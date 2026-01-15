@@ -15,7 +15,7 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.Expiry;
 import io.camunda.exporter.ExporterResourceProvider;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
-import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration.RetentionMode;
+import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration.ProcessInstanceRetentionMode;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.BasicArchiveBatch;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.ProcessInstanceArchiveBatch;
@@ -386,11 +386,11 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
             .value(FieldValue.of(partitionId))
             .build();
 
-    final var retentionMode = config.getRetentionMode();
+    final var retentionMode = config.getProcessInstanceRetentionMode();
     final Query hierarchyQ;
 
-    if (retentionMode == RetentionMode.PI_HIERARCHY
-        || retentionMode == RetentionMode.PI_HIERARCHY_IGNORE_LEGACY) {
+    if (retentionMode == ProcessInstanceRetentionMode.PI_HIERARCHY
+        || retentionMode == ProcessInstanceRetentionMode.PI_HIERARCHY_IGNORE_LEGACY) {
       final var rootExists =
           QueryBuilders.exists()
               .field(ListViewTemplate.ROOT_PROCESS_INSTANCE_KEY)
@@ -406,7 +406,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
       final var newHierarchy =
           QueryBuilders.bool().mustNot(parentExists).must(rootExists).build().toQuery();
 
-      if (retentionMode == RetentionMode.PI_HIERARCHY) {
+      if (retentionMode == ProcessInstanceRetentionMode.PI_HIERARCHY) {
         // (rootPI IS NULL) (Legacy)
         final var legacy = QueryBuilders.bool().mustNot(rootExists).build().toQuery();
         hierarchyQ =
@@ -567,7 +567,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
               final List<Long> processInstanceKeys = new ArrayList<>();
               final List<Long> rootProcessInstanceKeys = new ArrayList<>();
 
-              if (config.getRetentionMode() == RetentionMode.PI) {
+              if (config.getProcessInstanceRetentionMode() == ProcessInstanceRetentionMode.PI) {
                 batchHits.forEach(h -> processInstanceKeys.add(Long.valueOf(h.id())));
               } else {
                 for (final var hit : batchHits) {

@@ -22,7 +22,7 @@ import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
-import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration.RetentionMode;
+import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration.ProcessInstanceRetentionMode;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.utils.TestExporterResourceProvider;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
@@ -422,7 +422,7 @@ final class ElasticsearchArchiverRepositoryIT {
   @Test
   void shouldHandlePIMode() throws Exception {
     // given
-    config.setRetentionMode(RetentionMode.PI);
+    config.setProcessInstanceRetentionMode(ProcessInstanceRetentionMode.PI);
     config.setRolloverBatchSize(100);
     config.setWaitPeriodBeforeArchiving("0s");
     final var repository = createRepository();
@@ -451,7 +451,7 @@ final class ElasticsearchArchiverRepositoryIT {
   @Test
   void shouldHandlePIHierarchyMode() throws Exception {
     // given
-    config.setRetentionMode(RetentionMode.PI_HIERARCHY);
+    config.setProcessInstanceRetentionMode(ProcessInstanceRetentionMode.PI_HIERARCHY);
     config.setRolloverBatchSize(100);
     config.setWaitPeriodBeforeArchiving("0s");
     final var repository = createRepository();
@@ -481,7 +481,7 @@ final class ElasticsearchArchiverRepositoryIT {
   @Test
   void shouldHandlePIHierarchyIgnoreLegacyMode() throws Exception {
     // given
-    config.setRetentionMode(RetentionMode.PI_HIERARCHY_IGNORE_LEGACY);
+    config.setProcessInstanceRetentionMode(ProcessInstanceRetentionMode.PI_HIERARCHY_IGNORE_LEGACY);
     config.setRolloverBatchSize(100);
     config.setWaitPeriodBeforeArchiving("0s");
     final var repository = createRepository();

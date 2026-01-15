@@ -15,7 +15,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
-import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration.RetentionMode;
+import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration.ProcessInstanceRetentionMode;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.utils.TestExporterResourceProvider;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
@@ -88,7 +88,7 @@ final class OpenSearchArchiverRepositoryTest extends AbstractArchiverRepositoryT
   public void shouldConstructCorrectQueryForPIMode() throws IOException {
     // given
     final var config = new HistoryConfiguration();
-    config.setRetentionMode(RetentionMode.PI);
+    config.setProcessInstanceRetentionMode(ProcessInstanceRetentionMode.PI);
     final var client = mock(OpenSearchAsyncClient.class);
     final var repository = createRepository(client, config);
     when(client.search(any(SearchRequest.class), eq(ProcessInstanceForListViewEntity.class)))
@@ -108,7 +108,7 @@ final class OpenSearchArchiverRepositoryTest extends AbstractArchiverRepositoryT
   public void shouldMapBatchForPIMode() throws IOException {
     // given
     final var config = new HistoryConfiguration();
-    config.setRetentionMode(RetentionMode.PI);
+    config.setProcessInstanceRetentionMode(ProcessInstanceRetentionMode.PI);
     final var client = mock(OpenSearchAsyncClient.class);
     final var repository = createRepository(client, config);
     final var hit1 = createHit("1", "2024-01-01", null);
@@ -130,7 +130,7 @@ final class OpenSearchArchiverRepositoryTest extends AbstractArchiverRepositoryT
   public void shouldMapBatchForPIHierarchyMode() throws IOException {
     // given
     final var config = new HistoryConfiguration();
-    config.setRetentionMode(RetentionMode.PI_HIERARCHY);
+    config.setProcessInstanceRetentionMode(ProcessInstanceRetentionMode.PI_HIERARCHY);
     final var client = mock(OpenSearchAsyncClient.class);
     final var repository = createRepository(client, config);
     final var hit1 = createHit("1", "2024-01-01", null); // Legacy
@@ -152,7 +152,7 @@ final class OpenSearchArchiverRepositoryTest extends AbstractArchiverRepositoryT
   public void shouldMapBatchForPIHierarchyIgnoreLegacyMode() throws IOException {
     // given
     final var config = new HistoryConfiguration();
-    config.setRetentionMode(RetentionMode.PI_HIERARCHY_IGNORE_LEGACY);
+    config.setProcessInstanceRetentionMode(ProcessInstanceRetentionMode.PI_HIERARCHY_IGNORE_LEGACY);
     final var client = mock(OpenSearchAsyncClient.class);
     final var repository = createRepository(client, config);
 

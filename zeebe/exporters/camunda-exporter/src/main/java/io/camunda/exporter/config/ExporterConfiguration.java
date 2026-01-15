@@ -221,6 +221,8 @@ public class ExporterConfiguration {
 
   public static class HistoryConfiguration {
     private boolean processInstanceEnabled = true;
+    private ProcessInstanceRetentionMode processInstanceRetentionMode =
+        ProcessInstanceRetentionMode.PI_HIERARCHY;
     private String elsRolloverDateFormat = "date";
     private String rolloverInterval = "1d";
     private String usageMetricsRolloverInterval = "1M";
@@ -230,7 +232,6 @@ public class ExporterConfiguration {
     private int maxDelayBetweenRuns = 60000;
     private RetentionConfiguration retention = new RetentionConfiguration();
     private boolean trackArchivalMetricsForProcessInstance = true;
-    private RetentionMode retentionMode = RetentionMode.PI_HIERARCHY;
 
     public boolean isProcessInstanceEnabled() {
       return processInstanceEnabled;
@@ -331,7 +332,7 @@ public class ExporterConfiguration {
           + ", trackArchivalMetricsForProcessInstance="
           + trackArchivalMetricsForProcessInstance
           + ", retentionMode="
-          + retentionMode
+          + processInstanceRetentionMode
           + '}';
     }
 
@@ -344,15 +345,16 @@ public class ExporterConfiguration {
       this.trackArchivalMetricsForProcessInstance = trackArchivalMetricsForProcessInstance;
     }
 
-    public RetentionMode getRetentionMode() {
-      return retentionMode;
+    public ProcessInstanceRetentionMode getProcessInstanceRetentionMode() {
+      return processInstanceRetentionMode;
     }
 
-    public void setRetentionMode(final RetentionMode retentionMode) {
-      this.retentionMode = retentionMode;
+    public void setProcessInstanceRetentionMode(
+        final ProcessInstanceRetentionMode processInstanceRetentionMode) {
+      this.processInstanceRetentionMode = processInstanceRetentionMode;
     }
 
-    public enum RetentionMode {
+    public enum ProcessInstanceRetentionMode {
       PI_HIERARCHY,
       PI_HIERARCHY_IGNORE_LEGACY,
       PI

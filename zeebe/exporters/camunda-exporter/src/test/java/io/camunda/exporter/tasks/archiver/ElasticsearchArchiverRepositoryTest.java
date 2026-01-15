@@ -25,7 +25,7 @@ import co.elastic.clients.json.JsonData;
 import co.elastic.clients.json.SimpleJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
-import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration.RetentionMode;
+import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration.ProcessInstanceRetentionMode;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.utils.TestExporterResourceProvider;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
@@ -84,7 +84,7 @@ final class ElasticsearchArchiverRepositoryTest extends AbstractArchiverReposito
   public void shouldConstructCorrectQueryForPIMode() {
     // given
     final var config = new HistoryConfiguration();
-    config.setRetentionMode(RetentionMode.PI);
+    config.setProcessInstanceRetentionMode(ProcessInstanceRetentionMode.PI);
     final var client = mock(ElasticsearchAsyncClient.class);
     final var repository = createRepository(client, config);
     when(client.search(any(SearchRequest.class), eq(ProcessInstanceForListViewEntity.class)))
@@ -110,7 +110,7 @@ final class ElasticsearchArchiverRepositoryTest extends AbstractArchiverReposito
   public void shouldMapBatchForPIMode() {
     // given
     final var config = new HistoryConfiguration();
-    config.setRetentionMode(RetentionMode.PI);
+    config.setProcessInstanceRetentionMode(ProcessInstanceRetentionMode.PI);
     final var client = mock(ElasticsearchAsyncClient.class);
     final var repository = createRepository(client, config);
     final var hit1 = createHit("1", "2024-01-01", null);
@@ -132,7 +132,7 @@ final class ElasticsearchArchiverRepositoryTest extends AbstractArchiverReposito
   public void shouldMapBatchForPIHierarchyMode() {
     // given
     final var config = new HistoryConfiguration();
-    config.setRetentionMode(RetentionMode.PI_HIERARCHY);
+    config.setProcessInstanceRetentionMode(ProcessInstanceRetentionMode.PI_HIERARCHY);
     final var client = mock(ElasticsearchAsyncClient.class);
     final var repository = createRepository(client, config);
     final var hit1 = createHit("1", "2024-01-01", null); // Legacy
@@ -155,7 +155,7 @@ final class ElasticsearchArchiverRepositoryTest extends AbstractArchiverReposito
   public void shouldMapBatchForPIHierarchyIgnoreLegacyMode() {
     // given
     final var config = new HistoryConfiguration();
-    config.setRetentionMode(RetentionMode.PI_HIERARCHY_IGNORE_LEGACY);
+    config.setProcessInstanceRetentionMode(ProcessInstanceRetentionMode.PI_HIERARCHY_IGNORE_LEGACY);
     final var client = mock(ElasticsearchAsyncClient.class);
     final var repository = createRepository(client, config);
 

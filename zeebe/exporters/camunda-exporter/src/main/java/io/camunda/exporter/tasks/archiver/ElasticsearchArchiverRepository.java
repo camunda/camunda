@@ -35,7 +35,7 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.Expiry;
 import io.camunda.exporter.ExporterResourceProvider;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
-import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration.RetentionMode;
+import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration.ProcessInstanceRetentionMode;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.BasicArchiveBatch;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.ProcessInstanceArchiveBatch;
@@ -345,11 +345,11 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
     final var partitionQ =
         QueryBuilders.term(q -> q.field(ListViewTemplate.PARTITION_ID).value(partitionId));
 
-    final var retentionMode = config.getRetentionMode();
+    final var retentionMode = config.getProcessInstanceRetentionMode();
     final Query hierarchyQ;
 
-    if (retentionMode == RetentionMode.PI_HIERARCHY
-        || retentionMode == RetentionMode.PI_HIERARCHY_IGNORE_LEGACY) {
+    if (retentionMode == ProcessInstanceRetentionMode.PI_HIERARCHY
+        || retentionMode == ProcessInstanceRetentionMode.PI_HIERARCHY_IGNORE_LEGACY) {
       final var rootExists =
           QueryBuilders.exists(e -> e.field(ListViewTemplate.ROOT_PROCESS_INSTANCE_KEY));
       final var parentExists =
@@ -358,7 +358,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
       // (parentPI IS NULL AND rootPI IS NOT NULL) (New hierarchy filter)
       final var newHierarchy = QueryBuilders.bool(b -> b.mustNot(parentExists).must(rootExists));
 
-      if (retentionMode == RetentionMode.PI_HIERARCHY) {
+      if (retentionMode == ProcessInstanceRetentionMode.PI_HIERARCHY) {
         // (rootPI IS NULL) (Legacy)
         final var legacyPiFilter = QueryBuilders.bool(b -> b.mustNot(rootExists));
         hierarchyQ =
@@ -452,7 +452,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
               final List<Long> processInstanceKeys = new ArrayList<>();
               final List<Long> rootProcessInstanceKeys = new ArrayList<>();
 
-              if (config.getRetentionMode() == RetentionMode.PI) {
+              if (config.getProcessInstanceRetentionMode() == ProcessInstanceRetentionMode.PI) {
                 batchHits.forEach(h -> processInstanceKeys.add(Long.valueOf(h.id())));
               } else {
                 for (final var hit : batchHits) {
