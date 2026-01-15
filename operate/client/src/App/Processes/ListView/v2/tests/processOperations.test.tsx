@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {render, screen} from 'modules/testing-library';
+import {render, screen, within} from 'modules/testing-library';
 import {ListView} from '..';
 import {getWrapper} from './mocks';
 import {
@@ -185,20 +185,14 @@ describe('<ListView /> - operations', () => {
       screen.getByRole('button', {name: /delete process definition/i}),
     );
 
-    const confirmCheckbox = await screen.findByLabelText(
+    const dialog = await screen.findByRole('dialog', {
+      name: 'Delete Process Definition',
+    });
+    const confirmCheckbox = within(dialog).getByLabelText(
       /Yes, I confirm I want to delete this process definition/i,
     );
-
+    const deleteButton = within(dialog).getByRole('button', {name: /Delete/i});
     await user.click(confirmCheckbox);
-
-    await screen.findByRole('button', {name: 'Cancel'});
-
-    const allButtons = screen.getAllByRole('button');
-    const deleteButtons = allButtons.filter((button) =>
-      button.textContent?.includes('Delete'),
-    );
-    const deleteButton = deleteButtons[deleteButtons.length - 1];
-
     await user.click(deleteButton);
 
     expect(notificationsStore.displayNotification).toHaveBeenCalledWith({

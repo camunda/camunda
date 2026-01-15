@@ -6,19 +6,19 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {render, screen} from 'modules/testing-library.ts';
-import {Toolbar} from '../index.tsx';
+import {render, screen} from 'modules/testing-library';
+import {Toolbar} from '../index';
 import {MemoryRouter} from 'react-router-dom';
-import {batchModificationStore} from 'modules/stores/batchModification.ts';
-import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelectionV2.ts';
-import {panelStatesStore} from 'modules/stores/panelStates.ts';
-import {notificationsStore} from 'modules/stores/notifications.tsx';
-import {variableFilterStore} from 'modules/stores/variableFilter.ts';
+import {batchModificationStore} from 'modules/stores/batchModification';
+import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelectionV2';
+import {panelStatesStore} from 'modules/stores/panelStates';
+import {notificationsStore} from 'modules/stores/notifications';
+import {variableFilterStore} from 'modules/stores/variableFilter';
 import {QueryClientProvider} from '@tanstack/react-query';
-import {getMockQueryClient} from 'modules/react-query/mockQueryClient.ts';
-import {mockCancelProcessInstancesBatchOperation} from 'modules/mocks/api/v2/processes/cancelProcessInstancesBatchOperation.ts';
-import {mockResolveProcessInstancesIncidentsBatchOperation} from 'modules/mocks/api/v2/processes/resolveProcessInstancesIncidentsBatchOperation.ts';
-import {mockQueryBatchOperations} from 'modules/mocks/api/v2/batchOperations/queryBatchOperations.ts';
+import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
+import {mockCancelProcessInstancesBatchOperation} from 'modules/mocks/api/v2/processes/cancelProcessInstancesBatchOperation';
+import {mockResolveProcessInstancesIncidentsBatchOperation} from 'modules/mocks/api/v2/processes/resolveProcessInstancesIncidentsBatchOperation';
+import {mockQueryBatchOperations} from 'modules/mocks/api/v2/batchOperations/queryBatchOperations';
 import {tracking} from 'modules/tracking';
 
 type Props = {
