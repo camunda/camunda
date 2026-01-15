@@ -8,12 +8,12 @@
 
 import {
   CodeSnippet,
-  Link,
   Modal,
   StructuredListBody,
   StructuredListCell,
   StructuredListWrapper,
 } from '@carbon/react';
+import {Link} from 'modules/components/Link';
 import {formatDate} from 'modules/utils/date';
 import {
   ArrowRight,
@@ -64,8 +64,8 @@ const DetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog}) => {
           <BatchJob />
           This operation is part of a batch.
           <Link
-            href={Paths.batchOperation(auditLog.batchOperationKey)}
-            target="_self"
+            to={Paths.batchOperation(auditLog.batchOperationKey)}
+            aria-label={`View batch operation ${auditLog.batchOperationKey}`}
           >
             View batch operation details.
           </Link>
@@ -128,10 +128,10 @@ const DetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog}) => {
                 <StructuredListCell>
                   <IconText>
                     <Link
-                      href={Paths.batchOperation(auditLog.batchOperationKey)}
-                      target="_self"
+                      to={Paths.batchOperation(auditLog.batchOperationKey)}
+                      aria-label={`View batch operation ${auditLog.batchOperationKey}`}
                     >
-                      View batch operation details&nbsp;
+                      View batch operation details
                       <ArrowRight />
                     </Link>
                   </IconText>

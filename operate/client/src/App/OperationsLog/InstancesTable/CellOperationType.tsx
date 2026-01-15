@@ -7,7 +7,7 @@
  */
 
 import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.9/audit-log';
-import {Link} from '@carbon/react';
+import {Link} from 'modules/components/Link';
 import {OperationLogName} from './styled';
 import {ClassicBatch} from '@carbon/react/icons';
 import {spaceAndCapitalize} from 'modules/utils/spaceAndCapitalize';
@@ -34,8 +34,8 @@ const CellOperationType: React.FC<Props> = ({item}) => {
         <OperationLogName>
           <ClassicBatch />
           <Link
-            href={Paths.batchOperation(item.batchOperationKey)}
-            target="_self"
+            to={Paths.batchOperation(item.batchOperationKey)}
+            aria-label={`View batch operation ${item.batchOperationKey}`}
           >
             {item.batchOperationKey}
           </Link>
