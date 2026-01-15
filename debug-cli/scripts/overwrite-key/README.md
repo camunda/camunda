@@ -39,7 +39,7 @@ Before starting, you need:
 
 #### Finding Key Jumps Using Elasticsearch
 
-To identify where the key jump occurred within a partition, use the provided script to query Elasticsearch and analyze `processInstanceKey` values. The script automatically handles pagination for partitions with many process instances.
+To identify where the key jump occurred within a partition, use the provided script to query Elasticsearch and analyze flow node instance keys. The script automatically handles pagination for partitions with many flow node instances.
 
 > [!NOTE]
 > The provided script should work for most scenarios, but may need adjustments for specific Elasticsearch configurations or custom requirements. If needed, you can perform manual queries by examining the Elasticsearch queries used by the script.
@@ -52,7 +52,7 @@ ES_URL="http://localhost:9200" PARTITION_ID=1 ./analyze-partition-keys.sh
 ```
 
 The script will:
-1. Query Elasticsearch for all unique processInstanceKeys in the partition (with automatic pagination)
+1. Query Elasticsearch for all unique flow node instance keys in the partition (with automatic pagination)
 2. Save results to `partition_${PARTITION_ID}_keys.txt`
 3. Analyze the keys to detect jumps > 1 million
 4. Display any jumps found with timestamps
@@ -72,18 +72,16 @@ PARTITION_ID=1 SKIP_DOWNLOAD=true ./analyze-partition-keys.sh
 
 **Use Cases:**
 
-- **BATCH_SIZE**: Use a larger batch size (e.g., 5000-10000) for faster downloads when the partition has many process instances. Smaller batch sizes are useful for slow networks.
+- **BATCH_SIZE**: Use a larger batch size (e.g., 5000-10000) for faster downloads when the partition has many flow node instances. Smaller batch sizes are useful for slow networks.
 
-- **AFTER_KEY**: If the script is interrupted during download, you can resume by setting AFTER_KEY to the last processInstanceKey in the file. Check the last line with `tail -1 partition_${PARTITION_ID}_keys.txt | cut -f1`.
+- **AFTER_KEY**: If the script is interrupted during download, you can resume by setting AFTER_KEY to the last key in the file. Check the last line with `tail -1 partition_${PARTITION_ID}_keys.txt | cut -f1`.
 
 - **SKIP_DOWNLOAD**: Use this when you've already downloaded the data and just want to re-run the analysis. This is useful for:
-
   - Testing different jump thresholds without re-downloading
   - Sharing the data file with team members for offline analysis
   - Re-analyzing after manually modifying the data
 
 **Important:** If you need to re-run the analysis from scratch, manually delete the output file first:
-
 ```bash
 rm partition_${PARTITION_ID}_keys.txt
 ```
@@ -102,7 +100,7 @@ Output File:       partition_1_keys.txt
 Testing Elasticsearch connectivity...
 ✓ Connected to Elasticsearch
 
-Fetching processInstanceKeys...
+Fetching flow node instance keys...
 Batch 1: Fetching up to 1000 keys... ✓ 1000 keys (Total: 1000)
 Batch 2: Fetching up to 1000 keys... ✓ 1000 keys (Total: 2000)
 Batch 3: Fetching up to 1000 keys... ✓ 456 keys (Total: 2456)
@@ -127,10 +125,10 @@ Results saved to:    partition_1_keys.txt
 
 Step 2 can be done using other tools if you prefer. The file `partition_${PARTITION_ID}_keys.txt` is a tab-separated text file with two columns:
 
-1. **Column 1**: `processInstanceKey` (sorted numerically)
-2. **Column 2**: `timestamp` (when the process instance started)
+1. **Column 1**: `key` (flow node instance key, sorted numerically)
+2. **Column 2**: `timestamp` (when the flow node instance started)
 
-**What to look for:** Find rows where the difference between consecutive `processInstanceKey` values is greater than a threshold (e.g. one million ). This indicates an abnormal jump.
+**What to look for:** Find rows where the difference between consecutive key values is greater than a threshold (e.g. one million). This indicates an abnormal jump.
 
 **Example file content:**
 
