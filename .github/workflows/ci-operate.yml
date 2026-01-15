@@ -107,9 +107,58 @@ jobs:
 
   fe-unit-tests:
     if: inputs.runFeTests
-    name: "Unit - Front End"
-    runs-on: gcp-perf-core-8-default
-    timeout-minutes: 15
+    name: "Unit - Front End [${{ matrix.shardIndex }}/${{ matrix.shardTotal }}]"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions: {} # GITHUB_TOKEN unused in this job
+    strategy:
+      fail-fast: false
+      matrix:
+        shardIndex: [1, 2, 3, 4]
+        shardTotal: [4]
+    env:
+      TEST_TYPE: Unit
+      TEST_OWNER: Core Features
+    defaults:
+      run:
+        working-directory: operate/client
+    steps:
+      - uses: actions/checkout@v4
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci
+        name: Install dependencies
+      - run: npm run test -- --no-file-parallelism --maxWorkers 1 --reporter=blob --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
+        name: Unit & Integration tests
+      - name: Upload blob report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: operate-fe-blob-report-${{ matrix.shardIndex }}
+          path: operate/client/.vitest-reports/*
+          include-hidden-files: true
+          retention-days: 1
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "operate-ci/fe-unit-tests-${{ matrix.shardIndex }}"
+          build_status: ${{ job.status }}
+          detailed_junit_tests: true
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+  fe-unit-tests-merge:
+    if: ${{ !cancelled() && inputs.runFeTests }}
+    needs: [fe-unit-tests]
+    name: "Unit - Front End - Merge Reports"
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: Unit
@@ -126,15 +175,20 @@ jobs:
           node-version: "22"
       - run: npm ci
         name: Install dependencies
-      - run: npm run test -- --no-file-parallelism --maxWorkers 1
-        name: Unit & Integration tests
+      - name: Download blob reports
+        uses: actions/download-artifact@v4
+        with:
+          path: operate/client/.vitest-reports
+          pattern: operate-fe-blob-report-*
+          merge-multiple: true
+      - name: Merge reports
+        run: npx vitest --merge-reports
       - name: Observe build status
         if: always()
         continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
           build_status: ${{ job.status }}
-          detailed_junit_tests: true
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
