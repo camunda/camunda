@@ -1096,4 +1096,25 @@
     </modifySql>
   </changeSet>
 
+  <changeSet id="create_audit_log_authorization_indexes" author="camunda">
+    <!-- Index for filtering by CATEGORY (used in authorization checks for AUDIT_LOG resource type
+         and USER_TASKS filtering) -->
+    <createIndex tableName="${prefix}AUDIT_LOG" indexName="${prefix}IDX_AUDIT_LOG_CATEGORY">
+      <column name="CATEGORY"/>
+    </createIndex>
+
+    <!-- Index for filtering by PROCESS_DEFINITION_ID (used in authorization checks for
+         process instance and user task access, including IS NOT NULL checks) -->
+    <createIndex tableName="${prefix}AUDIT_LOG" indexName="${prefix}IDX_AUDIT_LOG_PROC_DEF_ID">
+      <column name="PROCESS_DEFINITION_ID"/>
+    </createIndex>
+
+    <!-- Composite index for efficient filtering of USER_TASKS by specific process definition IDs
+         (covers the compound condition: CATEGORY = 'USER_TASKS' AND PROCESS_DEFINITION_ID IN (...)) -->
+    <createIndex tableName="${prefix}AUDIT_LOG" indexName="${prefix}IDX_AUDIT_LOG_CAT_PROC_DEF_ID">
+      <column name="CATEGORY"/>
+      <column name="PROCESS_DEFINITION_ID"/>
+    </createIndex>
+  </changeSet>
+
 </databaseChangeLog>
