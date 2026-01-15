@@ -78,6 +78,7 @@ public class BackupManagerMetrics {
     return Timer.builder(BACKUP_OPERATIONS_LATENCY.getName())
         .description(BACKUP_OPERATIONS_LATENCY.getDescription())
         .tag(MetricKeyName.OPERATION.asString(), operationType.name())
+        .serviceLevelObjectives(BACKUP_OPERATIONS_LATENCY.getTimerSLOs())
         .register(registry);
   }
 
