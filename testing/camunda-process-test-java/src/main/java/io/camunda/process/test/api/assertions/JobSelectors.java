@@ -15,6 +15,7 @@
  */
 package io.camunda.process.test.api.assertions;
 
+import io.camunda.client.api.search.enums.JobKind;
 import io.camunda.client.api.search.filter.JobFilter;
 import io.camunda.client.api.search.response.Job;
 
@@ -49,6 +50,16 @@ public class JobSelectors {
    */
   public static JobSelector byProcessDefinitionId(final String processDefinitionId) {
     return new JobProcessDefinitionSelector(processDefinitionId);
+  }
+
+  /**
+   * Select the job by its kind.
+   *
+   * @param jobKind the kind of the job
+   * @return the selector
+   */
+  public static JobSelector byJobKind(final JobKind jobKind) {
+    return new JobKindSelector(jobKind);
   }
 
   private static final class JobTypeSelector implements JobSelector {
@@ -120,6 +131,30 @@ public class JobSelectors {
     @Override
     public void applyFilter(final JobFilter filter) {
       filter.processDefinitionId(processDefinitionId);
+    }
+  }
+
+  private static final class JobKindSelector implements JobSelector {
+
+    private final JobKind jobKind;
+
+    private JobKindSelector(final JobKind jobKind) {
+      this.jobKind = jobKind;
+    }
+
+    @Override
+    public boolean test(final Job job) {
+      return jobKind.equals(job.getKind());
+    }
+
+    @Override
+    public String describe() {
+      return "jobKind: " + jobKind;
+    }
+
+    @Override
+    public void applyFilter(final JobFilter filter) {
+      filter.kind(jobKind);
     }
   }
 }

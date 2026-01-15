@@ -472,23 +472,8 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
 
     // Add the AD_HOC_SUB_PROCESS kind filter to the job selector
     final JobSelector adHocJobSelector =
-        new JobSelector() {
-          @Override
-          public boolean test(final Job job) {
-            return jobSelector.test(job);
-          }
-
-          @Override
-          public String describe() {
-            return jobSelector.describe();
-          }
-
-          @Override
-          public void applyFilter(final JobFilter filter) {
-            jobSelector.applyFilter(filter);
-            filter.kind(io.camunda.client.api.search.enums.JobKind.AD_HOC_SUB_PROCESS);
-          }
-        };
+        jobSelector.and(
+            JobSelectors.byJobKind(io.camunda.client.api.search.enums.JobKind.AD_HOC_SUB_PROCESS));
 
     // completing the job inside the await block to handle the eventual consistency of the API
     awaitJob(
