@@ -406,7 +406,8 @@ public final class BpmnStateTransitionBehavior {
         new ProcessInstanceBatchRecord()
             .setProcessInstanceKey(context.getProcessInstanceKey())
             .setBatchElementInstanceKey(context.getElementInstanceKey())
-            .setIndex(amount);
+            .setIndex(amount)
+            .setProcessDefinitionKey(context.getProcessDefinitionKey());
 
     final var key = keyGenerator.nextKey();
     commandWriter.appendFollowUpCommand(key, ProcessInstanceBatchIntent.ACTIVATE, record);
@@ -444,7 +445,8 @@ public final class BpmnStateTransitionBehavior {
       final var batchRecord =
           new ProcessInstanceBatchRecord()
               .setProcessInstanceKey(context.getProcessInstanceKey())
-              .setBatchElementInstanceKey(context.getElementInstanceKey());
+              .setBatchElementInstanceKey(context.getElementInstanceKey())
+              .setProcessDefinitionKey(context.getProcessDefinitionKey());
       final var key = keyGenerator.nextKey();
       commandWriter.appendFollowUpCommand(key, ProcessInstanceBatchIntent.TERMINATE, batchRecord);
       return false;
@@ -515,6 +517,7 @@ public final class BpmnStateTransitionBehavior {
     runtimeInstructionRecord.setProcessInstanceKey(context.getProcessInstanceKey());
     runtimeInstructionRecord.setTenantId(context.getTenantId());
     runtimeInstructionRecord.setElementId(runtimeInstruction.getAfterElementId());
+    runtimeInstructionRecord.setProcessDefinitionKey(context.getProcessDefinitionKey());
 
     stateWriter.appendFollowUpEvent(
         processInstance.getKey(), RuntimeInstructionIntent.INTERRUPTED, runtimeInstructionRecord);

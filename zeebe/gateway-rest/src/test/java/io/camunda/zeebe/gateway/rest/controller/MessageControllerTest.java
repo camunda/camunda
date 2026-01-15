@@ -72,7 +72,8 @@ public class MessageControllerTest extends RestControllerTest {
                 new MessageCorrelationRecord()
                     .setMessageKey(123L)
                     .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
-                    .setProcessInstanceKey(321L)));
+                    .setProcessInstanceKey(321L)
+                    .setProcessDefinitionKey(234L)));
 
     final var request =
         """

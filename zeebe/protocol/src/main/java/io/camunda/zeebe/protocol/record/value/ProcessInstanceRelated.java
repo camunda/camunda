@@ -21,4 +21,26 @@ public interface ProcessInstanceRelated {
    * @return the key of the corresponding process instance
    */
   long getProcessInstanceKey();
+
+  /**
+   * @return the key of the corresponding process definition
+   */
+  long getProcessDefinitionKey();
+
+  // TODO: remove default implementation: https://github.com/camunda/camunda/issues/43757
+  /**
+   * @return the key of the corresponding BPMN process ID
+   */
+  default String getBpmnProcessId() {
+    return "";
+  }
+
+  // TODO: remove default implementation: https://github.com/camunda/camunda/issues/43758
+  // and implement for missing classes
+  /**
+   * @return the key of the corresponding element instance
+   */
+  default long getElementInstanceKey() {
+    return -1L;
+  }
 }
