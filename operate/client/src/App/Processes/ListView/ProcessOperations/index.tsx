@@ -13,7 +13,6 @@ import {DeleteButtonContainer} from 'modules/components/DeleteDefinition/styled'
 import {InlineLoading, Link, ListItem, Stack} from '@carbon/react';
 import {DeleteDefinitionModal} from 'modules/components/DeleteDefinitionModal';
 import {operationsStore} from 'modules/stores/operations';
-import {panelStatesStore} from 'modules/stores/panelStates';
 import {StructuredList} from 'modules/components/StructuredList';
 import {UnorderedList} from 'modules/components/DeleteDefinitionModal/Warning/styled';
 import {notificationsStore} from 'modules/stores/notifications';
@@ -137,7 +136,6 @@ const ProcessOperations: React.FC<Props> = observer(
               processDefinitionId,
               onSuccess: () => {
                 setIsOperationRunning(false);
-                panelStatesStore.expandOperationsPanel();
 
                 notificationsStore.displayNotification({
                   kind: 'success',

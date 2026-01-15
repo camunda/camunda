@@ -201,7 +201,5 @@ test.describe.skip('Child Process Instance Migration @roundtrip', () => {
     await expect(
       processesPage.processInstancesTable.getByRole('heading'),
     ).toContainText(/1 result/i);
-
-    await commonPage.collapseOperationsPanel();
   });
 });

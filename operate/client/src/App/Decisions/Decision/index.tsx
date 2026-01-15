@@ -15,7 +15,6 @@ import {DiagramShell} from 'modules/components/DiagramShell';
 import {DecisionViewer} from 'modules/components/DecisionViewer';
 import {notificationsStore} from 'modules/stores/notifications';
 import {useDecisionDefinitionXml} from 'modules/queries/decisionDefinitions/useDecisionDefinitionXml';
-import {panelStatesStore} from 'modules/stores/panelStates';
 import {useDecisionDefinitionSelection} from 'modules/hooks/decisionDefinition';
 
 const Decision: React.FC = observer(() => {
@@ -81,14 +80,7 @@ const Decision: React.FC = observer(() => {
 
   return (
     <Section>
-      <PanelHeader
-        title={selectedDefinitionName}
-        className={
-          panelStatesStore.state.isOperationsCollapsed
-            ? undefined
-            : 'panelOffset'
-        }
-      >
+      <PanelHeader title={selectedDefinitionName}>
         {definitionSelection.kind !== 'no-match' && (
           <CopiableContent
             copyButtonDescription="Decision ID / Click to copy"

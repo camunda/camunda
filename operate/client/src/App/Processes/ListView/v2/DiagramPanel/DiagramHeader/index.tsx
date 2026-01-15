@@ -8,14 +8,13 @@
 
 import {observer} from 'mobx-react';
 import {CopiableProcessID} from 'App/Processes/CopiableProcessID';
-import {ProcessOperations} from '../../ProcessOperations';
+import {ProcessOperations} from 'App/Processes/ListView/v2/ProcessOperations';
 import {
   PanelHeader,
   Description,
   DescriptionTitle,
   DescriptionData,
-} from '../../../DiagramPanel/DiagramHeader/styled';
-import {panelStatesStore} from 'modules/stores/panelStates';
+} from 'App/Processes/ListView/DiagramPanel/DiagramHeader/styled';
 import {
   getProcessDefinitionName,
   type ProcessDefinitionSelection,
@@ -32,15 +31,7 @@ const DiagramHeader: React.FC<DiagramHeaderProps> = observer(
       processDefinitionSelection.kind === 'no-match' ? 'Process' : undefined;
 
     return (
-      <PanelHeader
-        title={title}
-        ref={panelHeaderRef}
-        className={
-          panelStatesStore.state.isOperationsCollapsed
-            ? undefined
-            : 'panelOffset'
-        }
-      >
+      <PanelHeader title={title} ref={panelHeaderRef}>
         <DefinitionSelectionContent
           processDefinitionSelection={processDefinitionSelection}
         />

@@ -9,15 +9,9 @@
 import styled from 'styled-components';
 import {PanelHeader as BasePanelHeader} from 'modules/components/PanelHeader';
 import {CopiableContent as BaseCopiableContent} from 'modules/components/PanelHeader/CopiableContent';
-import {OPERATIONS_EXPANDED_PANEL_WIDTH} from 'modules/components/OperationsPanel/constants';
 
 const PanelHeader = styled(BasePanelHeader)`
   padding-right: 0;
-  &.panelOffset {
-    margin-right: calc(
-      ${OPERATIONS_EXPANDED_PANEL_WIDTH}px - var(--cds-spacing-09)
-    );
-  }
 `;
 
 const Section = styled.section`

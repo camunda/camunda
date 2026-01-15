@@ -20,7 +20,6 @@ import {
   DescriptionData,
   HeaderActions,
 } from './styled';
-import {panelStatesStore} from 'modules/stores/panelStates';
 import {Paths} from 'modules/Routes';
 
 type ProcessDetails = {
@@ -48,11 +47,6 @@ const DiagramHeader: React.FC<DiagramHeaderProps> = observer(
       <PanelHeader
         title={!hasSelectedProcess ? 'Process' : undefined}
         ref={panelHeaderRef}
-        className={
-          panelStatesStore.state.isOperationsCollapsed
-            ? undefined
-            : 'panelOffset'
-        }
       >
         {hasSelectedProcess && (
           <>

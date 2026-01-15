@@ -9,16 +9,10 @@
 import {styles} from '@carbon/elements';
 import styled from 'styled-components';
 import {PanelHeader as BasePanelHeader} from 'modules/components/PanelHeader';
-import {OPERATIONS_EXPANDED_PANEL_WIDTH} from 'modules/components/OperationsPanel/constants';
 
 const PanelHeader = styled(BasePanelHeader)`
   padding-right: 0;
   gap: var(--cds-spacing-09);
-  &.panelOffset {
-    margin-right: calc(
-      ${OPERATIONS_EXPANDED_PANEL_WIDTH}px - var(--cds-spacing-09)
-    );
-  }
 `;
 
 const Description = styled.dl`

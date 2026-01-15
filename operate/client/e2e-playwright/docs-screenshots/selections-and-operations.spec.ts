@@ -74,7 +74,7 @@ test.describe('selections and operations', () => {
     });
   });
 
-  test('view operations panel after retry operation', async ({
+  test('view operations page after retry operation', async ({
     page,
     commonPage,
     processesPage,
@@ -104,11 +104,11 @@ test.describe('selections and operations', () => {
     await filtersPanel.selectVersion('1');
     await filtersPanel.processVersionFilter.blur();
 
-    await commonPage.expandOperationsPanel();
+    await page.getByRole('button', {name: /view batch operations/i}).click();
+    await page.waitForURL('**/batch-operations');
 
-    await processesPage.diagram.moveCanvasHorizontally(-200);
     await page.screenshot({
-      path: 'e2e-playwright/docs-screenshots/selections-and-operations/operate-operations-panel.png',
+      path: 'e2e-playwright/docs-screenshots/selections-and-operations/operate-operations-after-retry.png',
     });
   });
 });

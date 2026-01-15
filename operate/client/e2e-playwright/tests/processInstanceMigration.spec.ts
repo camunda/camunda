@@ -369,8 +369,6 @@ test.describe.skip('Process Instance Migration', () => {
     await expect(
       processesPage.processInstancesTable.getByRole('heading'),
     ).toContainText(/4 results/i);
-
-    await commonPage.collapseOperationsPanel();
   });
 
   test('Migrated event sub processes', async ({commonPage, processesPage}) => {
@@ -381,7 +379,6 @@ test.describe.skip('Process Instance Migration', () => {
         incidents: 'true',
       },
     });
-    await commonPage.expandOperationsPanel();
 
     const migrateOperationEntry = commonPage.operationsList
       .getByRole('listitem')
@@ -664,8 +661,6 @@ test.describe.skip('Process Instance Migration', () => {
     await expect(
       processesPage.processInstancesTable.getByRole('heading'),
     ).toContainText(/3 results/i);
-
-    await commonPage.collapseOperationsPanel();
   });
 
   test('Migrated tasks', async ({

@@ -129,8 +129,6 @@ test.describe('Process Instance Batch Modification', () => {
 
     await modificationOperationEntry.getByRole('link').click();
 
-    await commonPage.collapseOperationsPanel();
-
     await filtersPanel.selectProcess('Order process');
     await filtersPanel.selectVersion(initialData.version.toString());
 

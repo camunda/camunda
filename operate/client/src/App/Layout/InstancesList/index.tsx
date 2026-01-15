@@ -21,7 +21,6 @@ type Props = {
   bottomPanel: React.ReactNode;
   additionalTopContent?: React.ReactNode;
   footer?: React.ReactNode;
-  rightPanel?: React.ReactNode;
   frame?: FrameProps;
   type: 'process' | 'decision' | 'migrate';
 };
@@ -30,7 +29,6 @@ const InstancesList: React.FC<Props> = observer(
     leftPanel,
     topPanel,
     bottomPanel,
-    rightPanel,
     additionalTopContent,
     footer,
     frame,
@@ -49,7 +47,6 @@ const InstancesList: React.FC<Props> = observer(
       <Frame frame={frame}>
         <Container
           $hasLeftPanel={leftPanel !== undefined}
-          $hasRightPanel={rightPanel !== undefined}
           $hasFooter={footer !== undefined}
           $hasAdditionalTopContent={additionalTopContent !== undefined}
         >
@@ -65,7 +62,6 @@ const InstancesList: React.FC<Props> = observer(
               {bottomPanel}
             </ResizablePanel>
           </PanelContainer>
-          {rightPanel}
           {footer}
         </Container>
       </Frame>

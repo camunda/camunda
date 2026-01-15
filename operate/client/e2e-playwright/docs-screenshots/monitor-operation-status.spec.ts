@@ -73,46 +73,9 @@ test.describe('process instance migration', () => {
         incidents: 'false',
         canceled: 'false',
         completed: 'false',
-      },
-    });
-
-    await commonPage.addRightArrow(
-      page.getByRole('button', {name: /expand operations/i}),
-    );
-
-    await page.screenshot({
-      path: path.join(baseDirectory, 'operations-panel.png'),
-    });
-
-    await commonPage.deleteArrows();
-
-    await processesPage.gotoProcessesPage({
-      searchParams: {
-        active: 'true',
-        incidents: 'false',
-        canceled: 'false',
-        completed: 'false',
         operationId: '653ed5e6-49ed-4675-85bf-2c54a94d8180',
       },
     });
-
-    await commonPage.expandOperationsPanel();
-
-    await commonPage.addRightArrow(
-      page
-        .getByRole('region', {name: /operations/i})
-        .getByTestId('operation-id'),
-    );
-
-    await commonPage.addDownArrow(processesPage.filtersPanel.operationIdFilter);
-
-    await page.screenshot({
-      path: path.join(baseDirectory, 'expanded-operations-panel.png'),
-    });
-
-    await commonPage.deleteArrows();
-
-    await commonPage.collapseOperationsPanel();
 
     await commonPage.addDownArrow(
       processInstancesTable.getByRole('button', {
