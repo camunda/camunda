@@ -68,7 +68,7 @@ public class OpensearchFlowNodeStatisticsDao implements FlowNodeStatisticsDao {
                 aggregationDSLWrapper.withSubaggregations(
                     aggregationDSLWrapper.termAggregation(FLOW_NODE_ID, TERMS_AGG_SIZE),
                     Map.of(
-                        COUNT_INCIDENT, queryDSLWrapper.term(INCIDENT, true)._toAggregation(),
+                        COUNT_INCIDENT, queryDSLWrapper.term(INCIDENT, true).toAggregation(),
                         COUNT_CANCELED,
                             queryDSLWrapper
                                 .and(
@@ -76,7 +76,7 @@ public class OpensearchFlowNodeStatisticsDao implements FlowNodeStatisticsDao {
                                         queryDSLWrapper.term(
                                             TYPE, FlowNodeType.MULTI_INSTANCE_BODY.name())),
                                     queryDSLWrapper.term(STATE, TERMINATED.name()))
-                                ._toAggregation(),
+                                .toAggregation(),
                         COUNT_COMPLETED,
                             queryDSLWrapper
                                 .and(
@@ -84,7 +84,7 @@ public class OpensearchFlowNodeStatisticsDao implements FlowNodeStatisticsDao {
                                         queryDSLWrapper.term(
                                             TYPE, FlowNodeType.MULTI_INSTANCE_BODY.name())),
                                     queryDSLWrapper.term(STATE, COMPLETED.name()))
-                                ._toAggregation(),
+                                .toAggregation(),
                         COUNT_ACTIVE,
                             queryDSLWrapper
                                 .and(
@@ -93,7 +93,7 @@ public class OpensearchFlowNodeStatisticsDao implements FlowNodeStatisticsDao {
                                             TYPE, FlowNodeType.MULTI_INSTANCE_BODY.name())),
                                     queryDSLWrapper.term(STATE, ACTIVE.name()),
                                     queryDSLWrapper.term(INCIDENT, false))
-                                ._toAggregation())))
+                                .toAggregation())))
             .size(0);
 
     return richOpenSearchClient

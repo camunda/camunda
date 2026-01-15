@@ -96,10 +96,10 @@ class VariableStoreOpenSearchTest {
     final var filters = capturedSearchRequest.query().constantScore().filter().bool().must();
     assertThat(filters).hasSize(2);
     assertThat(filters.getFirst().terms().field()).isEqualTo(FlowNodeInstanceTemplate.SCOPE_KEY);
-    assertThat(filters.getFirst().terms().terms().value().stream().map(FieldValue::_get))
+    assertThat(filters.getFirst().terms().terms().value().stream().map(FieldValue::_toJsonString))
         .isEqualTo(List.of("flowNodeId1"));
     assertThat(filters.getLast().terms().field()).isEqualTo(VariableTemplate.NAME);
-    assertThat(filters.getLast().terms().terms().value().stream().map(FieldValue::_get))
+    assertThat(filters.getLast().terms().terms().value().stream().map(FieldValue::_toJsonString))
         .isEqualTo(varNames);
     assertThat(capturedSearchRequest.size()).isEqualTo(200);
     assertThat(result).isEmpty();

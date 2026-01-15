@@ -116,7 +116,7 @@ public class AssigneeAndCandidateGroupsReaderOS implements AssigneeAndCandidateG
     final Aggregation userTasksAgg =
         AggregationDSL.withSubaggregations(
             nestedAgg,
-            Collections.singletonMap(COMPOSITE_AGG, assigneeCompositeAgg._toAggregation()));
+            Collections.singletonMap(COMPOSITE_AGG, assigneeCompositeAgg.toAggregation()));
 
     final List<String> termsBatch = new ArrayList<>();
     final OpenSearchCompositeAggregationScroller compositeAggregationScroller =
@@ -128,7 +128,7 @@ public class AssigneeAndCandidateGroupsReaderOS implements AssigneeAndCandidateG
             .size(0)
             .setPathToAggregation(NESTED_USER_TASKS_AGG, COMPOSITE_AGG)
             .setCompositeBucketConsumer(
-                bucket -> termsBatch.add((bucket.key()).get(TERMS_AGG).to(String.class)));
+                bucket -> termsBatch.add((bucket.key()).get(TERMS_AGG).stringValue()));
     boolean hasPage;
     do {
       hasPage = compositeAggregationScroller.consumePage();

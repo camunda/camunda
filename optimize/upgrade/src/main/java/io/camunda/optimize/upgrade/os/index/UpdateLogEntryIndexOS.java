@@ -18,6 +18,6 @@ public class UpdateLogEntryIndexOS extends UpdateLogEntryIndex<Builder> {
   @Override
   public IndexSettings.Builder addStaticSetting(
       final String key, final int value, final IndexSettings.Builder contentBuilder) {
-    return contentBuilder.numberOfShards(Integer.toString(value));
+    return contentBuilder.numberOfShards(value);
   }
 }
