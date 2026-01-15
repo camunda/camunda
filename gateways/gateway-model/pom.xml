@@ -85,7 +85,7 @@
                 <typeMapping>ProcessInstanceModificationActivateInstructionAncestorElementInstanceKey=String</typeMapping>
                 <typeMapping>ResourceKey=String</typeMapping>
                 <!-- map specific filter properties to basic filter types -->
-                <typeMapping>AuditLogEntityKeyFilterProperty=String</typeMapping>
+                <typeMapping>AuditLogEntityKeyFilterProperty=BasicStringFilterProperty</typeMapping>
                 <typeMapping>DecisionDefinitionKeyFilterProperty=BasicStringFilterProperty</typeMapping>
                 <typeMapping>DecisionEvaluationInstanceKeyFilterProperty=BasicStringFilterProperty</typeMapping>
                 <typeMapping>DeploymentKeyFilterProperty=BasicStringFilterProperty</typeMapping>
@@ -152,21 +152,34 @@
                 <typeMapping>VariableKeyFilterProperty=String</typeMapping>
                 <!-- map to custom model classes -->
                 <typeMapping>DateTimeFilterProperty=SimpleDateTimeFilterProperty</typeMapping>
-                <typeMapping>SearchQueryPageRequest=SimpleSearchQueryPageRequest</typeMapping>
-                <!-- enum filter properties mapped to advanced model enum types -->
-                <typeMapping>AuditLogCategoryFilterProperty=io.camunda.gateway.protocol.model.AuditLogCategoryEnum</typeMapping>
+                <!-- enum filter properties mapped to advanced model enum types for equality behavior -->
+                <typeMapping>AuditLogActorTypeFilterProperty=io.camunda.gateway.protocol.model.AuditLogActorTypeEnum</typeMapping>
+                <typeMapping>AuditLogResultFilterProperty=io.camunda.gateway.protocol.model.AuditLogResultEnum</typeMapping>
+                <typeMapping>BatchOperationItemStateFilterProperty=io.camunda.gateway.protocol.model.BatchOperationItemStateEnum</typeMapping>
+                <typeMapping>BatchOperationStateFilterProperty=io.camunda.gateway.protocol.model.BatchOperationStateEnum</typeMapping>
+                <typeMapping>BatchOperationTypeFilterProperty=io.camunda.gateway.protocol.model.BatchOperationTypeEnum</typeMapping>
+                <typeMapping>CategoryFilterProperty=io.camunda.gateway.protocol.model.AuditLogCategoryEnum</typeMapping>
+                <typeMapping>ClusterVariableScopeFilterProperty=io.camunda.gateway.protocol.model.ClusterVariableScopeEnum</typeMapping>
+                <typeMapping>DecisionInstanceStateFilterProperty=io.camunda.gateway.protocol.model.DecisionInstanceStateEnum</typeMapping>
+                <typeMapping>EntityTypeFilterProperty=io.camunda.gateway.protocol.model.AuditLogEntityTypeEnum</typeMapping>
+                <typeMapping>ElementInstanceStateFilterProperty=io.camunda.gateway.protocol.model.ElementInstanceStateEnum</typeMapping>
                 <typeMapping>IncidentErrorTypeFilterProperty=io.camunda.gateway.protocol.model.IncidentErrorTypeEnum</typeMapping>
                 <typeMapping>IncidentStateFilterProperty=io.camunda.gateway.protocol.model.IncidentStateEnum</typeMapping>
                 <typeMapping>JobKindFilterProperty=io.camunda.gateway.protocol.model.JobKindEnum</typeMapping>
+                <typeMapping>JobListenerEventTypeFilterProperty=io.camunda.gateway.protocol.model.JobListenerEventTypeEnum</typeMapping>
+                <typeMapping>JobStateFilterProperty=io.camunda.gateway.protocol.model.JobStateEnum</typeMapping>
+                <typeMapping>MessageSubscriptionStateFilterProperty=io.camunda.gateway.protocol.model.MessageSubscriptionStateEnum</typeMapping>
+                <typeMapping>ProcessInstanceStateFilterProperty=io.camunda.gateway.protocol.model.ProcessInstanceStateEnum</typeMapping>
+                <typeMapping>OperationTypeFilterProperty=io.camunda.gateway.protocol.model.AuditLogOperationTypeEnum</typeMapping>
+                <typeMapping>UserTaskStateFilterProperty=io.camunda.gateway.protocol.model.UserTaskStateEnum</typeMapping>
               </typeMappings>
               <generateApis>false</generateApis>
               <generateSupportingFiles>false</generateSupportingFiles>
               <generateModels>true</generateModels>
               <generateModelDocumentation>false</generateModelDocumentation>
               <generateModelTests>false</generateModelTests>
-              <!-- validate the spec on every generation -->
-              <skipValidateSpec>false</skipValidateSpec>
-              <openapiNormalizer>REF_AS_PARENT_IN_ALLOF=true</openapiNormalizer>
+              <!-- no validation needed, done in the advanced execution already -->
+              <skipValidateSpec>true</skipValidateSpec>
               <configOptions>
                 <additionalModelTypeAnnotations>@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)</additionalModelTypeAnnotations>
                 <serializationLibrary>jackson</serializationLibrary>
@@ -174,6 +187,7 @@
                 <jdk8>true</jdk8>
                 <openApiNullable>false</openApiNullable>
                 <useEnumCaseInsensitive>true</useEnumCaseInsensitive>
+                <useOneOfInterfaces>false</useOneOfInterfaces>
               </configOptions>
             </configuration>
           </execution>
