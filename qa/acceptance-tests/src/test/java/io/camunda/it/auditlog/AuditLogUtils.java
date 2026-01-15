@@ -177,18 +177,27 @@ public class AuditLogUtils {
     return this;
   }
 
-  private void awaitUserTenantAssignments(final UserTenantAssignment assignment) {
+  private void awaitUserTenantAssignments() {
+    final var lastTenantId = userTenantAssignments.getLast().tenantId;
+    final var assignmentCount =
+        userTenantAssignments.stream().filter(a -> a.tenantId.equals(lastTenantId)).toList().size();
+
     Awaitility.await("User is assigned to tenant")
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
-              final var users =
-                  defaultClient.newUsersByTenantSearchRequest(assignment.tenantId).send().join();
-              assertThat(
-                      users.items().stream()
-                          .anyMatch(
-                              tenantUser -> tenantUser.getUsername().equals(assignment.username)))
-                  .isTrue();
+              final var auditLogs =
+                  defaultClient
+                      .newAuditLogSearchRequest()
+                      .filter(
+                          f ->
+                              f.operationType(AuditLogOperationTypeEnum.ASSIGN)
+                                  .entityType(AuditLogEntityTypeEnum.TENANT)
+                                  .entityKey(lastTenantId))
+                      .send()
+                      .join();
+
+              assertThat(auditLogs.items()).hasSize(assignmentCount);
             });
   }
 
@@ -234,7 +243,7 @@ public class AuditLogUtils {
   public AuditLogUtils await() {
     if (!getUserTenantAssignments().isEmpty()) {
       // this waits for the creation export
-      awaitUserTenantAssignments(getUserTenantAssignments().getLast());
+      awaitUserTenantAssignments();
     }
 
     // this waits for the actual audit log
