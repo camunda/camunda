@@ -48,6 +48,164 @@ public record AuditLogInfo(
     AuditLogActor actor,
     Optional<AuditLogTenant> tenant) {
 
+  // Static map for ValueType to AuditLogOperationCategory mappings
+  private static final Map<ValueType, AuditLogOperationCategory> OPERATION_CATEGORY_MAP =
+      Map.ofEntries(
+          Map.entry(
+              ValueType.BATCH_OPERATION_CREATION, AuditLogOperationCategory.DEPLOYED_RESOURCES),
+          Map.entry(
+              ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
+              AuditLogOperationCategory.DEPLOYED_RESOURCES),
+          Map.entry(ValueType.DECISION_EVALUATION, AuditLogOperationCategory.DEPLOYED_RESOURCES),
+          Map.entry(ValueType.DECISION_REQUIREMENTS, AuditLogOperationCategory.DEPLOYED_RESOURCES),
+          Map.entry(ValueType.DECISION, AuditLogOperationCategory.DEPLOYED_RESOURCES),
+          Map.entry(ValueType.FORM, AuditLogOperationCategory.DEPLOYED_RESOURCES),
+          Map.entry(ValueType.INCIDENT, AuditLogOperationCategory.DEPLOYED_RESOURCES),
+          Map.entry(
+              ValueType.PROCESS_INSTANCE_CREATION, AuditLogOperationCategory.DEPLOYED_RESOURCES),
+          Map.entry(
+              ValueType.PROCESS_INSTANCE_MIGRATION, AuditLogOperationCategory.DEPLOYED_RESOURCES),
+          Map.entry(
+              ValueType.PROCESS_INSTANCE_MODIFICATION,
+              AuditLogOperationCategory.DEPLOYED_RESOURCES),
+          Map.entry(ValueType.PROCESS_INSTANCE, AuditLogOperationCategory.DEPLOYED_RESOURCES),
+          Map.entry(ValueType.RESOURCE, AuditLogOperationCategory.DEPLOYED_RESOURCES),
+          Map.entry(ValueType.VARIABLE, AuditLogOperationCategory.DEPLOYED_RESOURCES),
+          Map.entry(ValueType.AUTHORIZATION, AuditLogOperationCategory.ADMIN),
+          Map.entry(ValueType.GROUP, AuditLogOperationCategory.ADMIN),
+          Map.entry(ValueType.MAPPING_RULE, AuditLogOperationCategory.ADMIN),
+          Map.entry(ValueType.ROLE, AuditLogOperationCategory.ADMIN),
+          Map.entry(ValueType.TENANT, AuditLogOperationCategory.ADMIN),
+          Map.entry(ValueType.USER, AuditLogOperationCategory.ADMIN),
+          Map.entry(ValueType.USER_TASK, AuditLogOperationCategory.USER_TASKS));
+
+  // Static map for ValueType to AuditLogEntityType mappings
+  private static final Map<ValueType, AuditLogEntityType> ENTITY_TYPE_MAP =
+      Map.ofEntries(
+          Map.entry(ValueType.AUTHORIZATION, AuditLogEntityType.AUTHORIZATION),
+          Map.entry(ValueType.PROCESS_INSTANCE, AuditLogEntityType.PROCESS_INSTANCE),
+          Map.entry(ValueType.PROCESS_INSTANCE_CREATION, AuditLogEntityType.PROCESS_INSTANCE),
+          Map.entry(ValueType.PROCESS_INSTANCE_MODIFICATION, AuditLogEntityType.PROCESS_INSTANCE),
+          Map.entry(ValueType.PROCESS_INSTANCE_MIGRATION, AuditLogEntityType.PROCESS_INSTANCE),
+          Map.entry(ValueType.INCIDENT, AuditLogEntityType.INCIDENT),
+          Map.entry(ValueType.VARIABLE, AuditLogEntityType.VARIABLE),
+          Map.entry(ValueType.DECISION, AuditLogEntityType.DECISION),
+          Map.entry(ValueType.DECISION_EVALUATION, AuditLogEntityType.DECISION),
+          Map.entry(ValueType.DECISION_REQUIREMENTS, AuditLogEntityType.RESOURCE),
+          Map.entry(ValueType.BATCH_OPERATION_CREATION, AuditLogEntityType.BATCH),
+          Map.entry(ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT, AuditLogEntityType.BATCH),
+          Map.entry(ValueType.USER, AuditLogEntityType.USER),
+          Map.entry(ValueType.MAPPING_RULE, AuditLogEntityType.MAPPING_RULE),
+          Map.entry(ValueType.GROUP, AuditLogEntityType.GROUP),
+          Map.entry(ValueType.ROLE, AuditLogEntityType.ROLE),
+          Map.entry(ValueType.TENANT, AuditLogEntityType.TENANT),
+          Map.entry(ValueType.FORM, AuditLogEntityType.RESOURCE),
+          Map.entry(ValueType.PROCESS, AuditLogEntityType.RESOURCE),
+          Map.entry(ValueType.RESOURCE, AuditLogEntityType.RESOURCE),
+          Map.entry(ValueType.USER_TASK, AuditLogEntityType.USER_TASK));
+
+  // Static map for Intent to AuditLogOperationType mappings
+  private static final Map<Intent, AuditLogOperationType> OPERATION_TYPE_MAP =
+      Map.ofEntries(
+          // Authorization
+          Map.entry(AuthorizationIntent.CREATED, AuditLogOperationType.CREATE),
+          Map.entry(AuthorizationIntent.UPDATED, AuditLogOperationType.UPDATE),
+          Map.entry(AuthorizationIntent.DELETED, AuditLogOperationType.DELETE),
+
+          // BatchOperation
+          Map.entry(BatchOperationIntent.CREATED, AuditLogOperationType.CREATE),
+          Map.entry(BatchOperationIntent.RESUMED, AuditLogOperationType.RESUME),
+          Map.entry(BatchOperationIntent.RESUME, AuditLogOperationType.RESUME),
+          Map.entry(BatchOperationIntent.SUSPENDED, AuditLogOperationType.SUSPEND),
+          Map.entry(BatchOperationIntent.SUSPEND, AuditLogOperationType.SUSPEND),
+          Map.entry(BatchOperationIntent.CANCELED, AuditLogOperationType.CANCEL),
+          Map.entry(BatchOperationIntent.CANCEL, AuditLogOperationType.CANCEL),
+
+          // DecisionEvaluation
+          Map.entry(DecisionEvaluationIntent.EVALUATED, AuditLogOperationType.EVALUATE),
+          Map.entry(DecisionEvaluationIntent.FAILED, AuditLogOperationType.EVALUATE),
+
+          // Decision
+          Map.entry(DecisionIntent.CREATED, AuditLogOperationType.CREATE),
+          Map.entry(DecisionIntent.DELETED, AuditLogOperationType.DELETE),
+
+          // DecisionRequirements
+          Map.entry(DecisionRequirementsIntent.CREATED, AuditLogOperationType.CREATE),
+          Map.entry(DecisionRequirementsIntent.DELETED, AuditLogOperationType.DELETE),
+
+          // Form
+          Map.entry(FormIntent.CREATED, AuditLogOperationType.CREATE),
+          Map.entry(FormIntent.DELETED, AuditLogOperationType.DELETE),
+
+          // Group
+          Map.entry(GroupIntent.CREATED, AuditLogOperationType.CREATE),
+          Map.entry(GroupIntent.UPDATED, AuditLogOperationType.UPDATE),
+          Map.entry(GroupIntent.DELETED, AuditLogOperationType.DELETE),
+          Map.entry(GroupIntent.ENTITY_ADDED, AuditLogOperationType.ASSIGN),
+          Map.entry(GroupIntent.ENTITY_REMOVED, AuditLogOperationType.UNASSIGN),
+
+          // Incident
+          Map.entry(IncidentIntent.RESOLVED, AuditLogOperationType.RESOLVE),
+          Map.entry(IncidentIntent.RESOLVE, AuditLogOperationType.RESOLVE),
+
+          // MappingRule
+          Map.entry(MappingRuleIntent.CREATED, AuditLogOperationType.CREATE),
+          Map.entry(MappingRuleIntent.UPDATED, AuditLogOperationType.UPDATE),
+          Map.entry(MappingRuleIntent.DELETED, AuditLogOperationType.DELETE),
+
+          // Process
+          Map.entry(ProcessIntent.CREATED, AuditLogOperationType.CREATE),
+          Map.entry(ProcessIntent.DELETED, AuditLogOperationType.DELETE),
+
+          // ProcessInstanceCreation
+          Map.entry(ProcessInstanceCreationIntent.CREATED, AuditLogOperationType.CREATE),
+
+          // ProcessInstance
+          Map.entry(ProcessInstanceIntent.CANCELING, AuditLogOperationType.CANCEL),
+          Map.entry(ProcessInstanceIntent.CANCEL, AuditLogOperationType.CANCEL),
+
+          // ProcessInstanceMigration
+          Map.entry(ProcessInstanceMigrationIntent.MIGRATED, AuditLogOperationType.MIGRATE),
+          Map.entry(ProcessInstanceMigrationIntent.MIGRATE, AuditLogOperationType.MIGRATE),
+
+          // ProcessInstanceModification
+          Map.entry(ProcessInstanceModificationIntent.MODIFIED, AuditLogOperationType.MODIFY),
+          Map.entry(ProcessInstanceModificationIntent.MODIFY, AuditLogOperationType.MODIFY),
+
+          // Resource
+          Map.entry(ResourceIntent.CREATED, AuditLogOperationType.CREATE),
+          Map.entry(ResourceIntent.DELETED, AuditLogOperationType.DELETE),
+
+          // Tenant
+          Map.entry(TenantIntent.CREATED, AuditLogOperationType.CREATE),
+          Map.entry(TenantIntent.UPDATED, AuditLogOperationType.UPDATE),
+          Map.entry(TenantIntent.DELETED, AuditLogOperationType.DELETE),
+          Map.entry(TenantIntent.ENTITY_ADDED, AuditLogOperationType.ASSIGN),
+          Map.entry(TenantIntent.ENTITY_REMOVED, AuditLogOperationType.UNASSIGN),
+
+          // Role
+          Map.entry(RoleIntent.CREATED, AuditLogOperationType.CREATE),
+          Map.entry(RoleIntent.UPDATED, AuditLogOperationType.UPDATE),
+          Map.entry(RoleIntent.DELETED, AuditLogOperationType.DELETE),
+          Map.entry(RoleIntent.ENTITY_ADDED, AuditLogOperationType.ASSIGN),
+          Map.entry(RoleIntent.ENTITY_REMOVED, AuditLogOperationType.UNASSIGN),
+
+          // User
+          Map.entry(UserIntent.CREATED, AuditLogOperationType.CREATE),
+          Map.entry(UserIntent.UPDATED, AuditLogOperationType.UPDATE),
+          Map.entry(UserIntent.DELETED, AuditLogOperationType.DELETE),
+
+          // UserTask (non-ASSIGNED cases)
+          Map.entry(UserTaskIntent.ASSIGN, AuditLogOperationType.ASSIGN),
+          Map.entry(UserTaskIntent.UPDATED, AuditLogOperationType.UPDATE),
+          Map.entry(UserTaskIntent.UPDATE, AuditLogOperationType.UPDATE),
+          Map.entry(UserTaskIntent.COMPLETED, AuditLogOperationType.COMPLETE),
+          Map.entry(UserTaskIntent.COMPLETE, AuditLogOperationType.COMPLETE),
+
+          // Variable
+          Map.entry(VariableIntent.CREATED, AuditLogOperationType.CREATE),
+          Map.entry(VariableIntent.UPDATED, AuditLogOperationType.UPDATE));
+
   public static AuditLogInfo of(final Record<?> record) {
     return new AuditLogInfo(
         getOperationCategory(record.getValueType()),
@@ -58,75 +216,11 @@ public record AuditLogInfo(
   }
 
   private static AuditLogOperationCategory getOperationCategory(final ValueType valueType) {
-    switch (valueType) {
-      case BATCH_OPERATION_CREATION:
-      case BATCH_OPERATION_LIFECYCLE_MANAGEMENT:
-      case DECISION_EVALUATION:
-      case DECISION_REQUIREMENTS:
-      case DECISION:
-      case FORM:
-      case INCIDENT:
-      case PROCESS_INSTANCE_CREATION:
-      case PROCESS_INSTANCE_MIGRATION:
-      case PROCESS_INSTANCE_MODIFICATION:
-      case PROCESS_INSTANCE:
-      case RESOURCE:
-      case VARIABLE:
-        return AuditLogOperationCategory.DEPLOYED_RESOURCES;
-      case AUTHORIZATION:
-      case GROUP:
-      case MAPPING_RULE:
-      case ROLE:
-      case TENANT:
-      case USER:
-        return AuditLogOperationCategory.ADMIN;
-      case USER_TASK:
-        return AuditLogOperationCategory.USER_TASKS;
-      default:
-        return AuditLogOperationCategory.UNKNOWN;
-    }
+    return OPERATION_CATEGORY_MAP.getOrDefault(valueType, AuditLogOperationCategory.UNKNOWN);
   }
 
   private static AuditLogEntityType getEntityType(final ValueType valueType) {
-    switch (valueType) {
-      case AUTHORIZATION:
-        return AuditLogEntityType.AUTHORIZATION;
-      case PROCESS_INSTANCE:
-      case PROCESS_INSTANCE_CREATION:
-      case PROCESS_INSTANCE_MODIFICATION:
-      case PROCESS_INSTANCE_MIGRATION:
-        return AuditLogEntityType.PROCESS_INSTANCE;
-      case INCIDENT:
-        return AuditLogEntityType.INCIDENT;
-      case VARIABLE:
-        return AuditLogEntityType.VARIABLE;
-      case DECISION:
-      case DECISION_EVALUATION:
-        return AuditLogEntityType.DECISION;
-      case DECISION_REQUIREMENTS:
-        return AuditLogEntityType.RESOURCE;
-      case BATCH_OPERATION_CREATION:
-      case BATCH_OPERATION_LIFECYCLE_MANAGEMENT:
-        return AuditLogEntityType.BATCH;
-      case USER:
-        return AuditLogEntityType.USER;
-      case MAPPING_RULE:
-        return AuditLogEntityType.MAPPING_RULE;
-      case GROUP:
-        return AuditLogEntityType.GROUP;
-      case ROLE:
-        return AuditLogEntityType.ROLE;
-      case TENANT:
-        return AuditLogEntityType.TENANT;
-      case FORM:
-      case PROCESS:
-      case RESOURCE:
-        return AuditLogEntityType.RESOURCE;
-      case USER_TASK:
-        return AuditLogEntityType.USER_TASK;
-      default:
-        return AuditLogEntityType.UNKNOWN;
-    }
+    return ENTITY_TYPE_MAP.getOrDefault(valueType, AuditLogEntityType.UNKNOWN);
   }
 
   private static AuditLogOperationType getOperationType(final Record<?> record) {
@@ -135,148 +229,19 @@ public record AuditLogInfo(
       return AuditLogOperationType.UNKNOWN;
     }
 
-    switch (intent) {
-      case AuthorizationIntent.CREATED:
-        return AuditLogOperationType.CREATE;
-      case AuthorizationIntent.UPDATED:
-        return AuditLogOperationType.UPDATE;
-      case AuthorizationIntent.DELETED:
-        return AuditLogOperationType.DELETE;
-
-      case BatchOperationIntent.CREATED:
-        return AuditLogOperationType.CREATE;
-      case BatchOperationIntent.RESUMED:
-      case BatchOperationIntent.RESUME:
-        return AuditLogOperationType.RESUME;
-      case BatchOperationIntent.SUSPENDED:
-      case BatchOperationIntent.SUSPEND:
-        return AuditLogOperationType.SUSPEND;
-      case BatchOperationIntent.CANCELED:
-      case BatchOperationIntent.CANCEL:
-        return AuditLogOperationType.CANCEL;
-
-      case DecisionEvaluationIntent.EVALUATED:
-      case DecisionEvaluationIntent.FAILED:
-        return AuditLogOperationType.EVALUATE;
-
-      case DecisionIntent.CREATED:
-        return AuditLogOperationType.CREATE;
-      case DecisionIntent.DELETED:
-        return AuditLogOperationType.DELETE;
-
-      case DecisionRequirementsIntent.CREATED:
-        return AuditLogOperationType.CREATE;
-      case DecisionRequirementsIntent.DELETED:
-        return AuditLogOperationType.DELETE;
-
-      case FormIntent.CREATED:
-        return AuditLogOperationType.CREATE;
-      case FormIntent.DELETED:
-        return AuditLogOperationType.DELETE;
-
-      case GroupIntent.CREATED:
-        return AuditLogOperationType.CREATE;
-      case GroupIntent.UPDATED:
-        return AuditLogOperationType.UPDATE;
-      case GroupIntent.DELETED:
-        return AuditLogOperationType.DELETE;
-      case GroupIntent.ENTITY_ADDED:
-        return AuditLogOperationType.ASSIGN;
-      case GroupIntent.ENTITY_REMOVED:
-        return AuditLogOperationType.UNASSIGN;
-
-      case IncidentIntent.RESOLVED:
-      case IncidentIntent.RESOLVE:
-        return AuditLogOperationType.RESOLVE;
-
-      case MappingRuleIntent.CREATED:
-        return AuditLogOperationType.CREATE;
-      case MappingRuleIntent.UPDATED:
-        return AuditLogOperationType.UPDATE;
-      case MappingRuleIntent.DELETED:
-        return AuditLogOperationType.DELETE;
-
-      case ProcessIntent.CREATED:
-        return AuditLogOperationType.CREATE;
-      case ProcessIntent.DELETED:
-        return AuditLogOperationType.DELETE;
-
-      case ProcessInstanceCreationIntent.CREATED:
-        return AuditLogOperationType.CREATE;
-
-      case ProcessInstanceIntent.CANCELING:
-      case ProcessInstanceIntent.CANCEL:
-        return AuditLogOperationType.CANCEL;
-
-      case ProcessInstanceMigrationIntent.MIGRATED:
-      case ProcessInstanceMigrationIntent.MIGRATE:
-        return AuditLogOperationType.MIGRATE;
-
-      case ProcessInstanceModificationIntent.MODIFIED:
-      case ProcessInstanceModificationIntent.MODIFY:
-        return AuditLogOperationType.MODIFY;
-
-      case ResourceIntent.CREATED:
-        return AuditLogOperationType.CREATE;
-      case ResourceIntent.DELETED:
-        return AuditLogOperationType.DELETE;
-
-      case TenantIntent.CREATED:
-        return AuditLogOperationType.CREATE;
-      case TenantIntent.UPDATED:
-        return AuditLogOperationType.UPDATE;
-      case TenantIntent.DELETED:
-        return AuditLogOperationType.DELETE;
-      case TenantIntent.ENTITY_ADDED:
-        return AuditLogOperationType.ASSIGN;
-      case TenantIntent.ENTITY_REMOVED:
-        return AuditLogOperationType.UNASSIGN;
-
-      case RoleIntent.CREATED:
-        return AuditLogOperationType.CREATE;
-      case RoleIntent.UPDATED:
-        return AuditLogOperationType.UPDATE;
-      case RoleIntent.DELETED:
-        return AuditLogOperationType.DELETE;
-      case RoleIntent.ENTITY_ADDED:
-        return AuditLogOperationType.ASSIGN;
-      case RoleIntent.ENTITY_REMOVED:
-        return AuditLogOperationType.UNASSIGN;
-
-      case UserIntent.CREATED:
-        return AuditLogOperationType.CREATE;
-      case UserIntent.UPDATED:
-        return AuditLogOperationType.UPDATE;
-      case UserIntent.DELETED:
-        return AuditLogOperationType.DELETE;
-
-      case UserTaskIntent.ASSIGNED:
-        // Operation type is UNASSIGN if assignee is not provided
-        if (!(record.getValue() instanceof UserTaskRecordValue)) {
-          return AuditLogOperationType.UNKNOWN;
-        }
-        final String assignee = ((UserTaskRecordValue) record.getValue()).getAssignee();
-        return (assignee == null || assignee.isBlank())
-            ? AuditLogOperationType.UNASSIGN
-            : AuditLogOperationType.ASSIGN;
-      case UserTaskIntent.ASSIGN:
-        return AuditLogOperationType.ASSIGN;
-      case UserTaskIntent.UPDATED:
-      case UserTaskIntent.UPDATE:
-        return AuditLogOperationType.UPDATE;
-      case UserTaskIntent.COMPLETED:
-      case UserTaskIntent.COMPLETE:
-        return AuditLogOperationType.COMPLETE;
-
-      case VariableIntent.CREATED:
-        return AuditLogOperationType.CREATE;
-      case VariableIntent.UPDATED:
-        return AuditLogOperationType.UPDATE;
-
-      // TODO: map additional intents to operations here
-      default:
+    // Special handling for UserTaskIntent.ASSIGNED
+    if (intent == UserTaskIntent.ASSIGNED) {
+      // Operation type is UNASSIGN if assignee is not provided
+      if (!(record.getValue() instanceof UserTaskRecordValue)) {
         return AuditLogOperationType.UNKNOWN;
+      }
+      final String assignee = ((UserTaskRecordValue) record.getValue()).getAssignee();
+      return (assignee == null || assignee.isBlank())
+          ? AuditLogOperationType.UNASSIGN
+          : AuditLogOperationType.ASSIGN;
     }
+
+    return OPERATION_TYPE_MAP.getOrDefault(intent, AuditLogOperationType.UNKNOWN);
   }
 
   public record AuditLogActor(AuditLogActorType actorType, String actorId) {
