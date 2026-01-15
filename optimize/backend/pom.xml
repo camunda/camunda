@@ -713,7 +713,7 @@
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-qa-util</artifactId>
       <!-- Pinned version until https://github.com/camunda/camunda/issues/44104 is resolved -->
-      <version>8.5.25</version>
+      <version>8.9.0-SNAPSHOT</version>
       <scope>test</scope>
       <exclusions>
         <exclusion>
