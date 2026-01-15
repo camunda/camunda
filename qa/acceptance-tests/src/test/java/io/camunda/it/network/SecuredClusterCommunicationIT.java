@@ -12,6 +12,9 @@ import static io.camunda.application.commons.security.CamundaSecurityConfigurati
 
 import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
 import io.camunda.zeebe.test.util.asserts.SslAssert;
+import io.camunda.zeebe.test.util.testcontainers.CamundaTestContainerDefaults;
+import io.camunda.zeebe.test.util.testcontainers.OperateTestContainerDefaults;
+import io.camunda.zeebe.test.util.testcontainers.TasklistTestContainerDefaults;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
 import io.zeebe.containers.ZeebeContainer;
@@ -20,7 +23,6 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.security.cert.CertificateException;
 import java.time.Duration;
-import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Test;
@@ -29,7 +31,6 @@ import org.testcontainers.containers.Network;
 import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.utility.DockerImageName;
 import org.testcontainers.utility.MountableFile;
 
 /**
@@ -42,6 +43,10 @@ import org.testcontainers.utility.MountableFile;
  *   <li>The Zeebe command API port (26501) is secured with TLS
  *   <li>The cluster internal communication ports (26502) are secured with TLS
  * </ul>
+ *
+ * <p>TODO: This test is primarily useful for versions 8.6-8.8. Once separate camunda/operate and
+ * camunda/tasklist containers are no longer used (post-8.9 profile streamlining), this test can be
+ * removed in favor of the camunda/camunda single application test.
  */
 @Testcontainers
 final class SecuredClusterCommunicationIT {
@@ -52,20 +57,6 @@ final class SecuredClusterCommunicationIT {
 
   private static final String DB_TYPE_ELASTICSEARCH = "elasticsearch";
   private static final String ES_URL = "http://elastic:9200";
-
-  private static final String OPERATE_IMAGE_NAME =
-      Optional.ofNullable(System.getenv("OPERATE_TEST_DOCKER_IMAGE"))
-          .orElse("camunda/operate:current-test");
-  private static final String TASKLIST_IMAGE_NAME =
-      Optional.ofNullable(System.getenv("TASKLIST_TEST_DOCKER_IMAGE"))
-          .orElse("camunda/tasklist:current-test");
-  private static final String CAMUNDA_IMAGE_NAME =
-      Optional.ofNullable(System.getenv("CAMUNDA_TEST_DOCKER_IMAGE"))
-          .orElse("camunda/camunda:SNAPSHOT");
-
-  private static final DockerImageName OPERATE = DockerImageName.parse(OPERATE_IMAGE_NAME);
-  private static final DockerImageName TASKLIST = DockerImageName.parse(TASKLIST_IMAGE_NAME);
-  private static final DockerImageName CAMUNDA = DockerImageName.parse(CAMUNDA_IMAGE_NAME);
 
   @AutoClose private final Network network = Network.newNetwork();
   private final String testPrefix = UUID.randomUUID().toString();
@@ -210,7 +201,7 @@ final class SecuredClusterCommunicationIT {
   }
 
   private GenericContainer<?> createOperateContainer(final ZeebeContainer zeebe) {
-    return new GenericContainer<>(OPERATE)
+    return new GenericContainer<>(OperateTestContainerDefaults.defaultTestImage())
         .withNetwork(network)
         .withNetworkAliases("operate")
         // Cluster security (TLS for internal communication)
@@ -249,7 +240,7 @@ final class SecuredClusterCommunicationIT {
   }
 
   private GenericContainer<?> createTasklistContainer(final ZeebeContainer zeebe) {
-    return new GenericContainer<>(TASKLIST)
+    return new GenericContainer<>(TasklistTestContainerDefaults.defaultTestImage())
         .withNetwork(network)
         .withNetworkAliases("tasklist")
         .withEnv("SPRING_PROFILES_ACTIVE", "consolidated-auth")
@@ -291,7 +282,7 @@ final class SecuredClusterCommunicationIT {
   }
 
   private GenericContainer<?> createCamundaContainer() {
-    return new GenericContainer<>(CAMUNDA)
+    return new GenericContainer<>(CamundaTestContainerDefaults.defaultTestImage())
         .withNetwork(network)
         .withNetworkAliases("camunda")
         // TLS for internal/command APIs (broker network security)
