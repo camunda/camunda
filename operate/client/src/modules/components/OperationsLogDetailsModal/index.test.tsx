@@ -10,6 +10,7 @@ import {describe, it, expect} from 'vitest';
 import {render, screen} from 'modules/testing-library';
 import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.9/audit-log';
 import {DetailsModal} from './index';
+import {MemoryRouter, Route, Routes} from 'react-router-dom';
 
 const baseAuditLog: AuditLog = {
   auditLogKey: '123',
@@ -24,9 +25,19 @@ const baseAuditLog: AuditLog = {
   category: 'USER_TASKS',
 };
 
+const Wrapper: React.FC<{children: React.ReactNode}> = ({children}) => (
+  <MemoryRouter initialEntries={['/']}>
+    <Routes>
+      <Route path="/" element={children} />
+    </Routes>
+  </MemoryRouter>
+);
+
 describe('DetailsModal', () => {
   it('renders details for a normal audit log', () => {
-    render(<DetailsModal isOpen onClose={() => {}} auditLog={baseAuditLog} />);
+    render(<DetailsModal isOpen onClose={() => {}} auditLog={baseAuditLog} />, {
+      wrapper: Wrapper,
+    });
 
     expect(
       screen.getByRole('heading', {name: /update variable/i}),
@@ -49,17 +60,21 @@ describe('DetailsModal', () => {
       batchOperationKey: '999',
     };
 
-    render(<DetailsModal isOpen onClose={() => {}} auditLog={batchAuditLog} />);
+    render(
+      <DetailsModal isOpen onClose={() => {}} auditLog={batchAuditLog} />,
+      {
+        wrapper: Wrapper,
+      },
+    );
 
     expect(
       screen.getByText(/this operation is part of a batch\./i),
     ).toBeInTheDocument();
 
     const link = screen.getByRole('link', {
-      name: /view batch operation details\./i,
+      name: 'View batch operation 999',
     });
     expect(link).toBeInTheDocument();
     expect(link).toHaveAttribute('href', '/batch-operations/999');
-    expect(link).toHaveAttribute('target', '_self');
   });
 });
