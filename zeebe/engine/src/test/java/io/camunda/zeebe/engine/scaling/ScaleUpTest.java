@@ -206,7 +206,7 @@ public class ScaleUpTest {
     assertThat(record.getValue().getDesiredPartitionCount()).isEqualTo(4);
     assertThat(record.getValue().getRedistributedPartitions()).containsExactly(1, 2);
     // SCALE_UP command is the first command
-    assertThat(record.getValue().getScalingPosition()).isEqualTo(3);
+    assertThat(record.getValue().getScalingPosition()).isEqualTo(4);
     assertThat(record.getValue().getMessageCorrelationPartitions()).isEqualTo(2);
 
     // when the partitions are marked as bootstrapped

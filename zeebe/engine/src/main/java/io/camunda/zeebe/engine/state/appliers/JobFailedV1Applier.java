@@ -13,16 +13,16 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 
-public class JobCanceledApplier implements TypedEventApplier<JobIntent, JobRecord> {
+final class JobFailedV1Applier implements TypedEventApplier<JobIntent, JobRecord> {
 
   private final MutableJobState jobState;
 
-  JobCanceledApplier(final MutableProcessingState state) {
+  JobFailedV1Applier(final MutableProcessingState state) {
     jobState = state.getJobState();
   }
 
   @Override
   public void applyState(final long key, final JobRecord value) {
-    jobState.cancel(key, value);
+    jobState.fail(key, value);
   }
 }

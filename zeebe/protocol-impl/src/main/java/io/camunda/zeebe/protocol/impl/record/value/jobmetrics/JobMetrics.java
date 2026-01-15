@@ -63,6 +63,13 @@ public final class JobMetrics extends ObjectValue implements JobMetricsValue {
     return statusMetricsProperty.stream().collect(Collectors.toList());
   }
 
+  public JobMetrics setStatusMetrics(final List<StatusMetricsValue> statusMetrics) {
+    statusMetricsProperty.reset();
+    statusMetrics.forEach(
+        statusMetricsValue -> statusMetricsProperty.add().wrap(statusMetricsValue));
+    return this;
+  }
+
   public JobMetrics setWorkerNameIndex(final int workerNameIndex) {
     workerNameIndexProperty.setValue(workerNameIndex);
     return this;
@@ -73,13 +80,6 @@ public final class JobMetrics extends ObjectValue implements JobMetricsValue {
     setTenantIdIndex(value.getTenantIdIndex());
     setWorkerNameIndex(value.getWorkerNameIndex());
     setStatusMetrics(value.getStatusMetrics());
-    return this;
-  }
-
-  public JobMetricsValue setStatusMetrics(final List<StatusMetricsValue> statusMetrics) {
-    statusMetricsProperty.reset();
-    statusMetrics.forEach(
-        statusMetricsValue -> statusMetricsProperty.add().wrap(statusMetricsValue));
     return this;
   }
 }

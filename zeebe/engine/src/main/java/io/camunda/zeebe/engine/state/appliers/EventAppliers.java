@@ -158,13 +158,13 @@ public final class EventAppliers implements EventApplier {
     registerConditionalSubscriptionAppliers(state);
     registerConditionalEvaluationAppliers();
     registerExpressionEvaluationEventAppliers();
-    registerJobMetricsBatchEventAppliers();
     registerGlobalListenersEventAppliers(state);
+    registerJobMetricsBatchEventAppliers(state);
     return this;
   }
 
-  private void registerJobMetricsBatchEventAppliers() {
-    register(JobMetricsBatchIntent.EXPORTED, NOOP_EVENT_APPLIER);
+  private void registerJobMetricsBatchEventAppliers(final MutableProcessingState state) {
+    register(JobMetricsBatchIntent.EXPORTED, new JobMetricsBatchExportedApplier(state));
   }
 
   private void registerExpressionEvaluationEventAppliers() {
@@ -353,15 +353,21 @@ public final class EventAppliers implements EventApplier {
   }
 
   private void registerJobIntentEventAppliers(final MutableProcessingState state) {
-    register(JobIntent.CANCELED, new JobCanceledApplier(state));
+    register(JobIntent.CANCELED, 1, new JobCanceledV1Applier(state));
+    register(JobIntent.CANCELED, 2, new JobCanceledV2Applier(state));
     register(JobIntent.COMPLETED, 1, new JobCompletedV1Applier(state));
-    register(JobIntent.COMPLETED, 2, new JobCompletedApplierV2(state));
-    register(JobIntent.CREATED, new JobCreatedApplier(state));
-    register(JobIntent.ERROR_THROWN, new JobErrorThrownApplier(state));
-    register(JobIntent.FAILED, new JobFailedApplier(state));
+    register(JobIntent.COMPLETED, 2, new JobCompletedV2Applier(state));
+    register(JobIntent.COMPLETED, 3, new JobCompletedV3Applier(state));
+    register(JobIntent.CREATED, 1, new JobCreatedV1Applier(state));
+    register(JobIntent.CREATED, 2, new JobCreatedV2Applier(state));
+    register(JobIntent.ERROR_THROWN, 1, new JobErrorThrownV1Applier(state));
+    register(JobIntent.ERROR_THROWN, 2, new JobErrorThrownV2Applier(state));
+    register(JobIntent.FAILED, 1, new JobFailedV1Applier(state));
+    register(JobIntent.FAILED, 2, new JobFailedV2Applier(state));
     register(JobIntent.YIELDED, new JobYieldedApplier(state));
     register(JobIntent.RETRIES_UPDATED, new JobRetriesUpdatedApplier(state));
-    register(JobIntent.TIMED_OUT, new JobTimedOutApplier(state));
+    register(JobIntent.TIMED_OUT, 1, new JobTimedOutV1Applier(state));
+    register(JobIntent.TIMED_OUT, 2, new JobTimedOutV2Applier(state));
     register(JobIntent.RECURRED_AFTER_BACKOFF, new JobRecurredApplier(state));
     register(JobIntent.TIMEOUT_UPDATED, new JobTimeoutUpdatedApplier(state));
     register(JobIntent.UPDATED, 1, new JobUpdatedApplier(state));

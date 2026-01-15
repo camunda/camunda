@@ -32,6 +32,11 @@ public final class EngineConfiguration {
 
   public static final int DEFAULT_MAX_PROCESS_DEPTH = 1000;
   public static final Duration DEFAULT_USAGE_METRICS_EXPORT_INTERVAL = Duration.ofMinutes(5);
+  public static final Duration DEFAULT_JOB_METRICS_EXPORT_INTERVAL = Duration.ofMinutes(5);
+  public static final int DEFAULT_MAX_WORKER_NAME_LENGTH = 100;
+  public static final int DEFAULT_MAX_JOB_TYPE_LENGTH = 100;
+  public static final int DEFAULT_MAX_TENANT_ID_LENGTH = 30;
+  public static final int DEFAULT_MAX_UNIQUE_JOB_METRICS_KEYS = 9500;
 
   public static final Duration DEFAULT_BATCH_OPERATION_SCHEDULER_INTERVAL = Duration.ofSeconds(1);
   // reasonable size of a chunk record to avoid too many or too large records
@@ -53,7 +58,10 @@ public final class EngineConfiguration {
   public static final Duration DEFAULT_COMMAND_REDISTRIBUTION_MAX_BACKOFF_DURATION =
       Duration.ofMinutes(5);
   public static final boolean DEFAULT_ENABLE_IDENTITY_SETUP = true;
-
+  private int maxJobTypeLength = DEFAULT_MAX_JOB_TYPE_LENGTH;
+  private int maxTenantIdLength = DEFAULT_MAX_TENANT_ID_LENGTH;
+  private int maxUniqueJobMetricsKeys = DEFAULT_MAX_UNIQUE_JOB_METRICS_KEYS;
+  private int maxWorkerNameLength = DEFAULT_MAX_WORKER_NAME_LENGTH;
   private int messagesTtlCheckerBatchLimit = DEFAULT_MESSAGES_TTL_CHECKER_BATCH_LIMIT;
   private Duration messagesTtlCheckerInterval = DEFAULT_MESSAGES_TTL_CHECKER_INTERVAL;
   private int drgCacheCapacity = DEFAULT_DRG_CACHE_CAPACITY;
@@ -62,16 +70,11 @@ public final class EngineConfiguration {
   private int processCacheCapacity = DEFAULT_FORM_CACHE_CAPACITY;
   private int authorizationsCacheCapacity = DEFAULT_AUTHORIZATIONS_CACHE_CAPACITY;
   private Duration authorizationsCacheTtl = DEFAULT_AUTHORIZATIONS_CACHE_TTL;
-
   private Duration jobsTimeoutCheckerPollingInterval = DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL;
   private int jobsTimeoutCheckerBatchLimit = DEFAULT_JOBS_TIMEOUT_CHECKER_BATCH_LIMIT;
-
   private int validatorsResultsOutputMaxSize = DEFAULT_VALIDATORS_RESULTS_OUTPUT_MAX_SIZE;
-
   private boolean enableAuthorization = DEFAULT_ENABLE_AUTHORIZATION_CHECKS;
-
   private int maxProcessDepth = DEFAULT_MAX_PROCESS_DEPTH;
-
   private Duration batchOperationSchedulerInterval = DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL;
   private int batchOperationChunkSize = DEFAULT_BATCH_OPERATION_CHUNK_SIZE;
   private int batchOperationDbChunkSize = DEFAULT_BATCH_OPERATION_DB_CHUNK_SIZE;
@@ -83,9 +86,8 @@ public final class EngineConfiguration {
   private Duration batchOperationQueryRetryMaxDelay = DEFAULT_BATCH_OPERATION_QUERY_RETRY_MAX_DELAY;
   private int batchOperationQueryRetryBackoffFactor =
       DEFAULT_BATCH_OPERATION_QUERY_RETRY_BACKOFF_FACTOR;
-
   private Duration usageMetricsExportInterval = DEFAULT_USAGE_METRICS_EXPORT_INTERVAL;
-
+  private Duration jobMetricsExportInterval = DEFAULT_JOB_METRICS_EXPORT_INTERVAL;
   private boolean commandDistributionPaused = DEFAULT_COMMAND_DISTRIBUTION_PAUSED;
   private Duration commandRedistributionInterval = DEFAULT_COMMAND_REDISTRIBUTION_INTERVAL;
   private Duration commandRedistributionMaxBackoff =
@@ -311,6 +313,15 @@ public final class EngineConfiguration {
     return this;
   }
 
+  public Duration getJobMetricsExportInterval() {
+    return jobMetricsExportInterval;
+  }
+
+  public EngineConfiguration setJobMetricsExportInterval(final Duration jobMetricsExportInterval) {
+    this.jobMetricsExportInterval = jobMetricsExportInterval;
+    return this;
+  }
+
   public boolean isCommandDistributionPaused() {
     return commandDistributionPaused;
   }
@@ -356,6 +367,42 @@ public final class EngineConfiguration {
   public EngineConfiguration setGlobalListeners(
       final GlobalListenersConfiguration globalListeners) {
     this.globalListeners = globalListeners;
+    return this;
+  }
+
+  public int getMaxUniqueJobMetricsKeys() {
+    return maxUniqueJobMetricsKeys;
+  }
+
+  public EngineConfiguration setMaxUniqueJobMetricsKeys(final int maxUniqueJobMetricsKeys) {
+    this.maxUniqueJobMetricsKeys = maxUniqueJobMetricsKeys;
+    return this;
+  }
+
+  public int getMaxWorkerNameLength() {
+    return maxWorkerNameLength;
+  }
+
+  public EngineConfiguration setMaxWorkerNameLength(final int maxWorkerNameLength) {
+    this.maxWorkerNameLength = maxWorkerNameLength;
+    return this;
+  }
+
+  public int getMaxJobTypeLength() {
+    return maxJobTypeLength;
+  }
+
+  public EngineConfiguration setMaxJobTypeLength(final int maxJobTypeLength) {
+    this.maxJobTypeLength = maxJobTypeLength;
+    return this;
+  }
+
+  public int getMaxTenantIdLength() {
+    return maxTenantIdLength;
+  }
+
+  public EngineConfiguration setMaxTenantIdLength(final int maxTenantIdLength) {
+    this.maxTenantIdLength = maxTenantIdLength;
     return this;
   }
 }

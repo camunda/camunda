@@ -41,6 +41,7 @@ import io.camunda.zeebe.engine.util.client.IdentitySetupClient;
 import io.camunda.zeebe.engine.util.client.IncidentClient;
 import io.camunda.zeebe.engine.util.client.JobActivationClient;
 import io.camunda.zeebe.engine.util.client.JobClient;
+import io.camunda.zeebe.engine.util.client.JobMetricsBatchClient;
 import io.camunda.zeebe.engine.util.client.MappingRuleClient;
 import io.camunda.zeebe.engine.util.client.MessageCorrelationClient;
 import io.camunda.zeebe.engine.util.client.ProcessInstanceClient;
@@ -494,6 +495,10 @@ public final class EngineRule extends ExternalResource {
 
   public ClusterVariableClient clusterVariables() {
     return new ClusterVariableClient(environmentRule);
+  }
+
+  public JobMetricsBatchClient jobMetricsBatch() {
+    return new JobMetricsBatchClient(environmentRule);
   }
 
   public ExpressionClient expression() {

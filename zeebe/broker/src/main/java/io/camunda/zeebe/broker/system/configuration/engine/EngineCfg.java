@@ -19,6 +19,7 @@ public final class EngineCfg implements ConfigurationEntry {
   private ValidatorsCfg validators = new ValidatorsCfg();
   private BatchOperationCfg batchOperations = new BatchOperationCfg();
   private UsageMetricsCfg usageMetrics = new UsageMetricsCfg();
+  private JobMetricsCfg jobMetrics = new JobMetricsCfg();
   private DistributionCfg distribution = new DistributionCfg();
   private int maxProcessDepth = EngineConfiguration.DEFAULT_MAX_PROCESS_DEPTH;
   private GlobalListenersCfg globalListeners = new GlobalListenersCfg();
@@ -28,6 +29,7 @@ public final class EngineCfg implements ConfigurationEntry {
     messages.init(globalConfig, brokerBase);
     caches.init(globalConfig, brokerBase);
     jobs.init(globalConfig, brokerBase);
+    jobMetrics.init(globalConfig, brokerBase);
     batchOperations.init(globalConfig, brokerBase);
     validators.init(globalConfig, brokerBase);
     distribution.init(globalConfig, brokerBase);
@@ -107,6 +109,10 @@ public final class EngineCfg implements ConfigurationEntry {
     this.globalListeners = globalListeners;
   }
 
+  public void setJobMetrics(final JobMetricsCfg jobMetrics) {
+    this.jobMetrics = jobMetrics;
+  }
+
   @Override
   public String toString() {
     return "EngineCfg{"
@@ -118,6 +124,8 @@ public final class EngineCfg implements ConfigurationEntry {
         + jobs
         + ", validators="
         + validators
+        + ", jobMetrics="
+        + jobMetrics
         + ", batchOperations="
         + batchOperations
         + ", usageMetrics="
@@ -152,6 +160,7 @@ public final class EngineCfg implements ConfigurationEntry {
         .setBatchOperationQueryRetryMaxDelay(batchOperations.getQueryRetryMaxDelay())
         .setBatchOperationQueryRetryBackoffFactor(batchOperations.getQueryRetryBackoffFactor())
         .setUsageMetricsExportInterval(usageMetrics.getExportInterval())
+        .setJobMetricsExportInterval(jobMetrics.getExportInterval())
         .setCommandDistributionPaused(distribution.isPauseCommandDistribution())
         .setCommandRedistributionInterval(distribution.getRedistributionInterval())
         .setCommandRedistributionMaxBackoff(distribution.getMaxBackoffDuration())

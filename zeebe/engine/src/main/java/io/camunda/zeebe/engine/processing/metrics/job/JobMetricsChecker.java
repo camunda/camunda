@@ -5,13 +5,12 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.engine.processing.metrics;
+package io.camunda.zeebe.engine.processing.metrics.job;
 
 import static java.util.Optional.ofNullable;
 
-import io.camunda.zeebe.protocol.impl.record.value.metrics.UsageMetricRecord;
-import io.camunda.zeebe.protocol.record.intent.UsageMetricIntent;
-import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.EventType;
+import io.camunda.zeebe.protocol.impl.record.value.jobmetrics.JobMetricsBatchRecord;
+import io.camunda.zeebe.protocol.record.intent.JobMetricsBatchIntent;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.scheduling.SimpleProcessingScheduleService.ScheduledTask;
 import io.camunda.zeebe.stream.api.scheduling.Task;
@@ -23,9 +22,13 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class UsageMetricsChecker implements Task {
+/**
+ * Task that periodically sends a JOB_METRICS_BATCH EXPORT command to trigger the export of job
+ * worker metrics.
+ */
+public class JobMetricsChecker implements Task {
 
-  private static final Logger LOG = LoggerFactory.getLogger(UsageMetricsChecker.class);
+  private static final Logger LOG = LoggerFactory.getLogger(JobMetricsChecker.class);
 
   private final Duration exportInterval;
   private final InstantSource clock;
@@ -33,7 +36,7 @@ public class UsageMetricsChecker implements Task {
   private volatile boolean shouldReschedule = false;
   private final AtomicReference<ScheduledTask> scheduledTask = new AtomicReference<>(null);
 
-  public UsageMetricsChecker(final Duration exportInterval, final InstantSource clock) {
+  public JobMetricsChecker(final Duration exportInterval, final InstantSource clock) {
     this.exportInterval = exportInterval;
     this.clock = clock;
   }
@@ -47,7 +50,7 @@ public class UsageMetricsChecker implements Task {
           processingContext
               .getScheduleService()
               .runAt(clock.millis() + exportInterval.toMillis(), this);
-      LOG.trace("UsageMetricsChecker scheduled");
+      LOG.trace("JobMetricsChecker scheduled");
     }
 
     ofNullable(scheduledTask.getAndSet(nextTask)).ifPresent(ScheduledTask::cancel);
@@ -55,10 +58,11 @@ public class UsageMetricsChecker implements Task {
 
   @Override
   public TaskResult execute(final TaskResultBuilder taskResultBuilder) {
-    LOG.trace("UsageMetricsChecker running...");
-
-    taskResultBuilder.appendCommandRecord(
-        UsageMetricIntent.EXPORT, new UsageMetricRecord().setEventType(EventType.NONE));
+    LOG.trace("JobMetricsChecker running...");
+    final JobMetricsBatchRecord record = new JobMetricsBatchRecord();
+    // trigger the export by writing the EXPORT command with an empty record
+    // the JobMetricsBatchExportProcessor will use the JobMetricsState to fill in the data
+    taskResultBuilder.appendCommandRecord(JobMetricsBatchIntent.EXPORT, record);
 
     if (shouldReschedule) {
       schedule(false);

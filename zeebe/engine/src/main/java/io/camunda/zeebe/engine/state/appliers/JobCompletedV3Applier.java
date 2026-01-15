@@ -9,20 +9,24 @@ package io.camunda.zeebe.engine.state.appliers;
 
 import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
+import io.camunda.zeebe.engine.state.jobmetrics.JobMetricsExportState;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
+import io.camunda.zeebe.engine.state.mutable.MutableJobMetricsState;
 import io.camunda.zeebe.engine.state.mutable.MutableJobState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 
-class JobCompletedApplierV2 implements TypedEventApplier<JobIntent, JobRecord> {
+class JobCompletedV3Applier implements TypedEventApplier<JobIntent, JobRecord> {
 
   private final MutableJobState jobState;
   private final MutableElementInstanceState elementInstanceState;
+  private final MutableJobMetricsState jobMetricsState;
 
-  JobCompletedApplierV2(final MutableProcessingState state) {
+  JobCompletedV3Applier(final MutableProcessingState state) {
     jobState = state.getJobState();
     elementInstanceState = state.getElementInstanceState();
+    jobMetricsState = state.getJobMetricsState();
   }
 
   @Override
@@ -36,5 +40,7 @@ class JobCompletedApplierV2 implements TypedEventApplier<JobIntent, JobRecord> {
       elementInstance.setJobKey(-1);
       elementInstanceState.updateInstance(elementInstance);
     }
+
+    jobMetricsState.incrementMetric(value, JobMetricsExportState.COMPLETED);
   }
 }

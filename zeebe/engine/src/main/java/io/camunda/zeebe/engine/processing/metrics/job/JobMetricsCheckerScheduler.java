@@ -5,48 +5,48 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.engine.processing.metrics;
+package io.camunda.zeebe.engine.processing.metrics.job;
 
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import java.time.InstantSource;
 
-public class UsageMetricsCheckerScheduler implements StreamProcessorLifecycleAware {
+public class JobMetricsCheckerScheduler implements StreamProcessorLifecycleAware {
 
-  private final UsageMetricsChecker usageMetricsChecker;
+  private final JobMetricsChecker jobMetricsChecker;
 
-  public UsageMetricsCheckerScheduler(
+  public JobMetricsCheckerScheduler(
       final EngineConfiguration engineConfiguration, final InstantSource clock) {
-    final var exportInterval = engineConfiguration.getUsageMetricsExportInterval();
-    usageMetricsChecker = new UsageMetricsChecker(exportInterval, clock);
+    final var exportInterval = engineConfiguration.getJobMetricsExportInterval();
+    jobMetricsChecker = new JobMetricsChecker(exportInterval, clock);
   }
 
   @Override
   public void onRecovered(final ReadonlyStreamProcessorContext processingContext) {
-    usageMetricsChecker.setProcessingContext(processingContext);
-    usageMetricsChecker.setShouldReschedule(true);
-    usageMetricsChecker.schedule(true);
+    jobMetricsChecker.setProcessingContext(processingContext);
+    jobMetricsChecker.setShouldReschedule(true);
+    jobMetricsChecker.schedule(true);
   }
 
   @Override
   public void onClose() {
-    usageMetricsChecker.setShouldReschedule(false);
+    jobMetricsChecker.setShouldReschedule(false);
   }
 
   @Override
   public void onFailed() {
-    usageMetricsChecker.setShouldReschedule(false);
+    jobMetricsChecker.setShouldReschedule(false);
   }
 
   @Override
   public void onPaused() {
-    usageMetricsChecker.setShouldReschedule(false);
+    jobMetricsChecker.setShouldReschedule(false);
   }
 
   @Override
   public void onResumed() {
-    usageMetricsChecker.setShouldReschedule(true);
-    usageMetricsChecker.schedule(true);
+    jobMetricsChecker.setShouldReschedule(true);
+    jobMetricsChecker.schedule(true);
   }
 }

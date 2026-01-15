@@ -81,6 +81,7 @@ import io.camunda.zeebe.protocol.record.value.HistoryDeletionRecordValue;
 import io.camunda.zeebe.protocol.record.value.IdentitySetupRecordValue;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
+import io.camunda.zeebe.protocol.record.value.JobMetricsBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.MappingRuleRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageBatchRecordValue;
@@ -267,6 +268,11 @@ public final class RecordingExporter implements Exporter {
 
   public static UsageMetricsStream usageMetricsRecords(final UsageMetricIntent intent) {
     return usageMetricsRecords().withIntent(intent);
+  }
+
+  public static JobMetricsBatchRecordStream jobMetricsBatchRecords() {
+    return new JobMetricsBatchRecordStream(
+        records(ValueType.JOB_METRICS_BATCH, JobMetricsBatchRecordValue.class));
   }
 
   public static CommandDistributionRecordStream commandDistributionRecords() {

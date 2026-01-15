@@ -10,20 +10,24 @@ package io.camunda.zeebe.engine.state.appliers;
 import io.camunda.zeebe.engine.processing.job.JobThrowErrorProcessor;
 import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
+import io.camunda.zeebe.engine.state.jobmetrics.JobMetricsExportState;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
+import io.camunda.zeebe.engine.state.mutable.MutableJobMetricsState;
 import io.camunda.zeebe.engine.state.mutable.MutableJobState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 
-public class JobErrorThrownV1Applier implements TypedEventApplier<JobIntent, JobRecord> {
+public class JobErrorThrownV2Applier implements TypedEventApplier<JobIntent, JobRecord> {
 
   private final MutableJobState jobState;
   private final MutableElementInstanceState elementInstanceState;
+  private final MutableJobMetricsState jobMetricsState;
 
-  JobErrorThrownV1Applier(final MutableProcessingState state) {
+  JobErrorThrownV2Applier(final MutableProcessingState state) {
     jobState = state.getJobState();
     elementInstanceState = state.getElementInstanceState();
+    jobMetricsState = state.getJobMetricsState();
   }
 
   @Override
@@ -36,6 +40,8 @@ public class JobErrorThrownV1Applier implements TypedEventApplier<JobIntent, Job
 
       removeJobReference(jobKey, job, serviceTaskInstance);
     }
+
+    jobMetricsState.incrementMetric(job, JobMetricsExportState.FAILED);
   }
 
   private void removeJobReference(
