@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.conditional;
 
-import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
@@ -59,7 +58,6 @@ public class ConditionalEvaluationEvaluateProcessor
   private final ConditionalSubscriptionState conditionalSubscriptionState;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final ExpressionProcessor expressionProcessor;
-  private final ExpressionLanguage expressionLanguage;
 
   public ConditionalEvaluationEvaluateProcessor(
       final Writers writers,
@@ -68,8 +66,7 @@ public class ConditionalEvaluationEvaluateProcessor
       final BpmnStateBehavior stateBehavior,
       final EventTriggerBehavior eventTriggerBehavior,
       final AuthorizationCheckBehavior authCheckBehavior,
-      final ExpressionProcessor expressionProcessor,
-      final ExpressionLanguage expressionLanguage) {
+      final ExpressionProcessor expressionProcessor) {
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
@@ -78,7 +75,6 @@ public class ConditionalEvaluationEvaluateProcessor
     this.keyGenerator = keyGenerator;
     this.authCheckBehavior = authCheckBehavior;
     this.expressionProcessor = expressionProcessor;
-    this.expressionLanguage = expressionLanguage;
     eventHandle =
         new EventHandle(
             keyGenerator,
@@ -102,7 +98,6 @@ public class ConditionalEvaluationEvaluateProcessor
     }
 
     final var processDefinitionKey = record.getProcessDefinitionKey();
-
     if (processDefinitionKey > 0
         && processState.getProcessByKeyAndTenant(processDefinitionKey, record.getTenantId())
             == null) {
@@ -114,7 +109,6 @@ public class ConditionalEvaluationEvaluateProcessor
     }
 
     final List<MatchedStartEvent> matchedStartEvents = collectMatchingStartEvents(record);
-
     for (final var match : matchedStartEvents) {
       checkAuthorizationToStartProcessInstance(command, match.bpmnProcessId());
     }
@@ -156,7 +150,6 @@ public class ConditionalEvaluationEvaluateProcessor
       final ConditionalEvaluationRecord record) {
 
     final List<MatchedStartEvent> matches = new ArrayList<>();
-
     final var tenantId = record.getTenantId();
     final var variables = record.getVariables();
     final var providedVariableNames = variables.keySet();
@@ -187,25 +180,13 @@ public class ConditionalEvaluationEvaluateProcessor
       final List<MatchedStartEvent> matches) {
 
     final var variableNames = subscription.getVariableNames();
-
     if (!variableNames.isEmpty()
         && variableNames.stream().noneMatch(providedVariableNames::contains)) {
       return;
     }
 
-    final String conditionString = subscription.getCondition();
-    final var conditionExpression = expressionLanguage.parseExpression(conditionString);
-
-    if (!conditionExpression.isValid()) {
-      LOG.warn(
-          "Failed to parse condition expression for conditional start event '{}' in process '{}': {}",
-          subscription.getCatchEventId(),
-          subscription.getBpmnProcessId(),
-          conditionExpression.getFailureMessage());
-      return;
-    }
-
-    final var result = expressionProcessor.evaluateBooleanExpression(conditionExpression, context);
+    final var result =
+        expressionProcessor.evaluateBooleanExpression(subscription.getCondition(), context);
 
     if (result.isRight() && Boolean.TRUE.equals(result.get())) {
       matches.add(

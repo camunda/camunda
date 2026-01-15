@@ -12,7 +12,6 @@ import static io.camunda.zeebe.protocol.record.intent.DeploymentIntent.CREATE;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.zeebe.dmn.DecisionEngineFactory;
-import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.ExpressionLanguageMetrics;
 import io.camunda.zeebe.el.impl.ExpressionLanguageMetricsImpl;
 import io.camunda.zeebe.engine.EngineConfiguration;
@@ -263,12 +262,7 @@ public final class EngineProcessors {
         commandDistributionBehavior,
         authCheckBehavior);
     addConditionalEvaluationProcessors(
-        typedRecordProcessors,
-        bpmnBehaviors,
-        writers,
-        processingState,
-        authCheckBehavior,
-        bpmnBehaviors.expressionLanguage());
+        typedRecordProcessors, bpmnBehaviors, writers, processingState, authCheckBehavior);
     addCommandDistributionProcessors(
         commandDistributionBehavior,
         scheduledTaskStateFactory,
@@ -650,8 +644,7 @@ public final class EngineProcessors {
       final BpmnBehaviors bpmnBehaviors,
       final Writers writers,
       final MutableProcessingState processingState,
-      final AuthorizationCheckBehavior authCheckBehavior,
-      final ExpressionLanguage expressionLanguage) {
+      final AuthorizationCheckBehavior authCheckBehavior) {
     final var conditionalEvaluationProcessor =
         new ConditionalEvaluationEvaluateProcessor(
             writers,
@@ -660,8 +653,7 @@ public final class EngineProcessors {
             bpmnBehaviors.stateBehavior(),
             bpmnBehaviors.eventTriggerBehavior(),
             authCheckBehavior,
-            bpmnBehaviors.expressionProcessor(),
-            expressionLanguage);
+            bpmnBehaviors.expressionProcessor());
     typedRecordProcessors.onCommand(
         ValueType.CONDITIONAL_EVALUATION,
         ConditionalEvaluationIntent.EVALUATE,

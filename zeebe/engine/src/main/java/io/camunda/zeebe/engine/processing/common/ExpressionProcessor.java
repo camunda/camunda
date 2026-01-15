@@ -156,6 +156,12 @@ public final class ExpressionProcessor {
         .map(EvaluationResult::getBoolean);
   }
 
+  public Either<Failure, Boolean> evaluateBooleanExpression(
+      final String expression, final EvaluationContext context) {
+    final var parsedExpression = expressionLanguage.parseExpression(expression);
+    return evaluateBooleanExpression(parsedExpression, context);
+  }
+
   /**
    * Evaluates the given expression and returns the result as an Interval. If the evaluation fails
    * or the result is not an interval then a failure is returned.

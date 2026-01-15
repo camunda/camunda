@@ -12,6 +12,7 @@ import static io.camunda.zeebe.test.util.asserts.EitherAssert.assertThat;
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.ExpressionLanguageFactory;
 import io.camunda.zeebe.engine.processing.bpmn.clock.ZeebeFeelEngineClock;
+import io.camunda.zeebe.engine.processing.expression.InMemoryVariableEvaluationContext;
 import io.camunda.zeebe.engine.processing.expression.ScopedEvaluationContext;
 import io.camunda.zeebe.util.Either;
 import java.time.InstantSource;
@@ -221,6 +222,40 @@ class ExpressionProcessorTest {
               Expected result of the expression 'x' to be 'OBJECT', but was 'NULL'. \
               The evaluation reported the following warnings:
               [NO_VARIABLE_FOUND] No variable found with name 'x'""");
+    }
+  }
+
+  @Nested
+  class EvaluateBooleanExpressionWithStringTest {
+
+    @Test
+    void shouldEvaluateValidBooleanExpression() {
+      // given
+      final var processor = new ExpressionProcessor(EXPRESSION_LANGUAGE, DEFAULT_CONTEXT_LOOKUP);
+      final var context = new InMemoryVariableEvaluationContext(java.util.Map.of("x", 10, "y", 5));
+
+      // when
+      final var result = processor.evaluateBooleanExpression("= x > y", context);
+
+      // then
+      assertThat(result).isRight().extracting(Either::get).isEqualTo(true);
+    }
+
+    @Test
+    void shouldReturnFailureForInvalidExpression() {
+      // given
+      final var processor = new ExpressionProcessor(EXPRESSION_LANGUAGE, DEFAULT_CONTEXT_LOOKUP);
+      final var context = new InMemoryVariableEvaluationContext(java.util.Map.of());
+
+      // when
+      final var result = processor.evaluateBooleanExpression("= x >", context);
+
+      // then
+      assertThat(result)
+          .isLeft()
+          .extracting(r -> r.getLeft().getMessage())
+          .asString()
+          .startsWith("failed to parse expression ' x >':");
     }
   }
 }
