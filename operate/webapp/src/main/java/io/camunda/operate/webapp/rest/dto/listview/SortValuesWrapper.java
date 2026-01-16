@@ -27,8 +27,6 @@ public class SortValuesWrapper implements Serializable {
 
   private static final Set<Class<?>> ALLOWED_SORTVALUE_TYPES = new HashSet<>();
 
-  // These values were taken from org.elasticsearch.search.searchafter.SearchAfterBuilder.
-  // Opensearch does not have a filter and just passes any type further on
   static {
     ALLOWED_SORTVALUE_TYPES.add(String.class);
     ALLOWED_SORTVALUE_TYPES.add(Long.class);

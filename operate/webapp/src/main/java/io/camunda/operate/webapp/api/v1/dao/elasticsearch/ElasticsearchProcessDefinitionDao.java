@@ -9,6 +9,7 @@ package io.camunda.operate.webapp.api.v1.dao.elasticsearch;
 
 import static io.camunda.webapps.schema.descriptors.index.ProcessIndex.BPMN_XML;
 
+import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchRequest.Builder;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import io.camunda.operate.conditions.ElasticsearchCondition;
@@ -39,11 +40,7 @@ public class ElasticsearchProcessDefinitionDao extends ElasticsearchDao<ProcessD
       throws APIException {
     logger.debug("search {}", query);
     final var searchReqBuilder =
-        buildQueryOn(
-            query,
-            ProcessDefinition.KEY,
-            new co.elastic.clients.elasticsearch.core.SearchRequest.Builder(),
-            true);
+        buildQueryOn(query, ProcessDefinition.KEY, new SearchRequest.Builder(), true);
 
     try {
       final var searchReq = searchReqBuilder.index(processIndex.getAlias()).build();
@@ -62,7 +59,7 @@ public class ElasticsearchProcessDefinitionDao extends ElasticsearchDao<ProcessD
       final var searchReqBuilder = processDefinitionKeySearchReq(key);
 
       processDefinitions =
-          ElasticsearchUtil.scrollAllStream(es8Client, searchReqBuilder, ProcessDefinition.class)
+          ElasticsearchUtil.scrollAllStream(esClient, searchReqBuilder, ProcessDefinition.class)
               .flatMap(res -> res.hits().hits().stream())
               .map(Hit::source)
               .toList();
@@ -88,7 +85,7 @@ public class ElasticsearchProcessDefinitionDao extends ElasticsearchDao<ProcessD
       final var searchReqBuilder =
           processDefinitionKeySearchReq(key).source(s -> s.filter(f -> f.includes(BPMN_XML)));
 
-      final var res = es8Client.search(searchReqBuilder.build(), ElasticsearchUtil.MAP_CLASS);
+      final var res = esClient.search(searchReqBuilder.build(), ElasticsearchUtil.MAP_CLASS);
 
       if (res.hits().total().value() == 1) {
         return (String) res.hits().hits().get(0).source().get(BPMN_XML);
@@ -151,13 +148,10 @@ public class ElasticsearchProcessDefinitionDao extends ElasticsearchDao<ProcessD
     searchRequestBuilder.query(finalQuery);
   }
 
-  private co.elastic.clients.elasticsearch.core.SearchRequest.Builder processDefinitionKeySearchReq(
-      final Long key) {
+  private SearchRequest.Builder processDefinitionKeySearchReq(final Long key) {
     final var query = ElasticsearchUtil.termsQuery(ProcessIndex.KEY, key);
     final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
 
-    return new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
-        .index(processIndex.getAlias())
-        .query(tenantAwareQuery);
+    return new SearchRequest.Builder().index(processIndex.getAlias()).query(tenantAwareQuery);
   }
 }

@@ -50,7 +50,7 @@ public class ElasticsearchJobReader extends AbstractReader implements JobReader 
             .build();
 
     try {
-      final var response = es8client.search(searchRequest, JobEntity.class);
+      final var response = esClient.search(searchRequest, JobEntity.class);
       return response.hits().hits().stream().findFirst().map(Hit::source);
     } catch (final IOException e) {
       throw new OperateRuntimeException("Error reading job from Elasticsearch", e);

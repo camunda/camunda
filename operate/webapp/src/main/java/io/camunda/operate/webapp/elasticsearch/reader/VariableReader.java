@@ -84,7 +84,7 @@ public class VariableReader extends AbstractReader
               .query(tenantAwareQuery)
               .build();
 
-      final var response = es8client.search(searchRequest, VariableEntity.class);
+      final var response = esClient.search(searchRequest, VariableEntity.class);
 
       if (response.hits().total().value() != 1) {
         throw new NotFoundException(String.format("Variable with id %s not found.", id));
@@ -124,7 +124,7 @@ public class VariableReader extends AbstractReader
               .query(tenantAwareQuery)
               .build();
 
-      final var response = es8client.search(searchRequest, VariableEntity.class);
+      final var response = esClient.search(searchRequest, VariableEntity.class);
 
       if (response.hits().total().value() > 0) {
         final var variableEntity = response.hits().hits().get(0).source();
@@ -244,7 +244,7 @@ public class VariableReader extends AbstractReader
     applySorting(searchRequestBuilder, request);
 
     try {
-      final var response = es8client.search(searchRequestBuilder.build(), VariableEntity.class);
+      final var response = esClient.search(searchRequestBuilder.build(), VariableEntity.class);
 
       final List<VariableEntity> variableEntities =
           response.hits().hits().stream()

@@ -10,6 +10,7 @@ package io.camunda.operate.webapp.api.v1.dao.elasticsearch;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.SortOptions;
+import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.query_dsl.RangeQuery;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.search.Hit;
@@ -33,7 +34,7 @@ public abstract class ElasticsearchDao<T> {
 
   protected final Logger logger = LoggerFactory.getLogger(getClass());
 
-  @Autowired protected ElasticsearchClient es8Client;
+  @Autowired protected ElasticsearchClient esClient;
 
   @Autowired protected ElasticsearchTenantHelper tenantHelper;
 
@@ -44,10 +45,7 @@ public abstract class ElasticsearchDao<T> {
   @Autowired protected OperateDateTimeFormatter dateTimeFormatter;
 
   private SortOptions toFieldSort(final Sort sort) {
-    final var order =
-        (sort.getOrder() == Order.DESC)
-            ? co.elastic.clients.elasticsearch._types.SortOrder.Desc
-            : co.elastic.clients.elasticsearch._types.SortOrder.Asc;
+    final var order = (sort.getOrder() == Order.DESC) ? SortOrder.Desc : SortOrder.Asc;
 
     return SortOptions.of(s -> s.field(f -> f.field(sort.getField()).order(order)));
   }
@@ -62,12 +60,7 @@ public abstract class ElasticsearchDao<T> {
     }
 
     final var uniqueKeySort =
-        SortOptions.of(
-            s ->
-                s.field(
-                    f ->
-                        f.field(uniqueSortKey)
-                            .order(co.elastic.clients.elasticsearch._types.SortOrder.Asc)));
+        SortOptions.of(s -> s.field(f -> f.field(uniqueSortKey).order(SortOrder.Asc)));
 
     searchRequestBuilder.sort(uniqueKeySort);
   }
@@ -96,7 +89,7 @@ public abstract class ElasticsearchDao<T> {
   protected <ResultType> Results<ResultType> searchWithResultsReturn(
       final SearchRequest searchRequest, final Class<ResultType> clazz) throws IOException {
 
-    final var res = es8Client.search(searchRequest, clazz);
+    final var res = esClient.search(searchRequest, clazz);
 
     final var hits = res.hits().hits();
 

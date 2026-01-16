@@ -78,7 +78,7 @@ public class ElasticsearchProcessInstanceDao extends ElasticsearchDao<ProcessIns
               .query(tenantAwareQuery);
 
       processInstances =
-          ElasticsearchUtil.scrollAllStream(es8Client, searchReq, ProcessInstance.class)
+          ElasticsearchUtil.scrollAllStream(esClient, searchReq, ProcessInstance.class)
               .flatMap(res -> res.hits().hits().stream())
               .map(Hit::source)
               .filter(Objects::nonNull)

@@ -14,8 +14,6 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch._types.HealthStatus;
 import co.elastic.clients.elasticsearch.cluster.HealthResponse;
-import co.elastic.clients.json.jackson.JacksonJsonpMapper;
-import co.elastic.clients.transport.rest_client.RestClientTransport;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.exporter.CamundaExporter;
 import io.camunda.operate.exceptions.OperateRuntimeException;
@@ -38,8 +36,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import org.apache.http.HttpHost;
-import org.elasticsearch.client.RestClient;
 import org.keycloak.admin.client.Keycloak;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -112,14 +108,6 @@ public class TestContainerUtil {
   private TestStandaloneBroker broker;
   private GenericContainer operateContainer;
   private Keycloak keycloakClient;
-
-  public static ElasticsearchClient getEsClient() {
-    final RestClient restClient =
-        RestClient.builder(new HttpHost(ELS_HOST, ELS_PORT, ELS_SCHEME)).build();
-    final RestClientTransport transport =
-        new RestClientTransport(restClient, new JacksonJsonpMapper());
-    return new ElasticsearchClient(transport);
-  }
 
   public void startIdentity(
       final TestContext testContext, final String version, final boolean multiTenancyEnabled) {
@@ -325,14 +313,9 @@ public class TestContainerUtil {
         testContext.getExternalElsPort());
   }
 
-  public boolean checkElasticsearchHealth(final TestContext testContext) {
-    try (final RestClient restClient =
-        RestClient.builder(
-                new HttpHost(testContext.getExternalElsHost(), testContext.getExternalElsPort()))
-            .build()) {
-      final RestClientTransport transport =
-          new RestClientTransport(restClient, new JacksonJsonpMapper());
-      final ElasticsearchClient esClient = new ElasticsearchClient(transport);
+  public boolean checkElasticsearchHealth(
+      final TestContext testContext, final ElasticsearchClient esClient) {
+    try {
       return RetryOperation.<Boolean>newBuilder()
           .noOfRetry(5)
           .retryOn(IOException.class, ElasticsearchException.class)

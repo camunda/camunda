@@ -61,7 +61,7 @@ public class ElasticsearchUserTaskReader extends AbstractReader implements UserT
               .index(whereToSearch(taskTemplate, ALL))
               .query(constantScoreQuery(TASK_QUERY));
 
-      return ElasticsearchUtil.scrollAllStream(es8client, searchRequestBuilder, TaskEntity.class)
+      return ElasticsearchUtil.scrollAllStream(esClient, searchRequestBuilder, TaskEntity.class)
           .flatMap(res -> res.hits().hits().stream())
           .map(Hit::source)
           .toList();
@@ -88,7 +88,7 @@ public class ElasticsearchUserTaskReader extends AbstractReader implements UserT
               .query(tenantAwareQuery)
               .build();
 
-      final var response = es8client.search(searchRequest, TaskEntity.class);
+      final var response = esClient.search(searchRequest, TaskEntity.class);
       return response.hits().hits().stream().findFirst().map(Hit::source);
     } catch (final IOException e) {
       final var message =
@@ -109,7 +109,7 @@ public class ElasticsearchUserTaskReader extends AbstractReader implements UserT
             .query(query);
     try {
       return ElasticsearchUtil.scrollAllStream(
-              es8client, searchRequestBuilder, SnapshotTaskVariableEntity.class)
+              esClient, searchRequestBuilder, SnapshotTaskVariableEntity.class)
           .flatMap(res -> res.hits().hits().stream())
           .map(Hit::source)
           .toList();

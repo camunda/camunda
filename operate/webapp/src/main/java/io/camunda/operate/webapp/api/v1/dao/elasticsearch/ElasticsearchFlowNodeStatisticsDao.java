@@ -136,7 +136,7 @@ public class ElasticsearchFlowNodeStatisticsDao extends ElasticsearchDao<FlowNod
             .build();
 
     try {
-      final var response = es8Client.search(request, Void.class);
+      final var response = esClient.search(request, Void.class);
 
       final var flowNodeAgg = response.aggregations().get(FLOW_NODE_ID_AGG).sterms();
 

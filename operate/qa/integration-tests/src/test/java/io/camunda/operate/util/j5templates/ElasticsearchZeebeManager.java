@@ -24,24 +24,24 @@ import org.springframework.stereotype.Component;
 public class ElasticsearchZeebeManager extends ZeebeContainerManager {
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchZeebeManager.class);
 
-  private final ElasticsearchClient es8Client;
+  private final ElasticsearchClient esClient;
 
   public ElasticsearchZeebeManager(
       final OperateProperties operateProperties,
       final SecurityConfiguration securityConfiguration,
       final TestContainerUtil testContainerUtil,
-      final ElasticsearchClient es8Client,
+      final ElasticsearchClient esClient,
       final IndexPrefixHolder indexPrefixHolder) {
     super(
         operateProperties,
         securityConfiguration,
         testContainerUtil,
         indexPrefixHolder.createNewIndexPrefix());
-    this.es8Client = es8Client;
+    this.esClient = esClient;
   }
 
   @Override
   protected void removeIndices() {
-    TestUtil.removeAllIndices(es8Client, prefix);
+    TestUtil.removeAllIndices(esClient, prefix);
   }
 }
