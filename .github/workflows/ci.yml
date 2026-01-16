@@ -576,10 +576,10 @@ jobs:
             suite: DataLayer
             maven-modules: ${{ needs.setup-tests.outputs.ZEEBE_EXPORTER_MODULES }}
           - component: Backup
-            suite: DistributedSystems
+            suite: DistributedPlatform
             maven-modules: ${{ needs.setup-tests.outputs.ZEEBE_BACKUP_MODULES }}
           - component:  Distributed
-            suite: DistributedSystems
+            suite: DistributedPlatform
             maven-modules: ${{ needs.setup-tests.outputs.ZEEBE_DISTRIBUTED_MODULES }}
           - component: Client
             suite: CamundaEx
