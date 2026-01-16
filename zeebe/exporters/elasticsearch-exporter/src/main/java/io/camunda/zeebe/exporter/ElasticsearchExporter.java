@@ -13,10 +13,9 @@ import io.camunda.search.connect.plugin.PluginRepository;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Context;
+import io.camunda.zeebe.exporter.api.context.Context.RecordFilter;
 import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.RecordType;
-import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.util.SemanticVersion;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
@@ -56,6 +55,7 @@ public class ElasticsearchExporter implements Exporter {
   private ElasticsearchRecordCounters recordCounters;
   private MeterRegistry registry;
   private ElasticsearchExporterSchemaManager schemaManager;
+  private RecordFilter recordFilter;
 
   private long lastPosition = -1;
 
@@ -69,7 +69,8 @@ public class ElasticsearchExporter implements Exporter {
     validate(configuration);
     pluginRepository.load(configuration.getInterceptorPlugins());
 
-    context.setFilter(new ElasticsearchRecordFilter(configuration));
+    recordFilter = new ElasticsearchRecordFilter(configuration);
+    context.setFilter(recordFilter);
     registry = context.getMeterRegistry();
   }
 
@@ -137,8 +138,8 @@ public class ElasticsearchExporter implements Exporter {
 
     if (!shouldExportRecord(record)) {
       // ignore the record but still update the last exported position
-      // so that we don't block compaction. Don't update the controller yet, this needs to be done
-      // on the next flush.
+      // so that we don't block compaction. Don't update the controller yet, this needs to be
+      // done on the next flush.
       lastPosition = record.getPosition();
       return;
     }
@@ -264,19 +265,14 @@ public class ElasticsearchExporter implements Exporter {
   /**
    * Determine whether a record should be exported or not. For Camunda 8.8 we require Optimize
    * records to be exported, or if the configuration explicitly enables the export of all records
-   * {@link ElasticsearchExporterConfiguration#includeEnabledRecords}. For past versions, we
+   * {@link ElasticsearchExporterConfiguration#getIsIncludeEnabledRecords}. For past versions, we
    * continue to export all records.
    *
    * @param record The record to check
    * @return Whether the record should be exported or not
    */
   private boolean shouldExportRecord(final Record<?> record) {
-    final var recordVersion = getVersion(record.getBrokerVersion());
-    if (configuration.getIsIncludeEnabledRecords()
-        || (recordVersion.major() == 8 && recordVersion.minor() < 8)) {
-      return true;
-    }
-    return configuration.shouldIndexRequiredValueType(record.getValueType());
+    return recordFilter.acceptRecord(record);
   }
 
   private SemanticVersion getVersion(final String version) {
@@ -287,24 +283,5 @@ public class ElasticsearchExporter implements Exporter {
                     "Unsupported record broker version: ["
                         + version
                         + "] Must be a semantic version."));
-  }
-
-  private static class ElasticsearchRecordFilter implements Context.RecordFilter {
-
-    private final ElasticsearchExporterConfiguration configuration;
-
-    ElasticsearchRecordFilter(final ElasticsearchExporterConfiguration configuration) {
-      this.configuration = configuration;
-    }
-
-    @Override
-    public boolean acceptType(final RecordType recordType) {
-      return configuration.shouldIndexRecordType(recordType);
-    }
-
-    @Override
-    public boolean acceptValue(final ValueType valueType) {
-      return configuration.shouldIndexValueType(valueType);
-    }
   }
 }

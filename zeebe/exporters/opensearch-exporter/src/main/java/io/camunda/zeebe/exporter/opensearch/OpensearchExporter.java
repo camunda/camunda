@@ -13,16 +13,13 @@ import io.camunda.search.connect.plugin.PluginRepository;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Context;
+import io.camunda.zeebe.exporter.api.context.Context.RecordFilter;
 import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.RecordType;
-import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.util.SemanticVersion;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.time.Duration;
-import java.util.HashSet;
-import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,8 +41,9 @@ public class OpensearchExporter implements Exporter {
   private MeterRegistry meterRegistry;
   private OpensearchExporterSchemaManager schemaManager;
 
+  private RecordFilter recordFilter;
+
   private long lastPosition = -1;
-  private Set<String> indexTemplatesCreated;
 
   @Override
   public void configure(final Context context) {
@@ -56,8 +54,8 @@ public class OpensearchExporter implements Exporter {
     validate(configuration);
     pluginRepository.load(configuration.getInterceptorPlugins());
 
-    context.setFilter(new OpensearchRecordFilter(configuration));
-    indexTemplatesCreated = new HashSet<>();
+    recordFilter = new OpensearchRecordFilter(configuration);
+    context.setFilter(recordFilter);
     meterRegistry = context.getMeterRegistry();
   }
 
@@ -147,19 +145,14 @@ public class OpensearchExporter implements Exporter {
   /**
    * Determine whether a record should be exported or not. For Camunda 8.8 we require Optimize
    * records to be exported, or if the configuration explicitly enables the export of all records
-   * {@link OpensearchExporterConfiguration#includeEnabledRecords}. For past versions, we continue
-   * to export all records.
+   * {@link OpensearchExporterConfiguration#getIsIncludeEnabledRecords()}. For past versions, we
+   * continue to export all records.
    *
    * @param record The record to check
    * @return Whether the record should be exported or not
    */
   private boolean shouldExportRecord(final Record<?> record) {
-    final var recordVersion = getVersion(record.getBrokerVersion());
-    if (configuration.getIsIncludeEnabledRecords()
-        || (recordVersion.major() == 8 && recordVersion.minor() < 8)) {
-      return true;
-    }
-    return configuration.shouldIndexRequiredValueType(record.getValueType());
+    return recordFilter.acceptRecord(record);
   }
 
   private void validate(final OpensearchExporterConfiguration configuration) {
@@ -254,24 +247,5 @@ public class OpensearchExporter implements Exporter {
                     "Unsupported record broker version: ["
                         + version
                         + "] Must be a semantic version."));
-  }
-
-  private static class OpensearchRecordFilter implements Context.RecordFilter {
-
-    private final OpensearchExporterConfiguration configuration;
-
-    OpensearchRecordFilter(final OpensearchExporterConfiguration configuration) {
-      this.configuration = configuration;
-    }
-
-    @Override
-    public boolean acceptType(final RecordType recordType) {
-      return configuration.shouldIndexRecordType(recordType);
-    }
-
-    @Override
-    public boolean acceptValue(final ValueType valueType) {
-      return configuration.shouldIndexValueType(valueType);
-    }
   }
 }

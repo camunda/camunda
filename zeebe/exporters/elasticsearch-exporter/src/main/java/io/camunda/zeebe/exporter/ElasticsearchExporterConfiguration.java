@@ -8,7 +8,6 @@
 package io.camunda.zeebe.exporter;
 
 import io.camunda.search.connect.plugin.PluginConfiguration;
-import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import java.util.ArrayList;
@@ -64,9 +63,34 @@ public class ElasticsearchExporterConfiguration {
         + '}';
   }
 
-  public boolean shouldIndexRecord(final Record<?> record) {
-    return shouldIndexRecordType(record.getRecordType())
-        && shouldIndexValueType(record.getValueType());
+  /**
+   * Not all value records are required to be exported from 8.8 onward. The following included
+   * records are required by Optimize and Zeebe-Analytics so they must continue to be exported by
+   * the {@link ElasticsearchExporter}:
+   *
+   * @param valueType the value type of the record
+   * @return true if the record should be indexed, false otherwise
+   */
+  public boolean shouldIndexRequiredValueType(final ValueType valueType) {
+    return switch (valueType) {
+      case DEPLOYMENT -> index.deployment;
+      case PROCESS -> index.process;
+      case INCIDENT -> index.incident;
+      case VARIABLE -> index.variable;
+      case PROCESS_INSTANCE -> index.processInstance;
+      case USER_TASK -> index.userTask;
+      case JOB -> index.job;
+      default -> false;
+    };
+  }
+
+  public boolean shouldIndexRecordType(final RecordType recordType) {
+    return switch (recordType) {
+      case EVENT -> index.event;
+      case COMMAND -> index.command;
+      case COMMAND_REJECTION -> index.rejection;
+      default -> false;
+    };
   }
 
   public boolean shouldIndexValueType(final ValueType valueType) {
@@ -112,36 +136,6 @@ public class ElasticsearchExporterConfiguration {
       case CONDITIONAL_SUBSCRIPTION -> index.conditionalSubscription;
       case CONDITIONAL_EVALUATION -> index.conditionalEvaluation;
       case GLOBAL_LISTENER_BATCH -> index.globalListenerBatch;
-      default -> false;
-    };
-  }
-
-  /**
-   * Not all value records are required to be exported from 8.8 onward. The following included
-   * records are required by Optimize and Zeebe-Analytics so they must continue to be exported by
-   * the {@link ElasticsearchExporter}:
-   *
-   * @param valueType the value type of the record
-   * @return true if the record should be indexed, false otherwise
-   */
-  public boolean shouldIndexRequiredValueType(final ValueType valueType) {
-    return switch (valueType) {
-      case DEPLOYMENT -> index.deployment;
-      case PROCESS -> index.process;
-      case INCIDENT -> index.incident;
-      case VARIABLE -> index.variable;
-      case PROCESS_INSTANCE -> index.processInstance;
-      case USER_TASK -> index.userTask;
-      case JOB -> index.job;
-      default -> false;
-    };
-  }
-
-  public boolean shouldIndexRecordType(final RecordType recordType) {
-    return switch (recordType) {
-      case EVENT -> index.event;
-      case COMMAND -> index.command;
-      case COMMAND_REJECTION -> index.rejection;
       default -> false;
     };
   }
@@ -200,6 +194,18 @@ public class ElasticsearchExporterConfiguration {
     public boolean variable = true;
     public boolean variableDocument = true;
     public boolean adHocSubProcessInstruction = true;
+
+    // variable name filtering
+    public List<String> variableNameInclusionExact;
+    public List<String> variableNameInclusionStartWith;
+    public List<String> variableNameInclusionEndWith;
+    public List<String> variableNameExclusionExact;
+    public List<String> variableNameExclusionStartWith;
+    public List<String> variableNameExclusionEndWith;
+
+    // variable value type filtering
+    public List<String> variableValueTypeInclusion;
+    public List<String> variableValueTypeExclusion;
 
     public boolean checkpoint = false;
     public boolean timer = true;
@@ -358,6 +364,24 @@ public class ElasticsearchExporterConfiguration {
           + conditionalSubscription
           + ", conditionalEvaluation="
           + conditionalEvaluation
+          // variable name filtering
+          + ", variableNameInclusionExact="
+          + variableNameInclusionExact
+          + ", variableNameInclusionStartWith="
+          + variableNameInclusionStartWith
+          + ", variableNameInclusionEndWith="
+          + variableNameInclusionEndWith
+          + ", variableNameExclusionExact="
+          + variableNameExclusionExact
+          + ", variableNameExclusionStartWith="
+          + variableNameExclusionStartWith
+          + ", variableNameExclusionEndWith="
+          + variableNameExclusionEndWith
+          // variable value type filtering
+          + ", variableValueTypeInclusion="
+          + variableValueTypeInclusion
+          + ", variableValueTypeExclusion="
+          + variableValueTypeExclusion
           + '}';
     }
   }

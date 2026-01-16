@@ -30,6 +30,7 @@ import io.camunda.zeebe.protocol.record.ImmutableRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.util.VersionUtil;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -77,6 +78,8 @@ final class OpensearchExporterTest {
     // when
     exporter.open(controller);
     final Record mockRecord = mock(Record.class);
+    when(mockRecord.getRecordType()).thenReturn(RecordType.EVENT);
+    when(mockRecord.getIntent()).thenReturn(mock(Intent.class));
     when(mockRecord.getValueType()).thenReturn(ValueType.PROCESS_INSTANCE);
     when(mockRecord.getBrokerVersion()).thenReturn(VersionUtil.getVersionLowerCase());
 
@@ -121,6 +124,8 @@ final class OpensearchExporterTest {
 
     // when
     final var recordMock = mock(Record.class);
+    when(recordMock.getRecordType()).thenReturn(RecordType.EVENT);
+    when(recordMock.getIntent()).thenReturn(mock(Intent.class));
     when(recordMock.getValueType()).thenReturn(ValueType.PROCESS_INSTANCE);
     when(recordMock.getBrokerVersion()).thenReturn(VersionUtil.getVersionLowerCase());
     exporter.export(recordMock);
@@ -141,6 +146,8 @@ final class OpensearchExporterTest {
 
     // when
     final var recordMock = mock(Record.class);
+    when(recordMock.getRecordType()).thenReturn(RecordType.EVENT);
+    when(recordMock.getIntent()).thenReturn(mock(Intent.class));
     when(recordMock.getValueType()).thenReturn(ValueType.PROCESS_INSTANCE);
     when(recordMock.getBrokerVersion()).thenReturn(VersionUtil.getVersionLowerCase());
     exporter.export(recordMock);
@@ -162,6 +169,8 @@ final class OpensearchExporterTest {
 
     // when
     final var recordMock = mock(Record.class);
+    when(recordMock.getRecordType()).thenReturn(RecordType.EVENT);
+    when(recordMock.getIntent()).thenReturn(mock(Intent.class));
     when(recordMock.getValueType()).thenReturn(ValueType.PROCESS_INSTANCE);
     when(recordMock.getBrokerVersion()).thenReturn(VersionUtil.getVersionLowerCase());
     exporter.export(recordMock);
@@ -259,6 +268,8 @@ final class OpensearchExporterTest {
 
       // when
       final var recordMock = mock(Record.class);
+      when(recordMock.getRecordType()).thenReturn(RecordType.EVENT);
+      when(recordMock.getIntent()).thenReturn(mock(Intent.class));
       when(recordMock.getValueType()).thenReturn(ValueType.PROCESS_INSTANCE);
       when(recordMock.getBrokerVersion()).thenReturn(VersionUtil.getVersionLowerCase());
       exporter.export(recordMock);
@@ -276,6 +287,8 @@ final class OpensearchExporterTest {
 
       // when
       final var recordMock = mock(Record.class);
+      when(recordMock.getRecordType()).thenReturn(RecordType.EVENT);
+      when(recordMock.getIntent()).thenReturn(mock(Intent.class));
       when(recordMock.getValueType()).thenReturn(ValueType.PROCESS_INSTANCE);
       when(recordMock.getBrokerVersion()).thenReturn(VersionUtil.getVersionLowerCase());
       exporter.export(recordMock);
@@ -295,6 +308,8 @@ final class OpensearchExporterTest {
 
       // when
       final var recordMock = mock(Record.class);
+      when(recordMock.getRecordType()).thenReturn(RecordType.EVENT);
+      when(recordMock.getIntent()).thenReturn(mock(Intent.class));
       when(recordMock.getValueType()).thenReturn(ValueType.PROCESS_INSTANCE);
       when(recordMock.getBrokerVersion()).thenReturn(VersionUtil.getVersionLowerCase());
       exporter.export(recordMock);
@@ -314,6 +329,8 @@ final class OpensearchExporterTest {
 
       // when
       final var recordMock = mock(Record.class);
+      when(recordMock.getRecordType()).thenReturn(RecordType.EVENT);
+      when(recordMock.getIntent()).thenReturn(mock(Intent.class));
       when(recordMock.getValueType()).thenReturn(ValueType.PROCESS_INSTANCE);
       when(recordMock.getBrokerVersion()).thenReturn(VersionUtil.getVersionLowerCase());
       exporter.export(recordMock);
@@ -335,6 +352,8 @@ final class OpensearchExporterTest {
 
       // when
       final var recordMock = mock(Record.class);
+      when(recordMock.getRecordType()).thenReturn(RecordType.EVENT);
+      when(recordMock.getIntent()).thenReturn(mock(Intent.class));
       when(recordMock.getValueType()).thenReturn(valueType);
       when(recordMock.getBrokerVersion()).thenReturn(version);
       exporter.export(recordMock);
@@ -365,6 +384,8 @@ final class OpensearchExporterTest {
 
       // when
       final var recordMock = mock(Record.class);
+      when(recordMock.getRecordType()).thenReturn(RecordType.EVENT);
+      when(recordMock.getIntent()).thenReturn(mock(Intent.class));
       when(recordMock.getValueType()).thenReturn(ValueType.PROCESS_INSTANCE);
       when(recordMock.getBrokerVersion()).thenReturn(VersionUtil.getVersionLowerCase());
 
@@ -408,6 +429,7 @@ final class OpensearchExporterTest {
       final var record =
           ImmutableRecord.builder()
               .withBrokerVersion(VersionUtil.getVersionLowerCase())
+              .withRecordType(RecordType.EVENT)
               .withPosition(10L)
               .withValueType(ValueType.PROCESS_INSTANCE)
               .build();
@@ -430,6 +452,7 @@ final class OpensearchExporterTest {
           ImmutableRecord.builder()
               .withPosition(10L)
               .withBrokerVersion(VersionUtil.getVersionLowerCase())
+              .withRecordType(RecordType.EVENT)
               .withValueType(ValueType.PROCESS_INSTANCE)
               .build();
       exporter.configure(context);
@@ -452,6 +475,7 @@ final class OpensearchExporterTest {
           ImmutableRecord.builder()
               .withPosition(10L)
               .withBrokerVersion(VersionUtil.getVersionLowerCase())
+              .withRecordType(RecordType.EVENT)
               .withValueType(ValueType.PROCESS_INSTANCE)
               .build();
       exporter.configure(context);
@@ -473,6 +497,7 @@ final class OpensearchExporterTest {
           ImmutableRecord.builder()
               .withBrokerVersion(VersionUtil.getVersionLowerCase())
               .withPosition(10L)
+              .withRecordType(RecordType.EVENT)
               .withValueType(ValueType.PROCESS_INSTANCE)
               .build();
       exporter.configure(context);
@@ -706,6 +731,7 @@ final class OpensearchExporterTest {
       return ImmutableRecord.builder()
           .withBrokerVersion(VersionUtil.getVersionLowerCase())
           .withPartitionId(partitionId)
+          .withRecordType(RecordType.EVENT)
           .withValueType(valueType)
           .build();
     }

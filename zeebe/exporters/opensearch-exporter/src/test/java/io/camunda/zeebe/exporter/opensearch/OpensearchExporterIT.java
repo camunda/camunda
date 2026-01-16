@@ -18,6 +18,7 @@ import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.value.ImmutableJobBatchRecordValue;
@@ -395,6 +396,7 @@ final class OpensearchExporterIT {
    */
   @Nested
   final class IndexSettingsTest {
+
     @Test
     void shouldAddIndexLifecycleSettingsToExistingIndicesOnRerunWhenRetentionIsEnabled() {
       // given
@@ -414,7 +416,7 @@ final class OpensearchExporterIT {
                 assertHasNoISMPolicy(index1Policy);
               });
 
-      /* Tests when retention is later enabled all indices should have lifecycle policy */
+      /* When retention is later enabled all indices should have lifecycle policy */
       // given
       configureExporter(true);
       final var record2 = generateRecord(ValueType.JOB);
@@ -459,7 +461,7 @@ final class OpensearchExporterIT {
                 assertHasISMPolicy(indexPolicy1);
               });
 
-      /* Tests when retention is later disabled all indices should not have a lifecycle policy */
+      /* When retention is later disabled all indices should not have a lifecycle policy */
       // given
       configureExporter(false);
       final var record2 = generateRecord(ValueType.JOB);
@@ -546,7 +548,6 @@ final class OpensearchExporterIT {
 
     @Test
     void shouldExportToCorrectIndexWithOpensearchNotReachable() throws IOException {
-
       // given
       final var currentPort = CONTAINER.getFirstMappedPort();
       CONTAINER.stop();
@@ -647,6 +648,27 @@ final class OpensearchExporterIT {
           .get()
           .extracting(wrapper -> wrapper.template().priority())
           .isEqualTo(20L); // default priority is 20
+    }
+
+    private void configureExporter(final boolean retentionEnabled) {
+      configureExporter(cfg -> cfg.retention.setEnabled(retentionEnabled));
+    }
+
+    private void configureExporter(final Consumer<OpensearchExporterConfiguration> configurator) {
+      // Apply caller-specific config (e.g. retention, priority)
+      configurator.accept(config);
+
+      // In these index-settings tests we always want all index-enabled value types and record types
+      // to be exported; they are not about filtering semantics.
+      config.setIncludeEnabledRecords(true);
+
+      // Ensure record-type indexing is enabled for the types we may see
+      TestSupport.setIndexingForRecordType(config.index, RecordType.EVENT, true);
+      TestSupport.setIndexingForRecordType(config.index, RecordType.COMMAND, true);
+      TestSupport.setIndexingForRecordType(config.index, RecordType.COMMAND_REJECTION, true);
+
+      exporter.configure(exporterTestContext);
+      exporter.open(controller);
     }
 
     private void assertHasISMPolicy(final Optional<IndexISMPolicyDto> indexSettings) {
