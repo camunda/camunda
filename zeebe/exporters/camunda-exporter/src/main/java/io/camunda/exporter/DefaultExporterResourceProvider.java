@@ -386,7 +386,9 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                     .get(CorrelatedMessageSubscriptionTemplate.class)
                     .getFullQualifiedName())));
 
-    addAuditLogHandlers(configuration.getAuditLog(), partitionId);
+    if (configuration.getAuditLog().isEnabled()) {
+      addAuditLogHandlers(configuration.getAuditLog(), partitionId);
+    }
 
     if (configuration.getBatchOperation().isExportItemsOnCreation()) {
       // only add this handler when the items are exported on creation
@@ -487,42 +489,39 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
   }
 
   private void addAuditLogHandlers(final AuditLogConfiguration auditLog, final int partitionId) {
-    if (auditLog.isEnabled()) {
-      final var indexName = (indexDescriptors.get(AuditLogTemplate.class).getFullQualifiedName());
+    final var indexName = (indexDescriptors.get(AuditLogTemplate.class).getFullQualifiedName());
+    final var auditLogBuilder = AuditLogHandler.builder(indexName, auditLog);
 
-      final var auditLogBuilder = AuditLogHandler.builder(indexName, auditLog);
-
-      if (partitionId == PROCESS_DEFINITION_PARTITION) {
-        auditLogBuilder
-            .addHandler(new AuthorizationAuditLogTransformer())
-            .addHandler(new BatchOperationCreationAuditLogTransformer())
-            .addHandler(new DecisionRequirementsRecordAuditLogTransformer())
-            .addHandler(new DecisionAuditLogTransformer())
-            .addHandler(new FormAuditLogTransformer())
-            .addHandler(new GroupAuditLogTransformer())
-            .addHandler(new GroupEntityAuditLogTransformer())
-            .addHandler(new MappingRuleAuditLogTransformer())
-            .addHandler(new ProcessAuditLogTransformer())
-            .addHandler(new ResourceAuditLogTransformer())
-            .addHandler(new RoleAuditLogTransformer())
-            .addHandler(new RoleEntityAuditLogTransformer())
-            .addHandler(new TenantAuditLogTransformer())
-            .addHandler(new TenantEntityAuditLogTransformer())
-            .addHandler(new UserAuditLogTransformer());
-      }
-
+    if (partitionId == PROCESS_DEFINITION_PARTITION) {
       auditLogBuilder
-          .addHandler(new BatchOperationLifecycleManagementAuditLogTransformer())
-          .addHandler(new DecisionEvaluationAuditLogTransformer())
-          .addHandler(new IncidentResolutionAuditLogTransformer())
-          .addHandler(new ProcessInstanceCancelAuditLogTransformer())
-          .addHandler(new ProcessInstanceCreationAuditLogTransformer())
-          .addHandler(new ProcessInstanceMigrationAuditLogTransformer())
-          .addHandler(new ProcessInstanceModificationAuditLogTransformer())
-          .addHandler(new UserTaskAuditLogTransformer())
-          .addHandler(new VariableAddUpdateAuditLogTransformer())
-          .build()
-          .forEach(exportHandlers::add);
+          .addHandler(new AuthorizationAuditLogTransformer())
+          .addHandler(new BatchOperationCreationAuditLogTransformer())
+          .addHandler(new DecisionRequirementsRecordAuditLogTransformer())
+          .addHandler(new DecisionAuditLogTransformer())
+          .addHandler(new FormAuditLogTransformer())
+          .addHandler(new GroupAuditLogTransformer())
+          .addHandler(new GroupEntityAuditLogTransformer())
+          .addHandler(new MappingRuleAuditLogTransformer())
+          .addHandler(new ProcessAuditLogTransformer())
+          .addHandler(new ResourceAuditLogTransformer())
+          .addHandler(new RoleAuditLogTransformer())
+          .addHandler(new RoleEntityAuditLogTransformer())
+          .addHandler(new TenantAuditLogTransformer())
+          .addHandler(new TenantEntityAuditLogTransformer())
+          .addHandler(new UserAuditLogTransformer());
     }
+
+    auditLogBuilder
+        .addHandler(new BatchOperationLifecycleManagementAuditLogTransformer())
+        .addHandler(new DecisionEvaluationAuditLogTransformer())
+        .addHandler(new IncidentResolutionAuditLogTransformer())
+        .addHandler(new ProcessInstanceCancelAuditLogTransformer())
+        .addHandler(new ProcessInstanceCreationAuditLogTransformer())
+        .addHandler(new ProcessInstanceMigrationAuditLogTransformer())
+        .addHandler(new ProcessInstanceModificationAuditLogTransformer())
+        .addHandler(new UserTaskAuditLogTransformer())
+        .addHandler(new VariableAddUpdateAuditLogTransformer())
+        .build()
+        .forEach(exportHandlers::add);
   }
 }

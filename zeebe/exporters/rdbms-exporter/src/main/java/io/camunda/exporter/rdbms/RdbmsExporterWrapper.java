@@ -282,7 +282,9 @@ public class RdbmsExporterWrapper implements Exporter {
         ValueType.HISTORY_DELETION,
         new HistoryDeletionDeletedHandler(rdbmsWriters.getHistoryDeletionWriter()));
 
-    registerAuditLogHandlers(rdbmsWriters, builder, config, partitionId);
+    if (config.getAuditLog().isEnabled()) {
+      registerAuditLogHandlers(rdbmsWriters, builder, config, partitionId);
+    }
   }
 
   private void createBatchOperationHandlers(
