@@ -222,6 +222,8 @@ zeebeGateway:
     # See https://github.com/camunda/camunda-platform-helm/issues/2197
     - name: SPRING_CONFIG_ADDITIONALLOCATION
       value: "/usr/local/zeebe/config/application.yml"
+    - name: CAMUNDA_REST_QUERY_ENABLED
+      value: "true"
 
   # Resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
   resources:
