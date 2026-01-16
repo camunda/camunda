@@ -1,0 +1,286 @@
+{
+  "testCases": [
+    {
+      "name": "Happy path",
+      "description": "Happy path through the process",
+      "instructions": [
+        {
+          "type": "MOCK_JOB_WORKER_COMPLETE_JOB",
+          "jobType": "archive-invoice"
+        },
+        {
+          "type": "MOCK_JOB_WORKER_COMPLETE_JOB",
+          "jobType": "add-invoice-to-accounting"
+        },
+        {
+          "type": "CREATE_PROCESS_INSTANCE",
+          "processDefinitionSelector": {
+            "processDefinitionId": "Process_InvoiceApproval"
+          },
+          "variables": {
+            "approver": "Zee",
+            "invoice": {
+              "id": "INV-1001",
+              "amount": 12000,
+              "currency": "EUR",
+              "supplier": {
+                "id": "0815",
+                "name": "Acme GmbH"
+              },
+              "contactEmail": "accounting@acme.com"
+            }
+          }
+        },
+        {
+          "type": "ASSERT_ELEMENT_INSTANCES",
+          "processInstanceSelector": {
+            "processDefinitionId": "Process_InvoiceApproval"
+          },
+          "elementSelectors": [
+            {
+              "elementId": "UserTask_ApproveInvoice"
+            }
+          ],
+          "state": "IS_ACTIVE"
+        },
+        {
+          "type": "ASSERT_USER_TASK",
+          "userTaskSelector": {
+            "elementId": "UserTask_ApproveInvoice"
+          },
+          "state": "IS_CREATED",
+          "assignee": "Zee"
+        },
+        {
+          "type": "COMPLETE_USER_TASK",
+          "userTaskSelector": {
+            "elementId": "UserTask_ApproveInvoice"
+          },
+          "variables": {
+            "approved": true
+          }
+        },
+        {
+          "type": "ASSERT_ELEMENT_INSTANCES",
+          "processInstanceSelector": {
+            "processDefinitionId": "Process_InvoiceApproval"
+          },
+          "elementSelectors": [
+            {
+              "elementId": "StartEvent_InvoiceReceived"
+            },
+            {
+              "elementId": "UserTask_ApproveInvoice"
+            },
+            {
+              "elementId": "ServiceTask_ArchiveInvoice"
+            },
+            {
+              "elementId": "ServiceTask_AddInvoiceAccounting"
+            },
+            {
+              "elementId": "EndEvent_InvoiceApproved"
+            }
+          ],
+          "state": "IS_COMPLETED_IN_ORDER"
+        },
+        {
+          "type": "ASSERT_PROCESS_INSTANCE",
+          "processInstanceSelector": {
+            "processDefinitionId": "Process_InvoiceApproval"
+          },
+          "state": "IS_COMPLETED"
+        }
+      ]
+    },
+    {
+      "name": "Rejection path",
+      "description": "Path when invoice was rejected",
+      "instructions": [
+        {
+          "type": "MOCK_JOB_WORKER_COMPLETE_JOB",
+          "jobType": "io.camunda:http-json:1"
+        },
+        {
+          "type": "CREATE_PROCESS_INSTANCE",
+          "processDefinitionSelector": {
+            "processDefinitionId": "Process_InvoiceApproval"
+          },
+          "variables": {
+            "approver": "Zee",
+            "invoice": {
+              "id": "INV-1001",
+              "amount": 12000,
+              "currency": "EUR",
+              "supplier": {
+                "id": "0815",
+                "name": "Acme GmbH"
+              },
+              "contactEmail": "accounting@acme.com"
+            }
+          }
+        },
+        {
+          "type": "ASSERT_USER_TASK",
+          "userTaskSelector": {
+            "elementId": "UserTask_ApproveInvoice"
+          },
+          "state": "IS_CREATED",
+          "assignee": "Zee"
+        },
+        {
+          "type": "COMPLETE_USER_TASK",
+          "userTaskSelector": {
+            "elementId": "UserTask_ApproveInvoice"
+          },
+          "variables": {
+            "approved": false,
+            "rejectionReason": "it is a test case :-)"
+          }
+        },
+        {
+          "type": "ASSERT_ELEMENT_INSTANCES",
+          "processInstanceSelector": {
+            "processDefinitionId": "Process_InvoiceApproval"
+          },
+          "elementSelectors": [
+            {
+              "elementId": "StartEvent_InvoiceReceived"
+            },
+            {
+              "elementId": "UserTask_ApproveInvoice"
+            },
+            {
+              "elementId": "Gateway_Approved"
+            },
+            {
+              "elementId": "ServiceTask_SendRejection"
+            },
+            {
+              "elementId": "EndEvent_InvoiceRejected"
+            }
+          ],
+          "state": "IS_COMPLETED_IN_ORDER"
+        },
+        {
+          "type": "ASSERT_PROCESS_INSTANCE",
+          "processInstanceSelector": {
+            "processDefinitionId": "Process_InvoiceApproval"
+          },
+          "state": "IS_COMPLETED"
+        }
+      ]
+    },
+    {
+      "name": "Archive system error",
+      "description": "Path when the archive system raises an error",
+      "instructions": [
+        {
+          "type": "MOCK_JOB_WORKER_THROW_BPMN_ERROR",
+          "jobType": "archive-invoice",
+          "errorCode": "LEGACY_ERROR_ARCHIVE",
+          "errorMessage": "The archive system had a problem."
+        },
+        {
+          "type": "MOCK_JOB_WORKER_COMPLETE_JOB",
+          "jobType": "add-invoice-to-accounting"
+        },
+        {
+          "type": "CREATE_PROCESS_INSTANCE",
+          "processDefinitionSelector": {
+            "processDefinitionId": "Process_InvoiceApproval"
+          },
+          "variables": {
+            "approver": "Zee",
+            "invoice": {
+              "id": "INV-1001",
+              "amount": 12000,
+              "currency": "EUR",
+              "supplier": {
+                "id": "0815",
+                "name": "Acme GmbH"
+              },
+              "contactEmail": "accounting@acme.com"
+            }
+          }
+        },
+        {
+          "type": "ASSERT_USER_TASK",
+          "userTaskSelector": {
+            "elementId": "UserTask_ApproveInvoice"
+          },
+          "state": "IS_CREATED",
+          "assignee": "Zee"
+        },
+        {
+          "type": "COMPLETE_USER_TASK",
+          "userTaskSelector": {
+            "elementId": "UserTask_ApproveInvoice"
+          },
+          "variables": {
+            "approved": true
+          }
+        },
+        {
+          "type": "ASSERT_USER_TASK",
+          "userTaskSelector": {
+            "elementId": "UserTask_ManuallyArchiveInvoice"
+          },
+          "state": "IS_CREATED",
+          "candidateGroups": [
+            "archive-team"
+          ]
+        },
+        {
+          "type": "COMPLETE_USER_TASK",
+          "userTaskSelector": {
+            "elementId": "UserTask_ManuallyArchiveInvoice"
+          }
+        },
+        {
+          "type": "ASSERT_ELEMENT_INSTANCES",
+          "processInstanceSelector": {
+            "processDefinitionId": "Process_InvoiceApproval"
+          },
+          "elementSelectors": [
+            {
+              "elementId": "StartEvent_InvoiceReceived"
+            },
+            {
+              "elementId": "UserTask_ApproveInvoice"
+            },
+            {
+              "elementId": "UserTask_ManuallyArchiveInvoice"
+            },
+            {
+              "elementId": "ServiceTask_AddInvoiceAccounting"
+            },
+            {
+              "elementId": "EndEvent_InvoiceApproved"
+            }
+          ],
+          "state": "IS_COMPLETED_IN_ORDER"
+        },
+        {
+          "type": "ASSERT_ELEMENT_INSTANCES",
+          "processInstanceSelector": {
+            "processDefinitionId": "Process_InvoiceApproval"
+          },
+          "elementSelectors": [
+            {
+              "elementId": "ServiceTask_ArchiveInvoice"
+            }
+          ],
+          "state": "IS_TERMINATED"
+        },
+        {
+          "type": "ASSERT_PROCESS_INSTANCE",
+          "processInstanceSelector": {
+            "processDefinitionId": "Process_InvoiceApproval"
+          },
+          "state": "IS_COMPLETED"
+        }
+      ]
+    }
+  ]
+}
