@@ -12,12 +12,14 @@ import io.camunda.security.entity.AuthenticationMethod;
 public class AuthenticationConfiguration {
   public static final AuthenticationMethod DEFAULT_METHOD = AuthenticationMethod.BASIC;
   public static final boolean DEFAULT_UNPROTECTED_API = false;
+  public static final boolean DEFAULT_LOGOUT_CORS_ENABLED = true;
 
   private AuthenticationMethod method = DEFAULT_METHOD;
   private String authenticationRefreshInterval = "PT30S";
   private OidcAuthenticationConfiguration oidcAuthenticationConfiguration =
       new OidcAuthenticationConfiguration();
   private boolean unprotectedApi = DEFAULT_UNPROTECTED_API;
+  private boolean logoutCorsEnabled = DEFAULT_LOGOUT_CORS_ENABLED;
 
   private ProvidersConfiguration providers;
 
@@ -27,6 +29,14 @@ public class AuthenticationConfiguration {
 
   public void setUnprotectedApi(final boolean value) {
     unprotectedApi = value;
+  }
+
+  public boolean getLogoutCorsEnabled() {
+    return logoutCorsEnabled;
+  }
+
+  public void setLogoutCorsEnabled(final boolean value) {
+    logoutCorsEnabled = value;
   }
 
   public AuthenticationMethod getMethod() {

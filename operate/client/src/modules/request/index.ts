@@ -90,6 +90,7 @@ async function requestWithThrow<T>({
 async function request(
   {url, method, body, headers, signal}: RequestParams,
   {skipSessionCheck = false}: {skipSessionCheck?: boolean} = {},
+  corsMode: RequestMode = 'cors',
 ) {
   const csrfToken = sessionStorage.getItem('X-CSRF-TOKEN');
   const hasCsrfToken =
@@ -108,7 +109,7 @@ async function request(
         ...(hasCsrfToken ? {'X-CSRF-TOKEN': csrfToken} : {}),
         ...headers,
       },
-      mode: 'cors',
+      mode: corsMode,
       signal,
     },
   );

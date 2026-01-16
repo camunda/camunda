@@ -29,6 +29,7 @@ public class ClientConfig {
   public String mixpanelAPIHost;
   public String mixpanelToken;
   public boolean isLoginDelegated;
+  public boolean isLogoutCorsEnabled;
   public String tasklistUrl;
   public boolean resourcePermissionsEnabled;
   public boolean multiTenancyEnabled;
@@ -50,7 +51,7 @@ public class ClientConfig {
     // when operating in SaaS we don't have the logout option.
     canLogout = securityConfiguration.getAuthentication().getOidc().getOrganizationId() == null;
     isLoginDelegated = profileService.isLoginDelegated();
-    tasklistUrl = operateProperties.getTasklistUrl();
+    isLogoutCorsEnabled = securityConfiguration.getAuthentication().getLogoutCorsEnabled();
     resourcePermissionsEnabled = securityConfiguration.getAuthorizations().isEnabled();
     multiTenancyEnabled = securityConfiguration.getMultiTenancy().isChecksEnabled();
     databaseType = environmentService.getDatabaseType();

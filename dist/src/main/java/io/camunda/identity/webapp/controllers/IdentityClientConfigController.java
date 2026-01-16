@@ -25,6 +25,7 @@ public class IdentityClientConfigController {
   private static final Logger LOG = LoggerFactory.getLogger(IdentityClientConfigController.class);
 
   private static final String IS_OIDC = "isOidc";
+  private static final String IS_LOGOUT_CORS_ENABLED = "isLogoutCorsEnabled";
   private static final String IS_CAMUNDA_GROUPS_ENABLED = "isCamundaGroupsEnabled";
   private static final String IS_TENANTS_API_ENABLED = "isTenantsApiEnabled";
   private static final String ORGANIZATION_ID = "organizationId";
@@ -57,6 +58,9 @@ public class IdentityClientConfigController {
     final var saasConfiguration = securityConfiguration.getSaas();
 
     config.put(IS_OIDC, String.valueOf(isOidcAuthentication(securityConfiguration)));
+    config.put(
+        IS_LOGOUT_CORS_ENABLED,
+        String.valueOf(securityConfiguration.getAuthentication().getLogoutCorsEnabled()));
     config.put(
         IS_CAMUNDA_GROUPS_ENABLED, String.valueOf(isCamundaGroupsEnabled(securityConfiguration)));
     config.put(

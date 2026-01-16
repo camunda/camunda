@@ -29,6 +29,7 @@ export declare global {
       baseName?: string;
       canLogout?: boolean;
       isLoginDelegated?: boolean;
+      isLogoutCorsEnabled?: boolean;
       organizationId?: null | string;
       clusterId?: null | string;
       mixpanelToken?: null | string;

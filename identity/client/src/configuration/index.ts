@@ -20,6 +20,10 @@ const loginApiUrl = "/login";
 const logoutApiUrl = "/logout";
 
 export const isOIDC = getClientConfigBoolean("isOidc", false);
+export const isLogoutCorsEnabled = getClientConfigBoolean(
+  "isLogoutCorsEnabled",
+  true,
+);
 export const isCamundaGroupsEnabled = getClientConfigBoolean(
   "isCamundaGroupsEnabled",
   true,
