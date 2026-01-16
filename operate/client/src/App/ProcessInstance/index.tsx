@@ -44,6 +44,7 @@ import {
 import {notificationsStore} from 'modules/stores/notifications';
 import {useNavigate} from 'react-router-dom';
 import {Locations} from 'modules/Routes';
+import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 import {IS_ELEMENT_SELECTION_V2} from 'modules/feature-flags';
 
 const ProcessInstance: React.FC = observer(() => {
@@ -58,6 +59,7 @@ const ProcessInstance: React.FC = observer(() => {
   const isRootNodeSelected = useIsRootNodeSelected();
   const rootNode = useRootNode();
   const navigate = useNavigate();
+  const {clearSelection} = useProcessInstanceElementSelection();
 
   const {isNavigationInterrupted, confirmNavigation, cancelNavigation} =
     useCallbackPrompt({
@@ -65,7 +67,7 @@ const ProcessInstance: React.FC = observer(() => {
       ignoreSearchParams: true,
     });
 
-if (IS_ELEMENT_SELECTION_V2) {
+  if (IS_ELEMENT_SELECTION_V2) {
     useClearSelectionOnModificationUndo();
   }
 
@@ -90,6 +92,9 @@ if (IS_ELEMENT_SELECTION_V2) {
     const disposer = reaction(
       () => modificationsStore.isModificationModeEnabled,
       (isModificationModeEnabled) => {
+        if (IS_ELEMENT_SELECTION_V2) {
+          clearSelection();
+        }
         if (!isModificationModeEnabled) {
           instanceHistoryModificationStore.reset();
         }
@@ -99,7 +104,7 @@ if (IS_ELEMENT_SELECTION_V2) {
     return () => {
       disposer();
     };
-  }, [processInstance]);
+  }, [processInstance, clearSelection]);
 
   const isInitialized = useRef(false);
   useEffect(() => {
