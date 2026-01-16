@@ -27,13 +27,15 @@ import {BatchStateIndicator} from 'App/BatchOperations/BatchStateIndicator';
 import {
   PageContainer,
   ContentContainer,
-  PageHeader,
+  BreadcrumbBar,
   TilesContainer,
   Tile,
   TileLabel,
+  Header,
 } from './styled';
 import {notificationsStore} from 'modules/stores/notifications';
 import {BatchItemsTable} from './BatchItemsTable';
+import {OperationsActions} from './OperationActions';
 
 const renderWithLoading = (isLoading: boolean, content: React.ReactNode) =>
   isLoading ? <SkeletonText data-testid="text-skeleton" /> : content;
@@ -106,7 +108,7 @@ const BatchOperation: React.FC = () => {
   return (
     <PageContainer gap={5}>
       <VisuallyHiddenH1>Batch Operations</VisuallyHiddenH1>
-      <PageHeader>
+      <BreadcrumbBar>
         <Breadcrumb noTrailingSlash>
           <BreadcrumbItem>
             <Link
@@ -130,9 +132,20 @@ const BatchOperation: React.FC = () => {
             <div>{renderWithLoading(isLoading, operationType)}</div>
           </BreadcrumbItem>
         </Breadcrumb>
-      </PageHeader>
+      </BreadcrumbBar>
       <ContentContainer gap={5}>
-        <h3>{renderWithLoading(isLoading, operationType)}</h3>
+        {renderWithLoading(
+          isLoading,
+          <Header>
+            <h3>{operationType}</h3>
+            {state && (
+              <OperationsActions
+                batchOperationKey={batchOperationKey}
+                batchOperationState={state}
+              />
+            )}
+          </Header>,
+        )}
         {error && (
           <InlineNotification
             kind="error"
