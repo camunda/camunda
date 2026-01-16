@@ -9,18 +9,13 @@ package io.camunda.zeebe.engine.processing.usertask.processors;
 
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
-import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
-import java.util.Optional;
-import java.util.function.BiFunction;
 
 public class UserTaskCommandPreconditionChecker {
 
@@ -32,9 +27,6 @@ public class UserTaskCommandPreconditionChecker {
   private final List<LifecycleState> validLifecycleStates;
   private final String intent;
   private final AuthorizationCheckBehavior authCheckBehavior;
-  private final BiFunction<
-          TypedRecord<UserTaskRecord>, UserTaskRecord, Either<Rejection, UserTaskRecord>>
-      additionalChecks;
   private final UserTaskState userTaskState;
 
   public UserTaskCommandPreconditionChecker(
@@ -42,51 +34,32 @@ public class UserTaskCommandPreconditionChecker {
       final String intent,
       final UserTaskState userTaskState,
       final AuthorizationCheckBehavior authCheckBehavior) {
-    this(validLifecycleStates, intent, null, userTaskState, authCheckBehavior);
-  }
-
-  public UserTaskCommandPreconditionChecker(
-      final List<LifecycleState> validLifecycleStates,
-      final String intent,
-      final BiFunction<
-              TypedRecord<UserTaskRecord>, UserTaskRecord, Either<Rejection, UserTaskRecord>>
-          additionalChecks,
-      final UserTaskState userTaskState,
-      final AuthorizationCheckBehavior authCheckBehavior) {
     this.validLifecycleStates = validLifecycleStates;
     this.intent = intent;
     this.authCheckBehavior = authCheckBehavior;
-    this.additionalChecks = additionalChecks;
     this.userTaskState = userTaskState;
   }
 
-  protected Either<Rejection, UserTaskRecord> check(final TypedRecord<UserTaskRecord> command) {
+  protected Either<Rejection, UserTaskRecord> checkUserTaskExists(
+      final TypedRecord<UserTaskRecord> command) {
     final long userTaskKey = command.getKey();
-    final var persistedRecord =
+    final var persistedUserTask =
         userTaskState.getUserTask(userTaskKey, authCheckBehavior.getAuthorizedTenantIds(command));
 
-    if (persistedRecord == null) {
+    if (persistedUserTask == null) {
       return Either.left(
           new Rejection(
               RejectionType.NOT_FOUND,
               String.format(NO_USER_TASK_FOUND_MESSAGE, intent, userTaskKey)));
     }
 
-    final var authRequest =
-        AuthorizationRequest.builder()
-            .command(command)
-            .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-            .permissionType(PermissionType.UPDATE_USER_TASK)
-            .tenantId(persistedRecord.getTenantId())
-            .addResourceId(persistedRecord.getBpmnProcessId())
-            .build();
-    final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(authRequest);
-    if (isAuthorized.isLeft()) {
-      return Either.left(isAuthorized.getLeft());
-    }
+    return Either.right(persistedUserTask);
+  }
 
+  protected Either<Rejection, UserTaskRecord> checkLifecycleState(
+      final TypedRecord<UserTaskRecord> command, final UserTaskRecord persistedUserTask) {
+    final long userTaskKey = command.getKey();
     final LifecycleState lifecycleState = userTaskState.getLifecycleState(userTaskKey);
-
     if (!validLifecycleStates.contains(lifecycleState)) {
       return Either.left(
           new Rejection(
@@ -94,9 +67,6 @@ public class UserTaskCommandPreconditionChecker {
               String.format(INVALID_USER_TASK_STATE_MESSAGE, intent, userTaskKey, lifecycleState)));
     }
 
-    return Optional.ofNullable(additionalChecks)
-        .map(checks -> checks.apply(command, persistedRecord))
-        .filter(Either::isLeft)
-        .orElse(Either.right(persistedRecord));
+    return Either.right(persistedUserTask);
   }
 }
