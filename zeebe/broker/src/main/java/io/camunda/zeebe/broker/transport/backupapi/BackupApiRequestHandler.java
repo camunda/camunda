@@ -20,6 +20,8 @@ import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.protocol.impl.encoding.BackupListResponse;
 import io.camunda.zeebe.protocol.impl.encoding.BackupStatusResponse;
 import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse;
+import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse.CheckpointInfo;
+import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse.PartitionBackupRange;
 import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse.PartitionCheckpointState;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
@@ -98,7 +100,7 @@ public final class BackupApiRequestHandler
       case QUERY_STATUS -> handleQueryStatusRequest(requestReader, responseWriter, errorWriter);
       case LIST -> handleListBackupRequest(requestReader, responseWriter, errorWriter);
       case DELETE -> handleDeleteBackupRequest(requestReader, responseWriter, errorWriter);
-      case QUERY_STATE -> handleQueryStateRequest(responseWriter);
+      case QUERY_STATE -> handleQueryStateRequest(responseWriter, errorWriter);
       default ->
           CompletableActorFuture.completed(unknownRequest(errorWriter, requestReader.type()));
     };
@@ -214,7 +216,7 @@ public final class BackupApiRequestHandler
   }
 
   private ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>> handleQueryStateRequest(
-      final BackupApiResponseWriter responseWriter) {
+      final BackupApiResponseWriter responseWriter, final ErrorResponseWriter errorWriter) {
     final ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>> result =
         new CompletableActorFuture<>();
     final var response = new CheckpointStateResponse();
@@ -239,8 +241,50 @@ public final class BackupApiRequestHandler
               checkpointState.getLatestCheckpointPosition());
       response.getCheckpointStates().add(cpState);
     }
-    result.complete(Either.right(responseWriter.withCheckpointState(response)));
+
+    backupManager
+        .getBackupRangeStatus()
+        .onComplete(
+            (ranges, error) -> {
+              if (error != null) {
+                errorWriter.errorCode(ErrorCode.INTERNAL_ERROR).errorMessage(error.getMessage());
+                result.complete(Either.left(errorWriter));
+                return;
+              }
+              response.setRanges(
+                  ranges.stream()
+                      .map(
+                          r ->
+                              new PartitionBackupRange(
+                                  partitionId,
+                                  fromBackupStatus(r.first()),
+                                  fromBackupStatus(r.last()),
+                                  r.missingCheckpoints()))
+                      .toList());
+              result.complete(Either.right(responseWriter.withCheckpointState(response)));
+            });
+
     return result;
+  }
+
+  private CheckpointInfo fromBackupStatus(final BackupStatus backupStatus) {
+    if (backupStatus == null) {
+      return null;
+    }
+
+    final var descriptor =
+        backupStatus
+            .descriptor()
+            .orElseThrow(
+                () ->
+                    new IllegalArgumentException(
+                        "Expected a backup with descriptor: " + backupStatus));
+    return new CheckpointInfo(
+        backupStatus.id().checkpointId(),
+        descriptor.firstLogPosition().orElse(-1L),
+        descriptor.checkpointPosition(),
+        descriptor.checkpointType(),
+        descriptor.checkpointTimestamp());
   }
 
   private BackupListResponse buildBackupListResponse(final Collection<BackupStatus> backups) {
