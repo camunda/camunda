@@ -596,7 +596,7 @@ public final class SearchQueryRequestMapper {
         SearchQuerySortRequestMapper.toSearchQuerySort(
             SearchQuerySortRequestMapper.fromUserTaskAuditLogSearchRequest(request.getSort()),
             SortOptionBuilders::auditLog,
-            SearchQuerySortRequestMapper::applyUserTaskAuditLogSortField);
+            SearchQuerySortRequestMapper::applyAuditLogSortField);
 
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::auditLogSearchQuery);
   }

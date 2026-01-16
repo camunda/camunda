@@ -198,9 +198,8 @@ public class SearchQuerySortRequestMapper {
     return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
   }
 
-  static List<SearchQuerySortRequest<UserTaskAuditLogSearchQuerySortRequest.FieldEnum>>
-      fromUserTaskAuditLogSearchRequest(
-          final List<UserTaskAuditLogSearchQuerySortRequest> requests) {
+  static List<SearchQuerySortRequest<AuditLogSearchQuerySortRequest.FieldEnum>>
+      fromUserTaskAuditLogSearchRequest(final List<AuditLogSearchQuerySortRequest> requests) {
     return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
   }
 
@@ -831,23 +830,6 @@ public class SearchQuerySortRequestMapper {
         case TENANT_ID -> builder.tenantId();
         case TIMESTAMP -> builder.timestamp();
         case USER_TASK_KEY -> builder.userTaskKey();
-        default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
-      }
-    }
-    return validationErrors;
-  }
-
-  public static List<String> applyUserTaskAuditLogSortField(
-      final UserTaskAuditLogSearchQuerySortRequest.FieldEnum field,
-      final io.camunda.search.sort.AuditLogSort.Builder builder) {
-    final List<String> validationErrors = new ArrayList<>();
-    if (field == null) {
-      validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
-    } else {
-      switch (field) {
-        case TIMESTAMP -> builder.timestamp();
-        case OPERATION_TYPE -> builder.operationType();
-        case RESULT -> builder.result();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }
     }

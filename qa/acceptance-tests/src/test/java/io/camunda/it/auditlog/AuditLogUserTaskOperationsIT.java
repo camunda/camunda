@@ -52,6 +52,35 @@ public class AuditLogUserTaskOperationsIT {
   }
 
   @Test
+  void shouldSearchUserTaskAuditLogWithSort(
+      @Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
+    // given
+    final long userTaskKey = userTask.getUserTaskKey();
+
+    // when
+    final var auditLogItems =
+        client
+            .newUserTaskAuditLogSearchRequest(userTaskKey)
+            .sort(s -> s.timestamp().desc())
+            .send()
+            .join();
+
+    // then
+    assertThat(auditLogItems.items().size()).isEqualTo(3);
+    assertThat(auditLogItems.items().get(0).getOperationType())
+        .isEqualTo(AuditLogOperationTypeEnum.COMPLETE);
+    assertThat(auditLogItems.items().get(1).getOperationType())
+        .isEqualTo(AuditLogOperationTypeEnum.UPDATE);
+    assertThat(auditLogItems.items().get(2).getOperationType())
+        .isEqualTo(AuditLogOperationTypeEnum.ASSIGN);
+    for (int i = 0; i < auditLogItems.items().size() - 1; i++) {
+      final var current = auditLogItems.items().get(i);
+      final var next = auditLogItems.items().get(i + 1);
+      assertThat(current.getTimestamp()).isGreaterThanOrEqualTo(next.getTimestamp());
+    }
+  }
+
+  @Test
   void shouldSearchUserTaskAuditLogByKeyWithAssignOperation(
       @Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
     // given

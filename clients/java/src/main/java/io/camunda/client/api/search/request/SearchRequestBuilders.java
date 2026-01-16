@@ -66,7 +66,6 @@ import io.camunda.client.api.search.sort.TenantGroupSort;
 import io.camunda.client.api.search.sort.TenantSort;
 import io.camunda.client.api.search.sort.TenantUserSort;
 import io.camunda.client.api.search.sort.UserSort;
-import io.camunda.client.api.search.sort.UserTaskAuditLogSort;
 import io.camunda.client.api.search.sort.UserTaskSort;
 import io.camunda.client.api.search.sort.VariableSort;
 import io.camunda.client.api.statistics.filter.ProcessDefinitionStatisticsFilter;
@@ -122,7 +121,6 @@ import io.camunda.client.impl.search.sort.TenantGroupSortImpl;
 import io.camunda.client.impl.search.sort.TenantSortImpl;
 import io.camunda.client.impl.search.sort.TenantUserSortImpl;
 import io.camunda.client.impl.search.sort.UserSortImpl;
-import io.camunda.client.impl.search.sort.UserTaskAuditLogSortImpl;
 import io.camunda.client.impl.search.sort.UserTaskSortImpl;
 import io.camunda.client.impl.search.sort.VariableSortImpl;
 import io.camunda.client.impl.statistics.filter.ProcessDefinitionStatisticsFilterImpl;
@@ -480,12 +478,6 @@ public final class SearchRequestBuilders {
     final UserTaskAuditLogFilter filter = new UserTaskAuditLogFilterImpl();
     fn.accept(filter);
     return filter;
-  }
-
-  public static UserTaskAuditLogSort userTaskAuditLogSort(final Consumer<UserTaskAuditLogSort> fn) {
-    final UserTaskAuditLogSort sort = new UserTaskAuditLogSortImpl();
-    fn.accept(sort);
-    return sort;
   }
 
   public static SearchRequestOffsetPage offsetPage(final Consumer<SearchRequestOffsetPage> fn) {
