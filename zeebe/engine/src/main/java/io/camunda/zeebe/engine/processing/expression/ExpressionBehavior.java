@@ -11,13 +11,13 @@ import io.camunda.zeebe.el.EvaluationResult;
 import io.camunda.zeebe.el.EvaluationWarning;
 import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.el.ExpressionLanguage;
-import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.protocol.impl.record.value.expression.ExpressionRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.util.Either;
+import java.time.Duration;
 
 public class ExpressionBehavior {
 
@@ -25,12 +25,11 @@ public class ExpressionBehavior {
 
   public ExpressionBehavior(
       final NamespacedEvaluationContext namespaceFullClusterContext,
-      final ExpressionLanguage expressionLanguage) {
+      final ExpressionLanguage expressionLanguage,
+      final Duration expressionEvaluationTimeout) {
     clusterExpressionProcessor =
         new ExpressionProcessor(
-            expressionLanguage,
-            namespaceFullClusterContext,
-            EngineConfiguration.DEFAULT_EXPRESSION_EVALUATION_TIMEOUT);
+            expressionLanguage, namespaceFullClusterContext, expressionEvaluationTimeout);
   }
 
   public Either<Rejection, ExpressionRecord> resolveExpression(

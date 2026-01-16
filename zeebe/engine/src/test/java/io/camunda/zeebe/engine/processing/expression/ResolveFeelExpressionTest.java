@@ -594,7 +594,7 @@ public class ResolveFeelExpressionTest {
     final var record =
         ENGINE_RULE
             .expression()
-            .withExpression("= for x in 0..1000000 return for y in 0..x return x + y")
+            .withExpression("=for x in 0..1000000 return for y in 0..x return x + y")
             .expectRejection()
             .resolve();
 
