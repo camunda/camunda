@@ -26,8 +26,7 @@ import org.slf4j.Logger;
  * records itself and also delegates to the repository to move dependent records (decisions, flow
  * node instances, variable updates, etc).
  */
-public class ProcessInstanceArchiverJob
-    extends ArchiverJob<ArchiveBatch.ProcessInstanceArchiveBatch> {
+public class ProcessInstanceArchiverJob extends ArchiverJob<ProcessInstanceArchiveBatch> {
 
   private final ListViewTemplate processInstanceTemplate;
   private final List<ProcessInstanceDependant> processInstanceDependants;
@@ -59,7 +58,7 @@ public class ProcessInstanceArchiverJob
   }
 
   @Override
-  CompletableFuture<ArchiveBatch.ProcessInstanceArchiveBatch> getNextBatch() {
+  CompletableFuture<ProcessInstanceArchiveBatch> getNextBatch() {
     return getArchiverRepository().getProcessInstancesNextBatch();
   }
 

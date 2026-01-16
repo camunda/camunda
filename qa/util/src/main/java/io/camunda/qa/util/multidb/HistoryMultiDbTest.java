@@ -11,6 +11,7 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import org.junit.jupiter.api.Tag;
 
 /**
  * Extension of the {@link MultiDbTest} annotation, to mark a test as history related test, which
@@ -23,5 +24,6 @@ import java.lang.annotation.Target;
  */
 @Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
+@Tag("history")
 @MultiDbTest
 public @interface HistoryMultiDbTest {}

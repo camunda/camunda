@@ -20,6 +20,16 @@ on:
         required: false
         type: string
         description: The database docker image version to be used during the tests. Will be set as env variable IMAGE_VERSION. If not set, the default value from the docker-compose file will be used.
+      maven-profiles:
+        required: false
+        type: string
+        default: "multi-db-test"
+        description: Comma-separated list of Maven profiles to activate during the test run (e.g., "multi-db-test", "history"). The profiles parallel-tests,extract-flaky-tests,skipFrontendBuild are always included.
+      test-type-label:
+        required: false
+        type: string
+        default: "Database"
+        description: Label for the test type used in artifact names and job descriptions (e.g., "Database", "History").
       notify-slack-on-failure:
         required: false
         type: boolean
@@ -58,7 +68,7 @@ jobs:
       # start the required database service
       - name: Start Database service
         if: ${{ inputs.database-type != 'h2' }}
-        run: docker-compose -f db/docker-compose.yml up -d ${{inputs.database-type}}
+        run: docker-compose -f db/docker-compose.yml up -d ${{ inputs.database-type }}
       # Build the platform before running the integration tests; skipping frontend
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
@@ -79,12 +89,12 @@ jobs:
           -D failsafe.rerunFailingTestsCount=3
           -D flaky.test.reportDir=failsafe-reports
           -D test.integration.camunda.database.type=${{inputs.it-database-type}}
-          -P parallel-tests,extract-flaky-tests,skipFrontendBuild,multi-db-test
+          -P parallel-tests,extract-flaky-tests,skipFrontendBuild,${{inputs.maven-profiles}}
           -pl 'qa/acceptance-tests'
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Stop Database service
-        if: always()
+        if: ${{ always() && inputs.database-type != 'h2' }}
         run: docker-compose -f db/docker-compose.yml down
       - name: Analyze Test Runs
         id: analyze-test-run
@@ -96,7 +106,7 @@ jobs:
         uses: ./.github/actions/collect-test-artifacts
         if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
         with:
-          name: "[IT] Database - ${{inputs.database-type}}"
+          name: "[IT] ${{inputs.test-type-label}} - ${{inputs.database-type}}"
       - name: Observe build status
         if: always()
         continue-on-error: true

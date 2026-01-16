@@ -419,11 +419,17 @@ public class CamundaMultiDBExtension
 
     if (isHistoryRelatedTest) {
       // make sure history clean up policies are applied more often
-      final Duration pollInterval =
-          getDatabaseType(context) == DatabaseType.ES
-              ? Duration.ofSeconds(5)
-              : Duration.ofMinutes(1);
-      setupHelper.applyIndexPoliciesPollInterval(pollInterval);
+      switch (getDatabaseType(context)) {
+        case ES, LOCAL:
+          setupHelper.applyIndexPoliciesPollInterval(Duration.ofSeconds(1));
+          break;
+        case OS:
+          setupHelper.applyIndexPoliciesPollInterval(
+              Duration.ofMinutes(1)); // OpenSearch can't go lower
+          break;
+        default:
+          break;
+      }
     }
 
     // we need to close the test application before cleaning up
@@ -483,6 +489,7 @@ public class CamundaMultiDBExtension
     // such they are reusable and tests methods are not relying on order, etc.
     // We want to run tests in an efficient manner, and reduce setup time
     injectStaticClientField(testClass);
+    injectStaticDatabaseTypeField(testClass, context);
   }
 
   private KeycloakContainer setupKeycloak() {
@@ -722,6 +729,24 @@ public class CamundaMultiDBExtension
     }
   }
 
+  private void injectStaticDatabaseTypeField(
+      final Class<?> testClass, final ExtensionContext context) {
+    for (final Field field : testClass.getDeclaredFields()) {
+      try {
+        if (field.getType() == DatabaseType.class) {
+          if (ModifierSupport.isStatic(field)) {
+            field.setAccessible(true);
+            field.set(null, getDatabaseType(context));
+          } else {
+            fail("DatabaseType field couldn't be injected. Make sure it is static.");
+          }
+        }
+      } catch (final Exception ex) {
+        throw new RuntimeException(ex);
+      }
+    }
+  }
+
   private void injectStaticKeycloakContainerField(
       final Class<?> testClass, final KeycloakContainer keycloakContainer) {
     for (final Field field : testClass.getDeclaredFields()) {
@@ -759,8 +784,11 @@ public class CamundaMultiDBExtension
   public boolean supportsParameter(
       final ParameterContext parameterContext, final ExtensionContext extensionContext)
       throws ParameterResolutionException {
-    return isOwner(extensionContext)
-        && parameterContext.getParameter().getType() == CamundaClient.class;
+    if (!isOwner(extensionContext)) {
+      return false;
+    }
+    final Class<?> paramType = parameterContext.getParameter().getType();
+    return paramType == CamundaClient.class || paramType == DatabaseType.class;
   }
 
   @Override
@@ -771,7 +799,14 @@ public class CamundaMultiDBExtension
       throw new ParameterResolutionException(
           "CamundaMultiDBExtension cannot resolve parameter because it did not own the test class");
     }
-    return getCamundaClient(parameterContext.getParameter().getAnnotation(Authenticated.class));
+    final Class<?> paramType = parameterContext.getParameter().getType();
+    if (paramType == CamundaClient.class) {
+      return getCamundaClient(parameterContext.getParameter().getAnnotation(Authenticated.class));
+    }
+    if (paramType == DatabaseType.class) {
+      return getDatabaseType(extensionContext);
+    }
+    throw new ParameterResolutionException("Unsupported parameter type: " + paramType);
   }
 
   private CamundaClient getCamundaClient(final Authenticated authenticated) {

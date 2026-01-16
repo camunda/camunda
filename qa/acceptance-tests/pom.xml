@@ -661,7 +661,7 @@
             <artifactId>maven-failsafe-plugin</artifactId>
             <configuration>
               <groups>rdbms</groups>
-              <excludedGroups>multi-db-test, compatibility-test</excludedGroups>
+              <excludedGroups>multi-db-test, compatibility-test, history</excludedGroups>
             </configuration>
           </plugin>
         </plugins>
@@ -686,7 +686,7 @@
             <configuration>
               <failIfNoTests>false</failIfNoTests>
               <groups>multi-db-test</groups>
-              <excludedGroups>rdbms</excludedGroups>
+              <excludedGroups>rdbms, history</excludedGroups>
               <systemPropertyVariables>
                 <camunda.test.preferred.extension>multi-db</camunda.test.preferred.extension>
               </systemPropertyVariables>
@@ -716,9 +716,37 @@
             <configuration>
               <failIfNoTests>false</failIfNoTests>
               <groups>compatibility-test</groups>
-              <excludedGroups>rdbms</excludedGroups>
+              <excludedGroups>rdbms, history</excludedGroups>
               <systemPropertyVariables>
                 <camunda.test.preferred.extension>compatibility</camunda.test.preferred.extension>
+              </systemPropertyVariables>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
+    <!--
+    This profile will run all tests annotated with @Tag("history").
+    The profile is mainly used to run history-related tests that can be executed against
+    multiple different databases.
+
+    For example against:
+    Elasticsearch, OpenSearch, H2, etc.
+    -->
+    <profile>
+      <id>history</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration>
+              <failIfNoTests>false</failIfNoTests>
+              <groups>history</groups>
+              <excludedGroups>rdbms</excludedGroups>
+              <systemPropertyVariables>
+                <camunda.test.preferred.extension>multi-db</camunda.test.preferred.extension>
               </systemPropertyVariables>
             </configuration>
           </plugin>
