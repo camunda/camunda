@@ -18,7 +18,6 @@ import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.value.ImmutableJobBatchRecordValue;
@@ -620,15 +619,6 @@ final class OpensearchExporterIT {
     private void configureExporter(final Consumer<OpensearchExporterConfiguration> configurator) {
       // Apply caller-specific config (e.g. retention, priority)
       configurator.accept(config);
-
-      // In these index-settings tests we always want all index-enabled value types and record types
-      // to be exported; they are not about filtering semantics.
-      config.setIncludeEnabledRecords(true);
-
-      // Ensure record-type indexing is enabled for the types we may see
-      TestSupport.setIndexingForRecordType(config.index, RecordType.EVENT, true);
-      TestSupport.setIndexingForRecordType(config.index, RecordType.COMMAND, true);
-      TestSupport.setIndexingForRecordType(config.index, RecordType.COMMAND_REJECTION, true);
 
       exporter.configure(exporterTestContext);
       exporter.open(controller);

@@ -21,7 +21,6 @@ import java.util.Set;
 
 public final class VariableTypeFilter implements ExporterRecordFilter, RecordVersionFilter {
 
-  private static final String LIST_SEPARATOR = ";";
   private final ObjectMapper objectMapper;
   private final Set<VariableValueType> inclusion;
   private final Set<VariableValueType> exclusion;

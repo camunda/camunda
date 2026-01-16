@@ -22,7 +22,6 @@ import io.camunda.zeebe.exporter.test.ExporterTestContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
 import io.camunda.zeebe.protocol.record.ImmutableRecord.Builder;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.value.ImmutableJobBatchRecordValue;
@@ -336,6 +335,12 @@ final class ElasticsearchExporterIT {
       assertIndexSettingsHasNoLifecyclePolicy(response1);
     }
 
+    /**
+     * Default timeout for elasticsearch `PUT /<target>/_settings` is 30 seconds.
+     *
+     * <p>500 records each has a shard and a replica means 1000 shards, which is the maximum open
+     * shards in a one node cluster
+     */
     @Test
     void shouldNotTimeoutWhenUpdatingLifecyclePolicyForExistingIndices() {
       // given
@@ -438,15 +443,6 @@ final class ElasticsearchExporterIT {
       // Apply caller-specific config (e.g. retention, priority)
       configurator.accept(config);
 
-      // In these index-settings tests we always want all index-enabled value types and record types
-      // to be exported; they are not about filtering semantics.
-      config.setIncludeEnabledRecords(true);
-
-      // Ensure record-type indexing is enabled for all non-sentinel types
-      TestSupport.setIndexingForRecordType(config.index, RecordType.EVENT, true);
-      TestSupport.setIndexingForRecordType(config.index, RecordType.COMMAND, true);
-      TestSupport.setIndexingForRecordType(config.index, RecordType.COMMAND_REJECTION, true);
-
       exporter.configure(exporterTestContext);
       exporter.open(controller);
     }
@@ -486,6 +482,9 @@ final class ElasticsearchExporterIT {
         export(record2);
       }
 
+      // then
+      // If the templates are not created then the dynamically created indices will not have an
+      // alias versus with a template as the template defines an alias.
       final var firstRecordIndexName = indexRouter.indexFor(record);
       final var firstRecordIndexAliases =
           testClient

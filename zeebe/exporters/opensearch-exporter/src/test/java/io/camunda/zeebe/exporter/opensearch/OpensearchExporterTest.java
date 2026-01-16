@@ -30,7 +30,6 @@ import io.camunda.zeebe.protocol.record.ImmutableRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.util.VersionUtil;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -78,8 +77,6 @@ final class OpensearchExporterTest {
     // when
     exporter.open(controller);
     final Record mockRecord = mock(Record.class);
-    when(mockRecord.getRecordType()).thenReturn(RecordType.EVENT);
-    when(mockRecord.getIntent()).thenReturn(mock(Intent.class));
     when(mockRecord.getValueType()).thenReturn(ValueType.PROCESS_INSTANCE);
     when(mockRecord.getBrokerVersion()).thenReturn(VersionUtil.getVersionLowerCase());
 
@@ -124,8 +121,6 @@ final class OpensearchExporterTest {
 
     // when
     final var recordMock = mock(Record.class);
-    when(recordMock.getRecordType()).thenReturn(RecordType.EVENT);
-    when(recordMock.getIntent()).thenReturn(mock(Intent.class));
     when(recordMock.getValueType()).thenReturn(ValueType.PROCESS_INSTANCE);
     when(recordMock.getBrokerVersion()).thenReturn(VersionUtil.getVersionLowerCase());
     exporter.export(recordMock);
@@ -146,8 +141,6 @@ final class OpensearchExporterTest {
 
     // when
     final var recordMock = mock(Record.class);
-    when(recordMock.getRecordType()).thenReturn(RecordType.EVENT);
-    when(recordMock.getIntent()).thenReturn(mock(Intent.class));
     when(recordMock.getValueType()).thenReturn(ValueType.PROCESS_INSTANCE);
     when(recordMock.getBrokerVersion()).thenReturn(VersionUtil.getVersionLowerCase());
     exporter.export(recordMock);
@@ -169,8 +162,6 @@ final class OpensearchExporterTest {
 
     // when
     final var recordMock = mock(Record.class);
-    when(recordMock.getRecordType()).thenReturn(RecordType.EVENT);
-    when(recordMock.getIntent()).thenReturn(mock(Intent.class));
     when(recordMock.getValueType()).thenReturn(ValueType.PROCESS_INSTANCE);
     when(recordMock.getBrokerVersion()).thenReturn(VersionUtil.getVersionLowerCase());
     exporter.export(recordMock);
@@ -268,8 +259,6 @@ final class OpensearchExporterTest {
 
       // when
       final var recordMock = mock(Record.class);
-      when(recordMock.getRecordType()).thenReturn(RecordType.EVENT);
-      when(recordMock.getIntent()).thenReturn(mock(Intent.class));
       when(recordMock.getValueType()).thenReturn(ValueType.PROCESS_INSTANCE);
       when(recordMock.getBrokerVersion()).thenReturn(VersionUtil.getVersionLowerCase());
       exporter.export(recordMock);
@@ -287,8 +276,6 @@ final class OpensearchExporterTest {
 
       // when
       final var recordMock = mock(Record.class);
-      when(recordMock.getRecordType()).thenReturn(RecordType.EVENT);
-      when(recordMock.getIntent()).thenReturn(mock(Intent.class));
       when(recordMock.getValueType()).thenReturn(ValueType.PROCESS_INSTANCE);
       when(recordMock.getBrokerVersion()).thenReturn(VersionUtil.getVersionLowerCase());
       exporter.export(recordMock);
@@ -308,8 +295,6 @@ final class OpensearchExporterTest {
 
       // when
       final var recordMock = mock(Record.class);
-      when(recordMock.getRecordType()).thenReturn(RecordType.EVENT);
-      when(recordMock.getIntent()).thenReturn(mock(Intent.class));
       when(recordMock.getValueType()).thenReturn(ValueType.PROCESS_INSTANCE);
       when(recordMock.getBrokerVersion()).thenReturn(VersionUtil.getVersionLowerCase());
       exporter.export(recordMock);
@@ -329,8 +314,6 @@ final class OpensearchExporterTest {
 
       // when
       final var recordMock = mock(Record.class);
-      when(recordMock.getRecordType()).thenReturn(RecordType.EVENT);
-      when(recordMock.getIntent()).thenReturn(mock(Intent.class));
       when(recordMock.getValueType()).thenReturn(ValueType.PROCESS_INSTANCE);
       when(recordMock.getBrokerVersion()).thenReturn(VersionUtil.getVersionLowerCase());
       exporter.export(recordMock);
@@ -351,8 +334,6 @@ final class OpensearchExporterTest {
 
       // when
       final var recordMock = mock(Record.class);
-      when(recordMock.getRecordType()).thenReturn(RecordType.EVENT);
-      when(recordMock.getIntent()).thenReturn(mock(Intent.class));
       when(recordMock.getValueType()).thenReturn(ValueType.PROCESS_INSTANCE);
       when(recordMock.getBrokerVersion()).thenReturn(VersionUtil.getVersionLowerCase());
 
