@@ -152,7 +152,6 @@
                 <typeMapping>VariableKeyFilterProperty=String</typeMapping>
                 <!-- map to custom model classes -->
                 <typeMapping>DateTimeFilterProperty=SimpleDateTimeFilterProperty</typeMapping>
-                <typeMapping>SearchQueryPageRequest=SimpleSearchQueryPageRequest</typeMapping>
                 <!-- enum filter properties mapped to advanced model enum types for equality behavior -->
                 <typeMapping>AuditLogActorTypeFilterProperty=io.camunda.gateway.protocol.model.AuditLogActorTypeEnum</typeMapping>
                 <typeMapping>AuditLogResultFilterProperty=io.camunda.gateway.protocol.model.AuditLogResultEnum</typeMapping>
@@ -179,9 +178,8 @@
               <generateModels>true</generateModels>
               <generateModelDocumentation>false</generateModelDocumentation>
               <generateModelTests>false</generateModelTests>
-              <!-- validate the spec on every generation -->
-              <skipValidateSpec>false</skipValidateSpec>
-              <openapiNormalizer>REF_AS_PARENT_IN_ALLOF=true</openapiNormalizer>
+              <!-- no validation needed, done in the advanced execution already -->
+              <skipValidateSpec>true</skipValidateSpec>
               <configOptions>
                 <additionalModelTypeAnnotations>@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)</additionalModelTypeAnnotations>
                 <serializationLibrary>jackson</serializationLibrary>
@@ -189,6 +187,7 @@
                 <jdk8>true</jdk8>
                 <openApiNullable>false</openApiNullable>
                 <useEnumCaseInsensitive>true</useEnumCaseInsensitive>
+                <useOneOfInterfaces>false</useOneOfInterfaces>
               </configOptions>
             </configuration>
           </execution>

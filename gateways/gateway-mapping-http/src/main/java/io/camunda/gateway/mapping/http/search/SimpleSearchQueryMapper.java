@@ -26,8 +26,8 @@ import io.camunda.gateway.protocol.model.SortOrderEnum;
 import io.camunda.gateway.protocol.model.StringFilterProperty;
 import io.camunda.gateway.protocol.model.simple.IncidentFilter;
 import io.camunda.gateway.protocol.model.simple.IncidentSearchQuerySortRequest;
+import io.camunda.gateway.protocol.model.simple.SearchQueryPageRequest;
 import io.camunda.gateway.protocol.model.simple.SimpleDateTimeFilterProperty;
-import io.camunda.gateway.protocol.model.simple.SimpleSearchQueryPageRequest;
 import io.camunda.service.exception.ServiceError;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
@@ -41,22 +41,22 @@ import java.util.stream.Stream;
  * <p>This class provides static helper methods to:
  *
  * <ul>
- *   <li>Validate and map simple {@link SimpleSearchQueryPageRequest} instances to advanced
- *       pagination requests (e.g. limit, cursor, and offset-based pagination).
+ *   <li>Validate and map simple {@link SearchQueryPageRequest} instances to advanced pagination
+ *       requests (e.g. limit, cursor, and offset-based pagination).
  *   <li>Map simple filters to advanced query components with equality semantics.
  */
 public class SimpleSearchQueryMapper {
 
   public static io.camunda.gateway.protocol.model.SearchQueryPageRequest toPageRequest(
-      final SimpleSearchQueryPageRequest page) {
+      final SearchQueryPageRequest page) {
     if (page == null) {
       return new LimitPagination();
     }
     // validate fields
-    if (page.from() == null
-        && page.before() == null
-        && page.after() == null
-        && page.limit() == null) {
+    if (page.getFrom() == null
+        && page.getBefore() == null
+        && page.getAfter() == null
+        && page.getLimit() == null) {
       throw new ServiceException(
           new ServiceError(
               ERROR_MESSAGE_AT_LEAST_ONE_FIELD.formatted(
@@ -64,7 +64,9 @@ public class SimpleSearchQueryMapper {
                   + " in the page.",
               Status.INVALID_ARGUMENT));
     }
-    if (Stream.of(page.from(), page.before(), page.after()).filter(not(Objects::isNull)).count()
+    if (Stream.of(page.getFrom(), page.getBefore(), page.getAfter())
+            .filter(not(Objects::isNull))
+            .count()
         > 1) {
       throw new ServiceException(
           new ServiceError(
@@ -73,16 +75,16 @@ public class SimpleSearchQueryMapper {
               Status.INVALID_ARGUMENT));
     }
     // create page request
-    if (page.before() != null) {
-      return new CursorBackwardPagination().before(page.before()).limit(page.limit());
+    if (page.getBefore() != null) {
+      return new CursorBackwardPagination().before(page.getBefore()).limit(page.getLimit());
     }
-    if (page.after() != null) {
-      return new CursorForwardPagination().after(page.after()).limit(page.limit());
+    if (page.getAfter() != null) {
+      return new CursorForwardPagination().after(page.getAfter()).limit(page.getLimit());
     }
-    if (page.from() != null) {
-      return new OffsetPagination().from(page.from()).limit(page.limit());
+    if (page.getFrom() != null) {
+      return new OffsetPagination().from(page.getFrom()).limit(page.getLimit());
     }
-    return new LimitPagination().limit(page.limit());
+    return new LimitPagination().limit(page.getLimit());
   }
 
   public static io.camunda.gateway.protocol.model.IncidentFilter toIncidentFilter(
