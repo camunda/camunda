@@ -121,7 +121,7 @@ class UserTaskAuthorizationIT {
     assertThat(problemException.code()).isEqualTo(403);
     assertThat(problemException.details().getDetail())
         .isEqualTo(
-            "Unauthorized to perform operation 'READ_USER_TASK' on resource 'PROCESS_DEFINITION'");
+            "Unauthorized to perform any of the operations: 'READ_USER_TASK' on 'PROCESS_DEFINITION' or 'READ' on 'USER_TASK'");
   }
 
   @Test
@@ -152,7 +152,7 @@ class UserTaskAuthorizationIT {
     assertThat(problemException.code()).isEqualTo(403);
     assertThat(problemException.details().getDetail())
         .isEqualTo(
-            "Unauthorized to perform operation 'READ_USER_TASK' on resource 'PROCESS_DEFINITION'");
+            "Unauthorized to perform any of the operations: 'READ_USER_TASK' on 'PROCESS_DEFINITION' or 'READ' on 'USER_TASK'");
   }
 
   @Test
@@ -184,7 +184,7 @@ class UserTaskAuthorizationIT {
     assertThat(problemException.code()).isEqualTo(403);
     assertThat(problemException.details().getDetail())
         .isEqualTo(
-            "Unauthorized to perform operation 'READ_USER_TASK' on resource 'PROCESS_DEFINITION'");
+            "Unauthorized to perform any of the operations: 'READ_USER_TASK' on 'PROCESS_DEFINITION' or 'READ' on 'USER_TASK'");
   }
 
   private long getUserTaskKey(final CamundaClient camundaClient, final String processId) {
