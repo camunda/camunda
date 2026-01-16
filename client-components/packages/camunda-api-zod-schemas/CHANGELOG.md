@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.0.30
+
+### 🚀 Enhancements
+
+- add optional `actorType` and `actorId` fields to batch operation schema ([#44029](https://github.com/camunda/camunda/pull/44029))
+- add `actorId` as a sortable field for batch operations query ([#44029](https://github.com/camunda/camunda/pull/44029))
+
+### 🩹 Fixes
+
+- update batch operation methods (`cancel`, `suspend`, `resume`) to use POST instead of PUT ([#44029](https://github.com/camunda/camunda/pull/44029))
+- remove `INCOMPLETED` from batch operation state enum ([#44029](https://github.com/camunda/camunda/pull/44029))
+
+### ❤️ Contributors
+
+- Omran Abazid ([@OmranAbazid](https://github.com/OmranAbazid))
+
 ## v0.0.29
 
 ### 🚀 Enhancements

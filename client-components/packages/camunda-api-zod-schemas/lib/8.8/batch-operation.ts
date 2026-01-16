@@ -36,7 +36,6 @@ const batchOperationStateSchema = z.enum([
 	'COMPLETED',
 	'PARTIALLY_COMPLETED',
 	'CANCELED',
-	'INCOMPLETED',
 	'FAILED',
 ]);
 type BatchOperationState = z.infer<typeof batchOperationStateSchema>;
@@ -50,6 +49,8 @@ const batchOperationSchema = z.object({
 	batchOperationType: batchOperationTypeSchema,
 	startDate: z.string().optional(),
 	endDate: z.string().optional(),
+	actorType: z.string().optional(),
+	actorId: z.string().optional(),
 	operationsTotalCount: z.number().int(),
 	operationsFailedCount: z.number().int(),
 	operationsCompletedCount: z.number().int(),
@@ -67,7 +68,7 @@ const batchOperationItemSchema = z.object({
 type BatchOperationItem = z.infer<typeof batchOperationItemSchema>;
 
 const queryBatchOperationsRequestBodySchema = getQueryRequestBodySchema({
-	sortFields: ['batchOperationKey', 'operationType', 'state', 'startDate', 'endDate'] as const,
+	sortFields: ['batchOperationKey', 'operationType', 'state', 'startDate', 'endDate', 'actorId'] as const,
 	filter: z
 		.object({
 			batchOperationKey: basicStringFilterSchema,
@@ -109,17 +110,17 @@ const queryBatchOperations: Endpoint = {
 };
 
 const cancelBatchOperation: Endpoint<{batchOperationKey: string}> = {
-	method: 'PUT',
+	method: 'POST',
 	getUrl: ({batchOperationKey}) => `/${API_VERSION}/batch-operations/${batchOperationKey}/cancellation`,
 };
 
 const suspendBatchOperation: Endpoint<{batchOperationKey: string}> = {
-	method: 'PUT',
+	method: 'POST',
 	getUrl: ({batchOperationKey}) => `/${API_VERSION}/batch-operations/${batchOperationKey}/suspension`,
 };
 
 const resumeBatchOperation: Endpoint<{batchOperationKey: string}> = {
-	method: 'PUT',
+	method: 'POST',
 	getUrl: ({batchOperationKey}) => `/${API_VERSION}/batch-operations/${batchOperationKey}/resumption`,
 };
 
