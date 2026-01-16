@@ -50,11 +50,16 @@ The script queries `operate-flownode-instance-*` which matches multiple indices:
 - **Current/active index**: `operate-flownode-instance-8.3.1_` (no date suffix)
 - **Historic/archived indices**: `operate-flownode-instance-8.3.1_2026-01-14`, `operate-flownode-instance-8.3.1_2026-01-13`, etc.
 
-When process instances complete, their flow node records are archived to date-stamped indices. The script automatically:
-1. Queries ALL matching indices (active + all historic)
-2. Fetches position values (Raft log position) to validate jumps
-3. Sorts all keys numerically across indices
-4. Analyzes jumps to determine if they're real overflows or normal time gaps
+When process instances complete, their flow node records are archived to date-stamped indices. The script will:
+
+1. Query Elasticsearch for all unique keys from `operate-flownode-instance-*` (with automatic pagination)
+2. Collect keys from ALL matching indices (active + all historic/archived indices with dates)
+3. Fetch position values (logstream position) for each key to distinguish real overflows from time gaps
+4. Sort all keys numerically to ensure correct ordering across indices
+5. Save results to `partition_${PARTITION_ID}_keys.txt`
+6. Analyze the keys to detect jumps > 1 million
+7. Validate jumps using position data to identify real key overflow issues
+8. Display any jumps found with timestamps and overflow assessment
 
 **Run the Analysis Script:**
 
@@ -63,19 +68,9 @@ When process instances complete, their flow node records are archived to date-st
 ES_URL="http://localhost:9200" PARTITION_ID=1 ./analyze-partition-keys.sh
 ```
 
-The script will:
-1. Query Elasticsearch for all unique keys from `operate-flownode-instance-*` (with automatic pagination)
-2. Collect keys from ALL matching indices (active + all historic/archived indices with dates)
-3. Fetch position values (Raft log position) for each key to distinguish real overflows from time gaps
-4. Sort all keys numerically to ensure correct ordering across indices
-5. Save results to `partition_${PARTITION_ID}_keys.txt`
-6. Analyze the keys to detect jumps > 1 million
-7. Validate jumps using position data to identify real key overflow issues
-8. Display any jumps found with timestamps and overflow assessment
-
 **Understanding Position-Based Validation:**
 
-When the script detects a key jump, it analyzes the `position` field (Raft log position) to distinguish between:
+When the script detects a key jump, it analyzes the `position` field (logstream position) to distinguish between:
 
 1. **Real Key Overflow (CRITICAL)**: Keys jump significantly while position values remain close (< 10,000 difference by default)
    - Indicates keys jumped during continuous processing
@@ -212,7 +207,7 @@ Action required: Review the jumps above and proceed with recovery procedure.
 The output file is a tab-separated text file with three columns:
 
 1. **Column 1**: `key` (sorted numerically)
-2. **Column 2**: `position` (Raft log position, may be "null" for historic records)
+2. **Column 2**: `position` (logstream position, may be "null" for historic records)
 3. **Column 3**: `timestamp` (when the record was created)
 
 **File naming:** `partition_${PARTITION_ID}_keys.txt`
