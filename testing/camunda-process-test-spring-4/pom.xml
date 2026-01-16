@@ -36,6 +36,8 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-process-test-spring</artifactId>
+      <!-- this dependency will be shaded into this artifact -->
+      <optional>true</optional>
       <exclusions>
         <!-- Exclude Spring Boot 3.x starter - we use 4.x version -->
         <exclusion>
@@ -50,6 +52,97 @@
       <groupId>io.camunda</groupId>
       <artifactId>camunda-spring-boot-4-starter</artifactId>
       <version>${project.version}</version>
+    </dependency>
+
+    <!--
+      Original dependencies of the shaded module, except `camunda-spring-boot-starter`.
+      This is done as the shaded module is declared as provided
+      and we cannot use the shade plugin's feature to promoteTransitiveDependencies
+      as this would reintroduce the dependency on `camunda-spring-boot-starter`.
+    -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-process-test-java</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-client-java</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-client-java</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-test</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-core</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-context</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-beans</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-test</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-autoconfigure</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.google.code.findbugs</groupId>
+      <artifactId>jsr305</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.checkerframework</groupId>
+      <artifactId>checker-qual</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.awaitility</groupId>
+      <artifactId>awaitility</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.httpcomponents.client5</groupId>
+      <artifactId>httpclient5</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.httpcomponents.core5</groupId>
+      <artifactId>httpcore5</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
     </dependency>
 
     <!-- Test dependencies -->
@@ -124,9 +217,9 @@
             </goals>
             <phase>package</phase>
             <configuration>
-              <createDependencyReducedPom>true</createDependencyReducedPom>
+              <createDependencyReducedPom>false</createDependencyReducedPom>
               <createSourcesJar>true</createSourcesJar>
-              <promoteTransitiveDependencies>true</promoteTransitiveDependencies>
+              <promoteTransitiveDependencies>false</promoteTransitiveDependencies>
               <artifactSet>
                 <includes>
                   <!-- Only include the base module in the shaded jar -->
@@ -157,10 +250,13 @@
           <ignoredNonTestScopedDependencies>
             <dependency>*</dependency>
           </ignoredNonTestScopedDependencies>
-          <!-- Ignore all unused, we inherit all from base -->
+          <!-- Ignore all unused, we duplicate all from the base module -->
           <ignoredUsedUndeclaredDependencies>
             <dependency>*</dependency>
           </ignoredUsedUndeclaredDependencies>
+          <ignoredUnusedDeclaredDependencies>
+            <dependency>*</dependency>
+          </ignoredUnusedDeclaredDependencies>
         </configuration>
       </plugin>
 
