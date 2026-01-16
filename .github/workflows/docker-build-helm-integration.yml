@@ -412,7 +412,7 @@ jobs:
           echo "Waiting for E2E workflow to complete in camunda/c8-cross-component-e2e-tests for ${{ github.sha }}"
 
           # Wait up to 40 min (80 x 30s)
-          for i in {1..80}; do
+          for _ in {1..80}; do
             RUN_ID=$(gh api -H "Accept: application/vnd.github+json" \
               /repos/camunda/c8-cross-component-e2e-tests/actions/runs \
               --jq '.workflow_runs[] | select(.head_sha=="${{ github.sha }}") | .id' | head -n1)
