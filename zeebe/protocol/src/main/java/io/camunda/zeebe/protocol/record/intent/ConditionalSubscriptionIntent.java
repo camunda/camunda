@@ -19,7 +19,8 @@ public enum ConditionalSubscriptionIntent implements ProcessInstanceRelatedInten
   CREATED((short) 0),
   TRIGGER((short) 1),
   TRIGGERED((short) 2),
-  DELETED((short) 3);
+  DELETED((short) 3),
+  MIGRATED((short) 4);
 
   private final short value;
   private final boolean shouldBanInstance;
@@ -44,6 +45,7 @@ public enum ConditionalSubscriptionIntent implements ProcessInstanceRelatedInten
       case CREATED:
       case TRIGGERED:
       case DELETED:
+      case MIGRATED:
         return true;
       default:
         return false;
@@ -60,6 +62,8 @@ public enum ConditionalSubscriptionIntent implements ProcessInstanceRelatedInten
         return TRIGGERED;
       case 3:
         return DELETED;
+      case 4:
+        return MIGRATED;
       default:
         return Intent.UNKNOWN;
     }

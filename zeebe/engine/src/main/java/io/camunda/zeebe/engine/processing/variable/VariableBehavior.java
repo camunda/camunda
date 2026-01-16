@@ -92,7 +92,7 @@ public final class VariableBehavior {
       variableEvent.ifPresent(variableEvents::add);
     }
 
-    conditionalBehavior.evaluateConditionals(processDefinitionKey, variableEvents);
+    conditionalBehavior.evaluateConditionals(processInstanceKey, variableEvents);
   }
 
   /**
@@ -170,7 +170,7 @@ public final class VariableBehavior {
       variableEvent.ifPresent(variableEvents::add);
     }
 
-    conditionalBehavior.evaluateConditionals(processDefinitionKey, variableEvents);
+    conditionalBehavior.evaluateConditionals(processInstanceKey, variableEvents);
   }
 
   /**
@@ -214,7 +214,7 @@ public final class VariableBehavior {
     final Optional<VariableEvent> variableEvent = setLocalVariable(variableRecord);
     final var variableEvents = variableEvent.map(List::of).orElseGet(List::of);
 
-    conditionalBehavior.evaluateConditionals(processDefinitionKey, variableEvents);
+    conditionalBehavior.evaluateConditionals(processInstanceKey, variableEvents);
   }
 
   private Optional<VariableEvent> setLocalVariable(final VariableRecord record) {

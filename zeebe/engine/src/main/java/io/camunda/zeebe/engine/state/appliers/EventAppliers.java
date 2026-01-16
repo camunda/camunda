@@ -181,6 +181,9 @@ public final class EventAppliers implements EventApplier {
     register(
         ConditionalSubscriptionIntent.DELETED,
         new ConditionalSubscriptionDeletedApplier(state.getConditionalSubscriptionState()));
+    register(
+        ConditionalSubscriptionIntent.MIGRATED,
+        new ConditionalSubscriptionMigratedApplier(state.getConditionalSubscriptionState()));
   }
 
   private void registerGlobalListenersEventAppliers(final MutableProcessingState state) {

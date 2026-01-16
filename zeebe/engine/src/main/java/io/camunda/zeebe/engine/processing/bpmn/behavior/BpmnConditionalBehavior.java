@@ -70,15 +70,12 @@ public class BpmnConditionalBehavior {
    *
    * <p>Note: These filters are optional. If they are not set, apply the filter as passed.
    *
-   * @param processDefinitionKey the process definition key to evaluate conditionals for
+   * @param processInstanceKey the process instance key to check if subscriptions exist for
    * @param variableEvents the list of variable events to evaluate conditionals for
    */
   public void evaluateConditionals(
-      final long processDefinitionKey, final List<VariableEvent> variableEvents) {
-
-    // performance optimization: skip evaluation if no conditional subscriptions exist for the
-    // process definition
-    if (!isConditionalSubscriptionExist(processDefinitionKey)) {
+      final long processInstanceKey, final List<VariableEvent> variableEvents) {
+    if (!isConditionalSubscriptionExist(processInstanceKey)) {
       return;
     }
 
@@ -187,9 +184,8 @@ public class BpmnConditionalBehavior {
     return evaluation.isRight() && evaluation.get().equals(true);
   }
 
-  private boolean isConditionalSubscriptionExist(final long processDefinitionKey) {
-    // no conditional subscriptions for the process definition, so skip evaluation
-    return conditionSubscriptionState.exists(processDefinitionKey);
+  private boolean isConditionalSubscriptionExist(final long processInstanceKey) {
+    return conditionSubscriptionState.exists(processInstanceKey);
   }
 
   public record VariableEvent(long scopeKey, VariableIntent intent, VariableRecord record) {
