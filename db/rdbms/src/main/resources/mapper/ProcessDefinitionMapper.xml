@@ -453,4 +453,12 @@
     <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
   </select>
+
+  <delete id="deleteByKeys">
+    DELETE FROM ${prefix}PROCESS_DEFINITION
+    WHERE PROCESS_DEFINITION_KEY IN
+    <foreach collection="processDefinitionKeys" item="key" open="(" separator="," close=")">
+      #{key}
+    </foreach>
+  </delete>
 </mapper>

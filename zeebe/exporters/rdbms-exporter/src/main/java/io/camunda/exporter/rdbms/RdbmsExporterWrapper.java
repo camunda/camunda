@@ -161,6 +161,7 @@ public class RdbmsExporterWrapper implements Exporter {
         new HistoryDeletionService(
             rdbmsWriters,
             rdbmsService.getHistoryDeletionDbReader(),
+            rdbmsService.getProcessInstanceReader(),
             new HistoryDeletionConfig(
                 config.getHistoryDeletion().getDelayBetweenRuns(),
                 config.getHistoryDeletion().getMaxDelayBetweenRuns(),
