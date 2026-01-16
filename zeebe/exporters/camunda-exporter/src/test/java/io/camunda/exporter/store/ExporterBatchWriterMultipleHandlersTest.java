@@ -213,87 +213,6 @@ public class ExporterBatchWriterMultipleHandlersTest {
     verify(batchRequest).execute(any());
   }
 
-  @Nested
-  final class ExportDurationObserverTest {
-    private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
-    private final ExporterBatchWriter batchWriter =
-        ExporterBatchWriter.Builder.begin(
-                new CamundaExporterMetrics(
-                    meterRegistry, InstantSource.fixed(Instant.ofEpochMilli(20L))))
-            .withHandler(
-                TestExportHandler.handlerAcceptingOnly(
-                    r -> r.getOperationReference() != Long.MAX_VALUE))
-            .build();
-    private final ProtocolFactory protocolFactory = new ProtocolFactory();
-    private final BatchRequest batchRequest = mock(BatchRequest.class);
-
-    @Test
-    void shouldObserveDurationOfHandledRecordsOnly() {
-      // given
-      final var observedRecords =
-          List.of(
-              protocolFactory.generateRecord(
-                  ValueType.PROCESS_INSTANCE, b -> b.withPosition(1L).withTimestamp(4L)),
-              protocolFactory.generateRecord(
-                  ValueType.PROCESS_INSTANCE, b -> b.withPosition(2L).withTimestamp(8L)));
-      final var unobservedRecord =
-          protocolFactory.generateRecord(
-              ValueType.PROCESS_INSTANCE,
-              b -> b.withPosition(10L).withTimestamp(12L).withOperationReference(Long.MAX_VALUE));
-
-      //  when
-      observedRecords.forEach(batchWriter::addRecord);
-      batchWriter.addRecord(unobservedRecord);
-      batchWriter.flush(batchRequest);
-
-      // then
-      final var timer = meterRegistry.get("zeebe.camunda.exporter.record.export.duration").timer();
-      Assertions.assertThat(timer.count()).isEqualTo(2);
-      Assertions.assertThat(timer.max(TimeUnit.MILLISECONDS)).isEqualTo(16L);
-      Assertions.assertThat(timer.mean(TimeUnit.MILLISECONDS)).isEqualTo(14L);
-    }
-
-    @Test
-    void shouldNotObserveSameMetricsOnSuccessiveFlush() {
-      // given
-      final var record =
-          protocolFactory.generateRecord(
-              ValueType.PROCESS_INSTANCE, b -> b.withPosition(1L).withTimestamp(4L));
-
-      //  when
-      batchWriter.addRecord(record);
-      batchWriter.addRecord(record);
-      batchWriter.addRecord(record);
-      batchWriter.flush(batchRequest);
-
-      // then
-      final var timer = meterRegistry.get("zeebe.camunda.exporter.record.export.duration").timer();
-      Assertions.assertThat(timer.count()).isOne();
-      Assertions.assertThat(timer.max(TimeUnit.MILLISECONDS)).isEqualTo(16L);
-      Assertions.assertThat(timer.mean(TimeUnit.MILLISECONDS)).isEqualTo(16L);
-    }
-
-    @Test
-    void shouldNotObserveSameRecordTwice() {
-      // given
-      final var record =
-          protocolFactory.generateRecord(
-              ValueType.PROCESS_INSTANCE, b -> b.withPosition(1L).withTimestamp(4L));
-
-      //  when
-      batchWriter.addRecord(record);
-      batchWriter.addRecord(record);
-      batchWriter.addRecord(record);
-      batchWriter.flush(batchRequest);
-
-      // then
-      final var timer = meterRegistry.get("zeebe.camunda.exporter.record.export.duration").timer();
-      Assertions.assertThat(timer.count()).isOne();
-      Assertions.assertThat(timer.max(TimeUnit.MILLISECONDS)).isEqualTo(16L);
-      Assertions.assertThat(timer.mean(TimeUnit.MILLISECONDS)).isEqualTo(16L);
-    }
-  }
-
   private static class TestEntity implements ExporterEntity<TestEntity> {
 
     private String id;
@@ -414,6 +333,87 @@ public class ExporterBatchWriterMultipleHandlersTest {
     @Override
     public String getIndexName() {
       return null;
+    }
+  }
+
+  @Nested
+  final class ExportDurationObserverTest {
+    private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
+    private final ExporterBatchWriter batchWriter =
+        ExporterBatchWriter.Builder.begin(
+                new CamundaExporterMetrics(
+                    meterRegistry, InstantSource.fixed(Instant.ofEpochMilli(20L))))
+            .withHandler(
+                TestExportHandler.handlerAcceptingOnly(
+                    r -> r.getOperationReference() != Long.MAX_VALUE))
+            .build();
+    private final ProtocolFactory protocolFactory = new ProtocolFactory();
+    private final BatchRequest batchRequest = mock(BatchRequest.class);
+
+    @Test
+    void shouldObserveDurationOfHandledRecordsOnly() {
+      // given
+      final var observedRecords =
+          List.of(
+              protocolFactory.generateRecord(
+                  ValueType.PROCESS_INSTANCE, b -> b.withPosition(1L).withTimestamp(4L)),
+              protocolFactory.generateRecord(
+                  ValueType.PROCESS_INSTANCE, b -> b.withPosition(2L).withTimestamp(8L)));
+      final var unobservedRecord =
+          protocolFactory.generateRecord(
+              ValueType.PROCESS_INSTANCE,
+              b -> b.withPosition(10L).withTimestamp(12L).withOperationReference(Long.MAX_VALUE));
+
+      //  when
+      observedRecords.forEach(batchWriter::addRecord);
+      batchWriter.addRecord(unobservedRecord);
+      batchWriter.flush(batchRequest);
+
+      // then
+      final var timer = meterRegistry.get("zeebe.camunda.exporter.record.export.duration").timer();
+      Assertions.assertThat(timer.count()).isEqualTo(2);
+      Assertions.assertThat(timer.max(TimeUnit.MILLISECONDS)).isEqualTo(16L);
+      Assertions.assertThat(timer.mean(TimeUnit.MILLISECONDS)).isEqualTo(14L);
+    }
+
+    @Test
+    void shouldNotObserveSameMetricsOnSuccessiveFlush() {
+      // given
+      final var record =
+          protocolFactory.generateRecord(
+              ValueType.PROCESS_INSTANCE, b -> b.withPosition(1L).withTimestamp(4L));
+
+      //  when
+      batchWriter.addRecord(record);
+      batchWriter.addRecord(record);
+      batchWriter.addRecord(record);
+      batchWriter.flush(batchRequest);
+
+      // then
+      final var timer = meterRegistry.get("zeebe.camunda.exporter.record.export.duration").timer();
+      Assertions.assertThat(timer.count()).isOne();
+      Assertions.assertThat(timer.max(TimeUnit.MILLISECONDS)).isEqualTo(16L);
+      Assertions.assertThat(timer.mean(TimeUnit.MILLISECONDS)).isEqualTo(16L);
+    }
+
+    @Test
+    void shouldNotObserveSameRecordTwice() {
+      // given
+      final var record =
+          protocolFactory.generateRecord(
+              ValueType.PROCESS_INSTANCE, b -> b.withPosition(1L).withTimestamp(4L));
+
+      //  when
+      batchWriter.addRecord(record);
+      batchWriter.addRecord(record);
+      batchWriter.addRecord(record);
+      batchWriter.flush(batchRequest);
+
+      // then
+      final var timer = meterRegistry.get("zeebe.camunda.exporter.record.export.duration").timer();
+      Assertions.assertThat(timer.count()).isOne();
+      Assertions.assertThat(timer.max(TimeUnit.MILLISECONDS)).isEqualTo(16L);
+      Assertions.assertThat(timer.mean(TimeUnit.MILLISECONDS)).isEqualTo(16L);
     }
   }
 }
