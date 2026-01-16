@@ -48,9 +48,9 @@ public class ProcessStoreElasticSearch implements ProcessStore {
   @Autowired private ProcessIndex processIndex;
   @Autowired private SecurityConfiguration securityConfiguration;
 
-  @Qualifier("tasklistEsClient")
+  @Qualifier("tasklistEs8Client")
   @Autowired
-  private ElasticsearchClient esClient;
+  private ElasticsearchClient es8Client;
 
   @Autowired private ElasticsearchTenantHelper tenantHelper;
 
@@ -73,7 +73,7 @@ public class ProcessStoreElasticSearch implements ProcessStore {
             .build();
 
     try {
-      final var response = esClient.search(request, ProcessEntity.class);
+      final var response = es8Client.search(request, ProcessEntity.class);
       if (response.hits().total().value() > 0) {
         return response.hits().hits().get(0).source();
       } else {
@@ -117,7 +117,7 @@ public class ProcessStoreElasticSearch implements ProcessStore {
             .build();
 
     try {
-      final var response = esClient.search(request, ProcessEntity.class);
+      final var response = es8Client.search(request, ProcessEntity.class);
       if (response.hits().total().value() > 0) {
         return response.hits().hits().get(0).source();
       } else {
@@ -143,7 +143,7 @@ public class ProcessStoreElasticSearch implements ProcessStore {
             .build();
 
     try {
-      final var response = esClient.search(request, ProcessEntity.class);
+      final var response = es8Client.search(request, ProcessEntity.class);
       if (response.hits().total().value() == 1) {
         return response.hits().hits().get(0).source();
       } else if (response.hits().total().value() > 1) {
@@ -432,7 +432,7 @@ public class ProcessStoreElasticSearch implements ProcessStore {
             .build();
 
     try {
-      final var response = esClient.search(request, ProcessEntity.class);
+      final var response = es8Client.search(request, ProcessEntity.class);
       final Aggregate bpmnProcessIdBuckets =
           response.aggregations().get(BPMN_PROCESS_ID_TENANT_ID_AGG_NAME);
 
