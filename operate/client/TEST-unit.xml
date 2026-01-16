@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<testsuites name="vitest tests" tests="5" failures="0" errors="0" time="0.008040229">
+    <testsuite name="src/modules/bpmn-js/utils/isMigratableFlowNode.test.ts" timestamp="2026-01-16T16:12:01.069Z" hostname="runnervmmtnos" tests="5" failures="0" errors="0" skipped="0" time="0.008040229">
+        <testcase classname="src/modules/bpmn-js/utils/isMigratableFlowNode.test.ts" name="isMigratableFlowNode &gt; should return true for ad hoc sub process" time="0.002037653">
+        </testcase>
+        <testcase classname="src/modules/bpmn-js/utils/isMigratableFlowNode.test.ts" name="isMigratableFlowNode &gt; conditional events &gt; should return true for boundary event with conditional event definition" time="0.000681866">
+        </testcase>
+        <testcase classname="src/modules/bpmn-js/utils/isMigratableFlowNode.test.ts" name="isMigratableFlowNode &gt; conditional events &gt; should return true for intermediate catch event with conditional event definition" time="0.000524461">
+        </testcase>
+        <testcase classname="src/modules/bpmn-js/utils/isMigratableFlowNode.test.ts" name="isMigratableFlowNode &gt; conditional events &gt; should return true for event subprocess with conditional start event" time="0.000480609">
+        </testcase>
+        <testcase classname="src/modules/bpmn-js/utils/isMigratableFlowNode.test.ts" name="isMigratableFlowNode &gt; conditional events &gt; should return true for start event with conditional event definition inside event subprocess" time="0.000440334">
+        </testcase>
+    </testsuite>
+</testsuites>
