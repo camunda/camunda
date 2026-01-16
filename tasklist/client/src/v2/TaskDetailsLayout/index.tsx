@@ -19,7 +19,6 @@ import {Outlet, useMatch, useNavigate, useSearchParams} from 'react-router-dom';
 import {DetailsSkeleton} from 'common/tasks/details/DetailsSkeleton';
 import {useProcessDefinitionXml} from 'v2/api/useProcessDefinitionXml.query';
 import {useTask} from 'v2/api/useTask.query';
-import {IS_HISTORY_TAB_ENABLED} from 'common/featureFlags';
 import {useEffect} from 'react';
 import {notificationsStore} from 'common/notifications/notifications.store';
 import {TaskDetailsHeader} from 'common/tasks/details/TaskDetailsHeader';
@@ -130,7 +129,6 @@ const TaskDetailsLayout: React.FC = () => {
       to: {
         pathname: pages.taskDetailsHistory(id),
       },
-      visible: IS_HISTORY_TAB_ENABLED,
     },
   ];
 
