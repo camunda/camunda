@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useMemo} from 'react';
+import {useMemo, useRef, useCallback} from 'react';
 import {
   type LoaderFunctionArgs,
   Outlet,
@@ -146,13 +146,31 @@ const TaskDetailsHistoryView: React.FC = () => {
   const {t} = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
-  const {data} = useSuspenseInfiniteQuery(
-    getUserTaskAuditLogsQueryOptions(id, getSortFromUrl(location.search)),
-  );
+  const scrollableContainerRef = useRef<HTMLDivElement>(null);
+
+  const {data, fetchNextPage, hasNextPage, isFetchingNextPage} =
+    useSuspenseInfiniteQuery(
+      getUserTaskAuditLogsQueryOptions(id, getSortFromUrl(location.search)),
+    );
 
   const auditLogs = useMemo(
     () => data.pages.flatMap((page) => page.items),
     [data],
+  );
+
+  const handleScroll: React.UIEventHandler<HTMLDivElement> = useCallback(
+    async (event) => {
+      const target = event.currentTarget;
+      const {scrollTop, scrollHeight, clientHeight} = target;
+
+      const isAtBottom =
+        Math.floor(scrollHeight - clientHeight - scrollTop) <= 1;
+
+      if (isAtBottom && hasNextPage && !isFetchingNextPage) {
+        await fetchNextPage();
+      }
+    },
+    [hasNextPage, isFetchingNextPage, fetchNextPage],
   );
 
   const headers = HEADERS.map((header) => ({
@@ -192,7 +210,11 @@ const TaskDetailsHistoryView: React.FC = () => {
 
   return (
     <div className={styles.container} data-testid="task-details-history-view">
-      <div className={styles.tableContainer}>
+      <div
+        className={styles.tableContainer}
+        ref={scrollableContainerRef}
+        onScroll={handleScroll}
+      >
         <DataTable rows={rows} headers={headers} isSortable>
           {({rows, headers, getTableProps, getRowProps}) => (
             <TableContainer>
