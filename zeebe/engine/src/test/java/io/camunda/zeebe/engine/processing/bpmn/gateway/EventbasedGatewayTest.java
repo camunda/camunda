@@ -450,4 +450,109 @@ public final class EventbasedGatewayTest {
         .hasRecordType(RecordType.COMMAND_REJECTION)
         .hasRejectionType(RejectionType.INVALID_STATE);
   }
+
+  @Test
+  public void shouldTakeConditionalPathWhenConditionIsTrue() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("PROCESS_WITH_CONDITIONAL")
+            .startEvent()
+            .eventBasedGateway()
+            .id("gateway")
+            .intermediateCatchEvent("conditional")
+            .condition("x > 5")
+            .sequenceFlowId("to-end1")
+            .endEvent("end1")
+            .moveToLastGateway()
+            .intermediateCatchEvent("timer", c -> c.timerWithDuration("PT10S"))
+            .sequenceFlowId("to-end2")
+            .endEvent("end2")
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId("PROCESS_WITH_CONDITIONAL")
+            .withVariable("x", 10)
+            .create();
+
+    // then - process completes via conditional path
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId("conditional")
+                .exists())
+        .isTrue();
+
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId("end1")
+                .exists())
+        .isTrue();
+
+    // verify timer was not triggered
+    assertThat(
+            RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
+                .withProcessInstanceKey(processInstanceKey)
+                .exists())
+        .isFalse();
+  }
+
+  @Test
+  public void shouldTakeTimerPathWhenConditionIsFalse() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("PROCESS_WITH_CONDITIONAL_FALSE")
+            .startEvent()
+            .eventBasedGateway()
+            .id("gateway")
+            .intermediateCatchEvent("conditional")
+            .condition("x > 100")
+            .sequenceFlowId("to-end1")
+            .endEvent("end1")
+            .moveToLastGateway()
+            .intermediateCatchEvent("timer", c -> c.timerWithDuration("PT1S"))
+            .sequenceFlowId("to-end2")
+            .endEvent("end2")
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId("PROCESS_WITH_CONDITIONAL_FALSE")
+            .withVariable("x", 10)
+            .create();
+
+    // timer triggers after 1 second since condition is false
+    ENGINE.increaseTime(Duration.ofSeconds(2));
+
+    // then - process completes via timer path
+    assertThat(
+            RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
+                .withProcessInstanceKey(processInstanceKey)
+                .exists())
+        .isTrue();
+
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId("end2")
+                .exists())
+        .isTrue();
+
+    // verify conditional path was not taken
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId("end1")
+                .exists())
+        .isFalse();
+  }
 }
