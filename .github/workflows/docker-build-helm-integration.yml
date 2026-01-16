@@ -354,6 +354,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build-and-push, format-identifier]
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
       - name: Generate GitHub App Token (for dispatch)
         id: github-token
         uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
@@ -384,10 +386,10 @@ jobs:
                       "source_sha": "${{ github.sha }}",
                       "c8Version": "8.9",
                       "zeebeVersion": "${{ needs.build-and-push.outputs.image-tag }}",
-                      "operateVersion": "8.9.0-alpha3",
-                      "tasklistVersion": "8.9.0-alpha3",
-                      "connectorsVersion": "8.9.0-alpha3.1",
-                      "optimizeVersion": "8.9.0-alpha3"
+                      "operateVersion": "SNAPSHOT",
+                      "tasklistVersion": "SNAPSHOT",
+                      "connectorsVersion": "SNAPSHOT",
+                      "optimizeVersion": "8-SNAPSHOT"
                   }
                 }'
 
