@@ -52,6 +52,7 @@ public class ClientConfig {
     canLogout = securityConfiguration.getAuthentication().getOidc().getOrganizationId() == null;
     isLoginDelegated = profileService.isLoginDelegated();
     isLogoutCorsEnabled = securityConfiguration.getAuthentication().getLogoutCorsEnabled();
+    tasklistUrl = operateProperties.getTasklistUrl();
     resourcePermissionsEnabled = securityConfiguration.getAuthorizations().isEnabled();
     multiTenancyEnabled = securityConfiguration.getMultiTenancy().isChecksEnabled();
     databaseType = environmentService.getDatabaseType();
