@@ -108,6 +108,9 @@ const InstancesTable: React.FC<InstancesTableProps> = observer(
               ? 'INCIDENT'
               : instance.state;
 
+            // Mock business key for UI prototype
+            const mockBusinessKey = `ORDER-${instance.processInstanceKey.slice(-6)}`;
+
             return {
               id: instance.processInstanceKey,
               processName: (
@@ -137,6 +140,7 @@ const InstancesTable: React.FC<InstancesTableProps> = observer(
                 </Link>
               ),
               processVersion: instance.processDefinitionVersion,
+              businessKey: mockBusinessKey,
               versionTag: instance.processDefinitionVersionTag ?? '--',
               tenant: isTenantColumnVisible ? instance.tenantId : undefined,
               startDate: formatDate(instance.startDate),
@@ -190,6 +194,11 @@ const InstancesTable: React.FC<InstancesTableProps> = observer(
               header: 'Version',
               key: 'processVersion',
               sortKey: 'processDefinitionVersion',
+            },
+            {
+              header: 'Business Key',
+              key: 'businessKey',
+              isDisabled: true,
             },
             ...(hasVersionTags
               ? [

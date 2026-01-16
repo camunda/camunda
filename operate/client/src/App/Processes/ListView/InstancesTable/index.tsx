@@ -187,6 +187,8 @@ const InstancesTable: React.FC = observer(() => {
               </Link>
             ),
             processVersion: instance.processVersion,
+            // Mock business key for UI prototype
+            businessKey: `ORDER-${instance.id.slice(-6)}`,
             versionTag: instance.processVersionTag ?? '--',
             tenant: isTenantColumnVisible ? instance.tenantId : undefined,
             startDate: formatDate(instance.startDate),
@@ -249,6 +251,11 @@ const InstancesTable: React.FC = observer(() => {
           {
             header: 'Version',
             key: 'processVersion',
+          },
+          {
+            header: 'Business Key',
+            key: 'businessKey',
+            isDisabled: true,
           },
           ...(hasVersionTags
             ? [
