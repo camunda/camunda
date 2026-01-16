@@ -15,7 +15,7 @@
     <bpmn:sequenceFlow id="Flow_A" sourceRef="Gateway_Split" targetRef="Task_Decision" />
     <bpmn:businessRuleTask id="Task_Decision" name="A: Decision Chain">
       <bpmn:extensionElements>
-        <zeebe:calledDecision decisionId="Definitions_decision_chain_a" resultVariable="test" />
+        <zeebe:calledDecision decisionId="decision-a" resultVariable="test" />
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_A</bpmn:incoming>
       <bpmn:outgoing>Flow_A_Merge</bpmn:outgoing>

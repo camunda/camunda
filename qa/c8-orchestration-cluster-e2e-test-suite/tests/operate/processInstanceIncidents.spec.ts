@@ -8,14 +8,9 @@
 
 import {test} from 'fixtures';
 import {expect} from '@playwright/test';
-import {
-  deploy,
-  createInstances,
-  generateManyVariables,
-} from 'utils/zeebeClient';
+import {deploy, createInstances} from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToApp} from '@pages/UtilitiesPage';
-import {expectInViewport} from 'utils/expectInViewport';
 
 test.beforeAll(async () => {
   await deploy([
@@ -23,12 +18,11 @@ test.beforeAll(async () => {
     './resources/process_to_test_incidents.bpmn',
     './resources/callProcess_with Incident.bpmn',
   ]);
-  const manyVariables = generateManyVariables();
-  await createInstances('variableScrollingProcess', 1, 1, manyVariables);
-  await createInstances('simpleServiceTaskProcess', 1, 1);
+  await createInstances('root-cause-test', 1, 1);
+  await createInstances('call-level-1-process', 1, 1, {shouldFail: true});
 });
 
-test.describe.only('Process Instance Incident', () => {
+test.describe('Process Instance Incident', () => {
   test.beforeEach(async ({page, loginPage, operateHomePage}) => {
     await navigateToApp(page, 'operate');
     await loginPage.login('demo', 'demo');
@@ -40,8 +34,7 @@ test.describe.only('Process Instance Incident', () => {
     await captureFailureVideo(page, testInfo);
   });
 
-  test('Verify Incident root casue instance', async ({
-    page,
+  test('Verify Incident root cause instance', async ({
     operateProcessInstancePage,
     operateHomePage,
     operateProcessesPage,
@@ -50,171 +43,116 @@ test.describe.only('Process Instance Incident', () => {
 
     await test.step('Navigate to Processes tab and open the process instance', async () => {
       await operateHomePage.clickProcessesTab();
-      await operateProcessesPage.filterByProcessName(
-        'variable scrolling process',
-      );
+      await operateProcessesPage.filterByProcessName('Process-Incident');
       await operateProcessesPage.clickProcessInstanceLink();
-      // await expect(operateProcessInstancePage.addVariableButton).toBeEnabled();
+    });
+    await test.step('Click IO mapping Error and verify Error Type', async () => {
+      await operateProcessInstancePage.clickOnElementInDiagram(
+        'Task_IOMapping',
+      );
+
+      await expect(operateProcessInstancePage.metadataPopover).toBeVisible({
+        timeout: 10000,
+      });
+
+      await expect(operateProcessInstancePage.incidentSection).toBeVisible();
+      await expect(
+        operateProcessInstancePage.getIncidentErrorMessageByText(
+          'IO mapping error.',
+        ),
+      ).toBeVisible();
+      await operateProcessInstancePage.clickOnElementInDiagram(
+        'Task_IOMapping',
+      );
+      await expect(operateProcessInstancePage.metadataPopover).toBeHidden({
+        timeout: 10000,
+      });
+    });
+    await test.step('Click ExclusiveGatewayError and verify Error Type', async () => {
+      await operateProcessInstancePage.clickOnElementInDiagram(
+        'Gateway_Expression',
+      );
+
+      await expect(operateProcessInstancePage.metadataPopover).toBeVisible({
+        timeout: 10000,
+      });
+
+      await expect(operateProcessInstancePage.incidentSection).toBeVisible();
+      await expect(
+        operateProcessInstancePage.getIncidentErrorMessageByText(
+          'Extract value error.',
+        ),
+      ).toBeVisible();
+    });
+    await operateProcessInstancePage.clickOnElementInDiagram(
+      'Gateway_Expression',
+    );
+    await expect(operateProcessInstancePage.metadataPopover).toBeHidden({
+      timeout: 10000,
+    });
+    await test.step('Click Call Activity and verify verify the error type', async () => {
+      await operateProcessInstancePage.clickOnElementInDiagram(
+        'Task_CallActivity',
+      );
+
+      await expect(operateProcessInstancePage.metadataPopover).toBeVisible({
+        timeout: 10000,
+      });
+
+      // Verify incident section is visible
+      await expect(operateProcessInstancePage.incidentSection).toBeVisible();
+
+      // Verify Called  process name is displayed
+      await expect(
+        operateProcessInstancePage.rootCauseProcessName,
+      ).toBeVisible();
+      const rootCauseLink = operateProcessInstancePage.getCalledProcessLink(
+        'View Call Activity Level 1',
+      );
+      await expect(rootCauseLink).toBeVisible();
+      await expect(
+        operateProcessInstancePage.getIncidentErrorMessageByText(
+          'Called element error.',
+        ),
+      ).toBeVisible();
+      await operateProcessInstancePage.clickOnElementInDiagram(
+        'Task_CallActivity',
+      );
+      await operateProcessInstancePage.clickOnRootCauseProcessName();
+      await operateProcessInstancePage.viewParentInstanceLink.click();
+      await expect(operateProcessInstancePage.metadataPopover).toBeHidden({
+        timeout: 10000,
+      });
     });
 
-    await test.step('Click DMN task', async () => {
-      await operateProcessInstancePage.clickEditVariableButton('aa');
-      await operateProcessInstancePage.clickVariableValueInput();
-      await operateProcessInstancePage.clearVariableValueInput();
-      await operateProcessInstancePage.fillVariableValueInput(
-        '"editedTestValue"',
-      );
-      await expect(operateProcessInstancePage.saveVariableButton).toBeEnabled({
+    await test.step('Verify error indicators on all affected elements', async () => {
+      // Wait for diagram to load completely
+      await expect(operateProcessInstancePage.diagram).toBeVisible();
+      await expect(operateProcessInstancePage.diagramSpinner).toBeHidden({
         timeout: 30000,
       });
-    });
 
-    await test.step('Click Save Variable button and verify that both edit variable spinner and operation spinner are displayed', async () => {
-      await operateProcessInstancePage.saveVariableButton.click();
-      await expect(operateProcessInstancePage.variableSpinner).toBeVisible();
-    });
-
-    await test.step('Verify that both spinners disappear after saving the variable', async () => {
-      await expect(operateProcessInstancePage.variableSpinner).toBeHidden({
-        timeout: 60000,
+      await expect(operateProcessInstancePage.incidentsBanner).toBeVisible({
+        timeout: 10000,
       });
-      await expect(operateProcessInstancePage.operationSpinner).toBeHidden({
-        timeout: 60000,
+      // Click incidents banner to open incidents view
+      await operateProcessInstancePage.clickIncidentsBanner();
+
+      // Wait for the incident count heading to appear
+      await expect(operateProcessInstancePage.incidentsViewHeader).toBeVisible({
+        timeout: 10000,
       });
-    });
 
-    await test.step('Refresh the page and verify the variable is still there', async () => {
-      await page.reload();
-      await expect(page.getByText('editedtestvalue')).toBeVisible();
-    });
-  });
+      // Get and verify the incident count from the heading
+      const incidentCount = await operateProcessInstancePage.getIncidentCount();
+      expect(incidentCount).toBeGreaterThan(0);
 
-  test('Add variables', async ({
-    page,
-    operateProcessInstancePage,
-    operateHomePage,
-    operateFiltersPanelPage,
-    operateProcessesPage,
-  }) => {
-    test.slow();
+      // Verify the count matches expected value
+      await operateProcessInstancePage.verifyIncidentCount(4);
 
-    await test.step('Navigate to Processes tab and open the process instance', async () => {
-      await operateHomePage.clickProcessesTab();
-      await operateProcessesPage.filterByProcessName(
-        'simple service task process',
-      );
-      await operateProcessesPage.clickProcessInstanceLink();
-      await expect(operateProcessInstancePage.addVariableButton).toBeEnabled();
-    });
-
-    await test.step('Add a new variable', async () => {
-      await operateProcessInstancePage.clickAddVariableButton();
-      await operateProcessInstancePage.fillNewVariable(
-        'secondTestKey',
-        '"secondTestValue"',
-      );
-      await expect(operateProcessInstancePage.saveVariableButton).toBeEnabled();
-    });
-
-    await test.step('Click Save Variable button and verify that variable spinner and toast are displayed', async () => {
-      await operateProcessInstancePage.clickSaveVariableButton();
-      await expect(operateProcessInstancePage.variableSpinner).toBeVisible();
-      await expect(operateProcessInstancePage.variableAddedBanner).toBeVisible({
-        timeout: 60000,
-      });
-    });
-
-    await test.step('Verify that the spinner disappears after saving the variable', async () => {
-      await expect(operateProcessInstancePage.variableSpinner).toBeHidden({
-        timeout: 60000,
-      });
-    });
-
-    await test.step('Refresh the page and verify the variable is still there', async () => {
-      await page.reload();
-      await expect(
-        page.getByText('secondTestKey', {exact: true}),
-      ).toBeVisible();
-      await expect(page.getByText('"secondTestValue"')).toBeVisible();
-    });
-
-    await test.step('Get the process instance key, navigate to Instances tab, and search using the added variable', async () => {
-      const processInstanceKey =
-        await operateProcessInstancePage.getProcessInstanceKey();
-
-      await operateHomePage.clickProcessesTab();
-      await operateFiltersPanelPage.displayOptionalFilter(
-        'Process Instance Key(s)',
-      );
-      await operateFiltersPanelPage.displayOptionalFilter('Variable');
-      await operateFiltersPanelPage.fillVariableNameFilter('secondTestKey');
-      await operateFiltersPanelPage.fillVariableValueFilter(
-        '"secondTestValue"',
-      );
-      await operateFiltersPanelPage.fillProcessInstanceKeyFilter(
-        processInstanceKey,
-      );
-
-      await expect(page.getByText('1 result')).toBeVisible();
-      await operateProcessesPage.assertProcessInstanceLink(processInstanceKey);
-    });
-  });
-
-  test('Infinite scrolling', async ({
-    page,
-    operateHomePage,
-    operateProcessesPage,
-    operateProcessInstancePage,
-  }) => {
-    await test.step('Navigate to Processes tab and open the process instance', async () => {
-      await operateHomePage.clickProcessesTab();
-      await operateProcessesPage.filterByProcessName(
-        'variable scrolling process',
-      );
-      await operateProcessesPage.clickProcessInstanceLink();
-    });
-
-    await test.step('Scroll through variables and verify row count increases progressively', async () => {
-      await expect(operateProcessInstancePage.variablesList).toBeVisible();
-      await expect(
-        operateProcessInstancePage.variablesList.getByRole('row'),
-      ).toHaveCount(51);
-
-      await expect(page.getByText('aa', {exact: true})).toBeVisible();
-      await expect(page.getByText('bx', {exact: true})).toBeVisible();
-
-      await page.getByText('bx', {exact: true}).scrollIntoViewIfNeeded();
-      await expect(
-        operateProcessInstancePage.variablesList.getByRole('row'),
-      ).toHaveCount(101);
-
-      await expect(page.getByText('dv', {exact: true})).toBeVisible();
-      await page.getByText('dv', {exact: true}).scrollIntoViewIfNeeded();
-      await expect(
-        operateProcessInstancePage.variablesList.getByRole('row'),
-      ).toHaveCount(151);
-
-      await expect(page.getByText('ft', {exact: true})).toBeVisible();
-      await page.getByText('ft', {exact: true}).scrollIntoViewIfNeeded();
-      await expect(
-        operateProcessInstancePage.variablesList.getByRole('row'),
-      ).toHaveCount(201);
-
-      await expect(page.getByText('hr', {exact: true})).toBeVisible();
-      await page.getByText('hr', {exact: true}).scrollIntoViewIfNeeded();
-
-      await expectInViewport(page.getByTestId('variable-aa'), false);
-      await expect(page.getByText('by', {exact: true})).toBeVisible();
-      await expect(page.getByText('jp', {exact: true})).toBeVisible();
-
-      await page.getByText('by', {exact: true}).scrollIntoViewIfNeeded();
-      await expect(
-        operateProcessInstancePage.variablesList.getByRole('row'),
-      ).toHaveCount(251);
-
-      await expectInViewport(page.getByTestId('variable-jp'), false);
-      await expect(page.getByText('aa', {exact: true})).toBeVisible();
-      await expect(page.getByText('by', {exact: true})).toBeVisible();
+      // Check if panel is visible before closing
+      await operateProcessInstancePage.incidentsViewHeader.isVisible();
+      await operateProcessInstancePage.clickIncidentsBanner();
     });
   });
 });
