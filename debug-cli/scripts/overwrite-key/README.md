@@ -82,7 +82,7 @@ When the script detects a key jump, it analyzes the `position` field (Raft log p
    - **Requires recovery procedure**
    - Example: key jumps 2 billion, but position only changes by 5,000
 2. **Normal Time Gap (SAFE)**: Both keys AND positions jump significantly (> 10,000 difference by default)
-   - Indicates cluster restart, downtime, or old completed processes being archived
+   - Indicates that probably some process instance was already deleted from secondary storage due to retention limits.
    - **No action needed**
    - Example: key jumps 366 million, position also jumps 896 million
 
@@ -175,14 +175,14 @@ Previous key:        4503599669189032 (timestamp: 2026-01-12T11:08:45.526Z, posi
 Current key:         4503600035577724 (timestamp: 2026-01-15T14:57:58.189Z, position: 1000011148)
 Key difference:      366388692
 Position difference: 896562893
-✓ Likely NOT an overflow - Large position gap suggests cluster restart/downtime
+✓ Likely NOT an overflow - Large position gap suggests data deletion due to retention policies
   The key jump corresponds to a time gap in processing.
 
 ======================================
 Analysis Summary
 ======================================
 ✓ No key overflow issues detected
-  Key jumps found are likely due to cluster downtime/restart (large position gaps)
+  Key jumps found are likely due to data deletion by retention policies(large position gaps)
 Total keys analyzed: 420000
 Results saved to:    partition_2_keys.txt
 ```
@@ -239,12 +239,12 @@ with open('partition_1_keys.txt', 'r') as f:
         key = int(parts[0])
         position = None if parts[1] == 'null' else int(parts[1])
         timestamp = parts[2]
-        
+
         if prev_key is not None:
             key_diff = key - prev_key
             if key_diff > 1000000:
                 print(f"JUMP: {prev_key} -> {key} (key diff: {key_diff})")
-                
+
                 # Check position to determine if real overflow
                 if prev_pos is not None and position is not None:
                     pos_diff = position - prev_pos
@@ -252,10 +252,10 @@ with open('partition_1_keys.txt', 'r') as f:
                     if pos_diff <= 10000:
                         print("  ⚠ LIKELY REAL OVERFLOW!")
                     else:
-                        print("  ✓ Likely time gap (cluster restart/downtime)")
+                        print("  ✓ Likely time gap (data deletion by retention policies)")
                 else:
                     print("  ⚠ Cannot verify - position data missing")
-        
+
         prev_key = key
         prev_pos = position
 ```
