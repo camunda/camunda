@@ -31,6 +31,7 @@ public class TestCaseInstructionType {
   public static final String CREATE_PROCESS_INSTANCE = "CREATE_PROCESS_INSTANCE";
   public static final String EVALUATE_CONDITIONAL_START_EVENT = "EVALUATE_CONDITIONAL_START_EVENT";
   public static final String EVALUATE_DECISION = "EVALUATE_DECISION";
+  public static final String INCREASE_TIME = "INCREASE_TIME";
   public static final String MOCK_CHILD_PROCESS = "MOCK_CHILD_PROCESS";
   public static final String MOCK_DMN_DECISION = "MOCK_DMN_DECISION";
   public static final String MOCK_JOB_WORKER_COMPLETE_JOB = "MOCK_JOB_WORKER_COMPLETE_JOB";

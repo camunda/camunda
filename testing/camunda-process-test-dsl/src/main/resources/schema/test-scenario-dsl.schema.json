@@ -97,6 +97,9 @@
         },
         {
           "$ref": "#/definitions/EvaluateConditionalStartEventInstruction"
+        },
+        {
+          "$ref": "#/definitions/IncreaseTimeInstruction"
         }
       ]
     },
@@ -857,6 +860,26 @@
       "required": [
         "type",
         "decisionDefinitionSelector"
+      ],
+      "additionalProperties": false
+    },
+    "IncreaseTimeInstruction": {
+      "description": "An instruction to increase the time.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "The type of the instruction.",
+          "type": "string",
+          "const": "INCREASE_TIME"
+        },
+        "duration": {
+          "description": "The duration to increase the time by, in ISO 8601 duration format (e.g., \"PT1H\", \"P2D\").",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "duration"
       ],
       "additionalProperties": false
     }
