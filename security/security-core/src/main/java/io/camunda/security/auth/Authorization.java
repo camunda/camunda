@@ -76,23 +76,16 @@ public record Authorization<T>(
 
   public static <T> Authorization<T> withAuthorization(
       final Authorization<T> authorization, final String resourceId) {
-    return authorization.with(resourceId);
+    return authorization.withResourceId(resourceId);
   }
 
   public static <T> Authorization<T> withAuthorization(
       final Authorization<T> authorization, final Function<T, String> resourceIdSupplier) {
-    return authorization.with(resourceIdSupplier);
+    return authorization.withResourceIdSupplier(resourceIdSupplier);
   }
 
-  public Authorization<T> with(final String resourceId) {
-    return new Authorization<>(
-        resourceType(),
-        permissionType(),
-        List.of(resourceId),
-        resourceIdSupplier(),
-        resourcePropertyNames(),
-        condition(),
-        transitive());
+  public Authorization<T> withResourceId(final String resourceId) {
+    return withResourceIds(List.of(resourceId));
   }
 
   public Authorization<T> withResourceIds(final List<String> resourceIds) {
@@ -106,7 +99,7 @@ public record Authorization<T>(
         transitive());
   }
 
-  public Authorization<T> with(final Function<T, String> resourceIdSupplier) {
+  public Authorization<T> withResourceIdSupplier(final Function<T, String> resourceIdSupplier) {
     return new Authorization<>(
         resourceType(),
         permissionType(),

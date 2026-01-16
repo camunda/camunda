@@ -29,12 +29,12 @@ public class AuditLogServices
 
   private static final AuthorizationCondition AUDIT_LOG_AUTHORIZATIONS =
       AuthorizationConditions.anyOf(
-          AUDIT_LOG_READ_AUTHORIZATION.with(al -> al.category().name()),
+          AUDIT_LOG_READ_AUTHORIZATION.withResourceIdSupplier(al -> al.category().name()),
           AUDIT_LOG_READ_PROCESS_INSTANCE_AUTHORIZATION
-              .with(AuditLogEntity::processDefinitionId)
+              .withResourceIdSupplier(AuditLogEntity::processDefinitionId)
               .withCondition(al -> al.processDefinitionId() != null),
           AUDIT_LOG_READ_USER_TASK_AUTHORIZATION
-              .with(AuditLogEntity::processDefinitionId)
+              .withResourceIdSupplier(AuditLogEntity::processDefinitionId)
               .withCondition(
                   al ->
                       al.processDefinitionId() != null
