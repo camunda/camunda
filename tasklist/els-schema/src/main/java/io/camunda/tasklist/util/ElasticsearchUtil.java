@@ -25,6 +25,7 @@ import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch._types.query_dsl.TermsQueryField;
 import co.elastic.clients.elasticsearch.core.ScrollResponse;
 import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
+import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.elasticsearch.core.search.ResponseBody;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -416,6 +417,11 @@ public abstract class ElasticsearchUtil {
     return result;
   }
 
+  /**
+   * Helper method to scroll in chunks. This is useful when you have a large number of ids and want
+   * to avoid sending them all at once to OpenSearch to not hit the max allowed terms limit {@link
+   * #DEFAULT_MAX_TERMS_COUNT}
+   */
   public static <T, ID> List<T> scrollInChunks(
       final List<ID> list,
       final int chunkSize,
@@ -575,11 +581,9 @@ public abstract class ElasticsearchUtil {
   public static Map<String, String> scrollIdsWithIndexToMap(
       final co.elastic.clients.elasticsearch.ElasticsearchClient client,
       final co.elastic.clients.elasticsearch.core.SearchRequest.Builder searchRequestBuilder) {
-    final Map<String, String> result = new LinkedHashMap<>();
-    scrollAllStream(client, searchRequestBuilder, MAP_CLASS)
+    return scrollAllStream(client, searchRequestBuilder, MAP_CLASS)
         .flatMap(response -> response.hits().hits().stream())
-        .forEach(hit -> result.put(hit.id(), hit.index()));
-    return result;
+        .collect(Collectors.toMap(Hit::id, Hit::index));
   }
 
   public static Map<String, String> scrollIdsWithIndexToMap(
@@ -911,19 +915,14 @@ public abstract class ElasticsearchUtil {
       final co.elastic.clients.elasticsearch.ElasticsearchClient client,
       final co.elastic.clients.elasticsearch.core.SearchRequest.Builder searchRequestBuilder,
       final String fieldName) {
-    final Set<Long> result = new HashSet<>();
-    scrollAllStream(client, searchRequestBuilder, MAP_CLASS)
+    return scrollAllStream(client, searchRequestBuilder, MAP_CLASS)
         .flatMap(response -> response.hits().hits().stream())
         .map(co.elastic.clients.elasticsearch.core.search.Hit::source)
         .filter(Objects::nonNull)
-        .forEach(
-            source -> {
-              final var value = source.get(fieldName);
-              if (value != null) {
-                result.add(((Number) value).longValue());
-              }
-            });
-    return result;
+        .map(source -> source.get(fieldName))
+        .filter(Objects::nonNull)
+        .map(value -> ((Number) value).longValue())
+        .collect(Collectors.toSet());
   }
 
   // ===========================================================================================

@@ -55,7 +55,7 @@ public class TaskMetricsStoreElasticSearch implements TaskMetricsStore {
 
   @Autowired
   @Qualifier("tasklistEs8Client")
-  private ElasticsearchClient es8Client;
+  private ElasticsearchClient esClient;
 
   @Autowired
   @Qualifier("tasklistObjectMapper")
@@ -103,7 +103,7 @@ public class TaskMetricsStoreElasticSearch implements TaskMetricsStore {
                     .size(0));
 
     try {
-      final var response = es8Client.search(searchRequest, Void.class);
+      final var response = esClient.search(searchRequest, Void.class);
       final var aggregations = response.aggregations();
 
       if (aggregations == null || !aggregations.containsKey(ASSIGNEE)) {
@@ -128,7 +128,7 @@ public class TaskMetricsStoreElasticSearch implements TaskMetricsStore {
           IndexRequest.of(
               b -> b.index(template.getFullQualifiedName()).id(entity.getId()).document(entity));
 
-      final var response = es8Client.index(request);
+      final var response = esClient.index(request);
       final var result = response.result();
 
       return Result.Created.equals(result) || Result.Updated.equals(result);
