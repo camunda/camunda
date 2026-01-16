@@ -15,7 +15,7 @@ import io.camunda.zeebe.model.bpmn.builder.ProcessBuilder;
 import java.time.Duration;
 import java.util.function.Consumer;
 
-public class ZeebeBpmnModels {
+public final class ZeebeBpmnModels {
 
   public static final String ACTIVATE_ELEMENTS = "activateElements";
   public static final String ADHOC_SUB_PROCESS = "adhocSubProcess";
