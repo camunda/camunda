@@ -378,18 +378,24 @@ describe('<MoveAction />', () => {
   });
 
   it('should enable move button when conditional event is selected', async () => {
-    mockFetchProcessInstancesV2().withSuccess(mockProcessInstancesV2);
-    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
-
-    const {user} = render(<MoveAction />, {
-      wrapper: getWrapper(
-        `/processes?process=${PROCESS_ID}&version=1&flowNodeId=ConditionalEvent`,
-      ),
+    render(<MoveAction />, {
+      wrapper: createWrapper({
+        initialPath: `/processes?process=${PROCESS_ID}&version=1&flowNodeId=ConditionalEvent`,
+        withTestButtons: true,
+      }),
     });
 
-    await fetchProcessInstances(screen, user);
+    await waitForDiagramToLoad(screen);
 
     setupSelectionStoreWithInstances(mockProcessInstancesV2);
+
+    const instance = getProcessInstance('ACTIVE', mockProcessInstancesV2);
+
+    act(() => {
+      processInstancesSelectionStore.selectProcessInstance(
+        instance.processInstanceKey,
+      );
+    });
 
     const moveButton = screen.getByRole('button', {name: /move/i});
 

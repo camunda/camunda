@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<testsuites name="vitest tests" tests="24" failures="0" errors="0" time="1.898758385">
+    <testsuite name="src/App/Processes/ListView/InstancesTable/Toolbar/MoveAction/tests/index.test.tsx" timestamp="2026-01-16T17:08:34.112Z" hostname="runnervmmtnos" tests="12" failures="0" errors="0" skipped="0" time="0.956997507">
+        <testcase classname="src/App/Processes/ListView/InstancesTable/Toolbar/MoveAction/tests/index.test.tsx" name="&lt;MoveAction /&gt; &gt; should disable button when no process version is selected" time="0.167318589">
+        </testcase>
+        <testcase classname="src/App/Processes/ListView/InstancesTable/Toolbar/MoveAction/tests/index.test.tsx" name="&lt;MoveAction /&gt; &gt; should disable button when only finished instances are selected" time="0.10144757">
+        </testcase>
+        <testcase classname="src/App/Processes/ListView/InstancesTable/Toolbar/MoveAction/tests/index.test.tsx" name="&lt;MoveAction /&gt; &gt; should disable button when start event is selected" time="0.063813932">
+        </testcase>
+        <testcase classname="src/App/Processes/ListView/InstancesTable/Toolbar/MoveAction/tests/index.test.tsx" name="&lt;MoveAction /&gt; &gt; should disable button when boundary event is selected" time="0.046909354">
+        </testcase>
+        <testcase classname="src/App/Processes/ListView/InstancesTable/Toolbar/MoveAction/tests/index.test.tsx" name="&lt;MoveAction /&gt; &gt; should disable button when multi instance task is selected" time="0.061043175">
+        </testcase>
+        <testcase classname="src/App/Processes/ListView/InstancesTable/Toolbar/MoveAction/tests/index.test.tsx" name="&lt;MoveAction /&gt; &gt; should disable button if element is attached to event based gateway" time="0.059540757">
+        </testcase>
+        <testcase classname="src/App/Processes/ListView/InstancesTable/Toolbar/MoveAction/tests/index.test.tsx" name="&lt;MoveAction /&gt; &gt; should disable button if element is inside multi instance sub process" time="0.056433041">
+        </testcase>
+        <testcase classname="src/App/Processes/ListView/InstancesTable/Toolbar/MoveAction/tests/index.test.tsx" name="&lt;MoveAction /&gt; &gt; should enable move button when active or incident instances are selected" time="0.068426178">
+        </testcase>
+        <testcase classname="src/App/Processes/ListView/InstancesTable/Toolbar/MoveAction/tests/index.test.tsx" name="&lt;MoveAction /&gt; &gt; should enable move button when all instances are selected" time="0.063880133">
+        </testcase>
+        <testcase classname="src/App/Processes/ListView/InstancesTable/Toolbar/MoveAction/tests/index.test.tsx" name="&lt;MoveAction /&gt; &gt; should display migration helper modal and enter migration mode" time="0.095526676">
+        </testcase>
+        <testcase classname="src/App/Processes/ListView/InstancesTable/Toolbar/MoveAction/tests/index.test.tsx" name="&lt;MoveAction /&gt; &gt; should hide helper modal after checkbox click" time="0.136885926">
+        </testcase>
+        <testcase classname="src/App/Processes/ListView/InstancesTable/Toolbar/MoveAction/tests/index.test.tsx" name="&lt;MoveAction /&gt; &gt; should enable move button when conditional event is selected" time="0.028606317">
+        </testcase>
+    </testsuite>
+    <testsuite name="src/App/Processes/ListView/v2/InstancesTable/Toolbar/MoveAction/tests/index.test.tsx" timestamp="2026-01-16T17:08:34.115Z" hostname="runnervmmtnos" tests="12" failures="0" errors="0" skipped="0" time="0.941760878">
+        <testcase classname="src/App/Processes/ListView/v2/InstancesTable/Toolbar/MoveAction/tests/index.test.tsx" name="&lt;MoveAction /&gt; &gt; should disable button when no process version is selected" time="0.124360922">
+        </testcase>
+        <testcase classname="src/App/Processes/ListView/v2/InstancesTable/Toolbar/MoveAction/tests/index.test.tsx" name="&lt;MoveAction /&gt; &gt; should disable button when only finished instances are selected" time="0.073780612">
+        </testcase>
+        <testcase classname="src/App/Processes/ListView/v2/InstancesTable/Toolbar/MoveAction/tests/index.test.tsx" name="&lt;MoveAction /&gt; &gt; should disable button when start event is selected" time="0.049230271">
+        </testcase>
+        <testcase classname="src/App/Processes/ListView/v2/InstancesTable/Toolbar/MoveAction/tests/index.test.tsx" name="&lt;MoveAction /&gt; &gt; should disable button when boundary event is selected" time="0.042526425">
+        </testcase>
+        <testcase classname="src/App/Processes/ListView/v2/InstancesTable/Toolbar/MoveAction/tests/index.test.tsx" name="&lt;MoveAction /&gt; &gt; should disable button when multi instance task is selected" time="0.04088635">
+        </testcase>
+        <testcase classname="src/App/Processes/ListView/v2/InstancesTable/Toolbar/MoveAction/tests/index.test.tsx" name="&lt;MoveAction /&gt; &gt; should disable button if element is attached to event based gateway" time="0.053464142">
+        </testcase>
+        <testcase classname="src/App/Processes/ListView/v2/InstancesTable/Toolbar/MoveAction/tests/index.test.tsx" name="&lt;MoveAction /&gt; &gt; should disable button if element is inside multi instance sub process" time="0.04493642">
+        </testcase>
+        <testcase classname="src/App/Processes/ListView/v2/InstancesTable/Toolbar/MoveAction/tests/index.test.tsx" name="&lt;MoveAction /&gt; &gt; should enable move button when active or incident instances are selected" time="0.042188531">
+        </testcase>
+        <testcase classname="src/App/Processes/ListView/v2/InstancesTable/Toolbar/MoveAction/tests/index.test.tsx" name="&lt;MoveAction /&gt; &gt; should enable move button when all instances are selected" time="0.064250912">
+        </testcase>
+        <testcase classname="src/App/Processes/ListView/v2/InstancesTable/Toolbar/MoveAction/tests/index.test.tsx" name="&lt;MoveAction /&gt; &gt; should display migration helper modal and enter migration mode" time="0.129333941">
+        </testcase>
+        <testcase classname="src/App/Processes/ListView/v2/InstancesTable/Toolbar/MoveAction/tests/index.test.tsx" name="&lt;MoveAction /&gt; &gt; should hide helper modal after checkbox click" time="0.227093314">
+        </testcase>
+        <testcase classname="src/App/Processes/ListView/v2/InstancesTable/Toolbar/MoveAction/tests/index.test.tsx" name="&lt;MoveAction /&gt; &gt; should enable move button when conditional event is selected" time="0.040614928">
+        </testcase>
+    </testsuite>
+</testsuites>
