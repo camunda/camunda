@@ -1,6 +1,51 @@
 # hadolint global ignore=DL3006
-ARG BASE_IMAGE="alpine:3.23.2"
-ARG BASE_DIGEST="sha256:865b95f46d98cf867a156fe4a135ad3fe50d2056aa3f25ed31662dff6da4eb62"
+ARG BASE_IMAGE="reg.mini.dev/1212/openjre-base:21-dev"
+ARG BASE_DIGEST="sha256:1374fb954464843a022aa8087e5b21c7ea5c130371b6555e8d63e46b1c52e214"
+ARG JATTACH_VERSION="v2.2"
+ARG JATTACH_CHECKSUM_AMD64="acd9e17f15749306be843df392063893e97bfecc5260eef73ee98f06e5cfe02f"
+ARG JATTACH_CHECKSUM_ARM64="288ae5ed87ee7fe0e608c06db5a23a096a6217c9878ede53c4e33710bdcaab51"
+ARG TINI_VERSION="v0.19.0"
+ARG TINI_CHECKSUM_AMD64="93dcc18adc78c65a028a84799ecf8ad40c936fdfc5f2a57b1acda5a8117fa82c"
+ARG TINI_CHECKSUM_ARM64="07952557df20bfd2a95f9bef198b445e006171969499a1d361bd9e6f8e5e0e81"
+
+# If you don't have access to Minimus hardened base images, you can use public
+# base images like this instead on your own risk:
+#ARG BASE_IMAGE="eclipse-temurin:21-jre-noble"
+#ARG BASE_DIGEST="sha256:20e7f7288e1c18eebe8f06a442c9f7183342d9b022d3b9a9677cae2b558ddddd"
+
+FROM alpine AS tools
+ARG TARGETARCH
+ARG JATTACH_VERSION
+ARG JATTACH_CHECKSUM_AMD64
+ARG JATTACH_CHECKSUM_ARM64
+ARG TINI_VERSION
+ARG TINI_CHECKSUM_AMD64
+ARG TINI_CHECKSUM_ARM64
+
+# hadolint ignore=DL4006,DL3018
+RUN --mount=type=cache,target=/root/.tools,rw \
+    apk add -q --no-cache curl 2>/dev/null && \
+    if [ "${TARGETARCH}" = "amd64" ]; then \
+      JATTACH_BINARY="linux-x64"; \
+      JATTACH_CHECKSUM="${JATTACH_CHECKSUM_AMD64}"; \
+      TINI_BINARY="tini-amd64"; \
+      TINI_CHECKSUM="${TINI_CHECKSUM_AMD64}"; \
+    else  \
+      JATTACH_BINARY="linux-arm64"; \
+      JATTACH_CHECKSUM="${JATTACH_CHECKSUM_ARM64}"; \
+      TINI_BINARY="tini-arm64"; \
+      TINI_CHECKSUM="${TINI_CHECKSUM_ARM64}"; \
+    fi && \
+    # Download jattach \
+    curl -sL "https://github.com/jattach/jattach/releases/download/${JATTACH_VERSION}/jattach-${JATTACH_BINARY}.tgz" -o jattach.tgz && \
+    echo "${JATTACH_CHECKSUM} jattach.tgz" | sha256sum -c && \
+    tar -xzf "jattach.tgz" && \
+    chmod +x jattach && \
+    mv jattach /jattach && \
+    # Download tini \
+    curl -sL "https://github.com/krallin/tini/releases/download/${TINI_VERSION}/${TINI_BINARY}" -o /tini && \
+    echo "${TINI_CHECKSUM} /tini" | sha256sum -c && \
+    chmod +x /tini
 
 # Prepare tasklist Distribution
 FROM ${BASE_IMAGE}@${BASE_DIGEST} AS prepare
@@ -13,17 +58,9 @@ COPY ${DISTBALL} tasklist.tar.gz
 RUN tar xzvf tasklist.tar.gz --strip 1 && \
     rm tasklist.tar.gz
 
-### Base image ###
-# hadolint ignore=DL3006
-FROM ${BASE_IMAGE}@${BASE_DIGEST} AS base
-
-# Install Tini
-RUN apk update && apk add --no-cache tini
-
 ### Application Image ###
 # hadolint ignore=DL3006
-
-FROM base AS app
+FROM ${BASE_IMAGE}@${BASE_DIGEST} AS app
 # leave unset to use the default value at the top of the file
 ARG BASE_IMAGE
 ARG BASE_DIGEST
@@ -32,7 +69,7 @@ ARG DATE=""
 ARG REVISION=""
 
 # OCI labels: https://github.com/opencontainers/image-spec/blob/main/annotations.md
-LABEL org.opencontainers.image.base.name="docker.io/library/${BASE_IMAGE}"
+LABEL org.opencontainers.image.base.name="${BASE_IMAGE}"
 LABEL org.opencontainers.image.base.digest="${BASE_DIGEST}"
 LABEL org.opencontainers.image.created="${DATE}"
 LABEL org.opencontainers.image.authors="hto@camunda.com"
@@ -56,23 +93,23 @@ LABEL io.k8s.description="Tasklist is a ready-to-use application to rapidly impl
 
 EXPOSE 8080
 
-RUN apk update && apk upgrade && \
-    apk add --no-cache bash openjdk21-jre tzdata gcompat libgcc libc6-compat
-
 ENV TASKLIST_HOME=/usr/local/tasklist
 
 WORKDIR ${TASKLIST_HOME}
 VOLUME /tmp
 VOLUME ${TASKLIST_HOME}/logs
 
+USER root
 RUN addgroup --gid 1001 camunda && \
-    adduser -D -h ${TASKLIST_HOME} -G camunda -u 1001 camunda && \
+    adduser -S -h ${TASKLIST_HOME} -G camunda -u 1001 camunda && \
     # These directories are to be mounted by users, eagerly creating them and setting ownership
     # helps to avoid potential permission issues due to default volume ownership.
     mkdir ${TASKLIST_HOME}/logs && \
     chown -R 1001:0 ${TASKLIST_HOME} && \
     chmod -R 0775 ${TASKLIST_HOME}
 
+COPY --from=tools --chown=1001:0 /jattach /usr/bin/jattach
+COPY --from=tools --chown=1001:0 /tini /usr/bin/tini
 COPY --from=prepare --chown=1001:0 --chmod=0775 /tmp/tasklist ${TASKLIST_HOME}
 
 # rename tasklist-migrate script to migrate (as expected by SaaS)
@@ -80,4 +117,4 @@ RUN mv ${TASKLIST_HOME}/bin/tasklist-migrate ${TASKLIST_HOME}/bin/migrate
 
 USER 1001:1001
 
-ENTRYPOINT ["/sbin/tini", "--", "/usr/local/tasklist/bin/tasklist"]
+ENTRYPOINT ["tini", "--", "/usr/local/tasklist/bin/tasklist"]
