@@ -80,9 +80,7 @@ public class ListViewVariableFromVariableHandlerTest {
     // given
     final Record<VariableRecordValue> variableRecord =
         factory.generateRecord(ValueType.VARIABLE, r -> r.withIntent(VariableIntent.CREATED));
-    final String expectedId =
-        VariableForListViewEntity.getIdBy(
-            variableRecord.getValue().getScopeKey(), variableRecord.getValue().getName());
+    final String expectedId = variableRecord.getValue().getFullyQualifiedName();
 
     // when
     final var idList = underTest.generateIds(variableRecord);
@@ -140,10 +138,7 @@ public class ListViewVariableFromVariableHandlerTest {
     underTest.updateEntity(variableRecord, entity);
 
     // then
-    assertThat(entity.getId())
-        .isEqualTo(
-            VariableForListViewEntity.getIdBy(
-                variableRecord.getValue().getScopeKey(), variableRecord.getValue().getName()));
+    assertThat(entity.getId()).isEqualTo(variableRecord.getValue().getFullyQualifiedName());
     assertThat(entity.getKey()).isEqualTo(variableRecord.getKey());
     assertThat(entity.getPartitionId()).isEqualTo(variableRecord.getPartitionId());
     assertThat(entity.getScopeKey()).isEqualTo(variableRecord.getValue().getScopeKey());

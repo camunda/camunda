@@ -38,10 +38,6 @@ public class VariableForListViewEntity
   @SinceVersion(value = "8.9.0", requireDefault = false)
   private Long rootProcessInstanceKey;
 
-  public static String getIdBy(final long scopeKey, final String name) {
-    return String.format("%d-%s", scopeKey, name);
-  }
-
   @Override
   public String getId() {
     return id;

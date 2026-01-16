@@ -11,7 +11,6 @@ import static io.camunda.exporter.utils.ExporterUtil.tenantOrDefault;
 
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.VariableEntity;
-import io.camunda.webapps.schema.entities.listview.VariableForListViewEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
@@ -45,9 +44,7 @@ public class VariableHandler implements ExportHandler<VariableEntity, VariableRe
 
   @Override
   public List<String> generateIds(final Record<VariableRecordValue> record) {
-    final var recordValue = record.getValue();
-    return List.of(
-        VariableForListViewEntity.getIdBy(recordValue.getScopeKey(), recordValue.getName()));
+    return List.of(record.getValue().getFullyQualifiedName());
   }
 
   @Override
@@ -60,7 +57,7 @@ public class VariableHandler implements ExportHandler<VariableEntity, VariableRe
     final var recordValue = record.getValue();
 
     entity
-        .setId(VariableForListViewEntity.getIdBy(recordValue.getScopeKey(), recordValue.getName()))
+        .setId(recordValue.getFullyQualifiedName())
         .setKey(record.getKey())
         .setPartitionId(record.getPartitionId())
         .setScopeKey(recordValue.getScopeKey())

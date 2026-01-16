@@ -56,9 +56,7 @@ public class ListViewVariableFromVariableHandler
 
   @Override
   public List<String> generateIds(final Record<VariableRecordValue> record) {
-    final var recordValue = record.getValue();
-    return List.of(
-        VariableForListViewEntity.getIdBy(recordValue.getScopeKey(), recordValue.getName()));
+    return List.of(record.getValue().getFullyQualifiedName());
   }
 
   @Override
@@ -71,7 +69,7 @@ public class ListViewVariableFromVariableHandler
       final Record<VariableRecordValue> record, final VariableForListViewEntity entity) {
     final var recordValue = record.getValue();
     entity
-        .setId(VariableForListViewEntity.getIdBy(recordValue.getScopeKey(), recordValue.getName()))
+        .setId(recordValue.getFullyQualifiedName())
         .setKey(record.getKey())
         .setPartitionId(record.getPartitionId())
         .setPosition(record.getPosition())
