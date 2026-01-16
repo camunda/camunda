@@ -23,7 +23,7 @@ import {
 } from '../../../../utils/http';
 import {defaultAssertionOptions, generateUniqueId} from '../../../../utils/constants';
 import {cleanupUsers} from '../../../../utils/usersCleanup';
-import {createUser, grantUserResourceAuthorization, createComponentAuthorization, createRole} from '@requestHelpers';
+import {createUser, grantUserResourceAuthorization, createComponentAuthorization, createRole, createGroup} from '@requestHelpers';
 import {validateResponse} from '../../../../json-body-assertions';
 import {
   CREATE_CUSTOM_AUTHORIZATION_BODY,
@@ -34,6 +34,7 @@ import { create } from 'domain';
 import { waitForAssertion } from 'utils/waitForAssertion';
 import { sleep } from 'utils/sleep';
 import { cleanupRoles } from 'utils/rolesCleanup';
+import { cleanupGroups } from 'utils/groupsCleanup';
 
 type Authorization = {
   ownerId: string;
@@ -60,6 +61,17 @@ test.describe.parallel('Update Authorization API', () => {
         description: string,
     };
     let originalRoleAuthorization: Authorization;
+    let originalGroup: {
+        groupId: string;
+        name: string;
+        description: string;
+    };
+    let newGroupForAuthorization: {
+        groupId: string;
+        name: string;
+        description: string;
+    };
+    let originalGroupAuthorization: Authorization;
     
         
   test.beforeAll(async ({request}) => {
@@ -71,6 +83,14 @@ test.describe.parallel('Update Authorization API', () => {
     await test.step('Setup - Create role for Authorization tests', async () => {
         originalRole = await createRole(request);
         console.log('Created role with roleId:', originalRole.roleId);
+    });
+
+    await test.step('Setup - Create group for Authorization tests', async () => {
+        originalGroup = await createGroup(request);
+        console.log('Created group with groupId:', originalGroup.groupId);
+
+        newGroupForAuthorization = await createGroup(request);
+        console.log('Created new group with groupId:', newGroupForAuthorization.groupId);
     });
 
     await test.step('Setup - Grant user necessary authorizations', async () => {
@@ -85,6 +105,13 @@ test.describe.parallel('Update Authorization API', () => {
         const roleAuthorizationKey = await createComponentAuthorization(request, roleAuthorizationBody);
         authorizationKeys.set('roleAuthorization', roleAuthorizationKey);
         originalRoleAuthorization = roleAuthorizationBody;
+    });
+
+    await test.step('Setup - Grant created group authorization', async () => {
+        const groupAuthorizationBody = CREATE_CUSTOM_AUTHORIZATION_BODY(originalGroup.groupId, 'GROUP', '*', 'TENANT', ['UPDATE']);
+        const groupAuthorizationKey = await createComponentAuthorization(request, groupAuthorizationBody);
+        authorizationKeys.set('groupAuthorization', groupAuthorizationKey);
+        originalGroupAuthorization = groupAuthorizationBody;
     });
   });
 
@@ -104,6 +131,15 @@ test.describe.parallel('Update Authorization API', () => {
         ' created for Authorization tests',
         async () => {
         await cleanupRoles(request, [originalRole.roleId]);
+        },
+    );
+
+    await test.step(
+        'Teardown - Delete group with groupId ' +
+        originalGroup.groupId + ' and ' + newGroupForAuthorization.groupId +
+        ' created for Authorization tests',
+        async () => {
+        await cleanupGroups(request, [originalGroup.groupId, newGroupForAuthorization.groupId]);
         },
     );
 
@@ -181,6 +217,46 @@ test.describe.parallel('Update Authorization API', () => {
             },
             onFailure: async () => {
                 getAuthRes = await request.get(buildUrl(`/authorizations/${expectedRoleAuthorization.authorizationKey}`), {
+                    headers: jsonHeaders(),
+                });
+                authBody = await getAuthRes.json();
+            },
+            maxRetries: 100,
+        });
+    });
+  });
+
+  test('Update Group Authorization - change ownerId to another group - success', async ({request}) => {
+    const updatedGroupAuthorization = {
+        ...originalGroupAuthorization,
+        ownerId: newGroupForAuthorization.groupId,
+    };
+
+    await test.step('Update group authorization to new group ownerId', async () => {
+        const authRes = await request.put(buildUrl(`/authorizations/${authorizationKeys.get('groupAuthorization')}`), {
+            headers: jsonHeaders(),
+            data: {
+                ...updatedGroupAuthorization   
+            },
+        });
+        expect(authRes.status()).toBe(204);
+    });
+
+    await test.step('Verify updated authorization', async () => {
+        const expectedGroupAuthorization = {...updatedGroupAuthorization, authorizationKey: authorizationKeys.get('groupAuthorization')};
+        let getAuthRes = await request.get(buildUrl(`/authorizations/${expectedGroupAuthorization.authorizationKey}`), {
+            headers: jsonHeaders(),
+        });
+        let authBody = await getAuthRes.json();
+        
+        await waitForAssertion({
+            assertion: async () => {
+                expect(getAuthRes.status()).toBe(200);
+                assertRequiredFields(authBody, authorizationRequiredFields);
+                assertEqualsForKeys(authBody, expectedGroupAuthorization, authorizationRequiredFields);
+            },
+            onFailure: async () => {
+                getAuthRes = await request.get(buildUrl(`/authorizations/${expectedGroupAuthorization.authorizationKey}`), {
                     headers: jsonHeaders(),
                 });
                 authBody = await getAuthRes.json();
