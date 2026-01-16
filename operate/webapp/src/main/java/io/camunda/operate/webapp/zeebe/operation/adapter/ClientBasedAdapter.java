@@ -45,9 +45,11 @@ public class ClientBasedAdapter implements OperateServicesAdapter {
   }
 
   @Override
-  public void deleteResource(final long resourceKey, final String operationId) {
+  public void deleteResource(
+      final long resourceKey, final String operationId, final boolean deleteHistory) {
     final var deleteResourceCommand =
-        withOperationReference(camundaClient.newDeleteResourceCommand(resourceKey), operationId);
+        withOperationReference(
+            camundaClient.newDeleteResourceCommand(resourceKey, deleteHistory), operationId);
     deleteResourceCommand.send().join();
   }
 

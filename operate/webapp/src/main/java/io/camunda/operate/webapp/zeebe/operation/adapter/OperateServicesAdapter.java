@@ -14,7 +14,8 @@ import java.util.Map;
 
 public interface OperateServicesAdapter {
 
-  void deleteResource(final long resourceKey, final String operationId);
+  void deleteResource(
+      final long resourceKey, final String operationId, final boolean deleteHistory);
 
   void migrateProcessInstance(
       final long processInstanceKey, final MigrationPlan migrationPlan, final String operationId);
