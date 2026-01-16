@@ -54,6 +54,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.testcontainers.containers.localstack.LocalStackContainer;
@@ -69,6 +71,7 @@ import software.amazon.awssdk.services.s3.model.S3Object;
 
 @Testcontainers
 @ZeebeIntegration
+@Execution(ExecutionMode.SAME_THREAD)
 public class DynamicNodeIdIT {
   @Container
   private static final LocalStackContainer S3 =

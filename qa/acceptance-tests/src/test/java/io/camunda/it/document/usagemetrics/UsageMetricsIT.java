@@ -35,6 +35,8 @@ import java.util.stream.Stream;
 import org.agrona.CloseHelper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AutoClose;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.testcontainers.containers.GenericContainer;
@@ -43,6 +45,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 /** Usage metrics integration test for both Elasticsearch and OpenSearch. */
 @Testcontainers
 @ZeebeIntegration
+@Execution(ExecutionMode.SAME_THREAD)
 public class UsageMetricsIT {
 
   private static final String REPOSITORY_NAME = "um-test-repository";

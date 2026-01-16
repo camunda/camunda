@@ -19,8 +19,11 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
 @MultiDbTest
+@Execution(ExecutionMode.SAME_THREAD)
 public class VariableIT {
 
   private static CamundaClient client;

@@ -29,12 +29,15 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import org.assertj.core.api.ThrowingConsumer;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
 /**
  * Acceptance tests for process instance migration with Ad Hoc Subprocess functionality. These tests
  * verify end-to-end migration scenarios involving ad hoc subprocesses.
  */
 @MultiDbTest
+@Execution(ExecutionMode.SAME_THREAD)
 public class AdHocSubprocessMigrationIT {
 
   private static CamundaClient client;

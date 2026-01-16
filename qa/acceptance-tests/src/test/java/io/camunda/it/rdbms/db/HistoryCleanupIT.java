@@ -35,6 +35,8 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.AutoConfigurationPackage;
 import org.springframework.boot.test.autoconfigure.data.jdbc.DataJdbcTest;
@@ -48,6 +50,7 @@ import org.springframework.test.context.TestPropertySource;
 @AutoConfigurationPackage
 @TestPropertySource(
     properties = {"spring.liquibase.enabled=false", "camunda.data.secondary-storage.type=rdbms"})
+@Execution(ExecutionMode.SAME_THREAD)
 public class HistoryCleanupIT {
 
   private static final List<String> PROCESS_RELATED_TABLE_NAMES =

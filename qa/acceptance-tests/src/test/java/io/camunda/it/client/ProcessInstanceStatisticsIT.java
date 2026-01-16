@@ -24,9 +24,12 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.util.function.Consumer;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
 @MultiDbTest
 @CompatibilityTest
+@Execution(ExecutionMode.SAME_THREAD)
 public class ProcessInstanceStatisticsIT {
 
   private static CamundaClient camundaClient;

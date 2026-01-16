@@ -36,9 +36,12 @@ import java.util.Objects;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
 @MultiDbTest
 @CompatibilityTest(enableMultiTenancy = true, enableAuthorization = true)
+@Execution(ExecutionMode.SAME_THREAD)
 public class ProcessDefinitionInstanceStatisticsIT {
 
   private static final String TENANT_ID_1 = "tenant1";

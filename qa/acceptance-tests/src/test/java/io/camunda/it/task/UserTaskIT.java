@@ -29,8 +29,11 @@ import java.util.Map;
 import java.util.function.Consumer;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
 @MultiDbTest
+@Execution(ExecutionMode.SAME_THREAD)
 public class UserTaskIT {
 
   private static CamundaClient client;

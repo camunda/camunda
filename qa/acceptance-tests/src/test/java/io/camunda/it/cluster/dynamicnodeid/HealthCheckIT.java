@@ -31,6 +31,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.testcontainers.containers.ToxiproxyContainer;
 import org.testcontainers.containers.localstack.LocalStackContainer;
 import org.testcontainers.containers.localstack.LocalStackContainer.Service;
@@ -42,6 +44,7 @@ import software.amazon.awssdk.services.s3.S3Client;
 
 @Testcontainers
 @ZeebeIntegration
+@Execution(ExecutionMode.SAME_THREAD)
 public class HealthCheckIT {
 
   @Container

@@ -28,9 +28,12 @@ import java.util.function.Function;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
 @Tag("rdbms")
 @ExtendWith(CamundaRdbmsInvocationContextProviderExtension.class)
+@Execution(ExecutionMode.SAME_THREAD)
 public class ElementInstanceSortIT {
 
   public static final Long PARTITION_ID = 0L;

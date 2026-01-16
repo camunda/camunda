@@ -32,12 +32,15 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 @MultiDbTest
 @CompatibilityTest
+@Execution(ExecutionMode.SAME_THREAD)
 public class ProcessDefinitionSearchIT {
   private static final String PROCESS_ID_WITH_START_FORM = "Process_11hxie4";
   private static final String FORM_ID = "test";

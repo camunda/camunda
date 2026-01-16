@@ -22,9 +22,12 @@ import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
 @MultiDbTest
 @CompatibilityTest
+@Execution(ExecutionMode.SAME_THREAD)
 public class CreateDocumentIT {
 
   private static CamundaClient camundaClient;

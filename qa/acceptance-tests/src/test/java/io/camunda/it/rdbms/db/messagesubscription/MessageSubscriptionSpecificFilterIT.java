@@ -26,6 +26,8 @@ import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,6 +46,7 @@ import org.springframework.test.context.TestPropertySource;
       "camunda.data.secondary-storage.type=rdbms",
       "logging.level.io.camunda.db.rdbms=DEBUG"
     })
+@Execution(ExecutionMode.SAME_THREAD)
 public class MessageSubscriptionSpecificFilterIT {
   private static final Long MESSAGE_SUBSCRIPTION_KEY = CommonFixtures.nextKey();
   private static final String MESSAGE_NAME = "messageName";

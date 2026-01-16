@@ -43,9 +43,12 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
 @MultiDbTest
 @CompatibilityTest
+@Execution(ExecutionMode.SAME_THREAD)
 public class ProcessDefinitionStatisticsIT {
 
   public static final String INCIDENT_ERROR_MESSAGE_V1 =

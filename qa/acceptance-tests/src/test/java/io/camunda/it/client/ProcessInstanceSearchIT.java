@@ -43,9 +43,12 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
 @MultiDbTest
 @CompatibilityTest
+@Execution(ExecutionMode.SAME_THREAD)
 public class ProcessInstanceSearchIT {
 
   public static final String INCIDENT_ERROR_MESSAGE_V1 =

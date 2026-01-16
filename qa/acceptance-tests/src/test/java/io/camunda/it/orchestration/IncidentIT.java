@@ -29,8 +29,11 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
 @MultiDbTest
+@Execution(ExecutionMode.SAME_THREAD)
 public class IncidentIT {
 
   private static CamundaClient client;

@@ -38,8 +38,11 @@ import org.assertj.core.api.InstanceOfAssertFactories;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
 @MultiDbTest
+@Execution(ExecutionMode.SAME_THREAD)
 public class ClusterPurgeMultiDbIT {
 
   private static CamundaClient client;

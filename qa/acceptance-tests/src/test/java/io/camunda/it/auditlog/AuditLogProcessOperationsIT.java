@@ -39,6 +39,8 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
 /**
  * Acceptance tests for audit log entries related to process operations. This test class verifies
@@ -47,6 +49,7 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
  */
 @MultiDbTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
+@Execution(ExecutionMode.SAME_THREAD)
 public class AuditLogProcessOperationsIT {
 
   @MultiDbTestApplication

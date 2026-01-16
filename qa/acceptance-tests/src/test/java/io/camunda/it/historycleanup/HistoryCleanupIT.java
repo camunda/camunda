@@ -24,8 +24,11 @@ import java.util.Objects;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
 @HistoryMultiDbTest
+@Execution(ExecutionMode.SAME_THREAD)
 public class HistoryCleanupIT {
 
   static final String RESOURCE_NAME = "process/process_with_assigned_user_task.bpmn";

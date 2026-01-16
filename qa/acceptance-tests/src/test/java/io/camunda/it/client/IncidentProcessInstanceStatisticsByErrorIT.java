@@ -39,8 +39,11 @@ import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
 @MultiDbTest
+@Execution(ExecutionMode.SAME_THREAD)
 public class IncidentProcessInstanceStatisticsByErrorIT {
 
   private static final String PASSWORD = "password";

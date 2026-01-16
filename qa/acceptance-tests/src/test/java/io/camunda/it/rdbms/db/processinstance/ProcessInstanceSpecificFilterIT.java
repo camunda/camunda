@@ -29,6 +29,8 @@ import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -48,6 +50,7 @@ import org.springframework.test.context.TestPropertySource;
       "camunda.data.secondary-storage.type=rdbms",
       "logging.level.io.camunda.db.rdbms.sql=DEBUG"
     })
+@Execution(ExecutionMode.SAME_THREAD)
 public class ProcessInstanceSpecificFilterIT {
 
   public static final OffsetDateTime NOW = OffsetDateTime.now();

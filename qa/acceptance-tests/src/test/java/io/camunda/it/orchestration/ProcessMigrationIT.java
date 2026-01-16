@@ -34,8 +34,11 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import org.assertj.core.api.ThrowingConsumer;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
 @MultiDbTest
+@Execution(ExecutionMode.SAME_THREAD)
 public class ProcessMigrationIT {
 
   private static CamundaClient client;
