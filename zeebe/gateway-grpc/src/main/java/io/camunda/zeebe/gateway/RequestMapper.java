@@ -391,7 +391,9 @@ public final class RequestMapper extends RequestUtil {
   public static BrokerDeleteResourceRequest toDeleteResourceRequest(
       final DeleteResourceRequest grpcRequest) {
     final var brokerRequest =
-        new BrokerDeleteResourceRequest().setResourceKey(grpcRequest.getResourceKey());
+        new BrokerDeleteResourceRequest()
+            .setResourceKey(grpcRequest.getResourceKey())
+            .setDeleteHistory(grpcRequest.getDeleteHistory());
 
     if (grpcRequest.hasOperationReference()) {
       brokerRequest.setOperationReference(grpcRequest.getOperationReference());

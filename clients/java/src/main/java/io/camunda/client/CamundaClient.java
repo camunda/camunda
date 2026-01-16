@@ -664,6 +664,21 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   DeleteResourceCommandStep1 newDeleteResourceCommand(long resourceKey);
 
   /**
+   * Command to delete a resource.
+   *
+   * <pre>
+   * camundaClient
+   *  .newDeleteResourceCommand(resourceKey, deleteHistory)
+   *  .send();
+   * </pre>
+   *
+   * @param resourceKey the key of the resource
+   * @param deleteHistory flag that indicates if the historic data should be deleted
+   * @return the builder for the command
+   */
+  DeleteResourceCommandStep1 newDeleteResourceCommand(long resourceKey, boolean deleteHistory);
+
+  /**
    * Command to complete a user task.
    *
    * <pre>

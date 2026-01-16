@@ -348,7 +348,7 @@ public class ResourceDeletionDeleteProcessor
 
     if (!hasRunningInstances) {
       if (!command.isCommandDistributed() && command.getValue().isDeleteHistory()) {
-        deleteProcessInstanceHistory(process, eventKey);
+        deleteProcessInstanceHistory(process, eventKey, command.getValue());
       }
       stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), ProcessIntent.DELETED, processRecord);
     } else {
@@ -356,12 +356,16 @@ public class ResourceDeletionDeleteProcessor
     }
   }
 
-  private void deleteProcessInstanceHistory(final DeployedProcess process, final long eventKey) {
+  private void deleteProcessInstanceHistory(
+      final DeployedProcess process,
+      final long eventKey,
+      final ResourceDeletionRecord resourceDeletionRecord) {
     final var filter =
         new ProcessInstanceFilter.Builder().processDefinitionKeys(process.getKey()).build();
+    final long batchOperationKey = keyGenerator.nextKey();
     final var batchOperationRecord =
         new BatchOperationCreationRecord()
-            .setBatchOperationKey(keyGenerator.nextKey())
+            .setBatchOperationKey(batchOperationKey)
             .setBatchOperationType(BatchOperationType.DELETE_PROCESS_INSTANCE)
             .setEntityFilter(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(filter)))
             .setAuthentication(
@@ -375,6 +379,9 @@ public class ResourceDeletionDeleteProcessor
                     .setResourceType(HistoryDeletionType.PROCESS_DEFINITION));
     commandWriter.appendFollowUpCommand(
         eventKey, BatchOperationIntent.CREATE, batchOperationRecord);
+
+    resourceDeletionRecord.setBatchOperationKey(batchOperationKey);
+    resourceDeletionRecord.setBatchOperationType(BatchOperationType.DELETE_PROCESS_INSTANCE);
   }
 
   private void unsubscribeStartEvents(final DeployedProcess deployedProcess) {

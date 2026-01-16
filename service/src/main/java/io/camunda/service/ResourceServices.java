@@ -57,7 +57,9 @@ public final class ResourceServices extends ApiServices<ResourceServices> {
   public CompletableFuture<ResourceDeletionRecord> deleteResource(
       final ResourceDeletionRequest request) {
     final var brokerRequest =
-        new BrokerDeleteResourceRequest().setResourceKey(request.resourceKey());
+        new BrokerDeleteResourceRequest()
+            .setResourceKey(request.resourceKey())
+            .setDeleteHistory(request.deleteHistory());
     if (request.operationReference() != null) {
       brokerRequest.setOperationReference(request.operationReference());
     }
@@ -71,7 +73,8 @@ public final class ResourceServices extends ApiServices<ResourceServices> {
 
   public record DeployResourcesRequest(Map<String, byte[]> resources, String tenantId) {}
 
-  public record ResourceDeletionRequest(long resourceKey, Long operationReference) {}
+  public record ResourceDeletionRequest(
+      long resourceKey, Long operationReference, boolean deleteHistory) {}
 
   public record ResourceFetchRequest(long resourceKey) {}
 }

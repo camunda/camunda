@@ -497,7 +497,21 @@ public final class ResponseMapper {
 
   public static DeleteResourceResponse toDeleteResourceResponse(
       final long key, final ResourceDeletionRecord brokerResponse) {
-    return DeleteResourceResponse.getDefaultInstance();
+    final DeleteResourceResponse.Builder responseBuilder =
+        DeleteResourceResponse.newBuilder()
+            .setResourceKey(String.valueOf(brokerResponse.getResourceKey()));
+
+    if (brokerResponse.isDeleteHistory() && brokerResponse.getBatchOperationKey() != -1) {
+      final var batchOperationBuilder =
+          GatewayOuterClass.BatchOperationCreatedResult.newBuilder()
+              .setBatchOperationKey(String.valueOf(brokerResponse.getBatchOperationKey()))
+              .setBatchOperationType(
+                  GatewayOuterClass.BatchOperationCreatedResult.BatchOperationTypeEnum.valueOf(
+                      brokerResponse.getBatchOperationType().name()));
+      responseBuilder.setBatchOperation(batchOperationBuilder.build());
+    }
+
+    return responseBuilder.build();
   }
 
   public static BroadcastSignalResponse toBroadcastSignalResponse(

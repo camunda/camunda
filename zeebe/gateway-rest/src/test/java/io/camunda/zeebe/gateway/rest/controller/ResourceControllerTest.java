@@ -29,9 +29,11 @@ import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionReco
 import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
+import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -390,119 +392,6 @@ public class ResourceControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldDeleteResource() {
-    // given
-    when(resourceServices.deleteResource(any(ResourceDeletionRequest.class)))
-        .thenReturn(CompletableFuture.completedFuture(new ResourceDeletionRecord()));
-
-    final var request =
-        """
-            {
-              "operationReference": 123
-            }""";
-
-    // when/then
-    webClient
-        .post()
-        .uri(DELETE_RESOURCE_ENDPOINT.formatted("1"))
-        .accept(MediaType.APPLICATION_JSON)
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(request)
-        .exchange()
-        .expectStatus()
-        .isNoContent();
-
-    Mockito.verify(resourceServices).deleteResource(deleteRequestCaptor.capture());
-    final var capturedRequest = deleteRequestCaptor.getValue();
-    assertThat(capturedRequest.resourceKey()).isEqualTo(1);
-    assertThat(capturedRequest.operationReference()).isEqualTo(123L);
-  }
-
-  @Test
-  void shouldDeleteResourceWithNoBody() {
-    // given
-    when(resourceServices.deleteResource(any(ResourceDeletionRequest.class)))
-        .thenReturn(CompletableFuture.completedFuture(new ResourceDeletionRecord()));
-
-    // when/then
-    webClient
-        .post()
-        .uri(DELETE_RESOURCE_ENDPOINT.formatted("1"))
-        .accept(MediaType.APPLICATION_JSON)
-        .contentType(MediaType.APPLICATION_JSON)
-        .exchange()
-        .expectStatus()
-        .isNoContent();
-
-    Mockito.verify(resourceServices).deleteResource(deleteRequestCaptor.capture());
-    final var capturedRequest = deleteRequestCaptor.getValue();
-    assertThat(capturedRequest.resourceKey()).isEqualTo(1L);
-    assertThat(capturedRequest.operationReference()).isNull();
-  }
-
-  @Test
-  void shouldDeleteResourceWithEmptyBody() {
-    // given
-    when(resourceServices.deleteResource(any(ResourceDeletionRequest.class)))
-        .thenReturn(CompletableFuture.completedFuture(new ResourceDeletionRecord()));
-
-    final var request =
-        """
-            {}""";
-
-    // when/then
-    webClient
-        .post()
-        .uri(DELETE_RESOURCE_ENDPOINT.formatted("1"))
-        .accept(MediaType.APPLICATION_JSON)
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(request)
-        .exchange()
-        .expectStatus()
-        .isNoContent();
-
-    Mockito.verify(resourceServices).deleteResource(deleteRequestCaptor.capture());
-    final var capturedRequest = deleteRequestCaptor.getValue();
-    assertThat(capturedRequest.resourceKey()).isEqualTo(1);
-    assertThat(capturedRequest.operationReference()).isNull();
-  }
-
-  @Test
-  void shouldRejectDeleteResourceWithOperationReferenceNotValid() {
-    // given
-    final var request =
-        """
-            {
-              "operationReference": -123
-            }""";
-
-    final var expectedBody =
-        """
-            {
-                "type":"about:blank",
-                "title":"INVALID_ARGUMENT",
-                "status":400,
-                "detail":"The value for operationReference is '-123' but must be > 0.",
-                "instance":"/v2/resources/1/deletion"
-             }""";
-
-    // when / then
-    webClient
-        .post()
-        .uri(DELETE_RESOURCE_ENDPOINT.formatted("1"))
-        .accept(MediaType.APPLICATION_JSON)
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(request)
-        .exchange()
-        .expectStatus()
-        .isBadRequest()
-        .expectHeader()
-        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
-        .expectBody()
-        .json(expectedBody, JsonCompareMode.STRICT);
-  }
-
-  @Test
   void shouldGetResource() {
     // given
     when(resourceServices.fetchResource(new ResourceFetchRequest(1)))
@@ -777,5 +666,258 @@ public class ResourceControllerTest extends RestControllerTest {
             """
                 .formatted(url),
             JsonCompareMode.STRICT);
+  }
+
+  @Nested
+  class DeleteResourceTests {
+
+    @Test
+    void shouldDeleteResource() {
+      // given
+      final var resourceKey = 1L;
+      when(resourceServices.deleteResource(any(ResourceDeletionRequest.class)))
+          .thenReturn(
+              CompletableFuture.completedFuture(
+                  new ResourceDeletionRecord().setResourceKey(resourceKey)));
+
+      final var request =
+          """
+              {
+                "operationReference": 123
+              }""";
+
+      // when/then
+      webClient
+          .post()
+          .uri(DELETE_RESOURCE_ENDPOINT.formatted("1"))
+          .accept(MediaType.APPLICATION_JSON)
+          .contentType(MediaType.APPLICATION_JSON)
+          .bodyValue(request)
+          .exchange()
+          .expectStatus()
+          .isOk()
+          .expectBody()
+          .json(
+              """
+              {
+                "resourceKey": "1"
+              }
+              """,
+              JsonCompareMode.STRICT);
+
+      Mockito.verify(resourceServices).deleteResource(deleteRequestCaptor.capture());
+      final var capturedRequest = deleteRequestCaptor.getValue();
+      assertThat(capturedRequest.resourceKey()).isEqualTo(resourceKey);
+      assertThat(capturedRequest.operationReference()).isEqualTo(123L);
+      assertThat(capturedRequest.deleteHistory()).isFalse();
+    }
+
+    @Test
+    void shouldDeleteResourceWithNoBody() {
+      // given
+      final var resourceKey = 1L;
+      when(resourceServices.deleteResource(any(ResourceDeletionRequest.class)))
+          .thenReturn(
+              CompletableFuture.completedFuture(
+                  new ResourceDeletionRecord().setResourceKey(resourceKey)));
+
+      // when/then
+      webClient
+          .post()
+          .uri(DELETE_RESOURCE_ENDPOINT.formatted("1"))
+          .accept(MediaType.APPLICATION_JSON)
+          .contentType(MediaType.APPLICATION_JSON)
+          .exchange()
+          .expectStatus()
+          .isOk()
+          .expectBody()
+          .json(
+              """
+              {
+                "resourceKey": "1"
+              }
+              """,
+              JsonCompareMode.STRICT);
+
+      Mockito.verify(resourceServices).deleteResource(deleteRequestCaptor.capture());
+      final var capturedRequest = deleteRequestCaptor.getValue();
+      assertThat(capturedRequest.resourceKey()).isEqualTo(resourceKey);
+      assertThat(capturedRequest.operationReference()).isNull();
+      assertThat(capturedRequest.deleteHistory()).isFalse();
+    }
+
+    @Test
+    void shouldDeleteResourceWithEmptyRequestBody() {
+      // given
+      final var resourceKey = 1L;
+      when(resourceServices.deleteResource(any(ResourceDeletionRequest.class)))
+          .thenReturn(
+              CompletableFuture.completedFuture(
+                  new ResourceDeletionRecord().setResourceKey(resourceKey)));
+
+      final var request =
+          """
+              {}""";
+
+      // when/then
+      webClient
+          .post()
+          .uri(DELETE_RESOURCE_ENDPOINT.formatted("1"))
+          .accept(MediaType.APPLICATION_JSON)
+          .contentType(MediaType.APPLICATION_JSON)
+          .bodyValue(request)
+          .exchange()
+          .expectStatus()
+          .isOk()
+          .expectBody()
+          .json(
+              """
+              {
+                "resourceKey": "1"
+              }
+              """,
+              JsonCompareMode.STRICT);
+
+      Mockito.verify(resourceServices).deleteResource(deleteRequestCaptor.capture());
+      final var capturedRequest = deleteRequestCaptor.getValue();
+      assertThat(capturedRequest.resourceKey()).isEqualTo(resourceKey);
+      assertThat(capturedRequest.operationReference()).isNull();
+      assertThat(capturedRequest.deleteHistory()).isFalse();
+    }
+
+    @Test
+    void shouldDeleteResourceWithDeleteHistory() {
+      // given
+      final var resourceKey = 1L;
+      final var deletionRecord =
+          new ResourceDeletionRecord()
+              .setResourceKey(resourceKey)
+              .setDeleteHistory(true)
+              .setBatchOperationKey(999L)
+              .setBatchOperationType(BatchOperationType.DELETE_PROCESS_INSTANCE);
+
+      when(resourceServices.deleteResource(any(ResourceDeletionRequest.class)))
+          .thenReturn(CompletableFuture.completedFuture(deletionRecord));
+
+      final var request =
+          """
+              {
+                "deleteHistory": true
+              }""";
+
+      // when/then
+      webClient
+          .post()
+          .uri(DELETE_RESOURCE_ENDPOINT.formatted("1"))
+          .accept(MediaType.APPLICATION_JSON)
+          .contentType(MediaType.APPLICATION_JSON)
+          .bodyValue(request)
+          .exchange()
+          .expectStatus()
+          .isOk()
+          .expectBody()
+          .json(
+              """
+              {
+                "resourceKey": "1",
+                "batchOperation": {
+                  "batchOperationKey": "999",
+                  "batchOperationType": "DELETE_PROCESS_INSTANCE"
+                }
+              }
+              """,
+              JsonCompareMode.STRICT);
+
+      Mockito.verify(resourceServices).deleteResource(deleteRequestCaptor.capture());
+      final var capturedRequest = deleteRequestCaptor.getValue();
+      assertThat(capturedRequest.resourceKey()).isEqualTo(resourceKey);
+      assertThat(capturedRequest.deleteHistory()).isTrue();
+    }
+
+    @Test
+    void shouldDeleteResourceWithAllFields() {
+      // given
+      final var resourceKey = 1L;
+      final var deletionRecord =
+          new ResourceDeletionRecord()
+              .setResourceKey(resourceKey)
+              .setDeleteHistory(true)
+              .setBatchOperationKey(555L)
+              .setBatchOperationType(BatchOperationType.DELETE_PROCESS_INSTANCE);
+
+      when(resourceServices.deleteResource(any(ResourceDeletionRequest.class)))
+          .thenReturn(CompletableFuture.completedFuture(deletionRecord));
+
+      final var request =
+          """
+              {
+                "operationReference": 123,
+                "deleteHistory": true
+              }""";
+
+      // when/then
+      webClient
+          .post()
+          .uri(DELETE_RESOURCE_ENDPOINT.formatted("1"))
+          .accept(MediaType.APPLICATION_JSON)
+          .contentType(MediaType.APPLICATION_JSON)
+          .bodyValue(request)
+          .exchange()
+          .expectStatus()
+          .isOk()
+          .expectBody()
+          .json(
+              """
+              {
+                "resourceKey": "1",
+                "batchOperation": {
+                  "batchOperationKey": "555",
+                  "batchOperationType": "DELETE_PROCESS_INSTANCE"
+                }
+              }
+              """,
+              JsonCompareMode.STRICT);
+
+      Mockito.verify(resourceServices).deleteResource(deleteRequestCaptor.capture());
+      final var capturedRequest = deleteRequestCaptor.getValue();
+      assertThat(capturedRequest.resourceKey()).isEqualTo(resourceKey);
+      assertThat(capturedRequest.operationReference()).isEqualTo(123L);
+      assertThat(capturedRequest.deleteHistory()).isTrue();
+    }
+
+    @Test
+    void shouldRejectDeleteResourceWithOperationReferenceNotValid() {
+      // given
+      final var request =
+          """
+              {
+                "operationReference": -123
+              }""";
+
+      final var expectedBody =
+          """
+              {
+                  "type":"about:blank",
+                  "title":"INVALID_ARGUMENT",
+                  "status":400,
+                  "detail":"The value for operationReference is '-123' but must be > 0.",
+                  "instance":"/v2/resources/1/deletion"
+               }""";
+
+      // when / then
+      webClient
+          .post()
+          .uri(DELETE_RESOURCE_ENDPOINT.formatted("1"))
+          .accept(MediaType.APPLICATION_JSON)
+          .contentType(MediaType.APPLICATION_JSON)
+          .bodyValue(request)
+          .exchange()
+          .expectStatus()
+          .isBadRequest()
+          .expectHeader()
+          .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+          .expectBody()
+          .json(expectedBody, JsonCompareMode.STRICT);
+    }
   }
 }

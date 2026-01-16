@@ -2529,17 +2529,22 @@ final class JsonSerializableToJsonTest {
         (Supplier<UnifiedRecordValue>)
             () -> {
               final var resourceKey = 1L;
+              final var batchOperationKey = 2L;
 
               return new ResourceDeletionRecord()
                   .setResourceKey(resourceKey)
                   .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
-                  .setDeleteHistory(true);
+                  .setDeleteHistory(true)
+                  .setBatchOperationKey(batchOperationKey)
+                  .setBatchOperationType(BatchOperationType.DELETE_PROCESS_INSTANCE);
             },
         """
                 {
                   "resourceKey":1,
                   "tenantId": "<default>",
-                  "deleteHistory": true
+                  "deleteHistory": true,
+                  "batchOperationKey": 2,
+                  "batchOperationType": "DELETE_PROCESS_INSTANCE"
                 }
                 """
       },
@@ -2557,7 +2562,9 @@ final class JsonSerializableToJsonTest {
                 {
                   "resourceKey":1,
                   "tenantId": "<default>",
-                  "deleteHistory": false
+                  "deleteHistory": false,
+                  "batchOperationKey": -1,
+                  "batchOperationType": "DELETE_PROCESS_INSTANCE"
                 }
                 """
       },
