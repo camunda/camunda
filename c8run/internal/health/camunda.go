@@ -23,7 +23,6 @@ import (
 
 const (
 	inboundConnectorsPort = 8086
-	zeebeGatewayAddress   = "localhost:26500"
 	zeebeAPIURL           = "http://localhost:26500"
 	camundaMetricsURL     = "http://localhost:9600/actuator/prometheus"
 	quickstartURL         = "https://docs.camunda.io/docs/next/guides/getting-started-example/"
@@ -146,7 +145,7 @@ func PrintStatus(settings types.C8RunSettings) error {
 		InboundConnectorsAPI: fmt.Sprintf("http://localhost:%d/", inboundConnectorsPort),
 		ZeebeAPI:             zeebeAPIURL,
 		CamundaMetrics:       camundaMetricsURL,
-		DesktopModelerTarget: zeebeGatewayAddress,
+		DesktopModelerTarget: fmt.Sprintf("%s://localhost:%d/v2/", protocol, camundaPort),
 		QuickstartURL:        quickstartURL,
 		JavaDevelopersURL:    javaSpringGuideURL,
 		AgentGuideURL:        agentGuideURL,
