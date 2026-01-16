@@ -97,7 +97,7 @@
     <version.zeebe-test-container>3.6.9</version.zeebe-test-container>
     <version.feel-scala>1.18.3</version.feel-scala>
     <version.dmn-scala>1.10.1</version.dmn-scala>
-    <version.rest-assured>5.5.6</version.rest-assured>
+    <version.rest-assured>5.5.7</version.rest-assured>
     <version.spring>6.2.15</version.spring>
     <version.spring-security>6.5.7</version.spring-security>
     <version.spring-boot>3.5.9</version.spring-boot>
