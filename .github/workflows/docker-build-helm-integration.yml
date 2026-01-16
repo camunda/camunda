@@ -404,4 +404,37 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
+      - name: Wait for downstream workflow to finish
+        env:
+          GH_TOKEN: ${{ steps.github-token.outputs.token }} 
+        run: |
+          set -e
+          echo "Waiting for E2E workflow to complete in camunda/c8-cross-component-e2e-tests for ${{ github.sha }}"
+
+          # Wait up to 40 min (80 x 30s)
+          for i in {1..80}; do
+            RUN_ID=$(gh api -H "Accept: application/vnd.github+json" \
+              /repos/camunda/c8-cross-component-e2e-tests/actions/runs \
+              --jq '.workflow_runs[] | select(.head_sha=="${{ github.sha }}") | .id' | head -n1)
+
+            if [[ -n "$RUN_ID" ]]; then
+              STATUS=$(gh api /repos/camunda/c8-cross-component-e2e-tests/actions/runs/$RUN_ID --jq .status)
+              CONCLUSION=$(gh api /repos/camunda/c8-cross-component-e2e-tests/actions/runs/$RUN_ID --jq .conclusion)
+
+              echo "Workflow run status: $STATUS ($CONCLUSION)"
+              if [[ "$STATUS" == "completed" ]]; then
+                if [[ "$CONCLUSION" == "success" ]]; then
+                  echo "Downstream workflow succeeded!"
+                  exit 0
+                else
+                  echo "Downstream workflow failed: $CONCLUSION"
+                  exit 1
+                fi
+              fi
+            fi
+            sleep 30
+          done
+          echo "Timed out waiting for downstream workflow to complete."
+          exit 1
+
 
