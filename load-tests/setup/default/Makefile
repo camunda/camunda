@@ -75,6 +75,7 @@ install-platform: setup-leader-balancer
 		--reset-then-reuse-values \
 		--render-subchart-notes \
 		-f camunda-platform-values.yaml \
+		-f camunda-platform-values-optimize.yaml \
 		$(if $(storage_values_file),-f $(storage_values_file)) \
 		$(additional_platform_configuration)
 
