@@ -327,4 +327,28 @@
     </plugins>
   </build>
 
+  <profiles>
+    <profile>
+      <id>optimize-zeebe-it-support</id>
+      <activation>
+        <property>
+          <name>skipQaBuild</name>
+          <value>!true</value>
+        </property>
+      </activation>
+    </profile>
+    <profile>
+      <id>skip-upgrade-tests-without-it-support</id>
+      <activation>
+        <property>
+          <name>skipQaBuild</name>
+          <value>true</value>
+        </property>
+      </activation>
+      <properties>
+        <maven.test.skip>true</maven.test.skip>
+      </properties>
+    </profile>
+  </profiles>
+
 </project>
