@@ -13,7 +13,6 @@ import io.camunda.search.connect.plugin.PluginRepository;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Context;
-import io.camunda.zeebe.exporter.api.context.Context.RecordFilter;
 import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.util.SemanticVersion;
@@ -55,7 +54,6 @@ public class ElasticsearchExporter implements Exporter {
   private ElasticsearchRecordCounters recordCounters;
   private MeterRegistry registry;
   private ElasticsearchExporterSchemaManager schemaManager;
-  private RecordFilter recordFilter;
 
   private long lastPosition = -1;
 
@@ -69,8 +67,7 @@ public class ElasticsearchExporter implements Exporter {
     validate(configuration);
     pluginRepository.load(configuration.getInterceptorPlugins());
 
-    recordFilter = new ElasticsearchRecordFilter(configuration);
-    context.setFilter(recordFilter);
+    context.setFilter(new ElasticsearchRecordFilter(configuration));
     registry = context.getMeterRegistry();
   }
 
@@ -135,14 +132,6 @@ public class ElasticsearchExporter implements Exporter {
 
   @Override
   public void export(final Record<?> record) {
-
-    if (!shouldExportRecord(record)) {
-      // ignore the record but still update the last exported position
-      // so that we don't block compaction. Don't update the controller yet, this needs to be
-      // done on the next flush.
-      lastPosition = record.getPosition();
-      return;
-    }
     schemaManager.createSchema(record.getBrokerVersion());
 
     final var recordSequence = recordCounters.getNextRecordSequence(record);
@@ -260,19 +249,6 @@ public class ElasticsearchExporter implements Exporter {
     } catch (final IOException e) {
       throw new ElasticsearchExporterException("Failed to deserialize exporter metadata", e);
     }
-  }
-
-  /**
-   * Determine whether a record should be exported or not. For Camunda 8.8 we require Optimize
-   * records to be exported, or if the configuration explicitly enables the export of all records
-   * {@link ElasticsearchExporterConfiguration#getIsIncludeEnabledRecords}. For past versions, we
-   * continue to export all records.
-   *
-   * @param record The record to check
-   * @return Whether the record should be exported or not
-   */
-  private boolean shouldExportRecord(final Record<?> record) {
-    return recordFilter.acceptRecord(record);
   }
 
   private SemanticVersion getVersion(final String version) {

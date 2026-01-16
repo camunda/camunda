@@ -11,7 +11,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 
-import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch.core.GetResponse;
 import io.camunda.zeebe.exporter.TestClient.ComponentTemplatesDto.ComponentTemplateWrapper;
 import io.camunda.zeebe.exporter.TestClient.IndexSettings;
@@ -248,42 +247,6 @@ final class ElasticsearchExporterIT {
         .get()
         .extracting(ComponentTemplateWrapper::name)
         .isEqualTo(config.index.prefix + "-" + VersionUtil.getVersionLowerCase());
-  }
-
-  @ParameterizedTest(name = "{0} - version={1}")
-  @MethodSource(
-      "io.camunda.zeebe.exporter.TestSupport#provideValueTypesWithCurrentAndPreviousVersions")
-  void shouldExportOnlyRequiredRecords(final ValueType valueType, final String version) {
-    // given
-    config.setIncludeEnabledRecords(false);
-    exporter.configure(exporterTestContext);
-    exporter.open(controller);
-
-    final var record = generateRecord(valueType, version);
-
-    // when
-    export(record);
-
-    // then
-    if (valueType == ValueType.PROCESS_INSTANCE
-        || valueType == ValueType.PROCESS
-        || valueType == ValueType.VARIABLE
-        || valueType == ValueType.INCIDENT
-        || valueType == ValueType.USER_TASK
-        || valueType == ValueType.DEPLOYMENT
-        || valueType == ValueType.JOB) {
-      final var response = testClient.getExportedDocumentFor(record);
-      assertThat(response)
-          .extracting(GetResponse::index, GetResponse::id, GetResponse::routing)
-          .containsExactly(
-              indexRouter.indexFor(record),
-              indexRouter.idFor(record),
-              String.valueOf(record.getPartitionId()));
-    } else {
-      assertThatThrownBy(() -> testClient.getExportedDocumentFor(record))
-          .isInstanceOf(ElasticsearchException.class)
-          .hasMessageContaining("no such index [%s]".formatted(indexRouter.indexFor(record)));
-    }
   }
 
   private boolean export(final Record<?> record) {

@@ -13,7 +13,6 @@ import io.camunda.search.connect.plugin.PluginRepository;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Context;
-import io.camunda.zeebe.exporter.api.context.Context.RecordFilter;
 import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.util.SemanticVersion;
@@ -41,8 +40,6 @@ public class OpensearchExporter implements Exporter {
   private MeterRegistry meterRegistry;
   private OpensearchExporterSchemaManager schemaManager;
 
-  private RecordFilter recordFilter;
-
   private long lastPosition = -1;
 
   @Override
@@ -54,8 +51,7 @@ public class OpensearchExporter implements Exporter {
     validate(configuration);
     pluginRepository.load(configuration.getInterceptorPlugins());
 
-    recordFilter = new OpensearchRecordFilter(configuration);
-    context.setFilter(recordFilter);
+    context.setFilter(new OpensearchRecordFilter(configuration));
     meterRegistry = context.getMeterRegistry();
   }
 
@@ -119,14 +115,6 @@ public class OpensearchExporter implements Exporter {
 
   @Override
   public void export(final Record<?> record) {
-
-    if (!shouldExportRecord(record)) {
-      // ignore the record but still update the last exported position
-      // so that we don't block compaction. Don't update the controller yet, this needs to be done
-      // on the next flush.
-      lastPosition = record.getPosition();
-      return;
-    }
     schemaManager.createSchema(record.getBrokerVersion());
 
     final var recordSequence = recordCounters.getNextRecordSequence(record);
@@ -140,19 +128,6 @@ public class OpensearchExporter implements Exporter {
       flush();
       updateLastExportedPosition();
     }
-  }
-
-  /**
-   * Determine whether a record should be exported or not. For Camunda 8.8 we require Optimize
-   * records to be exported, or if the configuration explicitly enables the export of all records
-   * {@link OpensearchExporterConfiguration#getIsIncludeEnabledRecords()}. For past versions, we
-   * continue to export all records.
-   *
-   * @param record The record to check
-   * @return Whether the record should be exported or not
-   */
-  private boolean shouldExportRecord(final Record<?> record) {
-    return recordFilter.acceptRecord(record);
   }
 
   private void validate(final OpensearchExporterConfiguration configuration) {

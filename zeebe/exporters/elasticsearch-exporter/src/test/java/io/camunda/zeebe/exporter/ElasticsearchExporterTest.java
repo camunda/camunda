@@ -274,39 +274,6 @@ final class ElasticsearchExporterTest {
       // then
       verify(client, never()).putIndexTemplate(valueType);
     }
-
-    @ParameterizedTest(name = "{0} - version: {1}")
-    @MethodSource(
-        "io.camunda.zeebe.exporter.TestSupport#provideValueTypesWithCurrentAndPreviousVersions")
-    void shouldExportOnlyRequiredRecords(final ValueType valueType, final String version) {
-      // given
-      config.index.createTemplate = true;
-      config.setIncludeEnabledRecords(false);
-      TestSupport.setIndexingForValueType(config.index, valueType, true);
-      exporter.configure(context);
-      exporter.open(controller);
-
-      // when
-      final var recordMock = mock(Record.class);
-      when(recordMock.getRecordType()).thenReturn(RecordType.EVENT);
-      when(recordMock.getIntent()).thenReturn(mock(Intent.class));
-      when(recordMock.getValueType()).thenReturn(valueType);
-      when(recordMock.getBrokerVersion()).thenReturn(version);
-      exporter.export(recordMock);
-
-      // then
-      if (valueType == ValueType.PROCESS_INSTANCE
-          || valueType == ValueType.PROCESS
-          || valueType == ValueType.VARIABLE
-          || valueType == ValueType.INCIDENT
-          || valueType == ValueType.USER_TASK
-          || valueType == ValueType.DEPLOYMENT
-          || valueType == ValueType.JOB) {
-        verify(client, times(1)).putIndexTemplate(valueType, version);
-      } else {
-        verify(client, never()).putIndexTemplate(any(), any());
-      }
-    }
   }
 
   @Nested
@@ -379,29 +346,6 @@ final class ElasticsearchExporterTest {
 
       // then
       assertThat(controller.getPosition()).isEqualTo(10L);
-    }
-
-    @Test
-    void shouldNotUpdatePositionWhenSkippingDisabledValueType() {
-      // given
-      TestSupport.setIndexingForValueType(config.index, ValueType.PROCESS_INSTANCE, false);
-      final var record =
-          ImmutableRecord.builder()
-              .withPosition(10L)
-              .withBrokerVersion(VersionUtil.getVersionLowerCase())
-              .withRecordType(RecordType.EVENT)
-              .withValueType(ValueType.PROCESS_INSTANCE)
-              .build();
-      exporter.configure(context);
-      exporter.open(controller);
-
-      // when
-      exporter.export(record);
-
-      // then
-      assertThat(controller.getPosition()).isEqualTo(-1);
-      verify(client, never()).index(any(), any());
-      verify(client, never()).flush();
     }
 
     @Test
