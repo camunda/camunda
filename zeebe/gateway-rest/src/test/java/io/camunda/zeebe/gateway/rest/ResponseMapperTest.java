@@ -20,6 +20,8 @@ import io.camunda.zeebe.msgpack.value.ValueArray;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionRecord;
+import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -29,6 +31,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -184,6 +187,51 @@ class ResponseMapperTest {
       public String toString() {
         return name;
       }
+    }
+  }
+
+  @Nested
+  class DeleteResourceResponseMappingTest {
+
+    @Test
+    void shouldMapDeleteResourceResponseWithResourceKeyAndNoBatchOperation() {
+      // given
+      final long resourceKey = 12345L;
+      final var brokerResponse = mock(ResourceDeletionRecord.class);
+      when(brokerResponse.getResourceKey()).thenReturn(resourceKey);
+      when(brokerResponse.isDeleteHistory()).thenReturn(false);
+
+      // when
+      final var response = ResponseMapper.toDeleteResourceResponse(brokerResponse);
+
+      // then
+      assertThat(response.getResourceKey()).isEqualTo(String.valueOf(resourceKey));
+      assertThat(response.getBatchOperation()).isNull();
+    }
+
+    @Test
+    void shouldMapDeleteResourceResponseWithResourceKeyAndBatchOperation() {
+      // given
+      final long resourceKey = 12345L;
+      final long batchOperationKey = 67890L;
+      final BatchOperationType batchOperationType = BatchOperationType.DELETE_PROCESS_INSTANCE;
+      final var brokerResponse = mock(ResourceDeletionRecord.class);
+      when(brokerResponse.getResourceKey()).thenReturn(resourceKey);
+      when(brokerResponse.isDeleteHistory()).thenReturn(true);
+      when(brokerResponse.getBatchOperationKey()).thenReturn(batchOperationKey);
+      when(brokerResponse.getBatchOperationType()).thenReturn(batchOperationType);
+
+      // when
+      final var response = ResponseMapper.toDeleteResourceResponse(brokerResponse);
+
+      // then
+      assertThat(response.getResourceKey()).isEqualTo(String.valueOf(resourceKey));
+      assertThat(response.getBatchOperation()).isNotNull();
+      assertThat(response.getBatchOperation().getBatchOperationKey())
+          .isEqualTo(String.valueOf(batchOperationKey));
+      assertThat(response.getBatchOperation().getBatchOperationType()).isNotNull();
+      assertThat(response.getBatchOperation().getBatchOperationType().name())
+          .isEqualTo(batchOperationType.name());
     }
   }
 }
