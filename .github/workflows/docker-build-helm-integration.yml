@@ -393,6 +393,10 @@ jobs:
                   }
                 }'
 
+      - name: Get trigger timestamp
+        id: trigger-time
+        run: echo "trigger_time=$(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> $GITHUB_OUTPUT
+
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -406,22 +410,25 @@ jobs:
 
       - name: Wait for downstream workflow to finish
         env:
-          GH_TOKEN: ${{ steps.github-token.outputs.token }} 
+          GH_TOKEN: ${{ steps.github-token.outputs.token }}
+          TRIGGER_TIME: ${{ steps.trigger-time.outputs.trigger_time }}
         run: |
           set -e
-          echo "Waiting for E2E workflow to complete in camunda/c8-cross-component-e2e-tests for ${{ github.sha }}"
+          echo "Waiting for E2E workflow to complete in camunda/c8-cross-component-e2e-tests triggered after $TRIGGER_TIME"
+
+          TARGET_REPO="camunda/c8-cross-component-e2e-tests"
+          WORKFLOW_FILE="playwright_saas_pr_trigger_monorepo_8_9.yml"
 
           # Wait up to 40 min (80 x 30s)
           for _ in {1..80}; do
-            RUN_ID=$(gh api -H "Accept: application/vnd.github+json" \
-              /repos/camunda/c8-cross-component-e2e-tests/actions/runs \
-              --jq '.workflow_runs[] | select(.head_sha=="${{ github.sha }}") | .id' | head -n1)
+            # Grab the first run created after the trigger event
+            RUN_ID=$(gh api "/repos/$TARGET_REPO/actions/workflows/$WORKFLOW_FILE/runs?event=repository_dispatch&per_page=5" \
+              --jq ".workflow_runs[] | select(.created_at > \"$TRIGGER_TIME\") | .id" | head -n1)
 
             if [[ -n "$RUN_ID" ]]; then
-              STATUS=$(gh api /repos/camunda/c8-cross-component-e2e-tests/actions/runs/$RUN_ID --jq .status)
-              CONCLUSION=$(gh api /repos/camunda/c8-cross-component-e2e-tests/actions/runs/$RUN_ID --jq .conclusion)
-
-              echo "Workflow run status: $STATUS ($CONCLUSION)"
+              STATUS=$(gh api /repos/$TARGET_REPO/actions/runs/$RUN_ID --jq .status)
+              CONCLUSION=$(gh api /repos/$TARGET_REPO/actions/runs/$RUN_ID --jq .conclusion)
+              echo "Workflow run $RUN_ID status: $STATUS ($CONCLUSION)"
               if [[ "$STATUS" == "completed" ]]; then
                 if [[ "$CONCLUSION" == "success" ]]; then
                   echo "Downstream workflow succeeded!"
