@@ -20,7 +20,6 @@ ARG TINI_CHECKSUM_ARM64="07952557df20bfd2a95f9bef198b445e006171969499a1d361bd9e6
 # set to "build" to build zeebe from scratch instead of using a distball
 ARG DIST="distball"
 
-
 ### Build zeebe from scratch ###
 FROM reg.mini.dev/openjdk:21.0.9-dev AS build
 
@@ -69,7 +68,7 @@ RUN --mount=type=cache,target=/root/.tools,rw \
     curl -sL "https://github.com/krallin/tini/releases/download/${TINI_VERSION}/${TINI_BINARY}" -o /tini && \
     echo "${TINI_CHECKSUM} /tini" | sha256sum -c && \
     chmod +x /tini
-    
+
 ### Extract zeebe from distball ###
 # hadolint ignore=DL3006,DL3007
 FROM ${BASE_IMAGE}@${BASE_DIGEST} AS distball
