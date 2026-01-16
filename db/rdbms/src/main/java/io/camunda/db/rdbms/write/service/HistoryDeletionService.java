@@ -8,13 +8,17 @@
 package io.camunda.db.rdbms.write.service;
 
 import io.camunda.db.rdbms.read.service.HistoryDeletionDbReader;
+import io.camunda.db.rdbms.read.service.ProcessInstanceDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig.HistoryDeletionConfig;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.HistoryDeletionDbModel;
 import io.camunda.db.rdbms.write.domain.HistoryDeletionDbModel.HistoryDeletionTypeDbModel;
+import io.camunda.search.filter.ProcessInstanceFilter;
+import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.zeebe.util.ExponentialBackoff;
 import java.time.Duration;
 import java.util.List;
+import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,6 +31,7 @@ public class HistoryDeletionService {
 
   private final RdbmsWriters rdbmsWriters;
   private final HistoryDeletionDbReader historyDeletionDbReader;
+  private final ProcessInstanceDbReader processInstanceDbReader;
   private final HistoryDeletionConfig config;
   private final ExponentialBackoff exponentialBackoff;
   private Duration currentDelayBetweenRuns;
@@ -34,26 +39,32 @@ public class HistoryDeletionService {
   public HistoryDeletionService(
       final RdbmsWriters rdbmsWriters,
       final HistoryDeletionDbReader historyDeletionDbReader,
+      final ProcessInstanceDbReader processInstanceDbReader,
       final HistoryDeletionConfig config) {
     this.rdbmsWriters = rdbmsWriters;
     this.historyDeletionDbReader = historyDeletionDbReader;
+    this.processInstanceDbReader = processInstanceDbReader;
     this.config = config;
-    this.exponentialBackoff =
+    exponentialBackoff =
         new ExponentialBackoff(
             config.maxDelayBetweenRuns().toMillis(),
             config.delayBetweenRuns().toMillis(),
             2,
             0.0); // Use 0.0 jitter for deterministic backoff and clamp to min delay to avoid
     // sub-min values
-    this.currentDelayBetweenRuns = config.delayBetweenRuns();
+    currentDelayBetweenRuns = config.delayBetweenRuns();
   }
 
   public Duration deleteHistory(final int partitionId) {
     final var batch = historyDeletionDbReader.getNextBatch(partitionId, config.queueBatchSize());
     LOG.trace("Deleting historic data for entities: {}", batch);
 
-    final var deletedProcessInstances = deleteProcessInstances(batch);
-    final var deletedResourceCount = deleteFromHistoryDeletionTable(deletedProcessInstances);
+    final List<Long> deletedProcessInstances = deleteProcessInstances(batch);
+    final List<Long> deletedProcessDefinitions = deleteProcessDefinitions(batch);
+    final List<Long> deletedResources =
+        Stream.concat(deletedProcessInstances.stream(), deletedProcessDefinitions.stream())
+            .toList();
+    final var deletedResourceCount = deleteFromHistoryDeletionTable(deletedResources);
 
     return nextDelay(deletedResourceCount);
   }
@@ -89,6 +100,44 @@ public class HistoryDeletionService {
     }
 
     return List.of();
+  }
+
+  private List<Long> deleteProcessDefinitions(final List<HistoryDeletionDbModel> batch) {
+    final var processDefinitionKeys =
+        batch.stream()
+            .filter(
+                deletionModel ->
+                    deletionModel
+                        .resourceType()
+                        .equals(HistoryDeletionTypeDbModel.PROCESS_DEFINITION))
+            .filter(this::hasAllDependentsDeleted)
+            .map(HistoryDeletionDbModel::resourceKey)
+            .toList();
+
+    if (processDefinitionKeys.isEmpty()) {
+      return List.of();
+    }
+    rdbmsWriters.getProcessDefinitionWriter().deleteByKeys(processDefinitionKeys);
+
+    return processDefinitionKeys;
+  }
+
+  private boolean hasAllDependentsDeleted(final HistoryDeletionDbModel historyDeletionDbModel) {
+    final boolean hasDependents =
+        processInstanceDbReader
+                .search(
+                    ProcessInstanceQuery.of(
+                        b ->
+                            b.filter(
+                                new ProcessInstanceFilter.Builder()
+                                    .processDefinitionKeys(historyDeletionDbModel.resourceKey())
+                                    .build())))
+                .total()
+            != 0;
+    LOG.debug(
+        "Process definition {} still has dependent process instances and will not be deleted.",
+        historyDeletionDbModel.resourceKey());
+    return !hasDependents;
   }
 
   private int deleteFromHistoryDeletionTable(final List<Long> deletedResourceKeys) {

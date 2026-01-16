@@ -39,4 +39,6 @@ public interface ProcessDefinitionMapper {
 
   List<ProcessDefinitionInstanceVersionStatisticsEntity> processInstanceVersionStatistics(
       ProcessDefinitionInstanceVersionStatisticsDbQuery filter);
+
+  void deleteByKeys(List<Long> processDefinitionKeys);
 }

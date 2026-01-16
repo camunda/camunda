@@ -20,6 +20,7 @@ import io.camunda.db.rdbms.sql.HistoryDeletionMapper;
 import io.camunda.db.rdbms.sql.IncidentMapper;
 import io.camunda.db.rdbms.sql.JobMapper;
 import io.camunda.db.rdbms.sql.MessageSubscriptionMapper;
+import io.camunda.db.rdbms.sql.ProcessDefinitionMapper;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
 import io.camunda.db.rdbms.sql.PurgeMapper;
 import io.camunda.db.rdbms.sql.SequenceFlowMapper;
@@ -42,6 +43,7 @@ public class RdbmsWriterFactory {
   private final FlowNodeInstanceMapper flowNodeInstanceMapper;
   private final IncidentMapper incidentMapper;
   private final ProcessInstanceMapper processInstanceMapper;
+  private final ProcessDefinitionMapper processDefinitionMapper;
   private final PurgeMapper purgeMapper;
   private final UserTaskMapper userTaskMapper;
   private final VariableMapper variableMapper;
@@ -66,6 +68,7 @@ public class RdbmsWriterFactory {
       final FlowNodeInstanceMapper flowNodeInstanceMapper,
       final IncidentMapper incidentMapper,
       final ProcessInstanceMapper processInstanceMapper,
+      final ProcessDefinitionMapper processDefinitionMapper,
       final PurgeMapper purgeMapper,
       final UserTaskMapper userTaskMapper,
       final VariableMapper variableMapper,
@@ -88,6 +91,7 @@ public class RdbmsWriterFactory {
     this.flowNodeInstanceMapper = flowNodeInstanceMapper;
     this.incidentMapper = incidentMapper;
     this.processInstanceMapper = processInstanceMapper;
+    this.processDefinitionMapper = processDefinitionMapper;
     this.purgeMapper = purgeMapper;
     this.userTaskMapper = userTaskMapper;
     this.variableMapper = variableMapper;
@@ -123,6 +127,7 @@ public class RdbmsWriterFactory {
         flowNodeInstanceMapper,
         incidentMapper,
         processInstanceMapper,
+        processDefinitionMapper,
         purgeMapper,
         userTaskMapper,
         variableMapper,

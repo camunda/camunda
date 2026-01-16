@@ -10,6 +10,7 @@ package io.camunda.it.rdbms.db.processdefinition;
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.resourceAccessChecksFromResourceIds;
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.resourceAccessChecksFromTenantIds;
 import static io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures.createAndSaveProcessDefinition;
+import static io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures.createAndSaveProcessDefinitions;
 import static io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures.createAndSaveRandomProcessDefinition;
 import static io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures.createAndSaveRandomProcessDefinitions;
 import static io.camunda.it.rdbms.db.fixtures.ProcessInstanceFixtures.createAndSaveRandomProcessInstance;
@@ -35,6 +36,7 @@ import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.sort.ProcessDefinitionSort;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import java.time.OffsetDateTime;
+import java.util.List;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
@@ -427,5 +429,43 @@ public class ProcessDefinitionIT {
                 processDefinitionV2.tenantId(),
                 0L,
                 1L));
+  }
+
+  @TestTemplate
+  public void shouldDeleteProcessDefinitionsByKey(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final ProcessDefinitionDbReader processDefinitionReader =
+        rdbmsService.getProcessDefinitionReader();
+
+    final var processDefinition1 = ProcessDefinitionFixtures.createRandomized(b -> b);
+    final var processDefinition2 = ProcessDefinitionFixtures.createRandomized(b -> b);
+    createAndSaveProcessDefinitions(rdbmsWriters, List.of(processDefinition1, processDefinition2));
+    final var searchResult =
+        processDefinitionReader.search(
+            new ProcessDefinitionQuery(
+                new ProcessDefinitionFilter.Builder().build(),
+                ProcessDefinitionSort.of(b -> b),
+                SearchQueryPage.of(b -> b.from(0).size(10))));
+    assertThat(searchResult.total()).isEqualTo(2);
+
+    // when
+    rdbmsWriters
+        .getProcessDefinitionWriter()
+        .deleteByKeys(
+            List.of(
+                processDefinition1.processDefinitionKey(),
+                processDefinition2.processDefinitionKey()));
+
+    // then
+    final var resultAfterDeletion =
+        processDefinitionReader.search(
+            new ProcessDefinitionQuery(
+                new ProcessDefinitionFilter.Builder().build(),
+                ProcessDefinitionSort.of(b -> b),
+                SearchQueryPage.of(b -> b.from(0).size(10))));
+    assertThat(resultAfterDeletion.total()).isZero();
   }
 }
