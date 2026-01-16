@@ -69,4 +69,19 @@ public interface VariableRecordValue extends RecordValue, ProcessInstanceRelated
    * @return the key of the root process instance, or {@code -1} if not set
    */
   long getRootProcessInstanceKey();
+
+  /**
+   * Returns the fully qualified name of the variable, which is a combination of the scope key and
+   * the variable name. This unique identifier can be used to distinguish variables with the same
+   * name that exist in different scopes.
+   *
+   * <p>The format is: {@code <scopeKey>-<name>}
+   *
+   * <p>Example: For a variable named "amount" in scope 12345, this returns "12345-amount".
+   *
+   * @return the fully qualified name in the format "{scopeKey}-{name}"
+   */
+  default String getFullyQualifiedName() {
+    return getScopeKey() + "-" + getName();
+  }
 }
