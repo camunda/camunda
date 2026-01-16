@@ -321,37 +321,6 @@ final class OpensearchExporterTest {
       // then
       verify(client, never()).putIndexTemplate(valueType);
     }
-
-    @ParameterizedTest(name = "{0} - version: {1}")
-    @MethodSource(
-        "io.camunda.zeebe.exporter.opensearch.TestSupport#provideValueTypesWithCurrentAndPreviousVersions")
-    void shouldExportOnlyRequiredRecords(final ValueType valueType, final String version) {
-      // given
-      config.index.createTemplate = true;
-      config.setIncludeEnabledRecords(false);
-      TestSupport.setIndexingForValueType(config.index, valueType, true);
-      exporter.configure(context);
-      exporter.open(controller);
-
-      // when
-      final var recordMock = mock(Record.class);
-      when(recordMock.getValueType()).thenReturn(valueType);
-      when(recordMock.getBrokerVersion()).thenReturn(version);
-      exporter.export(recordMock);
-
-      // then
-      if (valueType == ValueType.PROCESS_INSTANCE
-          || valueType == ValueType.PROCESS
-          || valueType == ValueType.VARIABLE
-          || valueType == ValueType.INCIDENT
-          || valueType == ValueType.USER_TASK
-          || valueType == ValueType.DEPLOYMENT
-          || valueType == ValueType.JOB) {
-        verify(client, times(1)).putIndexTemplate(valueType, version);
-      } else {
-        verify(client, never()).putIndexTemplate(any(), any());
-      }
-    }
   }
 
   @Nested
@@ -408,6 +377,7 @@ final class OpensearchExporterTest {
       final var record =
           ImmutableRecord.builder()
               .withBrokerVersion(VersionUtil.getVersionLowerCase())
+              .withRecordType(RecordType.EVENT)
               .withPosition(10L)
               .withValueType(ValueType.PROCESS_INSTANCE)
               .build();
@@ -417,50 +387,6 @@ final class OpensearchExporterTest {
 
       // when
       exporter.export(record);
-
-      // then
-      assertThat(controller.getPosition()).isEqualTo(10L);
-    }
-
-    @Test
-    void shouldNotUpdatePositionWhenSkippingDisabledValueType() {
-      // given
-      TestSupport.setIndexingForValueType(config.index, ValueType.PROCESS_INSTANCE, false);
-      final var record =
-          ImmutableRecord.builder()
-              .withPosition(10L)
-              .withBrokerVersion(VersionUtil.getVersionLowerCase())
-              .withValueType(ValueType.PROCESS_INSTANCE)
-              .build();
-      exporter.configure(context);
-      exporter.open(controller);
-
-      // when
-      exporter.export(record);
-
-      // then
-      assertThat(controller.getPosition()).isEqualTo(-1);
-      verify(client, never()).index(any(), any());
-      verify(client, never()).flush();
-    }
-
-    @Test
-    void shouldUpdatePositionWhenSkippingDisabledValueTypeAndFlushingAfterwards() {
-      // given
-      TestSupport.setIndexingForValueType(config.index, ValueType.PROCESS_INSTANCE, false);
-      final var record =
-          ImmutableRecord.builder()
-              .withPosition(10L)
-              .withBrokerVersion(VersionUtil.getVersionLowerCase())
-              .withValueType(ValueType.PROCESS_INSTANCE)
-              .build();
-      exporter.configure(context);
-      exporter.open(controller);
-      exporter.export(record);
-
-      // when
-      when(client.shouldFlush()).thenReturn(true);
-      controller.runScheduledTasks(Duration.ofSeconds(10));
 
       // then
       assertThat(controller.getPosition()).isEqualTo(10L);
@@ -473,6 +399,7 @@ final class OpensearchExporterTest {
           ImmutableRecord.builder()
               .withBrokerVersion(VersionUtil.getVersionLowerCase())
               .withPosition(10L)
+              .withRecordType(RecordType.EVENT)
               .withValueType(ValueType.PROCESS_INSTANCE)
               .build();
       exporter.configure(context);
@@ -706,6 +633,7 @@ final class OpensearchExporterTest {
       return ImmutableRecord.builder()
           .withBrokerVersion(VersionUtil.getVersionLowerCase())
           .withPartitionId(partitionId)
+          .withRecordType(RecordType.EVENT)
           .withValueType(valueType)
           .build();
     }

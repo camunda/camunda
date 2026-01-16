@@ -28,6 +28,8 @@ import io.camunda.zeebe.protocol.record.ImmutableRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.util.VersionUtil;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -66,6 +68,7 @@ final class ElasticsearchExporterTest {
   }
 
   @Test
+  @SuppressWarnings("unchecked")
   void shouldNotFailOnOpenIfElasticIsUnreachable() {
     // given
     final var exporter = new ElasticsearchExporter();
@@ -73,7 +76,9 @@ final class ElasticsearchExporterTest {
 
     // when
     exporter.open(controller);
-    final Record mockRecord = mock(Record.class);
+    final Record<ProcessInstanceRecordValue> mockRecord = mock(Record.class);
+    when(mockRecord.getRecordType()).thenReturn(RecordType.EVENT);
+    when(mockRecord.getIntent()).thenReturn(mock(Intent.class));
     when(mockRecord.getValueType()).thenReturn(ValueType.PROCESS_INSTANCE);
     when(mockRecord.getBrokerVersion()).thenReturn(VersionUtil.getVersionLowerCase());
 
@@ -198,6 +203,8 @@ final class ElasticsearchExporterTest {
 
       // when
       final var recordMock = mock(Record.class);
+      when(recordMock.getRecordType()).thenReturn(RecordType.EVENT);
+      when(recordMock.getIntent()).thenReturn(mock(Intent.class));
       when(recordMock.getValueType()).thenReturn(ValueType.PROCESS_INSTANCE);
       when(recordMock.getBrokerVersion()).thenReturn(VersionUtil.getVersionLowerCase());
       exporter.export(recordMock);
@@ -215,6 +222,8 @@ final class ElasticsearchExporterTest {
 
       // when
       final var recordMock = mock(Record.class);
+      when(recordMock.getRecordType()).thenReturn(RecordType.EVENT);
+      when(recordMock.getIntent()).thenReturn(mock(Intent.class));
       when(recordMock.getValueType()).thenReturn(ValueType.PROCESS_INSTANCE);
       when(recordMock.getBrokerVersion()).thenReturn(VersionUtil.getVersionLowerCase());
       exporter.export(recordMock);
@@ -235,6 +244,8 @@ final class ElasticsearchExporterTest {
 
       // when
       final var recordMock = mock(Record.class);
+      when(recordMock.getRecordType()).thenReturn(RecordType.EVENT);
+      when(recordMock.getIntent()).thenReturn(mock(Intent.class));
       when(recordMock.getValueType()).thenReturn(ValueType.PROCESS_INSTANCE);
       when(recordMock.getBrokerVersion()).thenReturn(VersionUtil.getVersionLowerCase());
       exporter.export(recordMock);
@@ -254,43 +265,14 @@ final class ElasticsearchExporterTest {
 
       // when
       final var recordMock = mock(Record.class);
+      when(recordMock.getRecordType()).thenReturn(RecordType.EVENT);
+      when(recordMock.getIntent()).thenReturn(mock(Intent.class));
       when(recordMock.getValueType()).thenReturn(ValueType.PROCESS_INSTANCE);
       when(recordMock.getBrokerVersion()).thenReturn(VersionUtil.getVersionLowerCase());
       exporter.export(recordMock);
 
       // then
       verify(client, never()).putIndexTemplate(valueType);
-    }
-
-    @ParameterizedTest(name = "{0} - version: {1}")
-    @MethodSource(
-        "io.camunda.zeebe.exporter.TestSupport#provideValueTypesWithCurrentAndPreviousVersions")
-    void shouldExportOnlyRequiredRecords(final ValueType valueType, final String version) {
-      // given
-      config.index.createTemplate = true;
-      config.setIncludeEnabledRecords(false);
-      TestSupport.setIndexingForValueType(config.index, valueType, true);
-      exporter.configure(context);
-      exporter.open(controller);
-
-      // when
-      final var recordMock = mock(Record.class);
-      when(recordMock.getValueType()).thenReturn(valueType);
-      when(recordMock.getBrokerVersion()).thenReturn(version);
-      exporter.export(recordMock);
-
-      // then
-      if (valueType == ValueType.PROCESS_INSTANCE
-          || valueType == ValueType.PROCESS
-          || valueType == ValueType.VARIABLE
-          || valueType == ValueType.INCIDENT
-          || valueType == ValueType.USER_TASK
-          || valueType == ValueType.DEPLOYMENT
-          || valueType == ValueType.JOB) {
-        verify(client, times(1)).putIndexTemplate(valueType, version);
-      } else {
-        verify(client, never()).putIndexTemplate(any(), any());
-      }
     }
   }
 
@@ -306,6 +288,8 @@ final class ElasticsearchExporterTest {
 
       // when
       final var recordMock = mock(Record.class);
+      when(recordMock.getRecordType()).thenReturn(RecordType.EVENT);
+      when(recordMock.getIntent()).thenReturn(mock(Intent.class));
       when(recordMock.getValueType()).thenReturn(ValueType.PROCESS_INSTANCE);
       when(recordMock.getBrokerVersion()).thenReturn(VersionUtil.getVersionLowerCase());
 
@@ -350,6 +334,7 @@ final class ElasticsearchExporterTest {
           ImmutableRecord.builder()
               .withPosition(10L)
               .withBrokerVersion(VersionUtil.getVersionLowerCase())
+              .withRecordType(RecordType.EVENT)
               .withValueType(ValueType.PROCESS_INSTANCE)
               .build();
       exporter.configure(context);
@@ -364,28 +349,6 @@ final class ElasticsearchExporterTest {
     }
 
     @Test
-    void shouldNotUpdatePositionWhenSkippingDisabledValueType() {
-      // given
-      TestSupport.setIndexingForValueType(config.index, ValueType.PROCESS_INSTANCE, false);
-      final var record =
-          ImmutableRecord.builder()
-              .withPosition(10L)
-              .withBrokerVersion(VersionUtil.getVersionLowerCase())
-              .withValueType(ValueType.PROCESS_INSTANCE)
-              .build();
-      exporter.configure(context);
-      exporter.open(controller);
-
-      // when
-      exporter.export(record);
-
-      // then
-      assertThat(controller.getPosition()).isEqualTo(-1);
-      verify(client, never()).index(any(), any());
-      verify(client, never()).flush();
-    }
-
-    @Test
     void shouldUpdatePositionWhenSkippingDisabledValueTypeAndFlushingAfterwards() {
       // given
       TestSupport.setIndexingForValueType(config.index, ValueType.PROCESS_INSTANCE, false);
@@ -393,6 +356,7 @@ final class ElasticsearchExporterTest {
           ImmutableRecord.builder()
               .withPosition(10L)
               .withBrokerVersion(VersionUtil.getVersionLowerCase())
+              .withRecordType(RecordType.EVENT)
               .withValueType(ValueType.PROCESS_INSTANCE)
               .build();
       exporter.configure(context);
@@ -414,6 +378,7 @@ final class ElasticsearchExporterTest {
           ImmutableRecord.builder()
               .withBrokerVersion(VersionUtil.getVersionLowerCase())
               .withPosition(10L)
+              .withRecordType(RecordType.EVENT)
               .withValueType(ValueType.PROCESS_INSTANCE)
               .build();
       exporter.configure(context);
@@ -503,7 +468,6 @@ final class ElasticsearchExporterTest {
   final class RecordSequenceTest {
 
     private static final int PARTITION_ID = 123;
-    private final int position = 1;
 
     @BeforeEach
     void initExporter() {
@@ -677,6 +641,7 @@ final class ElasticsearchExporterTest {
       return ImmutableRecord.builder()
           .withBrokerVersion(VersionUtil.getVersionLowerCase())
           .withPartitionId(partitionId)
+          .withRecordType(RecordType.EVENT)
           .withValueType(valueType)
           .build();
     }

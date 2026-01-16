@@ -11,7 +11,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 
-import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch.core.GetResponse;
 import io.camunda.zeebe.exporter.TestClient.ComponentTemplatesDto.ComponentTemplateWrapper;
 import io.camunda.zeebe.exporter.TestClient.IndexSettings;
@@ -209,7 +208,7 @@ final class ElasticsearchExporterIT {
   void shouldPutIndexTemplate(final ValueType valueType) {
     // assuming
     Assumptions.assumeTrue(
-        config.shouldIndexValueType(valueType),
+        config.shouldIndexRequiredValueType(valueType),
         "no template is created because the exporter is configured filter out records of this type");
 
     // given
@@ -249,42 +248,6 @@ final class ElasticsearchExporterIT {
         .isEqualTo(config.index.prefix + "-" + VersionUtil.getVersionLowerCase());
   }
 
-  @ParameterizedTest(name = "{0} - version={1}")
-  @MethodSource(
-      "io.camunda.zeebe.exporter.TestSupport#provideValueTypesWithCurrentAndPreviousVersions")
-  void shouldExportOnlyRequiredRecords(final ValueType valueType, final String version) {
-    // given
-    config.setIncludeEnabledRecords(false);
-    exporter.configure(exporterTestContext);
-    exporter.open(controller);
-
-    final var record = generateRecord(valueType, version);
-
-    // when
-    export(record);
-
-    // then
-    if (valueType == ValueType.PROCESS_INSTANCE
-        || valueType == ValueType.PROCESS
-        || valueType == ValueType.VARIABLE
-        || valueType == ValueType.INCIDENT
-        || valueType == ValueType.USER_TASK
-        || valueType == ValueType.DEPLOYMENT
-        || valueType == ValueType.JOB) {
-      final var response = testClient.getExportedDocumentFor(record);
-      assertThat(response)
-          .extracting(GetResponse::index, GetResponse::id, GetResponse::routing)
-          .containsExactly(
-              indexRouter.indexFor(record),
-              indexRouter.idFor(record),
-              String.valueOf(record.getPartitionId()));
-    } else {
-      assertThatThrownBy(() -> testClient.getExportedDocumentFor(record))
-          .isInstanceOf(ElasticsearchException.class)
-          .hasMessageContaining("no such index [%s]".formatted(indexRouter.indexFor(record)));
-    }
-  }
-
   private boolean export(final Record<?> record) {
     exporter.export(record);
     return true;
@@ -309,6 +272,7 @@ final class ElasticsearchExporterIT {
 
   @Nested
   final class IndexSettingsTest {
+
     @Test
     void shouldAddIndexLifecycleSettingsToExistingIndicesOnRerunWhenRetentionIsEnabled() {
       // given
@@ -321,10 +285,9 @@ final class ElasticsearchExporterIT {
       // then
       final var index1 = indexRouter.indexFor(record1);
       var response1 = testClient.getIndexSettings(index1);
-
       assertIndexSettingsHasNoLifecyclePolicy(response1);
 
-      /* Tests when retention is later enabled all indices should have lifecycle policy */
+      /* When retention is later enabled all indices should have lifecycle policy */
       // given
       configureExporter(true);
       final var record2 = generateRecord(ValueType.JOB);
@@ -355,7 +318,7 @@ final class ElasticsearchExporterIT {
       var response1 = testClient.getIndexSettings(index1);
       assertIndexSettingsHasLifecyclePolicy(response1);
 
-      /* Tests when retention is later disabled all indices should not have a lifecycle policy */
+      /* When retention is later disabled all indices should not have a lifecycle policy */
       // given
       configureExporter(false);
       final var record2 = generateRecord(ValueType.JOB);
@@ -390,10 +353,11 @@ final class ElasticsearchExporterIT {
         records.add(record);
         export(record);
       }
+
       // when
       configureExporter(true);
       final var record2 = generateRecord(ValueType.JOB);
-      // when
+
       await("New record is exported, and existing indices are updated")
           .atMost(Duration.ofSeconds(30))
           .until(() -> export(record2));
@@ -406,7 +370,6 @@ final class ElasticsearchExporterIT {
       for (final var record : records) {
         final var index = indexRouter.indexFor(record);
         final var response = testClient.getIndexSettings(index);
-
         assertIndexSettingsHasLifecyclePolicy(response);
       }
     }
@@ -434,7 +397,7 @@ final class ElasticsearchExporterIT {
     void shouldSetIndexTemplatePriorityFromConfiguration() {
       // given
       final int priority = 100;
-      configureExporter(config -> config.index.setTemplatePriority(priority));
+      configureExporter(cfg -> cfg.index.setTemplatePriority(priority));
       final var record = generateRecord(ValueType.JOB);
 
       // when
@@ -454,7 +417,7 @@ final class ElasticsearchExporterIT {
     @Test
     void shouldSetIndexTemplateWithDefaultPriorityWhenNotSetInConfiguration() {
       // given
-      configureExporter(config -> {});
+      configureExporter(cfg -> {});
       final var record = generateRecord(ValueType.JOB);
 
       // when
@@ -472,32 +435,33 @@ final class ElasticsearchExporterIT {
     }
 
     private void configureExporter(final boolean retentionEnabled) {
-      configureExporter(config -> config.retention.setEnabled(retentionEnabled));
+      configureExporter(cfg -> cfg.retention.setEnabled(retentionEnabled));
     }
 
     private void configureExporter(
         final Consumer<ElasticsearchExporterConfiguration> configurator) {
+      // Apply caller-specific config (e.g. retention, priority)
       configurator.accept(config);
+
       exporter.configure(exporterTestContext);
       exporter.open(controller);
     }
 
     @Test
     void shouldExportToCorrectIndexWithElasticsearchNotReachable() throws IOException {
-
       // given
       final var currentPort = CONTAINER.getFirstMappedPort();
       CONTAINER.stop();
       Awaitility.await().until(() -> !CONTAINER.isRunning());
 
-      final var record = generateSupportedRecord(r -> r.withBrokerVersion("8.6.0"));
+      final var record = factory.generateRecord(ValueType.JOB, r -> r.withBrokerVersion("8.6.0"));
 
       try (final var mockVersion =
           Mockito.mockStatic(VersionUtil.class, Mockito.CALLS_REAL_METHODS)) {
         mockVersion.when(VersionUtil::getVersionLowerCase).thenReturn("8.6.0");
         configureExporter(false);
 
-        assertThatThrownBy(() -> export(record));
+        assertThatThrownBy(() -> export(record)).isInstanceOf(Exception.class);
       }
 
       CONTAINER
@@ -507,7 +471,7 @@ final class ElasticsearchExporterIT {
       Awaitility.await().until(CONTAINER::isRunning);
 
       // when
-      final var record2 = generateSupportedRecord(r -> r.withBrokerVersion("8.7.0"));
+      final var record2 = factory.generateRecord(ValueType.JOB, r -> r.withBrokerVersion("8.7.0"));
 
       try (final var mockVersion =
           Mockito.mockStatic(VersionUtil.class, Mockito.CALLS_REAL_METHODS)) {
@@ -519,7 +483,6 @@ final class ElasticsearchExporterIT {
       }
 
       // then
-
       // If the templates are not created then the dynamically created indices will not have an
       // alias versus with a template as the template defines an alias.
       final var firstRecordIndexName = indexRouter.indexFor(record);

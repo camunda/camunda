@@ -8,7 +8,6 @@
 package io.camunda.zeebe.exporter.opensearch;
 
 import io.camunda.search.connect.plugin.PluginConfiguration;
-import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import java.util.ArrayList;
@@ -61,11 +60,6 @@ public class OpensearchExporterConfiguration {
         + ", interceptorPlugins="
         + interceptorPlugins
         + '}';
-  }
-
-  public boolean shouldIndexRecord(final Record<?> record) {
-    return shouldIndexRecordType(record.getRecordType())
-        && shouldIndexValueType(record.getValueType());
   }
 
   public boolean shouldIndexValueType(final ValueType valueType) {
@@ -190,6 +184,18 @@ public class OpensearchExporterConfiguration {
     public boolean variableDocument = true;
     public boolean adHocSubProcessInstruction = true;
 
+    // variable name filtering
+    public List<String> variableNameInclusionExact;
+    public List<String> variableNameInclusionStartWith;
+    public List<String> variableNameInclusionEndWith;
+    public List<String> variableNameExclusionExact;
+    public List<String> variableNameExclusionStartWith;
+    public List<String> variableNameExclusionEndWith;
+
+    // variable value type filtering
+    public List<String> variableValueTypeInclusion;
+    public List<String> variableValueTypeExclusion;
+
     public boolean checkpoint = false;
     public boolean timer = true;
     public boolean messageStartEventSubscription = true;
@@ -258,7 +264,7 @@ public class OpensearchExporterConfiguration {
     @Override
     public String toString() {
       return "IndexConfiguration{"
-          + "indexPrefix='"
+          + "prefix='"
           + prefix
           + '\''
           + ", createTemplate="
@@ -269,30 +275,34 @@ public class OpensearchExporterConfiguration {
           + event
           + ", rejection="
           + rejection
-          + ", error="
-          + error
+          + ", decision="
+          + decision
+          + ", decisionEvaluation="
+          + decisionEvaluation
+          + ", decisionRequirements="
+          + decisionRequirements
           + ", deployment="
           + deployment
-          + ", process="
-          + process
+          + ", error="
+          + error
           + ", incident="
           + incident
           + ", job="
           + job
+          + ", jobBatch="
+          + jobBatch
           + ", message="
           + message
           + ", messageBatch="
           + messageBatch
           + ", messageSubscription="
           + messageSubscription
-          + ", variable="
-          + variable
-          + ", variableDocument="
-          + variableDocument
+          + ", process="
+          + process
           + ", processInstance="
-          + processInstanceBatch
-          + ", processInstanceBatch="
           + processInstance
+          + ", processInstanceBatch="
+          + processInstanceBatch
           + ", processInstanceCreation="
           + processInstanceCreation
           + ", processInstanceMigration="
@@ -301,12 +311,10 @@ public class OpensearchExporterConfiguration {
           + processInstanceModification
           + ", processMessageSubscription="
           + processMessageSubscription
-          + ", decisionRequirements="
-          + decisionRequirements
-          + ", decision="
-          + decision
-          + ", decisionEvaluation="
-          + decisionEvaluation
+          + ", variable="
+          + variable
+          + ", variableDocument="
+          + variableDocument
           + ", checkpoint="
           + checkpoint
           + ", timer="
@@ -327,7 +335,7 @@ public class OpensearchExporterConfiguration {
           + resourceDeletion
           + ", adHocSubProcessInstruction="
           + adHocSubProcessInstruction
-          + ", recordDistribution="
+          + ", commandDistribution="
           + commandDistribution
           + ", form="
           + form
@@ -347,6 +355,24 @@ public class OpensearchExporterConfiguration {
           + conditionalSubscription
           + ", conditionalEvaluation="
           + conditionalEvaluation
+          // variable name filtering
+          + ", variableNameInclusionExact="
+          + variableNameInclusionExact
+          + ", variableNameInclusionStartWith="
+          + variableNameInclusionStartWith
+          + ", variableNameInclusionEndWith="
+          + variableNameInclusionEndWith
+          + ", variableNameExclusionExact="
+          + variableNameExclusionExact
+          + ", variableNameExclusionStartWith="
+          + variableNameExclusionStartWith
+          + ", variableNameExclusionEndWith="
+          + variableNameExclusionEndWith
+          // variable value type filtering
+          + ", variableValueTypeInclusion="
+          + variableValueTypeInclusion
+          + ", variableValueTypeExclusion="
+          + variableValueTypeExclusion
           + '}';
     }
   }

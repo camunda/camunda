@@ -47,7 +47,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 import org.opensearch.client.ResponseException;
-import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch.core.GetResponse;
 import org.opensearch.testcontainers.OpenSearchContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -325,42 +324,6 @@ final class OpensearchExporterIT {
         .hasMessageContaining("Policy not found");
   }
 
-  @ParameterizedTest(name = "{0} - version={1}")
-  @MethodSource(
-      "io.camunda.zeebe.exporter.opensearch.TestSupport#provideValueTypesWithCurrentAndPreviousVersions")
-  void shouldExportOnlyRequiredRecords(final ValueType valueType, final String version) {
-    // given
-    config.setIncludeEnabledRecords(false);
-    exporter.configure(exporterTestContext);
-    exporter.open(controller);
-
-    final var record = generateRecord(valueType, version);
-
-    // when
-    export(record);
-
-    // then
-    if (valueType == ValueType.PROCESS_INSTANCE
-        || valueType == ValueType.PROCESS
-        || valueType == ValueType.VARIABLE
-        || valueType == ValueType.INCIDENT
-        || valueType == ValueType.USER_TASK
-        || valueType == ValueType.DEPLOYMENT
-        || valueType == ValueType.JOB) {
-      final var response = testClient.getExportedDocumentFor(record);
-      assertThat(response)
-          .extracting(GetResponse::index, GetResponse::id, GetResponse::routing)
-          .containsExactly(
-              indexRouter.indexFor(record),
-              indexRouter.idFor(record),
-              String.valueOf(record.getPartitionId()));
-    } else {
-      assertThatThrownBy(() -> testClient.getExportedDocumentFor(record))
-          .isInstanceOf(OpenSearchException.class)
-          .hasMessageContaining("no such index [%s]".formatted(indexRouter.indexFor(record)));
-    }
-  }
-
   private boolean export(final Record<?> record) {
     exporter.export(record);
     return true;
@@ -395,6 +358,7 @@ final class OpensearchExporterIT {
    */
   @Nested
   final class IndexSettingsTest {
+
     @Test
     void shouldAddIndexLifecycleSettingsToExistingIndicesOnRerunWhenRetentionIsEnabled() {
       // given
@@ -414,7 +378,7 @@ final class OpensearchExporterIT {
                 assertHasNoISMPolicy(index1Policy);
               });
 
-      /* Tests when retention is later enabled all indices should have lifecycle policy */
+      /* When retention is later enabled all indices should have lifecycle policy */
       // given
       configureExporter(true);
       final var record2 = generateRecord(ValueType.JOB);
@@ -459,7 +423,7 @@ final class OpensearchExporterIT {
                 assertHasISMPolicy(indexPolicy1);
               });
 
-      /* Tests when retention is later disabled all indices should not have a lifecycle policy */
+      /* When retention is later disabled all indices should not have a lifecycle policy */
       // given
       configureExporter(false);
       final var record2 = generateRecord(ValueType.JOB);
@@ -546,7 +510,6 @@ final class OpensearchExporterIT {
 
     @Test
     void shouldExportToCorrectIndexWithOpensearchNotReachable() throws IOException {
-
       // given
       final var currentPort = CONTAINER.getFirstMappedPort();
       CONTAINER.stop();
@@ -647,6 +610,18 @@ final class OpensearchExporterIT {
           .get()
           .extracting(wrapper -> wrapper.template().priority())
           .isEqualTo(20L); // default priority is 20
+    }
+
+    private void configureExporter(final boolean retentionEnabled) {
+      configureExporter(cfg -> cfg.retention.setEnabled(retentionEnabled));
+    }
+
+    private void configureExporter(final Consumer<OpensearchExporterConfiguration> configurator) {
+      // Apply caller-specific config (e.g. retention, priority)
+      configurator.accept(config);
+
+      exporter.configure(exporterTestContext);
+      exporter.open(controller);
     }
 
     private void assertHasISMPolicy(final Optional<IndexISMPolicyDto> indexSettings) {

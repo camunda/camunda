@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.exporter.api.context;
 
+import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -63,34 +64,95 @@ public interface Context {
    */
   void setFilter(RecordFilter filter);
 
-  /** A filter to limit the records which are exported. */
+  /**
+   * A filter to limit the records which are exported.
+   *
+   * <p>This interface is used in two distinct places:
+   *
+   * <ul>
+   *   <li><b>Broker-level prefiltering</b> (in the Zeebe broker, e.g. {@code ExporterDirector}):
+   *       only the {@link #acceptType(RecordType)}, {@link #acceptValue(ValueType)}, and {@link
+   *       #acceptIntent(Intent)} methods are used there. The broker combines all exporters' filters
+   *       to decide, based on <i>metadata only</i>, which record types/value types/intents are ever
+   *       interesting to any exporter. This lets the broker skip deserialization and exporting work
+   *       for clearly irrelevant records.
+   *   <li><b>Exporter-level filtering</b> (in exporter implementations or test harnesses): the
+   *       {@link #acceptRecord(Record)} method is called when the full {@link Record} is available.
+   *       Exporters can override this method to apply richer, record-level logic (e.g. broker
+   *       version, variable names/values, payload content, etc.).
+   * </ul>
+   *
+   * <p>The default {@link #acceptRecord(Record)} implementation exists for backward compatibility:
+   * it simply combines {@code acceptType}, {@code acceptValue}, and {@code acceptIntent} with a
+   * logical AND, so existing filters continue to behave as before without any changes.
+   */
   interface RecordFilter {
 
     /**
-     * Should export records of the given type?
+     * Filters by {@link RecordType}.
      *
-     * @param recordType the type of the record.
-     * @return {@code true} if records of this type should be exporter.
+     * <p>Used by:
+     *
+     * <ul>
+     *   <li>the broker (e.g. ExporterDirector) to build a global, metadata-only prefilter that
+     *       decides which record types are ever exported by any exporter
+     *   <li>the default {@link #acceptRecord(Record)} implementation
+     * </ul>
      */
-    boolean acceptType(RecordType recordType);
+    boolean acceptType(final RecordType recordType);
 
     /**
-     * Should export records with a value of the given type?
+     * Filters by {@link ValueType}.
      *
-     * @param valueType the type of the record value.
-     * @return {@code true} if records with this type of value should be exported.
+     * <p>Used by:
+     *
+     * <ul>
+     *   <li>the broker to skip records whose value type no exporter is interested in
+     *   <li>the default {@link #acceptRecord(Record)} implementation
+     * </ul>
      */
-    boolean acceptValue(ValueType valueType);
+    boolean acceptValue(final ValueType valueType);
 
     /**
-     * Should export records with the given intent?
+     * Filters by {@link Intent}.
      *
-     * @param intent the intent of the record.
-     * @return {@code true} if records with this intent should be exported.
+     * <p>Default is {@code true} for backward compatibility (no intent filtering).
+     *
+     * <p>Used by:
+     *
+     * <ul>
+     *   <li>the broker to prefilter intents at metadata level
+     *   <li>the default {@link #acceptRecord(Record)} implementation
+     * </ul>
      */
     default boolean acceptIntent(final Intent intent) {
-      // default implementation accepts all intents
       return true;
+    }
+
+    /**
+     * Filters a fully deserialized {@link Record}.
+     *
+     * <p>Used by:
+     *
+     * <ul>
+     *   <li>exporter runtimes/tests when the full record is available
+     *   <li>custom exporters that need richer, record-level logic
+     * </ul>
+     *
+     * <p>Default behavior is:
+     *
+     * <pre>{@code
+     * acceptType(record.getRecordType())
+     *     && acceptValue(record.getValueType())
+     *     && acceptIntent(record.getIntent());
+     * }</pre>
+     *
+     * which preserves the historic combination of type + value type + intent.
+     */
+    default boolean acceptRecord(final Record<?> record) {
+      return acceptType(record.getRecordType())
+          && acceptValue(record.getValueType())
+          && acceptIntent(record.getIntent());
     }
   }
 }
