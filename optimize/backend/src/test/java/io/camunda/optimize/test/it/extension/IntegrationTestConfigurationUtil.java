@@ -18,7 +18,7 @@ import io.camunda.optimize.test.util.PropertyUtil;
 import java.util.Properties;
 import org.springframework.context.ApplicationContext;
 
-public class IntegrationTestConfigurationUtil {
+public final class IntegrationTestConfigurationUtil {
 
   private static final String DEFAULT_PROPERTIES_PATH = "integration-extensions.properties";
   private static final Properties PROPERTIES = PropertyUtil.loadProperties(DEFAULT_PROPERTIES_PATH);
