@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.protocol.record.value;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
@@ -81,6 +82,7 @@ public interface VariableRecordValue extends RecordValue, ProcessInstanceRelated
    *
    * @return the fully qualified name in the format "{scopeKey}-{name}"
    */
+  @JsonIgnore
   default String getFullyQualifiedName() {
     return getScopeKey() + "-" + getName();
   }
