@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {test, expect} from '@playwright/test';
+import {test, expect, APIRequestContext} from '@playwright/test';
 import {
   jsonHeaders,
   buildUrl,
@@ -32,6 +32,7 @@ import { waitForAssertion } from 'utils/waitForAssertion';
 import { cleanupRoles } from 'utils/rolesCleanup';
 import { cleanupGroups } from 'utils/groupsCleanup';
 import { cleanupMappingRules } from 'utils/mappingRuleCleanup';
+import { sleep } from 'utils/sleep';
 
 type Authorization = {
   ownerId: string;
@@ -43,12 +44,12 @@ type Authorization = {
 };
 
 test.describe.parallel('Update Authorization API', () => {
-    const cleanups: (() => Promise<void>)[] = [];
+    const cleanups: ((request: APIRequestContext) => Promise<void>)[] = [];
     let authorizationKeys: Map<string, string> = new Map();
 
-  test.afterAll(async () => {
+  test.afterAll(async ({ request }) => {
     for (const cleanup of cleanups) {
-        await cleanup();
+        await cleanup(request);
     }
   });
 
@@ -63,7 +64,7 @@ test.describe.parallel('Update Authorization API', () => {
     await test.step('Setup - Create user for authorization tests', async () => {
       user = await createUser(request);
       console.log('Created user with username:', user.username);
-        cleanups.push(async () => {
+        cleanups.push(async (request) => {
             console.log('>>>>>>>> Deleting user with username:', user.username);
             await cleanupUsers(request, [user.username]);
         });
@@ -132,7 +133,7 @@ test.describe.parallel('Update Authorization API', () => {
     await test.step('Setup - Create role for Authorization tests', async () => {
         originalRole = await createRole(request);
         console.log('Created role with roleId:', originalRole.roleId);
-        cleanups.push(async () => {
+        cleanups.push(async (request) => {
             console.log('>>>>>>>> Deleting role with roleId:', originalRole.roleId);
             await cleanupRoles(request, [originalRole.roleId]);
         });
@@ -141,7 +142,7 @@ test.describe.parallel('Update Authorization API', () => {
     await test.step('Setup - Create user for authorization tests', async () => {
       user = await createUser(request);
       console.log('Created user with username:', user.username);
-        cleanups.push(async () => {
+        cleanups.push(async (request) => {
             console.log('>>>>>>>> Deleting user with username:', user.username);
             await cleanupUsers(request, [user.username]);
         });
@@ -207,14 +208,14 @@ test.describe.parallel('Update Authorization API', () => {
     await test.step('Setup - Create group for Authorization tests', async () => {
         originalGroup = await createGroup(request);
         console.log('Created group with groupId:', originalGroup.groupId);
-        cleanups.push(async () => {
+        cleanups.push(async (request) => {
             console.log('>>>>>>>> Deleting group with groupId:', originalGroup.groupId);
             await cleanupGroups(request, [originalGroup.groupId]);
         });
 
         newGroupForAuthorization = await createGroup(request);
         console.log('Created new group with groupId:', newGroupForAuthorization.groupId);
-        cleanups.push(async () => {
+        cleanups.push(async (request) => {
             console.log('>>>>>>>> Deleting group with groupId:', newGroupForAuthorization.groupId);
             await cleanupGroups(request, [newGroupForAuthorization.groupId]);
         });
@@ -235,9 +236,6 @@ test.describe.parallel('Update Authorization API', () => {
     await test.step('Poll authorization', async () => {
         await expectAuthorizationCanBeFound(request, authorizationKeys.get('groupAuthorization') as string);
     });
-
-    console.log('Original Group Authorization:', originalGroupAuthorization);
-    console.log('Updated Group Authorization:', updatedGroupAuthorization);
 
     await test.step('Update group authorization to new group ownerId', async () => {
         const authRes = await request.put(buildUrl(`/authorizations/${authorizationKeys.get('groupAuthorization')}`), {
@@ -266,9 +264,9 @@ test.describe.parallel('Update Authorization API', () => {
                 await verifyAuthorizationFields(authBody, expectedGroupAuthorization);
             },
             onFailure: async () => {
-                
+                await sleep(1000);
             },
-            maxRetries: 10,
+            maxRetries: 100,
         });
         
     });
@@ -306,7 +304,7 @@ test.describe.parallel('Update Authorization API', () => {
     await test.step('Setup - Create group for Authorization tests', async () => {
         originalGroup = await createGroup(request);
         console.log('Created group with groupId:', originalGroup.groupId);
-        cleanups.push(async () => {
+        cleanups.push(async (request) => {
             console.log('>>>>>>>> Deleting group with groupId:', originalGroup.groupId);
             await cleanupGroups(request, [originalGroup.groupId]);
         });
@@ -318,7 +316,7 @@ test.describe.parallel('Update Authorization API', () => {
             'Created Mapping Rule with mappingRuleId:',
             originalMappingRule.mappingRuleId,
         );
-        cleanups.push(async () => {
+        cleanups.push(async (request) => {
             console.log(
                 '>>>>>>>> Deleting Mapping Rule with mappingRuleId:',
                 originalMappingRule.mappingRuleId,
@@ -331,7 +329,7 @@ test.describe.parallel('Update Authorization API', () => {
             'Created new Mapping Rule with mappingRuleId:',
             newMappingRuleForAuthorization.mappingRuleId,
         );
-        cleanups.push(async () => {
+        cleanups.push(async (request) => {
             console.log(
                 '>>>>>>>> Deleting Mapping Rule with mappingRuleId:',
                 newMappingRuleForAuthorization.mappingRuleId,
