@@ -45,8 +45,7 @@ public record AuditLogInfo(
     AuditLogOperationCategory category,
     AuditLogEntityType entityType,
     AuditLogOperationType operationType,
-    AuditLogActor actor,
-    Optional<AuditLogTenant> tenant) {
+    AuditLogActor actor) {
 
   // Static map for ValueType to AuditLogOperationCategory mappings
   private static final Map<ValueType, AuditLogOperationCategory> OPERATION_CATEGORY_MAP =
@@ -207,12 +206,7 @@ public record AuditLogInfo(
           Map.entry(VariableIntent.UPDATED, AuditLogOperationType.UPDATE));
 
   public static AuditLogInfo of(final Record<?> record) {
-    return new AuditLogInfo(
-        getOperationCategory(record.getValueType()),
-        getEntityType(record.getValueType()),
-        getOperationType(record),
-        AuditLogActor.of(record),
-        AuditLogTenant.of(record));
+    return new AuditLogInfo(null, null, null, AuditLogActor.of(record));
   }
 
   private static AuditLogOperationCategory getOperationCategory(final ValueType valueType) {
