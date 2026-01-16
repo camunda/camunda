@@ -416,6 +416,21 @@ public abstract class ElasticsearchUtil {
     return result;
   }
 
+  public static <T, ID> List<T> scrollInChunks(
+      final List<ID> list,
+      final int chunkSize,
+      final Function<List<ID>, SearchRequest> chunkToSearchRequest,
+      final Class<T> clazz,
+      final ObjectMapper objectMapper,
+      final RestHighLevelClient esClient)
+      throws IOException {
+    final var result = new ArrayList<T>();
+    for (final var chunk : ListUtils.partition(list, chunkSize)) {
+      result.addAll(scroll(chunkToSearchRequest.apply(chunk), clazz, objectMapper, esClient));
+    }
+    return result;
+  }
+
   public static <T> List<T> scroll(
       final SearchRequest searchRequest,
       final Class<T> clazz,
