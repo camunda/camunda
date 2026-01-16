@@ -37,12 +37,14 @@ import {useCallHierarchy} from 'modules/queries/callHierarchy/useCallHierarchy';
 import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
 import {init as initFlowNodeSelection} from 'modules/utils/flowNodeSelection';
 import {
+  useClearSelectionOnModificationUndo,
   useIsRootNodeSelected,
   useRootNode,
 } from 'modules/hooks/flowNodeSelection';
 import {notificationsStore} from 'modules/stores/notifications';
 import {useNavigate} from 'react-router-dom';
 import {Locations} from 'modules/Routes';
+import {IS_ELEMENT_SELECTION_V2} from 'modules/feature-flags';
 
 const ProcessInstance: React.FC = observer(() => {
   const {data: processInstance, error} = useProcessInstance();
@@ -62,6 +64,10 @@ const ProcessInstance: React.FC = observer(() => {
       shouldInterrupt: modificationsStore.isModificationModeEnabled,
       ignoreSearchParams: true,
     });
+
+if (IS_ELEMENT_SELECTION_V2) {
+    useClearSelectionOnModificationUndo();
+  }
 
   useEffect(() => {
     if (error?.response?.status === 404 && processInstanceId) {
@@ -102,7 +108,9 @@ const ProcessInstance: React.FC = observer(() => {
       processInstance?.processInstanceKey &&
       rootNode
     ) {
-      initFlowNodeSelection(rootNode, processInstanceId, isRootNodeSelected);
+      if (!IS_ELEMENT_SELECTION_V2) {
+        initFlowNodeSelection(rootNode, processInstanceId, isRootNodeSelected);
+      }
       isInitialized.current = true;
     }
   }, [processInstance, rootNode, processInstanceId, isRootNodeSelected]);
