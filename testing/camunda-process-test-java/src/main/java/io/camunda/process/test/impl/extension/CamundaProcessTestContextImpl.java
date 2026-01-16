@@ -20,8 +20,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.api.JsonMapper;
+import io.camunda.client.api.command.CompleteAdHocSubProcessResultStep1;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.search.enums.IncidentState;
+import io.camunda.client.api.search.enums.JobKind;
 import io.camunda.client.api.search.enums.JobState;
 import io.camunda.client.api.search.enums.UserTaskState;
 import io.camunda.client.api.search.filter.IncidentFilter;
@@ -453,6 +455,45 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
             new ByteArrayInputStream(Dmn.convertToString(modelInstance).getBytes()), resourceName)
         .send()
         .join();
+  }
+
+  @Override
+  public void completeJobOfAdHocSubProcess(
+      final JobSelector jobSelector, final Consumer<CompleteAdHocSubProcessResultStep1> jobResult) {
+    completeJobOfAdHocSubProcess(jobSelector, Collections.emptyMap(), jobResult);
+  }
+
+  @Override
+  public void completeJobOfAdHocSubProcess(
+      final JobSelector jobSelector,
+      final Map<String, Object> variables,
+      final Consumer<CompleteAdHocSubProcessResultStep1> jobResult) {
+    final CamundaClient client = createClient();
+
+    // completing the job inside the await block to handle the eventual consistency of the API
+    awaitJob(
+        JobSelectors.byJobKind(JobKind.AD_HOC_SUB_PROCESS).and(jobSelector),
+        client,
+        job -> {
+          LOGGER.debug(
+              "Mock: Complete ad-hoc sub-process job [{}, jobKey: '{}'] with variables {}",
+              jobSelector.describe(),
+              job.getJobKey(),
+              variables);
+
+          client
+              .newCompleteCommand(job.getJobKey())
+              .variables(variables)
+              .withResult(
+                  result -> {
+                    final CompleteAdHocSubProcessResultStep1 adHocResult =
+                        result.forAdHocSubProcess();
+                    jobResult.accept(adHocResult);
+                    return adHocResult;
+                  })
+              .send()
+              .join();
+        });
   }
 
   @Override

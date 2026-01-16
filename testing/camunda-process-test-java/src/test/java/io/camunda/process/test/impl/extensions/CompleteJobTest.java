@@ -27,7 +27,11 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.ClientException;
+import io.camunda.client.api.command.CompleteAdHocSubProcessResultStep1;
+import io.camunda.client.api.command.CompleteJobCommandStep1.CompleteJobCommandJobResultStep;
+import io.camunda.client.api.command.CompleteJobResult;
 import io.camunda.client.api.response.CompleteJobResponse;
+import io.camunda.client.api.search.enums.JobKind;
 import io.camunda.client.api.search.enums.JobState;
 import io.camunda.client.api.search.filter.JobFilter;
 import io.camunda.client.api.search.filter.builder.IntegerProperty;
@@ -43,12 +47,14 @@ import io.camunda.process.test.utils.DevAwaitBehavior;
 import java.util.Collections;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
 import org.mockito.ArgumentCaptor;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -260,6 +266,187 @@ public class CompleteJobTest {
           .isInstanceOf(AssertionError.class)
           .hasMessageContaining(
               "Expected to complete job [jobType: %s] but no job is available.", JOB_TYPE);
+    }
+
+    @Test
+    void shouldFailIfNoAdHocSubProcessJobIsPresent() {
+      // given
+      when(camundaClient
+              .newJobSearchRequest()
+              .filter(jobFilterCaptor.capture())
+              .send()
+              .join()
+              .items())
+          .thenReturn(Collections.emptyList());
+
+      // when/then
+      assertThatThrownBy(
+              () ->
+                  camundaProcessTestContext.completeJobOfAdHocSubProcess(
+                      JobSelectors.byJobType(JOB_TYPE), result -> result.activateElement("task1")))
+          .isInstanceOf(AssertionError.class)
+          .hasMessageContaining(
+              "Expected to complete job [jobKind: AD_HOC_SUB_PROCESS, jobType: %s] but no job is available.",
+              JOB_TYPE);
+    }
+  }
+
+  @Nested
+  class CompleteJobOfAdHocSubProcess {
+
+    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
+    private JobFilter jobFilter;
+
+    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
+    private JobStateProperty jobStateProperty;
+
+    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
+    private IntegerProperty retriesProperty;
+
+    @Captor private ArgumentCaptor<Consumer<JobFilter>> jobFilterCaptor;
+    @Captor private ArgumentCaptor<Consumer<JobStateProperty>> jobStatePropertyCaptor;
+    @Captor private ArgumentCaptor<Consumer<IntegerProperty>> retriesPropertyCaptor;
+
+    @Mock private CompleteJobCommandJobResultStep completeJobCommandJobResultStep;
+    @Mock private CompleteAdHocSubProcessResultStep1 completeAdHocSubProcessResultStep;
+    @Mock private Consumer<CompleteAdHocSubProcessResultStep1> jobResultConsumer;
+
+    @Captor
+    private ArgumentCaptor<Function<CompleteJobCommandJobResultStep, CompleteJobResult>>
+        jobResultFunctionCaptor;
+
+    @BeforeEach
+    void setup() {
+      camundaProcessTestContext =
+          new CamundaProcessTestContextImpl(
+              camundaProcessTestRuntime,
+              clientCreationCallback,
+              camundaManagementClient,
+              DevAwaitBehavior.expectSuccess(),
+              jsonMapper,
+              zeebeJsonMapper);
+
+      when(camundaClient
+              .newJobSearchRequest()
+              .filter(jobFilterCaptor.capture())
+              .send()
+              .join()
+              .items())
+          .thenReturn(Collections.singletonList(job));
+
+      when(job.getJobKey()).thenReturn(JOB_KEY);
+      when(job.getType()).thenReturn(JOB_TYPE);
+      when(job.getKind()).thenReturn(JobKind.AD_HOC_SUB_PROCESS);
+    }
+
+    @Test
+    void shouldCompleteAdHocSubProcessJobWithoutVariables() {
+      // when
+      camundaProcessTestContext.completeJobOfAdHocSubProcess(
+          JobSelectors.byJobType(JOB_TYPE), result -> result.activateElement("task1"));
+
+      // then
+      verify(camundaClient.newCompleteCommand(JOB_KEY).variables(Collections.emptyMap()))
+          .withResult(ArgumentMatchers.any());
+    }
+
+    @Test
+    void shouldCompleteAdHocSubProcessJobWithVariables() {
+      // given
+      final Map<String, Object> variables = Collections.singletonMap("result", "okay");
+
+      // when
+      camundaProcessTestContext.completeJobOfAdHocSubProcess(
+          JobSelectors.byJobType(JOB_TYPE), variables, result -> result.activateElement("task1"));
+
+      // then
+      verify(camundaClient.newCompleteCommand(JOB_KEY).variables(variables))
+          .withResult(ArgumentMatchers.any());
+    }
+
+    @Test
+    void shouldInvokeJobResultConsumer() {
+      // given
+      when(completeJobCommandJobResultStep.forAdHocSubProcess())
+          .thenReturn(completeAdHocSubProcessResultStep);
+
+      // when
+      camundaProcessTestContext.completeJobOfAdHocSubProcess(
+          JobSelectors.byJobType(JOB_TYPE), jobResultConsumer);
+
+      // then - verify that withResult was called
+      verify(camundaClient.newCompleteCommand(JOB_KEY).variables(Collections.emptyMap()))
+          .withResult(jobResultFunctionCaptor.capture());
+
+      // and invoke the captured function to verify our consumer is called
+      jobResultFunctionCaptor.getValue().apply(completeJobCommandJobResultStep);
+      verify(jobResultConsumer).accept(completeAdHocSubProcessResultStep);
+    }
+
+    @Test
+    void shouldSearchByJobTypeAndKind() {
+      // when
+      camundaProcessTestContext.completeJobOfAdHocSubProcess(
+          JobSelectors.byJobType(JOB_TYPE), result -> result.activateElement("task1"));
+
+      // then
+      jobFilterCaptor.getValue().accept(jobFilter);
+      verify(jobFilter).kind(JobKind.AD_HOC_SUB_PROCESS);
+      verify(jobFilter).type(JOB_TYPE);
+      verify(jobFilter).state(jobStatePropertyCaptor.capture());
+      verify(jobFilter.state(jobStatePropertyCaptor.getValue()))
+          .retries(retriesPropertyCaptor.capture());
+
+      jobStatePropertyCaptor.getValue().accept(jobStateProperty);
+      verify(jobStateProperty)
+          .in(JobState.CREATED, JobState.FAILED, JobState.RETRIES_UPDATED, JobState.TIMED_OUT);
+
+      retriesPropertyCaptor.getValue().accept(retriesProperty);
+      verify(retriesProperty).gte(1);
+    }
+
+    @Test
+    void shouldAwaitUntilJobIsPresent() {
+      // given
+      when(camundaClient
+              .newJobSearchRequest()
+              .filter(jobFilterCaptor.capture())
+              .send()
+              .join()
+              .items())
+          .thenReturn(Collections.emptyList())
+          .thenReturn(Collections.singletonList(job));
+
+      clearInvocations(camundaClient);
+
+      // when
+      camundaProcessTestContext.completeJobOfAdHocSubProcess(
+          JobSelectors.byJobType(JOB_TYPE), result -> result.activateElement("task1"));
+
+      // then
+      verify(camundaClient, times(2)).newJobSearchRequest();
+    }
+
+    @Test
+    void shouldRetryCompletion() {
+      // given
+      when(camundaClient
+              .newCompleteCommand(JOB_KEY)
+              .variables(Collections.emptyMap())
+              .withResult(ArgumentMatchers.any())
+              .send()
+              .join())
+          .thenThrow(new ClientException("expected"))
+          .thenReturn(mock(CompleteJobResponse.class));
+
+      clearInvocations(camundaClient);
+
+      // when
+      camundaProcessTestContext.completeJobOfAdHocSubProcess(
+          JobSelectors.byJobType(JOB_TYPE), result -> result.activateElement("task1"));
+
+      // then
+      verify(camundaClient, times(2)).newCompleteCommand(JOB_KEY);
     }
   }
 }

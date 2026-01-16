@@ -15,6 +15,7 @@
  */
 package io.camunda.process.test.api.assertions;
 
+import io.camunda.client.api.search.enums.JobKind;
 import io.camunda.client.api.search.filter.JobFilter;
 import io.camunda.client.api.search.response.Job;
 
@@ -49,6 +50,26 @@ public class JobSelectors {
    */
   public static JobSelector byProcessDefinitionId(final String processDefinitionId) {
     return new JobProcessDefinitionSelector(processDefinitionId);
+  }
+
+  /**
+   * Select the job by its kind.
+   *
+   * @param jobKind the kind of the job
+   * @return the selector
+   */
+  public static JobSelector byJobKind(final JobKind jobKind) {
+    return new JobKindSelector(jobKind);
+  }
+
+  /**
+   * Select the job by its process instance key.
+   *
+   * @param processInstanceKey the process instance key
+   * @return the selector
+   */
+  public static JobSelector byProcessInstanceKey(final Long processInstanceKey) {
+    return new JobProcessInstanceKeySelector(processInstanceKey);
   }
 
   private static final class JobTypeSelector implements JobSelector {
@@ -120,6 +141,54 @@ public class JobSelectors {
     @Override
     public void applyFilter(final JobFilter filter) {
       filter.processDefinitionId(processDefinitionId);
+    }
+  }
+
+  private static final class JobKindSelector implements JobSelector {
+
+    private final JobKind jobKind;
+
+    private JobKindSelector(final JobKind jobKind) {
+      this.jobKind = jobKind;
+    }
+
+    @Override
+    public boolean test(final Job job) {
+      return jobKind.equals(job.getKind());
+    }
+
+    @Override
+    public String describe() {
+      return "jobKind: " + jobKind;
+    }
+
+    @Override
+    public void applyFilter(final JobFilter filter) {
+      filter.kind(jobKind);
+    }
+  }
+
+  private static final class JobProcessInstanceKeySelector implements JobSelector {
+
+    private final Long processInstanceKey;
+
+    private JobProcessInstanceKeySelector(final Long processInstanceKey) {
+      this.processInstanceKey = processInstanceKey;
+    }
+
+    @Override
+    public boolean test(final Job job) {
+      return processInstanceKey.equals(job.getProcessInstanceKey());
+    }
+
+    @Override
+    public String describe() {
+      return "processInstanceKey: " + processInstanceKey;
+    }
+
+    @Override
+    public void applyFilter(final JobFilter filter) {
+      filter.processInstanceKey(processInstanceKey);
     }
   }
 }
