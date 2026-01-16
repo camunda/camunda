@@ -533,25 +533,6 @@ public class VariableService {
     return result;
   }
 
-  public VariableDTO getVariable(final String variableId, final Set<String> fieldNames) {
-    try {
-      // 1st search in runtime variables
-      final VariableEntity runtimeVariable =
-          variableStore.getRuntimeVariable(variableId, fieldNames);
-      return VariableDTO.createFrom(runtimeVariable);
-    } catch (final NotFoundException ex) {
-      // then in task variables (for completed tasks)
-      try {
-        // 2nd search in runtime variables
-        final SnapshotTaskVariableEntity taskVariable =
-            variableStore.getTaskVariable(variableId, fieldNames);
-        return VariableDTO.createFrom(taskVariable);
-      } catch (final NotFoundException ex2) {
-        throw new NotFoundApiException(String.format("Variable with id %s not found.", variableId));
-      }
-    }
-  }
-
   public VariableResponse getVariableResponse(final String variableId) {
     try {
       // 1st search in runtime variables
