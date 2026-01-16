@@ -98,14 +98,17 @@ public final class DbGlobalListenersState implements MutableGlobalListenersState
     currentConfig.setGlobalListenerBatchKey(configKey.get());
 
     // Retrieve listeners list
+    final List<GlobalListenerRecord> currentListeners = new ArrayList<>();
     globalListenersColumnFamily.forEach(
         listener -> {
           // Note: the copy is necessary because the same instance is reused by the column family
           // iterator
           final GlobalListenerRecord record = new GlobalListenerRecord();
           record.copyFrom(listener.getGlobalListener());
-          currentConfig.addTaskListener(record);
+          currentListeners.add(record);
         });
+    currentListeners.sort(GlobalListenerRecord.PRIORITY_COMPARATOR);
+    currentListeners.forEach(currentConfig::addTaskListener);
 
     return currentConfig;
   }
