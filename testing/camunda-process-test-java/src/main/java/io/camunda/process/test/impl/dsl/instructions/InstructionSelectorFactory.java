@@ -17,6 +17,8 @@ package io.camunda.process.test.impl.dsl.instructions;
 
 import io.camunda.process.test.api.assertions.ElementSelector;
 import io.camunda.process.test.api.assertions.ElementSelectors;
+import io.camunda.process.test.api.assertions.IncidentSelector;
+import io.camunda.process.test.api.assertions.IncidentSelectors;
 import io.camunda.process.test.api.assertions.JobSelector;
 import io.camunda.process.test.api.assertions.JobSelectors;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelector;
@@ -134,5 +136,34 @@ final class InstructionSelectorFactory {
       throw new IllegalArgumentException(
           "Element selector must have either elementId or elementName");
     }
+  }
+
+  /**
+   * Builds an incident selector from a DSL incident selector.
+   *
+   * @param dslSelector the DSL incident selector
+   * @return the incident selector
+   * @throws IllegalArgumentException if no selector property is set
+   */
+  static IncidentSelector buildIncidentSelector(
+      final io.camunda.process.test.api.dsl.IncidentSelector dslSelector) {
+    IncidentSelector selector = null;
+
+    if (dslSelector.getElementId().isPresent()) {
+      selector = IncidentSelectors.byElementId(dslSelector.getElementId().get());
+    }
+
+    if (dslSelector.getProcessDefinitionId().isPresent()) {
+      final IncidentSelector processDefSelector =
+          IncidentSelectors.byProcessDefinitionId(dslSelector.getProcessDefinitionId().get());
+      selector = selector != null ? selector.and(processDefSelector) : processDefSelector;
+    }
+
+    if (selector == null) {
+      throw new IllegalArgumentException(
+          "Missing required property: at least one of elementId or processDefinitionId must be set");
+    }
+
+    return selector;
   }
 }
