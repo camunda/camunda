@@ -16,6 +16,7 @@
 package io.camunda.process.test.impl.proxy;
 
 import io.camunda.process.test.api.dsl.TestScenarioRunner;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -44,6 +45,16 @@ public class TestScenarioRunnerProxy extends AbstractInvocationHandler {
               + method
               + " on TestScenarioRunner, as TestScenarioRunner is currently not initialized. Maybe you run outside of a testcase?");
     }
-    return method.invoke(delegate, args);
+    try {
+      return method.invoke(delegate, args);
+
+    } catch (final InvocationTargetException e) {
+      if (e.getCause() instanceof final AssertionError assertionError) {
+        // unwrap assertion errors to make them visible to the test framework
+        throw assertionError;
+      } else {
+        throw e;
+      }
+    }
   }
 }
