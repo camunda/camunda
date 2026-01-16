@@ -42,5 +42,9 @@ zeebe:
             processMessageSubscription: false
             processInstanceModification: false
 camunda:
-  database:
-    url: "http://host.testcontainers.internal:${DATABASE_PORT:9200}"
+  data:
+    secondary-storage:
+      elasticsearch:
+        url: "http://host.testcontainers.internal:${DATABASE_PORT:9200}"
+      opensearch:
+        url: "http://host.testcontainers.internal:${DATABASE_PORT:9200}"

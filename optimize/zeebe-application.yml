@@ -45,5 +45,9 @@ zeebe:
             processInstanceModification: false
             bulkSize: 1
 camunda:
-  database:
-    url: "${DATABASE_URL:http://elasticsearch}:${DATABASE_PORT:9200}"
+  data:
+    secondary-storage:
+      elasticsearch:
+        url: "${DATABASE_URL:http://elasticsearch}:${DATABASE_PORT:9200}"
+      opensearch:
+        url: "${DATABASE_URL:http://elasticsearch}:${DATABASE_PORT:9200}"
