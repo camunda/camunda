@@ -20,7 +20,12 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
+import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.DeployResourceCommandStep1.DeployResourceCommandStep2;
+import io.camunda.zeebe.client.api.search.response.ProcessInstance;
+import io.camunda.zeebe.client.api.search.response.SearchQueryResponse;
+import io.camunda.zeebe.client.api.search.sort.ProcessInstanceSort;
+import io.camunda.zeebe.client.protocol.rest.ProcessInstanceVariableFilterRequest;
 import io.camunda.zeebe.config.AppCfg;
 import io.camunda.zeebe.config.StarterCfg;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
@@ -34,10 +39,8 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
@@ -131,7 +134,28 @@ public class Starter extends App {
             Executors.newScheduledThreadPool(1),
             appCfg.getMonitorDataAvailabilityInterval(),
             (listOfStartedInstances) -> {
-              return CompletableFuture.completedFuture(List.of());
+              //              final List<Object> page = List.of();
+              final ZeebeFuture<SearchQueryResponse<ProcessInstance>> send =
+                  client
+                      .newProcessInstanceQuery()
+                      .filter(
+                          f ->
+                              f.variable(
+                                  new ProcessInstanceVariableFilterRequest()
+                                      .name(starterCfg.getBusinessKey())
+                                      .values(
+                                          listOfStartedInstances.stream()
+                                              .map(l -> Long.toString(l))
+                                              .toList())))
+                      //                  .page(p -> p.searchAfter(page))
+                      .sort(ProcessInstanceSort::startDate)
+                      .send();
+
+              return send.thenApply(
+                  processInstanceSearchResponse ->
+                      processInstanceSearchResponse.items().stream()
+                          .map(ProcessInstance::getKey)
+                          .toList());
               //              final CamundaFuture<SearchResponse<ProcessInstance>> send =
               //                  client
               //                      .newProcessInstanceSearchRequest()
@@ -214,6 +238,7 @@ public class Starter extends App {
       final long startTime,
       final String processId,
       final HashMap<String, Object> variables) {
+    final var businessKey = (long) variables.get(starterCfg.getBusinessKey());
     final var sendFuture =
         client
             .newCreateInstanceCommand()
@@ -226,7 +251,8 @@ public class Starter extends App {
       return sendFuture.thenApply(
           (response) -> {
             final long processInstanceKey = response.getProcessInstanceKey();
-            processInstanceStartMeter.recordProcessInstanceStart(processInstanceKey, startTime);
+            processInstanceStartMeter.recordProcessInstanceStart(
+                processInstanceKey, businessKey, startTime);
             return response;
           });
     }
