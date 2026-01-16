@@ -9,13 +9,13 @@ package io.camunda.operate.qa.util.migration;
 
 import io.camunda.operate.qa.util.TestContainerUtil;
 import io.camunda.operate.qa.util.TestContext;
-import io.zeebe.containers.ZeebeContainer;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.testcontainers.containers.GenericContainer;
 
 public abstract class AbstractTestFixture implements TestFixture {
 
-  protected ZeebeContainer broker;
+  protected TestStandaloneBroker broker;
   protected GenericContainer<?> operateContainer;
   protected TestContext testContext;
   @Autowired private TestContainerUtil testContainerUtil;
@@ -26,7 +26,7 @@ public abstract class AbstractTestFixture implements TestFixture {
   }
 
   protected void startZeebeAndOperate() {
-    broker = testContainerUtil.startZeebe(getVersion(), testContext);
+    broker = testContainerUtil.startZeebe(testContext);
     operateContainer = testContainerUtil.startOperate(getVersion(), testContext);
   }
 
