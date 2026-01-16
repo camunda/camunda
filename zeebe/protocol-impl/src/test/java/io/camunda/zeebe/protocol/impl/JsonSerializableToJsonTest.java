@@ -754,88 +754,90 @@ final class JsonSerializableToJsonTest {
                   .setElementInstanceKey(activityInstanceKey)
                   .setChangedAttributes(changedAttributes)
                   .setResult(result)
-                  .setTags(Set.of("tag1", "tag2"));
+                  .setTags(Set.of("tag1", "tag2"))
+                  .setIsJobToUserTaskMigration(true);
 
               return record;
             },
         """
-        {
-          "maxJobsToActivate": 1,
-          "type": "type",
-          "worker": "worker",
-          "truncated": true,
-          "jobKeys": [
-            3
-          ],
-          "jobs": [
-            {
-              "bpmnProcessId": "test-process",
-              "processDefinitionKey": 13,
-              "processDefinitionVersion": 12,
-              "processInstanceKey": 1234,
-              "elementId": "activity",
-              "elementInstanceKey": 123,
-              "type": "type",
-              "worker": "worker",
-              "variables": {
-                "foo": "bar"
-              },
-              "retries": 3,
-              "jobKind": "BPMN_ELEMENT",
-              "jobListenerEventType": "UNSPECIFIED",
-              "retryBackoff": 1002,
-              "recurringTime": 1001,
-              "errorMessage": "failed message",
-              "errorCode": "error",
-              "customHeaders": {},
-              "deadline": 1000,
-              "timeout": -1,
-              "tenantId": "<default>",
-              "changedAttributes": ["bar", "foo"],
-              "tags": ["tag1", "tag2"],
-              "result": {
-                "type": "USER_TASK",
-                "denied": true,
-                "deniedReason": "Reason to deny lifecycle transition",
-                "correctedAttributes": [
-                  "assignee",
-                  "dueDate",
-                  "followUpDate",
-                  "candidateGroupsList",
-                  "candidateUsersList",
-                  "priority"
-                ],
-                "corrections": {
-                  "assignee": "frodo",
-                  "dueDate": "today",
-                  "followUpDate": "tomorrow",
-                  "candidateGroupsList": ["fellowship", "eagles"],
-                  "candidateUsersList": ["frodo", "sam", "gollum"],
-                  "priority": 1
-                },
-               "activateElements": [
-                  {
-                    "elementId": "gandalf",
-                    "variables": {
-                      "foo": "bar"
+                {
+                  "maxJobsToActivate": 1,
+                  "type": "type",
+                  "worker": "worker",
+                  "truncated": true,
+                  "jobKeys": [
+                    3
+                  ],
+                  "jobs": [
+                    {
+                      "bpmnProcessId": "test-process",
+                      "processDefinitionKey": 13,
+                      "processDefinitionVersion": 12,
+                      "processInstanceKey": 1234,
+                      "elementId": "activity",
+                      "elementInstanceKey": 123,
+                      "type": "type",
+                      "worker": "worker",
+                      "variables": {
+                        "foo": "bar"
+                      },
+                      "retries": 3,
+                      "jobKind": "BPMN_ELEMENT",
+                      "jobListenerEventType": "UNSPECIFIED",
+                      "retryBackoff": 1002,
+                      "recurringTime": 1001,
+                      "errorMessage": "failed message",
+                      "errorCode": "error",
+                      "customHeaders": {},
+                      "deadline": 1000,
+                      "timeout": -1,
+                      "tenantId": "<default>",
+                      "changedAttributes": ["bar", "foo"],
+                      "tags": ["tag1", "tag2"],
+                      "jobToUserTaskMigration": true,
+                      "result": {
+                        "type": "USER_TASK",
+                        "denied": true,
+                        "deniedReason": "Reason to deny lifecycle transition",
+                        "correctedAttributes": [
+                          "assignee",
+                          "dueDate",
+                          "followUpDate",
+                          "candidateGroupsList",
+                          "candidateUsersList",
+                          "priority"
+                        ],
+                        "corrections": {
+                          "assignee": "frodo",
+                          "dueDate": "today",
+                          "followUpDate": "tomorrow",
+                          "candidateGroupsList": ["fellowship", "eagles"],
+                          "candidateUsersList": ["frodo", "sam", "gollum"],
+                          "priority": 1
+                        },
+                       "activateElements": [
+                          {
+                            "elementId": "gandalf",
+                            "variables": {
+                              "foo": "bar"
+                            }
+                          },
+                          {
+                            "elementId": "sauron",
+                            "variables": {
+                              "foo": "bar"
+                            }
+                          }
+                        ],
+                        "completionConditionFulfilled": true,
+                        "cancelRemainingInstances": true
+                      }
                     }
-                  },
-                  {
-                    "elementId": "sauron",
-                    "variables": {
-                      "foo": "bar"
-                    }
-                  }
-                ],
-                "completionConditionFulfilled": true,
-                "cancelRemainingInstances": true
-              }
-            }
-          ],
-          "timeout": 2,
-          "tenantIds": []
-        }
-        """
+                  ],
+                  "timeout": 2,
+                  "tenantIds": []
+                }
+                """
       },
       /////////////////////////////////////////////////////////////////////////////////////////////
       ///////////////////////////////// Empty JobBatchRecord //////////////////////////////////////
@@ -935,78 +937,80 @@ final class JsonSerializableToJsonTest {
                       .setElementInstanceKey(activityInstanceKey)
                       .setChangedAttributes(changedAttributes)
                       .setResult(result)
-                      .setTags(Set.of("tag1", "tag2"));
+                      .setTags(Set.of("tag1", "tag2"))
+                      .setIsJobToUserTaskMigration(true);
 
               record.setCustomHeaders(wrapArray(MsgPackConverter.convertToMsgPack(customHeaders)));
               return record;
             },
         """
-        {
-          "bpmnProcessId": "test-process",
-          "processDefinitionKey": 13,
-          "processDefinitionVersion": 12,
-          "processInstanceKey": 1234,
-          "elementId": "activity",
-          "elementInstanceKey": 123,
-          "worker": "myWorker",
-          "type": "myType",
-          "variables": {
-            "foo": "bar"
-          },
-          "retries": 12,
-          "jobKind": "BPMN_ELEMENT",
-          "jobListenerEventType": "UNSPECIFIED",
-          "retryBackoff": 1003,
-          "recurringTime": 1004,
-          "errorMessage": "failed message",
-          "errorCode": "error",
-          "customHeaders": {
-            "workerVersion": "42"
-          },
-          "deadline": 13,
-          "timeout": 14,
-          "tenantId": "<default>",
-          "tags": ["tag1", "tag2"],
-          "changedAttributes": ["bar", "foo"],
-          "result": {
-            "type": "AD_HOC_SUB_PROCESS",
-            "denied": true,
-            "deniedReason": "Reason to deny lifecycle transition",
-            "correctedAttributes": [
-              "assignee",
-              "dueDate",
-              "followUpDate",
-              "candidateGroupsList",
-              "candidateUsersList",
-              "priority"
-            ],
-            "corrections": {
-              "assignee": "frodo",
-              "dueDate": "today",
-              "followUpDate": "tomorrow",
-              "candidateGroupsList": ["fellowship", "eagles"],
-              "candidateUsersList": ["frodo", "sam", "gollum"],
-              "priority": 1
-            },
-            "activateElements": [
-              {
-                "elementId": "gandalf",
-                "variables": {
-                  "foo": "bar"
+                {
+                  "bpmnProcessId": "test-process",
+                  "processDefinitionKey": 13,
+                  "processDefinitionVersion": 12,
+                  "processInstanceKey": 1234,
+                  "elementId": "activity",
+                  "elementInstanceKey": 123,
+                  "worker": "myWorker",
+                  "type": "myType",
+                  "variables": {
+                    "foo": "bar"
+                  },
+                  "retries": 12,
+                  "jobKind": "BPMN_ELEMENT",
+                  "jobListenerEventType": "UNSPECIFIED",
+                  "retryBackoff": 1003,
+                  "recurringTime": 1004,
+                  "errorMessage": "failed message",
+                  "errorCode": "error",
+                  "customHeaders": {
+                    "workerVersion": "42"
+                  },
+                  "deadline": 13,
+                  "timeout": 14,
+                  "tenantId": "<default>",
+                  "tags": ["tag1", "tag2"],
+                  "jobToUserTaskMigration": true,
+                  "changedAttributes": ["bar", "foo"],
+                  "result": {
+                    "type": "AD_HOC_SUB_PROCESS",
+                    "denied": true,
+                    "deniedReason": "Reason to deny lifecycle transition",
+                    "correctedAttributes": [
+                      "assignee",
+                      "dueDate",
+                      "followUpDate",
+                      "candidateGroupsList",
+                      "candidateUsersList",
+                      "priority"
+                    ],
+                    "corrections": {
+                      "assignee": "frodo",
+                      "dueDate": "today",
+                      "followUpDate": "tomorrow",
+                      "candidateGroupsList": ["fellowship", "eagles"],
+                      "candidateUsersList": ["frodo", "sam", "gollum"],
+                      "priority": 1
+                    },
+                    "activateElements": [
+                      {
+                        "elementId": "gandalf",
+                        "variables": {
+                          "foo": "bar"
+                        }
+                      },
+                      {
+                        "elementId": "sauron",
+                        "variables": {
+                          "foo": "bar"
+                        }
+                      }
+                    ],
+                    "completionConditionFulfilled": true,
+                    "cancelRemainingInstances": true
+                  }
                 }
-              },
-              {
-                "elementId": "sauron",
-                "variables": {
-                  "foo": "bar"
-                }
-              }
-            ],
-            "completionConditionFulfilled": true,
-            "cancelRemainingInstances": true
-          }
-        }
-        """
+                """
       },
 
       /////////////////////////////////////////////////////////////////////////////////////////////
@@ -1016,48 +1020,49 @@ final class JsonSerializableToJsonTest {
         "Empty JobRecord",
         (Supplier<UnifiedRecordValue>) JobRecord::new,
         """
-        {
-          "type": "",
-          "processDefinitionVersion": -1,
-          "elementId": "",
-          "bpmnProcessId": "",
-          "processDefinitionKey": -1,
-          "processInstanceKey": -1,
-          "elementInstanceKey": -1,
-          "variables": {},
-          "worker": "",
-          "retries": -1,
-          "jobKind": "BPMN_ELEMENT",
-          "jobListenerEventType": "UNSPECIFIED",
-          "retryBackoff": 0,
-          "recurringTime": -1,
-          "errorMessage": "",
-          "errorCode": "",
-          "customHeaders": {},
-          "deadline": -1,
-          "timeout": -1,
-          "tenantId": "<default>",
-          "tags": [],
-          "changedAttributes": [],
-          "result": {
-            "type": "USER_TASK",
-            "denied": false,
-            "deniedReason": "",
-            "correctedAttributes": [],
-            "corrections": {
-              "assignee": "",
-              "dueDate": "",
-              "followUpDate": "",
-              "candidateGroupsList": [],
-              "candidateUsersList": [],
-              "priority": -1
-            },
-            "activateElements": [],
-            "completionConditionFulfilled": false,
-            "cancelRemainingInstances": false
-          }
-        }
-        """
+                {
+                  "type": "",
+                  "processDefinitionVersion": -1,
+                  "elementId": "",
+                  "bpmnProcessId": "",
+                  "processDefinitionKey": -1,
+                  "processInstanceKey": -1,
+                  "elementInstanceKey": -1,
+                  "variables": {},
+                  "worker": "",
+                  "retries": -1,
+                  "jobKind": "BPMN_ELEMENT",
+                  "jobListenerEventType": "UNSPECIFIED",
+                  "retryBackoff": 0,
+                  "recurringTime": -1,
+                  "errorMessage": "",
+                  "errorCode": "",
+                  "customHeaders": {},
+                  "deadline": -1,
+                  "timeout": -1,
+                  "tenantId": "<default>",
+                  "tags": [],
+                  "jobToUserTaskMigration": false,
+                  "changedAttributes": [],
+                  "result": {
+                    "type": "USER_TASK",
+                    "denied": false,
+                    "deniedReason": "",
+                    "correctedAttributes": [],
+                    "corrections": {
+                      "assignee": "",
+                      "dueDate": "",
+                      "followUpDate": "",
+                      "candidateGroupsList": [],
+                      "candidateUsersList": [],
+                      "priority": -1
+                    },
+                    "activateElements": [],
+                    "completionConditionFulfilled": false,
+                    "cancelRemainingInstances": false
+                  }
+                }
+                """
       },
       /////////////////////////////////////////////////////////////////////////////////////////////
       ///////////////////////////////////// JobRecord with nullable variable //////////////////////
@@ -1070,50 +1075,51 @@ final class JsonSerializableToJsonTest {
                     .setVariables(
                         new UnsafeBuffer(MsgPackConverter.convertToMsgPack("{'foo':null}"))),
         """
-        {
-          "type": "",
-          "errorMessage": "",
-          "bpmnProcessId": "",
-          "processDefinitionKey": -1,
-          "processInstanceKey": -1,
-          "elementId": "",
-          "elementInstanceKey": -1,
-          "variables": {
-            "foo": null
-          },
-          "deadline": -1,
-          "timeout": -1,
-          "worker": "",
-          "retries": -1,
-          "jobKind": "BPMN_ELEMENT",
-          "jobListenerEventType": "UNSPECIFIED",
-          "retryBackoff": 0,
-          "recurringTime": -1,
-          "errorCode": "",
-          "processDefinitionVersion": -1,
-          "customHeaders": {},
-          "tenantId": "<default>",
-          "tags": [],
-          "changedAttributes": [],
-          "result": {
-            "type": "USER_TASK",
-            "denied": false,
-            "deniedReason": "",
-            "correctedAttributes": [],
-            "corrections": {
-              "assignee": "",
-              "dueDate": "",
-              "followUpDate": "",
-              "candidateGroupsList": [],
-              "candidateUsersList": [],
-              "priority": -1
-            },
-            "activateElements": [],
-            "completionConditionFulfilled": false,
-            "cancelRemainingInstances": false
-          }
-        }
-        """
+                {
+                  "type": "",
+                  "errorMessage": "",
+                  "bpmnProcessId": "",
+                  "processDefinitionKey": -1,
+                  "processInstanceKey": -1,
+                  "elementId": "",
+                  "elementInstanceKey": -1,
+                  "variables": {
+                    "foo": null
+                  },
+                  "deadline": -1,
+                  "timeout": -1,
+                  "worker": "",
+                  "retries": -1,
+                  "jobKind": "BPMN_ELEMENT",
+                  "jobListenerEventType": "UNSPECIFIED",
+                  "retryBackoff": 0,
+                  "recurringTime": -1,
+                  "errorCode": "",
+                  "processDefinitionVersion": -1,
+                  "customHeaders": {},
+                  "tenantId": "<default>",
+                  "tags": [],
+                  "jobToUserTaskMigration": false,
+                  "changedAttributes": [],
+                  "result": {
+                    "type": "USER_TASK",
+                    "denied": false,
+                    "deniedReason": "",
+                    "correctedAttributes": [],
+                    "corrections": {
+                      "assignee": "",
+                      "dueDate": "",
+                      "followUpDate": "",
+                      "candidateGroupsList": [],
+                      "candidateUsersList": [],
+                      "priority": -1
+                    },
+                    "activateElements": [],
+                    "completionConditionFulfilled": false,
+                    "cancelRemainingInstances": false
+                  }
+                }
+                """
       },
       /////////////////////////////////////////////////////////////////////////////////////////////
       ///////////////////////////////// MessageRecord /////////////////////////////////////////////

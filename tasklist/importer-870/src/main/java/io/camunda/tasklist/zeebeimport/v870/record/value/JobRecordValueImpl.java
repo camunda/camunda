@@ -35,6 +35,7 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
   private JobListenerEventType jobListenerEventType;
   private Set<String> changedAttributes;
   private Set<String> tags;
+  private boolean jobToUserTaskMigration;
 
   public JobRecordValueImpl() {}
 
@@ -209,6 +210,11 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
   @Override
   public Set<String> getTags() {
     return tags;
+  }
+
+  @Override
+  public boolean isJobToUserTaskMigration() {
+    return jobToUserTaskMigration;
   }
 
   @Override

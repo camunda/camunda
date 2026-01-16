@@ -84,6 +84,7 @@ public class ProcessInstanceMigrationMigrateProcessor
   private final EventScopeInstanceState eventScopeInstanceState;
   private final MessageState messageState;
   private final AuthorizationCheckBehavior authCheckBehavior;
+  private final BpmnBehaviors bpmnBehaviors;
   private final ProcessInstanceMigrationCatchEventBehaviour migrationCatchEventBehaviour;
   private final KeyGenerator keyGenerator;
 
@@ -108,6 +109,7 @@ public class ProcessInstanceMigrationMigrateProcessor
     eventScopeInstanceState = processingState.getEventScopeInstanceState();
     messageState = processingState.getMessageState();
     this.authCheckBehavior = authCheckBehavior;
+    this.bpmnBehaviors = bpmnBehaviors;
     this.keyGenerator = keyGenerator;
 
     migrationCatchEventBehaviour =
@@ -244,12 +246,13 @@ public class ProcessInstanceMigrationMigrateProcessor
     requireNonNullTargetElementId(targetElementId, processInstanceKey, elementId);
     requireSameElementType(
         targetProcessDefinition, targetElementId, elementInstance, processInstanceKey);
-    requireSameUserTaskImplementation(
-        sourceProcessDefinition,
-        targetProcessDefinition,
-        targetElementId,
-        elementInstance,
-        processInstanceKey);
+    final boolean isUserTaskConversion =
+        requireSupportedUserTaskImplementation(
+            sourceProcessDefinition,
+            targetProcessDefinition,
+            targetElementId,
+            elementInstance,
+            processInstanceKey);
     requireUnchangedFlowScope(
         elementInstanceState, elementInstanceRecord, targetProcessDefinition, targetElementId);
     requireNoEventSubprocessInSource(
@@ -347,7 +350,7 @@ public class ProcessInstanceMigrationMigrateProcessor
               targetSequenceFlowId);
         });
 
-    if (elementInstance.getJobKey() > 0) {
+    if (elementInstance.getJobKey() > 0 && !isUserTaskConversion) {
       final var job = jobState.getJob(elementInstance.getJobKey());
       if (job == null) {
         throw new SafetyCheckFailedException(
@@ -381,6 +384,21 @@ public class ProcessInstanceMigrationMigrateProcessor
     if (jobIncidentKey != MISSING_INCIDENT) {
       appendIncidentMigratedEvent(
           jobIncidentKey, targetProcessDefinition, targetElementId, updatedElementInstanceRecord);
+    }
+
+    if (isUserTaskConversion) {
+      final ProcessInstanceMigrationUserTaskBehavior migrationUserTaskBehavior =
+          new ProcessInstanceMigrationUserTaskBehavior(
+              processInstanceKey,
+              elementInstance,
+              sourceProcessDefinition,
+              targetProcessDefinition,
+              bpmnBehaviors,
+              targetElementId,
+              updatedElementInstanceRecord,
+              stateWriter,
+              jobState);
+      migrationUserTaskBehavior.tryMigrateJobWorkerToCamundaUserTask();
     }
 
     if (elementInstance.getUserTaskKey() > 0) {
