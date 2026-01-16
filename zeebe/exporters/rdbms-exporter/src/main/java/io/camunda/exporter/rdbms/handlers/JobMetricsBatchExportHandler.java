@@ -11,7 +11,6 @@ import io.camunda.db.rdbms.write.domain.JobMetricsBatchDbModel;
 import io.camunda.db.rdbms.write.domain.JobMetricsBatchDbModel.Builder;
 import io.camunda.db.rdbms.write.service.JobMetricsBatchWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
-import io.camunda.zeebe.engine.state.jobmetrics.JobMetricsExportState;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.JobMetricsBatchIntent;
 import io.camunda.zeebe.protocol.record.value.JobMetricsBatchRecordValue;
@@ -21,6 +20,11 @@ import java.time.ZoneOffset;
 
 public class JobMetricsBatchExportHandler
     implements RdbmsExportHandler<JobMetricsBatchRecordValue> {
+
+  // Status metric indices matching JobMetricsExportState enum
+  private static final int CREATED_INDEX = 0;
+  private static final int COMPLETED_INDEX = 1;
+  private static final int FAILED_INDEX = 2;
 
   private final JobMetricsBatchWriter jobMetricsBatchWriter;
 
@@ -49,11 +53,11 @@ public class JobMetricsBatchExportHandler
                 new Builder()
                     .key(
                         record.getKey()
-                            + "-"
+                            + "_"
                             + jobMetrics.getJobTypeIndex()
-                            + "-"
+                            + "_"
                             + jobMetrics.getTenantIdIndex()
-                            + "-"
+                            + "_"
                             + jobMetrics.getWorkerNameIndex())
                     .startTime(
                         OffsetDateTime.ofInstant(
@@ -65,43 +69,28 @@ public class JobMetricsBatchExportHandler
                             ZoneOffset.UTC))
                     .incompleteBatch(jobMetricsBatchRecord.getRecordSizeLimitExceeded())
                     .tenantId(encodedString.get(jobMetrics.getTenantIdIndex()))
-                    .failedCount(
-                        jobMetrics
-                            .getStatusMetrics()
-                            .get(JobMetricsExportState.FAILED.getIndex())
-                            .getCount())
+                    .failedCount(jobMetrics.getStatusMetrics().get(FAILED_INDEX).getCount())
                     .lastFailedAt(
                         OffsetDateTime.ofInstant(
                             Instant.ofEpochMilli(
-                                jobMetrics
-                                    .getStatusMetrics()
-                                    .get(JobMetricsExportState.FAILED.getIndex())
-                                    .getLastUpdatedAt()),
+                                jobMetrics.getStatusMetrics().get(FAILED_INDEX).getLastUpdatedAt()),
                             ZoneOffset.UTC))
-                    .completedCount(
-                        jobMetrics
-                            .getStatusMetrics()
-                            .get(JobMetricsExportState.COMPLETED.getIndex())
-                            .getCount())
+                    .completedCount(jobMetrics.getStatusMetrics().get(COMPLETED_INDEX).getCount())
                     .lastCompletedAt(
                         OffsetDateTime.ofInstant(
                             Instant.ofEpochMilli(
                                 jobMetrics
                                     .getStatusMetrics()
-                                    .get(JobMetricsExportState.COMPLETED.getIndex())
+                                    .get(COMPLETED_INDEX)
                                     .getLastUpdatedAt()),
                             ZoneOffset.UTC))
-                    .createdCount(
-                        jobMetrics
-                            .getStatusMetrics()
-                            .get(JobMetricsExportState.CREATED.getIndex())
-                            .getCount())
+                    .createdCount(jobMetrics.getStatusMetrics().get(CREATED_INDEX).getCount())
                     .lastCreatedAt(
                         OffsetDateTime.ofInstant(
                             Instant.ofEpochMilli(
                                 jobMetrics
                                     .getStatusMetrics()
-                                    .get(JobMetricsExportState.CREATED.getIndex())
+                                    .get(CREATED_INDEX)
                                     .getLastUpdatedAt()),
                             ZoneOffset.UTC))
                     .jobType(encodedString.get(jobMetrics.getJobTypeIndex()))

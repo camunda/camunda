@@ -46,6 +46,7 @@ public final class RdbmsTableNames {
           "HISTORY_DELETION",
           "INCIDENT",
           "JOB",
+          "JOB_METRICS_BATCH",
           "MAPPING_RULES",
           "MESSAGE_SUBSCRIPTION",
           "PROCESS_DEFINITION",
