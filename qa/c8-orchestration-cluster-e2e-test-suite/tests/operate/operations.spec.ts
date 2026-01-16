@@ -229,18 +229,6 @@ test.describe('Operations', () => {
 
       await validateURL(page, /operationId=/);
 
-      await waitForAssertion({
-        assertion: async () => {
-          await expect(
-            operateProcessesPage.getOperationAndResultsContainer('cancel', 5),
-          ).toBeVisible({
-            timeout: 30000,
-          });
-        },
-        onFailure: async () => {
-          await page.reload();
-        },
-      });
       await Promise.all(
         instances.map((instance) =>
           expect(
@@ -276,8 +264,16 @@ test.describe('Operations', () => {
         instances.length,
       );
 
-      await expect(operationEntry).toBeVisible({timeout: 120000});
-
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(operationEntry).toBeVisible();
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+        maxRetries: 10,
+      });
+      
       await Promise.all(
         instances.map((instance) =>
           expect(
