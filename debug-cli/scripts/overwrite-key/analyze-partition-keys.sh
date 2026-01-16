@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # analyze-partition-keys.sh
-# 
+#
 # Queries Elasticsearch to extract all flownode instance keys for a specific partition
 # and analyzes them to detect key overflow issues.
 #
@@ -16,7 +16,7 @@
 #   SKIP_DOWNLOAD  - Set to "true" to skip download and only analyze existing file
 #   JUMP_THRESHOLD - Minimum key difference to consider a jump (default: 1000000)
 #   POSITION_THRESHOLD - Maximum position difference for a real overflow (default: 10000)
-#                        If position diff > this, likely a cluster restart, not overflow
+#                        If position diff > this, likely just data deletion due to retention policies
 #
 # Output:
 #   partition_${PARTITION_ID}_keys.txt - Tab-separated file with keys, positions, and timestamps
@@ -27,7 +27,7 @@
 #
 #   # With custom batch size:
 #   ES_URL="http://localhost:9200" PARTITION_ID=1 BATCH_SIZE=5000 ./analyze-partition-keys.sh
-#   
+#
 #   # Resume from a specific key:
 #   ES_URL="http://localhost:9200" PARTITION_ID=1 AFTER_KEY=2251799813999999 ./analyze-partition-keys.sh
 #
@@ -78,8 +78,8 @@ KEY_FIELD="key"
 
 # Validate batch size
 if [ "$BATCH_SIZE" -gt 10000 ]; then
-	echo -e "${YELLOW}Warning: BATCH_SIZE cannot exceed 10000. Setting to 10000.${NC}"
-	BATCH_SIZE=10000
+        echo -e "${YELLOW}Warning: BATCH_SIZE cannot exceed 10000. Setting to 10000.${NC}"
+        BATCH_SIZE=10000
 fi
 
 OUTPUT_FILE="partition_${PARTITION_ID}_keys.txt"
@@ -88,10 +88,10 @@ echo -e "${BLUE}======================================${NC}"
 echo -e "${BLUE}Partition Key Analysis${NC}"
 echo -e "${BLUE}======================================${NC}"
 if [ "$SKIP_DOWNLOAD" = "true" ]; then
-	echo "Mode:               Analysis only (SKIP_DOWNLOAD)"
+        echo "Mode:               Analysis only (SKIP_DOWNLOAD)"
 else
-	echo "Elasticsearch URL:  $ES_URL"
-	echo "Batch Size:         $BATCH_SIZE"
+        echo "Elasticsearch URL:  $ES_URL"
+        echo "Batch Size:         $BATCH_SIZE"
 fi
 echo "Partition ID:       $PARTITION_ID"
 echo "Jump Threshold:     $JUMP_THRESHOLD"
@@ -147,12 +147,12 @@ else
         fi
         echo -e "${GREEN}✓ Connected to Elasticsearch${NC}"
 
-	# Main pagination loop
-	echo ""
-	echo -e "${BLUE}Fetching flownode instance keys from operate-flownode-instance-*...${NC}"
-	BATCH_NUM=1
-	TOTAL_KEYS=0
-	CURRENT_AFTER_KEY="$AFTER_KEY"
+        # Main pagination loop
+        echo ""
+        echo -e "${BLUE}Fetching flownode instance keys from operate-flownode-instance-*...${NC}"
+        BATCH_NUM=1
+        TOTAL_KEYS=0
+        CURRENT_AFTER_KEY="$AFTER_KEY"
 
         while true; do
                 # Build after parameter
@@ -198,8 +198,8 @@ EOF
                         exit 1
                 }
 
-		# Extract data and append to file
-		BATCH_KEYS=$(echo "$RESPONSE" | jq -r ".aggregations.keys_agg.buckets[] | [.key.${KEY_FIELD}, (if .max_position.value == null then \"null\" else .max_position.value | floor end), .min_timestamp.value_as_string // \"N/A\"] | @tsv" | tee -a "$OUTPUT_FILE" | wc -l)
+                # Extract data and append to file
+                BATCH_KEYS=$(echo "$RESPONSE" | jq -r ".aggregations.keys_agg.buckets[] | [.key.${KEY_FIELD}, (if .max_position.value == null then \"null\" else .max_position.value | floor end), .min_timestamp.value_as_string // \"N/A\"] | @tsv" | tee -a "$OUTPUT_FILE" | wc -l)
 
                 TOTAL_KEYS=$((TOTAL_KEYS + BATCH_KEYS))
                 echo -e " ${GREEN}✓ $BATCH_KEYS keys (Total: $TOTAL_KEYS)${NC}"
@@ -268,7 +268,7 @@ while IFS=$'\t' read -r key position timestamp; do
                                         echo -e "${RED}  This suggests keys jumped while processing was continuous.${NC}"
                                         REAL_OVERFLOW_FOUND=true
                                 else
-                                        echo -e "${GREEN}✓ Likely NOT an overflow - Large position gap suggests cluster restart/downtime${NC}"
+                                        echo -e "${GREEN}✓ Likely NOT an overflow - Large position gap suggests data deletion due to retention policies${NC}"
                                         echo -e "${GREEN}  The key jump corresponds to a time gap in processing.${NC}"
                                 fi
                         else
@@ -297,7 +297,7 @@ if [ "$REAL_OVERFLOW_FOUND" = true ]; then
 else
         echo -e "${GREEN}✓ No key overflow issues detected${NC}"
         if [ "$JUMP_FOUND" = true ]; then
-                echo "  Key jumps found are likely due to cluster downtime/restart (large position gaps)"
+                echo "  Key jumps found are likely due to data deletion by retention policies"
         fi
 fi
 echo "Total keys analyzed: $TOTAL_KEYS"
