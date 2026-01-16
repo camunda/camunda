@@ -125,7 +125,7 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   build-zeebe-image:
-    name: Build Camunda
+    name: Build Zeebe Docker image
     needs: calculate-image-tag
     if: ${{ inputs.reuse-tag == '' }}
     runs-on: ubuntu-latest
@@ -143,23 +143,8 @@ jobs:
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-      - uses: ./.github/actions/build-frontend
-        name: Build Operate Frontend
-        id: build-operate-fe
-        with:
-          directory: ./operate/client
-      - uses: ./.github/actions/build-frontend
-        name: Build Tasklist Frontend
-        id: build-tasklist-fe
-        with:
-          directory: ./tasklist/client
-      - uses: ./.github/actions/build-frontend
-        name: Build Identity Frontend
-        id: build-identity-fe
-        with:
-          directory: ./identity/client
       - uses: ./.github/actions/build-zeebe
-        name: Build Camunda Platform
+        name: Build Zeebe
         id: build-camunda
         with:
           maven-extra-args: -PskipFrontendBuild -P\!include-optimize -Dmaven.test.skip=true
@@ -176,7 +161,7 @@ jobs:
           username: oauth2accesstoken
           password: ${{ steps.auth.outputs.access_token }}
       - uses: ./.github/actions/build-platform-docker
-        name: Build Camunda Docker Image
+        name: Build Zeebe Docker Image
         with:
           repository: 'gcr.io/zeebe-io/zeebe'
           revision: ${{ inputs.ref }}
