@@ -32,6 +32,7 @@ import io.camunda.zeebe.qa.util.actuator.BrokerHealthActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.cluster.TestHealthProbe;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import java.io.IOException;
@@ -230,9 +231,7 @@ public class DynamicNodeIdIT {
     }
 
     // when - stop all brokers
-    for (final var broker : testCluster.brokers().values()) {
-      broker.stop();
-    }
+    testCluster.shutdown();
 
     // Verify leases are released for all brokers
     for (final int nodeId : nodeIds) {
@@ -288,7 +287,7 @@ public class DynamicNodeIdIT {
     // Delete v1 folder from all brokers
     for (final var broker : testCluster.brokers().values()) {
       final var v1Dir = getVersionDirectory(broker, 1);
-      deleteDirectory(v1Dir);
+      FileUtil.deleteFolder(v1Dir);
       assertThat(v1Dir).doesNotExist();
     }
 
@@ -332,21 +331,6 @@ public class DynamicNodeIdIT {
     final Path initFile = versionDir.resolve("directory-initialized.json");
     assertThat(initFile).exists().isRegularFile();
     return OBJECT_MAPPER.readValue(initFile.toFile(), DirectoryInitializationInfo.class);
-  }
-
-  private void deleteDirectory(final Path directory) throws IOException {
-    if (java.nio.file.Files.exists(directory)) {
-      java.nio.file.Files.walk(directory)
-          .sorted(java.util.Comparator.reverseOrder())
-          .forEach(
-              path -> {
-                try {
-                  java.nio.file.Files.delete(path);
-                } catch (IOException e) {
-                  throw new RuntimeException(e);
-                }
-              });
-    }
   }
 
   private List<Lease> readLeases(final List<S3Object> objectsInBucket) throws IOException {
