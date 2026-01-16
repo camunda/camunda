@@ -14,6 +14,7 @@ const ClientConfigSchema = z.object({
   baseName: z.string().optional().default('/'),
   canLogout: z.boolean().optional().default(true),
   isLoginDelegated: z.boolean().optional().default(false),
+  isLogoutCorsEnabled: z.boolean().optional().default(true),
   organizationId: z.string().min(1).nullable().optional().default(null),
   clusterId: z.string().min(1).nullable().optional().default(null),
   mixpanelToken: z.string().nullable().optional().default(null),

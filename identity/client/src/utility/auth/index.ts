@@ -6,7 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { getBaseUrl, getLoginApiUrl, getLogoutApiUrl } from "src/configuration";
+import {
+  getBaseUrl,
+  getLoginApiUrl,
+  getLogoutApiUrl,
+  isLogoutCorsEnabled,
+} from "src/configuration";
 
 let loggedIn = false;
 
@@ -57,9 +62,11 @@ export function login(
 
 export function logout(): Promise<void> {
   const data = new FormData();
+  const logoutCorsMode = isLogoutCorsEnabled ? "cors" : "no-cors";
   return fetch(getLogoutApiUrl(), {
     method: "post",
     body: data,
+    mode: logoutCorsMode,
   })
     .then((response: Response) => {
       if (response.status < 400) {

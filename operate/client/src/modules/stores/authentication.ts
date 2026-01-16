@@ -84,6 +84,9 @@ class Authentication {
   };
 
   handleLogout = async () => {
+    const logoutCorsMode = window.clientConfig?.isLogoutCorsEnabled
+      ? 'cors'
+      : 'no-cors';
     try {
       const response = await request(
         {
@@ -93,6 +96,7 @@ class Authentication {
         {
           skipSessionCheck: true,
         },
+        logoutCorsMode,
       );
 
       if (!response.ok) {

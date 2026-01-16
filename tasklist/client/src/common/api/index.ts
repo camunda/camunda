@@ -27,6 +27,10 @@ function getFullURL(url: string) {
   );
 }
 
+const logoutCorsMode = getClientConfig().isLogoutCorsEnabled
+  ? 'cors'
+  : 'no-cors';
+
 const commonApi = {
   login: (body: {username: string; password: string}) => {
     return new Request(getFullURL('/login'), {
@@ -45,6 +49,7 @@ const commonApi = {
       headers: {
         'Content-Type': 'application/json',
       },
+      mode: logoutCorsMode,
     }),
   getCurrentUser: () =>
     new Request(getFullURL(endpoints.getCurrentUser.getUrl()), {

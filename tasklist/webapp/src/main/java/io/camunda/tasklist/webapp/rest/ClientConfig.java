@@ -22,6 +22,7 @@ import org.springframework.util.unit.DataSize;
 public class ClientConfig {
 
   public boolean isEnterprise;
+  public boolean isLogoutCorsEnabled;
   public boolean isMultiTenancyEnabled;
   public boolean canLogout;
   public boolean isLoginDelegated;
@@ -69,6 +70,7 @@ public class ClientConfig {
   @PostConstruct
   public void init() {
     isEnterprise = tasklistProperties.isEnterprise();
+    isLogoutCorsEnabled = securityConfiguration.getAuthentication().getLogoutCorsEnabled();
     isMultiTenancyEnabled = securityConfiguration.getMultiTenancy().isChecksEnabled();
     contextPath = context.getContextPath();
     baseName = context.getContextPath() + "/tasklist";

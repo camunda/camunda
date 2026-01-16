@@ -33,6 +33,7 @@ export declare global {
       clusterId?: null | string;
       canLogout?: null | boolean;
       isLoginDelegated?: null | boolean;
+      isLogoutCorsEnabled?: boolean;
       mixpanelToken?: null | string;
       mixpanelAPIHost?: null | string;
       tasklistUrl?: null | string;
