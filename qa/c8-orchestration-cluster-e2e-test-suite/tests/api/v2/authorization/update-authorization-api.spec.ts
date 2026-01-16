@@ -21,9 +21,9 @@ import {
   assertForbiddenRequest,
   assertEqualsForKeys,
 } from '../../../../utils/http';
-import {defaultAssertionOptions} from '../../../../utils/constants';
+import {defaultAssertionOptions, generateUniqueId} from '../../../../utils/constants';
 import {cleanupUsers} from '../../../../utils/usersCleanup';
-import {createUser, grantUserResourceAuthorization, createComponentAuthorization} from '@requestHelpers';
+import {createUser, grantUserResourceAuthorization, createComponentAuthorization, createRole} from '@requestHelpers';
 import {validateResponse} from '../../../../json-body-assertions';
 import {
   CREATE_CUSTOM_AUTHORIZATION_BODY,
@@ -33,6 +33,16 @@ import {
 import { create } from 'domain';
 import { waitForAssertion } from 'utils/waitForAssertion';
 import { sleep } from 'utils/sleep';
+import { cleanupRoles } from 'utils/rolesCleanup';
+
+type Authorization = {
+  ownerId: string;
+  ownerType: string;
+  resourceId: string;
+  resourceType: string;
+  permissionTypes: string[];
+  authorizationKey?: string;
+};
 
 test.describe.parallel('Update Authorization API', () => {
     let user: {
@@ -42,19 +52,25 @@ test.describe.parallel('Update Authorization API', () => {
         password: string;
     };
     let authorizationKeys: Map<string, string> = new Map();
-    let originalUserAuthorization: {
-        ownerId: string;
-        ownerType: string;
-        resourceId: string;
-        resourceType: string;
-        permissionTypes: string[];
+    let originalUserAuthorization: Authorization;
+// const uid = generateUniqueId();
+    let originalRole: {
+        roleId: string,
+        name: string,
+        description: string,
     };
+    let originalRoleAuthorization: Authorization;
     
         
   test.beforeAll(async ({request}) => {
-    await test.step('Setup - Create user for Authorization tests', async () => {
+    await test.step('Setup - Create user for authorization tests', async () => {
       user = await createUser(request);
       console.log('Created user with username:', user.username);
+    });
+
+    await test.step('Setup - Create role for Authorization tests', async () => {
+        originalRole = await createRole(request);
+        console.log('Created role with roleId:', originalRole.roleId);
     });
 
     await test.step('Setup - Grant user necessary authorizations', async () => {
@@ -62,6 +78,13 @@ test.describe.parallel('Update Authorization API', () => {
         const authorizationKey = await createComponentAuthorization(request, authorizationBody);
         authorizationKeys.set('userAuthorization', authorizationKey);
         originalUserAuthorization = authorizationBody;
+    });
+
+    await test.step('Setup - Grant created role authorization', async () => {
+        const roleAuthorizationBody = CREATE_CUSTOM_AUTHORIZATION_BODY(originalRole.roleId, 'ROLE', '*', 'USER', ['DELETE']);
+        const roleAuthorizationKey = await createComponentAuthorization(request, roleAuthorizationBody);
+        authorizationKeys.set('roleAuthorization', roleAuthorizationKey);
+        originalRoleAuthorization = roleAuthorizationBody;
     });
   });
 
@@ -74,6 +97,16 @@ test.describe.parallel('Update Authorization API', () => {
         await cleanupUsers(request, [user.username]);
       },
     );
+
+    await test.step(
+        'Teardown - Delete role with roleId ' +
+        originalRole.roleId +
+        ' created for Authorization tests',
+        async () => {
+        await cleanupRoles(request, [originalRole.roleId]);
+        },
+    );
+
   });
 
   test('Update User Authorization - additional permissionType - success', async ({request}) => { 
@@ -92,33 +125,68 @@ test.describe.parallel('Update Authorization API', () => {
         expect(authRes.status()).toBe(204);
     });
 
-    sleep(5000);
     await test.step('Verify updated authorization', async () => {
-        let getAuthRes = await request.get(buildUrl(`/authorizations/${authorizationKeys.get('userAuthorization')}`), {
+        const expectedUserAuthorization = {...updatedUserAuthorization, authorizationKey: authorizationKeys.get('userAuthorization')};
+        let getAuthRes = await request.get(buildUrl(`/authorizations/${expectedUserAuthorization.authorizationKey}`), {
             headers: jsonHeaders(),
         });
         let authBody = await getAuthRes.json();
-        const expectedAuthorization = {...updatedUserAuthorization, authorizationKey: authorizationKeys.get('userAuthorization')};
+        
 
         await waitForAssertion({
             assertion: async () => {
                 expect(getAuthRes.status()).toBe(200);
-                assertEqualsForKeys(authBody, expectedAuthorization, authorizationRequiredFields);
+                assertRequiredFields(authBody, authorizationRequiredFields);
+                assertEqualsForKeys(authBody, expectedUserAuthorization, authorizationRequiredFields);
             },
             onFailure: async () => {
-                getAuthRes = await request.get(buildUrl(`/authorizations/${authorizationKeys.get('userAuthorization')}`), {
+                getAuthRes = await request.get(buildUrl(`/authorizations/${expectedUserAuthorization.authorizationKey}`), {
                     headers: jsonHeaders(),
                 });
                 authBody = await getAuthRes.json();
             },
             maxRetries: 100,
         });
-            
-        
-        assertRequiredFields(authBody, authorizationRequiredFields);
-        
-        
     });
   });
 
+  test('Update Role Authorization - change resourceId - bad request', async ({request}) => {
+    const updatedRoleAuthorization = {
+        ...originalRoleAuthorization,
+        resourceId: `${user.username}`,
+    };
+
+    await test.step('Update role authorization with changed resourceId', async () => {
+        const authRes = await request.put(buildUrl(`/authorizations/${authorizationKeys.get('roleAuthorization')}`), {
+            headers: jsonHeaders(),
+            data: {
+                ...updatedRoleAuthorization   
+            },
+        });
+        expect(authRes.status()).toBe(204);
+    });
+
+    await test.step('Verify updated authorization', async () => {
+        const expectedRoleAuthorization = {...updatedRoleAuthorization, authorizationKey: authorizationKeys.get('roleAuthorization')};
+        let getAuthRes = await request.get(buildUrl(`/authorizations/${expectedRoleAuthorization.authorizationKey}`), {
+            headers: jsonHeaders(),
+        });
+        let authBody = await getAuthRes.json();
+        
+        await waitForAssertion({
+            assertion: async () => {
+                expect(getAuthRes.status()).toBe(200);
+                assertRequiredFields(authBody, authorizationRequiredFields);
+                assertEqualsForKeys(authBody, expectedRoleAuthorization, authorizationRequiredFields);
+            },
+            onFailure: async () => {
+                getAuthRes = await request.get(buildUrl(`/authorizations/${expectedRoleAuthorization.authorizationKey}`), {
+                    headers: jsonHeaders(),
+                });
+                authBody = await getAuthRes.json();
+            },
+            maxRetries: 100,
+        });
+    });
+  });
 });
