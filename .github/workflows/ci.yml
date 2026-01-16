@@ -255,10 +255,9 @@ jobs:
       # IT Engine = ZEEBE_CORE_FEATURES_MODULES + ZEEBE_PROTOCOL_MODULES + ZEEBE_GATEWAY_MODULES + ZEEBE_CLIENT_MODULES (explicit list)
       ZEEBE_IT_ENGINE_MODULES: ${{ steps.set-constants.outputs.it_engine }}
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 2
     permissions: { }
     steps:
-      - uses: actions/checkout@v4
       - name: Set all test constants
         id: set-constants
         run: |
@@ -317,24 +316,6 @@ jobs:
             echo "it_exporter=${IT_EXPORTER}"
             echo "it_engine=${IT_ENGINE}"
           } >> "$GITHUB_OUTPUT"
-
-      - name: Validate module coverage
-        if: false  # Temporarily disabled - validation step needs refinement
-        run: |
-          bash .ci/scripts/validate-test-module-coverage.sh \
-            "${{ steps.set-constants.outputs.it_distributed }}" \
-            "${{ steps.set-constants.outputs.it_exporter }}" \
-            "${{ steps.set-constants.outputs.it_engine }}"
-
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          build_status: ${{ job.status }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   # Runs unit tests for all modules that are not Operate, Optimize, Tasklist, or Zeebe. This test will run any new modules that are added and are not included in setup-unit-tests
   general-unit-tests:
