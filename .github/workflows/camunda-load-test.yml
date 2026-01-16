@@ -196,7 +196,7 @@ jobs:
 
   build-operate-image:
     name: Build + Push Operate Docker image
-    if: ${{ inputs.reuse-tag != '' }}
+    if: ${{ inputs.reuse-tag == '' }}
     runs-on: ubuntu-latest
     permissions:
       contents: 'read'
