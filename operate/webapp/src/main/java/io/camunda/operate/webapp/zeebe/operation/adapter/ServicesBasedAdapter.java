@@ -82,7 +82,8 @@ public class ServicesBasedAdapter implements OperateServicesAdapter {
   }
 
   @Override
-  public void deleteResource(final long resourceKey, final String operationId) {
+  public void deleteResource(
+      final long resourceKey, final String operationId, final boolean deleteHistory) {
     executeCamundaServiceAnonymously(
         (authentication) ->
             withOperationReference(
@@ -90,7 +91,8 @@ public class ServicesBasedAdapter implements OperateServicesAdapter {
                     resourceServices
                         .withAuthentication(authentication)
                         .deleteResource(
-                            new ResourceDeletionRequest(resourceKey, operationReference, false)),
+                            new ResourceDeletionRequest(
+                                resourceKey, operationReference, deleteHistory)),
                 operationId));
   }
 
