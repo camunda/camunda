@@ -267,7 +267,9 @@ test.describe('delete finished instances', () => {
       }
     });
 
-    await expect(page.getByText('Instance is scheduled for deletion')).toBeInViewport();
+    await expect(
+      page.getByText('Instance is scheduled for deletion'),
+    ).toBeInViewport();
 
     await page.screenshot({
       path: 'e2e-playwright/docs-screenshots/delete-finished-instances/operate-instance-deleted-notification.png',
