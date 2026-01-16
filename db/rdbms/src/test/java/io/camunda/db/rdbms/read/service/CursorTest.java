@@ -8,12 +8,14 @@
 package io.camunda.db.rdbms.read.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.db.rdbms.sql.columns.ProcessInstanceSearchColumn;
 import io.camunda.db.rdbms.sql.columns.SearchColumn;
 import io.camunda.db.rdbms.sql.columns.SearchColumnUtils;
 import io.camunda.search.entities.ProcessInstanceEntity;
-import java.util.Collections;
+import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.search.exception.CamundaSearchException.Reason;
 import java.util.List;
 import java.util.stream.Stream;
 import org.instancio.Instancio;
@@ -23,7 +25,6 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 class CursorTest {
-  Cursor cursor = new Cursor();
 
   public static Stream<Arguments> provideSearchColumns() {
     return SearchColumnUtils.findAll().stream()
@@ -32,7 +33,8 @@ class CursorTest {
 
   @ParameterizedTest(name = "#{0}#{1}")
   @MethodSource("provideSearchColumns")
-  void encodeDecodeSearchColumn(final String className, final SearchColumn<Object> column) {
+  void shouldEncodeDecodeWithSearchColumn(
+      final String className, final SearchColumn<Object> column) {
     final var columns = List.of(column);
     final var entity = Instancio.create(column.getEntityClass());
 
@@ -44,58 +46,69 @@ class CursorTest {
   }
 
   @Test
-  void encodeDecodeSearchColumns() {
+  void shouldEncodeDecodeWithMultipleSearchColumns() {
     final List<SearchColumn<ProcessInstanceEntity>> columns =
         List.of(
             ProcessInstanceSearchColumn.PROCESS_DEFINITION_NAME,
             ProcessInstanceSearchColumn.START_DATE);
     final var entity = Instancio.create(ProcessInstanceEntity.class);
 
-    final var encodedCursor = cursor.encode(entity, columns);
-    final var decodedValues = cursor.decode(encodedCursor, columns);
+    final var encodedCursor = Cursor.encode(entity, columns);
+    final var decodedValues = Cursor.decode(encodedCursor, columns);
 
     final var encodedValue = columns.stream().map(c -> c.getPropertyValue(entity)).toArray();
     assertThat(encodedValue).isEqualTo(decodedValues);
   }
 
   @Test
-  void encodeDecodeEmptySearchColumns() {
-    final List<SearchColumn<Object>> columns = Collections.emptyList();
+  void shouldEncodeToNullWithEmptySearchColumns() {
     final var entity = Instancio.create(ProcessInstanceEntity.class);
-
-    final var encodedCursor = cursor.encode(entity, columns);
-    final var decodedValues = cursor.decode(encodedCursor, columns);
-
-    assertThat(decodedValues).isNull();
+    assertThat(Cursor.encode(entity, List.of())).isNull();
   }
 
   @Test
-  void testEncodeWithNull() {
-    final String encoded = cursor.encode(null, null);
-
-    assertThat(encoded).isNull();
+  void shouldEncodeToNullWithNullSearchColumns() {
+    final var entity = Instancio.create(ProcessInstanceEntity.class);
+    assertThat(Cursor.encode(entity, null)).isNull();
   }
 
   @Test
-  void testEncodeWithEmptyArray() {
-    final String encoded = cursor.encode(null, Collections.emptyList());
-
-    assertThat(encoded).isNull();
+  void shouldEncodeToNullWithNullEntity() {
+    assertThat(Cursor.encode(null, List.of(ProcessInstanceSearchColumn.PROCESS_DEFINITION_NAME)))
+        .isNull();
   }
 
   @Test
-  void testDecodeWithNull() {
-    final List<SearchColumn<Object>> columns = Collections.emptyList();
-    final Object[] decodedValues = cursor.decode(null, columns);
-
-    assertThat(decodedValues).isNull();
+  void shouldDecodeToNullWithEmptySearchColumns() {
+    assertThat(Cursor.decode("ignored", List.of())).isNull();
   }
 
   @Test
-  void testDecodeWithEmptyString() {
-    final List<SearchColumn<Object>> columns = Collections.emptyList();
-    final Object[] decodedValues = cursor.decode("", columns);
+  void shouldDecodeToNullWithNullSearchColumns() {
+    assertThat(Cursor.decode("ignored", null)).isNull();
+  }
 
-    assertThat(decodedValues).isNull();
+  @Test
+  void shouldDecodeToNullWithNullCursor() {
+    assertThat(Cursor.decode(null, List.of(ProcessInstanceSearchColumn.PROCESS_DEFINITION_NAME)))
+        .isNull();
+  }
+
+  @Test
+  void shouldDecodeToNullWithEmptyCursor() {
+    assertThat(Cursor.decode("", List.of(ProcessInstanceSearchColumn.PROCESS_DEFINITION_NAME)))
+        .isNull();
+  }
+
+  @Test
+  void shouldFailDecodeWithInvalidCursor() {
+    assertThatThrownBy(
+            () ->
+                Cursor.decode(
+                    "invalid_cursor", List.of(ProcessInstanceSearchColumn.PROCESS_DEFINITION_NAME)))
+        .isInstanceOf(CamundaSearchException.class)
+        .hasMessageContaining("Cannot decode pagination cursor 'invalid_cursor'")
+        .extracting("reason")
+        .isEqualTo(Reason.INVALID_ARGUMENT);
   }
 }
