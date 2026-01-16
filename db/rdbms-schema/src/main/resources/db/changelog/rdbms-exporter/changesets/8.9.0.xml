@@ -1117,4 +1117,32 @@
     </createIndex>
   </changeSet>
 
+  <changeSet id="create_job_metrics_batch_table" author="camunda">
+    <createTable tableName="${prefix}JOB_METRICS_BATCH">
+      <column name="JOB_METRICS_BATCH_KEY" type="VARCHAR(255)">
+        <constraints primaryKey="true"/>
+      </column>
+      <column name="START_TIME" type="TIMESTAMP WITH TIME ZONE(3)"/>
+      <column name="END_TIME" type="TIMESTAMP WITH TIME ZONE(3)"/>
+      <column name="INCOMPLETE_BATCH" type="BOOLEAN"/>
+      <column name="TENANT_ID" type="VARCHAR(${userCharColumnSize})"/>
+      <column name="FAILED_COUNT" type="INT"/>
+      <column name="LAST_FAILED_AT" type="TIMESTAMP WITH TIME ZONE(3)"/>
+      <column name="COMPLETED_COUNT" type="INT"/>
+      <column name="LAST_COMPLETED_AT" type="TIMESTAMP WITH TIME ZONE(3)"/>
+      <column name="CREATED_COUNT" type="INT"/>
+      <column name="LAST_CREATED_AT" type="TIMESTAMP WITH TIME ZONE(3)"/>
+      <column name="JOB_TYPE" type="VARCHAR(${userCharColumnSize})"/>
+      <column name="WORKER" type="VARCHAR(${userCharColumnSize})"/>
+    </createTable>
+
+    <modifySql dbms="mariadb,mysql">
+      <!-- MariaDB doesn't support TIMESTAMP WITH TIME ZONE, but its TIMESTAMP type has already a time zone -->
+      <replace replace="TIMESTAMP WITH TIME ZONE" with="TIMESTAMP"/>
+    </modifySql>
+    <modifySql dbms="mssql">
+      <replace replace="datetime2" with="DATETIMEOFFSET"/>
+    </modifySql>
+  </changeSet>
+
 </databaseChangeLog>

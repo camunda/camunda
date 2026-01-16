@@ -41,6 +41,7 @@ import io.camunda.db.rdbms.write.service.FormWriter;
 import io.camunda.db.rdbms.write.service.GroupWriter;
 import io.camunda.db.rdbms.write.service.HistoryDeletionWriter;
 import io.camunda.db.rdbms.write.service.IncidentWriter;
+import io.camunda.db.rdbms.write.service.JobMetricsBatchWriter;
 import io.camunda.db.rdbms.write.service.JobWriter;
 import io.camunda.db.rdbms.write.service.MappingRuleWriter;
 import io.camunda.db.rdbms.write.service.MessageSubscriptionWriter;
@@ -140,6 +141,7 @@ public class RdbmsWriters {
             vendorDatabaseProperties));
     writers.put(
         JobWriter.class, new JobWriter(executionQueue, jobMapper, vendorDatabaseProperties));
+    writers.put(JobMetricsBatchWriter.class, new JobMetricsBatchWriter(executionQueue));
     writers.put(
         SequenceFlowWriter.class, new SequenceFlowWriter(executionQueue, sequenceFlowMapper));
     writers.put(UsageMetricWriter.class, new UsageMetricWriter(executionQueue, usageMetricMapper));
@@ -238,6 +240,10 @@ public class RdbmsWriters {
 
   public JobWriter getJobWriter() {
     return getWriter(JobWriter.class);
+  }
+
+  public JobMetricsBatchWriter getJobMetricsBatchWriter() {
+    return getWriter(JobMetricsBatchWriter.class);
   }
 
   public SequenceFlowWriter getSequenceFlowWriter() {

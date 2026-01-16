@@ -21,6 +21,7 @@ public enum ContextType {
   HISTORY_DELETION(false),
   INCIDENT(false),
   JOB(false),
+  JOB_METRICS_BATCH(false),
   MAPPING_RULE(false),
   MESSAGE_SUBSCRIPTION(false),
   PROCESS_DEFINITION(false),
