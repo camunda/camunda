@@ -29,6 +29,7 @@ import io.camunda.search.filter.UserTaskFilter.Builder;
 import io.camunda.search.filter.VariableValueFilter;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.security.auth.Authorization;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.condition.AuthorizationConditions;
 import io.camunda.security.reader.AuthorizationCheck;
 import io.camunda.security.reader.ResourceAccessChecks;
@@ -485,6 +486,202 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
 
     // then
     final var queryVariant = searchQuery.queryOption();
+    assertThat(queryVariant).isInstanceOf(SearchMatchNoneQuery.class);
+  }
+
+  @Test
+  public void shouldApplyPropertyBasedAuthorizationForAssignee() {
+    // given
+    final var authentication = CamundaAuthentication.of(b -> b.user("john"));
+    final var authorization = Authorization.of(a -> a.userTask().read().authorizedByAssignee());
+    final var authorizationCheck = AuthorizationCheck.enabled(authorization);
+    final var resourceAccessChecks =
+        ResourceAccessChecks.of(authorizationCheck, TenantCheck.disabled(), authentication);
+
+    // when
+    final var searchQuery = transformQuery(FilterBuilders.userTask(b -> b), resourceAccessChecks);
+
+    // then
+    final SearchQueryOption queryVariant = searchQuery.queryOption();
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            (boolQuery) ->
+                assertThat(boolQuery.must())
+                    .anySatisfy(
+                        query ->
+                            assertSearchTermQuery(
+                                query.queryOption(), TaskTemplate.ASSIGNEE, "john")));
+  }
+
+  @Test
+  public void shouldApplyPropertyBasedAuthorizationForCandidateUsers() {
+    // given
+    final var authentication = CamundaAuthentication.of(b -> b.user("jane"));
+    final var authorization =
+        Authorization.of(a -> a.userTask().read().authorizedByCandidateUsers());
+    final var authorizationCheck = AuthorizationCheck.enabled(authorization);
+    final var resourceAccessChecks =
+        ResourceAccessChecks.of(authorizationCheck, TenantCheck.disabled(), authentication);
+
+    // when
+    final var searchQuery = transformQuery(FilterBuilders.userTask(b -> b), resourceAccessChecks);
+
+    // then
+    final SearchQueryOption queryVariant = searchQuery.queryOption();
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            (boolQuery) ->
+                assertThat(boolQuery.must())
+                    .anySatisfy(
+                        query ->
+                            assertSearchTermQuery(
+                                query.queryOption(), TaskTemplate.CANDIDATE_USERS, "jane")));
+  }
+
+  @Test
+  public void shouldApplyPropertyBasedAuthorizationForCandidateGroups() {
+    // given
+    final var authentication =
+        CamundaAuthentication.of(b -> b.user("alice").groupIds(List.of("group1", "group2")));
+    final var authorization =
+        Authorization.of(a -> a.userTask().read().authorizedByCandidateGroups());
+    final var authorizationCheck = AuthorizationCheck.enabled(authorization);
+    final var resourceAccessChecks =
+        ResourceAccessChecks.of(authorizationCheck, TenantCheck.disabled(), authentication);
+
+    // when
+    final var searchQuery = transformQuery(FilterBuilders.userTask(b -> b), resourceAccessChecks);
+
+    // then
+    final SearchQueryOption queryVariant = searchQuery.queryOption();
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            (boolQuery) ->
+                assertThat(boolQuery.must())
+                    .anySatisfy(
+                        query ->
+                            assertSearchTermsQuery(
+                                query.queryOption(),
+                                TaskTemplate.CANDIDATE_GROUPS,
+                                "group1",
+                                "group2")));
+  }
+
+  @Test
+  public void shouldApplyPropertyBasedAuthorizationForMultipleProperties() {
+    // given
+    final var authentication =
+        CamundaAuthentication.of(b -> b.user("bob").groupIds(List.of("teamA")));
+    final var authorization =
+        Authorization.of(
+            a ->
+                a.userTask()
+                    .read()
+                    .authorizedByAssignee()
+                    .authorizedByCandidateUsers()
+                    .authorizedByCandidateGroups());
+    final var authorizationCheck = AuthorizationCheck.enabled(authorization);
+    final var resourceAccessChecks =
+        ResourceAccessChecks.of(authorizationCheck, TenantCheck.disabled(), authentication);
+
+    // when
+    final var searchQuery = transformQuery(FilterBuilders.userTask(b -> b), resourceAccessChecks);
+
+    // then
+    final SearchQueryOption queryVariant = searchQuery.queryOption();
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            (boolQuery) ->
+                assertThat(boolQuery.must())
+                    .anySatisfy(
+                        query ->
+                            assertThat(query.queryOption())
+                                .isInstanceOfSatisfying(
+                                    SearchBoolQuery.class,
+                                    innerBool -> {
+                                      assertThat(innerBool.should()).hasSize(3);
+                                      assertThat(innerBool.should())
+                                          .anySatisfy(
+                                              q ->
+                                                  assertSearchTermQuery(
+                                                      q.queryOption(),
+                                                      TaskTemplate.ASSIGNEE,
+                                                      "bob"));
+                                      assertThat(innerBool.should())
+                                          .anySatisfy(
+                                              q ->
+                                                  assertSearchTermQuery(
+                                                      q.queryOption(),
+                                                      TaskTemplate.CANDIDATE_USERS,
+                                                      "bob"));
+                                      assertThat(innerBool.should())
+                                          .anySatisfy(
+                                              q ->
+                                                  assertSearchTermQuery(
+                                                      q.queryOption(),
+                                                      TaskTemplate.CANDIDATE_GROUPS,
+                                                      "teamA"));
+                                    })));
+  }
+
+  @Test
+  public void shouldReturnMatchNoneWhenPropertyBasedAuthorizationWithNoAuthentication() {
+    // given
+    final var authorization =
+        Authorization.of(
+            a ->
+                a.userTask()
+                    .read()
+                    .resourcePropertyNames(java.util.Set.of(Authorization.PROP_ASSIGNEE)));
+    final var authorizationCheck = AuthorizationCheck.enabled(authorization);
+    final var resourceAccessChecks =
+        ResourceAccessChecks.of(authorizationCheck, TenantCheck.disabled(), null);
+
+    // when
+    final var searchQuery = transformQuery(FilterBuilders.userTask(b -> b), resourceAccessChecks);
+
+    // then
+    final SearchQueryOption queryVariant = searchQuery.queryOption();
+    assertThat(queryVariant).isInstanceOf(SearchMatchNoneQuery.class);
+  }
+
+  @Test
+  public void shouldReturnMatchNoneForPropertyBasedAuthorizationWithWrongResourceType() {
+    // given
+    final var authentication = CamundaAuthentication.of(b -> b.user("user1"));
+    final var authorization =
+        Authorization.of(a -> a.processDefinition().readUserTask().authorizedByAssignee());
+    final var authorizationCheck = AuthorizationCheck.enabled(authorization);
+    final var resourceAccessChecks =
+        ResourceAccessChecks.of(authorizationCheck, TenantCheck.disabled(), authentication);
+
+    // when
+    final var searchQuery = transformQuery(FilterBuilders.userTask(b -> b), resourceAccessChecks);
+
+    // then
+    final SearchQueryOption queryVariant = searchQuery.queryOption();
+    assertThat(queryVariant).isInstanceOf(SearchMatchNoneQuery.class);
+  }
+
+  @Test
+  public void shouldReturnMatchNoneForPropertyBasedAuthorizationWithUnknownProperty() {
+    // given
+    final var authentication = CamundaAuthentication.of(b -> b.user("user1"));
+    final var authorization =
+        Authorization.of(a -> a.userTask().read().authorizedByProperty("unknownProperty"));
+    final var authorizationCheck = AuthorizationCheck.enabled(authorization);
+    final var resourceAccessChecks =
+        ResourceAccessChecks.of(authorizationCheck, TenantCheck.disabled(), authentication);
+
+    // when
+    final var searchQuery = transformQuery(FilterBuilders.userTask(b -> b), resourceAccessChecks);
+
+    // then
+    final SearchQueryOption queryVariant = searchQuery.queryOption();
     assertThat(queryVariant).isInstanceOf(SearchMatchNoneQuery.class);
   }
 

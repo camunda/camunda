@@ -13,6 +13,7 @@ import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import io.camunda.zeebe.protocol.record.value.EntityType;
@@ -68,10 +69,17 @@ public class AuthorizationChecker {
                           .unlimited());
           return authorizationReader.search(query, ResourceAccessChecks.disabled()).items().stream()
               .filter(e -> e.permissionTypes().contains(permissionType))
-              .map(authorizationEntity -> AuthorizationScope.of(authorizationEntity.resourceId()))
+              .map(this::toAuthorizationScope)
               .toList();
         },
         List::of);
+  }
+
+  private AuthorizationScope toAuthorizationScope(final AuthorizationEntity authorizationEntity) {
+    return new AuthorizationScope(
+        AuthorizationResourceMatcher.from(authorizationEntity.resourceMatcher()),
+        authorizationEntity.resourceId(),
+        authorizationEntity.resourcePropertyName());
   }
 
   /**
