@@ -14,7 +14,7 @@
       <bpmn:outgoing>Flow_1eup25y</bpmn:outgoing>
     </bpmn:serviceTask>
     <bpmn:endEvent id="EndEvent" name="End Event">
-      <bpmn:incoming>Flow_0j8pqal</bpmn:incoming>
+      <bpmn:incoming>Flow_1s1gqhb</bpmn:incoming>
     </bpmn:endEvent>
     <bpmn:sequenceFlow id="Flow_1eup25y" sourceRef="TaskWithBoundaryEvent" targetRef="MultiInstanceTask" />
     <bpmn:sequenceFlow id="Flow_1s8iqxj" sourceRef="MultiInstanceTask" targetRef="Task" />
@@ -57,7 +57,7 @@
       <bpmn:messageEventDefinition id="MessageEventDefinition_1cehn6b" />
     </bpmn:intermediateCatchEvent>
     <bpmn:sequenceFlow id="Flow_1krqip1" sourceRef="EventBasedGateway" targetRef="MessageEvent" />
-    <bpmn:sequenceFlow id="Flow_0j8pqal" sourceRef="MessageEvent" targetRef="EndEvent" />
+    <bpmn:sequenceFlow id="Flow_0j8pqal" sourceRef="MessageEvent" targetRef="ConditionalEvent" />
     <bpmn:sequenceFlow id="Flow_11ahxr1" sourceRef="Task" targetRef="MultiInstanceSubProcess" />
     <bpmn:serviceTask id="Task" name="Task">
       <bpmn:extensionElements>
@@ -66,6 +66,14 @@
       <bpmn:incoming>Flow_1s8iqxj</bpmn:incoming>
       <bpmn:outgoing>Flow_11ahxr1</bpmn:outgoing>
     </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_1s1gqhb" sourceRef="ConditionalEvent" targetRef="EndEvent" />
+    <bpmn:intermediateCatchEvent id="ConditionalEvent">
+      <bpmn:incoming>Flow_0j8pqal</bpmn:incoming>
+      <bpmn:outgoing>Flow_1s1gqhb</bpmn:outgoing>
+      <bpmn:conditionalEventDefinition id="ConditionalEventDefinition_18h00el">
+        <bpmn:condition xsi:type="bpmn:tFormalExpression">=x &gt; 10</bpmn:condition>
+      </bpmn:conditionalEventDefinition>
+    </bpmn:intermediateCatchEvent>
   </bpmn:process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="MoveModificationProcess">
@@ -83,26 +91,14 @@
         <dc:Bounds x="430" y="137" width="100" height="80" />
         <bpmndi:BPMNLabel />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_03nhimx_di" bpmnElement="Task">
-        <dc:Bounds x="580" y="137" width="100" height="80" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Gateway_1p8f1vt_di" bpmnElement="EventBasedGateway">
-        <dc:Bounds x="1135" y="152" width="50" height="50" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="1129" y="209" width="63" height="27" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_1309lrd_di" bpmnElement="EndEvent">
-        <dc:Bounds x="1332" y="159" width="36" height="36" />
+        <dc:Bounds x="1432" y="159" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1325" y="202" width="51" height="14" />
+          <dc:Bounds x="1425" y="202" width="51" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_0vn2a16_di" bpmnElement="MessageEvent">
-        <dc:Bounds x="1242" y="159" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="1223" y="202" width="76" height="14" />
-        </bpmndi:BPMNLabel>
+      <bpmndi:BPMNShape id="Event_1ih251w_di" bpmnElement="ConditionalEvent">
+        <dc:Bounds x="1322" y="159" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_0r0rtai_di" bpmnElement="MultiInstanceSubProcess" isExpanded="true">
         <dc:Bounds x="730" y="77" width="350" height="200" />
@@ -132,6 +128,21 @@
         <di:waypoint x="960" y="177" />
         <di:waypoint x="1022" y="177" />
       </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Gateway_1p8f1vt_di" bpmnElement="EventBasedGateway">
+        <dc:Bounds x="1135" y="152" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1129" y="209" width="63" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0vn2a16_di" bpmnElement="MessageEvent">
+        <dc:Bounds x="1242" y="159" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1223" y="202" width="76" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_03nhimx_di" bpmnElement="Task">
+        <dc:Bounds x="580" y="137" width="100" height="80" />
+      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_0cqvr1i_di" bpmnElement="BoundaryEvent">
         <dc:Bounds x="332" y="199" width="36" height="36" />
         <bpmndi:BPMNLabel>
@@ -160,11 +171,15 @@
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_0j8pqal_di" bpmnElement="Flow_0j8pqal">
         <di:waypoint x="1278" y="177" />
-        <di:waypoint x="1332" y="177" />
+        <di:waypoint x="1322" y="177" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_11ahxr1_di" bpmnElement="Flow_11ahxr1">
         <di:waypoint x="680" y="177" />
         <di:waypoint x="730" y="177" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1s1gqhb_di" bpmnElement="Flow_1s1gqhb">
+        <di:waypoint x="1358" y="177" />
+        <di:waypoint x="1432" y="177" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
