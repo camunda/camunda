@@ -12,6 +12,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
+import io.camunda.operate.util.TestUtil;
 import io.camunda.operate.util.j5templates.OperateSearchAbstractIT;
 import io.camunda.operate.webapp.reader.ListViewReader;
 import io.camunda.operate.webapp.rest.dto.SortingDto;
@@ -75,8 +76,7 @@ public class ListViewReaderIT extends OperateSearchAbstractIT {
             .setVarName("p1v1")
             .setVarValue("Y")
             .setTenantId("tenant1")
-            .setId(
-                VariableForListViewEntity.getIdBy(activeProcess.getProcessInstanceKey(), "p1v1"));
+            .setId(TestUtil.getVariableId(activeProcess.getProcessInstanceKey(), "p1v1"));
 
     variableEntity.getJoinRelation().setParent(activeProcess.getProcessInstanceKey());
     testSearchRepository.createOrUpdateDocumentFromObject(

@@ -404,6 +404,21 @@ public abstract class TestUtil {
     return result;
   }
 
+  /**
+   * Generates a unique ID for a variable based on its scope key and name.
+   *
+   * <p>The format is: {@code <scopeKey>-<name>}
+   *
+   * @param scopeKey the scope key of the variable
+   * @param name the name of the variable
+   * @return the unique ID in the format "{scopeKey}-{name}"
+   * @see io.camunda.zeebe.protocol.record.value.VariableRecordValue#getFullyQualifiedName() for a
+   *     convenience method on record values
+   */
+  public static String getVariableId(final long scopeKey, final String name) {
+    return scopeKey + "-" + name;
+  }
+
   public static VariableForListViewEntity createVariableForListView(final Long processInstanceKey) {
     final String name = UUID.randomUUID().toString();
     final String value = UUID.randomUUID().toString();
@@ -413,7 +428,7 @@ public abstract class TestUtil {
   public static VariableForListViewEntity createVariableForListView(
       final Long processInstanceKey, final Long scopeKey, final String name, final String value) {
     final VariableForListViewEntity variable = new VariableForListViewEntity();
-    variable.setId(VariableForListViewEntity.getIdBy(scopeKey, name));
+    variable.setId(getVariableId(scopeKey, name));
     variable.setProcessInstanceKey(processInstanceKey);
     variable.setScopeKey(scopeKey);
     variable.setVarName(name);
@@ -435,7 +450,7 @@ public abstract class TestUtil {
       final String name,
       final String value) {
     final VariableEntity variable = new VariableEntity();
-    variable.setId(scopeKey + "-" + name);
+    variable.setId(getVariableId(scopeKey, name));
     variable.setProcessInstanceKey(processInstanceKey);
     variable.setProcessDefinitionKey(processDefinitionKey);
     variable.setBpmnProcessId(bpmnProcessId);

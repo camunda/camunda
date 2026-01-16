@@ -10,7 +10,6 @@ package io.camunda.exporter.handlers;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
 import io.camunda.webapps.schema.entities.VariableEntity;
-import io.camunda.webapps.schema.entities.listview.VariableForListViewEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
@@ -44,9 +43,7 @@ public class MigratedVariableHandler implements ExportHandler<VariableEntity, Va
 
   @Override
   public List<String> generateIds(final Record<VariableRecordValue> record) {
-    final var recordValue = record.getValue();
-    return List.of(
-        VariableForListViewEntity.getIdBy(recordValue.getScopeKey(), recordValue.getName()));
+    return List.of(record.getValue().getFullyQualifiedName());
   }
 
   @Override
@@ -59,7 +56,7 @@ public class MigratedVariableHandler implements ExportHandler<VariableEntity, Va
     final var recordValue = record.getValue();
 
     entity
-        .setId(VariableForListViewEntity.getIdBy(recordValue.getScopeKey(), recordValue.getName()))
+        .setId(recordValue.getFullyQualifiedName())
         .setProcessDefinitionKey(recordValue.getProcessDefinitionKey())
         .setPosition(record.getPosition())
         .setBpmnProcessId(recordValue.getBpmnProcessId());

@@ -30,7 +30,6 @@ public class UserTaskVariableHandler
 
   private static final Logger LOG = LoggerFactory.getLogger(UserTaskVariableHandler.class);
 
-  private static final String ID_PATTERN = "%s-%s";
   protected final int variableSizeThreshold;
   private final String indexName;
 
@@ -56,8 +55,7 @@ public class UserTaskVariableHandler
 
   @Override
   public List<String> generateIds(final Record<VariableRecordValue> record) {
-    return List.of(
-        ID_PATTERN.formatted(record.getValue().getScopeKey(), record.getValue().getName()));
+    return List.of(record.getValue().getFullyQualifiedName());
   }
 
   @Override
@@ -70,8 +68,7 @@ public class UserTaskVariableHandler
       final Record<VariableRecordValue> record, final UserTaskVariableBatch batchEntity) {
 
     final var processVariable = createVariableFromRecord(record);
-    processVariable.setId(
-        ID_PATTERN.formatted(record.getValue().getScopeKey(), record.getValue().getName()));
+    processVariable.setId(record.getValue().getFullyQualifiedName());
 
     final TaskJoinRelationship joinRelationship = new TaskJoinRelationship();
     joinRelationship.setParent(processVariable.getProcessInstanceId());
@@ -82,8 +79,7 @@ public class UserTaskVariableHandler
     if (record.getValue().getProcessInstanceKey() != record.getValue().getScopeKey()) {
       final TaskVariableEntity taskVariable = createVariableFromRecord(record);
       taskVariable.setId(
-          ID_PATTERN.formatted(record.getValue().getScopeKey(), record.getValue().getName())
-              + TaskTemplate.LOCAL_VARIABLE_SUFFIX);
+          record.getValue().getFullyQualifiedName() + TaskTemplate.LOCAL_VARIABLE_SUFFIX);
 
       final TaskJoinRelationship localTaskJoinRelationship = new TaskJoinRelationship();
       localTaskJoinRelationship.setParent(taskVariable.getScopeKey());
