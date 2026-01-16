@@ -343,6 +343,9 @@ public final class IncidentUpdateTask implements BackgroundTask {
       final var parsedTreePath = new TreePath(treePath);
       final var piIds = parsedTreePath.extractProcessInstanceIds();
       final var fniIds = parsedTreePath.extractFlowNodeInstanceIds();
+      if (fniIds.removeAll(piIds)) {
+        logger.info("Removed");
+      }
 
       future =
           createProcessInstanceUpdates(data, incident, newState, piIds, bulkUpdate)
