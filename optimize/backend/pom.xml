@@ -979,8 +979,60 @@
     <profile>
       <id>ccsm-it</id>
 
+      <dependencies>
+        <dependency>
+          <groupId>io.camunda</groupId>
+          <artifactId>zeebe-qa-util</artifactId>
+          <scope>test</scope>
+          <exclusions>
+            <exclusion>
+              <groupId>io.camunda</groupId>
+              <artifactId>camunda-gateway-mcp</artifactId>
+            </exclusion>
+            <exclusion>
+              <groupId>org.liquibase</groupId>
+              <artifactId>liquibase-core</artifactId>
+            </exclusion>
+          </exclusions>
+        </dependency>
+        <dependency>
+          <groupId>io.camunda</groupId>
+          <artifactId>configuration</artifactId>
+          <scope>test</scope>
+          <exclusions>
+            <exclusion>
+              <groupId>org.liquibase</groupId>
+              <artifactId>liquibase-core</artifactId>
+            </exclusion>
+          </exclusions>
+        </dependency>
+        <dependency>
+          <groupId>io.camunda</groupId>
+          <artifactId>zeebe-broker</artifactId>
+          <scope>test</scope>
+        </dependency>
+      </dependencies>
+
       <build>
         <plugins>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>build-helper-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>add-it-source</id>
+                <goals>
+                  <goal>add-test-source</goal>
+                </goals>
+                <phase>generate-test-sources</phase>
+                <configuration>
+                  <sources>
+                    <source>src/it/java</source>
+                  </sources>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-failsafe-plugin</artifactId>
