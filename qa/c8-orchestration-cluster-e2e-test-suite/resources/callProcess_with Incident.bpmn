@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:ns1="modeler" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:ns0="xmlns" id="bpmn_copilot_Definition_id" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Web Modeler" exporterVersion="a8d7898" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.7.0" ns0:modeler="http://camunda.org/schema/modeler/1.0" ns1:executionPlatform="Camunda Cloud" ns1:executionPlatformVersion="8.6">
+  <bpmn:process id="call-level-1-process" name="Call Activity Level 1 Process" processType="None" isClosed="false" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_Level1" name="Start Level 1">
+      <bpmn:extensionElements>
+        <zeebe:ioMapping>
+          <zeebe:input source="=if required_variable != null then required_variable else error(&#34;Input variable &#39;required_variable&#39; is mandatory and was not provided.&#34;)" target="required_variable" />
+          <zeebe:output source="=test" target="OutputVariable_2r18fea" />
+        </zeebe:ioMapping>
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_to_preprocess_1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_to_preprocess_1" sourceRef="StartEvent_Level1" targetRef="Task_PreProcessing_Level1" />
+    <bpmn:sequenceFlow id="Flow_to_call_2" sourceRef="Task_PreProcessing_Level1" targetRef="EndEvent_Level1" />
+    <bpmn:endEvent id="EndEvent_Level1" name="End Level 1">
+      <bpmn:incoming>Flow_to_call_2</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:callActivity id="Task_PreProcessing_Level1" name="Level 1 Pre-Processing">
+      <bpmn:extensionElements>
+        <zeebe:ioMapping>
+          <zeebe:output source="=1" target="test" />
+        </zeebe:ioMapping>
+        <zeebe:calledElement processId="Not" propagateAllChildVariables="false" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_to_preprocess_1</bpmn:incoming>
+      <bpmn:outgoing>Flow_to_call_2</bpmn:outgoing>
+    </bpmn:callActivity>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_call-level-1-process">
+    <bpmndi:BPMNPlane id="BPMNPlane_call-level-1-process" bpmnElement="call-level-1-process">
+      <bpmndi:BPMNShape id="StartEvent_Level1_di" bpmnElement="StartEvent_Level1">
+        <dc:Bounds x="57" y="52" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_Level1_di" bpmnElement="EndEvent_Level1">
+        <dc:Bounds x="357" y="52" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0jnllr1_di" bpmnElement="Task_PreProcessing_Level1">
+        <dc:Bounds x="175" y="30" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_to_preprocess_1_di" bpmnElement="Flow_to_preprocess_1">
+        <di:waypoint x="93" y="70" />
+        <di:waypoint x="175" y="70" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_to_call_2_di" bpmnElement="Flow_to_call_2">
+        <di:waypoint x="275" y="70" />
+        <di:waypoint x="357" y="70" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
