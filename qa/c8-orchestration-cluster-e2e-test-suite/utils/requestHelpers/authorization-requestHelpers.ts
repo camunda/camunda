@@ -8,7 +8,7 @@
 
 import type {APIRequestContext} from 'playwright-core';
 import {Serializable} from 'playwright-core/types/structs';
-import {assertRequiredFields, buildUrl, jsonHeaders} from '../http';
+import {assertRequiredFields, assertStatusCode, buildUrl, jsonHeaders} from '../http';
 import {expect} from '@playwright/test';
 import {authorizedComponentRequiredFields} from '../beans/requestBeans';
 
@@ -24,6 +24,7 @@ export async function createComponentAuthorization(
   expect(res.status()).toBe(201);
   const json = await res.json();
   assertRequiredFields(json, authorizedComponentRequiredFields);
+  return json.authorizationKey;
 }
 
 export async function grantUserResourceAuthorization(

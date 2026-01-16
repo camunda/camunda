@@ -113,6 +113,14 @@ export const mappingRuleRequiredFields: string[] = [
 ];
 export const roleRequiredFields: string[] = ['roleId', 'name', 'description'];
 export const authorizedComponentRequiredFields: string[] = ['authorizationKey'];
+export const authorizationRequiredFields: string[] = [
+  'ownerId',
+  'ownerType',
+  'resourceType',
+  'resourceId',
+  'permissionTypes',
+  'authorizationKey',
+];
 export const userRequiredFields: string[] = ['username', 'name', 'email'];
 export const decisionDefinitionRequiredFields: string[] = [
   'decisionDefinitionId',
