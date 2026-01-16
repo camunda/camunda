@@ -364,7 +364,9 @@ const ElementInstanceIcon: React.FC<Props> = ({
           switch (getBoundaryEventType(diagramBusinessObject)) {
             default:
             case 'interrupting':
-              return <FlowNodeEventConditionalIntermediateCatch {...svgProps} />;
+              return (
+                <FlowNodeEventConditionalIntermediateCatch {...svgProps} />
+              );
             case 'non-interrupting':
               return <FlowNodeEventConditionalNonInterrupting {...svgProps} />;
           }
