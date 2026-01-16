@@ -1095,4 +1095,28 @@ public abstract class ElasticsearchUtil {
     ONLY_RUNTIME,
     ALL
   }
+
+  /**
+   * Converts an array of search_after values to ES8 FieldValue list for pagination.
+   *
+   * @param searchAfter Array of sort values from previous search result
+   * @return List of FieldValue objects for ES8 searchAfter parameter
+   */
+  public static List<FieldValue> searchAfterToFieldValues(final Object[] searchAfter) {
+    if (searchAfter == null) {
+      return List.of();
+    }
+    return Arrays.stream(searchAfter)
+        .map(
+            value -> {
+              if (value == null) {
+                return FieldValue.NULL;
+              } else if (value instanceof Number) {
+                return FieldValue.of(((Number) value).longValue());
+              } else {
+                return FieldValue.of(value.toString());
+              }
+            })
+        .toList();
+  }
 }
