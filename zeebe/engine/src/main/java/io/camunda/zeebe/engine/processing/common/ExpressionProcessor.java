@@ -49,11 +49,6 @@ public final class ExpressionProcessor {
   private final Duration expressionEvaluationTimeout;
 
   public ExpressionProcessor(
-      final ExpressionLanguage expressionLanguage, final EvaluationContextLookup lookup) {
-    this(expressionLanguage, lookup, EngineConfiguration.DEFAULT_EXPRESSION_EVALUATION_TIMEOUT);
-  }
-
-  public ExpressionProcessor(
       final ExpressionLanguage expressionLanguage,
       final EvaluationContextLookup lookup,
       final Duration expressionEvaluationTimeout) {
