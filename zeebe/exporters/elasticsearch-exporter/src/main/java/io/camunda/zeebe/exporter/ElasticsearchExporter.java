@@ -62,7 +62,7 @@ public class ElasticsearchExporter implements Exporter {
     log = context.getLogger();
     configuration =
         context.getConfiguration().instantiate(ElasticsearchExporterConfiguration.class);
-    log.debug("Exporter configured with {}", configuration);
+    log.info("Exporter configured with {}", configuration);
 
     validate(configuration);
     pluginRepository.load(configuration.getInterceptorPlugins());

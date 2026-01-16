@@ -46,7 +46,7 @@ public class OpensearchExporter implements Exporter {
   public void configure(final Context context) {
     log = context.getLogger();
     configuration = context.getConfiguration().instantiate(OpensearchExporterConfiguration.class);
-    log.debug("Exporter configured with {}", configuration);
+    log.info("Exporter configured with {}", configuration);
 
     validate(configuration);
     pluginRepository.load(configuration.getInterceptorPlugins());
