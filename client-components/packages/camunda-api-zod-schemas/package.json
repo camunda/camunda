@@ -229,10 +229,10 @@
 	},
 	"packageManager": "npm@11.7.0",
 	"devDependencies": {
-		"@types/node": "25.0.2",
+		"@types/node": "25.0.9",
 		"changelogen": "0.6.2",
 		"typescript": "5.9.3",
-		"vite": "7.3.0",
+		"vite": "7.3.1",
 		"vite-plugin-circular-dependency": "0.5.0",
 		"vite-plugin-dts": "4.5.4",
 		"zod": "^4.2.0"
