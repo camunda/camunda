@@ -374,11 +374,11 @@ jobs:
           --set zeebe.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
           --set zeebeGateway.image.repository=gcr.io/zeebe-io/zeebe
           --set zeebeGateway.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
-          --set camunda-platform.operate.enabled=true
-          --set camunda-platform.operate.image.repository=gcr.io/zeebe-io/operate
-          --set camunda-platform.operate.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
-          --set camunda-platform.elasticsearch.master.persistence.size=128Gi
-          --set camunda-platform.zeebe.retention.minimumAge=1d
+          --set operate.enabled=true
+          --set operate.image.repository=gcr.io/zeebe-io/operate
+          --set operate.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
+          --set elasticsearch.master.persistence.size=128Gi
+          --set zeebe.retention.minimumAge=1d
           -f https://raw.githubusercontent.com/camunda/camunda/${{ github.ref }}/zeebe/benchmarks/camunda-platform-values.yaml
           ${{ steps.find-chart-release.outputs.chart-release != '' && format('--version {0}', steps.find-chart-release.outputs.chart-release) || '' }}
           ${{ inputs.stable-vms && format('-f https://raw.githubusercontent.com/camunda/camunda/{0}/zeebe/benchmarks/setup/default/values-stable.yaml', github.ref) || '' }}
