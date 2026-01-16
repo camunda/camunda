@@ -15,14 +15,16 @@ import static org.elasticsearch.action.support.IndicesOptions.Option.IGNORE_UNAV
 import static org.elasticsearch.action.support.IndicesOptions.WildcardStates.CLOSED;
 import static org.elasticsearch.action.support.IndicesOptions.WildcardStates.OPEN;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
-import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.FieldValue;
+import co.elastic.clients.elasticsearch._types.Refresh;
+import co.elastic.clients.elasticsearch._types.SortOptions;
 import co.elastic.clients.elasticsearch._types.Time;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch._types.query_dsl.TermsQueryField;
 import co.elastic.clients.elasticsearch.core.ScrollResponse;
+import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
 import co.elastic.clients.elasticsearch.core.search.ResponseBody;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -36,6 +38,7 @@ import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashSet;
@@ -54,8 +57,6 @@ import java.util.stream.Stream;
 import org.apache.commons.collections4.ListUtils;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.ActionListener;
-import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
-import org.elasticsearch.action.admin.indices.refresh.RefreshResponse;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
@@ -118,11 +119,13 @@ public abstract class ElasticsearchUtil {
       final QueryType queryType,
       final TenantAwareElasticsearchClient tenantAwareClient)
       throws IOException {
-    final QueryBuilder query = idsQuery().addIds(id);
+    final QueryBuilder query = org.elasticsearch.index.query.QueryBuilders.idsQuery().addIds(id);
 
     final SearchRequest request =
         ElasticsearchUtil.createSearchRequest(descriptor, queryType)
-            .source(new SearchSourceBuilder().query(constantScoreQuery(query)));
+            .source(
+                new SearchSourceBuilder()
+                    .query(org.elasticsearch.index.query.QueryBuilders.constantScoreQuery(query)));
 
     final SearchResponse response = tenantAwareClient.search(request);
     if (response.getHits().getTotalHits().value == 1) {
@@ -387,21 +390,28 @@ public abstract class ElasticsearchUtil {
   }
 
   /**
-   * Helper method to scroll in chunks. This is useful when you have a large number of ids and want
-   * to avoid sending them all at once to OpenSearch to not hit the max allowed terms limit {@link
-   * #DEFAULT_MAX_TERMS_COUNT}
+   * Scrolls through all search results using ES8 client and collects results into a list, with
+   * chunking support for large ID lists.
+   *
+   * @param client ES8 client
+   * @param ids List of IDs to process in chunks
+   * @param chunkSize Maximum number of IDs per chunk
+   * @param searchRequestBuilderFactory Factory to create search request builder for each chunk
+   * @param docClass Document class type
+   * @param <T> Type of documents
+   * @param <ID> Type of IDs
+   * @return List of document sources
    */
   public static <T, ID> List<T> scrollInChunks(
-      final List<ID> list,
+      final co.elastic.clients.elasticsearch.ElasticsearchClient client,
+      final List<ID> ids,
       final int chunkSize,
-      final Function<List<ID>, SearchRequest> chunkToSearchRequest,
-      final Class<T> clazz,
-      final ObjectMapper objectMapper,
-      final RestHighLevelClient esClient)
-      throws IOException {
+      final Function<List<ID>, co.elastic.clients.elasticsearch.core.SearchRequest.Builder>
+          searchRequestBuilderFactory,
+      final Class<T> docClass) {
     final var result = new ArrayList<T>();
-    for (final var chunk : ListUtils.partition(list, chunkSize)) {
-      result.addAll(scroll(chunkToSearchRequest.apply(chunk), clazz, objectMapper, esClient));
+    for (final var chunk : ListUtils.partition(ids, chunkSize)) {
+      result.addAll(scrollAllToList(client, searchRequestBuilderFactory.apply(chunk), docClass));
     }
     return result;
   }
@@ -539,26 +549,33 @@ public abstract class ElasticsearchUtil {
     return result;
   }
 
+  /**
+   * Scrolls through all search results using ES8 client and collects document IDs with their index
+   * names into a map.
+   *
+   * @param client ES8 client
+   * @param searchRequestBuilder Search request builder
+   * @return Map of document ID to index name
+   */
+  public static Map<String, String> scrollIdsWithIndexToMap(
+      final co.elastic.clients.elasticsearch.ElasticsearchClient client,
+      final co.elastic.clients.elasticsearch.core.SearchRequest.Builder searchRequestBuilder) {
+    final Map<String, String> result = new LinkedHashMap<>();
+    scrollAllStream(client, searchRequestBuilder, MAP_CLASS)
+        .flatMap(response -> response.hits().hits().stream())
+        .forEach(hit -> result.put(hit.id(), hit.index()));
+    return result;
+  }
+
   public static Map<String, String> scrollIdsWithIndexToMap(
       final SearchRequest request, final RestHighLevelClient esClient) throws IOException {
-    final Map<String, String> result = new LinkedHashMap();
+    final Map<String, String> result = new LinkedHashMap<>();
 
     final Consumer<SearchHits> collectIds =
         (hits) ->
             result.putAll(
                 Stream.of(hits.getHits())
                     .collect(Collectors.toMap(SearchHit::getId, SearchHit::getIndex)));
-
-    scrollWith(request, esClient, collectIds, null, null);
-    return result;
-  }
-
-  public static List<Long> scrollKeysToList(
-      final SearchRequest request, final RestHighLevelClient esClient) throws IOException {
-    final List<Long> result = new ArrayList<>();
-
-    final Consumer<SearchHits> collectIds =
-        (hits) -> result.addAll(map(hits.getHits(), SEARCH_HIT_ID_TO_LONG));
 
     scrollWith(request, esClient, collectIds, null, null);
     return result;
@@ -576,39 +593,6 @@ public abstract class ElasticsearchUtil {
 
     scrollWith(request, esClient, collectFields, null, null);
     return result;
-  }
-
-  public static Set<String> scrollIdsToSet(
-      final SearchRequest request, final RestHighLevelClient esClient) throws IOException {
-    final Set<String> result = new HashSet<>();
-
-    final Consumer<SearchHits> collectIds =
-        (hits) -> result.addAll(map(hits.getHits(), SEARCH_HIT_ID_TO_STRING));
-    scrollWith(request, esClient, collectIds, null, collectIds);
-    return result;
-  }
-
-  public static Set<Long> scrollKeysToSet(
-      final SearchRequest request, final RestHighLevelClient esClient) throws IOException {
-    final Set<Long> result = new HashSet<>();
-    final Consumer<SearchHits> collectIds =
-        (hits) -> result.addAll(map(hits.getHits(), SEARCH_HIT_ID_TO_LONG));
-    scrollWith(request, esClient, collectIds, null, null);
-    return result;
-  }
-
-  public static void refreshIndicesFor(
-      final RestHighLevelClient esClient, final String indexPattern) {
-    final var refreshRequest = new RefreshRequest(indexPattern);
-    try {
-      final RefreshResponse refresh =
-          esClient.indices().refresh(refreshRequest, RequestOptions.DEFAULT);
-      if (refresh.getFailedShards() > 0) {
-        LOGGER.warn("Unable to refresh indices: {}", indexPattern);
-      }
-    } catch (final Exception ex) {
-      LOGGER.warn(String.format("Unable to refresh indices: %s", indexPattern), ex);
-    }
   }
 
   // ============ ES8 Query Helper Methods ============
@@ -700,6 +684,103 @@ public abstract class ElasticsearchUtil {
     return Query.of(q -> q.matchAll(m -> m));
   }
 
+  /**
+   * Creates an ES8 ids query for the given document IDs.
+   *
+   * @param ids Document IDs to match
+   * @return Query that matches documents with the specified IDs
+   */
+  public static Query idsQuery(final String... ids) {
+    return Query.of(q -> q.ids(i -> i.values(Arrays.asList(ids))));
+  }
+
+  /**
+   * Wraps a query in a constant_score query, which assigns all matching documents a relevance score
+   * equal to the boost parameter (default 1.0).
+   *
+   * @param query The query to wrap
+   * @return Query with constant scoring applied
+   */
+  public static Query constantScoreQuery(final Query query) {
+    return Query.of(q -> q.constantScore(cs -> cs.filter(query)));
+  }
+
+  /**
+   * Creates an ES8 exists query that matches documents containing a value for the specified field.
+   *
+   * @param field The field name to check for existence
+   * @return Query that matches documents where the field exists
+   */
+  public static Query existsQuery(final String field) {
+    return Query.of(q -> q.exists(e -> e.field(field)));
+  }
+
+  /**
+   * Creates a bool query that must NOT match the provided query.
+   *
+   * @param query The query to negate
+   * @return Query that does not match the provided query
+   */
+  public static Query mustNotQuery(final Query query) {
+    return Query.of(q -> q.bool(b -> b.mustNot(query)));
+  }
+
+  /**
+   * Joins multiple ES8 queries with OR logic. Returns null if no queries provided, single query if
+   * only one provided, or a bool query with should clauses for multiple queries.
+   *
+   * @param queries Queries to join
+   * @return Combined query or null
+   */
+  public static Query joinWithOr(final Query... queries) {
+    final var notNullQueries = throwAwayNullElements(queries);
+
+    if (notNullQueries.isEmpty()) {
+      return null;
+    } else if (notNullQueries.size() == 1) {
+      return notNullQueries.get(0);
+    } else {
+      return Query.of(q -> q.bool(b -> b.should(notNullQueries)));
+    }
+  }
+
+  /**
+   * Creates an ES8 range query builder for the specified field.
+   *
+   * @param field Field name to apply range on
+   * @return A RangeQueryBuilder for chaining range operations
+   */
+  public static RangeQueryBuilder rangeQuery(final String field) {
+    return new RangeQueryBuilder(field);
+  }
+
+  /**
+   * Creates an ES8 script sort option.
+   *
+   * @param scriptSource The inline script source
+   * @param scriptSortType The type of script sort (STRING or NUMBER)
+   * @param sortOrder The sort order
+   * @return SortOptions configured for script sorting
+   */
+  public static SortOptions scriptSort(
+      final String scriptSource,
+      final co.elastic.clients.elasticsearch._types.ScriptSortType scriptSortType,
+      final co.elastic.clients.elasticsearch._types.SortOrder sortOrder) {
+    return SortOptions.of(
+        s ->
+            s.script(
+                sc ->
+                    sc.script(
+                            script ->
+                                script
+                                    .lang(
+                                        co.elastic.clients.elasticsearch._types.ScriptLanguage
+                                            .Painless)
+                                    .source(scriptSource))
+                        .type(scriptSortType)
+                        .order(sortOrder)));
+  }
+
   // ===========================================================================================
   // ES8 Scroll Helper Methods
   // ===========================================================================================
@@ -779,6 +860,191 @@ public abstract class ElasticsearchUtil {
       } catch (final Exception e) {
         LOGGER.warn("Error occurred when clearing the scroll with id [{}]", scrollId, e);
       }
+    }
+  }
+
+  /**
+   * Scrolls through all search results using ES8 client and collects results into a list.
+   *
+   * @param client ES8 client
+   * @param searchRequestBuilder Search request builder
+   * @param docClass Document class type
+   * @param <T> Type of documents
+   * @return List of document sources
+   */
+  public static <T> List<T> scrollAllToList(
+      final co.elastic.clients.elasticsearch.ElasticsearchClient client,
+      final co.elastic.clients.elasticsearch.core.SearchRequest.Builder searchRequestBuilder,
+      final Class<T> docClass) {
+    return scrollAllStream(client, searchRequestBuilder, docClass)
+        .flatMap(response -> response.hits().hits().stream())
+        .map(co.elastic.clients.elasticsearch.core.search.Hit::source)
+        .filter(Objects::nonNull)
+        .collect(Collectors.toList());
+  }
+
+  /**
+   * Scrolls through all search results using ES8 client and collects a specific field's Long values
+   * into a set.
+   *
+   * @param client ES8 client
+   * @param searchRequestBuilder Search request builder
+   * @param fieldName The field name to extract Long values from
+   * @return Set of Long values
+   */
+  public static Set<Long> scrollFieldToLongSet(
+      final co.elastic.clients.elasticsearch.ElasticsearchClient client,
+      final co.elastic.clients.elasticsearch.core.SearchRequest.Builder searchRequestBuilder,
+      final String fieldName) {
+    final Set<Long> result = new HashSet<>();
+    scrollAllStream(client, searchRequestBuilder, MAP_CLASS)
+        .flatMap(response -> response.hits().hits().stream())
+        .map(co.elastic.clients.elasticsearch.core.search.Hit::source)
+        .filter(Objects::nonNull)
+        .forEach(
+            source -> {
+              final var value = source.get(fieldName);
+              if (value != null) {
+                result.add(((Number) value).longValue());
+              }
+            });
+    return result;
+  }
+
+  // ===========================================================================================
+  // ES8 Sort Helper Methods
+  // ===========================================================================================
+
+  /**
+   * Creates an ES8 SortOptions for a field with specified order.
+   *
+   * @param field The field name to sort by
+   * @param sortOrder The sort order (Asc or Desc)
+   * @return SortOptions configured for the field
+   */
+  public static SortOptions sortOrder(
+      final String field, final co.elastic.clients.elasticsearch._types.SortOrder sortOrder) {
+    return SortOptions.of(s -> s.field(f -> f.field(field).order(sortOrder)));
+  }
+
+  /**
+   * Creates an ES8 SortOptions for a field with specified order and missing value handling.
+   *
+   * @param field The field name to sort by
+   * @param sortOrder The sort order (Asc or Desc)
+   * @param missing How to handle missing values ("_first", "_last", or a custom value)
+   * @return SortOptions configured for the field with missing value handling
+   */
+  public static SortOptions sortOrder(
+      final String field,
+      final co.elastic.clients.elasticsearch._types.SortOrder sortOrder,
+      final String missing) {
+    return SortOptions.of(s -> s.field(f -> f.field(field).order(sortOrder).missing(missing)));
+  }
+
+  // ===========================================================================================
+  // Inner Classes
+  // ===========================================================================================
+
+  /**
+   * Executes a bulk request with the given operations and refresh policy.
+   *
+   * @param client the Elasticsearch client
+   * @param operations the list of bulk operations to execute
+   * @param refresh the refresh policy to use
+   * @throws IOException if an I/O error occurs
+   * @throws TasklistRuntimeException if the bulk request contains errors
+   */
+  public static void executeBulkRequest(
+      final ElasticsearchClient client, final List<BulkOperation> operations, final Refresh refresh)
+      throws IOException {
+    if (operations.isEmpty()) {
+      return;
+    }
+
+    final var bulkRequest =
+        co.elastic.clients.elasticsearch.core.BulkRequest.of(
+            b -> b.operations(operations).refresh(refresh));
+
+    final var bulkResponse = client.bulk(bulkRequest);
+
+    if (bulkResponse.errors()) {
+      final var errorMessages =
+          bulkResponse.items().stream()
+              .filter(item -> item.error() != null)
+              .map(item -> item.error().reason())
+              .collect(Collectors.joining(", "));
+      throw new TasklistRuntimeException("Bulk request failed. Errors: " + errorMessages);
+    }
+  }
+
+  /**
+   * Converts an array of search_after values to ES8 FieldValue list for pagination.
+   *
+   * @param searchAfter Array of sort values from previous search result
+   * @return List of FieldValue objects for ES8 searchAfter parameter
+   */
+  public static List<co.elastic.clients.elasticsearch._types.FieldValue> searchAfterToFieldValues(
+      final Object[] searchAfter) {
+    return Arrays.stream(searchAfter)
+        .map(co.elastic.clients.elasticsearch._types.FieldValue::of)
+        .toList();
+  }
+
+  /** Builder class for creating ES8 range queries with a fluent API. */
+  public static class RangeQueryBuilder {
+    private final String field;
+    private Object gt;
+    private Object gte;
+    private Object lt;
+    private Object lte;
+
+    public RangeQueryBuilder(final String field) {
+      this.field = field;
+    }
+
+    public RangeQueryBuilder gt(final Object value) {
+      gt = value;
+      return this;
+    }
+
+    public RangeQueryBuilder gte(final Object value) {
+      gte = value;
+      return this;
+    }
+
+    public RangeQueryBuilder lt(final Object value) {
+      lt = value;
+      return this;
+    }
+
+    public RangeQueryBuilder lte(final Object value) {
+      lte = value;
+      return this;
+    }
+
+    public Query build() {
+      final var untypedBuilder =
+          new co.elastic.clients.elasticsearch._types.query_dsl.UntypedRangeQuery.Builder();
+      untypedBuilder.field(field);
+
+      if (gt != null) {
+        untypedBuilder.gt(co.elastic.clients.json.JsonData.of(gt));
+      }
+      if (gte != null) {
+        untypedBuilder.gte(co.elastic.clients.json.JsonData.of(gte));
+      }
+      if (lt != null) {
+        untypedBuilder.lt(co.elastic.clients.json.JsonData.of(lt));
+      }
+      if (lte != null) {
+        untypedBuilder.lte(co.elastic.clients.json.JsonData.of(lte));
+      }
+
+      return co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders.range()
+          .untyped(untypedBuilder.build())
+          .build()
+          ._toQuery();
     }
   }
 
