@@ -20,12 +20,10 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
-import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.DeployResourceCommandStep1.DeployResourceCommandStep2;
 import io.camunda.zeebe.client.api.search.response.ProcessInstance;
-import io.camunda.zeebe.client.api.search.response.SearchQueryResponse;
+import io.camunda.zeebe.client.api.search.response.SearchResponsePage;
 import io.camunda.zeebe.client.api.search.sort.ProcessInstanceSort;
-import io.camunda.zeebe.client.protocol.rest.ProcessInstanceVariableFilterRequest;
 import io.camunda.zeebe.config.AppCfg;
 import io.camunda.zeebe.config.StarterCfg;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
@@ -39,6 +37,7 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletionStage;
@@ -66,6 +65,7 @@ public class Starter extends App {
   private Timer responseLatencyTimer;
   private ScheduledExecutorService executorService;
   private ProcessInstanceStartMeter processInstanceStartMeter;
+  private SearchResponsePage responsePage = null;
 
   Starter(final AppCfg appCfg) {
     this.appCfg = appCfg;
@@ -134,41 +134,27 @@ public class Starter extends App {
             Executors.newScheduledThreadPool(1),
             appCfg.getMonitorDataAvailabilityInterval(),
             (listOfStartedInstances) -> {
-              //              final List<Object> page = List.of();
-              final ZeebeFuture<SearchQueryResponse<ProcessInstance>> send =
+              final var sendFuture =
                   client
                       .newProcessInstanceQuery()
-                      .filter(
-                          f ->
-                              f.variable(
-                                  new ProcessInstanceVariableFilterRequest()
-                                      .name(starterCfg.getBusinessKey())
-                                      .values(
-                                          listOfStartedInstances.stream()
-                                              .map(l -> Long.toString(l))
-                                              .toList())))
-                      //                  .page(p -> p.searchAfter(page))
+                      .filter(f -> f.active(true).running(true))
                       .sort(ProcessInstanceSort::startDate)
+                      .page(
+                          p ->
+                              p.limit(100)
+                                  .searchAfter(
+                                      responsePage == null
+                                          ? List.of()
+                                          : responsePage.lastSortValues()))
                       .send();
 
-              return send.thenApply(
-                  processInstanceSearchResponse ->
-                      processInstanceSearchResponse.items().stream()
-                          .map(ProcessInstance::getKey)
-                          .toList());
-              //              final CamundaFuture<SearchResponse<ProcessInstance>> send =
-              //                  client
-              //                      .newProcessInstanceSearchRequest()
-              //                      .filter((f) -> f.processInstanceKey(key ->
-              // key.in(listOfStartedInstances)))
-              //                      .sort(ProcessInstanceSort::startDate)
-              //                      .send();
-              //
-              //              return send.thenApply(
-              //                  processInstanceSearchResponse ->
-              //                      processInstanceSearchResponse.items().stream()
-              //                          .map(ProcessInstance::getProcessInstanceKey)
-              //                          .toList());
+              return sendFuture.thenApply(
+                  processInstanceSearchResponse -> {
+                    responsePage = processInstanceSearchResponse.page();
+                    return processInstanceSearchResponse.items().stream()
+                        .map(ProcessInstance::getKey)
+                        .toList();
+                  });
             });
     processInstanceStartMeter.start();
   }
