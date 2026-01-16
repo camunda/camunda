@@ -128,7 +128,7 @@ public class GroupClient {
     }
 
     public GroupUpdateClient withDescription(final String description) {
-      groupRecord.setName(description);
+      groupRecord.setDescription(description);
       return this;
     }
 
