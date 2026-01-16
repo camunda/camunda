@@ -17,6 +17,7 @@ import io.camunda.webapps.schema.entities.listview.FlowNodeInstanceForListViewEn
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
+import io.camunda.zeebe.protocol.record.value.ImmutableIncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.util.LinkedHashMap;
@@ -95,7 +96,7 @@ public class ListViewFlowNodeFromIncidentHandlerTest {
   public void shouldUpdateEntityFromRecord() {
     // given
     final Record<IncidentRecordValue> incidentRecord =
-        factory.generateRecord(ValueType.INCIDENT, r -> r.withIntent(IncidentIntent.CREATED));
+        createIncidentRecordWithIntent(IncidentIntent.CREATED);
     // when
     final FlowNodeInstanceForListViewEntity flowNodeInstanceForListViewEntity =
         new FlowNodeInstanceForListViewEntity();
@@ -125,7 +126,7 @@ public class ListViewFlowNodeFromIncidentHandlerTest {
   public void shouldRemoveErrorMessageForResolvedIncident() {
     // given
     final Record<IncidentRecordValue> incidentRecord =
-        factory.generateRecord(ValueType.INCIDENT, r -> r.withIntent(IncidentIntent.RESOLVED));
+        createIncidentRecordWithIntent(IncidentIntent.RESOLVED);
     // when
     final FlowNodeInstanceForListViewEntity flowNodeInstanceForListViewEntity =
         new FlowNodeInstanceForListViewEntity();
@@ -140,8 +141,7 @@ public class ListViewFlowNodeFromIncidentHandlerTest {
       names = {"CREATED", "MIGRATED", "RESOLVED"})
   void shouldHandleRecordWithSupportedIntent(final IncidentIntent intent) {
     // given
-    final Record<IncidentRecordValue> incidentRecord =
-        factory.generateRecord(ValueType.INCIDENT, r -> r.withIntent(intent));
+    final Record<IncidentRecordValue> incidentRecord = createIncidentRecordWithIntent(intent);
 
     // when - then
     assertThat(underTest.handlesRecord(incidentRecord)).isTrue();
@@ -151,9 +151,32 @@ public class ListViewFlowNodeFromIncidentHandlerTest {
   void shouldNotHandleResolveIntentRecords() {
     // given
     final Record<IncidentRecordValue> incidentRecord =
-        factory.generateRecord(ValueType.INCIDENT, r -> r.withIntent(IncidentIntent.RESOLVE));
+        createIncidentRecordWithIntent(IncidentIntent.RESOLVE);
 
     // when - then
     assertThat(underTest.handlesRecord(incidentRecord)).isFalse();
+  }
+
+  @Test
+  void shouldNotHandleProcessInstanceLevelIncidentRecords() {
+    // given
+    final var processInstanceKey = 123L;
+    final var intent = IncidentIntent.CREATED;
+    final IncidentRecordValue recordValue =
+        ImmutableIncidentRecordValue.builder()
+            .from(createIncidentRecordWithIntent(intent).getValue())
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementInstanceKey(processInstanceKey)
+            .build();
+    final Record<IncidentRecordValue> incidentRecord =
+        factory.generateRecord(
+            ValueType.INCIDENT, r -> r.withIntent(intent).withValue(recordValue));
+
+    // when - then
+    assertThat(underTest.handlesRecord(incidentRecord)).isFalse();
+  }
+
+  private Record<IncidentRecordValue> createIncidentRecordWithIntent(final IncidentIntent intent) {
+    return factory.generateRecord(ValueType.INCIDENT, r -> r.withIntent(intent));
   }
 }
