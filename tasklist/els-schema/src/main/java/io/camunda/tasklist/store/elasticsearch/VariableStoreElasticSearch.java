@@ -167,6 +167,10 @@ public class VariableStoreElasticSearch implements VariableStore {
   @Override
   public void persistTaskVariables(final Collection<SnapshotTaskVariableEntity> finalVariables) {
     try {
+      if (finalVariables.isEmpty()) {
+        return;
+      }
+
       final var bulkOperations = finalVariables.stream().map(this::createUpsertRequest).toList();
 
       final var bulkRequest =
@@ -390,11 +394,6 @@ public class VariableStoreElasticSearch implements VariableStore {
   }
 
   private BulkOperation createUpsertRequest(final SnapshotTaskVariableEntity variableEntity) {
-    final var updateFields = new HashMap<String, Object>();
-    updateFields.put(SnapshotTaskVariableTemplate.TASK_ID, variableEntity.getTaskId());
-    updateFields.put(SnapshotTaskVariableTemplate.NAME, variableEntity.getName());
-    updateFields.put(SnapshotTaskVariableTemplate.VALUE, variableEntity.getValue());
-
     return BulkOperation.of(
         op ->
             op.update(
@@ -402,6 +401,6 @@ public class VariableStoreElasticSearch implements VariableStore {
                     u.index(taskVariableTemplate.getFullQualifiedName())
                         .id(variableEntity.getId())
                         .retryOnConflict(UPDATE_RETRY_COUNT)
-                        .action(a -> a.doc(updateFields).upsert(variableEntity))));
+                        .action(a -> a.doc(variableEntity).docAsUpsert(true))));
   }
 }
