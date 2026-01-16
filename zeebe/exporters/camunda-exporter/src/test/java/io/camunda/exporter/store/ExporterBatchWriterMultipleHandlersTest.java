@@ -184,13 +184,16 @@ public class ExporterBatchWriterMultipleHandlersTest {
   }
 
   @Test
-  public void shouldFlushMultipleDifferentEntitiesForMultipleHandlers()
+  public void shouldFlushMultipleDifferentEntitiesForMultipleHandlersInOrder()
       throws PersistenceException {
     // given
     final var writer =
         Builder.begin()
             .withHandler(
                 TestExportHandler.handlerForEntity(OtherTestEntity.class, OtherTestEntity::new))
+            .withHandler(
+                TestExportHandler.handlerForEntity(
+                    DifferentTestEntity.class, DifferentTestEntity::new))
             .withHandler(TestExportHandler.defaultHandler())
             .build();
 
@@ -206,11 +209,17 @@ public class ExporterBatchWriterMultipleHandlersTest {
     writer.flush(batchRequest);
 
     // then
-    verify(batchRequest)
-        .update(eq("indexA"), eq(Long.toString(record.getKey())), any(TestEntity.class));
-    verify(batchRequest)
+    final InOrder inOrder = Mockito.inOrder(batchRequest);
+    inOrder
+        .verify(batchRequest)
         .update(eq("indexA"), eq(Long.toString(record.getKey())), any(OtherTestEntity.class));
-    verify(batchRequest).execute(any());
+    inOrder
+        .verify(batchRequest)
+        .update(eq("indexA"), eq(Long.toString(record.getKey())), any(DifferentTestEntity.class));
+    inOrder
+        .verify(batchRequest)
+        .update(eq("indexA"), eq(Long.toString(record.getKey())), any(TestEntity.class));
+    inOrder.verify(batchRequest).execute(any());
   }
 
   private static class TestEntity implements ExporterEntity<TestEntity> {
@@ -248,6 +257,26 @@ public class ExporterBatchWriterMultipleHandlersTest {
 
     @Override
     public OtherTestEntity setId(final String id) {
+      this.id = id;
+      return this;
+    }
+  }
+
+  private static class DifferentTestEntity implements ExporterEntity<DifferentTestEntity> {
+
+    private String id;
+
+    DifferentTestEntity(final String id) {
+      this.id = id;
+    }
+
+    @Override
+    public String getId() {
+      return id;
+    }
+
+    @Override
+    public DifferentTestEntity setId(final String id) {
       this.id = id;
       return this;
     }
