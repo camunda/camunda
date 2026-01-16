@@ -430,7 +430,7 @@ class DocumentResourceAccessControllerTest {
     // when - then
     assertThatExceptionOfType(ResourceAccessDeniedException.class)
         .isThrownBy(() -> controller.doGet(securityContext, doGetAccessCheckApplier(document)))
-        .withMessageContaining(
+        .withMessage(
             "Unauthorized to perform operation 'READ_PROCESS_DEFINITION' on resource 'PROCESS_DEFINITION'")
         .satisfies(
             err -> {
@@ -469,8 +469,8 @@ class DocumentResourceAccessControllerTest {
     // when - then
     assertThatExceptionOfType(ResourceAccessDeniedException.class)
         .isThrownBy(() -> controller.doGet(securityContext, doGetAccessCheckApplier(document)))
-        .withMessageContaining(
-            "Unauthorized to perform any of the operations ('READ_USER_TASK' on 'PROCESS_DEFINITION'), ('READ' on 'USER_TASK')")
+        .withMessage(
+            "Unauthorized to perform any of the operations: 'READ_USER_TASK' on 'PROCESS_DEFINITION' or 'READ' on 'USER_TASK'")
         .satisfies(
             err -> {
               assertThat(err.getReason()).isEqualTo(Reason.FORBIDDEN);
