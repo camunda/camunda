@@ -54,7 +54,7 @@
     "eslint-plugin-react-refresh": "0.4.24",
     "event-source-polyfill": "1.0.31",
     "license-checker": "25.0.1",
-    "monaco-editor": "0.52.2",
+    "monaco-editor": "0.55.1",
     "prettier": "3.6.2",
     "rollup": "4.45.0",
     "rollup-plugin-license": "^3.5.3",
