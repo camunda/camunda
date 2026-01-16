@@ -9,14 +9,16 @@
 package io.camunda.zeebe.engine.state.globallistener;
 
 import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerBatchRecord;
+import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerRecord;
 
 public interface MutableGlobalListenersState extends GlobalListenersState {
-  /**
-   * Replace the current global listeners configuration with the given one.
-   *
-   * @param record the new global listeners configuration
-   */
-  void updateCurrentConfiguration(final GlobalListenerBatchRecord record);
+  void create(final GlobalListenerRecord record);
+
+  void update(final GlobalListenerRecord record);
+
+  void delete(final GlobalListenerRecord record);
+
+  void updateConfigKey(final long key);
 
   /**
    * Store a copy of the given global listeners configuration and return its version key.

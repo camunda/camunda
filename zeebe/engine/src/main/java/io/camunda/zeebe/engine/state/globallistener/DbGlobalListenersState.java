@@ -21,6 +21,8 @@ import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerRecord;
 import io.camunda.zeebe.protocol.record.value.GlobalListenerType;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import org.agrona.collections.MutableBoolean;
 
@@ -87,9 +89,30 @@ public final class DbGlobalListenersState implements MutableGlobalListenersState
 
   @Override
   public GlobalListenerBatchRecord getCurrentConfig() {
-    return Optional.ofNullable(currentConfigColumnFamily.get(key))
-        .map(PersistedGlobalListenersConfig::getGlobalListeners)
-        .orElse(null);
+    // Retrieve configuration key
+    final var configKey = getCurrentConfigKey();
+    if (configKey.isEmpty()) {
+      return null;
+    }
+    final var currentConfig = new GlobalListenerBatchRecord();
+    currentConfig.setGlobalListenerBatchKey(configKey.get());
+
+    // Retrieve listeners list
+    globalListenersColumnFamily.forEach(
+        listener -> {
+          // Note: the copy is necessary because the same instance is reused by the column family
+          // iterator
+          final GlobalListenerRecord record = new GlobalListenerRecord();
+          record.copyFrom(listener.getGlobalListener());
+          currentConfig.addTaskListener(record);
+        });
+
+    return currentConfig;
+  }
+
+  @Override
+  public Optional<Long> getCurrentConfigKey() {
+    return Optional.ofNullable(currentConfigKeyColumnFamily.get(key)).map(DbLong::getValue);
   }
 
   @Override
@@ -122,9 +145,41 @@ public final class DbGlobalListenersState implements MutableGlobalListenersState
   }
 
   @Override
-  public void updateCurrentConfiguration(final GlobalListenerBatchRecord record) {
-    currentConfig.setGlobalListeners(record);
-    currentConfigColumnFamily.upsert(key, currentConfig);
+  public Optional<GlobalListenerRecord> getGlobalListener(
+      final GlobalListenerType listenerType, final String id) {
+    this.listenerType.setValue(listenerType);
+    listenerId.wrapString(id);
+    return Optional.ofNullable(globalListenersColumnFamily.get(listenerTypeAndIdKey))
+        .map(PersistedGlobalListener::getGlobalListener);
+  }
+
+  @Override
+  public void create(final GlobalListenerRecord record) {
+    listenerType.setValue(record.getListenerType());
+    listenerId.wrapString(record.getId());
+    globalListener.setGlobalListener(record);
+    globalListenersColumnFamily.insert(listenerTypeAndIdKey, globalListener);
+  }
+
+  @Override
+  public void update(final GlobalListenerRecord record) {
+    listenerType.setValue(record.getListenerType());
+    listenerId.wrapString(record.getId());
+    globalListener.setGlobalListener(record);
+    globalListenersColumnFamily.update(listenerTypeAndIdKey, globalListener);
+  }
+
+  @Override
+  public void delete(final GlobalListenerRecord record) {
+    listenerType.setValue(record.getListenerType());
+    listenerId.wrapString(record.getId());
+    globalListenersColumnFamily.deleteExisting(listenerTypeAndIdKey);
+  }
+
+  @Override
+  public void updateConfigKey(final long configKey) {
+    currentConfigKey.wrapLong(configKey);
+    currentConfigKeyColumnFamily.upsert(key, currentConfigKey);
   }
 
   @Override
