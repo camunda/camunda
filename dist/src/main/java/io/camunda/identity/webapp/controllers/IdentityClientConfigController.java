@@ -12,9 +12,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.entity.AuthenticationMethod;
 import io.swagger.v3.oas.annotations.Hidden;
+import java.util.HashMap;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
+import org.springframework.security.oauth2.client.annotation.RegisteredOAuth2AuthorizedClient;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -33,17 +36,18 @@ public class IdentityClientConfigController {
   private static final String FALLBACK_CONFIG_JS = "window.clientConfig = {};";
   private static final String CONFIG_JS_TEMPLATE = "window.clientConfig = %s;";
 
-  private final String clientConfigAsJS;
+  //  private final String clientConfigAsJS;
+  private final Map<String, String> commonConfig;
   private final ObjectMapper objectMapper;
 
   public IdentityClientConfigController(final SecurityConfiguration securityConfiguration) {
     objectMapper = new ObjectMapper();
-    clientConfigAsJS = generateClientConfig(securityConfiguration);
+    commonConfig = createCommonConfigMap(securityConfiguration);
+    //    clientConfigAsJS = generateClientConfig(securityConfiguration);
   }
 
-  private String generateClientConfig(final SecurityConfiguration securityConfiguration) {
+  private String generateClientConfig(final Map<String, String> config) {
     try {
-      final Map<String, String> config = createConfigMap(securityConfiguration);
       final String configJson = objectMapper.writeValueAsString(config);
       return String.format(CONFIG_JS_TEMPLATE, configJson);
     } catch (final JsonProcessingException e) {
@@ -52,7 +56,8 @@ public class IdentityClientConfigController {
     }
   }
 
-  private Map<String, String> createConfigMap(final SecurityConfiguration securityConfiguration) {
+  private Map<String, String> createCommonConfigMap(
+      final SecurityConfiguration securityConfiguration) {
     final var config = new java.util.HashMap<String, String>();
     final var saasConfiguration = securityConfiguration.getSaas();
 
@@ -84,7 +89,19 @@ public class IdentityClientConfigController {
   @GetMapping(path = "/identity/config.js", produces = "text/javascript;charset=UTF-8")
   @ResponseBody
   @Hidden
-  public String getClientConfig() {
-    return clientConfigAsJS;
+  public String getClientConfig(
+      @RegisteredOAuth2AuthorizedClient final OAuth2AuthorizedClient authorizedClient) {
+    //    return clientConfigAsJS;
+    final Map<String, String> userConfig = new HashMap<>(commonConfig);
+    userConfig.put(
+        "endSessionEndpoint",
+        authorizedClient
+            .getClientRegistration()
+            .getProviderDetails()
+            .getConfigurationMetadata()
+            .get("end_session_endpoint")
+            .toString());
+
+    return generateClientConfig(userConfig);
   }
 }

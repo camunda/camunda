@@ -37,6 +37,8 @@ export const docsUrl = "https://docs.camunda.io";
 
 export const isSaaS = Boolean(getClientConfigString("organizationId"));
 
+export const endSessionEndpoint = getClientConfigString("endSessionEndpoint");
+
 export function getApiBaseUrl() {
   return getBasePathBeforeIdentity() + apiBaseUrl;
 }

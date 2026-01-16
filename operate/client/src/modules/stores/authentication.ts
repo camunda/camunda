@@ -80,7 +80,10 @@ class Authentication {
 
     storeStateLocally({wasReloaded: true});
 
-    window.location.reload();
+    // redirect to Keycloak logout endpoint
+    // hardcoding post_logout_redirect_uri and client_id for now
+    window.location.href = `http://localhost:18080/auth/realms/camunda/protocol/openid-connect/logout?post_logout_redirect_uri=http://localhost:8080/operate&client_id=orchestration-cluster`;
+    // window.location.reload();
   };
 
   handleLogout = async () => {
