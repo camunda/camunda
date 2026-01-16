@@ -27,6 +27,12 @@
             },
             "deleteHistory": {
               "type": "boolean"
+            },
+            "batchOperationKey": {
+              "type": "long"
+            },
+            "batchOperationType": {
+              "type": "keyword"
             }
           }
         }
