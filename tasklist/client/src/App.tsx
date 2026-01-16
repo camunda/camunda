@@ -122,7 +122,14 @@ const v2Routes = createRoutesFromElements(
           <Route
             path="history"
             lazy={() => import('./v2/TaskDetailsHistoryView')}
-          />
+          >
+            <Route
+              path=":auditLogKey"
+              lazy={() =>
+                import('./v2/TaskDetailsHistoryView/HistoryItemDetailsModal')
+              }
+            />
+          </Route>
         </Route>
       </Route>
     </Route>

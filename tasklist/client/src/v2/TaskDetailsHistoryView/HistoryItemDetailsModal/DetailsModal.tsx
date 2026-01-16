@@ -1,0 +1,85 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {
+  ComposedModal,
+  ModalBody,
+  ModalHeader,
+  StructuredListBody,
+  StructuredListCell,
+  StructuredListRow,
+  StructuredListWrapper,
+} from '@carbon/react';
+import {CheckmarkOutline, EventSchedule, UserAvatar} from '@carbon/react/icons';
+import {useTranslation} from 'react-i18next';
+import type {QueryUserTaskAuditLogsResponseBody} from '@camunda/camunda-api-zod-schemas/8.9';
+import {formatDate} from 'common/dates/formatDate';
+import {spaceAndCapitalize} from 'common/utils/spaceAndCapitalize';
+import {AuditLogItemStatusIcon} from 'v2/features/tasks/task-history/AuditLogItemStatusIcon';
+import styles from './styles.module.scss';
+
+type AuditLogItem = QueryUserTaskAuditLogsResponseBody['items'][number];
+
+type Props = {
+  onClose: () => void;
+  auditLog: AuditLogItem;
+};
+
+const DetailsModal: React.FC<Props> = ({onClose, auditLog}) => {
+  const {t} = useTranslation();
+  const {operationType, entityType, result, actorId, timestamp} = auditLog;
+
+  return (
+    <ComposedModal size="md" open onClose={onClose}>
+      <ModalHeader
+        title={`${spaceAndCapitalize(operationType)} ${spaceAndCapitalize(entityType)}`}
+      />
+      <ModalBody>
+        <StructuredListWrapper isCondensed isFlush>
+          <StructuredListBody>
+            <StructuredListRow className={styles.verticallyAlignedRow}>
+              <StructuredListCell noWrap className={styles.firstColumn}>
+                <div className={styles.iconText}>
+                  <CheckmarkOutline />
+                  {t('taskDetailsHistoryModalStatus')}
+                </div>
+              </StructuredListCell>
+              <StructuredListCell>
+                <div className={styles.iconText}>
+                  <AuditLogItemStatusIcon status={result} />
+                  {spaceAndCapitalize(result)}
+                </div>
+              </StructuredListCell>
+            </StructuredListRow>
+            <StructuredListRow className={styles.verticallyAlignedRow}>
+              <StructuredListCell className={styles.firstColumn}>
+                <div className={styles.iconText}>
+                  <UserAvatar />
+                  {t('taskDetailsHistoryModalActor')}
+                </div>
+              </StructuredListCell>
+              <StructuredListCell>{actorId}</StructuredListCell>
+            </StructuredListRow>
+            <StructuredListRow className={styles.verticallyAlignedRow}>
+              <StructuredListCell noWrap className={styles.firstColumn}>
+                <div className={styles.iconText}>
+                  <EventSchedule />
+                  {t('taskDetailsHistoryModalTime')}
+                </div>
+              </StructuredListCell>
+              <StructuredListCell>{formatDate(timestamp)}</StructuredListCell>
+            </StructuredListRow>
+          </StructuredListBody>
+        </StructuredListWrapper>
+      </ModalBody>
+    </ComposedModal>
+  );
+};
+
+export type {AuditLogItem};
+export {DetailsModal};
