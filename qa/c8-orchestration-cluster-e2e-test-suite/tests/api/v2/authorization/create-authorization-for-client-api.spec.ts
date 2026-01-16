@@ -37,7 +37,8 @@ import {
 
 const CREATE_AUTHORIZATION_ENDPOINT = '/authorizations';
 
-test.describe.serial('Create Authorization API for client - Success and Conflict', () => {
+test.describe
+  .serial('Create Authorization API for client - Success and Conflict', () => {
   const clientId = 'client' + generateUniqueId();
   let createdAuthorizationKeys: string[] = [];
 
@@ -145,7 +146,8 @@ test.describe.serial('Create Authorization API for client - Success and Conflict
   });
 });
 
-test.describe.parallel('Create Authorization API for client - Unhappy paths', () => {
+test.describe
+  .parallel('Create Authorization API for client - Unhappy paths', () => {
   const clientId = 'client' + generateUniqueId();
 
   test('Create Authorization for client - 400 Bad Request - wrong value for ownerType', async ({

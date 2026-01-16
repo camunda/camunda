@@ -102,10 +102,7 @@ test.describe
       'GROUP',
       '*',
       'DECISION_DEFINITION',
-      [
-        'CREATE_DECISION_INSTANCE',
-        'READ_DECISION_DEFINITION'
-      ],
+      ['CREATE_DECISION_INSTANCE', 'READ_DECISION_DEFINITION'],
     );
 
     await expect(async () => {

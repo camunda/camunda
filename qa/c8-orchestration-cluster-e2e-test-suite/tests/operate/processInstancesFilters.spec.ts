@@ -76,6 +76,7 @@ test.describe('Process Instances Filters', () => {
       await operateFiltersPanelPage.selectProcess(
         'Process With Multiple Versions',
       );
+      await operateFiltersPanelPage.selectVersion('2');
       await waitForAssertion({
         assertion: async () => {
           await expect
@@ -90,6 +91,7 @@ test.describe('Process Instances Filters', () => {
           await operateFiltersPanelPage.selectProcess(
             'Process With Multiple Versions',
           );
+          await operateFiltersPanelPage.selectVersion('2');
         },
       });
     });

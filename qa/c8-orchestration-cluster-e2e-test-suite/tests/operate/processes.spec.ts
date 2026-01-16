@@ -248,8 +248,15 @@ test.describe('Processes', () => {
         `${baseUrl}/operate/processes?process=testProcess&version=1`,
       );
 
-      await expect(operateFiltersPanelPage.processNameFilter).toBeDisabled({
-        timeout: 30000,
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(operateFiltersPanelPage.processNameFilter).toBeDisabled({
+            timeout: 5000,
+          });
+        },
+        onFailure: async () => {
+          page.reload();
+        },
       });
 
       await expect(operateDiagramPage.diagramSpinner).toBeVisible();

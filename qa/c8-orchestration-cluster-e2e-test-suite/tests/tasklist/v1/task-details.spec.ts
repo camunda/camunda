@@ -625,12 +625,12 @@ test.describe('task details page', () => {
     await taskDetailsPageV1.assertFieldValue(
       'Process input variable',
       'name:"Adeel Solangi"',
-      {contains: true},
+      {partial: true},
     );
     await taskDetailsPageV1.assertFieldValue(
       'Process input variable',
       'Maecenas quis nisi nunc.", version:2.69',
-      {contains: true},
+      {partial: true},
     );
     await taskDetailsPageV1.clickCompleteTaskButton();
     await expect(taskDetailsPageV1.taskCompletedBanner).toBeVisible();
@@ -642,12 +642,12 @@ test.describe('task details page', () => {
     await taskDetailsPageV1.assertFieldValue(
       'Process input variable',
       'name:"Adeel Solangi"',
-      {contains: true},
+      {partial: true},
     );
     await taskDetailsPageV1.assertFieldValue(
       'Process input variable',
       'Maecenas quis nisi nunc.", version:2.69',
-      {contains: true},
+      {partial: true},
     );
   });
 });
