@@ -12,6 +12,7 @@ import io.camunda.zeebe.el.EvaluationResult;
 import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.ResultType;
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.model.bpmn.util.time.Interval;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.util.Either;
@@ -40,7 +41,6 @@ public final class ExpressionProcessor {
       List.of(ResultType.NULL, ResultType.DATE_TIME, ResultType.STRING);
 
   private static final EvaluationContext EMPTY_EVALUATION_CONTEXT = x -> null;
-  private static final Duration EXPRESSION_EVALUATION_TIMEOUT = Duration.ofSeconds(1);
 
   private final DirectBuffer resultView = new UnsafeBuffer();
 
@@ -50,7 +50,7 @@ public final class ExpressionProcessor {
 
   public ExpressionProcessor(
       final ExpressionLanguage expressionLanguage, final EvaluationContextLookup lookup) {
-    this(expressionLanguage, lookup, Duration.ofSeconds(1));
+    this(expressionLanguage, lookup, EngineConfiguration.DEFAULT_EXPRESSION_EVALUATION_TIMEOUT);
   }
 
   public ExpressionProcessor(
