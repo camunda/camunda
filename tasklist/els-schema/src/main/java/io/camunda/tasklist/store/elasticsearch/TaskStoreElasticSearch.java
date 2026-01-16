@@ -9,15 +9,20 @@ package io.camunda.tasklist.store.elasticsearch;
 
 import static io.camunda.tasklist.util.CollectionUtil.asMap;
 import static io.camunda.tasklist.util.CollectionUtil.getOrDefaultFromMap;
-import static io.camunda.tasklist.util.ElasticsearchUtil.createSearchRequest;
-import static io.camunda.tasklist.util.ElasticsearchUtil.joinWithAnd;
 import static java.util.stream.Collectors.toList;
-import static org.elasticsearch.index.query.QueryBuilders.*;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.Refresh;
+import co.elastic.clients.elasticsearch._types.ScriptSortType;
+import co.elastic.clients.elasticsearch._types.SortOptions;
+import co.elastic.clients.elasticsearch._types.SortOrder;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch._types.query_dsl.UntypedRangeQuery;
+import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.UpdateRequest;
 import co.elastic.clients.elasticsearch.core.search.Hit;
+import co.elastic.clients.json.JsonData;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.exceptions.NotFoundException;
@@ -31,7 +36,6 @@ import io.camunda.tasklist.queries.TaskSortFields;
 import io.camunda.tasklist.store.TaskStore;
 import io.camunda.tasklist.store.VariableStore;
 import io.camunda.tasklist.store.util.TaskVariableSearchUtil;
-import io.camunda.tasklist.tenant.TenantAwareElasticsearchClient;
 import io.camunda.tasklist.util.ElasticsearchTenantHelper;
 import io.camunda.tasklist.util.ElasticsearchUtil;
 import io.camunda.tasklist.util.ElasticsearchUtil.QueryType;
@@ -45,6 +49,7 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -53,21 +58,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.ExistsQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.index.query.RangeQueryBuilder;
-import org.elasticsearch.index.query.TermsQueryBuilder;
-import org.elasticsearch.script.Script;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.elasticsearch.search.sort.ScriptSortBuilder;
-import org.elasticsearch.search.sort.ScriptSortBuilder.ScriptSortType;
-import org.elasticsearch.search.sort.SortBuilder;
-import org.elasticsearch.search.sort.SortBuilders;
-import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -88,8 +78,6 @@ public class TaskStoreElasticSearch implements TaskStore {
   @Autowired
   @Qualifier("tasklistEs8Client")
   private ElasticsearchClient es8Client;
-
-  @Autowired private TenantAwareElasticsearchClient tenantAwareClient;
 
   @Autowired private ElasticsearchTenantHelper tenantHelper;
 
@@ -369,14 +357,13 @@ public class TaskStoreElasticSearch implements TaskStore {
         .size(tasklistProperties.getElasticsearch().getBatchSize());
   }
 
-  private List<TaskSearchView> mapTasksFromEntity(final SearchResponse response) {
-    return ElasticsearchUtil.mapSearchHits(
-        response.getHits().getHits(),
-        (sh) ->
-            TaskSearchView.createFrom(
-                ElasticsearchUtil.fromSearchHit(
-                    sh.getSourceAsString(), objectMapper, TaskEntity.class),
-                sh.getSortValues()));
+  private List<TaskSearchView> mapTasksFromEntity(final SearchResponse<TaskEntity> response) {
+    return response.hits().hits().stream()
+        .map(
+            hit ->
+                TaskSearchView.createFrom(
+                    hit.source(), hit.sort().stream().map(f -> f._get()).toArray()))
+        .collect(toList());
   }
 
   /**
@@ -447,22 +434,40 @@ public class TaskStoreElasticSearch implements TaskStore {
       }
     }
 
-    final QueryBuilder esQuery = buildQuery(query, tasksIds);
-    // TODO #104 define list of fields
+    final Query esQuery = buildQuery(query, tasksIds);
 
-    // TODO we can play around with query type here (2nd parameter), e.g. when we select for only
-    // active tasks
-    final SearchSourceBuilder sourceBuilder = new SearchSourceBuilder().query(esQuery);
-    applySorting(sourceBuilder, query);
+    // Apply tenant filtering
+    final Query tenantAwareQuery =
+        query.getTenantIds() == null
+            ? tenantHelper.makeQueryTenantAware(esQuery)
+            : tenantHelper.makeQueryTenantAware(esQuery, Set.of(query.getTenantIds()));
 
-    final SearchRequest searchRequest =
-        createSearchRequest(taskTemplate, getQueryTypeByTaskState(query.getState()))
-            .source(sourceBuilder);
+    // Build sort options and search after
+    final List<SortOptions> sortOptions = buildSortOptions(query);
+    final List<FieldValue> searchAfterValues = buildSearchAfterValues(query);
+
+    // Determine page size
+    final int size =
+        (query.getSearchBefore() != null || query.getSearchBeforeOrEqual() != null)
+            ? query.getPageSize() + 1
+            : query.getPageSize();
+
+    final var searchRequestBuilder =
+        new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+            .index(
+                ElasticsearchUtil.whereToSearch(
+                    taskTemplate, getQueryTypeByTaskState(query.getState())))
+            .query(tenantAwareQuery)
+            .sort(sortOptions)
+            .size(size);
+
+    if (!searchAfterValues.isEmpty()) {
+      searchRequestBuilder.searchAfter(searchAfterValues);
+    }
+
     try {
-      final SearchResponse response =
-          query.getTenantIds() == null
-              ? tenantAwareClient.search(searchRequest)
-              : tenantAwareClient.searchByTenantIds(searchRequest, Set.of(query.getTenantIds()));
+      final SearchResponse<TaskEntity> response =
+          es8Client.search(searchRequestBuilder.build(), TaskEntity.class);
       final List<TaskSearchView> tasks = mapTasksFromEntity(response);
 
       if (!tasks.isEmpty()) {
@@ -508,106 +513,130 @@ public class TaskStoreElasticSearch implements TaskStore {
     }
   }
 
-  private QueryBuilder buildQuery(final TaskQuery query, final List<String> taskIds) {
-    QueryBuilder stateQ = boolQuery().mustNot(termQuery(TaskTemplate.STATE, TaskState.CANCELED));
+  private Query buildQuery(final TaskQuery query, final List<String> taskIds) {
+    Query stateQ =
+        ElasticsearchUtil.mustNotQuery(
+            ElasticsearchUtil.termsQuery(TaskTemplate.STATE, TaskState.CANCELED.name()));
     if (query.getState() != null) {
-      stateQ = termQuery(TaskTemplate.STATE, query.getState());
+      stateQ = ElasticsearchUtil.termsQuery(TaskTemplate.STATE, query.getState().name());
     }
-    QueryBuilder assignedQ = null;
-    QueryBuilder assigneeQ = null;
+
+    Query assignedQ = null;
+    Query assigneeQ = null;
     if (query.getAssigned() != null) {
       if (query.getAssigned()) {
-        assignedQ = existsQuery(TaskTemplate.ASSIGNEE);
+        assignedQ = ElasticsearchUtil.existsQuery(TaskTemplate.ASSIGNEE);
       } else {
-        assignedQ = boolQuery().mustNot(existsQuery(TaskTemplate.ASSIGNEE));
+        assignedQ =
+            ElasticsearchUtil.mustNotQuery(ElasticsearchUtil.existsQuery(TaskTemplate.ASSIGNEE));
       }
     }
     if (query.getAssignee() != null) {
-      assigneeQ = termQuery(TaskTemplate.ASSIGNEE, query.getAssignee());
+      assigneeQ = ElasticsearchUtil.termsQuery(TaskTemplate.ASSIGNEE, query.getAssignee());
     }
 
-    QueryBuilder assigneesQ = null;
+    Query assigneesQ = null;
     if (query.getAssignees() != null) {
-      assigneesQ = termsQuery(TaskTemplate.ASSIGNEE, query.getAssignees());
+      assigneesQ =
+          ElasticsearchUtil.termsQuery(TaskTemplate.ASSIGNEE, Arrays.asList(query.getAssignees()));
     }
 
-    TermsQueryBuilder taskIdsQuery = null;
-    ExistsQueryBuilder flowNodeInstanceExistsQuery = null;
+    Query taskIdsQuery = null;
+    Query flowNodeInstanceExistsQuery = null;
     if (taskIds != null) {
-      taskIdsQuery = termsQuery(TaskTemplate.KEY, taskIds);
+      taskIdsQuery = ElasticsearchUtil.termsQuery(TaskTemplate.KEY, taskIds);
     } else {
-      flowNodeInstanceExistsQuery = existsQuery(TaskTemplate.FLOW_NODE_INSTANCE_ID);
+      flowNodeInstanceExistsQuery =
+          ElasticsearchUtil.existsQuery(TaskTemplate.FLOW_NODE_INSTANCE_ID);
     }
 
-    QueryBuilder taskDefinitionQ = null;
+    Query taskDefinitionQ = null;
     if (query.getTaskDefinitionId() != null) {
-      taskDefinitionQ = termQuery(TaskTemplate.FLOW_NODE_BPMN_ID, query.getTaskDefinitionId());
+      taskDefinitionQ =
+          ElasticsearchUtil.termsQuery(TaskTemplate.FLOW_NODE_BPMN_ID, query.getTaskDefinitionId());
     }
 
-    QueryBuilder candidateGroupQ = null;
+    Query candidateGroupQ = null;
     if (query.getCandidateGroup() != null) {
-      candidateGroupQ = termQuery(TaskTemplate.CANDIDATE_GROUPS, query.getCandidateGroup());
+      candidateGroupQ =
+          ElasticsearchUtil.termsQuery(TaskTemplate.CANDIDATE_GROUPS, query.getCandidateGroup());
     }
 
-    QueryBuilder candidateGroupsQ = null;
+    Query candidateGroupsQ = null;
     if (query.getCandidateGroups() != null) {
-      candidateGroupsQ = termsQuery(TaskTemplate.CANDIDATE_GROUPS, query.getCandidateGroups());
+      candidateGroupsQ =
+          ElasticsearchUtil.termsQuery(
+              TaskTemplate.CANDIDATE_GROUPS, Arrays.asList(query.getCandidateGroups()));
     }
 
-    QueryBuilder candidateUserQ = null;
+    Query candidateUserQ = null;
     if (query.getCandidateUser() != null) {
-      candidateUserQ = termQuery(TaskTemplate.CANDIDATE_USERS, query.getCandidateUser());
+      candidateUserQ =
+          ElasticsearchUtil.termsQuery(TaskTemplate.CANDIDATE_USERS, query.getCandidateUser());
     }
 
-    QueryBuilder candidateUsersQ = null;
+    Query candidateUsersQ = null;
     if (query.getCandidateUsers() != null) {
-      candidateUsersQ = termsQuery(TaskTemplate.CANDIDATE_USERS, query.getCandidateUsers());
+      candidateUsersQ =
+          ElasticsearchUtil.termsQuery(
+              TaskTemplate.CANDIDATE_USERS, Arrays.asList(query.getCandidateUsers()));
     }
 
-    QueryBuilder candidateGroupsAndUserByCurrentUserQ = null;
+    Query candidateGroupsAndUserByCurrentUserQ = null;
     if (query.getTaskByCandidateUserOrGroups() != null) {
       candidateGroupsAndUserByCurrentUserQ =
-          returnUserGroupBoolQuery(
+          buildUserGroupBoolQuery(
               List.of(query.getTaskByCandidateUserOrGroups().getUserGroups()),
               query.getTaskByCandidateUserOrGroups().getUserName());
     }
 
-    QueryBuilder processInstanceIdQ = null;
+    Query processInstanceIdQ = null;
     if (query.getProcessInstanceId() != null) {
       processInstanceIdQ =
-          termQuery(TaskTemplate.PROCESS_INSTANCE_ID, query.getProcessInstanceId());
+          ElasticsearchUtil.termsQuery(
+              TaskTemplate.PROCESS_INSTANCE_ID, query.getProcessInstanceId());
     }
 
-    QueryBuilder processDefinitionIdQ = null;
+    Query processDefinitionIdQ = null;
     if (query.getProcessDefinitionId() != null) {
       processDefinitionIdQ =
-          termQuery(TaskTemplate.PROCESS_DEFINITION_ID, query.getProcessDefinitionId());
+          ElasticsearchUtil.termsQuery(
+              TaskTemplate.PROCESS_DEFINITION_ID, query.getProcessDefinitionId());
     }
 
-    QueryBuilder followUpQ = null;
+    Query followUpQ = null;
     if (query.getFollowUpDate() != null) {
       followUpQ =
-          rangeQuery(TaskTemplate.FOLLOW_UP_DATE)
-              .gte(query.getFollowUpDate().getFrom())
-              .lte(query.getFollowUpDate().getTo());
+          buildRangeQuery(
+              TaskTemplate.FOLLOW_UP_DATE,
+              query.getFollowUpDate().getFrom(),
+              query.getFollowUpDate().getTo(),
+              true,
+              true);
     }
 
-    QueryBuilder dueDateQ = null;
+    Query dueDateQ = null;
     if (query.getDueDate() != null) {
       dueDateQ =
-          rangeQuery(TaskTemplate.DUE_DATE)
-              .from(query.getDueDate().getFrom())
-              .lte(query.getDueDate().getTo());
+          buildRangeQuery(
+              TaskTemplate.DUE_DATE,
+              query.getDueDate().getFrom(),
+              query.getDueDate().getTo(),
+              false,
+              true);
     }
-    QueryBuilder implementationQ = null;
+
+    Query implementationQ = null;
     if (query.getImplementation() != null) {
-      implementationQ = termQuery(TaskTemplate.IMPLEMENTATION, query.getImplementation());
+      implementationQ =
+          ElasticsearchUtil.termsQuery(
+              TaskTemplate.IMPLEMENTATION, query.getImplementation().name());
     }
 
-    final QueryBuilder priorityQ = buildPriorityQuery(query);
+    final Query priorityQ = buildPriorityQuery(query);
 
-    QueryBuilder jointQ =
-        joinWithAnd(
+    Query jointQ =
+        ElasticsearchUtil.joinWithAnd(
             stateQ,
             assignedQ,
             assigneeQ,
@@ -627,49 +656,44 @@ public class TaskStoreElasticSearch implements TaskStore {
             implementationQ,
             priorityQ);
     if (jointQ == null) {
-      jointQ = matchAllQuery();
+      jointQ = ElasticsearchUtil.matchAllQueryEs8();
     }
-    return constantScoreQuery(jointQ);
+    return ElasticsearchUtil.constantScoreQuery(jointQ);
   }
 
-  /**
-   * In case of searchAfterOrEqual and searchBeforeOrEqual, this method will ignore "orEqual" part.
-   *
-   * @param searchSourceBuilder
-   * @param query
-   */
-  private void applySorting(final SearchSourceBuilder searchSourceBuilder, final TaskQuery query) {
-
-    final boolean isSortOnRequest;
-    if (query.getSort() != null) {
-      isSortOnRequest = true;
-    } else {
-      isSortOnRequest = false;
-    }
-
-    final boolean directSorting =
-        query.getSearchAfter() != null
-            || query.getSearchAfterOrEqual() != null
-            || (query.getSearchBefore() == null && query.getSearchBeforeOrEqual() == null);
-
-    final SortBuilder sort2;
-    Object[] querySearchAfter = null; // may be null
-    if (directSorting) { // this sorting is also the default one for 1st page
-      sort2 = SortBuilders.fieldSort(TaskTemplate.KEY).order(SortOrder.ASC);
-      if (query.getSearchAfter() != null) {
-        querySearchAfter = query.getSearchAfter();
-      } else if (query.getSearchAfterOrEqual() != null) {
-        querySearchAfter = query.getSearchAfterOrEqual();
-      }
-    } else { // searchBefore != null
-      // reverse sorting
-      sort2 = SortBuilders.fieldSort(TaskTemplate.KEY).order(SortOrder.DESC);
-      if (query.getSearchBefore() != null) {
-        querySearchAfter = query.getSearchBefore();
-      } else if (query.getSearchBeforeOrEqual() != null) {
-        querySearchAfter = query.getSearchBeforeOrEqual();
+  private Query buildRangeQuery(
+      final String field,
+      final Date from,
+      final Date to,
+      final boolean includeFrom,
+      final boolean includeTo) {
+    final var rangeBuilder = new UntypedRangeQuery.Builder().field(field);
+    if (from != null) {
+      if (includeFrom) {
+        rangeBuilder.gte(JsonData.of(from));
+      } else {
+        rangeBuilder.gt(JsonData.of(from));
       }
     }
+    if (to != null) {
+      if (includeTo) {
+        rangeBuilder.lte(JsonData.of(to));
+      } else {
+        rangeBuilder.lt(JsonData.of(to));
+      }
+    }
+    return Query.of(q -> q.range(r -> r.untyped(rangeBuilder.build())));
+  }
+
+  /** Builds sort options list based on query parameters. */
+  private List<SortOptions> buildSortOptions(final TaskQuery query) {
+    final List<SortOptions> sortOptions = new ArrayList<>();
+
+    final boolean isSortOnRequest = query.getSort() != null;
+
+    final boolean directSorting = isDirectSorting(query);
+
+    final SortOrder sort2Order = directSorting ? SortOrder.Asc : SortOrder.Desc;
 
     if (isSortOnRequest) {
       for (int i = 0; i < query.getSort().length; i++) {
@@ -677,43 +701,61 @@ public class TaskStoreElasticSearch implements TaskStore {
         final String field = orderBy.getField().toString();
         final SortOrder sortOrder =
             directSorting
-                ? orderBy.getOrder().equals(Sort.DESC) ? SortOrder.DESC : SortOrder.ASC
-                : orderBy.getOrder().equals(Sort.DESC) ? SortOrder.ASC : SortOrder.DESC;
+                ? orderBy.getOrder().equals(Sort.DESC) ? SortOrder.Desc : SortOrder.Asc
+                : orderBy.getOrder().equals(Sort.DESC) ? SortOrder.Asc : SortOrder.Desc;
 
         if (!orderBy.getField().equals(TaskSortFields.priority)) {
-          searchSourceBuilder.sort(applyDateSortScript(orderBy.getOrder(), field, sortOrder));
+          sortOptions.add(applyDateSortScript(orderBy.getOrder(), field, sortOrder));
         } else {
-          searchSourceBuilder.sort(
+          sortOptions.add(
               mapNullInSort(
-                  TaskTemplate.PRIORITY, DEFAULT_PRIORITY, sortOrder, ScriptSortType.NUMBER));
+                  TaskTemplate.PRIORITY, DEFAULT_PRIORITY, sortOrder, ScriptSortType.Number));
         }
       }
     } else {
-      final String sort1Field;
-      final SortBuilder sort1;
-
-      sort1Field = getOrDefaultFromMap(SORT_FIELD_PER_STATE, query.getState(), DEFAULT_SORT_FIELD);
+      final String sort1Field =
+          getOrDefaultFromMap(SORT_FIELD_PER_STATE, query.getState(), DEFAULT_SORT_FIELD);
       if (directSorting) {
-        sort1 = SortBuilders.fieldSort(sort1Field).order(SortOrder.DESC).missing("_last");
+        sortOptions.add(ElasticsearchUtil.sortOrder(sort1Field, SortOrder.Desc, "_last"));
       } else {
-        sort1 = SortBuilders.fieldSort(sort1Field).order(SortOrder.ASC).missing("_first");
+        sortOptions.add(ElasticsearchUtil.sortOrder(sort1Field, SortOrder.Asc, "_first"));
       }
-      searchSourceBuilder.sort(sort1);
     }
 
-    searchSourceBuilder.sort(sort2);
-    // for searchBefore[orEqual] we will increase size by 1 to fill ou isFirst flag
-    if (query.getSearchBefore() != null || query.getSearchBeforeOrEqual() != null) {
-      searchSourceBuilder.size(query.getPageSize() + 1);
-    } else {
-      searchSourceBuilder.size(query.getPageSize());
-    }
-    if (querySearchAfter != null) {
-      searchSourceBuilder.searchAfter(querySearchAfter);
-    }
+    sortOptions.add(ElasticsearchUtil.sortOrder(TaskTemplate.KEY, sort2Order));
+
+    return sortOptions;
   }
 
-  private SortBuilder<?> applyDateSortScript(
+  /**
+   * Builds search after values list based on query parameters. In case of searchAfterOrEqual and
+   * searchBeforeOrEqual, this method will ignore "orEqual" part.
+   */
+  private List<FieldValue> buildSearchAfterValues(final TaskQuery query) {
+    final Object[] querySearchAfter;
+    if (isDirectSorting(query)) {
+      if (query.getSearchAfter() != null) {
+        querySearchAfter = query.getSearchAfter();
+      } else {
+        querySearchAfter = query.getSearchAfterOrEqual();
+      }
+    } else {
+      if (query.getSearchBefore() != null) {
+        querySearchAfter = query.getSearchBefore();
+      } else {
+        querySearchAfter = query.getSearchBeforeOrEqual();
+      }
+    }
+    return ElasticsearchUtil.searchAfterToFieldValues(querySearchAfter);
+  }
+
+  private boolean isDirectSorting(final TaskQuery query) {
+    return query.getSearchAfter() != null
+        || query.getSearchAfterOrEqual() != null
+        || (query.getSearchBefore() == null && query.getSearchBeforeOrEqual() == null);
+  }
+
+  private SortOptions applyDateSortScript(
       final Sort sorting, final String field, final SortOrder sortOrder) {
     final String nullDate;
     if (sorting.equals(Sort.ASC)) {
@@ -721,22 +763,47 @@ public class TaskStoreElasticSearch implements TaskStore {
     } else {
       nullDate = "1900-01-01";
     }
-    final Script script =
-        new Script(
-            "def sf = new SimpleDateFormat(\"yyyy-MM-dd\"); "
-                + "def nullDate=sf.parse('"
-                + nullDate
-                + "');"
-                + "if(doc['"
-                + field
-                + "'].size() == 0){"
-                + "nullDate.getTime().toString()"
-                + "}else{"
-                + "doc['"
-                + field
-                + "'].value.getMillis().toString()"
-                + "}");
-    return SortBuilders.scriptSort(script, ScriptSortType.STRING).order(sortOrder);
+    final String scriptSource =
+        "def sf = new SimpleDateFormat(\"yyyy-MM-dd\"); "
+            + "def nullDate=sf.parse('"
+            + nullDate
+            + "');"
+            + "if(doc['"
+            + field
+            + "'].size() == 0){"
+            + "nullDate.getTime().toString()"
+            + "}else{"
+            + "doc['"
+            + field
+            + "'].value.getMillis().toString()"
+            + "}";
+
+    return SortOptions.of(
+        s ->
+            s.script(
+                sc ->
+                    sc.type(ScriptSortType.String)
+                        .order(sortOrder)
+                        .script(script -> script.source(scriptSource))));
+  }
+
+  private SortOptions mapNullInSort(
+      final String field,
+      final String defaultValue,
+      final SortOrder order,
+      final ScriptSortType sortType) {
+    final String nullHandlingScript =
+        String.format(
+            "if (doc['%s'].size() == 0) { %s } else { doc['%s'].value }",
+            field, defaultValue, field);
+
+    return SortOptions.of(
+        s ->
+            s.script(
+                sc ->
+                    sc.type(sortType)
+                        .order(order)
+                        .script(script -> script.source(nullHandlingScript))));
   }
 
   private void updateTask(final String taskId, final Map<String, Object> updateFields) {
@@ -846,26 +913,29 @@ public class TaskStoreElasticSearch implements TaskStore {
             .orElse(Collections.emptySet()));
   }
 
-  private BoolQueryBuilder returnUserGroupBoolQuery(
-      final List<String> userGroups, final String userName) {
-    final SearchRequest searchRequest = new SearchRequest(taskTemplate.getFullQualifiedName());
-    final BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
+  private Query buildUserGroupBoolQuery(final List<String> userGroups, final String userName) {
+    final List<Query> shouldQueries = new ArrayList<>();
 
     // Additional clause for TaskTemplate.ASSIGNEE
-    boolQuery.should(QueryBuilders.termQuery(TaskTemplate.ASSIGNEE, userName));
+    shouldQueries.add(ElasticsearchUtil.termsQuery(TaskTemplate.ASSIGNEE, userName));
 
     userGroups.forEach(
-        group -> boolQuery.should(QueryBuilders.termsQuery(TaskTemplate.CANDIDATE_GROUPS, group)));
+        group ->
+            shouldQueries.add(ElasticsearchUtil.termsQuery(TaskTemplate.CANDIDATE_GROUPS, group)));
 
-    boolQuery.should(QueryBuilders.termQuery(TaskTemplate.CANDIDATE_USERS, userName));
+    shouldQueries.add(ElasticsearchUtil.termsQuery(TaskTemplate.CANDIDATE_USERS, userName));
 
     // Consider the tasks that have no candidate users and groups
-    boolQuery.should(
-        QueryBuilders.boolQuery()
-            .mustNot(QueryBuilders.existsQuery(TaskTemplate.CANDIDATE_USERS))
-            .mustNot(QueryBuilders.existsQuery(TaskTemplate.CANDIDATE_GROUPS)));
+    shouldQueries.add(
+        Query.of(
+            q ->
+                q.bool(
+                    b ->
+                        b.mustNot(ElasticsearchUtil.existsQuery(TaskTemplate.CANDIDATE_USERS))
+                            .mustNot(
+                                ElasticsearchUtil.existsQuery(TaskTemplate.CANDIDATE_GROUPS)))));
 
-    return boolQuery;
+    return Query.of(q -> q.bool(b -> b.should(shouldQueries).minimumShouldMatch("1")));
   }
 
   private List<String> retrieveTaskIdByProcessInstanceId(
@@ -884,42 +954,28 @@ public class TaskStoreElasticSearch implements TaskStore {
     return taskVariableSearchUtil.getTaskIdsContainingVariables(request, variablesMap);
   }
 
-  private QueryBuilder buildPriorityQuery(final TaskQuery query) {
+  private Query buildPriorityQuery(final TaskQuery query) {
     if (query.getPriority() != null) {
       final var priority = query.getPriority();
       if (priority.getEq() != null) {
-        return QueryBuilders.termQuery(TaskTemplate.PRIORITY, priority.getEq());
+        return ElasticsearchUtil.termsQuery(TaskTemplate.PRIORITY, priority.getEq());
       } else {
-        RangeQueryBuilder rangeBuilder = QueryBuilders.rangeQuery(TaskTemplate.PRIORITY);
+        final var rangeBuilder = new UntypedRangeQuery.Builder().field(TaskTemplate.PRIORITY);
         if (priority.getGt() != null) {
-          rangeBuilder = rangeBuilder.gt(priority.getGt());
+          rangeBuilder.gt(JsonData.of(priority.getGt()));
         }
         if (priority.getGte() != null) {
-          rangeBuilder = rangeBuilder.gte(priority.getGte());
+          rangeBuilder.gte(JsonData.of(priority.getGte()));
         }
         if (priority.getLt() != null) {
-          rangeBuilder = rangeBuilder.lt(priority.getLt());
+          rangeBuilder.lt(JsonData.of(priority.getLt()));
         }
         if (priority.getLte() != null) {
-          rangeBuilder = rangeBuilder.lte(priority.getLte());
+          rangeBuilder.lte(JsonData.of(priority.getLte()));
         }
-        return rangeBuilder;
+        return Query.of(q -> q.range(r -> r.untyped(rangeBuilder.build())));
       }
     }
     return null;
-  }
-
-  private SortBuilder<?> mapNullInSort(
-      final String field,
-      final String defaultValue,
-      final SortOrder order,
-      final ScriptSortBuilder.ScriptSortType sortType) {
-    final String nullHandlingScript =
-        String.format(
-            "if (doc['%s'].size() == 0) { %s } else { doc['%s'].value }",
-            field, defaultValue, field);
-
-    final Script script = new Script(nullHandlingScript);
-    return SortBuilders.scriptSort(script, sortType).order(order);
   }
 }
