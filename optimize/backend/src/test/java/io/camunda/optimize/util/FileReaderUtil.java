@@ -13,7 +13,7 @@ import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import org.apache.commons.io.IOUtils;
 
-public class FileReaderUtil {
+public final class FileReaderUtil {
 
   private FileReaderUtil() {}
 
