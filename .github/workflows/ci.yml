@@ -256,7 +256,7 @@ jobs:
       # IT Engine = ZEEBE_CORE_FEATURES_MODULES + ZEEBE_PROTOCOL_MODULES + ZEEBE_GATEWAY_MODULES + ZEEBE_CLIENT_MODULES (explicit list)
       ZEEBE_IT_ENGINE_MODULES: ${{ steps.set-constants.outputs.it_engine }}
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 5
     permissions: { }
     steps:
       - uses: actions/checkout@v4
@@ -1460,7 +1460,7 @@ jobs:
           build_status: ${{ job.status }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           user_description: "General"
 
   renovatelint:
