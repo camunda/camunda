@@ -746,7 +746,18 @@
         </excludes>
       </testResource>
       <testResource>
+        <filtering>true</filtering>
         <directory>src/test/resources</directory>
+        <includes>
+          <include>**/*.properties</include>
+        </includes>
+      </testResource>
+      <testResource>
+        <filtering>false</filtering>
+        <directory>src/test/resources</directory>
+        <excludes>
+          <exclude>**/*.properties</exclude>
+        </excludes>
       </testResource>
     </testResources>
 
