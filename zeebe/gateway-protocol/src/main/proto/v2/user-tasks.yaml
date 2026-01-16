@@ -720,22 +720,6 @@ components:
             - $ref: '#/components/schemas/UserTaskVariableFilter'
           description: The user task variable search filters.
 
-
-    UserTaskAuditLogSearchQuerySortRequest:
-      type: object
-      properties:
-        field:
-          description: The field to sort by.
-          type: string
-          enum:
-            - operationType
-            - result
-            - timestamp
-        order:
-          $ref: 'search-models.yaml#/components/schemas/SortOrderEnum'
-      required:
-        - field
-
     UserTaskAuditLogSearchQueryRequest:
       allOf:
         - $ref: 'search-models.yaml#/components/schemas/SearchQueryRequest'
@@ -747,7 +731,7 @@ components:
           description: Sort field criteria.
           type: array
           items:
-            $ref: '#/components/schemas/UserTaskAuditLogSearchQuerySortRequest'
+            $ref: 'audit-logs.yaml#/components/schemas/AuditLogSearchQuerySortRequest'
         filter:
           $ref: '#/components/schemas/UserTaskAuditLogFilter'
 
@@ -812,8 +796,6 @@ components:
             $ref: "#/components/schemas/UserTaskStateEnum"
         $like:
           $ref: "filters.yaml#/components/schemas/LikeFilter"
-
-
 
     UserTaskAuditLogFilter:
       description: The user task audit log search filters.

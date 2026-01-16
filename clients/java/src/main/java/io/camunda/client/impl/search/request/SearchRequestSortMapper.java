@@ -622,28 +622,6 @@ public class SearchRequestSortMapper {
         .collect(Collectors.toList());
   }
 
-  public static List<UserTaskAuditLogSearchQuerySortRequest>
-      toUserTaskAuditLogSearchQuerySortRequest(final List<SearchRequestSort> requests) {
-    return requests.stream()
-        .map(
-            r -> {
-              final UserTaskAuditLogSearchQuerySortRequest request =
-                  new UserTaskAuditLogSearchQuerySortRequest();
-              request.setField(
-                  UserTaskAuditLogSearchQuerySortRequest.FieldEnum.fromValue(r.getField()));
-              request.setOrder(r.getOrder());
-              return request;
-            })
-        .collect(Collectors.toList());
-  }
-
-  public static List<SearchRequestSort> fromUserTaskAuditLogSearchQuerySortRequest(
-      final List<UserTaskAuditLogSearchQuerySortRequest> requests) {
-    return requests.stream()
-        .map(r -> createFrom(r.getField(), r.getOrder()))
-        .collect(Collectors.toList());
-  }
-
   public static List<SearchRequestSort>
       fromIncidentProcessInstanceStatisticsByErrorQuerySortRequest(
           final List<IncidentProcessInstanceStatisticsByErrorQuerySortRequest> requests) {

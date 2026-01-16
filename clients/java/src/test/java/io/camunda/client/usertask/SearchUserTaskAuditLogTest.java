@@ -132,7 +132,56 @@ public class SearchUserTaskAuditLogTest extends ClientRestTest {
     // when
     client
         .newUserTaskAuditLogSearchRequest(USER_TASK_KEY)
-        .sort(s -> s.operationType().asc().result().asc().timestamp().desc())
+        .sort(
+            s ->
+                s.actorId()
+                    .asc()
+                    .actorType()
+                    .desc()
+                    .annotation()
+                    .asc()
+                    .auditLogKey()
+                    .asc()
+                    .batchOperationKey()
+                    .desc()
+                    .batchOperationType()
+                    .desc()
+                    .category()
+                    .asc()
+                    .decisionDefinitionId()
+                    .asc()
+                    .decisionDefinitionKey()
+                    .asc()
+                    .decisionEvaluationKey()
+                    .asc()
+                    .decisionRequirementsId()
+                    .asc()
+                    .decisionRequirementsKey()
+                    .desc()
+                    .elementInstanceKey()
+                    .asc()
+                    .entityKey()
+                    .desc()
+                    .entityType()
+                    .asc()
+                    .jobKey()
+                    .desc()
+                    .operationType()
+                    .asc()
+                    .processDefinitionId()
+                    .asc()
+                    .processDefinitionKey()
+                    .asc()
+                    .processInstanceKey()
+                    .asc()
+                    .result()
+                    .asc()
+                    .tenantId()
+                    .asc()
+                    .timestamp()
+                    .desc()
+                    .userTaskKey()
+                    .asc())
         .send()
         .join();
 
@@ -140,13 +189,33 @@ public class SearchUserTaskAuditLogTest extends ClientRestTest {
     final UserTaskAuditLogSearchQueryRequest request =
         gatewayService.getLastRequest(UserTaskAuditLogSearchQueryRequest.class);
     final List<SearchRequestSort> sorts =
-        SearchRequestSortMapper.fromUserTaskAuditLogSearchQuerySortRequest(
+        SearchRequestSortMapper.fromAuditLogSearchQuerySortRequest(
             Objects.requireNonNull(request.getSort()));
-    assertThat(sorts).hasSize(3);
-
-    assertSort(sorts.get(0), "operationType", SortOrderEnum.ASC);
-    assertSort(sorts.get(1), "result", SortOrderEnum.ASC);
-    assertSort(sorts.get(2), "timestamp", SortOrderEnum.DESC);
+    assertThat(sorts).hasSize(24);
+    assertSort(sorts.get(0), "actorId", SortOrderEnum.ASC);
+    assertSort(sorts.get(1), "actorType", SortOrderEnum.DESC);
+    assertSort(sorts.get(2), "annotation", SortOrderEnum.ASC);
+    assertSort(sorts.get(3), "auditLogKey", SortOrderEnum.ASC);
+    assertSort(sorts.get(4), "batchOperationKey", SortOrderEnum.DESC);
+    assertSort(sorts.get(5), "batchOperationType", SortOrderEnum.DESC);
+    assertSort(sorts.get(6), "category", SortOrderEnum.ASC);
+    assertSort(sorts.get(7), "decisionDefinitionId", SortOrderEnum.ASC);
+    assertSort(sorts.get(8), "decisionDefinitionKey", SortOrderEnum.ASC);
+    assertSort(sorts.get(9), "decisionEvaluationKey", SortOrderEnum.ASC);
+    assertSort(sorts.get(10), "decisionRequirementsId", SortOrderEnum.ASC);
+    assertSort(sorts.get(11), "decisionRequirementsKey", SortOrderEnum.DESC);
+    assertSort(sorts.get(12), "elementInstanceKey", SortOrderEnum.ASC);
+    assertSort(sorts.get(13), "entityKey", SortOrderEnum.DESC);
+    assertSort(sorts.get(14), "entityType", SortOrderEnum.ASC);
+    assertSort(sorts.get(15), "jobKey", SortOrderEnum.DESC);
+    assertSort(sorts.get(16), "operationType", SortOrderEnum.ASC);
+    assertSort(sorts.get(17), "processDefinitionId", SortOrderEnum.ASC);
+    assertSort(sorts.get(18), "processDefinitionKey", SortOrderEnum.ASC);
+    assertSort(sorts.get(19), "processInstanceKey", SortOrderEnum.ASC);
+    assertSort(sorts.get(20), "result", SortOrderEnum.ASC);
+    assertSort(sorts.get(21), "tenantId", SortOrderEnum.ASC);
+    assertSort(sorts.get(22), "timestamp", SortOrderEnum.DESC);
+    assertSort(sorts.get(23), "userTaskKey", SortOrderEnum.ASC);
   }
 
   @Test

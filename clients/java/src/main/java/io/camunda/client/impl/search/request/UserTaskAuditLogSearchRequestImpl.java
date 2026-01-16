@@ -15,9 +15,9 @@
  */
 package io.camunda.client.impl.search.request;
 
+import static io.camunda.client.api.search.request.SearchRequestBuilders.auditLogSort;
 import static io.camunda.client.api.search.request.SearchRequestBuilders.searchRequestPage;
 import static io.camunda.client.api.search.request.SearchRequestBuilders.userTaskAuditLogFilter;
-import static io.camunda.client.api.search.request.SearchRequestBuilders.userTaskAuditLogSort;
 
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.search.filter.UserTaskAuditLogFilter;
@@ -26,7 +26,7 @@ import io.camunda.client.api.search.request.SearchRequestPage;
 import io.camunda.client.api.search.request.UserTaskAuditLogSearchRequest;
 import io.camunda.client.api.search.response.AuditLogResult;
 import io.camunda.client.api.search.response.SearchResponse;
-import io.camunda.client.api.search.sort.UserTaskAuditLogSort;
+import io.camunda.client.api.search.sort.AuditLogSort;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.search.response.SearchResponseMapper;
@@ -87,16 +87,16 @@ public class UserTaskAuditLogSearchRequestImpl
   }
 
   @Override
-  public UserTaskAuditLogSearchRequest sort(final UserTaskAuditLogSort value) {
+  public UserTaskAuditLogSearchRequest sort(final AuditLogSort value) {
     request.setSort(
-        SearchRequestSortMapper.toUserTaskAuditLogSearchQuerySortRequest(
+        SearchRequestSortMapper.toAuditLogSearchQuerySortRequest(
             provideSearchRequestProperty(value)));
     return this;
   }
 
   @Override
-  public UserTaskAuditLogSearchRequest sort(final Consumer<UserTaskAuditLogSort> fn) {
-    return sort(userTaskAuditLogSort(fn));
+  public UserTaskAuditLogSearchRequest sort(final Consumer<AuditLogSort> fn) {
+    return sort(auditLogSort(fn));
   }
 
   @Override
