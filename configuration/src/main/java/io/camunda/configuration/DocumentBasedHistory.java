@@ -8,6 +8,7 @@
 package io.camunda.configuration;
 
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
+import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration.ProcessInstanceRetentionMode;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Set;
@@ -17,6 +18,8 @@ public class DocumentBasedHistory {
   public static final Duration DEFAULT_HISTORY_MAX_DELAY_BETWEEN_RUNS = Duration.ofMillis(60000);
   private static final Duration DEFAULT_HISTORY_DELAY_BETWEEN_RUNS = Duration.ofMillis(2000);
   private static final boolean DEFAULT_HISTORY_PROCESS_INSTANCE_ENABLED = true;
+  private static final ProcessInstanceRetentionMode
+      DEFAULT_HISTORY_PROCESS_INSTANCE_RETENTION_MODE = ProcessInstanceRetentionMode.PI_HIERARCHY;
   private static final String DEFAULT_HISTORY_POLICY_NAME = "camunda-retention-policy";
   private static final String DEFAULT_HISTORY_ELS_ROLLOVER_DATE_FORMAT = "date";
   private static final String DEFAULT_HISTORY_ROLLOVER_INTERVAL = "1d";
@@ -26,6 +29,8 @@ public class DocumentBasedHistory {
       Map.of(
           "process-instance-enabled",
           "zeebe.broker.exporters.camundaexporter.args.history.process-instance-enabled",
+          "process-instance-retention-mode",
+          "zeebe.broker.exporters.camundaexporter.args.history.processInstanceRetentionMode",
           "els-rollover-date-format",
           "zeebe.broker.exporters.camundaexporter.args.history.elsRolloverDateFormat",
           "rollover-interval",
@@ -41,6 +46,9 @@ public class DocumentBasedHistory {
   private final String prefix;
 
   private boolean processInstanceEnabled = DEFAULT_HISTORY_PROCESS_INSTANCE_ENABLED;
+
+  private ProcessInstanceRetentionMode processInstanceRetentionMode =
+      DEFAULT_HISTORY_PROCESS_INSTANCE_RETENTION_MODE;
 
   /** Date format for historical indices in Java DateTimeFormatter syntax */
   private String elsRolloverDateFormat = DEFAULT_HISTORY_ELS_ROLLOVER_DATE_FORMAT;
@@ -81,6 +89,20 @@ public class DocumentBasedHistory {
 
   public void setProcessInstanceEnabled(final boolean processInstanceEnabled) {
     this.processInstanceEnabled = processInstanceEnabled;
+  }
+
+  public ProcessInstanceRetentionMode getProcessInstanceRetentionMode() {
+    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+        prefix + ".process-instance-retention-mode",
+        processInstanceRetentionMode,
+        ProcessInstanceRetentionMode.class,
+        BackwardsCompatibilityMode.SUPPORTED,
+        Set.of(LEGACY_BROKER_PROPERTIES.get("process-instance-retention-mode")));
+  }
+
+  public void setProcessInstanceRetentionMode(
+      final ProcessInstanceRetentionMode processInstanceRetentionMode) {
+    this.processInstanceRetentionMode = processInstanceRetentionMode;
   }
 
   public String getPrefix() {
