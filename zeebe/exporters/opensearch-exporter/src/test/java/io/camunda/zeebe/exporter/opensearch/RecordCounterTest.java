@@ -23,9 +23,7 @@ import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
 import io.camunda.zeebe.util.VersionUtil;
 import java.io.IOException;
@@ -62,8 +60,6 @@ public class RecordCounterTest {
     exporter.open(controller);
     final Record mockRecord = mock(Record.class);
     final var valueType = ValueType.PROCESS_INSTANCE;
-    when(mockRecord.getRecordType()).thenReturn(RecordType.EVENT);
-    when(mockRecord.getIntent()).thenReturn(mock(Intent.class));
     when(mockRecord.getValueType()).thenReturn(valueType);
     when(mockRecord.getBrokerVersion()).thenReturn(VersionUtil.getVersionLowerCase());
 
@@ -87,8 +83,6 @@ public class RecordCounterTest {
     exporter.open(controller);
     final Record mockRecord = mock(Record.class);
     final var valueType = ValueType.PROCESS_INSTANCE;
-    when(mockRecord.getRecordType()).thenReturn(RecordType.EVENT);
-    when(mockRecord.getIntent()).thenReturn(mock(Intent.class));
     when(mockRecord.getValueType()).thenReturn(valueType);
     when(mockRecord.getBrokerVersion()).thenReturn(VersionUtil.getVersionLowerCase());
 
@@ -111,8 +105,6 @@ public class RecordCounterTest {
     exporter.open(controller);
     final Record mockRecord = mock(Record.class);
     final var valueType = ValueType.PROCESS_INSTANCE;
-    when(mockRecord.getRecordType()).thenReturn(RecordType.EVENT);
-    when(mockRecord.getIntent()).thenReturn(mock(Intent.class));
     when(mockRecord.getValueType()).thenReturn(valueType);
     when(mockRecord.getBrokerVersion()).thenReturn(VersionUtil.getVersionLowerCase());
 
@@ -138,8 +130,6 @@ public class RecordCounterTest {
     exporter.open(controller);
     final Record mockRecord = mock(Record.class);
     final var valueType = ValueType.PROCESS_INSTANCE;
-    when(mockRecord.getRecordType()).thenReturn(RecordType.EVENT);
-    when(mockRecord.getIntent()).thenReturn(mock(Intent.class));
     when(mockRecord.getValueType()).thenReturn(valueType);
     when(mockRecord.getBrokerVersion()).thenReturn(VersionUtil.getVersionLowerCase());
 
@@ -163,8 +153,6 @@ public class RecordCounterTest {
     exporter.open(controller);
     final Record mockRecord = mock(Record.class);
     final var valueType = ValueType.PROCESS_INSTANCE;
-    when(mockRecord.getRecordType()).thenReturn(RecordType.EVENT);
-    when(mockRecord.getIntent()).thenReturn(mock(Intent.class));
     when(mockRecord.getValueType()).thenReturn(valueType);
     when(mockRecord.getBrokerVersion()).thenReturn(VersionUtil.getVersionLowerCase());
 
@@ -196,8 +184,6 @@ public class RecordCounterTest {
     exporter.open(controller);
     final Record mockRecord = mock(Record.class);
     final var valueType = ValueType.PROCESS_INSTANCE;
-    when(mockRecord.getRecordType()).thenReturn(RecordType.EVENT);
-    when(mockRecord.getIntent()).thenReturn(mock(Intent.class));
     when(mockRecord.getValueType()).thenReturn(valueType);
     when(mockRecord.getBrokerVersion()).thenReturn(VersionUtil.getVersionLowerCase());
 
@@ -231,10 +217,6 @@ public class RecordCounterTest {
     final Record mockRecord1 = mock(Record.class);
     final Record mockRecord2 = mock(Record.class);
     final var valueType = ValueType.PROCESS_INSTANCE;
-    when(mockRecord1.getRecordType()).thenReturn(RecordType.EVENT);
-    when(mockRecord1.getIntent()).thenReturn(mock(Intent.class));
-    when(mockRecord2.getRecordType()).thenReturn(RecordType.EVENT);
-    when(mockRecord2.getIntent()).thenReturn(mock(Intent.class));
     when(mockRecord1.getValueType()).thenReturn(valueType);
     when(mockRecord2.getValueType()).thenReturn(valueType);
     when(mockRecord1.getBrokerVersion()).thenReturn(VersionUtil.getVersionLowerCase());
@@ -263,8 +245,6 @@ public class RecordCounterTest {
     exporter.configure(context);
     exporter.open(controller);
     final Record mockRecord = mock(Record.class);
-    when(mockRecord.getRecordType()).thenReturn(RecordType.EVENT);
-    when(mockRecord.getIntent()).thenReturn(mock(Intent.class));
     when(mockRecord.getValueType()).thenReturn(ValueType.PROCESS_INSTANCE);
     when(mockRecord.getBrokerVersion()).thenReturn(VersionUtil.getVersionLowerCase());
     when(client.shouldFlush()).thenReturn(true);
