@@ -117,7 +117,7 @@ public class LinkEventDefinitionTest {
         .contains("Element: Gateway_")
         .contains("ERROR: Event-based gateway must have at least 2 outgoing sequence flows.")
         .contains(
-            "ERROR: Event-based gateway must not have an outgoing sequence flow to other elements than message/timer/signal intermediate catch events.");
+            "ERROR: Event-based gateway must not have an outgoing sequence flow to other elements than message/timer/signal/conditional intermediate catch events.");
   }
 
   @Test
