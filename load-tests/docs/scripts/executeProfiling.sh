@@ -36,6 +36,16 @@ fi
 
 # Run profiling
 filename=flamegraph-$(date +%Y-%m-%d_%H-%M-%S).html
+# Extracting the PID:
+#
+#  $ k exec camunda-0 -it -- ps -ax
+#    PID TTY      STAT   TIME COMMAND
+#      1 ?        Ssl  570:26 /usr/lib/jvm/default-jvm/bin/java -XX:+ExitOnOutOfM
+#   5905 pts/0    Rs+    0:00 ps -ax
+#
+#   As we want to find the PID of the Java process we can use awk
+#   to check the fifth input whether it contains "/java/"
+#   If so we return the first input, which is the PID
 PID=$(kubectl exec "$node" -- ps -ax | awk '$5 ~ /java/ {print $1}')
 kubectl exec "$node" -- ./data/asprof -e itimer -d 100 -t -f "$containerPath/$filename" --libpath "$containerPath/libasyncProfiler.so" "$PID"
 
