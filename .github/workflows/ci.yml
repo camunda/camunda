@@ -317,7 +317,7 @@ jobs:
             echo "it_engine=${IT_ENGINE}"
           } >> "$GITHUB_OUTPUT"
 
-  # Runs unit tests for all modules that are not Operate, Optimize, Tasklist, or Zeebe. This test will run any new modules that are added and are not included in setup-unit-tests
+  # Runs unit tests for all modules that are not Operate, Optimize, Tasklist, or Zeebe. This test will run any new modules that are added and are not included in setup-tests
   general-unit-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     name: "General / Unit - Back End"
