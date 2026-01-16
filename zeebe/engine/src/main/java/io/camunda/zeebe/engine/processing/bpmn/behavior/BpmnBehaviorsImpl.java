@@ -121,7 +121,11 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
                 processVariableContext, namespaceFullClusterContext),
             config.getExpressionEvaluationTimeout());
 
-    expressionBehavior = new ExpressionBehavior(namespaceFullClusterContext, expressionLanguage);
+    expressionBehavior =
+        new ExpressionBehavior(
+            namespaceFullClusterContext,
+            expressionLanguage,
+            config.getExpressionEvaluationTimeout());
 
     conditionalBehavior =
         new BpmnConditionalBehavior(
