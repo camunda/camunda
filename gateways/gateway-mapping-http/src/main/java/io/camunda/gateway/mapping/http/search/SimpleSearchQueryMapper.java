@@ -32,7 +32,6 @@ import io.camunda.service.exception.ServiceError;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.Stream;
 
 /**
@@ -53,10 +52,10 @@ public class SimpleSearchQueryMapper {
       return new LimitPagination();
     }
     // validate fields
-    if (page.getFrom() == null
-        && page.getBefore() == null
-        && page.getAfter() == null
-        && page.getLimit() == null) {
+    if (isEmpty(page.getLimit())
+        && isEmpty(page.getBefore())
+        && isEmpty(page.getAfter())
+        && isEmpty(page.getFrom())) {
       throw new ServiceException(
           new ServiceError(
               ERROR_MESSAGE_AT_LEAST_ONE_FIELD.formatted(
@@ -65,7 +64,7 @@ public class SimpleSearchQueryMapper {
               Status.INVALID_ARGUMENT));
     }
     if (Stream.of(page.getFrom(), page.getBefore(), page.getAfter())
-            .filter(not(Objects::isNull))
+            .filter(not(SimpleSearchQueryMapper::isEmpty))
             .count()
         > 1) {
       throw new ServiceException(
@@ -75,16 +74,26 @@ public class SimpleSearchQueryMapper {
               Status.INVALID_ARGUMENT));
     }
     // create page request
-    if (page.getBefore() != null) {
+    if (!isEmpty(page.getBefore())) {
       return new CursorBackwardPagination().before(page.getBefore()).limit(page.getLimit());
     }
-    if (page.getAfter() != null) {
+    if (!isEmpty(page.getAfter())) {
       return new CursorForwardPagination().after(page.getAfter()).limit(page.getLimit());
     }
-    if (page.getFrom() != null) {
+    if (!isEmpty(page.getFrom())) {
       return new OffsetPagination().from(page.getFrom()).limit(page.getLimit());
     }
     return new LimitPagination().limit(page.getLimit());
+  }
+
+  private static boolean isEmpty(final Object value) {
+    if (value == null) {
+      return true;
+    }
+    if (value instanceof final String str) {
+      return str.isBlank();
+    }
+    return false;
   }
 
   public static io.camunda.gateway.protocol.model.IncidentFilter toIncidentFilter(
