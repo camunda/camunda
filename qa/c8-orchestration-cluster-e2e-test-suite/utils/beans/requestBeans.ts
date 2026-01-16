@@ -121,6 +121,13 @@ export const authorizationRequiredFields: string[] = [
   'permissionTypes',
   'authorizationKey',
 ];
+export const authorizationRequiredFieldsWithoutPermissionTypes: string[] = [
+  'ownerId',
+  'ownerType',
+  'resourceType',
+  'resourceId',
+  'authorizationKey',
+];
 export const userRequiredFields: string[] = ['username', 'name', 'email'];
 export const decisionDefinitionRequiredFields: string[] = [
   'decisionDefinitionId',

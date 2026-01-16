@@ -43,6 +43,8 @@ export {
   createComponentAuthorization,
   grantUserResourceAuthorization,
   cleanupAuthorizations,
+  expectAuthorizationCanBeFound,
+  verifyAuthorizationFields,
 } from './authorization-requestHelpers';
 export {assertRoleInResponse} from './role-requestHelpers';
 export {assertClientsInResponse} from './clients-requestHelpers';

@@ -23,16 +23,12 @@ import {
 } from '../../../../utils/http';
 import {defaultAssertionOptions, generateUniqueId} from '../../../../utils/constants';
 import {cleanupUsers} from '../../../../utils/usersCleanup';
-import {createUser, grantUserResourceAuthorization, createComponentAuthorization, createRole, createGroup, createMappingRule} from '@requestHelpers';
+import {createUser, grantUserResourceAuthorization, createComponentAuthorization, createRole, createGroup, createMappingRule, expectAuthorizationCanBeFound, verifyAuthorizationFields} from '@requestHelpers';
 import {validateResponse} from '../../../../json-body-assertions';
 import {
   CREATE_CUSTOM_AUTHORIZATION_BODY,
-  authorizationRequiredFields,
-  authorizedComponentRequiredFields,
 } from '../../../../utils/beans/requestBeans';
-import { create } from 'domain';
 import { waitForAssertion } from 'utils/waitForAssertion';
-import { sleep } from 'utils/sleep';
 import { cleanupRoles } from 'utils/rolesCleanup';
 import { cleanupGroups } from 'utils/groupsCleanup';
 import { cleanupMappingRules } from 'utils/mappingRuleCleanup';
@@ -47,77 +43,30 @@ type Authorization = {
 };
 
 test.describe.parallel('Update Authorization API', () => {
+    const cleanups: (() => Promise<void>)[] = [];
+    let authorizationKeys: Map<string, string> = new Map();
+
+  test.afterAll(async () => {
+    for (const cleanup of cleanups) {
+        await cleanup();
+    }
+  });
+
+  test('Update User Authorization - additional permissionType - success', async ({request}) => { 
     let user: {
         username: string;
         name: string;
         email: string;
         password: string;
     };
-    let authorizationKeys: Map<string, string> = new Map();
-    let originalUserAuthorization: Authorization;
-// const uid = generateUniqueId();
-    let originalRole: {
-        roleId: string,
-        name: string,
-        description: string,
-    };
-    let originalRoleAuthorization: Authorization;
-    let originalGroup: {
-        groupId: string;
-        name: string;
-        description: string;
-    };
-    let newGroupForAuthorization: {
-        groupId: string;
-        name: string;
-        description: string;
-    };
-    let originalGroupAuthorization: Authorization;
-    let originalMappingRule: {
-        mappingRuleId: string;
-        claimName: string;
-        claimValue: string;
-        name: string;
-    };
-    let newMappingRuleForAuthorization: {
-        mappingRuleId: string;
-        claimName: string;
-        claimValue: string;
-        name: string;
-    };
-    
-        
-  test.beforeAll(async ({request}) => {
+    let originalUserAuthorization: Authorization = {} as Authorization;
     await test.step('Setup - Create user for authorization tests', async () => {
       user = await createUser(request);
       console.log('Created user with username:', user.username);
-    });
-
-    await test.step('Setup - Create role for Authorization tests', async () => {
-        originalRole = await createRole(request);
-        console.log('Created role with roleId:', originalRole.roleId);
-    });
-
-    await test.step('Setup - Create group for Authorization tests', async () => {
-        originalGroup = await createGroup(request);
-        console.log('Created group with groupId:', originalGroup.groupId);
-
-        newGroupForAuthorization = await createGroup(request);
-        console.log('Created new group with groupId:', newGroupForAuthorization.groupId);
-    });
-
-    await test.step('Setup - Create Mapping Rule for Authorization tests', async () => {
-        originalMappingRule = await createMappingRule(request);
-        console.log(
-            'Created Mapping Rule with mappingRuleId:',
-            originalMappingRule.mappingRuleId,
-        );
-
-        newMappingRuleForAuthorization = await createMappingRule(request);
-        console.log(
-            'Created new Mapping Rule with mappingRuleId:',
-            newMappingRuleForAuthorization.mappingRuleId,
-        );
+        cleanups.push(async () => {
+            console.log('>>>>>>>> Deleting user with username:', user.username);
+            await cleanupUsers(request, [user.username]);
+        });
     });
 
     await test.step('Setup - Grant user necessary authorizations', async () => {
@@ -127,67 +76,6 @@ test.describe.parallel('Update Authorization API', () => {
         originalUserAuthorization = authorizationBody;
     });
 
-    await test.step('Setup - Grant created role authorization', async () => {
-        const roleAuthorizationBody = CREATE_CUSTOM_AUTHORIZATION_BODY(originalRole.roleId, 'ROLE', '*', 'USER', ['DELETE']);
-        const roleAuthorizationKey = await createComponentAuthorization(request, roleAuthorizationBody);
-        authorizationKeys.set('roleAuthorization', roleAuthorizationKey);
-        originalRoleAuthorization = roleAuthorizationBody;
-    });
-
-    await test.step('Setup - Grant created group authorization', async () => {
-        const groupAuthorizationBody = CREATE_CUSTOM_AUTHORIZATION_BODY(originalGroup.groupId, 'GROUP', '*', 'TENANT', ['UPDATE']);
-        const groupAuthorizationKey = await createComponentAuthorization(request, groupAuthorizationBody);
-        authorizationKeys.set('groupAuthorization', groupAuthorizationKey);
-        originalGroupAuthorization = groupAuthorizationBody;
-    });
-
-    await test.step('Setup - Grant created mapping rule authorization', async () => {
-        const mappingRuleAuthorizationBody = CREATE_CUSTOM_AUTHORIZATION_BODY(originalMappingRule.mappingRuleId, 'MAPPING_RULE', '*', 'GROUP', ['CREATE']);
-        const mappingRuleAuthorizationKey = await createComponentAuthorization(request, mappingRuleAuthorizationBody);
-        authorizationKeys.set('mappingRuleAuthorization', mappingRuleAuthorizationKey);
-        originalGroupAuthorization = mappingRuleAuthorizationBody;
-    });
-  });
-
-  test.afterAll(async ({request}) => {
-    await test.step(
-      'Teardown - Delete user with username ' +
-        user.username +
-        ' created for Authorization tests',
-      async () => {
-        await cleanupUsers(request, [user.username]);
-      },
-    );
-
-    await test.step(
-        'Teardown - Delete role with roleId ' +
-        originalRole.roleId +
-        ' created for Authorization tests',
-        async () => {
-        await cleanupRoles(request, [originalRole.roleId]);
-        },
-    );
-
-    await test.step(
-        'Teardown - Delete group with groupId ' +
-        originalGroup.groupId + ' and ' + newGroupForAuthorization.groupId +
-        ' created for Authorization tests',
-        async () => {
-        await cleanupGroups(request, [originalGroup.groupId, newGroupForAuthorization.groupId]);
-        },
-    );
-
-    await test.step(
-        'Teardown - Delete Mapping Rule with mappingRuleId ' +
-        newMappingRuleForAuthorization.mappingRuleId + ' and ' + originalMappingRule.mappingRuleId +
-        ' created for Authorization tests',
-        async () => {
-        await cleanupMappingRules(request, [newMappingRuleForAuthorization.mappingRuleId, originalMappingRule.mappingRuleId]);
-        },
-    );
-  });
-
-  test('Update User Authorization - additional permissionType - success', async ({request}) => { 
     const updatedUserAuthorization = {
         ...originalUserAuthorization,
         permissionTypes: ['READ', 'UPDATE'],
@@ -203,32 +91,69 @@ test.describe.parallel('Update Authorization API', () => {
         expect(authRes.status()).toBe(204);
     });
 
+    await test.step('Poll authorization', async () => {
+        await expectAuthorizationCanBeFound(request, authorizationKeys.get('userAuthorization') as string);
+    });
+
     await test.step('Verify updated authorization', async () => {
         const expectedUserAuthorization = {...updatedUserAuthorization, authorizationKey: authorizationKeys.get('userAuthorization')};
-        let getAuthRes = await request.get(buildUrl(`/authorizations/${expectedUserAuthorization.authorizationKey}`), {
-            headers: jsonHeaders(),
-        });
-        let authBody = await getAuthRes.json();
-        
 
-        await waitForAssertion({
-            assertion: async () => {
-                expect(getAuthRes.status()).toBe(200);
-                assertRequiredFields(authBody, authorizationRequiredFields);
-                assertEqualsForKeys(authBody, expectedUserAuthorization, authorizationRequiredFields);
-            },
-            onFailure: async () => {
-                getAuthRes = await request.get(buildUrl(`/authorizations/${expectedUserAuthorization.authorizationKey}`), {
-                    headers: jsonHeaders(),
-                });
-                authBody = await getAuthRes.json();
-            },
-            maxRetries: 100,
-        });
+        await expect(async () => {
+            const getAuthRes = await request.get(buildUrl(`/authorizations/${expectedUserAuthorization.authorizationKey}`), {
+                headers: jsonHeaders(),
+            });
+            expect(getAuthRes.status()).toBe(200);
+
+            const authBody = await getAuthRes.json();
+            verifyAuthorizationFields(authBody, expectedUserAuthorization);
+        }).toPass(defaultAssertionOptions);
     });
   });
 
-  test('Update Role Authorization - change resourceId - bad request', async ({request}) => {
+  test('Update Role Authorization - change resourceId - success', async ({request}) => {
+    let user: {
+        username: string;
+        name: string;
+        email: string;
+        password: string;
+    } = {} as {
+        username: string;
+        name: string;
+        email: string;
+        password: string;
+    };
+    let originalRole: {
+        roleId: string,
+        name: string,
+        description: string,
+    };
+    let originalRoleAuthorization: Authorization = {} as Authorization;
+
+    await test.step('Setup - Create role for Authorization tests', async () => {
+        originalRole = await createRole(request);
+        console.log('Created role with roleId:', originalRole.roleId);
+        cleanups.push(async () => {
+            console.log('>>>>>>>> Deleting role with roleId:', originalRole.roleId);
+            await cleanupRoles(request, [originalRole.roleId]);
+        });
+    });
+
+    await test.step('Setup - Create user for authorization tests', async () => {
+      user = await createUser(request);
+      console.log('Created user with username:', user.username);
+        cleanups.push(async () => {
+            console.log('>>>>>>>> Deleting user with username:', user.username);
+            await cleanupUsers(request, [user.username]);
+        });
+    });
+
+    await test.step('Setup - Grant created role authorization', async () => {
+        const roleAuthorizationBody = CREATE_CUSTOM_AUTHORIZATION_BODY(originalRole.roleId, 'ROLE', '*', 'USER', ['DELETE']);
+        const roleAuthorizationKey = await createComponentAuthorization(request, roleAuthorizationBody);
+        authorizationKeys.set('roleAuthorization', roleAuthorizationKey);
+        originalRoleAuthorization = roleAuthorizationBody;
+    });
+
     const updatedRoleAuthorization = {
         ...originalRoleAuthorization,
         resourceId: `${user.username}`,
@@ -244,35 +169,75 @@ test.describe.parallel('Update Authorization API', () => {
         expect(authRes.status()).toBe(204);
     });
 
+    await test.step('Poll authorization', async () => {
+        await expectAuthorizationCanBeFound(request, authorizationKeys.get('roleAuthorization') as string);
+    });
+
     await test.step('Verify updated authorization', async () => {
         const expectedRoleAuthorization = {...updatedRoleAuthorization, authorizationKey: authorizationKeys.get('roleAuthorization')};
-        let getAuthRes = await request.get(buildUrl(`/authorizations/${expectedRoleAuthorization.authorizationKey}`), {
-            headers: jsonHeaders(),
-        });
-        let authBody = await getAuthRes.json();
-        
-        await waitForAssertion({
-            assertion: async () => {
-                expect(getAuthRes.status()).toBe(200);
-                assertRequiredFields(authBody, authorizationRequiredFields);
-                assertEqualsForKeys(authBody, expectedRoleAuthorization, authorizationRequiredFields);
-            },
-            onFailure: async () => {
-                getAuthRes = await request.get(buildUrl(`/authorizations/${expectedRoleAuthorization.authorizationKey}`), {
-                    headers: jsonHeaders(),
-                });
-                authBody = await getAuthRes.json();
-            },
-            maxRetries: 100,
-        });
+        await expect(async () => {
+            const getAuthRes = await request.get(buildUrl(`/authorizations/${expectedRoleAuthorization.authorizationKey}`), {
+                headers: jsonHeaders(),
+            });
+            expect(getAuthRes.status()).toBe(200);
+
+            const authBody = await getAuthRes.json();
+            verifyAuthorizationFields(authBody, expectedRoleAuthorization);
+        }).toPass(defaultAssertionOptions);
     });
   });
 
-  test('Update Group Authorization - change ownerId to another group - success', async ({request}) => {
+    test('Update Group Authorization - change ownerId to another group - success', async ({request}) => {
+    let originalGroup: {
+        groupId: string;
+        name: string;
+        description: string;
+    };
+    let newGroupForAuthorization: {
+        groupId: string;
+        name: string;
+        description: string;
+    } = {} as {
+        groupId: string;
+        name: string;
+        description: string;
+    };
+    let originalGroupAuthorization: Authorization = {} as Authorization;
+
+    await test.step('Setup - Create group for Authorization tests', async () => {
+        originalGroup = await createGroup(request);
+        console.log('Created group with groupId:', originalGroup.groupId);
+        cleanups.push(async () => {
+            console.log('>>>>>>>> Deleting group with groupId:', originalGroup.groupId);
+            await cleanupGroups(request, [originalGroup.groupId]);
+        });
+
+        newGroupForAuthorization = await createGroup(request);
+        console.log('Created new group with groupId:', newGroupForAuthorization.groupId);
+        cleanups.push(async () => {
+            console.log('>>>>>>>> Deleting group with groupId:', newGroupForAuthorization.groupId);
+            await cleanupGroups(request, [newGroupForAuthorization.groupId]);
+        });
+    });
+
+    await test.step('Setup - Grant created group authorization', async () => {
+        const groupAuthorizationBody = CREATE_CUSTOM_AUTHORIZATION_BODY(originalGroup.groupId, 'GROUP', '*', 'TENANT', ['UPDATE']);
+        const groupAuthorizationKey = await createComponentAuthorization(request, groupAuthorizationBody);
+        authorizationKeys.set('groupAuthorization', groupAuthorizationKey);
+        originalGroupAuthorization = groupAuthorizationBody;
+    });
+    
     const updatedGroupAuthorization = {
         ...originalGroupAuthorization,
         ownerId: newGroupForAuthorization.groupId,
     };
+
+    await test.step('Poll authorization', async () => {
+        await expectAuthorizationCanBeFound(request, authorizationKeys.get('groupAuthorization') as string);
+    });
+
+    console.log('Original Group Authorization:', originalGroupAuthorization);
+    console.log('Updated Group Authorization:', updatedGroupAuthorization);
 
     await test.step('Update group authorization to new group ownerId', async () => {
         const authRes = await request.put(buildUrl(`/authorizations/${authorizationKeys.get('groupAuthorization')}`), {
@@ -284,33 +249,106 @@ test.describe.parallel('Update Authorization API', () => {
         expect(authRes.status()).toBe(204);
     });
 
+    await test.step('Poll authorization', async () => {
+        await expectAuthorizationCanBeFound(request, authorizationKeys.get('groupAuthorization') as string);
+    });
+
     await test.step('Verify updated authorization', async () => {
         const expectedGroupAuthorization = {...updatedGroupAuthorization, authorizationKey: authorizationKeys.get('groupAuthorization')};
-        let getAuthRes = await request.get(buildUrl(`/authorizations/${expectedGroupAuthorization.authorizationKey}`), {
-            headers: jsonHeaders(),
-        });
-        let authBody = await getAuthRes.json();
-        
         await waitForAssertion({
             assertion: async () => {
-                expect(getAuthRes.status()).toBe(200);
-                assertRequiredFields(authBody, authorizationRequiredFields);
-                assertEqualsForKeys(authBody, expectedGroupAuthorization, authorizationRequiredFields);
-            },
-            onFailure: async () => {
-                getAuthRes = await request.get(buildUrl(`/authorizations/${expectedGroupAuthorization.authorizationKey}`), {
+                const getAuthRes = await request.get(buildUrl(`/authorizations/${expectedGroupAuthorization.authorizationKey}`), {
                     headers: jsonHeaders(),
                 });
-                authBody = await getAuthRes.json();
+                expect(getAuthRes.status()).toBe(200);
+
+                const authBody = await getAuthRes.json();
+                await verifyAuthorizationFields(authBody, expectedGroupAuthorization);
             },
-            maxRetries: 100,
+            onFailure: async () => {
+                
+            },
+            maxRetries: 10,
         });
+        
     });
   });
 
   test('Update Authorization - change ownerId, resourceId and permissionType - success', async ({request}) => {
+    let originalMappingRule: {
+        mappingRuleId: string;
+        claimName: string;
+        claimValue: string;
+        name: string;
+    };
+    let originalMappingRuleAuthorization: Authorization = {} as Authorization;
+    let newMappingRuleForAuthorization: {
+        mappingRuleId: string;
+        claimName: string;
+        claimValue: string;
+        name: string;
+    } = {} as {
+        mappingRuleId: string;
+        claimName: string;
+        claimValue: string;
+        name: string;
+    };
+    let originalGroup: {
+        groupId: string;
+        name: string;
+        description: string;
+    } = {} as {
+        groupId: string;
+        name: string;
+        description: string;
+    };
+
+    await test.step('Setup - Create group for Authorization tests', async () => {
+        originalGroup = await createGroup(request);
+        console.log('Created group with groupId:', originalGroup.groupId);
+        cleanups.push(async () => {
+            console.log('>>>>>>>> Deleting group with groupId:', originalGroup.groupId);
+            await cleanupGroups(request, [originalGroup.groupId]);
+        });
+    });
+
+    await test.step('Setup - Create Mapping Rule for Authorization tests', async () => {
+        originalMappingRule = await createMappingRule(request);
+        console.log(
+            'Created Mapping Rule with mappingRuleId:',
+            originalMappingRule.mappingRuleId,
+        );
+        cleanups.push(async () => {
+            console.log(
+                '>>>>>>>> Deleting Mapping Rule with mappingRuleId:',
+                originalMappingRule.mappingRuleId,
+            );
+            await cleanupMappingRules(request, [originalMappingRule.mappingRuleId]);
+        });
+
+        newMappingRuleForAuthorization = await createMappingRule(request);
+        console.log(
+            'Created new Mapping Rule with mappingRuleId:',
+            newMappingRuleForAuthorization.mappingRuleId,
+        );
+        cleanups.push(async () => {
+            console.log(
+                '>>>>>>>> Deleting Mapping Rule with mappingRuleId:',
+                newMappingRuleForAuthorization.mappingRuleId,
+            );
+            await cleanupMappingRules(request, [newMappingRuleForAuthorization.mappingRuleId]);
+        });
+    });
+
+    await test.step('Setup - Grant created mapping rule authorization', async () => {
+        const mappingRuleAuthorizationBody = CREATE_CUSTOM_AUTHORIZATION_BODY(originalMappingRule.mappingRuleId, 'MAPPING_RULE', '*', 'GROUP', ['CREATE']);
+        const mappingRuleAuthorizationKey = await createComponentAuthorization(request, mappingRuleAuthorizationBody);
+        authorizationKeys.set('mappingRuleAuthorization', mappingRuleAuthorizationKey);
+        originalMappingRuleAuthorization = mappingRuleAuthorizationBody;
+    });
+    
     const updatedMappingRuleAuthorization = {
-        ...originalGroupAuthorization,
+        ...originalMappingRuleAuthorization,
         ownerId: newMappingRuleForAuthorization.mappingRuleId,
         resourceId: `${originalGroup.groupId}`,
         permissionTypes: ['UPDATE', 'READ'],
@@ -325,27 +363,22 @@ test.describe.parallel('Update Authorization API', () => {
         expect(authRes.status()).toBe(204);
     });
 
+    await test.step('Poll authorization', async () => {
+        await expectAuthorizationCanBeFound(request, authorizationKeys.get('mappingRuleAuthorization') as string);
+    });
+
     await test.step('Verify updated authorization', async () => {
         const expectedMappingRuleAuthorization = {...updatedMappingRuleAuthorization, authorizationKey: authorizationKeys.get('mappingRuleAuthorization')};
-        let getAuthRes = await request.get(buildUrl(`/authorizations/${expectedMappingRuleAuthorization.authorizationKey}`), {
-            headers: jsonHeaders(),
-        });
-        let authBody = await getAuthRes.json();
-        
-        await waitForAssertion({
-            assertion: async () => {
-                expect(getAuthRes.status()).toBe(200);
-                assertRequiredFields(authBody, authorizationRequiredFields);
-                assertEqualsForKeys(authBody, expectedMappingRuleAuthorization, authorizationRequiredFields);
-            },
-            onFailure: async () => {
-                getAuthRes = await request.get(buildUrl(`/authorizations/${expectedMappingRuleAuthorization.authorizationKey}`), {
-                    headers: jsonHeaders(),
-                });
-                authBody = await getAuthRes.json();
-            },
-            maxRetries: 100,
-        });
+        await expect(async () => {
+            const getAuthRes = await request.get(buildUrl(`/authorizations/${expectedMappingRuleAuthorization.authorizationKey}`), {
+                headers: jsonHeaders(),
+            });
+            expect(getAuthRes.status()).toBe(200);
+
+            const authBody = await getAuthRes.json();
+            verifyAuthorizationFields(authBody, expectedMappingRuleAuthorization);
+        }).toPass(defaultAssertionOptions);
     });
   });
+
 });
