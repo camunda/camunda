@@ -27,7 +27,6 @@ import {
 } from './processInstanceDetailsDiagram';
 import {isSubProcess} from 'modules/bpmn-js/utils/isSubProcess';
 import {useHasPendingCancelOrMoveModification} from './flowNodeSelection';
-import {hasEventType} from 'modules/bpmn-js/utils/hasEventType';
 
 type ModificationOption =
   | 'add'
@@ -255,16 +254,6 @@ const useCanBeModified = (elementId?: string) => {
   const {data: businessObjects} = useBusinessObjects();
 
   if (elementId === undefined) {
-    return false;
-  }
-
-  const businessObject = businessObjects?.[elementId];
-
-  // this is temporary until #40960 is implemented
-  if (
-    businessObject &&
-    hasEventType({businessObject, types: ['bpmn:ConditionalEventDefinition']})
-  ) {
     return false;
   }
 

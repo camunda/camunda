@@ -347,4 +347,27 @@ describe('<MoveAction />', () => {
       screen.getByText(/process instance batch move mode/i),
     ).toBeInTheDocument();
   });
+
+  it('should enable move button when conditional event is selected', async () => {
+    mockFetchProcessInstances().withSuccess(mockProcessInstances);
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
+
+    const {user} = render(<MoveAction />, {
+      wrapper: getWrapper(
+        `/processes?process=${PROCESS_ID}&version=1&flowNodeId=ConditionalEvent`,
+      ),
+    });
+
+    await fetchProcessInstances(screen, user);
+
+    const instance = getProcessInstance('ACTIVE', mockProcessInstances);
+
+    act(() => {
+      processInstancesSelectionStore.selectProcessInstance(instance.id);
+    });
+
+    const moveButton = screen.getByRole('button', {name: /move/i});
+
+    expect(moveButton).toBeEnabled();
+  });
 });
