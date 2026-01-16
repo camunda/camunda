@@ -339,7 +339,6 @@ public class RdbmsExporterWrapper implements Exporter {
       final Builder builder,
       final ExporterConfiguration config,
       final int partitionId) {
-
     final Set<AuditLogTransformer<?>> transformers = new HashSet<>();
     transformers.add(new BatchOperationLifecycleManagementAuditLogTransformer());
     transformers.add(new DecisionEvaluationAuditLogTransformer());
