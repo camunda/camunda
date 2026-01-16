@@ -18,15 +18,22 @@ package io.camunda.client.resource.rest;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.protocol.rest.DeleteResourceRequest;
+import io.camunda.client.protocol.rest.DeleteResourceResponse;
 import io.camunda.client.util.ClientRestTest;
 import org.junit.jupiter.api.Test;
 
 public class DeleteResourceRestTest extends ClientRestTest {
 
+  private static final DeleteResourceResponse DUMMY_RESPONSE =
+      new DeleteResourceResponse().resourceKey("1");
+
   @Test
   public void shouldSendCommand() {
+    final long resourceKey = 123L;
+    gatewayService.onDeleteResourceRequest(resourceKey, DUMMY_RESPONSE);
+
     // when
-    client.newDeleteResourceCommand(123).operationReference(1L).send().join();
+    client.newDeleteResourceCommand(resourceKey).operationReference(1L).send().join();
 
     // then
     final DeleteResourceRequest request =
