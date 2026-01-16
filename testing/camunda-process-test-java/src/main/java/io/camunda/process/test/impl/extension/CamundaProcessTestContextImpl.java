@@ -21,6 +21,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.CompleteAdHocSubProcessResultStep1;
+import io.camunda.client.api.command.ThrowErrorCommandStep1;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.search.enums.IncidentState;
 import io.camunda.client.api.search.enums.JobKind;
@@ -317,23 +318,66 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
 
   @Override
   public void throwBpmnErrorFromJob(final String jobType, final String errorCode) {
-    throwBpmnErrorFromJob(jobType, errorCode, Collections.emptyMap());
+    throwBpmnErrorFromJob(JobSelectors.byJobType(jobType), errorCode);
   }
 
   @Override
   public void throwBpmnErrorFromJob(
       final String jobType, final String errorCode, final Map<String, Object> variables) {
+    throwBpmnErrorFromJob(JobSelectors.byJobType(jobType), errorCode, variables);
+  }
+
+  @Override
+  public void throwBpmnErrorFromJob(
+      final String jobType,
+      final String errorCode,
+      final String errorMessage,
+      final Map<String, Object> variables) {
+    throwBpmnErrorFromJob(JobSelectors.byJobType(jobType), errorCode, errorMessage, variables);
+  }
+
+  @Override
+  public void throwBpmnErrorFromJob(final JobSelector jobSelector, final String errorCode) {
+    throwBpmnErrorFromJob(jobSelector, errorCode, Collections.emptyMap());
+  }
+
+  @Override
+  public void throwBpmnErrorFromJob(
+      final JobSelector jobSelector, final String errorCode, final Map<String, Object> variables) {
+    throwBpmnErrorFromJob(jobSelector, errorCode, null, variables);
+  }
+
+  @Override
+  public void throwBpmnErrorFromJob(
+      final JobSelector jobSelector,
+      final String errorCode,
+      final String errorMessage,
+      final Map<String, Object> variables) {
     final CamundaClient client = createClient();
-    final ActivatedJob job = getActivatedJob(jobType, client);
 
-    LOGGER.debug(
-        "Mock: Throw BPMN error [jobType: '{}', jobKey: '{}'] with error code {} and variables {}",
-        jobType,
-        job.getKey(),
-        errorCode,
-        variables);
+    awaitJob(
+        jobSelector,
+        client,
+        job -> {
+          LOGGER.debug(
+              "Mock: Throw BPMN error [{}, jobKey: '{}'] with error code {} and variables {}",
+              jobSelector.describe(),
+              job.getJobKey(),
+              errorCode,
+              variables);
 
-    client.newThrowErrorCommand(job).errorCode(errorCode).variables(variables).send().join();
+          final ThrowErrorCommandStep1.ThrowErrorCommandStep2 command =
+              client
+                  .newThrowErrorCommand(job.getJobKey())
+                  .errorCode(errorCode)
+                  .variables(variables);
+
+          if (errorMessage != null) {
+            command.errorMessage(errorMessage);
+          }
+
+          command.send().join();
+        });
   }
 
   @Override

@@ -58,6 +58,7 @@ import io.camunda.process.test.api.dsl.instructions.ImmutableMockJobWorkerComple
 import io.camunda.process.test.api.dsl.instructions.ImmutableMockJobWorkerThrowBpmnErrorInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutablePublishMessageInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableResolveIncidentInstruction;
+import io.camunda.process.test.api.dsl.instructions.ImmutableThrowBpmnErrorFromJobInstruction;
 import io.camunda.process.test.api.dsl.instructions.assertElementInstance.ElementInstanceState;
 import io.camunda.process.test.api.dsl.instructions.assertElementInstances.ElementInstancesState;
 import io.camunda.process.test.api.dsl.instructions.assertProcessInstance.ProcessInstanceState;
@@ -340,6 +341,27 @@ public class PojoCompatibilityTest {
                             .processDefinitionId("my-process")
                             .elementId("task1")
                             .build())
+                    .build())),
+        // ===== THROW_BPMN_ERROR_FROM_JOB =====
+        Arguments.of(
+            "throw bpmn error from job: minimal",
+            singleTestCase(
+                ImmutableThrowBpmnErrorFromJobInstruction.builder()
+                    .jobSelector(ImmutableJobSelector.builder().jobType("validate-order").build())
+                    .errorCode("invalid")
+                    .build())),
+        Arguments.of(
+            "throw bpmn error from job: full",
+            singleTestCase(
+                ImmutableThrowBpmnErrorFromJobInstruction.builder()
+                    .jobSelector(
+                        ImmutableJobSelector.builder()
+                            .jobType("validate-order")
+                            .elementId("task-1")
+                            .build())
+                    .errorCode("invalid")
+                    .errorMessage("Nope.")
+                    .putVariables("x", 1)
                     .build())),
         // ===== MOCK_CHILD_PROCESS =====
         Arguments.of(

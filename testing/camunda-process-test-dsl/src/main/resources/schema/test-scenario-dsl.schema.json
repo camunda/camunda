@@ -106,6 +106,9 @@
         },
         {
           "$ref": "#/definitions/IncreaseTimeInstruction"
+        },
+        {
+          "$ref": "#/definitions/ThrowBpmnErrorFromJobInstruction"
         }
       ]
     },
@@ -988,6 +991,39 @@
       "required": [
         "type",
         "duration"
+      ],
+      "additionalProperties": false
+    },
+    "ThrowBpmnErrorFromJobInstruction": {
+      "description": "An instruction to throw a BPMN error from a job.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "The type of the instruction.",
+          "type": "string",
+          "const": "THROW_BPMN_ERROR_FROM_JOB"
+        },
+        "jobSelector": {
+          "description": "The selector to identify the job to throw the error from.",
+          "$ref": "#/definitions/JobSelector"
+        },
+        "errorCode": {
+          "description": "The error code to throw.",
+          "type": "string"
+        },
+        "errorMessage": {
+          "description": "The error message to throw. Optional.",
+          "type": "string"
+        },
+        "variables": {
+          "description": "The variables to set when throwing the error. Optional.",
+          "type": "object"
+        }
+      },
+      "required": [
+        "type",
+        "jobSelector",
+        "errorCode"
       ],
       "additionalProperties": false
     }
