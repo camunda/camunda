@@ -711,6 +711,63 @@ public abstract class ElasticsearchUtil {
     return Query.of(q -> q.bool(b -> b.mustNot(query)));
   }
 
+
+  /**
+   * Joins multiple ES8 queries with OR logic. Returns null if no queries provided, single query if
+   * only one provided, or a bool query with should clauses for multiple queries.
+   *
+   * @param queries Queries to join
+   * @return Combined query or null
+   */
+  public static Query joinWithOr(final Query... queries) {
+    final var notNullQueries = throwAwayNullElements(queries);
+
+    if (notNullQueries.isEmpty()) {
+      return null;
+    } else if (notNullQueries.size() == 1) {
+      return notNullQueries.get(0);
+    } else {
+      return Query.of(q -> q.bool(b -> b.should(notNullQueries)));
+    }
+  }
+
+  /**
+   * Creates an ES8 range query builder for the specified field.
+   *
+   * @param field Field name to apply range on
+   * @return A RangeQueryBuilder for chaining range operations
+   */
+  public static RangeQueryBuilder rangeQuery(final String field) {
+    return new RangeQueryBuilder(field);
+  }
+
+  /**
+   * Creates an ES8 script sort option.
+   *
+   * @param scriptSource The inline script source
+   * @param scriptSortType The type of script sort (STRING or NUMBER)
+   * @param sortOrder The sort order
+   * @return SortOptions configured for script sorting
+   */
+  public static SortOptions scriptSort(
+      final String scriptSource,
+      final co.elastic.clients.elasticsearch._types.ScriptSortType scriptSortType,
+      final co.elastic.clients.elasticsearch._types.SortOrder sortOrder) {
+    return SortOptions.of(
+        s ->
+            s.script(
+                sc ->
+                    sc.script(
+                            script ->
+                                script
+                                    .lang(
+                                        co.elastic.clients.elasticsearch._types.ScriptLanguage
+                                            .Painless)
+                                    .source(scriptSource))
+                        .type(scriptSortType)
+                        .order(sortOrder)));
+  }
+
   // ===========================================================================================
   // ES8 Scroll Helper Methods
   // ===========================================================================================
@@ -905,6 +962,76 @@ public abstract class ElasticsearchUtil {
               .map(item -> item.error().reason())
               .collect(Collectors.joining(", "));
       throw new TasklistRuntimeException("Bulk request failed. Errors: " + errorMessages);
+    }
+  }
+
+  /**
+   * Converts an array of search_after values to ES8 FieldValue list for pagination.
+   *
+   * @param searchAfter Array of sort values from previous search result
+   * @return List of FieldValue objects for ES8 searchAfter parameter
+   */
+  public static List<co.elastic.clients.elasticsearch._types.FieldValue> searchAfterToFieldValues(
+      final Object[] searchAfter) {
+    return Arrays.stream(searchAfter)
+        .map(co.elastic.clients.elasticsearch._types.FieldValue::of)
+        .toList();
+  }
+
+  /** Builder class for creating ES8 range queries with a fluent API. */
+  public static class RangeQueryBuilder {
+    private final String field;
+    private Object gt;
+    private Object gte;
+    private Object lt;
+    private Object lte;
+
+    public RangeQueryBuilder(final String field) {
+      this.field = field;
+    }
+
+    public RangeQueryBuilder gt(final Object value) {
+      gt = value;
+      return this;
+    }
+
+    public RangeQueryBuilder gte(final Object value) {
+      gte = value;
+      return this;
+    }
+
+    public RangeQueryBuilder lt(final Object value) {
+      lt = value;
+      return this;
+    }
+
+    public RangeQueryBuilder lte(final Object value) {
+      lte = value;
+      return this;
+    }
+
+    public Query build() {
+      final var untypedBuilder =
+          new co.elastic.clients.elasticsearch._types.query_dsl.UntypedRangeQuery.Builder();
+      untypedBuilder.field(field);
+
+      if (gt != null) {
+        untypedBuilder.gt(co.elastic.clients.json.JsonData.of(gt));
+      }
+      if (gte != null) {
+        untypedBuilder.gte(co.elastic.clients.json.JsonData.of(gte));
+      }
+      if (lt != null) {
+        untypedBuilder.lt(co.elastic.clients.json.JsonData.of(lt));
+      }
+      if (lte != null) {
+        untypedBuilder.lte(co.elastic.clients.json.JsonData.of(lte));
+      }
+
+      return co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders.range()
+          .untyped(untypedBuilder.build())
+          .build()
+          ._toQuery();
     }
   }
 
