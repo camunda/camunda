@@ -106,8 +106,7 @@ import io.camunda.process.test.api.dsl.instructions.ThrowBpmnErrorFromJobInstruc
       name = TestCaseInstructionType.PUBLISH_MESSAGE),
   @JsonSubTypes.Type(
       value = ResolveIncidentInstruction.class,
-      name = TestCaseInstructionType.RESOLVE_INCIDENT)
-      name = TestCaseInstructionType.PUBLISH_MESSAGE),
+      name = TestCaseInstructionType.RESOLVE_INCIDENT),
   @JsonSubTypes.Type(
       value = ThrowBpmnErrorFromJobInstruction.class,
       name = TestCaseInstructionType.THROW_BPMN_ERROR_FROM_JOB)
