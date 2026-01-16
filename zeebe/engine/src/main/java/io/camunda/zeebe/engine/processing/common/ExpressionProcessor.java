@@ -12,6 +12,7 @@ import io.camunda.zeebe.el.EvaluationResult;
 import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.ResultType;
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.expression.CombinedEvaluationContext;
 import io.camunda.zeebe.engine.processing.expression.ScopedEvaluationContext;
 import io.camunda.zeebe.model.bpmn.util.time.Interval;
@@ -50,7 +51,10 @@ public final class ExpressionProcessor {
   public ExpressionProcessor(
       final ExpressionLanguage expressionLanguage,
       final ScopedEvaluationContext scopedEvaluationContext) {
-    this(expressionLanguage, scopedEvaluationContext, Duration.ofSeconds(1));
+    this(
+        expressionLanguage,
+        scopedEvaluationContext,
+        EngineConfiguration.DEFAULT_EXPRESSION_EVALUATION_TIMEOUT);
   }
 
   public ExpressionProcessor(
