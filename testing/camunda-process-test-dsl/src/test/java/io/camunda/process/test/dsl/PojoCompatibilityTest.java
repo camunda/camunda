@@ -53,6 +53,7 @@ import io.camunda.process.test.api.dsl.instructions.ImmutableMockDmnDecisionInst
 import io.camunda.process.test.api.dsl.instructions.ImmutableMockJobWorkerCompleteJobInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableMockJobWorkerThrowBpmnErrorInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutablePublishMessageInstruction;
+import io.camunda.process.test.api.dsl.instructions.ImmutableSetTimeInstruction;
 import io.camunda.process.test.api.dsl.instructions.assertElementInstance.ElementInstanceState;
 import io.camunda.process.test.api.dsl.instructions.assertElementInstances.ElementInstancesState;
 import io.camunda.process.test.api.dsl.instructions.assertProcessInstance.ProcessInstanceState;
@@ -500,7 +501,12 @@ public class PojoCompatibilityTest {
                             .build())
                     .putVariables("input", 100)
                     .putVariables("region", "US")
-                    .build()))
+                    .build())),
+        // ===== SET_TIME =====
+        Arguments.of(
+            "set time",
+            singleTestCase(
+                ImmutableSetTimeInstruction.builder().time("2025-12-01T10:00:00Z").build()))
         // add new instructions here
         );
   }
