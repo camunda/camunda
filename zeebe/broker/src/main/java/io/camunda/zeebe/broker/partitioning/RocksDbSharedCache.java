@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
 
 public class RocksDbSharedCache {
   public static final long MINIMUM_PARTITION_MEMORY_LIMIT = 32 * 1024 * 1024L;
-
+  public static final double ADVICE_MAX_MEMORY_FRACTION = 0.5;
   private static final Logger LOGGER = LoggerFactory.getLogger(RocksDbSharedCache.class);
 
   static SharedRocksDbResources allocateSharedCache(final BrokerCfg brokerCfg) {
@@ -39,7 +39,7 @@ public class RocksDbSharedCache {
 
     return switch (rocksdbCfg.getMemoryAllocationStrategy()) {
       case BROKER -> rocksdbCfg.getMemoryLimit().toBytes();
-      case AUTO -> getFixedMemoryPercentage(rocksdbCfg.getMemoryFraction());
+      case FRACTION -> getFixedMemoryPercentage(rocksdbCfg.getMemoryFraction());
       // in case of PARTITION or null, we allocate per partition
       default -> rocksdbCfg.getMemoryLimit().toBytes() * partitionsCount;
     };
@@ -53,13 +53,20 @@ public class RocksDbSharedCache {
   }
 
   public static void validateRocksDbMemory(final RocksdbCfg rocksdbCfg, final int partitionsCount) {
-    // makes sure that memoryFraction is between [0 and 1] when using AUTO strategy
-    if (rocksdbCfg.getMemoryAllocationStrategy() == MemoryAllocationStrategy.AUTO
-        && (rocksdbCfg.getMemoryFraction() <= 0.0 || rocksdbCfg.getMemoryFraction() >= 1.0)) {
-      throw new IllegalArgumentException(
-          String.format(
-              "Expected the memoryFraction for RocksDB AUTO memory allocation strategy to be between 0 and 1, but was %s.",
-              rocksdbCfg.getMemoryFraction()));
+    // makes sure that memoryFraction is between [0 and 1] when using FRACTION strategy
+    if (rocksdbCfg.getMemoryAllocationStrategy() == MemoryAllocationStrategy.FRACTION) {
+      if (rocksdbCfg.getMemoryFraction() <= 0.0 || rocksdbCfg.getMemoryFraction() >= 1.0) {
+        throw new IllegalArgumentException(
+            String.format(
+                "Expected the memoryFraction for RocksDB FRACTION memory allocation strategy to be between 0 and 1, but was %s.",
+                rocksdbCfg.getMemoryFraction()));
+      }
+
+      if (rocksdbCfg.getMemoryFraction() >= ADVICE_MAX_MEMORY_FRACTION) {
+        LOGGER.warn(
+            "The configured memoryFraction for RocksDB is set to {}, which is quite high and may lead to out of memory issues for the broker.",
+            rocksdbCfg.getMemoryFraction());
+      }
     }
 
     final long blockCacheBytes = getBlockCacheBytes(rocksdbCfg, partitionsCount);

@@ -117,7 +117,7 @@ class RocksDbSharedCacheTest {
     brokerCfg
         .getExperimental()
         .getRocksdb()
-        .setMemoryAllocationStrategy(MemoryAllocationStrategy.AUTO);
+        .setMemoryAllocationStrategy(MemoryAllocationStrategy.FRACTION);
     brokerCfg.getExperimental().getRocksdb().setMemoryFraction(0.15);
     final int partitionsCount = 1;
 
@@ -157,7 +157,7 @@ class RocksDbSharedCacheTest {
       final double fraction = 0.15;
       final long available = RocksDbSharedCache.getFixedMemoryPercentage(fraction);
       // 15% of 512MB
-      final long expectedAvailable = (long) (512L * 1024 * 1024 * fraction);
+      final long expectedAvailable = Math.round(512L * 1024 * 1024 * fraction);
       // Assert
       assertThat(available).isEqualTo(expectedAvailable);
     }
@@ -169,7 +169,7 @@ class RocksDbSharedCacheTest {
     brokerCfg
         .getExperimental()
         .getRocksdb()
-        .setMemoryAllocationStrategy(MemoryAllocationStrategy.AUTO);
+        .setMemoryAllocationStrategy(MemoryAllocationStrategy.FRACTION);
 
     // when fraction > 1
     brokerCfg.getExperimental().getRocksdb().setMemoryFraction(1.1);
@@ -185,7 +185,7 @@ class RocksDbSharedCacheTest {
     assertThat(throwable)
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining(
-            "Expected the memoryFraction for RocksDB AUTO memory allocation strategy to be between 0 and 1, but was %s.",
+            "Expected the memoryFraction for RocksDB FRACTION memory allocation strategy to be between 0 and 1, but was %s.",
             1.1);
 
     // when fraction <= 0
@@ -202,7 +202,7 @@ class RocksDbSharedCacheTest {
     assertThat(throwable)
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining(
-            "Expected the memoryFraction for RocksDB AUTO memory allocation strategy to be between 0 and 1, but was %s.",
+            "Expected the memoryFraction for RocksDB FRACTION memory allocation strategy to be between 0 and 1, but was %s.",
             0.0);
   }
 }

@@ -67,10 +67,18 @@ public class RocksDb {
    * Configures the memory allocation strategy by RocksDB. If set to 'PARTITION', the total memory
    * allocated to RocksDB will be the number of partitions times the configured memory limit. If the
    * value is set to 'BROKER', the total memory allocated to RocksDB will be equal to the configured
-   * memory limit. If set to 'AUTO', Zeebe will allocate the remaining memory available to RocksDB
-   * after accounting for other components, such as the JVM heap and other native memory consumers.
+   * memory limit. If set to 'FRACTION', Zeebe will allocate a configurable percentage of total RAM
+   * to RocksDB that can be configured via the memoryFraction configuration [0,1].
    */
-  private MemoryAllocationStrategy memoryAllocationStrategy = MemoryAllocationStrategy.PARTITION;
+  private MemoryAllocationStrategy memoryAllocationStrategy =
+      MemoryAllocationStrategy.PARTITION;
+
+  /**
+   * Configures the fraction of total system memory to allocate to RocksDB when using the 'FRACTION'
+   * memory allocation strategy. The value must be between 0 and 1 (exclusive). For example, a value
+   * of 0.1 means 10% of total system memory will be allocated to RocksDB.
+   */
+  private double memoryFraction = 0.1;
 
   /**
    * Configures how many files are kept open by RocksDB, per default it is unlimited (-1). This is a
@@ -117,7 +125,7 @@ public class RocksDb {
 
   /**
    * Configures if the RocksDB SST files should be partitioned based on some virtual column
-   * families. By default RocksDB will not partition the SST files, which might have influence on
+   * families. By default, RocksDB will not partition the SST files, which might have influence on
    * the compacting of certain key ranges. Enabling this option gives RocksDB some good hints how to
    * improve compaction and reduce the write amplification. Benchmarks have show impressive results
    * allowing to sustain performance on larger states. This setting will increase the general file
@@ -178,6 +186,14 @@ public class RocksDb {
 
   public void setMemoryAllocationStrategy(final MemoryAllocationStrategy memoryAllocationStrategy) {
     this.memoryAllocationStrategy = memoryAllocationStrategy;
+  }
+
+  public double getMemoryFraction() {
+    return memoryFraction;
+  }
+
+  public void setMemoryFraction(final double memoryFraction) {
+    this.memoryFraction = memoryFraction;
   }
 
   public int getMaxOpenFiles() {
