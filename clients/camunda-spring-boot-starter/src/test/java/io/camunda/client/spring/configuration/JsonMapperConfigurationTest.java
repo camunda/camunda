@@ -22,12 +22,15 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.api.JsonMapper;
+import io.camunda.client.impl.CamundaJackson3ObjectMapper;
+import io.camunda.client.impl.CamundaObjectMapper;
 import io.camunda.client.spring.configuration.JsonMapperConfigurationTest.OverrideObjectMapper.JacksonConfiguration;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.jackson.autoconfigure.JacksonAutoConfiguration;
 import org.springframework.boot.jackson2.autoconfigure.Jackson2AutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
@@ -36,13 +39,36 @@ import org.springframework.context.annotation.Configuration;
 public class JsonMapperConfigurationTest {
 
   @Nested
-  @SpringBootTest(classes = {JsonMapperConfiguration.class, Jackson2AutoConfiguration.class})
-  class Jackson2SpringBoot {
-    @Autowired JsonMapperConfiguration config;
+  @SpringBootTest(classes = {JsonMapperConfiguration.class, JacksonAutoConfiguration.class})
+  class JacksonSpringBoot {
+    @Autowired JsonMapper jsonMapper;
+    @Autowired tools.jackson.databind.ObjectMapper objectMapper;
 
     @Test
     void shouldUseAutoConfiguredObjectMapper() {
-      assertThat(config.objectMapper).isNotNull();
+      assertThat(objectMapper).isNotNull();
+    }
+
+    @Test
+    void shouldUseCamundaJackson3ObjectMapper() {
+      assertThat(jsonMapper).isInstanceOf(CamundaJackson3ObjectMapper.class);
+    }
+  }
+
+  @Nested
+  @SpringBootTest(classes = {JsonMapperConfiguration.class, Jackson2AutoConfiguration.class})
+  class Jackson2SpringBoot {
+    @Autowired com.fasterxml.jackson.databind.ObjectMapper objectMapper;
+    @Autowired JsonMapper jsonMapper;
+
+    @Test
+    void shouldUseAutoConfiguredObjectMapper() {
+      assertThat(objectMapper).isNotNull();
+    }
+
+    @Test
+    void shouldUseCamundaJackson2ObjectMapper() {
+      assertThat(jsonMapper).isInstanceOf(CamundaObjectMapper.class);
     }
   }
 
