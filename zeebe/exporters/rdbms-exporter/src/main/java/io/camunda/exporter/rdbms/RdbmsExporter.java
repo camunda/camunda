@@ -24,7 +24,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -400,7 +400,7 @@ public final class RdbmsExporter {
     private int queueSize;
     private RdbmsWriters rdbmsWriters;
     private RdbmsSchemaManager rdbmsSchemaManager;
-    private Map<ValueType, List<RdbmsExportHandler>> handlers = new HashMap<>();
+    private Map<ValueType, List<RdbmsExportHandler>> handlers = new EnumMap<>(ValueType.class);
     private HistoryCleanupService historyCleanupService;
     private HistoryDeletionService historyDeletionService;
 
