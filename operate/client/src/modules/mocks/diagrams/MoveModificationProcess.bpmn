@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_02ck0mb" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.12.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.2.0">
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_02ck0mb" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.12.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.2.0">
   <bpmn:process id="MoveModificationProcess" isExecutable="true">
     <bpmn:startEvent id="StartEvent" name="Start Event">
       <bpmn:outgoing>Flow_0od49px</bpmn:outgoing>
@@ -27,7 +27,7 @@
       <bpmn:multiInstanceLoopCharacteristics />
     </bpmn:serviceTask>
     <bpmn:subProcess id="MultiInstanceSubProcess" name="Multi Instance Sub Process">
-      <bpmn:incoming>Flow_11ahxr1</bpmn:incoming>
+      <bpmn:incoming>Flow_conditional_to_mi</bpmn:incoming>
       <bpmn:outgoing>Flow_094t3rs</bpmn:outgoing>
       <bpmn:multiInstanceLoopCharacteristics />
       <bpmn:startEvent id="StartEventInsideMultiInstance" name="Start Event inside Multi Instance">
@@ -58,7 +58,15 @@
     </bpmn:intermediateCatchEvent>
     <bpmn:sequenceFlow id="Flow_1krqip1" sourceRef="EventBasedGateway" targetRef="MessageEvent" />
     <bpmn:sequenceFlow id="Flow_0j8pqal" sourceRef="MessageEvent" targetRef="EndEvent" />
-    <bpmn:sequenceFlow id="Flow_11ahxr1" sourceRef="Task" targetRef="MultiInstanceSubProcess" />
+    <bpmn:sequenceFlow id="Flow_11ahxr1" sourceRef="Task" targetRef="ConditionalEvent" />
+    <bpmn:intermediateCatchEvent id="ConditionalEvent" name="Conditional Event">
+      <bpmn:incoming>Flow_11ahxr1</bpmn:incoming>
+      <bpmn:outgoing>Flow_conditional_to_mi</bpmn:outgoing>
+      <bpmn:conditionalEventDefinition id="ConditionalEventDefinition_1">
+        <bpmn:condition xsi:type="bpmn:tFormalExpression">=x &gt; 0</bpmn:condition>
+      </bpmn:conditionalEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:sequenceFlow id="Flow_conditional_to_mi" sourceRef="ConditionalEvent" targetRef="MultiInstanceSubProcess" />
     <bpmn:serviceTask id="Task" name="Task">
       <bpmn:extensionElements>
         <zeebe:taskDefinition type="worker" />
@@ -86,6 +94,12 @@
       <bpmndi:BPMNShape id="Activity_03nhimx_di" bpmnElement="Task">
         <dc:Bounds x="580" y="137" width="100" height="80" />
       </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_ConditionalEvent_di" bpmnElement="ConditionalEvent">
+        <dc:Bounds x="730" y="159" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="723" y="202" width="50" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Gateway_1p8f1vt_di" bpmnElement="EventBasedGateway">
         <dc:Bounds x="1135" y="152" width="50" height="50" />
         <bpmndi:BPMNLabel>
@@ -105,7 +119,7 @@
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_0r0rtai_di" bpmnElement="MultiInstanceSubProcess" isExpanded="true">
-        <dc:Bounds x="730" y="77" width="350" height="200" />
+        <dc:Bounds x="810" y="77" width="350" height="200" />
         <bpmndi:BPMNLabel />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_1vqjwdq_di" bpmnElement="StartEventInsideMultiInstance">
@@ -151,7 +165,7 @@
         <di:waypoint x="580" y="177" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_094t3rs_di" bpmnElement="Flow_094t3rs">
-        <di:waypoint x="1080" y="177" />
+        <di:waypoint x="1160" y="177" />
         <di:waypoint x="1135" y="177" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_1krqip1_di" bpmnElement="Flow_1krqip1">
@@ -165,6 +179,10 @@
       <bpmndi:BPMNEdge id="Flow_11ahxr1_di" bpmnElement="Flow_11ahxr1">
         <di:waypoint x="680" y="177" />
         <di:waypoint x="730" y="177" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_conditional_to_mi_di" bpmnElement="Flow_conditional_to_mi">
+        <di:waypoint x="766" y="177" />
+        <di:waypoint x="810" y="177" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
