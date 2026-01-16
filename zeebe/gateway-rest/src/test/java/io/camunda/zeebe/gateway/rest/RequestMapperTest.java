@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.gateway.mapping.http.RequestMapper;
 import io.camunda.gateway.protocol.model.AdvancedStringFilter;
+import io.camunda.gateway.protocol.model.DeleteResourceRequest;
 import io.camunda.gateway.protocol.model.MigrateProcessInstanceMappingInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceFilter;
 import io.camunda.gateway.protocol.model.ProcessInstanceMigrationBatchOperationPlan;
@@ -21,6 +22,7 @@ import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateBatchOpe
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyBatchOperationRequest;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.ProblemDetail;
 
@@ -144,5 +146,111 @@ class RequestMapperTest {
     final var problemDetail = result.getLeft();
     assertThat(problemDetail.getStatus()).isEqualTo(400);
     assertThat(problemDetail.getDetail()).isEqualTo("No targetElementId provided.");
+  }
+
+  @Nested
+  class ResourceDeletionRequestMappingTest {
+
+    @Test
+    void shouldMapResourceDeletionWithMinimalFields() {
+      // given
+      final long resourceKey = 12345L;
+
+      // when
+      final var result = RequestMapper.toResourceDeletion(resourceKey, null);
+
+      // then
+      assertThat(result.isRight()).isTrue();
+      final var request = result.get();
+      assertThat(request.resourceKey()).isEqualTo(12345L);
+      assertThat(request.operationReference()).isNull();
+      assertThat(request.deleteHistory()).isFalse();
+    }
+
+    @Test
+    void shouldMapResourceDeletionWithOperationReference() {
+      // given
+      final long resourceKey = 67890L;
+      final var deleteRequest = new DeleteResourceRequest().operationReference(999L);
+
+      // when
+      final var result = RequestMapper.toResourceDeletion(resourceKey, deleteRequest);
+
+      // then
+      assertThat(result.isRight()).isTrue();
+      final var request = result.get();
+      assertThat(request.resourceKey()).isEqualTo(67890L);
+      assertThat(request.operationReference()).isEqualTo(999L);
+      assertThat(request.deleteHistory()).isFalse();
+    }
+
+    @Test
+    void shouldMapResourceDeletionWithDeleteHistory() {
+      // given
+      final long resourceKey = 11111L;
+      final var deleteRequest = new DeleteResourceRequest().deleteHistory(true);
+
+      // when
+      final var result = RequestMapper.toResourceDeletion(resourceKey, deleteRequest);
+
+      // then
+      assertThat(result.isRight()).isTrue();
+      final var request = result.get();
+      assertThat(request.resourceKey()).isEqualTo(11111L);
+      assertThat(request.operationReference()).isNull();
+      assertThat(request.deleteHistory()).isTrue();
+    }
+
+    @Test
+    void shouldMapResourceDeletionWithAllFields() {
+      // given
+      final long resourceKey = 22222L;
+      final var deleteRequest =
+          new DeleteResourceRequest().operationReference(555L).deleteHistory(true);
+
+      // when
+      final var result = RequestMapper.toResourceDeletion(resourceKey, deleteRequest);
+
+      // then
+      assertThat(result.isRight()).isTrue();
+      final var request = result.get();
+      assertThat(request.resourceKey()).isEqualTo(22222L);
+      assertThat(request.operationReference()).isEqualTo(555L);
+      assertThat(request.deleteHistory()).isTrue();
+    }
+
+    @Test
+    void shouldMapResourceDeletionWithDeleteHistoryFalse() {
+      // given
+      final long resourceKey = 33333L;
+      final var deleteRequest = new DeleteResourceRequest().deleteHistory(false);
+
+      // when
+      final var result = RequestMapper.toResourceDeletion(resourceKey, deleteRequest);
+
+      // then
+      assertThat(result.isRight()).isTrue();
+      final var request = result.get();
+      assertThat(request.resourceKey()).isEqualTo(33333L);
+      assertThat(request.operationReference()).isNull();
+      assertThat(request.deleteHistory()).isFalse();
+    }
+
+    @Test
+    void shouldRejectResourceDeletionWithInvalidOperationReference() {
+      // given
+      final long resourceKey = 44444L;
+      final var deleteRequest = new DeleteResourceRequest().operationReference(0L);
+
+      // when
+      final var result = RequestMapper.toResourceDeletion(resourceKey, deleteRequest);
+
+      // then
+      assertThat(result.isLeft()).isTrue();
+      final var problemDetail = result.getLeft();
+      assertThat(problemDetail.getStatus()).isEqualTo(400);
+      assertThat(problemDetail.getDetail()).contains("operationReference");
+      assertThat(problemDetail.getDetail()).contains("> 0");
+    }
   }
 }
