@@ -16,12 +16,15 @@ import static org.elasticsearch.action.support.IndicesOptions.WildcardStates.CLO
 import static org.elasticsearch.action.support.IndicesOptions.WildcardStates.OPEN;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.FieldValue;
+import co.elastic.clients.elasticsearch._types.Refresh;
 import co.elastic.clients.elasticsearch._types.SortOptions;
 import co.elastic.clients.elasticsearch._types.Time;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch._types.query_dsl.TermsQueryField;
 import co.elastic.clients.elasticsearch.core.ScrollResponse;
+import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
 import co.elastic.clients.elasticsearch.core.search.ResponseBody;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -872,6 +875,38 @@ public abstract class ElasticsearchUtil {
   // ===========================================================================================
   // Inner Classes
   // ===========================================================================================
+
+  /**
+   * Executes a bulk request with the given operations and refresh policy.
+   *
+   * @param client the Elasticsearch client
+   * @param operations the list of bulk operations to execute
+   * @param refresh the refresh policy to use
+   * @throws IOException if an I/O error occurs
+   * @throws TasklistRuntimeException if the bulk request contains errors
+   */
+  public static void executeBulkRequest(
+      final ElasticsearchClient client, final List<BulkOperation> operations, final Refresh refresh)
+      throws IOException {
+    if (operations.isEmpty()) {
+      return;
+    }
+
+    final var bulkRequest =
+        co.elastic.clients.elasticsearch.core.BulkRequest.of(
+            b -> b.operations(operations).refresh(refresh));
+
+    final var bulkResponse = client.bulk(bulkRequest);
+
+    if (bulkResponse.errors()) {
+      final var errorMessages =
+          bulkResponse.items().stream()
+              .filter(item -> item.error() != null)
+              .map(item -> item.error().reason())
+              .collect(Collectors.joining(", "));
+      throw new TasklistRuntimeException("Bulk request failed. Errors: " + errorMessages);
+    }
+  }
 
   private static final class DelegatingActionListener<Response>
       implements ActionListener<Response> {

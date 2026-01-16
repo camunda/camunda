@@ -21,7 +21,6 @@ import static java.util.stream.Collectors.toList;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.Refresh;
 import co.elastic.clients.elasticsearch._types.SortOrder;
-import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
@@ -167,26 +166,8 @@ public class VariableStoreElasticSearch implements VariableStore {
   @Override
   public void persistTaskVariables(final Collection<SnapshotTaskVariableEntity> finalVariables) {
     try {
-      if (finalVariables.isEmpty()) {
-        return;
-      }
-
       final var bulkOperations = finalVariables.stream().map(this::createUpsertRequest).toList();
-
-      final var bulkRequest =
-          BulkRequest.of(b -> b.operations(bulkOperations).refresh(Refresh.WaitFor));
-
-      final var bulkResponse = es8Client.bulk(bulkRequest);
-
-      if (bulkResponse.errors()) {
-        final var errorMessages =
-            bulkResponse.items().stream()
-                .filter(item -> item.error() != null)
-                .map(item -> item.error().reason())
-                .collect(java.util.stream.Collectors.joining(", "));
-        throw new TasklistRuntimeException(
-            "Failed to persist task variables. Errors: " + errorMessages);
-      }
+      ElasticsearchUtil.executeBulkRequest(es8Client, bulkOperations, Refresh.WaitFor);
     } catch (final IOException e) {
       throw new TasklistRuntimeException("Error persisting task variables", e);
     }
