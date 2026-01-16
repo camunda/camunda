@@ -8,19 +8,25 @@
 package io.camunda.tasklist.store.elasticsearch;
 
 import static io.camunda.tasklist.util.ElasticsearchUtil.AGGREGATION_TERMS_SIZE;
-import static io.camunda.tasklist.util.ElasticsearchUtil.LENIENT_EXPAND_OPEN_IGNORE_THROTTLED;
 import static io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate.ASSIGNEE_HASH;
 import static io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate.END_TIME;
 import static io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate.TENANT_ID;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.ExpandWildcard;
 import co.elastic.clients.elasticsearch._types.Result;
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
+import co.elastic.clients.elasticsearch._types.aggregations.LongTermsBucket;
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
 import co.elastic.clients.elasticsearch.core.IndexRequest;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.store.TaskMetricsStore;
+import io.camunda.tasklist.util.ElasticsearchUtil;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
 import io.camunda.webapps.schema.entities.metrics.UsageMetricsTUEntity;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;
@@ -30,17 +36,6 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.search.aggregations.Aggregation;
-import org.elasticsearch.search.aggregations.AggregationBuilders;
-import org.elasticsearch.search.aggregations.Aggregations;
-import org.elasticsearch.search.aggregations.bucket.terms.ParsedLongTerms;
-import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,10 +52,6 @@ public class TaskMetricsStoreElasticSearch implements TaskMetricsStore {
   private static final Logger LOGGER = LoggerFactory.getLogger(TaskMetricsStoreElasticSearch.class);
 
   @Autowired private UsageMetricTUTemplate template;
-
-  @Autowired
-  @Qualifier("tasklistEsClient")
-  private RestHighLevelClient esClient;
 
   @Autowired
   @Qualifier("tasklistEs8Client")
@@ -85,39 +76,44 @@ public class TaskMetricsStoreElasticSearch implements TaskMetricsStore {
   public Set<Long> retrieveDistinctAssigneesBetweenDates(
       final OffsetDateTime startTime, final OffsetDateTime endTime, final String tenantId) {
 
-    final BoolQueryBuilder boolQuery =
-        boolQuery().must(QueryBuilders.rangeQuery(END_TIME).gte(startTime).lt(endTime));
+    final BoolQuery.Builder boolQueryBuilder = new BoolQuery.Builder();
+    boolQueryBuilder.must(
+        QueryBuilders.range(
+            r -> r.date(d -> d.field(END_TIME).gte(startTime.toString()).lt(endTime.toString()))));
 
     if (tenantId != null) {
-      boolQuery.must(QueryBuilders.termQuery(TENANT_ID, tenantId));
+      boolQueryBuilder.must(ElasticsearchUtil.termsQuery(TENANT_ID, tenantId));
     }
 
-    final TermsAggregationBuilder aggregation =
-        AggregationBuilders.terms(ASSIGNEE).field(ASSIGNEE_HASH).size(AGGREGATION_TERMS_SIZE);
+    final Query query = boolQueryBuilder.build()._toQuery();
 
-    final SearchSourceBuilder source =
-        SearchSourceBuilder.searchSource().query(boolQuery).aggregation(aggregation);
+    final Aggregation termsAggregation =
+        Aggregation.of(a -> a.terms(t -> t.field(ASSIGNEE_HASH).size(AGGREGATION_TERMS_SIZE)));
+
     final SearchRequest searchRequest =
-        new SearchRequest(template.getFullQualifiedName())
-            .indicesOptions(LENIENT_EXPAND_OPEN_IGNORE_THROTTLED)
-            .source(source);
-    try {
+        SearchRequest.of(
+            s ->
+                s.index(template.getFullQualifiedName())
+                    .ignoreUnavailable(true)
+                    .allowNoIndices(true)
+                    .ignoreThrottled(true)
+                    .expandWildcards(ExpandWildcard.Open)
+                    .query(query)
+                    .aggregations(ASSIGNEE, termsAggregation)
+                    .size(0));
 
-      final Aggregations aggregations =
-          esClient.search(searchRequest, RequestOptions.DEFAULT).getAggregations();
-      if (aggregations == null) {
+    try {
+      final var response = es8Client.search(searchRequest, Void.class);
+      final var aggregations = response.aggregations();
+
+      if (aggregations == null || !aggregations.containsKey(ASSIGNEE)) {
         throw new TasklistRuntimeException("Search with aggregation returned no aggregation");
       }
 
-      final Aggregation group = aggregations.get(ASSIGNEE);
-      if (!(group instanceof final ParsedLongTerms terms)) {
-        throw new TasklistRuntimeException("Unexpected response for aggregations");
-      }
+      final var termsResult = aggregations.get(ASSIGNEE).lterms();
+      final List<LongTermsBucket> buckets = termsResult.buckets().array();
 
-      final List<ParsedLongTerms.ParsedBucket> buckets =
-          (List<ParsedLongTerms.ParsedBucket>) terms.getBuckets();
-
-      return buckets.stream().map(it -> (long) it.getKey()).collect(Collectors.toSet());
+      return buckets.stream().map(LongTermsBucket::key).collect(Collectors.toSet());
     } catch (final IOException e) {
       LOGGER.error(
           "Error while retrieving assigned users between dates from index: " + template, e);
