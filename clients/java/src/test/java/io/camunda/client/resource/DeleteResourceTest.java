@@ -34,6 +34,33 @@ public final class DeleteResourceTest extends ClientTest {
     // then
     final DeleteResourceRequest request = gatewayService.getLastRequest();
     assertThat(request.getResourceKey()).isEqualTo(123);
+    assertThat(request.getDeleteHistory()).isFalse();
+
+    rule.verifyDefaultRequestTimeout();
+  }
+
+  @Test
+  public void shouldSendCommandWithDeleteHistoryFalse() {
+    // when
+    client.newDeleteResourceCommand(123, false).send().join();
+
+    // then
+    final DeleteResourceRequest request = gatewayService.getLastRequest();
+    assertThat(request.getResourceKey()).isEqualTo(123);
+    assertThat(request.getDeleteHistory()).isFalse();
+
+    rule.verifyDefaultRequestTimeout();
+  }
+
+  @Test
+  public void shouldSendCommandWithDeleteHistoryTrue() {
+    // when
+    client.newDeleteResourceCommand(123, true).send().join();
+
+    // then
+    final DeleteResourceRequest request = gatewayService.getLastRequest();
+    assertThat(request.getResourceKey()).isEqualTo(123);
+    assertThat(request.getDeleteHistory()).isTrue();
 
     rule.verifyDefaultRequestTimeout();
   }
@@ -54,6 +81,30 @@ public final class DeleteResourceTest extends ClientTest {
   public void shouldNotHaveNullResponse() {
     // given
     final DeleteResourceCommandStep1 command = client.newDeleteResourceCommand(12);
+
+    // when
+    final DeleteResourceResponse response = command.send().join();
+
+    // then
+    assertThat(response).isNotNull();
+  }
+
+  @Test
+  public void shouldNotHaveNullResponseWithDeleteHistoryFalse() {
+    // given
+    final DeleteResourceCommandStep1 command = client.newDeleteResourceCommand(12, false);
+
+    // when
+    final DeleteResourceResponse response = command.send().join();
+
+    // then
+    assertThat(response).isNotNull();
+  }
+
+  @Test
+  public void shouldNotHaveNullResponseWithDeleteHistoryTrue() {
+    // given
+    final DeleteResourceCommandStep1 command = client.newDeleteResourceCommand(12, true);
 
     // when
     final DeleteResourceResponse response = command.send().join();
