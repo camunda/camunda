@@ -41,7 +41,12 @@ public class ProcessInstanceStartMeterTest {
   @BeforeEach
   public void setUp() {
     meterRegistry = new SimpleMeterRegistry();
-    availabilityChecker = CompletableFuture::completedFuture;
+    availabilityChecker =
+        (list) -> {
+          final var piKeys =
+              list.stream().map(businessKey -> Protocol.encodePartitionId(1, businessKey)).toList();
+          return CompletableFuture.completedFuture(piKeys);
+        };
     processInstanceStartMeter =
         new ProcessInstanceStartMeter(
             meterRegistry,
@@ -63,7 +68,7 @@ public class ProcessInstanceStartMeterTest {
     // when
     processInstanceStartMeter.start();
     processInstanceStartMeter.recordProcessInstanceStart(
-        Protocol.encodePartitionId(1, 1), System.nanoTime());
+        Protocol.encodePartitionId(1, 1), 1, System.nanoTime());
 
     // then
     await()
@@ -122,7 +127,7 @@ public class ProcessInstanceStartMeterTest {
     // when
     processInstanceStartMeter.start();
     processInstanceStartMeter.recordProcessInstanceStart(
-        Protocol.encodePartitionId(1, 1), System.nanoTime());
+        Protocol.encodePartitionId(1, 1), 1, System.nanoTime());
 
     // then
     countDownLatch.await(1, TimeUnit.SECONDS);
@@ -147,7 +152,7 @@ public class ProcessInstanceStartMeterTest {
 
     // when
     processInstanceStartMeter.recordProcessInstanceStart(
-        Protocol.encodePartitionId(1, 1), System.nanoTime());
+        Protocol.encodePartitionId(1, 1), 1, System.nanoTime());
 
     // then
     assertThatThrownBy(
@@ -166,18 +171,19 @@ public class ProcessInstanceStartMeterTest {
         (list) -> {
           if (countDownLatch.getCount() == 1) {
             countDownLatch.countDown();
-            return CompletableFuture.completedFuture(List.of(list.getFirst()));
+            return CompletableFuture.completedFuture(
+                List.of(Protocol.encodePartitionId(1, list.getFirst())));
           }
           return CompletableFuture.completedFuture(List.of());
         };
 
     // when
     processInstanceStartMeter.recordProcessInstanceStart(
-        Protocol.encodePartitionId(1, 1), System.nanoTime());
+        Protocol.encodePartitionId(1, 1), 1, System.nanoTime());
     processInstanceStartMeter.recordProcessInstanceStart(
-        Protocol.encodePartitionId(1, 2), System.nanoTime());
+        Protocol.encodePartitionId(1, 2), 2, System.nanoTime());
     processInstanceStartMeter.recordProcessInstanceStart(
-        Protocol.encodePartitionId(1, 3), System.nanoTime());
+        Protocol.encodePartitionId(1, 3), 3, System.nanoTime());
     processInstanceStartMeter.start();
 
     // then

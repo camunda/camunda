@@ -87,7 +87,8 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
 
     LOG.debug("Current instances awaiting {}", startedInstances.size());
     availabilityChecker
-        .findAvailableInstances(List.copyOf(startedInstances.keySet()))
+        .findAvailableInstances(
+            startedInstances.values().stream().map(PiCreationResult::businessKey).toList())
         .whenCompleteAsync(
             (availableInstances, error) -> {
               if (error != null) {
@@ -123,12 +124,13 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
     startedInstances.remove(awaitingPI.processInstanceKey);
   }
 
-  public void recordProcessInstanceStart(final long processInstanceKey, final long startTimeNanos) {
+  public void recordProcessInstanceStart(
+      final long processInstanceKey, final long businessKey, final long startTimeNanos) {
     startedInstances.put(
-        processInstanceKey, new PiCreationResult(processInstanceKey, startTimeNanos));
+        processInstanceKey, new PiCreationResult(processInstanceKey, businessKey, startTimeNanos));
   }
 
-  record PiCreationResult(long processInstanceKey, long startTimeNanos) {}
+  record PiCreationResult(long processInstanceKey, long businessKey, long startTimeNanos) {}
 
   /**
    * Interface to check the availability of process instances.
@@ -139,10 +141,11 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
     /**
      * Finds the process instances that are available from the given list of process instance keys.
      *
-     * @param processInstanceKeys the list of process instance keys to check
+     * @param businessInstanceKeys the list of business instance keys to check identify the process
+     *     instances
      * @return a CompletionStage that, when completed, provides the list of available process
      *     instance keys
      */
-    CompletionStage<List<Long>> findAvailableInstances(List<Long> processInstanceKeys);
+    CompletionStage<List<Long>> findAvailableInstances(List<Long> businessInstanceKeys);
   }
 }
