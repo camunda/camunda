@@ -459,8 +459,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
 
   @Override
   public void completeJobOfAdHocSubProcess(
-      final JobSelector jobSelector,
-      final Consumer<CompleteAdHocSubProcessResultStep1> jobResult) {
+      final JobSelector jobSelector, final Consumer<CompleteAdHocSubProcessResultStep1> jobResult) {
     completeJobOfAdHocSubProcess(jobSelector, Collections.emptyMap(), jobResult);
   }
 

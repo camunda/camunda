@@ -57,6 +57,7 @@ public class CompleteJobAdHocSubProcessInstructionTest {
   @Mock private AssertionFacade assertionFacade;
   @Mock private JobFilter jobFilter;
   @Captor private ArgumentCaptor<JobSelector> jobSelectorCaptor;
+
   @Captor
   private ArgumentCaptor<Consumer<CompleteAdHocSubProcessResultStep1>> jobResultHandlerCaptor;
 
@@ -163,10 +164,7 @@ public class CompleteJobAdHocSubProcessInstructionTest {
         ImmutableCompleteJobAdHocSubProcessInstruction.builder()
             .jobSelector(ImmutableJobSelector.builder().elementId(ELEMENT_ID).build())
             .addActivateElements(
-                ImmutableActivateElement.builder()
-                    .elementId("task1")
-                    .putVariables("x", 1)
-                    .build())
+                ImmutableActivateElement.builder().elementId("task1").putVariables("x", 1).build())
             .addActivateElements(ImmutableActivateElement.builder().elementId("task2").build())
             .build();
 
@@ -201,10 +199,7 @@ public class CompleteJobAdHocSubProcessInstructionTest {
             .jobSelector(ImmutableJobSelector.builder().jobType(JOB_TYPE).build())
             .putAllVariables(variables)
             .addActivateElements(
-                ImmutableActivateElement.builder()
-                    .elementId("task1")
-                    .putVariables("x", 1)
-                    .build())
+                ImmutableActivateElement.builder().elementId("task1").putVariables("x", 1).build())
             .cancelRemainingInstances(true)
             .completionConditionFulfilled(true)
             .build();

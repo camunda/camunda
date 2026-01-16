@@ -276,8 +276,7 @@ public interface CamundaProcessTestContext {
    * @param jobResult the consumer to configure the ad-hoc sub-process result
    */
   void completeJobOfAdHocSubProcess(
-      final JobSelector jobSelector,
-      final Consumer<CompleteAdHocSubProcessResultStep1> jobResult);
+      final JobSelector jobSelector, final Consumer<CompleteAdHocSubProcessResultStep1> jobResult);
 
   /**
    * Completes a job of an ad-hoc sub-process matching the specified selector and sets the provided

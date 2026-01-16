@@ -19,7 +19,6 @@ import io.camunda.client.CamundaClient;
 import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.api.assertions.JobSelector;
 import io.camunda.process.test.api.dsl.instructions.CompleteJobAdHocSubProcessInstruction;
-import io.camunda.process.test.api.dsl.instructions.CompleteJobAdHocSubProcessInstruction.ActivateElement;
 import io.camunda.process.test.impl.dsl.AssertionFacade;
 import io.camunda.process.test.impl.dsl.TestCaseInstructionHandler;
 
