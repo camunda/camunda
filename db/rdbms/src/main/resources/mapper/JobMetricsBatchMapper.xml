@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="io.camunda.db.rdbms.sql.JobMetricsBatchMapper">
+
+  <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.JobMetricsBatchDbModel">
+    INSERT INTO ${prefix}JOB_METRICS_BATCH (JOB_METRICS_BATCH_KEY,
+                                            START_TIME,
+                                            END_TIME,
+                                            INCOMPLETE_BATCH,
+                                            TENANT_ID,
+                                            FAILED_COUNT,
+                                            LAST_FAILED_AT,
+                                            COMPLETED_COUNT,
+                                            LAST_COMPLETED_AT,
+                                            CREATED_COUNT,
+                                            LAST_CREATED_AT,
+                                            JOB_TYPE,
+                                            WORKER)
+    VALUES (#{key},
+            #{startTime, jdbcType=TIMESTAMP},
+            #{endTime, jdbcType=TIMESTAMP},
+            #{incompleteBatch},
+            #{tenantId},
+            #{failedCount},
+            #{lastFailedAt, jdbcType=TIMESTAMP},
+            #{completedCount},
+            #{lastCompletedAt, jdbcType=TIMESTAMP},
+            #{createdCount},
+            #{lastCreatedAt, jdbcType=TIMESTAMP},
+            #{jobType},
+            #{worker})
+  </insert>
+
+</mapper>
+
