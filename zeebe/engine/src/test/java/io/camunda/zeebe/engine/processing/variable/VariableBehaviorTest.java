@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.ExpressionLanguageFactory;
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnConditionalBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.clock.ZeebeFeelEngineClock;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
@@ -61,7 +62,10 @@ final class VariableBehaviorTest {
     eventAppliers.registerEventAppliers(processingState);
     final var stateWriter = new EventApplyingStateWriter(eventWriter, eventAppliers);
     final ExpressionProcessor expressionProcessor =
-        new ExpressionProcessor(EXPRESSION_LANGUAGE, DEFAULT_CONTEXT_LOOKUP);
+        new ExpressionProcessor(
+            EXPRESSION_LANGUAGE,
+            DEFAULT_CONTEXT_LOOKUP,
+            EngineConfiguration.DEFAULT_EXPRESSION_EVALUATION_TIMEOUT);
     // commandWriter is never called in tests, so we can pass null
     final var conditionalBehavior =
         new BpmnConditionalBehavior(

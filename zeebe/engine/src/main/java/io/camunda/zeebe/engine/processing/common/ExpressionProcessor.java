@@ -50,15 +50,6 @@ public final class ExpressionProcessor {
 
   public ExpressionProcessor(
       final ExpressionLanguage expressionLanguage,
-      final ScopedEvaluationContext scopedEvaluationContext) {
-    this(
-        expressionLanguage,
-        scopedEvaluationContext,
-        EngineConfiguration.DEFAULT_EXPRESSION_EVALUATION_TIMEOUT);
-  }
-
-  public ExpressionProcessor(
-      final ExpressionLanguage expressionLanguage,
       final ScopedEvaluationContext scopedEvaluationContext,
       final Duration expressionEvaluationTimeout) {
     this.expressionLanguage = expressionLanguage;
@@ -87,7 +78,8 @@ public final class ExpressionProcessor {
     return new ExpressionProcessor(
         expressionLanguage,
         CombinedEvaluationContext.withContexts(
-            scopedEvaluationContext, this.scopedEvaluationContext));
+            scopedEvaluationContext, this.scopedEvaluationContext),
+        EngineConfiguration.DEFAULT_EXPRESSION_EVALUATION_TIMEOUT);
   }
 
   /**

@@ -11,6 +11,7 @@ import io.camunda.zeebe.el.EvaluationResult;
 import io.camunda.zeebe.el.EvaluationWarning;
 import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.el.ExpressionLanguage;
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
@@ -26,7 +27,10 @@ public class ExpressionBehavior {
       final NamespacedEvaluationContext namespaceFullClusterContext,
       final ExpressionLanguage expressionLanguage) {
     clusterExpressionProcessor =
-        new ExpressionProcessor(expressionLanguage, namespaceFullClusterContext);
+        new ExpressionProcessor(
+            expressionLanguage,
+            namespaceFullClusterContext,
+            EngineConfiguration.DEFAULT_EXPRESSION_EVALUATION_TIMEOUT);
   }
 
   public Either<Rejection, ExpressionRecord> resolveExpression(
