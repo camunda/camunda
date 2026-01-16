@@ -122,7 +122,7 @@ const Login: React.FC = () => {
                 <div className={styles.logo}>
                   <CamundaLogo aria-label={t('loginLogoLabel')} />
                 </div>
-                <h1 className={styles.title}>Tasklist</h1>
+                <h1 className={styles.title}>Foobar</h1>
               </Stack>
               <Stack gap={3}>
                 <span className={styles.error}>
