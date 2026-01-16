@@ -94,6 +94,11 @@
     </dependency>
 
     <dependency>
+      <groupId>org.elasticsearch</groupId>
+      <artifactId>elasticsearch-x-content</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>co.elastic.clients</groupId>
       <artifactId>elasticsearch-java</artifactId>
     </dependency>
@@ -189,7 +194,7 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
         <configuration>
-          <ignoredUnusedDeclaredDependencies>
+          <ignoredUnusedDeclaredDependencies combine.children="append">
             <dep>org.junit.platform:junit-platform-suite</dep>
             <dep>org.junit.platform:junit-platform-suite-engine</dep>
           </ignoredUnusedDeclaredDependencies>
