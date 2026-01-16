@@ -208,10 +208,6 @@ public class DynamicNodeIdIT {
   @ValueSource(booleans = {true, false})
   public void shouldCreateNewVersionedFolderAfterRestartWithHardLinks(
       final boolean gracefulShutdown) throws IOException {
-    // given - select broker 0 for testing
-    final var broker = testCluster.brokers().values().iterator().next();
-    final int nodeId = broker.bean(BrokerCfg.class).getCluster().getNodeId();
-
     // create some state: deploy process and start instances
     final var startedProcesses = 5;
     try (final CamundaClient client = testCluster.newClientBuilder().build()) {
@@ -223,60 +219,80 @@ public class DynamicNodeIdIT {
       }
     }
 
-    // Capture initial state
-    final Lease leaseBeforeRestart = awaitValidLease(nodeId);
-    final long versionBeforeRestart = leaseBeforeRestart.nodeInstance().version().version();
-    assertThat(versionBeforeRestart).isEqualTo(1L);
-
-    // when - restart broker
-    broker.stop();
-
-    // Verify lease is released
-    Awaitility.await("Until lease is released")
-        .atMost(Duration.ofSeconds(30))
-        .untilAsserted(() -> assertThat(readLeaseObjectBytes(nodeId)).isEmpty());
-
-    if (!gracefulShutdown) {
-      // let's create a fake "expired" lease in S3.
-      final var expiredLease =
-          new Lease(
-              "fake-object",
-              Clock.currentTimeMillis() - LEASE_DURATION.toMillis() * 2,
-              new NodeInstance(nodeId, Version.of(1L)),
-              VersionMappings.empty());
-      final var body = RequestBody.fromBytes(expiredLease.toJsonBytes(OBJECT_MAPPER));
-      final var metadata = Metadata.fromLease(expiredLease);
-      final var request =
-          PutObjectRequest.builder()
-              .bucket(BUCKET_NAME)
-              .key(S3NodeIdRepository.objectKey(nodeId))
-              .metadata(metadata.asMap())
-              .contentType("application/json")
-              .build();
-      s3Client.putObject(request, body);
+    // Capture initial state for all brokers
+    final var nodeIds = new ArrayList<Integer>();
+    for (final var broker : testCluster.brokers().values()) {
+      final int nodeId = broker.bean(BrokerCfg.class).getCluster().getNodeId();
+      nodeIds.add(nodeId);
+      final Lease leaseBeforeRestart = awaitValidLease(nodeId);
+      final long versionBeforeRestart = leaseBeforeRestart.nodeInstance().version().version();
+      assertThat(versionBeforeRestart).isEqualTo(1L);
     }
 
-    broker.start().await(TestHealthProbe.READY);
+    // when - stop all brokers
+    for (final var broker : testCluster.brokers().values()) {
+      broker.stop();
+    }
+
+    // Verify leases are released for all brokers
+    for (final int nodeId : nodeIds) {
+      Awaitility.await("Until lease is released for node " + nodeId)
+          .atMost(Duration.ofSeconds(30))
+          .untilAsserted(() -> assertThat(readLeaseObjectBytes(nodeId)).isEmpty());
+
+      if (!gracefulShutdown) {
+        // Create a fake "expired" lease in S3 for each broker
+        final var expiredLease =
+            new Lease(
+                "fake-object",
+                Clock.currentTimeMillis() - LEASE_DURATION.toMillis() * 2,
+                new NodeInstance(nodeId, Version.of(1L)),
+                VersionMappings.empty());
+        final var body = RequestBody.fromBytes(expiredLease.toJsonBytes(OBJECT_MAPPER));
+        final var metadata = Metadata.fromLease(expiredLease);
+        final var request =
+            PutObjectRequest.builder()
+                .bucket(BUCKET_NAME)
+                .key(S3NodeIdRepository.objectKey(nodeId))
+                .metadata(metadata.asMap())
+                .contentType("application/json")
+                .build();
+        s3Client.putObject(request, body);
+      }
+    }
+
+    // Start all brokers
+    for (final var broker : testCluster.brokers().values()) {
+      broker.start().await(TestHealthProbe.READY);
+    }
     testCluster.awaitHealthyTopology();
 
-    // then
-    final Lease leaseAfterRestart = awaitValidLease(nodeId);
-    final long versionAfterRestart = leaseAfterRestart.nodeInstance().version().version();
-    assertThat(versionAfterRestart).isEqualTo(2L);
+    // then - verify new directories are created for all brokers
+    for (final var broker : testCluster.brokers().values()) {
+      final int nodeId = broker.bean(BrokerCfg.class).getCluster().getNodeId();
+      final Lease leaseAfterRestart = awaitValidLease(nodeId);
+      final long versionAfterRestart = leaseAfterRestart.nodeInstance().version().version();
+      assertThat(versionAfterRestart).isEqualTo(2L);
 
-    // verify new directory is created and old is not deleted
-    final var v1Dir = getVersionDirectory(broker, 1);
-    assertThat(v1Dir).exists().isDirectory();
-    final Path v2Dir = getVersionDirectory(broker, 2);
-    assertThat(v2Dir).exists().isDirectory();
+      final var v1Dir = getVersionDirectory(broker, 1);
+      assertThat(v1Dir).exists().isDirectory();
+      final Path v2Dir = getVersionDirectory(broker, 2);
+      assertThat(v2Dir).exists().isDirectory();
 
-    // Verify v1 initialization file
-    final var v2InitInfo = readInitializationFile(v2Dir);
-    assertThat(v2InitInfo.initializedAt()).isGreaterThan(0);
-    assertThat(v2InitInfo.initializedFrom()).isNotNull();
-    assertThat(v2InitInfo.initializedFrom().version()).isEqualTo(1L);
+      final var v2InitInfo = readInitializationFile(v2Dir);
+      assertThat(v2InitInfo.initializedAt()).isGreaterThan(0);
+      assertThat(v2InitInfo.initializedFrom()).isNotNull();
+      assertThat(v2InitInfo.initializedFrom().version()).isEqualTo(1L);
+    }
 
-    // Verify data continuity - complete process instance started in v2
+    // Delete v1 folder from all brokers
+    for (final var broker : testCluster.brokers().values()) {
+      final var v1Dir = getVersionDirectory(broker, 1);
+      deleteDirectory(v1Dir);
+      assertThat(v1Dir).doesNotExist();
+    }
+
+    // Verify data continuity - complete process instances started in v1
     try (final CamundaClient client = testCluster.newClientBuilder().build()) {
       final var completedJobs = new ArrayList<ActivatedJob>();
 
@@ -316,6 +332,21 @@ public class DynamicNodeIdIT {
     final Path initFile = versionDir.resolve("directory-initialized.json");
     assertThat(initFile).exists().isRegularFile();
     return OBJECT_MAPPER.readValue(initFile.toFile(), DirectoryInitializationInfo.class);
+  }
+
+  private void deleteDirectory(final Path directory) throws IOException {
+    if (java.nio.file.Files.exists(directory)) {
+      java.nio.file.Files.walk(directory)
+          .sorted(java.util.Comparator.reverseOrder())
+          .forEach(
+              path -> {
+                try {
+                  java.nio.file.Files.delete(path);
+                } catch (IOException e) {
+                  throw new RuntimeException(e);
+                }
+              });
+    }
   }
 
   private List<Lease> readLeases(final List<S3Object> objectsInBucket) throws IOException {
