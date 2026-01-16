@@ -124,7 +124,7 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
-  build-camunda-image:
+  build-zeebe-image:
     name: Build Camunda
     needs: calculate-image-tag
     if: ${{ inputs.reuse-tag == '' }}
@@ -194,6 +194,83 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
+  build-operate-image:
+    name: Build + Push Operate Docker image
+    if: ${{ inputs.reuse-tag != '' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+      # See https://github.com/marketplace/actions/authenticate-to-google-cloud#setup
+      - uses: google-github-actions/auth@v2
+        id: auth
+        with:
+          token_format: 'access_token'
+          workload_identity_provider: 'projects/628707732411/locations/global/workloadIdentityPools/zeebe-gh-actions/providers/gha-provider'
+          service_account: 'zeebe-gh-actions@zeebe-io.iam.gserviceaccount.com'
+      - name: Login to GCR
+        uses: docker/login-action@v3
+        with:
+          registry: gcr.io
+          username: oauth2accesstoken
+          password: ${{ steps.auth.outputs.access_token }}
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@v3.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/github.com/organizations/camunda NEXUS_USR;
+            secret/data/github.com/organizations/camunda NEXUS_PSW;
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: "adopt"
+          java-version: "21"
+      - name: Setup Maven
+        uses: ./.github/actions/setup-maven-dist
+        with:
+          maven-version: 3.8.8
+          set-mvnw: true
+      - name: Configure Maven
+        uses: ./.github/actions/setup-maven-cache
+        with:
+          maven-cache-key-modifier: operate
+      # Use CI Nexus as co-located pull-through cache for Maven artifacts via ~/.m2/settings.xml
+      - name: 'Create settings.xml'
+        uses: s4u/maven-settings-action@v3.0.0
+        with:
+          githubServer: false
+          servers: |
+            [{
+               "id": "camunda-nexus",
+               "username": "${{ steps.secrets.outputs.NEXUS_USR }}",
+               "password": "${{ steps.secrets.outputs.NEXUS_PSW }}"
+             }]
+          mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "*", "name": "camunda Nexus"}]'
+      - name: Build backend
+        run: ./mvnw clean install -DskipChecks -P -docker -DskipTests=true -B -DskipRemoteStaging=true -Dmaven.deploy.skip=true
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build and push to Zeebe gcr.io registry
+        uses: docker/build-push-action@v6
+        env:
+          DOCKER_BUILD_SUMMARY: false
+          DOCKER_BUILD_RECORD_UPLOAD: false
+        with:
+          context: .
+          push: true
+          tags: gcr.io/zeebe-io/operate:${{ needs.calculate-image-tag.outputs.image-tag }}
+          file: operate.Dockerfile
+
   build-load-test-images:
     name: Build Starter and Worker
     if: ${{ inputs.reuse-tag == '' }}
@@ -245,7 +322,8 @@ jobs:
     name: Deploy cluster under test
     needs:
       - calculate-image-tag
-      - build-camunda-image
+      - build-zeebe-image
+      - build-operate-image
       - build-load-test-images
     # To have the possibility to re-deploy the tests without rebuilding the images,
     # the deploy will be run, when build is skipped or successful.
@@ -309,6 +387,11 @@ jobs:
           --set zeebe.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
           --set zeebeGateway.image.repository=gcr.io/zeebe-io/zeebe
           --set zeebeGateway.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
+          --set camunda-platform.operate.enabled=true
+          --set camunda-platform.operate.image.repository=gcr.io/zeebe-io/operate
+          --set camunda-platform.operate.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
+          --set camunda-platform.elasticsearch.master.persistence.size=128Gi
+          --set camunda-platform.zeebe.retention.minimumAge=1d
           -f https://raw.githubusercontent.com/camunda/camunda/${{ github.ref }}/zeebe/benchmarks/camunda-platform-values.yaml
           ${{ steps.find-chart-release.outputs.chart-release != '' && format('--version {0}', steps.find-chart-release.outputs.chart-release) || '' }}
           ${{ inputs.stable-vms && format('-f https://raw.githubusercontent.com/camunda/camunda/{0}/zeebe/benchmarks/setup/default/values-stable.yaml', github.ref) || '' }}
@@ -339,7 +422,8 @@ jobs:
       # We need to depend on calculate-image-tag, so that we can use the output in the job
       - calculate-image-tag
       - deploy-cluster-under-test
-      - build-camunda-image
+      - build-zeebe-image
+      - build-operate-image
       - build-load-test-images
       # To have the possibility to re-deploy the tests without rebuilding the images,
       # the deploy will be run, when build is skipped or successful.
