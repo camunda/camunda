@@ -7,10 +7,13 @@
  */
 package io.camunda.db.rdbms.write.service;
 
+import io.camunda.db.rdbms.read.domain.DbQueryPage;
+import io.camunda.db.rdbms.read.domain.DbQuerySorting;
 import io.camunda.db.rdbms.sql.HistoryCleanupMapper.CleanupHistoryDto;
 import io.camunda.db.rdbms.sql.ProcessBasedHistoryCleanupMapper;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper.EndProcessInstanceDto;
+import io.camunda.db.rdbms.sql.columns.ProcessInstanceSearchColumn;
 import io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel;
 import io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel.ProcessInstanceDbModelBuilder;
 import io.camunda.db.rdbms.write.queue.ContextType;
@@ -20,6 +23,7 @@ import io.camunda.db.rdbms.write.queue.UpdateHistoryCleanupDateMerger;
 import io.camunda.db.rdbms.write.queue.UpsertMerger;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
+import io.camunda.search.sort.SortOrder;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.function.Function;
@@ -147,7 +151,18 @@ public class ProcessInstanceWriter implements RdbmsWriter {
             .build());
   }
 
-  public void deleteByKeys(final List<Long> processInstanceKeys) {
-    mapper.deleteByKeys(processInstanceKeys);
+  public int deleteByKeys(final List<Long> processInstanceKeys) {
+    return mapper.deleteByKeys(processInstanceKeys);
+  }
+
+  public List<Long> selectExpiredProcessInstances(
+      final int partitionId, final OffsetDateTime cleanupDate, final int limit) {
+    return mapper.selectExpiredProcessInstances(
+        new ProcessInstanceMapper.SelectExpiredProcessInstancesDto(
+            partitionId,
+            cleanupDate,
+            DbQuerySorting.of(
+                b -> b.addEntry(ProcessInstanceSearchColumn.PROCESS_INSTANCE_KEY, SortOrder.ASC)),
+            new DbQueryPage(limit, null, null)));
   }
 }

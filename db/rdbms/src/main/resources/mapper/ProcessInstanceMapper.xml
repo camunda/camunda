@@ -473,4 +473,14 @@
     </foreach>
   </delete>
 
+  <select id="selectExpiredProcessInstances" resultType="java.lang.Long">
+    SELECT PROCESS_INSTANCE_KEY
+    FROM ${prefix}PROCESS_INSTANCE
+    WHERE PARTITION_ID = #{partitionId}
+      AND END_DATE IS NOT NULL
+      AND HISTORY_CLEANUP_DATE &lt; #{cleanupDate}
+    <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
+    ${keysetPaging.limit}
+  </select>
+
 </mapper>
