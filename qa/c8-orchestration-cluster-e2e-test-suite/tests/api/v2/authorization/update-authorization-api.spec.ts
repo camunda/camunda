@@ -65,16 +65,16 @@ test.describe.parallel('Update Authorization API', () => {
     });
   });
 
-//   test.afterAll(async ({request}) => {
-//     await test.step(
-//       'Teardown - Delete user with username ' +
-//         user.username +
-//         ' created for Authorization tests',
-//       async () => {
-//         await cleanupUsers(request, [user.username]);
-//       },
-//     );
-//   });
+  test.afterAll(async ({request}) => {
+    await test.step(
+      'Teardown - Delete user with username ' +
+        user.username +
+        ' created for Authorization tests',
+      async () => {
+        await cleanupUsers(request, [user.username]);
+      },
+    );
+  });
 
   test('Update User Authorization - additional permissionType - success', async ({request}) => { 
     const updatedUserAuthorization = {
