@@ -40,15 +40,19 @@ public class ConditionalSubscriptionStateTest {
 
   private ConditionalSubscriptionRecord createStartEventSubscription(
       final long processDefinitionKey, final String tenantId) {
-    return createSubscription(-1, processDefinitionKey, tenantId);
+    return createSubscription(-1, processDefinitionKey, 200L, tenantId);
   }
 
   private ConditionalSubscriptionRecord createSubscription(
-      final long scopeKey, final long processDefinitionKey, final String tenantId) {
+      final long scopeKey,
+      final long processDefinitionKey,
+      final long processInstanceKey,
+      final String tenantId) {
     final ConditionalSubscriptionRecord record = new ConditionalSubscriptionRecord();
     record
         .setScopeKey(scopeKey)
         .setProcessDefinitionKey(processDefinitionKey)
+        .setProcessInstanceKey(processInstanceKey)
         .setBpmnProcessId(BufferUtil.wrapString("test-process"))
         .setCatchEventId(BufferUtil.wrapString("start-" + processDefinitionKey))
         .setCondition(BufferUtil.wrapString("=x > 1"))
@@ -81,7 +85,7 @@ public class ConditionalSubscriptionStateTest {
     void shouldPutSubscriptionWithCorrectScopeKey() {
       // given
       final ConditionalSubscriptionRecord subscription =
-          createSubscription(2L, 100L, DEFAULT_TENANT);
+          createSubscription(2L, 100L, 200L, DEFAULT_TENANT);
 
       // when
       state.put(1L, subscription);
@@ -106,11 +110,11 @@ public class ConditionalSubscriptionStateTest {
       final long scopeKey1 = 500L;
       final long scopeKey2 = 600L;
       final ConditionalSubscriptionRecord subscription1Scope1 =
-          createSubscription(scopeKey1, 100L, DEFAULT_TENANT);
+          createSubscription(scopeKey1, 100L, 200L, DEFAULT_TENANT);
       final ConditionalSubscriptionRecord subscription2Scope1 =
-          createSubscription(scopeKey1, 100L, DEFAULT_TENANT);
+          createSubscription(scopeKey1, 100L, 201L, DEFAULT_TENANT);
       final ConditionalSubscriptionRecord subscription1Scope2 =
-          createSubscription(scopeKey2, 100L, DEFAULT_TENANT);
+          createSubscription(scopeKey2, 100L, 202L, DEFAULT_TENANT);
 
       // when
       state.put(1L, subscription1Scope1);
@@ -142,7 +146,7 @@ public class ConditionalSubscriptionStateTest {
       // given
       final long processDefinitionKey = 100L;
       final ConditionalSubscriptionRecord subscription =
-          createSubscription(500L, processDefinitionKey, DEFAULT_TENANT);
+          createSubscription(500L, processDefinitionKey, 200L, DEFAULT_TENANT);
 
       // when
       state.put(1L, subscription);
@@ -160,17 +164,17 @@ public class ConditionalSubscriptionStateTest {
     }
 
     @Test
-    void shouldPutAndTrackProcessDefinitionAfter() {
+    void shouldPutAndTrackProcessInstanceAfter() {
       // given
-      final long processDefinitionKey = 100L;
+      final long processInstanceKey = 200L;
       final ConditionalSubscriptionRecord subscription =
-          createSubscription(500L, processDefinitionKey, DEFAULT_TENANT);
+          createSubscription(500L, 100L, processInstanceKey, DEFAULT_TENANT);
 
       // when
       state.put(1L, subscription);
 
       // then
-      assertThat(state.exists(processDefinitionKey)).isTrue();
+      assertThat(state.exists(processInstanceKey)).isTrue();
     }
   }
 
@@ -302,7 +306,7 @@ public class ConditionalSubscriptionStateTest {
       // given
       final var scopeKey = 100L;
       final ConditionalSubscriptionRecord subscription =
-          createSubscription(scopeKey, 1L, DEFAULT_TENANT);
+          createSubscription(scopeKey, 1L, 200L, DEFAULT_TENANT);
       state.put(1L, subscription);
       assertThat(state.exists(DEFAULT_TENANT, 1L)).isTrue();
       final List<Long> keysBeforeDelete = new ArrayList<>();
@@ -329,29 +333,29 @@ public class ConditionalSubscriptionStateTest {
     }
 
     @Test
-    void shouldDecrementProcessDefinitionCount() {
+    void shouldDecrementProcessInstanceCount() {
       // given
-      final long processDefinitionKey = 100L;
+      final long processInstanceKey = 200L;
       final ConditionalSubscriptionRecord subscription1 =
-          createSubscription(1L, processDefinitionKey, DEFAULT_TENANT);
+          createSubscription(1L, 100L, processInstanceKey, DEFAULT_TENANT);
       final ConditionalSubscriptionRecord subscription2 =
-          createSubscription(2L, processDefinitionKey, DEFAULT_TENANT);
+          createSubscription(2L, 101L, processInstanceKey, DEFAULT_TENANT);
 
       state.put(1L, subscription1);
       state.put(2L, subscription2);
-      assertThat(state.exists(processDefinitionKey)).isTrue();
+      assertThat(state.exists(processInstanceKey)).isTrue();
 
       // when
       state.delete(1L, subscription1);
 
       // then
-      assertThat(state.exists(processDefinitionKey)).isTrue();
+      assertThat(state.exists(processInstanceKey)).isTrue();
 
       // when
       state.delete(2L, subscription2);
 
       // then
-      assertThat(state.exists(processDefinitionKey)).isFalse();
+      assertThat(state.exists(processInstanceKey)).isFalse();
     }
 
     @Test
@@ -359,9 +363,9 @@ public class ConditionalSubscriptionStateTest {
       // given
       final long scopeKey = 500L;
       final ConditionalSubscriptionRecord subscription1 =
-          createSubscription(scopeKey, 100L, DEFAULT_TENANT);
+          createSubscription(scopeKey, 100L, 200L, DEFAULT_TENANT);
       final ConditionalSubscriptionRecord subscription2 =
-          createSubscription(scopeKey, 100L, DEFAULT_TENANT);
+          createSubscription(scopeKey, 100L, 201L, DEFAULT_TENANT);
 
       state.put(1L, subscription1);
       state.put(2L, subscription2);
@@ -447,9 +451,9 @@ public class ConditionalSubscriptionStateTest {
     void shouldStopIterationWhenVisitorReturnsFalse() {
       // given
       final long scopeKey = 500L;
-      state.put(1L, createSubscription(scopeKey, 100L, DEFAULT_TENANT));
-      state.put(2L, createSubscription(scopeKey, 100L, DEFAULT_TENANT));
-      state.put(3L, createSubscription(scopeKey, 100L, DEFAULT_TENANT));
+      state.put(1L, createSubscription(scopeKey, 100L, 200L, DEFAULT_TENANT));
+      state.put(2L, createSubscription(scopeKey, 100L, 201L, DEFAULT_TENANT));
+      state.put(3L, createSubscription(scopeKey, 100L, 202L, DEFAULT_TENANT));
 
       // when
       final List<Long> visitedKeys = new ArrayList<>();

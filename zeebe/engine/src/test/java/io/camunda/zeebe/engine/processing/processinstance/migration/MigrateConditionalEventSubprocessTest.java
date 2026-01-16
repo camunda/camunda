@@ -278,7 +278,7 @@ public class MigrateConditionalEventSubprocessTest {
         .addMappingInstruction("start1", "start2")
         .migrate();
 
-    // then (note: no bpmnProcessId on conditional subscription)
+    // then
     assertThat(
             RecordingExporter.conditionalSubscriptionRecords(ConditionalSubscriptionIntent.MIGRATED)
                 .withProcessInstanceKey(processInstanceKey)
@@ -287,6 +287,8 @@ public class MigrateConditionalEventSubprocessTest {
                 .getValue())
         .describedAs("Expect that the process definition is updated")
         .hasProcessDefinitionKey(targetProcessDefinitionKey)
+        .describedAs("Expect that the bpmn process id is updated")
+        .hasBpmnProcessId(targetProcessId)
         .describedAs("Expect that the catch event id is updated")
         .hasCatchEventId("start2")
         .describedAs("Expect that the migrated subscription keeps the source condition")
@@ -373,7 +375,7 @@ public class MigrateConditionalEventSubprocessTest {
         .describedAs("Expect that version number did not change")
         .hasVersion(1);
 
-    // conditional subscription DELETED (no bpmnProcessId on the subscription itself)
+    // conditional subscription DELETED
     Assertions.assertThat(
             RecordingExporter.conditionalSubscriptionRecords(ConditionalSubscriptionIntent.DELETED)
                 .withProcessInstanceKey(processInstanceKey)
@@ -446,7 +448,7 @@ public class MigrateConditionalEventSubprocessTest {
         .describedAs("Expect that version number did not change")
         .hasVersion(1);
 
-    // created subscription in target (no bpmnProcessId field on conditional subscription)
+    // created subscription in target
     assertThat(
             RecordingExporter.conditionalSubscriptionRecords(ConditionalSubscriptionIntent.CREATED)
                 .withProcessDefinitionKey(targetProcessDefinitionKey)
@@ -455,6 +457,7 @@ public class MigrateConditionalEventSubprocessTest {
                 .getValue())
         .describedAs("Expect that the conditional subscription is created for the target process")
         .hasProcessDefinitionKey(targetProcessDefinitionKey)
+        .hasBpmnProcessId(targetProcessId)
         .hasCatchEventId("start1")
         .hasCondition("=x > 10");
 
@@ -546,6 +549,7 @@ public class MigrateConditionalEventSubprocessTest {
                 .getValue())
         .describedAs("Expect that the conditional subscription is created in the target process")
         .hasProcessDefinitionKey(targetProcessDefinitionKey)
+        .hasBpmnProcessId(targetProcessId)
         .hasCatchEventId("start2")
         .hasCondition("=y > 10");
 

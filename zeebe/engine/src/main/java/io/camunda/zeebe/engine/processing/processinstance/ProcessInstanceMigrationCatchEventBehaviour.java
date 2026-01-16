@@ -188,6 +188,7 @@ public class ProcessInstanceMigrationCatchEventBehaviour {
           final var recordCopy = new ConditionalSubscriptionRecord();
           recordCopy.wrap(conditionalSubscriptionRecord);
           recordCopy.setProcessDefinitionKey(targetProcessDefinition.getKey());
+          recordCopy.setBpmnProcessId(targetProcessDefinition.getBpmnProcessId());
           recordCopy.setCatchEventId(BufferUtil.wrapString(targetCatchEventId));
 
           stateWriter.appendFollowUpEvent(

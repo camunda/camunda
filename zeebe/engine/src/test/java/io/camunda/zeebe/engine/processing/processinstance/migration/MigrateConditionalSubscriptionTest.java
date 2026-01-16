@@ -105,6 +105,8 @@ public class MigrateConditionalSubscriptionTest {
                 .getValue())
         .describedAs("Expect that the process definition is updated")
         .hasProcessDefinitionKey(targetProcessDefinitionKey)
+        .describedAs("Expect that the bpmnProcessId is updated")
+        .hasBpmnProcessId(targetProcessId)
         .describedAs("Expect that the catch event id is updated")
         .hasCatchEventId("boundary2")
         .describedAs("Expect that the migrated subscription keeps its source condition")
@@ -290,6 +292,7 @@ public class MigrateConditionalSubscriptionTest {
                 .getFirst()
                 .getValue())
         .hasProcessDefinitionKey(targetProcessDefinitionKey)
+        .hasBpmnProcessId(targetProcessId)
         .hasCatchEventId("boundary3")
         .hasCondition("=x > 10");
 
@@ -379,6 +382,7 @@ public class MigrateConditionalSubscriptionTest {
                 .getFirst()
                 .getValue())
         .hasProcessDefinitionKey(targetProcessDefinitionKey)
+        .hasBpmnProcessId(targetProcessId)
         .hasCatchEventId("boundary2")
         .hasCondition("=x > 10");
 
@@ -462,6 +466,7 @@ public class MigrateConditionalSubscriptionTest {
                 .getValue())
         .describedAs("Expect that the conditional boundary event in the target is created")
         .hasProcessDefinitionKey(targetProcessDefinitionKey)
+        .hasBpmnProcessId(targetProcessId)
         .hasCatchEventId("boundary2")
         .hasCondition("=y > 10");
 
@@ -546,6 +551,7 @@ public class MigrateConditionalSubscriptionTest {
                 .getFirst()
                 .getValue())
         .hasProcessDefinitionKey(targetProcessDefinitionKey)
+        .hasBpmnProcessId(targetProcessId)
         .hasCatchEventId("boundary2")
         .hasCondition("=x > 10");
 
@@ -679,6 +685,7 @@ public class MigrateConditionalSubscriptionTest {
                 .getFirst()
                 .getValue())
         .hasProcessDefinitionKey(targetProcessDefinitionKey)
+        .hasBpmnProcessId(targetProcessId)
         .hasCatchEventId("boundary1")
         .hasCondition("=x > 10");
 
@@ -834,6 +841,7 @@ public class MigrateConditionalSubscriptionTest {
                 .getFirst()
                 .getValue())
         .hasProcessDefinitionKey(targetProcessDefinitionKey)
+        .hasBpmnProcessId(targetProcessId)
         .hasCatchEventId("catch2")
         .describedAs("Expect that the migrated subscription keeps the source condition")
         .hasCondition("=x > 10");
