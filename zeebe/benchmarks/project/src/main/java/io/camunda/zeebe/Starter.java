@@ -297,6 +297,7 @@ public class Starter extends App {
     final ZeebeClientBuilder builder =
         ZeebeClient.newClientBuilder()
             .grpcAddress(URI.create(appCfg.getBrokerUrl()))
+            .restAddress(URI.create(appCfg.getBrokerRestUrl()))
             .numJobWorkerExecutionThreads(0)
             .withProperties(System.getProperties())
             .withInterceptors(monitoringInterceptor);
