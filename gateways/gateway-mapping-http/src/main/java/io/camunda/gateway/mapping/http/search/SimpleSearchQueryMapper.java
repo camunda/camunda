@@ -22,10 +22,8 @@ import io.camunda.gateway.protocol.model.CursorBackwardPagination;
 import io.camunda.gateway.protocol.model.CursorForwardPagination;
 import io.camunda.gateway.protocol.model.LimitPagination;
 import io.camunda.gateway.protocol.model.OffsetPagination;
-import io.camunda.gateway.protocol.model.SortOrderEnum;
 import io.camunda.gateway.protocol.model.StringFilterProperty;
 import io.camunda.gateway.protocol.model.simple.IncidentFilter;
-import io.camunda.gateway.protocol.model.simple.IncidentSearchQuerySortRequest;
 import io.camunda.gateway.protocol.model.simple.SearchQueryPageRequest;
 import io.camunda.gateway.protocol.model.simple.SimpleDateTimeFilterProperty;
 import io.camunda.service.exception.ServiceError;
@@ -149,21 +147,5 @@ public class SimpleSearchQueryMapper {
       filterModel.$lt(value.to());
     }
     return filterModel;
-  }
-
-  public static List<io.camunda.gateway.protocol.model.IncidentSearchQuerySortRequest>
-      toIncidentSort(final List<IncidentSearchQuerySortRequest> sort) {
-    if (sort == null || sort.isEmpty()) {
-      return List.of();
-    }
-    return sort.stream()
-        .map(
-            s ->
-                new io.camunda.gateway.protocol.model.IncidentSearchQuerySortRequest()
-                    .field(
-                        io.camunda.gateway.protocol.model.IncidentSearchQuerySortRequest.FieldEnum
-                            .fromValue(s.getField().getValue()))
-                    .order(SortOrderEnum.fromValue(s.getOrder().getValue())))
-        .toList();
   }
 }

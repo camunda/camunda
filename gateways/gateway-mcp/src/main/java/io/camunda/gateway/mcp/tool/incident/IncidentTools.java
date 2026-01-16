@@ -14,10 +14,9 @@ import io.camunda.gateway.mapping.http.GatewayErrorMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.mcp.mapper.CallToolResultMapper;
+import io.camunda.gateway.protocol.model.IncidentSearchQuerySortRequest;
 import io.camunda.gateway.protocol.model.JobActivationResult;
 import io.camunda.gateway.protocol.model.simple.IncidentFilter;
-import io.camunda.gateway.protocol.model.simple.IncidentSearchQuery;
-import io.camunda.gateway.protocol.model.simple.IncidentSearchQuerySortRequest;
 import io.camunda.gateway.protocol.model.simple.SearchQueryPageRequest;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.security.auth.CamundaAuthentication;
@@ -70,9 +69,7 @@ public class IncidentTools {
       @McpToolParam(description = "Pagination criteria", required = false)
           final SearchQueryPageRequest page) {
     try {
-      final var incidentSearchQuery =
-          SearchQueryRequestMapper.toIncidentQuery(
-              new IncidentSearchQuery().filter(filter).page(page).sort(sort));
+      final var incidentSearchQuery = SearchQueryRequestMapper.toIncidentQuery(filter, page, sort);
 
       if (incidentSearchQuery.isLeft()) {
         return CallToolResultMapper.mapProblemToResult(incidentSearchQuery.getLeft());
