@@ -20,6 +20,7 @@ import java.time.Duration;
 public class AppCfg {
 
   private String brokerUrl;
+  private String brokerRestUrl;
   private boolean tls;
   private int monitoringPort;
   private StarterCfg starter;
@@ -33,6 +34,14 @@ public class AppCfg {
 
   public void setBrokerUrl(final String brokerUrl) {
     this.brokerUrl = brokerUrl;
+  }
+
+  public String getBrokerRestUrl() {
+    return brokerRestUrl;
+  }
+
+  public void setBrokerRestUrl(final String brokerRestUrl) {
+    this.brokerRestUrl = brokerRestUrl;
   }
 
   public boolean isTls() {
