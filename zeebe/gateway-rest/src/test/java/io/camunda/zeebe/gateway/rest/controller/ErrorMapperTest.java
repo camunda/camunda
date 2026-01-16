@@ -820,4 +820,23 @@ public class ErrorMapperTest extends RestControllerTest {
         .isEqualTo("The search client was unable to process the request");
     assertThat(problemDetail.getTitle()).isEqualTo(INTERNAL.name());
   }
+
+  @Test
+  public void shouldMapCamundaSearchExceptionWhenInvalidArgument() {
+    // given
+    final CamundaSearchException cse =
+        new CamundaSearchException(
+            "Invalid argument provided",
+            new IllegalArgumentException("Illegal argument"),
+            CamundaSearchException.Reason.INVALID_ARGUMENT);
+
+    // when
+    final ProblemDetail problemDetail =
+        GatewayErrorMapper.mapErrorToProblem(ErrorMapper.mapSearchError(cse));
+
+    // when
+    assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
+    assertThat(problemDetail.getDetail()).isEqualTo("Invalid argument provided");
+    assertThat(problemDetail.getTitle()).isEqualTo(INVALID_ARGUMENT.name());
+  }
 }

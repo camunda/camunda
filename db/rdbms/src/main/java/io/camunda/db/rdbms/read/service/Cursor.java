@@ -7,13 +7,13 @@
  */
 package io.camunda.db.rdbms.read.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.db.rdbms.sql.columns.SearchColumn;
-import java.io.IOException;
+import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.search.exception.CamundaSearchException.Reason;
 import java.util.Base64;
 import java.util.List;
 import java.util.stream.IntStream;
@@ -26,10 +26,7 @@ public class Cursor<T> {
           .build();
 
   public static <T> String encode(final T entity, final List<SearchColumn<T>> columns) {
-    if (columns == null || columns.isEmpty()) {
-      return null;
-    }
-    if (entity == null) {
+    if (columns == null || columns.isEmpty() || entity == null) {
       return null;
     }
 
@@ -38,13 +35,16 @@ public class Cursor<T> {
       final var value = MAPPER.writeValueAsString(fields);
 
       return Base64.getEncoder().encodeToString(value.getBytes());
-    } catch (final JsonProcessingException e) {
-      throw new RuntimeException(e);
+    } catch (final Exception e) {
+      throw new CamundaSearchException(
+          "Cannot encode data store pagination information in cursor",
+          e,
+          Reason.SEARCH_CLIENT_FAILED);
     }
   }
 
   public static <T> Object[] decode(final String cursor, final List<SearchColumn<T>> columns) {
-    if (columns == null || columns.isEmpty()) {
+    if (columns == null || columns.isEmpty() || cursor == null || cursor.isEmpty()) {
       return null;
     }
 
@@ -59,8 +59,9 @@ public class Cursor<T> {
           .mapToObj(i -> columns.get(i).convertToPropertyValue(values[i]))
           .toArray();
 
-    } catch (final IOException e) {
-      throw new RuntimeException(e);
+    } catch (final Exception e) {
+      throw new CamundaSearchException(
+          "Cannot decode pagination cursor '%s'".formatted(cursor), e, Reason.INVALID_ARGUMENT);
     }
   }
 }
