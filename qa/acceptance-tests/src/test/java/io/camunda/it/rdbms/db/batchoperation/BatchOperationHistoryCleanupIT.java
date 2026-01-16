@@ -11,11 +11,13 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.service.HistoryCleanupService;
+import io.camunda.it.rdbms.db.fixtures.AuditLogFixtures;
 import io.camunda.it.rdbms.db.fixtures.BatchOperationFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.BatchOperationType;
 import io.camunda.search.query.BatchOperationItemQuery;
+import io.camunda.security.reader.ResourceAccessChecks;
 import java.time.OffsetDateTime;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
@@ -34,11 +36,15 @@ public class BatchOperationHistoryCleanupIT {
     final var historyCleanupService = new HistoryCleanupService(config, rdbmsWriter);
     final var batchOperationReader = rdbmsService.getBatchOperationReader();
     final var batchOperationItemReader = rdbmsService.getBatchOperationItemReader();
+    final var auditLogReader = rdbmsService.getAuditLogReader();
 
     final var batchOperation =
         BatchOperationFixtures.createAndSaveBatchOperation(rdbmsWriter, b -> b);
     final var batchOperationKey = batchOperation.batchOperationKey();
     final BatchOperationType batchOperationType = batchOperation.operationType();
+    final var auditLog =
+        AuditLogFixtures.createAndSaveAuditLog(rdbmsWriter, b -> b.entityKey(batchOperationKey));
+    final var entityKey = auditLog.entityKey();
 
     BatchOperationFixtures.createAndSaveRandomBatchOperationItems(
         rdbmsWriter, batchOperationKey, 5);
@@ -60,6 +66,8 @@ public class BatchOperationHistoryCleanupIT {
     final var query =
         BatchOperationItemQuery.of(b -> b.filter(f -> f.batchOperationKeys(batchOperationKey)));
     assertThat(batchOperationItemReader.search(query).total()).isEqualTo(0);
+    assertThat(auditLogReader.getById(auditLog.auditLogKey(), ResourceAccessChecks.disabled()))
+        .isNull();
   }
 
   @TestTemplate
@@ -71,11 +79,15 @@ public class BatchOperationHistoryCleanupIT {
     final var historyCleanupService = new HistoryCleanupService(config, rdbmsWriter);
     final var batchOperationReader = rdbmsService.getBatchOperationReader();
     final var batchOperationItemReader = rdbmsService.getBatchOperationItemReader();
+    final var auditLogReader = rdbmsService.getAuditLogReader();
 
     final var batchOperation =
         BatchOperationFixtures.createAndSaveBatchOperation(rdbmsWriter, b -> b);
     final var batchOperationKey = batchOperation.batchOperationKey();
     final BatchOperationType batchOperationType = batchOperation.operationType();
+    final var auditLog =
+        AuditLogFixtures.createAndSaveAuditLog(rdbmsWriter, b -> b.entityKey(batchOperationKey));
+    final var entityKey = auditLog.entityKey();
 
     BatchOperationFixtures.createAndSaveRandomBatchOperationItems(
         rdbmsWriter, batchOperationKey, 5);
@@ -94,5 +106,7 @@ public class BatchOperationHistoryCleanupIT {
     final var query =
         BatchOperationItemQuery.of(b -> b.filter(f -> f.batchOperationKeys(batchOperationKey)));
     assertThat(batchOperationItemReader.search(query).total()).isEqualTo(5);
+    assertThat(auditLogReader.getById(auditLog.auditLogKey(), ResourceAccessChecks.disabled()))
+        .isNotNull();
   }
 }

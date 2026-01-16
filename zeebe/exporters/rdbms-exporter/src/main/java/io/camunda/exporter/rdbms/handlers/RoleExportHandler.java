@@ -9,11 +9,13 @@ package io.camunda.exporter.rdbms.handlers;
 
 import io.camunda.db.rdbms.write.domain.RoleDbModel;
 import io.camunda.db.rdbms.write.domain.RoleMemberDbModel;
+import io.camunda.db.rdbms.write.service.HistoryCleanupService;
 import io.camunda.db.rdbms.write.service.RoleWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
+import io.camunda.zeebe.util.DateUtil;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,9 +33,12 @@ public class RoleExportHandler implements RdbmsExportHandler<RoleRecordValue> {
           RoleIntent.ENTITY_REMOVED);
 
   private final RoleWriter roleWriter;
+  private final HistoryCleanupService historyCleanupService;
 
-  public RoleExportHandler(final RoleWriter roleWriter) {
+  public RoleExportHandler(
+      final RoleWriter roleWriter, final HistoryCleanupService historyCleanupService) {
     this.roleWriter = roleWriter;
+    this.historyCleanupService = historyCleanupService;
   }
 
   @Override
@@ -49,7 +54,11 @@ public class RoleExportHandler implements RdbmsExportHandler<RoleRecordValue> {
     switch (record.getIntent()) {
       case RoleIntent.CREATED -> roleWriter.create(map(value));
       case RoleIntent.UPDATED -> roleWriter.update(map(value));
-      case RoleIntent.DELETED -> roleWriter.delete(value.getRoleId());
+      case RoleIntent.DELETED -> {
+        roleWriter.delete(value.getRoleId());
+        final var endDate = DateUtil.toOffsetDateTime(record.getTimestamp());
+        historyCleanupService.scheduleAuditLogsForHistoryCleanup(value.getRoleId(), endDate);
+      }
       case RoleIntent.ENTITY_ADDED ->
           roleWriter.addMember(
               new RoleMemberDbModel.Builder()

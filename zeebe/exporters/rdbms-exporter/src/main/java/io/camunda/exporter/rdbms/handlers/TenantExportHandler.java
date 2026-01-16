@@ -9,11 +9,13 @@ package io.camunda.exporter.rdbms.handlers;
 
 import io.camunda.db.rdbms.write.domain.TenantDbModel;
 import io.camunda.db.rdbms.write.domain.TenantMemberDbModel;
+import io.camunda.db.rdbms.write.service.HistoryCleanupService;
 import io.camunda.db.rdbms.write.service.TenantWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
+import io.camunda.zeebe.util.DateUtil;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,9 +33,12 @@ public class TenantExportHandler implements RdbmsExportHandler<TenantRecordValue
           TenantIntent.ENTITY_REMOVED);
 
   private final TenantWriter tenantWriter;
+  private final HistoryCleanupService historyCleanupService;
 
-  public TenantExportHandler(final TenantWriter tenantWriter) {
+  public TenantExportHandler(
+      final TenantWriter tenantWriter, final HistoryCleanupService historyCleanupService) {
     this.tenantWriter = tenantWriter;
+    this.historyCleanupService = historyCleanupService;
   }
 
   @Override
@@ -49,7 +54,11 @@ public class TenantExportHandler implements RdbmsExportHandler<TenantRecordValue
     switch (record.getIntent()) {
       case TenantIntent.CREATED -> tenantWriter.create(map(value));
       case TenantIntent.UPDATED -> tenantWriter.update(map(value));
-      case TenantIntent.DELETED -> tenantWriter.delete(map(value));
+      case TenantIntent.DELETED -> {
+        tenantWriter.delete(map(value));
+        final var endDate = DateUtil.toOffsetDateTime(record.getTimestamp());
+        historyCleanupService.scheduleAuditLogsForHistoryCleanup(value.getTenantId(), endDate);
+      }
       case TenantIntent.ENTITY_ADDED ->
           tenantWriter.addMember(
               new TenantMemberDbModel.Builder()

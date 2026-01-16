@@ -10,18 +10,23 @@ package io.camunda.exporter.rdbms.handlers;
 import io.camunda.db.rdbms.write.domain.FormDbModel;
 import io.camunda.db.rdbms.write.domain.FormDbModel.FormDbModelBuilder;
 import io.camunda.db.rdbms.write.service.FormWriter;
+import io.camunda.db.rdbms.write.service.HistoryCleanupService;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.FormIntent;
 import io.camunda.zeebe.protocol.record.value.deployment.Form;
+import io.camunda.zeebe.util.DateUtil;
 import java.nio.charset.StandardCharsets;
 
 public class FormExportHandler implements RdbmsExportHandler<Form> {
 
   private final FormWriter formWriter;
+  private final HistoryCleanupService historyCleanupService;
 
-  public FormExportHandler(final FormWriter formWriter) {
+  public FormExportHandler(
+      final FormWriter formWriter, final HistoryCleanupService historyCleanupService) {
     this.formWriter = formWriter;
+    this.historyCleanupService = historyCleanupService;
   }
 
   @Override
@@ -35,6 +40,9 @@ public class FormExportHandler implements RdbmsExportHandler<Form> {
       formWriter.create(map(record));
     } else if (record.getIntent().equals(FormIntent.DELETED)) {
       formWriter.update(map(record).copy(b -> ((FormDbModelBuilder) b).isDeleted(true)));
+      final var endDate = DateUtil.toOffsetDateTime(record.getTimestamp());
+      historyCleanupService.scheduleAuditLogsForHistoryCleanup(
+          String.valueOf(record.getKey()), endDate);
     }
   }
 
