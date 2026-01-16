@@ -211,6 +211,7 @@ components:
           allOf:
             - $ref: '#/components/schemas/IncidentErrorTypeFilterProperty'
         errorMessage:
+          description: The error message of this incident.
           allOf:
             - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
         elementId:

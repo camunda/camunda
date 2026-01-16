@@ -15,7 +15,10 @@ import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.mcp.mapper.CallToolResultMapper;
 import io.camunda.gateway.protocol.model.JobActivationResult;
+import io.camunda.gateway.protocol.model.simple.IncidentFilter;
 import io.camunda.gateway.protocol.model.simple.IncidentSearchQuery;
+import io.camunda.gateway.protocol.model.simple.IncidentSearchQuerySortRequest;
+import io.camunda.gateway.protocol.model.simple.SearchQueryPageRequest;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
@@ -28,6 +31,7 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.util.Either;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import jakarta.validation.constraints.Positive;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springaicommunity.mcp.annotation.McpTool;
@@ -59,13 +63,16 @@ public class IncidentTools {
       description = "Search for incidents. " + EVENTUAL_CONSISTENCY_NOTE,
       annotations = @McpAnnotations(readOnlyHint = true))
   public CallToolResult searchIncidents(
-      @McpToolParam(
-              description =
-                  "Filter search by the given filter fields, with sort criteria, and pagination instructions",
-              required = false)
-          final IncidentSearchQuery query) {
+      @McpToolParam(description = "Filter search by the given fields", required = false)
+          final IncidentFilter filter,
+      @McpToolParam(description = "Sort criteria", required = false)
+          final List<IncidentSearchQuerySortRequest> sort,
+      @McpToolParam(description = "Pagination criteria", required = false)
+          final SearchQueryPageRequest page) {
     try {
-      final var incidentSearchQuery = SearchQueryRequestMapper.toIncidentQuery(query);
+      final var incidentSearchQuery =
+          SearchQueryRequestMapper.toIncidentQuery(
+              new IncidentSearchQuery().filter(filter).page(page).sort(sort));
 
       if (incidentSearchQuery.isLeft()) {
         return CallToolResultMapper.mapProblemToResult(incidentSearchQuery.getLeft());

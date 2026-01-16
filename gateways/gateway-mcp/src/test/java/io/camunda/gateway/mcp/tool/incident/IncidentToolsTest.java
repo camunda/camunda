@@ -185,16 +185,10 @@ class IncidentToolsTest extends ToolsTest {
                 .name("searchIncidents")
                 .arguments(
                     Map.of(
-                        "query",
+                        "filter",
                         Map.of(
-                            "filter",
-                            Map.of(
-                                "creationTime",
-                                Map.of(
-                                    "from",
-                                    "2025-05-23T09:35:12Z",
-                                    "to",
-                                    "2025-12-18T17:22:33Z")))))
+                            "creationTime",
+                            Map.of("from", "2025-05-23T09:35:12Z", "to", "2025-12-18T17:22:33Z"))))
                 .build());
 
     // then
@@ -222,14 +216,12 @@ class IncidentToolsTest extends ToolsTest {
                 .name("searchIncidents")
                 .arguments(
                     Map.of(
-                        "query",
-                        Map.of(
-                            "filter",
-                            Map.of("state", "ACTIVE", "errorType", "JOB_NO_RETRIES"),
-                            "sort",
-                            List.of(Map.of("field", "incidentKey", "order", "DESC")),
-                            "page",
-                            Map.of("limit", 25, "after", "WzEwMjRd"))))
+                        "filter",
+                        Map.of("state", "ACTIVE", "errorType", "JOB_NO_RETRIES"),
+                        "sort",
+                        List.of(Map.of("field", "incidentKey", "order", "DESC")),
+                        "page",
+                        Map.of("limit", 25, "after", "WzEwMjRd")))
                 .build());
 
     // then
