@@ -27,9 +27,6 @@ public final class ToolDescriptions {
   public static final String EVENTUAL_CONSISTENCY_NOTE =
       "Note: Results are eventually consistent and may not immediately reflect recent changes.";
 
-  public static final String DATE_TIME_FORMAT =
-      "RFC 3339 format (e.g., '2024-12-17T10:30:00Z' or '2024-12-17T10:30:00+01:00').";
-
   private ToolDescriptions() {
     // Utility class
   }
