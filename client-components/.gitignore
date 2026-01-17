@@ -32,3 +32,6 @@ yarn-error.log*
 
 # JUnit style test results 
 jest-test-results.xml
+
+# Downloaded OpenAPI specs (re-download with: npm run download-specs -w @camunda/camunda-api-zod-schemas)
+packages/camunda-api-zod-schemas/specs/

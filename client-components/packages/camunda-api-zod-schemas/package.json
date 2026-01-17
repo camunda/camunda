@@ -23,7 +23,8 @@
 		"build": "vite build",
 		"format": "prettier --write .",
 		"prepublish": "npm run build",
-		"typecheck": "tsc"
+		"typecheck": "tsc",
+		"download-specs": "node scripts/download-specs.js"
 	},
 	"sideEffects": false,
 	"files": [
