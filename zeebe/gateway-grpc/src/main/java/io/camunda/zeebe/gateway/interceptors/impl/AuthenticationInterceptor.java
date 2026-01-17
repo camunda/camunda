@@ -9,6 +9,7 @@ package io.camunda.zeebe.gateway.interceptors.impl;
 
 import io.camunda.zeebe.util.Either.Left;
 import io.camunda.zeebe.util.Either.Right;
+import io.camunda.zeebe.util.VisibleForTesting;
 import io.grpc.Context;
 import io.grpc.Contexts;
 import io.grpc.Metadata;
@@ -23,9 +24,17 @@ public class AuthenticationInterceptor implements ServerInterceptor {
       Metadata.Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER);
 
   private final AuthenticationHandler authenticationHandler;
+  private final AuthenticationMetrics metrics;
 
-  public AuthenticationInterceptor(final AuthenticationHandler authenticationHandler) {
+  @VisibleForTesting
+  AuthenticationInterceptor(final AuthenticationHandler authenticationHandler) {
+    this(authenticationHandler, new AuthenticationMetrics());
+  }
+
+  public AuthenticationInterceptor(
+      final AuthenticationHandler authenticationHandler, final AuthenticationMetrics metrics) {
     this.authenticationHandler = authenticationHandler;
+    this.metrics = metrics;
   }
 
   @Override
@@ -33,9 +42,10 @@ public class AuthenticationInterceptor implements ServerInterceptor {
       final ServerCall<ReqT, RespT> call,
       final Metadata headers,
       final ServerCallHandler<ReqT, RespT> next) {
-
+    final var latencyTimer = metrics.startLatencySample();
     final var authorization = headers.get(AUTH_KEY);
     if (authorization == null) {
+      metrics.recordFailureLatency(latencyTimer);
       return deny(
           call,
           Status.UNAUTHENTICATED.augmentDescription(
@@ -44,9 +54,14 @@ public class AuthenticationInterceptor implements ServerInterceptor {
     }
 
     return switch (authenticationHandler.authenticate(authorization)) {
-      case Left<Status, Context>(final var status) -> deny(call, status);
-      case Right<Status, Context>(final var context) ->
-          Contexts.interceptCall(context, call, headers, next);
+      case Left<Status, Context>(final var status) -> {
+        metrics.recordFailureLatency(latencyTimer);
+        yield deny(call, status);
+      }
+      case Right<Status, Context>(final var context) -> {
+        metrics.recordSuccessLatency(latencyTimer);
+        yield Contexts.interceptCall(context, call, headers, next);
+      }
     };
   }
 

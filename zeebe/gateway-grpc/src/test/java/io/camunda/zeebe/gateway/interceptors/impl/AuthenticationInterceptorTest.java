@@ -22,6 +22,7 @@ import io.camunda.search.entities.UserEntity;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.configuration.OidcAuthenticationConfiguration;
+import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationHandler.BasicAuth;
 import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationHandler.Oidc;
@@ -31,6 +32,7 @@ import io.grpc.Metadata.Key;
 import io.grpc.MethodDescriptor;
 import io.grpc.ServerCallHandler;
 import io.grpc.Status;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -608,6 +610,36 @@ public class AuthenticationInterceptorTest {
                   .hasMessageContaining(
                       "Group's list derived from ($.groups[*]) is not a string array. Please check your OIDC configuration.");
             });
+  }
+
+  @Test
+  void shouldMeasureLatency() {
+    // given
+    final var meterRegistry = new SimpleMeterRegistry();
+    final var metrics = new AuthenticationMetrics(meterRegistry, AuthenticationMethod.BASIC);
+    final var capturingCall =
+        new CloseStatusCapturingServerCall();
+    final Metadata metadata = new Metadata();
+    // demo:demo
+    metadata.put(Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER), "Basic ZGVtbzpkZW1v");
+    final var userServices = mock(UserServices.class);
+    when(userServices.withAuthentication(any(CamundaAuthentication.class)))
+        .thenReturn(userServices);
+    when(userServices.search(any()))
+        .thenReturn(new SearchQueryResult<>(1, false, List.of(createUserEntity()), null, null));
+    final var passwordEncoder = mock(PasswordEncoder.class);
+    when(passwordEncoder.matches(anyString(), anyString())).thenReturn(true);
+    new AuthenticationInterceptor(new BasicAuth(userServices, passwordEncoder), metrics)
+        .interceptCall(
+            capturingCall,
+            metadata,
+            (call, headers) -> {
+              call.close(Status.OK, headers);
+              return null;
+            });
+
+    // then
+    assertThat(capturingCall.closeStatus).hasValue(Status.OK);
   }
 
   private Metadata createAuthHeader() {
