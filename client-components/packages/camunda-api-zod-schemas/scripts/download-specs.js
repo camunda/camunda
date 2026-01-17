@@ -12,26 +12,11 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 
-/**
- * Configuration for a single-file spec (e.g., 8.8).
- * @typedef {Object} SingleFileSpecConfig
- * @property {string} branch - Git branch name (e.g., 'stable/8.8')
- * @property {string} file - Path to the single spec file
- * @property {undefined} [directory] - Not used in single-file mode
- */
+import {CONFIG, getAvailableVersions} from './supported-versions.js';
 
-/**
- * Configuration for a directory-based spec (e.g., 8.9).
- * @typedef {Object} DirectorySpecConfig
- * @property {string} branch - Git branch name (e.g., 'main')
- * @property {undefined} [file] - Not used in directory mode
- * @property {string} directory - Path to directory containing spec files
- */
-
-/**
- * Spec configuration - either single-file or directory-based.
- * @typedef {SingleFileSpecConfig | DirectorySpecConfig} SpecConfig
- */
+/** @typedef {import('./supported-versions.js').DownloadConfig} DownloadConfig */
+/** @typedef {import('./supported-versions.js').SingleFileDownloadConfig} SingleFileDownloadConfig */
+/** @typedef {import('./supported-versions.js').DirectoryDownloadConfig} DirectoryDownloadConfig */
 
 /**
  * Entry returned from GitHub Contents API for a file.
@@ -68,26 +53,6 @@ const SPECS_DIR = path.join(PACKAGE_ROOT, 'specs');
 
 const GITHUB_RAW_BASE = 'https://raw.githubusercontent.com/camunda/camunda';
 const GITHUB_API_BASE = 'https://api.github.com/repos/camunda/camunda';
-
-/**
- * Configuration for each API version.
- * Add new versions here as they become available.
- *
- * For single-file specs, use `file` property.
- * For directory-based specs (multiple YAML files), use `directory` property.
- *
- * @type {Record<string, SpecConfig>}
- */
-const SPECS_CONFIG = {
-	8.8: {
-		branch: 'stable/8.8',
-		file: 'zeebe/gateway-protocol/src/main/proto/rest-api.yaml',
-	},
-	8.9: {
-		branch: 'main',
-		directory: 'zeebe/gateway-protocol/src/main/proto/v2',
-	},
-};
 
 /**
  * Downloads a file from the given URL.
@@ -148,7 +113,7 @@ async function listYamlFiles(branch, directoryPath) {
 /**
  * Downloads a single file spec (8.8 style).
  * @param {string} version - The API version
- * @param {SingleFileSpecConfig} config - The configuration for this version
+ * @param {SingleFileDownloadConfig} config - The configuration for this version
  * @returns {Promise<void>}
  */
 async function downloadSingleFileSpec(version, config) {
@@ -169,7 +134,7 @@ async function downloadSingleFileSpec(version, config) {
 /**
  * Downloads a directory of spec files (8.9 style).
  * @param {string} version - The API version
- * @param {DirectorySpecConfig} config - The configuration for this version
+ * @param {DirectoryDownloadConfig} config - The configuration for this version
  * @returns {Promise<void>}
  */
 async function downloadDirectorySpec(version, config) {
@@ -194,14 +159,14 @@ async function downloadDirectorySpec(version, config) {
 /**
  * Downloads the OpenAPI spec for a specific version.
  * @param {string} version - The API version (e.g., '8.8')
- * @param {SpecConfig} config - The configuration for this version
+ * @param {DownloadConfig} config - The configuration for this version
  * @returns {Promise<void>}
  */
 async function downloadSpec(version, config) {
 	if ('file' in config && config.file) {
-		await downloadSingleFileSpec(version, /** @type {SingleFileSpecConfig} */ (config));
+		await downloadSingleFileSpec(version, /** @type {SingleFileDownloadConfig} */ (config));
 	} else if ('directory' in config && config.directory) {
-		await downloadDirectorySpec(version, /** @type {DirectorySpecConfig} */ (config));
+		await downloadDirectorySpec(version, /** @type {DirectoryDownloadConfig} */ (config));
 	} else {
 		throw new Error(`Invalid config for version ${version}: must have 'file' or 'directory'`);
 	}
@@ -238,8 +203,12 @@ function parseArgs() {
 	return result;
 }
 
+/**
+ * Prints usage information.
+ * @returns {void}
+ */
 function printHelp() {
-	const availableVersions = Object.keys(SPECS_CONFIG).join(', ');
+	const availableVersions = getAvailableVersions().join(', ');
 	console.log(`Usage: node download-specs.js [options]
 
 Options:
@@ -255,6 +224,10 @@ Examples:
 `);
 }
 
+/**
+ * Main entry point.
+ * @returns {Promise<void>}
+ */
 async function main() {
 	const {versions: requestedVersions, help} = parseArgs();
 
@@ -263,11 +236,11 @@ async function main() {
 		return;
 	}
 
-	const availableVersions = Object.keys(SPECS_CONFIG);
+	const availableVersions = getAvailableVersions();
 	const versionsToDownload = requestedVersions || availableVersions;
 
 	for (const version of versionsToDownload) {
-		if (!SPECS_CONFIG[version]) {
+		if (!CONFIG[version]) {
 			throw new Error(`Unknown version: ${version}. Available versions: ${availableVersions.join(', ')}`);
 		}
 	}
@@ -275,7 +248,7 @@ async function main() {
 	console.log('Downloading OpenAPI specs...\n');
 
 	for (const version of versionsToDownload) {
-		await downloadSpec(version, SPECS_CONFIG[version]);
+		await downloadSpec(version, CONFIG[version].download);
 	}
 
 	console.log('\nAll specs downloaded successfully.');
