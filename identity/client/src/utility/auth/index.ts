@@ -61,11 +61,10 @@ export function logout(): Promise<void> {
     method: "post",
     body: data,
     headers: { "Content-Type": "application/x-www-form-urlencoded", 'Accept': 'application/json, text/plain', },
-    // mode: "no-cors",
   })
     .then((response: Response) => {
-      if (response.status < 400) {
-        window.location.href = `${getBaseUrl()}/`;
+      if (response.status > 400) {
+        return Promise.reject(`Server returned ${response.status}`);
       }
 
       return response.json();
@@ -73,7 +72,7 @@ export function logout(): Promise<void> {
       if (json && json.url && json.url.length > 0) {
         window.location.href = json.url;
       } else {
-        window.location.reload();
+        window.location.href = `${getBaseUrl()}/`;
       }
     })
     .catch((e) => {
