@@ -18,7 +18,7 @@ class BatchOperationItemDbModelTest {
   void shouldTruncateErrorMessage() {
     final BatchOperationItemDbModel truncatedMessage =
         new BatchOperationItemDbModel(
-                "batchId", 123L, 456L, BatchOperationItemState.ACTIVE, null, "errorMessage")
+                "batchId", 123L, 456L, 789L, BatchOperationItemState.ACTIVE, null, "errorMessage")
             .truncateErrorMessage(10, null);
 
     assertThat(truncatedMessage.errorMessage().length()).isEqualTo(10);
@@ -29,7 +29,7 @@ class BatchOperationItemDbModelTest {
   void shouldTruncateErrorMessageBytes() {
     final BatchOperationItemDbModel truncatedMessage =
         new BatchOperationItemDbModel(
-                "batchId", 123L, 456L, BatchOperationItemState.ACTIVE, null, "ääääääääää")
+                "batchId", 123L, 456L, 789L, BatchOperationItemState.ACTIVE, null, "ääääääääää")
             .truncateErrorMessage(50, 5);
 
     assertThat(truncatedMessage.errorMessage().length()).isEqualTo(2);
