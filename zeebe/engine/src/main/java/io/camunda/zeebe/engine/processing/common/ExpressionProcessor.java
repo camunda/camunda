@@ -12,7 +12,6 @@ import io.camunda.zeebe.el.EvaluationResult;
 import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.ResultType;
-import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.model.bpmn.util.time.Interval;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.util.Either;
@@ -25,6 +24,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
@@ -33,6 +34,8 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 public final class ExpressionProcessor {
 
+  private static final Executor VIRTUAL_THREAD_EXECUTOR =
+      Executors.newVirtualThreadPerTaskExecutor();
   private static final List<ResultType> INTERVAL_RESULT_TYPES =
       List.of(ResultType.DURATION, ResultType.PERIOD, ResultType.STRING);
   private static final List<ResultType> DATE_TIME_RESULT_TYPES =
@@ -440,7 +443,8 @@ public final class ExpressionProcessor {
   private Either<Failure, EvaluationResult> evaluateExpressionAsEither(
       final Expression expression, final long variableScopeKey) {
     final CompletableFuture<EvaluationResult> future =
-        CompletableFuture.supplyAsync(() -> evaluateExpression(expression, variableScopeKey));
+        CompletableFuture.supplyAsync(
+            () -> evaluateExpression(expression, variableScopeKey), VIRTUAL_THREAD_EXECUTOR);
 
     final EvaluationResult result;
     try {
