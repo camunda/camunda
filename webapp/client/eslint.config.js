@@ -18,8 +18,12 @@ import tanstackPlugin from '@tanstack/eslint-plugin-query';
 import vitestPlugin from '@vitest/eslint-plugin';
 
 const files = {
-	browser: ['packages/**/*.{js,jsx,mjs,cjs,ts,tsx,mts,cts}', 'apps/**/*.{js,jsx,mjs,cjs,ts,tsx,mts,cts}'],
-	node: ['scripts/**/*.{js,mjs,cjs,ts,mts,cts}', 'prettier.config.js'],
+	browser: ['packages/**/lib/**/*.{js,mjs,cjs,ts,mts,cts}', 'apps/**/*.{js,jsx,mjs,cjs,ts,tsx,mts,cts}'],
+	node: [
+		'scripts/**/*.{js,mjs,cjs,ts,mts,cts}',
+		'packages/**/scripts/**/*.{js,mjs,cjs,ts,mts,cts}',
+		'prettier.config.js',
+	],
 };
 
 const ocPath = 'apps/orchestration-cluster-webapp';
