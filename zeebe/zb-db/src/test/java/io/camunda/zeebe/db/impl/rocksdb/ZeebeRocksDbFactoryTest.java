@@ -138,10 +138,10 @@ final class ZeebeRocksDbFactoryTest {
   }
 
   @Test
-  void shouldHaveDefaultsIfPerAutoMemoryAllocationStrategy() {
+  void shouldHaveDefaultsIfPerFractionMemoryAllocationStrategy() {
     // when configuring with per-broker memory allocation strategy
     final RocksDbConfiguration rocksDbConfiguration = new RocksDbConfiguration();
-    rocksDbConfiguration.setMemoryAllocationStrategy(MemoryAllocationStrategy.AUTO);
+    rocksDbConfiguration.setMemoryAllocationStrategy(MemoryAllocationStrategy.FRACTION);
 
     // then - options should match our defaults
     // we expect the same options regardless of the memory allocation strategy
