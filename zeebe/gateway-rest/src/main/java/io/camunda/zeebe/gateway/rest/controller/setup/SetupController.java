@@ -8,12 +8,15 @@
 package io.camunda.zeebe.gateway.rest.controller.setup;
 
 import io.camunda.gateway.mapping.http.GatewayErrorMapper;
-import io.camunda.gateway.mapping.http.RequestMapper;
 import io.camunda.gateway.mapping.http.ResponseMapper;
+import io.camunda.gateway.mapping.http.mapper.UserMapper;
+import io.camunda.gateway.mapping.http.validator.UserRequestValidator;
 import io.camunda.gateway.protocol.model.UserRequest;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.entity.AuthenticationMethod;
+import io.camunda.security.validation.IdentifierValidator;
+import io.camunda.security.validation.UserValidator;
 import io.camunda.service.RoleServices;
 import io.camunda.service.UserServices;
 import io.camunda.service.exception.ServiceException;
@@ -45,17 +48,19 @@ public class SetupController {
   private final RoleServices roleServices;
   private final SecurityConfiguration securityConfiguration;
   private final CamundaAuthenticationProvider authenticationProvider;
+  private final UserMapper userMapper;
 
   public SetupController(
       final UserServices userServices,
       final RoleServices roleServices,
       final SecurityConfiguration securityConfiguration,
       final CamundaAuthenticationProvider authenticationProvider,
-      final SecurityConfiguration securityConfig) {
+      final IdentifierValidator identifierValidator) {
     this.userServices = userServices;
     this.roleServices = roleServices;
     this.securityConfiguration = securityConfiguration;
     this.authenticationProvider = authenticationProvider;
+    userMapper = new UserMapper(new UserRequestValidator(new UserValidator(identifierValidator)));
   }
 
   @CamundaPostMapping(path = "/user")
@@ -76,8 +81,8 @@ public class SetupController {
           GatewayErrorMapper.mapErrorToProblem(exception));
     }
 
-    return RequestMapper.toUserRequest(
-            request, securityConfiguration.getCompiledIdValidationPattern())
+    return userMapper
+        .toUserRequest(request)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
             dto ->

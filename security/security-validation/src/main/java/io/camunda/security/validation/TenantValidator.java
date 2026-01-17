@@ -16,17 +16,21 @@ import java.util.List;
 
 public class TenantValidator {
 
-  public static final String DEFAULT_TENANT_ID = "<default>";
-
   private final IdentifierValidator identifierValidator;
 
   public TenantValidator(final IdentifierValidator identifierValidator) {
     this.identifierValidator = identifierValidator;
   }
 
-  public List<String> validate(final String tenantId, final String name) {
+  public List<String> validateCreate(final String tenantId, final String name) {
     final List<String> violations = new ArrayList<>();
     validateTenantId(tenantId, violations);
+    validateTenantName(name, violations);
+    return violations;
+  }
+
+  public List<String> validateUpdate(final String name) {
+    final List<String> violations = new ArrayList<>();
     validateTenantName(name, violations);
     return violations;
   }
@@ -36,34 +40,27 @@ public class TenantValidator {
     if (memberIds == null) {
       return emptyList();
     }
-    return memberIds.stream()
-        .map(memberId -> validateMemberId(memberId, memberType))
-        .flatMap(List::stream)
-        .toList();
+    final List<String> violations = new ArrayList<>();
+    memberIds.forEach(
+        memberId -> identifierValidator.validateMemberId(memberId, memberType, violations));
+    return violations;
+  }
+
+  public List<String> validateTenantMember(
+      final String tenantId, final String memberId, final EntityType memberType) {
+    final List<String> violations = new ArrayList<>();
+    validateTenantId(tenantId, violations);
+    identifierValidator.validateMemberId(memberId, memberType, violations);
+    return violations;
   }
 
   private void validateTenantId(final String id, final List<String> violations) {
-    identifierValidator.validateTenantId(id, violations, DEFAULT_TENANT_ID::equals);
+    identifierValidator.validateTenantId(id, violations);
   }
 
   private static void validateTenantName(final String name, final List<String> violations) {
     if (name == null || name.isBlank()) {
       violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("name"));
     }
-  }
-
-  private List<String> validateMemberId(final String entityId, final EntityType entityType) {
-    final List<String> violations = new ArrayList<>();
-    final var propertyName =
-        switch (entityType) {
-          case USER -> "username";
-          case GROUP -> "groupId";
-          case MAPPING_RULE -> "mappingRuleId";
-          case ROLE -> "roleId";
-          case CLIENT -> "clientId";
-          default -> "entityId";
-        };
-    identifierValidator.validateId(entityId, propertyName, violations);
-    return violations;
   }
 }

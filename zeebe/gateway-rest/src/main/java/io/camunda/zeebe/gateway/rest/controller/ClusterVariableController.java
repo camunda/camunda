@@ -9,15 +9,17 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToResponse;
 
-import io.camunda.gateway.mapping.http.RequestMapper;
 import io.camunda.gateway.mapping.http.ResponseMapper;
+import io.camunda.gateway.mapping.http.mapper.ClusterVariableMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
+import io.camunda.gateway.mapping.http.validator.ClusterVariableRequestValidator;
 import io.camunda.gateway.protocol.model.ClusterVariableSearchQueryRequest;
 import io.camunda.gateway.protocol.model.CreateClusterVariableRequest;
 import io.camunda.search.query.ClusterVariableQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.validation.ClusterVariableValidator;
+import io.camunda.security.validation.IdentifierValidator;
 import io.camunda.service.ClusterVariableServices;
 import io.camunda.service.ClusterVariableServices.ClusterVariableRequest;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaDeleteMapping;
@@ -41,22 +43,24 @@ public class ClusterVariableController {
 
   private final ClusterVariableServices clusterVariableServices;
   private final CamundaAuthenticationProvider authenticationProvider;
-  private final SecurityConfiguration securityConfiguration;
+  private final ClusterVariableMapper clusterVariableMapper;
 
   public ClusterVariableController(
       final ClusterVariableServices clusterVariableServices,
       final CamundaAuthenticationProvider authenticationProvider,
-      final SecurityConfiguration securityConfiguration) {
+      final IdentifierValidator identifierValidator) {
     this.clusterVariableServices = clusterVariableServices;
     this.authenticationProvider = authenticationProvider;
-    this.securityConfiguration = securityConfiguration;
+    clusterVariableMapper =
+        new ClusterVariableMapper(
+            new ClusterVariableRequestValidator(new ClusterVariableValidator(identifierValidator)));
   }
 
   @CamundaPostMapping(path = "/global")
   public CompletableFuture<ResponseEntity<Object>> createGlobalClusterVariable(
       @RequestBody final CreateClusterVariableRequest createClusterVariableRequest) {
-    return RequestMapper.toGlobalClusterVariableCreateRequest(
-            createClusterVariableRequest, securityConfiguration.getCompiledIdValidationPattern())
+    return clusterVariableMapper
+        .toGlobalClusterVariableCreateRequest(createClusterVariableRequest)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::createGlobalClusterVariable);
   }
 
@@ -64,26 +68,24 @@ public class ClusterVariableController {
   public CompletableFuture<ResponseEntity<Object>> createTenantClusterVariable(
       @PathVariable("tenantId") final String tenantId,
       @RequestBody final CreateClusterVariableRequest createClusterVariableRequest) {
-    return RequestMapper.toTenantClusterVariableCreateRequest(
-            createClusterVariableRequest,
-            tenantId,
-            securityConfiguration.getCompiledIdValidationPattern())
+    return clusterVariableMapper
+        .toTenantClusterVariableCreateRequest(createClusterVariableRequest, tenantId)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::createTenantClusterVariable);
   }
 
   @CamundaDeleteMapping(path = "/global/{name}")
   public CompletableFuture<ResponseEntity<Object>> deleteGlobalClusterVariable(
       @PathVariable("name") final String name) {
-    return RequestMapper.toGlobalClusterVariableRequest(
-            name, securityConfiguration.getCompiledIdValidationPattern())
+    return clusterVariableMapper
+        .toGlobalClusterVariableRequest(name)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::deleteGlobalClusterVariable);
   }
 
   @CamundaDeleteMapping(path = "/tenants/{tenantId}/{name}")
   public CompletableFuture<ResponseEntity<Object>> deleteTenantClusterVariable(
       @PathVariable("tenantId") final String tenantId, @PathVariable("name") final String name) {
-    return RequestMapper.toTenantClusterVariableRequest(
-            name, tenantId, securityConfiguration.getCompiledIdValidationPattern())
+    return clusterVariableMapper
+        .toTenantClusterVariableRequest(name, tenantId)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::deleteTenantClusterVariable);
   }
 
@@ -112,16 +114,16 @@ public class ClusterVariableController {
 
   @CamundaGetMapping(path = "/global/{name}")
   public ResponseEntity<Object> getGlobalClusterVariable(@PathVariable("name") final String name) {
-    return RequestMapper.toGlobalClusterVariableRequest(
-            name, securityConfiguration.getCompiledIdValidationPattern())
+    return clusterVariableMapper
+        .toGlobalClusterVariableRequest(name)
         .fold(RestErrorMapper::mapProblemToResponse, this::getGlobalClusterVariable);
   }
 
   @CamundaGetMapping(path = "/tenants/{tenantId}/{name}")
   public ResponseEntity<Object> getTenantClusterVariable(
       @PathVariable("tenantId") final String tenantId, @PathVariable("name") final String name) {
-    return RequestMapper.toTenantClusterVariableRequest(
-            name, tenantId, securityConfiguration.getCompiledIdValidationPattern())
+    return clusterVariableMapper
+        .toTenantClusterVariableRequest(name, tenantId)
         .fold(RestErrorMapper::mapProblemToResponse, this::getTenantClusterVariable);
   }
 

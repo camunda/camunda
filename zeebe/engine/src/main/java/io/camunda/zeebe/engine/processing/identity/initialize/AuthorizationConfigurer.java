@@ -26,7 +26,7 @@ public class AuthorizationConfigurer
   @Override
   public Either<List<String>, AuthorizationRecord> configure(final ConfiguredAuthorization auth) {
     final List<String> violations =
-        validator.validate(
+        validator.validateIdBased(
             auth.ownerId(),
             auth.ownerType(),
             auth.resourceType(),

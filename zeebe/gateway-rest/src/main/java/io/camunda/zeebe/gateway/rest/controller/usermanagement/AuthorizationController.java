@@ -9,16 +9,18 @@ package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
 import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToResponse;
 
-import io.camunda.gateway.mapping.http.RequestMapper;
 import io.camunda.gateway.mapping.http.ResponseMapper;
+import io.camunda.gateway.mapping.http.mapper.AuthorizationMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
+import io.camunda.gateway.mapping.http.validator.AuthorizationRequestValidator;
 import io.camunda.gateway.protocol.model.AuthorizationRequest;
 import io.camunda.gateway.protocol.model.AuthorizationSearchQuery;
 import io.camunda.gateway.protocol.model.AuthorizationSearchResult;
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.validation.AuthorizationValidator;
+import io.camunda.security.validation.IdentifierValidator;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
 import io.camunda.service.AuthorizationServices.UpdateAuthorizationRequest;
@@ -42,22 +44,24 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public class AuthorizationController {
   private final AuthorizationServices authorizationServices;
   private final CamundaAuthenticationProvider authenticationProvider;
-  private final SecurityConfiguration securityConfiguration;
+  private final AuthorizationMapper authorizationMapper;
 
   public AuthorizationController(
       final AuthorizationServices authorizationServices,
       final CamundaAuthenticationProvider authenticationProvider,
-      final SecurityConfiguration securityConfiguration) {
+      final IdentifierValidator identifierValidator) {
     this.authorizationServices = authorizationServices;
     this.authenticationProvider = authenticationProvider;
-    this.securityConfiguration = securityConfiguration;
+    authorizationMapper =
+        new AuthorizationMapper(
+            new AuthorizationRequestValidator(new AuthorizationValidator(identifierValidator)));
   }
 
   @CamundaPostMapping()
   public CompletableFuture<ResponseEntity<Object>> createAuthorization(
       @RequestBody final AuthorizationRequest authorizationCreateRequest) {
-    return RequestMapper.toCreateAuthorizationRequest(
-            authorizationCreateRequest, securityConfiguration.getCompiledIdValidationPattern())
+    return authorizationMapper
+        .toCreateAuthorizationRequest(authorizationCreateRequest)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::create);
   }
 
@@ -90,10 +94,8 @@ public class AuthorizationController {
   public CompletableFuture<ResponseEntity<Object>> updateAuthorization(
       @PathVariable final long authorizationKey,
       @RequestBody final AuthorizationRequest authorizationUpdateRequest) {
-    return RequestMapper.toUpdateAuthorizationRequest(
-            authorizationKey,
-            authorizationUpdateRequest,
-            securityConfiguration.getCompiledIdValidationPattern())
+    return authorizationMapper
+        .toUpdateAuthorizationRequest(authorizationKey, authorizationUpdateRequest)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::update);
   }
 

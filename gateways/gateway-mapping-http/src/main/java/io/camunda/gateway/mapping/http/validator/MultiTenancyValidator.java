@@ -10,6 +10,7 @@ package io.camunda.gateway.mapping.http.validator;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_INVALID_TENANT;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_INVALID_TENANTS;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.createProblemDetail;
+import static io.camunda.security.validation.IdentifierValidator.TENANT_ID_MASK;
 import static io.camunda.zeebe.protocol.record.RejectionType.INVALID_ARGUMENT;
 
 import io.camunda.gateway.mapping.http.GatewayErrorMapper;
@@ -17,12 +18,10 @@ import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.regex.Pattern;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 
 public final class MultiTenancyValidator {
-  private static final Pattern TENANT_ID_MASK = Pattern.compile("^[\\w\\.-]{1,31}$");
 
   /**
    * Validates the tenantId. If multi-tenancy is disabled, the tenantId must be empty, or the
