@@ -136,6 +136,7 @@ final class GlobalListenersInitializerIT {
             .map(
                 type -> {
                   final GlobalListenerCfg listenerCfg = new GlobalListenerCfg();
+                  listenerCfg.setId("GlobalListener_" + type);
                   listenerCfg.setType(type);
                   listenerCfg.setEventTypes(List.of("all"));
                   return listenerCfg;
