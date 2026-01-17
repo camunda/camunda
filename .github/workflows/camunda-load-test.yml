@@ -45,6 +45,11 @@ on:
         type: boolean
         required: false
         default: false
+      operate-included:
+        description: 'Enable Operate: Should run a load test, including operate (allows the measurement for data-availability)'
+        type: boolean
+        required: false
+        default: false
   workflow_call:
     inputs:
       ref:
@@ -87,6 +92,11 @@ on:
         default: false
       realistic:
         description: 'Should run a realistic load test, with real-world process and load'
+        type: boolean
+        required: false
+        default: false
+      operate-included:
+        description: 'Enable Operate: Should run a load test, including operate (allows the measurement for data-availability)'
         type: boolean
         required: false
         default: false
@@ -182,7 +192,7 @@ jobs:
   build-operate-image:
     name: Build + Push Operate Docker image
     needs: calculate-image-tag
-    if: ${{ inputs.reuse-tag == '' }}
+    if: ${{ inputs.operate-included && inputs.reuse-tag == '' }}
     runs-on: ubuntu-latest
     permissions:
       contents: 'read'
@@ -374,14 +384,12 @@ jobs:
           --set zeebe.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
           --set zeebeGateway.image.repository=gcr.io/zeebe-io/zeebe
           --set zeebeGateway.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
-          --set operate.enabled=true
-          --set operate.image.repository=gcr.io/zeebe-io/operate
-          --set operate.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
-          --set elasticsearch.master.persistence.size=128Gi
           --set zeebe.retention.minimumAge=1d
           -f https://raw.githubusercontent.com/camunda/camunda/${{ github.ref }}/zeebe/benchmarks/camunda-platform-values.yaml
           ${{ steps.find-chart-release.outputs.chart-release != '' && format('--version {0}', steps.find-chart-release.outputs.chart-release) || '' }}
           ${{ inputs.stable-vms && format('-f https://raw.githubusercontent.com/camunda/camunda/{0}/zeebe/benchmarks/setup/default/values-stable.yaml', github.ref) || '' }}
+          ${{ inputs.operate-included && format('-f https://raw.githubusercontent.com/camunda/camunda/{0}/zeebe/benchmarks/camunda-platform-operate-values.yaml', github.ref) || '' }}
+          ${{ inputs.operate-included && format('--set operate.image.tag={0}', needs.calculate-image-tag.outputs.image-tag) || '' }}
           ${{ inputs.platform-helm-values }}
 
       - name: Summarize deployment
@@ -455,6 +463,7 @@ jobs:
           --set global.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
           ${{ steps.find-chart-release.outputs.chart-release != '' && format('--version {0}', steps.find-chart-release.outputs.chart-release) || '' }}
           ${{ inputs.realistic && '-f https://raw.githubusercontent.com/camunda/camunda-load-tests-helm/refs/heads/main/charts/camunda-load-tests/values-realistic-benchmark.yaml' || '' }}
+          ${{ inputs.operate-included && '--set app.monitorDataAvailability=true' || '' }}
           ${{ inputs.load-test-load }}
       - name: Setup leader balancing
         run: |

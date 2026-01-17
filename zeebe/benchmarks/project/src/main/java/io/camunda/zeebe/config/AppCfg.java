@@ -25,7 +25,7 @@ public class AppCfg {
   private int monitoringPort;
   private StarterCfg starter;
   private WorkerCfg worker;
-  private boolean monitorDataAvailability = true;
+  private boolean monitorDataAvailability = false;
   private Duration monitorDataAvailabilityInterval = Duration.ofMillis(250);
 
   public String getBrokerUrl() {

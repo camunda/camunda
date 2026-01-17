@@ -1,0 +1,21 @@
+# Values for Operate in the Camunda Platform Chart.
+
+operate:
+  enabled: true
+  image:
+    repository: gcr.io/zeebe-io/operate
+    tag: 8.7.0
+zeebe:
+  retention:
+    minimumAge: 1d
+elasticsearch:
+  master:
+    persistence:
+      size: 128Gi
+    resources:
+      requests:
+        cpu: 3
+        memory: 3Gi
+      limits:
+        cpu: 3
+        memory: 6Gi
