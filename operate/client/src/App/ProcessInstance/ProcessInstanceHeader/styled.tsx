@@ -13,4 +13,15 @@ const VersionTag = styled(Tag)`
   margin-left: 0;
 `;
 
-export {VersionTag};
+const ProcessTags = styled(Tag)`
+  margin-left: var(--cds-spacing-03);
+  white-space: nowrap;
+  flex-shrink: 0;
+  min-width: 0;
+
+  &:first-child {
+    margin-left: 0;
+  }
+`;
+
+export {VersionTag, ProcessTags};
