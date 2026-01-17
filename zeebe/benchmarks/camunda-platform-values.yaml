@@ -51,6 +51,37 @@ postgresql:
 
 operate:
   enabled: false
+  image:
+    tag: SNAPSHOT
+  # Resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
+  resources:
+    requests:
+      cpu: 600m
+      memory: 400Mi
+    limits:
+      cpu: 2000m
+      memory: 2Gi
+
+  # Retention can be used to define the data in Elasticsearch (ILM).
+  retention:
+    ## @param operate.retention.enabled if true, the ILM Policy is created and applied to the index templates.
+    enabled: true
+    ## @param operate.retention.minimumAge defines how old the data must be, before the data is deleted as a duration.
+    minimumAge: 30m # there is no need to keep data longer for our benchmarks, otherwise we will fill up ES pretty quick
+
+  env:
+    - name: OPERATE_LOG_APPENDER
+      value: Stackdriver
+    - name: OPERATE_LOG_STACKDRIVER_SERVICENAME
+      value: operate
+    - name: OPERATE_LOG_STACKDRIVER_SERVICEVERSION
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.namespace
+
+  logging:
+    level:
+      io.camunda.operate: INFO
 
 tasklist:
   enabled: false
@@ -222,6 +253,8 @@ zeebeGateway:
     # See https://github.com/camunda/camunda-platform-helm/issues/2197
     - name: SPRING_CONFIG_ADDITIONALLOCATION
       value: "/usr/local/zeebe/config/application.yml"
+    - name: CAMUNDA_REST_QUERY_ENABLED
+      value: "true"
 
   # Resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
   resources:
@@ -263,8 +296,8 @@ elasticsearch:
       accessModes: [ "ReadWriteOnce" ]
     resources:
       requests:
-        cpu: 1
+        cpu: 3
         memory: 3Gi
       limits:
-        cpu: 2
+        cpu: 3
         memory: 6Gi
