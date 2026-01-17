@@ -17,7 +17,6 @@ import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.protocol.impl.record.value.expression.ExpressionRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.util.Either;
-import java.time.Duration;
 
 public class ExpressionBehavior {
 
@@ -25,11 +24,9 @@ public class ExpressionBehavior {
 
   public ExpressionBehavior(
       final NamespacedEvaluationContext namespaceFullClusterContext,
-      final ExpressionLanguage expressionLanguage,
-      final Duration expressionEvaluationTimeout) {
+      final ExpressionLanguage expressionLanguage) {
     clusterExpressionProcessor =
-        new ExpressionProcessor(
-            expressionLanguage, namespaceFullClusterContext, expressionEvaluationTimeout);
+        new ExpressionProcessor(expressionLanguage, namespaceFullClusterContext);
   }
 
   public Either<Rejection, ExpressionRecord> resolveExpression(

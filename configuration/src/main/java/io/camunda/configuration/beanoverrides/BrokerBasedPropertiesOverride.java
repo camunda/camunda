@@ -219,7 +219,6 @@ public class BrokerBasedPropertiesOverride {
   private void populateFromEngine(final BrokerBasedProperties override) {
     populateFromDistribution(override);
     populateFromBatchOperations(override);
-    populateFromExpression(override);
   }
 
   private void populateFromDistribution(final BrokerBasedProperties override) {
@@ -239,11 +238,6 @@ public class BrokerBasedPropertiesOverride {
         .getEngine()
         .getBatchOperations()
         .setSchedulerInterval(engineBatchOperation.getSchedulerInterval());
-  }
-
-  private void populateFromExpression(final BrokerBasedProperties override) {
-    final var expression = unifiedConfiguration.getCamunda().getExpression();
-    override.getExperimental().getEngine().getExpression().setTimeout(expression.getTimeout());
   }
 
   private void populateFromFlowControl(final BrokerBasedProperties override) {

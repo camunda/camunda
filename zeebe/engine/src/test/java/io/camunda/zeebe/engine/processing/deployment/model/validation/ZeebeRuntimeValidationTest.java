@@ -11,7 +11,6 @@ import static io.camunda.zeebe.engine.processing.deployment.model.validation.Exp
 
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.ExpressionLanguageFactory;
-import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.bpmn.clock.ZeebeFeelEngineClock;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.ExpressionTransformer;
@@ -510,11 +509,7 @@ public final class ZeebeRuntimeValidationTest {
         ExpressionLanguageFactory.createExpressionLanguage(
             new ZeebeFeelEngineClock(InstantSource.system()));
     final ScopedEvaluationContext emptyLookup = ScopedEvaluationContext.NONE_INSTANCE;
-    final var expressionProcessor =
-        new ExpressionProcessor(
-            expressionLanguage,
-            emptyLookup,
-            EngineConfiguration.DEFAULT_EXPRESSION_EVALUATION_TIMEOUT);
+    final var expressionProcessor = new ExpressionProcessor(expressionLanguage, emptyLookup);
     final ValidationVisitor visitor =
         new ValidationVisitor(
             ZeebeRuntimeValidators.getValidators(expressionLanguage, expressionProcessor));

@@ -15,7 +15,6 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ExpressionIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
-import java.time.Duration;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -23,15 +22,7 @@ import org.junit.Test;
 
 public class ResolveFeelExpressionTest {
 
-  @ClassRule
-  public static final EngineRule ENGINE_RULE =
-      EngineRule.singlePartition()
-          .withEngineConfig(
-              e -> {
-                // Set it low to speed up shouldRejectResolveWhenExpressionEvaluationTimesOut
-                // But not too low to accidentally timeout during other tests
-                e.setExpressionEvaluationTimeout(Duration.ofMillis(300));
-              });
+  @ClassRule public static final EngineRule ENGINE_RULE = EngineRule.singlePartition();
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
@@ -586,26 +577,5 @@ public class ResolveFeelExpressionTest {
         .hasIntent(ExpressionIntent.EVALUATED)
         .hasRecordType(RecordType.EVENT);
     assertThat(record.getValue().getResultValue()).isEqualTo("Null");
-  }
-
-  @Test
-  public void shouldRejectResolveWhenExpressionEvaluationTimesOut() {
-    // when
-    final var record =
-        ENGINE_RULE
-            .expression()
-            .withExpression("=for x in 0..1000000 return for y in 0..x return x + y")
-            .expectRejection()
-            .resolve();
-
-    // then
-    Assertions.assertThat(record)
-        .hasRecordType(RecordType.COMMAND_REJECTION)
-        .hasIntent(ExpressionIntent.EVALUATE)
-        .hasRejectionType(RejectionType.PROCESSING_ERROR)
-        .hasRejectionReason(
-            """
-            Expected to evaluate expression but timed out after 300 ms: \
-            'for x in 0..1000000 return for y in 0..x return x + y'""");
   }
 }

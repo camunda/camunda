@@ -11,7 +11,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.ExpressionLanguageFactory;
-import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.bpmn.clock.ZeebeFeelEngineClock;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.expression.ScopedEvaluationContext;
@@ -75,11 +74,7 @@ public class ProcessValidationUtil {
         ExpressionLanguageFactory.createExpressionLanguage(
             new ZeebeFeelEngineClock(InstantSource.system()));
     final ScopedEvaluationContext emptyLookup = ScopedEvaluationContext.NONE_INSTANCE;
-    final var expressionProcessor =
-        new ExpressionProcessor(
-            expressionLanguage,
-            emptyLookup,
-            EngineConfiguration.DEFAULT_EXPRESSION_EVALUATION_TIMEOUT);
+    final var expressionProcessor = new ExpressionProcessor(expressionLanguage, emptyLookup);
     final ValidationVisitor visitor =
         new ValidationVisitor(
             Stream.of(
