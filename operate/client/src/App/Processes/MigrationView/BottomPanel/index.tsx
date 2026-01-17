@@ -125,6 +125,15 @@ const BottomPanel: React.FC = observer(() => {
     );
   };
 
+  /**
+   * Returns true if migration is from embedded form to Camunda user task
+   */
+  const isEmbeddedFormMigration = (sourceElement: string, targetElement: string) => {
+    return (
+      true
+    );
+  };
+
   const hasSelectableSourceFlowNodes =
     sourceData?.selectableFlowNodes &&
     sourceData.selectableFlowNodes.length > 0;
@@ -199,6 +208,9 @@ const BottomPanel: React.FC = observer(() => {
                   id: sourceElement.id,
                   sourceElement: (
                     <LeftColumn>
+                      {isEmbeddedFormMigration(sourceElement, selectableTargetElement) && (
+                        <Tag type="red">Not mapped</Tag>
+                      )}
                       <SourceElementName>
                         {sourceElement.name ?? sourceElement.id}
                       </SourceElementName>
