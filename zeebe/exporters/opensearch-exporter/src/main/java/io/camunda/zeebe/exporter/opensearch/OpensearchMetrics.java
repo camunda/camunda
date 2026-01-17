@@ -30,6 +30,7 @@ public class OpensearchMetrics {
     bulkMemorySize =
         StatefulGauge.builder(meterName("bulk.memory.size"))
             .description("Exporter bulk memory size")
+            .valueExpires()
             .register(meterRegistry);
     flushDuration =
         Timer.builder(meterName("flush.duration.seconds"))
