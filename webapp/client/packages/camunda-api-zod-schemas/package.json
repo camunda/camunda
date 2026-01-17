@@ -25,7 +25,8 @@
 		"typecheck": "tsc",
 		"prepare": "npm run build",
 		"download-specs": "node scripts/download-specs.js",
-		"generate-schemas": "node scripts/generate-schemas.js"
+		"generate-schemas": "node scripts/generate-schemas.js",
+		"clean": "node scripts/clean.js"
 	},
 	"sideEffects": false,
 	"files": [
@@ -819,11 +820,11 @@
 	},
 	"packageManager": "npm@12.1.0",
 	"devDependencies": {
-		"@kubb/cli": "4.17.0",
-		"@kubb/core": "4.17.0",
-		"@kubb/plugin-oas": "4.17.0",
-		"@kubb/plugin-ts": "4.17.0",
-		"@kubb/plugin-zod": "4.17.0",
+		"@kubb/cli": "4.36.4",
+		"@kubb/core": "4.36.4",
+		"@kubb/plugin-oas": "4.36.4",
+		"@kubb/plugin-ts": "4.36.4",
+		"@kubb/plugin-zod": "4.36.4",
 		"@types/node": "26.6.3",
 		"changelogen": "0.6.2",
 		"typescript": "7.0.2",
