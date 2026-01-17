@@ -24,6 +24,7 @@
 		"format": "prettier --write .",
 		"prepublish": "npm run build",
 		"typecheck": "tsc",
+		"clean": "node scripts/clean.js",
 		"download-specs": "node scripts/download-specs.js",
 		"generate-schemas": "node scripts/generate-schemas.js"
 	},
