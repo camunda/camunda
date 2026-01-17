@@ -25,6 +25,7 @@ import io.camunda.zeebe.gateway.impl.job.RoundRobinActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.stream.StreamJobsHandler;
 import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationHandler;
 import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationInterceptor;
+import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationMetrics;
 import io.camunda.zeebe.gateway.interceptors.impl.ContextInjectingInterceptor;
 import io.camunda.zeebe.gateway.interceptors.impl.DecoratedInterceptor;
 import io.camunda.zeebe.gateway.interceptors.impl.InterceptorRepository;
@@ -411,14 +412,17 @@ public final class Gateway implements CloseableSilently {
     interceptors.add(new ContextInjectingInterceptor(queryApi));
 
     if (securityConfiguration.isApiProtected()) {
+      final var authMethod = securityConfiguration.getAuthentication().getMethod();
       final var handler =
-          switch (securityConfiguration.getAuthentication().getMethod()) {
+          switch (authMethod) {
             case BASIC -> basicAuth();
             case OIDC ->
                 new AuthenticationHandler.Oidc(
                     jwtDecoder, securityConfiguration.getAuthentication().getOidc());
           };
-      interceptors.add(new AuthenticationInterceptor(handler));
+      interceptors.add(
+          new AuthenticationInterceptor(
+              handler, new AuthenticationMetrics(meterRegistry, authMethod)));
     }
     return ServerInterceptors.intercept(service, interceptors);
   }

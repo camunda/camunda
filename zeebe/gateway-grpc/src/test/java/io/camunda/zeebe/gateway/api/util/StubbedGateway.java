@@ -12,6 +12,7 @@ import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.interfaces.Claim;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.EndpointManager;
 import io.camunda.zeebe.gateway.Gateway;
@@ -25,6 +26,7 @@ import io.camunda.zeebe.gateway.impl.stream.StreamJobsHandler;
 import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationHandler;
 import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationHandler.Oidc;
 import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationInterceptor;
+import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationMetrics;
 import io.camunda.zeebe.gateway.metrics.LongPollingMetrics;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayBlockingStub;
@@ -49,6 +51,7 @@ import io.grpc.Server;
 import io.grpc.ServerInterceptors;
 import io.grpc.inprocess.InProcessChannelBuilder;
 import io.grpc.inprocess.InProcessServerBuilder;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.util.Date;
 import java.util.HashMap;
@@ -108,7 +111,9 @@ public final class StubbedGateway {
                     new AuthenticationInterceptor(
                         new AuthenticationHandler.Oidc(
                             new FakeJwtDecoder(),
-                            securityConfiguration.getAuthentication().getOidc()))));
+                            securityConfiguration.getAuthentication().getOidc()),
+                        new AuthenticationMetrics(
+                            new SimpleMeterRegistry(), AuthenticationMethod.OIDC))));
     server = serverBuilder.build();
     server.start();
   }

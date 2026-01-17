@@ -82,6 +82,7 @@ import org.springframework.security.config.annotation.web.configurers.HeadersCon
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer.FrameOptionsConfig;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer.HstsConfig;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.config.observation.SecurityObservationSettings;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
@@ -191,6 +192,11 @@ public class WebSecurityConfig {
       "camunda_authentication_external_requests";
   private static final KeyValues CAMUNDA_AUTHENTICATION_OBSERVATION_DOMAIN_IDENTITY_TAGS =
       KeyValues.of("domain", "identity");
+
+  @Bean
+  public SecurityObservationSettings defaultSecurityObservations() {
+    return SecurityObservationSettings.withDefaults().build();
+  }
 
   @Bean
   @Order(ORDER_UNPROTECTED)
