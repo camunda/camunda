@@ -10,6 +10,8 @@ package io.camunda.authentication.config;
 import static io.camunda.security.configuration.OidcAuthenticationConfiguration.CLIENT_AUTHENTICATION_METHODS;
 
 import io.camunda.security.configuration.OidcAuthenticationConfiguration;
+import java.util.HashMap;
+import java.util.Map;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.ClientRegistration.Builder;
 import org.springframework.security.oauth2.client.registration.ClientRegistrations;
@@ -29,6 +31,12 @@ public final class ClientRegistrationFactory {
               .registrationId(registrationId);
     } else {
       builder = ClientRegistration.withRegistrationId(registrationId);
+    }
+
+    if (configuration.getEndSessionEndpoint() != null) {
+      final Map<String, Object> metadata = new HashMap<>();
+      metadata.put("end_session_endpoint", configuration.getEndSessionEndpoint());
+      builder.providerConfigurationMetadata(metadata);
     }
 
     if (configuration.getClientName() != null) {

@@ -164,7 +164,7 @@ public class SecurityHeadersOidcIT extends SecurityHeadersBaseIT {
     assertThat(headers)
         .containsEntry(
             CONTENT_SECURITY_POLICY,
-            List.of(ContentSecurityPolicyConfig.DEFAULT_SM_SECURITY_POLICY));
+            List.of(ContentSecurityPolicyConfig.getDefaultSmSecurityPolicy(List.of())));
     assertThat(headers).doesNotContainKey(CONTENT_SECURITY_POLICY_REPORT_ONLY);
     assertThat(headers).containsEntry(REFERRER_POLICY, List.of(REFERRER_POLICY_VALUE));
     assertThat(headers)

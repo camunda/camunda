@@ -69,7 +69,7 @@ class Authentication {
     this.status = status;
   };
 
-  #handleThirdPartySessionExpiration = () => {
+  #handleThirdPartySessionExpiration = (redirectUrl: string) => {
     const wasReloaded = getStateLocally().wasReloaded;
 
     this.setStatus('invalid-third-party-session');
@@ -80,6 +80,11 @@ class Authentication {
 
     storeStateLocally({wasReloaded: true});
 
+    if (redirectUrl && redirectUrl !== "") {
+      window.location.href = redirectUrl;
+      return;
+    }
+
     window.location.reload();
   };
 
@@ -89,10 +94,14 @@ class Authentication {
         {
           url: '/logout',
           method: 'POST',
+          headers: {
+            'Accept': 'application/json, text/plain',
+          }
         },
         {
           skipSessionCheck: true,
         },
+        // 'no-cors',
       );
 
       if (!response.ok) {
@@ -105,7 +114,13 @@ class Authentication {
         !window?.clientConfig?.canLogout ||
         window?.clientConfig?.isLoginDelegated
       ) {
-        this.#handleThirdPartySessionExpiration();
+        let redirectUrl = "";
+        if (response.headers.get('Content-Type')?.includes('application/json')) {
+          const json = await response.json();
+          redirectUrl = json.url;
+        }
+
+        this.#handleThirdPartySessionExpiration(redirectUrl);
         return;
       }
 
@@ -126,7 +141,7 @@ class Authentication {
       !window?.clientConfig?.canLogout ||
       window?.clientConfig?.isLoginDelegated
     ) {
-      this.#handleThirdPartySessionExpiration();
+      this.#handleThirdPartySessionExpiration("");
 
       return;
     }
