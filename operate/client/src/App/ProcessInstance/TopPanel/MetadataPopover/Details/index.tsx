@@ -19,12 +19,29 @@ import type {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
 import {DetailsModal} from './DetailsModal';
 import type {ElementInstance} from '@camunda/camunda-api-zod-schemas/8.8';
 import {useProcessInstancesSearch} from 'modules/queries/processInstance/useProcessInstancesSearch';
+import {useGetUserTaskByElementInstance} from 'modules/queries/userTasks/useGetUserTaskByElementInstance';
 import {useJobs} from 'modules/queries/jobs/useJobs';
 import {useDecisionInstancesSearch} from 'modules/queries/decisionInstances/useDecisionInstancesSearch';
 
 type Props = {
   elementInstance: ElementInstance;
   businessObject?: BusinessObject | null;
+};
+
+const formatTaskLink = (
+  tasklistUrl: string,
+  userTaskKey?: string,
+  state?: string,
+) => {
+  if (!userTaskKey) {
+    return tasklistUrl;
+  }
+  switch (state) {
+    case 'completed':
+      return `${tasklistUrl}/${userTaskKey}?filter=completed`;
+    default:
+      return `${tasklistUrl}/${userTaskKey}?filter=all-open`;
+  }
 };
 
 const Details: React.FC<Props> = ({elementInstance, businessObject}) => {
@@ -65,6 +82,13 @@ const Details: React.FC<Props> = ({elementInstance, businessObject}) => {
     },
   );
 
+  const {data: userTask} = useGetUserTaskByElementInstance(
+    elementInstanceKey ?? '',
+    {
+      enabled: !!elementInstanceKey && type === 'USER_TASK',
+    },
+  );
+
   const calledDecisionInstance = useMemo(
     () =>
       decisionInstanceSearchResult?.items?.find(
@@ -84,7 +108,11 @@ const Details: React.FC<Props> = ({elementInstance, businessObject}) => {
         link={
           !isNil(window.clientConfig?.tasklistUrl) && type === 'USER_TASK'
             ? {
-                href: window.clientConfig!.tasklistUrl,
+                href: formatTaskLink(
+                  window.clientConfig!.tasklistUrl,
+                  userTask?.userTaskKey,
+                  userTask?.state,
+                ),
                 label: 'Open Tasklist',
                 onClick: () => {
                   tracking.track({
