@@ -76,6 +76,9 @@ else
 fi
 kubectl label namespace $namespace deadline-date="${deadline_date}" --overwrite
 
+# Label namespace with registry (required to inject image pull secrets)
+kubectl label namespace "$namespace" registry=harbor --overwrite
+
 # Copy default folder to new namespace folder
 cp -rv default/ $namespace
 

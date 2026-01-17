@@ -217,7 +217,6 @@ An example payload looks like this:
     "inputs": {
       "name": benchmark_name,
       "ref": zeebe_ref_name,
-      "cluster": "zeebe-cluster",
       "stable-vms": stable_vms
     }
 }
