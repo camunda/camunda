@@ -34,6 +34,8 @@ type OnFlowNodeSelection = (
   isMultiInstance?: boolean,
 ) => void;
 
+type OnRootChange = (rootElementId: string) => void;
+
 type RenderOptions = {
   container: HTMLElement;
   xml: string;
@@ -57,7 +59,7 @@ class BpmnJS {
   selectedFlowNode?: SVGGraphicsElement;
   onFlowNodeSelection?: OnFlowNodeSelection;
   onViewboxChange?: (isChanging: boolean) => void;
-  onRootChange?: (rootElementId: string) => void;
+  onRootChange?: OnRootChange;
   #overlaysData: OverlayData[] = [];
   #hasOuterBorderOnSelection = false;
   #rootElement?: BpmnElement;
@@ -456,4 +458,4 @@ class BpmnJS {
 }
 
 export {BpmnJS};
-export type {OnFlowNodeSelection, OverlayData};
+export type {OnFlowNodeSelection, OnRootChange, OverlayData};
