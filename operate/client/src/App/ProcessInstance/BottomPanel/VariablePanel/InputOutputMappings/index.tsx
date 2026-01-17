@@ -6,8 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
-import {observer} from 'mobx-react';
 import {getMappings} from 'modules/bpmn-js/utils/getInputOutputMappings';
 import {Content, EmptyMessage} from './styled';
 import {IOMappingInfoBanner} from './IOMappingInfoBanner';
@@ -26,21 +24,17 @@ const INFORMATION_TEXT = {
 
 type Props = {
   type: 'Input' | 'Output';
+  elementId: string;
 };
 
-const InputOutputMappings: React.FC<Props> = observer(({type}) => {
-  const flowNodeId = flowNodeSelectionStore.state.selection?.flowNodeId;
+const InputOutputMappings: React.FC<Props> = ({type, elementId}) => {
   const [isInfoBannerVisible, setIsInfoBannerVisible] = useState(
     !getStateLocally()?.[`hide${type}MappingsHelperBanner`],
   );
 
-  if (flowNodeId === undefined) {
-    return null;
-  }
-
   const processDefinitionKey = useProcessDefinitionKeyContext();
   const {data} = useProcessInstanceXml({processDefinitionKey});
-  const businessObject = data?.businessObjects[flowNodeId];
+  const businessObject = data?.businessObjects[elementId];
 
   const mappings =
     businessObject === undefined ? [] : getMappings(businessObject, type);
@@ -91,6 +85,6 @@ const InputOutputMappings: React.FC<Props> = observer(({type}) => {
       )}
     </Content>
   );
-});
+};
 
 export {InputOutputMappings};
