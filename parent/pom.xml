@@ -147,7 +147,7 @@
     <version.checker-qual>3.49.5</version.checker-qual>
     <version.java-jwt>4.5.0</version.java-jwt>
     <version.reactive-streams>1.0.4</version.reactive-streams>
-    <version.postgresql>42.7.8</version.postgresql>
+    <version.postgresql>42.7.9</version.postgresql>
     <version.h2>2.3.232</version.h2>
     <version.aws-signing>3.0.0</version.aws-signing>
     <version.tc-keycloak>4.0.1</version.tc-keycloak>
