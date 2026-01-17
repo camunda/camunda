@@ -35,3 +35,6 @@ jest-test-results.xml
 
 # Downloaded OpenAPI specs (re-download with: npm run download-specs -w @camunda/camunda-api-zod-schemas)
 packages/camunda-api-zod-schemas/specs/
+
+# Auto-generated Zod schemas (re-generate with: npm run generate-schemas -w @camunda/camunda-api-zod-schemas)
+packages/camunda-api-zod-schemas/lib/**/gen/
