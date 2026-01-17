@@ -714,7 +714,7 @@
           "useBackend": false
         }
       ],
-      "title": "Error Rate REST (top 10)",
+      "title": "Error Rate gRPC (top 10)",
       "type": "timeseries"
     },
     {
