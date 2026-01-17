@@ -29,9 +29,6 @@ public enum StarterLatencyMetricsDoc implements ExtendedMeterDocumentation {
     private static final KeyName[] KEY_NAMES = new KeyName[] {StarterMetricKeyNames.PARTITION};
 
     private static final Duration[] BUCKETS = {
-      Duration.ofMillis(500),
-      Duration.ofSeconds(1),
-      Duration.ofMillis(2500),
       Duration.ofSeconds(5),
       Duration.ofSeconds(10),
       Duration.ofSeconds(15),
@@ -39,6 +36,9 @@ public enum StarterLatencyMetricsDoc implements ExtendedMeterDocumentation {
       Duration.ofSeconds(45),
       Duration.ofSeconds(60),
       Duration.ofSeconds(90),
+      Duration.ofSeconds(120),
+      Duration.ofMinutes(3),
+      Duration.ofMinutes(4)
     };
 
     @Override
