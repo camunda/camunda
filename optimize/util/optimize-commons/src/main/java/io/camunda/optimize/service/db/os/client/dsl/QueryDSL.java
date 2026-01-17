@@ -16,9 +16,11 @@ import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.opensearch.client.json.JsonData;
+import org.opensearch.client.opensearch._types.BuiltinScriptLanguage;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.Script;
 import org.opensearch.client.opensearch._types.ScriptField;
+import org.opensearch.client.opensearch._types.ScriptLanguage;
 import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery.Builder;
@@ -40,7 +42,8 @@ import org.opensearch.client.opensearch.core.search.SourceConfig;
 
 public interface QueryDSL {
 
-  String DEFAULT_SCRIPT_LANG = "painless";
+  ScriptLanguage DEFAULT_SCRIPT_LANG =
+      ScriptLanguage.builder().builtin(BuiltinScriptLanguage.Painless).build();
 
   private static <A> List<A> nonNull(final A[] items) {
     return nonNull(Arrays.asList(items));

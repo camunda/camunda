@@ -17,6 +17,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation.Builder;
@@ -104,14 +105,11 @@ public class OpenSearchCompositeAggregationScroller {
       final CompositeAggregate compositeAggregationResult =
           extractCompositeAggregationResult(searchResponse);
 
-      final Map<String, String> safeAfterKeyMap =
+      final Map<String, FieldValue> safeAfterKeyMap =
           compositeAggregationResult.afterKey().entrySet().stream()
               // Below is a workaround for a known java issue
               // https://bugs.openjdk.org/browse/JDK-8148463
-              .collect(
-                  HashMap::new,
-                  (m, v) -> m.put(v.getKey(), v.getValue().to(String.class)),
-                  HashMap::putAll);
+              .collect(HashMap::new, (m, v) -> m.put(v.getKey(), v.getValue()), HashMap::putAll);
 
       aggregations = updateAfterKeyInCompositeAggregation(safeAfterKeyMap, aggregations);
 
@@ -129,12 +127,12 @@ public class OpenSearchCompositeAggregationScroller {
   }
 
   private HashMap<String, Aggregation> updateAfterKeyInCompositeAggregation(
-      final Map<String, String> safeAfterKeyMap, final Map<String, Aggregation> currentAgg) {
+      final Map<String, FieldValue> safeAfterKeyMap, final Map<String, Aggregation> currentAgg) {
     return updateAfterKeyInCompositeAggregation(safeAfterKeyMap, currentAgg, false);
   }
 
   private HashMap<String, Aggregation> updateAfterKeyInCompositeAggregation(
-      final Map<String, String> safeAfterKeyMap,
+      final Map<String, FieldValue> safeAfterKeyMap,
       final Map<String, Aggregation> currentAgg,
       final boolean isFromNested) {
     final HashMap<String, Aggregation> newAggregations = new HashMap<>();
@@ -161,7 +159,7 @@ public class OpenSearchCompositeAggregationScroller {
         final CompositeAggregation newAgg =
             updateCompositeAggregation(agg.composite(), safeAfterKeyMap);
         if (isFromNested) {
-          newAggregations.put(aggPath, newAgg._toAggregation());
+          newAggregations.put(aggPath, newAgg.toAggregation());
         } else {
           final Aggregation upgradeAgg =
               Aggregation.of(
@@ -180,7 +178,7 @@ public class OpenSearchCompositeAggregationScroller {
 
   private CompositeAggregation updateCompositeAggregation(
       final CompositeAggregation prevCompositeAggregation,
-      final Map<String, String> safeAfterKeyMap) {
+      final Map<String, FieldValue> safeAfterKeyMap) {
     return new CompositeAggregation.Builder()
         .sources(prevCompositeAggregation.sources())
         .size(prevCompositeAggregation.size())

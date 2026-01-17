@@ -478,7 +478,7 @@ public class VariableRepositoryOS implements VariableRepository {
         AggregationDSL.withSubaggregations(
             nestedAgg,
             Collections.singletonMap(
-                VAR_NAME_AND_TYPE_COMPOSITE_AGG, varNameAndTypeAgg._toAggregation()));
+                VAR_NAME_AND_TYPE_COMPOSITE_AGG, varNameAndTypeAgg.toAggregation()));
 
     final List<String> indicesToTarget =
         processDefinitionKeysToTarget.stream()
@@ -507,9 +507,9 @@ public class VariableRepositoryOS implements VariableRepository {
       final Map<String, DefinitionVariableLabelsDto> definitionLabelsByKey) {
     final String processDefinitionKey =
         extractProcessDefinitionKeyFromIndexName(
-            (bucket.key().get(INDEX_AGGREGATION).to(String.class)));
-    final String variableName = bucket.key().get(NAME_AGGREGATION).to(String.class);
-    final String variableType = bucket.key().get(TYPE_AGGREGATION).to(String.class);
+            (bucket.key().get(INDEX_AGGREGATION).stringValue()));
+    final String variableName = bucket.key().get(NAME_AGGREGATION).stringValue();
+    final String variableType = bucket.key().get(TYPE_AGGREGATION).stringValue();
     return processVariableNameResponseDtoFrom(
         definitionLabelsByKey, processDefinitionKey, variableName, variableType);
   }
@@ -565,7 +565,7 @@ public class VariableRepositoryOS implements VariableRepository {
             .build();
 
     filterForVariableWithGivenIdAndPrefix.aggregations(
-        Map.of(VALUE_AGGREGATION, collectAllVariableValues._toAggregation()));
+        Map.of(VALUE_AGGREGATION, collectAllVariableValues.toAggregation()));
 
     final NestedAggregation.Builder nestedAgg = new NestedAggregation.Builder().path(variablePath);
     final Aggregation finalAgg =

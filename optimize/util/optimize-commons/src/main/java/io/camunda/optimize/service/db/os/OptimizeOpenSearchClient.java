@@ -22,9 +22,7 @@ import io.camunda.optimize.dto.optimize.DataImportSourceType;
 import io.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import io.camunda.optimize.dto.optimize.ImportRequestDto;
 import io.camunda.optimize.dto.optimize.datasource.DataSourceDto;
-import io.camunda.optimize.rest.exceptions.NotSupportedException;
 import io.camunda.optimize.service.db.DatabaseClient;
-import io.camunda.optimize.service.db.es.schema.TransportOptionsProvider;
 import io.camunda.optimize.service.db.os.client.dsl.QueryDSL;
 import io.camunda.optimize.service.db.os.client.sync.OpenSearchDocumentOperations;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
@@ -50,14 +48,14 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import org.opensearch.client.RestClient;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
-import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch._types.BulkByScrollFailure;
 import org.opensearch.client.opensearch._types.Conflicts;
 import org.opensearch.client.opensearch._types.ErrorCause;
 import org.opensearch.client.opensearch._types.FieldSort;
 import org.opensearch.client.opensearch._types.OpenSearchException;
+import org.opensearch.client.opensearch._types.Refresh;
 import org.opensearch.client.opensearch._types.Script;
 import org.opensearch.client.opensearch._types.SortOptions;
 import org.opensearch.client.opensearch._types.SortOrder;
@@ -118,67 +116,28 @@ import org.opensearch.client.opensearch.tasks.ListResponse;
 import org.opensearch.client.opensearch.tasks.Status;
 import org.opensearch.client.transport.endpoints.SimpleEndpoint;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
 
 public class OptimizeOpenSearchClient extends DatabaseClient {
 
-  private static final Logger LOG =
-      org.slf4j.LoggerFactory.getLogger(OptimizeOpenSearchClient.class);
+  private static final Logger LOG = LoggerFactory.getLogger(OptimizeOpenSearchClient.class);
 
   private ExtendedOpenSearchClient openSearchClient;
   private OpenSearchAsyncClient openSearchAsyncClient;
   private RichOpenSearchClient richOpenSearchClient;
-  private RestClient restClient;
-  private TransportOptionsProvider transportOptionsProvider;
   private IndexNameServiceOS indexNameServiceOS;
 
   public OptimizeOpenSearchClient(
       final ExtendedOpenSearchClient openSearchClient,
       final OpenSearchAsyncClient openSearchAsyncClient,
       final OptimizeIndexNameService indexNameService) {
-    this(openSearchClient, openSearchAsyncClient, indexNameService, new TransportOptionsProvider());
-  }
-
-  public OptimizeOpenSearchClient(
-      final RestClient restClient,
-      final ExtendedOpenSearchClient openSearchClient,
-      final OpenSearchAsyncClient openSearchAsyncClient,
-      final OptimizeIndexNameService indexNameService,
-      final TransportOptionsProvider transportOptionsProvider) {
     this.openSearchClient = openSearchClient;
     this.indexNameService = indexNameService;
-    this.transportOptionsProvider = transportOptionsProvider;
-    this.openSearchAsyncClient = openSearchAsyncClient;
-    richOpenSearchClient =
-        new RichOpenSearchClient(openSearchClient, openSearchAsyncClient, indexNameService);
-    this.restClient = restClient;
-    indexNameServiceOS = new IndexNameServiceOS(indexNameService);
-  }
-
-  public OptimizeOpenSearchClient(
-      final ExtendedOpenSearchClient openSearchClient,
-      final OpenSearchAsyncClient openSearchAsyncClient,
-      final OptimizeIndexNameService indexNameService,
-      final TransportOptionsProvider transportOptionsProvider) {
-    this.openSearchClient = openSearchClient;
-    this.indexNameService = indexNameService;
-    this.transportOptionsProvider = transportOptionsProvider;
     this.openSearchAsyncClient = openSearchAsyncClient;
     richOpenSearchClient =
         new RichOpenSearchClient(openSearchClient, openSearchAsyncClient, indexNameService);
     indexNameServiceOS = new IndexNameServiceOS(indexNameService);
-  }
-
-  public RestClient getRestClient() {
-    if (restClient != null) {
-      return restClient;
-    } else {
-      // We are creating this client only for testing, as there is currently no use in the normal
-      // codebase. In case that becomes necessary this is a bit complicated because the AwsTransport
-      // requires Apache 5, however the RestClient works with Apache 4, so we would need to
-      // duplicate the entire logic for building the transport
-      throw new NotSupportedException("RestClient is only available for testing");
-    }
   }
 
   private static String getHintForErrorMsg(final boolean containsNestedDocumentLimitErrorMessage) {
@@ -231,7 +190,7 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     }
 
     if (taskResponse.response() != null) {
-      final List<String> failures = taskResponse.response().failures();
+      final List<BulkByScrollFailure> failures = taskResponse.response().failures();
       if (failures != null && !failures.isEmpty()) {
         LOG.error("Opensearch task contains failures: {}", failures);
         throw new OptimizeRuntimeException(failures.toString());
@@ -244,8 +203,8 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
   }
 
   public final void close() {
-    Optional.of(openSearchClient).ifPresent(OpenSearchClient::shutdown);
-    Optional.of(openSearchAsyncClient).ifPresent(OpenSearchAsyncClient::shutdown);
+    Optional.ofNullable(openSearchClient).ifPresent(c -> closeSafely(c._transport()));
+    Optional.ofNullable(openSearchAsyncClient).ifPresent(c -> closeSafely(c._transport()));
   }
 
   @Override
@@ -261,8 +220,6 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     richOpenSearchClient =
         new RichOpenSearchClient(openSearchClient, openSearchAsyncClient, indexNameService);
     indexNameService = context.getBean(OptimizeIndexNameService.class);
-    restClient = OpenSearchClientBuilder.restClient(configurationService);
-    transportOptionsProvider = new TransportOptionsProvider(configurationService);
     indexNameServiceOS = new IndexNameServiceOS(indexNameService);
   }
 
@@ -938,7 +895,7 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
             .query(filterQuery)
             .conflicts(Conflicts.Proceed)
             .script(updateScript)
-            .refresh(true);
+            .refresh(Refresh.True);
     final Function<Exception, String> errorMessage =
         e ->
             format(
@@ -959,7 +916,7 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
 
     waitUntilTaskIsFinished(taskId, updateItemIdentifier);
 
-    final Status taskStatus = richOpenSearchClient.task().task(taskId).response();
+    final Status taskStatus = richOpenSearchClient.task().task(taskId).task().status();
     LOG.debug("Updated [{}] {}.", taskStatus.updated(), updateItemIdentifier);
     return taskStatus.updated() > 0L;
   }
@@ -970,12 +927,13 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
       final boolean refresh,
       final String... indices) {
     LOG.debug("Deleting {}", deleteItemIdentifier);
+    final Refresh refreshPolicy = refresh ? Refresh.True : Refresh.False;
     final DeleteByQueryRequest.Builder requestBuilder =
         new DeleteByQueryRequest.Builder()
             .index(applyIndexPrefixes(indices))
             .conflicts(Conflicts.Proceed)
             .query(filterQuery)
-            .refresh(refresh);
+            .refresh(refreshPolicy);
     final Function<Exception, String> errorMessage =
         e ->
             format(
@@ -996,7 +954,7 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
 
     waitUntilTaskIsFinished(taskId, deleteItemIdentifier);
 
-    final Status taskStatus = richOpenSearchClient.task().task(taskId).response();
+    final Status taskStatus = richOpenSearchClient.task().task(taskId).task().status();
     LOG.debug("Deleted [{}] {}.", taskStatus.updated(), deleteItemIdentifier);
     return taskStatus.updated() > 0L;
   }
@@ -1073,5 +1031,15 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
   public GetSnapshotResponse getSnapshots(final GetSnapshotRequest getSnapshotRequest)
       throws IOException {
     return openSearchClient.getSnapshots(getSnapshotRequest);
+  }
+
+  private void closeSafely(final AutoCloseable closeable) {
+    if (closeable != null) {
+      try {
+        closeable.close();
+      } catch (final Exception e) {
+        LOG.warn("Failed to close resource.", e);
+      }
+    }
   }
 }

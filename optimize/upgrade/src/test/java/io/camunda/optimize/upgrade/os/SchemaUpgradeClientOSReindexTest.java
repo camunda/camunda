@@ -7,7 +7,6 @@
  */
 package io.camunda.optimize.upgrade.os;
 
-import static io.camunda.optimize.service.util.mapper.ObjectMapperFactory.OPTIMIZE_MAPPER;
 import static io.camunda.optimize.upgrade.db.SchemaUpgradeClientFactory.createSchemaUpgradeClient;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
@@ -29,13 +28,10 @@ import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.upgrade.db.SchemaUpgradeClient;
 import io.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import io.github.netmikey.logunit.api.LogCapturer;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-import org.apache.http.HttpEntity;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -43,15 +39,15 @@ import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.stubbing.OngoingStubbing;
-import org.opensearch.client.Response;
 import org.opensearch.client.opensearch._types.ErrorCause;
 import org.opensearch.client.opensearch._types.Retries;
 import org.opensearch.client.opensearch.core.ReindexRequest;
 import org.opensearch.client.opensearch.tasks.GetTasksResponse;
-import org.opensearch.client.opensearch.tasks.Info;
 import org.opensearch.client.opensearch.tasks.ListRequest;
 import org.opensearch.client.opensearch.tasks.ListResponse;
 import org.opensearch.client.opensearch.tasks.Status;
+import org.opensearch.client.opensearch.tasks.TaskInfo;
+import org.opensearch.client.opensearch.tasks.TaskInfos;
 
 @ExtendWith(MockitoExtension.class)
 public class SchemaUpgradeClientOSReindexTest {
@@ -67,7 +63,7 @@ public class SchemaUpgradeClientOSReindexTest {
   @Mock private ConfigurationService configurationService;
   @Mock private OptimizeIndexNameService indexNameService;
   @Mock private OpenSearchMetadataService metadataService;
-  @Mock private Info taskInfo;
+  @Mock private TaskInfo taskInfo;
   private SchemaUpgradeClient<?, ?, ?> underTest;
 
   @BeforeEach
@@ -88,7 +84,7 @@ public class SchemaUpgradeClientOSReindexTest {
     mockCountResponseFromIndex(index1, 1L);
     mockCountResponseFromIndex(index2, 0L);
     when(openSearchClient.getOpenSearchClient()).thenReturn(mock(ExtendedOpenSearchClient.class));
-    when(openSearchClient.getTaskList(any())).thenReturn(ListResponse.listResponseOf(l -> l));
+    when(openSearchClient.getTaskList(any())).thenReturn(ListResponse.of(l -> l));
     when(openSearchClient.submitReindexTask(any(ReindexRequest.class)).task()).thenReturn(taskId);
 
     // the first task response is in progress, the second is successfully complete
@@ -104,8 +100,6 @@ public class SchemaUpgradeClientOSReindexTest {
   }
 
   @Test
-  @Disabled
-  // TODO check the mocking issue that causes this test to fail
   public void testReindexDetectsPendingReindexAndWaitForIt() throws IOException {
     // given
     final String index1 = "index1";
@@ -115,10 +109,9 @@ public class SchemaUpgradeClientOSReindexTest {
 
     mockCountResponseFromIndex(index1, 1L);
     mockCountResponseFromIndex(index2, 0L);
-    final Info taskInfo = mock(Info.class);
-    // TODO The mocking issue is in the two lines below
-    final Map<String, Info> mockedResponse = getMockedListResponse(taskInfo).tasks();
-    when(openSearchClient.getTaskList(any(ListRequest.class)).tasks()).thenReturn(mockedResponse);
+    final TaskInfo taskInfo = mock(TaskInfo.class);
+    when(openSearchClient.getTaskList(any(ListRequest.class)))
+        .thenReturn(getMockedListResponse(taskInfo));
     when(taskInfo.id()).thenReturn(Long.valueOf(numericTaskId));
     when(taskInfo.description()).thenReturn(createReindexTaskDescription(index1, index2));
 
@@ -170,7 +163,7 @@ public class SchemaUpgradeClientOSReindexTest {
 
     mockCountResponseFromIndex(index1, 1L);
     mockCountResponseFromIndex(index2, 0L);
-    when(openSearchClient.getTaskList(any())).thenReturn(ListResponse.listResponseOf(l -> l));
+    when(openSearchClient.getTaskList(any())).thenReturn(ListResponse.of(l -> l));
     given(openSearchClient.submitReindexTask(any(ReindexRequest.class)).task())
         .willAnswer(
             invocation -> {
@@ -233,7 +226,7 @@ public class SchemaUpgradeClientOSReindexTest {
     verify(openSearchClient).submitReindexTask(any(ReindexRequest.class));
   }
 
-  private Info createInfo(
+  private TaskInfo createInfo(
       final String taskId,
       final long total,
       final long updated,
@@ -242,14 +235,14 @@ public class SchemaUpgradeClientOSReindexTest {
     return createInfo(taskId, total, updated, created, deleted, "");
   }
 
-  private Info createInfo(
+  private TaskInfo createInfo(
       final String taskId,
       final long total,
       final long updated,
       final long created,
       final long deleted,
       final String description) {
-    return Info.of(
+    return TaskInfo.of(
         i ->
             i.id(Long.parseLong(taskId))
                 .action("indices:data/write/reindex")
@@ -271,9 +264,9 @@ public class SchemaUpgradeClientOSReindexTest {
                 .updated(updated)
                 .created(created)
                 .deleted(deleted)
-                .batches(0L)
+                .batches(0)
                 .noops(0L)
-                .requestsPerSecond(1)
+                .requestsPerSecond(1F)
                 .retries(new Retries.Builder().bulk(0L).search(0L).build())
                 .throttledMillis(1000L)
                 .throttledUntilMillis(1000L)
@@ -305,8 +298,10 @@ public class SchemaUpgradeClientOSReindexTest {
     when(openSearchClient.getTaskList(any())).thenReturn(mockedListResponse);
   }
 
-  private ListResponse getMockedListResponse(final Info taskInfo) {
-    return new ListResponse.Builder().tasks(Map.of("" + this.taskInfo.id(), this.taskInfo)).build();
+  private ListResponse getMockedListResponse(final TaskInfo taskInfo) {
+    return ListResponse.builder()
+        .tasks(TaskInfos.builder().groupedByNone(List.of(taskInfo)).build())
+        .build();
   }
 
   private static String createReindexTaskDescription(
@@ -321,16 +316,5 @@ public class SchemaUpgradeClientOSReindexTest {
 
   private void mockCountResponseFromIndex(final String indexName, final long count) {
     when(openSearchClient.countWithoutPrefix(matches(indexName))).thenAnswer(a -> count);
-  }
-
-  private Response createOsResponse(final GetTasksResponse taskResponse) throws IOException {
-    final Response mockedReindexResponse = mock(Response.class);
-
-    final HttpEntity httpEntity = mock(HttpEntity.class);
-    when(httpEntity.getContent())
-        .thenReturn(new ByteArrayInputStream(OPTIMIZE_MAPPER.writeValueAsBytes(taskResponse)));
-    when(mockedReindexResponse.getEntity()).thenReturn(httpEntity);
-
-    return mockedReindexResponse;
   }
 }

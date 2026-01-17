@@ -40,6 +40,6 @@ public class MinAggregationOS extends AggregationStrategyOS {
     final MinAggregation.Builder builder = new MinAggregation.Builder().script(script);
     AggregationResultMappingUtil.firstField(fields).ifPresent(builder::field);
     return Pair.of(
-        createAggregationName(customIdentifier, MIN_AGGREGATION), builder.build()._toAggregation());
+        createAggregationName(customIdentifier, MIN_AGGREGATION), builder.build().toAggregation());
   }
 }
