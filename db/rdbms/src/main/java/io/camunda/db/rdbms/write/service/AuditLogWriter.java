@@ -15,6 +15,7 @@ import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.domain.AuditLogDbModel;
 import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
+import io.camunda.db.rdbms.write.queue.InsertAuditLogMerger;
 import io.camunda.db.rdbms.write.queue.QueueItem;
 import io.camunda.db.rdbms.write.queue.UpdateHistoryCleanupDateMerger;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
@@ -22,6 +23,8 @@ import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
 import java.time.OffsetDateTime;
 
 public class AuditLogWriter extends ProcessInstanceDependant implements RdbmsWriter {
+
+  private static final int INSERT_BATCH_SIZE = 50;
 
   private final AuditLogMapper mapper;
   private final ExecutionQueue executionQueue;
@@ -53,13 +56,21 @@ public class AuditLogWriter extends ProcessInstanceDependant implements RdbmsWri
       finalAuditLog = auditLog;
     }
 
-    executionQueue.executeInQueue(
-        new QueueItem(
-            ContextType.AUDIT_LOG,
-            WriteStatementType.INSERT,
-            finalAuditLog.auditLogKey(),
-            "io.camunda.db.rdbms.sql.AuditLogMapper.insert",
-            finalAuditLog));
+    final var wasMerged =
+        executionQueue.tryMergeWithExistingQueueItem(
+            new InsertAuditLogMerger(finalAuditLog, INSERT_BATCH_SIZE));
+
+    if (!wasMerged) {
+      executionQueue.executeInQueue(
+          new QueueItem(
+              ContextType.AUDIT_LOG,
+              WriteStatementType.INSERT,
+              finalAuditLog.auditLogKey(),
+              "io.camunda.db.rdbms.sql.AuditLogMapper.insert",
+              new AuditLogMapper.BatchInsertAuditLogsDto.Builder()
+                  .auditLog(finalAuditLog)
+                  .build()));
+    }
   }
 
   public void scheduleProcessInstanceLogsForHistoryCleanup(

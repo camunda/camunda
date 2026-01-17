@@ -209,7 +209,7 @@
     </where>
   </sql>
 
-  <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.AuditLogDbModel">
+  <insert id="insert" parameterType="io.camunda.db.rdbms.sql.AuditLogMapper$BatchInsertAuditLogsDto">
     INSERT INTO ${prefix}AUDIT_LOG (
       AUDIT_LOG_KEY,
       ENTITY_KEY,
@@ -246,42 +246,45 @@
       PARTITION_ID,
       HISTORY_CLEANUP_DATE
     )
-    VALUES (
-      #{auditLogKey},
-      #{entityKey},
-      #{entityType},
-      #{operationType},
-      #{entityVersion},
-      #{entityValueType},
-      #{entityOperationIntent},
-      #{batchOperationKey},
-      #{batchOperationType},
-      #{timestamp, jdbcType=TIMESTAMP},
-      #{actorType},
-      #{actorId},
-      #{tenantId},
-      #{tenantScope},
-      #{result},
-      #{annotation},
-      #{category},
-      #{processDefinitionId},
-      #{decisionRequirementsId},
-      #{decisionDefinitionId},
-      #{processDefinitionKey},
-      #{processInstanceKey},
-      #{rootProcessInstanceKey},
-      #{elementInstanceKey},
-      #{jobKey},
-      #{userTaskKey},
-      #{decisionRequirementsKey},
-      #{decisionDefinitionKey},
-      #{decisionEvaluationKey},
-      #{deploymentKey},
-      #{formKey},
-      #{resourceKey},
-      #{partitionId},
-      #{historyCleanupDate, jdbcType=TIMESTAMP}
-    )
+    VALUES
+    <foreach collection="auditLogs" item="auditLog" separator=",">
+      (
+        #{auditLog.auditLogKey},
+        #{auditLog.entityKey},
+        #{auditLog.entityType},
+        #{auditLog.operationType},
+        #{auditLog.entityVersion},
+        #{auditLog.entityValueType},
+        #{auditLog.entityOperationIntent},
+        #{auditLog.batchOperationKey},
+        #{auditLog.batchOperationType},
+        #{auditLog.timestamp, jdbcType=TIMESTAMP},
+        #{auditLog.actorType},
+        #{auditLog.actorId},
+        #{auditLog.tenantId},
+        #{auditLog.tenantScope},
+        #{auditLog.result},
+        #{auditLog.annotation},
+        #{auditLog.category},
+        #{auditLog.processDefinitionId},
+        #{auditLog.decisionRequirementsId},
+        #{auditLog.decisionDefinitionId},
+        #{auditLog.processDefinitionKey},
+        #{auditLog.processInstanceKey},
+        #{auditLog.rootProcessInstanceKey},
+        #{auditLog.elementInstanceKey},
+        #{auditLog.jobKey},
+        #{auditLog.userTaskKey},
+        #{auditLog.decisionRequirementsKey},
+        #{auditLog.decisionDefinitionKey},
+        #{auditLog.decisionEvaluationKey},
+        #{auditLog.deploymentKey},
+        #{auditLog.formKey},
+        #{auditLog.resourceKey},
+        #{auditLog.partitionId},
+        #{auditLog.historyCleanupDate, jdbcType=TIMESTAMP}
+      )
+    </foreach>
   </insert>
 
   <update id="updateProcessHistoryCleanupDate">
