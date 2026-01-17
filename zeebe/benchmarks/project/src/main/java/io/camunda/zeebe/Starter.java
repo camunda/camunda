@@ -141,7 +141,7 @@ public class Starter extends App {
                       .sort(ProcessInstanceSort::startDate)
                       .page(
                           p ->
-                              p.limit(100)
+                              p.limit(1000)
                                   .searchAfter(
                                       responsePage == null
                                           ? List.of()
