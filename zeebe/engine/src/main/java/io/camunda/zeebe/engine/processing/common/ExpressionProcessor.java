@@ -35,6 +35,7 @@ public final class ExpressionProcessor {
       List.of(ResultType.DATE_TIME, ResultType.STRING);
   private static final List<ResultType> NULLABLE_DATE_TIME_RESULT_TYPES =
       List.of(ResultType.NULL, ResultType.DATE_TIME, ResultType.STRING);
+  private static final boolean DUMMY_CHANGE = true;
 
   private final DirectBuffer resultView = new UnsafeBuffer();
 
