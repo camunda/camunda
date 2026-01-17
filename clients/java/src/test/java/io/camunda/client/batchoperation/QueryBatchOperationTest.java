@@ -19,7 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
-import io.camunda.client.api.search.enums.BatchOperationActorTypeEnum;
+import io.camunda.client.api.search.enums.AuditLogActorTypeEnum;
 import io.camunda.client.api.search.enums.BatchOperationState;
 import io.camunda.client.api.search.enums.BatchOperationType;
 import io.camunda.client.api.search.response.BatchOperation;
@@ -80,7 +80,7 @@ public class QueryBatchOperationTest extends ClientRestTest {
         batchOperationKey,
         Instancio.create(BatchOperationResponse.class)
             .batchOperationKey(batchOperationKey)
-            .actorType(io.camunda.client.protocol.rest.BatchOperationActorTypeEnum.USER)
+            .actorType(io.camunda.client.protocol.rest.AuditLogActorTypeEnum.USER)
             .actorId("demo-user")
             .endDate(OffsetDateTime.now().toString())
             .startDate(OffsetDateTime.now().toString()));
@@ -90,7 +90,7 @@ public class QueryBatchOperationTest extends ClientRestTest {
         client.newBatchOperationGetRequest(batchOperationKey).send().join();
 
     // then
-    assertThat(result.getActorType()).isEqualTo(BatchOperationActorTypeEnum.USER);
+    assertThat(result.getActorType()).isEqualTo(AuditLogActorTypeEnum.USER);
     assertThat(result.getActorId()).isEqualTo("demo-user");
   }
 }

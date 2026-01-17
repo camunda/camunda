@@ -65,14 +65,14 @@ class BatchOperationEntityMapperTest {
   void shouldMapDbModelToEntityWithActor() {
     final var dbModel =
         new BatchOperationDbModel.Builder()
-            .actorType(io.camunda.search.entities.BatchOperationEntity.BatchOperationActorType.USER)
+            .actorType(io.camunda.search.entities.AuditLogEntity.AuditLogActorType.USER)
             .actorId("user-123")
             .build();
 
     final var entity = BatchOperationEntityMapper.toEntity(dbModel);
 
     assertThat(entity.actorType())
-        .isEqualTo(io.camunda.search.entities.BatchOperationEntity.BatchOperationActorType.USER);
+        .isEqualTo(io.camunda.search.entities.AuditLogEntity.AuditLogActorType.USER);
     assertThat(entity.actorId()).isEqualTo("user-123");
   }
 
