@@ -78,6 +78,23 @@ public class GroupTest {
   }
 
   @Test
+  public void shouldUpdateGroupWithEmptyDescription() {
+    // given
+    final var name = UUID.randomUUID().toString();
+    final var groupId = UUID.randomUUID().toString();
+    final var description = "some description";
+    engine.group().newGroup(groupId).withName(name).withDescription(description).create();
+
+    // when
+    final var updatedDescription = "";
+    final var updatedGroupRecord =
+        engine.group().updateGroup(groupId).withDescription(updatedDescription).update();
+
+    final var updatedGroup = updatedGroupRecord.getValue();
+    assertThat(updatedGroup).hasDescription(updatedDescription);
+  }
+
+  @Test
   public void shouldRejectUpdatedIfNoGroupExists() {
     // when
     final var groupId = UUID.randomUUID().toString();

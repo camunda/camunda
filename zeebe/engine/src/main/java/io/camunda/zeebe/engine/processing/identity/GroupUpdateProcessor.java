@@ -105,9 +105,8 @@ public class GroupUpdateProcessor implements DistributedTypedRecordProcessor<Gro
       persistedGroup.setName(updatedName);
     }
     final var updatedDescription = updateRecord.getDescription();
-    if (!updatedDescription.isEmpty()) {
-      persistedGroup.setDescription(updatedDescription);
-    }
+
+    persistedGroup.setDescription(updatedDescription);
   }
 
   private void updateState(

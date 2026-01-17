@@ -74,6 +74,11 @@ public class GroupClient {
       return this;
     }
 
+    public GroupCreateClient withDescription(final String description) {
+      groupRecord.setDescription(description);
+      return this;
+    }
+
     public Record<GroupRecordValue> create() {
       final long position = writer.writeCommand(GroupIntent.CREATE, groupRecord);
       return expectation.apply(position);
@@ -119,6 +124,11 @@ public class GroupClient {
 
     public GroupUpdateClient withName(final String name) {
       groupRecord.setName(name);
+      return this;
+    }
+
+    public GroupUpdateClient withDescription(final String description) {
+      groupRecord.setDescription(description);
       return this;
     }
 

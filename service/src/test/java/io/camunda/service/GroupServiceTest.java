@@ -155,6 +155,28 @@ public class GroupServiceTest {
   }
 
   @Test
+  public void shouldUpdateGroupWithEmptyDescription() {
+    // given
+    final var groupKey = Protocol.encodePartitionId(1, 100L);
+    final var groupId = String.valueOf(groupKey);
+    final var name = "UpdatedName";
+    final var description = "";
+
+    // when
+    services.updateGroup(groupId, name, description);
+
+    // then
+    final BrokerGroupUpdateRequest request = stubbedBrokerClient.getSingleBrokerRequest();
+    assertThat(request.getPartitionId()).isEqualTo(Protocol.DEPLOYMENT_PARTITION);
+    assertThat(request.getValueType()).isEqualTo(ValueType.GROUP);
+    assertThat(request.getIntent()).isNotEvent().isEqualTo(GroupIntent.UPDATE);
+    final GroupRecord record = request.getRequestWriter();
+    assertThat(record).hasName(name);
+    assertThat(record).hasGroupId(groupId);
+    assertThat(record).hasDescription(description);
+  }
+
+  @Test
   public void shouldDeleteGroup() {
     // given
     final var groupKey = Protocol.encodePartitionId(1, 123L);
