@@ -24,7 +24,8 @@
 		"format": "prettier --write .",
 		"prepublish": "npm run build",
 		"typecheck": "tsc",
-		"download-specs": "node scripts/download-specs.js"
+		"download-specs": "node scripts/download-specs.js",
+		"generate-schemas": "node scripts/generate-schemas.js"
 	},
 	"sideEffects": false,
 	"files": [
@@ -242,6 +243,11 @@
 	},
 	"packageManager": "npm@11.8.0",
 	"devDependencies": {
+		"@kubb/cli": "4.17.0",
+		"@kubb/core": "4.17.0",
+		"@kubb/plugin-oas": "4.17.0",
+		"@kubb/plugin-ts": "4.17.0",
+		"@kubb/plugin-zod": "4.17.0",
 		"@types/node": "25.0.2",
 		"changelogen": "0.6.2",
 		"typescript": "5.9.3",
