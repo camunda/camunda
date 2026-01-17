@@ -37,4 +37,7 @@ export const Paths = {
   clusterVariables() {
     return "/cluster-variables";
   },
+  taskListeners() {
+    return "/task-listeners";
+  },
 } as const;
