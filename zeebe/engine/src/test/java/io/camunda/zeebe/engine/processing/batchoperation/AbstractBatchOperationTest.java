@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.batchoperation;
 
+import static io.camunda.zeebe.auth.Authorization.AUTHORIZED_USERNAME;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationScope.WILDCARD;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
@@ -55,6 +56,13 @@ abstract class AbstractBatchOperationTest {
           UUID.randomUUID().toString(),
           UUID.randomUUID().toString());
 
+  protected static final ConfiguredUser OTHER_USER =
+      new ConfiguredUser(
+          UUID.randomUUID().toString(),
+          UUID.randomUUID().toString(),
+          UUID.randomUUID().toString(),
+          UUID.randomUUID().toString());
+
   protected static final int DEFAULT_QUERY_PAGE_SIZE = 10000;
 
   @Rule
@@ -71,12 +79,17 @@ abstract class AbstractBatchOperationTest {
       EngineRule.singlePartition()
           .withIdentitySetup()
           .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true))
-          .withSecurityConfig(cfg -> cfg.getInitialization().setUsers(List.of(DEFAULT_USER)))
+          .withSecurityConfig(
+              cfg -> cfg.getInitialization().setUsers(List.of(DEFAULT_USER, OTHER_USER)))
           .withSecurityConfig(
               cfg ->
                   cfg.getInitialization()
                       .getDefaultRoles()
-                      .put("admin", Map.of("users", List.of(DEFAULT_USER.getUsername()))))
+                      .put(
+                          "admin",
+                          Map.of(
+                              "users",
+                              List.of(DEFAULT_USER.getUsername(), OTHER_USER.getUsername()))))
           .withEngineConfig(
               cfg ->
                   cfg.setBatchOperationQueryPageSize(DEFAULT_QUERY_PAGE_SIZE)
@@ -186,7 +199,7 @@ abstract class AbstractBatchOperationTest {
   }
 
   protected long createNewResolveIncidentsBatchOperation(
-      final Map<Long, Set<Long>> piAndIncidentKeys, final Map<String, Object> claims) {
+      final Map<Long, Set<Long>> piAndIncidentKeys) {
     final var processInstanceResult =
         new SearchQueryResult.Builder<ProcessInstanceEntity>()
             .items(
@@ -214,11 +227,10 @@ abstract class AbstractBatchOperationTest {
         convertToBuffer(
             new ProcessInstanceFilter.Builder().processInstanceKeys(1L, 3L, 8L).build());
 
-    DirectBuffer authenticationBuffer = null;
-    if (claims != null) {
-      authenticationBuffer = convertToBuffer(CamundaAuthentication.of(b -> b.claims(claims)));
-      when(brokerRequestAuthorizationConverter.convert(any())).thenReturn(claims);
-    }
+    final DirectBuffer authenticationBuffer =
+        convertToBuffer(CamundaAuthentication.of(b -> b.user(OTHER_USER.getUsername())));
+    when(brokerRequestAuthorizationConverter.convert(any()))
+        .thenReturn(Map.of(AUTHORIZED_USERNAME, OTHER_USER.getUsername()));
 
     return engine
         .batchOperation()

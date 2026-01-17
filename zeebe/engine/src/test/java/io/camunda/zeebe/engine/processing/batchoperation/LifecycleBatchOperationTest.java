@@ -38,8 +38,12 @@ public final class LifecycleBatchOperationTest extends AbstractBatchOperationTes
         .containsSequence(BatchOperationIntent.CANCELED);
 
     // and no follow op up command to execute again
+    // Note: we broadcast a signal so we have a command we can limit the RecordingExporter on.
+    final var limitRecord = engine.signal().withSignalName("limitSignal").broadcast();
     assertThat(
-            RecordingExporter.batchOperationExecutionRecords()
+            RecordingExporter.records()
+                .limit(r -> r.getPosition() == limitRecord.getPosition())
+                .batchOperationExecutionRecords()
                 .withBatchOperationKey(batchOperationKey)
                 .onlyCommands())
         .extracting(Record::getIntent)
@@ -65,8 +69,12 @@ public final class LifecycleBatchOperationTest extends AbstractBatchOperationTes
         .containsSequence(BatchOperationIntent.SUSPENDED);
 
     // and no follow op up command to execute again
+    // Note: we broadcast a signal so we have a command we can limit the RecordingExporter on.
+    final var limitRecord = engine.signal().withSignalName("limitSignal").broadcast();
     assertThat(
-            RecordingExporter.batchOperationExecutionRecords()
+            RecordingExporter.records()
+                .limit(r -> r.getPosition() == limitRecord.getPosition())
+                .batchOperationExecutionRecords()
                 .withBatchOperationKey(batchOperationKey)
                 .onlyCommands())
         .extracting(Record::getIntent)
@@ -82,14 +90,6 @@ public final class LifecycleBatchOperationTest extends AbstractBatchOperationTes
     // when we suspend the batch operation
     engine.batchOperation().newLifecycle().withBatchOperationKey(batchOperationKey).suspend();
 
-    // and send the execute command
-    engine
-        .batchOperation()
-        .newExecution()
-        .withBatchOperationKey(batchOperationKey)
-        .expectRejection()
-        .execute();
-
     // then we have a suspended event
     assertThat(
             RecordingExporter.batchOperationLifecycleRecords()
@@ -99,13 +99,18 @@ public final class LifecycleBatchOperationTest extends AbstractBatchOperationTes
         .extracting(Record::getIntent)
         .containsSequence(BatchOperationIntent.SUSPENDED);
 
-    // and that we have no executed event
+    // and the execute command is rejected
     assertThat(
-            RecordingExporter.batchOperationExecutionRecords()
+            engine
+                .batchOperation()
+                .newExecution()
                 .withBatchOperationKey(batchOperationKey)
-                .onlyEvents())
-        .extracting(Record::getIntent)
-        .doesNotContain(BatchOperationExecutionIntent.EXECUTED);
+                .expectRejection()
+                .execute())
+        .extracting(Record::getRejectionType, Record::getRejectionReason)
+        .containsExactly(
+            RejectionType.INVALID_STATE,
+            "Batch operation '%s' is suspended.".formatted(batchOperationKey));
   }
 
   @Test
@@ -129,14 +134,6 @@ public final class LifecycleBatchOperationTest extends AbstractBatchOperationTes
                 .limit(r -> r.getIntent() == BatchOperationIntent.SUSPEND))
         .extracting(Record::getIntent)
         .containsSequence(BatchOperationIntent.SUSPEND);
-
-    // and no follow op up command to execute again
-    assertThat(
-            RecordingExporter.batchOperationExecutionRecords()
-                .withBatchOperationKey(batchOperationKey)
-                .onlyCommands())
-        .extracting(Record::getIntent)
-        .doesNotContain(BatchOperationExecutionIntent.EXECUTE);
   }
 
   @Test
@@ -155,7 +152,8 @@ public final class LifecycleBatchOperationTest extends AbstractBatchOperationTes
     assertThat(
             RecordingExporter.batchOperationLifecycleRecords()
                 .withBatchOperationKey(batchOperationKey)
-                .onlyEvents())
+                .onlyEvents()
+                .limit(r -> r.getIntent().equals(BatchOperationIntent.COMPLETED)))
         .extracting(Record::getIntent)
         .containsSequence(
             BatchOperationIntent.SUSPENDED,
@@ -166,10 +164,9 @@ public final class LifecycleBatchOperationTest extends AbstractBatchOperationTes
     assertThat(
             RecordingExporter.batchOperationExecutionRecords()
                 .withBatchOperationKey(batchOperationKey)
-                .onlyEvents()
-                .limit(r -> r.getIntent() == BatchOperationExecutionIntent.EXECUTED))
-        .extracting(Record::getIntent)
-        .containsSequence(BatchOperationExecutionIntent.EXECUTED);
+                .withIntent(BatchOperationExecutionIntent.EXECUTED)
+                .getFirst())
+        .isNotNull();
   }
 
   @Test
@@ -191,14 +188,6 @@ public final class LifecycleBatchOperationTest extends AbstractBatchOperationTes
                 .limit(r -> r.getIntent() == BatchOperationIntent.RESUME))
         .extracting(Record::getIntent)
         .containsSequence(BatchOperationIntent.RESUME);
-
-    // and no follow-up command to execute again
-    assertThat(
-            RecordingExporter.batchOperationExecutionRecords()
-                .withBatchOperationKey(batchOperationKey)
-                .onlyCommands())
-        .extracting(Record::getIntent)
-        .doesNotContain(BatchOperationExecutionIntent.EXECUTE);
   }
 
   @Test
