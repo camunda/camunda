@@ -7,6 +7,12 @@
  */
 package io.camunda.db.rdbms.read.service;
 
+import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.AUDIT_LOG;
+import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.PROCESS_DEFINITION;
+import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_PROCESS_INSTANCE;
+import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_USER_TASK;
+
+import io.camunda.db.rdbms.read.domain.AuditLogAuthorizationFilter;
 import io.camunda.db.rdbms.read.domain.AuditLogDbQuery;
 import io.camunda.db.rdbms.read.mapper.AuditLogEntityMapper;
 import io.camunda.db.rdbms.sql.AuditLogMapper;
@@ -15,8 +21,9 @@ import io.camunda.search.clients.reader.AuditLogReader;
 import io.camunda.search.entities.AuditLogEntity;
 import io.camunda.search.query.AuditLogQuery;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.auth.Authorization;
 import io.camunda.security.reader.ResourceAccessChecks;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import org.slf4j.Logger;
@@ -51,18 +58,13 @@ public class AuditLogDbReader extends AbstractEntityReader<AuditLogEntity>
       return buildSearchQueryResult(0, List.of(), dbSort);
     }
 
-    final var authorizedResourceIds =
-        resourceAccessChecks
-            .getAuthorizedResourceIdsByType()
-            // FIXME: Adjust to provide correct resource type, once available
-            //  (see https://github.com/camunda/camunda/issues/41120)
-            .getOrDefault(AuthorizationResourceType.UNSPECIFIED.name(), List.of());
+    final var authorizationFilter = buildAuthorizationFilter(resourceAccessChecks);
     final var dbPage = convertPaging(dbSort, query.page());
     final var dbQuery =
         AuditLogDbQuery.of(
             b ->
                 b.filter(query.filter())
-                    .authorizedResourceIds(authorizedResourceIds)
+                    .authorizationFilter(authorizationFilter)
                     .authorizedTenantIds(resourceAccessChecks.getAuthorizedTenantIds())
                     .sort(dbSort)
                     .page(dbPage));
@@ -79,7 +81,109 @@ public class AuditLogDbReader extends AbstractEntityReader<AuditLogEntity>
     return buildSearchQueryResult(totalHits, hits, dbSort);
   }
 
+  /**
+   * Builds the authorization filter for audit log queries by extracting the composite authorization
+   * structure from ResourceAccessChecks.
+   *
+   * <p>This mirrors the Elasticsearch implementation in {@code
+   * AuditLogFilterTransformer.toAuthorizationCheckSearchQuery}, supporting:
+   *
+   * <ul>
+   *   <li>AUDIT_LOG resource type: authorized categories
+   *   <li>PROCESS_DEFINITION + READ_PROCESS_INSTANCE: authorized process definition IDs or wildcard
+   *       access
+   *   <li>PROCESS_DEFINITION + READ_USER_TASK: authorized process definition IDs for user tasks or
+   *       wildcard access
+   * </ul>
+   */
+  private AuditLogAuthorizationFilter buildAuthorizationFilter(
+      final ResourceAccessChecks resourceAccessChecks) {
+    final var authorizations = extractAuthorizations(resourceAccessChecks);
+    if (authorizations.isEmpty()) {
+      return AuditLogAuthorizationFilter.disabled();
+    }
+
+    final var builder = new AuthorizationFilterBuilder();
+    authorizations.forEach(builder::processAuthorization);
+
+    return builder.build();
+  }
+
+  private List<Authorization<?>> extractAuthorizations(
+      final ResourceAccessChecks resourceAccessChecks) {
+    final var authCheck = resourceAccessChecks.authorizationCheck();
+    if (!authCheck.enabled() || authCheck.authorizationCondition() == null) {
+      return List.of();
+    }
+
+    final var authorizations = authCheck.authorizationCondition().authorizations();
+    if (authorizations == null || authorizations.isEmpty()) {
+      return List.of();
+    }
+
+    return authorizations;
+  }
+
   public SearchQueryResult<AuditLogEntity> search(final AuditLogQuery query) {
     return search(query, ResourceAccessChecks.disabled());
+  }
+
+  private static final class AuthorizationFilterBuilder {
+    private final List<String> authorizedCategories = new ArrayList<>();
+    private final List<String> processDefIdsForProcessInstance = new ArrayList<>();
+    private boolean hasProcessInstanceWildcard = false;
+    private final List<String> processDefIdsForUserTask = new ArrayList<>();
+    private boolean hasUserTaskWildcard = false;
+
+    void processAuthorization(final Authorization<?> auth) {
+      if (auth == null || auth.resourceType() == null) {
+        return;
+      }
+
+      if (AUDIT_LOG.equals(auth.resourceType())) {
+        processAuditLogAuthorization(auth);
+      } else if (PROCESS_DEFINITION.equals(auth.resourceType())) {
+        processProcessDefinitionAuthorization(auth);
+      }
+    }
+
+    private void processAuditLogAuthorization(final Authorization<?> auth) {
+      if (auth.hasAnyResourceIds()) {
+        authorizedCategories.addAll(auth.resourceIds());
+      }
+    }
+
+    private void processProcessDefinitionAuthorization(final Authorization<?> auth) {
+      if (READ_PROCESS_INSTANCE.equals(auth.permissionType())) {
+        processReadProcessInstancePermission(auth);
+      } else if (READ_USER_TASK.equals(auth.permissionType())) {
+        processReadUserTaskPermission(auth);
+      }
+    }
+
+    private void processReadProcessInstancePermission(final Authorization<?> auth) {
+      if (auth.isWildcard()) {
+        hasProcessInstanceWildcard = true;
+      } else if (auth.hasAnyResourceIds()) {
+        processDefIdsForProcessInstance.addAll(auth.resourceIds());
+      }
+    }
+
+    private void processReadUserTaskPermission(final Authorization<?> auth) {
+      if (auth.isWildcard()) {
+        hasUserTaskWildcard = true;
+      } else if (auth.hasAnyResourceIds()) {
+        processDefIdsForUserTask.addAll(auth.resourceIds());
+      }
+    }
+
+    AuditLogAuthorizationFilter build() {
+      return new AuditLogAuthorizationFilter(
+          List.copyOf(authorizedCategories),
+          List.copyOf(processDefIdsForProcessInstance),
+          hasProcessInstanceWildcard,
+          List.copyOf(processDefIdsForUserTask),
+          hasUserTaskWildcard);
+    }
   }
 }
