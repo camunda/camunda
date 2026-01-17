@@ -10,6 +10,7 @@ package io.camunda.authentication.config;
 import static io.camunda.security.configuration.headers.ContentSecurityPolicyConfig.DEFAULT_SAAS_SECURITY_POLICY;
 import static java.util.stream.Collectors.toMap;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.authentication.ConditionalOnAuthenticationMethod;
 import io.camunda.authentication.ConditionalOnProtectedApi;
 import io.camunda.authentication.ConditionalOnUnprotectedApi;
@@ -67,6 +68,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointRequest;
 import org.springframework.boot.actuate.logging.LoggersEndpoint;
+import org.springframework.boot.autoconfigure.web.servlet.WebMvcAutoConfiguration.WebMvcAutoConfigurationAdapter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -124,6 +126,9 @@ import org.springframework.security.web.header.writers.CrossOriginResourcePolicy
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy;
 import org.springframework.security.web.savedrequest.NullRequestCache;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 @Configuration
@@ -887,6 +892,23 @@ public class WebSecurityConfig {
     }
 
     @Bean
+    @ConditionalOnSecondaryStorageEnabled
+    public WebappRedirectStrategy webappRedirectStrategy(final ObjectMapper objectMapper) {
+      return new WebappRedirectStrategy(objectMapper);
+    }
+
+    @Bean
+    @ConditionalOnSecondaryStorageEnabled
+    public CamundaOidcLogoutSuccessHandler logoutSuccessHandler(
+        final WebappRedirectStrategy redirectStrategy,
+        final ClientRegistrationRepository repository) {
+      final var handler = new CamundaOidcLogoutSuccessHandler(repository);
+      handler.setPostLogoutRedirectUri("{baseUrl}");
+      handler.setRedirectStrategy(redirectStrategy);
+      return handler;
+    }
+
+    @Bean
     @Order(ORDER_WEBAPP_API)
     @ConditionalOnSecondaryStorageEnabled
     public SecurityFilterChain oidcWebappSecurity(
@@ -902,7 +924,8 @@ public class WebSecurityConfig {
         final CookieCsrfTokenRepository csrfTokenRepository,
         final OAuth2AuthorizedClientRepository authorizedClientRepository,
         final OAuth2AuthorizedClientManager authorizedClientManager,
-        final OidcTokenEndpointCustomizer tokenEndpointCustomizer)
+        final OidcTokenEndpointCustomizer tokenEndpointCustomizer,
+        final CamundaOidcLogoutSuccessHandler logoutSuccessHandler)
         throws Exception {
       final List<String> idpConnectUrls = getIdPConnectUrls(clientRegistrations);
       final var filterChainBuilder =
@@ -956,9 +979,9 @@ public class WebSecurityConfig {
                   (logout) ->
                       logout
                           .logoutUrl(LOGOUT_URL)
-                          .logoutSuccessHandler(
-                              new CamundaOidcLogoutSuccessHandler(clientRegistrationRepository))
-                          .deleteCookies(SESSION_COOKIE, X_CSRF_TOKEN))
+                          .deleteCookies(SESSION_COOKIE, X_CSRF_TOKEN)
+                          .invalidateHttpSession(true)
+                          .logoutSuccessHandler(logoutSuccessHandler))
               .addFilterAfter(
                   new WebComponentAuthorizationCheckFilter(
                       securityConfiguration, authenticationProvider, resourceAccessProvider),

@@ -60,11 +60,20 @@ export function logout(): Promise<void> {
   return fetch(getLogoutApiUrl(), {
     method: "post",
     body: data,
-    mode: "no-cors",
+    headers: { "Content-Type": "application/x-www-form-urlencoded", 'Accept': 'application/json, text/plain', },
+    // mode: "no-cors",
   })
     .then((response: Response) => {
       if (response.status < 400) {
         window.location.href = `${getBaseUrl()}/`;
+      }
+
+      return response.json();
+    }).then((json: any) => {
+      if (json && json.url && json.url.length > 0) {
+        window.location.href = json.url;
+      } else {
+        window.location.reload();
       }
     })
     .catch((e) => {
