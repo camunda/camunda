@@ -22,7 +22,7 @@ public interface EvaluateConditionalCommandStep1
     extends CommandWithCommunicationApiStep<EvaluateConditionalCommandStep1>,
         CommandWithVariables<EvaluateConditionalCommandStep2> {
 
-  public interface EvaluateConditionalCommandStep2
+  interface EvaluateConditionalCommandStep2
       extends CommandWithTenantStep<EvaluateConditionalCommandStep2>,
           FinalCommandStep<EvaluateConditionalResponse> {
 

@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.CommandWithTenantStep;
 import io.camunda.client.api.command.EvaluateConditionalCommandStep1;
 import io.camunda.client.api.response.EvaluateConditionalResponse;
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
@@ -67,6 +68,8 @@ public final class EvaluateConditionalTest {
             .join();
 
     // then
+    assertThat(response.getConditionalEvaluationKey()).isPositive();
+    assertThat(response.getTenantId()).isEqualTo(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
     assertThat(response.getProcessInstances()).hasSize(1);
     final var processInstance = response.getProcessInstances().getFirst();
     assertThat(processInstance.getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
@@ -95,6 +98,8 @@ public final class EvaluateConditionalTest {
         getCommand(client, useRest).variables(Map.of("x", 100)).send().join();
 
     // then
+    assertThat(response.getConditionalEvaluationKey()).isPositive();
+    assertThat(response.getTenantId()).isEqualTo(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
     assertThat(response.getProcessInstances()).hasSize(2);
 
     final var processInstance1Key =
@@ -137,6 +142,8 @@ public final class EvaluateConditionalTest {
         getCommand(client, useRest).variables(Map.of("x", 10)).send().join();
 
     // then
+    assertThat(response.getConditionalEvaluationKey()).isPositive();
+    assertThat(response.getTenantId()).isEqualTo(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
     assertThat(response.getProcessInstances()).isEmpty();
 
     assertThat(
@@ -178,6 +185,8 @@ public final class EvaluateConditionalTest {
             .join();
 
     // then
+    assertThat(response.getConditionalEvaluationKey()).isPositive();
+    assertThat(response.getTenantId()).isEqualTo(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
     assertThat(response.getProcessInstances()).hasSize(2);
     assertThat(response.getProcessInstances())
         .allSatisfy(
@@ -269,6 +278,8 @@ public final class EvaluateConditionalTest {
         getCommand(client, useRest).variables(Map.of("x", 100)).send().join();
 
     // then
+    assertThat(response.getConditionalEvaluationKey()).isPositive();
+    assertThat(response.getTenantId()).isEqualTo(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
     assertThat(response.getProcessInstances()).hasSize(1);
     final var processInstance = response.getProcessInstances().getFirst();
     assertThat(processInstance.getProcessDefinitionKey()).isEqualTo(processDefinitionKeyV2);

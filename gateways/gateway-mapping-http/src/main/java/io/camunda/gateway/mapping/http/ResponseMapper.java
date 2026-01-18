@@ -532,9 +532,10 @@ public final class ResponseMapper {
   }
 
   public static EvaluateConditionalResult toConditionalEvaluationResponse(
-      final ConditionalEvaluationRecord brokerResponse) {
+      final BrokerResponse<ConditionalEvaluationRecord> brokerResponse) {
+    final var response = brokerResponse.getResponse();
     final var processInstances =
-        brokerResponse.getStartedProcessInstances().stream()
+        response.getStartedProcessInstances().stream()
             .map(
                 instance ->
                     new ProcessInstanceReference()
@@ -543,7 +544,10 @@ public final class ResponseMapper {
                         .processInstanceKey(KeyUtil.keyToString(instance.getProcessInstanceKey())))
             .toList();
 
-    return new EvaluateConditionalResult().processInstances(processInstances);
+    return new EvaluateConditionalResult()
+        .conditionalEvaluationKey(KeyUtil.keyToString(brokerResponse.getKey()))
+        .tenantId(response.getTenantId())
+        .processInstances(processInstances);
   }
 
   public static AuthorizationCreateResult toAuthorizationCreateResponse(
