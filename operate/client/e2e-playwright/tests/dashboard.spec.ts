@@ -192,9 +192,13 @@ test.describe('Dashboard', () => {
   });
 
   test('Select process instances by name', async ({page}) => {
-    await expect(page.getByTestId('instances-by-process')).toBeVisible();
+    await expect(
+      page.getByTestId('instances-by-process-definition'),
+    ).toBeVisible();
 
-    const firstInstanceByProcess = page.getByTestId('instances-by-process-0');
+    const firstInstanceByProcess = page.getByTestId(
+      'instances-by-process-definition-0',
+    );
 
     const incidentCount = Number(
       await firstInstanceByProcess

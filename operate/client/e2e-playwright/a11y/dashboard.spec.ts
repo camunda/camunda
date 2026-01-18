@@ -10,7 +10,7 @@ import {expect} from '@playwright/test';
 import {test} from '../visual-fixtures';
 import {
   mockIncidentsByError,
-  mockIncidentsByProcess,
+  mockProcessDefinitionStatistics,
   mockStatistics,
   mockResponses,
 } from '../mocks/dashboard.mocks';
@@ -37,7 +37,7 @@ test.describe('dashboard', () => {
       mockResponses({
         statistics: mockStatistics,
         incidentsByError: mockIncidentsByError,
-        incidentsByProcess: mockIncidentsByProcess,
+        processDefinitionStatistics: mockProcessDefinitionStatistics,
       }),
     );
 
@@ -58,14 +58,14 @@ test.describe('dashboard', () => {
       mockResponses({
         statistics: mockStatistics,
         incidentsByError: mockIncidentsByError,
-        incidentsByProcess: mockIncidentsByProcess,
+        processDefinitionStatistics: mockProcessDefinitionStatistics,
       }),
     );
 
     await dashboardPage.gotoDashboardPage();
 
     const expandInstancesByProcessRow = page
-      .getByTestId('instances-by-process')
+      .getByTestId('instances-by-process-definition')
       .getByRole('button', {
         name: /expand current row/i,
       })
@@ -75,8 +75,9 @@ test.describe('dashboard', () => {
 
     await expandInstancesByProcessRow.click();
 
+    // V2 component renders "146 Instances in 2+ Versions" (141 + 5)
     await expect(
-      page.getByText(/order process – 136 instances in version 2/i),
+      page.getByText(/order process – 146 instances in 2\+ versions/i),
     ).toBeVisible();
 
     const expandIncidentsByErrorRow = page
