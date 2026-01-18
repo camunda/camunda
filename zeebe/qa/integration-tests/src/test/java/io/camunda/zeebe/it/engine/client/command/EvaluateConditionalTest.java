@@ -219,9 +219,8 @@ public final class EvaluateConditionalTest {
 
     // then
     assertThatThrownBy(command::join)
-        .hasMessageContaining("Expected to evaluate conditional with command key")
         .hasMessageContaining(
-            "for process definition key '%s', but no such process was found"
+            "Expected to evaluate conditional for process definition key '%s', but no such process was found"
                 .formatted(nonExistingKey));
   }
 

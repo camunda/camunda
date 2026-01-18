@@ -45,7 +45,7 @@ public class ConditionalEvaluationEvaluateProcessor
       LoggerFactory.getLogger(ConditionalEvaluationEvaluateProcessor.class);
 
   private static final String NO_PROCESS_DEFINITION_FOUND_MESSAGE =
-      "Expected to evaluate conditional with command key '%d' for process definition key '%d', but no such process was found.";
+      "Expected to evaluate conditional for process definition key '%d', but no such process was found.";
   private static final String USER_NOT_ASSIGNED_TO_TENANT_MESSAGE =
       "Expected to evaluate conditional for tenant '%s', but user is not assigned to this tenant.";
 
@@ -102,7 +102,7 @@ public class ConditionalEvaluationEvaluateProcessor
         && processState.getProcessByKeyAndTenant(processDefinitionKey, record.getTenantId())
             == null) {
       final var failureMessage =
-          NO_PROCESS_DEFINITION_FOUND_MESSAGE.formatted(command.getKey(), processDefinitionKey);
+          NO_PROCESS_DEFINITION_FOUND_MESSAGE.formatted(processDefinitionKey);
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, failureMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, failureMessage);
       return;
