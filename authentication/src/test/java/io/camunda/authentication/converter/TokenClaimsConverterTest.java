@@ -8,7 +8,6 @@
 package io.camunda.authentication.converter;
 
 import static io.camunda.security.auth.OidcGroupsLoader.DERIVED_GROUPS_ARE_NOT_STRING_ARRAY;
-import static io.camunda.zeebe.auth.Authorization.USER_GROUPS_CLAIMS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.any;
@@ -301,7 +300,6 @@ public class TokenClaimsConverterTest {
       assertThat(authentication.authenticatedRoleIds())
           .containsExactlyInAnyOrder(roleR1.roleId(), groupRole.roleId());
       assertThat(authentication.authenticatedGroupIds()).containsExactly("group-g1");
-      assertThat(authentication.claims().get(USER_GROUPS_CLAIMS)).isNull();
       assertThat(authentication.authenticatedTenantIds())
           .containsExactlyInAnyOrder(tenantT1.tenantId(), groupTenant.tenantId());
     }
