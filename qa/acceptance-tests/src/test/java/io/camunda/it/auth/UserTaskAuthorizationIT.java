@@ -10,11 +10,13 @@ package io.camunda.it.auth;
 import static io.camunda.client.api.search.enums.PermissionType.*;
 import static io.camunda.client.api.search.enums.ResourceType.PROCESS_DEFINITION;
 import static io.camunda.client.api.search.enums.ResourceType.RESOURCE;
+import static io.camunda.client.api.search.enums.ResourceType.USER_TASK;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
+import io.camunda.client.api.search.response.UserTask;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.TestUser;
@@ -44,6 +46,7 @@ class UserTaskAuthorizationIT {
       "userWithProcessDefReadUserTaskProcess1";
   private static final String USER_WITH_PROCESS_DEF_READ_USER_TASK_PROCESS_2 =
       "userWithProcessDefReadUserTaskProcess2";
+  private static final String USER_WITH_USER_TASK_READ_WILDCARD = "userWithUserTaskReadWildcard";
 
   @UserDefinition
   private static final TestUser ADMIN_USER =
@@ -70,6 +73,13 @@ class UserTaskAuthorizationIT {
           USER_WITH_PROCESS_DEF_READ_USER_TASK_PROCESS_2,
           "password",
           List.of(new Permissions(PROCESS_DEFINITION, READ_USER_TASK, List.of(PROCESS_ID_2))));
+
+  @UserDefinition
+  private static final TestUser USER_WITH_USER_TASK_READ_WILDCARD_USER =
+      new TestUser(
+          USER_WITH_USER_TASK_READ_WILDCARD,
+          "password",
+          List.of(new Permissions(USER_TASK, READ, List.of("*"))));
 
   @BeforeAll
   static void setUp(@Authenticated(ADMIN) final CamundaClient adminClient) {
@@ -194,6 +204,34 @@ class UserTaskAuthorizationIT {
     assertThat(problemException.details().getDetail())
         .isEqualTo(
             "Unauthorized to perform any of the operations: 'READ_USER_TASK' on 'PROCESS_DEFINITION' or 'READ' on 'USER_TASK'");
+  }
+
+  @Test
+  void searchShouldReturnAllUserTasksForWildcardUserTaskReadPermission(
+      @Authenticated(USER_WITH_USER_TASK_READ_WILDCARD) final CamundaClient camundaClient) {
+    // when
+    final var result = camundaClient.newUserTaskSearchRequest().send().join();
+
+    // then - return all user tasks created in @BeforeAll:
+    //        2 tasks from PROCESS_ID_1 (bpmProcessVariable)
+    //        1 task from PROCESS_ID_2 (processWithForm)
+    assertThat(result.items()).hasSize(3);
+    assertThat(result.items())
+        .extracting(UserTask::getBpmnProcessId)
+        .containsExactlyInAnyOrder(PROCESS_ID_1, PROCESS_ID_1, PROCESS_ID_2);
+  }
+
+  @Test
+  void getByKeyShouldReturnUserTaskForWildcardUserTaskReadPermission(
+      @Authenticated(ADMIN) final CamundaClient adminClient,
+      @Authenticated(USER_WITH_USER_TASK_READ_WILDCARD) final CamundaClient camundaClient) {
+    // given - get a task from process 2
+    final var userTaskKeyProcess = getUserTaskKey(adminClient, PROCESS_ID_2);
+    // when
+    final var result = camundaClient.newUserTaskGetRequest(userTaskKeyProcess).send().join();
+    // then
+    assertThat(result).isNotNull();
+    assertThat(result.getBpmnProcessId()).isEqualTo(PROCESS_ID_2);
   }
 
   private long getUserTaskKey(final CamundaClient camundaClient, final String processId) {
