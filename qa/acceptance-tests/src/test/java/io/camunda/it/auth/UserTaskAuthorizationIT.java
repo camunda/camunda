@@ -40,8 +40,10 @@ class UserTaskAuthorizationIT {
   private static final String PROCESS_ID_1 = "bpmProcessVariable";
   private static final String PROCESS_ID_2 = "processWithForm";
   private static final String ADMIN = "admin";
-  private static final String USER1 = "user1";
-  private static final String USER2 = "user2";
+  private static final String USER_WITH_PROCESS_DEF_READ_USER_TASK_PROCESS_1 =
+      "userWithProcessDefReadUserTaskProcess1";
+  private static final String USER_WITH_PROCESS_DEF_READ_USER_TASK_PROCESS_2 =
+      "userWithProcessDefReadUserTaskProcess2";
 
   @UserDefinition
   private static final TestUser ADMIN_USER =
@@ -56,16 +58,16 @@ class UserTaskAuthorizationIT {
               new Permissions(PROCESS_DEFINITION, READ_USER_TASK, List.of("*"))));
 
   @UserDefinition
-  private static final TestUser USER1_USER =
+  private static final TestUser USER_WITH_PROCESS_DEF_READ_USER_TASK_PROCESS_1_USER =
       new TestUser(
-          USER1,
+          USER_WITH_PROCESS_DEF_READ_USER_TASK_PROCESS_1,
           "password",
           List.of(new Permissions(PROCESS_DEFINITION, READ_USER_TASK, List.of(PROCESS_ID_1))));
 
   @UserDefinition
-  private static final TestUser USER2_USER =
+  private static final TestUser USER_WITH_PROCESS_DEF_READ_USER_TASK_PROCESS_2_USER =
       new TestUser(
-          USER2,
+          USER_WITH_PROCESS_DEF_READ_USER_TASK_PROCESS_2,
           "password",
           List.of(new Permissions(PROCESS_DEFINITION, READ_USER_TASK, List.of(PROCESS_ID_2))));
 
@@ -83,7 +85,8 @@ class UserTaskAuthorizationIT {
 
   @Test
   public void searchShouldReturnAuthorizedUserTasks(
-      @Authenticated(USER1) final CamundaClient camundaClient) {
+      @Authenticated(USER_WITH_PROCESS_DEF_READ_USER_TASK_PROCESS_1)
+          final CamundaClient camundaClient) {
     // when
     final var result = camundaClient.newUserTaskSearchRequest().send().join();
 
@@ -96,7 +99,8 @@ class UserTaskAuthorizationIT {
   @Test
   void getByKeyShouldReturnAuthorizedUserTask(
       @Authenticated(ADMIN) final CamundaClient adminClient,
-      @Authenticated(USER1) final CamundaClient camundaClient) {
+      @Authenticated(USER_WITH_PROCESS_DEF_READ_USER_TASK_PROCESS_1)
+          final CamundaClient camundaClient) {
     // given
     final var userTaskKey = getUserTaskKey(adminClient, PROCESS_ID_1);
     // when
@@ -109,7 +113,8 @@ class UserTaskAuthorizationIT {
   @Test
   void getByKeyShouldReturnForbiddenForUnauthorizedUserTask(
       @Authenticated(ADMIN) final CamundaClient adminClient,
-      @Authenticated(USER1) final CamundaClient camundaClient) {
+      @Authenticated(USER_WITH_PROCESS_DEF_READ_USER_TASK_PROCESS_1)
+          final CamundaClient camundaClient) {
     // given
     final var userTaskKey = getUserTaskKey(adminClient, PROCESS_ID_2);
     // when
@@ -127,7 +132,8 @@ class UserTaskAuthorizationIT {
   @Test
   void getUserTaskFormShouldReturnFormForAuthorizedUserTask(
       @Authenticated(ADMIN) final CamundaClient adminClient,
-      @Authenticated(USER2) final CamundaClient camundaClient) {
+      @Authenticated(USER_WITH_PROCESS_DEF_READ_USER_TASK_PROCESS_2)
+          final CamundaClient camundaClient) {
     // given
     final var userTaskKey = getUserTaskKey(adminClient, PROCESS_ID_2);
     // when
@@ -140,7 +146,8 @@ class UserTaskAuthorizationIT {
   @Test
   void getUserTaskFormShouldReturnForbiddenForUnauthorizedUserTask(
       @Authenticated(ADMIN) final CamundaClient adminClient,
-      @Authenticated(USER1) final CamundaClient camundaClient) {
+      @Authenticated(USER_WITH_PROCESS_DEF_READ_USER_TASK_PROCESS_1)
+          final CamundaClient camundaClient) {
     // given
     final var userTaskKey = getUserTaskKey(adminClient, PROCESS_ID_2);
     // when
@@ -158,7 +165,8 @@ class UserTaskAuthorizationIT {
   @Test
   void searchUserTaskVariablesShouldReturnVariablesForAuthorizedUserTask(
       @Authenticated(ADMIN) final CamundaClient adminClient,
-      @Authenticated(USER1) final CamundaClient camundaClient) {
+      @Authenticated(USER_WITH_PROCESS_DEF_READ_USER_TASK_PROCESS_1)
+          final CamundaClient camundaClient) {
     // given
     final var userTaskKey = getUserTaskKey(adminClient, PROCESS_ID_1);
     // when
@@ -170,7 +178,8 @@ class UserTaskAuthorizationIT {
   @Test
   void searchUserTaskVariablesShouldReturnForbiddenForUnauthorizedUserTask(
       @Authenticated(ADMIN) final CamundaClient adminClient,
-      @Authenticated(USER2) final CamundaClient camundaClient) {
+      @Authenticated(USER_WITH_PROCESS_DEF_READ_USER_TASK_PROCESS_2)
+          final CamundaClient camundaClient) {
     // given
     final var userTaskKey = getUserTaskKey(adminClient, PROCESS_ID_1);
     // when
