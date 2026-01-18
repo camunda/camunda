@@ -44,6 +44,8 @@ public class ProcessStoreIT extends OperateSearchAbstractIT {
   @Autowired private ProcessStore processStore;
 
   private ProcessEntity firstProcessDefinition;
+  private ProcessEntity firstProcessDefinitionV2;
+  private ProcessEntity firstProcessDefinitionV3;
   private ProcessEntity secondProcessDefinition;
   private ProcessEntity thirdProcessDefinition;
   private ProcessInstanceForListViewEntity firstProcessInstance;
@@ -61,6 +63,27 @@ public class ProcessStoreIT extends OperateSearchAbstractIT {
             .setBpmnProcessId("demoProcess")
             .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
             .setName("Demo process")
+            .setVersion(1)
+            .setBpmnXml(resourceXml);
+
+    firstProcessDefinitionV2 =
+        new ProcessEntity()
+            .setKey(2251799813685250L)
+            .setId("2251799813685250")
+            .setBpmnProcessId("demoProcess")
+            .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
+            .setName("Demo process")
+            .setVersion(2)
+            .setBpmnXml(resourceXml);
+
+    firstProcessDefinitionV3 =
+        new ProcessEntity()
+            .setKey(2251799813685253L)
+            .setId("2251799813685253")
+            .setBpmnProcessId("demoProcess")
+            .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
+            .setName("Demo process")
+            .setVersion(3)
             .setBpmnXml(resourceXml);
 
     secondProcessDefinition =
@@ -125,7 +148,12 @@ public class ProcessStoreIT extends OperateSearchAbstractIT {
             .setJoinRelation(new ListViewJoinRelation("processInstance"));
 
     final var definitionEntities =
-        List.of(firstProcessDefinition, secondProcessDefinition, thirdProcessDefinition);
+        List.of(
+            firstProcessDefinition,
+            firstProcessDefinitionV2,
+            firstProcessDefinitionV3,
+            secondProcessDefinition,
+            thirdProcessDefinition);
     for (final var entity : definitionEntities) {
       testSearchRepository.createOrUpdateDocumentFromObject(
           processDefinitionIndex.getFullQualifiedName(), entity.getId(), entity);
@@ -176,6 +204,7 @@ public class ProcessStoreIT extends OperateSearchAbstractIT {
                 thirdProcessDefinition.getBpmnProcessId()));
 
     assertThat(results.values().size()).isEqualTo(2);
+    // First process has 3 versions (v1, v2, v3)
     assertThat(
             results
                 .get(
@@ -183,7 +212,7 @@ public class ProcessStoreIT extends OperateSearchAbstractIT {
                         firstProcessDefinition.getBpmnProcessId(),
                         TenantOwned.DEFAULT_TENANT_IDENTIFIER))
                 .size())
-        .isEqualTo(1);
+        .isEqualTo(3);
     assertThat(
             results
                 .get(
@@ -192,6 +221,94 @@ public class ProcessStoreIT extends OperateSearchAbstractIT {
                         TenantOwned.DEFAULT_TENANT_IDENTIFIER))
                 .size())
         .isEqualTo(1);
+  }
+
+  @Test
+  public void testGetProcessesGroupedWithNonExistentBpmnProcessIds() {
+    final Map<ProcessStore.ProcessKey, List<ProcessEntity>> results =
+        processStore.getProcessesGrouped(
+            TenantOwned.DEFAULT_TENANT_IDENTIFIER, Set.of("nonExistentProcess", "anotherFakeId"));
+
+    assertThat(results).isEmpty();
+  }
+
+  @Test
+  public void testGetProcessesGroupedWithNonExistentTenant() {
+    final Map<ProcessStore.ProcessKey, List<ProcessEntity>> results =
+        processStore.getProcessesGrouped(
+            "nonExistentTenant",
+            Set.of(
+                firstProcessDefinition.getBpmnProcessId(),
+                secondProcessDefinition.getBpmnProcessId()));
+    assertThat(results).isEmpty();
+  }
+
+  @Test
+  public void testGetProcessesGroupedWithNullTenantReturnsAllTenants() {
+    final Map<ProcessStore.ProcessKey, List<ProcessEntity>> results =
+        processStore.getProcessesGrouped(null, null);
+
+    // Should return all process definitions across both tenants
+    // demoProcess has 3 versions in default tenant, demoProcess-1 has 1 version in default tenant,
+    // demoProcess-2 has 1 version in tenant2
+    assertThat(results).hasSize(3);
+    assertThat(
+            results.get(
+                new ProcessStore.ProcessKey(
+                    firstProcessDefinition.getBpmnProcessId(),
+                    TenantOwned.DEFAULT_TENANT_IDENTIFIER)))
+        .hasSize(3);
+    assertThat(
+            results.get(
+                new ProcessStore.ProcessKey(
+                    secondProcessDefinition.getBpmnProcessId(),
+                    TenantOwned.DEFAULT_TENANT_IDENTIFIER)))
+        .hasSize(1);
+    assertThat(
+            results.get(
+                new ProcessStore.ProcessKey(thirdProcessDefinition.getBpmnProcessId(), "tenant2")))
+        .hasSize(1);
+  }
+
+  @Test
+  public void testGetProcessesGroupedWithNullAllowedBpmnProcessIds() {
+    final Map<ProcessStore.ProcessKey, List<ProcessEntity>> results =
+        processStore.getProcessesGrouped(TenantOwned.DEFAULT_TENANT_IDENTIFIER, null);
+
+    // Should return processes for default tenant only (demoProcess with 3 versions and
+    // demoProcess-1)
+    assertThat(results).hasSize(2);
+    assertThat(
+            results.get(
+                new ProcessStore.ProcessKey(
+                    firstProcessDefinition.getBpmnProcessId(),
+                    TenantOwned.DEFAULT_TENANT_IDENTIFIER)))
+        .hasSize(3);
+    assertThat(
+            results.get(
+                new ProcessStore.ProcessKey(
+                    secondProcessDefinition.getBpmnProcessId(),
+                    TenantOwned.DEFAULT_TENANT_IDENTIFIER)))
+        .hasSize(1);
+  }
+
+  @Test
+  public void testGetProcessesGroupedReturnsVersionsSortedDescending() {
+    final Map<ProcessStore.ProcessKey, List<ProcessEntity>> results =
+        processStore.getProcessesGrouped(
+            TenantOwned.DEFAULT_TENANT_IDENTIFIER,
+            Set.of(firstProcessDefinition.getBpmnProcessId()));
+
+    final ProcessStore.ProcessKey processKey =
+        new ProcessStore.ProcessKey(
+            firstProcessDefinition.getBpmnProcessId(), TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    final List<ProcessEntity> versions = results.get(processKey);
+
+    assertThat(versions).hasSize(3);
+    // Versions should be sorted in descending order (newest first)
+    assertThat(versions.get(0).getVersion()).isEqualTo(3);
+    assertThat(versions.get(1).getVersion()).isEqualTo(2);
+    assertThat(versions.get(2).getVersion()).isEqualTo(1);
   }
 
   @Test
@@ -205,8 +322,13 @@ public class ProcessStoreIT extends OperateSearchAbstractIT {
             "name",
             "bpmnProcessId",
             "key");
-    assertThat(results.size()).isEqualTo(2);
+    // 3 versions of firstProcessDefinition + 1 version of secondProcessDefinition = 4
+    assertThat(results.size()).isEqualTo(4);
     assertThat(results.get(firstProcessDefinition.getKey()).getBpmnProcessId())
+        .isEqualTo(firstProcessDefinition.getBpmnProcessId());
+    assertThat(results.get(firstProcessDefinitionV2.getKey()).getBpmnProcessId())
+        .isEqualTo(firstProcessDefinition.getBpmnProcessId());
+    assertThat(results.get(firstProcessDefinitionV3.getKey()).getBpmnProcessId())
         .isEqualTo(firstProcessDefinition.getBpmnProcessId());
     assertThat(results.get(secondProcessDefinition.getKey()).getBpmnProcessId())
         .isEqualTo(secondProcessDefinition.getBpmnProcessId());
