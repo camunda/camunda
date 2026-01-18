@@ -31,6 +31,7 @@ import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.time.Duration;
 import java.util.List;
+import java.util.stream.Stream;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
@@ -54,6 +55,11 @@ class UserTaskAuthorizationIT {
   private static final String USER_WITH_USER_TASK_READ_WILDCARD = "userWithUserTaskReadWildcard";
   private static final String USER_WITH_USER_TASK_READ_PROCESS_1_FIRST_TASK =
       "userWithUserTaskReadProcessId1FirstTask";
+
+  // Task keys captured during setup for reuse in tests
+  private static long processId1FirstTaskKey;
+  private static long processId1SecondTaskKey;
+  private static long processId2TaskKey;
 
   @UserDefinition
   private static final TestUser ADMIN_USER =
@@ -108,14 +114,20 @@ class UserTaskAuthorizationIT {
 
     waitForProcessAndTasksBeingExported(adminClient);
 
+    // Capture task keys for reuse in tests
+    final var process1Tasks = getUserTaskKeys(adminClient, PROCESS_ID_1).toList();
+    assertThat(process1Tasks).hasSize(2);
+    processId1FirstTaskKey = process1Tasks.getFirst();
+    processId1SecondTaskKey = process1Tasks.getLast();
+    processId2TaskKey = getUserTaskKey(adminClient, PROCESS_ID_2);
+
     // Add USER_TASK[READ] permission for specific task key at runtime
-    final var processId1FirstUserTaskKey = getUserTaskKey(adminClient, PROCESS_ID_1);
     createAuthorizationAndWait(
         adminClient,
         USER_WITH_USER_TASK_READ_PROCESS_1_FIRST_TASK,
         USER_TASK,
         READ,
-        String.valueOf(processId1FirstUserTaskKey));
+        String.valueOf(processId1FirstTaskKey));
   }
 
   @Test
@@ -133,13 +145,10 @@ class UserTaskAuthorizationIT {
 
   @Test
   void getByKeyShouldReturnAuthorizedUserTask(
-      @Authenticated(ADMIN) final CamundaClient adminClient,
       @Authenticated(USER_WITH_PROCESS_DEF_READ_USER_TASK_PROCESS_1)
           final CamundaClient camundaClient) {
-    // given
-    final var userTaskKey = getUserTaskKey(adminClient, PROCESS_ID_1);
     // when
-    final var result = camundaClient.newUserTaskGetRequest(userTaskKey).send().join();
+    final var result = camundaClient.newUserTaskGetRequest(processId1FirstTaskKey).send().join();
     // then
     assertThat(result).isNotNull();
     assertThat(result.getBpmnProcessId()).isEqualTo(PROCESS_ID_1);
@@ -147,14 +156,11 @@ class UserTaskAuthorizationIT {
 
   @Test
   void getByKeyShouldReturnForbiddenForUnauthorizedUserTask(
-      @Authenticated(ADMIN) final CamundaClient adminClient,
       @Authenticated(USER_WITH_PROCESS_DEF_READ_USER_TASK_PROCESS_1)
           final CamundaClient camundaClient) {
-    // given
-    final var userTaskKey = getUserTaskKey(adminClient, PROCESS_ID_2);
     // when
     final ThrowingCallable executeGet =
-        () -> camundaClient.newUserTaskGetRequest(userTaskKey).send().join();
+        () -> camundaClient.newUserTaskGetRequest(processId2TaskKey).send().join();
     // then
     final var problemException =
         assertThatExceptionOfType(ProblemException.class).isThrownBy(executeGet).actual();
@@ -166,13 +172,10 @@ class UserTaskAuthorizationIT {
 
   @Test
   void getUserTaskFormShouldReturnFormForAuthorizedUserTask(
-      @Authenticated(ADMIN) final CamundaClient adminClient,
       @Authenticated(USER_WITH_PROCESS_DEF_READ_USER_TASK_PROCESS_2)
           final CamundaClient camundaClient) {
-    // given
-    final var userTaskKey = getUserTaskKey(adminClient, PROCESS_ID_2);
     // when
-    final var result = camundaClient.newUserTaskGetFormRequest(userTaskKey).send().join();
+    final var result = camundaClient.newUserTaskGetFormRequest(processId2TaskKey).send().join();
     // then
     assertThat(result).isNotNull();
     assertThat(result.getFormId()).isEqualTo("test");
@@ -199,27 +202,22 @@ class UserTaskAuthorizationIT {
 
   @Test
   void searchUserTaskVariablesShouldReturnVariablesForAuthorizedUserTask(
-      @Authenticated(ADMIN) final CamundaClient adminClient,
       @Authenticated(USER_WITH_PROCESS_DEF_READ_USER_TASK_PROCESS_1)
           final CamundaClient camundaClient) {
-    // given
-    final var userTaskKey = getUserTaskKey(adminClient, PROCESS_ID_1);
     // when
-    final var result = camundaClient.newUserTaskVariableSearchRequest(userTaskKey).send().join();
+    final var result =
+        camundaClient.newUserTaskVariableSearchRequest(processId1FirstTaskKey).send().join();
     // then
     assertThat(result.items()).isNotEmpty();
   }
 
   @Test
   void searchUserTaskVariablesShouldReturnForbiddenForUnauthorizedUserTask(
-      @Authenticated(ADMIN) final CamundaClient adminClient,
       @Authenticated(USER_WITH_PROCESS_DEF_READ_USER_TASK_PROCESS_2)
           final CamundaClient camundaClient) {
-    // given
-    final var userTaskKey = getUserTaskKey(adminClient, PROCESS_ID_1);
     // when
     final ThrowingCallable executeSearchVariables =
-        () -> camundaClient.newUserTaskVariableSearchRequest(userTaskKey).send().join();
+        () -> camundaClient.newUserTaskVariableSearchRequest(processId1FirstTaskKey).send().join();
     // then
     final var problemException =
         assertThatExceptionOfType(ProblemException.class)
@@ -237,31 +235,27 @@ class UserTaskAuthorizationIT {
     // when
     final var result = camundaClient.newUserTaskSearchRequest().send().join();
 
-    // then - return all user tasks created in @BeforeAll:
-    //        2 tasks from PROCESS_ID_1 (bpmProcessVariable)
-    //        1 task from PROCESS_ID_2 (processWithForm)
-    assertThat(result.items()).hasSize(3);
+    // then - return all created user tasks
     assertThat(result.items())
-        .extracting(UserTask::getBpmnProcessId)
-        .containsExactlyInAnyOrder(PROCESS_ID_1, PROCESS_ID_1, PROCESS_ID_2);
+        .extracting(UserTask::getBpmnProcessId, UserTask::getUserTaskKey)
+        .containsExactlyInAnyOrder(
+            tuple(PROCESS_ID_1, processId1FirstTaskKey),
+            tuple(PROCESS_ID_1, processId1SecondTaskKey),
+            tuple(PROCESS_ID_2, processId2TaskKey));
   }
 
   @Test
   void getByKeyShouldReturnUserTaskForWildcardUserTaskReadPermission(
-      @Authenticated(ADMIN) final CamundaClient adminClient,
       @Authenticated(USER_WITH_USER_TASK_READ_WILDCARD) final CamundaClient camundaClient) {
-    // given - get a task from process 2
-    final var userTaskKeyProcess = getUserTaskKey(adminClient, PROCESS_ID_2);
     // when
-    final var result = camundaClient.newUserTaskGetRequest(userTaskKeyProcess).send().join();
+    final var result = camundaClient.newUserTaskGetRequest(processId1SecondTaskKey).send().join();
     // then
     assertThat(result).isNotNull();
-    assertThat(result.getBpmnProcessId()).isEqualTo(PROCESS_ID_2);
+    assertThat(result.getBpmnProcessId()).isEqualTo(PROCESS_ID_1);
   }
 
   @Test
   void searchShouldReturnOnlyAuthorizedUserTaskForSpecificKeyPermission(
-      @Authenticated(ADMIN) final CamundaClient adminClient,
       @Authenticated(USER_WITH_USER_TASK_READ_PROCESS_1_FIRST_TASK)
           final CamundaClient camundaClient) {
     // given - user has permission only for the first user task from PROCESS_ID_1
@@ -271,39 +265,30 @@ class UserTaskAuthorizationIT {
 
     // then - return only the authorized user task: 1 from PROCESS_ID_1
     assertThat(result.items())
-        .hasSize(1)
         .extracting(UserTask::getBpmnProcessId, UserTask::getUserTaskKey)
-        .containsExactly(tuple(PROCESS_ID_1, getUserTaskKey(adminClient, PROCESS_ID_1)));
+        .containsExactly(tuple(PROCESS_ID_1, processId1FirstTaskKey));
   }
 
   @Test
   void getByKeyShouldReturnUserTaskForSpecificKeyPermission(
-      @Authenticated(ADMIN) final CamundaClient adminClient,
       @Authenticated(USER_WITH_USER_TASK_READ_PROCESS_1_FIRST_TASK)
           final CamundaClient camundaClient) {
-    // given - the authorized task key from @BeforeAll
-    final var authorizedTaskKey = getUserTaskKey(adminClient, PROCESS_ID_1);
-
     // when
-    final var result = camundaClient.newUserTaskGetRequest(authorizedTaskKey).send().join();
+    final var result = camundaClient.newUserTaskGetRequest(processId1FirstTaskKey).send().join();
 
     // then
     assertThat(result).isNotNull();
     assertThat(result.getBpmnProcessId()).isEqualTo(PROCESS_ID_1);
-    assertThat(result.getUserTaskKey()).isEqualTo(authorizedTaskKey);
+    assertThat(result.getUserTaskKey()).isEqualTo(processId1FirstTaskKey);
   }
 
   @Test
   void getByKeyShouldReturnForbiddenForUnauthorizedUserTaskWithSpecificKeyPermission(
-      @Authenticated(ADMIN) final CamundaClient adminClient,
       @Authenticated(USER_WITH_USER_TASK_READ_PROCESS_1_FIRST_TASK)
           final CamundaClient camundaClient) {
-    // given - an unauthorized task key from PROCESS_ID_2
-    final var unauthorizedTaskKey = getUserTaskKey(adminClient, PROCESS_ID_2);
-
-    // when
+    // when - try to access unauthorized task from PROCESS_ID_2
     final ThrowingCallable executeGet =
-        () -> camundaClient.newUserTaskGetRequest(unauthorizedTaskKey).send().join();
+        () -> camundaClient.newUserTaskGetRequest(processId2TaskKey).send().join();
 
     // then
     final var problemException =
@@ -315,14 +300,19 @@ class UserTaskAuthorizationIT {
   }
 
   private static long getUserTaskKey(final CamundaClient camundaClient, final String processId) {
+    return getUserTaskKeys(camundaClient, processId).findFirst().orElseThrow();
+  }
+
+  private static Stream<Long> getUserTaskKeys(
+      final CamundaClient camundaClient, final String processId) {
     return camundaClient
         .newUserTaskSearchRequest()
         .filter(f -> f.bpmnProcessId(processId))
         .send()
         .join()
         .items()
-        .getFirst()
-        .getUserTaskKey();
+        .stream()
+        .map(UserTask::getUserTaskKey);
   }
 
   private static void deployResource(final CamundaClient camundaClient, final String resourceName) {
