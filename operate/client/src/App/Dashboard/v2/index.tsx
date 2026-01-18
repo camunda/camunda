@@ -11,13 +11,16 @@ import {VisuallyHiddenH1} from 'modules/components/VisuallyHiddenH1';
 import {MetricPanel} from './MetricPanel';
 import {PAGE_TITLE} from 'modules/constants';
 import {Grid, ScrollableContent, Tile, TileTitle} from '../styled';
-import {InstancesByProcess} from './InstancesByProcess';
+import {InstancesByProcessDefinition} from './InstancesByProcessDefinition';
 import {IncidentsByError} from './IncidentsByError';
 import {useProcessDefinitionStatistics} from 'modules/queries/processDefinitionStatistics/useProcessDefinitionStatistics';
+import {NoInstancesEmptyState} from '../NoInstancesEmptyState';
 
 const Dashboard: React.FC = () => {
   const processStats = useProcessDefinitionStatistics();
-  const hasNoInstances = processStats.data?.items.length === 0;
+  const hasNoInstances =
+    processStats.status === 'success' &&
+    processStats.data?.items.length === 0;
 
   useEffect(() => {
     document.title = PAGE_TITLE.DASHBOARD;
@@ -32,7 +35,11 @@ const Dashboard: React.FC = () => {
       <Tile>
         <TileTitle>Process Instances by Name</TileTitle>
         <ScrollableContent>
-          <InstancesByProcess />
+          {hasNoInstances ? (
+            <NoInstancesEmptyState />
+          ) : (
+            <InstancesByProcessDefinition result={processStats} />
+          )}
         </ScrollableContent>
       </Tile>
 

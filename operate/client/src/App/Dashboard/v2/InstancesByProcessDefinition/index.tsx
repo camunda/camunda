@@ -16,26 +16,25 @@ import {getAccordionLabel} from './utils/getAccordionLabel';
 import {InstancesBar} from 'modules/components/InstancesBar';
 import {LinkWrapper, ErrorMessage} from '../../styled';
 import {Skeleton} from '../PartiallyExpandableDataTable/Skeleton';
-import {EmptyState} from 'modules/components/EmptyState';
-import EmptyStateProcessInstancesByName from 'modules/components/Icon/empty-state-process-instances-by-name.svg?react';
 import {Details} from './Details';
 import {generateProcessKey} from 'modules/utils/generateProcessKey';
-import {useCurrentUser} from 'modules/queries/useCurrentUser';
 import {useAvailableTenants} from 'modules/queries/useAvailableTenants';
-import {useProcessDefinitionStatistics} from 'modules/queries/processDefinitionStatistics/useProcessDefinitionStatistics';
-import type {ProcessDefinitionInstanceStatistics} from '@camunda/camunda-api-zod-schemas/8.8';
+import type {
+  ProcessDefinitionInstanceStatistics,
+  GetProcessDefinitionInstanceStatisticsResponseBody,
+} from '@camunda/camunda-api-zod-schemas/8.8';
 import {DEFAULT_TENANT} from 'modules/constants';
+import type {UseQueryResult} from '@tanstack/react-query';
 
-const InstancesByProcess: React.FC = () => {
-  const result = useProcessDefinitionStatistics();
-  const {data: currentUser} = useCurrentUser();
-  const modelerLink = Array.isArray(currentUser?.c8Links)
-    ? currentUser?.c8Links.find((link) => link.name === 'modeler')?.link
-    : undefined;
+type Props = {
+  result: UseQueryResult<GetProcessDefinitionInstanceStatisticsResponseBody>;
+};
+
+const InstancesByProcessDefinition: React.FC<Props> = ({result}) => {
   const tenantsById = useAvailableTenants();
   const isMultiTenancyEnabled = window.clientConfig?.multiTenancyEnabled;
 
-  if (result.status === 'pending' && !result.data) {
+  if (result.isPending) {
     return <Skeleton />;
   }
 
@@ -43,44 +42,9 @@ const InstancesByProcess: React.FC = () => {
     return <ErrorMessage />;
   }
 
-  const hasNoInstances = result.data?.items.length === 0;
-  if (hasNoInstances) {
-    return (
-      <EmptyState
-        icon={
-          <EmptyStateProcessInstancesByName title="Start by deploying a process" />
-        }
-        heading="Start by deploying a process"
-        description="There are no processes deployed. Deploy and start a process from our Modeler, then come back here to track its progress."
-        link={{
-          label: 'Learn more about Operate',
-          href: 'https://docs.camunda.io/docs/components/operate/operate-introduction/',
-          onClick: () =>
-            tracking.track({
-              eventName: 'dashboard-link-clicked',
-              link: 'operate-docs',
-            }),
-        }}
-        button={
-          modelerLink !== undefined
-            ? {
-                label: 'Go to Modeler',
-                href: modelerLink,
-                onClick: () =>
-                  tracking.track({
-                    eventName: 'dashboard-link-clicked',
-                    link: 'modeler',
-                  }),
-              }
-            : undefined
-        }
-      />
-    );
-  }
-
   return (
     <PartiallyExpandableDataTable
-      dataTestId="instances-by-process"
+      dataTestId="instances-by-process-definition"
       headers={[{key: 'instance', header: 'instance'}]}
       rows={(result.data?.items ?? []).map(
         (item: ProcessDefinitionInstanceStatistics) => {
@@ -202,4 +166,4 @@ const InstancesByProcess: React.FC = () => {
   );
 };
 
-export {InstancesByProcess};
+export {InstancesByProcessDefinition};

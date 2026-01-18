@@ -13,7 +13,7 @@ import {PAGE_TITLE} from 'modules/constants';
 import {statisticsStore} from 'modules/stores/statistics';
 import {Dashboard} from './index';
 import {mockIncidentsByError} from './IncidentsByError/index.setup';
-import {mockWithSingleVersion} from './InstancesByProcess/index.setup';
+import {mockWithSingleVersion} from './InstancesByProcessDefinition/index.setup';
 import {statistics} from 'modules/mocks/statistics';
 import {mockFetchProcessCoreStatistics} from 'modules/mocks/api/processInstances/fetchProcessCoreStatistics';
 import {mockFetchIncidentsByError} from 'modules/mocks/api/incidents/fetchIncidentsByError';
@@ -89,5 +89,84 @@ describe('Dashboard', () => {
     expect(
       screen.getByText('Process Incidents by Error Message'),
     ).toBeInTheDocument();
+  });
+
+  it('should display skeleton while loading process definition statistics', () => {
+    mockFetchProcessCoreStatistics().withSuccess(statistics);
+    mockFetchIncidentsByError().withSuccess(mockIncidentsByError);
+    mockFetchProcessDefinitionStatistics().withSuccess(mockWithSingleVersion);
+
+    render(<Dashboard />, {wrapper: Wrapper});
+
+    expect(screen.getByTestId('data-table-skeleton')).toBeInTheDocument();
+  });
+
+  it('should handle process definition statistics fetch error', async () => {
+    mockFetchProcessCoreStatistics().withSuccess(statistics);
+    mockFetchIncidentsByError().withSuccess(mockIncidentsByError);
+    mockFetchProcessDefinitionStatistics().withServerError();
+
+    render(<Dashboard />, {wrapper: Wrapper});
+
+    expect(
+      await screen.findByText('Data could not be fetched'),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByText('Process Incidents by Error Message'),
+    ).toBeInTheDocument();
+  });
+
+  it('should handle network error for process definition statistics', async () => {
+    const consoleErrorMock = vi
+      .spyOn(global.console, 'error')
+      .mockImplementation(() => {});
+
+    mockFetchProcessCoreStatistics().withSuccess(statistics);
+    mockFetchIncidentsByError().withSuccess(mockIncidentsByError);
+    mockFetchProcessDefinitionStatistics().withNetworkError();
+
+    render(<Dashboard />, {wrapper: Wrapper});
+
+    expect(
+      await screen.findByText('Data could not be fetched'),
+    ).toBeInTheDocument();
+
+    consoleErrorMock.mockRestore();
+  });
+
+  it('should update after polling for new process definition statistics', async () => {
+    vi.useFakeTimers({shouldAdvanceTime: true});
+
+    mockFetchProcessCoreStatistics().withSuccess(statistics);
+    mockFetchIncidentsByError().withSuccess(mockIncidentsByError);
+    mockFetchProcessDefinitionStatistics().withSuccess(mockWithSingleVersion);
+
+    render(<Dashboard />, {wrapper: Wrapper});
+
+    expect(
+      await screen.findByText('loanProcess – 138 Instances in 1 Version'),
+    ).toBeInTheDocument();
+
+    mockFetchProcessCoreStatistics().withSuccess(statistics);
+    mockFetchIncidentsByError().withSuccess(mockIncidentsByError);
+    mockFetchProcessDefinitionStatistics().withSuccess({
+      items: [
+        {
+          ...mockWithSingleVersion.items[0]!,
+          activeInstancesWithoutIncidentCount: 150,
+        },
+      ],
+      page: {totalItems: 1},
+    });
+
+    vi.runOnlyPendingTimers();
+
+    expect(
+      await screen.findByText('loanProcess – 166 Instances in 1 Version'),
+    ).toBeInTheDocument();
+
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 });

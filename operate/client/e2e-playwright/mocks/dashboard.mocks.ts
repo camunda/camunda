@@ -12,6 +12,7 @@ import type {
   ProcessInstanceByNameDto,
   CoreStatisticsDto,
 } from '@/types';
+import type {GetProcessDefinitionInstanceStatisticsResponseBody} from '@camunda/camunda-api-zod-schemas/8.8';
 
 const mockStatistics = {
   running: 891,
@@ -1417,14 +1418,79 @@ const mockIncidentsByProcess = [
   },
 ];
 
+const mockProcessDefinitionStatistics: GetProcessDefinitionInstanceStatisticsResponseBody =
+  {
+    items: [
+      {
+        processDefinitionId: 'orderProcess',
+        latestProcessDefinitionName: 'Order process',
+        activeInstancesWithIncidentCount: 141,
+        activeInstancesWithoutIncidentCount: 5,
+        hasMultipleVersions: true,
+        tenantId: '<default>',
+      },
+      {
+        processDefinitionId: 'call-activity-process',
+        latestProcessDefinitionName: 'Call Activity Process',
+        activeInstancesWithIncidentCount: 90,
+        activeInstancesWithoutIncidentCount: 15,
+        hasMultipleVersions: false,
+        tenantId: '<default>',
+      },
+      {
+        processDefinitionId: 'complexProcess',
+        latestProcessDefinitionName: '',
+        activeInstancesWithIncidentCount: 90,
+        activeInstancesWithoutIncidentCount: 13,
+        hasMultipleVersions: true,
+        tenantId: '<default>',
+      },
+      {
+        processDefinitionId: 'called-process',
+        latestProcessDefinitionName: '',
+        activeInstancesWithIncidentCount: 70,
+        activeInstancesWithoutIncidentCount: 0,
+        hasMultipleVersions: true,
+        tenantId: '<default>',
+      },
+      {
+        processDefinitionId: 'invoice',
+        latestProcessDefinitionName: 'DMN invoice',
+        activeInstancesWithIncidentCount: 33,
+        activeInstancesWithoutIncidentCount: 35,
+        hasMultipleVersions: false,
+        tenantId: '<default>',
+      },
+      {
+        processDefinitionId: 'eventBasedGatewayProcess',
+        latestProcessDefinitionName: 'Event based gateway with timer start',
+        activeInstancesWithIncidentCount: 26,
+        activeInstancesWithoutIncidentCount: 0,
+        hasMultipleVersions: true,
+        tenantId: '<default>',
+      },
+      {
+        processDefinitionId: 'flightRegistration',
+        latestProcessDefinitionName: 'Flight registration',
+        activeInstancesWithIncidentCount: 23,
+        activeInstancesWithoutIncidentCount: 4,
+        hasMultipleVersions: true,
+        tenantId: '<default>',
+      },
+    ],
+    page: {totalItems: 7},
+  };
+
 function mockResponses({
   statistics,
   incidentsByError,
   incidentsByProcess,
+  processDefinitionStatistics,
 }: {
   statistics?: CoreStatisticsDto;
   incidentsByError?: IncidentByErrorDto[];
   incidentsByProcess?: ProcessInstanceByNameDto[];
+  processDefinitionStatistics?: GetProcessDefinitionInstanceStatisticsResponseBody;
 }) {
   return (route: Route) => {
     if (route.request().url().includes('/v2/authentication/me')) {
@@ -1476,6 +1542,16 @@ function mockResponses({
       });
     }
 
+    if (route.request().url().includes('/v2/process-definitions/statistics')) {
+      return route.fulfill({
+        status: processDefinitionStatistics === undefined ? 400 : 200,
+        body: JSON.stringify(processDefinitionStatistics),
+        headers: {
+          'content-type': 'application/json',
+        },
+      });
+    }
+
     route.continue();
   };
 }
@@ -1484,5 +1560,6 @@ export {
   mockStatistics,
   mockIncidentsByError,
   mockIncidentsByProcess,
+  mockProcessDefinitionStatistics,
   mockResponses,
 };
