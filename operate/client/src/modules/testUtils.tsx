@@ -7,7 +7,6 @@
  */
 
 import type {IncidentByErrorDto} from './api/incidents/fetchIncidentsByError';
-import type {ProcessInstanceByNameDto} from './api/incidents/fetchProcessInstancesByName';
 import type {BatchOperationDto} from './api/sharedTypes';
 import type {
   ProcessInstance,
@@ -298,31 +297,6 @@ const createProcess = (options = {}) => {
     errorMessage: 'JSON path $.paid has no result.',
     instancesWithActiveIncidentsCount: 37,
     activeInstancesCount: 5,
-    ...options,
-  };
-};
-
-/**
- * @returns a single mocked instanceByProcess Object
- * @param {*} customProps Obj with any type of custom property
- */
-const createInstanceByProcess = (
-  options: Partial<ProcessInstanceByNameDto> = {},
-): ProcessInstanceByNameDto => {
-  return {
-    bpmnProcessId: 'loanProcess',
-    tenantId: '<default>',
-    processName: null,
-    instancesWithActiveIncidentsCount: 16,
-    activeInstancesCount: 122,
-    processes: [
-      createProcess({
-        name: null,
-        bpmnProcessId: 'loanProcess',
-        instancesWithActiveIncidentsCount: 16,
-        activeInstancesCount: 122,
-      }),
-    ],
     ...options,
   };
 };
@@ -1097,7 +1071,6 @@ export {
   createOperation,
   mockProcessDefinitions,
   createProcess,
-  createInstanceByProcess,
   createIncidentByError,
   createIncidentsByError,
   createDiagramNode,

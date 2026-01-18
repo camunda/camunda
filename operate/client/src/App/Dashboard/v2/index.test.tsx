@@ -13,7 +13,7 @@ import {PAGE_TITLE} from 'modules/constants';
 import {statisticsStore} from 'modules/stores/statistics';
 import {Dashboard} from './index';
 import {mockIncidentsByError} from './IncidentsByError/index.setup';
-import {mockWithSingleVersion} from './InstancesByProcess/index.setup';
+import {mockWithSingleVersion} from './InstancesByProcessDefinition/index.setup';
 import {statistics} from 'modules/mocks/statistics';
 import {mockFetchProcessCoreStatistics} from 'modules/mocks/api/processInstances/fetchProcessCoreStatistics';
 import {mockFetchIncidentsByError} from 'modules/mocks/api/incidents/fetchIncidentsByError';
