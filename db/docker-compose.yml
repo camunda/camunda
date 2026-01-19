@@ -73,6 +73,30 @@ services:
       retries: 10
       start_period: 5s
 
+  elasticsearch9:
+    image: docker.elastic.co/elasticsearch/elasticsearch:${IMAGE_VERSION:-9.2.4}
+    container_name: elasticsearch9
+    environment:
+      - discovery.type=single-node
+      - cluster.name=elasticsearch
+      - bootstrap.memory_lock=true
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms1024m -Xmx2048m"
+      - path.repo=/usr/local/els-snapshots
+      - action.destructive_requires_name=false
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - 9200:9200
+      - 9300:9300
+    networks:
+      - zeebe_network
+    restart: always
+    volumes:
+      - ./els-snapshots:/usr/local/els-snapshots
+
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:${IMAGE_VERSION:-8.18.4}
     container_name: elasticsearch
