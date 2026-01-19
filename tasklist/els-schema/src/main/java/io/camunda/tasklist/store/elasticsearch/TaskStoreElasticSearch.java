@@ -74,8 +74,8 @@ public class TaskStoreElasticSearch implements TaskStore {
           TaskState.CANCELED, TaskTemplate.COMPLETION_TIME);
 
   @Autowired
-  @Qualifier("tasklistEs8Client")
-  private ElasticsearchClient es8Client;
+  @Qualifier("tasklistEsClient")
+  private ElasticsearchClient esClient;
 
   @Autowired private ElasticsearchTenantHelper tenantHelper;
 
@@ -104,7 +104,7 @@ public class TaskStoreElasticSearch implements TaskStore {
             .build();
 
     try {
-      final var response = es8Client.search(request, TaskEntity.class);
+      final var response = esClient.search(request, TaskEntity.class);
       if (response.hits().hits().size() == 1) {
         return response.hits().hits().get(0);
       } else if (response.hits().total().value() > 1) {
@@ -154,7 +154,7 @@ public class TaskStoreElasticSearch implements TaskStore {
 
     try {
       return ElasticsearchUtil.scrollAllStream(
-              es8Client, searchRequestBuilder, ElasticsearchUtil.MAP_CLASS)
+              esClient, searchRequestBuilder, ElasticsearchUtil.MAP_CLASS)
           .flatMap(response -> response.hits().hits().stream())
           .map(hit -> hit.source())
           .filter(Objects::nonNull)
@@ -182,7 +182,7 @@ public class TaskStoreElasticSearch implements TaskStore {
             .source(s -> s.filter(f -> f.includes(TaskTemplate.KEY)));
 
     try {
-      return ElasticsearchUtil.scrollIdsWithIndexToMap(es8Client, searchRequestBuilder);
+      return ElasticsearchUtil.scrollIdsWithIndexToMap(esClient, searchRequestBuilder);
     } catch (final Exception e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
     }
@@ -236,7 +236,7 @@ public class TaskStoreElasticSearch implements TaskStore {
                       .routing(getRoutingToUpsertTask(completedTask))
                       .refresh(Refresh.WaitFor));
 
-      es8Client.update(updateRequest, Object.class);
+      esClient.update(updateRequest, Object.class);
     } catch (final Exception e) {
       // we're OK with not updating the task here, it will be marked as completed within import
       LOGGER.error(e.getMessage(), e);
@@ -267,7 +267,7 @@ public class TaskStoreElasticSearch implements TaskStore {
                       .routing(getRoutingToUpsertTask(completedTask))
                       .refresh(Refresh.WaitFor));
 
-      es8Client.update(updateRequest, Object.class);
+      esClient.update(updateRequest, Object.class);
     } catch (final Exception e) {
       LOGGER.error("Error when trying to rollback Task to CREATED state: {}", e.getMessage());
     }
@@ -298,7 +298,7 @@ public class TaskStoreElasticSearch implements TaskStore {
         new SearchRequest.Builder().index(taskTemplate.getAlias()).query(tenantAwareQuery).build();
 
     try {
-      final var response = es8Client.search(request, TaskEntity.class);
+      final var response = esClient.search(request, TaskEntity.class);
       if (response.hits().total().value() > 0) {
         return response.hits().hits().stream()
             .map(hit -> hit.source())
@@ -325,7 +325,7 @@ public class TaskStoreElasticSearch implements TaskStore {
     try {
       // the number of process instance ids may be large, so we need to chunk them
       return ElasticsearchUtil.scrollInChunks(
-          es8Client,
+          esClient,
           processInstanceIds,
           tasklistProperties.getElasticsearch().getMaxTermsCount(),
           this::buildSearchCreatedTasksByProcessInstanceIdsRequest,
@@ -452,7 +452,7 @@ public class TaskStoreElasticSearch implements TaskStore {
     }
 
     try {
-      final var response = es8Client.search(requestBuilder.build(), TaskEntity.class);
+      final var response = esClient.search(requestBuilder.build(), TaskEntity.class);
       final List<TaskSearchView> tasks = mapTasksFromHits(response.hits().hits());
 
       if (!tasks.isEmpty()) {
@@ -772,7 +772,7 @@ public class TaskStoreElasticSearch implements TaskStore {
                       .routing(getRoutingToUpsertTask(taskEntity))
                       .refresh(Refresh.WaitFor));
 
-      es8Client.update(updateRequest, Object.class);
+      esClient.update(updateRequest, Object.class);
     } catch (final Exception e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
     }
@@ -825,7 +825,7 @@ public class TaskStoreElasticSearch implements TaskStore {
       try {
         final var scrollStream =
             ElasticsearchUtil.scrollAllStream(
-                es8Client, searchRequestBuilder, ElasticsearchUtil.MAP_CLASS);
+                esClient, searchRequestBuilder, ElasticsearchUtil.MAP_CLASS);
 
         scrollStream
             .flatMap(response -> response.hits().hits().stream())

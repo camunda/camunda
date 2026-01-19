@@ -54,7 +54,7 @@ public class TaskMetricsStoreElasticSearch implements TaskMetricsStore {
   @Autowired private UsageMetricTUTemplate template;
 
   @Autowired
-  @Qualifier("tasklistEs8Client")
+  @Qualifier("tasklistEsClient")
   private ElasticsearchClient esClient;
 
   @Autowired

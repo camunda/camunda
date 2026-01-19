@@ -30,7 +30,7 @@ import org.springframework.stereotype.Component;
 public class TasklistZeebeExtensionElasticSearch extends TasklistZeebeExtension {
 
   @Autowired
-  @Qualifier("tasklistEs8Client")
+  @Qualifier("tasklistEsClient")
   private ElasticsearchClient esClient;
 
   @Override

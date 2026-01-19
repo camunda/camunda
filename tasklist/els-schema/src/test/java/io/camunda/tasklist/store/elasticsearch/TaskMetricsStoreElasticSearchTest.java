@@ -56,7 +56,7 @@ public class TaskMetricsStoreElasticSearchTest {
 
   private static final String METRIC_INDEX_NAME = "usage_metric_tu_x.0.0";
   @Mock private UsageMetricTUTemplate template;
-  @Mock private ElasticsearchClient es8Client;
+  @Mock private ElasticsearchClient esClient;
 
   @InjectMocks private TaskMetricsStoreElasticSearch instance;
 
@@ -87,7 +87,7 @@ public class TaskMetricsStoreElasticSearchTest {
                 b.index(template.getFullQualifiedName())
                     .id(expectedEntry.getId())
                     .document(expectedEntry));
-    when(es8Client.index(any(co.elastic.clients.elasticsearch.core.IndexRequest.class)))
+    when(esClient.index(any(co.elastic.clients.elasticsearch.core.IndexRequest.class)))
         .thenReturn(indexRes);
     when(indexRes.result()).thenReturn(co.elastic.clients.elasticsearch._types.Result.Created);
 
@@ -95,7 +95,7 @@ public class TaskMetricsStoreElasticSearchTest {
     instance.registerTaskAssigned(task);
 
     // Then
-    verify(es8Client).index(refEq(expectedReq));
+    verify(esClient).index(refEq(expectedReq));
   }
 
   @Test
@@ -104,7 +104,7 @@ public class TaskMetricsStoreElasticSearchTest {
     final OffsetDateTime now = OffsetDateTime.now();
     final OffsetDateTime oneHourBefore = OffsetDateTime.now().withHour(1);
 
-    when(es8Client.search(any(SearchRequest.class), eq(Void.class)))
+    when(esClient.search(any(SearchRequest.class), eq(Void.class)))
         .thenThrow(new IOException("IO exception raised"));
 
     // When - Then
@@ -120,7 +120,7 @@ public class TaskMetricsStoreElasticSearchTest {
     final OffsetDateTime now = OffsetDateTime.now();
     final OffsetDateTime oneHourBefore = OffsetDateTime.now().withHour(1);
 
-    when(es8Client.search(any(SearchRequest.class), eq(Void.class)))
+    when(esClient.search(any(SearchRequest.class), eq(Void.class)))
         .thenThrow(new IOException("IO exception occurred"));
 
     // When - Then
@@ -138,7 +138,7 @@ public class TaskMetricsStoreElasticSearchTest {
     final OffsetDateTime oneHourBefore = OffsetDateTime.now().withHour(1);
 
     final SearchResponse<Void> searchResponse = mock(SearchResponse.class);
-    when(es8Client.search(any(SearchRequest.class), eq(Void.class))).thenReturn(searchResponse);
+    when(esClient.search(any(SearchRequest.class), eq(Void.class))).thenReturn(searchResponse);
 
     final LongTermsAggregate longTermsAggregate = mock(LongTermsAggregate.class);
     final Aggregate aggregate = mock(Aggregate.class);
@@ -155,7 +155,7 @@ public class TaskMetricsStoreElasticSearchTest {
     // Then
     assertThat(result).isEmpty();
     final ArgumentCaptor<SearchRequest> captor = ArgumentCaptor.forClass(SearchRequest.class);
-    verify(es8Client).search(captor.capture(), eq(Void.class));
+    verify(esClient).search(captor.capture(), eq(Void.class));
     final SearchRequest capturedRequest = captor.getValue();
     assertThat(capturedRequest.index()).containsExactly(METRIC_INDEX_NAME);
     assertThat(capturedRequest.aggregations()).containsKey(ASSIGNEE);
@@ -193,7 +193,7 @@ public class TaskMetricsStoreElasticSearchTest {
     final OffsetDateTime oneHourBefore = OffsetDateTime.now().withHour(1);
 
     final SearchResponse<Void> searchResponse = mock(SearchResponse.class);
-    when(es8Client.search(any(SearchRequest.class), eq(Void.class))).thenReturn(searchResponse);
+    when(esClient.search(any(SearchRequest.class), eq(Void.class))).thenReturn(searchResponse);
 
     final LongTermsAggregate longTermsAggregate = mock(LongTermsAggregate.class);
     final Aggregate aggregate = mock(Aggregate.class);
@@ -213,7 +213,7 @@ public class TaskMetricsStoreElasticSearchTest {
     // Then
     assertThat(result).containsExactly(1234567L);
     final ArgumentCaptor<SearchRequest> captor = ArgumentCaptor.forClass(SearchRequest.class);
-    verify(es8Client).search(captor.capture(), eq(Void.class));
+    verify(esClient).search(captor.capture(), eq(Void.class));
     final SearchRequest capturedRequest = captor.getValue();
     assertThat(capturedRequest.index()).containsExactly(METRIC_INDEX_NAME);
     assertThat(capturedRequest.aggregations()).containsKey(ASSIGNEE);

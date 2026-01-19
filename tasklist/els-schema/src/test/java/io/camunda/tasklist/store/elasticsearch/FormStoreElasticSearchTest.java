@@ -48,7 +48,7 @@ class FormStoreElasticSearchTest {
   @Mock private TaskTemplate taskTemplate = new TaskTemplate("test", true);
   @Mock private ProcessIndex processIndex = new ProcessIndex("test", true);
   @Mock private ElasticsearchTenantHelper tenantHelper;
-  @Mock private ElasticsearchClient es8Client;
+  @Mock private ElasticsearchClient esClient;
   @InjectMocks private FormStoreElasticSearch instance;
 
   @BeforeEach
@@ -68,7 +68,7 @@ class FormStoreElasticSearchTest {
     final var es8HitsMetadata = mock(HitsMetadata.class);
     final var es8TotalHits = mock(TotalHits.class);
 
-    when(es8Client.search(any(SearchRequest.class), any(Class.class))).thenReturn(es8Response);
+    when(esClient.search(any(SearchRequest.class), any(Class.class))).thenReturn(es8Response);
     when(es8Response.hits()).thenReturn(es8HitsMetadata);
     when(es8HitsMetadata.total()).thenReturn(es8TotalHits);
     when(es8TotalHits.value()).thenReturn(0L);
@@ -87,7 +87,7 @@ class FormStoreElasticSearchTest {
   @Test
   void getFormWhenIOExceptionOccurred() throws IOException {
     // given - Mock ES8 client to throw IOException
-    when(es8Client.search(any(SearchRequest.class), any(Class.class)))
+    when(esClient.search(any(SearchRequest.class), any(Class.class)))
         .thenThrow(new IOException("some error"));
     when(es8Client.count(any(CountRequest.class))).thenThrow(new IOException("some error"));
 
@@ -114,7 +114,7 @@ class FormStoreElasticSearchTest {
     final var es8TotalHits = mock(TotalHits.class);
     final var es8Hit = mock(Hit.class);
 
-    when(es8Client.search(any(SearchRequest.class), any(Class.class))).thenReturn(es8Response);
+    when(esClient.search(any(SearchRequest.class), any(Class.class))).thenReturn(es8Response);
     when(es8Response.hits()).thenReturn(es8HitsMetadata);
     when(es8HitsMetadata.total()).thenReturn(es8TotalHits);
     when(es8TotalHits.value()).thenReturn(1L);

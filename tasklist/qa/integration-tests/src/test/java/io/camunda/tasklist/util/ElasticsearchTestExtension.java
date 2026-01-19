@@ -57,7 +57,7 @@ public class ElasticsearchTestExtension
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchTestExtension.class);
 
   @Autowired
-  @Qualifier("tasklistEs8Client")
+  @Qualifier("tasklistEsClient")
   private ElasticsearchClient esClient;
 
   @Autowired private TasklistProperties tasklistProperties;
