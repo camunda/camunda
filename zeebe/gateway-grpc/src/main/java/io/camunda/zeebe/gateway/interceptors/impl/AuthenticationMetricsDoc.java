@@ -34,7 +34,7 @@ public enum AuthenticationMetricsDoc implements ExtendedMeterDocumentation {
 
     @Override
     public KeyName[] getKeyNames() {
-      return new KeyName[] {LatencyKeyNames.AUTH_METHOD};
+      return new KeyName[] {LatencyKeyNames.AUTH_METHOD, LatencyKeyNames.AUTH_RESULT};
     }
   };
 
