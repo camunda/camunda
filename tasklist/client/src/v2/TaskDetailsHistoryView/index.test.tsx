@@ -12,7 +12,7 @@ import {
   Component as AuditLogDetailsComponent,
   loader as auditLogDetailsLoader,
 } from './HistoryItemDetailsModal';
-import {render, screen, within} from 'common/testing/testing-library';
+import {render, screen, within, waitFor} from 'common/testing/testing-library';
 import {http, HttpResponse} from 'msw';
 import {nodeMockServer} from 'common/testing/nodeMockServer';
 import {QueryClientProvider} from '@tanstack/react-query';
@@ -408,5 +408,136 @@ describe('<TaskDetailsHistoryView />', () => {
     ).not.toBeInTheDocument();
 
     expect(screen.getByTestId('pathname')).toHaveTextContent('/0/history');
+  });
+
+  it('should display sortable column headers for Operation, Actor, and Time', async () => {
+    nodeMockServer.use(
+      http.post(
+        endpoints.queryUserTaskAuditLogs.getUrl({
+          userTaskKey: ':userTaskKey',
+        }),
+        () =>
+          HttpResponse.json(
+            auditLogMocks.getQueryUserTaskAuditLogsResponseMock(),
+          ),
+      ),
+    );
+
+    render(<RouterProvider router={getRouter()} />, {wrapper: getWrapper()});
+
+    expect(
+      await screen.findByTestId('task-details-history-view'),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByRole('button', {name: /sort by operation/i}),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {name: /sort by actor/i}),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {name: /sort by time/i}),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.queryByRole('button', {name: /sort by status/i}),
+    ).not.toBeInTheDocument();
+  });
+
+  it('should update URL when clicking a sortable column', async () => {
+    nodeMockServer.use(
+      http.post(
+        endpoints.queryUserTaskAuditLogs.getUrl({
+          userTaskKey: ':userTaskKey',
+        }),
+        () =>
+          HttpResponse.json(
+            auditLogMocks.getQueryUserTaskAuditLogsResponseMock(),
+          ),
+      ),
+    );
+
+    const {user} = render(<RouterProvider router={getRouter()} />, {
+      wrapper: getWrapper(),
+    });
+
+    expect(
+      await screen.findByTestId('task-details-history-view'),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {name: /sort by operation/i}));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('search')).toHaveTextContent(
+        '?sort=operationType%2Bdesc',
+      );
+    });
+  });
+
+  it('should toggle sort order when clicking same column twice', async () => {
+    nodeMockServer.use(
+      http.post(
+        endpoints.queryUserTaskAuditLogs.getUrl({
+          userTaskKey: ':userTaskKey',
+        }),
+        () =>
+          HttpResponse.json(
+            auditLogMocks.getQueryUserTaskAuditLogsResponseMock(),
+          ),
+      ),
+    );
+
+    const {user} = render(<RouterProvider router={getRouter()} />, {
+      wrapper: getWrapper(),
+    });
+
+    expect(
+      await screen.findByTestId('task-details-history-view'),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {name: /sort by time/i}));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('search')).toHaveTextContent(
+        '?sort=timestamp%2Basc',
+      );
+    });
+
+    await user.click(screen.getByRole('button', {name: /sort by time/i}));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('search')).toHaveTextContent(
+        '?sort=timestamp%2Bdesc',
+      );
+    });
+  });
+
+  it('should load with sort from URL params', async () => {
+    nodeMockServer.use(
+      http.post(
+        endpoints.queryUserTaskAuditLogs.getUrl({
+          userTaskKey: ':userTaskKey',
+        }),
+        () =>
+          HttpResponse.json(
+            auditLogMocks.getQueryUserTaskAuditLogsResponseMock(),
+          ),
+      ),
+    );
+
+    render(
+      <RouterProvider
+        router={getRouter('/0/history?sort=operationType+asc')}
+      />,
+      {wrapper: getWrapper()},
+    );
+
+    expect(
+      await screen.findByTestId('task-details-history-view'),
+    ).toBeInTheDocument();
+
+    expect(screen.getByTestId('search')).toHaveTextContent(
+      'sort=operationType+asc',
+    );
   });
 });

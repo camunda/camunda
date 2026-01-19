@@ -33,6 +33,7 @@ import cn from 'classnames';
 import {useIsCurrentTaskOpen} from './useIsCurrentTaskOpen';
 import {getNavLinkLabel} from './getNavLinkLabel';
 import {getSecondaryDate} from './getSecondaryDate';
+import {removeSortParam} from 'common/tasks/removeSortParam';
 
 type Props = {
   taskId: string;
@@ -84,7 +85,7 @@ const AvailableTaskItem = React.forwardRef<HTMLDivElement, Props>(
     });
 
     const searchWithRefTag = useMemo(() => {
-      const params = new URLSearchParams(location.search);
+      const params = new URLSearchParams(removeSortParam(location.search));
       params.set(
         'ref',
         encodeTaskOpenedRef({

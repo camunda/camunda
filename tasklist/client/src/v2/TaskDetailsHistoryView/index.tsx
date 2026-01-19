@@ -10,13 +10,20 @@ import {useMemo} from 'react';
 import {
   type LoaderFunctionArgs,
   Outlet,
+  useLocation,
   useNavigate,
   useRevalidator,
   useRouteError,
 } from 'react-router-dom';
 import {pages, useTaskDetailsParams} from 'common/routing';
 import {reactQueryClient} from 'common/react-query/reactQueryClient';
-import {getUserTaskAuditLogsQueryOptions} from 'v2/api/useUserTaskAuditLogs.query';
+import {
+  getUserTaskAuditLogsQueryOptions,
+  DEFAULT_SORT,
+  AUDIT_LOG_SORT_FIELDS,
+  type AuditLogSort,
+  type AuditLogSortField,
+} from 'v2/api/useUserTaskAuditLogs.query';
 import {useSuspenseInfiniteQuery} from '@tanstack/react-query';
 import {SomethingWentWrong} from 'common/error-handling/SomethingWentWrong';
 import {Forbidden} from 'common/error-handling/Forbidden';
@@ -30,7 +37,6 @@ import {
   TableCell,
   TableContainer,
   TableHead,
-  TableHeader,
   TableRow,
   Layer,
   Button,
@@ -39,26 +45,97 @@ import {Information} from '@carbon/react/icons';
 import {formatDate} from 'common/dates/formatDate';
 import {spaceAndCapitalize} from 'common/utils/spaceAndCapitalize';
 import {AuditLogItemStatusIcon} from 'v2/features/tasks/task-history/AuditLogItemStatusIcon';
+import {ColumnHeader} from './ColumnHeader';
+import {getSortParams} from './sortUtils';
 import styles from './styles.module.scss';
 
 const HTTP_STATUS_FORBIDDEN = 403;
 
-const HEADERS = [
-  {key: 'operation', header: 'taskDetailsHistoryOperationHeader'},
-  {key: 'status', header: 'taskDetailsHistoryStatusHeader'},
-  {key: 'actor', header: 'taskDetailsHistoryActorHeader'},
-  {key: 'time', header: 'taskDetailsHistoryTimeHeader'},
-  {key: 'details', header: ''},
+type HeaderConfig = {
+  key: string;
+  header: string;
+  sortKey?: AuditLogSortField;
+  isDefault?: boolean;
+  isDisabled?: boolean;
+};
+
+const HEADERS_MAP = {
+  operation: {
+    key: 'operation',
+    header: 'taskDetailsHistoryOperationHeader',
+    sortKey: 'operationType',
+    isDefault: false,
+    isDisabled: false,
+  },
+  status: {
+    key: 'status',
+    header: 'taskDetailsHistoryStatusHeader',
+    sortKey: undefined,
+    isDefault: false,
+    isDisabled: false,
+  },
+  actor: {
+    key: 'actor',
+    header: 'taskDetailsHistoryActorHeader',
+    sortKey: 'actorId',
+    isDefault: false,
+    isDisabled: false,
+  },
+  time: {
+    key: 'time',
+    header: 'taskDetailsHistoryTimeHeader',
+    sortKey: 'timestamp',
+    isDefault: true,
+    isDisabled: false,
+  },
+  details: {
+    key: 'details',
+    header: '',
+    sortKey: undefined,
+    isDefault: false,
+    isDisabled: true,
+  },
+} as const;
+
+function isHeaderKey(key: string): key is keyof typeof HEADERS_MAP {
+  return key in HEADERS_MAP;
+}
+
+const HEADERS: HeaderConfig[] = [
+  HEADERS_MAP['operation'],
+  HEADERS_MAP['status'],
+  HEADERS_MAP['actor'],
+  HEADERS_MAP['time'],
+  HEADERS_MAP['details'],
 ];
 
-async function loader({params}: LoaderFunctionArgs) {
+function getSortFromUrl(search: string): AuditLogSort {
+  const sortParams = getSortParams(search);
+  if (sortParams === null) {
+    return DEFAULT_SORT;
+  }
+
+  if (AUDIT_LOG_SORT_FIELDS.includes(sortParams.sortBy)) {
+    return {
+      field: sortParams.sortBy,
+      order: sortParams.sortOrder,
+    };
+  }
+
+  return DEFAULT_SORT;
+}
+
+async function loader({params, request}: LoaderFunctionArgs) {
   const userTaskKey = params.id;
   if (!userTaskKey) {
     throw new Error('User task key is required');
   }
 
   await reactQueryClient.ensureInfiniteQueryData(
-    getUserTaskAuditLogsQueryOptions(userTaskKey),
+    getUserTaskAuditLogsQueryOptions(
+      userTaskKey,
+      getSortFromUrl(new URL(request.url).search),
+    ),
   );
 
   return null;
@@ -68,7 +145,10 @@ const TaskDetailsHistoryView: React.FC = () => {
   const {id} = useTaskDetailsParams();
   const {t} = useTranslation();
   const navigate = useNavigate();
-  const {data} = useSuspenseInfiniteQuery(getUserTaskAuditLogsQueryOptions(id));
+  const location = useLocation();
+  const {data} = useSuspenseInfiniteQuery(
+    getUserTaskAuditLogsQueryOptions(id, getSortFromUrl(location.search)),
+  );
 
   const auditLogs = useMemo(
     () => data.pages.flatMap((page) => page.items),
@@ -113,18 +193,27 @@ const TaskDetailsHistoryView: React.FC = () => {
   return (
     <div className={styles.container} data-testid="task-details-history-view">
       <div className={styles.tableContainer}>
-        <DataTable rows={rows} headers={headers}>
-          {({rows, headers, getTableProps, getHeaderProps, getRowProps}) => (
+        <DataTable rows={rows} headers={headers} isSortable>
+          {({rows, headers, getTableProps, getRowProps}) => (
             <TableContainer>
-              <Table {...getTableProps()} size="sm">
+              <Table {...getTableProps()} size="sm" isSortable>
                 <TableHead>
                   <TableRow>
-                    {headers.map((header) => {
-                      const {key, ...headerProps} = getHeaderProps({header});
+                    {headers.map(({header, key}) => {
+                      if (!isHeaderKey(key)) {
+                        return null;
+                      }
+
                       return (
-                        <TableHeader key={key} {...headerProps}>
-                          {header.header}
-                        </TableHeader>
+                        <ColumnHeader
+                          key={key}
+                          label={t(HEADERS_MAP[key].header)}
+                          sortKey={HEADERS_MAP[key].sortKey}
+                          isDefault={HEADERS_MAP[key].isDefault}
+                          isDisabled={HEADERS_MAP[key].isDisabled}
+                        >
+                          {header}
+                        </ColumnHeader>
                       );
                     })}
                   </TableRow>
