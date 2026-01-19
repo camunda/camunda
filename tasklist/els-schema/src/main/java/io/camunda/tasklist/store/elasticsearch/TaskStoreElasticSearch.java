@@ -328,14 +328,14 @@ public class TaskStoreElasticSearch implements TaskStore {
           es8Client,
           processInstanceIds,
           tasklistProperties.getElasticsearch().getMaxTermsCount(),
-          this::buildSearchCreatedTasksByProcessInstanceIdsRequestEs8,
+          this::buildSearchCreatedTasksByProcessInstanceIdsRequest,
           TaskEntity.class);
     } catch (final Exception e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
     }
   }
 
-  private SearchRequest.Builder buildSearchCreatedTasksByProcessInstanceIdsRequestEs8(
+  private SearchRequest.Builder buildSearchCreatedTasksByProcessInstanceIdsRequest(
       final List<String> processInstanceIds) {
     final var processInstanceIdsQuery =
         ElasticsearchUtil.termsQuery(TaskTemplate.PROCESS_INSTANCE_ID, processInstanceIds);
@@ -348,7 +348,7 @@ public class TaskStoreElasticSearch implements TaskStore {
 
     return new SearchRequest.Builder()
         .index(ElasticsearchUtil.whereToSearch(taskTemplate, QueryType.ALL))
-        .query(query)
+        .query(tenantHelper.makeQueryTenantAware(query))
         .size(tasklistProperties.getElasticsearch().getBatchSize());
   }
 
@@ -357,7 +357,7 @@ public class TaskStoreElasticSearch implements TaskStore {
         .map(
             hit ->
                 TaskSearchView.createFrom(
-                    hit.source(), hit.sort().stream().map(FieldValue::_toJsonString).toArray()))
+                    hit.source(), hit.sort().stream().map(FieldValue::_get).toArray()))
         .filter(Objects::nonNull)
         .toList();
   }
