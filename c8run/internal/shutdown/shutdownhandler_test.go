@@ -173,8 +173,10 @@ func TestDeleteDataDirSkipsWhenVersionEmpty(t *testing.T) {
 func TestDeleteDataDirSkipsWhenVersionContainsPathTraversal(t *testing.T) {
 	baseDir := t.TempDir()
 	version := "../evil"
-	targetDir := filepath.Join(baseDir, "camunda-zeebe-"+version, "data")
-	require.NoError(t, os.MkdirAll(targetDir, 0o755))
+	safeDir := filepath.Join(baseDir, "camunda-zeebe-safe", "data")
+	require.NoError(t, os.MkdirAll(safeDir, 0o755))
+	sentinel := filepath.Join(safeDir, "sentinel.txt")
+	require.NoError(t, os.WriteFile(sentinel, []byte("keep"), 0o644))
 
 	processes := types.Processes{
 		Camunda: types.Process{
@@ -185,8 +187,8 @@ func TestDeleteDataDirSkipsWhenVersionContainsPathTraversal(t *testing.T) {
 
 	deleteDataDir(processes)
 
-	_, err := os.Stat(targetDir)
-	require.NoError(t, err, "data directory should remain because version contained path traversal characters")
+	_, err := os.Stat(sentinel)
+	require.NoError(t, err, "sentinel file should remain because version contained path traversal characters")
 }
 
 func unsetEnv(t *testing.T, key string) {
