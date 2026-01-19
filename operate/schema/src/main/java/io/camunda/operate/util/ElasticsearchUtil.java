@@ -7,7 +7,6 @@
  */
 package io.camunda.operate.util;
 
-import static io.camunda.operate.util.CollectionUtil.map;
 import static io.camunda.operate.util.CollectionUtil.throwAwayNullElements;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
@@ -28,18 +27,14 @@ import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.ResponseBody;
 import co.elastic.clients.util.MissingRequiredPropertyException;
-import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.operate.entities.HitEntity;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.store.ScrollException;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
 import java.util.stream.Stream;
-import org.elasticsearch.search.SearchHit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -204,31 +199,6 @@ public abstract class ElasticsearchUtil {
                 .globalSettings(s -> s.refresh(refreshVal)));
   }
 
-  /* MAP QUERY RESULTS */
-  public static <T> List<T> mapSearchHits(
-      final List<HitEntity> hits, final ObjectMapper objectMapper, final JavaType valueType) {
-    return map(hits, h -> fromSearchHit(h.getSourceAsString(), objectMapper, valueType));
-  }
-
-  public static <T> List<T> mapSearchHits(
-      final HitEntity[] searchHits, final ObjectMapper objectMapper, final Class<T> clazz) {
-    return map(
-        searchHits,
-        (searchHit) -> fromSearchHit(searchHit.getSourceAsString(), objectMapper, clazz));
-  }
-
-  public static <T> List<T> mapSearchHits(
-      final SearchHit[] searchHits, final Function<SearchHit, T> searchHitMapper) {
-    return map(searchHits, searchHitMapper);
-  }
-
-  public static <T> List<T> mapSearchHits(
-      final SearchHit[] searchHits, final ObjectMapper objectMapper, final Class<T> clazz) {
-    return map(
-        searchHits,
-        (searchHit) -> fromSearchHit(searchHit.getSourceAsString(), objectMapper, clazz));
-  }
-
   public static <T> T fromSearchHit(
       final String searchHitString, final ObjectMapper objectMapper, final Class<T> clazz) {
     final T entity;
@@ -242,31 +212,6 @@ public abstract class ElasticsearchUtil {
       throw new OperateRuntimeException(
           String.format(
               "Error while reading entity of type %s from Elasticsearch!", clazz.getName()),
-          e);
-    }
-    return entity;
-  }
-
-  public static <T> List<T> mapSearchHits(
-      final SearchHit[] searchHits, final ObjectMapper objectMapper, final JavaType valueType) {
-    return map(
-        searchHits,
-        (searchHit) -> fromSearchHit(searchHit.getSourceAsString(), objectMapper, valueType));
-  }
-
-  public static <T> T fromSearchHit(
-      final String searchHitString, final ObjectMapper objectMapper, final JavaType valueType) {
-    final T entity;
-    try {
-      entity = objectMapper.readValue(searchHitString, valueType);
-    } catch (final IOException e) {
-      LOGGER.error(
-          String.format(
-              "Error while reading entity of type %s from Elasticsearch!", valueType.toString()),
-          e);
-      throw new OperateRuntimeException(
-          String.format(
-              "Error while reading entity of type %s from Elasticsearch!", valueType.toString()),
           e);
     }
     return entity;
