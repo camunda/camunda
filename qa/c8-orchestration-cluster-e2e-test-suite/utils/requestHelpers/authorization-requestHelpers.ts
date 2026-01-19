@@ -8,9 +8,27 @@
 
 import type {APIRequestContext} from 'playwright-core';
 import {Serializable} from 'playwright-core/types/structs';
-import {assertRequiredFields, buildUrl, jsonHeaders} from '../http';
+import {
+  assertEqualsForKeys,
+  assertRequiredFields,
+  assertStatusCode,
+  buildUrl,
+  jsonHeaders,
+} from '../http';
 import {expect} from '@playwright/test';
-import {authorizedComponentRequiredFields} from '../beans/requestBeans';
+import {
+  authorizationRequiredFieldsWithoutPermissionTypes,
+  authorizedComponentRequiredFields,
+} from '../beans/requestBeans';
+
+export interface Authorization {
+  ownerId: string;
+  ownerType: string;
+  resourceId: string;
+  resourceType: string;
+  permissionTypes: string[];
+  authorizationKey?: string;
+};
 
 export async function createComponentAuthorization(
   request: APIRequestContext,
@@ -24,6 +42,7 @@ export async function createComponentAuthorization(
   expect(res.status()).toBe(201);
   const json = await res.json();
   assertRequiredFields(json, authorizedComponentRequiredFields);
+  return json.authorizationKey;
 }
 
 export async function grantUserResourceAuthorization(
@@ -85,4 +104,49 @@ export async function cleanupAuthorizations(
       } catch {}
     }),
   );
+}
+
+export async function expectAuthorizationCanBeFound(
+  request: APIRequestContext,
+  authorizationKey: string,
+) {
+  await expect(async () => {
+    const statusRes = await request.get(
+      buildUrl(`/authorizations/${authorizationKey}`),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    await assertStatusCode(statusRes, 200);
+  }).toPass({
+    intervals: [5_000, 10_000, 15_000, 25_000, 35_000],
+    timeout: 120_000,
+  });
+}
+
+export function verifyAuthorizationFields(
+  obj: {
+    ownerId: string;
+    ownerType: string;
+    resourceId: string;
+    resourceType: string;
+    permissionTypes: string[];
+    authorizationKey?: string;
+  },
+  expected: {
+    ownerId: string;
+    ownerType: string;
+    resourceId: string;
+    resourceType: string;
+    permissionTypes: string[];
+    authorizationKey?: string;
+  },
+) {
+  assertRequiredFields(obj, authorizedComponentRequiredFields);
+  assertEqualsForKeys(
+    obj,
+    expected,
+    authorizationRequiredFieldsWithoutPermissionTypes,
+  );
+  expect(obj.permissionTypes.sort()).toEqual(expected.permissionTypes.sort());
 }
