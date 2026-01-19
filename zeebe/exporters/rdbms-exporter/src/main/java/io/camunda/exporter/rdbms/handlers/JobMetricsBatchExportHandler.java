@@ -17,6 +17,7 @@ import io.camunda.zeebe.protocol.record.value.JobMetricsBatchRecordValue;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.List;
 
 public class JobMetricsBatchExportHandler
     implements RdbmsExportHandler<JobMetricsBatchRecordValue> {
@@ -43,8 +44,7 @@ public class JobMetricsBatchExportHandler
     dbModels.forEach(jobMetricsBatchWriter::create);
   }
 
-  private java.util.List<JobMetricsBatchDbModel> map(
-      final Record<JobMetricsBatchRecordValue> record) {
+  private List<JobMetricsBatchDbModel> map(final Record<JobMetricsBatchRecordValue> record) {
     final var jobMetricsBatchRecord = record.getValue();
     final var encodedString = jobMetricsBatchRecord.getEncodedStrings();
     return record.getValue().getJobMetrics().stream()
@@ -52,13 +52,12 @@ public class JobMetricsBatchExportHandler
             jobMetrics ->
                 new Builder()
                     .key(
-                        record.getKey()
-                            + "_"
-                            + jobMetrics.getJobTypeIndex()
-                            + "_"
-                            + jobMetrics.getTenantIdIndex()
-                            + "_"
-                            + jobMetrics.getWorkerNameIndex())
+                        String.join(
+                            "_",
+                            Long.toString(record.getKey()),
+                            Integer.toString(jobMetrics.getJobTypeIndex()),
+                            Integer.toString(jobMetrics.getTenantIdIndex()),
+                            Integer.toString(jobMetrics.getWorkerNameIndex())))
                     .startTime(
                         OffsetDateTime.ofInstant(
                             Instant.ofEpochMilli(jobMetricsBatchRecord.getBatchStartTime()),

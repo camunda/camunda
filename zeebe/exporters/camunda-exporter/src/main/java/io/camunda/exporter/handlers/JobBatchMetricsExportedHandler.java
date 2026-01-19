@@ -18,7 +18,6 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
-import java.util.stream.Stream;
 
 public class JobBatchMetricsExportedHandler
     implements ExportHandler<JobMetricsBatchEntity, JobMetricsBatchRecordValue> {
@@ -57,14 +56,13 @@ public class JobBatchMetricsExportedHandler
               final var jobTypeIndex = jobMetricsValue.getJobTypeIndex();
               final var tenantIdIndex = jobMetricsValue.getTenantIdIndex();
               final var workerNameIndex = jobMetricsValue.getWorkerNameIndex();
-              return Stream.of(
-                  record.getKey()
-                      + "_"
-                      + jobTypeIndex
-                      + "_"
-                      + tenantIdIndex
-                      + "_"
-                      + workerNameIndex);
+              return String.join(
+                      "_",
+                      Long.toString(record.getKey()),
+                      Integer.toString(jobTypeIndex),
+                      Integer.toString(tenantIdIndex),
+                      Integer.toString(workerNameIndex))
+                  .lines();
             })
         .toList();
   }
