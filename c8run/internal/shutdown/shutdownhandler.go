@@ -152,10 +152,21 @@ func shouldDeleteDataDir(settings types.C8RunSettings, processes types.Processes
 
 func deleteDataDir(processes types.Processes) {
 	baseDir := filepath.Dir(processes.Camunda.PidPath)
-	dataDir := filepath.Join(baseDir, "camunda-zeebe-"+processes.Camunda.Version, "data")
-	if dataDir == "" {
+	version := strings.TrimSpace(processes.Camunda.Version)
+	if version == "" {
+		log.Warn().Msg("deleteDataDir: Camunda version is empty; skipping data directory deletion")
 		return
 	}
+
+	// Guard against path traversal or accidental path separators in the version string.
+	if strings.Contains(version, "..") || strings.ContainsAny(version, string(os.PathSeparator)+"/\\") {
+		log.Warn().
+			Str("version", version).
+			Msg("deleteDataDir: refusing to delete data directory because version contains invalid path characters")
+		return
+	}
+
+	dataDir := filepath.Join(baseDir, "camunda-zeebe-"+version, "data")
 
 	if err := os.RemoveAll(dataDir); err != nil {
 		log.Warn().Err(err).Str("dataDir", dataDir).Msg("Failed to delete data directory for H2 cleanup")
@@ -207,6 +218,8 @@ func detectRdbmsURL(path string) (string, error) {
 
 	var root map[string]any
 	if err := yaml.Unmarshal(content, &root); err != nil {
+		log.Warn().Err(err).Str("path", path).
+			Msg("failed to parse YAML configuration while detecting RDBMS URL; ignoring and proceeding without secondary storage URL")
 		return "", err
 	}
 
