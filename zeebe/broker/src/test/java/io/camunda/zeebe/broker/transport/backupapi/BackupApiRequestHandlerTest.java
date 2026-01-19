@@ -16,6 +16,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.atomix.primitive.partition.PartitionId;
 import io.camunda.zeebe.backup.api.BackupManager;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
@@ -528,7 +529,13 @@ final class BackupApiRequestHandlerTest {
     final var requestBuffer = new UnsafeBuffer(new byte[request.getLength()]);
     request.write(requestBuffer, 0);
 
-    handler.onRequest(serverOutput, 1, 1, requestBuffer, 0, request.getLength());
+    handler.onRequest(
+        serverOutput,
+        new PartitionId("raft-partition", 1),
+        1,
+        requestBuffer,
+        0,
+        request.getLength());
     scheduler.workUntilDone();
   }
 

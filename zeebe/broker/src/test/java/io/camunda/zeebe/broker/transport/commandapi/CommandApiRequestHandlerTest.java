@@ -14,6 +14,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.atomix.primitive.partition.PartitionId;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerPublishMessageRequest;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
@@ -257,7 +258,13 @@ public class CommandApiRequestHandlerTest {
     final ServerOutput serverOutput = createServerOutput(future);
     final var requestBuffer = new UnsafeBuffer(new byte[request.getLength()]);
     request.write(requestBuffer, 0);
-    handler.onRequest(serverOutput, 0, 0, requestBuffer, 0, request.getLength());
+    handler.onRequest(
+        serverOutput,
+        new PartitionId("raft-partition", 0),
+        0,
+        requestBuffer,
+        0,
+        request.getLength());
     scheduler.workUntilDone();
     return future;
   }

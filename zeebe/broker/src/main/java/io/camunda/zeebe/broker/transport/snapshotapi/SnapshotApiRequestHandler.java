@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.transport.snapshotapi;
 
+import io.atomix.primitive.partition.PartitionId;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.partitioning.scaling.snapshot.SnapshotRequest.DeleteSnapshotForBootstrapRequest;
 import io.camunda.zeebe.broker.partitioning.scaling.snapshot.SnapshotRequest.GetSnapshotChunk;
@@ -63,7 +64,7 @@ public class SnapshotApiRequestHandler
 
   @Override
   protected ActorFuture<Either<ErrorResponseWriter, SnapshotApiResponseWriter>> handleAsync(
-      final int partitionId,
+      final PartitionId partitionId,
       final long requestId,
       final SnapshotApiRequestReader requestReader,
       final SnapshotApiResponseWriter responseWriter,
@@ -71,14 +72,15 @@ public class SnapshotApiRequestHandler
     final var service = transferServices.get(partitionId);
     if (service == null) {
       return CompletableActorFuture.completed(
-          Either.left(errorWriter.partitionUnavailable(partitionId)));
+          Either.left(errorWriter.partitionUnavailable(partitionId.id())));
     } else {
       final var request = requestReader.getRequest();
       return switch (request) {
+        // TODO: Use full partition id, including the group
         case final GetSnapshotChunk snapshotChunkRequest ->
-            handleGet(snapshotChunkRequest, partitionId, responseWriter, errorWriter, service);
+            handleGet(snapshotChunkRequest, partitionId.id(), responseWriter, errorWriter, service);
         case final DeleteSnapshotForBootstrapRequest deleteRequest ->
-            handleDelete(partitionId, responseWriter, errorWriter, service);
+            handleDelete(partitionId.id(), responseWriter, errorWriter, service);
       };
     }
   }

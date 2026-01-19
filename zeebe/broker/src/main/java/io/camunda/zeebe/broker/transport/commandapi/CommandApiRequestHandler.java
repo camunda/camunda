@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.transport.commandapi;
 
+import io.atomix.primitive.partition.PartitionId;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler;
 import io.camunda.zeebe.broker.transport.ErrorResponseWriter;
@@ -44,7 +45,7 @@ final class CommandApiRequestHandler
 
   @Override
   protected ActorFuture<Either<ErrorResponseWriter, CommandApiResponseWriter>> handleAsync(
-      final int partitionId,
+      final PartitionId partitionId,
       final long requestId,
       final CommandApiRequestReader requestReader,
       final CommandApiResponseWriter responseWriter,
@@ -66,7 +67,7 @@ final class CommandApiRequestHandler
   }
 
   private Either<ErrorResponseWriter, CommandApiResponseWriter> handle(
-      final int partitionId,
+      final PartitionId partitionId,
       final long requestId,
       final CommandApiRequestReader requestReader,
       final CommandApiResponseWriter responseWriter,
@@ -76,14 +77,14 @@ final class CommandApiRequestHandler
   }
 
   private Either<ErrorResponseWriter, CommandApiResponseWriter> handleExecuteCommandRequest(
-      final int partitionId,
+      final PartitionId partitionId,
       final long requestId,
       final CommandApiRequestReader reader,
       final CommandApiResponseWriter responseWriter,
       final ErrorResponseWriter errorWriter) {
 
     if (!isDiskSpaceAvailable) {
-      return Either.left(errorWriter.outOfDiskSpace(partitionId));
+      return Either.left(errorWriter.outOfDiskSpace(partitionId.id()));
     }
 
     if (processingPaused.getOrDefault(partitionId, false)) {
@@ -93,7 +94,8 @@ final class CommandApiRequestHandler
     }
 
     final var command = reader.getMessageDecoder();
-    final var logStreamWriter = leadingStreams.get(partitionId);
+    // TODO: `leadingStreams` should use the full partition id as keys
+    final var logStreamWriter = leadingStreams.get(partitionId.id());
 
     final var valueType = command.valueType();
     final var intent = Intent.fromProtocolValue(valueType, command.intent());
@@ -102,7 +104,7 @@ final class CommandApiRequestHandler
     final var metadata = reader.metadata();
 
     metadata.requestId(requestId);
-    metadata.requestStreamId(partitionId);
+    metadata.requestStreamId(partitionId.id());
     metadata.recordType(RecordType.COMMAND);
     metadata.intent(intent);
     metadata.valueType(valueType);
@@ -119,7 +121,8 @@ final class CommandApiRequestHandler
     }
 
     try {
-      return writeCommand(command.key(), metadata, value, logStreamWriter, errorWriter, partitionId)
+      return writeCommand(
+              command.key(), metadata, value, logStreamWriter, errorWriter, partitionId.id())
           .map(b -> responseWriter)
           .mapLeft(failure -> errorWriter);
 

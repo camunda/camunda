@@ -9,6 +9,7 @@ package io.camunda.zeebe.transport.impl;
 
 import static io.camunda.zeebe.transport.impl.AtomixServerTransport.topicName;
 
+import io.atomix.primitive.partition.PartitionId;
 import io.atomix.utils.net.Address;
 import io.camunda.zeebe.scheduler.ScheduledTimer;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
@@ -24,7 +25,7 @@ final class RequestContext {
 
   private final CompletableActorFuture<DirectBuffer> currentFuture;
   private final Supplier<String> nodeAddressSupplier;
-  private final int partitionId;
+  private final PartitionId partitionId;
   private final RequestType requestType;
   private final byte[] requestBytes;
   private final boolean shouldRetry;
@@ -37,7 +38,7 @@ final class RequestContext {
   RequestContext(
       final CompletableActorFuture<DirectBuffer> currentFuture,
       final Supplier<String> nodeAddressSupplier,
-      final int partitionId,
+      final PartitionId partitionId,
       final RequestType requestType,
       final byte[] requestBytes,
       final Predicate<DirectBuffer> responseValidator,

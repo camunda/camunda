@@ -15,9 +15,4 @@ public interface ServerResponse extends BufferWriter {
    * @return the id of the corresponding request
    */
   long getRequestId();
-
-  /**
-   * @return the partition id on which the requests was received and should be send back
-   */
-  int getPartitionId();
 }

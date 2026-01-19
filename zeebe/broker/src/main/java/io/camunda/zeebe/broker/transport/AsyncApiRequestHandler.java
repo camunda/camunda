@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.transport;
 
+import io.atomix.primitive.partition.PartitionId;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler.RequestReader;
 import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler.ResponseWriter;
@@ -57,7 +58,7 @@ public abstract class AsyncApiRequestHandler<R extends RequestReader, W extends 
    *     sent as a response.
    */
   protected abstract ActorFuture<Either<ErrorResponseWriter, W>> handleAsync(
-      int partitionId,
+      PartitionId partitionId,
       long requestId,
       R requestReader,
       W responseWriter,
@@ -66,7 +67,7 @@ public abstract class AsyncApiRequestHandler<R extends RequestReader, W extends 
   @Override
   public final void onRequest(
       final ServerOutput serverOutput,
-      final int partitionId,
+      final PartitionId partitionId,
       final long requestId,
       final DirectBuffer buffer,
       final int offset,
@@ -76,7 +77,7 @@ public abstract class AsyncApiRequestHandler<R extends RequestReader, W extends 
 
   private void handleRequest(
       final ServerOutput serverOutput,
-      final int partitionId,
+      final PartitionId partitionId,
       final long requestId,
       final DirectBuffer buffer,
       final int offset,
@@ -94,13 +95,11 @@ public abstract class AsyncApiRequestHandler<R extends RequestReader, W extends 
     } catch (final RequestReaderException.InvalidTemplateException e) {
       errorResponseWriter
           .invalidMessageTemplate(e.actualTemplate, e.expectedTemplate)
-          .tryWriteResponseOrLogFailure(serverOutput, partitionId, requestId);
+          .tryWriteResponseOrLogFailure(serverOutput, requestId);
       return;
     } catch (final Exception e) {
       LOG.error("Failed to deserialize message", e);
-      errorResponseWriter
-          .malformedRequest(e)
-          .tryWriteResponseOrLogFailure(serverOutput, partitionId, requestId);
+      errorResponseWriter.malformedRequest(e).tryWriteResponseOrLogFailure(serverOutput, requestId);
       return;
     }
 
@@ -114,12 +113,12 @@ public abstract class AsyncApiRequestHandler<R extends RequestReader, W extends 
               errorResponseWriter
                   .internalError(
                       "Failed to handle request due to internal error; see the broker logs for more")
-                  .tryWriteResponse(serverOutput, partitionId, requestId);
+                  .tryWriteResponse(serverOutput, requestId);
             } else {
               if (result.isLeft()) {
-                result.getLeft().tryWriteResponse(serverOutput, partitionId, requestId);
+                result.getLeft().tryWriteResponse(serverOutput, requestId);
               } else {
-                result.get().tryWriteResponse(serverOutput, partitionId, requestId);
+                result.get().tryWriteResponse(serverOutput, partitionId.id(), requestId);
               }
             }
           });
@@ -128,7 +127,7 @@ public abstract class AsyncApiRequestHandler<R extends RequestReader, W extends 
       errorResponseWriter
           .internalError(
               "Failed to handle request due to internal error; see the broker logs for more")
-          .tryWriteResponse(serverOutput, partitionId, requestId);
+          .tryWriteResponse(serverOutput, requestId);
     }
   }
 

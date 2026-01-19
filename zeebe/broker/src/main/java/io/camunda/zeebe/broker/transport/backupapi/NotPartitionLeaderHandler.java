@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.transport.backupapi;
 
+import io.atomix.primitive.partition.PartitionId;
 import io.camunda.zeebe.broker.transport.ErrorResponseWriter;
 import io.camunda.zeebe.transport.RequestHandler;
 import io.camunda.zeebe.transport.ServerOutput;
@@ -20,7 +21,7 @@ public class NotPartitionLeaderHandler implements RequestHandler {
   @Override
   public void onRequest(
       final ServerOutput serverOutput,
-      final int partitionId,
+      final PartitionId partitionId,
       final long requestId,
       final DirectBuffer buffer,
       final int offset,
@@ -28,6 +29,6 @@ public class NotPartitionLeaderHandler implements RequestHandler {
     final ErrorResponseWriter errorResponseWriter = new ErrorResponseWriter();
     errorResponseWriter
         .partitionLeaderMismatch(partitionId)
-        .tryWriteResponseOrLogFailure(serverOutput, partitionId, requestId);
+        .tryWriteResponseOrLogFailure(serverOutput, requestId);
   }
 }

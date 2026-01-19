@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.transport.queryapi;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.atomix.primitive.partition.PartitionId;
 import io.camunda.zeebe.broker.system.configuration.QueryApiCfg;
 import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.engine.state.QueryService.ClosedServiceException;
@@ -339,7 +340,13 @@ final class QueryApiRequestHandlerTest {
 
       final var partitionId = queryRequest.getPartitionId();
       final var request = BufferUtil.createCopy(queryRequest);
-      sut.onRequest(serverOutput, partitionId, requestCount++, request, 0, request.capacity());
+      sut.onRequest(
+          serverOutput,
+          new PartitionId("raft-partition", partitionId),
+          requestCount++,
+          request,
+          0,
+          request.capacity());
       return future;
     }
 
@@ -351,7 +358,8 @@ final class QueryApiRequestHandlerTest {
       final ServerOutput serverOutput = createServerOutput(future);
 
       final var request = new UnsafeBuffer();
-      sut.onRequest(serverOutput, 1, requestCount++, request, 0, -1);
+      sut.onRequest(
+          serverOutput, new PartitionId("raft-partition", 1), requestCount++, request, 0, -1);
       return future;
     }
 

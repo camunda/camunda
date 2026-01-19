@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.test.broker.protocol.brokerapi;
 
+import io.atomix.primitive.partition.PartitionId;
 import io.camunda.zeebe.protocol.record.ExecuteCommandRequestDecoder;
 import io.camunda.zeebe.protocol.record.MessageHeaderDecoder;
 import io.camunda.zeebe.test.broker.protocol.MsgPackHelper;
@@ -47,7 +48,7 @@ public final class StubRequestHandler implements RequestHandler {
   @Override
   public void onRequest(
       final ServerOutput output,
-      final int partitionId,
+      final PartitionId partitionId,
       final long requestId,
       final DirectBuffer buffer,
       final int offset,
@@ -65,7 +66,7 @@ public final class StubRequestHandler implements RequestHandler {
       commandRequests.add(request);
       allRequests.add(request);
 
-      requestHandled = handleRequest(output, partitionId, request, cmdRequestStubs, requestId);
+      requestHandled = handleRequest(output, partitionId.id(), request, cmdRequestStubs, requestId);
     }
 
     if (!requestHandled) {

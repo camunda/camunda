@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.transport;
 
+import io.atomix.primitive.partition.PartitionId;
 import org.agrona.DirectBuffer;
 
 @FunctionalInterface
@@ -24,7 +25,7 @@ public interface RequestHandler {
    */
   void onRequest(
       ServerOutput serverOutput,
-      int partitionId,
+      PartitionId partitionId,
       long requestId,
       DirectBuffer buffer,
       int offset,

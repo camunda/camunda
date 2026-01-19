@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.transport;
 
+import io.atomix.primitive.partition.PartitionId;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 
 public interface ClientRequest extends BufferWriter {
@@ -15,6 +16,8 @@ public interface ClientRequest extends BufferWriter {
    * @return the partition id to which the request should be sent to
    */
   int getPartitionId();
+
+  PartitionId getFullPartitionId();
 
   /**
    * @return the type of this request
