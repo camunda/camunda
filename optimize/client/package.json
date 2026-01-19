@@ -83,7 +83,7 @@
     "@types/enzyme": "3.10.19",
     "@types/enzyme-adapter-react-16": "1.0.9",
     "@types/jest": "29.5.14",
-    "@types/node": "22.17.0",
+    "@types/node": "22.19.7",
     "@types/react": "^18.3.5",
     "@types/react-date-range": "1.4.10",
     "@types/react-dom": "^18.3.0",
