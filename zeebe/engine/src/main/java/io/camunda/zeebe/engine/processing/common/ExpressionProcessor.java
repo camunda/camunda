@@ -24,10 +24,10 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
@@ -36,7 +36,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 public final class ExpressionProcessor {
 
-  private static final Executor VIRTUAL_THREAD_EXECUTOR =
+  private static final ExecutorService VIRTUAL_THREAD_EXECUTOR =
       Executors.newVirtualThreadPerTaskExecutor();
   private static final List<ResultType> INTERVAL_RESULT_TYPES =
       List.of(ResultType.DURATION, ResultType.PERIOD, ResultType.STRING);
@@ -549,10 +549,9 @@ public final class ExpressionProcessor {
    */
   private Either<Failure, EvaluationResult> evaluateExpressionAsEither(
       final Expression expression, final EvaluationContext context, final long variableScopeKey) {
-    final CompletableFuture<EvaluationResult> future =
-        CompletableFuture.supplyAsync(
-            () -> expressionLanguage.evaluateExpression(expression, context),
-            VIRTUAL_THREAD_EXECUTOR);
+    final Future<EvaluationResult> future =
+        VIRTUAL_THREAD_EXECUTOR.submit(
+            () -> expressionLanguage.evaluateExpression(expression, context));
 
     final EvaluationResult result;
     try {
