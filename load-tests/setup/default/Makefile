@@ -37,21 +37,10 @@ install-stable: install-storage install-platform-stable install-load-test instal
 install-storage:
 ifeq ($(secondary_storage),postgresql)
 	@echo "Installing PostgreSQL database for namespace $(namespace)..."
-	# Install Postgres database with
-	# - default user camunda:camunda
-	# - additional extension pg_stat_statements for advanced query performance monitoring (must be activated with postgres user before use)
+	# Install Postgres database - all configuration in secondary-storage-values-postgresql.yaml
 	helm upgrade --install postgres oci://registry-1.docker.io/bitnamicharts/postgresql \
 		--namespace $(namespace) \
-		--set global.postgresql.auth.database=camunda \
-		--set global.postgresql.auth.username=camunda \
-		--set global.postgresql.auth.password=camunda \
-		--set global.postgresql.auth.postgresPassword=camunda \
-		--set postgresqlSharedPreloadLibraries=pg_stat_statements \
-		--set primary.resources.requests.memory=4Gi \
-		--set primary.resources.requests.cpu=3000m \
-		--set primary.resources.limits.memory=6Gi \
-		--set primary.resources.limits.cpu=6000m \
-		--set primary.persistence.size=128Gi
+		-f secondary-storage-values-postgresql.yaml
 else ifeq ($(secondary_storage),opensearch)
 	@echo "Installing OpenSearch cluster for namespace $(namespace)..."
 	helm upgrade --install opensearch opensearch/opensearch \
