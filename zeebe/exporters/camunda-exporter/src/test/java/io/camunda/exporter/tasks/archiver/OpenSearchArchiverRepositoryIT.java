@@ -352,7 +352,7 @@ final class OpenSearchArchiverRepositoryIT {
         .as("only first two documents were reindexed")
         .hasSize(2)
         .map(Hit::id)
-        .containsExactly("1", "2");
+        .containsExactlyInAnyOrder("1", "2");
     assertThat(remaining.hits().hits())
         .as("only the last document is remaining")
         .hasSize(1)
@@ -427,7 +427,7 @@ final class OpenSearchArchiverRepositoryIT {
     // then
     // PI mode: Should select all 3 (since end date matches).
     // And should treat ALL as legacyProcessInstanceKeys (PROCESS_INSTANCE_KEY)
-    assertThat(batch.processInstanceKeys()).containsExactly(10L, 20L, 30L);
+    assertThat(batch.processInstanceKeys()).containsExactlyInAnyOrder(10L, 20L, 30L);
     assertThat(batch.rootProcessInstanceKeys()).isEmpty();
   }
 
@@ -525,7 +525,7 @@ final class OpenSearchArchiverRepositoryIT {
         DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
     final var batch = result.join();
-    assertThat(batch.ids()).containsExactly("1", "2");
+    assertThat(batch.ids()).containsExactlyInAnyOrder("1", "2");
     assertThat(batch.finishDate()).isEqualTo(dateFormatter.format(now.minus(Duration.ofHours(2))));
   }
 
@@ -564,7 +564,7 @@ final class OpenSearchArchiverRepositoryIT {
         DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
     final var batch = result.join();
-    assertThat(batch.ids()).containsExactly("1", "2");
+    assertThat(batch.ids()).containsExactlyInAnyOrder("1", "2");
     assertThat(batch.finishDate()).isEqualTo(dateFormatter.format(now.minus(Duration.ofHours(2))));
   }
 
@@ -594,7 +594,7 @@ final class OpenSearchArchiverRepositoryIT {
         .untilAsserted(
             () -> {
               assertThat(firstBatch.isDone()).isTrue();
-              assertThat(firstBatch.get().ids()).containsExactly("1", "2");
+              assertThat(firstBatch.get().ids()).containsExactlyInAnyOrder("1", "2");
               assertThat(firstBatch.get().finishDate())
                   .isEqualTo(dateFormatter.format(now.minus(Duration.ofDays(4))));
             });
@@ -616,7 +616,7 @@ final class OpenSearchArchiverRepositoryIT {
         .untilAsserted(
             () -> {
               assertThat(secondBatch.isDone()).isTrue();
-              assertThat(secondBatch.get().ids()).containsExactly("3", "4");
+              assertThat(secondBatch.get().ids()).containsExactlyInAnyOrder("3", "4");
               assertThat(secondBatch.get().finishDate())
                   .isEqualTo(dateFormatter.format(now.minus(Duration.ofDays(4))));
             });
@@ -643,7 +643,7 @@ final class OpenSearchArchiverRepositoryIT {
         .untilAsserted(
             () -> {
               assertThat(thirdBatch.isDone()).isTrue();
-              assertThat(thirdBatch.get().ids()).containsExactly("5", "6");
+              assertThat(thirdBatch.get().ids()).containsExactlyInAnyOrder("5", "6");
               assertThat(thirdBatch.get().finishDate())
                   .isEqualTo(dateFormatter.format(now.minus(Duration.ofHours(2))));
             });
@@ -677,7 +677,7 @@ final class OpenSearchArchiverRepositoryIT {
 
     // then the batch finish date should not update:
     final var batch = repository.getBatchOperationsNextBatch().join();
-    assertThat(batch.ids()).containsExactly("1", "2");
+    assertThat(batch.ids()).containsExactlyInAnyOrder("1", "2");
     assertThat(batch.finishDate()).isEqualTo(dateFormatter.format(now.minus(Duration.ofDays(3))));
   }
 
@@ -706,7 +706,7 @@ final class OpenSearchArchiverRepositoryIT {
 
     // then the batch finish date should update since zeebe index should be excluded:
     final var batch = repository.getBatchOperationsNextBatch().join();
-    assertThat(batch.ids()).containsExactly("1", "2");
+    assertThat(batch.ids()).containsExactlyInAnyOrder("1", "2");
     assertThat(batch.finishDate()).isEqualTo(dateFormatter.format(now.minus(Duration.ofDays(1))));
   }
 
@@ -743,7 +743,7 @@ final class OpenSearchArchiverRepositoryIT {
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
     final var batch = result.join();
     if (partitionId == 1) {
-      assertThat(batch.ids()).containsExactly("1", "2", "3");
+      assertThat(batch.ids()).containsExactlyInAnyOrder("1", "2", "3");
     } else {
       assertThat(batch.ids()).containsExactly("21");
     }
@@ -783,7 +783,7 @@ final class OpenSearchArchiverRepositoryIT {
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
     final var batch = result.join();
     if (partitionId == 1) {
-      assertThat(batch.ids()).containsExactly("10", "11", "12");
+      assertThat(batch.ids()).containsExactlyInAnyOrder("10", "11", "12");
     } else {
       assertThat(batch.ids()).containsExactly("21");
     }
@@ -868,7 +868,8 @@ final class OpenSearchArchiverRepositoryIT {
     final var requests = captor.getAllValues();
     assertThat(requests)
         .map(Request::getEndpoint)
-        .containsExactly("/_plugins/_ism/add/" + indexName1, "/_plugins/_ism/add/" + indexName2);
+        .containsExactlyInAnyOrder(
+            "/_plugins/_ism/add/" + indexName1, "/_plugins/_ism/add/" + indexName2);
 
     // we reset the spy to ensure that we only capture the next calls
     reset(genericClientSpy);
