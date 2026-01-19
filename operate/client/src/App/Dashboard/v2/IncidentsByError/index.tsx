@@ -6,13 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React, {useEffect} from 'react';
-import {incidentsByErrorStore} from 'modules/stores/incidentsByError';
-import {observer} from 'mobx-react';
-import {useLocation} from 'react-router-dom';
+import React from 'react';
 import {PartiallyExpandableDataTable} from '../PartiallyExpandableDataTable';
 import {Locations} from 'modules/Routes';
-import {panelStatesStore} from 'modules/stores/panelStates';
 import {tracking} from 'modules/tracking';
 import {getAccordionTitle} from './utils/getAccordionTitle';
 import {InstancesBar} from 'modules/components/InstancesBar';
@@ -21,30 +17,17 @@ import {Skeleton} from '../PartiallyExpandableDataTable/Skeleton';
 import {LinkWrapper, ErrorMessage} from '../../styled';
 import {EmptyState} from 'modules/components/EmptyState';
 import EmptyStateProcessIncidents from 'modules/components/Icon/empty-state-process-incidents.svg?react';
-import {Details} from './Details';
-import {generateErrorMessageId} from './utils/generateErrorMessageId';
+import {useIncidentProcessInstanceStatisticsByError} from 'modules/queries/incidents/useIncidentProcessInstanceStatisticsByError';
+import type {IncidentProcessInstanceStatisticsByError} from '@camunda/camunda-api-zod-schemas/8.9';
 
-const IncidentsByError: React.FC = observer(() => {
-  const location = useLocation();
+const IncidentsByError: React.FC = () => {
+  const result = useIncidentProcessInstanceStatisticsByError();
 
-  useEffect(() => {
-    incidentsByErrorStore.init();
-    return () => {
-      incidentsByErrorStore.reset();
-    };
-  }, []);
-
-  useEffect(() => {
-    incidentsByErrorStore.getIncidentsByError();
-  }, [location.key]);
-
-  const {incidents, status} = incidentsByErrorStore.state;
-
-  if (['initial', 'first-fetch'].includes(status)) {
+  if (result.status === 'pending' && !result.data) {
     return <Skeleton />;
   }
 
-  if (status === 'fetched' && incidents.length === 0) {
+  if (result.data?.items.length === 0) {
     return (
       <EmptyState
         icon={<EmptyStateProcessIncidents title="Your processes are healthy" />}
@@ -54,7 +37,7 @@ const IncidentsByError: React.FC = observer(() => {
     );
   }
 
-  if (status === 'error') {
+  if (result.status === 'error') {
     return <ErrorMessage />;
   }
 
@@ -62,29 +45,34 @@ const IncidentsByError: React.FC = observer(() => {
     <PartiallyExpandableDataTable
       dataTestId="incident-byError"
       headers={[{key: 'incident', header: 'incident'}]}
-      rows={incidents.map(
-        ({errorMessage, incidentErrorHashCode, instancesWithErrorCount}) => {
+      rows={(result.data?.items ?? []).map(
+        (item: IncidentProcessInstanceStatisticsByError) => {
+          const {errorHashCode, errorMessage, activeInstancesWithErrorCount} =
+            item;
+
           return {
-            id: generateErrorMessageId(errorMessage),
+            id: String(errorHashCode),
             incident: (
               <LinkWrapper
                 to={Locations.processes({
                   errorMessage: truncateErrorMessage(errorMessage),
-                  incidentErrorHashCode,
+                  incidentErrorHashCode: errorHashCode,
                   incidents: true,
                 })}
                 onClick={() => {
-                  panelStatesStore.expandFiltersPanel();
                   tracking.track({
                     eventName: 'navigation',
                     link: 'dashboard-process-incidents-by-error-message-all-processes',
                   });
                 }}
-                title={getAccordionTitle(instancesWithErrorCount, errorMessage)}
+                title={getAccordionTitle(
+                  activeInstancesWithErrorCount,
+                  errorMessage,
+                )}
               >
                 <InstancesBar
                   label={{type: 'incident', size: 'small', text: errorMessage}}
-                  incidentsCount={instancesWithErrorCount}
+                  incidentsCount={activeInstancesWithErrorCount}
                   size="medium"
                 />
               </LinkWrapper>
@@ -92,21 +80,8 @@ const IncidentsByError: React.FC = observer(() => {
           };
         },
       )}
-      expandedContents={incidents.reduce(
-        (accumulator, {errorMessage, incidentErrorHashCode, processes}) => ({
-          ...accumulator,
-          [generateErrorMessageId(errorMessage)]: (
-            <Details
-              errorMessage={errorMessage}
-              processes={processes}
-              incidentErrorHashCode={incidentErrorHashCode}
-            />
-          ),
-        }),
-        {},
-      )}
     />
   );
-});
+};
 
 export {IncidentsByError};
