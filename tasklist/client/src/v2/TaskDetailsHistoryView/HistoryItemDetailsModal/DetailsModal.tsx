@@ -81,5 +81,4 @@ const DetailsModal: React.FC<Props> = ({onClose, auditLog}) => {
   );
 };
 
-export type {AuditLogItem};
 export {DetailsModal};
