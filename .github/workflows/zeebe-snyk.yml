@@ -101,6 +101,7 @@ jobs:
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          minimus: true
       # We need to build the Docker image (and thus the distribution) to scan it
       - name: Build Zeebe Distribution
         uses: ./.github/actions/build-zeebe
