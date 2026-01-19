@@ -78,23 +78,31 @@ public class RocksDbSharedCache {
 
   private static void validateMaxMemoryFraction(
       final RocksdbCfg rocksdbCfg, final long totalMemorySize, final long blockCacheBytes) {
-    if (rocksdbCfg.getMaxMemoryFraction() > 0 && rocksdbCfg.getMaxMemoryFraction() <= 1.0) {
-      final double maxMemoryFraction = rocksdbCfg.getMaxMemoryFraction();
-      final long maxRocksDbMem = (long) (totalMemorySize * maxMemoryFraction);
-
-      if (blockCacheBytes > maxRocksDbMem
-          && rocksdbCfg.getMemoryAllocationStrategy() != MemoryAllocationStrategy.FRACTION) {
-        // this check does not apply for FRACTION strategy as it is calculated
-        // based on available memory
-        throw new IllegalArgumentException(
-            String.format(
-                "Expected the allocated memory for RocksDB to be below or "
-                    + "equal %.2f %% of ram memory, but was %.2f %%.",
-                maxMemoryFraction * 100, ((double) blockCacheBytes / totalMemorySize * 100)));
-      }
-    } else {
+    final double maxMemoryFraction = rocksdbCfg.getMaxMemoryFraction();
+    if (maxMemoryFraction == -1) {
       LOGGER.debug(
           "Max Memory check for RocksDB is disabled. This can be configured setting CAMUNDA_DATA_PRIMARYSTORAGE_ROCKSDB_MAXMEMORYFRACTION with a value between 0 and 1 to set the max fraction that RocksDB can take of total RAM memory.");
+      return;
+    }
+
+    if (maxMemoryFraction <= 0 || maxMemoryFraction > 1.0) {
+      throw new IllegalArgumentException(
+          String.format(
+              "Expected the maxMemoryFraction for RocksDB to be between 0 and 1 (exclusive of 0) or -1 (disabled), but was %s.",
+              maxMemoryFraction));
+    }
+
+    final long maxRocksDbMem = (long) (totalMemorySize * maxMemoryFraction);
+
+    if (blockCacheBytes > maxRocksDbMem
+        && rocksdbCfg.getMemoryAllocationStrategy() != MemoryAllocationStrategy.FRACTION) {
+      // this check does not apply for FRACTION strategy as it is calculated
+      // based on available memory
+      throw new IllegalArgumentException(
+          String.format(
+              "Expected the allocated memory for RocksDB to be below or "
+                  + "equal %.2f %% of ram memory, but was %.2f %%.",
+              maxMemoryFraction * 100, ((double) blockCacheBytes / totalMemorySize * 100)));
     }
   }
 

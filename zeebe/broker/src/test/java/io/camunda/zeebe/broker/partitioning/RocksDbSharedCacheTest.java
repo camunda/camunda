@@ -62,6 +62,48 @@ class RocksDbSharedCacheTest {
         Arguments.of(DataSize.ofBytes(129L * 1024 * 1024), 0.6, false));
   }
 
+  static Stream<Arguments> provideMaxMemoryFractionScenarios() {
+    // should only accept values between 0 and 1 (exclusive of 0) or -1 (disabled)
+    return Stream.of(
+        Arguments.of(-1.0, false), // Disabled (default value is -1), valid
+        Arguments.of(0.5, false), // Valid
+        Arguments.of(1.0, false), // Valid
+        Arguments.of(1.1, true), // Invalid > 1
+        Arguments.of(-0.1, true), // Invalid < 0
+        Arguments.of(0.0, true)); // Invalid == 0
+  }
+
+  @ParameterizedTest
+  @MethodSource("provideMaxMemoryFractionScenarios")
+  void shouldValidateMaxMemoryFractionConfiguration(
+      final double maxMemoryFraction, final boolean shouldThrow) {
+    // when
+    brokerCfg.getExperimental().getRocksdb().setMaxMemoryFraction(maxMemoryFraction);
+    brokerCfg.getExperimental().getRocksdb().setMemoryLimit(DataSize.ofBytes(128L * 1024 * 1024L));
+    // then
+    try (final var ignored = mockMemoryEnvironment(256L * 1024 * 1024)) { // 256MB
+      if (shouldThrow) {
+        final var throwable =
+            catchThrowable(
+                () ->
+                    RocksDbSharedCache.validateRocksDbMemory(
+                        brokerCfg.getExperimental().getRocksdb(), DEFAULT_PARTITION_COUNT));
+
+        assertThat(throwable)
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining(
+                "Expected the maxMemoryFraction for RocksDB to be between 0 and 1 (exclusive of 0) or -1 (disabled), but was %s.",
+                maxMemoryFraction);
+      } else {
+        assertThatCode(
+                () ->
+                    RocksDbSharedCache.validateRocksDbMemory(
+                        brokerCfg.getExperimental().getRocksdb(), DEFAULT_PARTITION_COUNT))
+            .doesNotThrowAnyException();
+      }
+    }
+  }
+
   @ParameterizedTest
   @MethodSource("provideMemoryAllocationScenarios")
   void shouldValidateMemoryAllocationAgainstMaxFraction(
@@ -201,22 +243,18 @@ class RocksDbSharedCacheTest {
   }
 
   @Test
-  void shouldNotFailAllocatingMoreThanHalfOfRamIfAuto() {
+  void shouldNotFailAllocatingMoreThanHalfOfRamIfFraction() {
     // when
     brokerCfg
         .getExperimental()
         .getRocksdb()
         .setMemoryAllocationStrategy(MemoryAllocationStrategy.FRACTION);
+    brokerCfg.getExperimental().getRocksdb().setMemoryFraction(0.600);
     brokerCfg.getExperimental().getRocksdb().setMaxMemoryFraction(0.500);
     final int partitionsCount = 1;
 
-    // we have broker with 1024mb of ram, where:
-    // - max heap is 128mb
-    // - max non-heap is 128mb
-    // so available memory is 1024 - 128 - 128 = 768mb with a
-    // ROCKSDB_OVERHEAD_FACTOR of 0.15 we can allocate  652.8mb to rocksdb. This is more than half
-    // of the
-    // ram, but since we are in AUTO mode it should be allowed.
+    // we try to allocate 60% of ram to rocksdb, and the max is 50%, but
+    // since we are in FRACTION mode it should be allowed.
     try (final var managementFactoryMock = mockMemoryEnvironment(1024L * 1024 * 1024)) {
       assertThatCode(
               () -> {
