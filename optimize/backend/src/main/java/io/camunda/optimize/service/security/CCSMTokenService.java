@@ -146,6 +146,25 @@ public class CCSMTokenService {
         : Optional.of(configuredRedirectRootUrl);
   }
 
+  /**
+   * Verifies the validity and Optimize authorization of the access token.
+   *
+   * <p>This method should be used ONLY as the first step in token validation, before attempting
+   * token renewal. If verification fails with {@link TokenVerificationException}, the caller should
+   * proceed to attempt token renewal using {@link #renewToken(String)}.
+   *
+   * @param accessToken the access token to verify (may include "Bearer" prefix)
+   * @throws TokenVerificationException if the token is invalid or expired
+   * @throws NotAuthorizedException if the token is valid but the user lacks Optimize permissions
+   */
+  public void verifyAccessToken(final String accessToken) {
+    final AccessToken verifiedToken =
+        authentication().verifyToken(extractTokenFromAuthorizationValue(accessToken));
+    if (!userHasOptimizeAuthorization(verifiedToken)) {
+      throw new NotAuthorizedException("User is not authorized to access Optimize");
+    }
+  }
+
   public AccessToken verifyToken(final String accessToken) {
     try {
       final AccessToken verifiedToken =
