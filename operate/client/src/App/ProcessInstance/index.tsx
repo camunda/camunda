@@ -19,7 +19,11 @@ import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {flowNodeTimeStampStore} from 'modules/stores/flowNodeTimeStamp';
 import {ProcessInstanceHeader} from './ProcessInstanceHeader';
 import {TopPanel} from './TopPanel';
-import {BottomPanel, ModificationFooter, Buttons} from './styled';
+import {BottomPanel, BottomPanelStacked, ModificationFooter, Buttons} from './styled';
+import {
+  ResizablePanel,
+  SplitDirection,
+} from 'modules/components/ResizablePanel';
 import {ElementInstanceLog} from './ElementInstanceLog';
 import {Button, Modal} from '@carbon/react';
 import {tracking} from 'modules/tracking';
@@ -43,6 +47,57 @@ import {
 import {notificationsStore} from 'modules/stores/notifications';
 import {useNavigate} from 'react-router-dom';
 import {Locations} from 'modules/Routes';
+import {BREAKPOINTS} from 'modules/constants';
+
+const BottomPanelContent: React.FC<{
+  setListenerTabVisibility: React.Dispatch<React.SetStateAction<boolean>>;
+}> = ({setListenerTabVisibility}) => {
+  const [clientWidth, setClientWidth] = useState(0);
+  const [isDesktop, setIsDesktop] = useState(
+    window.innerWidth >= BREAKPOINTS.lg,
+  );
+  const containerRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const updateWidth = () => {
+      setClientWidth(containerRef?.current?.clientWidth ?? 0);
+      setIsDesktop(window.innerWidth >= BREAKPOINTS.lg);
+    };
+    updateWidth();
+    window.addEventListener('resize', updateWidth);
+    return () => window.removeEventListener('resize', updateWidth);
+  }, []);
+
+  const panelMinWidth = clientWidth / 4;
+
+  if (isDesktop) {
+    return (
+      <BottomPanel ref={containerRef}>
+        <ResizablePanel
+          panelId="process-instance-bottom-horizontal-panel"
+          direction={SplitDirection.Horizontal}
+          minWidths={[panelMinWidth, panelMinWidth]}
+        >
+          <div style={{height: '100%', width: '100%', overflow: 'hidden'}}>
+            <ElementInstanceLog />
+          </div>
+          <div style={{height: '100%', width: '100%', overflow: 'hidden'}}>
+            <VariablePanel
+              setListenerTabVisibility={setListenerTabVisibility}
+            />
+          </div>
+        </ResizablePanel>
+      </BottomPanel>
+    );
+  }
+
+  return (
+    <BottomPanelStacked>
+      <ElementInstanceLog />
+      <VariablePanel setListenerTabVisibility={setListenerTabVisibility} />
+    </BottomPanelStacked>
+  );
+};
 
 const ProcessInstance: React.FC = observer(() => {
   const {data: processInstance, error} = useProcessInstance();
@@ -175,12 +230,9 @@ const ProcessInstance: React.FC = observer(() => {
             header={<ProcessInstanceHeader processInstance={processInstance} />}
             topPanel={<TopPanel />}
             bottomPanel={
-              <BottomPanel $shouldExpandPanel={isListenerTabSelected}>
-                <ElementInstanceLog />
-                <VariablePanel
-                  setListenerTabVisibility={setListenerTabVisibility}
-                />
-              </BottomPanel>
+              <BottomPanelContent
+                setListenerTabVisibility={setListenerTabVisibility}
+              />
             }
             footer={
               isModificationModeEnabled ? (

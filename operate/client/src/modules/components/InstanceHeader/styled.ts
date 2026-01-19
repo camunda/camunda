@@ -12,6 +12,7 @@ import {
   SkeletonText as BaseSkeletonText,
   SkeletonIcon as BaseSkeletonIcon,
 } from '@carbon/react';
+import {BREAKPOINTS} from 'modules/constants';
 
 const Table = styled.table`
   width: 100%;
@@ -20,6 +21,13 @@ const Table = styled.table`
   border-collapse: separate;
   border-spacing: var(--cds-spacing-01);
   color: var(--cds-text-secondary);
+
+  @media (max-width: ${BREAKPOINTS.lg - 1}px) {
+    th:nth-child(n + 3),
+    td:nth-child(n + 3) {
+      display: none;
+    }
+  }
 `;
 
 const Th = styled.th`
