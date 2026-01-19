@@ -8,7 +8,10 @@
 package io.camunda.search.clients.transformers.query;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.search.exception.CamundaSearchException.Reason;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -28,7 +31,7 @@ class CursorTest {
 
   @ParameterizedTest(name = "{0}:{1}")
   @MethodSource("provideExamples")
-  void testEncodeDecode(final String description, final Object[] values) {
+  void shouldEncodeDecodeValues(final String ignored, final Object[] values) {
     final String encoded = Cursor.encode(values);
     final Object[] decoded = Cursor.decode(encoded);
 
@@ -36,30 +39,40 @@ class CursorTest {
   }
 
   @Test
-  void testEncodeWithNull() {
-    final String encoded = Cursor.encode(null);
-
-    assertThat(encoded).isNull();
+  void shouldEncodeToNullWithNullValues() {
+    assertThat(Cursor.encode(null)).isNull();
   }
 
   @Test
-  void testEncodeWithEmptyArray() {
-    final String encoded = Cursor.encode(new Object[] {});
-
-    assertThat(encoded).isNull();
+  void shouldEncodeToNullWithEmptyValues() {
+    assertThat(Cursor.encode(new Object[] {})).isNull();
   }
 
   @Test
-  void testDecodeWithNull() {
-    final Object[] decoded = Cursor.decode(null);
-
-    assertThat(decoded).isNull();
+  void shouldDecodeToNullWithNullCursor() {
+    assertThat(Cursor.decode(null)).isNull();
   }
 
   @Test
-  void testDecodeWithEmptyString() {
-    final Object[] decoded = Cursor.decode("");
+  void shouldDecodeToNullWithEmptyCursor() {
+    assertThat(Cursor.decode("")).isNull();
+  }
 
-    assertThat(decoded).isNull();
+  @Test
+  void shouldFailEncodeWithInvalidEntity() {
+    assertThatThrownBy(() -> Cursor.encode(new Object[] {new Object()}))
+        .isInstanceOf(CamundaSearchException.class)
+        .hasMessageContaining("Cannot encode data store pagination information into a cursor")
+        .extracting("reason")
+        .isEqualTo(Reason.SEARCH_CLIENT_FAILED);
+  }
+
+  @Test
+  void shouldFailDecodeWithInvalidCursor() {
+    assertThatThrownBy(() -> Cursor.decode("invalid_cursor"))
+        .isInstanceOf(CamundaSearchException.class)
+        .hasMessageContaining("Cannot decode pagination cursor 'invalid_cursor'")
+        .extracting("reason")
+        .isEqualTo(Reason.INVALID_ARGUMENT);
   }
 }
