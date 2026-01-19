@@ -89,8 +89,8 @@ cp -v ../prometheus-elasticsearch-exporter-values.yaml $namespace/
 cd $namespace
 
 # Update Makefile to use the namespace and secondary storage
-sed_inplace "s/default/$namespace/" Makefile
-sed_inplace "s/elasticsearch/$secondaryStorage/" Makefile
+sed_inplace "s/__NAMESPACE__/$namespace/" Makefile
+sed_inplace "s/__STORAGE_TYPE__/$secondaryStorage/" Makefile
 
 # Add/update helm repositories
 helm repo add camunda https://helm.camunda.io/ --force-update

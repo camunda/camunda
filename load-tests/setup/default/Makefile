@@ -1,5 +1,5 @@
-namespace ?= default
-secondary_storage ?= elasticsearch
+namespace ?= __NAMESPACE__
+secondary_storage ?= __STORAGE_TYPE__
 helm_chart ?= camunda-platform-8.9
 curl_image ?= curlimages/curl:7.87.0
 camunda_management_url ?= http://camunda:9600
