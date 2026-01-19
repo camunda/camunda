@@ -1,0 +1,23 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+.iconText {
+  display: flex;
+  align-items: center;
+  gap: var(--cds-spacing-02);
+}
+
+.firstColumn {
+  min-width: 200px;
+}
+
+.verticallyAlignedRow {
+  :global(.cds--structured-list-td) {
+    vertical-align: middle;
+  }
+}

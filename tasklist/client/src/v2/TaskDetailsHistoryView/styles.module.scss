@@ -1,0 +1,41 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+.container {
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.tableContainer {
+  flex: 1;
+  overflow: auto;
+}
+
+.statusCell {
+  display: flex;
+  align-items: center;
+  gap: var(--cds-spacing-02);
+}
+
+.successIcon {
+  fill: var(--cds-support-success);
+}
+
+.failIcon {
+  fill: var(--cds-support-error);
+}
+
+.emptyContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  background-color: var(--cds-layer);
+}
