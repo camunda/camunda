@@ -15,7 +15,7 @@ const files = {
 
 export default defineConfig([
 	{
-		ignores: ['packages/**/dist/**/*'],
+		ignores: ['packages/**/dist/**/*', '**/gen/**/*.{js,mjs,cjs,ts,mts,cts}'],
 	},
 
 	{
