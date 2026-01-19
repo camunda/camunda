@@ -44,14 +44,16 @@ public class IncreaseTimeInstructionTest {
   @Test
   void shouldIncreaseTimeWithDuration() {
     // given
+    final Duration duration = Duration.ofDays(2);
+
     final IncreaseTimeInstruction instruction =
-        ImmutableIncreaseTimeInstruction.builder().duration("P2D").build();
+        ImmutableIncreaseTimeInstruction.builder().duration(duration).build();
 
     // when
     instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
 
     // then
-    verify(processTestContext).increaseTime(Duration.ofDays(2));
+    verify(processTestContext).increaseTime(duration);
 
     verifyNoMoreInteractions(camundaClient, processTestContext, assertionFacade);
   }
@@ -59,14 +61,16 @@ public class IncreaseTimeInstructionTest {
   @Test
   void shouldIncreaseTimeWithHourDuration() {
     // given
+    final Duration duration = Duration.ofHours(1);
+
     final IncreaseTimeInstruction instruction =
-        ImmutableIncreaseTimeInstruction.builder().duration("PT1H").build();
+        ImmutableIncreaseTimeInstruction.builder().duration(duration).build();
 
     // when
     instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
 
     // then
-    verify(processTestContext).increaseTime(Duration.ofHours(1));
+    verify(processTestContext).increaseTime(duration);
 
     verifyNoMoreInteractions(camundaClient, processTestContext, assertionFacade);
   }
@@ -74,14 +78,16 @@ public class IncreaseTimeInstructionTest {
   @Test
   void shouldIncreaseTimeWithMinuteDuration() {
     // given
+    final Duration duration = Duration.ofMinutes(30);
+
     final IncreaseTimeInstruction instruction =
-        ImmutableIncreaseTimeInstruction.builder().duration("PT30M").build();
+        ImmutableIncreaseTimeInstruction.builder().duration(duration).build();
 
     // when
     instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
 
     // then
-    verify(processTestContext).increaseTime(Duration.ofMinutes(30));
+    verify(processTestContext).increaseTime(duration);
 
     verifyNoMoreInteractions(camundaClient, processTestContext, assertionFacade);
   }

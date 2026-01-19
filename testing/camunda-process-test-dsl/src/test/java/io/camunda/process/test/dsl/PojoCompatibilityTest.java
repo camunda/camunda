@@ -70,6 +70,7 @@ import io.camunda.process.test.api.dsl.instructions.assertUserTask.UserTaskState
 import io.camunda.process.test.api.dsl.instructions.createProcessInstance.ImmutableCreateProcessInstanceStartInstruction;
 import io.camunda.process.test.api.dsl.instructions.createProcessInstance.ImmutableCreateProcessInstanceTerminateRuntimeInstruction;
 import java.io.IOException;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Set;
@@ -576,7 +577,8 @@ public class PojoCompatibilityTest {
         // ===== INCREASE_TIME =====
         Arguments.of(
             "increase time",
-            singleTestCase(ImmutableIncreaseTimeInstruction.builder().duration("P2D").build())),
+            singleTestCase(
+                ImmutableIncreaseTimeInstruction.builder().duration(Duration.ofDays(2)).build())),
         // ===== UPDATE_VARIABLES =====
         Arguments.of(
             "update variables: global",

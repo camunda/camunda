@@ -15,9 +15,12 @@
  */
 package io.camunda.process.test.api.dsl.instructions;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonFormat.Shape;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.camunda.process.test.api.dsl.TestCaseInstruction;
 import io.camunda.process.test.api.dsl.TestCaseInstructionType;
+import java.time.Duration;
 import org.immutables.value.Value;
 
 /** An instruction to increase the time. */
@@ -32,9 +35,10 @@ public interface IncreaseTimeInstruction extends TestCaseInstruction {
   }
 
   /**
-   * The duration to increase the time by, in ISO 8601 duration format (e.g., "PT1H", "P2D").
+   * The duration to increase the time by.
    *
-   * @return the duration as a string
+   * @return the duration
    */
-  String getDuration();
+  @JsonFormat(shape = Shape.STRING)
+  Duration getDuration();
 }

@@ -32,7 +32,7 @@ public class IncreaseTimeInstructionHandler
       final CamundaClient camundaClient,
       final AssertionFacade assertionFacade) {
 
-    final Duration duration = Duration.parse(instruction.getDuration());
+    final Duration duration = instruction.getDuration();
     context.increaseTime(duration);
   }
 
