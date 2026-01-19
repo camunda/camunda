@@ -181,6 +181,7 @@ public class ProcessingMetrics {
     final var meterDoc = StreamMetricsDoc.PROCESSING_LATENCY;
     return Timer.builder(meterDoc.getName())
         .description(meterDoc.getDescription())
+        .serviceLevelObjectives(meterDoc.getTimerSLOs())
         .register(registry);
   }
 
@@ -188,6 +189,7 @@ public class ProcessingMetrics {
     final var meterDoc = StreamMetricsDoc.PROCESSING_DURATION;
     return Timer.builder(meterDoc.getName())
         .description(meterDoc.getDescription())
+        .serviceLevelObjectives(meterDoc.getTimerSLOs())
         .tag(ProcessingDurationKeys.VALUE_TYPE.asString(), valueType.name())
         .tag(ProcessingDurationKeys.INTENT.asString(), intent.name())
         .register(registry);
