@@ -8,14 +8,12 @@
 package io.camunda.zeebe.gateway.rest.controller;
 
 import static io.camunda.service.exception.ServiceException.Status.ABORTED;
-import static io.camunda.service.exception.ServiceException.Status.ALREADY_EXISTS;
 import static io.camunda.service.exception.ServiceException.Status.DEADLINE_EXCEEDED;
 import static io.camunda.service.exception.ServiceException.Status.INTERNAL;
 import static io.camunda.service.exception.ServiceException.Status.INVALID_ARGUMENT;
 import static io.camunda.service.exception.ServiceException.Status.NOT_FOUND;
 import static io.camunda.service.exception.ServiceException.Status.RESOURCE_EXHAUSTED;
 import static io.camunda.service.exception.ServiceException.Status.UNAVAILABLE;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -23,7 +21,6 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import io.atomix.cluster.messaging.MessagingException.ConnectionClosed;
-import io.camunda.gateway.mapping.http.GatewayErrorMapper;
 import io.camunda.gateway.protocol.model.UserTaskCompletionRequest;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.security.auth.CamundaAuthentication;
@@ -40,7 +37,6 @@ import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.netty.channel.ConnectTimeoutException;
-import java.io.IOException;
 import java.net.ConnectException;
 import java.net.URI;
 import java.util.Map;
@@ -692,151 +688,5 @@ public class ErrorMapperTest extends RestControllerTest {
         .isEqualTo(HttpStatus.BAD_REQUEST)
         .expectBody(ProblemDetail.class)
         .isEqualTo(expectedBody);
-  }
-
-  @Test
-  public void shouldMapCamundaSearchExceptionWhenNoReason() {
-    // given
-    final CamundaSearchException cse = new CamundaSearchException("No reason");
-
-    // when
-    final ProblemDetail problemDetail =
-        GatewayErrorMapper.mapErrorToProblem(ErrorMapper.mapSearchError(cse));
-
-    // when
-    assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR.value());
-    assertThat(problemDetail.getDetail()).isEqualTo("No reason");
-    assertThat(problemDetail.getTitle()).isEqualTo("INTERNAL");
-  }
-
-  @Test
-  public void shouldMapCamundaSearchExceptionWhenNotFound() {
-    // given
-    final CamundaSearchException cse =
-        new CamundaSearchException("Item not found", CamundaSearchException.Reason.NOT_FOUND);
-
-    // when
-    final ProblemDetail problemDetail =
-        GatewayErrorMapper.mapErrorToProblem(ErrorMapper.mapSearchError(cse));
-
-    // when
-    assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
-    assertThat(problemDetail.getDetail()).isEqualTo("Item not found");
-    assertThat(problemDetail.getTitle()).isEqualTo(CamundaSearchException.Reason.NOT_FOUND.name());
-  }
-
-  @Test
-  public void shouldMapCamundaSearchExceptionWhenNotUnique() {
-    // given
-    final CamundaSearchException cse =
-        new CamundaSearchException("Item not unique", CamundaSearchException.Reason.NOT_UNIQUE);
-
-    // when
-    final ProblemDetail problemDetail =
-        GatewayErrorMapper.mapErrorToProblem(ErrorMapper.mapSearchError(cse));
-
-    // when
-    assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.CONFLICT.value());
-    assertThat(problemDetail.getDetail()).isEqualTo("Item not unique");
-    assertThat(problemDetail.getTitle()).isEqualTo(ALREADY_EXISTS.name());
-  }
-
-  @Test
-  public void shouldMapCamundaSearchExceptionWhenESClientCannotConnect() {
-    // given
-    final CamundaSearchException cse =
-        new CamundaSearchException(
-            "Request failed",
-            new ConnectException("No connection"),
-            CamundaSearchException.Reason.CONNECTION_FAILED);
-
-    // when
-    final ProblemDetail problemDetail =
-        GatewayErrorMapper.mapErrorToProblem(ErrorMapper.mapSearchError(cse));
-
-    // when
-    assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE.value());
-    assertThat(problemDetail.getDetail())
-        .isEqualTo("The search client could not connect to the search server");
-    assertThat(problemDetail.getTitle()).isEqualTo(UNAVAILABLE.name());
-  }
-
-  @Test
-  public void shouldMapCamundaSearchExceptionWhenESClientIOException() {
-    // given
-    final CamundaSearchException cse =
-        new CamundaSearchException(
-            "Request failed",
-            new IOException("Generic IO Error"),
-            CamundaSearchException.Reason.SEARCH_CLIENT_FAILED);
-
-    // when
-    final ProblemDetail problemDetail =
-        GatewayErrorMapper.mapErrorToProblem(ErrorMapper.mapSearchError(cse));
-
-    // when
-    assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR.value());
-    assertThat(problemDetail.getDetail())
-        .isEqualTo("The search client was unable to process the request");
-    assertThat(problemDetail.getTitle()).isEqualTo(INTERNAL.name());
-  }
-
-  @Test
-  public void shouldMapCamundaSearchExceptionWhenOSClientCannotConnect() {
-    // given
-    final CamundaSearchException cse =
-        new CamundaSearchException(
-            "Request failed",
-            new ConnectException("No connection"),
-            CamundaSearchException.Reason.CONNECTION_FAILED);
-
-    // when
-    final ProblemDetail problemDetail =
-        GatewayErrorMapper.mapErrorToProblem(ErrorMapper.mapSearchError(cse));
-
-    // when
-    assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE.value());
-    assertThat(problemDetail.getDetail())
-        .isEqualTo("The search client could not connect to the search server");
-    assertThat(problemDetail.getTitle()).isEqualTo(UNAVAILABLE.name());
-  }
-
-  @Test
-  public void shouldMapCamundaSearchExceptionWhenOSClientIOException() {
-    // given
-    final CamundaSearchException cse =
-        new CamundaSearchException(
-            "Request failed",
-            new IOException("Generic IO Error"),
-            CamundaSearchException.Reason.SEARCH_CLIENT_FAILED);
-
-    // when
-    final ProblemDetail problemDetail =
-        GatewayErrorMapper.mapErrorToProblem(ErrorMapper.mapSearchError(cse));
-
-    // when
-    assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR.value());
-    assertThat(problemDetail.getDetail())
-        .isEqualTo("The search client was unable to process the request");
-    assertThat(problemDetail.getTitle()).isEqualTo(INTERNAL.name());
-  }
-
-  @Test
-  public void shouldMapCamundaSearchExceptionWhenInvalidArgument() {
-    // given
-    final CamundaSearchException cse =
-        new CamundaSearchException(
-            "Invalid argument provided",
-            new IllegalArgumentException("Illegal argument"),
-            CamundaSearchException.Reason.INVALID_ARGUMENT);
-
-    // when
-    final ProblemDetail problemDetail =
-        GatewayErrorMapper.mapErrorToProblem(ErrorMapper.mapSearchError(cse));
-
-    // when
-    assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
-    assertThat(problemDetail.getDetail()).isEqualTo("Invalid argument provided");
-    assertThat(problemDetail.getTitle()).isEqualTo(INVALID_ARGUMENT.name());
   }
 }

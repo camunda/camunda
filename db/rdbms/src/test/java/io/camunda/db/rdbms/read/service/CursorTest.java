@@ -101,6 +101,40 @@ class CursorTest {
   }
 
   @Test
+  void shouldFailEncodeWithInvalidEntity() {
+    assertThatThrownBy(
+            () ->
+                Cursor.encode(
+                    new Object(),
+                    List.of(
+                        new SearchColumn<>() {
+                          @Override
+                          public String name() {
+                            return "invalid";
+                          }
+
+                          @Override
+                          public String property() {
+                            return "nonExistentProperty";
+                          }
+
+                          @Override
+                          public Class<Object> getEntityClass() {
+                            return Object.class;
+                          }
+
+                          @Override
+                          public Object getPropertyValue(final Object entity) {
+                            return new Object();
+                          }
+                        })))
+        .isInstanceOf(CamundaSearchException.class)
+        .hasMessageContaining("Cannot encode data store pagination information into a cursor")
+        .extracting("reason")
+        .isEqualTo(Reason.SEARCH_CLIENT_FAILED);
+  }
+
+  @Test
   void shouldFailDecodeWithInvalidCursor() {
     assertThatThrownBy(
             () ->

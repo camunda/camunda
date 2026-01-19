@@ -59,6 +59,15 @@ class CursorTest {
   }
 
   @Test
+  void shouldFailEncodeWithInvalidEntity() {
+    assertThatThrownBy(() -> Cursor.encode(new Object[] {new Object()}))
+        .isInstanceOf(CamundaSearchException.class)
+        .hasMessageContaining("Cannot encode data store pagination information into a cursor")
+        .extracting("reason")
+        .isEqualTo(Reason.SEARCH_CLIENT_FAILED);
+  }
+
+  @Test
   void shouldFailDecodeWithInvalidCursor() {
     assertThatThrownBy(() -> Cursor.decode("invalid_cursor"))
         .isInstanceOf(CamundaSearchException.class)

@@ -29,7 +29,7 @@ public class Cursor {
       return Base64.getEncoder().encodeToString(value.getBytes());
     } catch (final Exception e) {
       throw new CamundaSearchException(
-          "Cannot encode data store pagination information in cursor",
+          "Cannot encode data store pagination information into a cursor",
           e,
           Reason.SEARCH_CLIENT_FAILED);
     }
