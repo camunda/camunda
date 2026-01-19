@@ -45,7 +45,7 @@ public enum AuthenticationMetricsDoc implements ExtendedMeterDocumentation {
         return "method";
       }
     },
-    /** Indicates if authentication was successful or not; possible values are */
+    /** Indicates if authentication was successful or not; possible values are 'success' and 'failure'. */
     AUTH_RESULT {
       @Override
       public String asString() {
