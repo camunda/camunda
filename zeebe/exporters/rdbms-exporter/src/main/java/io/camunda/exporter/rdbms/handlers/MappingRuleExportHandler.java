@@ -13,11 +13,13 @@ import static io.camunda.zeebe.protocol.record.intent.MappingRuleIntent.UPDATED;
 
 import io.camunda.db.rdbms.write.domain.MappingRuleDbModel;
 import io.camunda.db.rdbms.write.domain.MappingRuleDbModel.MappingRuleDbModelBuilder;
+import io.camunda.db.rdbms.write.service.HistoryCleanupService;
 import io.camunda.db.rdbms.write.service.MappingRuleWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.MappingRuleRecordValue;
+import io.camunda.zeebe.util.DateUtil;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,9 +30,13 @@ public class MappingRuleExportHandler implements RdbmsExportHandler<MappingRuleR
   private static final Set<Intent> MAPPING_INTENT = Set.of(CREATED, DELETED, UPDATED);
 
   private final MappingRuleWriter mappingRuleWriter;
+  private final HistoryCleanupService historyCleanupService;
 
-  public MappingRuleExportHandler(final MappingRuleWriter mappingRuleWriter) {
+  public MappingRuleExportHandler(
+      final MappingRuleWriter mappingRuleWriter,
+      final HistoryCleanupService historyCleanupService) {
     this.mappingRuleWriter = mappingRuleWriter;
+    this.historyCleanupService = historyCleanupService;
   }
 
   @Override
@@ -41,18 +47,22 @@ public class MappingRuleExportHandler implements RdbmsExportHandler<MappingRuleR
   @Override
   public void export(final Record<MappingRuleRecordValue> record) {
     final var intent = record.getIntent();
+    final var value = record.getValue();
     switch (intent) {
-      case CREATED -> mappingRuleWriter.create(map(record));
-      case DELETED -> mappingRuleWriter.delete(record.getValue().getMappingRuleId());
-      case UPDATED -> mappingRuleWriter.update(map(record));
+      case CREATED -> mappingRuleWriter.create(map(value));
+      case DELETED -> {
+        mappingRuleWriter.delete(value.getMappingRuleId());
+        final var endDate = DateUtil.toOffsetDateTime(record.getTimestamp());
+        historyCleanupService.scheduleAuditLogsForHistoryCleanup(value.getMappingRuleId(), endDate);
+      }
+      case UPDATED -> mappingRuleWriter.update(map(value));
       default ->
           LOGGER.trace(
               "Skip exporting {} for mapping rule, no known writing operation for it", intent);
     }
   }
 
-  private MappingRuleDbModel map(final Record<MappingRuleRecordValue> record) {
-    final var value = record.getValue();
+  private MappingRuleDbModel map(final MappingRuleRecordValue value) {
     return new MappingRuleDbModelBuilder()
         .mappingRuleId(value.getMappingRuleId())
         .mappingRuleKey(value.getMappingRuleKey())

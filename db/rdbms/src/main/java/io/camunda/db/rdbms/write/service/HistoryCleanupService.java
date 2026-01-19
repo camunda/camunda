@@ -125,6 +125,15 @@ public class HistoryCleanupService {
         batchOperationKey,
         historyCleanupDate);
     batchOperationWriter.scheduleForHistoryCleanup(batchOperationKey, historyCleanupDate);
+    auditLogWriter.scheduleAuditLogEntityLogsForHistoryCleanup(
+        batchOperationKey, historyCleanupDate);
+  }
+
+  public void scheduleAuditLogsForHistoryCleanup(
+      final String entityKey, final OffsetDateTime endDate) {
+    final OffsetDateTime historyCleanupDate = endDate.plus(defaultHistoryTTL);
+    LOG.trace("Scheduling audit logs cleanup for key {} at {}", entityKey, historyCleanupDate);
+    auditLogWriter.scheduleAuditLogEntityLogsForHistoryCleanup(entityKey, historyCleanupDate);
   }
 
   @VisibleForTesting
