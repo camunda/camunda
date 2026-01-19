@@ -21,7 +21,6 @@ import {OperateDashboardPage} from '@pages/OperateDashboardPage';
 import {OperateDiagramPage} from '@pages/OperateDiagramPage';
 import {OperateProcessMigrationModePage} from '@pages/OperateProcessMigrationModePage';
 import {OperateProcessModificationModePage} from '@pages/OperateProcessModificationModePage';
-import {OperateOperationPanelPage} from '@pages/OperateOperationPanelPage';
 import {TaskDetailsPage} from '@pages/TaskDetailsPage';
 import {TasklistHeader} from '@pages/TasklistHeader';
 import {TasklistProcessesPage} from '@pages/TasklistProcessesPage';
@@ -58,7 +57,6 @@ type PlaywrightFixtures = {
   operateDiagramPage: OperateDiagramPage;
   operateProcessMigrationModePage: OperateProcessMigrationModePage;
   operateProcessModificationModePage: OperateProcessModificationModePage;
-  operateOperationPanelPage: OperateOperationPanelPage;
   taskDetailsPage: TaskDetailsPage;
   tasklistHeader: TasklistHeader;
   tasklistProcessesPage: TasklistProcessesPage;
@@ -119,9 +117,6 @@ const test = base.extend<PlaywrightFixtures>({
   },
   operateDecisionsPage: async ({page}, use) => {
     await use(new OperateDecisionsPage(page));
-  },
-  operateOperationPanelPage: async ({page}, use) => {
-    await use(new OperateOperationPanelPage(page));
   },
   operateFiltersPanelPage: async ({page}, use) => {
     await use(new OperateFiltersPanelPage(page));
