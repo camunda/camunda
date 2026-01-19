@@ -160,6 +160,29 @@ class BatchOperationCreatedHandlerTest {
   }
 
   @Test
+  void shouldUpdateEntityWithMissingActorInfoFromRecordWithAnonymousClaim() {
+    // given
+    final var recordValue = factory.generateObject(BatchOperationCreationRecordValue.class);
+    final Record<BatchOperationCreationRecordValue> record =
+        factory.generateRecord(
+            ValueType.BATCH_OPERATION_CREATION,
+            r ->
+                r.withIntent(BatchOperationIntent.CREATED)
+                    .withValue(recordValue)
+                    .withBrokerVersion("8.9.0") // required for storing actor info
+                    .withAuthorizations(Map.of(Authorization.AUTHORIZED_ANONYMOUS_USER, true)));
+
+    final var entity = new BatchOperationEntity();
+
+    // when
+    underTest.updateEntity(record, entity);
+
+    // then
+    assertThat(entity.getActorType()).isEqualTo(AuditLogActorType.ANONYMOUS);
+    assertThat(entity.getActorId()).isNull();
+  }
+
+  @Test
   void shouldUpdateEntityWithMissingActorInfoFromRecordWithoutClaims() {
     // given
     final var recordValue = factory.generateObject(BatchOperationCreationRecordValue.class);
