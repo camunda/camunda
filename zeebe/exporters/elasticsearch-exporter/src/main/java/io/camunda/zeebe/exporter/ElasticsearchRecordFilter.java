@@ -24,7 +24,7 @@ public class ElasticsearchRecordFilter implements Context.RecordFilter {
   ElasticsearchRecordFilter(final ElasticsearchExporterConfiguration configuration) {
     this.configuration = configuration;
 
-    final var recordTypeFilters =
+    final var recordFilters =
         List.of(
             new RecordTypeFilter(configuration::shouldIndexRecordType),
             new RequiredValueTypeFilter(
@@ -32,7 +32,7 @@ public class ElasticsearchRecordFilter implements Context.RecordFilter {
                 configuration::shouldIndexValueType,
                 configuration::shouldIndexRequiredValueType));
 
-    delegate = new ExportRecordFilterChain(recordTypeFilters);
+    delegate = new ExportRecordFilterChain(recordFilters);
   }
 
   @Override

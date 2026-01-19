@@ -71,34 +71,35 @@ public interface Context {
    *
    * <ul>
    *   <li>filtering on metadata to avoid deserialization (faster but limited data to filter on)
-   *       additional filtering on fully deserialized records (slower but richer data to filter on)
-   *   <li>additional filtering on fully deserialized records (slower but richer data to filter on)
+   *   <li>filtering on fully deserialized records (slower but richer data to filter on)
    * </ul>
    */
   interface RecordFilter {
 
     /**
-     * Filters by {@link RecordType}.
+     * Should export records of the given type?
      *
-     * <p>Used to skip records by record type at metadata level
+     * @param recordType the type of the record.
+     * @return {@code true} if records of this type should be exporter.
      */
-    boolean acceptType(final RecordType recordType);
+    boolean acceptType(RecordType recordType);
 
     /**
-     * Filters by {@link ValueType}.
+     * Should export records with a value of the given type?
      *
-     * <p>Used to skip records by value type at metadata level
+     * @param valueType the type of the record value.
+     * @return {@code true} if records with this type of value should be exported.
      */
-    boolean acceptValue(final ValueType valueType);
+    boolean acceptValue(ValueType valueType);
 
     /**
-     * Filters by {@link Intent}.
+     * Should export records with the given intent?
      *
-     * <p>Default is {@code true} for backward compatibility (no intent filtering).
-     *
-     * <p>Used to filter intents at metadata level
+     * @param intent the intent of the record.
+     * @return {@code true} if records with this intent should be exported.
      */
     default boolean acceptIntent(final Intent intent) {
+      // default implementation accepts all intents
       return true;
     }
 

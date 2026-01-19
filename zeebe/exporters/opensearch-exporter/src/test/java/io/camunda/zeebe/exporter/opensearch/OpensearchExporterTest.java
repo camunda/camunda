@@ -30,6 +30,7 @@ import io.camunda.zeebe.protocol.record.ImmutableRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.util.VersionUtil;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -338,6 +339,7 @@ final class OpensearchExporterTest {
       when(recordMock.getValueType()).thenReturn(valueType);
       when(recordMock.getBrokerVersion()).thenReturn(version);
       when(recordMock.getRecordType()).thenReturn(RecordType.EVENT);
+      when(recordMock.getIntent()).thenReturn(mock(Intent.class));
 
       // simulate new filtering logic: only export if filter accepts
       final var filter = context.getRecordFilter();
