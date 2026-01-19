@@ -598,7 +598,6 @@ public class PojoCompatibilityTest {
                             .build())
                     .elementSelector(ImmutableElementSelector.builder().elementId("task1").build())
                     .putVariables("localVar", "localValue")
-                    .build()))
                     .build())),
         // ===== SET_TIME =====
         Arguments.of(
