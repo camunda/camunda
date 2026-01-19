@@ -169,7 +169,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "The average time it takes to authenticate  per minute",
+      "description": "The average time it takes to authenticate per minute",
       "fieldConfig": {
         "defaults": {
           "color": {
