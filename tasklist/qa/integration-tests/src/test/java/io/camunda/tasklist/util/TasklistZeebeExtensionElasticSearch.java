@@ -9,11 +9,11 @@ package io.camunda.tasklist.util;
 
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.tasklist.qa.util.TestUtil;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -30,8 +30,8 @@ import org.springframework.stereotype.Component;
 public class TasklistZeebeExtensionElasticSearch extends TasklistZeebeExtension {
 
   @Autowired
-  @Qualifier("tasklistEsClient")
-  private RestHighLevelClient esClient;
+  @Qualifier("tasklistEs8Client")
+  private ElasticsearchClient esClient;
 
   @Override
   public void afterEach(final ExtensionContext extensionContext) {

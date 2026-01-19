@@ -10,8 +10,13 @@ package io.camunda.tasklist.util;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.Refresh;
+import co.elastic.clients.elasticsearch.core.BulkRequest;
+import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
+import co.elastic.clients.elasticsearch.core.bulk.IndexOperation;
+import co.elastic.clients.elasticsearch.indices.FlushRequest;
+import co.elastic.clients.elasticsearch.nodes.Stats;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
 import io.camunda.tasklist.property.TasklistElasticsearchProperties;
 import io.camunda.tasklist.property.TasklistProperties;
@@ -22,17 +27,9 @@ import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import java.io.IOException;
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
-import org.elasticsearch.action.admin.indices.flush.FlushRequest;
-import org.elasticsearch.action.bulk.BulkRequest;
-import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.action.support.WriteRequest.RefreshPolicy;
-import org.elasticsearch.client.Request;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.Response;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.xcontent.XContentType;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -59,16 +56,9 @@ public class ElasticsearchTestExtension
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchTestExtension.class);
 
-  /** Scroll contexts constants */
-  private static final String OPEN_SCROLL_CONTEXT_FIELD = "open_contexts";
-
-  /** Path to find search statistics for all indexes */
-  private static final String PATH_SEARCH_STATISTICS =
-      "/_nodes/stats/indices/search?filter_path=nodes.*.indices.search";
-
   @Autowired
-  @Qualifier("tasklistEsClient")
-  private RestHighLevelClient esClient;
+  @Qualifier("tasklistEs8Client")
+  private ElasticsearchClient esClient;
 
   @Autowired private TasklistProperties tasklistProperties;
   @Autowired private SearchEngineConfiguration searchEngineConfiguration;
@@ -76,7 +66,6 @@ public class ElasticsearchTestExtension
   @Autowired private TestSchemaManager schemaManager;
   @Autowired private TasklistIndexPrefixHolder indexPrefixHolder;
   private String indexPrefix;
-  @Autowired private ObjectMapper objectMapper;
 
   @Override
   public void beforeEach(final ExtensionContext extensionContext) {
@@ -121,12 +110,12 @@ public class ElasticsearchTestExtension
   @Override
   public void refreshTasklistIndices() {
     try {
-
-      final FlushRequest flush =
-          new FlushRequest(tasklistProperties.getElasticsearch().getIndexPrefix() + "*");
-      esClient
-          .indices()
-          .flush(flush, RequestOptions.DEFAULT.toBuilder().addParameter("force", "true").build());
+      final FlushRequest flushRequest =
+          FlushRequest.of(
+              f ->
+                  f.index(tasklistProperties.getElasticsearch().getIndexPrefix() + "*")
+                      .force(true));
+      esClient.indices().flush(flushRequest);
     } catch (final Exception t) {
       LOGGER.error("Could not refresh Tasklist Elasticsearch indices", t);
     }
@@ -134,7 +123,17 @@ public class ElasticsearchTestExtension
 
   @Override
   public int getOpenScrollcontextSize() {
-    return getIntValueForJSON(PATH_SEARCH_STATISTICS, OPEN_SCROLL_CONTEXT_FIELD, 0);
+    int openContexts = 0;
+    try {
+      final Set<Map.Entry<String, Stats>> nodesResult = esClient.nodes().stats().nodes().entrySet();
+      for (final Map.Entry<String, Stats> nodeEntry : nodesResult) {
+        openContexts += nodeEntry.getValue().indices().search().openContexts().intValue();
+      }
+      return openContexts;
+    } catch (final IOException e) {
+      LOGGER.error("Couldn't retrieve node stats from elasticsearch.", e);
+      return 0;
+    }
   }
 
   @Override
@@ -143,39 +142,23 @@ public class ElasticsearchTestExtension
       final List<T> documents,
       final Function<T, String> routingFunction)
       throws IOException {
-    final var bulkRequest = new BulkRequest().setRefreshPolicy(RefreshPolicy.IMMEDIATE);
-    for (final var document : documents) {
-      bulkRequest.add(
-          new IndexRequest()
-              .index(index.getFullQualifiedName())
-              .id(document.getId())
-              .routing(routingFunction.apply(document))
-              .source(objectMapper.writeValueAsString(document), XContentType.JSON));
-    }
-    esClient.bulk(bulkRequest, RequestOptions.DEFAULT);
-  }
+    final List<BulkOperation> operations =
+        documents.stream()
+            .map(
+                document ->
+                    BulkOperation.of(
+                        op ->
+                            op.index(
+                                IndexOperation.of(
+                                    idx ->
+                                        idx.index(index.getFullQualifiedName())
+                                            .id(document.getId())
+                                            .routing(routingFunction.apply(document))
+                                            .document(document)))))
+            .toList();
 
-  private int getIntValueForJSON(
-      final String path, final String fieldname, final int defaultValue) {
-    final Optional<JsonNode> jsonNode = getJsonFor(path);
-    if (jsonNode.isPresent()) {
-      final JsonNode field = jsonNode.get().findValue(fieldname);
-      if (field != null) {
-        return field.asInt(defaultValue);
-      }
-    }
-    return defaultValue;
-  }
-
-  private Optional<JsonNode> getJsonFor(final String path) {
-    try {
-      final ObjectMapper objectMapper = new ObjectMapper();
-      final Response response =
-          esClient.getLowLevelClient().performRequest(new Request("GET", path));
-      return Optional.of(objectMapper.readTree(response.getEntity().getContent()));
-    } catch (final Exception e) {
-      LOGGER.error("Couldn't retrieve json object from elasticsearch. Return Optional.Empty.", e);
-      return Optional.empty();
-    }
+    final BulkRequest bulkRequest =
+        BulkRequest.of(b -> b.operations(operations).refresh(Refresh.True));
+    esClient.bulk(bulkRequest);
   }
 }
