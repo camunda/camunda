@@ -18,6 +18,7 @@ package io.camunda.process.test.api.dsl;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.As;
+import io.camunda.process.test.api.dsl.instructions.AssertDecisionInstruction;
 import io.camunda.process.test.api.dsl.instructions.AssertElementInstanceInstruction;
 import io.camunda.process.test.api.dsl.instructions.AssertElementInstancesInstruction;
 import io.camunda.process.test.api.dsl.instructions.AssertProcessInstanceInstruction;
@@ -48,6 +49,9 @@ import io.camunda.process.test.api.dsl.instructions.UpdateVariablesInstruction;
     property = "type",
     visible = true)
 @JsonSubTypes({
+  @JsonSubTypes.Type(
+      value = AssertDecisionInstruction.class,
+      name = TestCaseInstructionType.ASSERT_DECISION),
   @JsonSubTypes.Type(
       value = AssertElementInstanceInstruction.class,
       name = TestCaseInstructionType.ASSERT_ELEMENT_INSTANCE),

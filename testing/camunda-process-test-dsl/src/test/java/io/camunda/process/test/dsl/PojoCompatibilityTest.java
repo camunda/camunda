@@ -26,6 +26,7 @@ import com.networknt.schema.JsonSchemaFactory;
 import com.networknt.schema.SpecVersion;
 import com.networknt.schema.ValidationMessage;
 import io.camunda.process.test.api.dsl.ImmutableDecisionDefinitionSelector;
+import io.camunda.process.test.api.dsl.ImmutableDecisionSelector;
 import io.camunda.process.test.api.dsl.ImmutableElementSelector;
 import io.camunda.process.test.api.dsl.ImmutableIncidentSelector;
 import io.camunda.process.test.api.dsl.ImmutableJobSelector;
@@ -38,6 +39,7 @@ import io.camunda.process.test.api.dsl.ImmutableUserTaskSelector;
 import io.camunda.process.test.api.dsl.TestCaseInstruction;
 import io.camunda.process.test.api.dsl.TestScenario;
 import io.camunda.process.test.api.dsl.instructions.ImmutableActivateElement;
+import io.camunda.process.test.api.dsl.instructions.ImmutableAssertDecisionInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableAssertElementInstanceInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableAssertElementInstancesInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableAssertProcessInstanceInstruction;
@@ -69,6 +71,7 @@ import io.camunda.process.test.api.dsl.instructions.createProcessInstance.Immuta
 import io.camunda.process.test.api.dsl.instructions.createProcessInstance.ImmutableCreateProcessInstanceTerminateRuntimeInstruction;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
@@ -251,6 +254,78 @@ public class PojoCompatibilityTest {
                     .name("Review")
                     .dueDate("2025-10-31T10:00:00Z")
                     .followUpDate("2025-10-20T10:00:00Z")
+                    .build())),
+        // ===== ASSERT_DECISION =====
+        Arguments.of(
+            "assert decision: minimal with id",
+            singleTestCase(
+                ImmutableAssertDecisionInstruction.builder()
+                    .decisionSelector(
+                        ImmutableDecisionSelector.builder()
+                            .decisionDefinitionId("my-decision")
+                            .build())
+                    .build())),
+        Arguments.of(
+            "assert decision: minimal with name",
+            singleTestCase(
+                ImmutableAssertDecisionInstruction.builder()
+                    .decisionSelector(
+                        ImmutableDecisionSelector.builder()
+                            .decisionDefinitionName("My Decision")
+                            .build())
+                    .build())),
+        Arguments.of(
+            "assert decision: with string output",
+            singleTestCase(
+                ImmutableAssertDecisionInstruction.builder()
+                    .decisionSelector(
+                        ImmutableDecisionSelector.builder()
+                            .decisionDefinitionId("my-decision")
+                            .build())
+                    .output("valid")
+                    .build())),
+        Arguments.of(
+            "assert decision: with integer output",
+            singleTestCase(
+                ImmutableAssertDecisionInstruction.builder()
+                    .decisionSelector(
+                        ImmutableDecisionSelector.builder()
+                            .decisionDefinitionId("my-decision")
+                            .build())
+                    .output(42)
+                    .build())),
+        Arguments.of(
+            "assert decision: with list output",
+            singleTestCase(
+                ImmutableAssertDecisionInstruction.builder()
+                    .decisionSelector(
+                        ImmutableDecisionSelector.builder()
+                            .decisionDefinitionId("my-decision")
+                            .build())
+                    .output(Arrays.asList("value1", "value2"))
+                    .build())),
+        Arguments.of(
+            "assert decision: with map output",
+            singleTestCase(
+                ImmutableAssertDecisionInstruction.builder()
+                    .decisionSelector(
+                        ImmutableDecisionSelector.builder()
+                            .decisionDefinitionId("my-decision")
+                            .build())
+                    .output(Collections.singletonMap("status", "approved"))
+                    .build())),
+        Arguments.of(
+            "assert decision: full",
+            singleTestCase(
+                ImmutableAssertDecisionInstruction.builder()
+                    .decisionSelector(
+                        ImmutableDecisionSelector.builder()
+                            .decisionDefinitionId("my-decision")
+                            .build())
+                    .output("valid")
+                    .matchedRules(Arrays.asList(1, 3))
+                    .notMatchedRules(Arrays.asList(2, 4))
+                    .noMatchedRules(false)
                     .build())),
         // ===== ASSERT_ELEMENT_INSTANCES =====
         Arguments.of(
