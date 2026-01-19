@@ -1,3 +1,9 @@
 {
-  "operationsLog": "Operations log"
+  "operationsLog": "Operations log",
+  "operation": "Operation",
+  "entity": "Entity",
+  "status": "Status",
+  "actor": "Actor",
+  "time": "Time",
+  "operationsLogCouldNotLoad": "Operations log could not be loaded"
 }
