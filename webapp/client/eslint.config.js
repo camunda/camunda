@@ -36,6 +36,7 @@ export default defineConfig([
 	{
 		ignores: [
 			'packages/**/dist/**/*',
+			'**/gen/**/*.{js,mjs,cjs,ts,mts,cts}',
 			'apps/**/dist/**/*',
 			'target/**/*',
 			`${ocPath}/src/modules/svg/**/*`,
