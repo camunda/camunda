@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.batchoperation;
 import static io.camunda.zeebe.auth.Authorization.AUTHORIZED_USERNAME;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
+import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Record;
@@ -166,7 +167,10 @@ public final class ResolveIncidentBatchExecutorTest extends AbstractBatchOperati
                 .withIntents(IncidentIntent.RESOLVE, IncidentIntent.RESOLVED)
                 .limit(r -> r.getIntent() == IncidentIntent.RESOLVED))
         .isNotEmpty()
-        .allSatisfy(r -> assertThat(r.getBatchOperationReference()).isEqualTo(batchOperationKey));
+        .extracting(Record::getIntent, Record::getBatchOperationReference)
+        .containsExactly(
+            tuple(IncidentIntent.RESOLVE, batchOperationKey),
+            tuple(IncidentIntent.RESOLVED, batchOperationKey));
   }
 
   @Test
