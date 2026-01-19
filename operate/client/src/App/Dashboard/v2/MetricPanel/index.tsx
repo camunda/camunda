@@ -60,8 +60,8 @@ const MetricPanel = observer(() => {
       </Title>
       {count && (
         <InstancesBar
-          incidentsCount={count?.withIncidents}
-          activeInstancesCount={count?.withoutIncidents}
+          incidentsCount={count.withIncidents}
+          activeInstancesCount={count.withoutIncidents}
           size="large"
         />
       )}
