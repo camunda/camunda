@@ -7,7 +7,7 @@
  */
 
 import {getCurrentUser} from './authentication';
-import {activateAdHocSubProcessActivities, queryActivatableActivities} from './ad-hoc-sub-process';
+import {activateAdHocSubProcessActivities} from './ad-hoc-sub-process';
 import {
 	createAuthorization,
 	updateAuthorization,
@@ -154,7 +154,6 @@ import {getUsageMetrics} from './usage-metrics';
 
 const endpoints = {
 	getCurrentUser,
-	queryActivatableActivities,
 	activateAdHocSubProcessActivities,
 	createAuthorization,
 	updateAuthorization,
@@ -306,17 +305,9 @@ const endpoints = {
 
 export {currentUserSchema, getCurrentUser, type CurrentUser} from './authentication';
 export {
-	activityTypeSchema,
-	queryActivatableActivitiesRequestBodySchema,
-	queryActivatableActivitiesResponseBodySchema,
 	activateActivityWithinAdHocSubProcessRequestBodySchema,
-	activateActivityWithinAdHocSubProcessResponseBodySchema,
-	type ActivityType,
-	type QueryActivatableActivitiesRequestBody,
 	type ActivatableActivity,
-	type QueryActivatableActivitiesResponseBody,
 	type ActivateActivityWithinAdHocSubProcessRequestBody,
-	type ActivateActivityWithinAdHocSubProcessResponseBody,
 } from './ad-hoc-sub-process';
 export {
 	permissionTypeSchema,
