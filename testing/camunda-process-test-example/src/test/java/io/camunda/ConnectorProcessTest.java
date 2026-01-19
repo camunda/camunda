@@ -35,8 +35,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest(
     properties = {
-      "io.camunda.process.test.connectors-enabled=true",
-      "io.camunda.process.test.connectors-secrets.WEATHER_URL=https://api.open-meteo.com/v1/forecast"
+      "camunda.process-test.connectors-enabled=true",
+      "camunda.process-test.connectors-secrets.WEATHER_URL=https://api.open-meteo.com/v1/forecast"
     })
 @CamundaSpringProcessTest
 public class ConnectorProcessTest {
