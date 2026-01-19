@@ -4,11 +4,14 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/camunda/camunda/c8run/internal/processmanagement"
 	"github.com/camunda/camunda/c8run/internal/types"
 	"github.com/rs/zerolog/log"
+	"gopkg.in/yaml.v3"
 )
 
 type ShutdownHandler struct {
@@ -78,6 +81,10 @@ func (s *ShutdownHandler) stopCommand(settings types.C8RunSettings, processes ty
 	} else {
 		log.Info().Msg("Camunda is stopped.")
 	}
+
+	if shouldDeleteDataDir(settings, processes) {
+		deleteDataDir(processes)
+	}
 }
 
 func (s *ShutdownHandler) stopProcess(pidPath string) error {
@@ -120,4 +127,120 @@ func (s *ShutdownHandler) stopProcess(pidPath string) error {
 	log.Info().Str("pidFile", pidPath).Msg("Successfully stopped process")
 
 	return nil
+}
+
+func shouldDeleteDataDir(settings types.C8RunSettings, processes types.Processes) bool {
+	// Only consider deletion when using H2 (default) secondary storage.
+	if settings.SecondaryStorageType == "" || strings.EqualFold(settings.SecondaryStorageType, "elasticsearch") {
+		return false
+	}
+
+	// Highest precedence: explicit env override.
+	if url, ok := os.LookupEnv("CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_URL"); ok {
+		return strings.HasPrefix(strings.ToLower(strings.TrimSpace(url)), "jdbc:h2:")
+	}
+
+	baseDir := filepath.Dir(processes.Camunda.PidPath)
+	for _, cfg := range resolveConfigPaths(baseDir, settings.Config) {
+		if url, err := detectRdbmsURL(cfg); err == nil && strings.HasPrefix(strings.ToLower(url), "jdbc:h2:") {
+			return true
+		}
+	}
+
+	return false
+}
+
+func deleteDataDir(processes types.Processes) {
+	baseDir := filepath.Dir(processes.Camunda.PidPath)
+	version := strings.TrimSpace(processes.Camunda.Version)
+	if version == "" {
+		log.Warn().Msg("deleteDataDir: Camunda version is empty; skipping data directory deletion")
+		return
+	}
+
+	// Guard against path traversal or accidental path separators in the version string.
+	if strings.Contains(version, "..") || strings.ContainsAny(version, string(os.PathSeparator)+"/\\") {
+		log.Warn().
+			Str("version", version).
+			Msg("deleteDataDir: refusing to delete data directory because version contains invalid path characters")
+		return
+	}
+
+	dataDir := filepath.Join(baseDir, "camunda-zeebe-"+version, "data")
+
+	if err := os.RemoveAll(dataDir); err != nil {
+		log.Warn().Err(err).Str("dataDir", dataDir).Msg("Failed to delete data directory for H2 cleanup")
+		return
+	}
+
+	log.Info().Str("dataDir", dataDir).Msg("Deleted data directory to keep H2 in-memory state consistent across restarts")
+}
+
+func resolveConfigPaths(baseDir string, userConfig string) []string {
+	var paths []string
+	if userConfig != "" {
+		candidate := filepath.Join(baseDir, userConfig)
+		if info, err := os.Stat(candidate); err == nil {
+			if info.IsDir() {
+				candidate = filepath.Join(candidate, "application.yaml")
+			}
+			paths = append(paths, candidate)
+		}
+	}
+	defaultConfig := filepath.Join(baseDir, "configuration", "application.yaml")
+	paths = append(paths, defaultConfig)
+	return paths
+}
+
+func detectRdbmsURL(path string) (string, error) {
+	info, err := os.Stat(path)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return "", nil
+		}
+		return "", err
+	}
+	if info.IsDir() {
+		return detectRdbmsURL(filepath.Join(path, "application.yaml"))
+	}
+
+	content, err := os.ReadFile(path)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return "", nil
+		}
+		return "", err
+	}
+
+	if len(strings.TrimSpace(string(content))) == 0 {
+		return "", nil
+	}
+
+	var root map[string]any
+	if err := yaml.Unmarshal(content, &root); err != nil {
+		log.Warn().Err(err).Str("path", path).
+			Msg("failed to parse YAML configuration while detecting RDBMS URL; ignoring and proceeding without secondary storage URL")
+		return "", err
+	}
+
+	camundaNode, ok := root["camunda"].(map[string]any)
+	if !ok {
+		return "", nil
+	}
+	dataNode, ok := camundaNode["data"].(map[string]any)
+	if !ok {
+		return "", nil
+	}
+	secondaryNode, ok := dataNode["secondary-storage"].(map[string]any)
+	if !ok {
+		return "", nil
+	}
+	rdbmsNode, ok := secondaryNode["rdbms"].(map[string]any)
+	if !ok {
+		return "", nil
+	}
+	if url, ok := rdbmsNode["url"].(string); ok {
+		return strings.TrimSpace(url), nil
+	}
+	return "", nil
 }
