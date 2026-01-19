@@ -635,6 +635,7 @@ describe('TopPanel', () => {
     ).toBeInTheDocument();
   });
 
+  /* eslint-disable vitest/no-standalone-expect -- eslint doesn't understand dynamically skipped tests */
   (IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED ? it : it.skip)(
     'should display parent selection banner when trying to add a token on a flow node that has multiple scopes',
     async () => {
@@ -676,4 +677,5 @@ describe('TopPanel', () => {
       ).not.toBeInTheDocument();
     },
   );
+  /* eslint-enable vitest/no-standalone-expect */
 });

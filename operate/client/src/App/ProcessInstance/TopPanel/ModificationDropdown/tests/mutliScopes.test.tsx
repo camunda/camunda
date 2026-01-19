@@ -143,6 +143,7 @@ describe('Modification Dropdown - Multi Scopes', () => {
     expect(screen.getByText(/Add/)).toBeInTheDocument();
   });
 
+  /* eslint-disable vitest/no-standalone-expect -- eslint doesn't understand dynamically skipped tests */
   (IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED ? it.skip : it)(
     'should not support add modification for task with multiple inner parent scopes',
     async () => {
@@ -267,4 +268,5 @@ describe('Modification Dropdown - Multi Scopes', () => {
       expect(screen.getByText(/Add/)).toBeInTheDocument();
     },
   );
+  /* eslint-enable vitest/no-standalone-expect */
 });

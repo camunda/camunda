@@ -137,6 +137,10 @@ const config = defineConfig([
   {
     files: files.test,
     ...vitestPlugin.configs.recommended,
+    rules: {
+      ...vitestPlugin.configs.recommended.rules,
+      'vitest/no-mocks-import': 'warn',
+    },
     languageOptions: {
       globals: {
         ...vitestPlugin.environments.env.globals,
