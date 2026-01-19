@@ -45,7 +45,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class VariableStoreElasticSearchTest {
 
   @Captor private ArgumentCaptor<SearchRequest> searchRequestCaptor;
-  @Mock private ElasticsearchClient es8Client;
+  @Mock private ElasticsearchClient esClient;
   @Spy private VariableTemplate variableIndex = new VariableTemplate("test", true);
 
   @Spy
@@ -63,7 +63,7 @@ class VariableStoreElasticSearchTest {
   void setUp() throws IOException {
     // Mock clear scroll to avoid NullPointerException
     final ClearScrollResponse clearScrollResponse = mock(ClearScrollResponse.class);
-    when(es8Client.clearScroll(any(java.util.function.Function.class)))
+    when(esClient.clearScroll(any(java.util.function.Function.class)))
         .thenReturn(clearScrollResponse);
   }
 
@@ -87,7 +87,7 @@ class VariableStoreElasticSearchTest {
   void getFlowNodeInstancesWhenInstancesNotFound() throws Exception {
     // Given
     final SearchResponse<FlowNodeInstanceEntity> mockedResponse = createEmptySearchResponse();
-    when(es8Client.search(searchRequestCaptor.capture(), eq(FlowNodeInstanceEntity.class)))
+    when(esClient.search(searchRequestCaptor.capture(), eq(FlowNodeInstanceEntity.class)))
         .thenReturn(mockedResponse);
 
     // When
@@ -105,7 +105,7 @@ class VariableStoreElasticSearchTest {
   void getVariablesByFlowNodeInstanceIdsShouldUseVariableIndex() throws Exception {
     // Given
     final SearchResponse<VariableEntity> mockedResponse = createEmptySearchResponse();
-    when(es8Client.search(searchRequestCaptor.capture(), eq(VariableEntity.class)))
+    when(esClient.search(searchRequestCaptor.capture(), eq(VariableEntity.class)))
         .thenReturn(mockedResponse);
 
     // When
@@ -122,7 +122,7 @@ class VariableStoreElasticSearchTest {
   void getVariablesByFlowNodeInstanceIdsWithVariableNamesShouldUseCorrectQuery() throws Exception {
     // Given
     final SearchResponse<VariableEntity> mockedResponse = createEmptySearchResponse();
-    when(es8Client.search(searchRequestCaptor.capture(), eq(VariableEntity.class)))
+    when(esClient.search(searchRequestCaptor.capture(), eq(VariableEntity.class)))
         .thenReturn(mockedResponse);
 
     // When

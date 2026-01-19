@@ -7,14 +7,12 @@
  */
 package io.camunda.tasklist.data.es;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import io.camunda.tasklist.data.DataGenerator;
 import io.camunda.tasklist.data.DevDataGeneratorAbstract;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import java.io.IOException;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.client.core.CountRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,16 +35,15 @@ public class DevDataGeneratorElasticSearch extends DevDataGeneratorAbstract
 
   @Autowired
   @Qualifier("tasklistEsClient")
-  private RestHighLevelClient tasklistEsClient;
+  private ElasticsearchClient esClient;
 
   @Override
   public boolean shouldCreateData() {
     try {
-      final var request =
-          new CountRequest(
-              new ProcessIndex(tasklistProperties.getElasticsearch().getIndexPrefix(), true)
-                  .getFullQualifiedName());
-      final boolean exists = tasklistEsClient.count(request, RequestOptions.DEFAULT).getCount() > 0;
+      final String indexName =
+          new ProcessIndex(tasklistProperties.getElasticsearch().getIndexPrefix(), true)
+              .getFullQualifiedName();
+      final boolean exists = esClient.count(c -> c.index(indexName)).count() > 0;
       if (exists) {
         // data already exists
         LOGGER.debug("Data already exists.");

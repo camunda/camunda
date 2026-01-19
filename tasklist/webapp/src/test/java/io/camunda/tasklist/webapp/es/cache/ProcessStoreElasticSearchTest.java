@@ -66,7 +66,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 @MockitoSettings(strictness = Strictness.LENIENT)
 class ProcessStoreElasticSearchTest {
   @Mock private ProcessIndex processIndex;
-  @Mock private ElasticsearchClient es8Client;
+  @Mock private ElasticsearchClient esClient;
   @Mock private ElasticsearchTenantHelper tenantHelper;
   @InjectMocks private ProcessStoreElasticSearch processStore;
   @Mock private ObjectMapper objectMapper;
@@ -116,7 +116,7 @@ class ProcessStoreElasticSearchTest {
   public void shouldReturnIOExceptionForGetProcessByBpmnId() throws IOException {
     // given
     final IOException mockedException = new IOException("IO Exception during search");
-    when(es8Client.search(any(SearchRequest.class), eq(ProcessEntity.class)))
+    when(esClient.search(any(SearchRequest.class), eq(ProcessEntity.class)))
         .thenThrow(mockedException);
     when(processIndex.getAlias()).thenReturn("alias");
 
@@ -166,7 +166,7 @@ class ProcessStoreElasticSearchTest {
     final String errorMessage = "IOException error message";
     final IOException exception = new IOException(errorMessage);
 
-    when(es8Client.search(any(SearchRequest.class), eq(ProcessEntity.class))).thenThrow(exception);
+    when(esClient.search(any(SearchRequest.class), eq(ProcessEntity.class))).thenThrow(exception);
     when(processIndex.getAlias()).thenReturn("index_alias");
 
     // given and then
@@ -193,7 +193,7 @@ class ProcessStoreElasticSearchTest {
     when(processIndex.getAlias()).thenReturn("index_alias");
 
     final SearchResponse<ProcessEntity> searchResponse = mock(SearchResponse.class);
-    when(es8Client.search(any(SearchRequest.class), eq(ProcessEntity.class)))
+    when(esClient.search(any(SearchRequest.class), eq(ProcessEntity.class)))
         .thenReturn(searchResponse);
 
     final var bpmnProcessIdTermsAggregate =
@@ -303,7 +303,7 @@ class ProcessStoreElasticSearchTest {
     when(hitsMetadata.hits()).thenReturn(List.of(hit));
     when(searchResponse.hits()).thenReturn(hitsMetadata);
     when(processEntityMock.getId()).thenReturn("1");
-    when(es8Client.search(any(SearchRequest.class), eq(ProcessEntity.class)))
+    when(esClient.search(any(SearchRequest.class), eq(ProcessEntity.class)))
         .thenReturn(searchResponse);
     when(processIndex.getAlias()).thenReturn("index_alias");
   }
@@ -311,7 +311,7 @@ class ProcessStoreElasticSearchTest {
   @SuppressWarnings("unchecked")
   private void mockElasticSearchSuccessWithAggregatedResponse() throws IOException {
     final SearchResponse<ProcessEntity> mockedSearchResponse = mock(SearchResponse.class);
-    when(es8Client.search(any(SearchRequest.class), eq(ProcessEntity.class)))
+    when(esClient.search(any(SearchRequest.class), eq(ProcessEntity.class)))
         .thenReturn(mockedSearchResponse);
     when(processIndex.getAlias()).thenReturn("index_alias");
 
@@ -384,7 +384,7 @@ class ProcessStoreElasticSearchTest {
     when(hitsMetadata.total()).thenReturn(totalHits);
     when(hitsMetadata.hits()).thenReturn(Collections.emptyList());
     when(searchResponse.hits()).thenReturn(hitsMetadata);
-    when(es8Client.search(any(SearchRequest.class), eq(ProcessEntity.class)))
+    when(esClient.search(any(SearchRequest.class), eq(ProcessEntity.class)))
         .thenReturn(searchResponse);
     when(processIndex.getAlias()).thenReturn("index_alias");
   }
