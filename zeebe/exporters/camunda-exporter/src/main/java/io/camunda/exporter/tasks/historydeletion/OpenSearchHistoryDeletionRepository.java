@@ -20,6 +20,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import javax.annotation.WillCloseWhenClosed;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
+import org.opensearch.client.opensearch._types.Conflicts;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch.core.BulkRequest;
@@ -82,6 +83,8 @@ public class OpenSearchHistoryDeletionRepository extends OpensearchRepository
             .index(sourceIndexName)
             .allowNoIndices(true)
             .ignoreUnavailable(true)
+            .waitForCompletion(true)
+            .conflicts(Conflicts.Proceed)
             .query(
                 q ->
                     q.terms(
@@ -106,6 +109,22 @@ public class OpenSearchHistoryDeletionRepository extends OpensearchRepository
                         logger.error(errorMessage);
                         return CompletableFuture.failedFuture(new RuntimeException(errorMessage));
                       }
+
+                      if (response.versionConflicts() != null && response.versionConflicts() > 0) {
+                        final var debugMessage =
+                            "Deleting documents from index '%s' by field '%s' encountered '%d' conflicts"
+                                .formatted(
+                                    sourceIndexName, idFieldName, response.versionConflicts());
+                        logger.debug(debugMessage);
+                        return CompletableFuture.failedFuture(new RuntimeException(debugMessage));
+                      }
+
+                      logger.debug(
+                          "Deleted {} documents from index '{}' by field '{}' with values: {}",
+                          response.total(),
+                          sourceIndexName,
+                          idFieldName,
+                          fieldValues);
                       return CompletableFuture.completedFuture(fieldValues);
                     },
                     executor));
