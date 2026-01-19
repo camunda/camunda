@@ -35,33 +35,17 @@ class RocksDbSharedCacheTest {
   }
 
   /**
-   * Mocks both ManagementFactory.getOperatingSystemMXBean() and getMemoryMXBean() to control total
-   * memory, heap max, and non-heap max for testing memory allocation strategies. Returns a
+   * Mocks both ManagementFactory.getOperatingSystemMXBean() to control total memory. Returns a
    * MockedStatic for use in try-with-resources.
    */
-  private static MockedStatic<ManagementFactory> mockMemoryEnvironment(
-      final long totalMemorySize, final long heapMax, final long nonHeapMax) {
+  private static MockedStatic<ManagementFactory> mockMemoryEnvironment(final long totalMemorySize) {
     final MockedStatic<ManagementFactory> managementFactoryMock =
         Mockito.mockStatic(ManagementFactory.class);
     final var osBean = Mockito.mock(com.sun.management.OperatingSystemMXBean.class);
-    final var memoryBean = Mockito.mock(java.lang.management.MemoryMXBean.class);
-    final var heapUsage = Mockito.mock(java.lang.management.MemoryUsage.class);
-    final var nonHeapUsage = Mockito.mock(java.lang.management.MemoryUsage.class);
-
     managementFactoryMock.when(ManagementFactory::getOperatingSystemMXBean).thenReturn(osBean);
-    managementFactoryMock.when(ManagementFactory::getMemoryMXBean).thenReturn(memoryBean);
     Mockito.when(osBean.getTotalMemorySize()).thenReturn(totalMemorySize);
-    Mockito.when(memoryBean.getHeapMemoryUsage()).thenReturn(heapUsage);
-    Mockito.when(memoryBean.getNonHeapMemoryUsage()).thenReturn(nonHeapUsage);
-    Mockito.when(heapUsage.getMax()).thenReturn(heapMax);
-    Mockito.when(nonHeapUsage.getMax()).thenReturn(nonHeapMax);
 
     return managementFactoryMock;
-  }
-
-  /** Overload for cases where only totalMemorySize is relevant. */
-  private static MockedStatic<ManagementFactory> mockMemoryEnvironment(final long totalMemorySize) {
-    return mockMemoryEnvironment(totalMemorySize, 0, 0);
   }
 
   @Test
@@ -133,16 +117,13 @@ class RocksDbSharedCacheTest {
     brokerCfg
         .getExperimental()
         .getRocksdb()
-        .setMemoryAllocationStrategy(MemoryAllocationStrategy.AUTO);
+        .setMemoryAllocationStrategy(MemoryAllocationStrategy.FRACTION);
+    brokerCfg.getExperimental().getRocksdb().setMemoryFraction(0.15);
     final int partitionsCount = 1;
 
     // we have broker with 512mb of ram, where:
-    // - max heap is 128mb
-    // - max non-heap is 128mb
-    // so available memory is 512 - 128 - 128 = 256mb with a
-    // ROCKSDB_OVERHEAD_FACTOR of 0.15 we can allocate 217.6mb to rocksdb
-    try (final var managementFactoryMock =
-        mockMemoryEnvironment(512L * 1024 * 1024, 128L * 1024 * 1024, 128L * 1024 * 1024)) {
+    // we allocate 15% of total memory to rocksdb = 76.8mb
+    try (final var managementFactoryMock = mockMemoryEnvironment(512L * 1024 * 1024)) {
       assertThatCode(
               () -> {
                 RocksDbSharedCache.validateRocksDbMemory(
@@ -151,10 +132,9 @@ class RocksDbSharedCacheTest {
           .doesNotThrowAnyException();
     }
 
-    final int morePartitionsCount = 7;
-    // should not be valid with 7 partitions since 217.6 / 7 = 31.08mb < 32mb
-    try (final var managementFactoryMock =
-        mockMemoryEnvironment(512L * 1024 * 1024, 128L * 1024 * 1024, 128L * 1024 * 1024)) {
+    final int morePartitionsCount = 3;
+    // should not be valid with 3 partitions since 76.8 / 3 = 25.6mb < 32mb
+    try (final var managementFactoryMock = mockMemoryEnvironment(512L * 1024 * 1024)) {
       final var throwable =
           catchThrowable(
               () -> {
@@ -166,22 +146,63 @@ class RocksDbSharedCacheTest {
           .isInstanceOf(IllegalArgumentException.class)
           .hasMessageContaining(
               "Expected the allocated memory for RocksDB per partition to be at least %s bytes, but was %s bytes.",
-              MINIMUM_PARTITION_MEMORY_LIMIT, 32_595_733); // 217.6mb / 7 partitions
+              MINIMUM_PARTITION_MEMORY_LIMIT, 26_843_545); // 76.8mb / 3 partitions
     }
   }
 
   @Test
-  void shouldReturnExpectedAvailableMemoryCapacityWhenNonHeapNotSet() {
-    // 512MB total, 128MB heap, -1 non-heap triggers fallback
-    try (final var managementFactoryMock =
-        mockMemoryEnvironment(512L * 1024 * 1024, 128L * 1024 * 1024, -1)) {
-      final long available = RocksDbSharedCache.getAvailableMemoryCapacity();
-      // 25% of 512MB = 128MB fallback for non-heap
-      final long expectedNonHeap = 128L * 1024 * 1024;
-      final long expectedAvailable =
-          (long) (((512L * 1024 * 1024) - (128L * 1024 * 1024) - expectedNonHeap) * (1.0 - 0.15));
+  void shouldReturnFixedMemoryPercentage() {
+    // 512MB total
+    try (final var managementFactoryMock = mockMemoryEnvironment(512L * 1024 * 1024)) {
+      final double fraction = 0.15;
+      final long available = RocksDbSharedCache.getFixedMemoryPercentage(fraction);
+      // 15% of 512MB
+      final long expectedAvailable = Math.round(512L * 1024 * 1024 * fraction);
       // Assert
       assertThat(available).isEqualTo(expectedAvailable);
     }
+  }
+
+  @Test
+  void shouldThrowIfMemoryFractionIsInvalid() {
+    // when
+    brokerCfg
+        .getExperimental()
+        .getRocksdb()
+        .setMemoryAllocationStrategy(MemoryAllocationStrategy.FRACTION);
+
+    // when fraction > 1
+    brokerCfg.getExperimental().getRocksdb().setMemoryFraction(1.1);
+
+    // then
+    var throwable =
+        catchThrowable(
+            () -> {
+              RocksDbSharedCache.validateRocksDbMemory(
+                  brokerCfg.getExperimental().getRocksdb(), DEFAULT_PARTITION_COUNT);
+            });
+
+    assertThat(throwable)
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining(
+            "Expected the memoryFraction for RocksDB FRACTION memory allocation strategy to be between 0 and 1, but was %s.",
+            1.1);
+
+    // when fraction <= 0
+    brokerCfg.getExperimental().getRocksdb().setMemoryFraction(0.0);
+
+    // then
+    throwable =
+        catchThrowable(
+            () -> {
+              RocksDbSharedCache.validateRocksDbMemory(
+                  brokerCfg.getExperimental().getRocksdb(), DEFAULT_PARTITION_COUNT);
+            });
+
+    assertThat(throwable)
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining(
+            "Expected the memoryFraction for RocksDB FRACTION memory allocation strategy to be between 0 and 1, but was %s.",
+            0.0);
   }
 }
