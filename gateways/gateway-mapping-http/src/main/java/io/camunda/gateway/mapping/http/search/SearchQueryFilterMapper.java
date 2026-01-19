@@ -948,6 +948,15 @@ public class SearchQueryFilterMapper {
     ofNullable(filter.getCategory())
         .map(mapToOperations(String.class, new AuditLogCategoryConverter()))
         .ifPresent(builder::categoryOperations);
+    ofNullable(filter.getDeploymentKey())
+        .map(mapToOperations(Long.class))
+        .ifPresent(builder::deploymentKeyOperations);
+    ofNullable(filter.getFormKey())
+        .map(mapToOperations(Long.class))
+        .ifPresent(builder::formKeyOperations);
+    ofNullable(filter.getResourceKey())
+        .map(mapToOperations(Long.class))
+        .ifPresent(builder::resourceKeyOperations);
 
     return builder.build();
   }
