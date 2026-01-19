@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.0.32
+
+### 🚀 Enhancements
+
+- add `operationType` field to `batchOperationItem` schema ([#42145](https://github.com/camunda/camunda/pull/42145))
+
+### ❤️ Contributors
+
+- Yuliia Saienko ([@juliasaienko](https://github.com/juliasaienko))
+
 ## v0.0.31
 
 ### 🚀 Enhancements
