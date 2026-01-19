@@ -1,0 +1,464 @@
+<!doctype html>
+<html lang="en" dir="ltr" class="docs-wrapper plugin-docs plugin-id-default docs-version-current docs-doc-page docs-doc-id-release" data-has-hydrated="false">
+<head>
+<meta charset="UTF-8">
+<meta name="generator" content="Docusaurus v3.9.2">
+<title data-rh="true">Release Process | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-44303/release/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Release Process | Camunda Platform"><meta data-rh="true" name="description" content="This document will become a knowledge base around the C8 monorepo release process and help Camundi to maintain the process. It primarily focuses on the release process of Zeebe and the C8 webapps after they included with the monorepo merger (Camunda 8.6+)."><meta data-rh="true" property="og:description" content="This document will become a knowledge base around the C8 monorepo release process and help Camundi to maintain the process. It primarily focuses on the release process of Zeebe and the C8 webapps after they included with the monorepo merger (Camunda 8.6+)."><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-44303/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-44303/release/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-44303/release/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-44303/release/" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Release Process","item":"https://camunda.github.io/camunda/pr-preview/pr-44303/release"}]}</script><link rel="stylesheet" href="/camunda/pr-preview/pr-44303/assets/css/styles.9181a4df.css">
+<script src="/camunda/pr-preview/pr-44303/assets/js/runtime~main.88e7b96a.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-44303/assets/js/main.9d6f5a2b.js" defer="defer"></script>
+</head>
+<body class="navigation-with-keyboard">
+<svg style="display: none;"><defs>
+<symbol id="theme-svg-external-link" viewBox="0 0 24 24"><path fill="currentColor" d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"/></symbol>
+</defs></svg>
+<script>!function(){var t=function(){try{return new URLSearchParams(window.location.search).get("docusaurus-theme")}catch(t){}}()||function(){try{return window.localStorage.getItem("theme")}catch(t){}}();document.documentElement.setAttribute("data-theme",t||"light"),document.documentElement.setAttribute("data-theme-choice",t||"light")}(),function(){try{const c=new URLSearchParams(window.location.search).entries();for(var[t,e]of c)if(t.startsWith("docusaurus-data-")){var a=t.replace("docusaurus-data-","data-");document.documentElement.setAttribute(a,e)}}catch(t){}}()</script><div id="__docusaurus"><link rel="preload" as="image" href="/camunda/pr-preview/pr-44303/img/black-C.png"><div role="region" aria-label="Skip to main content"><a class="skipToContent_fXgn" href="#__docusaurus_skipToContent_fallback">Skip to main content</a></div><nav aria-label="Main" class="theme-layout-navbar navbar navbar--fixed-top"><div class="navbar__inner"><div class="theme-layout-navbar-left navbar__items"><button aria-label="Toggle navigation bar" aria-expanded="false" class="navbar__toggle clean-btn" type="button"><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><path stroke="currentColor" stroke-linecap="round" stroke-miterlimit="10" stroke-width="2" d="M4 7h22M4 15h22M4 23h22"></path></svg></button><a class="navbar__brand" href="/camunda/pr-preview/pr-44303/"><div class="navbar__logo"><img src="/camunda/pr-preview/pr-44303/img/black-C.png" alt="Camunda Logo" class="themedComponent_mlkZ themedComponent--light_NVdE"><img src="/camunda/pr-preview/pr-44303/img/black-C.png" alt="Camunda Logo" class="themedComponent_mlkZ themedComponent--dark_xIcU"></div><b class="navbar__title text--truncate">Camunda Platform</b></a></div><div class="theme-layout-navbar-right navbar__items navbar__items--right"><a href="https://github.com/camunda/camunda" target="_blank" rel="noopener noreferrer" class="navbar__item navbar__link">GitHub<svg width="13.5" height="13.5" aria-label="(opens in new tab)" class="iconExternalLink_nPIU"><use href="#theme-svg-external-link"></use></svg></a><div class="toggle_vylO colorModeToggle_DEke"><button class="clean-btn toggleButton_gllP toggleButtonDisabled_aARS" type="button" disabled="" title="system mode" aria-label="Switch between dark and light mode (currently system mode)"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP lightToggleIcon_pyhR"><path fill="currentColor" d="M12,9c1.65,0,3,1.35,3,3s-1.35,3-3,3s-3-1.35-3-3S10.35,9,12,9 M12,7c-2.76,0-5,2.24-5,5s2.24,5,5,5s5-2.24,5-5 S14.76,7,12,7L12,7z M2,13l2,0c0.55,0,1-0.45,1-1s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S1.45,13,2,13z M20,13l2,0c0.55,0,1-0.45,1-1 s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S19.45,13,20,13z M11,2v2c0,0.55,0.45,1,1,1s1-0.45,1-1V2c0-0.55-0.45-1-1-1S11,1.45,11,2z M11,20v2c0,0.55,0.45,1,1,1s1-0.45,1-1v-2c0-0.55-0.45-1-1-1C11.45,19,11,19.45,11,20z M5.99,4.58c-0.39-0.39-1.03-0.39-1.41,0 c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0s0.39-1.03,0-1.41L5.99,4.58z M18.36,16.95 c-0.39-0.39-1.03-0.39-1.41,0c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0c0.39-0.39,0.39-1.03,0-1.41 L18.36,16.95z M19.42,5.99c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06c-0.39,0.39-0.39,1.03,0,1.41 s1.03,0.39,1.41,0L19.42,5.99z M7.05,18.36c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06 c-0.39,0.39-0.39,1.03,0,1.41s1.03,0.39,1.41,0L7.05,18.36z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP darkToggleIcon_wfgR"><path fill="currentColor" d="M9.37,5.51C9.19,6.15,9.1,6.82,9.1,7.5c0,4.08,3.32,7.4,7.4,7.4c0.68,0,1.35-0.09,1.99-0.27C17.45,17.19,14.93,19,12,19 c-3.86,0-7-3.14-7-7C5,9.07,6.81,6.55,9.37,5.51z M12,3c-4.97,0-9,4.03-9,9s4.03,9,9,9s9-4.03,9-9c0-0.46-0.04-0.92-0.1-1.36 c-0.98,1.37-2.58,2.26-4.4,2.26c-2.98,0-5.4-2.42-5.4-5.4c0-1.81,0.89-3.42,2.26-4.4C12.92,3.04,12.46,3,12,3L12,3z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP systemToggleIcon_QzmC"><path fill="currentColor" d="m12 21c4.971 0 9-4.029 9-9s-4.029-9-9-9-9 4.029-9 9 4.029 9 9 9zm4.95-13.95c1.313 1.313 2.05 3.093 2.05 4.95s-0.738 3.637-2.05 4.95c-1.313 1.313-3.093 2.05-4.95 2.05v-14c1.857 0 3.637 0.737 4.95 2.05z"></path></svg></button></div><div class="navbarSearchContainer_Bca1"><div class="navbar__search"><span aria-label="expand searchbar" role="button" class="search-icon" tabindex="0"></span><input id="search_input_react" type="search" placeholder="Loading..." aria-label="Search" class="navbar__search-input search-bar" disabled=""></div></div></div></div><div role="presentation" class="navbar-sidebar__backdrop"></div></nav><div id="__docusaurus_skipToContent_fallback" class="theme-layout-main main-wrapper mainWrapper_z2l0"><div class="docsWrapper_hBAB"><button aria-label="Scroll back to top" class="clean-btn theme-back-to-top-button backToTopButton_sjWU" type="button"></button><div class="docRoot_UBD9"><aside class="theme-doc-sidebar-container docSidebarContainer_YfHR"><div class="sidebarViewport_aRkj"><div class="sidebar_njMd"><nav aria-label="Docs sidebar" class="menu thin-scrollbar menu_SIkG"><ul class="theme-doc-sidebar-menu menu__list"><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class="menu__link" href="/camunda/pr-preview/pr-44303/"><span title="Camunda Platform Documentation" class="linkLabel_WmDU">Camunda Platform Documentation</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class="menu__link" href="/camunda/pr-preview/pr-44303/ci/"><span title="CI &amp; Automation" class="linkLabel_WmDU">CI &amp; Automation</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class="menu__link menu__link--active" aria-current="page" href="/camunda/pr-preview/pr-44303/release/"><span title="Release Process" class="linkLabel_WmDU">Release Process</span></a></li></ul></nav></div></div></aside><main class="docMainContainer_TBSr"><div class="container padding-top--md padding-bottom--lg"><div class="row"><div class="col docItemCol_VOVn"><div class="docItemContainer_Djhp"><article><nav class="theme-doc-breadcrumbs breadcrumbsContainer_Z_bl" aria-label="Breadcrumbs"><ul class="breadcrumbs"><li class="breadcrumbs__item"><a aria-label="Home page" class="breadcrumbs__link" href="/camunda/pr-preview/pr-44303/"><svg viewBox="0 0 24 24" class="breadcrumbHomeIcon_YNFT"><path d="M10 19v-5h4v5c0 .55.45 1 1 1h3c.55 0 1-.45 1-1v-7h1.7c.46 0 .68-.57.33-.87L12.67 3.6c-.38-.34-.96-.34-1.34 0l-8.36 7.53c-.34.3-.13.87.33.87H5v7c0 .55.45 1 1 1h3c.55 0 1-.45 1-1z" fill="currentColor"></path></svg></a></li><li class="breadcrumbs__item breadcrumbs__item--active"><span class="breadcrumbs__link">Release Process</span></li></ul></nav><div class="tocCollapsible_ETCw theme-doc-toc-mobile tocMobile_ITEo"><button type="button" class="clean-btn tocCollapsibleButton_TO0P">On this page</button></div><div class="theme-doc-markdown markdown"><header><h1>Release Process</h1></header>
+<p>This document will become a knowledge base around the <a href="https://github.com/camunda/camunda" target="_blank" rel="noopener noreferrer" class="">C8 monorepo</a> release process and help Camundi to maintain the process. It primarily focuses on the release process of Zeebe and the C8 webapps after they included with the monorepo merger (Camunda 8.6+).</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="scope--goal">Scope &amp; Goal<a href="#scope--goal" class="hash-link" aria-label="Direct link to Scope &amp; Goal" title="Direct link to Scope &amp; Goal" translate="no">​</a></h2>
+<p>The goal of the C8 monorepo release process is to produce artifacts for patch, alpha and minor version releases of Camunda 8 components like Zeebe and (on 8.6+) most C8 webapps for SaaS and Self-Managed usage in a timely fashion. This includes <a href="https://github.com/camunda/zeebe-process-test" target="_blank" rel="noopener noreferrer" class="">the ZPT (zeebe-process-test) project</a>. Optimize is released separately for 8.6 to 8.8 (at least).</p>
+<p>It also involves automated and manual QA activities on release candidate builds to ensure bug-free artifacts on the final artifacts, e.g. certain benchmarks for Zeebe and interactive tests for C8 webapps.</p>
+<p>Required inputs:</p>
+<ul>
+<li class="">version of <a href="https://github.com/camunda-cloud/identity" target="_blank" rel="noopener noreferrer" class="">camunda-cloud/identity</a> to use for any given C8 monorepo release</li>
+<li class="">whether a release candidate build and manual QA is necessary for patch releases</li>
+</ul>
+<p>Produced artifacts include Maven artifacts on Maven Central, Docker images on DockerHub, GitHub releases with release notes and announcements.</p>
+<p>There must not be 2 concurrent releases ongoing with the same major and minor version (e.g. no 8.99.1 and 8.99.2 patch releases at the same time).</p>
+<p><em>Caveat: Many places still refer to this process as “Zeebe release process” although with 8.6+ it is the monorepo release process also involving other components like C8 webapps.</em></p>
+<p>Not in scope of this process are <a class="" href="/camunda/pr-preview/pr-44303/ci/#available-snapshot-artifacts">SNAPSHOT releases</a>.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="release-types">Release Types<a href="#release-types" class="hash-link" aria-label="Direct link to Release Types" title="Direct link to Release Types" translate="no">​</a></h3>
+<ul>
+<li class=""><a href="https://confluence.camunda.com/display/HAN/Product+Releases" target="_blank" rel="noopener noreferrer" class="">Minor</a> (version format is 8.x.0):<!-- -->
+<ul>
+<li class="">includes new features, for production use</li>
+<li class="">usually released every 6 months</li>
+<li class="">supported for certain time with new patch releases after the minor release</li>
+<li class="">code freeze before the release, to allow QA on a release candidate build</li>
+<li class="">source branch is <code>stable/${minor_version}</code></li>
+</ul>
+</li>
+<li class=""><a href="https://confluence.camunda.com/display/HAN/Alpha+Releases" target="_blank" rel="noopener noreferrer" class="">Alpha</a> (version format 8.x.0-alphaN)<!-- -->
+<ul>
+<li class="">includes new features to get early customer feedback, not for production use</li>
+<li class="">usually released every 1 month</li>
+<li class="">code freeze before the release, to allow QA on a release candidate build</li>
+<li class="">source branch is <code>main</code></li>
+</ul>
+</li>
+<li class="">Patch (version format 8.x.y):<!-- -->
+<ul>
+<li class="">includes security updates and bug fixes, for production use</li>
+<li class="">usually released every 1 month (or on demand, e.g. if critical CVE needs to be fixed sooner)</li>
+<li class="">no code freeze and no release candidate build</li>
+<li class="">source branch is <code>stable/${minor_version}</code></li>
+</ul>
+</li>
+</ul>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="release-dependencies">Release Dependencies<a href="#release-dependencies" class="hash-link" aria-label="Direct link to Release Dependencies" title="Direct link to Release Dependencies" translate="no">​</a></h3>
+<p><em>Caveat: While Optimize is part of the C8 monorepo, it has its own release process separate from the C8 monorepo release process (covers only Operate/Tasklist/Zeebe).</em></p>
+<p>Component releases that the C8 monorepo releases depend on:</p>
+<ul>
+<li class=""><a href="https://github.com/camunda-cloud/identity" target="_blank" rel="noopener noreferrer" class="">camunda-cloud/identity</a></li>
+</ul>
+<p>Components that depend on the C8 monorepo releases:</p>
+<ul>
+<li class="">C8 SaaS</li>
+<li class=""><a href="https://github.com/camunda/camunda-platform-helm" target="_blank" rel="noopener noreferrer" class="">Helm Chart</a></li>
+<li class="">C8 Optimize</li>
+</ul>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="artifacts">Artifacts<a href="#artifacts" class="hash-link" aria-label="Direct link to Artifacts" title="Direct link to Artifacts" translate="no">​</a></h3>
+<ul>
+<li class=""><a href="https://mvnrepository.com/artifact/io.camunda" target="_blank" rel="noopener noreferrer" class="">Maven Central</a></li>
+<li class="">DockerHub:<!-- -->
+<ul>
+<li class=""><a href="https://hub.docker.com/r/camunda/zeebe/" target="_blank" rel="noopener noreferrer" class="">Zeebe</a></li>
+<li class=""><a href="https://hub.docker.com/r/camunda/operate/" target="_blank" rel="noopener noreferrer" class="">Operate</a></li>
+<li class=""><a href="https://hub.docker.com/r/camunda/tasklist/" target="_blank" rel="noopener noreferrer" class="">Tasklist</a></li>
+<li class=""><a href="https://hub.docker.com/r/camunda/optimize/" target="_blank" rel="noopener noreferrer" class="">Optimize</a></li>
+<li class=""><a href="https://hub.docker.com/r/camunda/camunda/" target="_blank" rel="noopener noreferrer" class="">Camunda</a> (future &quot;Single Application&quot; Docker image)</li>
+</ul>
+</li>
+<li class=""><a href="https://github.com/camunda/camunda/releases" target="_blank" rel="noopener noreferrer" class="">GitHub releases</a></li>
+<li class="">SBOM information on FOSSA</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="implementation">Implementation<a href="#implementation" class="hash-link" aria-label="Direct link to Implementation" title="Direct link to Implementation" translate="no">​</a></h2>
+<p>The C8 monorepo release process is implemented using <a href="https://en.wikipedia.org/wiki/BPMN" target="_blank" rel="noopener noreferrer" class="">BPMN</a> models orchestrated by Camunda 8 SaaS, GitHub Action workflows and manual tasks (called &quot;User tasks&quot;). The GitHub Action workflows listen on <a href="https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows#repository_dispatch" target="_blank" rel="noopener noreferrer" class="">webhook events</a> via the <code>repository_dispatch</code> mechanism. Those events are generated by C8 via the GitHub API.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="bpmn-models">BPMN models<a href="#bpmn-models" class="hash-link" aria-label="Direct link to BPMN models" title="Direct link to BPMN models" translate="no">​</a></h3>
+<p>The BPMN models are developed, versioned and tested in <a href="https://github.com/camunda/zeebe-engineering-processes/tree/main?tab=readme-ov-file#release-process" target="_blank" rel="noopener noreferrer" class="">this (internal) repository</a>. BPMN models for noteworthy processes are:</p>
+<ul>
+<li class=""><a href="https://github.com/camunda/zeebe-engineering-processes/blob/main/src/main/resources/release/patch_release.bpmn" target="_blank" rel="noopener noreferrer" class="">Camunda Patch Release</a>: is run for performing patch releases for versions 8.6+. Gathers the required inputs from the <a href="#dris" class="">release manager</a> and then starts “Camunda Release” process</li>
+<li class=""><a href="https://github.com/camunda/zeebe-engineering-processes/blob/main/src/main/resources/release/camunda_release.bpmn" target="_blank" rel="noopener noreferrer" class="">Camunda Release</a>: Implements a unified release process for all release type since version 8.6:<!-- -->
+<ul>
+<li class="">is started by the <a href="#dris" class="">release manager</a> with all the required inputs.</li>
+<li class="">for non-patch releases waits for code freeze time.</li>
+<li class="">performs the release process including artifact generation, uploads and QA, for a specific version</li>
+</ul>
+</li>
+</ul>
+<p><em>Caveat: Some places still refer to those BPMN models as “Zeebe Release” although with 8.6+ the processes are responsible for multiple components including Zeebe and C8 webapps.</em></p>
+<p>Resources:</p>
+<ul>
+<li class=""><a href="https://academy.camunda.com/page/bpmn" target="_blank" rel="noopener noreferrer" class="">Free BPMN course</a> on Camunda Academy</li>
+<li class="">(Internal) <a href="https://camunda.slack.com/archives/C06UWQNCU7M/p1739978722627379" target="_blank" rel="noopener noreferrer" class="">Recording on the release process implementation</a></li>
+</ul>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="runtime">Runtime<a href="#runtime" class="hash-link" aria-label="Direct link to Runtime" title="Direct link to Runtime" translate="no">​</a></h3>
+<p>Those BPMN models are <a href="https://github.com/camunda/zeebe-engineering-processes/actions" target="_blank" rel="noopener noreferrer" class="">tested and deployed from <code>main</code> via GitHub Actions</a> into an (internal) <a href="https://console.camunda.io/org/9061128c-7381-4caa-abbe-e97057e0e1eb/cluster/a5d45cd5-3aad-48a4-9fe1-2d25d8e0b5a6" target="_blank" rel="noopener noreferrer" class="">Camunda 8 SaaS cluster</a>. Resources:</p>
+<ul>
+<li class=""><a href="https://bru-2.operate.camunda.io/a5d45cd5-3aad-48a4-9fe1-2d25d8e0b5a6/operate" target="_blank" rel="noopener noreferrer" class="">Camunda Release process in Operate</a></li>
+<li class=""><a href="https://bru-2.tasklist.camunda.io/a5d45cd5-3aad-48a4-9fe1-2d25d8e0b5a6/tasklist" target="_blank" rel="noopener noreferrer" class="">User tasks in Tasklist</a></li>
+</ul>
+<p><a href="https://console.camunda.io/org/9061128c-7381-4caa-abbe-e97057e0e1eb/cluster/a5d45cd5-3aad-48a4-9fe1-2d25d8e0b5a6/secrets" target="_blank" rel="noopener noreferrer" class="">Secrets are configured</a> as part of the C8 SaaS cluster and available ones are for APIs of e.g. GitHub, Slack, Opsgenie, Testrail. Used C8 connectors:</p>
+<ul>
+<li class="">GitHub Webhook</li>
+<li class="">HTTP (for other APIs)</li>
+<li class="">Slack (mainly for notifications)</li>
+</ul>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="github-action-workflows">GitHub Action workflows<a href="#github-action-workflows" class="hash-link" aria-label="Direct link to GitHub Action workflows" title="Direct link to GitHub Action workflows" translate="no">​</a></h3>
+<p>Centerpiece for the <code>camunda/camunda</code> monorepo is a <a href="https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-platform-release.yml" target="_blank" rel="noopener noreferrer" class="">reusable workflow</a> on <code>main</code> and each <code>stable/*</code> branch. This workflow handles the full release pipeline: building, scanning, publishing artifacts and Docker images, and notifying teams via Slack.</p>
+<p><strong>🔧 How It&#x27;s Triggered</strong></p>
+<p>Releases are triggered in two ways:</p>
+<ol>
+<li class="">
+<p>For dry runs, by using <code>on: schedule</code> triggers defined in the workflow itself (no Slack noise here).</p>
+</li>
+<li class="">
+<p>For real releases, by calling the GitHub Actions REST API directly with a <code>workflow_dispatch</code> request:</p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">curl -X POST https://api.github.com/repos/camunda/camunda/actions/workflows/camunda-platform-release.yml/dispatches \</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  -H &quot;Authorization: token $TOKEN&quot; \</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  -d &#x27;{&quot;ref&quot;: &quot;stable/8.7&quot;, &quot;inputs&quot;: {&quot;releaseVersion&quot;: &quot;8.7.x&quot;, &quot;nextDevelopmentVersion&quot;: &quot;8.7.y-SNAPSHOT&quot;, ...}}&#x27;</span><br></span></code></pre></div></div>
+</li>
+</ol>
+<p>📝 This replaces the older <code>dispatch-release-*</code> workflows, which have now been removed.</p>
+<p>For <a href="https://github.com/camunda/zeebe-process-test" target="_blank" rel="noopener noreferrer" class="">the ZPT (zeebe-process-test) project</a> there is automation to create the release branch, build and upload the Maven artifacts, only merging a release branch is manual.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="benchmark-tests">Benchmark Tests<a href="#benchmark-tests" class="hash-link" aria-label="Direct link to Benchmark Tests" title="Direct link to Benchmark Tests" translate="no">​</a></h3>
+<p><strong>🤔<!-- -->  What are the benchmarks</strong></p>
+<ul>
+<li class="">There’s a GKE Kubernetes cluster to run the benchmarks:<!-- -->
+<ul>
+<li class="">GCP project: <code>zeebe-io</code>, cluster name: <code>zeebe-cluster</code></li>
+<li class="">Run by the Zeebe team</li>
+</ul>
+</li>
+<li class="">This Kubernetes cluster has a monitoring stack installed (Prometheus, Grafana)<!-- -->
+<ul>
+<li class="">There’s a <a href="https://grafana.dev.zeebe.io/d/zeebe-medic-benchmark/zeebe-medic-benchmarks?orgId=1&amp;refresh=1m&amp;from=now-24h&amp;to=now&amp;timezone=browser&amp;var-DS_PROMETHEUS=prometheus&amp;var-cluster=$__all&amp;var-namespace=$__all&amp;var-pod=$__all&amp;var-partition=$__all" target="_blank" rel="noopener noreferrer" class="">dashboard</a> to observe the status of the benchmarks</li>
+</ul>
+</li>
+<li class="">Every created benchmark has a dedicated namespace in the Kubernetes cluster (e.g. <code>release-8-7-x</code>)</li>
+<li class="">There&#x27;s a benchmark for every currently supported (<a href="https://docs.camunda.io/docs/next/reference/announcements-release-notes/overview/#announcements--release-notes" target="_blank" rel="noopener noreferrer" class="">maintained</a>) version + previously released alpha version.</li>
+<li class="">A benchmark is installed/upgraded by this <a href="https://github.com/camunda/camunda/blob/main/.github/workflows/zeebe-medic-benchmarks.yml" target="_blank" rel="noopener noreferrer" class="">GHA workflow</a>
+<ul>
+<li class="">Under the hood, it’s running a <code>helm install --upgrade</code> command for a benchmark creation/update</li>
+<li class="">Helm installs a special <a href="https://github.com/camunda/zeebe-benchmark-helm" target="_blank" rel="noopener noreferrer" class="">Helm chart</a> that is a thin wrapper around the standard Camunda 8 <a href="https://github.com/camunda/camunda-platform-helm" target="_blank" rel="noopener noreferrer" class="">Helm chart</a>, with additional components for benchmark testing (workload generators)</li>
+</ul>
+</li>
+</ul>
+<p><strong>🍃<!-- --> Benchmark flow</strong></p>
+<ul>
+<li class="">A benchmark is automatically created via GitHub Action call after a release candidate (RC) is triggered (<a href="https://github.com/camunda/camunda/blob/main/.github/workflows/zeebe-medic-benchmarks.yml" target="_blank" rel="noopener noreferrer" class="">GHA workflow</a>)<!-- -->
+<ul>
+<li class="">Benchmark creation applies only to alpha, minor, and major releases.</li>
+<li class="">Patches don&#x27;t require a new benchmark creation. What is required is to re-use the same namespace + the recently released patch version, and update the the applicable benchmark with the newest patch version.</li>
+</ul>
+</li>
+<li class="">If during the release, new commits are merged into the release branch (major, minor, alpha), the corresponding benchmark needs to be updated to run the code from latest commit of the release branch.</li>
+<li class="">At end end of the release process:<!-- -->
+<ul>
+<li class="">For the alpha/minor/major release, a benchmark for this version is to be updated to its latest image (i.e. no RC running in the benchmark)<!-- -->
+<ul>
+<li class="">E.g. if a version 8.8.0 is released, the benchmark should be running 8.8.0 not 8.8.0-RC1</li>
+<li class="">Additionally, for alpha releases, previous alpha for the current version is to be removed<!-- -->
+<ul>
+<li class="">E.g. if 8.8.0-alpha6 is released, a benchmark for 8.8.0-alpha5 is be removed, for 8.8.0-alpha6 running</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="">For the patch releases, a benchmark for this minor version is to be update to this version)<!-- -->
+<ul>
+<li class="">E.g. if a version 8.7.10 is released, the benchmark for 8.7 (<code>release-8-7-x</code>) will be updated to use this version as a part of the 8.7.10 patch release.</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p><strong>📁<!-- --> Example</strong></p>
+<table><thead><tr><th>Release Version</th><th>Benchmark Namespace in Kubernetes</th><th>Patch Release</th><th>Alpha Release</th></tr></thead><tbody><tr><td>8.5.x</td><td>release-8-5-x</td><td>• Update benchmark to use newly released image version via GHA workflow<br>• Other benchmarks are untouched</td><td>(does not happen)</td></tr><tr><td>8.6.x</td><td>release-8-6-x</td><td>• Update benchmark to use newly released image version via GHA workflow<br>• Other benchmarks are untouched</td><td>(does not happen)</td></tr><tr><td>8.7.x</td><td>release-8-7-x</td><td>• Update benchmark to use newly released image version via GHA workflow<br>• Other benchmarks are untouched</td><td>(does not happen)</td></tr><tr><td>8.8.0-alphaN</td><td>release-8-8-0-alphaN</td><td>(does not happen)</td><td>• <code>release-8.8.0-alphaN</code> and <code>release-8.8.0-alpha(N+1)</code> benchmarks coexist during the release of <code>release-8.8.0-alpha(N+1)</code><br>• after <code>8.8.0-alpha(N+1)</code> release → <code>release-8-8-0-alphaN</code> is deleted<br>• Other benchmarks are untouched</td></tr></tbody></table>
+<p>More details on how benchmark tests work can be found in our <a href="https://github.com/camunda/camunda/blob/main/docs/testing/reliability-testing.md" target="_blank" rel="noopener noreferrer" class="">reliability testing documentation</a>.</p>
+<p><strong>👨‍🔧 Release Manager Ownership for Benchmark Issues</strong></p>
+<p>Owner during releases: The zeebe-release-manager owns benchmark/load-test issues for the release (for as long as this role exists).</p>
+<p>When a release benchmark fails, the RM must:</p>
+<ul>
+<li class="">Include: failing CI job link, version/RC + release line, and Grafana dashboard link.</li>
+<li class="">If it&#x27;s deploy/infra/Helm/cluster health, ping Reliability/Testing (and reference medics).</li>
+<li class="">If it&#x27;s an application-level regression, escalate to the owning product team (usually Core Features first), CC Reliability/Testing if infra may be involved.</li>
+<li class="">Make sure medics are aware, since they watch daily/weekly/release load tests until alerts are in place.</li>
+</ul>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="camunda-8-testing-clusters">Camunda 8 Testing Clusters<a href="#camunda-8-testing-clusters" class="hash-link" aria-label="Direct link to Camunda 8 Testing Clusters" title="Direct link to Camunda 8 Testing Clusters" translate="no">​</a></h3>
+<p>Camunda 8 testing clusters provide isolated environments for validating release builds, executing targeted test flows, and verifying features and bug fixes across all core components. The cluster creation and management processes can be manual or automated depending on the test type and the stage of the monorepo release process.</p>
+<p>📡<!-- --> <strong>Cluster Usage Scenarios</strong></p>
+<ul>
+<li class="">Component Coverage: Identity, Operate, Optimize, and Tasklist.</li>
+<li class="">Pre-release Validation: Isolate new release builds before broad deployment and confirm fixes or features behave as expected.</li>
+<li class="">Test Isolation: Support E2E, chaos, benchmark, reliability, andload test types.</li>
+</ul>
+<p>🚂<!-- --> <strong>Monorepo Release Process Mapping</strong></p>
+<p><strong>Manual Clusters</strong></p>
+<ul>
+<li class="">Clusters are provisioned manually for manual testing flows. They are used to enable Webapp testing across the four main apps (Identity, Operate, Optimize, and Tasklist).</li>
+<li class="">Manual creation is carried out by QA engineers via UI - soon to be automated by <a href="https://github.com/camunda/camunda/issues/32765" target="_blank" rel="noopener noreferrer" class="">CAMUNDA-32765</a>.<!-- -->
+<ul>
+<li class="">The process follows qa_manual_create_cluster.md.</li>
+</ul>
+</li>
+<li class="">For each Release Candidate, a new manual test cluster generation is created with the current RC version.</li>
+</ul>
+<p><strong>Automated Clusters</strong></p>
+<ul>
+<li class="">Automated flows use GitHub workflows like: <a href="https://github.com/camunda/camunda/blob/main/.github/workflows/zeebe-qa-testbench.yaml" target="_blank" rel="noopener noreferrer" class="">zeebe-qa-testbench.yaml</a> and <a href="https://github.com/camunda/camunda/blob/main/.github/workflows/zeebe-testbench.yaml" target="_blank" rel="noopener noreferrer" class="">zeebe-testbench.yaml</a> to orchestrate the creation of clusters for benchmark, reliability, E2E, and chaos tests.</li>
+<li class="">The clusters for automated tests are created for every Release Candidate, mirroring the manual flow but managed programmatically.</li>
+<li class="">Additional details about test setup can be found in our <a href="https://github.com/camunda/camunda/blob/main/docs/testing/reliability-testing.md" target="_blank" rel="noopener noreferrer" class="">reliability testing documentation</a>.</li>
+</ul>
+<p>👥<!-- --> <strong>Ownership and Terminology</strong></p>
+<ul>
+<li class="">Manual Test Clusters and Manual Tests: Owned by QA engineers.</li>
+<li class="">Automated Test Clusters and Automated Tests: Development &amp; Maintainability owned by the Zeebe team, Release monitoring owned by Monorepo Release Manager, orchestrated via GitHub Actions.</li>
+<li class="">Post-release QA: Historically managed by the Monorepo Release Manager.</li>
+<li class="">Terminology Note: The label “QA” is a catch-all for testing steps in the release process, not a strict indicator of team ownership. Consider replacing “QA” with more precise terms such as “Test Validation” or “Release Testing” for documentation clarity. (<a href="https://github.com/camunda/camunda/issues/35223" target="_blank" rel="noopener noreferrer" class="">CAMUNDA-35223</a>)</li>
+</ul>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="best-practices">Best Practices<a href="#best-practices" class="hash-link" aria-label="Direct link to Best Practices" title="Direct link to Best Practices" translate="no">​</a></h3>
+<p>For BPMN User Tasks:</p>
+<ul>
+<li class=""><a href="https://docs.camunda.io/docs/components/modeler/bpmn/user-tasks/#assignments" target="_blank" rel="noopener noreferrer" class=""><strong>Assign on creation</strong> automatically</a> to the correct person for better UX and ownership</li>
+</ul>
+<p>For BPMN activities using REST connector:</p>
+<ul>
+<li class="">Configure <strong>retries</strong> with appropriate interval for idempotent requests, to workaround network problems/short service interruption<!-- -->
+<ul>
+<li class="">e.g. use 3 retries with 10 seconds interval on <code>GET</code> requests</li>
+</ul>
+</li>
+<li class="">HTTP <strong>error handling</strong> of the remote API via <a href="https://docs.camunda.io/docs/components/modeler/bpmn/escalation-events/" target="_blank" rel="noopener noreferrer" class="">escalation events</a>
+<ul>
+<li class="">Also consider using retries for transient errors</li>
+<li class="">e.g. send a notification via Slack in #top-monorepo-release</li>
+</ul>
+</li>
+<li class="">Use <strong>authentication</strong> to avoid API ratelimits of <a href="https://docs.github.com/en/rest/using-the-rest-api/rate-limits-for-the-rest-api" target="_blank" rel="noopener noreferrer" class="">GitHub</a> and <a href="https://docs.docker.com/docker-hub/usage/" target="_blank" rel="noopener noreferrer" class="">DockerHub</a> for increased reliability</li>
+</ul>
+<p>Calling and integrating with GitHub Actions workflows:</p>
+<ul>
+<li class="">Use <a href="https://docs.camunda.io/docs/components/connectors/protocol/rest/" target="_blank" rel="noopener noreferrer" class="">C8 REST connector</a> to <a href="https://docs.github.com/en/rest/actions/workflows?apiVersion=2022-11-28#create-a-workflow-dispatch-event" target="_blank" rel="noopener noreferrer" class="">call GitHub REST API to dispatch workflows</a></li>
+<li class="">Use GHA <code>workflow_dispatch</code> inputs to give custom data as parameters like release branch names or versions</li>
+<li class="">Avoid release managers polling for GHA workflow completion either by:<!-- -->
+<ul>
+<li class="">Create 2nd BPMN activity that queries completion in a loop and makes the process wait for GHA</li>
+<li class="">Send a Slack notification from GHA workflow in #top-monorepo-release to notify the release manager</li>
+</ul>
+</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="change-management--testing">Change Management &amp; Testing<a href="#change-management--testing" class="hash-link" aria-label="Direct link to Change Management &amp; Testing" title="Direct link to Change Management &amp; Testing" translate="no">​</a></h2>
+<p>Changes to the release process are done in these steps:</p>
+<ul>
+<li class="">Implementation:<!-- -->
+<ul>
+<li class="">Check out <a href="https://github.com/camunda/zeebe-engineering-processes/tree/main?tab=readme-ov-file#release-process" target="_blank" rel="noopener noreferrer" class="">this (internal) repository</a> locally</li>
+<li class="">Use the <a href="https://camunda.com/download/modeler/" target="_blank" rel="noopener noreferrer" class="">Desktop Modeler</a> locally to modify the BPMN models</li>
+<li class="">Adjust/extend the Java/Kotlin unit tests covering the relevant BPMN models</li>
+<li class="">Create a Pull Request against <code>main</code> including screenshots + description to explain the change</li>
+</ul>
+</li>
+<li class="">Testing:<!-- -->
+<ul>
+<li class="">If testable in isolation/with dry run: demonstrate that change works</li>
+<li class="">If not testable with dry run: wait for next release</li>
+</ul>
+</li>
+<li class="">Review:<!-- -->
+<ul>
+<li class="">Get a peer review from a Monorepo DevOps team member or C8 engineer familiar with the process</li>
+</ul>
+</li>
+<li class="">Rollout:<!-- -->
+<ul>
+<li class="">Merge the Pull Request</li>
+<li class="">If necessary, migrate currently running process instances in <a href="#runtime" class="">Operate</a> to new version of the process</li>
+</ul>
+</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="issue-tracking">Issue Tracking<a href="#issue-tracking" class="hash-link" aria-label="Direct link to Issue Tracking" title="Direct link to Issue Tracking" translate="no">​</a></h2>
+<p>All problems, bugs and feature requests regarding the C8 release process are tracked using<a href="https://github.com/camunda/camunda/issues" target="_blank" rel="noopener noreferrer" class="">GitHub Issues</a>.</p>
+<p>For visibility and prioritization there is the (internal) <a href="https://github.com/orgs/camunda/projects/115/views/4" target="_blank" rel="noopener noreferrer" class="">Monorepo Release project board</a> that tracks high-level issues.</p>
+<p>For CI-related issues in the release process, also see our <a class="" href="/camunda/pr-preview/pr-44303/ci/#issue-tracking">CI &amp; Automation documentation</a>.</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="dris">DRIs<a href="#dris" class="hash-link" aria-label="Direct link to DRIs" title="Direct link to DRIs" translate="no">​</a></h2>
+<p><em>This section is subject to change in</em> <a href="https://github.com/camunda/camunda/issues/28528" target="_blank" rel="noopener noreferrer" class=""><em>#28528</em></a><em>.</em></p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="release-manager">Release Manager<a href="#release-manager" class="hash-link" aria-label="Direct link to Release Manager" title="Direct link to Release Manager" translate="no">​</a></h3>
+<p>There is one DRI called the “monorepo release manager” who oversees all running and newly launched release process instances end-to-end and is responsible for successfully finishing the releases (8.6+) according to their timelines. This DRI rotates every month (Slack groups etc. are manually updated) at the start of the month. Handover notes are <a href="https://docs.google.com/document/d/1PYOMGEW5vcIhgDBY_BIe62s4sE26C2EbDqjgSM30URE/edit?tab=t.7bl3xug6y4a3" target="_blank" rel="noopener noreferrer" class="">documented in tabs here</a>.</p>
+<p>Some tasks during the release process are also taking care of other DRIs. The release manager can also rely on help from medics.</p>
+<p>The release manager is currently selected manually for each release.</p>
+<p><em>Caveat: Some places still refer to this as “Zeebe release manager” although with 8.6+ the release manager is responsible for multiple components including Zeebe and C8 webapps.</em></p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="others">Others<a href="#others" class="hash-link" aria-label="Direct link to Others" title="Direct link to Others" translate="no">​</a></h3>
+<p>QA Release Manager: can help with questions around steps the QA team performs.</p>
+<p><em>Caveat: Not all steps with &quot;QA&quot; in the name mean that the QA team is actually involved, so check twice</em></p>
+<p>Zeebe Release Manager: can help with Zeebe-specific questions and tasks.</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="backporting-guidelines">Backporting Guidelines<a href="#backporting-guidelines" class="hash-link" aria-label="Direct link to Backporting Guidelines" title="Direct link to Backporting Guidelines" translate="no">​</a></h2>
+<p>We want the release process for all supported versions 8.6+ to be as similar as possible, to reduce maintenance effort, surprises and mental load. Improvements and fixes to the release process should always apply to all supported versions, if possible.</p>
+<p>For CI-related changes, refer to our <a class="" href="/camunda/pr-preview/pr-44303/ci/">CI &amp; Automation documentation</a> and the <a class="" href="/camunda/pr-preview/pr-44303/ci/#backporting-guidelines">backporting guidelines</a>.</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="minor-release-considerations">Minor Release Considerations<a href="#minor-release-considerations" class="hash-link" aria-label="Direct link to Minor Release Considerations" title="Direct link to Minor Release Considerations" translate="no">​</a></h2>
+<p>Minor releases happen less often than other release types, so not all steps are automated (yet) in the <code>camunda/camunda</code> monorepo:</p>
+<ol>
+<li class="">Bump the <code>pom.xml</code> versions to <code>8.(x+1).0-SNAPHOT</code> on <code>main</code>, after the last <code>release-8.x.0-alphaN</code> branch is created<!-- -->
+<ul>
+<li class="">This may reveal implicit assumptions or actual bugs in upgrade tests that check for clean upgrade behavior of the software between different minor versions!</li>
+<li class="">This can be done with the following command <code>./mvnw release:update-versions -DdevelopmentVersion=8.(x+1).0-SNAPSHOT</code></li>
+</ul>
+</li>
+<li class="">Create the <code>stable/8.x</code> release branch from latest <code>release-8.x.0-alphaN</code>, to enforce code freeze<!-- -->
+<ul>
+<li class="">Ensure all expected SNAPSHOT artifacts are produced correctly.</li>
+</ul>
+</li>
+<li class=""><a href="https://github.com/camunda/infra-core/blob/stage/terraform/github/prod/rulesets-camunda-camunda.tf" target="_blank" rel="noopener noreferrer" class="">Configure <code>unified-ci-merges-stable-branches</code> branch protection ruleset</a> to include new <code>stable/8.x</code> branch<!-- -->
+<ul>
+<li class="">This may need temporary admin permissions for the initial manual push of the new branch.</li>
+</ul>
+</li>
+<li class="">Bump configured versions in upgrade tests of the previous minor version to <code>8.x</code>
+<ul>
+<li class="">TODO: add references to known upgrade tests if possible</li>
+</ul>
+</li>
+</ol>
+<p>Also, we have to do similar steps for the <a href="https://github.com/camunda/zeebe-process-test" target="_blank" rel="noopener noreferrer" class="">ZPT repository</a> in coordination with stakeholders from Camunda Ex team:</p>
+<ol>
+<li class="">Creating <code>stable/8.x</code> release branch from <code>main</code>, to enforce code freeze</li>
+<li class="">Bumping <code>pom.xml</code> versions to <code>8.(x+1).0-SNAPHOT</code> on <code>main</code></li>
+</ol>
+<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="additional-minor-release-learnings-88">Additional Minor Release Learnings (8.8+)<a href="#additional-minor-release-learnings-88" class="hash-link" aria-label="Direct link to Additional Minor Release Learnings (8.8+)" title="Direct link to Additional Minor Release Learnings (8.8+)" translate="no">​</a></h4>
+<p>In addition to the standard steps above, recent minor releases have surfaced several process improvements and considerations worth incorporating into future release cycles:</p>
+<ul>
+<li class=""><strong>Feature Freeze Communication</strong>
+<ul>
+<li class="">The freeze notice should clearly describe not just alpha branch behavior, but expectations for the entire minor release phase (including post-alpha, backports to <code>stable/&lt;minor&gt;</code>, etc.).</li>
+<li class="">Current notice is too narrow; see <a href="https://github.com/camunda/zeebe-engineering-processes/pull/712" target="_blank" rel="noopener noreferrer" class="">engineering-processes#712</a> and <a href="https://camunda.slack.com/archives/CHY2S7KDJ/p1758632876658599?thread_ts=1757683374.580399&amp;cid=CHY2S7KDJ" target="_blank" rel="noopener noreferrer" class="">Slack discussion</a>.</li>
+<li class=""><strong>Action:</strong> Iterate a more generic, minor-release–aware template for next minor releases.</li>
+</ul>
+</li>
+<li class=""><strong>Benchmark Namespace Naming</strong>
+<ul>
+<li class="">Namespace for benchmarks during RCs may become <code>8-8-0</code> (when performing RC) instead of the expected <code>8-8-x</code>.</li>
+<li class="">Current handling is accepted; document and monitor naming in future minors for reproducibility.</li>
+</ul>
+</li>
+<li class=""><strong>Merge-Back Conflicts</strong>
+<ul>
+<li class="">Merge conflicts can occur when merging the release branch back into <code>stable/&lt;minor&gt;</code>, especially due to timing of backports versus release branch changes.</li>
+<li class="">Reference: <a href="https://camunda.slack.com/archives/C06UWQNCU7M/p1760046632109499?thread_ts=1760012606.937389&amp;cid=C06UWQNCU7M" target="_blank" rel="noopener noreferrer" class="">Slack thread</a></li>
+<li class=""><strong>Action:</strong> Evaluate sources and refine merge sequencing guidelines.</li>
+</ul>
+</li>
+<li class=""><strong>Heavy Merge-Back CI Load</strong>
+<ul>
+<li class="">Merge-back PRs currently run almost the full test matrix, resulting in long CI runtimes (see <a href="https://github.com/camunda/camunda/actions/runs/18385775955/job/52383810975" target="_blank" rel="noopener noreferrer" class="">example run</a>).</li>
+<li class=""><strong>Action:</strong> The task <a href="https://github.com/camunda/camunda/issues/39659" target="_blank" rel="noopener noreferrer" class="">https://github.com/camunda/camunda/issues/39659</a> was created to fix the existing issue and optimize merge-back test scope or introduce selective module test strategies.</li>
+</ul>
+</li>
+<li class=""><strong>Change of source branch</strong>
+<ul>
+<li class="">For 8.8 minor release the source branch <code>stable/8.8</code> based on <code>release-8.8.0-alpha8</code></li>
+<li class="">Currently  an automated script decides the source branch for the release type, in case of change in future release process, the code needs to be adjusted <a href="https://github.com/camunda/zeebe-engineering-processes/blob/main/src/main/resources/release/decide_dev_version_and_is_latest_for_release.bpmn#L39" target="_blank" rel="noopener noreferrer" class="">here</a></li>
+</ul>
+</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="troubleshooting">Troubleshooting<a href="#troubleshooting" class="hash-link" aria-label="Direct link to Troubleshooting" title="Direct link to Troubleshooting" translate="no">​</a></h2>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="how-to-correlate-git-commits-with-deployed-process-version-in-c8-operate">How to correlate <a href="https://github.com/camunda/zeebe-engineering-processes/commits" target="_blank" rel="noopener noreferrer" class="">Git commits</a> with deployed process version in C8 Operate?<a href="#how-to-correlate-git-commits-with-deployed-process-version-in-c8-operate" class="hash-link" aria-label="Direct link to how-to-correlate-git-commits-with-deployed-process-version-in-c8-operate" title="Direct link to how-to-correlate-git-commits-with-deployed-process-version-in-c8-operate" translate="no">​</a></h3>
+<p>There is currently no way to see metadata (e.g. deploy timestamp) in or <a href="https://github.com/camunda/camunda/issues/22005" target="_blank" rel="noopener noreferrer" class="">download BPMN XML for a certain version</a> from Operate UI.</p>
+<p>Workaround: Open a process instance in the Operate UI and use network tab of browser and look at <code>/xml</code> endpoint response after a page refresh.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="i-lack-permissions-in-the-internal-camunda-8-saas-cluster">I lack permissions in the (internal) <a href="https://console.cloud.camunda.io/org/9061128c-7381-4caa-abbe-e97057e0e1eb/cluster/689a796f-7efa-487f-9e44-76ca3a98c77b" target="_blank" rel="noopener noreferrer" class="">Camunda 8 SaaS cluster</a>?<a href="#i-lack-permissions-in-the-internal-camunda-8-saas-cluster" class="hash-link" aria-label="Direct link to i-lack-permissions-in-the-internal-camunda-8-saas-cluster" title="Direct link to i-lack-permissions-in-the-internal-camunda-8-saas-cluster" translate="no">​</a></h3>
+<p>Reach out via Slack to ask for the permissions.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="how-to-retry-a-camunda-platform-releaseyml-job-that-failed-mid-build">How to retry a <a href="https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-platform-release.yml" target="_blank" rel="noopener noreferrer" class="">camunda-platform-release.yml</a> job that failed mid-build?<a href="#how-to-retry-a-camunda-platform-releaseyml-job-that-failed-mid-build" class="hash-link" aria-label="Direct link to how-to-retry-a-camunda-platform-releaseyml-job-that-failed-mid-build" title="Direct link to how-to-retry-a-camunda-platform-releaseyml-job-that-failed-mid-build" translate="no">​</a></h3>
+<p>The <a href="https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-platform-release.yml" target="_blank" rel="noopener noreferrer" class="">camunda-platform-release.yml</a> GHA workflow uploads artifacts (Maven, Docker) to certain 3rd party services. If it fails unexpectedly after having already uploaded some, but not all artifacts, there is some cleanup needed. Only after the cleanup you can retry safely:</p>
+<p>Procedure:</p>
+<ul>
+<li class="">remove new info on GitHub (reset branch to before new Git commits, delete new Git tag)</li>
+<li class="">drop staged Maven artifacts from Maven Central</li>
+<li class="">do <em>nothing</em> re Artifactory (artifacts will be overwritten)</li>
+<li class="">do <em>nothing</em> re DockerHub (artifacts will be overwritten)</li>
+<li class="">retrigger the failing <a href="https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-platform-release.yml" target="_blank" rel="noopener noreferrer" class="">camunda-platform-release.yml</a> job</li>
+</ul>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="i-wantneed-to-retryskip-certain-parts-of-a-bpmn-process">I want/need to retry/skip certain parts of a BPMN process?<a href="#i-wantneed-to-retryskip-certain-parts-of-a-bpmn-process" class="hash-link" aria-label="Direct link to I want/need to retry/skip certain parts of a BPMN process?" title="Direct link to I want/need to retry/skip certain parts of a BPMN process?" translate="no">​</a></h3>
+<p>In C8 Operate, you can use <a href="https://docs.camunda.io/docs/components/operate/userguide/process-instance-modification/" target="_blank" rel="noopener noreferrer" class="">process instance modification</a> to change variables of the process or move to a different activity. If that activity is earlier in the process, it will be retried. If it is later, it will skip intermediate steps.</p>
+<p>All of the above operations can be dangerous and lead to unexpected behavior or inconsistencies (outdated/lacking variables, lacking preconditions for later steps, duplicate effects that are visible externally). Proceed with caution and ask another engineer to review beforehand!</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="how-to-remove-accidentially-published-artifacts-from-artifactory">How to remove accidentially published artifacts from <a href="https://artifacts.camunda.com" target="_blank" rel="noopener noreferrer" class="">Artifactory</a>?<a href="#how-to-remove-accidentially-published-artifacts-from-artifactory" class="hash-link" aria-label="Direct link to how-to-remove-accidentially-published-artifacts-from-artifactory" title="Direct link to how-to-remove-accidentially-published-artifacts-from-artifactory" translate="no">​</a></h3>
+<p>As a first step, you need to find out how to best identify the artifacts to be deleted:</p>
+<ol>
+<li class="">Do all affected artifacts (and only those) have a specific version (e.g. 8.99.0-dryrun)?</li>
+<li class="">Do you have a log of GitHub Actions workflow run uploading the files to identify them?</li>
+</ol>
+<p>If you know a specific version (and ideally have the the log of a GHA workflow run), <a href="https://github.com/camunda/infra-core/blob/stage/cmd/artifactory/delete_artifacts.py" target="_blank" rel="noopener noreferrer" class="">you can use this script</a>. The script source code has detailed usage instructions. Since the C8 monorepo currently publishes Operate, Tasklist and Zeebe a suitable deletion command for example for version <code>8.99.0-dryrun</code> is:</p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">REPOSITORY=zeebe-io ARTIFACTORY_PATH=&quot;io/camunda*&quot; VERSION=8.99.0-dryrun python delete_artifacts.py</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">REPOSITORY=camunda-operate ARTIFACTORY_PATH=&quot;io/camunda*&quot; VERSION=8.99.0-dryrun python delete_artifacts.py</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">REPOSITORY=camunda-zeebe-tasklist ARTIFACTORY_PATH=&quot;io/camunda*&quot; VERSION=8.99.0-dryrun python delete_artifacts.py</span><br></span></code></pre></div></div>
+<p>If you have a log of a GHA workflow run called <code>log.txt</code>, you can use <code>grep</code> to identify exact URLs of all uploaded files to <a href="https://artifacts.camunda.com" target="_blank" rel="noopener noreferrer" class="">Artifactory</a>:</p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">cat log.txt | grep &quot;Uploaded to camunda-nexus&quot; | grep -oP &quot;https://artifacts.camunda.com/[^\s]+&quot;</span><br></span></code></pre></div></div>
+<p>You can identify affected repositories of Artifactory from a <code>log.txt</code>, you can use the previous command and &quot;group&quot; by repository name:</p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">cat log.txt | grep &quot;Uploaded to camunda-nexus&quot; | grep -oP &quot;https://artifacts.camunda.com/[^\s]+&quot; | cut -d&#x27;/&#x27; -f5 | sort | uniq</span><br></span></code></pre></div></div>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="i-have-another-problem">I have another problem?<a href="#i-have-another-problem" class="hash-link" aria-label="Direct link to I have another problem?" title="Direct link to I have another problem?" translate="no">​</a></h3>
+<p>There is a document with <a href="https://docs.google.com/document/d/1PYOMGEW5vcIhgDBY_BIe62s4sE26C2EbDqjgSM30URE/edit?tab=t.0" target="_blank" rel="noopener noreferrer" class="">known problems</a> and workarounds (if available) that should be consulted first, alongside with open issues from <a href="#issue-tracking" class="">Issue Tracking</a>. The user tasks of the release process have documentation attached that gives guidance.</p>
+<p>If there is still questions, reach out via Slack.</p>
+<p>Consider opening an incident for serious issues (see below).</p>
+<h1>Incident Process</h1>
+<p>If you discover serious issues during the Monorepo Release process (while working on any of its subtasks), you can start the incident (per usual process with <code>/inc</code> command in Slack).</p>
+<p>Please select incident type: <code>C8 Monorepo Release incident</code>.</p>
+<p>Who can start the incident:</p>
+<ul>
+<li class="">Anyone participating in the current release process (Release Manager, QA Engineers, etc.)</li>
+<li class="">Anyone from the Orchestration cluster teams</li>
+</ul>
+<h1>FAQ</h1>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="1-should-i-request-a-patch-release-or-a-customer-specific-hotfix-docker-image">1. Should I request a patch release or a customer-specific (hotfix) Docker image?<a href="#1-should-i-request-a-patch-release-or-a-customer-specific-hotfix-docker-image" class="hash-link" aria-label="Direct link to 1. Should I request a patch release or a customer-specific (hotfix) Docker image?" title="Direct link to 1. Should I request a patch release or a customer-specific (hotfix) Docker image?" translate="no">​</a></h2>
+<p><strong>🔧 Request a customer-specific Docker image (hotfix) when:</strong></p>
+<ul>
+<li class="">The fix has <strong>not yet been merged</strong> into main or a stable branch</li>
+<li class="">You want to <strong>test the fix early</strong> with a specific customer or in an internal environment (e.g., Camunda SaaS dev)</li>
+<li class="">You are not yet sure if the fix is correct or complete</li>
+</ul>
+<p>➡️ How to: <a href="https://confluence.camunda.com/x/dwMNE" target="_blank" rel="noopener noreferrer" class="">follow these instructions</a>.</p>
+<p>Note: Hotfixes are <strong>not part of the official release process</strong> and <strong>should not be used as a substitute for patch releases</strong>. Hotfixes should be used by teams to validate a solution without impacting the general release flow.</p>
+<p><strong>📦 Request a general patch release when:</strong></p>
+<ul>
+<li class="">The fix has been merged and verified</li>
+<li class="">It’s relevant to all users or addresses a broad issue, not just one customer</li>
+<li class="">You’re ready to make the change available in an <strong>official release</strong></li>
+</ul>
+<p>➡️ How to: use the <code>Request Monorepo Patch release</code> Slack workflow in <a href="https://camunda.slack.com/archives/C06UWQNCU7M" target="_blank" rel="noopener noreferrer" class="">this channel</a> and fill the form.</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="2-whats-the-git-commit-mechanics-of-the-maven-release-plugin">2. What&#x27;s the git commit mechanics of the maven-release-plugin?<a href="#2-whats-the-git-commit-mechanics-of-the-maven-release-plugin" class="hash-link" aria-label="Direct link to 2. What&#x27;s the git commit mechanics of the maven-release-plugin?" title="Direct link to 2. What&#x27;s the git commit mechanics of the maven-release-plugin?" translate="no">​</a></h2>
+<p>Release process roughly looks like this:</p>
+<ul>
+<li class="">release branch is created (forked from <code>main</code> or <code>stable/x.y</code>)</li>
+<li class="">on the release branch, as a part of the release process, maven-release-plugin creates 2 commits sequentially:</li>
+<li class="">commit 1 (<a href="https://github.com/camunda/camunda/commit/472b0d32a15e25c6f494169b10ca4f799b55766c" target="_blank" rel="noopener noreferrer" class="">example</a>): bumping pom.xml files to the version we want to release (e.g. <code>8.8.0-SNAPSHOT</code> -&gt; <code>8.8.0-alpha6</code>)</li>
+<li class="">A git tag for the release (e.g. <code>8.8.0-alpha6</code>) is created from this commit</li>
+<li class="">The release is built from this commit.</li>
+<li class="">commit 2 (<a href="https://github.com/camunda/camunda/commit/d8cd12a8fd73c3bf5237c33a9c5fb1ed0c4f9bab" target="_blank" rel="noopener noreferrer" class="">example</a>): bumping pom.xml files for the next development version (e.g. <code>8.8.0-alpha6</code> -&gt; <code>8.8.0-SNAPSHOT</code>)</li>
+</ul>
+<p>If one needs to retry the failed release (assuming no need to clear the released artifacts), need to do:</p>
+<ul>
+<li class="">delete these two commits from the git history</li>
+<li class="">delete the GitHub release and git tag from GitHub</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="3-how-do-monorepo-releases-relate-to-the-big-release-train">3. How do Monorepo releases relate to the Big Release Train?<a href="#3-how-do-monorepo-releases-relate-to-the-big-release-train" class="hash-link" aria-label="Direct link to 3. How do Monorepo releases relate to the Big Release Train?" title="Direct link to 3. How do Monorepo releases relate to the Big Release Train?" translate="no">​</a></h2>
+<p>The Monorepo release produces core backend artifacts, while the Big Release Train bundles downstream services and UI components. The train can only depart once the Monorepo artifacts are confirmed as released.</p>
+<p>While Monorepo (camunda/camunda) releases artifacts for:</p>
+<ul>
+<li class=""><a href="https://hub.docker.com/r/camunda/camunda/" target="_blank" rel="noopener noreferrer" class="">Camunda</a></li>
+<li class=""><a href="https://hub.docker.com/r/camunda/zeebe/" target="_blank" rel="noopener noreferrer" class="">Zeebe</a></li>
+<li class=""><a href="https://hub.docker.com/r/camunda/operate/" target="_blank" rel="noopener noreferrer" class="">Operate</a></li>
+<li class=""><a href="https://hub.docker.com/r/camunda/tasklist/" target="_blank" rel="noopener noreferrer" class="">Tasklist</a></li>
+</ul>
+<p>The big release train releases:</p>
+<ul>
+<li class="">Identity Management Component (camunda-cloud/identity)</li>
+<li class="">Connectors (camunda/connectors)</li>
+<li class="">Web Modeler (camunda/web-modeler)</li>
+<li class="">Monorepo ⭐ ← <em>can only be done once monorepo artifacts are released (information gathered by <code>confirm-success-release-train</code> form)</em></li>
+<li class="">Optimize (camunda/camunda)</li>
+<li class="">Console (camunda/camunda-cloud-management-apps)</li>
+</ul></div><footer class="theme-doc-footer docusaurus-mt-lg"><div class="row margin-top--sm theme-doc-footer-edit-meta-row"><div class="col noPrint_WFHX"><a href="https://github.com/camunda/camunda/tree/main/docs/monorepo-docs/../docs/monorepo-docs/release.md" target="_blank" rel="noopener noreferrer" class="theme-edit-this-page"><svg fill="currentColor" height="20" width="20" viewBox="0 0 40 40" class="iconEdit_Z9Sw" aria-hidden="true"><g><path d="m34.5 11.7l-3 3.1-6.3-6.3 3.1-3q0.5-0.5 1.2-0.5t1.1 0.5l3.9 3.9q0.5 0.4 0.5 1.1t-0.5 1.2z m-29.5 17.1l18.4-18.5 6.3 6.3-18.4 18.4h-6.3v-6.2z"></path></g></svg>Edit this page</a></div><div class="col lastUpdated_JAkA"></div></div></footer></article><nav class="docusaurus-mt-lg pagination-nav" aria-label="Docs pages"><a class="pagination-nav__link pagination-nav__link--prev" href="/camunda/pr-preview/pr-44303/ci/"><div class="pagination-nav__sublabel">Previous</div><div class="pagination-nav__label">CI &amp; Automation</div></a></nav></div></div><div class="col col--3"><div class="tableOfContents_bqdL thin-scrollbar theme-doc-toc-desktop"><ul class="table-of-contents table-of-contents__left-border"><li><a href="#scope--goal" class="table-of-contents__link toc-highlight">Scope &amp; Goal</a><ul><li><a href="#release-types" class="table-of-contents__link toc-highlight">Release Types</a></li><li><a href="#release-dependencies" class="table-of-contents__link toc-highlight">Release Dependencies</a></li><li><a href="#artifacts" class="table-of-contents__link toc-highlight">Artifacts</a></li></ul></li><li><a href="#implementation" class="table-of-contents__link toc-highlight">Implementation</a><ul><li><a href="#bpmn-models" class="table-of-contents__link toc-highlight">BPMN models</a></li><li><a href="#runtime" class="table-of-contents__link toc-highlight">Runtime</a></li><li><a href="#github-action-workflows" class="table-of-contents__link toc-highlight">GitHub Action workflows</a></li><li><a href="#benchmark-tests" class="table-of-contents__link toc-highlight">Benchmark Tests</a></li><li><a href="#camunda-8-testing-clusters" class="table-of-contents__link toc-highlight">Camunda 8 Testing Clusters</a></li><li><a href="#best-practices" class="table-of-contents__link toc-highlight">Best Practices</a></li></ul></li><li><a href="#change-management--testing" class="table-of-contents__link toc-highlight">Change Management &amp; Testing</a></li><li><a href="#issue-tracking" class="table-of-contents__link toc-highlight">Issue Tracking</a></li><li><a href="#dris" class="table-of-contents__link toc-highlight">DRIs</a><ul><li><a href="#release-manager" class="table-of-contents__link toc-highlight">Release Manager</a></li><li><a href="#others" class="table-of-contents__link toc-highlight">Others</a></li></ul></li><li><a href="#backporting-guidelines" class="table-of-contents__link toc-highlight">Backporting Guidelines</a></li><li><a href="#minor-release-considerations" class="table-of-contents__link toc-highlight">Minor Release Considerations</a><ul><li><a href="#additional-minor-release-learnings-88" class="table-of-contents__link toc-highlight">Additional Minor Release Learnings (8.8+)</a></li></ul></li><li><a href="#troubleshooting" class="table-of-contents__link toc-highlight">Troubleshooting</a><ul><li><a href="#how-to-correlate-git-commits-with-deployed-process-version-in-c8-operate" class="table-of-contents__link toc-highlight">How to correlate Git commits with deployed process version in C8 Operate?</a></li><li><a href="#i-lack-permissions-in-the-internal-camunda-8-saas-cluster" class="table-of-contents__link toc-highlight">I lack permissions in the (internal) Camunda 8 SaaS cluster?</a></li><li><a href="#how-to-retry-a-camunda-platform-releaseyml-job-that-failed-mid-build" class="table-of-contents__link toc-highlight">How to retry a camunda-platform-release.yml job that failed mid-build?</a></li><li><a href="#i-wantneed-to-retryskip-certain-parts-of-a-bpmn-process" class="table-of-contents__link toc-highlight">I want/need to retry/skip certain parts of a BPMN process?</a></li><li><a href="#how-to-remove-accidentially-published-artifacts-from-artifactory" class="table-of-contents__link toc-highlight">How to remove accidentially published artifacts from Artifactory?</a></li><li><a href="#i-have-another-problem" class="table-of-contents__link toc-highlight">I have another problem?</a></li></ul></li><li><a href="#1-should-i-request-a-patch-release-or-a-customer-specific-hotfix-docker-image" class="table-of-contents__link toc-highlight">1. Should I request a patch release or a customer-specific (hotfix) Docker image?</a></li><li><a href="#2-whats-the-git-commit-mechanics-of-the-maven-release-plugin" class="table-of-contents__link toc-highlight">2. What&#39;s the git commit mechanics of the maven-release-plugin?</a></li><li><a href="#3-how-do-monorepo-releases-relate-to-the-big-release-train" class="table-of-contents__link toc-highlight">3. How do Monorepo releases relate to the Big Release Train?</a></li></ul></div></div></div></div></main></div></div></div><footer class="theme-layout-footer footer footer--dark"><div class="container container-fluid"><div class="footer__bottom text--center"><div class="footer__copyright">Copyright © 2026 Camunda.</div></div></div></footer></div>
+</body>
+</html>
