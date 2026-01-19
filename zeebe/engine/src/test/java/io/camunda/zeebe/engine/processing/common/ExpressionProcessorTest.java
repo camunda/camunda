@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Nested;
@@ -320,6 +321,35 @@ class ExpressionProcessorTest {
     }
 
     /**
+     * This test case uses an expression language implementation that blocks until released. It
+     * verifies that the processor interrupts the evaluation thread when the evaluation times out.
+     */
+    @ParameterizedTest(name = "{1} interrupts thread on timeout")
+    @MethodSource("processorEvaluationMethods")
+    void shouldInterruptBlockedThreadOnTimeout(
+        final ProcessorMethod evaluationMethod, final String methodName)
+        throws InterruptedException {
+      // given
+      final var interruptedLatch = new CountDownLatch(1);
+
+      final var blockingEL =
+          new FakeBlockingExpressionLanguage(onInterrupted -> interruptedLatch.countDown());
+
+      final var processor =
+          new ExpressionProcessor(blockingEL, DEFAULT_CONTEXT_LOOKUP, Duration.ofMillis(10));
+      final var expression = EXPRESSION_LANGUAGE.parseExpression("foo");
+
+      // when
+      final var result = evaluationMethod.evaluate(processor, expression);
+
+      // then
+      assertThat(result).as("should return failure for %s", methodName).isLeft();
+      Assertions.assertThat(interruptedLatch.await(5, TimeUnit.SECONDS))
+          .describedAs("Expected the evaluation thread to be interrupted upon timeout")
+          .isTrue();
+    }
+
+    /**
      * This test case uses an expression language implementation that always throws a specific
      * exception when evaluating an expression. It verifies that the processor catches this
      * exception and rethrows it as an EvaluationException with the expected message and cause.
@@ -474,6 +504,15 @@ class ExpressionProcessorTest {
     private static final class FakeBlockingExpressionLanguage implements ExpressionLanguage {
       private final CountDownLatch entered = new CountDownLatch(1);
       private final CountDownLatch release = new CountDownLatch(1);
+      private final Consumer<InterruptedException> onInterrupted;
+
+      public FakeBlockingExpressionLanguage() {
+        this(ignored -> {});
+      }
+
+      public FakeBlockingExpressionLanguage(final Consumer<InterruptedException> onInterrupted) {
+        this.onInterrupted = onInterrupted;
+      }
 
       @SuppressWarnings("SameParameterValue")
       boolean awaitEntered(final long timeout, final TimeUnit unit) throws InterruptedException {
@@ -500,6 +539,7 @@ class ExpressionProcessorTest {
           release.await();
           return null; // not relevant for this test
         } catch (final InterruptedException e) {
+          onInterrupted.accept(e);
           Thread.currentThread().interrupt();
           throw new RuntimeException(e);
         }
