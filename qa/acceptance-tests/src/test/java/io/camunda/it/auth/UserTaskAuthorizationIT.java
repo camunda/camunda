@@ -21,6 +21,7 @@ import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.enums.OwnerType;
 import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
+import io.camunda.client.api.search.response.Authorization;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
@@ -392,10 +393,22 @@ class UserTaskAuthorizationIT {
         .atMost(Duration.ofSeconds(30))
         .ignoreExceptions()
         .untilAsserted(
-            () -> {
-              final var authorization =
-                  adminClient.newAuthorizationGetRequest(authorizationKey).send().join();
-              assertThat(authorization).isNotNull();
-            });
+            () ->
+                // Use `newAuthorizationSearchRequest` instead of `newAuthorizationGetRequest`
+                // to ensure authorization is indexed and searchable.
+                // Get request may return the authorization before it's available in search index,
+                // causing test flakiness when tests subsequently search for user tasks.
+                assertThat(
+                        adminClient
+                            .newAuthorizationSearchRequest()
+                            .filter(
+                                f ->
+                                    f.resourceIds(resourceId)
+                                        .resourceType(resourceType)
+                                        .ownerId(username))
+                            .execute()
+                            .items())
+                    .extracting(Authorization::getAuthorizationKey)
+                    .contains(String.valueOf(authorizationKey)));
   }
 }
