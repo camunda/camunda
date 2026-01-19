@@ -18,7 +18,7 @@ on:
       helmRepositoryDirName:
         description: 'Helm chart directory name'
         type: string
-        default: 'camunda-platform-8.9'
+        default: 'camunda-platform-8.7'
       scenario:
         description: 'Test scenario'
         type: string
@@ -189,7 +189,6 @@ jobs:
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-          minimus: true
 
       - name: Get Maven project version
         id: maven-version
@@ -205,10 +204,10 @@ jobs:
             # Use explicitly provided version
             echo "tag=${{ inputs.version }}" >> "$GITHUB_OUTPUT"
           elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            # For PRs: <maven-version>-pr<number> (e.g., 8.9.0-SNAPSHOT-pr123)
+            # For PRs: <maven-version>-pr<number> (e.g., 8.7.0-SNAPSHOT-pr123)
             echo "tag=${MAVEN_VERSION}-pr${{ github.event.pull_request.number }}" >> "$GITHUB_OUTPUT"
           else
-            # For manual dispatch: <maven-version>-<short-sha> (e.g., 8.9.0-SNAPSHOT-abc1234)
+            # For manual dispatch: <maven-version>-<short-sha> (e.g., 8.7.0-SNAPSHOT-abc1234)
             SHA_SHORT="${GITHUB_SHA::7}"
             echo "tag=${MAVEN_VERSION}-${SHA_SHORT}" >> "$GITHUB_OUTPUT"
           fi
@@ -309,7 +308,7 @@ jobs:
       identifier: ${{ needs.format-identifier.outputs.identifier }}
       platforms: gke
       camunda-helm-git-ref: ${{ inputs.helmRepositoryBranchName || 'main' }}
-      camunda-helm-dir: ${{ inputs.helmRepositoryDirName || 'camunda-platform-8.9' }}
+      camunda-helm-dir: ${{ inputs.helmRepositoryDirName || 'camunda-platform-8.7' }}
       namespace-prefix: monorepo
       test-enabled: true
       e2e-enabled: true
