@@ -46,6 +46,7 @@ import io.camunda.process.test.impl.dsl.instructions.MockJobWorkerThrowBpmnError
 import io.camunda.process.test.impl.dsl.instructions.PublishMessageInstructionHandler;
 import io.camunda.process.test.impl.dsl.instructions.ResolveIncidentInstructionHandler;
 import io.camunda.process.test.impl.dsl.instructions.ThrowBpmnErrorFromJobInstructionHandler;
+import io.camunda.process.test.impl.dsl.instructions.UpdateVariablesInstructionHandler;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
@@ -85,6 +86,7 @@ public class CamundaTestScenarioRunner implements TestScenarioRunner {
     registerHandler(new PublishMessageInstructionHandler());
     registerHandler(new ResolveIncidentInstructionHandler());
     registerHandler(new ThrowBpmnErrorFromJobInstructionHandler());
+    registerHandler(new UpdateVariablesInstructionHandler());
   }
 
   private final CamundaProcessTestContext context;

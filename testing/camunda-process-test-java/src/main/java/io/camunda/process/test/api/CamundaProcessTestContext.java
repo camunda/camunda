@@ -18,8 +18,10 @@ package io.camunda.process.test.api;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.api.command.CompleteAdHocSubProcessResultStep1;
+import io.camunda.process.test.api.assertions.ElementSelector;
 import io.camunda.process.test.api.assertions.IncidentSelector;
 import io.camunda.process.test.api.assertions.JobSelector;
+import io.camunda.process.test.api.assertions.ProcessInstanceSelector;
 import io.camunda.process.test.api.assertions.UserTaskSelector;
 import io.camunda.process.test.api.mock.JobWorkerMockBuilder;
 import io.camunda.zeebe.client.ZeebeClient;
@@ -340,4 +342,25 @@ public interface CamundaProcessTestContext {
       final JobSelector jobSelector,
       final Map<String, Object> variables,
       final Consumer<CompleteAdHocSubProcessResultStep1> jobResult);
+
+  /**
+   * Updates variables for a process instance.
+   *
+   * @param processInstanceSelector the selector to identify the process instance
+   * @param variables a map of variables to update
+   */
+  void updateVariables(
+      final ProcessInstanceSelector processInstanceSelector, final Map<String, Object> variables);
+
+  /**
+   * Updates local variables for a specific element within a process instance.
+   *
+   * @param processInstanceSelector the selector to identify the process instance
+   * @param elementSelector the selector to identify the element
+   * @param variables a map of variables to update
+   */
+  void updateLocalVariables(
+      final ProcessInstanceSelector processInstanceSelector,
+      final ElementSelector elementSelector,
+      final Map<String, Object> variables);
 }

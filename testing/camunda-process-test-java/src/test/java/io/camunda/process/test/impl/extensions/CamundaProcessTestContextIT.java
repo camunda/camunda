@@ -31,6 +31,7 @@ import io.camunda.client.impl.CamundaObjectMapper;
 import io.camunda.process.test.api.CamundaProcessTest;
 import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.api.assertions.DecisionSelectors;
+import io.camunda.process.test.api.assertions.ElementSelectors;
 import io.camunda.process.test.api.assertions.IncidentSelectors;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelectors;
 import io.camunda.process.test.api.assertions.UserTaskSelectors;
@@ -1006,5 +1007,79 @@ public class CamundaProcessTestContextIT {
     assertThatProcessInstance(ProcessInstanceSelectors.byKey(processInstanceKey))
         .hasNoActiveIncidents()
         .isCompleted();
+  }
+
+  @Test
+  void shouldUpdateVariables() {
+    // given
+    deployProcessModel(
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("task")
+            .zeebeUserTask()
+            .endEvent()
+            .done());
+
+    final long processInstanceKey =
+        client
+            .newCreateInstanceCommand()
+            .bpmnProcessId("process")
+            .latestVersion()
+            .variable("a", "init")
+            .send()
+            .join()
+            .getProcessInstanceKey();
+
+    // when
+    final Map<String, Object> updatedVariables = new HashMap<>();
+    updatedVariables.put("global", "updated");
+    updatedVariables.put("b", "new");
+
+    processTestContext.updateVariables(
+        ProcessInstanceSelectors.byKey(processInstanceKey), updatedVariables);
+
+    // then
+    assertThatProcessInstance(ProcessInstanceSelectors.byKey(processInstanceKey))
+        .hasVariables(updatedVariables);
+  }
+
+  @Test
+  void shouldUpdateLocalVariables() {
+    // given
+    deployProcessModel(
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("task")
+            .zeebeUserTask()
+            .zeebeInputExpression("init", "local")
+            .endEvent()
+            .done());
+
+    final long processInstanceKey =
+        client
+            .newCreateInstanceCommand()
+            .bpmnProcessId("process")
+            .latestVersion()
+            .variable("global", "init")
+            .send()
+            .join()
+            .getProcessInstanceKey();
+
+    // when
+    final Map<String, Object> updatedVariables = new HashMap<>();
+    updatedVariables.put("global", "updated");
+    updatedVariables.put("local", "updated");
+    updatedVariables.put("other", "new");
+
+    processTestContext.updateLocalVariables(
+        ProcessInstanceSelectors.byKey(processInstanceKey),
+        ElementSelectors.byId("task"),
+        updatedVariables);
+
+    // then
+    assertThatProcessInstance(ProcessInstanceSelectors.byKey(processInstanceKey))
+        .hasVariable("global", "updated")
+        .hasVariable("other", "new")
+        .hasLocalVariable(ElementSelectors.byId("task"), "local", "updated");
   }
 }
