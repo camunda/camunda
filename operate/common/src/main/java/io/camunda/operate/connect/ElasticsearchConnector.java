@@ -35,6 +35,7 @@ import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLContext;
+import org.apache.http.Header;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpRequestInterceptor;
 import org.apache.http.auth.AuthScope;
@@ -45,6 +46,7 @@ import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
+import org.apache.http.message.BasicHeader;
 import org.apache.http.ssl.SSLContexts;
 import org.apache.http.ssl.TrustStrategy;
 import org.elasticsearch.client.*;
@@ -93,8 +95,16 @@ public class ElasticsearchConnector {
       final ElasticsearchProperties elsConfig, final PluginRepository pluginRepository) {
     LOGGER.debug("Creating Elasticsearch connection...");
 
+    // Create headers for ES8 compatibility when talking to ES9
+    final Header[] defaultHeaders =
+        new Header[] {
+          new BasicHeader("Accept", "application/vnd.elasticsearch+json;compatible-with=8"),
+          new BasicHeader("Content-Type", "application/vnd.elasticsearch+json;compatible-with=8")
+        };
+
     final RestClientBuilder restClientBuilder =
         RestClient.builder(getHttpHost(elsConfig))
+            .setDefaultHeaders(defaultHeaders)
             .setHttpClientConfigCallback(
                 httpClientBuilder ->
                     configureHttpClient(
