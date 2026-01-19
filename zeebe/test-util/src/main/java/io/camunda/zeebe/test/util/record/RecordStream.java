@@ -199,4 +199,10 @@ public final class RecordStream extends ExporterRecordStream<RecordValue, Record
     return new HistoryDeletionRecordStream(
         filter(r -> r.getValueType() == ValueType.HISTORY_DELETION).map(Record.class::cast));
   }
+
+  public BatchOperationExecutionRecordStream batchOperationExecutionRecords() {
+    return new BatchOperationExecutionRecordStream(
+        filter(r -> r.getValueType() == ValueType.BATCH_OPERATION_EXECUTION)
+            .map(Record.class::cast));
+  }
 }
