@@ -37,4 +37,7 @@ export const Paths = {
   clusterVariables() {
     return "/cluster-variables";
   },
+  operationsLog() {
+    return "/operations-log";
+  },
 } as const;

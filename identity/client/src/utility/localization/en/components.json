@@ -15,6 +15,7 @@
   "authorization": "Authorization",
   "clusterVariables": "Cluster variables",
   "clusterVariable": "Cluster variable",
+  "operationsLog": "Operations log",
   "unauthorized": "Unauthorized",
   "sessionExpired": "Looks like your session has expired",
   "forbidden": "Forbidden",
