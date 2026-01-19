@@ -9,12 +9,12 @@
 import {mockPostRequest} from '../../mockRequest';
 import {
   endpoints,
-  type GetIncidentProcessInstanceStatisticsByErrorResponseBody,
+  type GetIncidentProcessInstanceStatisticsByDefinitionResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.9';
 
-const mockFetchIncidentProcessInstanceStatisticsByError = () =>
-  mockPostRequest<GetIncidentProcessInstanceStatisticsByErrorResponseBody>(
-    endpoints.getIncidentProcessInstanceStatisticsByError.getUrl(),
+const mockFetchIncidentProcessInstanceStatisticsByDefinition = () =>
+  mockPostRequest<GetIncidentProcessInstanceStatisticsByDefinitionResponseBody>(
+    endpoints.getIncidentProcessInstanceStatisticsByDefinition.getUrl(),
   );
 
-export {mockFetchIncidentProcessInstanceStatisticsByError};
+export {mockFetchIncidentProcessInstanceStatisticsByDefinition};

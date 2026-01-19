@@ -23,6 +23,7 @@ import type {
 import type {
   QueryAuditLogsRequestBody,
   GetIncidentProcessInstanceStatisticsByErrorRequestBody,
+  GetIncidentProcessInstanceStatisticsByDefinitionRequestBody,
 } from '@camunda/camunda-api-zod-schemas/8.9';
 
 const queryKeys = {
@@ -200,6 +201,11 @@ const queryKeys = {
       'incidentProcessInstanceStatisticsByError',
       payload,
     ],
+  },
+  incidentProcessInstanceStatisticsByDefinition: {
+    get: (
+      payload?: GetIncidentProcessInstanceStatisticsByDefinitionRequestBody,
+    ) => ['incidentProcessInstanceStatisticsByDefinition', payload],
   },
 };
 
