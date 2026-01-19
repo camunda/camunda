@@ -407,6 +407,22 @@ const TopPanel: React.FC = observer(() => {
                     ? selectedElementIds
                     : selectedFlowNode
                 }
+                onRootChange={(rootElementId, getSelectionRootId) => {
+                  const elementId = IS_ELEMENT_SELECTION_V2
+                    ? (selectedElementId ?? undefined)
+                    : flowNodeSelection?.flowNodeId;
+                  if (!elementId) {
+                    return;
+                  }
+
+                  if (rootElementId !== getSelectionRootId(elementId)) {
+                    if (IS_ELEMENT_SELECTION_V2) {
+                      clearSelection();
+                    } else {
+                      clearSelectionV1(rootNode);
+                    }
+                  }
+                }}
                 onFlowNodeSelection={(flowNodeId, isMultiInstance) => {
                   if (modificationsStore.state.status === 'moving-token') {
                     const ancestorSelectionRequired = hasMultipleScopes(

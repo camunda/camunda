@@ -15,9 +15,11 @@ import {
 import DiagramControls from './DiagramControls';
 import {Diagram as StyledDiagram, DiagramCanvas} from './styled';
 import {observer} from 'mobx-react';
-import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
-import {clearSelection} from 'modules/utils/flowNodeSelection';
-import {useRootNode} from 'modules/hooks/flowNodeSelection';
+
+type OnRootChange = (
+  rootElementId: string,
+  getSelectionRootId: (elementId: string) => string | undefined,
+) => void;
 
 type SelectedFlowNodeOverlayProps = {
   selectedFlowNodeRef: SVGElement;
@@ -30,6 +32,7 @@ type Props = {
   selectableFlowNodes?: string[];
   selectedFlowNodeIds?: string[];
   onFlowNodeSelection?: OnFlowNodeSelection;
+  onRootChange?: OnRootChange;
   overlaysData?: OverlayData[];
   children?: React.ReactNode;
   selectedFlowNodeOverlay?:
@@ -48,6 +51,7 @@ const Diagram: React.FC<Props> = observer(
     selectableFlowNodes,
     selectedFlowNodeIds,
     onFlowNodeSelection,
+    onRootChange,
     overlaysData,
     selectedFlowNodeOverlay,
     children,
@@ -60,7 +64,6 @@ const Diagram: React.FC<Props> = observer(
     const [isDiagramRendered, setIsDiagramRendered] = useState(false);
     const viewerRef = useRef<BpmnJS | null>(null);
     const [isViewboxChanging, setIsViewboxChanging] = useState(false);
-    const rootNode = useRootNode();
 
     function getViewer() {
       if (viewerRef.current === null) {
@@ -107,22 +110,12 @@ const Diagram: React.FC<Props> = observer(
         viewer.onViewboxChange = setIsViewboxChanging;
 
         viewer.onRootChange = (rootElementId) => {
-          if (
-            flowNodeSelectionStore.state.selection?.flowNodeId === undefined
-          ) {
-            return;
-          }
-
-          const currentSelectionRootId = viewer.findRootId(
-            flowNodeSelectionStore.state.selection?.flowNodeId,
-          );
-
-          if (rootElementId !== currentSelectionRootId) {
-            clearSelection(rootNode);
-          }
+          const getSelectionRootId = (elementId: string) =>
+            viewer.findRootId(elementId);
+          onRootChange?.(rootElementId, getSelectionRootId);
         };
       }
-    }, [viewer, onFlowNodeSelection, rootNode]);
+    }, [viewer, onFlowNodeSelection, onRootChange]);
 
     useEffect(() => {
       return () => {
