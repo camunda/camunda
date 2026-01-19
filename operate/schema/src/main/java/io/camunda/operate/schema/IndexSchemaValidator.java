@@ -35,7 +35,7 @@ public class IndexSchemaValidator {
 
   @Autowired SchemaManager schemaManager;
 
-  @Autowired private OperateProperties operateProperties;
+  @Autowired OperateProperties operateProperties;
 
   private Set<String> getAllIndexNamesForIndex(final String index) {
     final String indexPattern = String.format("%s-%s*", getIndexPrefix(), index);
