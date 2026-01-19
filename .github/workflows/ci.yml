@@ -592,7 +592,7 @@ jobs:
     if: needs.detect-changes.outputs.operate-backend-changes == 'true'
     needs: [detect-changes]
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     permissions: {}  # GITHUB_TOKEN unused in this job
     env:
       BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
