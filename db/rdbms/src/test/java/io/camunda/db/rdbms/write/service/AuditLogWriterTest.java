@@ -7,17 +7,17 @@
  */
 package io.camunda.db.rdbms.write.service;
 
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.sql.AuditLogMapper;
+import io.camunda.db.rdbms.sql.AuditLogMapper.BatchInsertAuditLogsDto;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.domain.AuditLogDbModel;
 import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
-import io.camunda.db.rdbms.write.queue.QueueItem;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
 import org.junit.jupiter.api.Test;
 
@@ -39,12 +39,18 @@ class AuditLogWriterTest {
 
     verify(executionQueue)
         .executeInQueue(
-            eq(
-                new QueueItem(
-                    ContextType.AUDIT_LOG,
-                    WriteStatementType.INSERT,
-                    model.auditLogKey(),
-                    "io.camunda.db.rdbms.sql.AuditLogMapper.insert",
-                    model)));
+            argThat(
+                queueItem ->
+                    queueItem.contextType() == ContextType.AUDIT_LOG
+                        && queueItem.statementType() == WriteStatementType.INSERT
+                        && queueItem
+                            .statementId()
+                            .equals("io.camunda.db.rdbms.sql.AuditLogMapper.insert")
+                        && queueItem.parameter() instanceof BatchInsertAuditLogsDto
+                        && ((BatchInsertAuditLogsDto) queueItem.parameter()).auditLogs().size() == 1
+                        && ((BatchInsertAuditLogsDto) queueItem.parameter())
+                            .auditLogs()
+                            .getFirst()
+                            .equals(model)));
   }
 }

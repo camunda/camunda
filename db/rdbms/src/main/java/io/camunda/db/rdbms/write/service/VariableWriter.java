@@ -14,12 +14,15 @@ import io.camunda.db.rdbms.sql.VariableMapper;
 import io.camunda.db.rdbms.write.domain.VariableDbModel;
 import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
+import io.camunda.db.rdbms.write.queue.InsertVariableMerger;
 import io.camunda.db.rdbms.write.queue.QueueItem;
 import io.camunda.db.rdbms.write.queue.UpdateHistoryCleanupDateMerger;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
 import java.time.OffsetDateTime;
 
 public class VariableWriter extends ProcessInstanceDependant implements RdbmsWriter {
+
+  private static final int INSERT_BATCH_SIZE = 50;
 
   private final ExecutionQueue executionQueue;
   private final VariableMapper mapper;
@@ -36,15 +39,26 @@ public class VariableWriter extends ProcessInstanceDependant implements RdbmsWri
   }
 
   public void create(final VariableDbModel variable) {
-    executionQueue.executeInQueue(
-        new QueueItem(
-            ContextType.VARIABLE,
-            WriteStatementType.INSERT,
-            variable.variableKey(),
-            "io.camunda.db.rdbms.sql.VariableMapper.insert",
-            variable.truncateValue(
-                vendorDatabaseProperties.variableValuePreviewSize(),
-                vendorDatabaseProperties.charColumnMaxBytes())));
+    final var truncatedVariable =
+        variable.truncateValue(
+            vendorDatabaseProperties.variableValuePreviewSize(),
+            vendorDatabaseProperties.charColumnMaxBytes());
+
+    final var wasMerged =
+        executionQueue.tryMergeWithExistingQueueItem(
+            new InsertVariableMerger(truncatedVariable, INSERT_BATCH_SIZE));
+
+    if (!wasMerged) {
+      executionQueue.executeInQueue(
+          new QueueItem(
+              ContextType.VARIABLE,
+              WriteStatementType.INSERT,
+              truncatedVariable.variableKey(),
+              "io.camunda.db.rdbms.sql.VariableMapper.insert",
+              new VariableMapper.BatchInsertVariablesDto.Builder()
+                  .variable(truncatedVariable)
+                  .build()));
+    }
   }
 
   public void update(final VariableDbModel variable) {
