@@ -44,7 +44,7 @@ ifeq ($(secondary_storage),postgresql)
 else ifeq ($(secondary_storage),opensearch)
 	@echo "Installing OpenSearch cluster for namespace $(namespace)..."
 	helm upgrade --install opensearch opensearch/opensearch \
-		--version "2.31.0" \
+		--version "3.4.0" \
 		--namespace $(namespace) \
 		-f secondary-storage-values-opensearch.yaml
 else

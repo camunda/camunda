@@ -14,7 +14,7 @@ clusterName: "opensearch"
 nameOverride: "opensearch"
 masterService: "opensearch"
 
-majorVersion: "2.19.0"
+majorVersion: "3.4.0"
 
 config:
   opensearch.yml: |
@@ -27,6 +27,10 @@ extraEnvs:
     value: "yourStrongPassword123!"
 
 opensearchJavaOpts: "-Xms1024m -Xmx1024m"
+
+sysctlInit:
+  enabled: true
+sysctlVmMaxMapCount: 262144
 
 resources:
   requests:
