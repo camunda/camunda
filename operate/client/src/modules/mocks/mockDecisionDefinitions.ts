@@ -6,7 +6,25 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {QueryDecisionDefinitionsResponseBody} from '@camunda/camunda-api-zod-schemas/8.8';
+import type {
+  DecisionDefinition,
+  QueryDecisionDefinitionsResponseBody,
+} from '@camunda/camunda-api-zod-schemas/8.8';
+
+const createDecisionDefinition = (
+  options: Partial<DecisionDefinition> = {},
+): DecisionDefinition => {
+  return {
+    decisionDefinitionId: 'invoice-assign-approver',
+    name: 'Assign Approver Group',
+    version: 2,
+    decisionRequirementsId: 'invoice-assign-approver-requirements',
+    tenantId: '<default>',
+    decisionDefinitionKey: '1',
+    decisionRequirementsKey: '1-requirements',
+    ...options,
+  };
+};
 
 const mockDecisionDefinitions: QueryDecisionDefinitionsResponseBody = {
   items: [
@@ -77,4 +95,4 @@ const mockDecisionDefinitions: QueryDecisionDefinitionsResponseBody = {
   page: {totalItems: 7},
 };
 
-export {mockDecisionDefinitions};
+export {createDecisionDefinition, mockDecisionDefinitions};
