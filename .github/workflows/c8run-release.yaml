@@ -110,7 +110,7 @@ jobs:
       C8RUN_NAME_ARTIFACT_WITH_PATCH_VERSION: >-
         camunda8-run-${{ inputs.camundaAppsRelease }}${{ inputs.artifactVersionSuffix }}-${{ matrix.os.artifactFileSuffix }}
       C8RUN_NAME_BUILD_OUTPUT: >-
-        camunda8-run-${{ inputs.camundaAppsRelease }}${{ inputs.artifactVersionSuffix }}-${{ matrix.os.artifactFileSuffix }}
+        camunda8-run-${{ inputs.camundaAppsRelease }}-${{ matrix.os.artifactFileSuffix }}
       C8RUN_NAME_REUSE_SOURCE: >-
         camunda8-run-${{ inputs.camundaAppsRelease }}-rc-${{ matrix.os.artifactFileSuffix }}
       REUSE_EXISTING_ARTIFACTS: ${{ inputs.reuseExistingArtifacts }}
