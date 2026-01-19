@@ -46,7 +46,7 @@ on:
         type: boolean
         required: false
         default: false
-      secondary-database-type:
+      secondary-storage-type:
         description: 'Specifies the type of the secondary database used by Camunda Platform, can be "elasticsearch" or "rdbms"'
         type: string
         required: false
@@ -76,7 +76,7 @@ jobs:
       load-test-load: ${{ inputs.load-test-load }}
       stable-vms: ${{ inputs.stable-vms }}
       realistic: ${{ inputs.realistic }}
-      secondary-database-type: ${{ inputs.secondary-database-type }}
+      secondary-storage-type: ${{ inputs.secondary-storage-type }}
 
   execute-benchmark:
     name: Execute benchmark
