@@ -33,11 +33,12 @@ import {
   TableHeader,
   TableRow,
   Layer,
+  Button,
 } from '@carbon/react';
+import {Information} from '@carbon/react/icons';
 import {formatDate} from 'common/dates/formatDate';
 import {spaceAndCapitalize} from 'common/utils/spaceAndCapitalize';
 import {AuditLogItemStatusIcon} from 'v2/features/tasks/task-history/AuditLogItemStatusIcon';
-import {DetailsButton} from './DetailsButton';
 import styles from './styles.module.scss';
 
 const HTTP_STATUS_FORBIDDEN = 403;
@@ -143,10 +144,21 @@ const TaskDetailsHistoryView: React.FC = () => {
                             ) : (
                               <>
                                 {cell.info.header === 'details' ? (
-                                  <DetailsButton
+                                  <Button
+                                    kind="ghost"
+                                    size="sm"
+                                    tooltipPosition="left"
+                                    iconDescription={t(
+                                      'taskDetailsHistoryDetailsLabel',
+                                    )}
+                                    aria-label={t(
+                                      'taskDetailsHistoryDetailsLabel',
+                                    )}
                                     onClick={() =>
                                       handleOpenDetails(cell.value)
                                     }
+                                    hasIconOnly
+                                    renderIcon={Information}
                                   />
                                 ) : (
                                   cell.value
