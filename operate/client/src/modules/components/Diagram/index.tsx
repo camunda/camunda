@@ -10,12 +10,16 @@ import React, {useRef, useEffect, useLayoutEffect, useState} from 'react';
 import {
   BpmnJS,
   type OnFlowNodeSelection,
-  type OnRootChange,
   type OverlayData,
 } from 'modules/bpmn-js/BpmnJS';
 import DiagramControls from './DiagramControls';
 import {Diagram as StyledDiagram, DiagramCanvas} from './styled';
 import {observer} from 'mobx-react';
+
+type OnRootChange = (
+  rootElementId: string,
+  getSelectionRootId: (elementId: string) => string | undefined,
+) => void;
 
 type SelectedFlowNodeOverlayProps = {
   selectedFlowNodeRef: SVGElement;
@@ -25,7 +29,6 @@ type SelectedFlowNodeOverlayProps = {
 type Props = {
   xml: string;
   processDefinitionKey?: string;
-  selectedFlowNodeId?: string;
   selectableFlowNodes?: string[];
   selectedFlowNodeIds?: string[];
   onFlowNodeSelection?: OnFlowNodeSelection;
@@ -45,7 +48,6 @@ const Diagram: React.FC<Props> = observer(
   ({
     xml,
     processDefinitionKey,
-    selectedFlowNodeId,
     selectableFlowNodes,
     selectedFlowNodeIds,
     onFlowNodeSelection,
@@ -108,17 +110,12 @@ const Diagram: React.FC<Props> = observer(
         viewer.onViewboxChange = setIsViewboxChanging;
 
         viewer.onRootChange = (rootElementId) => {
-          if (!selectedFlowNodeId) {
-            return;
-          }
-
-          const currentSelectionRootId = viewer.findRootId(selectedFlowNodeId);
-          if (rootElementId !== currentSelectionRootId) {
-            onRootChange?.(rootElementId);
-          }
+          const getSelectionRootId = (elementId: string) =>
+            viewer.findRootId(elementId);
+          onRootChange?.(rootElementId, getSelectionRootId);
         };
       }
-    }, [viewer, onFlowNodeSelection, onRootChange, selectedFlowNodeId]);
+    }, [viewer, onFlowNodeSelection, onRootChange]);
 
     useEffect(() => {
       return () => {
