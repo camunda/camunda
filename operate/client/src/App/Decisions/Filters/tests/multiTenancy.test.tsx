@@ -17,11 +17,11 @@ import {
 } from 'modules/testUtils/selectComboBoxOption';
 import {Paths} from 'modules/Routes';
 import {mockMe} from 'modules/mocks/api/v2/me';
-import {createUser} from 'modules/testUtils';
+import {createUser, searchResult} from 'modules/testUtils';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {mockSearchDecisionDefinitions} from 'modules/mocks/api/v2/decisionDefinitions/searchDecisionDefinitions';
-import {mockDecisionDefinitions} from 'modules/mocks/mockDecisionDefinitions';
+import {createDecisionDefinition} from 'modules/mocks/mockDecisionDefinitions';
 
 function getWrapper(initialPath: string = Paths.decisions()) {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
@@ -59,9 +59,38 @@ const MOCK_FILTERS_PARAMS = {
 
 describe('<Filters />', () => {
   beforeEach(async () => {
-    mockSearchDecisionDefinitions().withSuccess(mockDecisionDefinitions);
-    mockSearchDecisionDefinitions().withSuccess(mockDecisionDefinitions);
-    mockSearchDecisionDefinitions().withSuccess(mockDecisionDefinitions);
+    mockSearchDecisionDefinitions().withSuccess(
+      searchResult([
+        createDecisionDefinition({
+          version: 2,
+          tenantId: 'tenant-A',
+          name: 'Assign Approver Group for tenant A',
+        }),
+        createDecisionDefinition({
+          version: 1,
+          tenantId: 'tenant-A',
+          name: 'Assign Approver Group for tenant A',
+        }),
+      ]),
+    );
+    mockSearchDecisionDefinitions().withSuccess(
+      searchResult([
+        createDecisionDefinition({
+          version: 2,
+          tenantId: 'tenant-A',
+          name: 'Assign Approver Group for tenant A',
+        }),
+      ]),
+    );
+    mockSearchDecisionDefinitions().withSuccess(
+      searchResult([
+        createDecisionDefinition({
+          version: 2,
+          tenantId: 'tenant-A',
+          name: 'Assign Approver Group for tenant A',
+        }),
+      ]),
+    );
     mockMe().withSuccess(
       createUser({
         tenants: [
@@ -77,7 +106,7 @@ describe('<Filters />', () => {
 
     const MOCK_VALUES = {
       name: 'invoice-assign-approver',
-      version: '3',
+      version: '2',
       tenant: 'tenant-A',
     } as const;
 
@@ -169,6 +198,12 @@ describe('<Filters />', () => {
   });
 
   it('should clear decision name and version field when tenant filter is changed', async () => {
+    mockSearchDecisionDefinitions().withSuccess(
+      searchResult([createDecisionDefinition()]),
+    );
+    mockSearchDecisionDefinitions().withSuccess(
+      searchResult([createDecisionDefinition()]),
+    );
     vi.stubGlobal('clientConfig', {multiTenancyEnabled: true});
     const {user} = render(<Filters />, {wrapper: getWrapper()});
 
@@ -198,7 +233,6 @@ describe('<Filters />', () => {
       /default tenant/i,
     );
 
-    mockSearchDecisionDefinitions().withSuccess(mockDecisionDefinitions);
     await selectTenant({user, option: 'Tenant A'});
 
     await waitFor(() => expect(screen.getByLabelText('Name')).toHaveValue(''));

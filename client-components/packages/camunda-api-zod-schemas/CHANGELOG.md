@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.0.31
+
+### 🚀 Enhancements
+
+- add `isLatestVersion` filter for searching decision definitions ([#44093](https://github.com/camunda/camunda/pull/44093))
+
+### ❤️ Contributors
+
+- Christoph Fricke ([@christoph-fricke](https://github.com/christoph-fricke))
+
 ## v0.0.30
 
 ### 🚀 Enhancements

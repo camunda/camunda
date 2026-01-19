@@ -30,7 +30,11 @@ const queryDecisionDefinitionsRequestBodySchema = getQueryRequestBodySchema({
 		'decisionRequirementsKey',
 		'tenantId',
 	] as const,
-	filter: decisionDefinitionSchema.partial(),
+	filter: decisionDefinitionSchema
+		.extend({
+			isLatestVersion: z.boolean(),
+		})
+		.partial(),
 });
 type QueryDecisionDefinitionsRequestBody = z.infer<typeof queryDecisionDefinitionsRequestBodySchema>;
 

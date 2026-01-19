@@ -38,32 +38,21 @@ function getDefinitionIdFromIdentifier(
 
 /**
  * Returns sorted decision-definitions for an optional `tenantId`.
- * The definitions are deduplicated for their `decisionDefinitionIds` and `tenantIds`
- * to include only the latest `version`.
+ * The definitions are deduplicated through the `isLatestVersion` filter.
  */
 function useDecisionDefinitions(tenantId?: string) {
   return useDecisionDefinitionsSearch({
-    payload: {
-      filter: {tenantId},
-      sort: [
-        {field: 'name', order: 'asc'},
-        {field: 'version', order: 'desc'},
-      ],
-    },
-    select: (definitions) => {
-      const uniquifier = new Map<string, DecisionDefinitionWithIdentifier>();
-      for (const definition of definitions) {
-        const identifier = getDefinitionIdentifier(
-          definition.decisionDefinitionId,
-          definition.tenantId,
-        );
-        const seenDefinition = uniquifier.get(identifier);
-        if (!seenDefinition || seenDefinition.version < definition.version) {
-          uniquifier.set(identifier, {...definition, identifier});
-        }
-      }
-      return Array.from(uniquifier.values());
-    },
+    payload: {filter: {tenantId, isLatestVersion: true}},
+    select: (definitions) =>
+      definitions
+        .map<DecisionDefinitionWithIdentifier>((definition) => ({
+          ...definition,
+          identifier: getDefinitionIdentifier(
+            definition.decisionDefinitionId,
+            definition.tenantId,
+          ),
+        }))
+        .sort((d1, d2) => d1.name.localeCompare(d2.name)),
   });
 }
 
