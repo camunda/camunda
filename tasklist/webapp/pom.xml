@@ -239,12 +239,6 @@
     </dependency>
 
     <dependency>
-      <groupId>org.apache.lucene</groupId>
-      <artifactId>lucene-core</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-actuator</artifactId>
     </dependency>
@@ -404,7 +398,7 @@
      classes on the classpath to resolve the AWS credentials -->
             <dependency>software.amazon.awssdk:sts</dependency>
           </usedDependencies>
-          <ignoredUnusedDeclaredDependencies>
+          <ignoredUnusedDeclaredDependencies combine.children="append">
             <dep>jakarta.servlet:jakarta.servlet-api</dep>
             <dep>jakarta.annotation:jakarta.annotation-api</dep>
             <dep>org.springframework:spring-aspects</dep>
