@@ -516,6 +516,72 @@ final class IncidentUpdateTaskTest {
     }
 
     @Test
+    void shouldNotUpdateFlowNodesForProcessLevelIncidents() {
+      // given
+      final var task =
+          new IncidentUpdateTask(
+              metadata,
+              repository,
+              false,
+              10,
+              EXECUTOR,
+              incidentNotifier,
+              metrics,
+              LOGGER,
+              Duration.ZERO);
+
+      incidentEntity.setProcessInstanceKey(parentProcessInstance.key());
+      incidentEntity.setTreePath(
+          new TreePath()
+              .startTreePath(parentProcessInstance.key())
+              .appendFlowNodeInstance(parentProcessInstance.key())
+              .toString());
+      incidentEntity.setFlowNodeInstanceKey(parentProcessInstance.key());
+
+      when(repository.getProcessInstances(any()))
+          .thenReturn(CompletableFuture.completedFuture(List.of(parentProcessInstance)));
+
+      // when
+      final var result = task.execute();
+
+      // then
+      assertThat(result).succeedsWithin(TIMEOUT);
+      verify(repository).bulkUpdate(bulkUpdateCaptor.capture());
+      final var update = bulkUpdateCaptor.getValue();
+      assertThat(update.incidentRequests())
+          .hasSize(1)
+          .containsEntry(
+              "5",
+              new DocumentUpdate(
+                  "5",
+                  "incidents",
+                  Map.of(
+                      IncidentTemplate.STATE,
+                      IncidentState.ACTIVE,
+                      IncidentTemplate.TREE_PATH,
+                      "PI_1/FNI_1"),
+                  null));
+      assertThat(update.flowNodeInstanceRequests()).isEmpty();
+      assertThat(update.listViewRequests())
+          .hasSize(1)
+          .containsEntry(
+              "1",
+              new DocumentUpdate("1", "list-view", Map.of(ListViewTemplate.INCIDENT, true), "1"));
+
+      final var incident =
+          new IncidentEntity()
+              .setKey(5L)
+              .setId("5")
+              .setFlowNodeInstanceKey(parentProcessInstance.key())
+              .setTreePath("PI_1/FNI_1")
+              .setProcessInstanceKey(parentProcessInstance.key())
+              .setState(IncidentState.PENDING);
+      verify(incidentNotifier, times(1)).notifyAsync(List.of(incident));
+      verify(metrics).recordIncidentUpdatesProcessed(1);
+      verify(metrics).recordIncidentUpdatesDocumentsUpdated(2);
+    }
+
+    @Test
     void shouldResolveIncident() {
       // given
       final var task =
