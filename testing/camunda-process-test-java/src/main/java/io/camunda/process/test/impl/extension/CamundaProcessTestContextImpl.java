@@ -21,6 +21,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.CompleteAdHocSubProcessResultStep1;
+import io.camunda.client.api.command.CompleteUserTaskJobResultStep1;
 import io.camunda.client.api.command.ThrowErrorCommandStep1;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.search.enums.ElementInstanceState;
@@ -544,6 +545,45 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
                         result.forAdHocSubProcess();
                     jobResult.accept(adHocResult);
                     return adHocResult;
+                  })
+              .send()
+              .join();
+        });
+  }
+
+  @Override
+  public void completeJobOfUserTaskListener(
+      final JobSelector jobSelector,
+      final Consumer<CompleteUserTaskJobResultStep1> jobResult) {
+    completeJobOfUserTaskListener(jobSelector, Collections.emptyMap(), jobResult);
+  }
+
+  @Override
+  public void completeJobOfUserTaskListener(
+      final JobSelector jobSelector,
+      final Map<String, Object> variables,
+      final Consumer<CompleteUserTaskJobResultStep1> jobResult) {
+    final CamundaClient client = createClient();
+
+    // completing the job inside the await block to handle the eventual consistency of the API
+    awaitJob(
+        JobSelectors.byJobKind(JobKind.TASK_LISTENER).and(jobSelector),
+        client,
+        job -> {
+          LOGGER.debug(
+              "Mock: Complete user task listener job [{}, jobKey: '{}'] with variables {}",
+              jobSelector.describe(),
+              job.getJobKey(),
+              variables);
+
+          client
+              .newCompleteCommand(job.getJobKey())
+              .variables(variables)
+              .withResult(
+                  result -> {
+                    final CompleteUserTaskJobResultStep1 userTaskResult = result.forUserTask();
+                    jobResult.accept(userTaskResult);
+                    return userTaskResult;
                   })
               .send()
               .join();

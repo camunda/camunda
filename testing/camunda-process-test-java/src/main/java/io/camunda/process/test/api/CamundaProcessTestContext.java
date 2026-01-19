@@ -363,4 +363,27 @@ public interface CamundaProcessTestContext {
       final ProcessInstanceSelector processInstanceSelector,
       final ElementSelector elementSelector,
       final Map<String, Object> variables);
+
+  /**
+   * Completes a job of a user task listener matching the specified selector.
+   *
+   * @param jobSelector the selector to identify the job to complete
+   * @param jobResult the consumer to configure the user task job result
+   */
+  void completeJobOfUserTaskListener(
+      final JobSelector jobSelector,
+      final Consumer<CompleteUserTaskJobResultStep1> jobResult);
+
+  /**
+   * Completes a job of a user task listener matching the specified selector and sets the provided
+   * variables.
+   *
+   * @param jobSelector the selector to identify the job to complete
+   * @param variables a map of variables to set when completing the job
+   * @param jobResult the consumer to configure the user task job result
+   */
+  void completeJobOfUserTaskListener(
+      final JobSelector jobSelector,
+      final Map<String, Object> variables,
+      final Consumer<CompleteUserTaskJobResultStep1> jobResult);
 }

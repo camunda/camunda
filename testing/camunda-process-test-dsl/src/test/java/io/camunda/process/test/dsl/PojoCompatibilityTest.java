@@ -50,7 +50,9 @@ import io.camunda.process.test.api.dsl.instructions.ImmutableAssertVariablesInst
 import io.camunda.process.test.api.dsl.instructions.ImmutableBroadcastSignalInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableCompleteJobAdHocSubProcessInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableCompleteJobInstruction;
+import io.camunda.process.test.api.dsl.instructions.ImmutableCompleteJobUserTaskListenerInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableCompleteUserTaskInstruction;
+import io.camunda.process.test.api.dsl.instructions.ImmutableCorrections;
 import io.camunda.process.test.api.dsl.instructions.ImmutableCreateProcessInstanceInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableEvaluateConditionalStartEventInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableEvaluateDecisionInstruction;
@@ -588,6 +590,37 @@ public class PojoCompatibilityTest {
                             .build())
                     .cancelRemainingInstances(true)
                     .completionConditionFulfilled(false)
+                    .build())),
+        // ===== COMPLETE_JOB_USER_TASK_LISTENER =====
+        Arguments.of(
+            "complete job user task listener: minimal",
+            singleTestCase(
+                ImmutableCompleteJobUserTaskListenerInstruction.builder()
+                    .jobSelector(ImmutableJobSelector.builder().jobType("assign-user").build())
+                    .build())),
+        Arguments.of(
+            "complete job user task listener: denied",
+            singleTestCase(
+                ImmutableCompleteJobUserTaskListenerInstruction.builder()
+                    .jobSelector(ImmutableJobSelector.builder().elementId("task1").build())
+                    .denied(true)
+                    .deniedReason("Task not ready")
+                    .build())),
+        Arguments.of(
+            "complete job user task listener: with corrections",
+            singleTestCase(
+                ImmutableCompleteJobUserTaskListenerInstruction.builder()
+                    .jobSelector(ImmutableJobSelector.builder().jobType("assign-user").build())
+                    .putVariables("result", "completed")
+                    .corrections(
+                        ImmutableCorrections.builder()
+                            .assignee("me")
+                            .dueDate("2024-12-31T23:59:59Z")
+                            .followUpDate("2024-12-01T00:00:00Z")
+                            .addCandidateUsers("user1", "user2")
+                            .addCandidateGroups("group1")
+                            .priority(100)
+                            .build())
                     .build())),
         // ===== EVALUATE_CONDITIONAL_START_EVENT =====
         Arguments.of(
