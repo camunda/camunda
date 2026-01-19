@@ -60,8 +60,25 @@ async function generateSchemas(version, config) {
 			},
 			output: {
 				path: outputPath,
+				extension: {
+					'.ts': '.js',
+				},
 			},
-			plugins: [pluginOas(), pluginTs(), pluginZod()],
+			plugins: [
+				pluginOas(),
+				pluginTs({
+					output: {
+						path: './types',
+						banner: '// @ts-nocheck',
+					},
+				}),
+				pluginZod({
+					output: {
+						path: './zod',
+						banner: '// @ts-nocheck',
+					},
+				}),
+			],
 		},
 	});
 
