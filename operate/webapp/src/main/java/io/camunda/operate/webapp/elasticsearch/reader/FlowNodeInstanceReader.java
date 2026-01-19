@@ -1017,13 +1017,12 @@ public class FlowNodeInstanceReader extends AbstractReader
 
     final var stateValue =
         Objects.requireNonNull(lastFlowNodeFields.get(STATE), "STATE field must not be null");
-    final var treePathValue =
-        Objects.requireNonNull(
-            lastFlowNodeFields.get(TREE_PATH), "TREE_PATH field must not be null");
+    final var treePathValue = lastFlowNodeFields.get(TREE_PATH);
 
     var flowNodeState = FlowNodeStateDto.valueOf(stateValue.toString());
 
     if (flowNodeState.equals(FlowNodeStateDto.ACTIVE)
+        && treePathValue != null
         && incidentPaths.contains(treePathValue.toString())) {
       flowNodeState = FlowNodeStateDto.INCIDENT;
     }
