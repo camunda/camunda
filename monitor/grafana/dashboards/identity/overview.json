@@ -151,7 +151,7 @@
           "disableTextWrap": false,
           "editorMode": "code",
           "exemplar": false,
-          "expr": "rate(camunda_authentication_external_requests_seconds_count{domain=\"identity\", namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])",
+          "expr": "rate(camunda_authentication_external_requests_seconds_count{domain=\"identity\", namespace=~\"$namespace\", service=~\"$service\", pod=~\"$pod\"}[$__rate_interval])",
           "format": "time_series",
           "fullMetaSearch": false,
           "includeNullMetadata": false,
@@ -163,6 +163,231 @@
       ],
       "title": "Authentication scoped requests to external IDP",
       "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "description": "The average time it takes to authenticate per minute",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 11,
+        "x": 0,
+        "y": 12
+      },
+      "id": 3,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.1.0",
+      "targets": [
+        {
+          "editorMode": "code",
+          "expr": "sum(rate(spring_security_authentications_seconds_sum{namespace=~\"$namespace\", service=~\"$service\", pod=~\"$pod\"}[$__rate_interval])) by (namespace,pod,authentication_request_type)\n/\nsum(rate(spring_security_authentications_seconds_count{namespace=~\"$namespace\", service=~\"$service\", pod=~\"$pod\"}[$__rate_interval])) by (namespace,pod,authentication_request_type)",
+          "interval": "1m",
+          "legendFormat": "p50 REST {{authentication_request_type}}",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "editorMode": "code",
+          "expr": "histogram_quantile(0.50, sum(increase(zeebe_gateway_grpc_auth_latency_seconds_bucket{namespace=~\"$namespace\", service=~\"$service\", pod=~\"$pod\"}[$__rate_interval])) by (le, method))",
+          "format": "time_series",
+          "hide": false,
+          "instant": false,
+          "interval": "1m",
+          "legendFormat": "p50 gRPC {{method}}",
+          "range": true,
+          "refId": "B"
+        }
+      ],
+      "title": "Authentication Latency",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "description": "Rate of authentication events per minute",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "noValue": "0",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 11,
+        "y": 12
+      },
+      "id": 4,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.1.0",
+      "targets": [
+        {
+          "editorMode": "code",
+          "exemplar": false,
+          "expr": "sum(rate(spring_security_authentications_seconds_count{namespace=~\"$namespace\", service=~\"$service\", pod=~\"$pod\"}[$__rate_interval])) by (namespace, pod, authentication_request_type)",
+          "instant": false,
+          "interval": "1m",
+          "legendFormat": "REST {{authentication_request_type}}",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "editorMode": "code",
+          "exemplar": false,
+          "expr": "sum(rate(zeebe_gateway_grpc_auth_latency_seconds_count{namespace=~\"$namespace\", service=~\"$service\", pod=~\"$pod\"}[$__rate_interval])) by (namespace, pod, method)",
+          "hide": false,
+          "instant": false,
+          "interval": "1m",
+          "legendFormat": "GRPC {{method}}",
+          "range": true,
+          "refId": "B"
+        }
+      ],
+      "title": "Authentication Rate",
+      "type": "timeseries"
     }
   ],
   "preload": false,
@@ -171,10 +396,6 @@
   "templating": {
     "list": [
       {
-        "current": {
-          "text": "Prometheus",
-          "value": "${DS_PROMETHEUS}"
-        },
         "label": "datasource",
         "name": "DS_PROMETHEUS",
         "options": [],
@@ -186,13 +407,17 @@
       {
         "allValue": ".*",
         "allowCustomValue": false,
-        "current": {
-          "text": "",
-          "value": ""
-        },
         "datasource": {
           "type": "prometheus",
           "uid": "${DS_PROMETHEUS}"
+        },
+        "current": {
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
         },
         "definition": "label_values(jvm_info,namespace)",
         "includeAll": true,
@@ -206,31 +431,67 @@
         },
         "refresh": 1,
         "regex": "",
+        "sort": 1,
         "type": "query"
       },
       {
         "allValue": ".*",
         "allowCustomValue": false,
-        "current": {
-          "text": "",
-          "value": ""
-        },
         "datasource": {
           "type": "prometheus",
           "uid": "${DS_PROMETHEUS}"
         },
-        "definition": "label_values(jvm_info{namespace=\"$namespace\"},pod)",
+        "current": {
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "definition": "label_values(jvm_info{namespace=\"$namespace\"},service)",
+        "includeAll": true,
+        "multi": true,
+        "name": "service",
+        "options": [],
+        "query": {
+          "qryType": 1,
+          "query": "label_values(jvm_info{namespace=\"$namespace\"},service)",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
+        },
+        "refresh": 1,
+        "regex": "",
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "allValue": ".*",
+        "allowCustomValue": false,
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "current": {
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "definition": "label_values(jvm_info{namespace=~\"$namespace\", service=~\"$service\"},pod)",
         "includeAll": true,
         "multi": true,
         "name": "pod",
         "options": [],
         "query": {
           "qryType": 1,
-          "query": "label_values(jvm_info{namespace=\"$namespace\"},pod)",
+          "query": "label_values(jvm_info{namespace=~\"$namespace\", service=~\"$service\"},pod)",
           "refId": "PrometheusVariableQueryEditor-VariableQuery"
         },
         "refresh": 1,
         "regex": "",
+        "sort": 1,
         "type": "query"
       }
     ]
@@ -243,5 +504,5 @@
   "timezone": "browser",
   "title": "Identity Overview",
   "uid": "identity",
-  "version": 4
+  "version": 5
 }
