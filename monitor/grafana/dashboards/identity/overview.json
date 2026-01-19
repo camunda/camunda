@@ -151,7 +151,7 @@
           "disableTextWrap": false,
           "editorMode": "code",
           "exemplar": false,
-          "expr": "rate(camunda_authentication_external_requests_seconds_count{domain=\"identity\", namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])",
+          "expr": "rate(camunda_authentication_external_requests_seconds_count{domain=\"identity\", namespace=~\"$namespace\", service=~\"$service\", pod=~\"$pod\"}[$__rate_interval])",
           "format": "time_series",
           "fullMetaSearch": false,
           "includeNullMetadata": false,
@@ -252,7 +252,7 @@
       "targets": [
         {
           "editorMode": "code",
-          "expr": "sum(rate(spring_security_authentications_seconds_sum{namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])) by (namespace,pod,authentication_request_type)\n/\nsum(rate(spring_security_authentications_seconds_count{namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])) by (namespace,pod,authentication_request_type)",
+          "expr": "sum(rate(spring_security_authentications_seconds_sum{namespace=~\"$namespace\", service=~\"$service\", pod=~\"$pod\"}[$__rate_interval])) by (namespace,pod,authentication_request_type)\n/\nsum(rate(spring_security_authentications_seconds_count{namespace=~\"$namespace\", service=~\"$service\", pod=~\"$pod\"}[$__rate_interval])) by (namespace,pod,authentication_request_type)",
           "interval": "1m",
           "legendFormat": "p50 REST {{authentication_request_type}}",
           "range": true,
@@ -264,7 +264,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.50, sum(increase(zeebe_gateway_grpc_auth_latency_seconds_bucket{namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])) by (le, method))",
+          "expr": "histogram_quantile(0.50, sum(increase(zeebe_gateway_grpc_auth_latency_seconds_bucket{namespace=~\"$namespace\", service=~\"$service\", pod=~\"$pod\"}[$__rate_interval])) by (le, method))",
           "format": "time_series",
           "hide": false,
           "instant": false,
@@ -363,7 +363,7 @@
         {
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum(rate(spring_security_authentications_seconds_count{namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])) by (namespace, pod, authentication_request_type)",
+          "expr": "sum(rate(spring_security_authentications_seconds_count{namespace=~\"$namespace\", service=~\"$service\", pod=~\"$pod\"}[$__rate_interval])) by (namespace, pod, authentication_request_type)",
           "instant": false,
           "interval": "1m",
           "legendFormat": "REST {{authentication_request_type}}",
@@ -377,7 +377,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum(rate(zeebe_gateway_grpc_auth_latency_seconds_count{namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])) by (namespace, pod, method)",
+          "expr": "sum(rate(zeebe_gateway_grpc_auth_latency_seconds_count{namespace=~\"$namespace\", service=~\"$service\", pod=~\"$pod\"}[$__rate_interval])) by (namespace, pod, method)",
           "hide": false,
           "instant": false,
           "interval": "1m",
@@ -396,10 +396,6 @@
   "templating": {
     "list": [
       {
-        "current": {
-          "text": "Prometheus",
-          "value": "${DS_PROMETHEUS}"
-        },
         "label": "datasource",
         "name": "DS_PROMETHEUS",
         "options": [],
@@ -411,13 +407,17 @@
       {
         "allValue": ".*",
         "allowCustomValue": false,
-        "current": {
-          "text": "",
-          "value": ""
-        },
         "datasource": {
           "type": "prometheus",
           "uid": "${DS_PROMETHEUS}"
+        },
+        "current": {
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
         },
         "definition": "label_values(jvm_info,namespace)",
         "includeAll": true,
@@ -431,31 +431,67 @@
         },
         "refresh": 1,
         "regex": "",
+        "sort": 1,
         "type": "query"
       },
       {
         "allValue": ".*",
         "allowCustomValue": false,
-        "current": {
-          "text": "",
-          "value": ""
-        },
         "datasource": {
           "type": "prometheus",
           "uid": "${DS_PROMETHEUS}"
         },
-        "definition": "label_values(jvm_info{namespace=\"$namespace\"},pod)",
+        "current": {
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "definition": "label_values(jvm_info{namespace=\"$namespace\"},service)",
+        "includeAll": true,
+        "multi": true,
+        "name": "service",
+        "options": [],
+        "query": {
+          "qryType": 1,
+          "query": "label_values(jvm_info{namespace=\"$namespace\"},service)",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
+        },
+        "refresh": 1,
+        "regex": "",
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "allValue": ".*",
+        "allowCustomValue": false,
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "current": {
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "definition": "label_values(jvm_info{namespace=~\"$namespace\", service=~\"$service\"},pod)",
         "includeAll": true,
         "multi": true,
         "name": "pod",
         "options": [],
         "query": {
           "qryType": 1,
-          "query": "label_values(jvm_info{namespace=\"$namespace\"},pod)",
+          "query": "label_values(jvm_info{namespace=~\"$namespace\", service=~\"$service\"},pod)",
           "refId": "PrometheusVariableQueryEditor-VariableQuery"
         },
         "refresh": 1,
         "regex": "",
+        "sort": 1,
         "type": "query"
       }
     ]
