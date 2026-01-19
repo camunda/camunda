@@ -44,6 +44,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLContext;
+import org.apache.http.Header;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpRequestInterceptor;
 import org.apache.http.auth.AuthScope;
@@ -54,6 +55,7 @@ import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
+import org.apache.http.message.BasicHeader;
 import org.apache.http.ssl.SSLContexts;
 import org.apache.http.ssl.TrustStrategy;
 import org.elasticsearch.client.RestClient;
@@ -80,6 +82,48 @@ public class ElasticsearchConnector {
   @VisibleForTesting
   public void setTasklistProperties(final TasklistProperties tasklistProperties) {
     this.tasklistProperties = tasklistProperties;
+  }
+
+  @Bean(destroyMethod = "close")
+  public RestHighLevelClient tasklistEsClient() {
+    // some weird error when ELS sets available processors number for Netty - see
+    // https://discuss.elastic.co/t/elasticsearch-5-4-1-availableprocessors-is-already-set/88036/3
+    System.setProperty("es.set.netty.runtime.available.processors", "false");
+    esClientRepository.load(tasklistProperties.getElasticsearch().getInterceptorPlugins());
+    return createEsClient(tasklistProperties.getElasticsearch(), esClientRepository);
+  }
+
+  protected RestHighLevelClient createEsClient(
+      final ElasticsearchProperties elsConfig, final PluginRepository pluginRepository) {
+    LOGGER.debug("Creating Elasticsearch connection...");
+    // Create headers for ES8 compatibility when talking to ES9
+    final Header[] defaultHeaders =
+        new Header[] {
+          new BasicHeader("Accept", "application/vnd.elasticsearch+json;compatible-with=8"),
+          new BasicHeader("Content-Type", "application/vnd.elasticsearch+json;compatible-with=8")
+        };
+
+    final RestClientBuilder restClientBuilder =
+        RestClient.builder(getHttpHost(elsConfig))
+            .setDefaultHeaders(defaultHeaders)
+            .setHttpClientConfigCallback(
+                httpClientBuilder ->
+                    configureHttpClient(
+                        httpClientBuilder, elsConfig, pluginRepository.asRequestInterceptor()));
+    if (elsConfig.getConnectTimeout() != null || elsConfig.getSocketTimeout() != null) {
+      restClientBuilder.setRequestConfigCallback(
+          configCallback -> setTimeouts(configCallback, elsConfig));
+    }
+    final RestHighLevelClient esClient =
+        new RestHighLevelClientBuilder(restClientBuilder.build())
+            .setApiCompatibilityMode(true)
+            .build();
+    if (!checkHealth(esClient)) {
+      LOGGER.warn("Elasticsearch cluster is not accessible");
+    } else {
+      LOGGER.debug("Elasticsearch connection was successfully created.");
+    }
+    return esClient;
   }
 
   @Bean
