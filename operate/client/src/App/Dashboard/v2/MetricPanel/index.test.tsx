@@ -13,22 +13,27 @@ import {
   screen,
 } from 'modules/testing-library';
 import {MetricPanel} from './index';
-import {statistics} from 'modules/mocks/statistics';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {LocationLog} from 'modules/utils/LocationLog';
-import {mockFetchProcessCoreStatistics} from 'modules/mocks/api/processInstances/fetchProcessCoreStatistics';
 import {Paths} from 'modules/Routes';
+import {QueryClientProvider} from '@tanstack/react-query';
+import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
+import {mockFetchProcessDefinitionStatistics} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionStatistics';
+import {searchResult} from 'modules/testUtils';
+import {createProcessDefinitionInstancesStatistics} from 'modules/mocks/mockProcessDefinitionStatistics';
 
 function createWrapper(initialPath: string = Paths.dashboard()) {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     return (
-      <MemoryRouter initialEntries={[initialPath]}>
-        <Routes>
-          <Route path={Paths.processes()} element={<div>Processes</div>} />
-          <Route path={Paths.dashboard()} element={children} />
-        </Routes>
-        <LocationLog />
-      </MemoryRouter>
+      <QueryClientProvider client={getMockQueryClient()}>
+        <MemoryRouter initialEntries={[initialPath]}>
+          <Routes>
+            <Route path={Paths.processes()} element={<div>Processes</div>} />
+            <Route path={Paths.dashboard()} element={children} />
+          </Routes>
+          <LocationLog />
+        </MemoryRouter>
+      </QueryClientProvider>
     );
   };
 
@@ -38,7 +43,14 @@ function createWrapper(initialPath: string = Paths.dashboard()) {
 describe('<MetricPanel />', () => {
   beforeEach(() => {
     panelStatesStore.toggleFiltersPanel();
-    mockFetchProcessCoreStatistics().withSuccess(statistics);
+    mockFetchProcessDefinitionStatistics().withSuccess(
+      searchResult([
+        createProcessDefinitionInstancesStatistics({
+          activeInstancesWithIncidentCount: 877,
+          activeInstancesWithoutIncidentCount: 210,
+        }),
+      ]),
+    );
   });
 
   afterEach(() => {
@@ -78,6 +90,38 @@ describe('<MetricPanel />', () => {
     expect(
       await screen.findByTestId('active-instances-badge'),
     ).toHaveTextContent('210');
+  });
+
+  it('should show aggregated instances counts from all process definition instances statistics', async () => {
+    mockFetchProcessDefinitionStatistics().withSuccess(
+      searchResult([
+        createProcessDefinitionInstancesStatistics({
+          activeInstancesWithIncidentCount: 6,
+          activeInstancesWithoutIncidentCount: 2,
+        }),
+        createProcessDefinitionInstancesStatistics({
+          activeInstancesWithIncidentCount: 6,
+          activeInstancesWithoutIncidentCount: 2,
+        }),
+        createProcessDefinitionInstancesStatistics({
+          activeInstancesWithIncidentCount: 6,
+          activeInstancesWithoutIncidentCount: 2,
+        }),
+      ]),
+    );
+    render(<MetricPanel />, {
+      wrapper: createWrapper(),
+    });
+
+    expect(
+      await screen.findByText('24 Running Process Instances in total'),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByTestId('incident-instances-badge'),
+    ).toHaveTextContent('18');
+    expect(
+      await screen.findByTestId('active-instances-badge'),
+    ).toHaveTextContent('6');
   });
 
   it('should go to the correct page when clicking on instances with incidents', async () => {
@@ -139,7 +183,7 @@ describe('<MetricPanel />', () => {
   });
 
   it('should handle server errors', async () => {
-    mockFetchProcessCoreStatistics().withServerError();
+    mockFetchProcessDefinitionStatistics().withServerError();
 
     render(<MetricPanel />, {
       wrapper: createWrapper(),
@@ -151,11 +195,7 @@ describe('<MetricPanel />', () => {
   });
 
   it('should handle networks errors', async () => {
-    const consoleErrorMock = vi
-      .spyOn(global.console, 'error')
-      .mockImplementation(() => {});
-
-    mockFetchProcessCoreStatistics().withNetworkError();
+    mockFetchProcessDefinitionStatistics().withNetworkError();
 
     render(<MetricPanel />, {
       wrapper: createWrapper(),
@@ -164,6 +204,5 @@ describe('<MetricPanel />', () => {
     expect(
       await screen.findByText('Process statistics could not be fetched'),
     ).toBeInTheDocument();
-    consoleErrorMock.mockRestore();
   });
 });

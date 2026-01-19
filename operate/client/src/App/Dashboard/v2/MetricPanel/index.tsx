@@ -6,7 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useEffect} from 'react';
 import {observer} from 'mobx-react';
 import {
   Title,
@@ -14,34 +13,24 @@ import {
   Label,
   ErrorMessage,
 } from '../../MetricPanel/styled';
-import {statisticsStore} from 'modules/stores/statistics';
 import {Locations} from 'modules/Routes';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {tracking} from 'modules/tracking';
-import {useLocation} from 'react-router-dom';
 import {InstancesBar} from 'modules/components/InstancesBar';
 import {SkeletonText} from '@carbon/react';
+import {useRunningInstancesCountStatistics} from 'modules/queries/processDefinitionStatistics/useRunningInstancesCountStatistics';
 
 const MetricPanel = observer(() => {
-  const location = useLocation();
+  const {
+    data: count,
+    isError,
+    isPending,
+  } = useRunningInstancesCountStatistics();
 
-  const {running, active, withIncidents, status} = statisticsStore.state;
-
-  useEffect(() => {
-    statisticsStore.init();
-
-    return () => {
-      statisticsStore.reset();
-    };
-  }, []);
-
-  useEffect(() => {
-    statisticsStore.fetchStatistics();
-  }, [location.key]);
-
-  if (status === 'error') {
+  if (isError) {
     return <ErrorMessage message="Process statistics could not be fetched" />;
   }
+
   return (
     <>
       <Title
@@ -54,7 +43,7 @@ const MetricPanel = observer(() => {
           });
         }}
         to={Locations.processes(
-          running === 0
+          !count || count.total === 0
             ? {
                 completed: true,
                 canceled: true,
@@ -67,20 +56,16 @@ const MetricPanel = observer(() => {
               },
         )}
       >
-        {`${
-          status === 'fetched' ? `${running} ` : ''
-        }Running Process Instances in total`}
+        {`${count ? `${count.total} ` : ''}Running Process Instances in total`}
       </Title>
-      {status === 'fetched' && (
+      {count && (
         <InstancesBar
-          incidentsCount={withIncidents}
-          activeInstancesCount={active}
+          incidentsCount={count?.withIncidents}
+          activeInstancesCount={count?.withoutIncidents}
           size="large"
         />
       )}
-      {(status === 'initial' || status === 'first-fetch') && (
-        <SkeletonText data-testid="instances-bar-skeleton" />
-      )}
+      {isPending && <SkeletonText data-testid="instances-bar-skeleton" />}
 
       <LabelContainer>
         <Label

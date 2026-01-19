@@ -91,6 +91,10 @@ const queryKeys = {
       processDefinitionId: string,
       payload?: GetProcessDefinitionInstanceVersionStatisticsRequestBody,
     ) => ['processDefinitionVersionStatistics', processDefinitionId, payload],
+    runningInstancesCount: () => [
+      'processDefinitionStatistics',
+      'runningInstancesCount',
+    ],
   },
   incidents: {
     get: (incidentKey: string) => ['incident', incidentKey],
