@@ -186,22 +186,24 @@
     WHERE HISTORY_CLEANUP_DATE &lt; #{cleanupDate, jdbcType=TIMESTAMP}
   </sql>
   <sql id="historyCleanup" databaseId="oracle">
+    <bind name="deleteColumn" value="primaryKeyColumn != null and primaryKeyColumn != '' ? primaryKeyColumn : 'rowid'" />
     DELETE
     FROM ${prefix}${tableName}
-    WHERE rowid IN (SELECT rowid
-                    FROM ${prefix}${tableName}
-                    WHERE PARTITION_ID = #{partitionId}
-                      AND HISTORY_CLEANUP_DATE &lt; #{cleanupDate}
-                      AND ROWNUM &lt;= #{limit})
+    WHERE ${deleteColumn} IN (SELECT ${deleteColumn}
+                              FROM ${prefix}${tableName}
+                              WHERE PARTITION_ID = #{partitionId}
+                                AND HISTORY_CLEANUP_DATE &lt; #{cleanupDate}
+                                AND ROWNUM &lt;= #{limit})
   </sql>
   <sql id="historyCleanup" databaseId="postgresql">
+    <bind name="deleteColumn" value="primaryKeyColumn != null and primaryKeyColumn != '' ? primaryKeyColumn : 'ctid'" />
     DELETE
     FROM ${prefix}${tableName}
-    WHERE ctid IN (SELECT ctid
-                   FROM ${prefix}${tableName}
-                   WHERE PARTITION_ID = #{partitionId}
-                     AND HISTORY_CLEANUP_DATE &lt; #{cleanupDate}
-                   LIMIT #{limit})
+    WHERE ${deleteColumn} IN (SELECT ${deleteColumn}
+                              FROM ${prefix}${tableName}
+                              WHERE PARTITION_ID = #{partitionId}
+                                AND HISTORY_CLEANUP_DATE &lt; #{cleanupDate}
+                              LIMIT #{limit})
   </sql>
 
   <sql id="historyDeletion">
@@ -222,26 +224,28 @@
     </foreach>
   </sql>
   <sql id="historyDeletion" databaseId="oracle">
+    <bind name="deleteColumn" value="primaryKeyColumn != null and primaryKeyColumn != '' ? primaryKeyColumn : 'rowid'" />
     DELETE
     FROM ${prefix}${tableName}
-    WHERE rowid IN (SELECT rowid
-                    FROM ${prefix}${tableName}
-                    WHERE PROCESS_INSTANCE_KEY IN
-                    <foreach collection="processInstanceKeys" item="key" open="(" separator=", " close=")">
-                      #{key}
-                    </foreach>
-                    AND ROWNUM &lt;= #{limit})
+    WHERE ${deleteColumn} IN (SELECT ${deleteColumn}
+                              FROM ${prefix}${tableName}
+                              WHERE PROCESS_INSTANCE_KEY IN
+                              <foreach collection="processInstanceKeys" item="key" open="(" separator=", " close=")">
+                                #{key}
+                              </foreach>
+                              AND ROWNUM &lt;= #{limit})
   </sql>
   <sql id="historyDeletion" databaseId="postgresql">
+    <bind name="deleteColumn" value="primaryKeyColumn != null and primaryKeyColumn != '' ? primaryKeyColumn : 'ctid'" />
     DELETE
     FROM ${prefix}${tableName}
-    WHERE ctid IN (SELECT ctid
-                   FROM ${prefix}${tableName}
-                   WHERE PROCESS_INSTANCE_KEY IN
-                   <foreach collection="processInstanceKeys" item="key" open="(" separator=", " close=")">
-                     #{key}
-                   </foreach>
-                   LIMIT #{limit})
+    WHERE ${deleteColumn} IN (SELECT ${deleteColumn}
+                              FROM ${prefix}${tableName}
+                              WHERE PROCESS_INSTANCE_KEY IN
+                              <foreach collection="processInstanceKeys" item="key" open="(" separator=", " close=")">
+                                #{key}
+                              </foreach>
+                              LIMIT #{limit})
   </sql>
 
   <resultMap id="flowNodeStatisticsResultMap"
