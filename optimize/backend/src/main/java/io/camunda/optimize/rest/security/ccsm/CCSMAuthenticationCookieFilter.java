@@ -31,6 +31,8 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.web.authentication.preauth.AbstractPreAuthenticatedProcessingFilter;
@@ -38,6 +40,9 @@ import org.springframework.security.web.authentication.preauth.AbstractPreAuthen
 @Conditional(CCSMCondition.class)
 @AllArgsConstructor
 public class CCSMAuthenticationCookieFilter extends AbstractPreAuthenticatedProcessingFilter {
+
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(CCSMAuthenticationCookieFilter.class);
 
   private final CCSMTokenService ccsmTokenService;
   private final ConfigurationService configurationService;
@@ -77,7 +82,7 @@ public class CCSMAuthenticationCookieFilter extends AbstractPreAuthenticatedProc
       } catch (final NotAuthorizedException notAuthorizedException) {
         // During token verification, it could be that the user is no longer authorized to access
         // Optimize, in which case we delete any existing cookies
-        logger.debug(notAuthorizedException.getMessage());
+        LOGGER.debug(notAuthorizedException.getMessage());
         deleteCookies(response);
       }
     }
