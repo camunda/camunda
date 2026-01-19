@@ -13,6 +13,7 @@ import static io.camunda.search.query.SearchQueryBuilders.variableSearchQuery;
 import static io.camunda.security.auth.Authorization.withAuthorization;
 import static io.camunda.service.authorization.Authorizations.PROCESS_DEFINITION_READ_USER_TASK_AUTHORIZATION;
 import static io.camunda.service.authorization.Authorizations.USER_TASK_READ_AUTHORIZATION;
+import static io.camunda.service.authorization.Authorizations.USER_TASK_READ_BY_PROPERTIES_AUTHORIZATION;
 
 import io.camunda.search.clients.UserTaskSearchClient;
 import io.camunda.search.entities.AuditLogEntity;
@@ -111,7 +112,9 @@ public final class UserTaskServices
         securityContextProvider.provideSecurityContext(
             authentication,
             AuthorizationConditions.anyOf(
-                PROCESS_DEFINITION_READ_USER_TASK_AUTHORIZATION, USER_TASK_READ_AUTHORIZATION)));
+                PROCESS_DEFINITION_READ_USER_TASK_AUTHORIZATION,
+                USER_TASK_READ_AUTHORIZATION,
+                USER_TASK_READ_BY_PROPERTIES_AUTHORIZATION)));
   }
 
   private SearchQueryResult<UserTaskEntity> search(
@@ -208,7 +211,8 @@ public final class UserTaskServices
                                     PROCESS_DEFINITION_READ_USER_TASK_AUTHORIZATION,
                                     UserTaskEntity::processDefinitionId),
                                 withAuthorization(
-                                    USER_TASK_READ_AUTHORIZATION, String.valueOf(userTaskKey)))))
+                                    USER_TASK_READ_AUTHORIZATION, String.valueOf(userTaskKey)),
+                                USER_TASK_READ_BY_PROPERTIES_AUTHORIZATION)))
                     .getUserTask(userTaskKey));
 
     final var cachedItem = processCache.getCacheItem(result.processDefinitionKey());
