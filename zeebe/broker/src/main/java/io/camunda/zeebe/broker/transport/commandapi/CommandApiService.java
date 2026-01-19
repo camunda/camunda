@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.transport.commandapi;
 
+import io.atomix.primitive.partition.PartitionId;
 import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -16,14 +17,14 @@ public interface CommandApiService {
 
   CommandResponseWriter newCommandResponseWriter();
 
-  void onRecovered(final int partitionId);
+  void onRecovered(final PartitionId partitionId);
 
-  void onPaused(final int partitionId);
+  void onPaused(final PartitionId partitionId);
 
-  void onResumed(final int partitionId);
+  void onResumed(final PartitionId partitionId);
 
   ActorFuture<Void> registerHandlers(
-      final int partitionId, final LogStream logStream, final QueryService queryService);
+      final PartitionId partitionId, final LogStream logStream, final QueryService queryService);
 
-  ActorFuture<Void> unregisterHandlers(final int partitionId);
+  ActorFuture<Void> unregisterHandlers(final PartitionId partitionId);
 }

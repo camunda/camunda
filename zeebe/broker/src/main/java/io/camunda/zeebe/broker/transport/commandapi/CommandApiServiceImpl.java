@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.transport.commandapi;
 
+import io.atomix.primitive.partition.PartitionId;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.system.configuration.QueryApiCfg;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
@@ -19,7 +20,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.stream.api.CommandResponseWriter;
 import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.transport.ServerTransport;
-import org.agrona.collections.IntHashSet;
+import java.util.HashSet;
 
 public final class CommandApiServiceImpl extends Actor
     implements DiskSpaceUsageListener, CommandApiService {
@@ -27,7 +28,7 @@ public final class CommandApiServiceImpl extends Actor
   private final ServerTransport serverTransport;
   private final CommandApiRequestHandler commandHandler;
   private final QueryApiRequestHandler queryHandler;
-  private final IntHashSet leadPartitions = new IntHashSet();
+  private final HashSet<PartitionId> leadPartitions = new HashSet<>();
   private final ActorSchedulingService scheduler;
 
   public CommandApiServiceImpl(
@@ -53,7 +54,7 @@ public final class CommandApiServiceImpl extends Actor
 
   @Override
   protected void onActorClosing() {
-    for (final Integer leadPartition : leadPartitions) {
+    for (final var leadPartition : leadPartitions) {
       unregisterHandlersActorless(leadPartition);
     }
     leadPartitions.clear();
@@ -79,30 +80,30 @@ public final class CommandApiServiceImpl extends Actor
   }
 
   @Override
-  public void onRecovered(final int partitionId) {
+  public void onRecovered(final PartitionId partitionId) {
     commandHandler.onRecovered(partitionId);
   }
 
   @Override
-  public void onPaused(final int partitionId) {
+  public void onPaused(final PartitionId partitionId) {
     commandHandler.onPaused(partitionId);
   }
 
   @Override
-  public void onResumed(final int partitionId) {
+  public void onResumed(final PartitionId partitionId) {
     commandHandler.onResumed(partitionId);
   }
 
   @Override
   public ActorFuture<Void> registerHandlers(
-      final int partitionId, final LogStream logStream, final QueryService queryService) {
+      final PartitionId partitionId, final LogStream logStream, final QueryService queryService) {
     return actor.call(
         () -> {
           // create the writer immediately so if the logStream is closed, this will throw an
           // exception immediately
           final var logStreamWriter = logStream.newLogStreamWriter();
           leadPartitions.add(partitionId);
-          queryHandler.addPartition(partitionId, queryService);
+          queryHandler.addPartition(partitionId.id(), queryService);
           serverTransport.subscribe(partitionId, RequestType.QUERY, queryHandler);
           commandHandler.addPartition(partitionId, logStreamWriter);
           serverTransport.subscribe(partitionId, RequestType.COMMAND, commandHandler);
@@ -110,13 +111,13 @@ public final class CommandApiServiceImpl extends Actor
   }
 
   @Override
-  public ActorFuture<Void> unregisterHandlers(final int partitionId) {
+  public ActorFuture<Void> unregisterHandlers(final PartitionId partitionId) {
     return actor.call(() -> unregisterHandlersActorless(partitionId));
   }
 
-  private void unregisterHandlersActorless(final int partitionId) {
+  private void unregisterHandlersActorless(final PartitionId partitionId) {
     commandHandler.removePartition(partitionId);
-    queryHandler.removePartition(partitionId);
+    queryHandler.removePartition(partitionId.id());
     leadPartitions.remove(partitionId);
     serverTransport.unsubscribe(partitionId, RequestType.COMMAND);
     serverTransport.unsubscribe(partitionId, RequestType.QUERY);

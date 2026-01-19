@@ -21,7 +21,7 @@ public class CommandApiServiceTransitionStep implements PartitionTransitionStep 
       final PartitionTransitionContext context, final long term, final Role targetRole) {
     return switch (targetRole) {
       case LEADER -> context.getConcurrencyControl().createCompletedFuture();
-      default -> context.getCommandApiService().unregisterHandlers(context.getPartitionId());
+      default -> context.getCommandApiService().unregisterHandlers(context.getFullPartitionId());
     };
   }
 
@@ -33,7 +33,7 @@ public class CommandApiServiceTransitionStep implements PartitionTransitionStep 
           context
               .getCommandApiService()
               .registerHandlers(
-                  context.getPartitionId(), context.getLogStream(), context.getQueryService());
+                  context.getFullPartitionId(), context.getLogStream(), context.getQueryService());
       default -> context.getConcurrencyControl().createCompletedFuture();
     };
   }

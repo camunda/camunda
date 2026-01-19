@@ -26,7 +26,6 @@ import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.Either;
 import java.util.HashMap;
 import java.util.Map;
-import org.agrona.collections.Int2ObjectHashMap;
 import org.slf4j.Logger;
 
 final class CommandApiRequestHandler
@@ -35,9 +34,9 @@ final class CommandApiRequestHandler
   private static final String[] SUPPORTED_VALUE_TYPES =
       ValueTypes.userCommands().map(Enum::name).toArray(String[]::new);
 
-  private final Int2ObjectHashMap<LogStreamWriter> leadingStreams = new Int2ObjectHashMap<>();
+  private final HashMap<PartitionId, LogStreamWriter> leadingStreams = new HashMap();
   private boolean isDiskSpaceAvailable = true;
-  private final Map<Integer, Boolean> processingPaused = new HashMap<>();
+  private final Map<PartitionId, Boolean> processingPaused = new HashMap<>();
 
   CommandApiRequestHandler() {
     super(CommandApiRequestReader::new, CommandApiResponseWriter::new);
@@ -54,15 +53,15 @@ final class CommandApiRequestHandler
         handle(partitionId, requestId, requestReader, responseWriter, errorWriter));
   }
 
-  public void onRecovered(final int partitionId) {
+  public void onRecovered(final PartitionId partitionId) {
     actor.run(() -> processingPaused.put(partitionId, false));
   }
 
-  public void onPaused(final int partitionId) {
+  public void onPaused(final PartitionId partitionId) {
     actor.run(() -> processingPaused.put(partitionId, true));
   }
 
-  public void onResumed(final int partitionId) {
+  public void onResumed(final PartitionId partitionId) {
     actor.run(() -> processingPaused.put(partitionId, false));
   }
 
@@ -94,8 +93,7 @@ final class CommandApiRequestHandler
     }
 
     final var command = reader.getMessageDecoder();
-    // TODO: `leadingStreams` should use the full partition id as keys
-    final var logStreamWriter = leadingStreams.get(partitionId.id());
+    final var logStreamWriter = leadingStreams.get(partitionId);
 
     final var valueType = command.valueType();
     final var intent = Intent.fromProtocolValue(valueType, command.intent());
@@ -128,7 +126,7 @@ final class CommandApiRequestHandler
 
     } catch (final Exception error) {
       final String errorMessage =
-          "Failed to write client request to partition '%d', %s".formatted(partitionId, error);
+          "Failed to write client request to partition '%s', %s".formatted(partitionId, error);
       LOG.error(errorMessage);
       return Either.left(errorWriter.internalError(errorMessage));
     }
@@ -161,11 +159,11 @@ final class CommandApiRequestHandler
     }
   }
 
-  void addPartition(final int partitionId, final LogStreamWriter logStreamWriter) {
+  void addPartition(final PartitionId partitionId, final LogStreamWriter logStreamWriter) {
     actor.submit(() -> leadingStreams.put(partitionId, logStreamWriter));
   }
 
-  void removePartition(final int partitionId) {
+  void removePartition(final PartitionId partitionId) {
     actor.submit(() -> leadingStreams.remove(partitionId));
   }
 

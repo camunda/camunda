@@ -48,7 +48,7 @@ public class CommandApiRequestHandlerTest {
   public void setup() {
     scheduler.submitActor(handler);
     logStreamWriter = mock(LogStreamWriter.class);
-    handler.addPartition(0, logStreamWriter);
+    handler.addPartition(new PartitionId("raft-partition", 0), logStreamWriter);
     scheduler.workUntilDone();
   }
 
@@ -74,7 +74,7 @@ public class CommandApiRequestHandlerTest {
   public void shouldRejectCommandIfNotLeader() {
     // given
     final var request = new ExecuteCommandRequest();
-    handler.removePartition(0);
+    handler.removePartition(new PartitionId("raft-partition", 0));
     scheduler.workUntilDone();
 
     // when
@@ -132,7 +132,7 @@ public class CommandApiRequestHandlerTest {
     // given
     final var logWriter = mock(LogStreamWriter.class);
     when(logWriter.canWriteEvents(anyInt(), anyInt())).thenReturn(true);
-    handler.addPartition(0, logWriter);
+    handler.addPartition(new PartitionId("raft-partition", 0), logWriter);
     scheduler.workUntilDone();
 
     final var request =
@@ -153,9 +153,9 @@ public class CommandApiRequestHandlerTest {
     when(logWriter.canWriteEvents(anyInt(), anyInt())).thenReturn(true);
     when(logWriter.tryWrite(any(WriteContext.class), any(LogAppendEntry.class)))
         .thenReturn(Either.left(WriteFailure.WRITE_LIMIT_EXHAUSTED));
-    handler.addPartition(0, logWriter);
-    handler.onRecovered(0);
-    handler.onPaused(1);
+    handler.addPartition(new PartitionId("raft-partition", 0), logWriter);
+    handler.onRecovered(new PartitionId("raft-partition", 0));
+    handler.onPaused(new PartitionId("raft-partition", 1));
     scheduler.workUntilDone();
 
     final var request =
@@ -183,9 +183,9 @@ public class CommandApiRequestHandlerTest {
     when(logWriter.canWriteEvents(anyInt(), anyInt())).thenReturn(true);
     when(logWriter.tryWrite(any(WriteContext.class), any(LogAppendEntry.class)))
         .thenReturn(Either.left(WriteFailure.WRITE_LIMIT_EXHAUSTED));
-    handler.addPartition(0, logWriter);
-    handler.onRecovered(0);
-    handler.onPaused(0);
+    handler.addPartition(new PartitionId("raft-partition", 0), logWriter);
+    handler.onRecovered(new PartitionId("raft-partition", 0));
+    handler.onPaused(new PartitionId("raft-partition", 0));
     scheduler.workUntilDone();
 
     final var request =
@@ -212,7 +212,7 @@ public class CommandApiRequestHandlerTest {
     when(logWriter.canWriteEvents(anyInt(), anyInt())).thenReturn(true);
     when(logWriter.tryWrite(any(WriteContext.class), any(LogAppendEntry.class)))
         .thenReturn(Either.left(WriteFailure.CLOSED));
-    handler.addPartition(0, logWriter);
+    handler.addPartition(new PartitionId("raft-partition", 0), logWriter);
     scheduler.workUntilDone();
 
     final var request =

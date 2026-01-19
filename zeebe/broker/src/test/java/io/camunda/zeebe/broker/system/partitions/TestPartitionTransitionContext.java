@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.system.partitions;
 
 import io.atomix.cluster.messaging.ClusterCommunicationService;
+import io.atomix.primitive.partition.PartitionId;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.security.configuration.SecurityConfiguration;
@@ -100,6 +101,11 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   @Override
   public int getPartitionId() {
     return 1;
+  }
+
+  @Override
+  public PartitionId getFullPartitionId() {
+    return new PartitionId("raft-partition", 1);
   }
 
   @Override
