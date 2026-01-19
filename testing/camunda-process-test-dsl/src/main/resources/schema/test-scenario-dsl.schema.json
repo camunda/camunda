@@ -783,7 +783,7 @@
           "const": "SET_TIME"
         },
         "time": {
-          "description": "The time to set.",
+          "description": "The time to set, in ISO 8601 instant format (e.g., \"2026-01-19T13:00:00Z\").",
           "type": "string"
         }
       },

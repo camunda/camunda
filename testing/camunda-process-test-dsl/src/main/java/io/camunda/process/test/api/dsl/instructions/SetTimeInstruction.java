@@ -15,9 +15,12 @@
  */
 package io.camunda.process.test.api.dsl.instructions;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonFormat.Shape;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.camunda.process.test.api.dsl.TestCaseInstruction;
 import io.camunda.process.test.api.dsl.TestCaseInstructionType;
+import java.time.Instant;
 import org.immutables.value.Value;
 
 /** An instruction to set the time. */
@@ -34,7 +37,8 @@ public interface SetTimeInstruction extends TestCaseInstruction {
   /**
    * The time to set.
    *
-   * @return the time as a string
+   * @return the time
    */
-  String getTime();
+  @JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'", timezone = "UTC")
+  Instant getTime();
 }

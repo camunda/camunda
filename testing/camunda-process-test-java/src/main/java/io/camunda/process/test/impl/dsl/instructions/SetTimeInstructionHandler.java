@@ -31,7 +31,7 @@ public class SetTimeInstructionHandler implements TestCaseInstructionHandler<Set
       final CamundaClient camundaClient,
       final AssertionFacade assertionFacade) {
 
-    final Instant timeToSet = Instant.parse(instruction.getTime());
+    final Instant timeToSet = instruction.getTime();
     context.setTime(timeToSet);
   }
 

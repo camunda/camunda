@@ -45,14 +45,16 @@ public class SetTimeInstructionTest {
   @Test
   void shouldSetTime() {
     // given
+    final Instant instant = Instant.parse(TIME_STRING);
+
     final SetTimeInstruction instruction =
-        ImmutableSetTimeInstruction.builder().time(TIME_STRING).build();
+        ImmutableSetTimeInstruction.builder().time(instant).build();
 
     // when
     instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
 
     // then
-    verify(processTestContext).setTime(Instant.parse(TIME_STRING));
+    verify(processTestContext).setTime(instant);
 
     verifyNoMoreInteractions(camundaClient, processTestContext, assertionFacade);
   }

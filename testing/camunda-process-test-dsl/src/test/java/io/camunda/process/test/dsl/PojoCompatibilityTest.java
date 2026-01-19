@@ -21,6 +21,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.networknt.schema.JsonSchema;
 import com.networknt.schema.JsonSchemaFactory;
 import com.networknt.schema.SpecVersion;
@@ -69,6 +70,7 @@ import io.camunda.process.test.api.dsl.instructions.assertUserTask.UserTaskState
 import io.camunda.process.test.api.dsl.instructions.createProcessInstance.ImmutableCreateProcessInstanceStartInstruction;
 import io.camunda.process.test.api.dsl.instructions.createProcessInstance.ImmutableCreateProcessInstanceTerminateRuntimeInstruction;
 import java.io.IOException;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -86,7 +88,7 @@ public class PojoCompatibilityTest {
   private final ObjectMapper objectMapper =
       new ObjectMapper()
           .setSerializationInclusion(JsonInclude.Include.NON_ABSENT)
-          .registerModule(new Jdk8Module());
+          .registerModules(new Jdk8Module(), new JavaTimeModule());
 
   @BeforeAll
   static void setup() {
@@ -602,7 +604,9 @@ public class PojoCompatibilityTest {
         Arguments.of(
             "set time",
             singleTestCase(
-                ImmutableSetTimeInstruction.builder().time("2025-12-01T10:00:00Z").build()))
+                ImmutableSetTimeInstruction.builder()
+                    .time(Instant.parse("2025-12-01T10:00:00Z"))
+                    .build()))
         // add new instructions here
         );
   }
