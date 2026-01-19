@@ -395,7 +395,7 @@ jobs:
 
       - name: Get trigger timestamp
         id: trigger-time
-        run: echo "trigger_time=$(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> $GITHUB_OUTPUT
+        run: echo "trigger_time=$(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> "$GITHUB_OUTPUT"
 
       - name: Observe build status
         if: always()
@@ -426,8 +426,8 @@ jobs:
               --jq ".workflow_runs[] | select(.created_at > \"$TRIGGER_TIME\") | .id" | head -n1)
 
             if [[ -n "$RUN_ID" ]]; then
-              STATUS=$(gh api /repos/$TARGET_REPO/actions/runs/$RUN_ID --jq .status)
-              CONCLUSION=$(gh api /repos/$TARGET_REPO/actions/runs/$RUN_ID --jq .conclusion)
+              STATUS=$(gh api /repos/$TARGET_REPO/actions/runs/"$RUN_ID" --jq .status)
+              CONCLUSION=$(gh api /repos/$TARGET_REPO/actions/runs/"$RUN_ID" --jq .conclusion)
               echo "Workflow run $RUN_ID status: $STATUS ($CONCLUSION)"
               if [[ "$STATUS" == "completed" ]]; then
                 if [[ "$CONCLUSION" == "success" ]]; then
