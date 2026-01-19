@@ -573,8 +573,7 @@ public class PojoCompatibilityTest {
         // ===== INCREASE_TIME =====
         Arguments.of(
             "increase time",
-            singleTestCase(ImmutableIncreaseTimeInstruction.builder().duration("P2D").build()))
-                    .build())),
+            singleTestCase(ImmutableIncreaseTimeInstruction.builder().duration("P2D").build())),
         // ===== UPDATE_VARIABLES =====
         Arguments.of(
             "update variables: global",
