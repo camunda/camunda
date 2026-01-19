@@ -182,6 +182,7 @@ describe('InstanceHeader', () => {
           itemKey: '1',
           processInstanceKey: mockInstance.processInstanceKey,
           state: 'ACTIVE',
+          operationType: 'CANCEL_PROCESS_INSTANCE',
         },
       ],
       page: {totalItems: 1},
