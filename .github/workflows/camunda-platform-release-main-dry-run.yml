@@ -40,7 +40,7 @@ jobs:
       nextDevelopmentVersion: 0.0.0-SNAPSHOT
       isLatest: ${{ matrix.latest }}
       dryRun: true
-      includeOptimize: ${{ inputs.includeOptimize || false }}
+      includeOptimize: ${{ github.event_name == 'schedule' || inputs.includeOptimize || false }}
 
   notify:
     name: Send Slack notification
