@@ -6,12 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { FC, useState } from "react";
+import { FC, useCallback, useMemo } from "react";
 import useTranslate from "src/utility/localization";
 import Page, { PageHeader } from "src/components/layout/Page";
 import EntityList from "src/components/entityList";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
-import { useApi, SortConfig } from "src/utility/api";
+import { useApi, usePagination, SortConfig } from "src/utility/api";
 import { searchAuditLogs } from "src/utility/api/audit-logs";
 
 type AuditLogSort = { field: string; order: "asc" | "desc" };
@@ -26,7 +26,24 @@ const ORDER_MAP: Record<SortConfig["order"], AuditLogSort["order"]> = {
 const List: FC = () => {
   const { t } = useTranslate("operationsLog");
   const { t: tComponents } = useTranslate();
-  const [sort, setSort] = useState<AuditLogSort[]>(DEFAULT_SORT);
+
+  const {
+    pageParams,
+    page,
+    setPageNumber,
+    setPageSize,
+    setSort: setPaginationSort,
+  } = usePagination();
+
+  const transformedSort = useMemo((): AuditLogSort[] => {
+    if (!pageParams.sort || pageParams.sort.length === 0) {
+      return DEFAULT_SORT;
+    }
+    return pageParams.sort.map(({ field, order }) => ({
+      field,
+      order: ORDER_MAP[order],
+    }));
+  }, [pageParams.sort]);
 
   const {
     data: auditLogs,
@@ -34,30 +51,24 @@ const List: FC = () => {
     success,
     reload,
   } = useApi(searchAuditLogs, {
-    sort,
+    sort: transformedSort,
     filter: {
       category: {
         $eq: "ADMIN",
       },
     },
     page: {
-      from: 0,
-      limit: 50,
+      from: pageParams.page.from,
+      limit: pageParams.page.limit,
     },
   });
 
-  const handleSort = (sortConfig: SortConfig[] | undefined) => {
-    if (!sortConfig) {
-      setSort(DEFAULT_SORT);
-      return;
-    }
-    setSort(
-      sortConfig.map(({ order, field }) => ({
-        field,
-        order: ORDER_MAP[order],
-      })),
-    );
-  };
+  const handleSort = useCallback(
+    (sortConfig: SortConfig[] | undefined) => {
+      setPaginationSort(sortConfig);
+    },
+    [setPaginationSort],
+  );
 
   return (
     <Page>
@@ -86,6 +97,9 @@ const List: FC = () => {
         ]}
         loading={loading}
         setSort={handleSort}
+        page={{ ...page, ...auditLogs?.page }}
+        setPageNumber={setPageNumber}
+        setPageSize={setPageSize}
       />
       {!loading && !success && (
         <TranslatedErrorInlineNotification
