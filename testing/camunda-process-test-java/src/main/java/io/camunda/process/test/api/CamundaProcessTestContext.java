@@ -18,6 +18,8 @@ package io.camunda.process.test.api;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.api.command.CompleteAdHocSubProcessResultStep1;
+import io.camunda.client.api.command.CompleteUserTaskJobResultStep1;
+import io.camunda.client.api.command.ThrowErrorCommandStep1;
 import io.camunda.process.test.api.assertions.ElementSelector;
 import io.camunda.process.test.api.assertions.IncidentSelector;
 import io.camunda.process.test.api.assertions.JobSelector;
