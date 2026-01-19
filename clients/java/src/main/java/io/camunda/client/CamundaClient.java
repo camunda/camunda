@@ -119,6 +119,8 @@ import io.camunda.client.api.fetch.ProcessDefinitionGetRequest;
 import io.camunda.client.api.fetch.ProcessDefinitionGetXmlRequest;
 import io.camunda.client.api.fetch.ProcessInstanceGetCallHierarchyRequest;
 import io.camunda.client.api.fetch.ProcessInstanceGetRequest;
+import io.camunda.client.api.fetch.ResourceContentGetRequest;
+import io.camunda.client.api.fetch.ResourceGetRequest;
 import io.camunda.client.api.fetch.RoleGetRequest;
 import io.camunda.client.api.fetch.RolesSearchRequest;
 import io.camunda.client.api.fetch.TenantGetRequest;
@@ -3186,4 +3188,34 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    */
   IncidentProcessInstanceStatisticsByDefinitionRequest
       newIncidentProcessInstanceStatisticsByDefinitionRequest(int errorHashCode);
+
+  /**
+   * Retrieves a resource by key.
+   *
+   * <pre>
+   * long resourceKey = ...;
+   *
+   * camundaClient
+   *  .newResourceGetRequest(resourceKey)
+   *  .send();
+   * </pre>
+   *
+   * @return a builder for the request to get a resource
+   */
+  ResourceGetRequest newResourceGetRequest(long resourceKey);
+
+  /**
+   * Retrieves a resource content by key.
+   *
+   * <pre>
+   * long resourceKey = ...;
+   *
+   * camundaClient
+   *  .newResourceContentGetRequest(resourceKey)
+   *  .send();
+   * </pre>
+   *
+   * @return a builder for the request to get a resource content
+   */
+  ResourceContentGetRequest newResourceContentGetRequest(long resourceKey);
 }

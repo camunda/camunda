@@ -109,6 +109,8 @@ public class RestGatewayPaths {
       REST_API_PATH + "/process-definitions/%s/statistics/process-instances";
   private static final String URL_INCIDENT_PROCESS_INSTANCE_STATISTICS_BY_PROCESS_DEFINITION =
       REST_API_PATH + "/incidents/statistics/process-instances-by-definition";
+  private static final String URL_RESOURCE = REST_API_PATH + "/resources/%s";
+  private static final String URL_RESOURCE_CONTENT = URL_RESOURCE + "/content";
   private static final String URL_INCIDENT_PROCESS_INSTANCE_STATISTICS_BY_ERROR =
       REST_API_PATH + "/incidents/statistics/process-instances-by-error";
 
@@ -417,6 +419,14 @@ public class RestGatewayPaths {
 
   public static String getIncidentProcessInstanceStatisticsByDefinitionUrl() {
     return URL_INCIDENT_PROCESS_INSTANCE_STATISTICS_BY_PROCESS_DEFINITION;
+  }
+
+  public static String getResourceUrl(final String resourceKey) {
+    return String.format(URL_RESOURCE, resourceKey);
+  }
+
+  public static String getResourceContentUrl(final String resourceKey) {
+    return String.format(URL_RESOURCE_CONTENT, resourceKey);
   }
 
   @Deprecated
