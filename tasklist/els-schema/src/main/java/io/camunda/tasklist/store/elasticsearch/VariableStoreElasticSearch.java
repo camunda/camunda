@@ -63,8 +63,8 @@ public class VariableStoreElasticSearch implements VariableStore {
   private static final Logger LOGGER = LoggerFactory.getLogger(VariableStoreElasticSearch.class);
 
   @Autowired
-  @Qualifier("tasklistEs8Client")
-  private ElasticsearchClient es8Client;
+  @Qualifier("tasklistEsClient")
+  private ElasticsearchClient esClient;
 
   @Autowired private ElasticsearchTenantHelper tenantHelper;
 
@@ -83,7 +83,7 @@ public class VariableStoreElasticSearch implements VariableStore {
       final Set<String> fieldNames) {
     try {
       return ElasticsearchUtil.scrollInChunks(
-          es8Client,
+          esClient,
           flowNodeInstanceIds,
           tasklistProperties.getElasticsearch().getMaxTermsCount(),
           chunk -> buildSearchVariablesByFlowNodeInstanceIdsRequest(chunk, varNames, fieldNames),
@@ -133,7 +133,7 @@ public class VariableStoreElasticSearch implements VariableStore {
     try {
       final List<SnapshotTaskVariableEntity> entities =
           ElasticsearchUtil.scrollAllToList(
-              es8Client, searchRequestBuilder, SnapshotTaskVariableEntity.class);
+              esClient, searchRequestBuilder, SnapshotTaskVariableEntity.class);
 
       return entities.stream()
           .collect(
@@ -157,7 +157,7 @@ public class VariableStoreElasticSearch implements VariableStore {
             .source(s -> s.filter(f -> f.includes(SnapshotTaskVariableTemplate.ID)));
 
     try {
-      return ElasticsearchUtil.scrollIdsWithIndexToMap(es8Client, searchRequestBuilder);
+      return ElasticsearchUtil.scrollIdsWithIndexToMap(esClient, searchRequestBuilder);
     } catch (final Exception e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
     }
@@ -167,7 +167,7 @@ public class VariableStoreElasticSearch implements VariableStore {
   public void persistTaskVariables(final Collection<SnapshotTaskVariableEntity> finalVariables) {
     try {
       final var bulkOperations = finalVariables.stream().map(this::createUpsertRequest).toList();
-      ElasticsearchUtil.executeBulkRequest(es8Client, bulkOperations, Refresh.WaitFor);
+      ElasticsearchUtil.executeBulkRequest(esClient, bulkOperations, Refresh.WaitFor);
     } catch (final IOException e) {
       throw new TasklistRuntimeException("Error persisting task variables", e);
     }
@@ -177,7 +177,7 @@ public class VariableStoreElasticSearch implements VariableStore {
   public List<FlowNodeInstanceEntity> getFlowNodeInstances(final List<Long> processInstanceKeys) {
     try {
       return ElasticsearchUtil.scrollInChunks(
-          es8Client,
+          esClient,
           processInstanceKeys,
           tasklistProperties.getElasticsearch().getMaxTermsCount(),
           this::buildSearchFlowNodeInstancesRequest,
@@ -202,7 +202,7 @@ public class VariableStoreElasticSearch implements VariableStore {
     applyFetchSourceForVariableIndex(requestBuilder, fieldNames);
 
     try {
-      final var response = es8Client.search(requestBuilder.build(), VariableEntity.class);
+      final var response = esClient.search(requestBuilder.build(), VariableEntity.class);
       if (response.hits().total().value() == 1) {
         return response.hits().hits().get(0).source();
       } else if (response.hits().total().value() > 1) {
@@ -231,7 +231,7 @@ public class VariableStoreElasticSearch implements VariableStore {
 
     try {
       final var response =
-          es8Client.search(requestBuilder.build(), SnapshotTaskVariableEntity.class);
+          esClient.search(requestBuilder.build(), SnapshotTaskVariableEntity.class);
       if (response.hits().total().value() == 1) {
         return response.hits().hits().get(0).source();
       } else if (response.hits().total().value() > 1) {
@@ -270,7 +270,7 @@ public class VariableStoreElasticSearch implements VariableStore {
       try {
         currentKeys =
             ElasticsearchUtil.scrollFieldToLongSet(
-                es8Client, searchRequestBuilder, PROCESS_INSTANCE_KEY);
+                esClient, searchRequestBuilder, PROCESS_INSTANCE_KEY);
       } catch (final Exception e) {
         final String message =
             String.format(
