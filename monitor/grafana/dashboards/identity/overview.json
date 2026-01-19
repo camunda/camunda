@@ -254,7 +254,7 @@
           "editorMode": "code",
           "expr": "sum(rate(spring_security_authentications_seconds_sum{namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])) by (namespace,pod,authentication_request_type)\n/\nsum(rate(spring_security_authentications_seconds_count{namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])) by (namespace,pod,authentication_request_type)",
           "interval": "1m",
-          "legendFormat": "p50 REST {{authentication_request_type}}",
+          "legendFormat": "avg REST {{authentication_request_type}}",
           "range": true,
           "refId": "A"
         },
@@ -366,7 +366,7 @@
           "expr": "sum(rate(spring_security_authentications_seconds_count{namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])) by (namespace, pod, authentication_request_type)",
           "instant": false,
           "interval": "1m",
-          "legendFormat": "p50 REST {{authentication_request_type}}",
+          "legendFormat": "REST {{authentication_request_type}}",
           "range": true,
           "refId": "A"
         },
@@ -381,7 +381,7 @@
           "hide": false,
           "instant": false,
           "interval": "1m",
-          "legendFormat": "p50 GRPC {{method}}",
+          "legendFormat": "gRPC {{method}}",
           "range": true,
           "refId": "B"
         }
