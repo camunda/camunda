@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.process.test.api.dsl.TestCase;
 import io.camunda.process.test.api.dsl.TestScenario;
 import io.camunda.process.test.api.dsl.instructions.CreateProcessInstanceInstruction;
@@ -35,7 +36,7 @@ public class DeserializationTest {
   private final ObjectMapper objectMapper =
       new ObjectMapper()
           .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-          .registerModule(new Jdk8Module());
+          .registerModules(new Jdk8Module(), new JavaTimeModule());
 
   @Test
   void shouldParseEmptyTestScenario() throws IOException {

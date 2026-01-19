@@ -17,27 +17,26 @@ package io.camunda.process.test.impl.dsl.instructions;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.process.test.api.CamundaProcessTestContext;
-import io.camunda.process.test.api.dsl.instructions.IncreaseTimeInstruction;
+import io.camunda.process.test.api.dsl.instructions.SetTimeInstruction;
 import io.camunda.process.test.impl.dsl.AssertionFacade;
 import io.camunda.process.test.impl.dsl.TestCaseInstructionHandler;
-import java.time.Duration;
+import java.time.Instant;
 
-public class IncreaseTimeInstructionHandler
-    implements TestCaseInstructionHandler<IncreaseTimeInstruction> {
+public class SetTimeInstructionHandler implements TestCaseInstructionHandler<SetTimeInstruction> {
 
   @Override
   public void execute(
-      final IncreaseTimeInstruction instruction,
+      final SetTimeInstruction instruction,
       final CamundaProcessTestContext context,
       final CamundaClient camundaClient,
       final AssertionFacade assertionFacade) {
 
-    final Duration duration = instruction.getDuration();
-    context.increaseTime(duration);
+    final Instant timeToSet = instruction.getTime();
+    context.setTime(timeToSet);
   }
 
   @Override
-  public Class<IncreaseTimeInstruction> getInstructionType() {
-    return IncreaseTimeInstruction.class;
+  public Class<SetTimeInstruction> getInstructionType() {
+    return SetTimeInstruction.class;
   }
 }

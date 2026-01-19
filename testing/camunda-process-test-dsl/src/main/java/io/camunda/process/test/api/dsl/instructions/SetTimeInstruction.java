@@ -20,25 +20,25 @@ import com.fasterxml.jackson.annotation.JsonFormat.Shape;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.camunda.process.test.api.dsl.TestCaseInstruction;
 import io.camunda.process.test.api.dsl.TestCaseInstructionType;
-import java.time.Duration;
+import java.time.Instant;
 import org.immutables.value.Value;
 
-/** An instruction to increase the time. */
+/** An instruction to set the time. */
 @Value.Immutable
-@JsonDeserialize(builder = ImmutableIncreaseTimeInstruction.Builder.class)
-public interface IncreaseTimeInstruction extends TestCaseInstruction {
+@JsonDeserialize(builder = ImmutableSetTimeInstruction.Builder.class)
+public interface SetTimeInstruction extends TestCaseInstruction {
 
   @Value.Default
   @Override
   default String getType() {
-    return TestCaseInstructionType.INCREASE_TIME;
+    return TestCaseInstructionType.SET_TIME;
   }
 
   /**
-   * The duration to increase the time by.
+   * The time to set.
    *
-   * @return the duration
+   * @return the time
    */
-  @JsonFormat(shape = Shape.STRING)
-  Duration getDuration();
+  @JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'", timezone = "UTC")
+  Instant getTime();
 }

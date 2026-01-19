@@ -21,6 +21,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.networknt.schema.JsonSchema;
 import com.networknt.schema.JsonSchemaFactory;
 import com.networknt.schema.SpecVersion;
@@ -60,6 +61,7 @@ import io.camunda.process.test.api.dsl.instructions.ImmutableMockJobWorkerComple
 import io.camunda.process.test.api.dsl.instructions.ImmutableMockJobWorkerThrowBpmnErrorInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutablePublishMessageInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableResolveIncidentInstruction;
+import io.camunda.process.test.api.dsl.instructions.ImmutableSetTimeInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableThrowBpmnErrorFromJobInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableUpdateVariablesInstruction;
 import io.camunda.process.test.api.dsl.instructions.assertElementInstance.ElementInstanceState;
@@ -70,6 +72,8 @@ import io.camunda.process.test.api.dsl.instructions.assertUserTask.UserTaskState
 import io.camunda.process.test.api.dsl.instructions.createProcessInstance.ImmutableCreateProcessInstanceStartInstruction;
 import io.camunda.process.test.api.dsl.instructions.createProcessInstance.ImmutableCreateProcessInstanceTerminateRuntimeInstruction;
 import java.io.IOException;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Set;
@@ -88,7 +92,7 @@ public class PojoCompatibilityTest {
   private final ObjectMapper objectMapper =
       new ObjectMapper()
           .setSerializationInclusion(JsonInclude.Include.NON_ABSENT)
-          .registerModule(new Jdk8Module());
+          .registerModules(new Jdk8Module(), new JavaTimeModule());
 
   @BeforeAll
   static void setup() {
@@ -648,7 +652,8 @@ public class PojoCompatibilityTest {
         // ===== INCREASE_TIME =====
         Arguments.of(
             "increase time",
-            singleTestCase(ImmutableIncreaseTimeInstruction.builder().duration("P2D").build())),
+            singleTestCase(
+                ImmutableIncreaseTimeInstruction.builder().duration(Duration.ofDays(2)).build())),
         // ===== UPDATE_VARIABLES =====
         Arguments.of(
             "update variables: global",
@@ -670,6 +675,13 @@ public class PojoCompatibilityTest {
                             .build())
                     .elementSelector(ImmutableElementSelector.builder().elementId("task1").build())
                     .putVariables("localVar", "localValue")
+                    .build())),
+        // ===== SET_TIME =====
+        Arguments.of(
+            "set time",
+            singleTestCase(
+                ImmutableSetTimeInstruction.builder()
+                    .time(Instant.parse("2025-12-01T10:00:00Z"))
                     .build()))
         // add new instructions here
         );

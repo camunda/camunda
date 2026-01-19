@@ -105,6 +105,9 @@
           "$ref": "#/definitions/ResolveIncidentInstruction"
         },
         {
+          "$ref": "#/definitions/SetTimeInstruction"
+        },
+        {
           "$ref": "#/definitions/EvaluateConditionalStartEventInstruction"
         },
         {
@@ -838,6 +841,26 @@
       "required": [
         "type",
         "incidentSelector"
+      ],
+      "additionalProperties": false
+    },
+    "SetTimeInstruction": {
+      "description": "An instruction to set the time.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "The type of the instruction.",
+          "type": "string",
+          "const": "SET_TIME"
+        },
+        "time": {
+          "description": "The time to set, in ISO 8601 instant format (e.g., \"2026-01-19T13:00:00Z\").",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "time"
       ],
       "additionalProperties": false
     },

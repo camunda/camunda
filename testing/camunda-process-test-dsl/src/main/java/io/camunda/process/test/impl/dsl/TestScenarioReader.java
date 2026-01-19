@@ -18,6 +18,7 @@ package io.camunda.process.test.impl.dsl;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.process.test.api.dsl.TestScenario;
 import java.io.InputStream;
 import java.util.Objects;
@@ -29,7 +30,7 @@ public class TestScenarioReader {
   private static final Supplier<ObjectMapper> DEFAULT_OBJECT_MAPPER_SUPPLIER =
       () ->
           new ObjectMapper()
-              .registerModule(new Jdk8Module())
+              .registerModules(new Jdk8Module(), new JavaTimeModule())
               .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
 
   private final ObjectMapper objectMapper;
