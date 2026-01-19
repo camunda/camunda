@@ -45,6 +45,7 @@ export {
   cleanupAuthorizations,
   expectAuthorizationCanBeFound,
   verifyAuthorizationFields,
+  type Authorization,
 } from './authorization-requestHelpers';
 export {assertRoleInResponse} from './role-requestHelpers';
 export {assertClientsInResponse} from './clients-requestHelpers';
