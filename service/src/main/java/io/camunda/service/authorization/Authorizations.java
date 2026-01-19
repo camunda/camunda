@@ -91,8 +91,12 @@ public abstract class Authorizations {
   public static final Authorization<UserEntity> USER_READ_AUTHORIZATION =
       Authorization.of(a -> a.user().read());
 
+  public static final Authorization<UserTaskEntity>
+      PROCESS_DEFINITION_READ_USER_TASK_AUTHORIZATION =
+          Authorization.of(a -> a.processDefinition().readUserTask());
+
   public static final Authorization<UserTaskEntity> USER_TASK_READ_AUTHORIZATION =
-      Authorization.of(a -> a.processDefinition().readUserTask());
+      Authorization.of(a -> a.userTask().read());
 
   public static final Authorization<VariableEntity> VARIABLE_READ_AUTHORIZATION =
       Authorization.of(a -> a.processDefinition().readProcessInstance());

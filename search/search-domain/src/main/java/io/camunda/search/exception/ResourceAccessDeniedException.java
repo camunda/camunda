@@ -67,10 +67,11 @@ public class ResourceAccessDeniedException extends CamundaSearchException {
 
     final var parts =
         missingAuthorization.stream()
-            .map(ma -> "('%s' on '%s')".formatted(ma.permissionType(), ma.resourceType()))
-            .collect(Collectors.joining(", "));
+            .map(ma -> "'%s' on '%s'".formatted(ma.permissionType(), ma.resourceType()))
+            .distinct()
+            .collect(Collectors.joining(" or "));
 
-    return "Unauthorized to perform any of the operations %s".formatted(parts);
+    return "Unauthorized to perform any of the operations: %s".formatted(parts);
   }
 
   public record MissingAuthorization(
