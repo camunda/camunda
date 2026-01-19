@@ -7,10 +7,10 @@
  */
 
 import {logger} from 'modules/logger';
-import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {modificationsStore} from 'modules/stores/modifications';
 import {
   useHasRunningOrFinishedTokens,
+  useIsPlaceholderSelected,
   useIsRootNodeSelected,
   useNewTokenCountForSelectedNode,
 } from './flowNodeSelection';
@@ -76,17 +76,13 @@ const useDisplayStatus = ({
 }) => {
   const hasNoContent = useHasNoContent();
   const hasMultipleInstances = useHasMultipleInstances();
-  const newTokenCountForSelectedNode = useNewTokenCountForSelectedNode();
-  let {isFetchingElementError, isSelectedInstancePlaceholder} =
-    useProcessInstanceElementSelection();
+  const isPlaceholderSelected = useIsPlaceholderSelected();
+  let {isFetchingElementError} = useProcessInstanceElementSelection();
 
   // TODO: Remove these assignments once the feature flag is fully rolled out
   isFetchingElementError = IS_ELEMENT_SELECTION_V2
     ? isFetchingElementError
     : flowNodeMetaDataStore.state.status === 'error';
-  isSelectedInstancePlaceholder = IS_ELEMENT_SELECTION_V2
-    ? isSelectedInstancePlaceholder
-    : (flowNodeSelectionStore.state.selection?.isPlaceholder ?? false);
 
   if (isError || isFetchingElementError) {
     return 'error';
@@ -100,7 +96,7 @@ const useDisplayStatus = ({
     return 'multi-instances';
   }
 
-  if (isSelectedInstancePlaceholder || newTokenCountForSelectedNode === 1) {
+  if (isPlaceholderSelected) {
     return 'no-variables';
   }
 
