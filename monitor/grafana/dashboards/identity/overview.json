@@ -407,7 +407,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "Count of REST authentication errors per method. High values may indicate server-side issues or crashes.",
+      "description": "Count of REST authentication and authorization errors per URI endpoint and status code. High values may indicate server-side issues or crashes.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -490,7 +490,7 @@
           "disableTextWrap": false,
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum by (uri,status)(\n  rate(http_server_requests_seconds_count{\n    outcome=\"CLIENT_ERROR\",\n    status=~\"401|403\",\n    namespace=~\"$namespace\",\n    pod=~\"$pod\"\n  }[$__rate_interval])\n)",
+          "expr": "sum by (uri,status)(\n  rate(http_server_requests_seconds_count{\n    outcome=\"CLIENT_ERROR\",\n    status=~\"401|403\",\n    namespace=~\"$namespace\",\n    service=~\"$service\",\n    pod=~\"$pod\"\n  }[$__rate_interval])\n)",
           "format": "time_series",
           "fullMetaSearch": false,
           "hide": false,
@@ -503,7 +503,7 @@
           "useBackend": false
         }
       ],
-      "title": "Error Rate REST (top 10)",
+      "title": "Error Rate REST",
       "type": "timeseries"
     },
     {
@@ -511,7 +511,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "Count of REST authentication errors per method. High values may indicate server-side issues or crashes.",
+      "description": "Count of REST authentication errors per URI endpoint and status code. High values may indicate server-side issues or crashes.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -570,7 +570,7 @@
           "disableTextWrap": false,
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum by (uri,status)(\n  rate(http_server_requests_seconds_count{\n    outcome=\"CLIENT_ERROR\",\n    status=~\"401|403\",\n    namespace=~\"$namespace\",\n    pod=~\"$pod\"\n  }[$__rate_interval])\n)",
+          "expr": "sum by (uri,status)(\n  rate(http_server_requests_seconds_count{\n    outcome=\"CLIENT_ERROR\",\n    status=~\"401|403\",\n    namespace=~\"$namespace\",\n    service=~\"$service\",\n    pod=~\"$pod\"\n  }[$__rate_interval])\n)",
           "format": "table",
           "fullMetaSearch": false,
           "hide": false,
@@ -583,7 +583,7 @@
           "useBackend": false
         }
       ],
-      "title": "Error Rate REST (top 10)",
+      "title": "Error Rate REST",
       "transformations": [
         {
           "id": "organize",
@@ -701,7 +701,7 @@
           "disableTextWrap": false,
           "editorMode": "code",
           "exemplar": false,
-          "expr": "\n  sum by(method, statusCode) (\n    rate(grpc_server_processing_duration_seconds_count{\n      statusCode=~\"UNAUTHENTICATED|PERMISSION_DENIED\",\n      namespace=~\"$namespace\",\n      pod=~\"$pod\"\n    }[$__rate_interval]) != 0\n  )\n",
+          "expr": "\n  sum by(method, statusCode) (\n    rate(grpc_server_processing_duration_seconds_count{\n      statusCode=~\"UNAUTHENTICATED|PERMISSION_DENIED\",\n      namespace=~\"$namespace\",\n      service=~\"$service\",\n      pod=~\"$pod\"\n    }[$__rate_interval]) != 0\n  )\n",
           "format": "time_series",
           "fullMetaSearch": false,
           "hide": false,
@@ -714,7 +714,7 @@
           "useBackend": false
         }
       ],
-      "title": "Error Rate gRPC (top 10)",
+      "title": "Error Rate gRPC",
       "type": "timeseries"
     },
     {
@@ -788,7 +788,7 @@
           "disableTextWrap": false,
           "editorMode": "code",
           "exemplar": false,
-          "expr": "\n  sum by(method, statusCode) (\n    rate(grpc_server_processing_duration_seconds_count{\n      statusCode=~\"UNAUTHENTICATED|PERMISSION_DENIED\",\n      namespace=~\"$namespace\",\n      pod=~\"$pod\"\n    }[$__rate_interval]) != 0\n  )\n",
+          "expr": "\n  sum by(method, statusCode) (\n    rate(grpc_server_processing_duration_seconds_count{\n      statusCode=~\"UNAUTHENTICATED|PERMISSION_DENIED\",\n      namespace=~\"$namespace\",\n      service=~\"$service\",\n      pod=~\"$pod\"\n    }[$__rate_interval]) != 0\n  )\n",
           "format": "table",
           "fullMetaSearch": false,
           "hide": false,
