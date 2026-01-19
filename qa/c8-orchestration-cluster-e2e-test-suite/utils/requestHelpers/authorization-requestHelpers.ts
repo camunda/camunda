@@ -21,6 +21,15 @@ import {
   authorizedComponentRequiredFields,
 } from '../beans/requestBeans';
 
+export interface Authorization {
+  ownerId: string;
+  ownerType: string;
+  resourceId: string;
+  resourceType: string;
+  permissionTypes: string[];
+  authorizationKey?: string;
+};
+
 export async function createComponentAuthorization(
   request: APIRequestContext,
   body: Serializable,

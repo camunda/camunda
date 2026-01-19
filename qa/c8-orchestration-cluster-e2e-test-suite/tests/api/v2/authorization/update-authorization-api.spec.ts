@@ -26,6 +26,7 @@ import {
   createMappingRule,
   expectAuthorizationCanBeFound,
   verifyAuthorizationFields,
+  type Authorization,
 } from '@requestHelpers';
 import {CREATE_CUSTOM_AUTHORIZATION_BODY} from '../../../../utils/beans/requestBeans';
 import {waitForAssertion} from 'utils/waitForAssertion';
@@ -33,15 +34,6 @@ import {cleanupRoles} from 'utils/rolesCleanup';
 import {cleanupGroups} from 'utils/groupsCleanup';
 import {cleanupMappingRules} from 'utils/mappingRuleCleanup';
 import {sleep} from 'utils/sleep';
-
-type Authorization = {
-  ownerId: string;
-  ownerType: string;
-  resourceId: string;
-  resourceType: string;
-  permissionTypes: string[];
-  authorizationKey?: string;
-};
 
 test.describe.parallel('Update Authorization API', () => {
   const cleanups: ((request: APIRequestContext) => Promise<void>)[] = [];
