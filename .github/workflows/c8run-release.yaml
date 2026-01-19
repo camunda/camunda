@@ -37,6 +37,10 @@ on:
         description: 'Add extra suffix for release artifacts like "-rc" (Note: the dash should be included)'
         type: string
         default: ""
+      reuseExistingArtifacts:
+        description: "Reuse previously published -rc artifacts instead of rebuilding"
+        type: boolean
+        default: false
 
 permissions:
   actions: read
@@ -105,6 +109,11 @@ jobs:
         camunda8-run-${{ inputs.camundaVersion }}${{ inputs.artifactVersionSuffix }}-${{ matrix.os.artifactFileSuffix }}
       C8RUN_NAME_ARTIFACT_WITH_PATCH_VERSION: >-
         camunda8-run-${{ inputs.camundaAppsRelease }}${{ inputs.artifactVersionSuffix }}-${{ matrix.os.artifactFileSuffix }}
+      C8RUN_NAME_BUILD_OUTPUT: >-
+        camunda8-run-${{ inputs.camundaAppsRelease }}-${{ matrix.os.artifactFileSuffix }}
+      C8RUN_NAME_REUSE_SOURCE: >-
+        camunda8-run-${{ inputs.camundaAppsRelease }}-rc-${{ matrix.os.artifactFileSuffix }}
+      REUSE_EXISTING_ARTIFACTS: ${{ inputs.reuseExistingArtifacts }}
     steps:
       - name: ℹ️ Print workflow inputs ℹ️
         env:
@@ -136,18 +145,22 @@ jobs:
             secret/data/products/distribution/ci APPLE_COMMON_NAME;
             secret/data/common/jenkins/downloads-camunda-cloud_google_sa_key DOWNLOAD_CENTER_GCLOUD_KEY_BYTES | GCP_CREDENTIALS_NAME;
       - uses: actions/setup-go@v5
+        if: ${{ !inputs.reuseExistingArtifacts }}
         with:
           go-version: ">=1.23.1"
           cache: false # disabling since not working anyways without a cache-dependency-path specified
       - name: Build artifact runtime distro
+        if: ${{ !inputs.reuseExistingArtifacts }}
         working-directory: ${{ matrix.os.workingDir }}
         run: go build -o ${{ matrix.os.c8runArtifactName }} ./cmd/c8run
 
       - name: Build artifact packaging distro
+        if: ${{ !inputs.reuseExistingArtifacts }}
         working-directory: ${{ matrix.os.workingDir }}
         run: go build -o ${{ matrix.os.packagerArtifactName }} ./cmd/packager
 
       - name: Create artifact package
+        if: ${{ !inputs.reuseExistingArtifacts }}
         working-directory: ${{ matrix.os.workingDir }}
         run: ${{ matrix.os.packagingCmd }} package
         env:
@@ -156,7 +169,7 @@ jobs:
 
       - name: MacOS - Extract package
         id: macos-extract
-        if: startsWith(matrix.os.name, 'MacOS')
+        if: ${{ !inputs.reuseExistingArtifacts && startsWith(matrix.os.name, 'MacOS') }}
         run: |
           mkdir -p tmp
           mv "$C8RUN_NAME_ORIGINAL" tmp
@@ -173,10 +186,10 @@ jobs:
         shell: bash
         working-directory: ./c8run
         env:
-          C8RUN_NAME_ORIGINAL: "camunda8-run-${{ inputs.camundaAppsRelease }}-${{ matrix.os.artifactFileSuffix }}"
+          C8RUN_NAME_ORIGINAL: "${{ env.C8RUN_NAME_BUILD_OUTPUT }}"
 
       - name: MacOS - Sign and notarize
-        if: startsWith(matrix.os.name, 'MacOS')
+        if: ${{ !inputs.reuseExistingArtifacts && startsWith(matrix.os.name, 'MacOS') }}
         uses: ./.github/actions/sign-and-notarize
         with:
           p12-base64: ${{ steps.secrets.outputs.APPLE_CERTIFICATE }}
@@ -188,25 +201,42 @@ jobs:
           path: ${{ steps.macos-extract.outputs.extracted_dir }}
 
       - name: MacOS - Replace old artifact with codesigned artifact
-        if: startsWith(matrix.os.name, 'MacOS')
+        if: ${{ !inputs.reuseExistingArtifacts && startsWith(matrix.os.name, 'MacOS') }}
         run: |
           mv ./c8run/tmp/c8run_complete.zip ./c8run/"$C8RUN_NAME_ORIGINAL"
         env:
-          C8RUN_NAME_ORIGINAL: "camunda8-run-${{ inputs.camundaAppsRelease }}-${{ matrix.os.artifactFileSuffix }}"
+          C8RUN_NAME_ORIGINAL: "${{ env.C8RUN_NAME_BUILD_OUTPUT }}"
+
+      - name: Download existing artifact
+        if: inputs.reuseExistingArtifacts
+        working-directory: ${{ matrix.os.workingDir }}
+        env:
+          SOURCE_FILE: "${{ env.C8RUN_NAME_REUSE_SOURCE }}"
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download "${{ inputs.camundaAppsRelease }}" \
+            --pattern "${SOURCE_FILE}" \
+            --dir .
 
       - name: Copy artifact
         working-directory: ${{ matrix.os.workingDir }}
-        env:
-          C8RUN_NAME_ORIGINAL: "camunda8-run-${{ inputs.camundaAppsRelease }}-${{ matrix.os.artifactFileSuffix }}"
-          C8RUN_NAME_TMP: "${{ env.C8RUN_NAME_ORIGINAL }}.tmp"
         run: |
           ls -lsa
           # Artifact.
-          cp -a "${{ env.C8RUN_NAME_ORIGINAL }}" "${{ env.C8RUN_NAME_TMP }}"
-          cp -a "${{ env.C8RUN_NAME_TMP }}" \
-            "${{ env.C8RUN_NAME_ARTIFACT_WITH_MINOR_VERSION }}"
-          cp -a "${{ env.C8RUN_NAME_TMP }}" \
-            "${{ env.C8RUN_NAME_ARTIFACT_WITH_PATCH_VERSION }}"
+          source_file="${C8RUN_NAME_BUILD_OUTPUT}"
+          if [[ "${REUSE_EXISTING_ARTIFACTS}" == "true" ]]; then
+            source_file="${C8RUN_NAME_REUSE_SOURCE}"
+          fi
+          if [[ ! -f "${source_file}" ]]; then
+            echo "Unable to locate source artifact: ${source_file}"
+            exit 1
+          fi
+          tmp_file="${source_file}.tmp"
+          cp -a "${source_file}" "${tmp_file}"
+          cp -a "${tmp_file}" \
+            "${C8RUN_NAME_ARTIFACT_WITH_MINOR_VERSION}"
+          cp -a "${tmp_file}" \
+            "${C8RUN_NAME_ARTIFACT_WITH_PATCH_VERSION}"
 
       - name: GitHub - Upload artifact to Camunda apps release
         if: inputs.publishToCamundaAppsRelease
