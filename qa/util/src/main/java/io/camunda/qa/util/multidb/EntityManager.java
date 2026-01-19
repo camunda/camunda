@@ -41,6 +41,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.apache.commons.lang3.ObjectUtils;
 import org.awaitility.Awaitility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -151,28 +152,53 @@ public final class EntityManager {
   private void addPermissions(
       final String ownerId, final OwnerType ownerType, final List<Permissions> permissions) {
     permissions.forEach(
-        permission ->
-            permission
-                .resourceIds()
-                .forEach(
-                    resourceId -> {
-                      defaultClient
-                          .newCreateAuthorizationCommand()
-                          .ownerId(ownerId)
-                          .ownerType(ownerType)
-                          .resourceId(resourceId)
-                          .resourceType(permission.resourceType())
-                          .permissionTypes(permission.permissionType())
-                          .send()
-                          .join();
-                      createdPermissionIdentifiers.add(
-                          permissionIdentifier(
-                              ownerId,
-                              ownerType,
-                              permission.resourceType(),
-                              resourceId,
-                              permission.permissionType()));
-                    }));
+        permission -> {
+          // Create permissions for resourceIds
+          permission
+              .resourceIds()
+              .forEach(
+                  resourceId -> {
+                    defaultClient
+                        .newCreateAuthorizationCommand()
+                        .ownerId(ownerId)
+                        .ownerType(ownerType)
+                        .resourceId(resourceId)
+                        .resourceType(permission.resourceType())
+                        .permissionTypes(permission.permissionType())
+                        .send()
+                        .join();
+                    createdPermissionIdentifiers.add(
+                        permissionIdentifier(
+                            ownerId,
+                            ownerType,
+                            permission.resourceType(),
+                            resourceId,
+                            permission.permissionType()));
+                  });
+
+          // Create permissions for resourcePropertyNames
+          permission
+              .resourcePropertyNames()
+              .forEach(
+                  propertyName -> {
+                    defaultClient
+                        .newCreateAuthorizationCommand()
+                        .ownerId(ownerId)
+                        .ownerType(ownerType)
+                        .resourcePropertyName(propertyName)
+                        .resourceType(permission.resourceType())
+                        .permissionTypes(permission.permissionType())
+                        .send()
+                        .join();
+                    createdPermissionIdentifiers.add(
+                        permissionIdentifier(
+                            ownerId,
+                            ownerType,
+                            permission.resourceType(),
+                            propertyName,
+                            permission.permissionType()));
+                  });
+        });
   }
 
   private void addGroupMemberships(final String groupId, final List<Membership> memberships) {
@@ -338,7 +364,8 @@ public final class EntityManager {
                     authorization.getOwnerId(),
                     authorization.getOwnerType(),
                     authorization.getResourceType(),
-                    authorization.getResourceId(),
+                    ObjectUtils.firstNonNull(
+                        authorization.getResourceId(), authorization.getResourcePropertyName()),
                     permissionType));
   }
 
@@ -346,9 +373,9 @@ public final class EntityManager {
       final String ownerId,
       final OwnerType ownerType,
       final ResourceType resourceType,
-      final String resourceId,
+      final String identifier,
       final PermissionType permissionType) {
-    return "%s|%s|%s|%s|%s".formatted(ownerId, ownerType, resourceType, resourceId, permissionType);
+    return "%s|%s|%s|%s|%s".formatted(ownerId, ownerType, resourceType, identifier, permissionType);
   }
 
   private <T> void awaitMembershipsVisibility(
