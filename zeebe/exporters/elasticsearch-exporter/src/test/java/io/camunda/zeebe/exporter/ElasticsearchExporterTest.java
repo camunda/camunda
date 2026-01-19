@@ -277,7 +277,13 @@ final class ElasticsearchExporterTest {
       final var recordMock = mock(Record.class);
       when(recordMock.getValueType()).thenReturn(valueType);
       when(recordMock.getBrokerVersion()).thenReturn(version);
-      exporter.export(recordMock);
+      when(recordMock.getRecordType()).thenReturn(RecordType.EVENT);
+
+      // simulate new filtering logic: only export if filter accepts
+      final var filter = context.getRecordFilter();
+      if (filter == null || filter.acceptRecord(recordMock)) {
+        exporter.export(recordMock);
+      }
 
       // then
       if (valueType == ValueType.PROCESS_INSTANCE
@@ -372,12 +378,17 @@ final class ElasticsearchExporterTest {
               .withPosition(10L)
               .withBrokerVersion(VersionUtil.getVersionLowerCase())
               .withValueType(ValueType.PROCESS_INSTANCE)
+              .withRecordType(RecordType.EVENT)
               .build();
       exporter.configure(context);
       exporter.open(controller);
 
       // when
-      exporter.export(record);
+      // simulate new filtering logic: only export if filter accepts
+      final var filter = context.getRecordFilter();
+      if (filter == null || filter.acceptRecord(record)) {
+        exporter.export(record);
+      }
 
       // then
       assertThat(controller.getPosition()).isEqualTo(-1);

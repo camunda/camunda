@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.exporter.api.context;
 
+import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -63,33 +64,50 @@ public interface Context {
    */
   void setFilter(RecordFilter filter);
 
-  /** A filter to limit the records which are exported. */
+  /**
+   * A filter to limit the records which are exported.
+   *
+   * <p>This interface is used in two distinct phases of filtering:
+   *
+   * <ul>
+   *   <li>filtering on metadata to avoid deserialization (faster but limited data to filter on)
+   *       additional filtering on fully deserialized records (slower but richer data to filter on)
+   *   <li>additional filtering on fully deserialized records (slower but richer data to filter on)
+   * </ul>
+   */
   interface RecordFilter {
 
     /**
-     * Should export records of the given type?
+     * Filters by {@link RecordType}.
      *
-     * @param recordType the type of the record.
-     * @return {@code true} if records of this type should be exporter.
+     * <p>Used to skip records by record type at metadata level
      */
-    boolean acceptType(RecordType recordType);
+    boolean acceptType(final RecordType recordType);
 
     /**
-     * Should export records with a value of the given type?
+     * Filters by {@link ValueType}.
      *
-     * @param valueType the type of the record value.
-     * @return {@code true} if records with this type of value should be exported.
+     * <p>Used to skip records by value type at metadata level
      */
-    boolean acceptValue(ValueType valueType);
+    boolean acceptValue(final ValueType valueType);
 
     /**
-     * Should export records with the given intent?
+     * Filters by {@link Intent}.
      *
-     * @param intent the intent of the record.
-     * @return {@code true} if records with this intent should be exported.
+     * <p>Default is {@code true} for backward compatibility (no intent filtering).
+     *
+     * <p>Used to filter intents at metadata level
      */
     default boolean acceptIntent(final Intent intent) {
-      // default implementation accepts all intents
+      return true;
+    }
+
+    /**
+     * Filters a fully deserialized {@link Record}.
+     *
+     * <p>Used to filter using full record instead of just metadata
+     */
+    default boolean acceptRecord(final Record<?> record) {
       return true;
     }
   }

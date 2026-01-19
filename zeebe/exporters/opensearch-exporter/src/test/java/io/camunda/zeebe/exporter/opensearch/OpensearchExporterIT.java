@@ -337,7 +337,11 @@ final class OpensearchExporterIT {
     final var record = generateRecord(valueType, version);
 
     // when
-    export(record);
+    // simulate new filtering logic: only export if filter accepts
+    final var filter = exporterTestContext.getRecordFilter();
+    if (filter == null || filter.acceptRecord(record)) {
+      export(record);
+    }
 
     // then
     if (valueType == ValueType.PROCESS_INSTANCE

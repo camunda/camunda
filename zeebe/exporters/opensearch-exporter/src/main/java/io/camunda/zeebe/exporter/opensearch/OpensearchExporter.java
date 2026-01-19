@@ -15,14 +15,10 @@ import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.RecordType;
-import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.util.SemanticVersion;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.time.Duration;
-import java.util.HashSet;
-import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,19 +41,17 @@ public class OpensearchExporter implements Exporter {
   private OpensearchExporterSchemaManager schemaManager;
 
   private long lastPosition = -1;
-  private Set<String> indexTemplatesCreated;
 
   @Override
   public void configure(final Context context) {
     log = context.getLogger();
     configuration = context.getConfiguration().instantiate(OpensearchExporterConfiguration.class);
-    log.debug("Exporter configured with {}", configuration);
+    log.info("Exporter configured with {}", configuration);
 
     validate(configuration);
     pluginRepository.load(configuration.getInterceptorPlugins());
 
     context.setFilter(new OpensearchRecordFilter(configuration));
-    indexTemplatesCreated = new HashSet<>();
     meterRegistry = context.getMeterRegistry();
   }
 
@@ -121,14 +115,6 @@ public class OpensearchExporter implements Exporter {
 
   @Override
   public void export(final Record<?> record) {
-
-    if (!shouldExportRecord(record)) {
-      // ignore the record but still update the last exported position
-      // so that we don't block compaction. Don't update the controller yet, this needs to be done
-      // on the next flush.
-      lastPosition = record.getPosition();
-      return;
-    }
     schemaManager.createSchema(record.getBrokerVersion());
 
     final var recordSequence = recordCounters.getNextRecordSequence(record);
@@ -142,24 +128,6 @@ public class OpensearchExporter implements Exporter {
       flush();
       updateLastExportedPosition();
     }
-  }
-
-  /**
-   * Determine whether a record should be exported or not. For Camunda 8.8 we require Optimize
-   * records to be exported, or if the configuration explicitly enables the export of all records
-   * {@link OpensearchExporterConfiguration#includeEnabledRecords}. For past versions, we continue
-   * to export all records.
-   *
-   * @param record The record to check
-   * @return Whether the record should be exported or not
-   */
-  private boolean shouldExportRecord(final Record<?> record) {
-    final var recordVersion = getVersion(record.getBrokerVersion());
-    if (configuration.getIsIncludeEnabledRecords()
-        || (recordVersion.major() == 8 && recordVersion.minor() < 8)) {
-      return true;
-    }
-    return configuration.shouldIndexRequiredValueType(record.getValueType());
   }
 
   private void validate(final OpensearchExporterConfiguration configuration) {
@@ -254,24 +222,5 @@ public class OpensearchExporter implements Exporter {
                     "Unsupported record broker version: ["
                         + version
                         + "] Must be a semantic version."));
-  }
-
-  private static class OpensearchRecordFilter implements Context.RecordFilter {
-
-    private final OpensearchExporterConfiguration configuration;
-
-    OpensearchRecordFilter(final OpensearchExporterConfiguration configuration) {
-      this.configuration = configuration;
-    }
-
-    @Override
-    public boolean acceptType(final RecordType recordType) {
-      return configuration.shouldIndexRecordType(recordType);
-    }
-
-    @Override
-    public boolean acceptValue(final ValueType valueType) {
-      return configuration.shouldIndexValueType(valueType);
-    }
   }
 }
