@@ -28,8 +28,6 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import net.bytebuddy.ByteBuddy;
-import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
-import org.elasticsearch.client.RequestOptions;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -87,7 +85,7 @@ public class ElasticsearchConnectorIT {
     final var client = connector.tasklistEsClient();
 
     // when
-    client.cluster().health(new ClusterHealthRequest(), RequestOptions.DEFAULT);
+    client.cluster().health();
 
     // then
     WIRE_MOCK_SERVER.verify(

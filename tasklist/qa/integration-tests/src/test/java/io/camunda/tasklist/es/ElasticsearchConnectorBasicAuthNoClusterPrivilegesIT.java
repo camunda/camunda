@@ -78,8 +78,8 @@ public class ElasticsearchConnectorBasicAuthNoClusterPrivilegesIT extends Taskli
           .withExposedPorts(9200);
 
   @Autowired
-  @Qualifier("tasklistEs8Client")
-  ElasticsearchClient es8Client;
+  @Qualifier("tasklistEsClient")
+  ElasticsearchClient esClient;
 
   @Autowired private TestRestTemplate testRestTemplate;
 
@@ -92,7 +92,7 @@ public class ElasticsearchConnectorBasicAuthNoClusterPrivilegesIT extends Taskli
 
   @Test
   public void canConnect() {
-    assertThat(es8Client).isNotNull();
+    assertThat(esClient).isNotNull();
     final var healthCheck =
         testRestTemplate.getForEntity(
             "http://localhost:" + managementPort + "/actuator/health", Map.class);
