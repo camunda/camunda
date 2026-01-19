@@ -16323,7 +16323,7 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "(sum(zeebe_rocksdb_memory_estimate_table_readers_mem{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}) by (pod, partition)) + (sum(zeebe_rocksdb_memory_size_all_mem_tables{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\",  partition=~\"$partition\"}) by (pod, partition)) + (sum(rate(zeebe_rocksdb_live_estimate_num_keys{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\",  partition=~\"$partition\"}[$__rate_interval])) by (pod, partition) * 10)",
+              "expr": "(((max(zeebe_rocksdb_memory_estimate_table_readers_mem{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}) by (pod)) + (max(zeebe_rocksdb_memory_size_all_mem_tables{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\"}) by (pod)) + (max(zeebe_rocksdb_memory_block_cache_capacity{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}) by (pod)) + (sum(rate(zeebe_rocksdb_live_estimate_num_keys{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (pod) * 10)) \nand on() (zeebe_rocksdb_memory_allocation_strategy{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}) )\nor\n( ((sum(zeebe_rocksdb_memory_estimate_table_readers_mem{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}) by (pod, partition)) + (sum(zeebe_rocksdb_memory_size_all_mem_tables{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\",  partition=~\"$partition\"}) by (pod, partition)) + (sum(zeebe_rocksdb_memory_block_cache_capacity{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}) by (pod, partition)) + (sum(rate(zeebe_rocksdb_live_estimate_num_keys{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\",  partition=~\"$partition\"}[$__rate_interval])) by (pod, partition) * 10)) \nunless on() (zeebe_rocksdb_memory_allocation_strategy{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}))",
               "hide": false,
               "interval": "",
               "legendFormat": "{{pod}} memory {{partition}}",
@@ -16924,7 +16924,7 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "max(\n  zeebe_rocksdb_memory_block_cache_capacity{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}\n) by (pod)",
+              "expr": "((max(zeebe_rocksdb_memory_block_cache_capacity{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}) by (pod)) and on() (zeebe_rocksdb_memory_allocation_strategy{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}) )\nor\n( (sum(zeebe_rocksdb_memory_block_cache_capacity{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}) by (pod, partition)) unless on() (zeebe_rocksdb_memory_allocation_strategy{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}))",
               "interval": "",
               "legendFormat": "{{pod}} Block cache",
               "range": true,
@@ -17026,7 +17026,7 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "max(zeebe_rocksdb_memory_block_cache_usage{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}) by (pod)",
+              "expr": "( (max(zeebe_rocksdb_memory_block_cache_usage{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}) by (pod)) and on() (zeebe_rocksdb_memory_allocation_strategy{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}) )\nor\n( (sum(zeebe_rocksdb_memory_block_cache_usage{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}) by (pod, partition)) unless on() (zeebe_rocksdb_memory_allocation_strategy{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}) )",
               "interval": "",
               "legendFormat": "{{pod}} Block cache usage",
               "range": true,
@@ -17127,7 +17127,7 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "max(zeebe_rocksdb_memory_block_cache_pinned_usage{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}) by (pod)",
+              "expr": "( (sum(zeebe_rocksdb_memory_block_cache_pinned_usage{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}) by (pod)) and on() (zeebe_rocksdb_memory_allocation_strategy{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}) )\nor\n( (sum(zeebe_rocksdb_memory_block_cache_pinned_usage{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}) by (pod, partition)) unless on() (zeebe_rocksdb_memory_allocation_strategy{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}) )",
               "interval": "",
               "legendFormat": "{{pod}} pinned cache",
               "range": true,
