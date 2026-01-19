@@ -38,17 +38,17 @@ const OperationsActions: React.FC<Props> = ({
 }) => {
   const suspendMutation = useSuspendBatchOperation({
     onError: (error) => {
-      handleOperationError(error.status);
+      handleOperationError(error.response?.status);
     },
   });
   const resumeMutation = useResumeBatchOperation({
     onError: (error) => {
-      handleOperationError(error.status);
+      handleOperationError(error.response?.status);
     },
   });
   const cancelMutation = useCancelBatchOperation({
     onError: (error) => {
-      handleOperationError(error.status);
+      handleOperationError(error.response?.status);
     },
   });
 

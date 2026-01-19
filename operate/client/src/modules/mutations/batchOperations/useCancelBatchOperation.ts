@@ -9,33 +9,31 @@
 import {useMutation, useQueryClient} from '@tanstack/react-query';
 import {cancelBatchOperation} from 'modules/api/v2/batchOperations/cancelBatchOperation';
 import {queryKeys} from 'modules/queries/queryKeys';
+import type {RequestError} from 'modules/request';
 
 type CancelBatchOperationOptions = {
-  onError?: (error: {
-    status: number;
-    statusText: string;
-  }) => Promise<unknown> | unknown;
+  onError?: (error: RequestError) => Promise<unknown> | unknown;
 };
 
 function useCancelBatchOperation(options?: CancelBatchOperationOptions) {
   const queryClient = useQueryClient();
 
-  return useMutation<void, {status: number; statusText: string}, string>({
+  return useMutation({
     mutationFn: async (batchOperationKey: string) => {
-      const response = await cancelBatchOperation(batchOperationKey);
+      const {response, error} = await cancelBatchOperation(batchOperationKey);
 
-      if (!response.ok) {
-        throw {status: response.status, statusText: response.statusText};
+      if (response !== null) {
+        return response;
       }
+
+      throw error;
     },
     onSuccess: (_, batchOperationKey) => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.batchOperations.get(batchOperationKey),
       });
     },
-    onError: (error) => {
-      return options?.onError?.(error);
-    },
+    onError: options?.onError,
   });
 }
 

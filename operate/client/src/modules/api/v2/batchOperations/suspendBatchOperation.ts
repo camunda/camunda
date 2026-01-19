@@ -7,10 +7,10 @@
  */
 
 import {endpoints} from '@camunda/camunda-api-zod-schemas/8.8';
-import {request} from 'modules/request';
+import {requestWithThrow} from 'modules/request';
 
 const suspendBatchOperation = async (batchOperationKey: string) => {
-  return request({
+  return requestWithThrow({
     url: endpoints.suspendBatchOperation.getUrl({batchOperationKey}),
     method: endpoints.suspendBatchOperation.method,
     responseType: 'none',
