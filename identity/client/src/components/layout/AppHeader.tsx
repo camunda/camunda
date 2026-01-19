@@ -8,7 +8,7 @@
 
 import { C3Navigation } from "@camunda/camunda-composite-components";
 import { useGlobalRoutes } from "src/components/global/useGlobalRoutes";
-import { Link } from "react-router";
+import { Link } from "react-router-dom";
 import { useApi } from "src/utility/api";
 import { checkLicense, License } from "src/utility/api/headers";
 import { getAuthentication } from "src/utility/api/authentication";
