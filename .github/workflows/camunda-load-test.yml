@@ -212,7 +212,7 @@ jobs:
 
   build-load-test-images:
     name: Build Starter and Worker
-    if: ${{ inputs.reuse-tag == '' }}
+    if: ${{ inputs.reuse-tag == '' || inputs.use-official-docker-images == true }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     needs: calculate-image-tag
@@ -300,7 +300,7 @@ jobs:
           make ${{ inputs.stable-vms && 'install-stable' || 'install' }} \
             secondary_storage=${{ inputs.secondary-storage-type }} \
             additional_platform_configuration="--set global.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }} --set orchestration.image.registry=${{ inputs.use-official-docker-images && 'docker.io' || 'gcr.io' }} --set orchestration.image.repository=${{ inputs.use-official-docker-images && 'camunda/camunda' || 'zeebe-io/zeebe' }} --set orchestration.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }} ${{ inputs.platform-helm-values }}" \
-            additional_load_test_configuration="--set global.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }} --set global.image.registry=${{ inputs.use-official-docker-images && 'docker.io' || 'gcr.io' }} --set global.image.repository=${{ inputs.use-official-docker-images && 'camunda/camunda' || 'zeebe-io/zeebe' }} ${{ inputs.realistic && '-f https://raw.githubusercontent.com/camunda/camunda-load-tests-helm/refs/heads/main/charts/camunda-load-tests/values-realistic-benchmark.yaml' || '' }} ${{ inputs.load-test-load }}"
+            additional_load_test_configuration="--set global.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }} ${{ inputs.realistic && '-f https://raw.githubusercontent.com/camunda/camunda-load-tests-helm/refs/heads/main/charts/camunda-load-tests/values-realistic-benchmark.yaml' || '' }} ${{ inputs.load-test-load }}"
       - name: Summarize platform deployment
         if: success()
         run: |
