@@ -19,6 +19,7 @@ import {OperationsLog} from './OperationsLog';
 import {WarningFilled} from './styled';
 import {useJobs} from 'modules/queries/jobs/useJobs';
 import {useIsRootNodeSelected} from 'modules/hooks/flowNodeSelection';
+import {useElementSelectionInstanceKey} from 'modules/hooks/useElementSelectionInstanceKey';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 import {IS_ELEMENT_SELECTION_V2} from 'modules/feature-flags';
 
@@ -40,8 +41,8 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
   setListenerTabVisibility,
 }) {
   const {processInstanceId = ''} = useProcessInstancePageParams();
-  let {hasSelection, selectedElementId, selectedElementInstanceKey} =
-    useProcessInstanceElementSelection();
+  let {hasSelection, selectedElementId} = useProcessInstanceElementSelection();
+  let resolvedElementInstanceKey = useElementSelectionInstanceKey();
 
   // TODO: Remove these assignments to remove the feature flag from the component
   hasSelection = IS_ELEMENT_SELECTION_V2
@@ -51,14 +52,15 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
   selectedElementId = IS_ELEMENT_SELECTION_V2
     ? selectedElementId
     : (flowNodeSelectionStore.state.selection?.flowNodeId ?? null);
-  selectedElementInstanceKey = IS_ELEMENT_SELECTION_V2
-    ? selectedElementInstanceKey
+  resolvedElementInstanceKey = IS_ELEMENT_SELECTION_V2
+    ? resolvedElementInstanceKey
     : (flowNodeSelectionStore.state.selection?.flowNodeInstanceId ?? null);
 
   const [listenerTypeFilter, setListenerTypeFilter] =
     useState<ListenerTypeFilter>();
   const [selectedTab, setSelectedTab] = useState<TabId>('variables');
 
+  const shouldFetchListeners = resolvedElementInstanceKey || selectedElementId;
   const {
     data: jobs,
     fetchNextPage,
@@ -70,11 +72,11 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
       filter: {
         processInstanceKey: processInstanceId,
         elementId: selectedElementId ?? undefined,
-        elementInstanceKey: selectedElementInstanceKey ?? undefined,
+        elementInstanceKey: resolvedElementInstanceKey ?? undefined,
         kind: listenerTypeFilter,
       },
     },
-    disabled: !hasSelection,
+    disabled: !shouldFetchListeners,
     select: (data) => data.pages?.flatMap((page) => page.items),
   });
 
@@ -82,7 +84,7 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
 
   return (
     <TabView
-      key={`tabview-${selectedElementId}-${selectedElementInstanceKey}`}
+      key={`tabview-${selectedElementId}-${resolvedElementInstanceKey}`}
       onTabChange={(tabId) => setSelectedTab(tabId)}
       tabs={[
         {
