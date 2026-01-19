@@ -24,6 +24,7 @@ import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.concurrency.FuturesUtil;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -342,7 +343,8 @@ public final class IncidentUpdateTask implements BackgroundTask {
     } else {
       final var parsedTreePath = new TreePath(treePath);
       final var piIds = parsedTreePath.extractProcessInstanceIds();
-      final var fniIds = parsedTreePath.extractFlowNodeInstanceIds();
+      final var fniIds =
+          removeProcessInstanceIds(parsedTreePath.extractFlowNodeInstanceIds(), piIds);
 
       future =
           createProcessInstanceUpdates(data, incident, newState, piIds, bulkUpdate)
@@ -360,6 +362,20 @@ public final class IncidentUpdateTask implements BackgroundTask {
           return null;
         },
         executor);
+  }
+
+  private List<String> removeProcessInstanceIds(
+      final List<String> fniIds, final List<String> piIds) {
+    final var piIdSet = Set.copyOf(piIds);
+    final var fnIdsFiltered = new ArrayList<String>(fniIds.size());
+    for (final var fnId : fniIds) {
+      if (!piIdSet.contains(fnId)) {
+        fnIdsFiltered.add(fnId);
+      } else {
+        logger.debug("Skipping flow node instance id {} as it is also a process instance id", fnId);
+      }
+    }
+    return fnIdsFiltered;
   }
 
   private CompletableFuture<Void> createFlowNodeInstanceUpdates(
