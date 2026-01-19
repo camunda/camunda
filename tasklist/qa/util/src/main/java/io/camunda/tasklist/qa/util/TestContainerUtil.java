@@ -9,6 +9,12 @@ package io.camunda.tasklist.qa.util;
 
 import static io.camunda.webapps.schema.SupportedVersions.SUPPORTED_ELASTICSEARCH_VERSION;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.HealthStatus;
+import co.elastic.clients.elasticsearch.cluster.HealthResponse;
+import co.elastic.clients.json.jackson.JacksonJsonpMapper;
+import co.elastic.clients.transport.ElasticsearchTransport;
+import co.elastic.clients.transport.rest_client.RestClientTransport;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.exporter.CamundaExporter;
 import io.camunda.security.configuration.ConfiguredUser;
@@ -25,18 +31,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.apache.http.HttpHost;
-import org.elasticsearch.ElasticsearchException;
-import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
-import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.cluster.health.ClusterHealthStatus;
 import org.keycloak.admin.client.Keycloak;
 import org.opensearch.client.opensearch.OpenSearchClient;
-import org.opensearch.client.opensearch._types.HealthStatus;
 import org.opensearch.client.opensearch._types.OpenSearchException;
-import org.opensearch.client.opensearch.cluster.HealthResponse;
 import org.opensearch.testcontainers.OpenSearchContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -338,22 +336,23 @@ public class TestContainerUtil {
       backoff = @Backoff(delay = 3000))
   public void checkElasticsearchHealth(final TestContext testContext) {
     try {
-      final RestHighLevelClient esClient =
-          new RestHighLevelClient(
-              RestClient.builder(
-                  new HttpHost(
-                      testContext.getExternalElsHost(), testContext.getExternalElsPort())));
-      final ClusterHealthResponse clusterHealthResponse =
-          esClient.cluster().health(new ClusterHealthRequest(), RequestOptions.DEFAULT);
-      final ClusterHealthStatus healthStatus = clusterHealthResponse.getStatus();
-      final boolean isHealth = healthStatus.equals(ClusterHealthStatus.GREEN);
-      if (isHealth) {
+      final RestClient restClient =
+          RestClient.builder(
+                  new HttpHost(testContext.getExternalElsHost(), testContext.getExternalElsPort()))
+              .build();
+      final ElasticsearchTransport transport =
+          new RestClientTransport(restClient, new JacksonJsonpMapper());
+      final ElasticsearchClient esClient = new ElasticsearchClient(transport);
+      final HealthResponse healthResponse = esClient.cluster().health();
+      final HealthStatus healthStatus = healthResponse.status();
+      final boolean isHealthy = HealthStatus.Green.equals(healthStatus);
+      if (isHealthy) {
         LOGGER.info("ElasticSearch cluster is up & running, health status: '{}'", healthStatus);
       } else {
         LOGGER.warn("ElasticSearch cluster health status is : '{}'", healthStatus);
       }
-    } catch (final IOException | ElasticsearchException ex) {
-      throw new TasklistRuntimeException();
+    } catch (final IOException e) {
+      throw new TasklistRuntimeException(e);
     }
   }
 
@@ -363,10 +362,13 @@ public class TestContainerUtil {
       backoff = @Backoff(delay = 3000))
   public void checkOpenSearchHealth(final OpenSearchClient osClient) {
     try {
-      final HealthResponse healthResponse = osClient.cluster().health();
-      final HealthStatus healthStatus = healthResponse.status();
-      final boolean isHealth = HealthStatus.Green.equals(healthStatus);
-      if (isHealth) {
+      final org.opensearch.client.opensearch.cluster.HealthResponse healthResponse =
+          osClient.cluster().health();
+      final org.opensearch.client.opensearch._types.HealthStatus healthStatus =
+          healthResponse.status();
+      final boolean isHealthy =
+          org.opensearch.client.opensearch._types.HealthStatus.Green.equals(healthStatus);
+      if (isHealthy) {
         LOGGER.info("OpenSearch cluster is up & running, health status: '{}'", healthStatus);
       } else {
         LOGGER.warn("OpenSearch cluster health status is : '{}'", healthStatus);
