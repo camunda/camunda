@@ -130,7 +130,7 @@ const useClearSelectionOnModificationUndo = () => {
             return [
               ...scopeIds,
               ...Object.values(modification.parentScopeIds),
-              ...[modification.scopeId],
+              modification.scopeId,
             ];
           }
 
