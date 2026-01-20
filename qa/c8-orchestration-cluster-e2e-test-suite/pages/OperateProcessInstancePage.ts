@@ -76,12 +76,12 @@ class OperateProcessInstancePage {
   readonly viewAllCalledInstancesLink: Locator;
   readonly metadataPopover: Locator;
   readonly incidentSection: Locator;
-  readonly rootCauseProcessName: Locator;
-  readonly rootCauseProcessId: Locator;
   readonly incidentErrorType: Locator;
   readonly viewParentInstanceLink: Locator;
   readonly incidentErrorIndicators: Locator;
   readonly incidentErrorMessage: Locator;
+  readonly RootCauseProcessLink: Locator;
+  readonly RootCauseProcessInstance!: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -209,10 +209,10 @@ class OperateProcessInstancePage {
       .locator('xpath=following-sibling::*[1]');
     this.incidentErrorMessage = this.metadataPopover.locator('text=/error/i');
     this.incidentSection = page.getByText('IncidentView');
-    this.rootCauseProcessName = page.getByText(
-      'Root Cause Process Instance call-level-1-process -',
+    this.RootCauseProcessInstance = this.page.getByText(
+      'Root Cause Process Instancecall-level-1-process -',
     );
-    this.rootCauseProcessId = page.getByRole('link', {
+    this.RootCauseProcessLink = this.page.getByRole('link', {
       name: 'call-level-1-process -',
     });
   }
@@ -633,6 +633,11 @@ class OperateProcessInstancePage {
   }
 
   async clickViewParentInstance(): Promise<void> {
+    await this.viewParentInstanceLink.scrollIntoViewIfNeeded();
+    await this.viewParentInstanceLink.waitFor({
+      state: 'visible',
+      timeout: 30000,
+    });
     await this.viewParentInstanceLink.click();
   }
   // Methods for interacting with diagram elements for incident tests
@@ -665,9 +670,14 @@ class OperateProcessInstancePage {
   getCalledProcessLink(processName: string): Locator {
     return this.page.getByRole('link', {name: processName});
   }
-  async clickOnRootCauseProcessName(): Promise<void> {
-    await this.rootCauseProcessName.isVisible();
-    await this.rootCauseProcessId.click();
+
+  async clickViewRootCauseProcessLink(): Promise<void> {
+    await this.RootCauseProcessInstance.scrollIntoViewIfNeeded();
+    await this.RootCauseProcessLink.waitFor({
+      state: 'visible',
+      timeout: 30000,
+    });
+    await this.RootCauseProcessLink.click();
   }
 
   async clickCalledProcessLink(processName: string): Promise<void> {

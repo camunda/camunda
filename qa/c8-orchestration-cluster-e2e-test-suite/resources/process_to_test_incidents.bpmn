@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:ns1="http://camunda.org/schema/modeler/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" id="Definitions_root_cause" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Web Modeler" exporterVersion="a8d7898" ns1:executionPlatform="Camunda Cloud" ns1:executionPlatformVersion="8.8.0">
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:ns1="http://camunda.org/schema/modeler/1.0" id="Definitions_root_cause" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.33.1" ns1:executionPlatform="Camunda Cloud" ns1:executionPlatformVersion="8.8.0">
   <bpmn:process id="root-cause-test" name="Process-Incident" isExecutable="true">
     <bpmn:startEvent id="Start" name="Start">
       <bpmn:outgoing>Flow_Start</bpmn:outgoing>
@@ -92,115 +92,112 @@
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="root-cause-test">
       <bpmndi:BPMNShape id="Shape_Start" bpmnElement="Start">
-        <dc:Bounds x="152" y="312" width="36" height="36" />
+        <dc:Bounds x="152" y="282" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="159" y="355" width="24" height="14" />
+          <dc:Bounds x="159" y="325" width="24" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Shape_Split" bpmnElement="Gateway_Split">
-        <dc:Bounds x="245" y="305" width="50" height="50" />
+        <dc:Bounds x="245" y="275" width="50" height="50" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Shape_Decision" bpmnElement="Task_Decision">
-        <dc:Bounds x="410" y="80" width="100" height="80" />
+        <dc:Bounds x="410" y="170" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Shape_Call" bpmnElement="Task_CallActivity">
-        <dc:Bounds x="410" y="190" width="100" height="80" />
+        <dc:Bounds x="410" y="80" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Shape_IO" bpmnElement="Task_IOMapping">
-        <dc:Bounds x="410" y="290" width="100" height="80" />
+        <dc:Bounds x="410" y="260" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Shape_Gateway_E" bpmnElement="Gateway_Expression" isMarkerVisible="true">
-        <dc:Bounds x="405" y="455" width="50" height="50" />
+        <dc:Bounds x="305" y="385" width="50" height="50" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="346" y="426" width="68" height="27" />
+          <dc:Bounds x="246" y="356" width="68" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Shape_E_Bad" bpmnElement="Task_E_Bad">
-        <dc:Bounds x="530" y="370" width="100" height="80" />
+        <dc:Bounds x="400" y="370" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Shape_E_Good" bpmnElement="Task_E_Good">
-        <dc:Bounds x="530" y="530" width="100" height="80" />
+        <dc:Bounds x="400" y="460" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Shape_E_Join" bpmnElement="Gateway_E_Join" isMarkerVisible="true">
-        <dc:Bounds x="705" y="435" width="50" height="50" />
+        <dc:Bounds x="565" y="385" width="50" height="50" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Shape_Merge" bpmnElement="Gateway_Merge">
-        <dc:Bounds x="755" y="305" width="50" height="50" />
+        <dc:Bounds x="565" y="275" width="50" height="50" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Shape_End" bpmnElement="End">
-        <dc:Bounds x="862" y="312" width="36" height="36" />
+        <dc:Bounds x="672" y="282" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="870" y="355" width="20" height="14" />
+          <dc:Bounds x="680" y="325" width="20" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="Edge_Start" bpmnElement="Flow_Start">
-        <di:waypoint x="188" y="330" />
-        <di:waypoint x="245" y="330" />
+        <di:waypoint x="188" y="300" />
+        <di:waypoint x="245" y="300" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Edge_A" bpmnElement="Flow_A">
-        <di:waypoint x="270" y="305" />
+        <di:waypoint x="270" y="275" />
+        <di:waypoint x="270" y="210" />
+        <di:waypoint x="410" y="210" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_A_Merge" bpmnElement="Flow_A_Merge">
+        <di:waypoint x="510" y="210" />
+        <di:waypoint x="590" y="210" />
+        <di:waypoint x="590" y="275" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_B" bpmnElement="Flow_B">
+        <di:waypoint x="270" y="275" />
         <di:waypoint x="270" y="120" />
         <di:waypoint x="410" y="120" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Edge_A_Merge" bpmnElement="Flow_A_Merge">
-        <di:waypoint x="510" y="120" />
-        <di:waypoint x="780" y="120" />
-        <di:waypoint x="780" y="305" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Edge_B" bpmnElement="Flow_B">
-        <di:waypoint x="270" y="305" />
-        <di:waypoint x="270" y="230" />
-        <di:waypoint x="410" y="230" />
-      </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Edge_B_Merge" bpmnElement="Flow_B_Merge">
-        <di:waypoint x="510" y="230" />
-        <di:waypoint x="780" y="230" />
-        <di:waypoint x="780" y="305" />
+        <di:waypoint x="510" y="120" />
+        <di:waypoint x="590" y="120" />
+        <di:waypoint x="590" y="275" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Edge_D" bpmnElement="Flow_D">
-        <di:waypoint x="295" y="330" />
-        <di:waypoint x="410" y="330" />
+        <di:waypoint x="295" y="300" />
+        <di:waypoint x="410" y="300" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Edge_D_Merge" bpmnElement="Flow_D_Merge">
-        <di:waypoint x="510" y="330" />
-        <di:waypoint x="755" y="330" />
+        <di:waypoint x="510" y="300" />
+        <di:waypoint x="565" y="300" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Edge_E" bpmnElement="Flow_E">
-        <di:waypoint x="270" y="355" />
-        <di:waypoint x="270" y="480" />
-        <di:waypoint x="405" y="480" />
+        <di:waypoint x="270" y="325" />
+        <di:waypoint x="270" y="410" />
+        <di:waypoint x="305" y="410" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Edge_E_Condition" bpmnElement="Flow_E_Condition">
-        <di:waypoint x="430" y="455" />
-        <di:waypoint x="430" y="410" />
-        <di:waypoint x="530" y="410" />
+        <di:waypoint x="355" y="410" />
+        <di:waypoint x="400" y="410" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="441" y="393" width="78" height="14" />
+          <dc:Bounds x="231" y="413" width="78" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Edge_E_Default" bpmnElement="Flow_E_Default">
-        <di:waypoint x="430" y="505" />
-        <di:waypoint x="430" y="570" />
-        <di:waypoint x="530" y="570" />
+        <di:waypoint x="330" y="435" />
+        <di:waypoint x="330" y="500" />
+        <di:waypoint x="400" y="500" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Edge_E_Bad_Merge" bpmnElement="Flow_E_Bad_Merge">
-        <di:waypoint x="630" y="410" />
-        <di:waypoint x="730" y="410" />
-        <di:waypoint x="730" y="435" />
+        <di:waypoint x="500" y="410" />
+        <di:waypoint x="565" y="410" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Edge_E_Good_Merge" bpmnElement="Flow_E_Good_Merge">
-        <di:waypoint x="630" y="570" />
-        <di:waypoint x="730" y="570" />
-        <di:waypoint x="730" y="485" />
+        <di:waypoint x="500" y="500" />
+        <di:waypoint x="590" y="500" />
+        <di:waypoint x="590" y="435" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Edge_E_Merge" bpmnElement="Flow_E_Merge">
-        <di:waypoint x="755" y="460" />
-        <di:waypoint x="780" y="460" />
-        <di:waypoint x="780" y="355" />
+        <di:waypoint x="590" y="385" />
+        <di:waypoint x="590" y="325" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Edge_End" bpmnElement="Flow_End">
-        <di:waypoint x="805" y="330" />
-        <di:waypoint x="862" y="330" />
+        <di:waypoint x="615" y="300" />
+        <di:waypoint x="672" y="300" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>

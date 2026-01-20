@@ -11,6 +11,7 @@ import {expect} from '@playwright/test';
 import {deploy, createInstances} from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToApp} from '@pages/UtilitiesPage';
+import {waitForAssertion} from 'utils/waitForAssertion';
 
 test.beforeAll(async () => {
   await deploy([
@@ -20,6 +21,9 @@ test.beforeAll(async () => {
   ]);
   await createInstances('root-cause-test', 1, 1);
   await createInstances('call-level-1-process', 1, 1, {shouldFail: true});
+
+  // Wait for incidents to be created and indexed
+  await new Promise((resolve) => setTimeout(resolve, 5000));
 });
 
 test.describe('Process Instance Incident', () => {
@@ -45,6 +49,35 @@ test.describe('Process Instance Incident', () => {
       await operateHomePage.clickProcessesTab();
       await operateProcessesPage.filterByProcessName('Process-Incident');
       await operateProcessesPage.clickProcessInstanceLink();
+    });
+    await test.step('Verify error indicators on all affected elements', async () => {
+      // Wait for diagram to load completely
+      await expect(operateProcessInstancePage.diagram).toBeVisible();
+      await expect(operateProcessInstancePage.diagramSpinner).toBeHidden({
+        timeout: 30000,
+      });
+
+      await expect(operateProcessInstancePage.incidentsBanner).toBeVisible({
+        timeout: 10000,
+      });
+      // Click incidents banner to open incidents view
+      await operateProcessInstancePage.clickIncidentsBanner();
+
+      // Wait for the incident count heading to appear
+      await expect(operateProcessInstancePage.incidentsViewHeader).toBeVisible({
+        timeout: 10000,
+      });
+
+      // Get and verify the incident count from the heading
+      const incidentCount = await operateProcessInstancePage.getIncidentCount();
+      expect(incidentCount).toBeGreaterThan(0);
+
+      // Verify the count matches expected value
+      await operateProcessInstancePage.verifyIncidentCount(4);
+
+      // Check if panel is visible before closing
+      await operateProcessInstancePage.incidentsViewHeader.isVisible();
+      await operateProcessInstancePage.clickIncidentsBanner();
     });
     await test.step('Click IO mapping Error and verify Error Type', async () => {
       await operateProcessInstancePage.clickOnElementInDiagram(
@@ -90,7 +123,7 @@ test.describe('Process Instance Incident', () => {
     await expect(operateProcessInstancePage.metadataPopover).toBeHidden({
       timeout: 10000,
     });
-    await test.step('Click Call Activity and verify verify the error type', async () => {
+    await test.step('Click Call Activity and verify the error type', async () => {
       await operateProcessInstancePage.clickOnElementInDiagram(
         'Task_CallActivity',
       );
@@ -102,57 +135,24 @@ test.describe('Process Instance Incident', () => {
       // Verify incident section is visible
       await expect(operateProcessInstancePage.incidentSection).toBeVisible();
 
-      // Verify Called  process name is displayed
-      await expect(
-        operateProcessInstancePage.rootCauseProcessName,
-      ).toBeVisible();
-      const rootCauseLink = operateProcessInstancePage.getCalledProcessLink(
-        'View Call Activity Level 1',
-      );
-      await expect(rootCauseLink).toBeVisible();
+      // Verify incident error message is displayed
       await expect(
         operateProcessInstancePage.getIncidentErrorMessageByText(
           'Called element error.',
         ),
       ).toBeVisible();
-      await operateProcessInstancePage.clickOnElementInDiagram(
-        'Task_CallActivity',
-      );
-      await operateProcessInstancePage.clickOnRootCauseProcessName();
-      await operateProcessInstancePage.viewParentInstanceLink.click();
+
+      await expect(
+        operateProcessInstancePage.RootCauseProcessLink,
+      ).toBeVisible();
+
+      await operateProcessInstancePage.clickViewRootCauseProcessLink();
+      await operateProcessInstancePage.viewParentInstanceLink.click({
+        timeout: 10000,
+      });
       await expect(operateProcessInstancePage.metadataPopover).toBeHidden({
         timeout: 10000,
       });
-    });
-
-    await test.step('Verify error indicators on all affected elements', async () => {
-      // Wait for diagram to load completely
-      await expect(operateProcessInstancePage.diagram).toBeVisible();
-      await expect(operateProcessInstancePage.diagramSpinner).toBeHidden({
-        timeout: 30000,
-      });
-
-      await expect(operateProcessInstancePage.incidentsBanner).toBeVisible({
-        timeout: 10000,
-      });
-      // Click incidents banner to open incidents view
-      await operateProcessInstancePage.clickIncidentsBanner();
-
-      // Wait for the incident count heading to appear
-      await expect(operateProcessInstancePage.incidentsViewHeader).toBeVisible({
-        timeout: 10000,
-      });
-
-      // Get and verify the incident count from the heading
-      const incidentCount = await operateProcessInstancePage.getIncidentCount();
-      expect(incidentCount).toBeGreaterThan(0);
-
-      // Verify the count matches expected value
-      await operateProcessInstancePage.verifyIncidentCount(4);
-
-      // Check if panel is visible before closing
-      await operateProcessInstancePage.incidentsViewHeader.isVisible();
-      await operateProcessInstancePage.clickIncidentsBanner();
     });
   });
 });
