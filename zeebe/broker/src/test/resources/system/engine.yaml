@@ -19,4 +19,4 @@ zeebe:
           maxBackoffDuration: 20m
         maxProcessDepth: 2000
         expression:
-          timeout: 5s
+          timeout: 2s

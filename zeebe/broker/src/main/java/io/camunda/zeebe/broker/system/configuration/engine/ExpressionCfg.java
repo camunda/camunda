@@ -9,12 +9,12 @@ package io.camunda.zeebe.broker.system.configuration.engine;
 
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ConfigurationEntry;
+import io.camunda.zeebe.engine.EngineConfiguration;
 import java.time.Duration;
 
 public final class ExpressionCfg implements ConfigurationEntry {
 
-  private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(1);
-  private Duration timeout = DEFAULT_TIMEOUT;
+  private Duration timeout = EngineConfiguration.DEFAULT_EXPRESSION_EVALUATION_TIMEOUT;
 
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
