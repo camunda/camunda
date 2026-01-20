@@ -38,6 +38,7 @@ class OperateProcessesPage {
   readonly diagram: InstanceType<typeof OperateDiagramPage>;
   readonly processActiveCheckbox: Locator;
   readonly processCompletedCheckbox: Locator;
+  readonly processCanceledCheckbox: Locator;
   readonly processRunningInstancesCheckbox: Locator;
   readonly processIncidentsCheckbox: Locator;
   readonly processFinishedInstancesCheckbox: Locator;
@@ -130,6 +131,9 @@ class OperateProcessesPage {
     this.processCompletedCheckbox = page
       .locator('label')
       .filter({hasText: 'Completed'});
+    this.processCanceledCheckbox = page
+      .locator('label')
+      .filter({hasText: 'Canceled'});
     this.processRunningInstancesCheckbox = page
       .locator('label')
       .filter({hasText: 'Running Instances'});
@@ -385,6 +389,10 @@ class OperateProcessesPage {
 
   async clickProcessCompletedCheckbox(): Promise<void> {
     await this.processCompletedCheckbox.click({timeout: 120000});
+  }
+
+  async clickProcessCanceledCheckbox(): Promise<void> {
+    await this.processCanceledCheckbox.click({timeout: 120000});
   }
 
   async clickProcessIncidentsCheckbox(): Promise<void> {

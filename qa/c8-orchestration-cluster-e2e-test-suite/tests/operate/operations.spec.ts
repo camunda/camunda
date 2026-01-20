@@ -10,11 +10,10 @@ import {test} from 'fixtures';
 import {expect} from '@playwright/test';
 import {deploy, createInstances, createSingleInstance} from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
-import {navigateToApp, validateURL} from '@pages/UtilitiesPage';
-import {DATE_REGEX} from 'utils/constants';
+import {navigateToApp} from '@pages/UtilitiesPage';
 import {sleep} from 'utils/sleep';
-import {waitForAssertion} from 'utils/waitForAssertion';
 import {createDemoOperations} from 'utils/operations.helper';
+import {waitForAssertion} from 'utils/waitForAssertion';
 
 type ProcessInstance = {
   processInstanceKey: string;
@@ -66,42 +65,12 @@ test.describe('Operations', () => {
     await captureFailureVideo(page, testInfo);
   });
 
-  test('Infinite scrolling', async ({operateOperationPanelPage}) => {
-    await test.step('Expand operations panel and validate initial count', async () => {
-      await operateOperationPanelPage.expandOperationIdField();
-      await expect(
-        operateOperationPanelPage.getAllOperationEntries(),
-      ).toHaveCount(9);
-    });
-
-    await test.step('Scroll to last operation entry', async () => {
-      const initialCount = await operateOperationPanelPage
-        .getAllOperationEntries()
-        .count();
-
-      await operateOperationPanelPage
-        .getAllOperationEntries()
-        .last()
-        .scrollIntoViewIfNeeded();
-
-      await test.step('Verify more operations loaded', async () => {
-        await expect(async () => {
-          const newCount = await operateOperationPanelPage
-            .getAllOperationEntries()
-            .count();
-          expect(newCount).toBeGreaterThan(initialCount);
-        }).toPass();
-      });
-    });
-  });
-
   // Skipped due to bug 42375: https://github.com/camunda/camunda/issues/42375
   // !Note: assert the code after the bug is fixed as it was dicoverd during the test implementation
   test.skip('Retry and cancel single instance', async ({
     page,
     operateProcessesPage,
     operateFiltersPanelPage,
-    operateOperationPanelPage,
   }) => {
     const instance = initialData.singleOperationInstance;
 
@@ -137,27 +106,6 @@ test.describe('Operations', () => {
       ).toBeVisible();
     });
 
-    await test.step('Validate operation in operations list', async () => {
-      await expect(operateOperationPanelPage.operationList).toBeHidden();
-      await operateOperationPanelPage.expandOperationIdField();
-
-      await expect(operateOperationPanelPage.operationList).toBeVisible();
-
-      const operationEntry =
-        operateOperationPanelPage.getCancelOperationEntry(1);
-
-      await expect(operationEntry).toBeVisible();
-      await expect(operationEntry.getByText(DATE_REGEX)).toBeVisible();
-
-      const operationId = await operationEntry.getByRole('link').innerText();
-
-      await operateOperationPanelPage.clickOperationLink(operationEntry);
-      await expect(operateFiltersPanelPage.operationIdFilter).toHaveValue(
-        operationId,
-      );
-      await expect(operateProcessesPage.resultsCount).toBeVisible();
-    });
-
     await test.step('Validate canceled instance details', async () => {
       const instanceRow = operateProcessesPage.getInstanceRow(0);
 
@@ -169,15 +117,12 @@ test.describe('Operations', () => {
       await expect(
         instanceRow.getByText(instance.processInstanceKey),
       ).toBeVisible();
-
-      await operateOperationPanelPage.collapseOperationIdField();
     });
   });
 
   test('Retry and cancel multiple instances', async ({
     operateProcessesPage,
     operateFiltersPanelPage,
-    operateOperationPanelPage,
     page,
   }) => {
     test.slow();
@@ -185,7 +130,6 @@ test.describe('Operations', () => {
 
     await test.step('Filter by Process Instance Keys', async () => {
       await expect(operateProcessesPage.dataList).toBeVisible();
-
       await operateFiltersPanelPage.displayOptionalFilter(
         'Process Instance Key(s)',
       );
@@ -203,87 +147,48 @@ test.describe('Operations', () => {
 
       await operateProcessesPage.retryButton.click();
 
-      await expect(operateOperationPanelPage.operationList).toBeHidden();
-
       await operateProcessesPage.applyButton.click();
+      await sleep(1000);
 
-      await expect(operateOperationPanelPage.operationList).toBeVisible({
-        timeout: 30000,
+      await waitForAssertion({
+        assertion: async () => {
+          await expect
+            .poll(async () => {
+              return operateProcessesPage.scheduledOperationsIcons.count();
+            })
+            .toBe(instances.length);
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
       });
-      await sleep(500);
-
-      await operateOperationPanelPage.expandOperationsPanel();
-
-      await expect
-        .poll(async () => {
-          return operateProcessesPage.scheduledOperationsIcons.count();
-        })
-        .toBe(instances.length);
-    });
-
-    await test.step('Wait for operation to complete', async () => {
-      const operationEntry = operateOperationPanelPage.getRetryOperationEntry(
-        instances.length,
-      );
-
-      await expect(operationEntry).toBeVisible({timeout: 120000});
-
-      await operateOperationPanelPage.clickOperationLink(operationEntry);
-
-      await validateURL(page, /operationId=/);
-
-      await Promise.all(
-        instances.map((instance) =>
-          expect(
-            operateProcessesPage.processInstanceLinkByKey(
-              instance.processInstanceKey,
-            ),
-          ).toBeVisible(),
-        ),
-      );
     });
 
     await test.step('Cancel all instances', async () => {
-      await operateOperationPanelPage.collapseOperationIdField();
       await operateProcessesPage.selectAllRowsCheckbox.click();
 
       await operateProcessesPage.cancelButton.click();
       await operateProcessesPage.applyButton.click();
 
-      await expect(operateOperationPanelPage.operationList).toBeVisible({
-        timeout: 30000,
-      });
-      await sleep(500);
-
-      await operateOperationPanelPage.expandOperationsPanel();
-
-      await expect
-        .poll(async () => {
-          return operateProcessesPage.scheduledOperationsIcons.count();
-        })
-        .toBe(instances.length);
-
-      const operationEntry = operateOperationPanelPage.getCancelOperationEntry(
-        instances.length,
-      );
+      await operateProcessesPage.clickProcessIncidentsCheckbox();
+      await operateProcessesPage.clickProcessCanceledCheckbox();
 
       await waitForAssertion({
         assertion: async () => {
-          await expect(operationEntry).toBeVisible();
+          await Promise.all(
+            instances.map((instance) =>
+              expect(
+                operateProcessesPage.getCanceledIcon(
+                  instance.processInstanceKey,
+                ),
+              ).toBeVisible({timeout: 5000}),
+            ),
+          );
         },
         onFailure: async () => {
           await page.reload();
         },
-        maxRetries: 10,
       });
-      
-      await Promise.all(
-        instances.map((instance) =>
-          expect(
-            operateProcessesPage.getCanceledIcon(instance.processInstanceKey),
-          ).toBeVisible({timeout: 120000}),
-        ),
-      );
     });
   });
 });

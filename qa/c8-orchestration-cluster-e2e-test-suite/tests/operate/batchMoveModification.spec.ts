@@ -16,12 +16,7 @@ import {
   gotoProcessesPage,
 } from '@pages/UtilitiesPage';
 import {sleep} from 'utils/sleep';
-
-type ProcessInstance = {
-  processInstanceKey: string;
-};
-
-let processInstances: ProcessInstance[];
+import {waitForAssertion} from 'utils/waitForAssertion';
 
 const NUM_PROCESS_INSTANCES = 10;
 const NUM_SELECTED_PROCESS_INSTANCES = 4;
@@ -29,11 +24,7 @@ const NUM_SELECTED_PROCESS_INSTANCES = 4;
 test.beforeAll(async () => {
   await deploy(['./resources/orderProcessBatchMod_v_1.bpmn']);
 
-  processInstances = await createInstances(
-    'orderProcessBatchMod',
-    1,
-    NUM_PROCESS_INSTANCES,
-  );
+  await createInstances('orderProcessBatchMod', 1, NUM_PROCESS_INSTANCES);
 
   await sleep(2000);
 });
@@ -55,14 +46,9 @@ test.describe('Process Instance Batch Modification', () => {
     page,
     operateProcessesPage,
     operateFiltersPanelPage,
-    operateOperationPanelPage,
     operateDiagramPage,
     operateProcessModificationModePage,
   }) => {
-    const processInstanceKeys = processInstances.map(
-      (instance) => instance.processInstanceKey,
-    );
-
     await test.step('Navigate to processes page with filters', async () => {
       await gotoProcessesPage(page, {
         searchParams: {
@@ -129,38 +115,25 @@ test.describe('Process Instance Batch Modification', () => {
       await operateProcessModificationModePage.applyAndConfirmModification();
     });
 
-    await test.step('Verify operation is created and completed', async () => {
-      await expect(operateOperationPanelPage.operationsList).toBeVisible();
-      const operationEntry =
-        operateOperationPanelPage.getModificationOperationEntry(4);
-
-      await expect(operationEntry).toBeVisible({timeout: 120000});
-
-      await operateOperationPanelPage.clickOperationLink(operationEntry);
-    });
-
     await test.step('Filter and verify modified instances', async () => {
-      await operateFiltersPanelPage.selectProcess(
-        'Order process (Batch Modification)',
-      );
-      await operateFiltersPanelPage.selectVersion('1');
-      await operateFiltersPanelPage.displayOptionalFilter(
-        'Process Instance Key(s)',
-      );
-      await operateFiltersPanelPage.processInstanceKeysFilter.fill(
-        processInstanceKeys.join(','),
-      );
+      await operateDiagramPage.clickFlowNode('shipArticles');
 
-      await expect(
-        page.getByText(`${NUM_SELECTED_PROCESS_INSTANCES} results`),
-      ).toBeVisible();
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(
+            page.getByText(`${NUM_SELECTED_PROCESS_INSTANCES} results`),
+          ).toBeVisible({
+            timeout: 3000,
+          });
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+      });
     });
 
     await test.step('Wait for modification to complete and verify flow nodes', async () => {
-      await operateOperationPanelPage.waitForOperationToComplete();
-
-      await page.reload();
-
+      await operateDiagramPage.clickFlowNode('shipArticles');
       await expect(
         operateDiagramPage.diagram.getByTestId(
           'state-overlay-checkPayment-canceled',

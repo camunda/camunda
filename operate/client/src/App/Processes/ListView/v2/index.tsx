@@ -19,7 +19,6 @@ import {deleteSearchParams} from 'modules/utils/filter';
 import {useLocation, useNavigate, type Location} from 'react-router-dom';
 import {PAGE_TITLE} from 'modules/constants';
 import {notificationsStore} from 'modules/stores/notifications';
-import {OperationsPanel} from 'modules/components/OperationsPanel';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {ProcessDefinitionKeyContext} from '../processDefinitionKeyContext';
 import {useFilters} from 'modules/hooks/useFilters';
@@ -118,7 +117,6 @@ const ListView: React.FC = observer(() => {
         leftPanel={<Filters />}
         topPanel={<DiagramPanel />}
         bottomPanel={<InstancesTableWrapper />}
-        rightPanel={<OperationsPanel />}
         frame={{
           isVisible: batchModificationStore.state.isEnabled,
           headerTitle: 'Batch Modification Mode',

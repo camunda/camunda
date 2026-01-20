@@ -15,7 +15,6 @@ import {getProcessInstanceFilters} from 'modules/utils/filter';
 import {processesStore} from 'modules/stores/processes/processes.list';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {Title, DataTable} from './styled';
-import {panelStatesStore} from 'modules/stores/panelStates';
 import {tracking} from 'modules/tracking';
 import {useInstancesCountV2} from 'modules/queries/processInstancesStatistics/useInstancesCountV2';
 import {useProcessDefinitionKeyContext} from '../../../../processDefinitionKeyContext';
@@ -68,7 +67,6 @@ const BatchModificationSummaryModal: React.FC<StateProps> = observer(
       useModifyProcessInstancesBatchOperation({
         onSuccess: ({batchOperationKey, batchOperationType}) => {
           displaySuccessNotification(batchOperationType, batchOperationKey);
-          panelStatesStore.expandOperationsPanel();
           batchModificationStore.reset();
           tracking.track({
             eventName: 'batch-operation',

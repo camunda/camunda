@@ -11,15 +11,14 @@ import {Button} from '@carbon/react';
 import {ClassicBatch} from '@carbon/react/icons';
 import {useNavigate} from 'react-router-dom';
 import {CopiableProcessID} from 'App/Processes/CopiableProcessID';
-import {ProcessOperations} from '../../ProcessOperations';
+import {ProcessOperations} from 'App/Processes/ListView/v2/ProcessOperations';
 import {
   PanelHeader,
   Description,
   DescriptionTitle,
   DescriptionData,
   HeaderActions,
-} from '../../../DiagramPanel/DiagramHeader/styled';
-import {panelStatesStore} from 'modules/stores/panelStates';
+} from 'App/Processes/ListView/DiagramPanel/DiagramHeader/styled';
 import {Paths} from 'modules/Routes';
 import {
   getProcessDefinitionName,
@@ -38,15 +37,7 @@ const DiagramHeader: React.FC<DiagramHeaderProps> = observer(
       processDefinitionSelection.kind === 'no-match' ? 'Process' : undefined;
 
     return (
-      <PanelHeader
-        title={title}
-        ref={panelHeaderRef}
-        className={
-          panelStatesStore.state.isOperationsCollapsed
-            ? undefined
-            : 'panelOffset'
-        }
-      >
+      <PanelHeader title={title} ref={panelHeaderRef}>
         <DefinitionSelectionContent
           processDefinitionSelection={processDefinitionSelection}
         />

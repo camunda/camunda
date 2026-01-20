@@ -8,7 +8,6 @@
 
 import {mockApplyProcessDefinitionOperation} from 'modules/mocks/api/processes/operations';
 import {operationsStore} from 'modules/stores/operations';
-import {panelStatesStore} from 'modules/stores/panelStates';
 import {
   fireEvent,
   render,
@@ -42,7 +41,6 @@ const mockOperation: OperationEntity = {
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   useEffect(() => {
     return () => {
-      panelStatesStore.reset();
       operationsStore.reset();
     };
   }, []);
@@ -134,8 +132,6 @@ describe('<ProcessOperations />', () => {
       }),
     );
 
-    expect(panelStatesStore.state.isOperationsCollapsed).toBe(true);
-
     await user.click(
       await screen.findByLabelText(
         /Yes, I confirm I want to delete this process definition./i,
@@ -147,7 +143,6 @@ describe('<ProcessOperations />', () => {
     await waitFor(() =>
       expect(operationsStore.state.operations).toEqual([mockOperation]),
     );
-    expect(panelStatesStore.state.isOperationsCollapsed).toBe(false);
   });
 
   it('should show notification on operation error', async () => {
@@ -172,8 +167,6 @@ describe('<ProcessOperations />', () => {
       }),
     );
 
-    expect(panelStatesStore.state.isOperationsCollapsed).toBe(true);
-
     await user.click(
       await screen.findByLabelText(
         /Yes, I confirm I want to delete this process definition./i,
@@ -189,7 +182,6 @@ describe('<ProcessOperations />', () => {
         isDismissable: true,
       });
     });
-    expect(panelStatesStore.state.isOperationsCollapsed).toBe(true);
   });
 
   it('should show notification on operation auth error', async () => {
@@ -214,8 +206,6 @@ describe('<ProcessOperations />', () => {
       }),
     );
 
-    expect(panelStatesStore.state.isOperationsCollapsed).toBe(true);
-
     await user.click(
       await screen.findByLabelText(
         /Yes, I confirm I want to delete this process definition./i,
@@ -230,7 +220,6 @@ describe('<ProcessOperations />', () => {
       subtitle: 'Please contact the administrator if you need access.',
       isDismissable: true,
     });
-    expect(panelStatesStore.state.isOperationsCollapsed).toBe(true);
   });
 
   it('should disable button and show spinner when delete operation is triggered', async () => {
@@ -338,8 +327,6 @@ describe('<ProcessOperations />', () => {
         name: /^delete process definition "myProcess - version 2"$/i,
       }),
     );
-
-    expect(panelStatesStore.state.isOperationsCollapsed).toBe(true);
 
     await user.click(screen.getByRole('button', {name: /danger Delete/}));
 

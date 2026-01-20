@@ -97,7 +97,6 @@ test.describe('Child Process Instance Migration', () => {
     operateProcessesPage,
     operateProcessInstancePage,
     operateProcessMigrationModePage,
-    operateOperationPanelPage,
   }) => {
     test.slow();
     const sourceVersion = testProcesses.childProcessV1.version.toString();
@@ -125,9 +124,11 @@ test.describe('Child Process Instance Migration', () => {
         },
       });
 
-      await operateProcessesPage
-        .processInstanceLinkByKey(parentInstanceKey)
-        .click();
+      const instanceLink =
+        operateProcessesPage.processInstanceLinkByKey(parentInstanceKey);
+
+      await expect(instanceLink).toBeVisible({timeout: 15000});
+      await instanceLink.click();
 
       await operateProcessInstancePage.clickViewAllChildProcesses();
 
@@ -184,29 +185,17 @@ test.describe('Child Process Instance Migration', () => {
       await operateProcessMigrationModePage.completeProcessInstanceMigration();
     });
 
-    await test.step('Verify migration operation is created and completes', async () => {
-      await expect(operateOperationPanelPage.operationList).toBeVisible({
-        timeout: 30000,
-      });
-
-      await operateOperationPanelPage.expandOperationsPanel();
-
-      await operateOperationPanelPage.waitForOperationToComplete();
-
-      const operationEntry =
-        operateOperationPanelPage.getMigrationOperationEntry(1);
-
-      await expect(operationEntry).toBeVisible({timeout: 120000});
-
-      await operateOperationPanelPage.clickOperationLink(operationEntry);
-    });
-
     await test.step('Verify 1 instance migrated to target version', async () => {
+      await operateFiltersPanelPage.selectVersion(targetVersion);
+
       await waitForAssertion({
         assertion: async () => {
           await expect(page.getByText('1 result')).toBeVisible({
-            timeout: 30000,
+            timeout: 3000,
           });
+          await expect(
+            operateProcessesPage.versionCells(targetVersion),
+          ).toHaveCount(1, {timeout: 3000});
         },
         onFailure: async () => {
           await page.reload();
@@ -214,17 +203,11 @@ test.describe('Child Process Instance Migration', () => {
       });
 
       await expect(
-        operateProcessesPage.versionCells(targetVersion),
-      ).toHaveCount(1, {timeout: 30000});
-
-      await expect(
         operateProcessesPage.parentInstanceCell(parentInstanceKey),
       ).toBeVisible();
     });
 
     await test.step('Verify remaining instances still at source version', async () => {
-      await operateFiltersPanelPage.removeOptionalFilter('Operation Id');
-
       await operateFiltersPanelPage.selectProcess(sourceBpmnProcessId);
       await operateFiltersPanelPage.selectVersion(sourceVersion);
 
