@@ -1,6 +1,6 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="StandaloneCamunda DEV" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot">
-    <option name="ACTIVE_PROFILES" value="identity,tasklist,operate,broker,consolidated-auth,dev,insecure" />
+    <option name="ACTIVE_PROFILES" value="identity,broker,consolidated-auth,dev,insecure,rdbmsH2" />
     <envs>
       <env name="CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_WAITFORIMPORTERS" value="false" />
       <env name="CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_USERS_0_" value="demo" />

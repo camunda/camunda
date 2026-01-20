@@ -13,6 +13,7 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import org.springframework.core.annotation.AliasFor;
 import org.springframework.web.bind.annotation.RestController;
 
 @Retention(RetentionPolicy.RUNTIME)
@@ -20,4 +21,14 @@ import org.springframework.web.bind.annotation.RestController;
 @Documented
 @ConditionalOnRestGatewayEnabled
 @RestController
-public @interface CamundaRestController {}
+public @interface CamundaRestController {
+  /**
+   * The base path for this controller. Will automatically register both the specified path and an
+   * engine-prefixed variant: {@code /engines/{engineName}<path>}
+   */
+  @AliasFor("path")
+  String value() default "";
+
+  @AliasFor("value")
+  String path() default "";
+}

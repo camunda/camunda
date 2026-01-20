@@ -49,10 +49,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
 
-@CamundaRestController
-@RequestMapping("/v2/process-instances")
+@CamundaRestController("/v2/process-instances")
 public class ProcessInstanceController {
 
   private final ProcessInstanceServices processInstanceServices;
@@ -70,6 +68,7 @@ public class ProcessInstanceController {
 
   @CamundaPostMapping
   public CompletableFuture<ResponseEntity<Object>> createProcessInstance(
+      @PathVariable(name = "engineName", required = false) final String engineName,
       @RequestBody final ProcessInstanceCreationInstruction request) {
     return RequestMapper.toCreateProcessInstance(request, multiTenancyCfg.isChecksEnabled())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::createProcessInstance);
@@ -115,6 +114,7 @@ public class ProcessInstanceController {
   @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/search")
   public ResponseEntity<ProcessInstanceSearchQueryResult> searchProcessInstances(
+      @PathVariable(name = "engineName", required = false) final String engineName,
       @RequestBody(required = false) final ProcessInstanceSearchQuery query) {
     return SearchQueryRequestMapper.toProcessInstanceQuery(query)
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
