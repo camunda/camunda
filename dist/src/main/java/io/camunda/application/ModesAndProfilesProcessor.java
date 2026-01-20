@@ -144,10 +144,7 @@ public class ModesAndProfilesProcessor implements SpringApplicationRunListener {
 
   private void configureProfilesForBrokerMode() {
     final Set<String> profiles =
-        new HashSet<>(
-            Set.of(
-                Profile.BROKER.getId(),
-                Profile.STANDALONE.getId()));
+        new HashSet<>(Set.of(Profile.BROKER.getId(), Profile.STANDALONE.getId()));
 
     if (isDevelopment()) {
       profiles.add(Profile.DEVELOPMENT.getId());
