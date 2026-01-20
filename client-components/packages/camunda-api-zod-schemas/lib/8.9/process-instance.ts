@@ -7,28 +7,20 @@
  */
 
 import {z} from 'zod';
-import {
-	API_VERSION,
-	type Endpoint,
-} from '../common';
+import {API_VERSION, type Endpoint} from '../common';
 import {type ProcessInstance} from '../8.8';
 
 const deleteProcessInstanceRequestBodySchema = z
-    .object({
-      operationReference: z.number().int(),
-    })
-    .optional();
+	.object({
+		operationReference: z.number().int(),
+	})
+	.optional();
 type DeleteProcessInstanceRequestBody = z.infer<typeof deleteProcessInstanceRequestBodySchema>;
 
 const deleteProcessInstance: Endpoint<Pick<ProcessInstance, 'processInstanceKey'>> = {
-  method: 'POST',
-  getUrl: ({processInstanceKey}) => `/${API_VERSION}/process-instances/${processInstanceKey}/deletion`,
+	method: 'POST',
+	getUrl: ({processInstanceKey}) => `/${API_VERSION}/process-instances/${processInstanceKey}/deletion`,
 };
 
-export {
-  deleteProcessInstanceRequestBodySchema,
-  deleteProcessInstance
-};
-export type {
-  DeleteProcessInstanceRequestBody
-};
+export {deleteProcessInstanceRequestBodySchema, deleteProcessInstance};
+export type {DeleteProcessInstanceRequestBody};
