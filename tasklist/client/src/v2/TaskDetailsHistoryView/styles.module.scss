@@ -11,6 +11,7 @@
   width: 100%;
   display: flex;
   flex-direction: column;
+  margin-top: calc(-1 * var(--cds-spacing-04));
 }
 
 .tableContainer {
