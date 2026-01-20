@@ -38,6 +38,11 @@
 
     <dependency>
       <groupId>com.azure</groupId>
+      <artifactId>azure-storage-blob-batch</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.azure</groupId>
       <artifactId>azure-core</artifactId>
     </dependency>
 
@@ -77,6 +82,11 @@
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
     </dependency>
 
     <dependency>
