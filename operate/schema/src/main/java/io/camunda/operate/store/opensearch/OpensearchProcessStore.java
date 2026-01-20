@@ -7,11 +7,9 @@
  */
 package io.camunda.operate.store.opensearch;
 
-import static io.camunda.operate.store.opensearch.client.sync.OpenSearchDocumentOperations.TERMS_AGG_SIZE;
 import static io.camunda.operate.store.opensearch.client.sync.OpenSearchRetryOperation.UPDATE_RETRY_COUNT;
 import static io.camunda.operate.store.opensearch.dsl.AggregationDSL.cardinalityAggregation;
 import static io.camunda.operate.store.opensearch.dsl.AggregationDSL.filtersAggregation;
-import static io.camunda.operate.store.opensearch.dsl.AggregationDSL.termAggregation;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.*;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.withTenantCheck;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.QueryType.ALL;
@@ -121,61 +119,45 @@ public class OpensearchProcessStore implements ProcessStore {
   @Override
   public Map<ProcessKey, List<ProcessEntity>> getProcessesGrouped(
       final String tenantId, final Set<String> allowedBPMNProcessIds) {
-    final String groupsAggName = "group_by_bpmnProcessId";
-
-    final List<String> sourceFields =
-        List.of(
-            ProcessIndex.ID,
-            ProcessIndex.NAME,
-            ProcessIndex.VERSION,
-            ProcessIndex.VERSION_TAG,
-            ProcessIndex.BPMN_PROCESS_ID,
-            ProcessIndex.TENANT_ID);
 
     final Query query =
         allowedBPMNProcessIds == null
             ? matchAll()
-            : stringTerms(ListViewTemplate.BPMN_PROCESS_ID, allowedBPMNProcessIds);
-
-    final var aggRequestBuilder =
-        searchRequestBuilder(processIndex.getAlias())
-            .query(withTenantCheck(withTenantIdQuery(tenantId, query)))
-            .size(0)
-            .aggregations(
-                groupsAggName,
-                termAggregation(ProcessIndex.BPMN_PROCESS_ID, TERMS_AGG_SIZE)._toAggregation());
-
-    final SearchResponse<Void> aggResponse =
-        richOpenSearchClient.doc().search(aggRequestBuilder, Void.class);
-
-    final List<String> bpmnProcessIds =
-        aggResponse.aggregations().get(groupsAggName).sterms().buckets().array().stream()
-            .map(b -> b.key())
-            .toList();
-
-    if (bpmnProcessIds.isEmpty()) {
-      return new HashMap<>();
-    }
-
-    final Query docsQuery = stringTerms(ListViewTemplate.BPMN_PROCESS_ID, bpmnProcessIds);
+            : stringTerms(ProcessIndex.BPMN_PROCESS_ID, allowedBPMNProcessIds);
 
     final var searchRequestBuilder =
         searchRequestBuilder(processIndex.getAlias())
-            .query(withTenantCheck(withTenantIdQuery(tenantId, docsQuery)))
-            .source(sourceInclude(sourceFields))
+            .query(withTenantCheck(withTenantIdQuery(tenantId, query)))
+            .source(
+                sourceInclude(
+                    ProcessIndex.ID,
+                    ProcessIndex.NAME,
+                    ProcessIndex.VERSION,
+                    ProcessIndex.VERSION_TAG,
+                    ProcessIndex.BPMN_PROCESS_ID,
+                    ProcessIndex.TENANT_ID))
             .sort(sortOptions(ProcessIndex.VERSION, SortOrder.Desc));
 
-    final List<ProcessEntity> allProcesses =
-        richOpenSearchClient.doc().scrollValues(searchRequestBuilder, ProcessEntity.class);
+    try {
+      final Map<ProcessKey, List<ProcessEntity>> result = new HashMap<>();
 
-    final Map<ProcessKey, List<ProcessEntity>> result = new HashMap<>();
-    for (final ProcessEntity processEntity : allProcesses) {
-      final ProcessKey groupKey =
-          new ProcessKey(processEntity.getBpmnProcessId(), processEntity.getTenantId());
-      result.computeIfAbsent(groupKey, k -> new ArrayList<>()).add(processEntity);
+      final List<ProcessEntity> allProcesses =
+          richOpenSearchClient.doc().scrollValues(searchRequestBuilder, ProcessEntity.class);
+
+      for (final ProcessEntity processEntity : allProcesses) {
+        final ProcessKey groupKey =
+            new ProcessKey(processEntity.getBpmnProcessId(), processEntity.getTenantId());
+        result.computeIfAbsent(groupKey, k -> new ArrayList<>()).add(processEntity);
+      }
+
+      return result;
+    } catch (final Exception e) {
+      final String message =
+          String.format(
+              "Exception occurred, while obtaining grouped processes: %s", e.getMessage());
+      LOGGER.error(message, e);
+      throw new OperateRuntimeException(message, e);
     }
-
-    return result;
   }
 
   @Override
