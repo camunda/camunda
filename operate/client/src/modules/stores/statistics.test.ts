@@ -7,7 +7,6 @@
  */
 
 import {statisticsStore} from './statistics';
-import {processInstanceDetailsStore} from './processInstanceDetails';
 import {waitFor} from 'modules/testing-library';
 import {processInstancesStore} from './processInstances';
 import {createInstance, mockProcessDefinitions} from 'modules/testUtils';
@@ -30,7 +29,6 @@ describe('stores/statistics', () => {
   });
 
   afterEach(() => {
-    processInstanceDetailsStore.reset();
     statisticsStore.reset();
     processInstancesStore.reset();
     vi.clearAllTimers();

@@ -16,7 +16,6 @@ import {
 } from 'modules/testing-library';
 
 import {LastModification} from 'App/ProcessInstance/LastModification';
-import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {createInstance, createvariable} from 'modules/testUtils';
@@ -77,7 +76,6 @@ const getWrapper = (
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     useEffect(() => {
       return () => {
-        flowNodeSelectionStore.reset();
         flowNodeMetaDataStore.reset();
         modificationsStore.reset();
       };
@@ -140,7 +138,6 @@ describe('New Variable Modifications', () => {
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
 
-    flowNodeSelectionStore.init();
     processInstanceDetailsStore.setProcessInstance(
       createInstance({
         id: 'instance_id',
