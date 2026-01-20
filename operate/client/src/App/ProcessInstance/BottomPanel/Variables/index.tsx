@@ -10,7 +10,6 @@ import {useEffect, useState} from 'react';
 import {VariablesContent, EmptyMessageWrapper} from './styled';
 import {observer} from 'mobx-react';
 import {reaction} from 'mobx';
-import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {useForm, useFormState} from 'react-final-form';
 import {modificationsStore} from 'modules/stores/modifications';
 import {useFieldArray} from 'react-final-form-arrays';
@@ -20,12 +19,9 @@ import {VariablesTable} from './VariablesTable';
 import {Footer} from './Footer';
 import {Skeleton} from './Skeleton';
 import {useNewScopeKeyForElement} from 'modules/hooks/modifications';
-import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {useIsProcessInstanceRunning} from 'modules/queries/processInstance/useIsProcessInstanceRunning';
 import {useIsRootNodeSelected} from 'modules/hooks/flowNodeSelection';
-import {getScopeId} from 'modules/utils/variables';
 import {useVariables} from 'modules/queries/variables/useVariables';
-import {IS_ELEMENT_SELECTION_V2} from 'modules/feature-flags';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 import {useVariableScopeKey} from 'modules/hooks/variables';
 
@@ -40,19 +36,13 @@ const Variables: React.FC<Props> = observer(
     const {displayStatus} = useVariables();
     const {selectedElementId, resolvedElementInstance} =
       useProcessInstanceElementSelection();
-    const newScopeKeyForElement = useNewScopeKeyForElement(
-      IS_ELEMENT_SELECTION_V2
-        ? selectedElementId
-        : (flowNodeSelectionStore.state.selection?.flowNodeId ?? null),
-    );
+    const newScopeKeyForElement = useNewScopeKeyForElement(selectedElementId);
     const {data: isProcessInstanceRunning} = useIsProcessInstanceRunning();
     const isRootNodeSelected = useIsRootNodeSelected();
     const [footerVariant, setFooterVariant] =
       useState<FooterVariant>('initial');
 
-    const scopeKey = IS_ELEMENT_SELECTION_V2
-      ? useVariableScopeKey(newScopeKeyForElement)
-      : (getScopeId() ?? newScopeKeyForElement);
+    const scopeKey = useVariableScopeKey(newScopeKeyForElement);
 
     const {isModificationModeEnabled} = modificationsStore;
 
@@ -82,9 +72,8 @@ const Variables: React.FC<Props> = observer(
         Object.values(initialValues).length === 0;
 
     useEffect(() => {
-      const isSelectedElementInstanceRunning = IS_ELEMENT_SELECTION_V2
-        ? resolvedElementInstance?.state === 'ACTIVE'
-        : flowNodeMetaDataStore.isSelectedInstanceRunning;
+      const isSelectedElementInstanceRunning =
+        resolvedElementInstance?.state === 'ACTIVE';
 
       if (!isProcessInstanceRunning) {
         setFooterVariant('disabled');
