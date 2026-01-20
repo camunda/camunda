@@ -1,7 +1,7 @@
 {
   "name": "identity-frontend",
   "private": true,
-  "version": "8.8.10-SNAPSHOT",
+  "version": "8.8.6-SNAPSHOT",
   "type": "module",
   "scripts": {
     "dev": "vite",
