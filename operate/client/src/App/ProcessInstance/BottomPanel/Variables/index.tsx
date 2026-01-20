@@ -19,7 +19,7 @@ import {EmptyMessage} from 'modules/components/EmptyMessage';
 import {VariablesTable} from './VariablesTable';
 import {Footer} from './Footer';
 import {Skeleton} from './Skeleton';
-import {useNewScopeIdForFlowNode} from 'modules/hooks/modifications';
+import {useNewScopeKeyForElement} from 'modules/hooks/modifications';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {useIsProcessInstanceRunning} from 'modules/queries/processInstance/useIsProcessInstanceRunning';
 import {useIsRootNodeSelected} from 'modules/hooks/flowNodeSelection';
@@ -38,8 +38,12 @@ type FooterVariant = React.ComponentProps<typeof Footer>['variant'];
 const Variables: React.FC<Props> = observer(
   ({isVariableModificationAllowed = false}) => {
     const {displayStatus} = useVariables();
-    const newScopeIdForFlowNode = useNewScopeIdForFlowNode(
-      flowNodeSelectionStore.state.selection?.flowNodeId,
+    const {selectedElementId, resolvedElementInstance} =
+      useProcessInstanceElementSelection();
+    const newScopeKeyForElement = useNewScopeKeyForElement(
+      IS_ELEMENT_SELECTION_V2
+        ? selectedElementId
+        : (flowNodeSelectionStore.state.selection?.flowNodeId ?? null),
     );
     const {data: isProcessInstanceRunning} = useIsProcessInstanceRunning();
     const isRootNodeSelected = useIsRootNodeSelected();
@@ -47,8 +51,8 @@ const Variables: React.FC<Props> = observer(
       useState<FooterVariant>('initial');
 
     const scopeKey = IS_ELEMENT_SELECTION_V2
-      ? useVariableScopeKey(newScopeIdForFlowNode)
-      : (getScopeId() ?? newScopeIdForFlowNode);
+      ? useVariableScopeKey(newScopeKeyForElement)
+      : (getScopeId() ?? newScopeKeyForElement);
 
     const {isModificationModeEnabled} = modificationsStore;
 
@@ -76,8 +80,6 @@ const Variables: React.FC<Props> = observer(
         modificationsStore.getAddVariableModifications(scopeKey).length === 0
       : initialValues === undefined ||
         Object.values(initialValues).length === 0;
-
-    const {resolvedElementInstance} = useProcessInstanceElementSelection();
 
     useEffect(() => {
       const isSelectedElementInstanceRunning = IS_ELEMENT_SELECTION_V2
