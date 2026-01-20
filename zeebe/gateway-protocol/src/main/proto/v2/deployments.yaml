@@ -347,13 +347,20 @@ components:
       nullable: true
       additionalProperties: false
       properties:
+        operationReference:
+          $ref: 'keys.yaml#/components/schemas/OperationReference'
         deleteHistory:
-          description: Indicates if the historic data should be deleted.
+          description: |
+            Indicates if the historic data of a process resource should be deleted via a
+            batch operation asynchronously.
+
+            This flag is only effective for process resources. For other resource types
+            (decisions, forms, generic resources), this flag is ignored and no history
+            will be deleted. In those cases, the `batchOperation` field in the response
+            will not be populated.
           type: boolean
           required: false
           default: false
-        operationReference:
-          $ref: 'keys.yaml#/components/schemas/OperationReference'
 
     DeleteResourceResponse:
       type: object
@@ -361,9 +368,18 @@ components:
         - resourceKey
       properties:
         resourceKey:
-          $ref: '#/components/schemas/ResourceKey'
+          allOf:
+            - $ref: '#/components/schemas/ResourceKey'
+          description: The system-assigned key for this resource, requested to be deleted.
         batchOperation:
-          $ref: 'batch-operations.yaml#/components/schemas/BatchOperationCreatedResult'
+          allOf:
+            - $ref: 'batch-operations.yaml#/components/schemas/BatchOperationCreatedResult'
+          description: |
+            The batch operation created for asynchronously deleting the historic data.
+
+            This field is only populated when the request `deleteHistory` is set to `true` and the resource
+            is a process definition. For other resource types (decisions, forms, generic resources),
+            this field will not be present in the response.
 
     ResourceResult:
       type: object
