@@ -9,7 +9,6 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToResponse;
 
-import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.gateway.mapping.http.RequestMapper;
 import io.camunda.gateway.mapping.http.RequestMapper.CompleteJobRequest;
 import io.camunda.gateway.mapping.http.RequestMapper.ErrorJobRequest;
@@ -17,8 +16,6 @@ import io.camunda.gateway.mapping.http.RequestMapper.FailJobRequest;
 import io.camunda.gateway.mapping.http.RequestMapper.UpdateJobRequest;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
-import io.camunda.gateway.protocol.model.GlobalJobStatisticsQuery;
-import io.camunda.gateway.protocol.model.GlobalJobStatisticsQueryResult;
 import io.camunda.gateway.protocol.model.JobActivationRequest;
 import io.camunda.gateway.protocol.model.JobActivationResult;
 import io.camunda.gateway.protocol.model.JobCompletionRequest;
@@ -59,12 +56,12 @@ public class JobController {
       final ResponseObserverProvider responseObserverProvider,
       final MultiTenancyConfiguration multiTenancyCfg,
       final CamundaAuthenticationProvider authenticationProvider,
-      final BrokerBasedProperties brokerProperties) {
+      final JobMetricsCfg jobMetricsCfg) {
     this.jobServices = jobServices;
     this.responseObserverProvider = responseObserverProvider;
     this.multiTenancyCfg = multiTenancyCfg;
     this.authenticationProvider = authenticationProvider;
-    jobMetricsCfg = brokerProperties.getExperimental().getEngine().getJobMetrics();
+    this.jobMetricsCfg = jobMetricsCfg;
   }
 
   @CamundaPostMapping(path = "/activation")
@@ -109,14 +106,6 @@ public class JobController {
       @RequestBody(required = false) final JobSearchQuery request) {
     return SearchQueryRequestMapper.toJobQuery(request)
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
-  }
-
-  @RequiresSecondaryStorage
-  @CamundaPostMapping(path = "/statistics/global")
-  public ResponseEntity<GlobalJobStatisticsQueryResult> getGlobalJobStatistics(
-      @RequestBody(required = false) final GlobalJobStatisticsQuery request) {
-    return SearchQueryRequestMapper.toGlobalJobStatisticsQuery(request)
-        .fold(RestErrorMapper::mapProblemToResponse, this::getGlobalStatistics);
   }
 
   private CompletableFuture<ResponseEntity<Object>> activateJobs(
@@ -190,19 +179,6 @@ public class JobController {
               .withAuthentication(authenticationProvider.getCamundaAuthentication())
               .search(query);
       return ResponseEntity.ok(SearchQueryResponseMapper.toJobSearchQueryResponse(result));
-    } catch (final Exception e) {
-      return mapErrorToResponse(e);
-    }
-  }
-
-  private ResponseEntity<GlobalJobStatisticsQueryResult> getGlobalStatistics(
-      final io.camunda.search.query.GlobalJobStatisticsQuery query) {
-    try {
-      final var result =
-          jobServices
-              .withAuthentication(authenticationProvider.getCamundaAuthentication())
-              .getGlobalStatistics(query);
-      return ResponseEntity.ok(SearchQueryResponseMapper.toGlobalJobStatisticsQueryResult(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }

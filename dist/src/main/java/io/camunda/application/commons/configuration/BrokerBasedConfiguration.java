@@ -16,6 +16,7 @@ import io.camunda.application.commons.job.JobHandlerConfiguration.ActivateJobHan
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.zeebe.broker.clustering.ClusterConfigFactory;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.configuration.engine.JobMetricsCfg;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.gateway.RestApiCompositeFilter;
 import io.camunda.zeebe.gateway.impl.configuration.FilterCfg;
@@ -67,6 +68,11 @@ public class BrokerBasedConfiguration {
   public BrokerClientTimeoutConfiguration brokerClientConfig() {
     return new BrokerClientTimeoutConfiguration(
         properties.getGateway().getCluster().getRequestTimeout());
+  }
+
+  @Bean
+  public JobMetricsCfg jobMetricsConfig() {
+    return properties.getExperimental().getEngine().getJobMetrics();
   }
 
   @Bean
