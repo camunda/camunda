@@ -226,7 +226,9 @@ class OperateProcessesPage {
   }
 
   async clickProcessInstanceKeySortButton(): Promise<void> {
-    await this.processInstanceKeySortButton.click();
+    await expect(this.processInstanceKeySortButton).toBeVisible();
+    await expect(this.processInstanceKeySortButton).toBeEnabled();
+    await this.processInstanceKeySortButton.click({timeout: 30000});
   }
 
   async visibleKeys(): Promise<string[]> {

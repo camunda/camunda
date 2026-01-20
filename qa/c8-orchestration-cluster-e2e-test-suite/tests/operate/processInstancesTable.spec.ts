@@ -201,6 +201,7 @@ test.describe('Process Instances Table', () => {
       await operateFiltersPanelPage.selectProcess(
         'Process For Infinite Scroll',
       );
+      await operateFiltersPanelPage.selectVersion('1');
       await waitForAssertion({
         assertion: async () => {
           await expect(page.getByText('300 results')).toBeVisible();
