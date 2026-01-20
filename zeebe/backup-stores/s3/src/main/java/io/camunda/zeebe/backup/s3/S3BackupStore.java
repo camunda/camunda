@@ -13,6 +13,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.google.common.collect.Iterables;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupDescriptor;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
@@ -39,10 +40,14 @@ import java.nio.file.Path;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
@@ -90,6 +95,7 @@ public final class S3BackupStore implements BackupStore {
   static final String MANIFEST_OBJECT_KEY = "manifest.json";
   private static final Logger LOG = LoggerFactory.getLogger(S3BackupStore.class);
   private static final int SCAN_PARALLELISM = 16;
+  private static final int MAX_DELETE_BATCH_SIZE = 1000;
   private final Pattern backupIdentifierPattern;
   private final S3BackupConfig config;
   private final S3AsyncClient client;
@@ -263,14 +269,28 @@ public final class S3BackupStore implements BackupStore {
                 return manifest;
               }
             })
-        .thenComposeAsync(
-            manifest ->
-                listObjects(manifest, Directory.MANIFESTS)
-                    .thenComposeAsync(this::deleteBackupObjects)
-                    .thenComposeAsync(
-                        ignored ->
-                            listObjects(manifest, Directory.CONTENTS)
-                                .thenComposeAsync(this::deleteBackupObjects)));
+        .thenComposeAsync(manifest -> collectBackupObjects(manifest.id()))
+        .thenComposeAsync(this::deleteBackupObjects);
+  }
+
+  @Override
+  public CompletableFuture<Void> delete(final Collection<BackupIdentifier> ids) {
+    final var deleteFutures = ids.stream().parallel().map(this::collectBackupObjects).toList();
+
+    return CompletableFuture.allOf(deleteFutures.toArray(new CompletableFuture[0]))
+        .thenApply(
+            ignored -> {
+              final Set<ObjectIdentifier> allObjects = new HashSet<>();
+              for (final var future : deleteFutures) {
+                try {
+                  allObjects.addAll(future.get());
+                } catch (final Exception e) {
+                  throw new BackupReadException("Failed to collect backup objects for deletion", e);
+                }
+              }
+              return allObjects;
+            })
+        .thenComposeAsync(this::deleteIdentifierBatch);
   }
 
   @Override
@@ -313,7 +333,7 @@ public final class S3BackupStore implements BackupStore {
                     .map(S3Object::key)
                     .map(key -> key.substring(prefix.length()))
                     .map(BackupRangeMarker::fromName)
-                    .filter(marker -> marker != null)
+                    .filter(Objects::nonNull)
                     .toList());
   }
 
@@ -336,22 +356,43 @@ public final class S3BackupStore implements BackupStore {
   }
 
   @Override
+  public CompletableFuture<Void> deleteRangeMarkers(
+      final int partitionId, final Collection<BackupRangeMarker> markers) {
+    final var markerIdentifiers =
+        markers.stream()
+            .map(
+                marker ->
+                    ObjectIdentifier.builder()
+                        .key(rangeMarkersPrefix(partitionId) + BackupRangeMarker.toName(marker))
+                        .build())
+            .collect(Collectors.toSet());
+
+    return deleteIdentifierBatch(markerIdentifiers);
+  }
+
+  @Override
   public CompletableFuture<Void> closeAsync() {
     client.close();
     return CompletableFuture.completedFuture(null);
   }
 
+  private CompletableFuture<Void> deleteIdentifierBatch(
+      final Collection<ObjectIdentifier> identifiers) {
+    // S3 DeleteObjects API has a maximum of 1000 objects per request
+    if (identifiers.size() > MAX_DELETE_BATCH_SIZE) {
+      final var futures =
+          StreamSupport.stream(
+                  Iterables.partition(identifiers, MAX_DELETE_BATCH_SIZE).spliterator(), true)
+              .map(this::deleteBackupObjects)
+              .toArray(CompletableFuture[]::new);
+      return CompletableFuture.allOf(futures);
+    } else {
+      return deleteBackupObjects(identifiers);
+    }
+  }
+
   private String rangeMarkersPrefix(final int partitionId) {
     return config.basePath().map(base -> base + "/").orElse("") + "ranges/" + partitionId + "/";
-  }
-
-  private CompletableFuture<List<ObjectIdentifier>> listBackupObjects(final Manifest manifest) {
-    return listObjects(manifest, Directory.CONTENTS);
-  }
-
-  private CompletableFuture<List<ObjectIdentifier>> listBackupManifestObjects(
-      final Manifest manifest) {
-    return listObjects(manifest, Directory.MANIFESTS);
   }
 
   private CompletableFuture<List<ObjectIdentifier>> listObjects(
@@ -394,6 +435,20 @@ public final class S3BackupStore implements BackupStore {
                     .map(S3Object::key)
                     .map(key -> ObjectIdentifier.builder().key(key).build())
                     .toList());
+  }
+
+  private CompletableFuture<Set<ObjectIdentifier>> collectBackupObjects(final BackupIdentifier id) {
+    return readManifestObject(id)
+        .thenComposeAsync(
+            manifest ->
+                listObjects(manifest, Directory.MANIFESTS)
+                    .thenCombineAsync(
+                        listObjects(manifest, Directory.CONTENTS),
+                        (manifestObjects, contentObjects) -> {
+                          final var allObjects = new HashSet<>(manifestObjects);
+                          allObjects.addAll(contentObjects);
+                          return allObjects;
+                        }));
   }
 
   private CompletableFuture<Void> deleteBackupObjects(
