@@ -912,6 +912,8 @@ public class BrokerBasedPropertiesOverride {
     history.setMinHistoryCleanupInterval(database.getHistory().getMinHistoryCleanupInterval());
     history.setMaxHistoryCleanupInterval(database.getHistory().getMaxHistoryCleanupInterval());
     history.setHistoryCleanupBatchSize(database.getHistory().getHistoryCleanupBatchSize());
+    history.setHistoryCleanupProcessInstanceBatchSize(
+        database.getHistory().getHistoryCleanupProcessInstanceBatchSize());
     history.setUsageMetricsCleanup(database.getHistory().getUsageMetricsCleanup());
     history.setUsageMetricsTTL(database.getHistory().getUsageMetricsTTL());
   }

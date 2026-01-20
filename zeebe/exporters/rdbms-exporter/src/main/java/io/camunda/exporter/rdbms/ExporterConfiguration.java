@@ -18,7 +18,6 @@ import java.util.List;
 
 public class ExporterConfiguration {
   public static final Duration DEFAULT_FLUSH_INTERVAL = Duration.ofMillis(500);
-  public static final int DEFAULT_CLEANUP_BATCH_SIZE = 1000;
   public static final int DEFAULT_MAX_CACHE_SIZE = 10_000;
 
   // AuditLog
@@ -195,6 +194,8 @@ public class ExporterConfiguration {
             .minHistoryCleanupInterval(history.getMinHistoryCleanupInterval())
             .maxHistoryCleanupInterval(history.getMaxHistoryCleanupInterval())
             .historyCleanupBatchSize(history.getHistoryCleanupBatchSize())
+            .historyCleanupProcessInstanceBatchSize(
+                history.getHistoryCleanupProcessInstanceBatchSize())
             .usageMetricsCleanup(history.getUsageMetricsCleanup())
             .usageMetricsTTL(history.getUsageMetricsTTL())
             .build();
@@ -273,7 +274,10 @@ public class ExporterConfiguration {
         RdbmsWriterConfig.HistoryConfig.DEFAULT_MIN_HISTORY_CLEANUP_INTERVAL;
     private Duration maxHistoryCleanupInterval =
         RdbmsWriterConfig.HistoryConfig.DEFAULT_MAX_HISTORY_CLEANUP_INTERVAL;
-    private int historyCleanupBatchSize = DEFAULT_CLEANUP_BATCH_SIZE;
+    private int historyCleanupBatchSize =
+        RdbmsWriterConfig.HistoryConfig.DEFAULT_HISTORY_CLEANUP_BATCH_SIZE;
+    private int historyCleanupProcessInstanceBatchSize =
+        RdbmsWriterConfig.HistoryConfig.DEFAULT_HISTORY_CLEANUP_PROCESS_INSTANCE_BATCH_SIZE;
     private Duration usageMetricsCleanup =
         RdbmsWriterConfig.HistoryConfig.DEFAULT_USAGE_METRICS_CLEANUP;
     private Duration usageMetricsTTL = RdbmsWriterConfig.HistoryConfig.DEFAULT_USAGE_METRICS_TTL;
@@ -423,6 +427,15 @@ public class ExporterConfiguration {
       }
 
       return errors;
+    }
+
+    public int getHistoryCleanupProcessInstanceBatchSize() {
+      return historyCleanupProcessInstanceBatchSize;
+    }
+
+    public void setHistoryCleanupProcessInstanceBatchSize(
+        final int historyCleanupProcessInstanceBatchSize) {
+      this.historyCleanupProcessInstanceBatchSize = historyCleanupProcessInstanceBatchSize;
     }
   }
 }
