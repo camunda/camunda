@@ -155,7 +155,9 @@ public class RdbmsExporterWrapper implements Exporter {
             new RdbmsBatchOperationCacheLoader(rdbmsService.getBatchOperationReader()),
             new CaffeineCacheStatsCounter(NAMESPACE, "batchOperation", context.getMeterRegistry()));
 
-    final var historyCleanupService = new HistoryCleanupService(rdbmsWriterConfig, rdbmsWriters);
+    final var historyCleanupService =
+        new HistoryCleanupService(
+            rdbmsWriterConfig, rdbmsWriters, rdbmsService.getProcessInstanceReader());
     builder.historyCleanupService(historyCleanupService);
     final var historyDeletionService =
         new HistoryDeletionService(

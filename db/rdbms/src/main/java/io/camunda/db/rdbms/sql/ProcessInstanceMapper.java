@@ -7,6 +7,7 @@
  */
 package io.camunda.db.rdbms.sql;
 
+import io.camunda.db.rdbms.read.domain.DbQueryPage;
 import io.camunda.db.rdbms.read.domain.ProcessInstanceDbQuery;
 import io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
@@ -34,10 +35,15 @@ public interface ProcessInstanceMapper extends ProcessBasedHistoryCleanupMapper 
 
   List<ProcessFlowNodeStatisticsEntity> flowNodeStatistics(long processInstanceKey);
 
-  void deleteByKeys(List<Long> processInstanceKeys);
+  int deleteByKeys(List<Long> processInstanceKeys);
+
+  List<Long> selectExpiredProcessInstances(SelectExpiredProcessInstancesDto dto);
 
   record EndProcessInstanceDto(
       long processInstanceKey,
       ProcessInstanceEntity.ProcessInstanceState state,
       OffsetDateTime endDate) {}
+
+  record SelectExpiredProcessInstancesDto(
+      int partitionId, OffsetDateTime cleanupDate, DbQueryPage page) {}
 }

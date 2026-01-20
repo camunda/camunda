@@ -147,7 +147,7 @@ public class ProcessInstanceWriter implements RdbmsWriter {
             .build());
   }
 
-  public void deleteByKeys(final List<Long> processInstanceKeys) {
-    mapper.deleteByKeys(processInstanceKeys);
+  public int deleteByKeys(final List<Long> processInstanceKeys) {
+    return mapper.deleteByKeys(processInstanceKeys);
   }
 }
