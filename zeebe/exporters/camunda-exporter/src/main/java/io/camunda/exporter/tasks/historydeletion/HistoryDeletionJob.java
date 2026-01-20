@@ -11,6 +11,7 @@ import io.camunda.exporter.ExporterResourceProvider;
 import io.camunda.exporter.tasks.BackgroundTask;
 import io.camunda.webapps.schema.descriptors.ProcessInstanceDependant;
 import io.camunda.webapps.schema.descriptors.index.HistoryDeletionIndex;
+import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
@@ -37,6 +38,7 @@ public class HistoryDeletionJob implements BackgroundTask {
   private final Logger logger;
   private final HistoryDeletionIndex historyDeletionIndex;
   private final ListViewTemplate listViewTemplate;
+  private final ProcessIndex processIndex;
 
   public HistoryDeletionJob(
       final List<ProcessInstanceDependant> processInstanceDependants,
@@ -53,6 +55,7 @@ public class HistoryDeletionJob implements BackgroundTask {
     this.logger = logger;
     historyDeletionIndex = resourceProvider.getIndexDescriptor(HistoryDeletionIndex.class);
     listViewTemplate = resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class);
+    processIndex = resourceProvider.getIndexDescriptor(ProcessIndex.class);
   }
 
   @Override
@@ -75,7 +78,9 @@ public class HistoryDeletionJob implements BackgroundTask {
       return CompletableFuture.completedFuture(0);
     }
 
-    return deleteProcessInstances(batch).thenCompose(this::deleteFromHistoryDeletionIndex);
+    return deleteProcessInstances(batch)
+        .thenCompose(ids -> deleteProcessDefinitions(batch, ids))
+        .thenCompose(this::deleteFromHistoryDeletionIndex);
   }
 
   /**
@@ -116,6 +121,23 @@ public class HistoryDeletionJob implements BackgroundTask {
                   dependentSourceIdx, dependentIdFieldName, processInstanceKeys);
             })
         .thenApply(ignored -> batch.getHistoryDeletionIds(HistoryDeletionType.PROCESS_INSTANCE));
+  }
+
+  // TODO add javadoc
+  private CompletionStage<List<String>> deleteProcessDefinitions(
+      final HistoryDeletionBatch batch, final List<String> ids) {
+    final var processDefinitions = batch.getResourceKeys(HistoryDeletionType.PROCESS_DEFINITION);
+    if (processDefinitions.isEmpty()) {
+      return CompletableFuture.completedFuture(ids);
+    }
+
+    // TODO audit log??
+
+    return deleterRepository
+        .deleteDocumentsById(
+            processIndex.getFullQualifiedName(),
+            processDefinitions.stream().map(Object::toString).toList())
+        .thenApply(ignored -> batch.getHistoryDeletionIds(HistoryDeletionType.PROCESS_DEFINITION));
   }
 
   private CompletionStage<Integer> deleteFromHistoryDeletionIndex(final List<String> ids) {
