@@ -7,6 +7,10 @@
  */
 package io.camunda.zeebe.backup.gcs;
 
+import static io.camunda.zeebe.backup.gcs.GcsBackupStore.SEGMENTS_FILESET_NAME;
+import static io.camunda.zeebe.backup.gcs.GcsBackupStore.SNAPSHOT_FILESET_NAME;
+
+import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.BucketInfo;
 import com.google.cloud.storage.Storage;
@@ -20,7 +24,13 @@ import io.camunda.zeebe.backup.common.NamedFileSetImpl;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
+import java.util.Collection;
+import java.util.Spliterator;
+import java.util.Spliterators;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 final class FileSetManager {
   /**
@@ -67,6 +77,39 @@ final class FileSetManager {
             .iterateAll()) {
       blob.delete();
     }
+  }
+
+  public CompletableFuture<Collection<BlobId>> backupDataUrls(
+      final Collection<BackupIdentifier> ids) {
+
+    final var futures = ids.stream().map(this::listBackupObjects).toList();
+
+    return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
+        .thenApply(v -> futures.stream().flatMap(f -> f.join().stream()).toList());
+  }
+
+  private CompletableFuture<Collection<BlobId>> listBackupObjects(final BackupIdentifier id) {
+    final var snapshotFuture =
+        CompletableFuture.supplyAsync(() -> listBlobUrls(id, SNAPSHOT_FILESET_NAME));
+    final var segmentFuture =
+        CompletableFuture.supplyAsync(() -> listBlobUrls(id, SEGMENTS_FILESET_NAME));
+
+    return snapshotFuture.thenCombine(
+        segmentFuture,
+        (snapshots, segments) -> Stream.concat(snapshots.stream(), segments.stream()).toList());
+  }
+
+  private Collection<BlobId> listBlobUrls(final BackupIdentifier id, final String fileSetName) {
+    final var spliterator =
+        Spliterators.spliteratorUnknownSize(
+            client
+                .list(bucketInfo.getName(), BlobListOption.prefix(fileSetPath(id, fileSetName)))
+                .iterateAll()
+                .iterator(),
+            Spliterator.IMMUTABLE);
+    return StreamSupport.stream(spliterator, true)
+        .map(BlobInfo::getBlobId)
+        .collect(Collectors.toSet());
   }
 
   public NamedFileSet restore(
