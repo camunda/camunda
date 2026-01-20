@@ -15,4 +15,15 @@
  */
 package io.camunda.client.api.response;
 
-public interface DeleteResourceResponse {}
+public interface DeleteResourceResponse {
+
+  /**
+   * @return the key of the deleted resource.
+   */
+  String getResourceKey();
+
+  /**
+   * @return the result of the batch operation created to delete the resource history, if requested.
+   */
+  CreateBatchOperationResponse getCreateBatchOperationResponse();
+}

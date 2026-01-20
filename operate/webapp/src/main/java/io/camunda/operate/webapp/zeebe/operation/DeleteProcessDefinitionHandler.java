@@ -71,7 +71,7 @@ public class DeleteProcessDefinitionHandler extends AbstractOperationHandler
         String.format(
             "Operation [%s]: Sending Zeebe delete command for processDefinitionKey [%s]...",
             operation.getId(), processDefinitionKey));
-    operationServicesAdapter.deleteResource(processDefinitionKey, operation.getId());
+    operationServicesAdapter.deleteResource(processDefinitionKey, operation.getId(), false);
     markAsSent(operation);
     LOGGER.info(
         String.format(

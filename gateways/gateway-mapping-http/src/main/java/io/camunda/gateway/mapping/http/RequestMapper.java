@@ -816,9 +816,11 @@ public class RequestMapper {
       final long resourceKey, final DeleteResourceRequest deleteRequest) {
     final Long operationReference =
         deleteRequest != null ? deleteRequest.getOperationReference() : null;
+    final boolean deleteHistory =
+        deleteRequest != null && Boolean.TRUE.equals(deleteRequest.getDeleteHistory());
     return getResult(
         validateResourceDeletion(deleteRequest),
-        () -> new ResourceDeletionRequest(resourceKey, operationReference));
+        () -> new ResourceDeletionRequest(resourceKey, operationReference, deleteHistory));
   }
 
   public static Either<ProblemDetail, BroadcastSignalRequest> toBroadcastSignalRequest(

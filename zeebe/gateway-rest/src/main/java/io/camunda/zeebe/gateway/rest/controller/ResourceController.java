@@ -95,11 +95,13 @@ public class ResourceController {
   }
 
   private CompletableFuture<ResponseEntity<Object>> delete(final ResourceDeletionRequest request) {
-    return RequestExecutor.executeServiceMethodWithNoContentResult(
+    return RequestExecutor.executeServiceMethod(
         () ->
             resourceServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                .deleteResource(request));
+                .deleteResource(request),
+        ResponseMapper::toDeleteResourceResponse,
+        HttpStatus.OK);
   }
 
   private CompletableFuture<ResourceRecord> fetchResource(final long resourceKey) {

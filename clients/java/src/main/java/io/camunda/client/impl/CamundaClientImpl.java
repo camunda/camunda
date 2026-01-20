@@ -810,6 +810,7 @@ public final class CamundaClientImpl implements CamundaClient {
   public DeleteResourceCommandStep1 newDeleteResourceCommand(final long resourceKey) {
     return new DeleteResourceCommandImpl(
         resourceKey,
+        false,
         asyncStub,
         credentialsProvider::shouldRetryRequest,
         httpClient,

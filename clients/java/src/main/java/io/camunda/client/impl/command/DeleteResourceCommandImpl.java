@@ -25,7 +25,8 @@ import io.camunda.client.api.response.DeleteResourceResponse;
 import io.camunda.client.impl.RetriableClientFutureImpl;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
-import io.camunda.client.impl.response.DeleteResourceResponseImpl;
+import io.camunda.client.impl.response.DeleteResourceResponseGrcpImpl;
+import io.camunda.client.impl.response.DeleteResourceResponseRestImpl;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeleteResourceRequest;
@@ -50,6 +51,7 @@ public class DeleteResourceCommandImpl implements DeleteResourceCommandStep1 {
 
   public DeleteResourceCommandImpl(
       final long resourceKey,
+      final boolean deleteHistory,
       final GatewayStub asyncStub,
       final Predicate<StatusCode> retryPredicate,
       final HttpClient httpClient,
@@ -57,11 +59,12 @@ public class DeleteResourceCommandImpl implements DeleteResourceCommandStep1 {
       final JsonMapper jsonMapper) {
     this.asyncStub = asyncStub;
     this.retryPredicate = retryPredicate;
-    requestBuilder.setResourceKey(resourceKey);
+    requestBuilder.setResourceKey(resourceKey).setDeleteHistory(deleteHistory);
     requestTimeout = config.getDefaultRequestTimeout();
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
-    httpRequestObject = new io.camunda.client.protocol.rest.DeleteResourceRequest();
+    httpRequestObject =
+        new io.camunda.client.protocol.rest.DeleteResourceRequest().deleteHistory(deleteHistory);
     useRest = config.preferRestOverGrpc();
     this.resourceKey = resourceKey;
     this.jsonMapper = jsonMapper;
@@ -90,7 +93,8 @@ public class DeleteResourceCommandImpl implements DeleteResourceCommandStep1 {
         "/resources/" + resourceKey + "/deletion",
         jsonMapper.toJson(httpRequestObject),
         httpRequestConfig.build(),
-        DeleteResourceResponseImpl::new,
+        io.camunda.client.protocol.rest.DeleteResourceResponse.class,
+        DeleteResourceResponseRestImpl::new,
         result);
     return result;
   }
@@ -102,7 +106,7 @@ public class DeleteResourceCommandImpl implements DeleteResourceCommandStep1 {
             DeleteResourceResponse, GatewayOuterClass.DeleteResourceResponse>
         future =
             new RetriableClientFutureImpl<>(
-                DeleteResourceResponseImpl::new,
+                DeleteResourceResponseGrcpImpl::new,
                 retryPredicate,
                 streamObserver -> sendGrpcRequest(request, streamObserver));
 
@@ -122,6 +126,13 @@ public class DeleteResourceCommandImpl implements DeleteResourceCommandStep1 {
   public DeleteResourceCommandStep1 operationReference(final long operationReference) {
     requestBuilder.setOperationReference(operationReference);
     httpRequestObject.setOperationReference(operationReference);
+    return this;
+  }
+
+  @Override
+  public DeleteResourceCommandStep1 deleteHistory(final boolean deleteHistory) {
+    requestBuilder.setDeleteHistory(deleteHistory);
+    httpRequestObject.deleteHistory(deleteHistory);
     return this;
   }
 

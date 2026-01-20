@@ -79,6 +79,7 @@ public class RestGatewayPaths {
       REST_API_PATH + "/process-instances/migration";
   private static final String URL_PROCESS_INSTANCES_MODIFICATION =
       REST_API_PATH + "/process-instances/modification";
+  private static final String URL_RESOURCE_DELETION = REST_API_PATH + "/resources/%s/deletion";
   private static final String URL_ROLE = REST_API_PATH + "/roles/%s";
   private static final String URL_ROLES = REST_API_PATH + "/roles";
   private static final String URL_SIGNAL_BROADCAST = REST_API_PATH + "/signals/broadcast";
@@ -417,6 +418,10 @@ public class RestGatewayPaths {
 
   public static String getIncidentProcessInstanceStatisticsByDefinitionUrl() {
     return URL_INCIDENT_PROCESS_INSTANCE_STATISTICS_BY_PROCESS_DEFINITION;
+  }
+
+  public static String getResourceDeletionUrl(final long resourceKey) {
+    return String.format(URL_RESOURCE_DELETION, resourceKey);
   }
 
   @Deprecated

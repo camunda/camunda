@@ -32,6 +32,7 @@ import io.camunda.client.protocol.rest.ClusterVariableResult;
 import io.camunda.client.protocol.rest.DecisionDefinitionResult;
 import io.camunda.client.protocol.rest.DecisionInstanceResult;
 import io.camunda.client.protocol.rest.DecisionRequirementsResult;
+import io.camunda.client.protocol.rest.DeleteResourceResponse;
 import io.camunda.client.protocol.rest.DeploymentResult;
 import io.camunda.client.protocol.rest.ElementInstanceResult;
 import io.camunda.client.protocol.rest.EvaluateConditionalResult;
@@ -129,6 +130,11 @@ public class RestGatewayService {
 
   public void onDeploymentsRequest(final DeploymentResult response) {
     registerPost(RestGatewayPaths.getDeploymentsUrl(), response);
+  }
+
+  public void onDeleteResourceRequest(
+      final long resourceKey, final DeleteResourceResponse response) {
+    registerPost(RestGatewayPaths.getResourceDeletionUrl(resourceKey), response);
   }
 
   public void onUsageMetricsRequest(final UsageMetricsResponse response) {
