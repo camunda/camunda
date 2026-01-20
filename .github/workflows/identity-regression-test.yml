@@ -109,7 +109,7 @@ jobs:
 
     services:
       elasticsearch:
-        image: docker.elastic.co/elasticsearch/elasticsearch:8.18.4
+        image: docker.elastic.co/elasticsearch/elasticsearch:8.19.10
         env:
           discovery.type: single-node
           cluster.name: "ci-${{ matrix.case }}"
