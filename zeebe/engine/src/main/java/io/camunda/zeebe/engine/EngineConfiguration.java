@@ -58,7 +58,7 @@ public final class EngineConfiguration {
   public static final Duration DEFAULT_COMMAND_REDISTRIBUTION_MAX_BACKOFF_DURATION =
       Duration.ofMinutes(5);
   public static final boolean DEFAULT_ENABLE_IDENTITY_SETUP = true;
-  public static final Duration DEFAULT_EXPRESSION_EVALUATION_TIMEOUT = Duration.ofSeconds(1);
+  public static final Duration DEFAULT_EXPRESSION_EVALUATION_TIMEOUT = Duration.ofSeconds(5);
 
   private int maxJobTypeLength = DEFAULT_MAX_JOB_TYPE_LENGTH;
   private int maxTenantIdLength = DEFAULT_MAX_TENANT_ID_LENGTH;

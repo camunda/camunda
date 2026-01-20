@@ -47,7 +47,7 @@ public class ExpressionTest {
   @Nested
   @TestPropertySource(
       properties = {
-        "camunda.expression.timeout=5s",
+        "camunda.expression.timeout=2s",
       })
   class WithOnlyUnifiedConfigSet {
     final BrokerBasedProperties brokerCfg;
@@ -59,14 +59,14 @@ public class ExpressionTest {
     @Test
     void shouldSetExpressionTimeout() {
       assertThat(brokerCfg.getExperimental().getEngine().getExpression())
-          .returns(Duration.ofSeconds(5), ExpressionCfg::getTimeout);
+          .returns(Duration.ofSeconds(2), ExpressionCfg::getTimeout);
     }
   }
 
   @Nested
   @TestPropertySource(
       properties = {
-        "zeebe.broker.experimental.engine.expression.timeout=5s",
+        "zeebe.broker.experimental.engine.expression.timeout=2s",
       })
   class WithOnlyLegacySet {
     final BrokerBasedProperties brokerCfg;
@@ -78,7 +78,7 @@ public class ExpressionTest {
     @Test
     void shouldSetExpressionTimeoutFromLegacy() {
       assertThat(brokerCfg.getExperimental().getEngine().getExpression())
-          .returns(Duration.ofSeconds(5), ExpressionCfg::getTimeout);
+          .returns(Duration.ofSeconds(2), ExpressionCfg::getTimeout);
     }
   }
 
@@ -86,7 +86,7 @@ public class ExpressionTest {
   @TestPropertySource(
       properties = {
         // new
-        "camunda.expression.timeout=5s",
+        "camunda.expression.timeout=2s",
         // legacy
         "zeebe.broker.experimental.engine.expression.timeout=50s",
       })
@@ -100,7 +100,7 @@ public class ExpressionTest {
     @Test
     void shouldSetExpressionTimeoutFromNew() {
       assertThat(brokerCfg.getExperimental().getEngine().getExpression())
-          .returns(Duration.ofSeconds(5), ExpressionCfg::getTimeout);
+          .returns(Duration.ofSeconds(2), ExpressionCfg::getTimeout);
     }
   }
 }
