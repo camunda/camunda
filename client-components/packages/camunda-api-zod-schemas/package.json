@@ -222,12 +222,12 @@
 				"default": "./dist/8.9/process-instance.js"
 			}
 		},
-    "./8.9/resource": {
-      "import": {
-        "types": "./dist/8.9/resource.d.ts",
-        "default": "./dist/8.9/resource.js"
-      }
-    },
+		"./8.9/resource": {
+			"import": {
+				"types": "./dist/8.9/resource.d.ts",
+				"default": "./dist/8.9/resource.js"
+			}
+		},
 		"./package.json": "./package.json"
 	},
 	"publishConfig": {
