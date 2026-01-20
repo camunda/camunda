@@ -82,12 +82,12 @@ jobs:
              "mustafadagher",
              "ce-dmelnych",
              "slolatte",
-             pedesen,
-             berkaycanbc,
-             georgios-goulos,
-             vsgoulart,
-             tsedekey,
-             lev-safro]'
+             "pedesen",
+             "berkaycanbc",
+             "georgios-goulos",
+             "vsgoulart",
+             "tsedekey",
+             "lev-safro"]'
           ), github.actor) &&
        !contains(github.event.pull_request.labels.*.name, 'skip-always-green'))
     steps:
