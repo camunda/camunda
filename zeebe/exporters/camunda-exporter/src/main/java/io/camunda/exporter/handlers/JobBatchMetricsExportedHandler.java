@@ -128,7 +128,8 @@ public class JobBatchMetricsExportedHandler
   private OffsetDateTime getLastUpdatedAtForStatus(
       final JobMetricsValue jobMetrics, final JobMetricsExportState jobState) {
     return OffsetDateTime.ofInstant(
-        Instant.ofEpochMilli(jobMetrics.getStatusMetrics().get(jobState.getIndex()).getLastUpdatedAt()),
+        Instant.ofEpochMilli(
+            jobMetrics.getStatusMetrics().get(jobState.getIndex()).getLastUpdatedAt()),
         ZoneOffset.UTC);
   }
 }
