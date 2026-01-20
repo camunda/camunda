@@ -250,7 +250,7 @@ test.describe('Process Instance', () => {
       await expect(
         diagram.getByText('fill form', {exact: false}),
       ).toBeVisible();
-      await expect(operateDiagramPage.popover).toBeVisible();
+      await operateDiagramPage.popover.waitFor({ state: 'visible' , timeout: 15000});
       await expect(page.getByText(/retries left/i)).toBeVisible();
     });
 
