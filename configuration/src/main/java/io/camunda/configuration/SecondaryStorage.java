@@ -99,6 +99,20 @@ public class SecondaryStorage {
     this.rdbms = rdbms;
   }
 
+  public DocumentBasedSecondaryStorageDatabase getDocumentBasedDatabase() {
+    switch (getType()) {
+      case elasticsearch -> {
+        return getElasticsearch();
+      }
+      case opensearch -> {
+        return getOpensearch();
+      }
+      default -> {
+        return null;
+      }
+    }
+  }
+
   public enum SecondaryStorageType {
     elasticsearch,
     opensearch,
