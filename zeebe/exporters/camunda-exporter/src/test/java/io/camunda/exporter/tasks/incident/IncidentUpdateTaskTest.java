@@ -15,8 +15,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableList;
 import io.camunda.exporter.ExporterMetadata;
 import io.camunda.exporter.config.ExporterConfiguration.IncidentNotifierConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
@@ -24,8 +26,8 @@ import io.camunda.exporter.notifier.IncidentNotifier;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.ActiveIncident;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.Document;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.DocumentUpdate;
+import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.IncidentBulkUpdate;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.IncidentDocument;
-import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.NoopIncidentUpdateRepository;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.PendingIncidentUpdateBatch;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.ProcessInstanceDocument;
 import io.camunda.search.test.utils.TestObjectMapper;
@@ -38,20 +40,18 @@ import io.camunda.webapps.schema.entities.incident.IncidentState;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,8 +65,19 @@ final class IncidentUpdateTaskTest {
 
   private final ExporterMetadata metadata = new ExporterMetadata(TestObjectMapper.objectMapper());
   private final IncidentNotifier incidentNotifier = Mockito.spy(createIncidentNotifier());
-  private final TestRepository repository = Mockito.spy(new TestRepository());
+  private final IncidentUpdateRepository repository = Mockito.mock(IncidentUpdateRepository.class);
   private final CamundaExporterMetrics metrics = Mockito.mock(CamundaExporterMetrics.class);
+
+  private final ArgumentCaptor<IncidentBulkUpdate> bulkUpdateCaptor =
+      ArgumentCaptor.forClass(IncidentBulkUpdate.class);
+
+  @BeforeEach
+  void beforeEach() {
+    when(repository.getPendingIncidentsBatch(anyLong(), anyInt()))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                new PendingIncidentUpdateBatch(-1, Collections.emptyMap())));
+  }
 
   @Test
   void shouldReturnNothingDoneOnEmptyPendingBatch() {
@@ -119,89 +130,6 @@ final class IncidentUpdateTaskTest {
     final var objectMapper = new ObjectMapper();
 
     return new IncidentNotifier(processCache, config, EXECUTOR, objectMapper);
-  }
-
-  private static final class TestRepository extends NoopIncidentUpdateRepository {
-    private CompletableFuture<PendingIncidentUpdateBatch> batch;
-    private CompletableFuture<Map<String, IncidentDocument>> incidents;
-    private CompletableFuture<Collection<ProcessInstanceDocument>> processInstances;
-    private CompletableFuture<Collection<ActiveIncident>> activeIncidentsByTreePaths;
-    private CompletableFuture<List<String>> bulkUpdate;
-    private CompletableFuture<Collection<Document>> flowNodesInListView;
-    private CompletableFuture<Collection<Document>> flowNodeInstances;
-    private CompletableFuture<Boolean> wasProcessInstanceDeleted;
-
-    private IncidentBulkUpdate updated;
-
-    @Override
-    public CompletionStage<PendingIncidentUpdateBatch> getPendingIncidentsBatch(
-        final long fromPosition, final int size) {
-      return batch != null ? batch : super.getPendingIncidentsBatch(fromPosition, size);
-    }
-
-    @Override
-    public CompletionStage<Map<String, IncidentDocument>> getIncidentDocuments(
-        final List<String> incidentIds) {
-      return incidents != null ? incidents : super.getIncidentDocuments(incidentIds);
-    }
-
-    @Override
-    public CompletionStage<Collection<Document>> getFlowNodesInListView(
-        final List<String> flowNodeKeys) {
-      return flowNodesInListView != null
-          ? flowNodesInListView
-          : super.getFlowNodesInListView(flowNodeKeys);
-    }
-
-    @Override
-    public CompletionStage<Collection<Document>> getFlowNodeInstances(
-        final List<String> flowNodeKeys) {
-      return flowNodeInstances != null
-          ? flowNodeInstances
-          : super.getFlowNodeInstances(flowNodeKeys);
-    }
-
-    @Override
-    public CompletionStage<Collection<ProcessInstanceDocument>> getProcessInstances(
-        final List<String> processInstanceIds) {
-      return processInstances != null
-          ? processInstances
-          : super.getProcessInstances(processInstanceIds);
-    }
-
-    @Override
-    public CompletionStage<Set<Long>> deletedProcessInstances(final Set<Long> processInstanceKeys) {
-      return wasProcessInstanceDeleted != null
-          ? CompletableFuture.completedFuture(processInstanceKeys)
-          : super.deletedProcessInstances(processInstanceKeys);
-    }
-
-    @Override
-    public CompletionStage<List<String>> bulkUpdate(final IncidentBulkUpdate update) {
-      updated = update;
-      final List<String> aggregatedIds =
-          new ArrayList<>() {
-            {
-              addAll(update.incidentRequests().keySet());
-              addAll(update.listViewRequests().keySet());
-              addAll(update.flowNodeInstanceRequests().keySet());
-            }
-          };
-      return bulkUpdate != null ? bulkUpdate : CompletableFuture.completedFuture(aggregatedIds);
-    }
-
-    @Override
-    public CompletionStage<List<String>> analyzeTreePath(final String treePath) {
-      return CompletableFuture.completedFuture(Arrays.asList(treePath.split("/")));
-    }
-
-    @Override
-    public CompletionStage<Collection<ActiveIncident>> getActiveIncidentsByTreePaths(
-        final Collection<String> treePathTerms) {
-      return activeIncidentsByTreePaths != null
-          ? activeIncidentsByTreePaths
-          : super.getActiveIncidentsByTreePaths(treePathTerms);
-    }
   }
 
   /**
@@ -257,18 +185,43 @@ final class IncidentUpdateTaskTest {
 
     @BeforeEach
     void beforeEach() {
-      repository.batch =
-          CompletableFuture.completedFuture(
-              new PendingIncidentUpdateBatch(
-                  highestPosition, Map.of(incident.incident().getKey(), IncidentState.ACTIVE)));
-      repository.incidents = CompletableFuture.completedFuture(Map.of(incident.id(), incident));
-      repository.flowNodesInListView =
-          CompletableFuture.completedFuture(
-              List.of(callActivityFlowNodeInListView, taskFlowNodeInListView));
-      repository.flowNodeInstances =
-          CompletableFuture.completedFuture(List.of(callActivityFlowNode, taskFlowNode));
-      repository.processInstances =
-          CompletableFuture.completedFuture(List.of(parentProcessInstance, childProcessInstance));
+      when(repository.getPendingIncidentsBatch(anyLong(), anyInt()))
+          .thenReturn(
+              CompletableFuture.completedFuture(
+                  new PendingIncidentUpdateBatch(
+                      highestPosition,
+                      Map.of(incident.incident().getKey(), IncidentState.ACTIVE))));
+      when(repository.getIncidentDocuments(any()))
+          .thenReturn(CompletableFuture.completedFuture(Map.of(incident.id(), incident)));
+      when(repository.getFlowNodesInListView(any()))
+          .thenReturn(
+              CompletableFuture.completedFuture(
+                  List.of(callActivityFlowNodeInListView, taskFlowNodeInListView)));
+      when(repository.getFlowNodeInstances(any()))
+          .thenReturn(
+              CompletableFuture.completedFuture(List.of(callActivityFlowNode, taskFlowNode)));
+      when(repository.getProcessInstances(any()))
+          .thenReturn(
+              CompletableFuture.completedFuture(
+                  List.of(parentProcessInstance, childProcessInstance)));
+      when(repository.deletedProcessInstances(any()))
+          .thenReturn(CompletableFuture.completedFuture(Set.of()));
+      when(repository.analyzeTreePath(any()))
+          .thenReturn(CompletableFuture.completedFuture(List.of()));
+      when(repository.getActiveIncidentsByTreePaths(any()))
+          .thenReturn(CompletableFuture.completedFuture(List.of()));
+
+      when(repository.bulkUpdate(any()))
+          .then(
+              inv -> {
+                final IncidentBulkUpdate update = inv.getArgument(0);
+                return CompletableFuture.completedFuture(
+                    ImmutableList.<String>builder()
+                        .addAll(update.incidentRequests().keySet())
+                        .addAll(update.listViewRequests().keySet())
+                        .addAll(update.flowNodeInstanceRequests().keySet())
+                        .build());
+              });
     }
 
     @Test
@@ -316,7 +269,8 @@ final class IncidentUpdateTaskTest {
               metrics,
               LOGGER,
               Duration.ZERO);
-      repository.incidents = CompletableFuture.completedFuture(Map.of());
+      when(repository.getIncidentDocuments(any()))
+          .thenReturn(CompletableFuture.completedFuture(Map.of()));
 
       // when
       final var result = task.execute();
@@ -344,7 +298,8 @@ final class IncidentUpdateTaskTest {
               metrics,
               LOGGER,
               Duration.ZERO);
-      repository.processInstances = CompletableFuture.completedFuture(List.of());
+      when(repository.getProcessInstances(any()))
+          .thenReturn(CompletableFuture.completedFuture(List.of()));
 
       // when
       final var result = task.execute();
@@ -372,7 +327,9 @@ final class IncidentUpdateTaskTest {
               metrics,
               LOGGER,
               Duration.ZERO);
-      repository.flowNodesInListView = CompletableFuture.completedFuture(List.of());
+
+      when(repository.getFlowNodesInListView(any()))
+          .thenReturn(CompletableFuture.completedFuture(List.of()));
 
       // when
       final var result = task.execute();
@@ -400,7 +357,9 @@ final class IncidentUpdateTaskTest {
               metrics,
               LOGGER,
               Duration.ZERO);
-      repository.flowNodeInstances = CompletableFuture.completedFuture(List.of());
+
+      when(repository.getFlowNodeInstances(any()))
+          .thenReturn(CompletableFuture.completedFuture(List.of()));
 
       // when
       final var result = task.execute();
@@ -434,7 +393,9 @@ final class IncidentUpdateTaskTest {
 
       // then
       assertThat(result).succeedsWithin(TIMEOUT);
-      assertThat(repository.updated.incidentRequests())
+      verify(repository).bulkUpdate(bulkUpdateCaptor.capture());
+      final var update = bulkUpdateCaptor.getValue();
+      assertThat(update.incidentRequests())
           .hasSize(1)
           .containsEntry(
               "5",
@@ -480,7 +441,9 @@ final class IncidentUpdateTaskTest {
 
       // then
       assertThat(result).succeedsWithin(TIMEOUT);
-      assertThat(repository.updated.listViewRequests())
+      verify(repository).bulkUpdate(bulkUpdateCaptor.capture());
+      final var update = bulkUpdateCaptor.getValue();
+      assertThat(update.listViewRequests())
           .hasSize(4)
           .containsEntry(
               "1",
@@ -527,7 +490,9 @@ final class IncidentUpdateTaskTest {
 
       // then
       assertThat(result).succeedsWithin(TIMEOUT);
-      assertThat(repository.updated.flowNodeInstanceRequests())
+      verify(repository).bulkUpdate(bulkUpdateCaptor.capture());
+      final var update = bulkUpdateCaptor.getValue();
+      assertThat(update.flowNodeInstanceRequests())
           .hasSize(2)
           .containsEntry(
               "2",
@@ -565,26 +530,31 @@ final class IncidentUpdateTaskTest {
               LOGGER,
               Duration.ZERO);
       incidentEntity.setState(IncidentState.ACTIVE);
-      repository.activeIncidentsByTreePaths =
-          CompletableFuture.completedFuture(
-              List.of(new ActiveIncident(incident.id(), incidentEntity.getTreePath())));
-      repository.batch =
-          CompletableFuture.completedFuture(
-              new PendingIncidentUpdateBatch(
-                  highestPosition, Map.of(incident.incident().getKey(), IncidentState.RESOLVED)));
+      when(repository.getActiveIncidentsByTreePaths(any()))
+          .thenReturn(
+              CompletableFuture.completedFuture(
+                  List.of(new ActiveIncident(incident.id(), incidentEntity.getTreePath()))));
+      when(repository.getPendingIncidentsBatch(anyLong(), anyInt()))
+          .thenReturn(
+              CompletableFuture.completedFuture(
+                  new PendingIncidentUpdateBatch(
+                      highestPosition,
+                      Map.of(incident.incident().getKey(), IncidentState.RESOLVED))));
 
       // when
       final var result = task.execute();
 
       // then
       assertThat(result).succeedsWithin(TIMEOUT);
-      assertThat(repository.updated.incidentRequests())
+      verify(repository).bulkUpdate(bulkUpdateCaptor.capture());
+      final var update = bulkUpdateCaptor.getValue();
+      assertThat(update.incidentRequests())
           .hasSize(1)
           .containsEntry(
               "5",
               new DocumentUpdate(
                   "5", "incidents", Map.of(IncidentTemplate.STATE, IncidentState.RESOLVED), null));
-      assertThat(repository.updated.flowNodeInstanceRequests())
+      assertThat(update.flowNodeInstanceRequests())
           .hasSize(2)
           .containsEntry(
               "2",
@@ -594,7 +564,7 @@ final class IncidentUpdateTaskTest {
               "4",
               new DocumentUpdate(
                   "4", "flow-nodes", Map.of(FlowNodeInstanceTemplate.INCIDENT, false), null));
-      assertThat(repository.updated.listViewRequests())
+      assertThat(update.listViewRequests())
           .hasSize(4)
           .containsEntry(
               "1",
@@ -630,15 +600,18 @@ final class IncidentUpdateTaskTest {
               LOGGER,
               Duration.ZERO);
       incidentEntity.setState(IncidentState.ACTIVE);
-      repository.activeIncidentsByTreePaths =
-          CompletableFuture.completedFuture(
-              List.of(
-                  new ActiveIncident("30", new TreePath().startTreePath("1").toString()),
-                  new ActiveIncident(incident.id(), incidentEntity.getTreePath())));
-      repository.batch =
-          CompletableFuture.completedFuture(
-              new PendingIncidentUpdateBatch(
-                  highestPosition, Map.of(incident.incident().getKey(), IncidentState.RESOLVED)));
+      when(repository.getActiveIncidentsByTreePaths(any()))
+          .thenReturn(
+              CompletableFuture.completedFuture(
+                  List.of(
+                      new ActiveIncident("30", new TreePath().startTreePath("1").toString()),
+                      new ActiveIncident(incident.id(), incidentEntity.getTreePath()))));
+      when(repository.getPendingIncidentsBatch(anyLong(), anyInt()))
+          .thenReturn(
+              CompletableFuture.completedFuture(
+                  new PendingIncidentUpdateBatch(
+                      highestPosition,
+                      Map.of(incident.incident().getKey(), IncidentState.RESOLVED))));
 
       // when
       final var result = task.execute();
@@ -646,13 +619,15 @@ final class IncidentUpdateTaskTest {
       // then - we should mark the child process instance, the call activity, and the task as
       // incident free, but NOT the parent process instance as it still has an active incident
       assertThat(result).succeedsWithin(TIMEOUT);
-      assertThat(repository.updated.incidentRequests())
+      verify(repository).bulkUpdate(bulkUpdateCaptor.capture());
+      final var update = bulkUpdateCaptor.getValue();
+      assertThat(update.incidentRequests())
           .hasSize(1)
           .containsEntry(
               "5",
               new DocumentUpdate(
                   "5", "incidents", Map.of(IncidentTemplate.STATE, IncidentState.RESOLVED), null));
-      assertThat(repository.updated.flowNodeInstanceRequests())
+      assertThat(update.flowNodeInstanceRequests())
           .hasSize(2)
           .containsEntry(
               "2",
@@ -662,7 +637,7 @@ final class IncidentUpdateTaskTest {
               "4",
               new DocumentUpdate(
                   "4", "flow-nodes", Map.of(FlowNodeInstanceTemplate.INCIDENT, false), null));
-      assertThat(repository.updated.listViewRequests())
+      assertThat(update.listViewRequests())
           .hasSize(3)
           .containsEntry(
               "2",
@@ -691,18 +666,22 @@ final class IncidentUpdateTaskTest {
               metrics,
               LOGGER,
               Duration.ZERO);
-      repository.processInstances =
-          CompletableFuture.completedFuture(List.of(parentProcessInstance));
-      repository.wasProcessInstanceDeleted = CompletableFuture.completedFuture(true);
+      when(repository.getProcessInstances(any()))
+          .thenReturn(CompletableFuture.completedFuture(List.of(parentProcessInstance)));
+      final long deletedProcessInstanceKey = childProcessInstance.key();
+      when(repository.deletedProcessInstances(Set.of(deletedProcessInstanceKey)))
+          .thenReturn(CompletableFuture.completedFuture(Set.of(deletedProcessInstanceKey)));
 
       // when
       final var result = task.execute();
 
       // then
       assertThat(result).succeedsWithin(TIMEOUT);
-      assertThat(repository.updated.listViewRequests()).isEmpty();
-      assertThat(repository.updated.incidentRequests()).isEmpty();
-      assertThat(repository.updated.flowNodeInstanceRequests()).isEmpty();
+      verify(repository).bulkUpdate(bulkUpdateCaptor.capture());
+      final var update = bulkUpdateCaptor.getValue();
+      assertThat(update.listViewRequests()).isEmpty();
+      assertThat(update.incidentRequests()).isEmpty();
+      assertThat(update.flowNodeInstanceRequests()).isEmpty();
       verify(incidentNotifier, times(0)).notifyAsync(any());
       verify(metrics).recordIncidentUpdatesProcessed(1);
       verify(metrics).recordIncidentUpdatesDocumentsUpdated(0);
