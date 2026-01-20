@@ -620,6 +620,31 @@ public final class RecordingGatewayService extends GatewayImplBase {
         request -> SetVariablesResponse.newBuilder().setKey(key).build());
   }
 
+  public void onDeleteResourceRequest(final long resourceKey) {
+    addRequestHandler(
+        DeleteResourceRequest.class,
+        request ->
+            DeleteResourceResponse.newBuilder()
+                .setResourceKey(String.valueOf(resourceKey))
+                .build());
+  }
+
+  public void onDeleteResourceRequest(
+      final long resourceKey, final String batchOperationKey, final int batchOperationType) {
+    addRequestHandler(
+        DeleteResourceRequest.class,
+        request ->
+            DeleteResourceResponse.newBuilder()
+                .setResourceKey(String.valueOf(resourceKey))
+                .setBatchOperation(
+                    io.camunda.zeebe.gateway.protocol.GatewayOuterClass.BatchOperationCreatedResult
+                        .newBuilder()
+                        .setBatchOperationKey(batchOperationKey)
+                        .setBatchOperationTypeValue(batchOperationType)
+                        .build())
+                .build());
+  }
+
   public void errorOnRequest(
       final Class<? extends GeneratedMessage> requestClass,
       final Supplier<Exception> errorSupplier) {

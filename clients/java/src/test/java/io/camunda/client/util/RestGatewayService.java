@@ -132,10 +132,6 @@ public class RestGatewayService {
     registerPost(RestGatewayPaths.getDeploymentsUrl(), response);
   }
 
-  public void onDeleteResourceRequest(final DeleteResourceResponse response) {
-    registerPost(RestGatewayPaths.getDeploymentsUrl(), response);
-  }
-
   public void onDeleteResourceRequest(
       final long resourceKey, final DeleteResourceResponse response) {
     registerPost(RestGatewayPaths.getResourceDeletionUrl(resourceKey), response);

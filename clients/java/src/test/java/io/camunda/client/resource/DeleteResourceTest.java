@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.api.command.DeleteResourceCommandStep1;
 import io.camunda.client.api.response.DeleteResourceResponse;
+import io.camunda.client.api.search.enums.BatchOperationType;
 import io.camunda.client.util.ClientTest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeleteResourceRequest;
 import java.time.Duration;
@@ -42,7 +43,7 @@ public final class DeleteResourceTest extends ClientTest {
   @Test
   public void shouldSendCommandWithDeleteHistoryFalse() {
     // when
-    client.newDeleteResourceCommand(123, false).send().join();
+    client.newDeleteResourceCommand(123).deleteHistory(false).send().join();
 
     // then
     final DeleteResourceRequest request = gatewayService.getLastRequest();
@@ -55,7 +56,7 @@ public final class DeleteResourceTest extends ClientTest {
   @Test
   public void shouldSendCommandWithDeleteHistoryTrue() {
     // when
-    client.newDeleteResourceCommand(123, true).send().join();
+    client.newDeleteResourceCommand(123).deleteHistory(true).send().join();
 
     // then
     final DeleteResourceRequest request = gatewayService.getLastRequest();
@@ -80,36 +81,53 @@ public final class DeleteResourceTest extends ClientTest {
   @Test
   public void shouldNotHaveNullResponse() {
     // given
-    final DeleteResourceCommandStep1 command = client.newDeleteResourceCommand(12);
+    final long resourceKey = 12L;
+    gatewayService.onDeleteResourceRequest(resourceKey);
+    final DeleteResourceCommandStep1 command = client.newDeleteResourceCommand(resourceKey);
 
     // when
     final DeleteResourceResponse response = command.send().join();
 
     // then
     assertThat(response).isNotNull();
+    assertThat(response.getResourceKey()).isEqualTo(String.valueOf(resourceKey));
+    assertThat(response.getCreateBatchOperationResponse()).isNull();
   }
 
   @Test
   public void shouldNotHaveNullResponseWithDeleteHistoryFalse() {
     // given
-    final DeleteResourceCommandStep1 command = client.newDeleteResourceCommand(12, false);
+    final long resourceKey = 12L;
+    gatewayService.onDeleteResourceRequest(resourceKey);
+    final DeleteResourceCommandStep1 command =
+        client.newDeleteResourceCommand(resourceKey).deleteHistory(false);
 
     // when
     final DeleteResourceResponse response = command.send().join();
 
     // then
     assertThat(response).isNotNull();
+    assertThat(response.getResourceKey()).isEqualTo(String.valueOf(resourceKey));
+    assertThat(response.getCreateBatchOperationResponse()).isNull();
   }
 
   @Test
   public void shouldNotHaveNullResponseWithDeleteHistoryTrue() {
     // given
-    final DeleteResourceCommandStep1 command = client.newDeleteResourceCommand(12, true);
+    final long resourceKey = 12L;
+    gatewayService.onDeleteResourceRequest(resourceKey, "34", 4);
+    final DeleteResourceCommandStep1 command =
+        client.newDeleteResourceCommand(resourceKey).deleteHistory(true);
 
     // when
     final DeleteResourceResponse response = command.send().join();
 
     // then
     assertThat(response).isNotNull();
+    assertThat(response.getResourceKey()).isEqualTo(String.valueOf(resourceKey));
+    assertThat(response.getCreateBatchOperationResponse()).isNotNull();
+    assertThat(response.getCreateBatchOperationResponse().getBatchOperationKey()).isEqualTo("34");
+    assertThat(response.getCreateBatchOperationResponse().getBatchOperationType())
+        .isEqualTo(BatchOperationType.DELETE_PROCESS_INSTANCE);
   }
 }
