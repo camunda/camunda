@@ -296,7 +296,7 @@ public class SimpleSearchQueryMapper {
 
   private static io.camunda.gateway.protocol.model.IntegerFilterProperty getIntegerFilter(
       final Integer value) {
-    return value == null ? null : new AdvancedIntegerFilter().$eq(value);
+    return new AdvancedIntegerFilter().$eq(value);
   }
 
   private static io.camunda.gateway.protocol.model.DateTimeFilterProperty getDateTimeFilter(
