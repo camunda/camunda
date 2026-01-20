@@ -154,6 +154,7 @@ test.describe('task panel page', () => {
       onFailure: async () => {
        await taskPanelPageV1.scrollToFirstTask('usertask_for_scrolling_2');
       },
+      maxRetries: 10,
     });
 
     await expect(page.getByText('usertask_for_scrolling_2')).toHaveCount(199);
