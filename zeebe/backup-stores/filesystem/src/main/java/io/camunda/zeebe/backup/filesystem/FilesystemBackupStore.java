@@ -134,6 +134,15 @@ public final class FilesystemBackupStore implements BackupStore {
   }
 
   @Override
+  public CompletableFuture<Void> delete(final Collection<BackupIdentifier> ids) {
+    return ids.stream()
+        .parallel()
+        .map(this::delete)
+        .reduce(CompletableFuture::allOf)
+        .orElseGet(() -> CompletableFuture.completedFuture(null));
+  }
+
+  @Override
   public CompletableFuture<Backup> restore(final BackupIdentifier id, final Path targetFolder) {
     return CompletableFuture.supplyAsync(
         () -> {
@@ -221,6 +230,30 @@ public final class FilesystemBackupStore implements BackupStore {
           final var markerPath = partitionDir.resolve(BackupRangeMarker.toName(marker));
           try {
             if (Files.deleteIfExists(markerPath)) {
+              FileUtil.flushDirectory(partitionDir);
+            }
+          } catch (final IOException e) {
+            throw new UncheckedIOException(e);
+          }
+        },
+        executor);
+  }
+
+  @Override
+  public CompletableFuture<Void> deleteRangeMarkers(
+      final int partitionId, final Collection<BackupRangeMarker> markers) {
+    return CompletableFuture.runAsync(
+        () -> {
+          final var partitionDir = rangesDir.resolve(String.valueOf(partitionId));
+          boolean deletedAny = false;
+          try {
+            for (final var marker : markers) {
+              final var markerPath = partitionDir.resolve(BackupRangeMarker.toName(marker));
+              if (Files.deleteIfExists(markerPath)) {
+                deletedAny = true;
+              }
+            }
+            if (deletedAny) {
               FileUtil.flushDirectory(partitionDir);
             }
           } catch (final IOException e) {
