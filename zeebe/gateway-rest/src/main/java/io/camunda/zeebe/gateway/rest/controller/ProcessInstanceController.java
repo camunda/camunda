@@ -71,41 +71,54 @@ public class ProcessInstanceController {
       @PathVariable(name = "engineName", required = false) final String engineName,
       @RequestBody final ProcessInstanceCreationInstruction request) {
     return RequestMapper.toCreateProcessInstance(request, multiTenancyCfg.isChecksEnabled())
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::createProcessInstance);
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            req -> createProcessInstance(req, engineName));
   }
 
   @CamundaPostMapping(path = "/{processInstanceKey}/cancellation")
   public CompletableFuture<ResponseEntity<Object>> cancelProcessInstance(
+      @PathVariable(name = "engineName", required = false) final String engineName,
       @PathVariable final long processInstanceKey,
       @RequestBody(required = false) final CancelProcessInstanceRequest cancelRequest) {
     return RequestMapper.toCancelProcessInstance(processInstanceKey, cancelRequest)
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::cancelProcessInstance);
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            req -> cancelProcessInstance(req, engineName));
   }
 
   @CamundaPostMapping(path = "/{processInstanceKey}/migration")
   public CompletableFuture<ResponseEntity<Object>> migrateProcessInstance(
+      @PathVariable(name = "engineName", required = false) final String engineName,
       @PathVariable final long processInstanceKey,
       @RequestBody final ProcessInstanceMigrationInstruction migrationRequest) {
     return RequestMapper.toMigrateProcessInstance(processInstanceKey, migrationRequest)
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::migrateProcessInstance);
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            req -> migrateProcessInstance(req, engineName));
   }
 
   @CamundaPostMapping(path = "/{processInstanceKey}/modification")
   public CompletableFuture<ResponseEntity<Object>> modifyProcessInstance(
+      @PathVariable(name = "engineName", required = false) final String engineName,
       @PathVariable final long processInstanceKey,
       @RequestBody final ProcessInstanceModificationInstruction modifyRequest) {
     return RequestMapper.toModifyProcessInstance(processInstanceKey, modifyRequest)
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::modifyProcessInstance);
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            req -> modifyProcessInstance(req, engineName));
   }
 
   @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/{processInstanceKey}/incident-resolution")
   public CompletableFuture<ResponseEntity<Object>> resolveProcessInstanceIncidents(
+      @PathVariable(name = "engineName", required = false) final String engineName,
       @PathVariable final long processInstanceKey) {
     return RequestExecutor.executeServiceMethod(
         () ->
             processInstanceServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
+                .withEngineName(engineName)
                 .resolveProcessInstanceIncidents(processInstanceKey),
         ResponseMapper::toBatchOperationCreatedWithResultResponse,
         HttpStatus.OK);
@@ -123,14 +136,15 @@ public class ProcessInstanceController {
   @RequiresSecondaryStorage
   @CamundaGetMapping(path = "/{processInstanceKey}")
   public ResponseEntity<Object> getByKey(
+      @PathVariable(name = "engineName", required = false) final String engineName,
       @PathVariable("processInstanceKey") final Long processInstanceKey) {
     try {
-      // Success case: Return the left side with the ProcessInstanceItem wrapped in ResponseEntity
       return ResponseEntity.ok()
           .body(
               SearchQueryResponseMapper.toProcessInstance(
                   processInstanceServices
                       .withAuthentication(authenticationProvider.getCamundaAuthentication())
+                      .withEngineName(engineName)
                       .getByKey(processInstanceKey)));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
@@ -140,12 +154,14 @@ public class ProcessInstanceController {
   @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/{processInstanceKey}/deletion")
   public CompletableFuture<ResponseEntity<Object>> deleteProcessInstance(
+      @PathVariable(name = "engineName", required = false) final String engineName,
       @PathVariable("processInstanceKey") final Long processInstanceKey,
       @RequestBody(required = false) final DeleteProcessInstanceRequest request) {
     return RequestExecutor.executeServiceMethod(
         () ->
             processInstanceServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
+                .withEngineName(engineName)
                 .deleteProcessInstance(
                     processInstanceKey,
                     Objects.nonNull(request) ? request.getOperationReference() : null),
@@ -156,6 +172,7 @@ public class ProcessInstanceController {
   @RequiresSecondaryStorage
   @CamundaGetMapping(path = "/{processInstanceKey}/call-hierarchy")
   public ResponseEntity<Object> getCallHierarchy(
+      @PathVariable(name = "engineName", required = false) final String engineName,
       @PathVariable("processInstanceKey") final Long processInstanceKey) {
     try {
       return ResponseEntity.ok()
@@ -163,6 +180,7 @@ public class ProcessInstanceController {
               SearchQueryResponseMapper.toProcessInstanceCallHierarchyEntries(
                   processInstanceServices
                       .withAuthentication(authenticationProvider.getCamundaAuthentication())
+                      .withEngineName(engineName)
                       .callHierarchy(processInstanceKey)));
 
     } catch (final Exception e) {
@@ -173,6 +191,7 @@ public class ProcessInstanceController {
   @RequiresSecondaryStorage
   @CamundaGetMapping(path = "/{processInstanceKey}/statistics/element-instances")
   public ResponseEntity<Object> elementStatistics(
+      @PathVariable(name = "engineName", required = false) final String engineName,
       @PathVariable("processInstanceKey") final Long processInstanceKey) {
     try {
       return ResponseEntity.ok()
@@ -180,6 +199,7 @@ public class ProcessInstanceController {
               SearchQueryResponseMapper.toProcessInstanceElementStatisticsResult(
                   processInstanceServices
                       .withAuthentication(authenticationProvider.getCamundaAuthentication())
+                      .withEngineName(engineName)
                       .elementStatistics(processInstanceKey)));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
@@ -189,6 +209,7 @@ public class ProcessInstanceController {
   @RequiresSecondaryStorage
   @CamundaGetMapping(path = "/{processInstanceKey}/sequence-flows")
   public ResponseEntity<Object> sequenceFlows(
+      @PathVariable(name = "engineName", required = false) final String engineName,
       @PathVariable("processInstanceKey") final Long processInstanceKey) {
     try {
       return ResponseEntity.ok()
@@ -196,6 +217,7 @@ public class ProcessInstanceController {
               SearchQueryResponseMapper.toSequenceFlowsResult(
                   processInstanceServices
                       .withAuthentication(authenticationProvider.getCamundaAuthentication())
+                      .withEngineName(engineName)
                       .sequenceFlows(processInstanceKey)));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
@@ -205,52 +227,68 @@ public class ProcessInstanceController {
   @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/cancellation")
   public CompletableFuture<ResponseEntity<Object>> cancelProcessInstancesBatchOperation(
+      @PathVariable(name = "engineName", required = false) final String engineName,
       @RequestBody final ProcessInstanceCancellationBatchOperationRequest request) {
     return RequestMapper.toRequiredProcessInstanceFilter(request.getFilter())
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::batchOperationCancellation);
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            filter -> batchOperationCancellation(filter, engineName));
   }
 
   @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/incident-resolution")
   public CompletableFuture<ResponseEntity<Object>> resolveIncidentsBatchOperation(
+      @PathVariable(name = "engineName", required = false) final String engineName,
       @RequestBody final ProcessInstanceIncidentResolutionBatchOperationRequest request) {
     return RequestMapper.toRequiredProcessInstanceFilter(request.getFilter())
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::batchOperationResolveIncidents);
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            filter -> batchOperationResolveIncidents(filter, engineName));
   }
 
   @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/migration")
   public CompletableFuture<ResponseEntity<Object>> migrateProcessInstancesBatchOperation(
+      @PathVariable(name = "engineName", required = false) final String engineName,
       @RequestBody final ProcessInstanceMigrationBatchOperationRequest request) {
     return RequestMapper.toProcessInstanceMigrationBatchOperationRequest(request)
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::batchOperationMigrate);
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            req -> batchOperationMigrate(req, engineName));
   }
 
   @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/modification")
   public CompletableFuture<ResponseEntity<Object>> modifyProcessInstancesBatchOperation(
+      @PathVariable(name = "engineName", required = false) final String engineName,
       @RequestBody final ProcessInstanceModificationBatchOperationRequest request) {
     return RequestMapper.toProcessInstanceModifyBatchOperationRequest(request)
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::batchOperationModify);
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            req -> batchOperationModify(req, engineName));
   }
 
   @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/deletion")
   public CompletableFuture<ResponseEntity<Object>> deleteProcessInstancesBatchOperation(
+      @PathVariable(name = "engineName", required = false) final String engineName,
       @RequestBody final ProcessInstanceDeletionBatchOperationRequest request) {
     return RequestMapper.toRequiredProcessInstanceFilter(request.getFilter())
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::batchOperationDeletion);
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            filter -> batchOperationDeletion(filter, engineName));
   }
 
   @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/{processInstanceKey}/incidents/search")
   public ResponseEntity<IncidentSearchQueryResult> searchIncidents(
+      @PathVariable(name = "engineName", required = false) final String engineName,
       @PathVariable("processInstanceKey") final long processInstanceKey,
       @RequestBody(required = false) final IncidentSearchQuery query) {
     return SearchQueryRequestMapper.toIncidentQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
-            incidentQuery -> searchIncidents(processInstanceKey, incidentQuery));
+            incidentQuery -> searchIncidents(processInstanceKey, incidentQuery, engineName));
   }
 
   private ResponseEntity<ProcessInstanceSearchQueryResult> search(
@@ -269,11 +307,12 @@ public class ProcessInstanceController {
   }
 
   private ResponseEntity<IncidentSearchQueryResult> searchIncidents(
-      final long processInstanceKey, final IncidentQuery query) {
+      final long processInstanceKey, final IncidentQuery query, final String engineName) {
     try {
       final var result =
           processInstanceServices
               .withAuthentication(authenticationProvider.getCamundaAuthentication())
+              .withEngineName(engineName)
               .searchIncidents(processInstanceKey, query);
       return ResponseEntity.ok(SearchQueryResponseMapper.toIncidentSearchQueryResponse(result));
     } catch (final Exception e) {
@@ -282,67 +321,73 @@ public class ProcessInstanceController {
   }
 
   private CompletableFuture<ResponseEntity<Object>> batchOperationCancellation(
-      final io.camunda.search.filter.ProcessInstanceFilter filter) {
+      final io.camunda.search.filter.ProcessInstanceFilter filter, final String engineName) {
     return RequestExecutor.executeServiceMethod(
         () ->
             processInstanceServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
+                .withEngineName(engineName)
                 .cancelProcessInstanceBatchOperationWithResult(filter),
         ResponseMapper::toBatchOperationCreatedWithResultResponse,
         HttpStatus.OK);
   }
 
   private CompletableFuture<ResponseEntity<Object>> batchOperationResolveIncidents(
-      final io.camunda.search.filter.ProcessInstanceFilter filter) {
+      final io.camunda.search.filter.ProcessInstanceFilter filter, final String engineName) {
     return RequestExecutor.executeServiceMethod(
         () ->
             processInstanceServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
+                .withEngineName(engineName)
                 .resolveIncidentsBatchOperationWithResult(filter),
         ResponseMapper::toBatchOperationCreatedWithResultResponse,
         HttpStatus.OK);
   }
 
   private CompletableFuture<ResponseEntity<Object>> batchOperationMigrate(
-      final ProcessInstanceMigrateBatchOperationRequest request) {
+      final ProcessInstanceMigrateBatchOperationRequest request, final String engineName) {
     return RequestExecutor.executeServiceMethod(
         () ->
             processInstanceServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
+                .withEngineName(engineName)
                 .migrateProcessInstancesBatchOperation(request),
         ResponseMapper::toBatchOperationCreatedWithResultResponse,
         HttpStatus.OK);
   }
 
   private CompletableFuture<ResponseEntity<Object>> batchOperationModify(
-      final ProcessInstanceModifyBatchOperationRequest request) {
+      final ProcessInstanceModifyBatchOperationRequest request, final String engineName) {
     return RequestExecutor.executeServiceMethod(
         () ->
             processInstanceServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
+                .withEngineName(engineName)
                 .modifyProcessInstancesBatchOperation(request),
         ResponseMapper::toBatchOperationCreatedWithResultResponse,
         HttpStatus.OK);
   }
 
   private CompletableFuture<ResponseEntity<Object>> batchOperationDeletion(
-      final io.camunda.search.filter.ProcessInstanceFilter filter) {
+      final io.camunda.search.filter.ProcessInstanceFilter filter, final String engineName) {
     return RequestExecutor.executeServiceMethod(
         () ->
             processInstanceServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
+                .withEngineName(engineName)
                 .deleteProcessInstancesBatchOperation(filter),
         ResponseMapper::toBatchOperationCreatedWithResultResponse,
         HttpStatus.OK);
   }
 
   private CompletableFuture<ResponseEntity<Object>> createProcessInstance(
-      final ProcessInstanceCreateRequest request) {
+      final ProcessInstanceCreateRequest request, final String engineName) {
     if (request.awaitCompletion()) {
       return RequestExecutor.executeServiceMethod(
           () ->
               processInstanceServices
                   .withAuthentication(authenticationProvider.getCamundaAuthentication())
+                  .withEngineName(engineName)
                   .createProcessInstanceWithResult(request),
           ResponseMapper::toCreateProcessInstanceWithResultResponse,
           HttpStatus.OK);
@@ -351,35 +396,39 @@ public class ProcessInstanceController {
         () ->
             processInstanceServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
+                .withEngineName(engineName)
                 .createProcessInstance(request),
         ResponseMapper::toCreateProcessInstanceResponse,
         HttpStatus.OK);
   }
 
   private CompletableFuture<ResponseEntity<Object>> cancelProcessInstance(
-      final ProcessInstanceCancelRequest request) {
+      final ProcessInstanceCancelRequest request, final String engineName) {
     return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
             processInstanceServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
+                .withEngineName(engineName)
                 .cancelProcessInstance(request));
   }
 
   private CompletableFuture<ResponseEntity<Object>> migrateProcessInstance(
-      final ProcessInstanceMigrateRequest request) {
+      final ProcessInstanceMigrateRequest request, final String engineName) {
     return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
             processInstanceServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
+                .withEngineName(engineName)
                 .migrateProcessInstance(request));
   }
 
   private CompletableFuture<ResponseEntity<Object>> modifyProcessInstance(
-      final ProcessInstanceModifyRequest request) {
+      final ProcessInstanceModifyRequest request, final String engineName) {
     return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
             processInstanceServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
+                .withEngineName(engineName)
                 .modifyProcessInstance(request));
   }
 }
