@@ -79,13 +79,13 @@ class UserTaskAuthorizationIT {
           ADMIN,
           "password",
           List.of(
-              new Permissions(AUTHORIZATION, CREATE, List.of("*")),
-              new Permissions(AUTHORIZATION, READ, List.of("*")),
-              new Permissions(RESOURCE, CREATE, List.of("*")),
-              new Permissions(PROCESS_DEFINITION, CREATE_PROCESS_INSTANCE, List.of("*")),
-              new Permissions(PROCESS_DEFINITION, READ_PROCESS_DEFINITION, List.of("*")),
-              new Permissions(PROCESS_DEFINITION, READ_PROCESS_INSTANCE, List.of("*")),
-              new Permissions(PROCESS_DEFINITION, READ_USER_TASK, List.of("*"))));
+              Permissions.withWildcard(AUTHORIZATION, CREATE),
+              Permissions.withWildcard(AUTHORIZATION, READ),
+              Permissions.withWildcard(RESOURCE, CREATE),
+              Permissions.withWildcard(PROCESS_DEFINITION, CREATE_PROCESS_INSTANCE),
+              Permissions.withWildcard(PROCESS_DEFINITION, READ_PROCESS_DEFINITION),
+              Permissions.withWildcard(PROCESS_DEFINITION, READ_PROCESS_INSTANCE),
+              Permissions.withWildcard(PROCESS_DEFINITION, READ_USER_TASK)));
 
   @UserDefinition
   private static final TestUser USER_WITHOUT_PERMISSIONS_USER =
@@ -96,21 +96,21 @@ class UserTaskAuthorizationIT {
       new TestUser(
           USER_WITH_PROCESS_DEF_READ_USER_TASK_PROCESS_1,
           "password",
-          List.of(new Permissions(PROCESS_DEFINITION, READ_USER_TASK, List.of(PROCESS_ID_1))));
+          List.of(Permissions.withResourceId(PROCESS_DEFINITION, READ_USER_TASK, PROCESS_ID_1)));
 
   @UserDefinition
   private static final TestUser USER_WITH_PROCESS_DEF_READ_USER_TASK_PROCESS_2_USER =
       new TestUser(
           USER_WITH_PROCESS_DEF_READ_USER_TASK_PROCESS_2,
           "password",
-          List.of(new Permissions(PROCESS_DEFINITION, READ_USER_TASK, List.of(PROCESS_ID_2))));
+          List.of(Permissions.withResourceId(PROCESS_DEFINITION, READ_USER_TASK, PROCESS_ID_2)));
 
   @UserDefinition
   private static final TestUser USER_WITH_USER_TASK_READ_WILDCARD_USER =
       new TestUser(
           USER_WITH_USER_TASK_READ_WILDCARD,
           "password",
-          List.of(new Permissions(USER_TASK, READ, List.of("*"))));
+          List.of(Permissions.withWildcard(USER_TASK, READ)));
 
   @UserDefinition
   private static final TestUser USER_WITH_USER_TASK_READ_PROCESS_1_FIRST_TASK_USER =

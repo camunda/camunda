@@ -58,6 +58,34 @@ public final class Permissions {
   }
 
   /**
+   * Creates a permission with a single resource ID.
+   *
+   * @param resourceType the resource type
+   * @param permissionType the permission type
+   * @param resourceId the resource ID
+   * @return a new Permissions instance with the specified resource ID
+   */
+  public static Permissions withResourceId(
+      final ResourceType resourceType,
+      final PermissionType permissionType,
+      final String resourceId) {
+    return Permissions.forResource(resourceType, permissionType).withResourceId(resourceId).build();
+  }
+
+  /**
+   * Creates a permission with wildcard resource ID (*) only for granting access to all resources of
+   * the specified type.
+   *
+   * @param resourceType the resource type
+   * @param permissionType the permission type
+   * @return a new Permissions instance with wildcard resource ID
+   */
+  public static Permissions withWildcard(
+      final ResourceType resourceType, final PermissionType permissionType) {
+    return withResourceId(resourceType, permissionType, "*");
+  }
+
+  /**
    * Creates a permission with a single property name.
    *
    * @param resourceType the resource type
@@ -104,6 +132,15 @@ public final class Permissions {
     public Builder withResourceIds(final List<String> resourceIds) {
       this.resourceIds.addAll(resourceIds);
       return this;
+    }
+
+    /**
+     * Adds wildcard resource ID (*) to grant access to all resources of the specified type.
+     *
+     * @return this Builder for method chaining
+     */
+    public Builder withWildcard() {
+      return withResourceId("*");
     }
 
     public Builder withProperty(final String propertyName) {
