@@ -20,6 +20,7 @@ import {useProcessInstanceElementSelection} from './useProcessInstanceElementSel
 import {TOKEN_OPERATIONS} from 'modules/constants';
 import {useElementSelectionInstanceKey} from './useElementSelectionInstanceKey';
 import {IS_ELEMENT_SELECTION_V2} from 'modules/feature-flags';
+import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 
 const useHasNoContent = () => {
   const newTokenCountForSelectedNode = useNewTokenCountForSelectedNode();
@@ -76,13 +77,18 @@ const useDisplayStatus = ({
 }) => {
   const hasNoContent = useHasNoContent();
   const hasMultipleInstances = useHasMultipleInstances();
-  const isPlaceholderSelected = useIsPlaceholderSelected();
+  const newTokenCountForSelectedNode = useNewTokenCountForSelectedNode();
+  let isPlaceholderSelected = useIsPlaceholderSelected();
   let {isFetchingElementError} = useProcessInstanceElementSelection();
 
   // TODO: Remove these assignments once the feature flag is fully rolled out
   isFetchingElementError = IS_ELEMENT_SELECTION_V2
     ? isFetchingElementError
     : flowNodeMetaDataStore.state.status === 'error';
+  isPlaceholderSelected = IS_ELEMENT_SELECTION_V2
+    ? isPlaceholderSelected
+    : flowNodeSelectionStore.state.selection?.isPlaceholder ||
+      newTokenCountForSelectedNode === 1;
 
   if (isError || isFetchingElementError) {
     return 'error';
