@@ -23,12 +23,12 @@ public abstract class AbstractExporterEntity<T extends AbstractExporterEntity<T>
   private String id;
 
   @Override
-  public String getId() {
+  public final String getId() {
     return id;
   }
 
   @Override
-  public T setId(final String id) {
+  public final T setId(final String id) {
     this.id = id;
     return (T) this;
   }

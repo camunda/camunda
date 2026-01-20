@@ -13,23 +13,11 @@ import io.camunda.webapps.schema.entities.BeforeVersion880;
 public class UserEntity extends AbstractExporterEntity<UserEntity> {
 
   public static final String DEFAULT_TENANT_IDENTIFIER = "<default>";
-  @BeforeVersion880 private String id;
   @BeforeVersion880 private Long key;
   @BeforeVersion880 private String username;
   @BeforeVersion880 private String name;
   @BeforeVersion880 private String email;
   @BeforeVersion880 private String password;
-
-  @Override
-  public String getId() {
-    return id;
-  }
-
-  @Override
-  public UserEntity setId(final String id) {
-    this.id = id;
-    return this;
-  }
 
   public Long getKey() {
     return key;
