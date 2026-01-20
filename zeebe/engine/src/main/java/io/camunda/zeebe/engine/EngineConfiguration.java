@@ -58,6 +58,8 @@ public final class EngineConfiguration {
   public static final Duration DEFAULT_COMMAND_REDISTRIBUTION_MAX_BACKOFF_DURATION =
       Duration.ofMinutes(5);
   public static final boolean DEFAULT_ENABLE_IDENTITY_SETUP = true;
+  public static final Duration DEFAULT_EXPRESSION_EVALUATION_TIMEOUT = Duration.ofSeconds(5);
+
   private int maxJobTypeLength = DEFAULT_MAX_JOB_TYPE_LENGTH;
   private int maxTenantIdLength = DEFAULT_MAX_TENANT_ID_LENGTH;
   private int maxUniqueJobMetricsKeys = DEFAULT_MAX_UNIQUE_JOB_METRICS_KEYS;
@@ -95,6 +97,7 @@ public final class EngineConfiguration {
 
   private boolean enableIdentitySetup = DEFAULT_ENABLE_IDENTITY_SETUP;
   private GlobalListenersConfiguration globalListeners = GlobalListenersConfiguration.empty();
+  private Duration expressionEvaluationTimeout = DEFAULT_EXPRESSION_EVALUATION_TIMEOUT;
 
   public int getMessagesTtlCheckerBatchLimit() {
     return messagesTtlCheckerBatchLimit;
@@ -403,6 +406,16 @@ public final class EngineConfiguration {
 
   public EngineConfiguration setMaxTenantIdLength(final int maxTenantIdLength) {
     this.maxTenantIdLength = maxTenantIdLength;
+    return this;
+  }
+
+  public Duration getExpressionEvaluationTimeout() {
+    return expressionEvaluationTimeout;
+  }
+
+  public EngineConfiguration setExpressionEvaluationTimeout(
+      final Duration expressionEvaluationTimeout) {
+    this.expressionEvaluationTimeout = expressionEvaluationTimeout;
     return this;
   }
 }

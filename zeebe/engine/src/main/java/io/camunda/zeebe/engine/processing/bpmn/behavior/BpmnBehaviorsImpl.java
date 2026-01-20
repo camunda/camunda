@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.bpmn.behavior;
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.ExpressionLanguageFactory;
 import io.camunda.zeebe.el.ExpressionLanguageMetrics;
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.ProcessInstanceStateTransitionGuard;
 import io.camunda.zeebe.engine.processing.bpmn.clock.ZeebeFeelEngineClock;
@@ -77,7 +78,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
       final InstantSource clock,
       final AuthorizationCheckBehavior authCheckBehavior,
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
-      final ExpressionLanguageMetrics expressionMetrics) {
+      final ExpressionLanguageMetrics expressionMetrics,
+      final EngineConfiguration config) {
 
     final var tenantClusterScope =
         new TenantScopeClusterVariableEvaluationContext(processingState.getClusterVariableState());
@@ -116,9 +118,14 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
         new ExpressionProcessor(
             expressionLanguage,
             CombinedEvaluationContext.withContexts(
-                processVariableContext, namespaceFullClusterContext));
+                processVariableContext, namespaceFullClusterContext),
+            config.getExpressionEvaluationTimeout());
 
-    expressionBehavior = new ExpressionBehavior(namespaceFullClusterContext, expressionLanguage);
+    expressionBehavior =
+        new ExpressionBehavior(
+            namespaceFullClusterContext,
+            expressionLanguage,
+            config.getExpressionEvaluationTimeout());
 
     conditionalBehavior =
         new BpmnConditionalBehavior(

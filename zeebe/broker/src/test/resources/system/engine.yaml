@@ -31,3 +31,5 @@ zeebe:
                 - canceling
               retries: 2
               afterNonGlobal: true
+        expression:
+          timeout: 2s

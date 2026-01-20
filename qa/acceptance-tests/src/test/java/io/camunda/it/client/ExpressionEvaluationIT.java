@@ -11,13 +11,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.ClientHttpException;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.EvaluateExpressionResponse;
+import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.qa.util.multidb.MultiDbTest;
+import io.camunda.qa.util.multidb.MultiDbTestApplication;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
 
 @MultiDbTest
@@ -25,6 +30,15 @@ import org.junit.jupiter.api.Test;
 public class ExpressionEvaluationIT {
 
   private static CamundaClient camundaClient;
+
+  @MultiDbTestApplication
+  private static final TestCamundaApplication CAMUNDA_APPLICATION =
+      new TestCamundaApplication()
+          .withUnifiedConfig(
+              cfg ->
+                  // Set it low to speed up shouldRejectExpressionAfterTimeout
+                  // But not too low to accidentally timeout during other tests
+                  cfg.getExpression().setTimeout(Duration.ofMillis(300)));
 
   // ============ STATIC EXPRESSION TESTS (LITERALS) ============
 
@@ -841,5 +855,26 @@ public class ExpressionEvaluationIT {
             () -> camundaClient.newEvaluateExpressionCommand().expression(null).send().join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("expression must not be null");
+  }
+
+  @Test
+  void shouldRejectExpressionAfterTimeout() {
+    // when / then
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newEvaluateExpressionCommand()
+                    .expression("=for x in 0..1000 return for y in 0..x return x + y")
+                    .send()
+                    .join())
+        .isInstanceOf(ProblemException.class)
+        .asInstanceOf(InstanceOfAssertFactories.throwable(ProblemException.class))
+        .hasMessageContaining(
+            """
+                Command 'EVALUATE' rejected with code 'PROCESSING_ERROR': \
+                Expected to evaluate expression but timed out after 300 ms: \
+                'for x in 0..1000 return for y in 0..x return x + y'""")
+        .extracting(ClientHttpException::code)
+        .isEqualTo(500);
   }
 }

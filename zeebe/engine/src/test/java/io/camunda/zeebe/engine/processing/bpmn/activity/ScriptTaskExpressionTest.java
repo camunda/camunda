@@ -28,6 +28,7 @@ import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.time.Duration;
 import java.util.Map;
 import java.util.function.Consumer;
 import org.junit.ClassRule;
@@ -36,7 +37,15 @@ import org.junit.Test;
 
 public final class ScriptTaskExpressionTest {
 
-  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
+  @ClassRule
+  public static final EngineRule ENGINE =
+      EngineRule.singlePartition()
+          .withEngineConfig(
+              e -> {
+                // Set it low to speed up shouldCreateIncidentIfScriptExpressionEvaluationTimesOut
+                // But not too low to accidentally timeout during other tests
+                e.setExpressionEvaluationTimeout(Duration.ofMillis(300));
+              });
 
   private static final String PROCESS_ID = "process";
   private static final String TASK_ID = "task";
@@ -363,5 +372,47 @@ public final class ScriptTaskExpressionTest {
         .hasValue("\"foobar\"");
 
     assertThat(incidentResolvedEvent.getKey()).isEqualTo(incidentCreatedRecord.getKey());
+  }
+
+  @Test
+  public void shouldCreateIncidentIfScriptExpressionEvaluationTimesOut() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            processWithScriptTask(
+                t ->
+                    t.zeebeExpression("for x in 0..1000000 return for y in 0..x return x + y")
+                        .zeebeResultVariable(RESULT_VARIABLE)))
+        .deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    final var scriptTask =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId(TASK_ID)
+            .withElementType(BpmnElementType.SCRIPT_TASK)
+            .getFirst();
+
+    final var incidentRecord =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    Assertions.assertThat(incidentRecord.getValue())
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasElementId(scriptTask.getValue().getElementId())
+        .hasElementInstanceKey(scriptTask.getKey())
+        .hasVariableScopeKey(scriptTask.getKey())
+        .hasJobKey(-1);
+
+    assertThat(incidentRecord.getValue().getErrorMessage())
+        .isEqualTo(
+            """
+            Expected to evaluate expression but timed out after 300 ms: \
+            'for x in 0..1000000 return for y in 0..x return x + y'""");
   }
 }

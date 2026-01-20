@@ -23,6 +23,7 @@ public final class EngineCfg implements ConfigurationEntry {
   private DistributionCfg distribution = new DistributionCfg();
   private int maxProcessDepth = EngineConfiguration.DEFAULT_MAX_PROCESS_DEPTH;
   private GlobalListenersCfg globalListeners = new GlobalListenersCfg();
+  private ExpressionCfg expression = new ExpressionCfg();
 
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
@@ -35,6 +36,7 @@ public final class EngineCfg implements ConfigurationEntry {
     distribution.init(globalConfig, brokerBase);
     usageMetrics.init(globalConfig, brokerBase);
     globalListeners.init(globalConfig, brokerBase);
+    expression.init(globalConfig, brokerBase);
   }
 
   public MessagesCfg getMessages() {
@@ -113,6 +115,14 @@ public final class EngineCfg implements ConfigurationEntry {
     this.jobMetrics = jobMetrics;
   }
 
+  public ExpressionCfg getExpression() {
+    return expression;
+  }
+
+  public void setExpression(final ExpressionCfg expression) {
+    this.expression = expression;
+  }
+
   @Override
   public String toString() {
     return "EngineCfg{"
@@ -134,6 +144,8 @@ public final class EngineCfg implements ConfigurationEntry {
         + distribution
         + ", maxProcessDepth="
         + maxProcessDepth
+        + ", expression="
+        + expression
         + '}';
   }
 
@@ -165,6 +177,7 @@ public final class EngineCfg implements ConfigurationEntry {
         .setCommandRedistributionInterval(distribution.getRedistributionInterval())
         .setCommandRedistributionMaxBackoff(distribution.getMaxBackoffDuration())
         .setMaxProcessDepth(getMaxProcessDepth())
-        .setGlobalListeners(globalListeners.createGlobalListenersConfiguration());
+        .setGlobalListeners(globalListeners.createGlobalListenersConfiguration())
+        .setExpressionEvaluationTimeout(expression.getTimeout());
   }
 }
