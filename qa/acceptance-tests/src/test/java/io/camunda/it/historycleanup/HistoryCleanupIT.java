@@ -39,7 +39,8 @@ public class HistoryCleanupIT {
   static void setup() {
     cleanupTimeout =
         switch (databaseType) {
-          case OS, AWS_OS -> Duration.ofSeconds(210); // OS cleanup can not be faster than 3min
+          // OS cleanup can not be faster than 3min, and can take more time.
+          case OS, AWS_OS -> Duration.ofMinutes(5);
           default -> Duration.ofSeconds(30);
         };
   }
