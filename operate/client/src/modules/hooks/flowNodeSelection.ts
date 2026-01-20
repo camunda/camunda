@@ -23,6 +23,8 @@ import {getFlowNodeName} from 'modules/utils/flowNodes';
 import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
 import {useProcessInstanceElementSelection} from './useProcessInstanceElementSelection';
 import {IS_ELEMENT_SELECTION_V2} from 'modules/feature-flags';
+import {useEffect} from 'react';
+import {reaction} from 'mobx';
 
 /**
  * @deprecated
@@ -83,6 +85,79 @@ const useHasPendingCancelOrMoveModificationV2 = () => {
       modificationsByFlowNode,
     })
   );
+};
+
+/**
+ * This hook adds a reaction to the flow node modifications when mounted
+ * and removes the reaction when unmounted.
+ *
+ * When the user adds or moves a token to an element and
+ * when the user selects the newly created placeholder element from the instance history and
+ * when the user undoes the last modification
+ * then the element selection is cleared.
+ */
+const useClearSelectionOnModificationUndo = () => {
+  const {
+    selectedElementId,
+    selectedElementInstanceKey,
+    resolvedElementInstance,
+    clearSelection,
+  } = useProcessInstanceElementSelection();
+
+  useEffect(() => {
+    const lastModificationRemovedDisposer = reaction(
+      () => modificationsStore.flowNodeModifications,
+      (modificationsNext, modificationsPrev) => {
+        if (
+          selectedElementId === null ||
+          modificationsNext.length >= modificationsPrev.length
+        ) {
+          return;
+        }
+
+        const elementInstanceKey =
+          resolvedElementInstance?.elementInstanceKey ??
+          selectedElementInstanceKey;
+
+        if (elementInstanceKey === null) {
+          return;
+        }
+
+        const newScopeIds = modificationsStore.flowNodeModifications.reduce<
+          string[]
+        >((scopeIds, modification) => {
+          if (modification.operation === 'ADD_TOKEN') {
+            return [
+              ...scopeIds,
+              ...Object.values(modification.parentScopeIds),
+              modification.scopeId,
+            ];
+          }
+
+          if (modification.operation === 'MOVE_TOKEN') {
+            return [
+              ...scopeIds,
+              ...Object.values(modification.parentScopeIds),
+              ...modification.scopeIds,
+            ];
+          }
+
+          return scopeIds;
+        }, []);
+
+        if (!newScopeIds.includes(elementInstanceKey)) {
+          clearSelection();
+        }
+      },
+    );
+
+    return () => lastModificationRemovedDisposer();
+  }, [
+    clearSelection,
+    selectedElementId,
+    selectedElementInstanceKey,
+    resolvedElementInstance,
+  ]);
 };
 
 /**
@@ -281,4 +356,5 @@ export {
   useNewTokenCountForSelectedNode,
   useRootNode,
   useSelectedFlowNodeName,
+  useClearSelectionOnModificationUndo,
 };
