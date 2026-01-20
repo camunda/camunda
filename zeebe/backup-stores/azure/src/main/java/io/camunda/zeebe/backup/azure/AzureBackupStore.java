@@ -186,19 +186,16 @@ public final class AzureBackupStore implements BackupStore {
 
   @Override
   public CompletableFuture<Void> delete(final Collection<BackupIdentifier> ids) {
-    return CompletableFuture.runAsync(
-        () ->
-            manifestManager
-                .manifestUrls(ids)
-                .thenCombine(
-                    fileSetManager.backupDataUrls(ids),
-                    (manifestUrls, objectUrls) -> {
-                      manifestUrls.addAll(objectUrls);
-                      return manifestUrls;
-                    })
-                .thenCompose(this::deleteBlobs)
-                .join(),
-        executor);
+    return manifestManager
+        .manifestUrls(ids)
+        .thenCombineAsync(
+            fileSetManager.backupDataUrls(ids),
+            (manifestUrls, objectUrls) -> {
+              manifestUrls.addAll(objectUrls);
+              return manifestUrls;
+            },
+            executor)
+        .thenComposeAsync(this::deleteBlobs, executor);
   }
 
   @Override
