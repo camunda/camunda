@@ -63,7 +63,7 @@ class PartitionManagerStepTest {
   }
 
   private final Logger log = LoggerFactory.getLogger(PartitionManagerStepTest.class);
-  private final PartitionManagerStep sut = new PartitionManagerStep();
+  private final PartitionManagerStep sut = new PartitionManagerStep("raft-partition");
   private BrokerStartupContextImpl testBrokerStartupContext;
 
   @Test

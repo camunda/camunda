@@ -19,10 +19,15 @@ import org.slf4j.Logger;
 final class PartitionManagerStep extends AbstractBrokerStartupStep {
   private static final Logger LOGGER = Loggers.SYSTEM_LOGGER;
   private static final int ERROR_CODE_ON_INCONSISTENT_TOPOLOGY = 3;
+  private final String partitionGroup;
+
+  PartitionManagerStep(final String partitionGroup) {
+    this.partitionGroup = partitionGroup;
+  }
 
   @Override
   public String getName() {
-    return "Partition Manager";
+    return "Partition Group " + partitionGroup;
   }
 
   @Override
@@ -32,7 +37,7 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
       final ActorFuture<BrokerStartupContext> startupFuture) {
     final var partitionManager =
         new PartitionManagerImpl(
-            "raft-partition",
+            partitionGroup,
             brokerStartupContext.getConcurrencyControl(),
             brokerStartupContext.getActorSchedulingService(),
             brokerStartupContext.getBrokerConfiguration(),

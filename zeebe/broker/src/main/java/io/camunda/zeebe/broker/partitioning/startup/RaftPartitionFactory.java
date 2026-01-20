@@ -28,11 +28,12 @@ import java.time.Duration;
 import org.slf4j.Logger;
 
 public final class RaftPartitionFactory {
-  public static final String GROUP_NAME = "raft-partition";
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
+  private final String partitionGroup;
   private final BrokerCfg brokerCfg;
 
-  public RaftPartitionFactory(final BrokerCfg brokerCfg) {
+  public RaftPartitionFactory(final String partitionGroup, final BrokerCfg brokerCfg) {
+    this.partitionGroup = partitionGroup;
     this.brokerCfg = brokerCfg;
   }
 
@@ -40,7 +41,7 @@ public final class RaftPartitionFactory {
       final PartitionMetadata partitionMetadata, final MeterRegistry partitionMeterRegistry) {
     final var partitionDirectory =
         Paths.get(brokerCfg.getData().getDirectory())
-            .resolve(GROUP_NAME)
+            .resolve(partitionGroup)
             .resolve("partitions")
             .resolve(partitionMetadata.id().id().toString());
     try {

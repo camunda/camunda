@@ -77,6 +77,7 @@ public final class PartitionManagerImpl
   private final DiskSpaceUsageMonitor diskSpaceUsageMonitor;
   private final BrokerClient brokerClient;
   private final DefaultPartitionManagementService managementService;
+  private final String partitionGroup;
   private final BrokerCfg brokerCfg;
   private final ZeebePartitionFactory zeebePartitionFactory;
   private final RaftPartitionFactory raftPartitionFactory;
@@ -107,6 +108,7 @@ public final class PartitionManagerImpl
       final SecurityConfiguration securityConfig,
       final SearchClientsProxy searchClientsProxy,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+    this.partitionGroup = partitionGroup;
     this.brokerCfg = brokerCfg;
     this.concurrencyControl = concurrencyControl;
     this.actorSchedulingService = actorSchedulingService;
@@ -156,7 +158,7 @@ public final class PartitionManagerImpl
     managementService =
         new DefaultPartitionManagementService(
             clusterServices.getMembershipService(), clusterServices.getCommunicationService());
-    raftPartitionFactory = new RaftPartitionFactory(brokerCfg);
+    raftPartitionFactory = new RaftPartitionFactory(partitionGroup, brokerCfg);
   }
 
   public void start() {
@@ -188,6 +190,7 @@ public final class PartitionManagerImpl
     final var id = partitionMetadata.id().id();
     final var context =
         new PartitionStartupContext(
+            partitionGroup,
             actorSchedulingService,
             concurrencyControl,
             topologyManager,
@@ -221,6 +224,7 @@ public final class PartitionManagerImpl
     final var id = partitionMetadata.id().id();
     final var context =
         new PartitionStartupContext(
+            partitionGroup,
             actorSchedulingService,
             concurrencyControl,
             topologyManager,

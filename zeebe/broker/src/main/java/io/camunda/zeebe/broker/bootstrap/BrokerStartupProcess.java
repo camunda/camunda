@@ -65,7 +65,8 @@ public final class BrokerStartupProcess {
 
     result.add(new JobStreamServiceStep());
     result.add(new SnapshotApiServiceStep());
-    result.add(new PartitionManagerStep());
+    result.add(new PartitionManagerStep("raft-partition"));
+    result.add(new PartitionManagerStep("engine-2"));
     result.add(new BrokerAdminServiceStep());
     result.add(new CheckpointSchedulerServiceStep());
 
