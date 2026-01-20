@@ -466,6 +466,17 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, VariableQuery> toVariableQuery(
+      final io.camunda.gateway.protocol.model.simple.VariableFilter filter,
+      final io.camunda.gateway.protocol.model.simple.SearchQueryPageRequest page,
+      final List<VariableSearchQuerySortRequest> sort) {
+    return toVariableQuery(
+        new VariableSearchQuery()
+            .filter(SimpleSearchQueryMapper.toVariableFilter(filter))
+            .page(SimpleSearchQueryMapper.toPageRequest(page))
+            .sort(sort == null ? List.of() : sort));
+  }
+
+  public static Either<ProblemDetail, VariableQuery> toVariableQuery(
       final VariableSearchQuery request) {
 
     if (request == null) {
