@@ -28,10 +28,6 @@ import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
 import io.camunda.search.entities.BatchOperationType;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -50,16 +46,6 @@ import org.springframework.test.context.TestPropertySource;
     properties = {"spring.liquibase.enabled=false", "camunda.data.secondary-storage.type=rdbms"})
 public class HistoryCleanupIT {
 
-  private static final List<String> PROCESS_RELATED_TABLE_NAMES =
-      List.of(
-          "VARIABLE",
-          "FLOW_NODE_INSTANCE",
-          "PROCESS_INSTANCE",
-          "USER_TASK",
-          "INCIDENT",
-          "DECISION_INSTANCE",
-          "AUDIT_LOG");
-
   @Autowired JdbcTemplate jdbcTemplate;
 
   @Autowired RdbmsService rdbmsService;
@@ -72,7 +58,8 @@ public class HistoryCleanupIT {
   void setUp() {
     final var config = new RdbmsWriterConfig.Builder().partitionId(0).build();
     rdbmsWriters = rdbmsService.createWriter(config);
-    historyCleanupService = new HistoryCleanupService(config, rdbmsWriters);
+    historyCleanupService =
+        new HistoryCleanupService(config, rdbmsWriters, rdbmsService.getProcessInstanceReader());
   }
 
   @Test
@@ -87,23 +74,23 @@ public class HistoryCleanupIT {
 
     // THEN
     final var expectedDate = now.plus(historyCleanupService.getHistoryCleanupInterval());
-    getProcessRelatedHistoryCleanupDates(processInstanceKey)
-        .forEach(
-            (tableName, historyCleanupDate) -> {
-              historyCleanupDate.forEach(
-                  date -> {
-                    assertThat(date)
-                        .describedAs(
-                            "should update the history cleanup date for %s but date is null",
-                            tableName)
-                        .isNotNull();
-                    assertThat((OffsetDateTime) date)
-                        .describedAs(
-                            "should update the history cleanup date for %s but date is wrong",
-                            tableName)
-                        .isCloseTo(expectedDate, within(10, ChronoUnit.MILLIS));
-                  });
-            });
+
+    final var historyCleanupDate1 =
+        jdbcTemplate.queryForObject(
+            "SELECT HISTORY_CLEANUP_DATE FROM "
+                + "PROCESS_INSTANCE"
+                + " WHERE PROCESS_INSTANCE_KEY = "
+                + processInstanceKey,
+            OffsetDateTime.class);
+
+    assertThat(historyCleanupDate1)
+        .describedAs("should update the history cleanup date for PROCESS_INSTANCE but date is null")
+        .isNotNull();
+
+    assertThat(historyCleanupDate1)
+        .describedAs(
+            "should update the history cleanup date for PROCESS_INSTANCE but date is wrong")
+        .isCloseTo(expectedDate, within(10, ChronoUnit.MILLIS));
   }
 
   @Test
@@ -156,28 +143,6 @@ public class HistoryCleanupIT {
         rdbmsWriters, b -> b.processInstanceKey(processInstanceKey));
 
     return processInstanceKey;
-  }
-
-  private Map<String, List<Object>> getProcessRelatedHistoryCleanupDates(
-      final Long processInstanceKey) {
-    final Map<String, List<Object>> historyCleanupDatesMap = new HashMap<>();
-
-    PROCESS_RELATED_TABLE_NAMES.forEach(
-        tableName -> {
-          final List<Object> historyCleanupDates =
-              jdbcTemplate
-                  .queryForList(
-                      "SELECT HISTORY_CLEANUP_DATE FROM "
-                          + tableName
-                          + " WHERE PROCESS_INSTANCE_KEY = "
-                          + processInstanceKey)
-                  .stream()
-                  .map(row -> row.get("HISTORY_CLEANUP_DATE"))
-                  .collect(Collectors.toList());
-          historyCleanupDatesMap.put(tableName, historyCleanupDates);
-        });
-
-    return historyCleanupDatesMap;
   }
 
   private OffsetDateTime getBatchOperationHistoryCleanupDate(final String batchOperationKey) {

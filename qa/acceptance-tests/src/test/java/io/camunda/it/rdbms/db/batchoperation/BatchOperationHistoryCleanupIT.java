@@ -31,7 +31,8 @@ public class BatchOperationHistoryCleanupIT {
     final var rdbmsService = testApplication.getRdbmsService();
     final var config = new RdbmsWriterConfig.Builder().partitionId(0).build();
     final var rdbmsWriter = rdbmsService.createWriter(config);
-    final var historyCleanupService = new HistoryCleanupService(config, rdbmsWriter);
+    final var historyCleanupService =
+        new HistoryCleanupService(config, rdbmsWriter, rdbmsService.getProcessInstanceReader());
     final var batchOperationReader = rdbmsService.getBatchOperationReader();
     final var batchOperationItemReader = rdbmsService.getBatchOperationItemReader();
 
@@ -68,7 +69,8 @@ public class BatchOperationHistoryCleanupIT {
     final var rdbmsService = testApplication.getRdbmsService();
     final var config = new RdbmsWriterConfig.Builder().partitionId(0).build();
     final var rdbmsWriter = rdbmsService.createWriter(config);
-    final var historyCleanupService = new HistoryCleanupService(config, rdbmsWriter);
+    final var historyCleanupService =
+        new HistoryCleanupService(config, rdbmsWriter, rdbmsService.getProcessInstanceReader());
     final var batchOperationReader = rdbmsService.getBatchOperationReader();
     final var batchOperationItemReader = rdbmsService.getBatchOperationItemReader();
 

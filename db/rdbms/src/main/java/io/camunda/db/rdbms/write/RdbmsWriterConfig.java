@@ -103,6 +103,7 @@ public record RdbmsWriterConfig(
       Duration minHistoryCleanupInterval,
       Duration maxHistoryCleanupInterval,
       int historyCleanupBatchSize,
+      int historyCleanupProcessInstanceBatchSize,
       Duration usageMetricsCleanup,
       Duration usageMetricsTTL) {
 
@@ -113,6 +114,9 @@ public record RdbmsWriterConfig(
     public static final Duration DEFAULT_USAGE_METRICS_CLEANUP = Duration.ofDays(1);
     public static final Duration DEFAULT_USAGE_METRICS_TTL = Duration.ofDays(730);
     public static final int DEFAULT_HISTORY_CLEANUP_BATCH_SIZE = 10000;
+    // Keep this smaller to avoid Oracle IN-clause limit (1000)
+    // when passing PI keys to deleteProcessInstanceRelatedData()
+    public static final int DEFAULT_HISTORY_CLEANUP_PROCESS_INSTANCE_BATCH_SIZE = 1000;
 
     public static RdbmsWriterConfig.Builder builder() {
       return new RdbmsWriterConfig.Builder();
@@ -133,6 +137,8 @@ public record RdbmsWriterConfig(
       private Duration minHistoryCleanupInterval = DEFAULT_MIN_HISTORY_CLEANUP_INTERVAL;
       private Duration maxHistoryCleanupInterval = DEFAULT_MAX_HISTORY_CLEANUP_INTERVAL;
       private int historyCleanupBatchSize = DEFAULT_HISTORY_CLEANUP_BATCH_SIZE;
+      private int historyCleanupProcessInstanceBatchSize =
+          DEFAULT_HISTORY_CLEANUP_PROCESS_INSTANCE_BATCH_SIZE;
       private Duration usageMetricsCleanup = DEFAULT_USAGE_METRICS_CLEANUP;
       private Duration usageMetricsTTL = DEFAULT_USAGE_METRICS_TTL;
 
@@ -190,6 +196,12 @@ public record RdbmsWriterConfig(
         return this;
       }
 
+      public HistoryConfig.Builder historyCleanupProcessInstanceBatchSize(
+          final int historyCleanupProcessInstanceBatchSize) {
+        this.historyCleanupProcessInstanceBatchSize = historyCleanupProcessInstanceBatchSize;
+        return this;
+      }
+
       public HistoryConfig.Builder usageMetricsCleanup(final Duration usageMetricsCleanup) {
         this.usageMetricsCleanup = usageMetricsCleanup;
         return this;
@@ -212,6 +224,7 @@ public record RdbmsWriterConfig(
             minHistoryCleanupInterval,
             maxHistoryCleanupInterval,
             historyCleanupBatchSize,
+            historyCleanupProcessInstanceBatchSize,
             usageMetricsCleanup,
             usageMetricsTTL);
       }
