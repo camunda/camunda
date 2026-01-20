@@ -961,7 +961,7 @@ jobs:
       DOCKER_PLATFORMS: "linux/arm64,linux/amd64" # build AMD64 last so it gets picked up by the test
     steps:
       - uses: actions/checkout@v4
-      - uses: hadolint/hadolint-action@v3.1.0
+      - uses: hadolint/hadolint-action@v3.3.0
         with:
           config: ./.hadolint.yaml
           dockerfile: ./camunda.Dockerfile
