@@ -8,19 +8,23 @@
 package io.camunda.it.client;
 
 import static io.camunda.it.util.TestHelper.deployProcessAndWaitForIt;
+import static io.camunda.it.util.TestHelper.waitForProcessInstances;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
+import io.camunda.client.api.response.CreateBatchOperationResponse;
 import io.camunda.client.api.response.DeleteResourceResponse;
 import io.camunda.client.api.response.Process;
-import io.camunda.client.protocol.rest.BatchOperationCreatedResult;
-import io.camunda.client.protocol.rest.BatchOperationTypeEnum;
+import io.camunda.client.api.search.enums.BatchOperationType;
+import io.camunda.client.api.search.enums.ProcessInstanceState;
+import io.camunda.configuration.HistoryDeletion;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import java.time.Duration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -30,12 +34,20 @@ import org.junit.jupiter.api.Test;
  * and without history, deletion with operation reference, and error handling.
  */
 @MultiDbTest
-public class DeleteResourceRestIT {
+public class DeleteResourceIT {
 
-  @MultiDbTestApplication static final TestStandaloneBroker BROKER = new TestStandaloneBroker();
+  @MultiDbTestApplication
+  static final TestStandaloneBroker BROKER =
+      new TestStandaloneBroker()
+          .withDataConfig(
+              config -> {
+                final var historyDeletionConfig = new HistoryDeletion();
+                historyDeletionConfig.setDelayBetweenRuns(Duration.ofMillis(100));
+                historyDeletionConfig.setMaxDelayBetweenRuns(Duration.ofMillis(100));
+                config.setHistoryDeletion(historyDeletionConfig);
+              });
 
   private static CamundaClient camundaClient;
-  private static Process process;
   private static long processDefinitionKey;
 
   @BeforeEach
@@ -43,52 +55,77 @@ public class DeleteResourceRestIT {
     final var processDefinition =
         Bpmn.createExecutableProcess("process").name("my process").startEvent().endEvent().done();
 
-    process = deployProcessAndWaitForIt(camundaClient, processDefinition, "process.bpmn");
+    // deploy simple process instance
+    final Process process =
+        deployProcessAndWaitForIt(camundaClient, processDefinition, "process.bpmn");
     processDefinitionKey = process.getProcessDefinitionKey();
+
+    // start a process instance
+    camundaClient
+        .newCreateInstanceCommand()
+        .processDefinitionKey(processDefinitionKey)
+        .send()
+        .join();
+    waitForProcessInstances(
+        camundaClient,
+        f -> f.processDefinitionKey(processDefinitionKey).state(ProcessInstanceState.COMPLETED),
+        1);
   }
 
   @Test
   void shouldDeleteDeployedResource() {
-    // given - deploy a process
-    // when - delete the resource
+    // given - deploy a process and start a process instance
+    // when - delete the resource with deleteHistory=false (default)
     final DeleteResourceResponse response =
         camundaClient.newDeleteResourceCommand(processDefinitionKey).send().join();
 
     // then - deletion should succeed without throwing an exception
     assertThat(response).isNotNull();
     assertThat(response.getResourceKey()).isEqualTo(String.valueOf(processDefinitionKey));
-    assertThat(response.getBatchOperationCreatedResult()).isNull();
+    assertThat(response.getCreateBatchOperationResponse()).isNull();
+    waitForProcessInstances(camundaClient, f -> f.processDefinitionKey(processDefinitionKey), 1);
   }
 
   @Test
   void shouldDeleteResourceWithoutHistory() {
-    // given - deploy a process
-    // when - delete the resource with deleteHistory=false (default)
+    // given - deploy a process and start a process instance
+    // when - delete the resource with deleteHistory=false
     final DeleteResourceResponse response =
-        camundaClient.newDeleteResourceCommand(processDefinitionKey, false).send().join();
+        camundaClient
+            .newDeleteResourceCommand(processDefinitionKey)
+            .deleteHistory(false)
+            .send()
+            .join();
 
     // then
     assertThat(response).isNotNull();
     assertThat(response.getResourceKey()).isEqualTo(String.valueOf(processDefinitionKey));
-    assertThat(response.getBatchOperationCreatedResult()).isNull();
+    assertThat(response.getCreateBatchOperationResponse()).isNull();
+    waitForProcessInstances(camundaClient, f -> f.processDefinitionKey(processDefinitionKey), 1);
   }
 
   @Test
   void shouldDeleteResourceWithHistory() {
-    // given - deploy a process
+    // given - deploy a process and start a process instance
     // when - delete the resource with deleteHistory=true
     final DeleteResourceResponse response =
-        camundaClient.newDeleteResourceCommand(processDefinitionKey, true).send().join();
+        camundaClient
+            .newDeleteResourceCommand(processDefinitionKey)
+            .deleteHistory(true)
+            .send()
+            .join();
 
     // then
     assertThat(response).isNotNull();
     assertThat(response.getResourceKey()).isEqualTo(String.valueOf(processDefinitionKey));
-    final BatchOperationCreatedResult batchOperation =
-        (BatchOperationCreatedResult) response.getBatchOperationCreatedResult();
+    final CreateBatchOperationResponse batchOperation = response.getCreateBatchOperationResponse();
     assertThat(batchOperation).isNotNull();
     assertThat(batchOperation.getBatchOperationKey()).isNotNull();
+    assertThat(Long.valueOf(batchOperation.getBatchOperationKey())).isGreaterThan(0);
     assertThat(batchOperation.getBatchOperationType())
-        .isEqualTo(BatchOperationTypeEnum.DELETE_PROCESS_INSTANCE);
+        .isEqualTo(BatchOperationType.DELETE_PROCESS_INSTANCE);
+
+    waitForProcessInstances(camundaClient, f -> f.processDefinitionKey(processDefinitionKey), 0);
   }
 
   @Test
@@ -100,5 +137,6 @@ public class DeleteResourceRestIT {
     assertThatThrownBy(
             () -> camundaClient.newDeleteResourceCommand(nonExistentResourceKey).send().join())
         .isInstanceOf(ProblemException.class);
+    waitForProcessInstances(camundaClient, f -> f.processDefinitionKey(processDefinitionKey), 1);
   }
 }
