@@ -59,17 +59,12 @@ public class ProcessStoreGroupedProcessesIT extends OperateSearchAbstractIT {
             TenantOwned.DEFAULT_TENANT_IDENTIFIER, Set.of(BPMN_PROCESS_ID));
 
     // then
-    final List<ProcessEntity> versions = results.get(processKey);
-    assertThat(versions).hasSize(TOTAL_VERSIONS);
-    assertThat(versions.getFirst().getVersion()).isEqualTo(TOTAL_VERSIONS);
-    assertThat(versions.getLast().getVersion()).isEqualTo(1);
-
-    final Set<Integer> returnedVersions =
-        versions.stream()
-            .map(ProcessEntity::getVersion)
-            .collect(java.util.stream.Collectors.toSet());
-    for (int i = 1; i <= TOTAL_VERSIONS; i++) {
-      assertThat(returnedVersions).contains(i);
-    }
+    final List<ProcessEntity> processEntities = results.get(processKey);
+    assertThat(processEntities)
+        .extracting(ProcessEntity::getVersion)
+        .hasSize(TOTAL_VERSIONS)
+        .startsWith(TOTAL_VERSIONS)
+        .endsWith(1)
+        .isSortedAccordingTo((v1, v2) -> Integer.compare(v2, v1));
   }
 }

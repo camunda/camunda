@@ -30,7 +30,9 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.CountRequest;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.elasticsearch.core.search.SourceConfig;
 import io.camunda.operate.conditions.ElasticsearchCondition;
@@ -55,7 +57,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -103,7 +104,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
     final String indexAlias = processIndex.getAlias();
     LOGGER.debug("Called distinct count for field {} in index alias {}.", fieldName, indexAlias);
     final var searchRequest =
-        new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+        new SearchRequest.Builder()
             .index(indexAlias)
             .query(q -> q.matchAll(m -> m))
             .size(0)
@@ -198,57 +199,29 @@ public class ElasticsearchProcessStore implements ProcessStore {
   @Override
   public Map<ProcessKey, List<ProcessEntity>> getProcessesGrouped(
       final String tenantId, @Nullable final Set<String> allowedBPMNProcessIds) {
-    final String groupsAggName = "group_by_bpmnProcessId";
-
-    final List<String> sourceFields =
-        Arrays.asList(
-            ProcessIndex.ID,
-            ProcessIndex.NAME,
-            ProcessIndex.VERSION,
-            ProcessIndex.VERSION_TAG,
-            ProcessIndex.BPMN_PROCESS_ID,
-            ProcessIndex.TENANT_ID);
-
-    final Aggregation groupsAgg =
-        Aggregation.of(
-            a ->
-                a.terms(
-                    t ->
-                        t.field(ProcessIndex.BPMN_PROCESS_ID)
-                            .size(ElasticsearchUtil.TERMS_AGG_SIZE)));
 
     final var query = buildQueryEs8(tenantId, allowedBPMNProcessIds);
     final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
 
+    final var searchRequestBuilder =
+        new SearchRequest.Builder()
+            .index(processIndex.getAlias())
+            .query(tenantAwareQuery)
+            .source(
+                src ->
+                    src.filter(
+                        f ->
+                            f.includes(
+                                Arrays.asList(
+                                    ProcessIndex.ID,
+                                    ProcessIndex.NAME,
+                                    ProcessIndex.VERSION,
+                                    ProcessIndex.VERSION_TAG,
+                                    ProcessIndex.BPMN_PROCESS_ID,
+                                    ProcessIndex.TENANT_ID))))
+            .sort(so -> so.field(fs -> fs.field(ProcessIndex.VERSION).order(SortOrder.Desc)));
+
     try {
-      final var aggResponse =
-          es8Client.search(
-              s ->
-                  s.index(processIndex.getAlias())
-                      .query(tenantAwareQuery)
-                      .aggregations(groupsAggName, groupsAgg)
-                      .size(0),
-              Void.class);
-
-      final List<String> bpmnProcessIds =
-          aggResponse.aggregations().get(groupsAggName).sterms().buckets().array().stream()
-              .map(b -> b.key().stringValue())
-              .toList();
-
-      if (bpmnProcessIds.isEmpty()) {
-        return new HashMap<>();
-      }
-
-      final var docsQuery =
-          tenantHelper.makeQueryTenantAware(buildQueryEs8(tenantId, new HashSet<>(bpmnProcessIds)));
-
-      final var searchRequestBuilder =
-          new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
-              .index(processIndex.getAlias())
-              .query(docsQuery)
-              .source(src -> src.filter(f -> f.includes(sourceFields)))
-              .sort(so -> so.field(fs -> fs.field(ProcessIndex.VERSION).order(SortOrder.Desc)));
-
       final Map<ProcessKey, List<ProcessEntity>> result = new HashMap<>();
 
       ElasticsearchUtil.scrollAllStream(es8Client, searchRequestBuilder, ProcessEntity.class)
@@ -456,7 +429,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
     final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(q);
 
     final var searchRequestBuilder =
-        new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+        new SearchRequest.Builder()
             .index(whereToSearch(listViewTemplate, ALL))
             .source(
                 src -> src.filter(f -> f.includes(ID, PROCESS_KEY, PROCESS_NAME, BPMN_PROCESS_ID)))
@@ -502,8 +475,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
 
   @Override
   public void deleteProcessInstanceFromTreePath(final String processInstanceKey) {
-    final co.elastic.clients.elasticsearch.core.BulkRequest.Builder es8BulkRequest =
-        new co.elastic.clients.elasticsearch.core.BulkRequest.Builder();
+    final BulkRequest.Builder es8BulkRequest = new BulkRequest.Builder();
     // select process instance - get tree path
     final String treePath = getProcessInstanceTreePathById(processInstanceKey);
 
@@ -526,7 +498,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
     final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
 
     final var searchRequestBuilder =
-        new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+        new SearchRequest.Builder()
             .index(whereToSearch(listViewTemplate, ALL))
             .query(tenantAwareQuery)
             .source(s -> s.filter(f -> f.includes(TREE_PATH)));
@@ -624,7 +596,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
         includeFields == null ? Collections.emptyList() : Arrays.asList(includeFields);
 
     final var searchRequestBuilder =
-        new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+        new SearchRequest.Builder()
             .index(whereToSearch(listViewTemplate, ALL))
             .size(size)
             .query(tenantAwareQuery)
