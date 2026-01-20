@@ -13,6 +13,10 @@ import io.camunda.gateway.protocol.model.simple.ProcessInstanceFilter;
 import io.camunda.gateway.protocol.model.simple.ProcessInstanceFilterFields;
 import java.util.List;
 
+/**
+ * MCP-specific process instance filter extending the {@link ProcessInstanceFilter} to hide fields
+ * from MCP clients to avoid unnecessary context bloat.
+ */
 public class McpProcessInstanceFilter extends ProcessInstanceFilter {
 
   @JsonIgnore
