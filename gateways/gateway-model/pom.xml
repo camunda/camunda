@@ -149,6 +149,7 @@
                 <typeMapping>ResourceKeyFilterProperty=String</typeMapping>
                 <typeMapping>ScopeKeyFilterProperty=String</typeMapping>
                 <typeMapping>StringFilterProperty=String</typeMapping>
+                <typeMapping>IntegerFilterProperty=Integer</typeMapping>
                 <typeMapping>VariableKeyFilterProperty=String</typeMapping>
                 <!-- map to custom model classes -->
                 <typeMapping>DateTimeFilterProperty=SimpleDateTimeFilterProperty</typeMapping>

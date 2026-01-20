@@ -27,6 +27,16 @@ public final class ToolDescriptions {
   public static final String EVENTUAL_CONSISTENCY_NOTE =
       "Note: Results are eventually consistent and may not immediately reflect recent changes.";
 
+  public static final String FILTER_DESCRIPTION = "Filter search by the given fields";
+  public static final String SORT_DESCRIPTION = "Sort criteria";
+  public static final String PAGE_DESCRIPTION = "Pagination criteria";
+
+  public static final String POSITIVE_NUMBER_MESSAGE = "must be a positive number.";
+  public static final String INCIDENT_KEY_POSITIVE_MESSAGE =
+      "Incident key " + POSITIVE_NUMBER_MESSAGE;
+  public static final String PROCESS_INSTANCE_KEY_POSITIVE_MESSAGE =
+      "Process instance key " + POSITIVE_NUMBER_MESSAGE;
+
   private ToolDescriptions() {
     // Utility class
   }

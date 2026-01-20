@@ -9,6 +9,10 @@ package io.camunda.gateway.mcp.tool.incident;
 
 import static io.camunda.gateway.mcp.mapper.CallToolResultMapper.mapErrorToResult;
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.EVENTUAL_CONSISTENCY_NOTE;
+import static io.camunda.gateway.mcp.tool.ToolDescriptions.FILTER_DESCRIPTION;
+import static io.camunda.gateway.mcp.tool.ToolDescriptions.INCIDENT_KEY_POSITIVE_MESSAGE;
+import static io.camunda.gateway.mcp.tool.ToolDescriptions.PAGE_DESCRIPTION;
+import static io.camunda.gateway.mcp.tool.ToolDescriptions.SORT_DESCRIPTION;
 
 import io.camunda.gateway.mapping.http.GatewayErrorMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
@@ -31,8 +35,6 @@ import io.camunda.zeebe.util.Either;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import jakarta.validation.constraints.Positive;
 import java.util.List;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springaicommunity.mcp.annotation.McpTool;
 import org.springaicommunity.mcp.annotation.McpTool.McpAnnotations;
 import org.springaicommunity.mcp.annotation.McpToolParam;
@@ -42,8 +44,6 @@ import org.springframework.validation.annotation.Validated;
 @Component
 @Validated
 public class IncidentTools {
-
-  private static final Logger LOGGER = LoggerFactory.getLogger(IncidentTools.class);
 
   private final IncidentServices incidentServices;
   private final CamundaAuthenticationProvider authenticationProvider;
@@ -62,11 +62,11 @@ public class IncidentTools {
       description = "Search for incidents. " + EVENTUAL_CONSISTENCY_NOTE,
       annotations = @McpAnnotations(readOnlyHint = true))
   public CallToolResult searchIncidents(
-      @McpToolParam(description = "Filter search by the given fields", required = false)
+      @McpToolParam(description = FILTER_DESCRIPTION, required = false)
           final McpIncidentFilter filter,
-      @McpToolParam(description = "Sort criteria", required = false)
+      @McpToolParam(description = SORT_DESCRIPTION, required = false)
           final List<IncidentSearchQuerySortRequest> sort,
-      @McpToolParam(description = "Pagination criteria", required = false)
+      @McpToolParam(description = PAGE_DESCRIPTION, required = false)
           final McpSearchQueryPageRequest page) {
     try {
       final var incidentSearchQuery = SearchQueryRequestMapper.toIncidentQuery(filter, page, sort);
@@ -92,7 +92,7 @@ public class IncidentTools {
       @McpToolParam(
               description =
                   "The assigned key of the incident, which acts as a unique identifier for this incident.")
-          @Positive(message = "Incident key must be a positive number.")
+          @Positive(message = INCIDENT_KEY_POSITIVE_MESSAGE)
           final Long incidentKey) {
     try {
       return CallToolResultMapper.from(
@@ -108,7 +108,7 @@ public class IncidentTools {
   @McpTool(description = "Resolve incident by key. " + EVENTUAL_CONSISTENCY_NOTE)
   public CallToolResult resolveIncident(
       @McpToolParam(description = "Key of the incident to resolve.")
-          @Positive(message = "Incident key must be a positive number.")
+          @Positive(message = INCIDENT_KEY_POSITIVE_MESSAGE)
           final Long incidentKey) {
     try {
       return CallToolResultMapper.fromPrimitive(
