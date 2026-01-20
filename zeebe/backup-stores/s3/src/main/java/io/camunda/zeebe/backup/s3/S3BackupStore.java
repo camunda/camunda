@@ -275,21 +275,12 @@ public final class S3BackupStore implements BackupStore {
 
   @Override
   public CompletableFuture<Void> delete(final Collection<BackupIdentifier> ids) {
-    final var deleteFutures = ids.stream().parallel().map(this::collectBackupObjects).toList();
-
-    return CompletableFuture.allOf(deleteFutures.toArray(new CompletableFuture[0]))
-        .thenApply(
-            ignored -> {
-              final Set<ObjectIdentifier> allObjects = new HashSet<>();
-              for (final var future : deleteFutures) {
-                try {
-                  allObjects.addAll(future.get());
-                } catch (final Exception e) {
-                  throw new BackupReadException("Failed to collect backup objects for deletion", e);
-                }
-              }
-              return allObjects;
-            })
+    return ids.stream()
+        .map(this::collectBackupObjects)
+        .reduce(
+            CompletableFuture.completedFuture(new HashSet<ObjectIdentifier>()),
+            (combined, future) -> combined.thenCombine(future, this::mergeSets),
+            (a, b) -> a.thenCombine(b, this::mergeSets))
         .thenComposeAsync(this::deleteIdentifierBatch);
   }
 
@@ -437,7 +428,8 @@ public final class S3BackupStore implements BackupStore {
                     .toList());
   }
 
-  private CompletableFuture<Set<ObjectIdentifier>> collectBackupObjects(final BackupIdentifier id) {
+  private CompletableFuture<HashSet<ObjectIdentifier>> collectBackupObjects(
+      final BackupIdentifier id) {
     return readManifestObject(id)
         .thenComposeAsync(
             manifest ->
@@ -644,6 +636,7 @@ public final class S3BackupStore implements BackupStore {
     return fileSetManager.save(prefix, backup.segments());
   }
 
+  @VisibleForTesting
   public String derivePath(
       final BackupDescriptor descriptor, final BackupIdentifier id, final Directory directory) {
     return isLegacyBackup(descriptor) ? legacyObjectPrefix(id) : objectPrefix(id, directory);
@@ -658,6 +651,12 @@ public final class S3BackupStore implements BackupStore {
                         "Invalid broker version format in manifest: " + descriptor.brokerVersion(),
                         null));
     return brokerVersion.major() == 8 && brokerVersion.minor() <= 8;
+  }
+
+  private HashSet<ObjectIdentifier> mergeSets(
+      final HashSet<ObjectIdentifier> set1, final HashSet<ObjectIdentifier> set2) {
+    set1.addAll(set2);
+    return set1;
   }
 
   public static S3AsyncClient buildClient(final S3BackupConfig config) {
