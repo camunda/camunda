@@ -8,15 +8,10 @@
 
 import {IncidentsTable} from '..';
 import {createProcessInstance} from 'modules/testUtils';
-import {render, screen} from 'modules/testing-library';
+import {render, screen, waitFor} from 'modules/testing-library';
 import {Wrapper, firstIncident, secondIncident} from './mocks';
-import * as selectionUtils from 'modules/utils/flowNodeSelection';
 import {mockFetchProcessInstance as mockFetchProcessInstanceV2} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance';
-
-// TanStack query is still fetching the data when the test executes, so "useRootNode"
-// falls back to undefined for the flowNodeInstanceId.
-const rootNode = {flowNodeInstanceId: undefined, isMultiInstance: false};
 
 describe('Selection', () => {
   beforeEach(() => {
@@ -42,8 +37,6 @@ describe('Selection', () => {
   });
 
   it('should deselect selected incident', async () => {
-    const spy = vi.spyOn(selectionUtils, 'clearSelection');
-
     const {user} = render(
       <IncidentsTable
         state="content"
@@ -56,13 +49,12 @@ describe('Selection', () => {
 
     await user.click(screen.getByRole('row', {selected: true}));
 
-    expect(spy).toHaveBeenCalledTimes(1);
-    expect(spy).toHaveBeenCalledWith(rootNode);
+    await waitFor(() => {
+      expect(screen.getByTestId('search')).toHaveTextContent('');
+    });
   });
 
   it('should select single incident when multiple incidents are selected', async () => {
-    const spy = vi.spyOn(selectionUtils, 'selectFlowNode');
-
     const {user} = render(
       <IncidentsTable
         state="content"
@@ -83,11 +75,15 @@ describe('Selection', () => {
     expect(firstRow).toBeInTheDocument();
     await user.click(firstRow);
 
-    expect(spy).toHaveBeenCalledTimes(1);
-    expect(spy).toHaveBeenCalledWith(rootNode, {
-      flowNodeId: firstIncident.elementId,
-      flowNodeInstanceId: firstIncident.elementInstanceKey,
-      isMultiInstance: false,
+    await waitFor(() => {
+      const searchParams = new URLSearchParams(
+        screen.getByTestId('search').textContent ?? '',
+      );
+      expect(searchParams.get('elementId')).toBe(firstIncident.elementId);
+      expect(searchParams.get('elementInstanceKey')).toBe(
+        firstIncident.elementInstanceKey,
+      );
+      expect(searchParams.get('isMultiInstanceBody')).toBeNull();
     });
   });
 });
