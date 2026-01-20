@@ -9,6 +9,7 @@ package io.camunda.exporter.rdbms;
 
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig.HistoryConfig;
+import io.camunda.db.rdbms.write.RdbmsWriterConfig.InsertBatchingConfig;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogConfiguration;
 import io.camunda.zeebe.exporter.common.historydeletion.HistoryDeletionConfiguration;
@@ -32,6 +33,8 @@ public class ExporterConfiguration {
       RdbmsWriterConfig.DEFAULT_EXPORT_BATCH_OPERATION_ITEMS_ON_CREATION;
   private int batchOperationItemInsertBlockSize =
       RdbmsWriterConfig.DEFAULT_BATCH_OPERATION_ITEM_INSERT_BLOCK_SIZE;
+  // insert batching configuration
+  private InsertBatchingConfiguration insertBatching = new InsertBatchingConfiguration();
   // caches
   private CacheConfiguration processCache = new CacheConfiguration();
   private CacheConfiguration decisionRequirementsCache = new CacheConfiguration();
@@ -126,9 +129,18 @@ public class ExporterConfiguration {
     this.batchOperationCache = batchOperationCache;
   }
 
+  public InsertBatchingConfiguration getInsertBatching() {
+    return insertBatching;
+  }
+
+  public void setInsertBatching(final InsertBatchingConfiguration insertBatching) {
+    this.insertBatching = insertBatching;
+  }
+
   public void validate() {
 
     final List<String> errors = new ArrayList<>(history.validate());
+    errors.addAll(insertBatching.validate());
 
     if (flushInterval.isNegative()) {
       errors.add(
@@ -207,6 +219,11 @@ public class ExporterConfiguration {
         .batchOperationItemInsertBlockSize(batchOperationItemInsertBlockSize)
         .exportBatchOperationItemsOnCreation(exportBatchOperationItemsOnCreation)
         .history(historyConfig)
+        .insertBatchingConfig(
+            InsertBatchingConfig.builder()
+                .auditLogInsertBatchSize(insertBatching.getMaxAuditLogInsertBatchSize())
+                .variableInsertBatchSize(insertBatching.getMaxVariableInsertBatchSize())
+                .build())
         .build();
   }
 
@@ -252,6 +269,49 @@ public class ExporterConfiguration {
 
     public void setMaxSize(final int maxSize) {
       this.maxSize = maxSize;
+    }
+  }
+
+  public static class InsertBatchingConfiguration {
+    private int maxVariableInsertBatchSize =
+        RdbmsWriterConfig.InsertBatchingConfig.DEFAULT_VARIABLE_INSERT_BATCH_SIZE;
+    private int maxAuditLogInsertBatchSize =
+        RdbmsWriterConfig.InsertBatchingConfig.DEFAULT_AUDIT_LOG_INSERT_BATCH_SIZE;
+
+    public int getMaxVariableInsertBatchSize() {
+      return maxVariableInsertBatchSize;
+    }
+
+    public void setMaxVariableInsertBatchSize(final int maxVariableInsertBatchSize) {
+      this.maxVariableInsertBatchSize = maxVariableInsertBatchSize;
+    }
+
+    public int getMaxAuditLogInsertBatchSize() {
+      return maxAuditLogInsertBatchSize;
+    }
+
+    public void setMaxAuditLogInsertBatchSize(final int maxAuditLogInsertBatchSize) {
+      this.maxAuditLogInsertBatchSize = maxAuditLogInsertBatchSize;
+    }
+
+    public List<String> validate() {
+      final List<String> errors = new ArrayList<>();
+
+      if (maxVariableInsertBatchSize < 1) {
+        errors.add(
+            String.format(
+                "insertBatching.maxVariableInsertBatchSize must be greater than 0 but was %d",
+                maxVariableInsertBatchSize));
+      }
+
+      if (maxAuditLogInsertBatchSize < 1) {
+        errors.add(
+            String.format(
+                "insertBatching.maxAuditLogInsertBatchSize must be greater than 0 but was %d",
+                maxAuditLogInsertBatchSize));
+      }
+
+      return errors;
     }
   }
 

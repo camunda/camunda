@@ -8,6 +8,7 @@
 package io.camunda.db.rdbms.write.queue;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 import io.camunda.db.rdbms.sql.AuditLogMapper.BatchInsertAuditLogsDto;
 import io.camunda.db.rdbms.sql.VariableMapper.BatchInsertVariablesDto;
@@ -26,6 +27,16 @@ import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
 
 class BatchInsertMergerTest {
+
+  @Test
+  void shouldNotMergeWhenMaxBatchSizeEqualsOne() {
+    final var variable = mock(VariableDbModel.class);
+
+    final var merger = new InsertVariableMerger(variable, 1);
+    final var queueItem = mock(QueueItem.class);
+
+    assertThat(merger.canBeMerged(queueItem)).isFalse();
+  }
 
   @Test
   void shouldMergeVariablesUsingGenericMerger() {
@@ -206,6 +217,37 @@ class BatchInsertMergerTest {
     final var queueItem =
         new QueueItem(ContextType.VARIABLE, WriteStatementType.INSERT, 1L, "statement", parameter);
 
+    assertThat(merger.canBeMerged(queueItem)).isFalse();
+  }
+
+  @Test
+  void shouldNotMergeWhenMaxBatchSizeIsOne() {
+    final var variable =
+        new VariableDbModel(
+            1L,
+            "var",
+            ValueTypeEnum.STRING,
+            null,
+            null,
+            "value",
+            null,
+            false,
+            100L,
+            200L,
+            200L,
+            "process1",
+            "tenant1",
+            1,
+            OffsetDateTime.now());
+
+    final var merger = new InsertVariableMerger(variable, 1); // Max batch size of 1
+
+    final var parameter = new BatchInsertVariablesDto(List.of(variable));
+
+    final var queueItem =
+        new QueueItem(ContextType.VARIABLE, WriteStatementType.INSERT, 1L, "statement", parameter);
+
+    // Should return false immediately due to maxBatchSize == 1 short-cut
     assertThat(merger.canBeMerged(queueItem)).isFalse();
   }
 }

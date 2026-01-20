@@ -28,7 +28,8 @@ public record RdbmsWriterConfig(
      * processed and are completed or failed.
      */
     boolean exportBatchOperationItemsOnCreation,
-    HistoryConfig history) {
+    HistoryConfig history,
+    InsertBatchingConfig insertBatchingConfig) {
 
   public static final int DEFAULT_QUEUE_SIZE = 1000;
   // Default memory limit: 20MB - aligned with CamundaExporter's default
@@ -49,6 +50,7 @@ public record RdbmsWriterConfig(
     private boolean exportBatchOperationItemsOnCreation =
         DEFAULT_EXPORT_BATCH_OPERATION_ITEMS_ON_CREATION;
     private HistoryConfig history = new HistoryConfig.Builder().build();
+    private InsertBatchingConfig insertBatchingConfig = new InsertBatchingConfig.Builder().build();
 
     public Builder partitionId(final int partitionId) {
       this.partitionId = partitionId;
@@ -81,6 +83,11 @@ public record RdbmsWriterConfig(
       return this;
     }
 
+    public Builder insertBatchingConfig(final InsertBatchingConfig insertBatchingConfig) {
+      this.insertBatchingConfig = insertBatchingConfig;
+      return this;
+    }
+
     @Override
     public RdbmsWriterConfig build() {
       return new RdbmsWriterConfig(
@@ -89,7 +96,8 @@ public record RdbmsWriterConfig(
           queueMemoryLimit,
           batchOperationItemInsertBlockSize,
           exportBatchOperationItemsOnCreation,
-          history);
+          history,
+          insertBatchingConfig);
     }
   }
 
@@ -236,4 +244,42 @@ public record RdbmsWriterConfig(
       Duration maxDelayBetweenRuns,
       int queueBatchSize,
       int dependentRowLimit) {}
+
+  public record InsertBatchingConfig(
+      /*
+       * The maximum size of variable insert batches.
+       */
+      int variableInsertBatchSize,
+      /*
+       * The maximum size of audit log insert batches.
+       */
+      int auditLogInsertBatchSize) {
+    public static final int DEFAULT_VARIABLE_INSERT_BATCH_SIZE = 10;
+    public static final int DEFAULT_AUDIT_LOG_INSERT_BATCH_SIZE = 10;
+
+    public static InsertBatchingConfig.Builder builder() {
+      return new InsertBatchingConfig.Builder();
+    }
+
+    public static class Builder implements ObjectBuilder<InsertBatchingConfig> {
+
+      private int variableInsertBatchSize = DEFAULT_VARIABLE_INSERT_BATCH_SIZE;
+      private int auditLogInsertBatchSize = DEFAULT_AUDIT_LOG_INSERT_BATCH_SIZE;
+
+      public Builder variableInsertBatchSize(final int variableInsertBatchSize) {
+        this.variableInsertBatchSize = variableInsertBatchSize;
+        return this;
+      }
+
+      public Builder auditLogInsertBatchSize(final int auditLogInsertBatchSize) {
+        this.auditLogInsertBatchSize = auditLogInsertBatchSize;
+        return this;
+      }
+
+      @Override
+      public InsertBatchingConfig build() {
+        return new InsertBatchingConfig(variableInsertBatchSize, auditLogInsertBatchSize);
+      }
+    }
+  }
 }

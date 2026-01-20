@@ -124,7 +124,7 @@ public class RdbmsWriters {
     writers.put(TenantWriter.class, new TenantWriter(executionQueue));
     writers.put(
         VariableWriter.class,
-        new VariableWriter(executionQueue, variableMapper, vendorDatabaseProperties));
+        new VariableWriter(executionQueue, variableMapper, vendorDatabaseProperties, config));
     writers.put(RoleWriter.class, new RoleWriter(executionQueue));
     writers.put(UserWriter.class, new UserWriter(executionQueue));
     writers.put(UserTaskWriter.class, new UserTaskWriter(executionQueue, userTaskMapper));
