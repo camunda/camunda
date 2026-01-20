@@ -22,18 +22,22 @@ import java.util.concurrent.CompletableFuture;
 
 public final class ResourceServices extends ApiServices<ResourceServices> {
 
+  private final String engineName;
+
   public ResourceServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final CamundaAuthentication authentication,
       final ApiServicesExecutorProvider executorProvider,
-      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
+      final String engineName) {
     super(
         brokerClient,
         securityContextProvider,
         authentication,
         executorProvider,
         brokerRequestAuthorizationConverter);
+    this.engineName = engineName;
   }
 
   @Override
@@ -43,12 +47,25 @@ public final class ResourceServices extends ApiServices<ResourceServices> {
         securityContextProvider,
         authentication,
         executorProvider,
-        brokerRequestAuthorizationConverter);
+        brokerRequestAuthorizationConverter,
+        engineName);
+  }
+
+  @Override
+  public ResourceServices withEngineName(final String engineName) {
+    return new ResourceServices(
+        brokerClient,
+        securityContextProvider,
+        authentication,
+        executorProvider,
+        brokerRequestAuthorizationConverter,
+        engineName);
   }
 
   public CompletableFuture<DeploymentRecord> deployResources(
       final DeployResourcesRequest deployResourcesRequest) {
     final var brokerRequest = new BrokerDeployResourceRequest();
+    brokerRequest.setPartitionGroup(engineName);
     deployResourcesRequest.resources().forEach(brokerRequest::addResource);
     brokerRequest.setTenantId(deployResourcesRequest.tenantId());
     return sendBrokerRequest(brokerRequest);

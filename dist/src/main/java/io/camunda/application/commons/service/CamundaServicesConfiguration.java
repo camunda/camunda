@@ -490,7 +490,8 @@ public class CamundaServicesConfiguration {
         securityContextProvider,
         null,
         executorProvider,
-        brokerRequestAuthorizationConverter);
+        brokerRequestAuthorizationConverter,
+        null);
   }
 
   @Bean

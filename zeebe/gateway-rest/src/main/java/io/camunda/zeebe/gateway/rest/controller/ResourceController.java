@@ -28,12 +28,10 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.multipart.MultipartFile;
 
-@CamundaRestController
-@RequestMapping("/v2")
+@CamundaRestController("/v2")
 public class ResourceController {
 
   private final ResourceServices resourceServices;
@@ -51,12 +49,15 @@ public class ResourceController {
 
   @CamundaPostMapping(path = "/deployments", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   public CompletableFuture<ResponseEntity<Object>> deployResources(
+      @PathVariable(name = "engineName", required = false) final String engineName,
       @RequestPart("resources") final List<MultipartFile> resources,
       @RequestPart(value = "tenantId", required = false) final String tenantId) {
 
     return RequestMapper.toDeployResourceRequest(
             resources, tenantId, multiTenancyCfg.isChecksEnabled())
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::deployResources);
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            (request) -> deployResources(request, engineName));
   }
 
   @CamundaPostMapping(path = "/resources/{resourceKey}/deletion")
@@ -84,10 +85,11 @@ public class ResourceController {
   }
 
   private CompletableFuture<ResponseEntity<Object>> deployResources(
-      final DeployResourcesRequest request) {
+      final DeployResourcesRequest request, final String engineName) {
     return RequestExecutor.executeServiceMethod(
         () ->
             resourceServices
+                .withEngineName(engineName)
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .deployResources(request),
         ResponseMapper::toDeployResourceResponse,

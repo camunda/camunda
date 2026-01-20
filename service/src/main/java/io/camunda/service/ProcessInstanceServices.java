@@ -262,6 +262,7 @@ public final class ProcessInstanceServices
     if (request.operationReference() != null) {
       brokerRequest.setOperationReference(request.operationReference());
     }
+    brokerRequest.setPartitionGroup(engineName);
     return sendBrokerRequest(brokerRequest);
   }
 
@@ -281,6 +282,7 @@ public final class ProcessInstanceServices
     if (request.operationReference() != null) {
       brokerRequest.setOperationReference(request.operationReference());
     }
+    brokerRequest.setPartitionGroup(engineName);
     return sendBrokerRequest(brokerRequest);
   }
 
