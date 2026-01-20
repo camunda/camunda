@@ -59,6 +59,7 @@ public interface Intent {
     map.put(ValueType.ESCALATION, EscalationIntent.class);
     map.put(ValueType.EXPRESSION, ExpressionIntent.class);
     map.put(ValueType.FORM, FormIntent.class);
+    map.put(ValueType.GLOBAL_LISTENER, GlobalListenerIntent.class);
     map.put(ValueType.GLOBAL_LISTENER_BATCH, GlobalListenerBatchIntent.class);
     map.put(ValueType.GROUP, GroupIntent.class);
     map.put(ValueType.HISTORY_DELETION, HistoryDeletionIntent.class);

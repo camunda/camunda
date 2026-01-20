@@ -8,11 +8,18 @@
 package io.camunda.zeebe.engine;
 
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
+import io.camunda.zeebe.protocol.record.value.GlobalListenerType;
 import java.util.List;
 import java.util.stream.Stream;
 
 public record GlobalListenerConfiguration(
-    List<String> eventTypes, String type, String retries, boolean afterNonGlobal) {
+    String id,
+    List<String> eventTypes,
+    String type,
+    String retries,
+    boolean afterNonGlobal,
+    int priority,
+    GlobalListenerType listenerType) {
 
   public static final String ALL_EVENT_TYPES = "all";
 

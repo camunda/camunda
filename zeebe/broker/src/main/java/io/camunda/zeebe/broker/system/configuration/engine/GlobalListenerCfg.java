@@ -10,15 +10,27 @@ package io.camunda.zeebe.broker.system.configuration.engine;
 import io.camunda.zeebe.broker.system.configuration.ConfigurationEntry;
 import io.camunda.zeebe.engine.GlobalListenerConfiguration;
 import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerRecord;
+import io.camunda.zeebe.protocol.record.value.GlobalListenerType;
 import java.util.ArrayList;
 import java.util.List;
 
 public class GlobalListenerCfg implements ConfigurationEntry {
 
+  private String id;
   private List<String> eventTypes = new ArrayList<>();
   private String type;
   private String retries = String.valueOf(GlobalListenerRecord.DEFAULT_RETRIES);
   private boolean afterNonGlobal = false;
+  private int priority = GlobalListenerRecord.DEFAULT_PRIORITY;
+  private GlobalListenerType listenerType = GlobalListenerType.USER_TASK;
+
+  public String getId() {
+    return id;
+  }
+
+  public void setId(final String id) {
+    this.id = id;
+  }
 
   public List<String> getEventTypes() {
     return eventTypes;
@@ -52,7 +64,24 @@ public class GlobalListenerCfg implements ConfigurationEntry {
     this.afterNonGlobal = afterNonGlobal;
   }
 
+  public int getPriority() {
+    return priority;
+  }
+
+  public void setPriority(final int priority) {
+    this.priority = priority;
+  }
+
+  public GlobalListenerType getListenerType() {
+    return listenerType;
+  }
+
+  public void setListenerType(final GlobalListenerType listenerType) {
+    this.listenerType = listenerType;
+  }
+
   public GlobalListenerConfiguration createGlobalListenerConfiguration() {
-    return new GlobalListenerConfiguration(eventTypes, type, retries, afterNonGlobal);
+    return new GlobalListenerConfiguration(
+        id, eventTypes, type, retries, afterNonGlobal, priority, listenerType);
   }
 }

@@ -20,14 +20,104 @@ import io.camunda.zeebe.protocol.record.RecordValue;
 import java.util.List;
 import org.immutables.value.Value;
 
+/**
+ * Represents a global listener configuration in the Zeebe protocol.
+ *
+ * <p>A global listener is notified of specific events occurring in the cluster, regardless of the
+ * process instance or scope. This record value describes the configuration and properties of such a
+ * listener.
+ */
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableGlobalListenerRecordValue.Builder.class)
 public interface GlobalListenerRecordValue extends RecordValue {
+
+  /**
+   * Returns the unique identifier of the global listener.
+   *
+   * <p>This ID is used to reference and manage the listener through APIs.
+   *
+   * @return the global listener's unique identifier
+   */
+  String getId();
+
+  /**
+   * Returns the job type of the global listener.
+   *
+   * <p>The type is used as a reference to specify which job workers request the respective listener
+   * job.
+   *
+   * @return the job type of the global listener
+   */
   String getType();
 
+  /**
+   * Returns the maximum number of retries allowed for this listener.
+   *
+   * <p>If the listener fails to process an event, it may be retried up to this number.
+   *
+   * @return the retry count
+   */
   int getRetries();
 
+  /**
+   * Returns the list of event types this listener is interested in.
+   *
+   * <p>The listener will be notified only for these event types.
+   *
+   * <p>For global user task listeners, valid event types include:
+   *
+   * <ul>
+   *   <li>"CREATING": when a user task is created
+   *   <li>"ASSIGNING": when a user task is assigned to a user or unassigned
+   *   <li>"UPDATING": when a user task information is updated
+   *   <li>"COMPLETING": when a user task is completed
+   *   <li>"CANCELING": when a user task is canceled
+   *   <li>"ALL": triggered by all of the above
+   * </ul>
+   *
+   * @return the list of event types
+   */
   List<String> getEventTypes();
 
+  /**
+   * Indicates whether this listener should be executed after all non-global listeners.
+   *
+   * <p>If {@code true}, the listener is invoked after non-global listeners for the same event,
+   * otherwise before them.
+   *
+   * @return {@code true} if executed after non-global listeners, otherwise {@code false}
+   */
   boolean isAfterNonGlobal();
+
+  /**
+   * Returns the priority of the listener.
+   *
+   * <p>Higher priority listeners are executed before lower priority ones.
+   *
+   * @return the priority value
+   */
+  int getPriority();
+
+  /**
+   * Returns the source of the global listener.
+   *
+   * <p>The source indicates how or where the listener was registered. The possible values are:
+   *
+   * <ul>
+   *   <li>{@link GlobalListenerSource#API}: registered via API
+   *   <li>{@link GlobalListenerSource#CONFIGURATION}: registered via configuration file</
+   * </ul>
+   *
+   * @return the listener source
+   */
+  GlobalListenerSource getSource();
+
+  /**
+   * Returns the listener type of the global listener.
+   *
+   * <p>Currently only global "user task" listeners are supported.
+   *
+   * @return the listener type
+   */
+  GlobalListenerType getListenerType();
 }

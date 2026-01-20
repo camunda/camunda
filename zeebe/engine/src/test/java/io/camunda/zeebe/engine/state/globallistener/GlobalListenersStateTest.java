@@ -162,6 +162,7 @@ public class GlobalListenersStateTest {
     for (int i = 0; i < numberOfListeners; i++) {
       record.addTaskListener(
           new GlobalListenerRecord()
+              .setId("GlobalListener_" + i)
               .setType("global" + i)
               .setEventTypes(List.of("creating", "assigning"))
               .setRetries(i)
