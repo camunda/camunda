@@ -71,9 +71,9 @@ test.describe('task history tab', () => {
 
     await tasksPage.gotoTaskDetailsHistoryTab(TASK.userTaskKey);
 
-    await expect(page.getByText('Create User Task')).toBeVisible();
-    await expect(page.getByText('Assign User Task')).toBeVisible();
-    await expect(page.getByText('Complete User Task')).toBeVisible();
+    await expect(page.getByText('Create task')).toBeVisible();
+    await expect(page.getByText('Assign task')).toBeVisible();
+    await expect(page.getByText('Complete task')).toBeVisible();
 
     await expect(page).toHaveScreenshot();
   });
@@ -117,7 +117,7 @@ test.describe('task history tab', () => {
 
     await tasksPage.gotoTaskDetailsHistoryTab(TASK.userTaskKey);
 
-    await expect(page.getByText('Assign User Task')).toBeVisible();
+    await expect(page.getByText('Assign task')).toBeVisible();
 
     await page.getByRole('button', {name: 'Open details'}).click();
 
