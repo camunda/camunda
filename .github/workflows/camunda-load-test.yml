@@ -463,7 +463,7 @@ jobs:
           --set global.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
           ${{ steps.find-chart-release.outputs.chart-release != '' && format('--version {0}', steps.find-chart-release.outputs.chart-release) || '' }}
           ${{ inputs.realistic && '-f https://raw.githubusercontent.com/camunda/camunda-load-tests-helm/refs/heads/main/charts/camunda-load-tests/values-realistic-benchmark.yaml' || '' }}
-          ${{ inputs.operate-included && '--set app.monitorDataAvailability=true' || '' }}
+          ${{ inputs.operate-included && '--set global.extraEnvVars[0].name="CONFIG_FORCE_app_monitorDataAvailability" --set global.extraEnvVars[0].value="true"' || '' }}
           ${{ inputs.load-test-load }}
       - name: Setup leader balancing
         run: |
