@@ -36,6 +36,8 @@ public final class ToolDescriptions {
       "Incident key " + POSITIVE_NUMBER_MESSAGE;
   public static final String PROCESS_INSTANCE_KEY_POSITIVE_MESSAGE =
       "Process instance key " + POSITIVE_NUMBER_MESSAGE;
+  public static final String VARIABLE_KEY_POSITIVE_MESSAGE =
+      "Variable key " + POSITIVE_NUMBER_MESSAGE;
 
   private ToolDescriptions() {
     // Utility class

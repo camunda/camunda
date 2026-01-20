@@ -286,6 +286,31 @@ public class SimpleSearchQueryMapper {
     return fields;
   }
 
+  public static io.camunda.gateway.protocol.model.VariableFilter toVariableFilter(
+      final io.camunda.gateway.protocol.model.simple.VariableFilter filter) {
+    final var filterModel = new io.camunda.gateway.protocol.model.VariableFilter();
+    if (filter != null) {
+      ofNullable(filter.getName())
+          .map(SimpleSearchQueryMapper::getStringFilter)
+          .ifPresent(filterModel::name);
+      ofNullable(filter.getValue())
+          .map(SimpleSearchQueryMapper::getStringFilter)
+          .ifPresent(filterModel::value);
+      ofNullable(filter.getTenantId()).ifPresent(filterModel::tenantId);
+      ofNullable(filter.getIsTruncated()).ifPresent(filterModel::isTruncated);
+      ofNullable(filter.getVariableKey())
+          .map(SimpleSearchQueryMapper::getBasicStringFilter)
+          .ifPresent(filterModel::variableKey);
+      ofNullable(filter.getScopeKey())
+          .map(SimpleSearchQueryMapper::getStringFilter)
+          .ifPresent(filterModel::scopeKey);
+      ofNullable(filter.getProcessInstanceKey())
+          .map(SimpleSearchQueryMapper::getBasicStringFilter)
+          .ifPresent(filterModel::processInstanceKey);
+    }
+    return filterModel;
+  }
+
   private static StringFilterProperty getStringFilter(final String value) {
     return new AdvancedStringFilter().$eq(value);
   }
