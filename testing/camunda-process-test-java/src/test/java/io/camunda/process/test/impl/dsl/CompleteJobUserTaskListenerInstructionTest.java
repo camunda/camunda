@@ -213,12 +213,13 @@ public class CompleteJobUserTaskListenerInstructionTest {
   }
 
   @Test
-  void shouldCompleteJobWithAllOptions() {
+  void shouldIgnoreCorrectionsIfDenied() {
     // given
     final CompleteJobUserTaskListenerInstruction instruction =
         ImmutableCompleteJobUserTaskListenerInstruction.builder()
             .jobSelector(ImmutableJobSelector.builder().jobType(JOB_TYPE).build())
-            .denied(false)
+            .denied(true)
+            .deniedReason("Not allowed")
             .corrections(
                 ImmutableCorrections.builder().assignee("new-assignee").priority(50).build())
             .build();
@@ -233,9 +234,9 @@ public class CompleteJobUserTaskListenerInstructionTest {
 
     jobResultHandlerCaptor.getValue().accept(jobResult);
 
-    verify(jobResult).correctAssignee("new-assignee");
-    verify(jobResult).correctPriority(50);
+    verify(jobResult).deny(true);
+    verify(jobResult).deniedReason("Not allowed");
 
-    verifyNoMoreInteractions(camundaClient, processTestContext, assertionFacade);
+    verifyNoMoreInteractions(camundaClient, processTestContext, assertionFacade, jobResult);
   }
 }

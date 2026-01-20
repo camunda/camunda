@@ -42,6 +42,8 @@ public class CompleteJobUserTaskListenerInstructionHandler
           if (instruction.getDenied()) {
             result.deny(true);
             instruction.getDeniedReason().ifPresent(result::deniedReason);
+            // If denied, no corrections are allowed
+            return;
           }
 
           // Apply corrections if specified

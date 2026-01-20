@@ -715,7 +715,7 @@
           "type": "string"
         },
         "corrections": {
-          "description": "The corrections to apply to the user task. Optional.",
+          "description": "The corrections to apply to the user task. Optional. Only applicable if denied is false.",
           "type": "object",
           "properties": {
             "assignee": {

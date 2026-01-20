@@ -59,7 +59,7 @@ public interface CompleteJobUserTaskListenerInstruction extends TestCaseInstruct
   Optional<String> getDeniedReason();
 
   /**
-   * The corrections to apply to the user task. Optional.
+   * The corrections to apply to the user task. Optional. Only applicable if denied is false.
    *
    * @return the corrections
    */
