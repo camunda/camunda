@@ -12,6 +12,7 @@ import io.camunda.exporter.tasks.BackgroundTask;
 import io.camunda.webapps.schema.descriptors.ProcessInstanceDependant;
 import io.camunda.webapps.schema.descriptors.index.HistoryDeletionIndex;
 import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
+import io.camunda.webapps.schema.descriptors.template.AuditLogTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
@@ -39,6 +40,7 @@ public class HistoryDeletionJob implements BackgroundTask {
   private final HistoryDeletionIndex historyDeletionIndex;
   private final ListViewTemplate listViewTemplate;
   private final ProcessIndex processIndex;
+  private final AuditLogTemplate auditLogTemplate;
 
   public HistoryDeletionJob(
       final List<ProcessInstanceDependant> processInstanceDependants,
@@ -56,6 +58,7 @@ public class HistoryDeletionJob implements BackgroundTask {
     historyDeletionIndex = resourceProvider.getIndexDescriptor(HistoryDeletionIndex.class);
     listViewTemplate = resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class);
     processIndex = resourceProvider.getIndexDescriptor(ProcessIndex.class);
+    auditLogTemplate = resourceProvider.getIndexTemplateDescriptor(AuditLogTemplate.class);
   }
 
   @Override
@@ -131,12 +134,16 @@ public class HistoryDeletionJob implements BackgroundTask {
       return CompletableFuture.completedFuture(ids);
     }
 
-    // TODO audit log??
-
     return deleterRepository
-        .deleteDocumentsById(
-            processIndex.getFullQualifiedName(),
-            processDefinitions.stream().map(Object::toString).toList())
+        .deleteDocumentsByField(
+            auditLogTemplate.getFullQualifiedName() + "*",
+            AuditLogTemplate.PROCESS_DEFINITION_KEY,
+            processDefinitions)
+        .thenCompose(
+            ignored ->
+                deleterRepository.deleteDocumentsById(
+                    processIndex.getFullQualifiedName(),
+                    processDefinitions.stream().map(Object::toString).toList()))
         .thenApply(ignored -> batch.getHistoryDeletionIds(HistoryDeletionType.PROCESS_DEFINITION));
   }
 
