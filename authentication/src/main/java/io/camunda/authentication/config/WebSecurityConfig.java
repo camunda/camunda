@@ -133,7 +133,7 @@ public class WebSecurityConfig {
   public static final String LOGIN_URL = "/login";
   public static final String LOGOUT_URL = "/logout";
   public static final Set<String> API_PATHS =
-      Set.of("/api/**", "/v1/**", "/v2/**", "/mcp", "/engine/**/v2/**");
+      Set.of("/api/**", "/v1/**", "/v2/**", "/mcp", "/engines/**/v2/**");
   public static final Set<String> UNPROTECTED_API_PATHS =
       Set.of(
           // these v2 endpoints are public
