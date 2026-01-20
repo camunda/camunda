@@ -1274,7 +1274,7 @@ jobs:
     permissions: {}  # GITHUB_TOKEN unused in this job
     env:
       # renovate: datasource=github-releases depName=daveshanley/vacuum
-      VACUUM_VERSION: 'v0.23.2'
+      VACUUM_VERSION: 'v0.23.4'
     steps:
       - uses: actions/checkout@v4
       - name: Install vacuum
