@@ -5,19 +5,37 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.broker.system.configuration.engine;
+package io.camunda.configuration;
 
-import io.camunda.zeebe.broker.system.configuration.ConfigurationEntry;
-import io.camunda.zeebe.engine.EngineConfiguration;
 import java.time.Duration;
 
-public class JobMetricsCfg implements ConfigurationEntry {
-  private boolean enabled = true;
-  private Duration exportInterval = EngineConfiguration.DEFAULT_JOB_METRICS_EXPORT_INTERVAL;
-  private int maxWorkerNameLength = EngineConfiguration.DEFAULT_MAX_WORKER_NAME_LENGTH;
-  private int maxJobTypeLength = EngineConfiguration.DEFAULT_MAX_JOB_TYPE_LENGTH;
-  private int maxTenantIdLength = EngineConfiguration.DEFAULT_MAX_TENANT_ID_LENGTH;
-  private int maxUniqueKeys = EngineConfiguration.DEFAULT_MAX_UNIQUE_JOB_METRICS_KEYS;
+/** Configuration properties for job metrics collection and export. */
+public class JobMetrics {
+
+  private static final Duration DEFAULT_EXPORT_INTERVAL = Duration.ofMinutes(1);
+  private static final boolean DEFAULT_ENABLED = true;
+  private static final int DEFAULT_MAX_WORKER_NAME_LENGTH = 64;
+  private static final int DEFAULT_MAX_JOB_TYPE_LENGTH = 64;
+  private static final int DEFAULT_MAX_TENANT_ID_LENGTH = 64;
+  private static final int DEFAULT_MAX_UNIQUE_KEYS = 100;
+
+  /** Whether job metrics collection is enabled. */
+  private boolean enabled = DEFAULT_ENABLED;
+
+  /** The interval at which job metrics are exported. */
+  private Duration exportInterval = DEFAULT_EXPORT_INTERVAL;
+
+  /** Maximum length of worker names to track. Longer names will be truncated. */
+  private int maxWorkerNameLength = DEFAULT_MAX_WORKER_NAME_LENGTH;
+
+  /** Maximum length of job types to track. Longer types will be truncated. */
+  private int maxJobTypeLength = DEFAULT_MAX_JOB_TYPE_LENGTH;
+
+  /** Maximum length of tenant IDs to track. Longer IDs will be truncated. */
+  private int maxTenantIdLength = DEFAULT_MAX_TENANT_ID_LENGTH;
+
+  /** Maximum number of unique keys (jobType_tenantId combinations) to track. */
+  private int maxUniqueKeys = DEFAULT_MAX_UNIQUE_KEYS;
 
   public boolean isEnabled() {
     return enabled;
@@ -67,21 +85,8 @@ public class JobMetricsCfg implements ConfigurationEntry {
     this.maxUniqueKeys = maxUniqueKeys;
   }
 
-  @Override
-  public String toString() {
-    return "JobMetricsCfg{"
-        + "enabled="
-        + enabled
-        + ", exportInterval="
-        + exportInterval
-        + ", maxWorkerNameLength="
-        + maxWorkerNameLength
-        + ", maxJobTypeLength="
-        + maxJobTypeLength
-        + ", maxTenantIdLength="
-        + maxTenantIdLength
-        + ", maxUniqueKeys="
-        + maxUniqueKeys
-        + '}';
+  /** Returns the export interval in minutes. */
+  public long getResolutionMinutes() {
+    return exportInterval.toMinutes();
   }
 }

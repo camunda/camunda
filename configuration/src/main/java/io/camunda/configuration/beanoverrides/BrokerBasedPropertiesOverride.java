@@ -219,6 +219,7 @@ public class BrokerBasedPropertiesOverride {
   private void populateFromEngine(final BrokerBasedProperties override) {
     populateFromDistribution(override);
     populateFromBatchOperations(override);
+    populateFromJobMetrics(override);
   }
 
   private void populateFromDistribution(final BrokerBasedProperties override) {
@@ -238,6 +239,18 @@ public class BrokerBasedPropertiesOverride {
         .getEngine()
         .getBatchOperations()
         .setSchedulerInterval(engineBatchOperation.getSchedulerInterval());
+  }
+
+  private void populateFromJobMetrics(final BrokerBasedProperties override) {
+    final var jobMetrics =
+        unifiedConfiguration.getCamunda().getProcessing().getEngine().getJobMetrics();
+    final var jobMetricsCfg = override.getExperimental().getEngine().getJobMetrics();
+    jobMetricsCfg.setEnabled(jobMetrics.isEnabled());
+    jobMetricsCfg.setExportInterval(jobMetrics.getExportInterval());
+    jobMetricsCfg.setMaxWorkerNameLength(jobMetrics.getMaxWorkerNameLength());
+    jobMetricsCfg.setMaxJobTypeLength(jobMetrics.getMaxJobTypeLength());
+    jobMetricsCfg.setMaxTenantIdLength(jobMetrics.getMaxTenantIdLength());
+    jobMetricsCfg.setMaxUniqueKeys(jobMetrics.getMaxUniqueKeys());
   }
 
   private void populateFromFlowControl(final BrokerBasedProperties override) {

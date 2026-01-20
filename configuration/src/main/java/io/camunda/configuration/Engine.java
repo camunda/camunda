@@ -18,6 +18,9 @@ public class Engine {
   @NestedConfigurationProperty
   private EngineBatchOperation batchOperations = new EngineBatchOperation();
 
+  /** Configuration properties for job metrics collection and export. */
+  @NestedConfigurationProperty private JobMetrics jobMetrics = new JobMetrics();
+
   public Distribution getDistribution() {
     return distribution;
   }
@@ -32,5 +35,13 @@ public class Engine {
 
   public void setBatchOperations(final EngineBatchOperation batchOperations) {
     this.batchOperations = batchOperations;
+  }
+
+  public JobMetrics getJobMetrics() {
+    return jobMetrics;
+  }
+
+  public void setJobMetrics(final JobMetrics jobMetrics) {
+    this.jobMetrics = jobMetrics;
   }
 }

@@ -109,6 +109,10 @@ public final class EngineCfg implements ConfigurationEntry {
     this.globalListeners = globalListeners;
   }
 
+  public JobMetricsCfg getJobMetrics() {
+    return jobMetrics;
+  }
+
   public void setJobMetrics(final JobMetricsCfg jobMetrics) {
     this.jobMetrics = jobMetrics;
   }

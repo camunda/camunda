@@ -9,6 +9,7 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToResponse;
 
+import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.gateway.mapping.http.RequestMapper;
 import io.camunda.gateway.mapping.http.RequestMapper.CompleteJobRequest;
 import io.camunda.gateway.mapping.http.RequestMapper.ErrorJobRequest;
@@ -16,6 +17,8 @@ import io.camunda.gateway.mapping.http.RequestMapper.FailJobRequest;
 import io.camunda.gateway.mapping.http.RequestMapper.UpdateJobRequest;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
+import io.camunda.gateway.protocol.model.GlobalJobStatisticsQuery;
+import io.camunda.gateway.protocol.model.GlobalJobStatisticsQueryResult;
 import io.camunda.gateway.protocol.model.JobActivationRequest;
 import io.camunda.gateway.protocol.model.JobActivationResult;
 import io.camunda.gateway.protocol.model.JobCompletionRequest;
@@ -29,6 +32,7 @@ import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.JobServices;
 import io.camunda.service.JobServices.ActivateJobsRequest;
+import io.camunda.zeebe.broker.system.configuration.engine.JobMetricsCfg;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPatchMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
@@ -48,16 +52,19 @@ public class JobController {
   private final JobServices<JobActivationResult> jobServices;
   private final MultiTenancyConfiguration multiTenancyCfg;
   private final CamundaAuthenticationProvider authenticationProvider;
+  private final JobMetricsCfg jobMetricsCfg;
 
   public JobController(
       final JobServices<JobActivationResult> jobServices,
       final ResponseObserverProvider responseObserverProvider,
       final MultiTenancyConfiguration multiTenancyCfg,
-      final CamundaAuthenticationProvider authenticationProvider) {
+      final CamundaAuthenticationProvider authenticationProvider,
+      final BrokerBasedProperties brokerProperties) {
     this.jobServices = jobServices;
     this.responseObserverProvider = responseObserverProvider;
     this.multiTenancyCfg = multiTenancyCfg;
     this.authenticationProvider = authenticationProvider;
+    jobMetricsCfg = brokerProperties.getExperimental().getEngine().getJobMetrics();
   }
 
   @CamundaPostMapping(path = "/activation")
@@ -102,6 +109,14 @@ public class JobController {
       @RequestBody(required = false) final JobSearchQuery request) {
     return SearchQueryRequestMapper.toJobQuery(request)
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
+  }
+
+  @RequiresSecondaryStorage
+  @CamundaPostMapping(path = "/statistics/global")
+  public ResponseEntity<GlobalJobStatisticsQueryResult> getGlobalJobStatistics(
+      @RequestBody(required = false) final GlobalJobStatisticsQuery request) {
+    return SearchQueryRequestMapper.toGlobalJobStatisticsQuery(request)
+        .fold(RestErrorMapper::mapProblemToResponse, this::getGlobalStatistics);
   }
 
   private CompletableFuture<ResponseEntity<Object>> activateJobs(
@@ -175,6 +190,19 @@ public class JobController {
               .withAuthentication(authenticationProvider.getCamundaAuthentication())
               .search(query);
       return ResponseEntity.ok(SearchQueryResponseMapper.toJobSearchQueryResponse(result));
+    } catch (final Exception e) {
+      return mapErrorToResponse(e);
+    }
+  }
+
+  private ResponseEntity<GlobalJobStatisticsQueryResult> getGlobalStatistics(
+      final io.camunda.search.query.GlobalJobStatisticsQuery query) {
+    try {
+      final var result =
+          jobServices
+              .withAuthentication(authenticationProvider.getCamundaAuthentication())
+              .getGlobalStatistics(query);
+      return ResponseEntity.ok(SearchQueryResponseMapper.toGlobalJobStatisticsQueryResult(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
