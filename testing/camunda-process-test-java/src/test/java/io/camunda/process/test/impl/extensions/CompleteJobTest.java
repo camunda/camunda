@@ -31,6 +31,7 @@ import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.command.CompleteAdHocSubProcessResultStep1;
 import io.camunda.client.api.command.CompleteJobCommandStep1.CompleteJobCommandJobResultStep;
 import io.camunda.client.api.command.CompleteJobResult;
+import io.camunda.client.api.command.CompleteUserTaskJobResultStep1;
 import io.camunda.client.api.response.CompleteJobResponse;
 import io.camunda.client.api.search.enums.JobKind;
 import io.camunda.client.api.search.enums.JobState;
@@ -466,13 +467,9 @@ public class CompleteJobTest {
 
     @Mock private CompleteJobCommandJobResultStep completeJobCommandJobResultStep;
 
-    @Mock
-    private io.camunda.client.api.command.CompleteUserTaskJobResultStep1
-        completeUserTaskJobResultStep;
+    @Mock private CompleteUserTaskJobResultStep1 completeUserTaskJobResultStep;
 
-    @Mock
-    private Consumer<io.camunda.client.api.command.CompleteUserTaskJobResultStep1>
-        jobResultConsumer;
+    @Mock private Consumer<CompleteUserTaskJobResultStep1> jobResultConsumer;
 
     @Captor
     private ArgumentCaptor<Function<CompleteJobCommandJobResultStep, CompleteJobResult>>
