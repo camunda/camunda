@@ -130,7 +130,7 @@ public class BatchOperationCreatedHandler
             case USER -> AuditLogActorType.USER;
             case CLIENT -> AuditLogActorType.CLIENT;
             case ANONYMOUS -> null;
-            case UNKNOWN -> null;
+            case UNKNOWN -> AuditLogActorType.UNKNOWN;
             case null -> null;
           };
       return new ActorInfo(actorType, auditLogActor.actorId());

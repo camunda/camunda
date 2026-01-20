@@ -178,7 +178,7 @@ class BatchOperationCreatedHandlerTest {
     underTest.updateEntity(record, entity);
 
     // then
-    assertThat(entity.getActorType()).isNull();
+    assertThat(entity.getActorType()).isEqualTo(AuditLogActorType.UNKNOWN);
     assertThat(entity.getActorId()).isNull();
   }
 
