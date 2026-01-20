@@ -22,6 +22,8 @@ import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.Operator;
 import io.camunda.search.filter.ProcessInstanceFilter;
+import io.camunda.search.filter.UntypedOperation;
+import io.camunda.search.filter.VariableValueFilter;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
@@ -187,7 +189,9 @@ class ProcessInstanceToolsTest extends ToolsTest {
                             "processDefinitionVersion",
                             5,
                             "tags",
-                            List.of("tag1")),
+                            List.of("tag1"),
+                            "variables",
+                            List.of(Map.of("name", "orderId", "value", "123"))),
                         "sort",
                         List.of(Map.of("field", "processInstanceKey", "order", "DESC")),
                         "page",
@@ -220,6 +224,13 @@ class ProcessInstanceToolsTest extends ToolsTest {
             tuple(Operator.LOWER_THAN, OffsetDateTime.parse("2024-02-01T00:00:00Z")));
 
     assertThat(filter.tags()).containsExactly("tag1");
+
+    assertThat(filter.variableFilters()).hasSize(1);
+    final VariableValueFilter variableFilter = filter.variableFilters().getFirst();
+    assertThat(variableFilter.name()).isEqualTo("orderId");
+    assertThat(variableFilter.valueOperations())
+        .extracting(UntypedOperation::operator, UntypedOperation::value)
+        .containsExactly(tuple(Operator.EQUALS, 123L));
 
     assertThat(capturedQuery.sort().orderings())
         .extracting(FieldSorting::field, FieldSorting::order)
