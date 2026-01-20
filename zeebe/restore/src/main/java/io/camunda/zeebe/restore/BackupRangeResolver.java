@@ -9,7 +9,6 @@ package io.camunda.zeebe.restore;
 
 import io.camunda.zeebe.backup.api.BackupRange;
 import io.camunda.zeebe.backup.api.BackupStatus;
-import io.camunda.zeebe.backup.api.BackupStatusCode;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -20,6 +19,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Pure, side-effect-free resolver for determining valid backup ranges for restore operations. All
@@ -29,6 +29,19 @@ public final class BackupRangeResolver {
 
   private BackupRangeResolver() {
     // Utility class
+  }
+
+  /** Find the backups before the given timestamp */
+  public static Stream<BackupStatus> findLatestBackupsBefore(
+      final Instant toTimestamp, final Collection<BackupStatus> allBackups) {
+    return allBackups.stream()
+        .filter(BackupStatus::isCompleted)
+        .filter(
+            backup ->
+                backup
+                    .descriptor()
+                    .map(ds -> !ds.checkpointTimestamp().isAfter(toTimestamp))
+                    .orElse(false));
   }
 
   /**
@@ -41,13 +54,7 @@ public final class BackupRangeResolver {
    */
   public static Optional<BackupStatus> findLatestBackupBefore(
       final Instant toTimestamp, final Collection<BackupStatus> allBackups) {
-    return allBackups.stream()
-        .filter(backup -> backup.descriptor().isPresent())
-        .filter(
-            backup -> {
-              final var checkpointTimestamp = backup.descriptor().get().checkpointTimestamp();
-              return !checkpointTimestamp.isAfter(toTimestamp);
-            })
+    return findLatestBackupsBefore(toTimestamp, allBackups)
         .max(Comparator.comparing(backup -> backup.descriptor().get().checkpointTimestamp()));
   }
 
@@ -62,7 +69,7 @@ public final class BackupRangeResolver {
   public static Optional<Long> findSafeStartCheckpoint(
       final long exportedPosition, final Collection<BackupStatus> availableBackups) {
     return availableBackups.stream()
-        .filter(backup -> backup.statusCode() == BackupStatusCode.COMPLETED)
+        .filter(BackupStatus::isCompleted)
         .filter(
             backup ->
                 backup

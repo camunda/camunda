@@ -18,6 +18,10 @@ public interface BackupStatus {
 
   BackupStatusCode statusCode();
 
+  default boolean isCompleted() {
+    return statusCode() == BackupStatusCode.COMPLETED;
+  }
+
   Optional<String> failureReason();
 
   Optional<Instant> created();
