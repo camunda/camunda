@@ -72,6 +72,7 @@ public final class ProcessInstanceServices
   private final ProcessInstanceSearchClient processInstanceSearchClient;
   private final SequenceFlowSearchClient sequenceFlowSearchClient;
   private final IncidentServices incidentServices;
+  private final String engineName;
 
   public ProcessInstanceServices(
       final BrokerClient brokerClient,
@@ -82,6 +83,28 @@ public final class ProcessInstanceServices
       final CamundaAuthentication authentication,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+    this(
+        brokerClient,
+        securityContextProvider,
+        processInstanceSearchClient,
+        sequenceFlowSearchClient,
+        incidentServices,
+        authentication,
+        executorProvider,
+        brokerRequestAuthorizationConverter,
+        null);
+  }
+
+  public ProcessInstanceServices(
+      final BrokerClient brokerClient,
+      final SecurityContextProvider securityContextProvider,
+      final ProcessInstanceSearchClient processInstanceSearchClient,
+      final SequenceFlowSearchClient sequenceFlowSearchClient,
+      final IncidentServices incidentServices,
+      final CamundaAuthentication authentication,
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
+      final String engineName) {
     super(
         brokerClient,
         securityContextProvider,
@@ -91,6 +114,7 @@ public final class ProcessInstanceServices
     this.processInstanceSearchClient = processInstanceSearchClient;
     this.sequenceFlowSearchClient = sequenceFlowSearchClient;
     this.incidentServices = incidentServices;
+    this.engineName = engineName;
   }
 
   @Override
@@ -103,7 +127,22 @@ public final class ProcessInstanceServices
         incidentServices,
         authentication,
         executorProvider,
-        brokerRequestAuthorizationConverter);
+        brokerRequestAuthorizationConverter,
+        engineName);
+  }
+
+  @Override
+  public ProcessInstanceServices withEngineName(final String engineName) {
+    return new ProcessInstanceServices(
+        brokerClient,
+        securityContextProvider,
+        processInstanceSearchClient,
+        sequenceFlowSearchClient,
+        incidentServices,
+        authentication,
+        executorProvider,
+        brokerRequestAuthorizationConverter,
+        engineName);
   }
 
   @Override
@@ -111,6 +150,7 @@ public final class ProcessInstanceServices
     return executeSearchRequest(
         () ->
             processInstanceSearchClient
+                .withEngineName(engineName)
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
                         authentication, PROCESS_INSTANCE_READ_AUTHORIZATION))

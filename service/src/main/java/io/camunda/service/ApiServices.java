@@ -48,6 +48,10 @@ public abstract class ApiServices<T extends ApiServices<T>> {
 
   public abstract T withAuthentication(final CamundaAuthentication authentication);
 
+  public T withEngineName(final String engineName) {
+    return null;
+  }
+
   public T withAuthentication(
       final Function<CamundaAuthentication.Builder, CamundaAuthentication.Builder> fn) {
     return withAuthentication(fn.apply(new CamundaAuthentication.Builder()).build());

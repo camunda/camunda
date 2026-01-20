@@ -117,7 +117,7 @@ public class ProcessInstanceController {
       @PathVariable(name = "engineName", required = false) final String engineName,
       @RequestBody(required = false) final ProcessInstanceSearchQuery query) {
     return SearchQueryRequestMapper.toProcessInstanceQuery(query)
-        .fold(RestErrorMapper::mapProblemToResponse, this::search);
+        .fold(RestErrorMapper::mapProblemToResponse, q -> search(q, engineName));
   }
 
   @RequiresSecondaryStorage
@@ -254,11 +254,12 @@ public class ProcessInstanceController {
   }
 
   private ResponseEntity<ProcessInstanceSearchQueryResult> search(
-      final ProcessInstanceQuery query) {
+      final ProcessInstanceQuery query, final String engineName) {
     try {
       final var result =
           processInstanceServices
               .withAuthentication(authenticationProvider.getCamundaAuthentication())
+              .withEngineName(engineName)
               .search(query);
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toProcessInstanceSearchQueryResponse(result));

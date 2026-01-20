@@ -24,4 +24,6 @@ public interface ProcessInstanceSearchClient {
       final long processInstanceKey);
 
   ProcessInstanceSearchClient withSecurityContext(SecurityContext securityContext);
+
+  ProcessInstanceSearchClient withEngineName(final String engineName);
 }

@@ -112,14 +112,23 @@ public class CamundaSearchClients implements SearchClientsProxy {
   private final SearchClientReaders readers;
   private final ResourceAccessController resourceAccessController;
   private final SecurityContext securityContext;
+  private final String engineName;
 
   public CamundaSearchClients(
       final SearchClientReaders readers,
       final ResourceAccessController resourceAccessController,
       final SecurityContext securityContext) {
+    this(readers, resourceAccessController, securityContext, null);
+  }
+
+  public CamundaSearchClients(
+      final SearchClientReaders readers,
+      final ResourceAccessController resourceAccessController,
+      final SecurityContext securityContext, final String engineName) {
     this.readers = readers;
     this.resourceAccessController = resourceAccessController;
     this.securityContext = securityContext;
+    this.engineName = engineName;
   }
 
   @Override
@@ -196,7 +205,7 @@ public class CamundaSearchClients implements SearchClientsProxy {
 
   @Override
   public CamundaSearchClients withSecurityContext(final SecurityContext securityContext) {
-    return new CamundaSearchClients(readers, resourceAccessController, securityContext);
+    return new CamundaSearchClients(readers, resourceAccessController, securityContext, engineName);
   }
 
   @Override
@@ -365,6 +374,11 @@ public class CamundaSearchClients implements SearchClientsProxy {
                     new ProcessInstanceFlowNodeStatisticsQuery(
                         new ProcessInstanceStatisticsFilter(processInstanceKey)),
                     access));
+  }
+
+  @Override
+  public CamundaSearchClients withEngineName(final String engineName) {
+    return new CamundaSearchClients(readers, resourceAccessController, securityContext, engineName);
   }
 
   @Override
