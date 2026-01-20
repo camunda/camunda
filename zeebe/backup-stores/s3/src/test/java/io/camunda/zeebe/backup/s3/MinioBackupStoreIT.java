@@ -107,6 +107,11 @@ final class MinioBackupStoreIT implements S3BackupStoreTests {
   }
 
   @Override
+  public int maxDeleteBatchSize() {
+    return S3BackupStore.MAX_DELETE_BATCH_SIZE;
+  }
+
+  @Override
   public Class<? extends Exception> getFileNotFoundExceptionClass() {
     return NoSuchFileException.class;
   }
