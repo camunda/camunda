@@ -53,6 +53,7 @@ class UserTaskAuthorizationIT {
   private static final String PROCESS_ID_1 = "bpmProcessVariable";
   private static final String PROCESS_ID_2 = "processWithForm";
   private static final String ADMIN = "admin";
+  private static final String USER_WITHOUT_PERMISSIONS = "userWithoutPermissions";
   private static final String USER_WITH_PROCESS_DEF_READ_USER_TASK_PROCESS_1 =
       "userWithProcessDefReadUserTaskProcess1";
   private static final String USER_WITH_PROCESS_DEF_READ_USER_TASK_PROCESS_2 =
@@ -85,6 +86,10 @@ class UserTaskAuthorizationIT {
               new Permissions(PROCESS_DEFINITION, READ_PROCESS_DEFINITION, List.of("*")),
               new Permissions(PROCESS_DEFINITION, READ_PROCESS_INSTANCE, List.of("*")),
               new Permissions(PROCESS_DEFINITION, READ_USER_TASK, List.of("*"))));
+
+  @UserDefinition
+  private static final TestUser USER_WITHOUT_PERMISSIONS_USER =
+      new TestUser(USER_WITHOUT_PERMISSIONS, "password", List.of());
 
   @UserDefinition
   private static final TestUser USER_WITH_PROCESS_DEF_READ_USER_TASK_PROCESS_1_USER =
@@ -418,6 +423,39 @@ class UserTaskAuthorizationIT {
     assertThat(result.getBpmnProcessId()).isEqualTo(PROCESS_ID_1);
     assertThat(result.getCandidateUsers())
         .contains(USER_WITH_USER_TASK_READ_BY_CANDIDATE_USER_PROPERTY);
+  }
+
+  @Test
+  void searchShouldReturnEmptyForUserBeingACandidateUserToTaskWithoutPermissions(
+      @Authenticated(USER_WITHOUT_PERMISSIONS) final CamundaClient camundaClient) {
+    // given - user is candidate user for form_process task in PROCESS_ID_2 but has no
+    // USER_TASK[READ](by candidateUsers) permission
+
+    // when
+    final var result = camundaClient.newUserTaskSearchRequest().send().join();
+
+    // then - return empty list, being candidate user alone is insufficient without proper
+    // permissions
+    assertThat(result.items()).isEmpty();
+  }
+
+  @Test
+  void getByKeyShouldReturnForbiddenForUserBeingACandidateUserToTaskWithoutPermissions(
+      @Authenticated(USER_WITHOUT_PERMISSIONS) final CamundaClient camundaClient) {
+    // given - user is candidate user for form_process task in PROCESS_ID_2 but has no
+    // USER_TASK[READ](by candidateUsers) permission
+
+    // when
+    final ThrowingCallable executeGet =
+        () -> camundaClient.newUserTaskGetRequest(processId2TaskKey).send().join();
+
+    // then - return 403, being candidate user alone is insufficient without proper permissions
+    final var problemException =
+        assertThatExceptionOfType(ProblemException.class).isThrownBy(executeGet).actual();
+    assertThat(problemException.code()).isEqualTo(403);
+    assertThat(problemException.details().getDetail())
+        .isEqualTo(
+            "Unauthorized to perform any of the operations: 'READ_USER_TASK' on 'PROCESS_DEFINITION' or 'READ' on 'USER_TASK'");
   }
 
   @Test
