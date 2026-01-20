@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway;
 
+import io.atomix.primitive.partition.PartitionId;
 import io.atomix.utils.net.Address;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.zeebe.auth.Authorization;
@@ -127,7 +128,9 @@ public final class EndpointManager {
                 return;
               }
 
-              final var status = topology.getPartitionHealth(brokerId, partitionId);
+              final var status =
+                  topology.getPartitionHealth(
+                      brokerId, new PartitionId("raft-partition", partitionId));
               switch (status) {
                 case HEALTHY -> partitionBuilder.setHealth(PartitionBrokerHealth.HEALTHY);
                 case UNHEALTHY -> partitionBuilder.setHealth(PartitionBrokerHealth.UNHEALTHY);
@@ -150,9 +153,12 @@ public final class EndpointManager {
       final Integer partitionId,
       final BrokerClusterState topology,
       final Partition.Builder partitionBuilder) {
-    final int partitionLeader = topology.getLeaderForPartition(partitionId);
-    final Set<Integer> partitionFollowers = topology.getFollowersForPartition(partitionId);
-    final Set<Integer> partitionInactives = topology.getInactiveNodesForPartition(partitionId);
+    final int partitionLeader =
+        topology.getLeaderForPartition(new PartitionId("raft-partition", partitionId));
+    final Set<Integer> partitionFollowers =
+        topology.getFollowersForPartition(new PartitionId("raft-partition", partitionId));
+    final Set<Integer> partitionInactives =
+        topology.getInactiveNodesForPartition(new PartitionId("raft-partition", partitionId));
 
     if (partitionLeader == brokerId) {
       partitionBuilder.setRole(PartitionBrokerRole.LEADER);

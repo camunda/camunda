@@ -22,6 +22,7 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.util.Either;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -41,7 +42,7 @@ public final class RoundRobinActivateJobsHandler<T> implements ActivateJobsHandl
   private static final String MAX_MESSAGE_SIZE_EXCEEDED_MSG =
       "the response is bigger than the maximum allowed message size %d";
 
-  private final Map<String, RoundRobinDispatchStrategy> jobTypeToNextPartitionId =
+  private final Map<String, Map<String, RoundRobinDispatchStrategy>> jobTypeToNextPartitionId =
       new ConcurrentHashMap<>();
   private final BrokerClient brokerClient;
   private final BrokerTopologyManager topologyManager;
@@ -97,7 +98,9 @@ public final class RoundRobinActivateJobsHandler<T> implements ActivateJobsHandl
       final BiConsumer<Integer, Boolean> onCompleted) {
     final var jobType = request.getType();
     final var maxJobsToActivate = request.getMaxJobsToActivate();
-    final var partitionIterator = partitionIdIteratorForType(jobType, partitionsCount);
+    final var partitionIterator =
+        partitionIdIteratorForType(
+            request.getRequest().getPartitionGroup(), jobType, partitionsCount);
 
     final var requestState =
         new InflightActivateJobsRequestState(partitionIterator, maxJobsToActivate);
@@ -290,10 +293,13 @@ public final class RoundRobinActivateJobsHandler<T> implements ActivateJobsHandl
   }
 
   private PartitionIdIterator partitionIdIteratorForType(
-      final String jobType, final int partitionsCount) {
+      final String partitionGroup, final String jobType, final int partitionsCount) {
     final var nextPartitionSupplier =
-        jobTypeToNextPartitionId.computeIfAbsent(jobType, t -> new RoundRobinDispatchStrategy());
+        jobTypeToNextPartitionId
+            .computeIfAbsent(partitionGroup, pg -> new HashMap<>())
+            .computeIfAbsent(jobType, t -> new RoundRobinDispatchStrategy());
     return new PartitionIdIterator(
+        partitionGroup,
         nextPartitionSupplier.determinePartition(topologyManager),
         partitionsCount,
         topologyManager);

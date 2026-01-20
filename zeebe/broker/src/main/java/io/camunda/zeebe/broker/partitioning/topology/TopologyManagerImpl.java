@@ -34,6 +34,7 @@ public final class TopologyManagerImpl extends Actor
   private static final Logger LOG = Loggers.CLUSTERING_LOGGER;
 
   private final Int2ObjectHashMap<BrokerInfo> partitionLeaders = new Int2ObjectHashMap<>();
+  private final String partitionGroup;
   private final ClusterMembershipService membershipService;
   private final BrokerInfo localBroker;
 
@@ -41,7 +42,10 @@ public final class TopologyManagerImpl extends Actor
   private final String actorName;
 
   public TopologyManagerImpl(
-      final ClusterMembershipService membershipService, final BrokerInfo localBroker) {
+      final String partitionGroup,
+      final ClusterMembershipService membershipService,
+      final BrokerInfo localBroker) {
+    this.partitionGroup = partitionGroup;
     this.membershipService = membershipService;
     this.localBroker = localBroker;
 
@@ -114,7 +118,8 @@ public final class TopologyManagerImpl extends Actor
   public void event(final ClusterMembershipEvent clusterMembershipEvent) {
     final Member eventSource = clusterMembershipEvent.subject();
 
-    final BrokerInfo brokerInfo = BrokerInfo.fromProperties(eventSource.properties());
+    final BrokerInfo brokerInfo =
+        BrokerInfo.fromProperties(partitionGroup, eventSource.properties());
 
     if (brokerInfo != null && brokerInfo.getNodeId() != localBroker.getNodeId()) {
       actor.run(
@@ -210,7 +215,7 @@ public final class TopologyManagerImpl extends Actor
   // Propagate local partition info to other nodes through Atomix member properties
   private void publishTopologyChanges() {
     final Properties memberProperties = membershipService.getLocalMember().properties();
-    localBroker.writeIntoProperties(memberProperties);
+    localBroker.writeIntoProperties(partitionGroup, memberProperties);
   }
 
   @Override

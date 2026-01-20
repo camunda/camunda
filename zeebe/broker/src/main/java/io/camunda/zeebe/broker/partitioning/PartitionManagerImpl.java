@@ -86,6 +86,7 @@ public final class PartitionManagerImpl
   private final SharedRocksDbResources sharedRocksDbResources;
 
   public PartitionManagerImpl(
+      final String partitionGroup,
       final ConcurrencyControl concurrencyControl,
       final ActorSchedulingService actorSchedulingService,
       final BrokerCfg brokerCfg,
@@ -117,7 +118,16 @@ public final class PartitionManagerImpl
     this.clusterConfigurationService = clusterConfigurationService;
     brokerMeterRegistry = meterRegistry;
     // TODO: Do this as a separate step before starting the partition manager
-    topologyManager = new TopologyManagerImpl(clusterServices.getMembershipService(), localBroker);
+    final var brokerInfoInGroup =
+        new BrokerInfo(localBroker.getNodeId(), localBroker.getCommandApiAddress());
+    brokerInfoInGroup.setVersion(localBroker.getVersion());
+    brokerInfoInGroup.setPartitionsCount(localBroker.getPartitionsCount());
+    brokerInfoInGroup.setReplicationFactor(localBroker.getReplicationFactor());
+    brokerInfoInGroup.setClusterSize(localBroker.getClusterSize());
+
+    topologyManager =
+        new TopologyManagerImpl(
+            partitionGroup, clusterServices.getMembershipService(), brokerInfoInGroup);
 
     final List<PartitionListener> listeners = new ArrayList<>(partitionListeners);
     listeners.add(topologyManager);

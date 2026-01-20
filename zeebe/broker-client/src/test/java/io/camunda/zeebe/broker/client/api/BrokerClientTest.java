@@ -15,6 +15,7 @@ import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.ClusterMembershipEvent;
 import io.atomix.cluster.ClusterMembershipEvent.Type;
 import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
+import io.atomix.primitive.partition.PartitionId;
 import io.atomix.utils.net.Address;
 import io.camunda.zeebe.broker.client.api.dto.BrokerError;
 import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
@@ -112,7 +113,10 @@ public final class BrokerClientTest {
     Awaitility.await("Topology is updated")
         .untilAsserted(
             () ->
-                assertThat(topologyManager.getTopology().getLeaderForPartition(1))
+                assertThat(
+                        topologyManager
+                            .getTopology()
+                            .getLeaderForPartition(new PartitionId("raft-partition", 1)))
                     .isNotEqualTo(BrokerClusterState.NODE_ID_NULL));
 
     client =
@@ -340,7 +344,7 @@ public final class BrokerClientTest {
     final var request =
         new TestCommand(
             1L,
-            topologyManager -> {
+            (ignoredGroup, ignored) -> {
               managerRef.set(topologyManager);
               return 1;
             });
@@ -371,7 +375,7 @@ public final class BrokerClientTest {
   public void shouldThrowCorrectErrorForInactivePartitionAndNoLeaderRequest() {
     // given
     final var partitionId = 1;
-    final var request = new TestCommand(1, topologyManager -> partitionId);
+    final var request = new TestCommand(1, (ignoredGroup, ignored) -> partitionId);
 
     // when
     broker.updateInfo(info -> info.setInactiveForPartition(partitionId));
@@ -379,7 +383,10 @@ public final class BrokerClientTest {
     Awaitility.await("Partition is inactive.")
         .untilAsserted(
             () ->
-                assertThat(topologyManager.getTopology().getInactiveNodesForPartition(1))
+                assertThat(
+                        topologyManager
+                            .getTopology()
+                            .getInactiveNodesForPartition(new PartitionId("raft-partition", 1)))
                     .isNotEmpty());
 
     // then
@@ -393,7 +400,7 @@ public final class BrokerClientTest {
     // given
     final var partitionId = 1;
     final var leaderBrokerId = 2;
-    final var request = new TestCommand(1, topologyManager -> partitionId);
+    final var request = new TestCommand(1, (ignoredGroup, ignored) -> partitionId);
 
     // when
     broker.updateInfo(info -> info.setInactiveForPartition(partitionId));
@@ -402,7 +409,10 @@ public final class BrokerClientTest {
     Awaitility.await("Partition " + partitionId + " is inactive.")
         .untilAsserted(
             () ->
-                assertThat(topologyManager.getTopology().getInactiveNodesForPartition(1))
+                assertThat(
+                        topologyManager
+                            .getTopology()
+                            .getInactiveNodesForPartition(new PartitionId("raft-partition", 1)))
                     .isNotEmpty());
 
     final BrokerResponse<?> response;
@@ -417,7 +427,10 @@ public final class BrokerClientTest {
       Awaitility.await("Broker " + leaderBrokerId + " is leader.")
           .untilAsserted(
               () ->
-                  assertThat(topologyManager.getTopology().getLeaderForPartition(1))
+                  assertThat(
+                          topologyManager
+                              .getTopology()
+                              .getLeaderForPartition(new PartitionId("raft-partition", 1)))
                       .isEqualTo(leaderBrokerId));
 
       response = client.sendRequest(request).join();
@@ -531,7 +544,12 @@ public final class BrokerClientTest {
         topologyManager.event(new ClusterMembershipEvent(Type.MEMBER_ADDED, otherBroker.member()));
         Awaitility.await("Topology is updated")
             .untilAsserted(
-                () -> assertThat(topologyManager.getTopology().getLeaderForPartition(1)).isOne());
+                () ->
+                    assertThat(
+                            topologyManager
+                                .getTopology()
+                                .getLeaderForPartition(new PartitionId("raft-partition", 1)))
+                        .isOne());
 
         // when
         response = client.sendRequest(request).join();
@@ -560,7 +578,12 @@ public final class BrokerClientTest {
         topologyManager.event(new ClusterMembershipEvent(Type.MEMBER_ADDED, otherBroker.member()));
         Awaitility.await("Topology is updated")
             .untilAsserted(
-                () -> assertThat(topologyManager.getTopology().getLeaderForPartition(2)).isOne());
+                () ->
+                    assertThat(
+                            topologyManager
+                                .getTopology()
+                                .getLeaderForPartition(new PartitionId("raft-partition", 2)))
+                        .isOne());
 
         // when
         response = client.sendRequest(request).join();
@@ -574,14 +597,19 @@ public final class BrokerClientTest {
     void shouldRouteRequestBasedOnDispatchStrategy() {
       // given - a second broker (1), which respond successfully for partition 2
       final BrokerResponse<?> response;
-      final var request = new TestCommand(1L, ignored -> 2);
+      final var request = new TestCommand(1L, (ignoredGroup, ignored) -> 2);
 
       try (final var otherBroker = new StubBroker(1, 2).start()) {
         registerSuccessResponse(otherBroker);
         topologyManager.event(new ClusterMembershipEvent(Type.MEMBER_ADDED, otherBroker.member()));
         Awaitility.await("Topology is updated")
             .untilAsserted(
-                () -> assertThat(topologyManager.getTopology().getLeaderForPartition(2)).isOne());
+                () ->
+                    assertThat(
+                            topologyManager
+                                .getTopology()
+                                .getLeaderForPartition(new PartitionId("raft-partition", 2)))
+                        .isOne());
 
         // when
         response = client.sendRequest(request).join();
@@ -595,7 +623,8 @@ public final class BrokerClientTest {
     void shouldRouteToDeploymentPartitionAsFallback() {
       // given - a dispatch strategy which returns "null"
       final BrokerResponse<?> response;
-      final var request = new TestCommand(1L, ignored -> BrokerClusterState.PARTITION_ID_NULL);
+      final var request =
+          new TestCommand(1L, (ignoredGroup, ignored) -> BrokerClusterState.PARTITION_ID_NULL);
       registerSuccessResponse(broker);
 
       // when

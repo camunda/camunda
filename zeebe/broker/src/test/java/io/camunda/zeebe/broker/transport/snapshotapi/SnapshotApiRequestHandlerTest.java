@@ -15,6 +15,7 @@ import static org.mockito.Mockito.when;
 import io.atomix.cluster.messaging.ClusterEventService;
 import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.cluster.messaging.impl.NettyMessagingService;
+import io.atomix.primitive.partition.PartitionId;
 import io.atomix.utils.net.Address;
 import io.camunda.zeebe.broker.client.api.BrokerClientRequestMetrics;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
@@ -96,7 +97,7 @@ public class SnapshotApiRequestHandlerTest {
     final var clusterService = mock(ClusterEventService.class);
     final var brokerTopology = mock(BrokerTopologyManager.class);
     final var clusterState = mock(BrokerClusterState.class);
-    when(clusterState.getLeaderForPartition(1)).thenReturn(1);
+    when(clusterState.getLeaderForPartition(new PartitionId("raft-partition", 1))).thenReturn(1);
     when(clusterState.getBrokerAddress(1)).thenReturn(serverAddress);
     when(clusterState.getPartitions()).thenReturn(List.of(1));
 

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.client.api;
 
+import io.atomix.primitive.partition.PartitionId;
 import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
 import java.util.List;
 import java.util.Set;
@@ -25,17 +26,17 @@ public interface BrokerClusterState {
 
   int getReplicationFactor();
 
-  int getLeaderForPartition(int partition);
+  int getLeaderForPartition(PartitionId partition);
 
-  Set<Integer> getFollowersForPartition(int partition);
+  Set<Integer> getFollowersForPartition(PartitionId partition);
 
-  Set<Integer> getInactiveNodesForPartition(int partition);
+  Set<Integer> getInactiveNodesForPartition(PartitionId partition);
 
   /**
    * @return the node id of a random broker or {@link BrokerClusterState#UNKNOWN_NODE_ID} if no
    *     brokers are known
    */
-  int getRandomBroker();
+  int getRandomBroker(String partitionGroup);
 
   List<Integer> getPartitions();
 
@@ -45,7 +46,7 @@ public interface BrokerClusterState {
 
   String getBrokerVersion(int brokerId);
 
-  PartitionHealthStatus getPartitionHealth(int brokerId, int partition);
+  PartitionHealthStatus getPartitionHealth(int brokerId, PartitionId partition);
 
   long getLastCompletedChangeId();
 

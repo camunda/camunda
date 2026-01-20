@@ -27,7 +27,9 @@ public final class PublishMessageDispatchStrategy implements RequestDispatchStra
   }
 
   @Override
-  public int determinePartition(final BrokerTopologyManager topologyManager) {
+  public int determinePartition(
+      final String partitionGroup, final BrokerTopologyManager topologyManager) {
+    // TODO: Determine cluster config for partition group
     return topologyManager
         .getClusterConfiguration()
         .routingState()

@@ -15,6 +15,7 @@ import io.atomix.cluster.ClusterMembershipEvent.Type;
 import io.atomix.cluster.Member;
 import io.atomix.cluster.MemberConfig;
 import io.atomix.cluster.MemberId;
+import io.atomix.primitive.partition.PartitionId;
 import io.camunda.zeebe.broker.client.impl.BrokerTopologyManagerImpl;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.Status;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
@@ -72,7 +73,11 @@ final class BrokerTopologyManagerTest {
     final BrokerInfo broker = createBroker(brokerId);
     notifyEvent(createMemberAddedEvent(broker));
 
-    assertThat(topologyManager.getTopology().getFollowersForPartition(partition)).isEmpty();
+    assertThat(
+            topologyManager
+                .getTopology()
+                .getFollowersForPartition(new PartitionId("raft-partition", partition)))
+        .isEmpty();
 
     // when
     final BrokerInfo brokerUpdated = createBroker(brokerId);
@@ -81,7 +86,10 @@ final class BrokerTopologyManagerTest {
 
     // then
 
-    assertThat(topologyManager.getTopology().getFollowersForPartition(partition))
+    assertThat(
+            topologyManager
+                .getTopology()
+                .getFollowersForPartition(new PartitionId("raft-partition", partition)))
         .describedAs("The partition has the expected follower")
         .containsExactly(brokerId);
     assertThat(topologyManager.getTopology().getBrokerVersion(brokerId))
@@ -113,9 +121,15 @@ final class BrokerTopologyManagerTest {
 
     assertThat(topologyManager.getTopology().getBrokers()).isNotEmpty();
 
-    assertThat(topologyManager.getTopology().getFollowersForPartition(partition))
+    assertThat(
+            topologyManager
+                .getTopology()
+                .getFollowersForPartition(new PartitionId("raft-partition", partition)))
         .doesNotContain(brokerId);
-    assertThat(topologyManager.getTopology().getLeaderForPartition(partition))
+    assertThat(
+            topologyManager
+                .getTopology()
+                .getLeaderForPartition(new PartitionId("raft-partition", partition)))
         .isEqualTo(NODE_ID_NULL);
   }
 
@@ -128,7 +142,10 @@ final class BrokerTopologyManagerTest {
     oldLeader.setLeaderForPartition(partition, 1);
     notifyEvent(createMemberAddedEvent(oldLeader));
 
-    assertThat(topologyManager.getTopology().getLeaderForPartition(partition))
+    assertThat(
+            topologyManager
+                .getTopology()
+                .getLeaderForPartition(new PartitionId("raft-partition", partition)))
         .describedAs("Topology has the old leader")
         .isZero();
 
@@ -140,7 +157,11 @@ final class BrokerTopologyManagerTest {
 
     // then
     assertThat(topologyManager.getTopology().getBrokers()).contains(newLeaderId);
-    assertThat(topologyManager.getTopology().getLeaderForPartition(partition)).isOne();
+    assertThat(
+            topologyManager
+                .getTopology()
+                .getLeaderForPartition(new PartitionId("raft-partition", partition)))
+        .isOne();
   }
 
   @Test
@@ -152,7 +173,11 @@ final class BrokerTopologyManagerTest {
     newLeader.setLeaderForPartition(partition, 2);
     notifyEvent(createMemberAddedEvent(newLeader));
 
-    assertThat(topologyManager.getTopology().getLeaderForPartition(partition)).isOne();
+    assertThat(
+            topologyManager
+                .getTopology()
+                .getLeaderForPartition(new PartitionId("raft-partition", partition)))
+        .isOne();
 
     // when
     final int oldLeaderId = 0;
@@ -162,7 +187,11 @@ final class BrokerTopologyManagerTest {
 
     // then
     assertThat(topologyManager.getTopology().getBrokers()).contains(oldLeaderId);
-    assertThat(topologyManager.getTopology().getLeaderForPartition(partition)).isOne();
+    assertThat(
+            topologyManager
+                .getTopology()
+                .getLeaderForPartition(new PartitionId("raft-partition", partition)))
+        .isOne();
   }
 
   @Test
@@ -174,7 +203,11 @@ final class BrokerTopologyManagerTest {
     leader.setLeaderForPartition(partition, 2);
     notifyEvent(createMemberAddedEvent(leader));
 
-    assertThat(topologyManager.getTopology().getLeaderForPartition(partition)).isOne();
+    assertThat(
+            topologyManager
+                .getTopology()
+                .getLeaderForPartition(new PartitionId("raft-partition", partition)))
+        .isOne();
 
     // when
     // partition shutdown/purge
@@ -189,7 +222,10 @@ final class BrokerTopologyManagerTest {
 
     // then
     assertThat(topologyManager.getTopology().getBrokers()).contains(newLeaderAfterRebootstrapId);
-    assertThat(topologyManager.getTopology().getLeaderForPartition(partition))
+    assertThat(
+            topologyManager
+                .getTopology()
+                .getLeaderForPartition(new PartitionId("raft-partition", partition)))
         .isEqualTo(newLeaderAfterRebootstrapId);
   }
 
@@ -214,7 +250,11 @@ final class BrokerTopologyManagerTest {
     assertThat(topologyManager.getTopology().getBrokers())
         .describedAs("the broker has rejoined the cluster")
         .containsExactly(leaderId);
-    assertThat(topologyManager.getTopology().getLeaderForPartition(partition)).isOne();
+    assertThat(
+            topologyManager
+                .getTopology()
+                .getLeaderForPartition(new PartitionId("raft-partition", partition)))
+        .isOne();
   }
 
   @Test
@@ -226,7 +266,10 @@ final class BrokerTopologyManagerTest {
     broker.setPartitionHealthy(partition);
     notifyEvent(createMemberAddedEvent(broker));
 
-    assertThat(topologyManager.getTopology().getPartitionHealth(brokerId, partition))
+    assertThat(
+            topologyManager
+                .getTopology()
+                .getPartitionHealth(brokerId, new PartitionId("raft-partition", partition)))
         .as("partition %d is healthy on broker %d", partition, brokerId)
         .isEqualTo(PartitionHealthStatus.HEALTHY);
 
@@ -236,7 +279,10 @@ final class BrokerTopologyManagerTest {
     notifyEvent(createMemberUpdateEvent(updatedBroker));
 
     // then
-    assertThat(topologyManager.getTopology().getPartitionHealth(brokerId, partition))
+    assertThat(
+            topologyManager
+                .getTopology()
+                .getPartitionHealth(brokerId, new PartitionId("raft-partition", partition)))
         .as("partition %d is unhealthy on broker %d", partition, brokerId)
         .isEqualTo(PartitionHealthStatus.UNHEALTHY);
   }
@@ -252,22 +298,34 @@ final class BrokerTopologyManagerTest {
 
     notifyEvent(createMemberAddedEvent(broker));
 
-    assertThat(topologyManager.getTopology().getPartitionHealth(brokerId, partition))
+    assertThat(
+            topologyManager
+                .getTopology()
+                .getPartitionHealth(brokerId, new PartitionId("raft-partition", partition)))
         .as("partition %d is healthy on broker %d", partition, brokerId)
         .isEqualTo(PartitionHealthStatus.HEALTHY);
-    assertThat(topologyManager.getTopology().getFollowersForPartition(partition))
+    assertThat(
+            topologyManager
+                .getTopology()
+                .getFollowersForPartition(new PartitionId("raft-partition", partition)))
         .containsExactly(brokerId);
 
     // when
     broker.setPartitionUnhealthy(partition);
     notifyEvent(createMemberUpdateEvent(broker));
 
-    assertThat(topologyManager.getTopology().getPartitionHealth(brokerId, partition))
+    assertThat(
+            topologyManager
+                .getTopology()
+                .getPartitionHealth(brokerId, new PartitionId("raft-partition", partition)))
         .as("partition %d is unhealthy on broker %d", partition, brokerId)
         .isEqualTo(PartitionHealthStatus.UNHEALTHY);
 
     // then
-    assertThat(topologyManager.getTopology().getFollowersForPartition(partition))
+    assertThat(
+            topologyManager
+                .getTopology()
+                .getFollowersForPartition(new PartitionId("raft-partition", partition)))
         .containsExactly(brokerId);
   }
 
@@ -281,22 +339,34 @@ final class BrokerTopologyManagerTest {
     broker.setInactiveForPartition(partition);
     notifyEvent(createMemberAddedEvent(broker));
 
-    assertThat(topologyManager.getTopology().getPartitionHealth(brokerId, partition))
+    assertThat(
+            topologyManager
+                .getTopology()
+                .getPartitionHealth(brokerId, new PartitionId("raft-partition", partition)))
         .as("partition %d is healthy on broker %d", partition, brokerId)
         .isEqualTo(PartitionHealthStatus.HEALTHY);
-    assertThat(topologyManager.getTopology().getInactiveNodesForPartition(partition))
+    assertThat(
+            topologyManager
+                .getTopology()
+                .getInactiveNodesForPartition(new PartitionId("raft-partition", partition)))
         .containsExactly(brokerId);
 
     // when
     broker.setPartitionUnhealthy(partition);
     notifyEvent(createMemberUpdateEvent(broker));
 
-    assertThat(topologyManager.getTopology().getPartitionHealth(brokerId, partition))
+    assertThat(
+            topologyManager
+                .getTopology()
+                .getPartitionHealth(brokerId, new PartitionId("raft-partition", partition)))
         .as("partition %d is unhealthy on broker %d", partition, brokerId)
         .isEqualTo(PartitionHealthStatus.UNHEALTHY);
 
     // then
-    assertThat(topologyManager.getTopology().getInactiveNodesForPartition(partition))
+    assertThat(
+            topologyManager
+                .getTopology()
+                .getInactiveNodesForPartition(new PartitionId("raft-partition", partition)))
         .containsExactly(brokerId);
   }
 
@@ -310,16 +380,26 @@ final class BrokerTopologyManagerTest {
     // when
     notifyEvent(createMemberUpdateEvent(broker));
 
-    assertThat(topologyManager.getTopology().getLeaderForPartition(partition)).isZero();
+    assertThat(
+            topologyManager
+                .getTopology()
+                .getLeaderForPartition(new PartitionId("raft-partition", partition)))
+        .isZero();
 
     broker.setFollowerForPartition(partition);
     notifyEvent(createMemberUpdateEvent(broker));
 
     // then
 
-    assertThat(topologyManager.getTopology().getFollowersForPartition(partition))
+    assertThat(
+            topologyManager
+                .getTopology()
+                .getFollowersForPartition(new PartitionId("raft-partition", partition)))
         .containsExactlyInAnyOrder(brokerId);
-    assertThat(topologyManager.getTopology().getLeaderForPartition(partition))
+    assertThat(
+            topologyManager
+                .getTopology()
+                .getLeaderForPartition(new PartitionId("raft-partition", partition)))
         .isEqualTo(NODE_ID_NULL);
   }
 
@@ -334,18 +414,32 @@ final class BrokerTopologyManagerTest {
 
     // when
 
-    assertThat(topologyManager.getTopology().getInactiveNodesForPartition(partition))
+    assertThat(
+            topologyManager
+                .getTopology()
+                .getInactiveNodesForPartition(new PartitionId("raft-partition", partition)))
         .isNullOrEmpty();
-    assertThat(topologyManager.getTopology().getLeaderForPartition(partition)).isZero();
+    assertThat(
+            topologyManager
+                .getTopology()
+                .getLeaderForPartition(new PartitionId("raft-partition", partition)))
+        .isZero();
 
     broker.setInactiveForPartition(partition);
     notifyEvent(createMemberUpdateEvent(broker));
 
     // then
 
-    assertThat(topologyManager.getTopology().getInactiveNodesForPartition(partition))
+    assertThat(
+            topologyManager
+                .getTopology()
+                .getInactiveNodesForPartition(new PartitionId("raft-partition", partition)))
         .contains(brokerId);
-    assertThat(topologyManager.getTopology().getLeaderForPartition(partition)).isNotZero();
+    assertThat(
+            topologyManager
+                .getTopology()
+                .getLeaderForPartition(new PartitionId("raft-partition", partition)))
+        .isNotZero();
   }
 
   @Test
@@ -575,14 +669,14 @@ final class BrokerTopologyManagerTest {
   private Member createMemberFromBrokerInfo(final BrokerInfo broker) {
     final Member member =
         new Member(new MemberConfig().setId(Integer.toString(broker.getNodeId())));
-    broker.writeIntoProperties(member.properties());
+    broker.writeIntoProperties("raft-partition", member.properties());
     members.add(member);
     return member;
   }
 
   private ClusterMembershipEvent createMemberRemoveEvent(final BrokerInfo broker) {
     final Member member = new Member(new MemberConfig().setId(String.valueOf(broker.getNodeId())));
-    broker.writeIntoProperties(member.properties());
+    broker.writeIntoProperties("raft-partition", member.properties());
     return new ClusterMembershipEvent(Type.MEMBER_REMOVED, member);
   }
 

@@ -7,15 +7,22 @@
  */
 package io.camunda.zeebe.broker.client.impl;
 
+import io.atomix.cluster.MemberId;
+import io.atomix.primitive.partition.PartitionId;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.agrona.collections.Int2IntHashMap;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.collections.IntArrayList;
@@ -29,7 +36,7 @@ import org.agrona.collections.IntArrayList;
  * io.camunda.zeebe.dynamic.config.state.ClusterConfiguration}.
  */
 public record BrokerClientTopologyImpl(
-    LiveClusterState liveClusterState, ConfiguredClusterState configuredClusterState)
+    Map<String, LiveClusterState> liveClusterState, ConfiguredClusterState configuredClusterState)
     implements BrokerClusterState {
 
   public static final int UNINITIALIZED_CLUSTER_SIZE = -1;
@@ -40,7 +47,7 @@ public record BrokerClientTopologyImpl(
 
   public static BrokerClientTopologyImpl uninitialized() {
     return new BrokerClientTopologyImpl(
-        new LiveClusterState(Set.of()),
+        Map.of(),
         new ConfiguredClusterState(
             UNINITIALIZED_CLUSTER_SIZE,
             0,
@@ -72,27 +79,54 @@ public record BrokerClientTopologyImpl(
   }
 
   @Override
-  public int getLeaderForPartition(final int partition) {
-    return liveClusterState.partitionLeaders.get(partition);
+  public int getLeaderForPartition(final PartitionId partition) {
+    if (partition == null) {
+      return UNKNOWN_NODE_ID;
+    }
+    final var group = liveClusterState.get(partition.group());
+    if (group == null) {
+      return UNKNOWN_NODE_ID;
+    }
+
+    return group.partitionLeaders.get((int) partition.id());
   }
 
   @Override
-  public Set<Integer> getFollowersForPartition(final int partition) {
-    return liveClusterState.partitionFollowers.getOrDefault(partition, Set.of());
+  public Set<Integer> getFollowersForPartition(final PartitionId partition) {
+    if (partition == null) {
+      return Set.of();
+    }
+    final var group = liveClusterState.get(partition.group());
+    if (group == null) {
+      return Set.of();
+    }
+
+    return group.partitionFollowers.getOrDefault(partition.id(), Set.of());
   }
 
   @Override
-  public Set<Integer> getInactiveNodesForPartition(final int partition) {
-    return liveClusterState.partitionInactiveNodes.getOrDefault(partition, Set.of());
+  public Set<Integer> getInactiveNodesForPartition(final PartitionId partition) {
+    if (partition == null) {
+      return Set.of();
+    }
+    final var group = liveClusterState.get(partition.group());
+    if (group == null) {
+      return Set.of();
+    }
+
+    return group.partitionInactiveNodes.getOrDefault(partition.id(), Set.of());
   }
 
   @Override
-  public int getRandomBroker() {
-    if (liveClusterState.brokers.isEmpty()) {
+  public int getRandomBroker(final String partitionGroup) {
+    final var group = liveClusterState.get(partitionGroup);
+    if (group == null) {
+      return UNKNOWN_NODE_ID;
+    }
+    if (group.brokers.isEmpty()) {
       return UNKNOWN_NODE_ID;
     } else {
-      return liveClusterState.brokers.get(
-          liveClusterState.randomBroker.nextInt(liveClusterState.brokers.size()));
+      return group.brokers.get(group.randomBroker.nextInt(group.brokers.size()));
     }
   }
 
@@ -103,27 +137,42 @@ public record BrokerClientTopologyImpl(
 
   @Override
   public List<Integer> getBrokers() {
-    return liveClusterState.brokers;
+    return liveClusterState.values().stream().flatMap(group -> group.brokers.stream()).toList();
   }
 
   @Override
   public String getBrokerAddress(final int brokerId) {
-    return liveClusterState.brokerAddresses.get(brokerId);
+    return liveClusterState.values().stream()
+        .filter(group -> group.brokerAddresses.containsKey(brokerId))
+        .map(group -> group.brokerAddresses.get(brokerId))
+        .findAny()
+        .orElse(null);
   }
 
   @Override
   public String getBrokerVersion(final int brokerId) {
-    return liveClusterState.brokerVersions.get(brokerId);
+    return liveClusterState.values().stream()
+        .filter(group -> group.brokerAddresses.containsKey(brokerId))
+        .map(group -> group.brokerAddresses.get(brokerId))
+        .findAny()
+        .orElse(null);
   }
 
   @Override
-  public PartitionHealthStatus getPartitionHealth(final int brokerId, final int partitionId) {
-    final var brokerHealthyPartitions = liveClusterState.partitionsHealthPerBroker.get(brokerId);
+  public PartitionHealthStatus getPartitionHealth(
+      final int brokerId, final PartitionId partitionId) {
+    final var group = liveClusterState.get(partitionId.group());
+    if (group == null) {
+      return PartitionHealthStatus.UNHEALTHY;
+    }
+
+    final var brokerHealthyPartitions = group.partitionsHealthPerBroker.get(brokerId);
 
     if (brokerHealthyPartitions == null) {
       return PartitionHealthStatus.UNHEALTHY;
     } else {
-      return brokerHealthyPartitions.getOrDefault(partitionId, PartitionHealthStatus.UNHEALTHY);
+      return brokerHealthyPartitions.getOrDefault(
+          partitionId.id(), PartitionHealthStatus.UNHEALTHY);
     }
   }
 
@@ -138,8 +187,32 @@ public record BrokerClientTopologyImpl(
   }
 
   public static BrokerClientTopologyImpl fromMemberProperties(
-      final Collection<BrokerInfo> values, final ConfiguredClusterState clusterConfiguration) {
-    return new BrokerClientTopologyImpl(new LiveClusterState(values), clusterConfiguration);
+      final Map<MemberId, Map<String, BrokerInfo>> values,
+      final ConfiguredClusterState clusterConfiguration) {
+    final var allGroups = new HashMap<String, Collection<BrokerInfo>>();
+
+    for (final var member : values.entrySet()) {
+      final var groupInMember = member.getValue();
+      for (final var groupEntry : groupInMember.entrySet()) {
+        final var groupName = groupEntry.getKey();
+        final var group = groupEntry.getValue();
+        allGroups.compute(
+            groupName,
+            (k, v) -> {
+              if (v == null) {
+                v = new ArrayList<>();
+              }
+              v.add(group);
+              return v;
+            });
+      }
+    }
+
+    final Map<String, LiveClusterState> result =
+        allGroups.entrySet().stream()
+            .collect(
+                Collectors.toMap(Entry::getKey, value -> new LiveClusterState(value.getValue())));
+    return new BrokerClientTopologyImpl(result, clusterConfiguration);
   }
 
   record ConfiguredClusterState(

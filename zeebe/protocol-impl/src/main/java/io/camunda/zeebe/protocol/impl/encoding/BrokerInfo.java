@@ -51,7 +51,7 @@ import org.slf4j.Logger;
 
 public final class BrokerInfo implements BufferReader, BufferWriter {
 
-  private static final String BROKER_INFO_PROPERTY_NAME = "brokerInfo";
+  private static final String BROKER_INFO_PROPERTY_NAME = "brokerInfo-%s";
   private static final DirectBuffer COMMAND_API_NAME = wrapString("commandApi");
 
   private static final Logger LOG = Loggers.PROTOCOL_LOGGER;
@@ -70,6 +70,7 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
   private final Map<Integer, Long> partitionLeaderTerms = new HashMap<>();
   private final Map<Integer, PartitionHealthStatus> partitionHealthStatuses = new HashMap<>();
 
+  private String partitionGroup;
   private int nodeId;
   private int partitionsCount;
   private int clusterSize;
@@ -421,13 +422,29 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
     }
   }
 
-  public static BrokerInfo fromProperties(final Properties properties) {
-    final String property = properties.getProperty(BROKER_INFO_PROPERTY_NAME);
+  public static BrokerInfo fromProperties(
+      final String partitionGroup, final Properties properties) {
+    final String property =
+        properties.getProperty(BROKER_INFO_PROPERTY_NAME.formatted(partitionGroup));
     if (property != null) {
       return readFromString(property);
     } else {
       return null;
     }
+  }
+
+  public static Map<String, BrokerInfo> groupedFromProperties(final Properties properties) {
+    final Map<String, BrokerInfo> brokerInfos = new HashMap<>();
+    properties.stringPropertyNames().stream()
+        .filter(name -> name.startsWith(BROKER_INFO_PROPERTY_NAME.formatted("")))
+        .forEach(
+            name -> {
+              final var groupName = name.substring("brokerInfo-".length());
+              final var brokerInfo = readFromString(properties.getProperty(name));
+              brokerInfo.partitionGroup = groupName;
+              brokerInfos.put(groupName, brokerInfo);
+            });
+    return brokerInfos;
   }
 
   private static BrokerInfo readFromString(final String property) {
@@ -439,8 +456,9 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
     return brokerInfo;
   }
 
-  public void writeIntoProperties(final Properties memberProperties) {
-    memberProperties.setProperty(BROKER_INFO_PROPERTY_NAME, writeToString());
+  public void writeIntoProperties(final String partitionGroup, final Properties memberProperties) {
+    memberProperties.setProperty(
+        BROKER_INFO_PROPERTY_NAME.formatted(partitionGroup), writeToString());
   }
 
   private String writeToString() {

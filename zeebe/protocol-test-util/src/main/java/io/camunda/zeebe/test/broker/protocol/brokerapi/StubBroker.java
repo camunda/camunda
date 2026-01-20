@@ -118,7 +118,8 @@ public final class StubBroker implements AutoCloseable {
   }
 
   private void writeBrokerInfoProperties() {
-    brokerInfo.writeIntoProperties(cluster.getMembershipService().getLocalMember().properties());
+    brokerInfo.writeIntoProperties(
+        "raft-partition", cluster.getMembershipService().getLocalMember().properties());
   }
 
   @Override

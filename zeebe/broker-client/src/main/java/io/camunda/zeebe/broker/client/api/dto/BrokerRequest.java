@@ -54,6 +54,10 @@ public abstract class BrokerRequest<T> implements ClientRequest {
     return partitionGroup;
   }
 
+  public String getPartitionGroup() {
+    return partitionGroup;
+  }
+
   public abstract void setPartitionId(int partitionId);
 
   public void setAuthorization(final Map<String, Object> claims) {

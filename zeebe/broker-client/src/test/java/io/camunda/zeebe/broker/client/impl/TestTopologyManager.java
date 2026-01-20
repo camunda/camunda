@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.client.impl;
 
+import io.atomix.primitive.partition.PartitionId;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyListener;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
@@ -97,22 +98,22 @@ final class TestTopologyManager implements BrokerTopologyManager {
     }
 
     @Override
-    public int getLeaderForPartition(final int partition) {
-      return partitionLeaders.getOrDefault(partition, BrokerClusterState.NODE_ID_NULL);
+    public int getLeaderForPartition(final PartitionId partition) {
+      return partitionLeaders.getOrDefault(partition.id(), BrokerClusterState.NODE_ID_NULL);
     }
 
     @Override
-    public Set<Integer> getFollowersForPartition(final int partition) {
+    public Set<Integer> getFollowersForPartition(final PartitionId partition) {
       return Set.of();
     }
 
     @Override
-    public Set<Integer> getInactiveNodesForPartition(final int partition) {
+    public Set<Integer> getInactiveNodesForPartition(final PartitionId partition) {
       return Set.of();
     }
 
     @Override
-    public int getRandomBroker() {
+    public int getRandomBroker(final String partitionGroup) {
       return 0;
     }
 
@@ -137,7 +138,8 @@ final class TestTopologyManager implements BrokerTopologyManager {
     }
 
     @Override
-    public PartitionHealthStatus getPartitionHealth(final int brokerId, final int partition) {
+    public PartitionHealthStatus getPartitionHealth(
+        final int brokerId, final PartitionId partition) {
       return null;
     }
 

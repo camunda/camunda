@@ -9,6 +9,7 @@ package io.camunda.zeebe.gateway.impl.probes.health;
 
 import static java.util.Objects.requireNonNull;
 
+import io.atomix.primitive.partition.PartitionId;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -39,7 +40,8 @@ public class PartitionLeaderAwarenessHealthIndicator implements HealthIndicator 
       if (clusterState.getPartitions().stream()
           .anyMatch(
               index ->
-                  clusterState.getLeaderForPartition(index) != BrokerClusterState.NODE_ID_NULL)) {
+                  clusterState.getLeaderForPartition(new PartitionId("raft-partition", index))
+                      != BrokerClusterState.NODE_ID_NULL)) {
         return Health.up().build();
       } else {
         return Health.down().build();

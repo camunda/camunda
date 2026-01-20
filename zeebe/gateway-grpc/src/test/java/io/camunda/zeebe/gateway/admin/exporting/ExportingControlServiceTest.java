@@ -18,6 +18,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.atomix.primitive.partition.PartitionId;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
@@ -55,13 +56,14 @@ public class ExportingControlServiceTest {
     // then
     for (final var partition : topology.getPartitions()) {
       for (final var follower :
-          Optional.ofNullable(topology.getFollowersForPartition(partition)).orElse(Set.of())) {
+          Optional.ofNullable(topology.getFollowersForPartition(new PartitionId("raft-partition", partition)))
+              .orElse(Set.of())) {
         verify(client).sendRequest(requestTo(partition, follower));
       }
-      verify(client).sendRequest(requestTo(partition, topology.getLeaderForPartition(partition)));
+      verify(client).sendRequest(requestTo(partition, topology.getLeaderForPartition(new PartitionId("raft-partition", partition))));
 
       for (final var inactive :
-          Optional.ofNullable(topology.getInactiveNodesForPartition(partition)).orElse(Set.of())) {
+          Optional.ofNullable(topology.getInactiveNodesForPartition(new PartitionId("raft-partition", partition))).orElse(Set.of())) {
         verify(client).sendRequest(requestTo(partition, inactive));
       }
     }
@@ -165,23 +167,23 @@ public class ExportingControlServiceTest {
       }
 
       @Override
-      public int getLeaderForPartition(final int partition) {
-        return Optional.ofNullable(topology.get(partition))
+      public int getLeaderForPartition(final PartitionId partition) {
+        return Optional.ofNullable(topology.get(partition.id()))
             .filter(brokers -> !brokers.isEmpty())
             .map(List::getFirst)
             .orElse(NODE_ID_NULL);
       }
 
       @Override
-      public Set<Integer> getFollowersForPartition(final int partition) {
-        return topology.getOrDefault(partition, List.of()).stream()
+      public Set<Integer> getFollowersForPartition(final PartitionId partition) {
+        return topology.getOrDefault(partition.id(), List.of()).stream()
             .skip(1)
             .collect(Collectors.toSet());
       }
 
       @Override
-      public Set<Integer> getInactiveNodesForPartition(final int partition) {
-        final var members = topology.getOrDefault(partition, List.of());
+      public Set<Integer> getInactiveNodesForPartition(final PartitionId partition) {
+        final var members = topology.getOrDefault(partition.id(), List.of());
 
         return getBrokers().stream()
             .filter(broker -> !members.contains(broker))
@@ -189,7 +191,7 @@ public class ExportingControlServiceTest {
       }
 
       @Override
-      public int getRandomBroker() {
+      public int getRandomBroker(final String partitionGroup) {
         throw new UnsupportedOperationException();
       }
 
@@ -214,7 +216,7 @@ public class ExportingControlServiceTest {
       }
 
       @Override
-      public PartitionHealthStatus getPartitionHealth(final int brokerId, final int partition) {
+      public PartitionHealthStatus getPartitionHealth(final int brokerId, final PartitionId partition) {
         throw new UnsupportedOperationException();
       }
 

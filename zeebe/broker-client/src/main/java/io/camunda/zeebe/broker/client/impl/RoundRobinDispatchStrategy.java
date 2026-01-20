@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.client.impl;
 
+import io.atomix.primitive.partition.PartitionId;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.broker.client.api.RequestDispatchStrategy;
@@ -29,7 +30,8 @@ public final class RoundRobinDispatchStrategy implements RequestDispatchStrategy
   private final AtomicInteger offset = new AtomicInteger(0);
 
   @Override
-  public int determinePartition(final BrokerTopologyManager topologyManager) {
+  public int determinePartition(
+      final String partitionGroup, final BrokerTopologyManager topologyManager) {
     final BrokerClusterState topology = topologyManager.getTopology();
 
     if (topology == null || !topology.isInitialized()) {
@@ -40,7 +42,8 @@ public final class RoundRobinDispatchStrategy implements RequestDispatchStrategy
 
     for (int i = 0; i < topology.getPartitionsCount(); i++) {
       final int partition = partitions.partitionAtOffset(offset.getAndIncrement());
-      if (topology.getLeaderForPartition(partition) != BrokerClusterState.NODE_ID_NULL) {
+      if (topology.getLeaderForPartition(new PartitionId(partitionGroup, partition))
+          != BrokerClusterState.NODE_ID_NULL) {
         return partition;
       }
     }
