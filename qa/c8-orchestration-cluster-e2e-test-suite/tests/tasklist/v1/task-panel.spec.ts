@@ -12,6 +12,7 @@ import {deploy, createInstances} from 'utils/zeebeClient';
 import {sleep} from 'utils/sleep';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToApp} from '@pages/UtilitiesPage';
+import { waitForAssertion } from 'utils/waitForAssertion';
 
 test.beforeAll(async ({resetData}) => {
   await resetData();
@@ -146,8 +147,15 @@ test.describe('task panel page', () => {
 
     await taskPanelPageV1.scrollToFirstTask('usertask_for_scrolling_2');
 
-    await expect(page.getByText('usertask_for_scrolling_1')).toHaveCount(1);
-    await expect(page.getByText('usertask_for_scrolling_2')).toHaveCount(199);
-    await expect(page.getByText('usertask_for_scrolling_3')).toHaveCount(0);
+    await waitForAssertion({
+      assertion: async () => {
+        await expect(page.getByText('usertask_for_scrolling_1')).toHaveCount(1);
+        await expect(page.getByText('usertask_for_scrolling_2')).toHaveCount(199);
+        await expect(page.getByText('usertask_for_scrolling_3')).toHaveCount(0);
+      },
+      onFailure: async () => {
+       await taskPanelPageV1.scrollToFirstTask('usertask_for_scrolling_2');
+      },
+    });
   });
 });
