@@ -5,31 +5,27 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.gateway.rest;
+package io.camunda.gateway.mapping.http.rest;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import io.camunda.gateway.mapping.http.ResponseMapper;
 import io.camunda.gateway.protocol.model.ActivatedJobResult;
 import io.camunda.gateway.protocol.model.UserTaskProperties;
 import io.camunda.zeebe.gateway.impl.job.JobActivationResponse;
-import io.camunda.zeebe.msgpack.value.LongValue;
-import io.camunda.zeebe.msgpack.value.ValueArray;
 import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionRecord;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
-import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -128,17 +124,11 @@ class ResponseMapperTest {
     void shouldMapActivatedJobWithUserTaskPropertiesBasedOnJobKind(
         final ActivatedJobWithUserTaskPropsCase testCase) {
       // given
-      final JobRecord jobRecord = mockJobRecord(testCase);
+      final JobRecord jobRecord = buildJobRecord(testCase);
+      final JobBatchRecord batchRecord = buildJobBatchRecord(jobRecord);
 
-      final JobBatchRecord batchRecordMock = mock(JobBatchRecord.class);
-      final ValueArray<JobRecord> jobsValueArrayMock = mockValueArray(jobRecord);
-      when(batchRecordMock.jobs()).thenReturn(jobsValueArrayMock);
-      final LongValue jobKey = mock(LongValue.class);
-      when(jobKey.getValue()).thenReturn(123L);
-      final ValueArray<LongValue> jobKeysValueArrayMock = mockValueArray(jobKey);
-      when(batchRecordMock.jobKeys()).thenReturn(jobKeysValueArrayMock);
       final JobActivationResponse activationResponse =
-          new JobActivationResponse(123L, batchRecordMock, 10L);
+          new JobActivationResponse(123L, batchRecord, 1024 * 1024L);
 
       // when
       final var result = ResponseMapper.toActivateJobsResponse(activationResponse);
@@ -151,30 +141,72 @@ class ResponseMapperTest {
           .satisfies(testCase.assertions);
     }
 
-    private static JobRecord mockJobRecord(final ActivatedJobWithUserTaskPropsCase testCase) {
-      final JobRecord jobRecord = mock(JobRecord.class);
-      when(jobRecord.getJobKind()).thenReturn(testCase.jobKind);
-      when(jobRecord.getCustomHeaders()).thenReturn(testCase.headers);
-      when(jobRecord.getType()).thenReturn("type");
-      when(jobRecord.getBpmnProcessId()).thenReturn("procId");
-      when(jobRecord.getElementId()).thenReturn("elementId");
-      when(jobRecord.getProcessInstanceKey()).thenReturn(1L);
-      when(jobRecord.getProcessDefinitionVersion()).thenReturn(1);
-      when(jobRecord.getProcessDefinitionKey()).thenReturn(2L);
-      when(jobRecord.getElementInstanceKey()).thenReturn(3L);
-      when(jobRecord.getWorkerBuffer()).thenReturn(BufferUtil.wrapString("worker"));
-      when(jobRecord.getRetries()).thenReturn(3);
-      when(jobRecord.getDeadline()).thenReturn(0L);
-      when(jobRecord.getVariables()).thenReturn(Map.of());
-      when(jobRecord.getTenantId()).thenReturn(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-      when(jobRecord.getLength()).thenReturn(1);
+    private static JobRecord buildJobRecord(final ActivatedJobWithUserTaskPropsCase testCase) {
+      final JobRecord jobRecord =
+          new JobRecord()
+              .setJobKind(testCase.jobKind)
+              .setType("type")
+              .setBpmnProcessId("procId")
+              .setElementId("elementId")
+              .setProcessInstanceKey(1L)
+              .setProcessDefinitionVersion(1)
+              .setProcessDefinitionKey(2L)
+              .setElementInstanceKey(3L)
+              .setWorker("worker")
+              .setRetries(3)
+              .setDeadline(0L)
+              .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+
+      // Set variables as MsgPack-encoded empty map
+      final byte[] emptyVariables = MsgPackConverter.convertToMsgPack(Collections.emptyMap());
+      jobRecord.setVariables(new UnsafeBuffer(emptyVariables));
+
+      // Set custom headers as msgpack-encoded buffer
+      if (!testCase.headers.isEmpty()) {
+        final byte[] msgpackHeaders = MsgPackConverter.convertToMsgPack(testCase.headers);
+        jobRecord.setCustomHeaders(new UnsafeBuffer(msgpackHeaders));
+      }
+
       return jobRecord;
     }
 
-    private static <T> ValueArray<T> mockValueArray(final T... values) {
-      final ValueArray<T> valueArrayMock = mock(ValueArray.class);
-      when(valueArrayMock.iterator()).thenReturn(List.of(values).iterator());
-      return valueArrayMock;
+    private static JobBatchRecord buildJobBatchRecord(final JobRecord jobRecord) {
+      final JobBatchRecord batchRecord = new JobBatchRecord();
+
+      // Set required properties on the batch record
+      batchRecord.setType(jobRecord.getType());
+      batchRecord.setWorker(jobRecord.getWorker());
+
+      // Add a job key
+      batchRecord.jobKeys().add().setValue(123L);
+
+      // Add the job record to the batch by copying all properties
+      final JobRecord job = batchRecord.jobs().add();
+      job.setJobKind(jobRecord.getJobKind())
+          .setType(jobRecord.getType())
+          .setBpmnProcessId(jobRecord.getBpmnProcessId())
+          .setElementId(jobRecord.getElementId())
+          .setProcessInstanceKey(jobRecord.getProcessInstanceKey())
+          .setProcessDefinitionVersion(jobRecord.getProcessDefinitionVersion())
+          .setProcessDefinitionKey(jobRecord.getProcessDefinitionKey())
+          .setElementInstanceKey(jobRecord.getElementInstanceKey())
+          .setWorker(jobRecord.getWorker())
+          .setRetries(jobRecord.getRetries())
+          .setDeadline(jobRecord.getDeadline())
+          .setTenantId(jobRecord.getTenantId());
+
+      // Set variables as empty MsgPack map
+      final byte[] emptyVariables = MsgPackConverter.convertToMsgPack(Collections.emptyMap());
+      job.setVariables(new UnsafeBuffer(emptyVariables));
+
+      // Copy custom headers if present
+      if (jobRecord.getCustomHeadersBuffer().capacity() > 0) {
+        final byte[] headersCopy = new byte[jobRecord.getCustomHeadersBuffer().capacity()];
+        jobRecord.getCustomHeadersBuffer().getBytes(0, headersCopy);
+        job.setCustomHeaders(new UnsafeBuffer(headersCopy));
+      }
+
+      return batchRecord;
     }
 
     private record ActivatedJobWithUserTaskPropsCase(
@@ -197,9 +229,8 @@ class ResponseMapperTest {
     void shouldMapDeleteResourceResponseWithResourceKeyAndNoBatchOperation() {
       // given
       final long resourceKey = 12345L;
-      final var brokerResponse = mock(ResourceDeletionRecord.class);
-      when(brokerResponse.getResourceKey()).thenReturn(resourceKey);
-      when(brokerResponse.isDeleteHistory()).thenReturn(false);
+      final var brokerResponse =
+          new ResourceDeletionRecord().setResourceKey(resourceKey).setDeleteHistory(false);
 
       // when
       final var response = ResponseMapper.toDeleteResourceResponse(brokerResponse);
@@ -215,11 +246,12 @@ class ResponseMapperTest {
       final long resourceKey = 12345L;
       final long batchOperationKey = 67890L;
       final BatchOperationType batchOperationType = BatchOperationType.DELETE_PROCESS_INSTANCE;
-      final var brokerResponse = mock(ResourceDeletionRecord.class);
-      when(brokerResponse.getResourceKey()).thenReturn(resourceKey);
-      when(brokerResponse.isDeleteHistory()).thenReturn(true);
-      when(brokerResponse.getBatchOperationKey()).thenReturn(batchOperationKey);
-      when(brokerResponse.getBatchOperationType()).thenReturn(batchOperationType);
+      final var brokerResponse =
+          new ResourceDeletionRecord()
+              .setResourceKey(resourceKey)
+              .setDeleteHistory(true)
+              .setBatchOperationKey(batchOperationKey)
+              .setBatchOperationType(batchOperationType);
 
       // when
       final var response = ResponseMapper.toDeleteResourceResponse(brokerResponse);

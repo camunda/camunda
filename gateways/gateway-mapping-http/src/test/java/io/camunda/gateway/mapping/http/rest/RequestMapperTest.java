@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.gateway.rest;
+package io.camunda.gateway.mapping.http.rest;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
