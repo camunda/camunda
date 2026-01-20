@@ -61,3 +61,35 @@ jobs:
         }
       branch: ${{ inputs.branch }}
     secrets: inherit
+
+  notify:
+    name: Notify on failure
+    runs-on: ubuntu-latest
+    needs: [ qa ]
+    if: failure()
+    steps:
+      - uses: actions/checkout@v4
+      - id: slack-notify
+        uses: slackapi/slack-github-action@v2.1.1
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ":warning: *Starting QA run failed for ${{ inputs.branch }}*"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "@zeebe-medic Please check the related workflow execution: https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}"
+                  }
+                }
+              ]
+            }
