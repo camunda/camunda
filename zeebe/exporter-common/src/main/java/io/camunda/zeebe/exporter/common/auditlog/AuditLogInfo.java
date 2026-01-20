@@ -68,6 +68,7 @@ public record AuditLogInfo(
           Map.entry(
               ValueType.PROCESS_INSTANCE_MODIFICATION,
               AuditLogOperationCategory.DEPLOYED_RESOURCES),
+          Map.entry(ValueType.PROCESS, AuditLogOperationCategory.DEPLOYED_RESOURCES),
           Map.entry(ValueType.PROCESS_INSTANCE, AuditLogOperationCategory.DEPLOYED_RESOURCES),
           Map.entry(ValueType.RESOURCE, AuditLogOperationCategory.DEPLOYED_RESOURCES),
           Map.entry(ValueType.VARIABLE, AuditLogOperationCategory.DEPLOYED_RESOURCES),
