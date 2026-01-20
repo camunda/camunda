@@ -25,5 +25,5 @@ public interface DeleteResourceResponse {
   /**
    * @return the result of the batch operation created to delete the resource history, if requested.
    */
-  Object getBatchOperationCreatedResult();
+  CreateBatchOperationResponse getCreateBatchOperationResponse();
 }

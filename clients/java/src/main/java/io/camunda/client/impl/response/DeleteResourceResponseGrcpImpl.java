@@ -15,20 +15,22 @@
  */
 package io.camunda.client.impl.response;
 
+import io.camunda.client.api.response.CreateBatchOperationResponse;
 import io.camunda.client.api.response.DeleteResourceResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.BatchOperationCreatedResult;
 
 public class DeleteResourceResponseGrcpImpl implements DeleteResourceResponse {
 
   private final String resourceKey;
-  private BatchOperationCreatedResult batchOperationCreatedResult;
+  private CreateBatchOperationResponse createBatchOperationResponse;
 
   public DeleteResourceResponseGrcpImpl(
       io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeleteResourceResponse
           deleteResourceResponse) {
     this.resourceKey = deleteResourceResponse.getResourceKey();
     if (deleteResourceResponse.hasBatchOperation()) {
-      this.batchOperationCreatedResult = deleteResourceResponse.getBatchOperation();
+      final BatchOperationCreatedResult batchOperation = deleteResourceResponse.getBatchOperation();
+      this.createBatchOperationResponse = new CreateBatchOperationResponseImpl(batchOperation);
     }
   }
 
@@ -38,7 +40,7 @@ public class DeleteResourceResponseGrcpImpl implements DeleteResourceResponse {
   }
 
   @Override
-  public Object getBatchOperationCreatedResult() {
-    return batchOperationCreatedResult;
+  public CreateBatchOperationResponse getCreateBatchOperationResponse() {
+    return createBatchOperationResponse;
   }
 }

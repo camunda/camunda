@@ -15,20 +15,21 @@
  */
 package io.camunda.client.impl.response;
 
+import io.camunda.client.api.response.CreateBatchOperationResponse;
 import io.camunda.client.api.response.DeleteResourceResponse;
 import io.camunda.client.protocol.rest.BatchOperationCreatedResult;
 
 public class DeleteResourceResponseRestImpl implements DeleteResourceResponse {
 
   private final String resourceKey;
-  private BatchOperationCreatedResult batchOperationCreatedResult;
+  private CreateBatchOperationResponse createBatchOperationResponse;
 
   public DeleteResourceResponseRestImpl(
       final io.camunda.client.protocol.rest.DeleteResourceResponse deleteResourceResponse) {
     this.resourceKey = deleteResourceResponse.getResourceKey();
     final BatchOperationCreatedResult batchOperation = deleteResourceResponse.getBatchOperation();
     if (batchOperation != null) {
-      this.batchOperationCreatedResult = batchOperation;
+      this.createBatchOperationResponse = new CreateBatchOperationResponseImpl(batchOperation);
     }
   }
 
@@ -38,7 +39,7 @@ public class DeleteResourceResponseRestImpl implements DeleteResourceResponse {
   }
 
   @Override
-  public Object getBatchOperationCreatedResult() {
-    return batchOperationCreatedResult;
+  public CreateBatchOperationResponse getCreateBatchOperationResponse() {
+    return createBatchOperationResponse;
   }
 }
