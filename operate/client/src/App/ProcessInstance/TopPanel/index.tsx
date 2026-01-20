@@ -9,7 +9,6 @@
 import {useEffect, useMemo, useState} from 'react';
 import {observer} from 'mobx-react';
 import {useProcessInstancePageParams} from '../useProcessInstancePageParams';
-import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {diagramOverlaysStore} from 'modules/stores/diagramOverlays';
 import {IncidentsBanner} from './IncidentsBanner';
 import {tracking} from 'modules/tracking';
@@ -30,7 +29,6 @@ import {computed} from 'mobx';
 import {type OverlayPosition} from 'bpmn-js/lib/NavigatedViewer';
 import {Diagram} from 'modules/components/Diagram';
 import {MetadataPopover} from './MetadataPopover';
-import {MetadataPopover as MetadataPopoverV2} from './MetadataPopover/indexV2';
 import {ModificationBadgeOverlay} from './ModificationBadgeOverlay';
 import {ModificationInfoBanner} from './ModificationInfoBanner';
 import {ModificationDropdown} from './ModificationDropdown';
@@ -91,7 +89,6 @@ const TopPanel: React.FC = observer(() => {
     selectedAnchorElementId,
   } = useProcessInstanceElementSelection();
   const {processInstanceId = ''} = useProcessInstancePageParams();
-  const flowNodeSelection = flowNodeSelectionStore.state.selection;
   const {
     sourceFlowNodeIdForMoveOperation,
     sourceFlowNodeInstanceKeyForMoveOperation,
@@ -184,14 +181,6 @@ const TopPanel: React.FC = observer(() => {
         : undefined;
   }, [selectedElementId, selectedAnchorElementId]);
 
-  const selectedFlowNode = useMemo(() => {
-    return flowNodeSelection?.anchorFlowNodeId
-      ? [flowNodeSelection.anchorFlowNodeId]
-      : flowNodeSelection?.flowNodeId
-        ? [flowNodeSelection.flowNodeId]
-        : undefined;
-  }, [flowNodeSelection?.anchorFlowNodeId, flowNodeSelection?.flowNodeId]);
-
   const highlightedSequenceFlows = useMemo(() => {
     const compensationAssociationIds = Object.values(
       processDefinitionData?.diagramModel.elementsById ?? {},
@@ -264,21 +253,13 @@ const TopPanel: React.FC = observer(() => {
 
   useEffect(() => {
     if (!isModificationModeEnabled) {
-      if (
-        IS_ELEMENT_SELECTION_V2
-          ? selectedElementId
-          : flowNodeSelection?.flowNodeId
-      ) {
+      if (selectedElementId) {
         tracking.track({eventName: 'metadata-popover-opened'});
       } else {
         tracking.track({eventName: 'metadata-popover-closed'});
       }
     }
-  }, [
-    isModificationModeEnabled,
-    selectedElementId,
-    flowNodeSelection?.flowNodeId,
-  ]);
+  }, [isModificationModeEnabled, selectedElementId]);
 
   const getStatus = () => {
     if (isXmlFetching) {
@@ -365,25 +346,14 @@ const TopPanel: React.FC = observer(() => {
                     ? modifiableFlowNodes
                     : selectableFlowNodes
                 }
-                selectedFlowNodeIds={
-                  IS_ELEMENT_SELECTION_V2
-                    ? selectedElementIds
-                    : selectedFlowNode
-                }
+                selectedFlowNodeIds={selectedElementIds}
                 onRootChange={(rootElementId, getSelectionRootId) => {
-                  const elementId = IS_ELEMENT_SELECTION_V2
-                    ? (selectedElementId ?? undefined)
-                    : flowNodeSelection?.flowNodeId;
-                  if (!elementId) {
+                  if (!selectedElementId) {
                     return;
                   }
 
-                  if (rootElementId !== getSelectionRootId(elementId)) {
-                    if (IS_ELEMENT_SELECTION_V2) {
-                      clearSelection();
-                    } else {
-                      clearSelectionV1(rootNode);
-                    }
+                  if (rootElementId !== getSelectionRootId(selectedElementId)) {
+                    clearSelection();
                   }
                 }}
                 onFlowNodeSelection={(flowNodeId, isMultiInstance) => {
@@ -427,12 +397,7 @@ const TopPanel: React.FC = observer(() => {
                   isModificationModeEnabled ? (
                     <ModificationDropdown />
                   ) : (
-                    !isIncidentBarOpen &&
-                    (IS_ELEMENT_SELECTION_V2 ? (
-                      <MetadataPopoverV2 />
-                    ) : (
-                      <MetadataPopover />
-                    ))
+                    !isIncidentBarOpen && <MetadataPopover />
                   )
                 }
                 highlightedSequenceFlows={highlightedSequenceFlows}
