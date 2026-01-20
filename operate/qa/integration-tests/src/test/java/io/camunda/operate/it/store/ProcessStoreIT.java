@@ -71,7 +71,7 @@ public class ProcessStoreIT extends OperateSearchAbstractIT {
             .setKey(2251799813685250L)
             .setId("2251799813685250")
             .setBpmnProcessId("demoProcess")
-            .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
+            .setTenantId(DEFAULT_TENANT_ID)
             .setName("Demo process")
             .setVersion(2)
             .setBpmnXml(resourceXml);
@@ -81,7 +81,7 @@ public class ProcessStoreIT extends OperateSearchAbstractIT {
             .setKey(2251799813685253L)
             .setId("2251799813685253")
             .setBpmnProcessId("demoProcess")
-            .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
+            .setTenantId(DEFAULT_TENANT_ID)
             .setName("Demo process")
             .setVersion(3)
             .setBpmnXml(resourceXml);
@@ -224,7 +224,7 @@ public class ProcessStoreIT extends OperateSearchAbstractIT {
   public void testGetProcessesGroupedWithNonExistentBpmnProcessIds() {
     final Map<ProcessStore.ProcessKey, List<ProcessEntity>> results =
         processStore.getProcessesGrouped(
-            TenantOwned.DEFAULT_TENANT_IDENTIFIER, Set.of("nonExistentProcess", "anotherFakeId"));
+            DEFAULT_TENANT_ID, Set.of("nonExistentProcess", "anotherFakeId"));
 
     assertThat(results).isEmpty();
   }
@@ -249,14 +249,12 @@ public class ProcessStoreIT extends OperateSearchAbstractIT {
     assertThat(
             results.get(
                 new ProcessStore.ProcessKey(
-                    firstProcessDefinition.getBpmnProcessId(),
-                    TenantOwned.DEFAULT_TENANT_IDENTIFIER)))
+                    firstProcessDefinition.getBpmnProcessId(), DEFAULT_TENANT_ID)))
         .hasSize(3);
     assertThat(
             results.get(
                 new ProcessStore.ProcessKey(
-                    secondProcessDefinition.getBpmnProcessId(),
-                    TenantOwned.DEFAULT_TENANT_IDENTIFIER)))
+                    secondProcessDefinition.getBpmnProcessId(), DEFAULT_TENANT_ID)))
         .hasSize(1);
     assertThat(
             results.get(
@@ -267,20 +265,18 @@ public class ProcessStoreIT extends OperateSearchAbstractIT {
   @Test
   public void testGetProcessesGroupedWithNullAllowedBpmnProcessIds() {
     final Map<ProcessStore.ProcessKey, List<ProcessEntity>> results =
-        processStore.getProcessesGrouped(TenantOwned.DEFAULT_TENANT_IDENTIFIER, null);
+        processStore.getProcessesGrouped(DEFAULT_TENANT_ID, null);
 
     assertThat(results).hasSize(2);
     assertThat(
             results.get(
                 new ProcessStore.ProcessKey(
-                    firstProcessDefinition.getBpmnProcessId(),
-                    TenantOwned.DEFAULT_TENANT_IDENTIFIER)))
+                    firstProcessDefinition.getBpmnProcessId(), DEFAULT_TENANT_ID)))
         .hasSize(3);
     assertThat(
             results.get(
                 new ProcessStore.ProcessKey(
-                    secondProcessDefinition.getBpmnProcessId(),
-                    TenantOwned.DEFAULT_TENANT_IDENTIFIER)))
+                    secondProcessDefinition.getBpmnProcessId(), DEFAULT_TENANT_ID)))
         .hasSize(1);
   }
 
@@ -501,7 +497,7 @@ public class ProcessStoreIT extends OperateSearchAbstractIT {
   @Test
   public void testGetProcessesGroupedWithEmptyAllowedBpmnProcessIds() {
     final Map<ProcessStore.ProcessKey, List<ProcessEntity>> results =
-        processStore.getProcessesGrouped(TenantOwned.DEFAULT_TENANT_IDENTIFIER, Set.of());
+        processStore.getProcessesGrouped(DEFAULT_TENANT_ID, Set.of());
     assertThat(results).isEmpty();
   }
 
@@ -509,14 +505,14 @@ public class ProcessStoreIT extends OperateSearchAbstractIT {
   public void testGetProcessesGroupedWithMixedExistingAndNonExistingIds() {
     final Map<ProcessStore.ProcessKey, List<ProcessEntity>> results =
         processStore.getProcessesGrouped(
-            TenantOwned.DEFAULT_TENANT_IDENTIFIER,
+            DEFAULT_TENANT_ID,
             Set.of(firstProcessDefinition.getBpmnProcessId(), "nonExistentProcess"));
 
     assertThat(results).hasSize(1);
     assertThat(results)
         .containsKey(
             new ProcessStore.ProcessKey(
-                firstProcessDefinition.getBpmnProcessId(), TenantOwned.DEFAULT_TENANT_IDENTIFIER));
+                firstProcessDefinition.getBpmnProcessId(), DEFAULT_TENANT_ID));
   }
 
   private String getFullIndexNameForDependant(final String indexName) {

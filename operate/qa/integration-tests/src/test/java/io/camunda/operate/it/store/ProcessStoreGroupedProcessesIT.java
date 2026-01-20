@@ -9,10 +9,10 @@ package io.camunda.operate.it.store;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.operate.entities.ProcessEntity;
+import io.camunda.operate.schema.indices.ProcessIndex;
 import io.camunda.operate.store.ProcessStore;
 import io.camunda.operate.util.j5templates.OperateSearchAbstractIT;
-import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
-import io.camunda.webapps.schema.entities.ProcessEntity;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.List;
 import java.util.Map;

@@ -32,19 +32,7 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.cardinality;
 
-<<<<<<< HEAD
 import com.fasterxml.jackson.databind.ObjectMapper;
-=======
-import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import co.elastic.clients.elasticsearch._types.SortOrder;
-import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
-import co.elastic.clients.elasticsearch._types.query_dsl.Query;
-import co.elastic.clients.elasticsearch.core.BulkRequest;
-import co.elastic.clients.elasticsearch.core.CountRequest;
-import co.elastic.clients.elasticsearch.core.SearchRequest;
-import co.elastic.clients.elasticsearch.core.search.Hit;
-import co.elastic.clients.elasticsearch.core.search.SourceConfig;
->>>>>>> 28dc51b046b (fix: Address PR feedback)
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.entities.ProcessEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
@@ -148,7 +136,6 @@ public class ElasticsearchProcessStore implements ProcessStore {
   public Optional<Long> getDistinctCountFor(final String fieldName) {
     final String indexAlias = processIndex.getAlias();
     LOGGER.debug("Called distinct count for field {} in index alias {}.", fieldName, indexAlias);
-<<<<<<< HEAD
     final SearchRequest searchRequest =
         new SearchRequest(indexAlias)
             .source(
@@ -159,17 +146,6 @@ public class ElasticsearchProcessStore implements ProcessStore {
                         cardinality(DISTINCT_FIELD_COUNTS)
                             .precisionThreshold(1_000)
                             .field(fieldName)));
-=======
-    final var searchRequest =
-        new SearchRequest.Builder()
-            .index(indexAlias)
-            .query(q -> q.matchAll(m -> m))
-            .size(0)
-            .aggregations(
-                DISTINCT_FIELD_COUNTS,
-                a -> a.cardinality(c -> c.precisionThreshold(1_000).field(fieldName)))
-            .build();
->>>>>>> 28dc51b046b (fix: Address PR feedback)
     try {
       final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
       final Cardinality distinctFieldCounts =
@@ -257,7 +233,6 @@ public class ElasticsearchProcessStore implements ProcessStore {
   public Map<ProcessKey, List<ProcessEntity>> getProcessesGrouped(
       final String tenantId, @Nullable final Set<String> allowedBPMNProcessIds) {
 
-<<<<<<< HEAD
     final SearchSourceBuilder sourceBuilder =
         new SearchSourceBuilder()
             .query(buildQuery(tenantId, allowedBPMNProcessIds))
@@ -275,28 +250,6 @@ public class ElasticsearchProcessStore implements ProcessStore {
 
     final SearchRequest searchRequest =
         new SearchRequest(processIndex.getAlias()).source(sourceBuilder);
-=======
-    final var query = buildQueryEs8(tenantId, allowedBPMNProcessIds);
-    final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
->>>>>>> 28dc51b046b (fix: Address PR feedback)
-
-    final var searchRequestBuilder =
-        new SearchRequest.Builder()
-            .index(processIndex.getAlias())
-            .query(tenantAwareQuery)
-            .source(
-                src ->
-                    src.filter(
-                        f ->
-                            f.includes(
-                                Arrays.asList(
-                                    ProcessIndex.ID,
-                                    ProcessIndex.NAME,
-                                    ProcessIndex.VERSION,
-                                    ProcessIndex.VERSION_TAG,
-                                    ProcessIndex.BPMN_PROCESS_ID,
-                                    ProcessIndex.TENANT_ID))))
-            .sort(so -> so.field(fs -> fs.field(ProcessIndex.VERSION).order(SortOrder.Desc)));
 
     try {
       final Map<ProcessKey, List<ProcessEntity>> result = new HashMap<>();
@@ -479,24 +432,12 @@ public class ElasticsearchProcessStore implements ProcessStore {
     // remove id of current process instance
     processInstanceIdsWithoutCurrentProcess.remove(currentProcessInstanceId);
 
-<<<<<<< HEAD
     final QueryBuilder query =
         joinWithAnd(
             termQuery(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION),
             termsQuery(ID, processInstanceIdsWithoutCurrentProcess));
     final SearchRequest request =
         ElasticsearchUtil.createSearchRequest(listViewTemplate)
-=======
-    final var q =
-        ElasticsearchUtil.joinWithAnd(
-            ElasticsearchUtil.termsQuery(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION),
-            ElasticsearchUtil.termsQuery(ID, processInstanceIdsWithoutCurrentProcess));
-    final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(q);
-
-    final var searchRequestBuilder =
-        new SearchRequest.Builder()
-            .index(whereToSearch(listViewTemplate, ALL))
->>>>>>> 28dc51b046b (fix: Address PR feedback)
             .source(
                 new SearchSourceBuilder()
                     .query(query)
@@ -548,11 +489,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
 
   @Override
   public void deleteProcessInstanceFromTreePath(final String processInstanceKey) {
-<<<<<<< HEAD
     final BulkRequest bulkRequest = new BulkRequest();
-=======
-    final BulkRequest.Builder es8BulkRequest = new BulkRequest.Builder();
->>>>>>> 28dc51b046b (fix: Address PR feedback)
     // select process instance - get tree path
     final String treePath = getProcessInstanceTreePathById(processInstanceKey);
 
@@ -562,7 +499,6 @@ public class ElasticsearchProcessStore implements ProcessStore {
     // - middle level: we remove /PI_key/FN_name/FNI_key from the middle
     // - end level: we remove /PI_key from the end
 
-<<<<<<< HEAD
     final QueryBuilder query =
         ((BoolQueryBuilder)
                 joinWithAnd(
@@ -572,25 +508,6 @@ public class ElasticsearchProcessStore implements ProcessStore {
     final SearchRequest request =
         ElasticsearchUtil.createSearchRequest(listViewTemplate)
             .source(new SearchSourceBuilder().query(query).fetchSource(TREE_PATH, null));
-=======
-    final var query =
-        Query.of(
-            q ->
-                q.bool(
-                    b ->
-                        b.must(
-                                ElasticsearchUtil.termsQuery(
-                                    JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION),
-                                ElasticsearchUtil.termsQuery(TREE_PATH, treePath))
-                            .mustNot(ElasticsearchUtil.termsQuery(KEY, processInstanceKey))));
-    final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
-
-    final var searchRequestBuilder =
-        new SearchRequest.Builder()
-            .index(whereToSearch(listViewTemplate, ALL))
-            .query(tenantAwareQuery)
-            .source(s -> s.filter(f -> f.includes(TREE_PATH)));
->>>>>>> 28dc51b046b (fix: Address PR feedback)
     try {
       tenantAwareClient.search(
           request,
@@ -674,7 +591,6 @@ public class ElasticsearchProcessStore implements ProcessStore {
           "Parameter 'parentProcessInstanceKeys' is needed to search by parents.");
     }
 
-<<<<<<< HEAD
     final QueryBuilder query =
         joinWithAnd(
             QueryBuilders.termQuery(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION),
@@ -682,23 +598,6 @@ public class ElasticsearchProcessStore implements ProcessStore {
     final SearchSourceBuilder source =
         new SearchSourceBuilder().size(size).query(query).fetchSource(includeFields, null);
     final SearchRequest searchRequest = createSearchRequest(listViewTemplate, ALL).source(source);
-=======
-    final var q =
-        ElasticsearchUtil.joinWithAnd(
-            ElasticsearchUtil.termsQuery(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION),
-            ElasticsearchUtil.termsQuery(PARENT_PROCESS_INSTANCE_KEY, parentProcessInstanceKeys));
-    final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(q);
-
-    final List<String> nulLSafeIncludeField =
-        includeFields == null ? Collections.emptyList() : Arrays.asList(includeFields);
-
-    final var searchRequestBuilder =
-        new SearchRequest.Builder()
-            .index(whereToSearch(listViewTemplate, ALL))
-            .size(size)
-            .query(tenantAwareQuery)
-            .source(s -> s.filter(f -> f.includes(nulLSafeIncludeField)));
->>>>>>> 28dc51b046b (fix: Address PR feedback)
 
     try {
       return tenantAwareClient.search(
