@@ -808,15 +808,9 @@ public final class CamundaClientImpl implements CamundaClient {
 
   @Override
   public DeleteResourceCommandStep1 newDeleteResourceCommand(final long resourceKey) {
-    return newDeleteResourceCommand(resourceKey, false);
-  }
-
-  @Override
-  public DeleteResourceCommandStep1 newDeleteResourceCommand(
-      final long resourceKey, final boolean deleteHistory) {
     return new DeleteResourceCommandImpl(
         resourceKey,
-        deleteHistory,
+        false,
         asyncStub,
         credentialsProvider::shouldRetryRequest,
         httpClient,

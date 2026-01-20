@@ -130,6 +130,13 @@ public class DeleteResourceCommandImpl implements DeleteResourceCommandStep1 {
   }
 
   @Override
+  public DeleteResourceCommandStep1 deleteHistory(final boolean deleteHistory) {
+    requestBuilder.setDeleteHistory(deleteHistory);
+    httpRequestObject.deleteHistory(deleteHistory);
+    return this;
+  }
+
+  @Override
   public DeleteResourceCommandStep1 useRest() {
     useRest = true;
     return this;
