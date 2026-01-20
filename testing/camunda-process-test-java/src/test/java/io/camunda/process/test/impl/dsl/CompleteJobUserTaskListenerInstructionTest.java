@@ -16,7 +16,6 @@
 package io.camunda.process.test.impl.dsl;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
@@ -32,8 +31,6 @@ import io.camunda.process.test.api.dsl.instructions.ImmutableCorrections;
 import io.camunda.process.test.impl.dsl.instructions.CompleteJobUserTaskListenerInstructionHandler;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -79,9 +76,7 @@ public class CompleteJobUserTaskListenerInstructionTest {
     instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
 
     // then
-    verify(processTestContext)
-        .completeJobOfUserTaskListener(
-            jobSelectorCaptor.capture(), eq(Collections.emptyMap()), any());
+    verify(processTestContext).completeJobOfUserTaskListener(jobSelectorCaptor.capture(), any());
 
     jobSelectorCaptor.getValue().applyFilter(jobFilter);
     verify(jobFilter).type(JOB_TYPE);
@@ -101,9 +96,7 @@ public class CompleteJobUserTaskListenerInstructionTest {
     instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
 
     // then
-    verify(processTestContext)
-        .completeJobOfUserTaskListener(
-            jobSelectorCaptor.capture(), eq(Collections.emptyMap()), any());
+    verify(processTestContext).completeJobOfUserTaskListener(jobSelectorCaptor.capture(), any());
 
     jobSelectorCaptor.getValue().applyFilter(jobFilter);
     verify(jobFilter).elementId(ELEMENT_ID);
@@ -124,35 +117,10 @@ public class CompleteJobUserTaskListenerInstructionTest {
     instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
 
     // then
-    verify(processTestContext)
-        .completeJobOfUserTaskListener(
-            jobSelectorCaptor.capture(), eq(Collections.emptyMap()), any());
+    verify(processTestContext).completeJobOfUserTaskListener(jobSelectorCaptor.capture(), any());
 
     jobSelectorCaptor.getValue().applyFilter(jobFilter);
     verify(jobFilter).processDefinitionId(PROCESS_DEFINITION_ID);
-
-    verifyNoMoreInteractions(camundaClient, processTestContext, assertionFacade);
-  }
-
-  @Test
-  void shouldCompleteJobWithVariables() {
-    // given
-    final Map<String, Object> variables = new HashMap<>();
-    variables.put("x", 1);
-    variables.put("y", "value");
-
-    final CompleteJobUserTaskListenerInstruction instruction =
-        ImmutableCompleteJobUserTaskListenerInstruction.builder()
-            .jobSelector(ImmutableJobSelector.builder().jobType(JOB_TYPE).build())
-            .putAllVariables(variables)
-            .build();
-
-    // when
-    instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
-
-    // then
-    verify(processTestContext)
-        .completeJobOfUserTaskListener(jobSelectorCaptor.capture(), eq(variables), any());
 
     verifyNoMoreInteractions(camundaClient, processTestContext, assertionFacade);
   }
@@ -172,9 +140,7 @@ public class CompleteJobUserTaskListenerInstructionTest {
     // then
     verify(processTestContext)
         .completeJobOfUserTaskListener(
-            jobSelectorCaptor.capture(),
-            eq(Collections.emptyMap()),
-            jobResultHandlerCaptor.capture());
+            jobSelectorCaptor.capture(), jobResultHandlerCaptor.capture());
 
     jobResultHandlerCaptor.getValue().accept(jobResult);
 
@@ -199,9 +165,7 @@ public class CompleteJobUserTaskListenerInstructionTest {
     // then
     verify(processTestContext)
         .completeJobOfUserTaskListener(
-            jobSelectorCaptor.capture(),
-            eq(Collections.emptyMap()),
-            jobResultHandlerCaptor.capture());
+            jobSelectorCaptor.capture(), jobResultHandlerCaptor.capture());
 
     jobResultHandlerCaptor.getValue().accept(jobResult);
 
@@ -234,9 +198,7 @@ public class CompleteJobUserTaskListenerInstructionTest {
     // then
     verify(processTestContext)
         .completeJobOfUserTaskListener(
-            jobSelectorCaptor.capture(),
-            eq(Collections.emptyMap()),
-            jobResultHandlerCaptor.capture());
+            jobSelectorCaptor.capture(), jobResultHandlerCaptor.capture());
 
     jobResultHandlerCaptor.getValue().accept(jobResult);
 
@@ -253,13 +215,9 @@ public class CompleteJobUserTaskListenerInstructionTest {
   @Test
   void shouldCompleteJobWithAllOptions() {
     // given
-    final Map<String, Object> variables = new HashMap<>();
-    variables.put("result", "completed");
-
     final CompleteJobUserTaskListenerInstruction instruction =
         ImmutableCompleteJobUserTaskListenerInstruction.builder()
             .jobSelector(ImmutableJobSelector.builder().jobType(JOB_TYPE).build())
-            .putAllVariables(variables)
             .denied(false)
             .corrections(
                 ImmutableCorrections.builder().assignee("new-assignee").priority(50).build())
@@ -271,7 +229,7 @@ public class CompleteJobUserTaskListenerInstructionTest {
     // then
     verify(processTestContext)
         .completeJobOfUserTaskListener(
-            jobSelectorCaptor.capture(), eq(variables), jobResultHandlerCaptor.capture());
+            jobSelectorCaptor.capture(), jobResultHandlerCaptor.capture());
 
     jobResultHandlerCaptor.getValue().accept(jobResult);
 

@@ -37,7 +37,6 @@ public class CompleteJobUserTaskListenerInstructionHandler
 
     context.completeJobOfUserTaskListener(
         jobSelector,
-        instruction.getVariables(),
         result -> {
           // Apply denial if specified
           if (instruction.getDenied()) {

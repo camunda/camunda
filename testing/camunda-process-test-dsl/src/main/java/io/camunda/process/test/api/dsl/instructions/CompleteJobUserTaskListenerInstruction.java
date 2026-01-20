@@ -20,7 +20,6 @@ import io.camunda.process.test.api.dsl.JobSelector;
 import io.camunda.process.test.api.dsl.TestCaseInstruction;
 import io.camunda.process.test.api.dsl.TestCaseInstructionType;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import org.immutables.value.Value;
 
@@ -41,13 +40,6 @@ public interface CompleteJobUserTaskListenerInstruction extends TestCaseInstruct
    * @return the job selector
    */
   JobSelector getJobSelector();
-
-  /**
-   * The variables to complete the job with. Optional.
-   *
-   * @return the variables
-   */
-  Map<String, Object> getVariables();
 
   /**
    * Whether the worker denies the work. Defaults to false.

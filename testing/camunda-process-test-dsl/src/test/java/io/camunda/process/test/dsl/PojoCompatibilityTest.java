@@ -611,7 +611,6 @@ public class PojoCompatibilityTest {
             singleTestCase(
                 ImmutableCompleteJobUserTaskListenerInstruction.builder()
                     .jobSelector(ImmutableJobSelector.builder().jobType("assign-user").build())
-                    .putVariables("result", "completed")
                     .corrections(
                         ImmutableCorrections.builder()
                             .assignee("me")

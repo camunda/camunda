@@ -499,28 +499,13 @@ public class CompleteJobTest {
     }
 
     @Test
-    void shouldCompleteUserTaskListenerJobWithoutVariables() {
+    void shouldCompleteUserTaskListenerJob() {
       // when
       camundaProcessTestContext.completeJobOfUserTaskListener(
           JobSelectors.byJobType(JOB_TYPE), result -> {});
 
       // then
-      verify(camundaClient.newCompleteCommand(JOB_KEY).variables(Collections.emptyMap()))
-          .withResult(ArgumentMatchers.any());
-    }
-
-    @Test
-    void shouldCompleteUserTaskListenerJobWithVariables() {
-      // given
-      final Map<String, Object> variables = Collections.singletonMap("result", "okay");
-
-      // when
-      camundaProcessTestContext.completeJobOfUserTaskListener(
-          JobSelectors.byJobType(JOB_TYPE), variables, result -> {});
-
-      // then
-      verify(camundaClient.newCompleteCommand(JOB_KEY).variables(variables))
-          .withResult(ArgumentMatchers.any());
+      verify(camundaClient.newCompleteCommand(JOB_KEY)).withResult(ArgumentMatchers.any());
     }
 
     @Test
@@ -533,7 +518,7 @@ public class CompleteJobTest {
           JobSelectors.byJobType(JOB_TYPE), jobResultConsumer);
 
       // then - verify that withResult was called
-      verify(camundaClient.newCompleteCommand(JOB_KEY).variables(Collections.emptyMap()))
+      verify(camundaClient.newCompleteCommand(JOB_KEY))
           .withResult(jobResultFunctionCaptor.capture());
 
       // and invoke the captured function to verify our consumer is called
@@ -590,7 +575,6 @@ public class CompleteJobTest {
       // given
       when(camundaClient
               .newCompleteCommand(JOB_KEY)
-              .variables(Collections.emptyMap())
               .withResult(ArgumentMatchers.any())
               .send()
               .join())

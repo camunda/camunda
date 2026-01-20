@@ -705,10 +705,6 @@
           "description": "The selector to identify the job to complete.",
           "$ref": "#/definitions/JobSelector"
         },
-        "variables": {
-          "description": "The variables to complete the job with. Optional.",
-          "type": "object"
-        },
         "denied": {
           "description": "Whether the worker denies the work. Defaults to false.",
           "type": "boolean",

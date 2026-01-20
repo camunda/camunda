@@ -513,6 +513,29 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   }
 
   @Override
+  public void resolveIncident(final IncidentSelector incidentSelector) {
+    final CamundaClient client = createClient();
+
+    awaitIncident(
+        incidentSelector,
+        client,
+        incident -> {
+          final long incidentKey = incident.getIncidentKey();
+
+          // If the incident has a job key, update the job retries to 1 before resolving
+          // This allows the job to be retried once, enabling the process instance to continue
+          if (incident.getJobKey() != null) {
+            final long jobKey = incident.getJobKey();
+            LOGGER.debug("Updating job retries for job key: {}", jobKey);
+            client.newUpdateRetriesCommand(jobKey).retries(1).send().join();
+          }
+
+          LOGGER.debug("Resolving incident [{}]", incidentSelector.describe());
+          client.newResolveIncidentCommand(incidentKey).send().join();
+        });
+  }
+
+  @Override
   public void completeJobOfAdHocSubProcess(
       final JobSelector jobSelector, final Consumer<CompleteAdHocSubProcessResultStep1> jobResult) {
     completeJobOfAdHocSubProcess(jobSelector, Collections.emptyMap(), jobResult);
@@ -554,14 +577,6 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   @Override
   public void completeJobOfUserTaskListener(
       final JobSelector jobSelector, final Consumer<CompleteUserTaskJobResultStep1> jobResult) {
-    completeJobOfUserTaskListener(jobSelector, Collections.emptyMap(), jobResult);
-  }
-
-  @Override
-  public void completeJobOfUserTaskListener(
-      final JobSelector jobSelector,
-      final Map<String, Object> variables,
-      final Consumer<CompleteUserTaskJobResultStep1> jobResult) {
     final CamundaClient client = createClient();
 
     // completing the job inside the await block to handle the eventual consistency of the API
@@ -570,14 +585,12 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
         client,
         job -> {
           LOGGER.debug(
-              "Mock: Complete user task listener job [{}, jobKey: '{}'] with variables {}",
+              "Mock: Complete user task listener job [{}, jobKey: '{}']",
               jobSelector.describe(),
-              job.getJobKey(),
-              variables);
+              job.getJobKey());
 
           client
               .newCompleteCommand(job.getJobKey())
-              .variables(variables)
               .withResult(
                   result -> {
                     final CompleteUserTaskJobResultStep1 userTaskResult = result.forUserTask();
@@ -586,29 +599,6 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
                   })
               .send()
               .join();
-        });
-  }
-
-  @Override
-  public void resolveIncident(final IncidentSelector incidentSelector) {
-    final CamundaClient client = createClient();
-
-    awaitIncident(
-        incidentSelector,
-        client,
-        incident -> {
-          final long incidentKey = incident.getIncidentKey();
-
-          // If the incident has a job key, update the job retries to 1 before resolving
-          // This allows the job to be retried once, enabling the process instance to continue
-          if (incident.getJobKey() != null) {
-            final long jobKey = incident.getJobKey();
-            LOGGER.debug("Updating job retries for job key: {}", jobKey);
-            client.newUpdateRetriesCommand(jobKey).retries(1).send().join();
-          }
-
-          LOGGER.debug("Resolving incident [{}]", incidentSelector.describe());
-          client.newResolveIncidentCommand(incidentKey).send().join();
         });
   }
 
