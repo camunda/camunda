@@ -101,6 +101,11 @@ final class TestRestorableBackupStore implements BackupStore {
   }
 
   @Override
+  public CompletableFuture<Void> delete(final Collection<BackupIdentifier> ids) {
+    return null;
+  }
+
+  @Override
   public CompletableFuture<Backup> restore(final BackupIdentifier id, final Path targetFolder) {
     final var backup = backups.get(id);
     final var snapshotFiles = copyNamedFileSet(targetFolder, backup.snapshot().namedFiles());
@@ -135,6 +140,12 @@ final class TestRestorableBackupStore implements BackupStore {
   @Override
   public CompletableFuture<Void> deleteRangeMarker(
       final int partitionId, final BackupRangeMarker marker) {
+    throw new UnsupportedOperationException("Range markers are not yet supported");
+  }
+
+  @Override
+  public CompletableFuture<Void> deleteRangeMarkers(
+      final int partitionId, final Collection<BackupRangeMarker> markers) {
     throw new UnsupportedOperationException("Range markers are not yet supported");
   }
 
