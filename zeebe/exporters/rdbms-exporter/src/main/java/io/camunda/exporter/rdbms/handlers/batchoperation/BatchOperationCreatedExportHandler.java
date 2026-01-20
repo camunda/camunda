@@ -10,7 +10,7 @@ package io.camunda.exporter.rdbms.handlers.batchoperation;
 import io.camunda.db.rdbms.write.domain.BatchOperationDbModel;
 import io.camunda.db.rdbms.write.service.BatchOperationWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
-import io.camunda.search.entities.BatchOperationEntity.BatchOperationActorType;
+import io.camunda.search.entities.AuditLogEntity.AuditLogActorType;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationState;
 import io.camunda.search.entities.BatchOperationType;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogInfo.AuditLogActor;
@@ -71,7 +71,7 @@ public class BatchOperationCreatedExportHandler
         .build();
   }
 
-  private record ActorInfo(BatchOperationActorType type, String id) {
+  private record ActorInfo(AuditLogActorType type, String id) {
     static final ActorInfo NULL_VALUES = new ActorInfo(null, null);
   }
 
@@ -98,8 +98,8 @@ public class BatchOperationCreatedExportHandler
 
       final var actorType =
           switch (auditLogActor.actorType()) {
-            case USER -> BatchOperationActorType.USER;
-            case CLIENT -> BatchOperationActorType.CLIENT;
+            case USER -> AuditLogActorType.USER;
+            case CLIENT -> AuditLogActorType.CLIENT;
             case ANONYMOUS -> null;
             case UNKNOWN -> null;
             case null -> null;

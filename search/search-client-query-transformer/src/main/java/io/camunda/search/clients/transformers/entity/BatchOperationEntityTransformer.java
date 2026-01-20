@@ -8,8 +8,8 @@
 package io.camunda.search.clients.transformers.entity;
 
 import io.camunda.search.clients.transformers.ServiceTransformer;
+import io.camunda.search.entities.AuditLogEntity.AuditLogActorType;
 import io.camunda.search.entities.BatchOperationEntity;
-import io.camunda.search.entities.BatchOperationEntity.BatchOperationActorType;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationErrorEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationState;
 import io.camunda.search.entities.BatchOperationType;
@@ -51,7 +51,7 @@ public class BatchOperationEntityTransformer
         source.getStartDate(),
         source.getEndDate(),
         source.getActorType() != null
-            ? BatchOperationActorType.valueOf(source.getActorType().name())
+            ? AuditLogActorType.valueOf(source.getActorType().name())
             : null,
         source.getActorId(),
         source.getOperationsTotalCount(),
@@ -77,7 +77,7 @@ public class BatchOperationEntityTransformer
         source.getStartDate(),
         source.getEndDate(),
         source.getActorType() != null
-            ? BatchOperationActorType.valueOf(source.getActorType().name())
+            ? AuditLogActorType.valueOf(source.getActorType().name())
             : null,
         source.getActorId(),
         source.getOperationsTotalCount(),

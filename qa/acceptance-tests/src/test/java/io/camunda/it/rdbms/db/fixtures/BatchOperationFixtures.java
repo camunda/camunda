@@ -14,7 +14,7 @@ import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.BatchOperationDbModel;
 import io.camunda.db.rdbms.write.domain.BatchOperationDbModel.Builder;
 import io.camunda.db.rdbms.write.domain.BatchOperationItemDbModel;
-import io.camunda.search.entities.BatchOperationEntity.BatchOperationActorType;
+import io.camunda.search.entities.AuditLogEntity.AuditLogActorType;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemState;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationState;
 import io.camunda.search.entities.BatchOperationType;
@@ -39,7 +39,7 @@ public final class BatchOperationFixtures {
             .operationType(BatchOperationType.CANCEL_PROCESS_INSTANCE)
             .startDate(OffsetDateTime.now())
             .endDate(OffsetDateTime.now().plusSeconds(1))
-            .actorType(randomEnum(BatchOperationActorType.class))
+            .actorType(randomEnum(AuditLogActorType.class))
             .actorId("actor-" + key)
             .operationsTotalCount(0)
             .operationsFailedCount(0)

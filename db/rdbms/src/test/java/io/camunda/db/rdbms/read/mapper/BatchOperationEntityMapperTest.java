@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationErrorDto;
 import io.camunda.db.rdbms.write.domain.BatchOperationDbModel;
+import io.camunda.search.entities.AuditLogEntity.AuditLogActorType;
 import io.camunda.search.entities.BatchOperationType;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -65,14 +66,13 @@ class BatchOperationEntityMapperTest {
   void shouldMapDbModelToEntityWithActor() {
     final var dbModel =
         new BatchOperationDbModel.Builder()
-            .actorType(io.camunda.search.entities.BatchOperationEntity.BatchOperationActorType.USER)
+            .actorType(AuditLogActorType.USER)
             .actorId("user-123")
             .build();
 
     final var entity = BatchOperationEntityMapper.toEntity(dbModel);
 
-    assertThat(entity.actorType())
-        .isEqualTo(io.camunda.search.entities.BatchOperationEntity.BatchOperationActorType.USER);
+    assertThat(entity.actorType()).isEqualTo(AuditLogActorType.USER);
     assertThat(entity.actorId()).isEqualTo("user-123");
   }
 
