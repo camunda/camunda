@@ -20,6 +20,16 @@ import java.util.List;
 public interface EvaluateConditionalResponse {
 
   /**
+   * @return the unique key of the conditional evaluation operation.
+   */
+  long getConditionalEvaluationKey();
+
+  /**
+   * @return the tenant ID of the conditional evaluation operation.
+   */
+  String getTenantId();
+
+  /**
    * @return list of process instances created. If no root-level conditional start events evaluated
    *     to true, the list will be empty.
    */

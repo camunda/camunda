@@ -24,10 +24,14 @@ import java.util.stream.Collectors;
 
 public final class EvaluateConditionalResponseImpl implements EvaluateConditionalResponse {
 
+  private final long conditionalEvaluationKey;
+  private final String tenantId;
   private final List<ProcessInstanceReference> processInstances;
 
   public EvaluateConditionalResponseImpl(
       final GatewayOuterClass.EvaluateConditionalResponse grpcResponse) {
+    conditionalEvaluationKey = grpcResponse.getConditionalEvaluationKey();
+    tenantId = grpcResponse.getTenantId();
     processInstances =
         grpcResponse.getProcessInstancesList().stream()
             .map(ProcessInstanceReferenceImpl::new)
@@ -35,11 +39,23 @@ public final class EvaluateConditionalResponseImpl implements EvaluateConditiona
   }
 
   public EvaluateConditionalResponseImpl(final EvaluateConditionalResult restResponse) {
+    conditionalEvaluationKey = Long.parseLong(restResponse.getConditionalEvaluationKey());
+    tenantId = restResponse.getTenantId();
     final List<io.camunda.client.protocol.rest.ProcessInstanceReference> restInstances =
         restResponse.getProcessInstances();
 
     processInstances =
         restInstances.stream().map(ProcessInstanceReferenceImpl::new).collect(Collectors.toList());
+  }
+
+  @Override
+  public long getConditionalEvaluationKey() {
+    return conditionalEvaluationKey;
+  }
+
+  @Override
+  public String getTenantId() {
+    return tenantId;
   }
 
   @Override

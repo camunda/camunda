@@ -20,6 +20,7 @@ import io.camunda.service.ConditionalServices;
 import io.camunda.service.ConditionalServices.EvaluateConditionalRequest;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.exception.ServiceException;
+import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.conditional.ConditionalEvaluationRecord;
 import java.util.concurrent.CompletableFuture;
@@ -59,12 +60,13 @@ public class ConditionalControllerTest extends RestControllerTest {
   @ParameterizedTest
   @MethodSource("provideConditionalEvaluationScenarios")
   void shouldEvaluateConditionalStartEvents(
-      final ConditionalEvaluationRecord mockResponseRecord, final String expectedApiResponse) {
+      final BrokerResponse<ConditionalEvaluationRecord> mockResponse,
+      final String expectedApiResponse) {
     // given
     when(multiTenancyCfg.isChecksEnabled()).thenReturn(false);
 
     when(conditionalServices.evaluateConditional(any(EvaluateConditionalRequest.class)))
-        .thenReturn(CompletableFuture.completedFuture(mockResponseRecord));
+        .thenReturn(CompletableFuture.completedFuture(mockResponse));
 
     final var request =
         """
@@ -344,11 +346,17 @@ public class ConditionalControllerTest extends RestControllerTest {
   private static Stream<Arguments> provideConditionalEvaluationScenarios() {
     return Stream.of(
         Arguments.of(
-            new ConditionalEvaluationRecord()
-                .addStartedProcessInstance(2251799813685249L, 2251799813685250L)
-                .addStartedProcessInstance(2251799813685251L, 2251799813685252L),
+            new BrokerResponse<>(
+                new ConditionalEvaluationRecord()
+                    .setTenantId("<default>")
+                    .addStartedProcessInstance(2251799813685249L, 2251799813685250L)
+                    .addStartedProcessInstance(2251799813685251L, 2251799813685252L),
+                1,
+                12345L),
             """
             {
+                "conditionalEvaluationKey": "12345",
+                "tenantId": "<default>",
                 "processInstances": [
                     {
                         "processDefinitionKey": "2251799813685249",
@@ -361,9 +369,12 @@ public class ConditionalControllerTest extends RestControllerTest {
                 ]
             }"""),
         Arguments.of(
-            new ConditionalEvaluationRecord(),
+            new BrokerResponse<>(
+                new ConditionalEvaluationRecord().setTenantId("<default>"), 0, 99999L),
             """
             {
+                "conditionalEvaluationKey": "99999",
+                "tenantId": "<default>",
                 "processInstances": []
             }"""));
   }

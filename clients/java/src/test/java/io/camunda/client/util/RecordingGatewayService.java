@@ -546,10 +546,24 @@ public final class RecordingGatewayService extends GatewayImplBase {
 
   public void onEvaluateConditionalRequest(
       final long processDefinitionKey, final long processInstanceKey) {
+    onEvaluateConditionalRequest(
+        12345L,
+        CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER,
+        processDefinitionKey,
+        processInstanceKey);
+  }
+
+  public void onEvaluateConditionalRequest(
+      final long conditionalEvaluationKey,
+      final String tenantId,
+      final long processDefinitionKey,
+      final long processInstanceKey) {
     addRequestHandler(
         EvaluateConditionalRequest.class,
         request ->
             EvaluateConditionalResponse.newBuilder()
+                .setConditionalEvaluationKey(conditionalEvaluationKey)
+                .setTenantId(tenantId)
                 .addProcessInstances(
                     ProcessInstanceReference.newBuilder()
                         .setProcessDefinitionKey(processDefinitionKey)
@@ -561,7 +575,11 @@ public final class RecordingGatewayService extends GatewayImplBase {
   public void onEvaluateConditionalRequest() {
     addRequestHandler(
         EvaluateConditionalRequest.class,
-        request -> EvaluateConditionalResponse.newBuilder().build());
+        request ->
+            EvaluateConditionalResponse.newBuilder()
+                .setConditionalEvaluationKey(12345L)
+                .setTenantId(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER)
+                .build());
   }
 
   public void onCreateProcessInstanceWithResultRequest(
