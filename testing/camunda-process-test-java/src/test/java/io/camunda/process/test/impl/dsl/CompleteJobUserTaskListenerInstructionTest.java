@@ -59,8 +59,7 @@ public class CompleteJobUserTaskListenerInstructionTest {
   @Mock private JobFilter jobFilter;
   @Captor private ArgumentCaptor<JobSelector> jobSelectorCaptor;
 
-  @Captor
-  private ArgumentCaptor<Consumer<CompleteUserTaskJobResultStep1>> jobResultHandlerCaptor;
+  @Captor private ArgumentCaptor<Consumer<CompleteUserTaskJobResultStep1>> jobResultHandlerCaptor;
 
   @Mock(answer = Answers.RETURNS_DEEP_STUBS)
   private CompleteUserTaskJobResultStep1 jobResult;

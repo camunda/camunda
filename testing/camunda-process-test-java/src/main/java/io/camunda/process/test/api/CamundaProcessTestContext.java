@@ -373,8 +373,7 @@ public interface CamundaProcessTestContext {
    * @param jobResult the consumer to configure the user task job result
    */
   void completeJobOfUserTaskListener(
-      final JobSelector jobSelector,
-      final Consumer<CompleteUserTaskJobResultStep1> jobResult);
+      final JobSelector jobSelector, final Consumer<CompleteUserTaskJobResultStep1> jobResult);
 
   /**
    * Completes a job of a user task listener matching the specified selector and sets the provided

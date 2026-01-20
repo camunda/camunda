@@ -553,8 +553,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
 
   @Override
   public void completeJobOfUserTaskListener(
-      final JobSelector jobSelector,
-      final Consumer<CompleteUserTaskJobResultStep1> jobResult) {
+      final JobSelector jobSelector, final Consumer<CompleteUserTaskJobResultStep1> jobResult) {
     completeJobOfUserTaskListener(jobSelector, Collections.emptyMap(), jobResult);
   }
 
