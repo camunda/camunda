@@ -8,6 +8,11 @@
 
 import {z} from 'zod';
 import {API_VERSION, type Endpoint} from '../common';
+import {
+	partitionSchema as generatedPartitionSchema,
+	brokerInfoSchema as generatedBrokerInfoSchema,
+	topologyResponseSchema,
+} from './gen';
 
 const partitionRoleSchema = z.enum(['leader', 'follower', 'inactive']);
 type PartitionRole = z.infer<typeof partitionRoleSchema>;
@@ -15,30 +20,13 @@ type PartitionRole = z.infer<typeof partitionRoleSchema>;
 const partitionHealthSchema = z.enum(['healthy', 'unhealthy', 'dead']);
 type PartitionHealth = z.infer<typeof partitionHealthSchema>;
 
-const partitionSchema = z.object({
-	partitionId: z.number().int(),
-	role: partitionRoleSchema,
-	health: partitionHealthSchema,
-});
+const partitionSchema = generatedPartitionSchema;
 type Partition = z.infer<typeof partitionSchema>;
 
-const brokerInfoSchema = z.object({
-	nodeId: z.number().int(),
-	host: z.string(),
-	port: z.number().int(),
-	partitions: z.array(partitionSchema),
-	version: z.string(),
-});
+const brokerInfoSchema = generatedBrokerInfoSchema;
 type BrokerInfo = z.infer<typeof brokerInfoSchema>;
 
-const getTopologyResponseBodySchema = z.object({
-	brokers: z.array(brokerInfoSchema).nullable(),
-	clusterSize: z.number().int().nullable(),
-	partitionsCount: z.number().int().nullable(),
-	replicationFactor: z.number().int().nullable(),
-	gatewayVersion: z.string().nullable(),
-	lastCompletedChangeId: z.string().nullable(),
-});
+const getTopologyResponseBodySchema = topologyResponseSchema;
 type GetTopologyResponseBody = z.infer<typeof getTopologyResponseBodySchema>;
 
 const getTopology: Endpoint = {
