@@ -16,6 +16,7 @@ import io.camunda.webapps.schema.descriptors.template.AuditLogTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -128,10 +129,10 @@ public class HistoryDeletionJob implements BackgroundTask {
 
   // TODO add javadoc
   private CompletionStage<List<String>> deleteProcessDefinitions(
-      final HistoryDeletionBatch batch, final List<String> ids) {
+      final HistoryDeletionBatch batch, final List<String> processInstanceDeletionIds) {
     final var processDefinitions = batch.getResourceKeys(HistoryDeletionType.PROCESS_DEFINITION);
     if (processDefinitions.isEmpty()) {
-      return CompletableFuture.completedFuture(ids);
+      return CompletableFuture.completedFuture(processInstanceDeletionIds);
     }
 
     return deleterRepository
@@ -144,7 +145,12 @@ public class HistoryDeletionJob implements BackgroundTask {
                 deleterRepository.deleteDocumentsById(
                     processIndex.getFullQualifiedName(),
                     processDefinitions.stream().map(Object::toString).toList()))
-        .thenApply(ignored -> batch.getHistoryDeletionIds(HistoryDeletionType.PROCESS_DEFINITION));
+        .thenApply(
+            ignored -> {
+              final var ids = new ArrayList<>(processInstanceDeletionIds);
+              ids.addAll(batch.getHistoryDeletionIds(HistoryDeletionType.PROCESS_DEFINITION));
+              return ids;
+            });
   }
 
   private CompletionStage<Integer> deleteFromHistoryDeletionIndex(final List<String> ids) {
