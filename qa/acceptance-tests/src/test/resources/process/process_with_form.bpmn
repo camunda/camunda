@@ -7,6 +7,7 @@
     <bpmn:userTask id="form_process" name="Form">
       <bpmn:extensionElements>
         <zeebe:formDefinition formId="test" />
+        <zeebe:assignmentDefinition assignee="userAssignee" candidateGroups="finance, candidateGroup, hr" />
         <zeebe:userTask />
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_07v18s2</bpmn:incoming>
