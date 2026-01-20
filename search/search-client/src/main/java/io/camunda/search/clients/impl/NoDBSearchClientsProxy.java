@@ -7,6 +7,7 @@
  */
 package io.camunda.search.clients.impl;
 
+import io.camunda.search.clients.ProcessInstanceSearchClient;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.search.entities.AuditLogEntity;
 import io.camunda.search.entities.AuthorizationEntity;
@@ -270,6 +271,11 @@ public class NoDBSearchClientsProxy implements SearchClientsProxy {
   public List<ProcessFlowNodeStatisticsEntity> processInstanceFlowNodeStatistics(
       final long processInstanceKey) {
     throw new NoSecondaryStorageException();
+  }
+
+  @Override
+  public ProcessInstanceSearchClient withEngineName(final String engineName) {
+    return this;
   }
 
   @Override

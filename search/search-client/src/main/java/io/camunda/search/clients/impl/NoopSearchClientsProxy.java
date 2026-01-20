@@ -9,6 +9,7 @@ package io.camunda.search.clients.impl;
 
 import static java.util.Collections.emptyList;
 
+import io.camunda.search.clients.ProcessInstanceSearchClient;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.search.entities.AuditLogEntity;
 import io.camunda.search.entities.AuthorizationEntity;
@@ -272,6 +273,11 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
   public List<ProcessFlowNodeStatisticsEntity> processInstanceFlowNodeStatistics(
       final long processInstanceKey) {
     return emptyList();
+  }
+
+  @Override
+  public ProcessInstanceSearchClient withEngineName(final String engineName) {
+    return this;
   }
 
   @Override
