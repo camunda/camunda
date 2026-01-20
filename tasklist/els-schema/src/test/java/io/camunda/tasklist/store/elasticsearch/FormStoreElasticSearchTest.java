@@ -27,6 +27,7 @@ import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import io.camunda.webapps.schema.entities.form.FormEntity;
 import java.io.IOException;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -79,8 +80,7 @@ class FormStoreElasticSearchTest {
   @Test
   void getFormWhenIOExceptionOccurred() throws IOException {
     // given - Mock ES8 client to throw IOException
-    when(es8Client.search(
-            any(co.elastic.clients.elasticsearch.core.SearchRequest.class), any(Class.class)))
+    when(es8Client.search(any(SearchRequest.class), any(Class.class)))
         .thenThrow(new IOException("some error"));
 
     // when - then
@@ -110,7 +110,7 @@ class FormStoreElasticSearchTest {
     when(es8Response.hits()).thenReturn(es8HitsMetadata);
     when(es8HitsMetadata.total()).thenReturn(es8TotalHits);
     when(es8TotalHits.value()).thenReturn(1L);
-    when(es8HitsMetadata.hits()).thenReturn(java.util.List.of(es8Hit));
+    when(es8HitsMetadata.hits()).thenReturn(List.of(es8Hit));
     when(es8Hit.source()).thenReturn(providedFormEntity);
 
     // when

@@ -18,6 +18,7 @@ import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.store.FormStore;
+import io.camunda.tasklist.store.ScrollException;
 import io.camunda.tasklist.util.ElasticsearchTenantHelper;
 import io.camunda.tasklist.util.ElasticsearchUtil;
 import io.camunda.tasklist.util.ElasticsearchUtil.QueryType;
@@ -27,6 +28,7 @@ import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import io.camunda.webapps.schema.entities.form.FormEntity;
 import java.io.IOException;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,21 +61,23 @@ public class FormStoreElasticSearch implements FormStore {
 
   @Override
   public FormEntity getForm(final String id, final String processDefinitionId, final Long version) {
-    final FormEntity formEmbedded =
-        version == null ? getFormEmbedded(id, processDefinitionId) : null;
-    if (formEmbedded != null) {
-      return formEmbedded;
-    } else if (isFormAssociatedToTask(id, processDefinitionId)) {
-      final var formLinked = getLinkedForm(id, version);
-      if (formLinked != null) {
-        return formLinked;
+    // Try to get embedded form first (only when version is not specified)
+    if (version == null) {
+      final FormEntity formEmbedded = getFormEmbedded(id, processDefinitionId);
+      if (formEmbedded != null) {
+        return formEmbedded;
       }
-    } else if (isFormAssociatedToProcess(id, processDefinitionId)) {
-      final var formLinked = getLinkedForm(id, version);
+    }
+
+    // Try to get linked form if associated to task or process
+    if (isFormAssociatedToTask(id, processDefinitionId)
+        || isFormAssociatedToProcess(id, processDefinitionId)) {
+      final FormEntity formLinked = getLinkedForm(id, version);
       if (formLinked != null) {
         return formLinked;
       }
     }
+
     throw new NotFoundException(String.format("form with id %s was not found", id));
   }
 
@@ -93,9 +97,9 @@ public class FormStoreElasticSearch implements FormStore {
               es8Client, searchRequestBuilder, ElasticsearchUtil.MAP_CLASS)
           .flatMap(response -> response.hits().hits().stream())
           .map(Hit::id)
-          .filter(java.util.Objects::nonNull)
+          .filter(Objects::nonNull)
           .toList();
-    } catch (final Exception e) {
+    } catch (final ScrollException e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
     }
   }
@@ -123,36 +127,28 @@ public class FormStoreElasticSearch implements FormStore {
   }
 
   private FormEntity getFormEmbedded(final String id, final String processDefinitionId) {
+    final String formId = String.format("%s_%s", processDefinitionId, id);
+    final var idsQuery = ElasticsearchUtil.idsQuery(formId);
+    final var query = ElasticsearchUtil.constantScoreQuery(idsQuery);
+    final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
+
+    final var searchRequest =
+        new SearchRequest.Builder()
+            .index(
+                ElasticsearchUtil.whereToSearch(
+                    formIndex, ElasticsearchUtil.QueryType.ONLY_RUNTIME))
+            .query(tenantAwareQuery)
+            .build();
+
     try {
-      final String formId = String.format("%s_%s", processDefinitionId, id);
-      final var idsQuery = ElasticsearchUtil.idsQuery(formId);
-      final var query = ElasticsearchUtil.constantScoreQuery(idsQuery);
-      final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
-
-      final var searchRequest =
-          new SearchRequest.Builder()
-              .index(
-                  ElasticsearchUtil.whereToSearch(
-                      formIndex, ElasticsearchUtil.QueryType.ONLY_RUNTIME))
-              .query(tenantAwareQuery)
-              .build();
-
       final var response = es8Client.search(searchRequest, FormEntity.class);
-
       if (response.hits().total().value() == 1) {
         return response.hits().hits().get(0).source();
-      } else if (response.hits().total().value() > 1) {
-        throw new NotFoundException(
-            String.format("Unique %s with id %s was not found", formIndex.getIndexName(), formId));
-      } else {
-        throw new NotFoundException(
-            String.format("%s with id %s was not found", formIndex.getIndexName(), formId));
       }
     } catch (final IOException e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
-    } catch (final NotFoundException e) {
-      return null;
     }
+    return null;
   }
 
   private FormEntity getLinkedForm(final String formId, final Long formVersion) {
@@ -162,6 +158,8 @@ public class FormStoreElasticSearch implements FormStore {
       final var formIdQuery =
           Query.of(q -> q.bool(b -> b.should(bpmnIdQuery).should(idQuery).minimumShouldMatch("1")));
 
+      // with the version set, you can return the form that was deleted, because of backward
+      // compatibility
       final var query =
           formVersion != null
               ? ElasticsearchUtil.joinWithAnd(
@@ -177,6 +175,7 @@ public class FormStoreElasticSearch implements FormStore {
               .query(tenantAwareQuery)
               .size(1);
 
+      // get the latest version where IS_DELETED is false (highest active version)
       if (formVersion == null) {
         searchRequestBuilder.sort(ElasticsearchUtil.sortOrder(FormIndex.VERSION, SortOrder.Desc));
       }
