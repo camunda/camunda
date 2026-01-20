@@ -7,7 +7,14 @@
  */
 package io.camunda.search.clients.reader;
 
+import io.camunda.search.entities.GlobalJobStatisticsEntity;
 import io.camunda.search.entities.JobEntity;
+import io.camunda.search.query.GlobalJobStatisticsQuery;
 import io.camunda.search.query.JobQuery;
+import io.camunda.security.reader.ResourceAccessChecks;
 
-public interface JobReader extends SearchEntityReader<JobEntity, JobQuery> {}
+public interface JobReader extends SearchEntityReader<JobEntity, JobQuery> {
+
+  GlobalJobStatisticsEntity getGlobalJobStatistics(
+      GlobalJobStatisticsQuery query, ResourceAccessChecks resourceAccessChecks);
+}

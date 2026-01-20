@@ -109,6 +109,23 @@ public final class SearchQueryRequestMapper {
                 .build());
   }
 
+  public static Either<ProblemDetail, io.camunda.search.query.GlobalJobStatisticsQuery>
+      toGlobalJobStatisticsQuery(final GlobalJobStatisticsQuery request) {
+    if (request == null) {
+      return Either.right(SearchQueryBuilders.globalJobStatisticsSearchQuery().build());
+    }
+    final var filter = SearchQueryFilterMapper.toGlobalJobStatisticsFilter(request.getFilter());
+
+    if (filter.isLeft()) {
+      final var problem = RequestValidator.createProblemDetail(filter.getLeft());
+      if (problem.isPresent()) {
+        return Either.left(problem.get());
+      }
+    }
+    return Either.right(
+        SearchQueryBuilders.globalJobStatisticsSearchQuery().filter(filter.get()).build());
+  }
+
   public static Either<ProblemDetail, ProcessDefinitionQuery> toProcessDefinitionQuery(
       final ProcessDefinitionSearchQuery request) {
     if (request == null) {

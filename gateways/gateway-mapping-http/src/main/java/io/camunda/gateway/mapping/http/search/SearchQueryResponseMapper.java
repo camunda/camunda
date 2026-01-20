@@ -53,6 +53,8 @@ import io.camunda.gateway.protocol.model.ElementInstanceStateEnum;
 import io.camunda.gateway.protocol.model.EvaluatedDecisionInputItem;
 import io.camunda.gateway.protocol.model.EvaluatedDecisionOutputItem;
 import io.camunda.gateway.protocol.model.FormResult;
+import io.camunda.gateway.protocol.model.GlobalJobStatisticsItem;
+import io.camunda.gateway.protocol.model.GlobalJobStatisticsQueryResult;
 import io.camunda.gateway.protocol.model.GroupClientResult;
 import io.camunda.gateway.protocol.model.GroupClientSearchResult;
 import io.camunda.gateway.protocol.model.GroupResult;
@@ -107,6 +109,7 @@ import io.camunda.gateway.protocol.model.RoleSearchQueryResult;
 import io.camunda.gateway.protocol.model.RoleUserResult;
 import io.camunda.gateway.protocol.model.RoleUserSearchResult;
 import io.camunda.gateway.protocol.model.SearchQueryPageResponse;
+import io.camunda.gateway.protocol.model.StatusMetric;
 import io.camunda.gateway.protocol.model.TenantClientResult;
 import io.camunda.gateway.protocol.model.TenantClientSearchResult;
 import io.camunda.gateway.protocol.model.TenantGroupResult;
@@ -141,6 +144,7 @@ import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceState;
 import io.camunda.search.entities.DecisionRequirementsEntity;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.entities.FormEntity;
+import io.camunda.search.entities.GlobalJobStatisticsEntity;
 import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.GroupMemberEntity;
 import io.camunda.search.entities.IncidentEntity;
@@ -1491,6 +1495,35 @@ public final class SearchQueryResponseMapper {
                     SearchQueryResponseMapper
                         ::toProcessDefinitionMessageSubscriptionStatisticsQueryResponse)
                 .orElseGet(Collections::emptyList));
+  }
+
+  public static GlobalJobStatisticsQueryResult toGlobalJobStatisticsQueryResult(
+      final GlobalJobStatisticsEntity entity) {
+    final var items =
+        ofNullable(entity)
+            .map(GlobalJobStatisticsEntity::items)
+            .map(
+                list ->
+                    list.stream()
+                        .map(SearchQueryResponseMapper::toGlobalJobStatisticsItem)
+                        .toList())
+            .orElseGet(Collections::emptyList);
+
+    return new GlobalJobStatisticsQueryResult().items(items);
+  }
+
+  private static GlobalJobStatisticsItem toGlobalJobStatisticsItem(
+      final GlobalJobStatisticsEntity.StatisticsItem item) {
+    return new GlobalJobStatisticsItem()
+        .created(toStatusMetric(item.created()))
+        .completed(toStatusMetric(item.completed()))
+        .failed(toStatusMetric(item.failed()));
+  }
+
+  private static StatusMetric toStatusMetric(final GlobalJobStatisticsEntity.StatusMetric metric) {
+    return new StatusMetric()
+        .count(metric.count())
+        .lastUpdatedAt(formatDate(metric.lastUpdatedAt()));
   }
 
   // sometimes we've seen null for properties that should not be null; log a warning if that happens

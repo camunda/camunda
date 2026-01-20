@@ -17,6 +17,9 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.gateway.protocol.model.JobActivationResult;
+import io.camunda.search.entities.GlobalJobStatisticsEntity;
+import io.camunda.search.entities.GlobalJobStatisticsEntity.StatisticsItem;
+import io.camunda.search.entities.GlobalJobStatisticsEntity.StatusMetric;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
@@ -27,6 +30,7 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResultCorrections;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -905,5 +909,105 @@ public class JobControllerTest extends RestControllerTest {
         Arguments.of(List.of("unauthorizedTenant")),
         Arguments.of(List.of("tenantId", "unauthorizedTenant")),
         Arguments.of(List.of("tenantId", "<default>")));
+  }
+
+  @Test
+  void shouldGetGlobalJobStatistics() {
+    // given
+    final var lastUpdatedAt = OffsetDateTime.parse("2024-07-29T15:51:28.071Z");
+    final var statisticsEntity =
+        new GlobalJobStatisticsEntity(
+            List.of(
+                new StatisticsItem(
+                    new StatusMetric(100, lastUpdatedAt),
+                    new StatusMetric(80, lastUpdatedAt),
+                    new StatusMetric(5, lastUpdatedAt))));
+
+    when(jobServices.getGlobalStatistics(any())).thenReturn(statisticsEntity);
+
+    final var request =
+        """
+            {
+              "filter": {
+                "from": "2024-07-28T15:51:28.071Z",
+                "to": "2024-07-29T15:51:28.071Z"
+              }
+            }""";
+
+    final var expectedResponse =
+        """
+            {
+              "items": [
+                {
+                  "created": {
+                    "count": 100,
+                    "lastUpdatedAt": "2024-07-29T15:51:28.071Z"
+                  },
+                  "completed": {
+                    "count": 80,
+                    "lastUpdatedAt": "2024-07-29T15:51:28.071Z"
+                  },
+                  "failed": {
+                    "count": 5,
+                    "lastUpdatedAt": "2024-07-29T15:51:28.071Z"
+                  }
+                }
+              ]
+            }""";
+
+    // when/then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/statistics/global")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(expectedResponse, JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldRejectGlobalJobStatisticsWithEmptyBody() {
+    // when/then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/statistics/global")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isBadRequest();
+
+    verifyNoInteractions(jobServices);
+  }
+
+  @Test
+  void shouldRejectGlobalJobStatisticsWithMissingFromAndTo() {
+    // given
+    final var request =
+        """
+            {
+              "filter": {
+                "jobType": "some-job-type"
+              }
+            }""";
+
+    // when/then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/statistics/global")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest();
+
+    verifyNoInteractions(jobServices);
   }
 }

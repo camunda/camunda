@@ -19,6 +19,7 @@ import io.camunda.search.entities.DecisionInstanceEntity;
 import io.camunda.search.entities.DecisionRequirementsEntity;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.entities.FormEntity;
+import io.camunda.search.entities.GlobalJobStatisticsEntity;
 import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.GroupMemberEntity;
 import io.camunda.search.entities.IncidentEntity;
@@ -56,6 +57,7 @@ import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.DecisionRequirementsQuery;
 import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.search.query.FormQuery;
+import io.camunda.search.query.GlobalJobStatisticsQuery;
 import io.camunda.search.query.GroupMemberQuery;
 import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.IncidentProcessInstanceStatisticsByDefinitionQuery;
@@ -392,6 +394,11 @@ public class NoDBSearchClientsProxy implements SearchClientsProxy {
 
   @Override
   public SearchQueryResult<JobEntity> searchJobs(final JobQuery query) {
+    throw new NoSecondaryStorageException();
+  }
+
+  @Override
+  public GlobalJobStatisticsEntity getGlobalJobStatistics(final GlobalJobStatisticsQuery query) {
     throw new NoSecondaryStorageException();
   }
 }
