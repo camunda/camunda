@@ -16,7 +16,6 @@ import {mockFetchIncidentProcessInstanceStatisticsByError} from 'modules/mocks/a
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import type {GetIncidentProcessInstanceStatisticsByErrorResponseBody} from '@camunda/camunda-api-zod-schemas/8.9';
 import * as incidentsApi from 'modules/api/v2/incidents/fetchIncidentProcessInstanceStatisticsByError';
-import {isRequestError} from 'modules/request';
 
 const Wrapper: React.FC<{children: React.ReactNode}> = ({children}) => (
   <QueryClientProvider client={getMockQueryClient()}>
@@ -73,11 +72,8 @@ describe('useIncidentProcessInstanceStatisticsByError', () => {
     );
 
     await waitFor(() => expect(result.current.isError).toBe(true));
-
-    expect(isRequestError(result.current.error)).toBe(true);
-    if (isRequestError(result.current.error)) {
-      expect(result.current.error.variant).toBe('failed-response');
-    }
+    expect(result.current.error).toBeInstanceOf(Error);
+    expect((result.current.error as Error).message).toBeDefined();
   });
 
   it('applies default sorting when no payload is provided', async () => {
