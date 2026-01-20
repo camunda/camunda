@@ -79,8 +79,9 @@ import java.util.function.Function;
  *
  * <h2>Transitive Authorization Support</h2>
  *
- * <p>Transitive authorizations extend permissions from one resource type to related resources. The
- * key behavioral difference is in wildcard handling:
+ * <p>The transitive flag is a technical optimization control that determines how wildcard
+ * permissions are handled during search operations. It does not cascade or extend permissions from
+ * one resource to another. The key behavioral difference is in wildcard handling:
  *
  * <ul>
  *   <li><b>Non-transitive wildcard:</b> Authorization check is disabled (no filtering)
