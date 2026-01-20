@@ -114,6 +114,10 @@ class TasksPage {
   async gotoTaskDetailsProcessTab(id: string) {
     await this.page.goto(`/${id}/process`, {waitUntil: 'networkidle'});
   }
+
+  async gotoTaskDetailsHistoryTab(id: string) {
+    await this.page.goto(`/${id}/history`, {waitUntil: 'networkidle'});
+  }
 }
 
 export {TasksPage};
