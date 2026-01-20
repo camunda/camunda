@@ -57,6 +57,7 @@ public class SecondaryStorageRdbmsTest {
   private static final String MIN_HISTORY_CLEANUP_INTERVAL = "PT1S";
   private static final String MAX_HISTORY_CLEANUP_INTERVAL = "PT2H";
   private static final int HISTORY_CLEANUP_BATCH_SIZE = 2000;
+  private static final int HISTORY_CLEANUP_PROCESS_INSTANCE_BATCH_SIZE = 1000;
   private static final String HISTORY_USAGE_METRICS_CLEANUP_INTERVAL = "PT48H";
   private static final String HISTORY_USAGE_METRICS_TTL = "PT1H";
 
@@ -90,6 +91,8 @@ public class SecondaryStorageRdbmsTest {
             + MAX_HISTORY_CLEANUP_INTERVAL,
         "camunda.data.secondary-storage.rdbms.history.historyCleanupBatchSize="
             + HISTORY_CLEANUP_BATCH_SIZE,
+        "camunda.data.secondary-storage.rdbms.history.historyCleanupProcessInstanceBatchSize="
+            + HISTORY_CLEANUP_PROCESS_INSTANCE_BATCH_SIZE,
         "camunda.data.secondary-storage.rdbms.history.usageMetricsCleanup="
             + HISTORY_USAGE_METRICS_CLEANUP_INTERVAL,
         "camunda.data.secondary-storage.rdbms.history.usageMetricsTTL=" + HISTORY_USAGE_METRICS_TTL,
@@ -154,6 +157,8 @@ public class SecondaryStorageRdbmsTest {
           .isEqualTo(Duration.parse(MAX_HISTORY_CLEANUP_INTERVAL));
       assertThat(exporterConfiguration.getHistory().getHistoryCleanupBatchSize())
           .isEqualTo(HISTORY_CLEANUP_BATCH_SIZE);
+      assertThat(exporterConfiguration.getHistory().getHistoryCleanupProcessInstanceBatchSize())
+          .isEqualTo(HISTORY_CLEANUP_PROCESS_INSTANCE_BATCH_SIZE);
       assertThat(exporterConfiguration.getHistory().getUsageMetricsCleanup())
           .isEqualTo(Duration.parse(HISTORY_USAGE_METRICS_CLEANUP_INTERVAL));
       assertThat(exporterConfiguration.getHistory().getUsageMetricsTTL())
