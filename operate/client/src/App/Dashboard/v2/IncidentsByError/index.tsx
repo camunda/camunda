@@ -17,11 +17,25 @@ import {Skeleton} from '../PartiallyExpandableDataTable/Skeleton';
 import {LinkWrapper, ErrorMessage} from '../../styled';
 import {EmptyState} from 'modules/components/EmptyState';
 import EmptyStateProcessIncidents from 'modules/components/Icon/empty-state-process-incidents.svg?react';
-import {useIncidentProcessInstanceStatisticsByError} from 'modules/queries/incidents/useIncidentProcessInstanceStatisticsByError';
+import {useIncidentProcessInstanceStatisticsByError} from 'modules/queries/incidentStatistics/useIncidentProcessInstanceStatisticsByError';
 import type {IncidentProcessInstanceStatisticsByError} from '@camunda/camunda-api-zod-schemas/8.9';
+import {Details} from './Details';
 
 const IncidentsByError: React.FC = () => {
   const result = useIncidentProcessInstanceStatisticsByError();
+  const incidents = result.data?.items ?? [];
+
+  const expandedContents = incidents.reduce<
+    Record<string, React.ReactElement<{tabIndex: number}>>
+  >((accumulator, item) => {
+    accumulator[String(item.errorHashCode)] = (
+      <Details
+        errorMessage={item.errorMessage}
+        incidentErrorHashCode={item.errorHashCode}
+      />
+    );
+    return accumulator;
+  }, {});
 
   if (result.status === 'pending' && !result.data) {
     return <Skeleton />;
@@ -45,41 +59,40 @@ const IncidentsByError: React.FC = () => {
     <PartiallyExpandableDataTable
       dataTestId="incident-byError"
       headers={[{key: 'incident', header: 'incident'}]}
-      rows={(result.data?.items ?? []).map(
-        (item: IncidentProcessInstanceStatisticsByError) => {
-          const {errorHashCode, errorMessage, activeInstancesWithErrorCount} =
-            item;
+      expandedContents={expandedContents}
+      rows={incidents.map((item: IncidentProcessInstanceStatisticsByError) => {
+        const {errorHashCode, errorMessage, activeInstancesWithErrorCount} =
+          item;
 
-          return {
-            id: String(errorHashCode),
-            incident: (
-              <LinkWrapper
-                to={Locations.processes({
-                  errorMessage: truncateErrorMessage(errorMessage),
-                  incidentErrorHashCode: errorHashCode,
-                  incidents: true,
-                })}
-                onClick={() => {
-                  tracking.track({
-                    eventName: 'navigation',
-                    link: 'dashboard-process-incidents-by-error-message-all-processes',
-                  });
-                }}
-                title={getAccordionTitle(
-                  activeInstancesWithErrorCount,
-                  errorMessage,
-                )}
-              >
-                <InstancesBar
-                  label={{type: 'incident', size: 'small', text: errorMessage}}
-                  incidentsCount={activeInstancesWithErrorCount}
-                  size="medium"
-                />
-              </LinkWrapper>
-            ),
-          };
-        },
-      )}
+        return {
+          id: String(errorHashCode),
+          incident: (
+            <LinkWrapper
+              to={Locations.processes({
+                errorMessage: truncateErrorMessage(errorMessage),
+                incidentErrorHashCode: errorHashCode,
+                incidents: true,
+              })}
+              onClick={() => {
+                tracking.track({
+                  eventName: 'navigation',
+                  link: 'dashboard-process-incidents-by-error-message-all-processes',
+                });
+              }}
+              title={getAccordionTitle(
+                activeInstancesWithErrorCount,
+                errorMessage,
+              )}
+            >
+              <InstancesBar
+                label={{type: 'incident', size: 'small', text: errorMessage}}
+                incidentsCount={activeInstancesWithErrorCount}
+                size="medium"
+              />
+            </LinkWrapper>
+          ),
+        };
+      })}
     />
   );
 };

@@ -6,41 +6,56 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {
-  createProcess,
-  createIncidentsByError,
-  createIncidentByError,
-} from 'modules/testUtils';
-
-const mockIncidentsByError = createIncidentsByError([
-  createIncidentByError({
-    processes: [createProcess()],
-  }),
-  createIncidentByError({
-    errorMessage: 'No space left on device.',
-    processes: [
-      createProcess({name: 'processA', version: 42}),
-      createProcess({name: 'processB', version: 23}),
-    ],
-  }),
-]);
+import type {
+  IncidentProcessInstanceStatisticsByDefinition,
+  IncidentProcessInstanceStatisticsByError,
+} from '@camunda/camunda-api-zod-schemas/8.9';
+import {searchResult} from 'modules/testUtils';
 
 const bigErrorMessage =
   'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Tempor nec feugiat nisl pretium fusce id. Pulvinar sapien et ligula ullamcorper malesuada. Iaculis nunc sed augue lacus viverra vitae congue eu. Aliquet lectus proin nibh nisl condimentum id. Tempus iaculis urna id volutpat.';
 
-const mockIncidentsByErrorWithBigErrorMessage = createIncidentsByError([
-  createIncidentByError({
-    processes: [
-      createProcess({
-        errorMessage: bigErrorMessage,
-      }),
-    ],
-    errorMessage: bigErrorMessage,
-  }),
-]);
+const incidentStatisticsByError =
+  searchResult<IncidentProcessInstanceStatisticsByError>([
+    {
+      errorHashCode: 234254,
+      errorMessage: "JSON path '$.paid' has no result.",
+      activeInstancesWithErrorCount: 78,
+    },
+  ]);
+
+const incidentStatisticsByErrorWithBigMessage =
+  searchResult<IncidentProcessInstanceStatisticsByError>([
+    {
+      errorHashCode: 234254,
+      errorMessage: bigErrorMessage,
+      activeInstancesWithErrorCount: 36,
+    },
+  ]);
+
+const incidentStatisticsByDefinition =
+  searchResult<IncidentProcessInstanceStatisticsByDefinition>([
+    {
+      processDefinitionId: 'call-level-2-process',
+      processDefinitionKey: 1,
+      processDefinitionVersion: 1,
+      processDefinitionName: 'Call Level 2 Process – Version 1',
+      tenantId: '<default>',
+      activeInstancesWithErrorCount: 52,
+    },
+    {
+      processDefinitionId: 'process-elements-incidents',
+      processDefinitionKey: 2,
+      processDefinitionVersion: 1,
+      processDefinitionName: 'Process with elements incidents – Version 1',
+      tenantId: 'tenant-a',
+      activeInstancesWithErrorCount: 26,
+    },
+  ]);
 
 export {
-  mockIncidentsByError,
+  incidentStatisticsByError,
+  incidentStatisticsByDefinition,
   bigErrorMessage,
-  mockIncidentsByErrorWithBigErrorMessage,
+  incidentStatisticsByErrorWithBigMessage,
 };
