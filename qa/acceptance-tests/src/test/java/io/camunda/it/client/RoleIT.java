@@ -221,7 +221,7 @@ public class RoleIT {
                             .items())
                     .anyMatch(
                         auth ->
-                            auth.resourceId().equals("resourceId")
+                            "resourceId".equals(auth.resourceId())
                                 && auth.resourceType().equals(ResourceType.RESOURCE)
                                 && auth.ownerId().equals(roleId)));
 
@@ -244,7 +244,7 @@ public class RoleIT {
                             .items())
                     .noneMatch(
                         auth ->
-                            auth.resourceId().equals("resourceId")
+                            "resourceId".equals(auth.resourceId())
                                 && auth.resourceType().equals(ResourceType.RESOURCE)
                                 && auth.ownerId().equals(roleId)));
   }
