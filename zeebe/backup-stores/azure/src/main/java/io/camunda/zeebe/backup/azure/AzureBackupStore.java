@@ -12,8 +12,11 @@ import com.azure.identity.DefaultAzureCredentialBuilder;
 import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.BlobServiceClient;
 import com.azure.storage.blob.BlobServiceClientBuilder;
+import com.azure.storage.blob.batch.BlobBatchClient;
+import com.azure.storage.blob.batch.BlobBatchClientBuilder;
 import com.azure.storage.blob.models.ListBlobsOptions;
 import com.azure.storage.common.StorageSharedKeyCredential;
+import com.google.common.collect.Iterables;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
@@ -33,6 +36,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,6 +55,7 @@ public final class AzureBackupStore implements BackupStore {
   public static final String SNAPSHOT_FILESET_NAME = "snapshot";
   public static final String SEGMENTS_FILESET_NAME = "segments";
   private static final Logger LOG = LoggerFactory.getLogger(AzureBackupStore.class);
+  private static final int MAX_DELETE_BLOB_BATCH_SIZE = 256;
   private final ExecutorService executor;
   private final FileSetManager fileSetManager;
   private final ManifestManager manifestManager;
@@ -179,6 +185,23 @@ public final class AzureBackupStore implements BackupStore {
   }
 
   @Override
+  public CompletableFuture<Void> delete(final Collection<BackupIdentifier> ids) {
+    return CompletableFuture.runAsync(
+        () ->
+            manifestManager
+                .manifestUrls(ids)
+                .thenCombine(
+                    fileSetManager.backupDataUrls(ids),
+                    (manifestUrls, objectUrls) -> {
+                      manifestUrls.addAll(objectUrls);
+                      return manifestUrls;
+                    })
+                .thenCompose(this::deleteBlobs)
+                .join(),
+        executor);
+  }
+
+  @Override
   public CompletableFuture<Backup> restore(final BackupIdentifier id, final Path targetFolder) {
     return CompletableFuture.supplyAsync(
         () -> {
@@ -260,6 +283,21 @@ public final class AzureBackupStore implements BackupStore {
   }
 
   @Override
+  public CompletableFuture<Void> deleteRangeMarkers(
+      final int partitionId, final Collection<BackupRangeMarker> markers) {
+    return CompletableFuture.supplyAsync(
+            () -> {
+              assureContainerCreated();
+              return markers.stream()
+                  .map(marker -> rangeMarkersPrefix(partitionId) + BackupRangeMarker.toName(marker))
+                  .map(blobName -> blobContainerClient.getBlobClient(blobName).getBlobUrl())
+                  .collect(Collectors.toSet());
+            },
+            executor)
+        .thenComposeAsync(this::deleteBlobs, executor);
+  }
+
+  @Override
   public CompletableFuture<Void> closeAsync() {
     return CompletableFuture.runAsync(
         () -> {
@@ -275,6 +313,24 @@ public final class AzureBackupStore implements BackupStore {
             throw new RuntimeException(e);
           }
         });
+  }
+
+  private CompletableFuture<Void> deleteBlobs(final Collection<String> blobUrls) {
+    final BlobBatchClient blobBatchClient =
+        new BlobBatchClientBuilder(blobContainerClient.getServiceClient()).buildClient();
+    return CompletableFuture.allOf(
+        StreamSupport.stream(
+                Iterables.partition(blobUrls, MAX_DELETE_BLOB_BATCH_SIZE).spliterator(), true)
+            .map(
+                batch -> {
+                  final var batchRequest = blobBatchClient.getBlobBatch();
+                  for (final var url : batch) {
+                    batchRequest.deleteBlob(url);
+                  }
+                  return batchRequest;
+                })
+            .map(batch -> CompletableFuture.runAsync(() -> blobBatchClient.submitBatch(batch)))
+            .toArray(CompletableFuture[]::new));
   }
 
   private String rangeMarkersPrefix(final int partitionId) {
