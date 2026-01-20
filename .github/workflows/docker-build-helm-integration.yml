@@ -81,7 +81,13 @@ jobs:
              "OmranAbazid",
              "mustafadagher",
              "ce-dmelnych",
-             "slolatte"]'
+             "slolatte",
+             pedesen,
+             berkaycanbc,
+             georgios-goulos,
+             vsgoulart,
+             tsedekey,
+             lev-safro]'
           ), github.actor) &&
        !contains(github.event.pull_request.labels.*.name, 'skip-always-green'))
     steps:
