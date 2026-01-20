@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.media.Schema.RequiredMode;
 import org.springframework.lang.Nullable;
 
+/** MCP-specific {@link SearchQueryPageRequest} that marks more fields as not required. */
 public class McpSearchQueryPageRequest extends SearchQueryPageRequest {
 
   @Schema(

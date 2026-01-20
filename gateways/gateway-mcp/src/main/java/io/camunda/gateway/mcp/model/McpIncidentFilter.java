@@ -10,6 +10,10 @@ package io.camunda.gateway.mcp.model;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.gateway.protocol.model.simple.IncidentFilter;
 
+/**
+ * MCP-specific Incident filter extending the {@link IncidentFilter} to hide fields from MCP clients
+ * to avoid unnecessary context bloat.
+ */
 public class McpIncidentFilter extends IncidentFilter {
 
   @JsonIgnore
