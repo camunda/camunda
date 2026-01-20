@@ -30,6 +30,64 @@ import org.junit.jupiter.api.Test;
 
 final class BackupRangeResolverTest {
 
+  /**
+   * Creates a contiguous list of backups from checkpoint specifications. Automatically calculates
+   * firstLogPosition to maintain contiguity: - First backup starts at position 1 - Each subsequent
+   * backup starts at previousCheckpointPosition + 1
+   */
+  private List<BackupStatus> createContiguousBackups(final CheckpointSpec... specs) {
+    if (specs.length == 0) {
+      return List.of();
+    }
+
+    final var backups = new java.util.ArrayList<BackupStatus>(specs.length);
+    long previousCheckpointPosition = 0; // First backup will start at 1
+
+    for (final var spec : specs) {
+      final long firstLogPosition = previousCheckpointPosition + 1;
+      backups.add(
+          createBackupWithLogPosition(
+              spec.checkpointId, spec.checkpointPosition, firstLogPosition, Instant.now()));
+      previousCheckpointPosition = spec.checkpointPosition;
+    }
+
+    return backups;
+  }
+
+  /**
+   * Creates a list of backups with an intentional gap in log positions.
+   *
+   * @param gapAtIndex the index where the gap should occur (gap before this backup)
+   * @param gapSize the size of the gap in log positions
+   */
+  private List<BackupStatus> createBackupsWithGap(
+      final int gapAtIndex, final long gapSize, final CheckpointSpec... specs) {
+    if (specs.length == 0 || gapAtIndex < 0 || gapAtIndex >= specs.length) {
+      return List.of();
+    }
+
+    final var backups = new java.util.ArrayList<BackupStatus>(specs.length);
+    long previousCheckpointPosition = 0;
+
+    for (int i = 0; i < specs.length; i++) {
+      final var spec = specs[i];
+      long firstLogPosition = previousCheckpointPosition + 1;
+
+      // Add gap before this backup
+      if (i == gapAtIndex) {
+        firstLogPosition += gapSize;
+      }
+
+      backups.add(
+          createBackupWithLogPosition(
+              spec.checkpointId, spec.checkpointPosition, firstLogPosition, Instant.now()));
+      previousCheckpointPosition = spec.checkpointPosition;
+    }
+
+    return backups;
+  }
+
+  // Legacy methods kept for compatibility with existing simple tests
   private BackupStatus createBackup(
       final long checkpointId, final long checkpointPosition, final Instant timestamp) {
     final BackupIdentifier id = new BackupIdentifierImpl(1, 1, checkpointId);
@@ -68,6 +126,9 @@ final class BackupRangeResolverTest {
         Optional.of(timestamp),
         Optional.of(timestamp));
   }
+
+  /** Checkpoint specification: checkpointId and checkpointPosition */
+  record CheckpointSpec(long checkpointId, long checkpointPosition) {}
 
   @Nested
   class ValidateGlobalCheckpointReachability {
@@ -194,22 +255,28 @@ final class BackupRangeResolverTest {
       final int expectedNodeCount = 2;
       final var safeStartByPartition = Map.of(1, 100L, 2, 100L);
 
+      // Node0P1 has a gap of 30 positions before backup 103
+      final var node0Backups =
+          createBackupsWithGap(
+              1,
+              30, // Gap before index 1
+              new CheckpointSpec(100, 1000),
+              new CheckpointSpec(103, 1030),
+              new CheckpointSpec(105, 1050));
+
+      // Node1P2 has a gap of 99 positions before backup 105
+      final var node1Backups =
+          createBackupsWithGap(
+              1,
+              99, // Gap before index 1
+              new CheckpointSpec(100, 2000),
+              new CheckpointSpec(105, 2050));
+
       final Map<BackupRangeResolver.NodePartitionId, Collection<BackupStatus>>
           backupsByNodePartition =
               Map.of(
-                  new BackupRangeResolver.NodePartitionId(0, 1),
-                      List.of(
-                          createBackupWithLogPosition(
-                              100, 1000, 1, Instant.now()), // first backup starts at 1
-                          createBackupWithLogPosition(
-                              103, 1030, 1031, Instant.now()), // GAP! should start at 1001
-                          createBackupWithLogPosition(105, 1050, 1031, Instant.now())),
-                  new BackupRangeResolver.NodePartitionId(1, 2),
-                      List.of(
-                          createBackupWithLogPosition(
-                              100, 2000, 1, Instant.now()), // first backup starts at 1
-                          createBackupWithLogPosition(
-                              105, 2050, 2100, Instant.now()))); // GAP! should start at 2001
+                  new BackupRangeResolver.NodePartitionId(0, 1), node0Backups,
+                  new BackupRangeResolver.NodePartitionId(1, 2), node1Backups);
 
       final Map<Integer, BackupRange> rangesByPartition =
           Map.of(
@@ -248,13 +315,11 @@ final class BackupRangeResolverTest {
           backupsByNodePartition =
               Map.of(
                   new BackupRangeResolver.NodePartitionId(0, 1),
-                      List.of(
-                          createBackup(100, 1000, Instant.now()),
-                          createBackup(105, 1050, Instant.now())),
+                      createContiguousBackups(
+                          new CheckpointSpec(100, 1000), new CheckpointSpec(105, 1050)),
                   new BackupRangeResolver.NodePartitionId(1, 2),
-                      List.of(
-                          createBackup(100, 2000, Instant.now()),
-                          createBackup(105, 2050, Instant.now())));
+                      createContiguousBackups(
+                          new CheckpointSpec(100, 2000), new CheckpointSpec(105, 2050)));
 
       final Map<Integer, BackupRange> rangesByPartition =
           Map.of(
@@ -286,10 +351,10 @@ final class BackupRangeResolverTest {
 
       // Backups start at 1950, missing coverage from 1900
       final var backups =
-          List.of(
-              createBackupWithLogPosition(1950, 2500, 1, Instant.now()),
-              createBackupWithLogPosition(2000, 3000, 2501, Instant.now()),
-              createBackupWithLogPosition(2100, 3500, 3001, Instant.now()));
+          createContiguousBackups(
+              new CheckpointSpec(1950, 2500),
+              new CheckpointSpec(2000, 3000),
+              new CheckpointSpec(2100, 3500));
 
       final Map<BackupRangeResolver.NodePartitionId, Collection<BackupStatus>>
           backupsByNodePartition = Map.of(new BackupRangeResolver.NodePartitionId(0, 1), backups);
@@ -322,10 +387,10 @@ final class BackupRangeResolverTest {
 
       // Backups end at 2050, missing coverage to 2100
       final var backups =
-          List.of(
-              createBackupWithLogPosition(1900, 2500, 1, Instant.now()),
-              createBackupWithLogPosition(2000, 3000, 2501, Instant.now()),
-              createBackupWithLogPosition(2050, 3500, 3001, Instant.now()));
+          createContiguousBackups(
+              new CheckpointSpec(1900, 2500),
+              new CheckpointSpec(2000, 3000),
+              new CheckpointSpec(2050, 3500));
 
       final Map<BackupRangeResolver.NodePartitionId, Collection<BackupStatus>>
           backupsByNodePartition = Map.of(new BackupRangeResolver.NodePartitionId(0, 1), backups);
@@ -358,10 +423,10 @@ final class BackupRangeResolverTest {
 
       // Backups exactly cover [1900, 2100]
       final var backups =
-          List.of(
-              createBackupWithLogPosition(1900, 2500, 1, Instant.now()),
-              createBackupWithLogPosition(2000, 3000, 2501, Instant.now()),
-              createBackupWithLogPosition(2100, 3500, 3001, Instant.now()));
+          createContiguousBackups(
+              new CheckpointSpec(1900, 2500),
+              new CheckpointSpec(2000, 3000),
+              new CheckpointSpec(2100, 3500));
 
       final Map<BackupRangeResolver.NodePartitionId, Collection<BackupStatus>>
           backupsByNodePartition = Map.of(new BackupRangeResolver.NodePartitionId(0, 1), backups);
@@ -391,12 +456,12 @@ final class BackupRangeResolverTest {
 
       // Backups cover [1800, 2200] which includes [1900, 2100]
       final var backups =
-          List.of(
-              createBackupWithLogPosition(1800, 2000, 1, Instant.now()),
-              createBackupWithLogPosition(1900, 2500, 2001, Instant.now()),
-              createBackupWithLogPosition(2000, 3000, 2501, Instant.now()),
-              createBackupWithLogPosition(2100, 3500, 3001, Instant.now()),
-              createBackupWithLogPosition(2200, 4000, 3501, Instant.now()));
+          createContiguousBackups(
+              new CheckpointSpec(1800, 2000),
+              new CheckpointSpec(1900, 2500),
+              new CheckpointSpec(2000, 3000),
+              new CheckpointSpec(2100, 3500),
+              new CheckpointSpec(2200, 4000));
 
       final Map<BackupRangeResolver.NodePartitionId, Collection<BackupStatus>>
           backupsByNodePartition = Map.of(new BackupRangeResolver.NodePartitionId(0, 1), backups);
@@ -426,17 +491,17 @@ final class BackupRangeResolverTest {
 
       // Node0 has backups [1900, 2000, 2100]
       final var node0Backups =
-          List.of(
-              createBackupWithLogPosition(1900, 2500, 1, Instant.now()),
-              createBackupWithLogPosition(2000, 3000, 2501, Instant.now()),
-              createBackupWithLogPosition(2100, 3500, 3001, Instant.now()));
+          createContiguousBackups(
+              new CheckpointSpec(1900, 2500),
+              new CheckpointSpec(2000, 3000),
+              new CheckpointSpec(2100, 3500));
 
       // Node1 has backups [1900, 2050, 2100] - different middle checkpoint
       final var node1Backups =
-          List.of(
-              createBackupWithLogPosition(1900, 2500, 1, Instant.now()),
-              createBackupWithLogPosition(2050, 3200, 2501, Instant.now()),
-              createBackupWithLogPosition(2100, 3700, 3201, Instant.now()));
+          createContiguousBackups(
+              new CheckpointSpec(1900, 2500),
+              new CheckpointSpec(2050, 3200),
+              new CheckpointSpec(2100, 3700));
 
       final Map<BackupRangeResolver.NodePartitionId, Collection<BackupStatus>>
           backupsByNodePartition =
@@ -456,8 +521,8 @@ final class BackupRangeResolverTest {
               backupsByNodePartition,
               rangesByPartition);
 
-      // then - should pass as both nodes cover the required range, just with different intermediate
-      // backups
+      // then - should pass as both nodes cover the required range, just with different
+      // intermediate backups
       assertThat(result.isValid()).as(result.getErrorMessage()).isTrue();
     }
 
@@ -470,17 +535,18 @@ final class BackupRangeResolverTest {
 
       // Node0 has contiguous backups
       final var node0Backups =
-          List.of(
-              createBackupWithLogPosition(1900, 2500, 1, Instant.now()),
-              createBackupWithLogPosition(2000, 3000, 2501, Instant.now()),
-              createBackupWithLogPosition(2100, 3500, 3001, Instant.now()));
+          createContiguousBackups(
+              new CheckpointSpec(1900, 2500),
+              new CheckpointSpec(2000, 3000),
+              new CheckpointSpec(2100, 3500));
 
-      // Node1 has a gap in log positions
+      // Node1 has a gap (199 positions) before the last backup
       final var node1Backups =
-          List.of(
-              createBackupWithLogPosition(1900, 2500, 1, Instant.now()),
-              createBackupWithLogPosition(
-                  2100, 3500, 2700, Instant.now())); // GAP! should start at 2501
+          createBackupsWithGap(
+              1,
+              199, // Gap of 199 positions before index 1 (backup 2100)
+              new CheckpointSpec(1900, 2500),
+              new CheckpointSpec(2100, 3500));
 
       final Map<BackupRangeResolver.NodePartitionId, Collection<BackupStatus>>
           backupsByNodePartition =
@@ -519,9 +585,7 @@ final class BackupRangeResolverTest {
 
       // Only have backups before and after, not the exact one
       final var backups =
-          List.of(
-              createBackupWithLogPosition(1900, 2500, 1, Instant.now()),
-              createBackupWithLogPosition(2100, 3500, 2501, Instant.now()));
+          createContiguousBackups(new CheckpointSpec(1900, 2500), new CheckpointSpec(2100, 3500));
 
       final Map<BackupRangeResolver.NodePartitionId, Collection<BackupStatus>>
           backupsByNodePartition = Map.of(new BackupRangeResolver.NodePartitionId(0, 1), backups);
@@ -552,7 +616,7 @@ final class BackupRangeResolverTest {
       final int expectedNodeCount = 1;
       final var safeStartByPartition = Map.of(1, 2000L);
 
-      final var backups = List.of(createBackupWithLogPosition(2000, 3000, 1, Instant.now()));
+      final var backups = createContiguousBackups(new CheckpointSpec(2000, 3000));
 
       final Map<BackupRangeResolver.NodePartitionId, Collection<BackupStatus>>
           backupsByNodePartition = Map.of(new BackupRangeResolver.NodePartitionId(0, 1), backups);
@@ -582,23 +646,25 @@ final class BackupRangeResolverTest {
 
       // P1: Valid contiguous backups
       final var p1Backups =
-          List.of(
-              createBackupWithLogPosition(1900, 2500, 1, Instant.now()),
-              createBackupWithLogPosition(2000, 3000, 2501, Instant.now()),
-              createBackupWithLogPosition(2100, 3500, 3001, Instant.now()));
+          createContiguousBackups(
+              new CheckpointSpec(1900, 2500),
+              new CheckpointSpec(2000, 3000),
+              new CheckpointSpec(2100, 3500));
 
-      // P2: Has a gap
+      // P2: Has a gap (199 positions before the last backup)
       final var p2Backups =
-          List.of(
-              createBackupWithLogPosition(1900, 2500, 1, Instant.now()),
-              createBackupWithLogPosition(2100, 3500, 2700, Instant.now())); // GAP!
+          createBackupsWithGap(
+              1,
+              199, // Gap before index 1 (backup 2100)
+              new CheckpointSpec(1900, 2500),
+              new CheckpointSpec(2100, 3500));
 
       // P3: Valid contiguous backups
       final var p3Backups =
-          List.of(
-              createBackupWithLogPosition(1900, 2500, 1, Instant.now()),
-              createBackupWithLogPosition(2000, 3000, 2501, Instant.now()),
-              createBackupWithLogPosition(2100, 3500, 3001, Instant.now()));
+          createContiguousBackups(
+              new CheckpointSpec(1900, 2500),
+              new CheckpointSpec(2000, 3000),
+              new CheckpointSpec(2100, 3500));
 
       final Map<BackupRangeResolver.NodePartitionId, Collection<BackupStatus>>
           backupsByNodePartition =
@@ -641,72 +707,41 @@ final class BackupRangeResolverTest {
       final long globalCheckpoint = 2100L; // Checkpoint ID 1500 + 6*100 = 2100
       final int expectedNodeCount = 3;
 
-      // Exported positions per partition
-      final var safeStartByPartition =
-          Map.of(
-              1, 2000L, // P1: exported 2900, safe start is checkpoint at position 2000 (checkpoint
-              // ID 1900)
-              2, 2000L, // P2: exported 3000, safe start is checkpoint at position 2000 (checkpoint
-              // ID 1900)
-              3, 2000L // P3: exported 4500, safe start is checkpoint at position 2000 (checkpoint
-              // ID 1900)
-              );
+      // Exported positions per partition - safe start at checkpoint 2000
+      final var safeStartByPartition = Map.of(1, 2000L, 2, 2000L, 3, 2000L);
 
-      // Checkpoint positions for each partition
-      // P1: positions [100, 500, 900, 2000, 2500, 3000, 3500] → checkpoint IDs [1500, 1600, 1700,
-      // 1800, 1900, 2000, 2100]
-      // P2: positions [100, 500, 900, 2000, 2500, 3102, 3500] → checkpoint IDs [1500, 1600, 1700,
-      // 1800, 1900, 2000, 2100]
-      // P3: positions [100, 500, 900, 2000, 2500, 3000, 4500] → checkpoint IDs [1500, 1600, 1700,
-      // 1800, 1900, 2000, 2100]
-
+      // P1: positions [100, 500, 900, 2000, 2500, 3000, 3500]
       final var p1Backups =
-          List.of(
-              createBackupWithLogPosition(1500, 100, 1, Instant.now()), // first backup, starts at 1
-              createBackupWithLogPosition(
-                  1600, 500, 101, Instant.now()), // starts after prev ends (100+1)
-              createBackupWithLogPosition(
-                  1700, 900, 501, Instant.now()), // starts after prev ends (500+1)
-              createBackupWithLogPosition(
-                  1800, 2000, 901, Instant.now()), // starts after prev ends (900+1)
-              createBackupWithLogPosition(
-                  1900, 2500, 2001, Instant.now()), // starts after prev ends (2000+1)
-              createBackupWithLogPosition(
-                  2000, 3000, 2501, Instant.now()), // starts after prev ends (2500+1)
-              createBackupWithLogPosition(
-                  2100, 3500, 3001, Instant.now())); // starts after prev ends (3000+1)
+          createContiguousBackups(
+              new CheckpointSpec(1500, 100),
+              new CheckpointSpec(1600, 500),
+              new CheckpointSpec(1700, 900),
+              new CheckpointSpec(1800, 2000),
+              new CheckpointSpec(1900, 2500),
+              new CheckpointSpec(2000, 3000),
+              new CheckpointSpec(2100, 3500));
 
+      // P2: positions [100, 500, 900, 2000, 2500, 3102, 3500] - different position for 2000
       final var p2Backups =
-          List.of(
-              createBackupWithLogPosition(1500, 100, 1, Instant.now()), // first backup, starts at 1
-              createBackupWithLogPosition(
-                  1600, 500, 101, Instant.now()), // starts after prev ends (100+1)
-              createBackupWithLogPosition(
-                  1700, 900, 501, Instant.now()), // starts after prev ends (500+1)
-              createBackupWithLogPosition(
-                  1800, 2000, 901, Instant.now()), // starts after prev ends (900+1)
-              createBackupWithLogPosition(
-                  1900, 2500, 2001, Instant.now()), // starts after prev ends (2000+1)
-              createBackupWithLogPosition(
-                  2000, 3102, 2501, Instant.now()), // starts after prev ends (2500+1)
-              createBackupWithLogPosition(
-                  2100, 3500, 3103, Instant.now())); // starts after prev ends (3102+1)
+          createContiguousBackups(
+              new CheckpointSpec(1500, 100),
+              new CheckpointSpec(1600, 500),
+              new CheckpointSpec(1700, 900),
+              new CheckpointSpec(1800, 2000),
+              new CheckpointSpec(1900, 2500),
+              new CheckpointSpec(2000, 3102),
+              new CheckpointSpec(2100, 3500));
 
+      // P3: positions [100, 500, 900, 2000, 2500, 3000, 4500] - different position for 2100
       final var p3Backups =
-          List.of(
-              createBackupWithLogPosition(1500, 100, 1, Instant.now()), // first backup, starts at 1
-              createBackupWithLogPosition(
-                  1600, 500, 101, Instant.now()), // starts after prev ends (100+1)
-              createBackupWithLogPosition(
-                  1700, 900, 501, Instant.now()), // starts after prev ends (500+1)
-              createBackupWithLogPosition(
-                  1800, 2000, 901, Instant.now()), // starts after prev ends (900+1)
-              createBackupWithLogPosition(
-                  1900, 2500, 2001, Instant.now()), // starts after prev ends (2000+1)
-              createBackupWithLogPosition(
-                  2000, 3000, 2501, Instant.now()), // starts after prev ends (2500+1)
-              createBackupWithLogPosition(
-                  2100, 4500, 3001, Instant.now())); // starts after prev ends (3000+1)
+          createContiguousBackups(
+              new CheckpointSpec(1500, 100),
+              new CheckpointSpec(1600, 500),
+              new CheckpointSpec(1700, 900),
+              new CheckpointSpec(1800, 2000),
+              new CheckpointSpec(1900, 2500),
+              new CheckpointSpec(2000, 3000),
+              new CheckpointSpec(2100, 4500));
 
       // Each node backs up each partition (full replication)
       final Map<BackupRangeResolver.NodePartitionId, Collection<BackupStatus>>
