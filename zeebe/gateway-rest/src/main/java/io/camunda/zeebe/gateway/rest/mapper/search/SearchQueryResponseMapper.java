@@ -144,10 +144,15 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class SearchQueryResponseMapper {
+  private static final Logger LOGGER = LoggerFactory.getLogger(SearchQueryResponseMapper.class);
 
   private SearchQueryResponseMapper() {}
 
@@ -646,11 +651,21 @@ public final class SearchQueryResponseMapper {
             entity.operationType() != null
                 ? BatchOperationTypeEnum.fromValue(entity.operationType().name())
                 : null)
-        .itemKey(entity.itemKey().toString())
-        .processInstanceKey(entity.processInstanceKey().toString())
+        .itemKey(
+            warnIfNull(entity, BatchOperationItemEntity::itemKey, "itemKey")
+                .map(Object::toString)
+                .orElse(null))
+        .processInstanceKey(
+            warnIfNull(entity, BatchOperationItemEntity::processInstanceKey, "processInstanceKey")
+                .map(Object::toString)
+                .orElse(null))
         .processedDate(formatDate(entity.processedDate()))
         .errorMessage(entity.errorMessage())
-        .state(BatchOperationItemResponse.StateEnum.fromValue(entity.state().name()));
+        .state(
+            warnIfNull(entity, BatchOperationItemEntity::state, "state")
+                .map(Enum::name)
+                .map(BatchOperationItemResponse.StateEnum::fromValue)
+                .orElse(null));
   }
 
   private static BatchOperationError toBatchOperationError(
@@ -1187,6 +1202,18 @@ public final class SearchQueryResponseMapper {
             processInstanceEntity.processDefinitionName().isBlank()
                 ? processInstanceEntity.processDefinitionId()
                 : processInstanceEntity.processDefinitionName());
+  }
+
+  // sometimes we've seen null for properties that should not be null; log a warning if that happens
+  // so we can at least return data - rather than erroring out the whole response
+  private static <T, R> Optional<R> warnIfNull(
+      final T entity, final Function<T, R> mapper, final String propertyName) {
+    final R value = mapper.apply(entity);
+    if (value == null) {
+      LOGGER.warn("{} value is null for entity: {}", propertyName, entity);
+      return Optional.empty();
+    }
+    return Optional.of(value);
   }
 
   private record RuleIdentifier(String ruleId, int ruleIndex) {}
