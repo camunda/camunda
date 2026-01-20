@@ -318,19 +318,6 @@ public class CompleteJobTest {
   @Nested
   class CompleteJobOfAdHocSubProcess {
 
-    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
-    private JobFilter jobFilter;
-
-    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
-    private JobStateProperty jobStateProperty;
-
-    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
-    private IntegerProperty retriesProperty;
-
-    @Captor private ArgumentCaptor<Consumer<JobFilter>> jobFilterCaptor;
-    @Captor private ArgumentCaptor<Consumer<JobStateProperty>> jobStatePropertyCaptor;
-    @Captor private ArgumentCaptor<Consumer<IntegerProperty>> retriesPropertyCaptor;
-
     @Mock private CompleteJobCommandJobResultStep completeJobCommandJobResultStep;
     @Mock private CompleteAdHocSubProcessResultStep1 completeAdHocSubProcessResultStep;
     @Mock private Consumer<CompleteAdHocSubProcessResultStep1> jobResultConsumer;
@@ -476,19 +463,6 @@ public class CompleteJobTest {
 
   @Nested
   class CompleteJobOfUserTaskListener {
-
-    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
-    private JobFilter jobFilter;
-
-    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
-    private JobStateProperty jobStateProperty;
-
-    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
-    private IntegerProperty retriesProperty;
-
-    @Captor private ArgumentCaptor<Consumer<JobFilter>> jobFilterCaptor;
-    @Captor private ArgumentCaptor<Consumer<JobStateProperty>> jobStatePropertyCaptor;
-    @Captor private ArgumentCaptor<Consumer<IntegerProperty>> retriesPropertyCaptor;
 
     @Mock private CompleteJobCommandJobResultStep completeJobCommandJobResultStep;
 
