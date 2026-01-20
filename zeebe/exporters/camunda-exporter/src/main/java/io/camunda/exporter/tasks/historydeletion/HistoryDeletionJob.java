@@ -127,7 +127,17 @@ public class HistoryDeletionJob implements BackgroundTask {
         .thenApply(ignored -> batch.getHistoryDeletionIds(HistoryDeletionType.PROCESS_INSTANCE));
   }
 
-  // TODO add javadoc
+  /**
+   * This method will delete a batch of process definitions in two steps:
+   *
+   * <ol>
+   *   <li>It deletes the process definition related data from the audit logs
+   *   <li>It deletes the process definitions from the process index
+   * </ol>
+   *
+   * @param batch The batch of entities to delete
+   * @return A future containing the list of history-deletion IDs that were processed
+   */
   private CompletionStage<List<String>> deleteProcessDefinitions(
       final HistoryDeletionBatch batch, final List<String> processInstanceDeletionIds) {
     final var processDefinitions = batch.getResourceKeys(HistoryDeletionType.PROCESS_DEFINITION);
