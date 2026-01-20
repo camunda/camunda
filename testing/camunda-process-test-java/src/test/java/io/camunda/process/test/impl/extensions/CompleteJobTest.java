@@ -17,7 +17,6 @@ package io.camunda.process.test.impl.extensions;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.clearInvocations;
-import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -494,9 +493,9 @@ public class CompleteJobTest {
               .items())
           .thenReturn(Collections.singletonList(job));
 
-      lenient().when(job.getJobKey()).thenReturn(JOB_KEY);
-      lenient().when(job.getType()).thenReturn(JOB_TYPE);
-      lenient().when(job.getKind()).thenReturn(JobKind.TASK_LISTENER);
+      when(job.getJobKey()).thenReturn(JOB_KEY);
+      when(job.getType()).thenReturn(JOB_TYPE);
+      when(job.getKind()).thenReturn(JobKind.TASK_LISTENER);
     }
 
     @Test
