@@ -79,6 +79,11 @@ public class EventBasedGatewayValidator implements ModelElementValidator<EventBa
     ModelUtil.verifyNoDuplicatedEventDefinition(
         signalEventDefinitions, error -> validationResultCollector.addError(0, error));
 
+    final List<ConditionalEventDefinition> conditionalEventDefinitions =
+        getConditionalEventDefinitions(outgoingSequenceFlows).collect(Collectors.toList());
+    ModelUtil.verifyNoDuplicatedConditionalExpressions(
+        conditionalEventDefinitions, error -> validationResultCollector.addError(0, error));
+
     if (!succeedingNodesOnlyHaveEventBasedGatewayAsIncomingFlows(element)) {
       validationResultCollector.addError(
           0,
@@ -113,10 +118,10 @@ public class EventBasedGatewayValidator implements ModelElementValidator<EventBa
       final Collection<SequenceFlow> outgoingSequenceFlows) {
     return outgoingSequenceFlows.stream()
         .map(SequenceFlow::getTarget)
-        .filter(t -> t instanceof IntermediateCatchEvent)
+        .filter(IntermediateCatchEvent.class::isInstance)
         .map(IntermediateCatchEvent.class::cast)
         .flatMap(e -> e.getEventDefinitions().stream())
-        .filter(e -> e instanceof MessageEventDefinition)
+        .filter(MessageEventDefinition.class::isInstance)
         .map(MessageEventDefinition.class::cast);
   }
 
@@ -124,11 +129,22 @@ public class EventBasedGatewayValidator implements ModelElementValidator<EventBa
       final Collection<SequenceFlow> outgoingSequenceFlows) {
     return outgoingSequenceFlows.stream()
         .map(SequenceFlow::getTarget)
-        .filter(t -> t instanceof IntermediateCatchEvent)
+        .filter(IntermediateCatchEvent.class::isInstance)
         .map(IntermediateCatchEvent.class::cast)
         .flatMap(e -> e.getEventDefinitions().stream())
-        .filter(e -> e instanceof SignalEventDefinition)
+        .filter(SignalEventDefinition.class::isInstance)
         .map(SignalEventDefinition.class::cast);
+  }
+
+  private Stream<ConditionalEventDefinition> getConditionalEventDefinitions(
+      final Collection<SequenceFlow> outgoingSequenceFlows) {
+    return outgoingSequenceFlows.stream()
+        .map(SequenceFlow::getTarget)
+        .filter(IntermediateCatchEvent.class::isInstance)
+        .map(IntermediateCatchEvent.class::cast)
+        .flatMap(e -> e.getEventDefinitions().stream())
+        .filter(ConditionalEventDefinition.class::isInstance)
+        .map(ConditionalEventDefinition.class::cast);
   }
 
   private boolean succeedingNodesOnlyHaveEventBasedGatewayAsIncomingFlows(

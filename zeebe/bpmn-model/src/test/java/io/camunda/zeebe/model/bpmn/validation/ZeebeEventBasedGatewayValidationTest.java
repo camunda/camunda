@@ -135,6 +135,35 @@ public class ZeebeEventBasedGatewayValidationTest extends AbstractZeebeValidatio
             .endEvent()
             .done(),
         Collections.emptyList()
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .eventBasedGateway()
+            .intermediateCatchEvent()
+            .condition("x > 1")
+            .moveToLastGateway()
+            .intermediateCatchEvent("catch2")
+            .condition("x > 1") // Same condition - should fail
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(
+                EventBasedGateway.class,
+                "Multiple conditional event definitions with the same condition expression '=x > 1' are not allowed."))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .eventBasedGateway()
+            .intermediateCatchEvent()
+            .condition("x > 1")
+            .moveToLastGateway()
+            .intermediateCatchEvent("catch2")
+            .condition("x > 2") // Same condition - should fail
+            .endEvent()
+            .done(),
+        Collections.emptyList()
       }
     };
   }
