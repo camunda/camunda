@@ -63,6 +63,11 @@ public class AzureBackupStoreIT implements BackupStoreTestKit {
   }
 
   @Override
+  public int maxDeleteBatchSize() {
+    return AzureBackupStore.MAX_DELETE_BLOB_BATCH_SIZE;
+  }
+
+  @Override
   public AzureBackupStore getStore() {
     return azureBackupStore;
   }

@@ -54,8 +54,8 @@ public final class AzureBackupStore implements BackupStore {
       "Expected to restore from completed backup with id '%s', but was in state '%s'";
   public static final String SNAPSHOT_FILESET_NAME = "snapshot";
   public static final String SEGMENTS_FILESET_NAME = "segments";
+  static final int MAX_DELETE_BLOB_BATCH_SIZE = 256;
   private static final Logger LOG = LoggerFactory.getLogger(AzureBackupStore.class);
-  private static final int MAX_DELETE_BLOB_BATCH_SIZE = 256;
   private final ExecutorService executor;
   private final FileSetManager fileSetManager;
   private final ManifestManager manifestManager;

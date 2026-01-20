@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -29,13 +30,22 @@ import org.junit.jupiter.api.Test;
  */
 public interface BackupRetention {
 
+  int PARTITION_COUNT = 3;
+  int NODE_COUNT = 3;
+
+  int maxDeleteBatchSize();
+
   BackupStore getStore();
 
   @Test
   default void backupsDoNotExistAfterDeleteAcrossPartitions() throws IOException {
     // given
-    final var backups = provideBackups(3, 3, 4, true);
-    backups.parallelStream().forEach(backup -> getStore().save(backup).join());
+    final var backups = provideBackups(PARTITION_COUNT, NODE_COUNT, 4, true);
+    final var saveFutures =
+        backups.parallelStream()
+            .map(backup -> getStore().save(backup))
+            .toArray(CompletableFuture[]::new);
+    CompletableFuture.allOf(saveFutures).join();
 
     // when
     final var ids = backups.stream().map(Backup::id).toList();
@@ -54,8 +64,11 @@ public interface BackupRetention {
   @Test
   default void backupsDoNotExistAfterDeleteAcrossPartitionsBatching() throws IOException {
     // given
-    final var backups = provideBackups(3, 3, 200, true);
-    backups.parallelStream().forEach(backup -> getStore().save(backup).join());
+    final var backups =
+        provideBackups(PARTITION_COUNT, NODE_COUNT, maxDeleteBatchSize() / PARTITION_COUNT, true);
+    final var saveFutures =
+        backups.stream().map(backup -> getStore().save(backup)).toArray(CompletableFuture[]::new);
+    CompletableFuture.allOf(saveFutures).join();
 
     // when
     final var ids = backups.stream().map(Backup::id).toList();
@@ -74,9 +87,8 @@ public interface BackupRetention {
   @Test
   default void rangeMarkersDoNotExistAfterBatchDeletion() throws IOException {
     // given
-    final int partitionCount = 3;
     final Map<Integer, List<BackupRangeMarker>> markers =
-        provideBackups(partitionCount, 3, 4, false).stream()
+        provideBackups(PARTITION_COUNT, NODE_COUNT, 4, false).stream()
             .map(Backup::id)
             .collect(
                 Collectors.groupingBy(
