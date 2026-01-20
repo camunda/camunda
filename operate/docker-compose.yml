@@ -24,7 +24,7 @@ services:
       - ./els-snapshots:/usr/local/els-snapshots
 
   kibana:
-    image: docker.elastic.co/kibana/kibana:9.0.4
+    image: docker.elastic.co/kibana/kibana:9.2.4
     ports:
       - 5601:5601
     links:
