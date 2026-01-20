@@ -8,10 +8,9 @@
 
 import {z} from 'zod';
 import {API_VERSION, type Endpoint} from '../common';
+import {clockPinRequestSchema} from './gen';
 
-const pinClockRequestBodySchema = z.object({
-	timestamp: z.number().int(),
-});
+const pinClockRequestBodySchema = clockPinRequestSchema;
 type PinClockRequestBody = z.infer<typeof pinClockRequestBodySchema>;
 
 const pinClock: Endpoint = {
