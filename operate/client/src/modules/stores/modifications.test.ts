@@ -12,8 +12,6 @@ import {
   createAddVariableModification,
   createEditVariableModification,
 } from 'modules/mocks/modifications';
-import {processInstanceDetailsStore} from './processInstanceDetails';
-import {createInstance} from 'modules/testUtils';
 import {
   cancelAllTokens,
   finishMovingToken,
@@ -29,7 +27,6 @@ type AddModificationPayload = Extract<
 describe('stores/modifications', () => {
   afterEach(() => {
     modificationsStore.reset();
-    processInstanceDetailsStore.reset();
   });
 
   it('should enable/disable modification mode', async () => {
@@ -448,10 +445,6 @@ describe('stores/modifications', () => {
   });
 
   it('should not generate parent scope id twice', async () => {
-    processInstanceDetailsStore.setProcessInstance(
-      createInstance({bpmnProcessId: 'nested_sub_process'}),
-    );
-
     modificationsStore.addModification({
       type: 'token',
       payload: {
