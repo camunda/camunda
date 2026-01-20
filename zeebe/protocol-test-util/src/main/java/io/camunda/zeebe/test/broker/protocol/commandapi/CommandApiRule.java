@@ -162,7 +162,7 @@ public final class CommandApiRule extends ExternalResource {
 
     return atomixCluster.getMembershipService().getMembers().stream()
         .map(Member::properties)
-        .map(BrokerInfo::fromProperties)
+        .map(props -> BrokerInfo.fromProperties("raft-partition", props))
         .filter(Objects::nonNull);
   }
 

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.admin.exporting;
 
+import io.atomix.primitive.partition.PartitionId;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.gateway.admin.BrokerAdminRequest;
@@ -65,11 +66,17 @@ public class ExportingControlService implements ExportingControlApi {
       final Integer partitionId,
       final Consumer<BrokerAdminRequest> configureRequest) {
 
-    final var leader = topology.getLeaderForPartition(partitionId);
+    final var leader =
+        topology.getLeaderForPartition(new PartitionId("raft-partition", partitionId));
     final var followers =
-        Optional.ofNullable(topology.getFollowersForPartition(partitionId)).orElseGet(Set::of);
+        Optional.ofNullable(
+                topology.getFollowersForPartition(new PartitionId("raft-partition", partitionId)))
+            .orElseGet(Set::of);
     final var inactive =
-        Optional.ofNullable(topology.getInactiveNodesForPartition(partitionId)).orElseGet(Set::of);
+        Optional.ofNullable(
+                topology.getInactiveNodesForPartition(
+                    new PartitionId("raft-partition", partitionId)))
+            .orElseGet(Set::of);
 
     final var members = new IntHashSet(topology.getReplicationFactor());
     members.add(leader);
@@ -102,7 +109,8 @@ public class ExportingControlService implements ExportingControlApi {
     }
 
     for (final var partition : partitions) {
-      final var leaderId = topology.getLeaderForPartition(partition);
+      final var leaderId =
+          topology.getLeaderForPartition(new PartitionId("raft-partition", partition));
 
       if (leaderId == BrokerClusterState.UNKNOWN_NODE_ID
           || leaderId == BrokerClusterState.NODE_ID_NULL) {
@@ -112,7 +120,8 @@ public class ExportingControlService implements ExportingControlApi {
       }
 
       final var followers =
-          Optional.ofNullable(topology.getFollowersForPartition(partition))
+          Optional.ofNullable(
+                  topology.getFollowersForPartition(new PartitionId("raft-partition", partition)))
               .orElse(Collections.emptySet());
       for (final var follower : followers) {
         if (follower == BrokerClusterState.UNKNOWN_NODE_ID

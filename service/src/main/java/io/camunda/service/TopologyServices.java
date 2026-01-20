@@ -7,6 +7,7 @@
  */
 package io.camunda.service;
 
+import io.atomix.primitive.partition.PartitionId;
 import io.atomix.utils.net.Address;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.auth.CamundaAuthentication;
@@ -75,8 +76,10 @@ public final class TopologyServices extends ApiServices<TopologyServices> {
     return partitions.stream()
         .anyMatch(
             partition -> {
-              final var leader = topology.getLeaderForPartition(partition);
-              return topology.getPartitionHealth(leader, partition)
+              final var leader =
+                  topology.getLeaderForPartition(new PartitionId("raft-partition", partition));
+              return topology.getPartitionHealth(
+                      leader, new PartitionId("raft-partition", partition))
                   == PartitionHealthStatus.HEALTHY;
             });
   }
@@ -143,7 +146,9 @@ public final class TopologyServices extends ApiServices<TopologyServices> {
                 return;
               }
 
-              final var status = topology.getPartitionHealth(brokerId, partitionId);
+              final var status =
+                  topology.getPartitionHealth(
+                      brokerId, new PartitionId("raft-partition", partitionId));
               switch (status) {
                 case HEALTHY -> partition.health(Health.HEALTHY);
                 case UNHEALTHY -> partition.health(Health.UNHEALTHY);
@@ -160,9 +165,12 @@ public final class TopologyServices extends ApiServices<TopologyServices> {
       final Integer partitionId,
       final BrokerClusterState topology,
       final Partition.Builder partition) {
-    final var partitionLeader = topology.getLeaderForPartition(partitionId);
-    final var partitionFollowers = topology.getFollowersForPartition(partitionId);
-    final var partitionInactives = topology.getInactiveNodesForPartition(partitionId);
+    final var partitionLeader =
+        topology.getLeaderForPartition(new PartitionId("raft-partition", partitionId));
+    final var partitionFollowers =
+        topology.getFollowersForPartition(new PartitionId("raft-partition", partitionId));
+    final var partitionInactives =
+        topology.getInactiveNodesForPartition(new PartitionId("raft-partition", partitionId));
 
     if (partitionLeader == brokerId) {
       partition.role(Role.LEADER);

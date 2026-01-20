@@ -15,6 +15,7 @@ import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.cluster.messaging.MessagingException;
 import io.atomix.cluster.messaging.impl.NettyMessagingService;
+import io.atomix.primitive.partition.PartitionId;
 import io.atomix.utils.net.Address;
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
@@ -69,7 +70,7 @@ public class AtomixTransportTest {
   private static String serverAddress;
   private static TransportFactory transportFactory;
   private static NettyMessagingService nettyMessagingService;
-  @AutoClose private static MeterRegistry meterRegistry = new SimpleMeterRegistry();
+  @AutoClose private static final MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
   @Parameter(0)
   public String testName;
@@ -416,6 +417,11 @@ public class AtomixTransportTest {
     }
 
     @Override
+    public PartitionId getFullPartitionId() {
+      return new PartitionId("raft-partition", 0);
+    }
+
+    @Override
     public RequestType getRequestType() {
       return RequestType.COMMAND;
     }
@@ -447,7 +453,7 @@ public class AtomixTransportTest {
     @Override
     public void onRequest(
         final ServerOutput serverOutput,
-        final int partitionId,
+        final PartitionId partitionId,
         final long requestId,
         final DirectBuffer buffer,
         final int offset,
@@ -456,7 +462,7 @@ public class AtomixTransportTest {
           new ServerResponseImpl()
               .buffer(buffer, 0, length)
               .setRequestId(requestId)
-              .setPartitionId(partitionId);
+              .setPartitionId(partitionId.id());
       requestConsumer.accept(buffer.byteArray());
       serverOutput.sendResponse(serverResponse);
     }
@@ -467,7 +473,7 @@ public class AtomixTransportTest {
     @Override
     public void onRequest(
         final ServerOutput serverOutput,
-        final int partitionId,
+        final PartitionId partitionId,
         final long requestId,
         final DirectBuffer buffer,
         final int offset,

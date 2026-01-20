@@ -12,6 +12,7 @@ import static org.mockito.Answers.RETURNS_MOCKS;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.atomix.primitive.partition.PartitionId;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
@@ -50,7 +51,12 @@ final class AdminApiRequestHandlerTest {
     final var requestBuffer = new UnsafeBuffer(new byte[request.getLength()]);
     request.write(requestBuffer, 0);
     handler.onRequest(
-        serverOutput, request.getPartitionId(), 0, requestBuffer, 0, request.getLength());
+        serverOutput,
+        new PartitionId("raft-partition", request.getPartitionId()),
+        0,
+        requestBuffer,
+        0,
+        request.getLength());
     return future;
   }
 

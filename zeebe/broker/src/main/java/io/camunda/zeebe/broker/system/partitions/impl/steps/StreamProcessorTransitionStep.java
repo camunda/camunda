@@ -183,17 +183,17 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
             new StreamProcessorLifecycleAware() {
               @Override
               public void onRecovered(final ReadonlyStreamProcessorContext ignored) {
-                context.getCommandApiService().onRecovered(context.getPartitionId());
+                context.getCommandApiService().onRecovered(context.getFullPartitionId());
               }
 
               @Override
               public void onPaused() {
-                context.getCommandApiService().onPaused(context.getPartitionId());
+                context.getCommandApiService().onPaused(context.getFullPartitionId());
               }
 
               @Override
               public void onResumed() {
-                context.getCommandApiService().onResumed(context.getPartitionId());
+                context.getCommandApiService().onResumed(context.getFullPartitionId());
               }
             })
         .streamProcessorMode(streamProcessorMode)

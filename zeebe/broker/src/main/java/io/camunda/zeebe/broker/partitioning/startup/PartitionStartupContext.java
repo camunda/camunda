@@ -26,6 +26,7 @@ import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import java.nio.file.Path;
 
 public class PartitionStartupContext {
+  private final String partitionGroup;
   private final ActorSchedulingService schedulingService;
   private final TopologyManager topologyManager;
   private final ConcurrencyControl concurrencyControl;
@@ -50,6 +51,7 @@ public class PartitionStartupContext {
   private SnapshotTransfer snapshotTransfer;
 
   public PartitionStartupContext(
+      final String partitionGroup,
       final ActorSchedulingService schedulingService,
       final ConcurrencyControl concurrencyControl,
       final TopologyManager topologyManager,
@@ -64,6 +66,7 @@ public class PartitionStartupContext {
       final boolean initializeFromSnapshot,
       final MeterRegistry brokerMeterRegistry,
       final BrokerClient brokerClient) {
+    this.partitionGroup = partitionGroup;
     this.schedulingService = schedulingService;
     this.topologyManager = topologyManager;
     this.concurrencyControl = concurrencyControl;
@@ -197,5 +200,9 @@ public class PartitionStartupContext {
 
   public SnapshotTransfer snapshotTransfer() {
     return snapshotTransfer;
+  }
+
+  public String getPartitionGroup() {
+    return partitionGroup;
   }
 }

@@ -14,6 +14,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.atomix.primitive.partition.PartitionId;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
 import java.util.List;
@@ -70,8 +71,10 @@ public class ClusterHealthIndicatorTest {
     final BrokerClusterState mockClusterState = mock(BrokerClusterState.class);
     when(mockClusterState.getBrokers()).thenReturn(List.of(1));
     when(mockClusterState.getPartitions()).thenReturn(List.of(1));
-    when(mockClusterState.getLeaderForPartition(1)).thenReturn(1);
-    when(mockClusterState.getPartitionHealth(1, 1)).thenReturn(PartitionHealthStatus.HEALTHY);
+    when(mockClusterState.getLeaderForPartition(new PartitionId("raft-partition", 1)))
+        .thenReturn(1);
+    when(mockClusterState.getPartitionHealth(1, new PartitionId("raft-partition", 1)))
+        .thenReturn(PartitionHealthStatus.HEALTHY);
 
     final Supplier<Optional<BrokerClusterState>> stateSupplier =
         () -> Optional.of(mockClusterState);
@@ -90,12 +93,18 @@ public class ClusterHealthIndicatorTest {
     final BrokerClusterState mockClusterState = mock(BrokerClusterState.class);
     when(mockClusterState.getBrokers()).thenReturn(List.of(1));
     when(mockClusterState.getPartitions()).thenReturn(List.of(1, 2, 3));
-    when(mockClusterState.getLeaderForPartition(1)).thenReturn(1);
-    when(mockClusterState.getLeaderForPartition(2)).thenReturn(2);
-    when(mockClusterState.getLeaderForPartition(3)).thenReturn(3);
-    when(mockClusterState.getPartitionHealth(1, 1)).thenReturn(PartitionHealthStatus.HEALTHY);
-    when(mockClusterState.getPartitionHealth(2, 2)).thenReturn(PartitionHealthStatus.HEALTHY);
-    when(mockClusterState.getPartitionHealth(3, 3)).thenReturn(PartitionHealthStatus.DEAD);
+    when(mockClusterState.getLeaderForPartition(new PartitionId("raft-partition", 1)))
+        .thenReturn(1);
+    when(mockClusterState.getLeaderForPartition(new PartitionId("raft-partition", 2)))
+        .thenReturn(2);
+    when(mockClusterState.getLeaderForPartition(new PartitionId("raft-partition", 3)))
+        .thenReturn(3);
+    when(mockClusterState.getPartitionHealth(1, new PartitionId("raft-partition", 1)))
+        .thenReturn(PartitionHealthStatus.HEALTHY);
+    when(mockClusterState.getPartitionHealth(2, new PartitionId("raft-partition", 2)))
+        .thenReturn(PartitionHealthStatus.HEALTHY);
+    when(mockClusterState.getPartitionHealth(3, new PartitionId("raft-partition", 3)))
+        .thenReturn(PartitionHealthStatus.DEAD);
 
     final Supplier<Optional<BrokerClusterState>> stateSupplier =
         () -> Optional.of(mockClusterState);
@@ -114,12 +123,18 @@ public class ClusterHealthIndicatorTest {
     final BrokerClusterState mockClusterState = mock(BrokerClusterState.class);
     when(mockClusterState.getBrokers()).thenReturn(List.of(1));
     when(mockClusterState.getPartitions()).thenReturn(List.of(1, 2, 3));
-    when(mockClusterState.getLeaderForPartition(1)).thenReturn(1);
-    when(mockClusterState.getLeaderForPartition(2)).thenReturn(2);
-    when(mockClusterState.getLeaderForPartition(3)).thenReturn(3);
-    when(mockClusterState.getPartitionHealth(1, 1)).thenReturn(PartitionHealthStatus.UNHEALTHY);
-    when(mockClusterState.getPartitionHealth(2, 2)).thenReturn(PartitionHealthStatus.UNHEALTHY);
-    when(mockClusterState.getPartitionHealth(3, 3)).thenReturn(PartitionHealthStatus.DEAD);
+    when(mockClusterState.getLeaderForPartition(new PartitionId("raft-partition", 1)))
+        .thenReturn(1);
+    when(mockClusterState.getLeaderForPartition(new PartitionId("raft-partition", 2)))
+        .thenReturn(2);
+    when(mockClusterState.getLeaderForPartition(new PartitionId("raft-partition", 3)))
+        .thenReturn(3);
+    when(mockClusterState.getPartitionHealth(1, new PartitionId("raft-partition", 1)))
+        .thenReturn(PartitionHealthStatus.UNHEALTHY);
+    when(mockClusterState.getPartitionHealth(2, new PartitionId("raft-partition", 2)))
+        .thenReturn(PartitionHealthStatus.UNHEALTHY);
+    when(mockClusterState.getPartitionHealth(3, new PartitionId("raft-partition", 3)))
+        .thenReturn(PartitionHealthStatus.DEAD);
 
     final Supplier<Optional<BrokerClusterState>> stateSupplier =
         () -> Optional.of(mockClusterState);
@@ -138,12 +153,18 @@ public class ClusterHealthIndicatorTest {
     final BrokerClusterState mockClusterState = mock(BrokerClusterState.class);
     when(mockClusterState.getBrokers()).thenReturn(List.of(1));
     when(mockClusterState.getPartitions()).thenReturn(List.of(1, 2, 3));
-    when(mockClusterState.getLeaderForPartition(1)).thenReturn(1);
-    when(mockClusterState.getLeaderForPartition(2)).thenReturn(2);
-    when(mockClusterState.getLeaderForPartition(3)).thenReturn(PARTITION_ID_NULL);
-    when(mockClusterState.getPartitionHealth(1, 1)).thenReturn(PartitionHealthStatus.HEALTHY);
-    when(mockClusterState.getPartitionHealth(2, 2)).thenReturn(PartitionHealthStatus.HEALTHY);
-    when(mockClusterState.getPartitionHealth(3, 3)).thenReturn(PartitionHealthStatus.UNHEALTHY);
+    when(mockClusterState.getLeaderForPartition(new PartitionId("raft-partition", 1)))
+        .thenReturn(1);
+    when(mockClusterState.getLeaderForPartition(new PartitionId("raft-partition", 2)))
+        .thenReturn(2);
+    when(mockClusterState.getLeaderForPartition(new PartitionId("raft-partition", 3)))
+        .thenReturn(PARTITION_ID_NULL);
+    when(mockClusterState.getPartitionHealth(1, new PartitionId("raft-partition", 1)))
+        .thenReturn(PartitionHealthStatus.HEALTHY);
+    when(mockClusterState.getPartitionHealth(2, new PartitionId("raft-partition", 2)))
+        .thenReturn(PartitionHealthStatus.HEALTHY);
+    when(mockClusterState.getPartitionHealth(3, new PartitionId("raft-partition", 3)))
+        .thenReturn(PartitionHealthStatus.UNHEALTHY);
 
     final Supplier<Optional<BrokerClusterState>> stateSupplier =
         () -> Optional.of(mockClusterState);

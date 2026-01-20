@@ -67,7 +67,7 @@ public final class AtomixClientTransportAdapter extends Actor implements ClientT
     final var buffer = new UnsafeBuffer(requestBytes);
     clientRequest.write(buffer, 0);
 
-    final var partitionId = clientRequest.getPartitionId();
+    final var partitionId = clientRequest.getFullPartitionId();
     final var requestType = clientRequest.getRequestType();
 
     final var requestFuture = new CompletableActorFuture<DirectBuffer>();

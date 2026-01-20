@@ -174,7 +174,7 @@ public class RestoreManager {
         new PartitionDistribution(
             StaticConfigurationGenerator.getStaticConfiguration(configuration, localMember)
                 .generatePartitionDistribution());
-    final var raftPartitionFactory = new RaftPartitionFactory(configuration);
+    final var raftPartitionFactory = new RaftPartitionFactory("raft-partition", configuration);
 
     return clusterTopology.partitions().stream()
         .filter(partitionMetadata -> partitionMetadata.members().contains(localMember))

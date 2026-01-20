@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.transport;
 
+import io.atomix.primitive.partition.PartitionId;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 
 public interface ServerTransport extends ServerOutput, AutoCloseable {
@@ -20,7 +21,12 @@ public interface ServerTransport extends ServerOutput, AutoCloseable {
    * @param requestHandler the handler which should be called.
    */
   ActorFuture<Void> subscribe(
-      int partitionId, RequestType requestType, RequestHandler requestHandler);
+      PartitionId partitionId, RequestType requestType, RequestHandler requestHandler);
+
+  default ActorFuture<Void> subscribe(
+      final int partitionId, final RequestType requestType, final RequestHandler requestHandler) {
+    return subscribe(new PartitionId("raft-partition", partitionId), requestType, requestHandler);
+  }
 
   /**
    * Unsubscribe from the given partition, the registered handler will no longer be called on new
@@ -29,5 +35,9 @@ public interface ServerTransport extends ServerOutput, AutoCloseable {
    * @param partitionId the partition, from which we should unsubscribe
    * @param requestType
    */
-  ActorFuture<Void> unsubscribe(int partitionId, RequestType requestType);
+  ActorFuture<Void> unsubscribe(PartitionId partitionId, RequestType requestType);
+
+  default ActorFuture<Void> unsubscribe(final int partitionId, final RequestType requestType) {
+    return unsubscribe(new PartitionId("raft-partition", partitionId), requestType);
+  }
 }

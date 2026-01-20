@@ -9,6 +9,7 @@ package io.camunda.zeebe.test.broker.protocol.brokerapi;
 
 import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.Member;
+import io.atomix.primitive.partition.PartitionId;
 import io.atomix.utils.net.Address;
 import io.camunda.zeebe.protocol.impl.Loggers;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
@@ -99,7 +100,8 @@ public final class StubBroker implements AutoCloseable {
         transportFactory.createServerTransport(cluster.getMessagingService(), requestIdGenerator);
 
     channelHandler = new StubRequestHandler(msgPackHelper);
-    serverTransport.subscribe(partitionId, RequestType.COMMAND, channelHandler);
+    serverTransport.subscribe(
+        new PartitionId("raft-partition", 1), RequestType.COMMAND, channelHandler);
 
     writeBrokerInfoProperties();
     return this;
@@ -116,7 +118,8 @@ public final class StubBroker implements AutoCloseable {
   }
 
   private void writeBrokerInfoProperties() {
-    brokerInfo.writeIntoProperties(cluster.getMembershipService().getLocalMember().properties());
+    brokerInfo.writeIntoProperties(
+        "raft-partition", cluster.getMembershipService().getLocalMember().properties());
   }
 
   @Override

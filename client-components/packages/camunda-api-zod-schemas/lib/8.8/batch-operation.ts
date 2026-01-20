@@ -64,6 +64,7 @@ const batchOperationItemSchema = z.object({
 	state: batchOperationItemStateSchema,
 	processedDate: z.string().optional(),
 	errorMessage: z.string().optional(),
+	operationType: batchOperationTypeSchema,
 });
 type BatchOperationItem = z.infer<typeof batchOperationItemSchema>;
 

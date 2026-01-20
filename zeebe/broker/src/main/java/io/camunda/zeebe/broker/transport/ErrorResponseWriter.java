@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.transport;
 import static io.camunda.zeebe.util.StringUtil.getBytes;
 import static java.lang.String.format;
 
+import io.atomix.primitive.partition.PartitionId;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter.WriteFailure;
 import io.camunda.zeebe.protocol.record.ErrorCode;
@@ -29,7 +30,7 @@ public final class ErrorResponseWriter implements BufferWriter {
   private static final String UNSUPPORTED_MESSAGE_FORMAT =
       "Expected to handle only messages of type %s, but received one of type '%s'";
   private static final String PARTITION_LEADER_MISMATCH_FORMAT =
-      "Expected to handle client message on the leader of partition '%d', but this node is not the leader for it";
+      "Expected to handle client message on the leader of partition '%s', but this node is not the leader for it";
   private static final String MALFORMED_REQUEST_FORMAT =
       "Expected to handle client message, but could not read it: %s";
   private static final String INVALID_CLIENT_VERSION_FORMAT =
@@ -66,7 +67,7 @@ public final class ErrorResponseWriter implements BufferWriter {
             String.format(UNSUPPORTED_MESSAGE_FORMAT, Arrays.toString(expectedTypes), actualType));
   }
 
-  public ErrorResponseWriter partitionLeaderMismatch(final int partitionId) {
+  public ErrorResponseWriter partitionLeaderMismatch(final PartitionId partitionId) {
     return errorCode(ErrorCode.PARTITION_LEADER_MISMATCH)
         .errorMessage(String.format(PARTITION_LEADER_MISMATCH_FORMAT, partitionId));
   }
@@ -188,22 +189,20 @@ public final class ErrorResponseWriter implements BufferWriter {
     return errorMessage;
   }
 
-  public void tryWriteResponseOrLogFailure(
-      final ServerOutput output, final int streamId, final long requestId) {
-    tryWriteResponse(output, streamId, requestId);
+  public void tryWriteResponseOrLogFailure(final ServerOutput output, final long requestId) {
+    tryWriteResponse(output, requestId);
   }
 
-  public void tryWriteResponseOrLogFailure(final int streamId, final long requestId) {
-    tryWriteResponseOrLogFailure(output, streamId, requestId);
+  public void tryWriteResponseOrLogFailure(final long requestId) {
+    tryWriteResponseOrLogFailure(output, requestId);
   }
 
-  public void tryWriteResponse(
-      final ServerOutput output, final int streamId, final long requestId) {
+  public void tryWriteResponse(final ServerOutput output, final long requestId) {
     EnsureUtil.ensureNotNull("error code", errorCode);
     EnsureUtil.ensureNotNull("error message", errorMessage);
 
     try {
-      response.reset().setPartitionId(streamId).writer(this).setRequestId(requestId);
+      response.reset().writer(this).setRequestId(requestId);
 
       output.sendResponse(response);
     } finally {
@@ -211,8 +210,8 @@ public final class ErrorResponseWriter implements BufferWriter {
     }
   }
 
-  public void tryWriteResponse(final int streamId, final long requestId) {
-    tryWriteResponse(output, streamId, requestId);
+  public void tryWriteResponse(final long requestId) {
+    tryWriteResponse(output, requestId);
   }
 
   @Override

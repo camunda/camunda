@@ -88,7 +88,7 @@ public final class RequestRetryHandler {
     sendRequestWithRetry(
         request,
         requestSender,
-        partitionIdIteratorForType(topology.getPartitionsCount()),
+        partitionIdIteratorForType(request.getPartitionGroup(), topology.getPartitionsCount()),
         responseConsumer,
         throwableConsumer,
         new ArrayList<>());
@@ -150,8 +150,11 @@ public final class RequestRetryHandler {
     return false;
   }
 
-  private PartitionIdIterator partitionIdIteratorForType(final int partitionsCount) {
-    final int nextPartitionId = roundRobinDispatchStrategy.determinePartition(topologyManager);
-    return new PartitionIdIterator(nextPartitionId, partitionsCount, topologyManager);
+  private PartitionIdIterator partitionIdIteratorForType(
+      final String partitionGroup, final int partitionsCount) {
+    final int nextPartitionId =
+        roundRobinDispatchStrategy.determinePartition(partitionGroup, topologyManager);
+    return new PartitionIdIterator(
+        partitionGroup, nextPartitionId, partitionsCount, topologyManager);
   }
 }

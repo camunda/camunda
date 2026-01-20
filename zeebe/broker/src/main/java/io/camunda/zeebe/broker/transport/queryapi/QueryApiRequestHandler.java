@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.transport.queryapi;
 
+import io.atomix.primitive.partition.PartitionId;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.system.configuration.QueryApiCfg;
 import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler;
@@ -68,7 +69,7 @@ public final class QueryApiRequestHandler
 
   @Override
   protected ActorFuture<Either<ErrorResponseWriter, QueryResponseWriter>> handleAsync(
-      final int partitionId,
+      final PartitionId partitionId,
       final long requestId,
       final QueryRequestReader requestReader,
       final QueryResponseWriter responseWriter,
@@ -78,7 +79,7 @@ public final class QueryApiRequestHandler
   }
 
   private Either<ErrorResponseWriter, QueryResponseWriter> handle(
-      final int partitionId,
+      final PartitionId partitionId,
       final QueryRequestReader requestReader,
       final QueryResponseWriter responseWriter,
       final ErrorResponseWriter errorWriter) {

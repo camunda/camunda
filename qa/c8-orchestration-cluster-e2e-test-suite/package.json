@@ -26,7 +26,7 @@
     "playwright-slack-report": "^1.1.89",
     "prettier": "3.6.2",
     "typescript": "5.8.2",
-    "valibot": "1.1.0",
+    "valibot": "1.2.0",
     "zeebe-node": "^8.3.2"
   },
   "lint-staged": {

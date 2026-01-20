@@ -9,6 +9,7 @@ package io.camunda.zeebe.gateway.api.util;
 
 import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
 
+import io.atomix.primitive.partition.PartitionId;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
 import io.camunda.zeebe.util.collection.Tuple;
@@ -67,25 +68,25 @@ public final class TestBrokerClusterState implements BrokerClusterState {
   }
 
   @Override
-  public int getLeaderForPartition(final int partition) {
-    if (!partitionLeaders.containsKey(partition)) {
+  public int getLeaderForPartition(final PartitionId partition) {
+    if (!partitionLeaders.containsKey(partition.id())) {
       return NODE_ID_NULL;
     }
-    return partitionLeaders.get(partition).getLeft();
+    return partitionLeaders.get(partition.id()).getLeft();
   }
 
   @Override
-  public Set<Integer> getFollowersForPartition(final int partition) {
-    return followerPartitionToNodeIds.getOrDefault(partition, Set.of());
+  public Set<Integer> getFollowersForPartition(final PartitionId partition) {
+    return followerPartitionToNodeIds.getOrDefault(partition.id(), Set.of());
   }
 
   @Override
-  public Set<Integer> getInactiveNodesForPartition(final int partition) {
-    return inactivePartitionsToNodeIds.getOrDefault(partition, Set.of());
+  public Set<Integer> getInactiveNodesForPartition(final PartitionId partition) {
+    return inactivePartitionsToNodeIds.getOrDefault(partition.id(), Set.of());
   }
 
   @Override
-  public int getRandomBroker() {
+  public int getRandomBroker(final String partitionGroup) {
     throw new UnsupportedOperationException();
   }
 
@@ -110,9 +111,9 @@ public final class TestBrokerClusterState implements BrokerClusterState {
   }
 
   @Override
-  public PartitionHealthStatus getPartitionHealth(final int brokerId, final int partition) {
+  public PartitionHealthStatus getPartitionHealth(final int brokerId, final PartitionId partition) {
     return brokerPartitionHealthStatus.getOrDefault(
-        Tuple.of(brokerId, partition), PartitionHealthStatus.UNHEALTHY);
+        Tuple.of(brokerId, partition.id()), PartitionHealthStatus.UNHEALTHY);
   }
 
   @Override

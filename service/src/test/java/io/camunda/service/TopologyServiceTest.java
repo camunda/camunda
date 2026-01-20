@@ -12,6 +12,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import io.atomix.primitive.partition.PartitionId;
 import io.camunda.service.TopologyServices.Broker;
 import io.camunda.service.TopologyServices.ClusterStatus;
 import io.camunda.service.TopologyServices.Health;
@@ -66,11 +67,15 @@ public class TopologyServiceTest {
     final int leaderId2 = 2;
 
     when(clusterState.getPartitions()).thenReturn(List.of(partitionId1, partitionId2));
-    when(clusterState.getLeaderForPartition(partitionId1)).thenReturn(leaderId1);
-    when(clusterState.getLeaderForPartition(partitionId2)).thenReturn(leaderId2);
-    when(clusterState.getPartitionHealth(leaderId1, partitionId1))
+    when(clusterState.getLeaderForPartition(new PartitionId("raft-partition", partitionId1)))
+        .thenReturn(leaderId1);
+    when(clusterState.getLeaderForPartition(new PartitionId("raft-partition", partitionId2)))
+        .thenReturn(leaderId2);
+    when(clusterState.getPartitionHealth(
+            leaderId1, new PartitionId("raft-partition", partitionId1)))
         .thenReturn(PartitionHealthStatus.HEALTHY);
-    when(clusterState.getPartitionHealth(leaderId2, partitionId2))
+    when(clusterState.getPartitionHealth(
+            leaderId2, new PartitionId("raft-partition", partitionId2)))
         .thenReturn(PartitionHealthStatus.UNHEALTHY);
 
     // when
@@ -82,8 +87,9 @@ public class TopologyServiceTest {
     verify(brokerClient).getTopologyManager();
     verify(topologyManager).getTopology();
     verify(clusterState).getPartitions();
-    verify(clusterState).getLeaderForPartition(partitionId1);
-    verify(clusterState).getPartitionHealth(leaderId1, partitionId1);
+    verify(clusterState).getLeaderForPartition(new PartitionId("raft-partition", partitionId1));
+    verify(clusterState)
+        .getPartitionHealth(leaderId1, new PartitionId("raft-partition", partitionId1));
   }
 
   @ParameterizedTest
@@ -100,10 +106,16 @@ public class TopologyServiceTest {
     final int leaderId2 = 2;
 
     when(clusterState.getPartitions()).thenReturn(List.of(partitionId1, partitionId2));
-    when(clusterState.getLeaderForPartition(partitionId1)).thenReturn(leaderId1);
-    when(clusterState.getLeaderForPartition(partitionId2)).thenReturn(leaderId2);
-    when(clusterState.getPartitionHealth(leaderId1, partitionId1)).thenReturn(unhealthyStatus);
-    when(clusterState.getPartitionHealth(leaderId2, partitionId2)).thenReturn(unhealthyStatus);
+    when(clusterState.getLeaderForPartition(new PartitionId("raft-partition", partitionId1)))
+        .thenReturn(leaderId1);
+    when(clusterState.getLeaderForPartition(new PartitionId("raft-partition", partitionId2)))
+        .thenReturn(leaderId2);
+    when(clusterState.getPartitionHealth(
+            leaderId1, new PartitionId("raft-partition", partitionId1)))
+        .thenReturn(unhealthyStatus);
+    when(clusterState.getPartitionHealth(
+            leaderId2, new PartitionId("raft-partition", partitionId2)))
+        .thenReturn(unhealthyStatus);
 
     // when
     final var status = services.getStatus().join();
@@ -114,10 +126,12 @@ public class TopologyServiceTest {
     verify(brokerClient).getTopologyManager();
     verify(topologyManager).getTopology();
     verify(clusterState).getPartitions();
-    verify(clusterState).getLeaderForPartition(partitionId1);
-    verify(clusterState).getPartitionHealth(leaderId1, partitionId1);
-    verify(clusterState).getLeaderForPartition(partitionId2);
-    verify(clusterState).getPartitionHealth(leaderId2, partitionId2);
+    verify(clusterState).getLeaderForPartition(new PartitionId("raft-partition", partitionId1));
+    verify(clusterState)
+        .getPartitionHealth(leaderId1, new PartitionId("raft-partition", partitionId1));
+    verify(clusterState).getLeaderForPartition(new PartitionId("raft-partition", partitionId2));
+    verify(clusterState)
+        .getPartitionHealth(leaderId2, new PartitionId("raft-partition", partitionId2));
   }
 
   @Test
@@ -164,14 +178,20 @@ public class TopologyServiceTest {
 
     when(clusterState.getPartitions())
         .thenReturn(List.of(partitionId1, partitionId2, partitionId3));
-    when(clusterState.getLeaderForPartition(partitionId1)).thenReturn(leaderId1);
-    when(clusterState.getLeaderForPartition(partitionId2)).thenReturn(leaderId2);
-    when(clusterState.getLeaderForPartition(partitionId3)).thenReturn(leaderId3);
-    when(clusterState.getPartitionHealth(leaderId1, partitionId1))
+    when(clusterState.getLeaderForPartition(new PartitionId("raft-partition", partitionId1)))
+        .thenReturn(leaderId1);
+    when(clusterState.getLeaderForPartition(new PartitionId("raft-partition", partitionId2)))
+        .thenReturn(leaderId2);
+    when(clusterState.getLeaderForPartition(new PartitionId("raft-partition", partitionId3)))
+        .thenReturn(leaderId3);
+    when(clusterState.getPartitionHealth(
+            leaderId1, new PartitionId("raft-partition", partitionId1)))
         .thenReturn(PartitionHealthStatus.DEAD);
-    when(clusterState.getPartitionHealth(leaderId2, partitionId2))
+    when(clusterState.getPartitionHealth(
+            leaderId2, new PartitionId("raft-partition", partitionId2)))
         .thenReturn(PartitionHealthStatus.UNHEALTHY);
-    when(clusterState.getPartitionHealth(leaderId3, partitionId3))
+    when(clusterState.getPartitionHealth(
+            leaderId3, new PartitionId("raft-partition", partitionId3)))
         .thenReturn(PartitionHealthStatus.HEALTHY);
 
     // when
@@ -183,12 +203,15 @@ public class TopologyServiceTest {
     verify(brokerClient).getTopologyManager();
     verify(topologyManager).getTopology();
     verify(clusterState).getPartitions();
-    verify(clusterState).getLeaderForPartition(partitionId1);
-    verify(clusterState).getPartitionHealth(leaderId1, partitionId1);
-    verify(clusterState).getLeaderForPartition(partitionId2);
-    verify(clusterState).getPartitionHealth(leaderId2, partitionId2);
-    verify(clusterState).getLeaderForPartition(partitionId3);
-    verify(clusterState).getPartitionHealth(leaderId3, partitionId3);
+    verify(clusterState).getLeaderForPartition(new PartitionId("raft-partition", partitionId1));
+    verify(clusterState)
+        .getPartitionHealth(leaderId1, new PartitionId("raft-partition", partitionId1));
+    verify(clusterState).getLeaderForPartition(new PartitionId("raft-partition", partitionId2));
+    verify(clusterState)
+        .getPartitionHealth(leaderId2, new PartitionId("raft-partition", partitionId2));
+    verify(clusterState).getLeaderForPartition(new PartitionId("raft-partition", partitionId3));
+    verify(clusterState)
+        .getPartitionHealth(leaderId3, new PartitionId("raft-partition", partitionId3));
   }
 
   @Test
@@ -276,22 +299,22 @@ public class TopologyServiceTest {
     }
 
     @Override
-    public int getLeaderForPartition(final int partition) {
+    public int getLeaderForPartition(final PartitionId partition) {
       return 0;
     }
 
     @Override
-    public Set<Integer> getFollowersForPartition(final int partition) {
+    public Set<Integer> getFollowersForPartition(final PartitionId partition) {
       return Set.of(1);
     }
 
     @Override
-    public Set<Integer> getInactiveNodesForPartition(final int partition) {
+    public Set<Integer> getInactiveNodesForPartition(final PartitionId partition) {
       return Set.of(2);
     }
 
     @Override
-    public int getRandomBroker() {
+    public int getRandomBroker(final String partitionGroup) {
       return ThreadLocalRandom.current().nextInt(0, 3);
     }
 
@@ -316,8 +339,9 @@ public class TopologyServiceTest {
     }
 
     @Override
-    public PartitionHealthStatus getPartitionHealth(final int brokerId, final int partition) {
-      if (partition != 1) {
+    public PartitionHealthStatus getPartitionHealth(
+        final int brokerId, final PartitionId partition) {
+      if (partition.id() != 1) {
         return PartitionHealthStatus.NULL_VAL;
       }
 

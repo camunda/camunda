@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.transport.adminapi;
 
+import io.atomix.primitive.partition.PartitionId;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
@@ -51,19 +52,22 @@ public class AdminApiRequestHandler
 
   @Override
   protected ActorFuture<Either<ErrorResponseWriter, ApiResponseWriter>> handleAsync(
-      final int partitionId,
+      final PartitionId partitionId,
       final long requestId,
       final ApiRequestReader requestReader,
       final ApiResponseWriter responseWriter,
       final ErrorResponseWriter errorWriter) {
+    // TODO: Use full partition id, including the group
     return switch (requestReader.getMessageDecoder().type()) {
       case STEP_DOWN_IF_NOT_PRIMARY ->
           CompletableActorFuture.completed(
               stepDownIfNotPrimary(responseWriter, partitionId, errorWriter));
-      case PAUSE_EXPORTING -> pauseExporting(responseWriter, partitionId, errorWriter);
-      case SOFT_PAUSE_EXPORTING -> softPauseExporting(responseWriter, partitionId, errorWriter);
-      case RESUME_EXPORTING -> resumeExporting(responseWriter, partitionId, errorWriter);
-      case BAN_INSTANCE -> banInstance(requestReader, responseWriter, partitionId, errorWriter);
+      case PAUSE_EXPORTING -> pauseExporting(responseWriter, partitionId.id(), errorWriter);
+      case SOFT_PAUSE_EXPORTING ->
+          softPauseExporting(responseWriter, partitionId.id(), errorWriter);
+      case RESUME_EXPORTING -> resumeExporting(responseWriter, partitionId.id(), errorWriter);
+      case BAN_INSTANCE ->
+          banInstance(requestReader, responseWriter, partitionId.id(), errorWriter);
       case GET_FLOW_CONTROL -> getFlowControl(responseWriter, errorWriter);
       case SET_FLOW_CONTROL -> setFlowControl(requestReader, responseWriter, errorWriter);
       default -> unknownRequest(errorWriter, requestReader.getMessageDecoder().type());
@@ -264,7 +268,7 @@ public class AdminApiRequestHandler
 
   private Either<ErrorResponseWriter, ApiResponseWriter> stepDownIfNotPrimary(
       final ApiResponseWriter responseWriter,
-      final int partitionId,
+      final PartitionId partitionId,
       final ErrorResponseWriter errorWriter) {
     if (raftPartition.getRole() == Role.LEADER) {
       raftPartition.stepDownIfNotPrimary();

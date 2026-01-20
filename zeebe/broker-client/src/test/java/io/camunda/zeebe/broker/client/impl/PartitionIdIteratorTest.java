@@ -19,7 +19,7 @@ final class PartitionIdIteratorTest {
   @Test
   void shouldIterateOverAllPartitions() {
     // given
-    final var iterator = new PartitionIdIterator(1, 3, topologyManager);
+    final var iterator = new PartitionIdIterator("raft-partition", 1, 3, topologyManager);
     final List<Integer> ids = new ArrayList<>();
     topologyManager.addPartition(1, 0).addPartition(2, 0).addPartition(3, 0);
 
@@ -33,7 +33,7 @@ final class PartitionIdIteratorTest {
   @Test
   void shouldSkipPartitionsWithoutLeaders() {
     // given
-    final var iterator = new PartitionIdIterator(1, 3, topologyManager);
+    final var iterator = new PartitionIdIterator("raft-partition", 1, 3, topologyManager);
     final List<Integer> ids = new ArrayList<>();
     topologyManager.addPartition(1, 0).addPartition(3, 0);
 
@@ -50,7 +50,7 @@ final class PartitionIdIteratorTest {
     final var topologyManager = new TestTopologyManager(null);
 
     // when
-    final var iterator = new PartitionIdIterator(1, 3, topologyManager);
+    final var iterator = new PartitionIdIterator("raft-partition", 1, 3, topologyManager);
 
     // then
     assertThat(iterator.hasNext()).isFalse();

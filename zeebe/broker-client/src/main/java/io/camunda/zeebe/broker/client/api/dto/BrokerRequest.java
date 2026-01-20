@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.client.api.dto;
 
+import io.atomix.primitive.partition.PartitionId;
 import io.camunda.zeebe.broker.client.api.RequestDispatchStrategy;
 import io.camunda.zeebe.broker.client.api.UnsupportedBrokerResponseException;
 import io.camunda.zeebe.protocol.impl.encoding.ErrorResponse;
@@ -32,6 +33,7 @@ public abstract class BrokerRequest<T> implements ClientRequest {
 
   protected final int schemaId;
   protected final int templateId;
+  protected String partitionGroup = "raft-partition";
 
   public BrokerRequest(final int schemaId, final int templateId) {
     this.schemaId = schemaId;
@@ -40,6 +42,20 @@ public abstract class BrokerRequest<T> implements ClientRequest {
 
   public Optional<Integer> getBrokerId() {
     return Optional.empty();
+  }
+
+  @Override
+  public PartitionId getFullPartitionId() {
+    return new PartitionId(partitionGroup, getPartitionId());
+  }
+
+  public String setPartitionGroup(final String partitionGroup) {
+    this.partitionGroup = partitionGroup;
+    return partitionGroup;
+  }
+
+  public String getPartitionGroup() {
+    return partitionGroup;
   }
 
   public abstract void setPartitionId(int partitionId);

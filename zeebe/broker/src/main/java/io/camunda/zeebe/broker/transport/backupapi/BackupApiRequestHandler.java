@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.transport.backupapi;
 
+import io.atomix.primitive.partition.PartitionId;
 import io.camunda.zeebe.backup.api.BackupDescriptor;
 import io.camunda.zeebe.backup.api.BackupManager;
 import io.camunda.zeebe.backup.api.BackupStatus;
@@ -80,7 +81,7 @@ public final class BackupApiRequestHandler
 
   @Override
   protected ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>> handleAsync(
-      final int requestStreamId,
+      final PartitionId requestStreamId,
       final long requestId,
       final BackupApiRequestReader requestReader,
       final BackupApiResponseWriter responseWriter,
@@ -94,7 +95,7 @@ public final class BackupApiRequestHandler
       case TAKE_BACKUP ->
           CompletableActorFuture.completed(
               handleTakeBackupRequest(
-                  requestStreamId, requestId, requestReader, responseWriter, errorWriter));
+                  requestStreamId.id(), requestId, requestReader, responseWriter, errorWriter));
       case QUERY_STATUS -> handleQueryStatusRequest(requestReader, responseWriter, errorWriter);
       case LIST -> handleListBackupRequest(requestReader, responseWriter, errorWriter);
       case DELETE -> handleDeleteBackupRequest(requestReader, responseWriter, errorWriter);

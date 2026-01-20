@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.cluster.messaging.impl.NettyMessagingService;
+import io.atomix.primitive.partition.PartitionId;
 import io.atomix.utils.net.Address;
 import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -213,6 +214,11 @@ public final class QueryApiIT {
     @Override
     public int getPartitionId() {
       return request.getPartitionId();
+    }
+
+    @Override
+    public PartitionId getFullPartitionId() {
+      return new PartitionId("raft-partition", request.getPartitionId());
     }
 
     @Override

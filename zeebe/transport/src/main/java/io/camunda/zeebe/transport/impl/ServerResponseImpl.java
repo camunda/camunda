@@ -16,7 +16,6 @@ import org.agrona.MutableDirectBuffer;
 public final class ServerResponseImpl implements ServerResponse {
   private final DirectBufferWriter writerAdapter = new DirectBufferWriter();
   private BufferWriter writer;
-  private int partitionId;
   private long requestId;
 
   public ServerResponseImpl writer(final BufferWriter writer) {
@@ -33,7 +32,6 @@ public final class ServerResponseImpl implements ServerResponse {
   }
 
   public ServerResponseImpl reset() {
-    partitionId = -1;
     writer = null;
     requestId = -1;
 
@@ -59,17 +57,12 @@ public final class ServerResponseImpl implements ServerResponse {
     return requestId;
   }
 
-  public int getPartitionId() {
-    return partitionId;
-  }
-
-  public ServerResponseImpl setPartitionId(final int partitionId) {
-    this.partitionId = partitionId;
+  public ServerResponseImpl setRequestId(final long requestId) {
+    this.requestId = requestId;
     return this;
   }
 
-  public ServerResponseImpl setRequestId(final long requestId) {
-    this.requestId = requestId;
+  public ServerResponseImpl setPartitionId(final int partitionId) {
     return this;
   }
 }

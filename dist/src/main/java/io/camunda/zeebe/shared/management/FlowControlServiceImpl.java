@@ -9,6 +9,7 @@ package io.camunda.zeebe.shared.management;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
+import io.atomix.primitive.partition.PartitionId;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.system.configuration.FlowControlCfg;
@@ -101,7 +102,8 @@ public class FlowControlServiceImpl implements FlowControlService {
 
   private CompletableFuture<FlowControlStatus> fetchFlowConfigOnPartition(
       final BrokerClusterState topology, final Integer partitionId) {
-    final var brokerId = topology.getLeaderForPartition(partitionId);
+    final var brokerId =
+        topology.getLeaderForPartition(new PartitionId("raft-partition", partitionId));
     final var request = new BrokerAdminRequest();
     request.setBrokerId(brokerId);
     request.setPartitionId(partitionId);
@@ -116,11 +118,17 @@ public class FlowControlServiceImpl implements FlowControlService {
   }
 
   private IntHashSet getMembers(final BrokerClusterState topology, final Integer partitionId) {
-    final var leader = topology.getLeaderForPartition(partitionId);
+    final var leader =
+        topology.getLeaderForPartition(new PartitionId("raft-partition", partitionId));
     final var followers =
-        Optional.ofNullable(topology.getFollowersForPartition(partitionId)).orElseGet(Set::of);
+        Optional.ofNullable(
+                topology.getFollowersForPartition(new PartitionId("raft-partition", partitionId)))
+            .orElseGet(Set::of);
     final var inactive =
-        Optional.ofNullable(topology.getInactiveNodesForPartition(partitionId)).orElseGet(Set::of);
+        Optional.ofNullable(
+                topology.getInactiveNodesForPartition(
+                    new PartitionId("raft-partition", partitionId)))
+            .orElseGet(Set::of);
 
     final var members = new IntHashSet(topology.getReplicationFactor());
     members.add(leader);

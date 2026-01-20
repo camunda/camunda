@@ -11,6 +11,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+import io.atomix.primitive.partition.PartitionId;
 import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler.RequestReader;
 import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler.ResponseWriter;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -40,7 +41,7 @@ final class ApiRequestHandlerTest {
     final var output = mock(ServerOutput.class);
 
     // when
-    handler.onRequest(output, 0, 0, buffer, 0, 1);
+    handler.onRequest(output, new PartitionId("raft-partition", 1), 0, buffer, 0, 1);
     actorScheduler.workUntilDone();
 
     // then
@@ -59,7 +60,7 @@ final class ApiRequestHandlerTest {
     final var output = mock(ServerOutput.class);
 
     // when
-    handler.onRequest(output, 0, 0, buffer, 0, 1);
+    handler.onRequest(output, new PartitionId("raft-partition", 1), 0, buffer, 0, 1);
     actorScheduler.workUntilDone();
 
     // then
@@ -83,7 +84,8 @@ final class ApiRequestHandlerTest {
     doThrow(new RuntimeException()).when(buffer).wrap(buffer, 0, 1);
 
     // when
-    handler.onRequest(output, partitionId, requestId, buffer, 0, 1);
+    handler.onRequest(
+        output, new PartitionId("raft-partition", partitionId), requestId, buffer, 0, 1);
     actorScheduler.workUntilDone();
 
     // then
@@ -100,7 +102,7 @@ final class ApiRequestHandlerTest {
 
     @Override
     protected ActorFuture<Either<ErrorResponseWriter, ResponseWriter>> handleAsync(
-        final int partitionId,
+        final PartitionId partitionId,
         final long requestId,
         final RequestReader requestReader,
         final ResponseWriter responseWriter,

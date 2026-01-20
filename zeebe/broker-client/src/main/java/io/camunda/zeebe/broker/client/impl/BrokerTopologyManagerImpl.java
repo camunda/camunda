@@ -12,6 +12,7 @@ import io.atomix.cluster.ClusterMembershipEvent.Type;
 import io.atomix.cluster.ClusterMembershipEventListener;
 import io.atomix.cluster.Member;
 import io.atomix.cluster.MemberId;
+import io.atomix.primitive.partition.PartitionId;
 import io.camunda.zeebe.broker.client.api.BrokerClientMetricsDoc.PartitionRoleValues;
 import io.camunda.zeebe.broker.client.api.BrokerClientTopologyMetrics;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
@@ -44,7 +45,7 @@ public final class BrokerTopologyManagerImpl extends Actor
 
   private final Set<BrokerTopologyListener> topologyListeners = new HashSet<>();
 
-  private final Map<MemberId, BrokerInfo> memberProperties = new HashMap<>();
+  private final Map<MemberId, Map<String, BrokerInfo>> memberProperties = new HashMap<>();
 
   public BrokerTopologyManagerImpl(
       final Supplier<Set<Member>> membersSupplier,
@@ -99,26 +100,23 @@ public final class BrokerTopologyManagerImpl extends Actor
     }
 
     for (final Member member : members) {
-      final BrokerInfo brokerInfo = BrokerInfo.fromProperties(member.properties());
-      if (brokerInfo != null) {
-        addBroker(member, brokerInfo);
-      }
+      addBroker(member);
     }
   }
 
-  private void addBroker(final Member member, final BrokerInfo brokerInfo) {
+  private void addBroker(final Member member) {
     actor.run(
         () -> {
           if (!memberProperties.containsKey(member.id())) {
             topologyListeners.forEach(l -> l.brokerAdded(member.id()));
           }
-
-          memberProperties.put(member.id(), brokerInfo);
+          final var groups = BrokerInfo.groupedFromProperties(member.properties());
+          memberProperties.put(member.id(), groups);
 
           updateTopology(
               oldTopology ->
                   BrokerClientTopologyImpl.fromMemberProperties(
-                      memberProperties.values(), oldTopology.configuredClusterState()));
+                      memberProperties, oldTopology.configuredClusterState()));
         });
   }
 
@@ -131,7 +129,7 @@ public final class BrokerTopologyManagerImpl extends Actor
           final var oldTopology = topology;
           topology =
               BrokerClientTopologyImpl.fromMemberProperties(
-                  memberProperties.values(), oldTopology.configuredClusterState());
+                  memberProperties, oldTopology.configuredClusterState());
         });
   }
 
@@ -150,7 +148,10 @@ public final class BrokerTopologyManagerImpl extends Actor
   public void event(final ClusterMembershipEvent event) {
     final Member subject = event.subject();
     final Type eventType = event.type();
-    final BrokerInfo brokerInfo = BrokerInfo.fromProperties(subject.properties());
+    final BrokerInfo brokerInfo =
+        BrokerInfo.groupedFromProperties(subject.properties()).values().stream()
+            .findAny()
+            .orElse(null);
 
     if (brokerInfo == null) {
       return;
@@ -164,7 +165,7 @@ public final class BrokerTopologyManagerImpl extends Actor
             brokerInfo.getPartitionRoles(),
             brokerInfo.getPartitionLeaderTerms(),
             brokerInfo.getPartitionHealthStatuses());
-        addBroker(subject, brokerInfo);
+        addBroker(subject);
       }
       case METADATA_CHANGED -> {
         LOG.debug(
@@ -173,7 +174,7 @@ public final class BrokerTopologyManagerImpl extends Actor
             brokerInfo.getPartitionRoles(),
             brokerInfo.getPartitionLeaderTerms(),
             brokerInfo.getPartitionHealthStatuses());
-        addBroker(subject, brokerInfo);
+        addBroker(subject);
       }
       case MEMBER_REMOVED -> {
         LOG.debug("Received broker was removed {}.", brokerInfo);
@@ -188,12 +189,14 @@ public final class BrokerTopologyManagerImpl extends Actor
     final var partitions = topology.getPartitions();
     partitions.forEach(
         partition -> {
-          final var leader = topology.getLeaderForPartition(partition);
+          final var leader =
+              topology.getLeaderForPartition(new PartitionId("raft-partition", partition));
           if (leader != BrokerClusterState.NODE_ID_NULL) {
             topologyMetrics.setRoleForPartition(partition, leader, PartitionRoleValues.LEADER);
           }
 
-          final var followers = topology.getFollowersForPartition(partition);
+          final var followers =
+              topology.getFollowersForPartition(new PartitionId("raft-partition", partition));
           if (followers != null) {
             followers.forEach(
                 broker ->

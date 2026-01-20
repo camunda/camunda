@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.client.impl;
 
 import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
 
+import io.atomix.primitive.partition.PartitionId;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import java.util.Iterator;
@@ -19,11 +20,14 @@ public final class PartitionIdIterator implements Iterator<Integer> {
 
   private final OfInt iterator;
   private int currentPartitionId;
+  private final String partitionGroup;
 
   public PartitionIdIterator(
+      final String partitionGroup,
       final int startPartitionId,
       final int partitionsCount,
       final BrokerTopologyManager topologyManager) {
+    this.partitionGroup = partitionGroup;
     iterator =
         IntStream.range(0, partitionsCount)
             .map(
@@ -36,7 +40,9 @@ public final class PartitionIdIterator implements Iterator<Integer> {
 
   private boolean hasLeader(final BrokerTopologyManager topologyManager, final int p) {
     final var topology = topologyManager.getTopology();
-    return topology != null && topology.getLeaderForPartition(p) != BrokerClusterState.NODE_ID_NULL;
+    return topology != null
+        && topology.getLeaderForPartition(new PartitionId(partitionGroup, p))
+            != BrokerClusterState.NODE_ID_NULL;
   }
 
   @Override

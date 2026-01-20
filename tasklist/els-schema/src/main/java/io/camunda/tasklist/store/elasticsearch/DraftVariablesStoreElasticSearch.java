@@ -10,35 +10,24 @@ package io.camunda.tasklist.store.elasticsearch;
 import static io.camunda.tasklist.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.Refresh;
 import co.elastic.clients.elasticsearch.core.DeleteByQueryRequest;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
+import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
-import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.store.DraftVariableStore;
-import io.camunda.tasklist.tenant.TenantAwareElasticsearchClient;
+import io.camunda.tasklist.util.ElasticsearchTenantHelper;
 import io.camunda.tasklist.util.ElasticsearchUtil;
 import io.camunda.webapps.schema.descriptors.template.DraftTaskVariableTemplate;
 import io.camunda.webapps.schema.entities.usertask.DraftTaskVariableEntity;
 import java.io.IOException;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import org.elasticsearch.action.bulk.BulkRequest;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.action.support.WriteRequest;
-import org.elasticsearch.action.update.UpdateRequest;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.search.SearchHit;
-import org.elasticsearch.search.SearchHits;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.elasticsearch.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,11 +43,7 @@ public class DraftVariablesStoreElasticSearch implements DraftVariableStore {
   private static final Logger LOGGER =
       LoggerFactory.getLogger(DraftVariablesStoreElasticSearch.class);
 
-  @Autowired private TenantAwareElasticsearchClient tenantAwareClient;
-
-  @Autowired
-  @Qualifier("tasklistEsClient")
-  private RestHighLevelClient esClient;
+  @Autowired private ElasticsearchTenantHelper tenantHelper;
 
   @Autowired
   @Qualifier("tasklistEs8Client")
@@ -72,15 +57,11 @@ public class DraftVariablesStoreElasticSearch implements DraftVariableStore {
 
   @Override
   public void createOrUpdate(final Collection<DraftTaskVariableEntity> draftVariables) {
-    final BulkRequest bulkRequest = new BulkRequest();
-    for (final DraftTaskVariableEntity variableEntity : draftVariables) {
-      bulkRequest.add(createUpsertRequest(variableEntity));
-    }
     try {
-      ElasticsearchUtil.processBulkRequest(
-          esClient, bulkRequest, WriteRequest.RefreshPolicy.WAIT_UNTIL);
-    } catch (final PersistenceException ex) {
-      throw new TasklistRuntimeException(ex);
+      final var bulkOperations = draftVariables.stream().map(this::createUpsertOperation).toList();
+      ElasticsearchUtil.executeBulkRequest(es8Client, bulkOperations, Refresh.WaitFor);
+    } catch (final IOException e) {
+      throw new TasklistRuntimeException("Error persisting draft variables", e);
     }
   }
 
@@ -118,7 +99,7 @@ public class DraftVariablesStoreElasticSearch implements DraftVariableStore {
                   ElasticsearchUtil.termsQuery(DraftTaskVariableTemplate.NAME, variableNames));
 
       final var searchRequestBuilder =
-          new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+          new SearchRequest.Builder()
               .index(draftTaskVariableTemplate.getFullQualifiedName())
               .query(query);
 
@@ -143,24 +124,22 @@ public class DraftVariablesStoreElasticSearch implements DraftVariableStore {
   @Override
   public Optional<DraftTaskVariableEntity> getById(final String variableId) {
     try {
-      final SearchRequest searchRequest =
-          new SearchRequest(draftTaskVariableTemplate.getFullQualifiedName());
-      final SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
-      sourceBuilder.query(QueryBuilders.termQuery(DraftTaskVariableTemplate.ID, variableId));
-      searchRequest.source(sourceBuilder);
+      final var query = ElasticsearchUtil.termsQuery(DraftTaskVariableTemplate.ID, variableId);
+      final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
 
-      final SearchResponse searchResponse = tenantAwareClient.search(searchRequest);
+      final var searchRequest =
+          new SearchRequest.Builder()
+              .index(draftTaskVariableTemplate.getFullQualifiedName())
+              .query(tenantAwareQuery)
+              .build();
 
-      final SearchHits hits = searchResponse.getHits();
-      if (hits.getTotalHits().value == 0) {
+      final var response = es8Client.search(searchRequest, DraftTaskVariableEntity.class);
+
+      if (response.hits().total().value() == 0) {
         return Optional.empty();
       }
 
-      final SearchHit hit = hits.getAt(0);
-      final String sourceAsString = hit.getSourceAsString();
-      final DraftTaskVariableEntity entity =
-          objectMapper.readValue(sourceAsString, DraftTaskVariableEntity.class);
-      return Optional.of(entity);
+      return Optional.ofNullable(response.hits().hits().get(0).source());
     } catch (final IOException e) {
       LOGGER.error(
           String.format("Error retrieving draft task variable instance with ID [%s]", variableId),
@@ -175,7 +154,7 @@ public class DraftVariablesStoreElasticSearch implements DraftVariableStore {
       final var query = ElasticsearchUtil.termsQuery(DraftTaskVariableTemplate.TASK_ID, taskIds);
 
       final var searchRequestBuilder =
-          new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+          new SearchRequest.Builder()
               .index(draftTaskVariableTemplate.getFullQualifiedName())
               .query(query)
               .source(s -> s.filter(f -> f.includes(DraftTaskVariableTemplate.ID)));
@@ -191,32 +170,14 @@ public class DraftVariablesStoreElasticSearch implements DraftVariableStore {
     }
   }
 
-  private UpdateRequest createUpsertRequest(final DraftTaskVariableEntity draftVariableEntity) {
-    try {
-      final Map<String, Object> updateFields = new HashMap<>();
-      updateFields.put(DraftTaskVariableTemplate.TASK_ID, draftVariableEntity.getTaskId());
-      updateFields.put(DraftTaskVariableTemplate.NAME, draftVariableEntity.getName());
-      updateFields.put(DraftTaskVariableTemplate.VALUE, draftVariableEntity.getValue());
-      updateFields.put(DraftTaskVariableTemplate.FULL_VALUE, draftVariableEntity.getFullValue());
-      updateFields.put(DraftTaskVariableTemplate.IS_PREVIEW, draftVariableEntity.getIsPreview());
-
-      // format date fields properly
-      final Map<String, Object> jsonMap =
-          objectMapper.readValue(objectMapper.writeValueAsString(updateFields), HashMap.class);
-
-      return new UpdateRequest()
-          .index(draftTaskVariableTemplate.getFullQualifiedName())
-          .id(draftVariableEntity.getId())
-          .upsert(objectMapper.writeValueAsString(draftVariableEntity), XContentType.JSON)
-          .doc(jsonMap)
-          .retryOnConflict(UPDATE_RETRY_COUNT);
-
-    } catch (final IOException e) {
-      throw new TasklistRuntimeException(
-          String.format(
-              "Error preparing the query to upsert task variable instance [%s]",
-              draftVariableEntity.getId()),
-          e);
-    }
+  private BulkOperation createUpsertOperation(final DraftTaskVariableEntity entity) {
+    return BulkOperation.of(
+        op ->
+            op.update(
+                u ->
+                    u.index(draftTaskVariableTemplate.getFullQualifiedName())
+                        .id(entity.getId())
+                        .retryOnConflict(UPDATE_RETRY_COUNT)
+                        .action(a -> a.doc(entity).docAsUpsert(true))));
   }
 }

@@ -34,7 +34,9 @@ public final class PosixFs {
           MethodHandles.privateLookupIn(FileDescriptor.class, MethodHandles.lookup())
               .findVarHandle(FileDescriptor.class, "fd", int.class);
     } catch (final NoSuchFieldException | IllegalAccessException e) {
-      LOGGER.warn("Cannot look up file descriptor via reflection; NativeFS will be disabled", e);
+      LOGGER.warn(
+          "Cannot look up file descriptor via reflection; NativeFS will be disabled: {}",
+          e.getMessage());
       fileDescriptorFd = null;
     }
 

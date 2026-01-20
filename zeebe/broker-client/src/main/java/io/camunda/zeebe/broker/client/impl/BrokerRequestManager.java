@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.client.impl;
 
+import io.atomix.primitive.partition.PartitionId;
 import io.camunda.zeebe.broker.client.api.BrokerClientMetricsDoc.AdditionalErrorCodes;
 import io.camunda.zeebe.broker.client.api.BrokerClientRequestMetrics;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
@@ -214,6 +215,9 @@ final class BrokerRequestManager extends Actor {
   }
 
   private BrokerAddressProvider determineBrokerNodeIdProvider(final BrokerRequest<?> request) {
+    // TODO: Should be done already by the service
+    request.setPartitionGroup("raft-partition");
+
     if (request.getBrokerId().isPresent()) {
       return new BrokerAddressProvider(clusterState -> request.getBrokerId().orElseThrow());
     } else if (request.addressesSpecificPartition()) {
@@ -221,14 +225,14 @@ final class BrokerRequestManager extends Actor {
       if (topology != null && !topology.getPartitions().contains(request.getPartitionId())) {
         throw new PartitionNotFoundException(request.getPartitionId());
       }
-      throwIfPartitionInactive(request.getPartitionId());
+      throwIfPartitionInactive(request.getFullPartitionId());
       // already know partition id
-      return new BrokerAddressProvider(request.getPartitionId());
+      return new BrokerAddressProvider(request.getFullPartitionId());
     } else if (request.requiresPartitionId()) {
       final var strategy = request.requestDispatchStrategy().orElse(dispatchStrategy);
 
       // select next partition id for request
-      int partitionId = strategy.determinePartition(topologyManager);
+      int partitionId = strategy.determinePartition(request.getPartitionGroup(), topologyManager);
       if (partitionId == BrokerClusterState.PARTITION_ID_NULL) {
         // could happen if the topology is not set yet, let's just try with partition 0 but we
         // should find a better solution
@@ -237,16 +241,16 @@ final class BrokerRequestManager extends Actor {
       }
       request.setPartitionId(partitionId);
 
-      throwIfPartitionInactive(partitionId);
+      throwIfPartitionInactive(request.getFullPartitionId());
 
-      return new BrokerAddressProvider(request.getPartitionId());
+      return new BrokerAddressProvider(request.getFullPartitionId());
     } else {
       // random broker
-      return new BrokerAddressProvider();
+      return new BrokerAddressProvider(request.getPartitionGroup());
     }
   }
 
-  private void throwIfPartitionInactive(final int partitionId) {
+  private void throwIfPartitionInactive(final PartitionId partitionId) {
     final BrokerClusterState topology = topologyManager.getTopology();
     if (topology == null) {
       throw new NoTopologyAvailableException();
@@ -300,11 +304,11 @@ final class BrokerRequestManager extends Actor {
 
     private final ToIntFunction<BrokerClusterState> nodeIdSelector;
 
-    BrokerAddressProvider() {
-      this(BrokerClusterState::getRandomBroker);
+    BrokerAddressProvider(final String partitionGroup) {
+      this((state) -> state.getRandomBroker(partitionGroup));
     }
 
-    BrokerAddressProvider(final int partitionId) {
+    BrokerAddressProvider(final PartitionId partitionId) {
       this(state -> state.getLeaderForPartition(partitionId));
     }
 

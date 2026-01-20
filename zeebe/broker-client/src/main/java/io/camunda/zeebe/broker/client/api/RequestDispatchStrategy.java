@@ -15,7 +15,11 @@ public interface RequestDispatchStrategy {
   /**
    * @return {@link BrokerClusterState#PARTITION_ID_NULL} if no partition can be determined
    */
-  int determinePartition(final BrokerTopologyManager topologyManager);
+  int determinePartition(final String partitionGroup, final BrokerTopologyManager topologyManager);
+
+  default int determinePartition(final BrokerTopologyManager topologyManager) {
+    return determinePartition("raft-partition", topologyManager);
+  }
 
   /**
    * Returns a dispatch strategy which will perform a stateful round robin between the partitions.

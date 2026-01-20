@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.broker.partitioning.startup.steps;
 
-import static io.camunda.zeebe.broker.partitioning.startup.RaftPartitionFactory.GROUP_NAME;
-
 import io.camunda.zeebe.broker.partitioning.startup.PartitionStartupContext;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.startup.StartupStep;
@@ -35,7 +33,10 @@ public final class PartitionDirectoryStep implements StartupStep<PartitionStartu
     final var dataDirectory = Paths.get(context.brokerConfig().getData().getDirectory());
     final var partitionId = context.partitionMetadata().id().id();
     final var partitionDirectory =
-        dataDirectory.resolve(GROUP_NAME).resolve("partitions").resolve(partitionId.toString());
+        dataDirectory
+            .resolve(context.getPartitionGroup())
+            .resolve("partitions")
+            .resolve(partitionId.toString());
 
     try {
       FileUtil.ensureDirectoryExists(partitionDirectory);

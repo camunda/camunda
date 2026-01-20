@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.atomix.primitive.partition.PartitionId;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import java.util.List;
 import java.util.Optional;
@@ -48,8 +49,10 @@ public class PartitionLeaderAwarenessHealthIndicatorTest {
     // given
     final BrokerClusterState mockClusterState = mock(BrokerClusterState.class);
     when(mockClusterState.getPartitions()).thenReturn(List.of(1, 2));
-    when(mockClusterState.getLeaderForPartition(1)).thenReturn(BrokerClusterState.NODE_ID_NULL);
-    when(mockClusterState.getLeaderForPartition(2)).thenReturn(42);
+    when(mockClusterState.getLeaderForPartition(new PartitionId("raft-partition", 1)))
+        .thenReturn(BrokerClusterState.NODE_ID_NULL);
+    when(mockClusterState.getLeaderForPartition(new PartitionId("raft-partition", 2)))
+        .thenReturn(42);
 
     final Supplier<Optional<BrokerClusterState>> stateSupplier =
         () -> Optional.of(mockClusterState);
@@ -86,8 +89,10 @@ public class PartitionLeaderAwarenessHealthIndicatorTest {
     // given
     final BrokerClusterState mockClusterState = mock(BrokerClusterState.class);
     when(mockClusterState.getPartitions()).thenReturn(List.of(1, 2));
-    when(mockClusterState.getLeaderForPartition(1)).thenReturn(BrokerClusterState.NODE_ID_NULL);
-    when(mockClusterState.getLeaderForPartition(2)).thenReturn(BrokerClusterState.NODE_ID_NULL);
+    when(mockClusterState.getLeaderForPartition(new PartitionId("raft-partition", 1)))
+        .thenReturn(BrokerClusterState.NODE_ID_NULL);
+    when(mockClusterState.getLeaderForPartition(new PartitionId("raft-partition", 2)))
+        .thenReturn(BrokerClusterState.NODE_ID_NULL);
 
     final Supplier<Optional<BrokerClusterState>> stateSupplier =
         () -> Optional.of(mockClusterState);

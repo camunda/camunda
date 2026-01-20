@@ -221,6 +221,7 @@ describe('ProcessInstanceOperations', () => {
           batchOperationKey: 'batch-123',
           processInstanceKey: '123456789',
           state: 'ACTIVE',
+          operationType: 'CANCEL_PROCESS_INSTANCE',
           itemKey: '123456789',
         },
       ],

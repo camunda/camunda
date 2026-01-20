@@ -5,14 +5,10 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.transport;
+package io.camunda.db.rdbms.write.queue;
 
-import io.camunda.zeebe.util.buffer.BufferWriter;
+import io.camunda.db.rdbms.write.domain.Copyable;
 
-public interface ServerResponse extends BufferWriter {
-
-  /**
-   * @return the id of the corresponding request
-   */
-  long getRequestId();
+public interface BatchInsertDto<T extends Copyable<T>, M> extends Copyable<T> {
+  T withAdditionalDbModel(M model);
 }

@@ -229,7 +229,7 @@ public final class RaftPartitionFactoryTest {
   }
 
   private RaftPartition buildRaftPartition(final BrokerCfg brokerCfg) {
-    return new RaftPartitionFactory(brokerCfg)
+    return new RaftPartitionFactory("raft-partition", brokerCfg)
         .createRaftPartition(
             new PartitionMetadata(
                 PartitionId.from("test", 1),

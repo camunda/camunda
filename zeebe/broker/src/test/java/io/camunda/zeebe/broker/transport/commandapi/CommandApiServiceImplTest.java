@@ -17,6 +17,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
 
+import io.atomix.primitive.partition.PartitionId;
 import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.broker.system.configuration.QueryApiCfg;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
@@ -156,7 +157,8 @@ public class CommandApiServiceImplTest {
     when(logStream.newLogStreamWriter()).thenReturn(mock());
     when(transitionContext.getQueryService()).thenReturn(mock());
 
-    commandApiService.registerHandlers(1, logStream, transitionContext.getQueryService());
+    commandApiService.registerHandlers(
+        new PartitionId("raft-partition", 1), logStream, transitionContext.getQueryService());
     scheduler.workUntilDone();
 
     verify(serverTransport, times(1)).subscribe(eq(1), eq(RequestType.QUERY), any());

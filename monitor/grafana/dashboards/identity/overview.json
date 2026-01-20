@@ -151,11 +151,11 @@
           "disableTextWrap": false,
           "editorMode": "code",
           "exemplar": false,
-          "expr": "rate(camunda_authentication_external_requests_seconds_count{domain=\"identity\", namespace=~\"$namespace\", service=~\"$service\", pod=~\"$pod\"}[$__rate_interval])",
+          "expr": "sum (\n  rate(camunda_authentication_external_requests_seconds_count{domain=\"identity\", namespace=~\"$namespace\", service=~\"$service\", pod=~\"$pod\"}[$__rate_interval])\n) by (namespace, service, status, uri)",
           "format": "time_series",
           "fullMetaSearch": false,
           "includeNullMetadata": false,
-          "legendFormat": "[{{status}}] {{uri}}",
+          "legendFormat": "{{namespace}} | {{service}} | [{{status}}] {{uri}}",
           "range": true,
           "refId": "A",
           "useBackend": false
@@ -945,5 +945,5 @@
   "timezone": "browser",
   "title": "Identity Overview",
   "uid": "identity",
-  "version": 6
+  "version": 7
 }
