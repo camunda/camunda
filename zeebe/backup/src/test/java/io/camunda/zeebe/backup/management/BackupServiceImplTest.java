@@ -379,7 +379,8 @@ class BackupServiceImplTest {
                 Optional.empty(), Optional.of(partitionId), CheckpointPattern.of(checkpointId))))
         .thenReturn(CompletableFuture.completedFuture(List.of(backupNode1, backupNode2)));
 
-    when(backupStore.delete(any())).thenReturn(CompletableFuture.completedFuture(null));
+    when(backupStore.delete(any(BackupIdentifier.class)))
+        .thenReturn(CompletableFuture.completedFuture(null));
     when(backupStore.storeRangeMarker(anyInt(), any()))
         .thenReturn(CompletableFuture.completedFuture(null));
 
@@ -405,7 +406,8 @@ class BackupServiceImplTest {
                 Optional.empty(), Optional.of(partitionId), CheckpointPattern.of(checkpointId))))
         .thenReturn(CompletableFuture.completedFuture(List.of(backup)));
 
-    when(backupStore.delete(any())).thenReturn(CompletableFuture.completedFuture(null));
+    when(backupStore.delete(any(BackupIdentifier.class)))
+        .thenReturn(CompletableFuture.completedFuture(null));
     when(backupStore.markFailed(any(), any()))
         .thenReturn(CompletableFuture.completedFuture(BackupStatusCode.FAILED));
     when(backupStore.storeRangeMarker(anyInt(), any()))
@@ -515,7 +517,8 @@ class BackupServiceImplTest {
                 Optional.empty(), Optional.of(partitionId), CheckpointPattern.of(checkpointId))))
         .thenReturn(CompletableFuture.completedFuture(List.of(backup)));
 
-    when(backupStore.delete(any())).thenReturn(CompletableFuture.completedFuture(null));
+    when(backupStore.delete(any(BackupIdentifier.class)))
+        .thenReturn(CompletableFuture.completedFuture(null));
     when(backupStore.storeRangeMarker(anyInt(), any()))
         .thenReturn(CompletableFuture.completedFuture(null));
 
@@ -542,7 +545,8 @@ class BackupServiceImplTest {
                 Optional.empty(), Optional.of(partitionId), CheckpointPattern.of(checkpointId))))
         .thenReturn(CompletableFuture.completedFuture(List.of(backup)));
 
-    when(backupStore.delete(any())).thenReturn(CompletableFuture.completedFuture(null));
+    when(backupStore.delete(any(BackupIdentifier.class)))
+        .thenReturn(CompletableFuture.completedFuture(null));
     when(backupStore.markFailed(any(), any()))
         .thenReturn(CompletableFuture.completedFuture(BackupStatusCode.FAILED));
     when(backupStore.storeRangeMarker(anyInt(), any()))
