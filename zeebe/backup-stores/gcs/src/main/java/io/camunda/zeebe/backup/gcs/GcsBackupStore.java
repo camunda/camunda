@@ -7,11 +7,13 @@
  */
 package io.camunda.zeebe.backup.gcs;
 
+import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.BucketInfo;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.Storage.BlobListOption;
 import com.google.cloud.storage.StorageOptions;
+import com.google.common.collect.Iterables;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
@@ -34,6 +36,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,6 +50,7 @@ public final class GcsBackupStore implements BackupStore {
       "Invalid configuration for GcsBackupStore: %s";
   public static final String SNAPSHOT_FILESET_NAME = "snapshot";
   public static final String SEGMENTS_FILESET_NAME = "segments";
+  static final int MAX_DELETE_BLOB_BATCH_SIZE = 100;
   private static final Logger LOG = LoggerFactory.getLogger(GcsBackupStore.class);
   private final ExecutorService executor;
   private final ManifestManager manifestManager;
@@ -118,6 +122,20 @@ public final class GcsBackupStore implements BackupStore {
           fileSetManager.delete(id, SEGMENTS_FILESET_NAME);
         },
         executor);
+  }
+
+  @Override
+  public CompletableFuture<Void> delete(final Collection<BackupIdentifier> ids) {
+    return manifestManager
+        .manifestIds(ids)
+        .thenCombineAsync(
+            fileSetManager.backupDataUrls(ids),
+            (manifestUrls, objectUrls) -> {
+              manifestUrls.addAll(objectUrls);
+              return manifestUrls;
+            },
+            executor)
+        .thenComposeAsync(this::deleteBlobs, executor);
   }
 
   @Override
@@ -202,6 +220,19 @@ public final class GcsBackupStore implements BackupStore {
   }
 
   @Override
+  public CompletableFuture<Void> deleteRangeMarkers(
+      final int partitionId, final Collection<BackupRangeMarker> markers) {
+    return CompletableFuture.supplyAsync(
+            () ->
+                markers.stream()
+                    .map(marker -> rangeMarkerBlobInfo(partitionId, marker))
+                    .map(BlobInfo::getBlobId)
+                    .collect(Collectors.toSet()),
+            executor)
+        .thenComposeAsync(this::deleteBlobs, executor);
+  }
+
+  @Override
   public CompletableFuture<Void> closeAsync() {
     return CompletableFuture.runAsync(
         () -> {
@@ -226,6 +257,14 @@ public final class GcsBackupStore implements BackupStore {
     return BlobInfo.newBuilder(
             bucketInfo, rangeMarkersPrefix(partitionId) + BackupRangeMarker.toName(marker))
         .build();
+  }
+
+  private CompletableFuture<Void> deleteBlobs(final Collection<BlobId> blobIds) {
+    return CompletableFuture.allOf(
+        StreamSupport.stream(
+                Iterables.partition(blobIds, MAX_DELETE_BLOB_BATCH_SIZE).spliterator(), true)
+            .map(batch -> CompletableFuture.runAsync(() -> client.delete(batch)))
+            .toArray(CompletableFuture[]::new));
   }
 
   public static Storage buildClient(final GcsBackupConfig config) {

@@ -15,6 +15,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.cloud.storage.Blob;
+import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.BucketInfo;
 import com.google.cloud.storage.Storage;
@@ -32,8 +33,10 @@ import java.io.UncheckedIOException;
 import java.util.Collection;
 import java.util.Spliterator;
 import java.util.Spliterators;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 public final class ManifestManager {
@@ -199,6 +202,14 @@ public final class ManifestManager {
 
   public void deleteManifest(final BackupIdentifier id) {
     client.delete(manifestBlobInfo(id).getBlobId());
+  }
+
+  public CompletableFuture<Collection<BlobId>> manifestIds(final Collection<BackupIdentifier> ids) {
+    return CompletableFuture.completedFuture(
+        ids.stream()
+            .map(this::manifestBlobInfo)
+            .map(BlobInfo::getBlobId)
+            .collect(Collectors.toSet()));
   }
 
   private BlobInfo manifestBlobInfo(final BackupIdentifier id) {
