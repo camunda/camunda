@@ -8,6 +8,10 @@
 package io.camunda.gateway.mcp.tool.process.instance;
 
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.EVENTUAL_CONSISTENCY_NOTE;
+import static io.camunda.gateway.mcp.tool.ToolDescriptions.FILTER_DESCRIPTION;
+import static io.camunda.gateway.mcp.tool.ToolDescriptions.PAGE_DESCRIPTION;
+import static io.camunda.gateway.mcp.tool.ToolDescriptions.PROCESS_INSTANCE_KEY_POSITIVE_MESSAGE;
+import static io.camunda.gateway.mcp.tool.ToolDescriptions.SORT_DESCRIPTION;
 
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
@@ -44,11 +48,11 @@ public class ProcessInstanceTools {
       description = "Search for process instances. " + EVENTUAL_CONSISTENCY_NOTE,
       annotations = @McpAnnotations(readOnlyHint = true))
   public CallToolResult searchProcessInstances(
-      @McpToolParam(description = "Filter search by the given fields", required = false)
+      @McpToolParam(description = FILTER_DESCRIPTION, required = false)
           final McpProcessInstanceFilter filter,
-      @McpToolParam(description = "Sort criteria", required = false)
+      @McpToolParam(description = SORT_DESCRIPTION, required = false)
           final List<ProcessInstanceSearchQuerySortRequest> sort,
-      @McpToolParam(description = "Pagination criteria", required = false)
+      @McpToolParam(description = PAGE_DESCRIPTION, required = false)
           final McpSearchQueryPageRequest page) {
     try {
       final var query = SearchQueryRequestMapper.toProcessInstanceQuery(filter, page, sort);
@@ -73,7 +77,7 @@ public class ProcessInstanceTools {
       @McpToolParam(
               description =
                   "The assigned key of the process instance, which acts as a unique identifier for this process instance.")
-          @Positive(message = "Process instance key must be a positive number.")
+          @Positive(message = PROCESS_INSTANCE_KEY_POSITIVE_MESSAGE)
           final Long processInstanceKey) {
     try {
       return CallToolResultMapper.from(
