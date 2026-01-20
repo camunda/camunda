@@ -154,7 +154,7 @@ describe('<TaskDetailsHistoryView />', () => {
       await screen.findByTestId('task-details-history-view'),
     ).toBeInTheDocument();
 
-    expect(screen.getByText('Create User task')).toBeInTheDocument();
+    expect(screen.getByText('Create task')).toBeInTheDocument();
   });
 
   it('should load and display audit logs in a table', async () => {
@@ -180,8 +180,8 @@ describe('<TaskDetailsHistoryView />', () => {
     expect(screen.getByText('Actor')).toBeInTheDocument();
     expect(screen.getByText('Time')).toBeInTheDocument();
 
-    expect(screen.getByText('Create User task')).toBeInTheDocument();
-    expect(screen.getByText('Assign User task')).toBeInTheDocument();
+    expect(screen.getByText('Create task')).toBeInTheDocument();
+    expect(screen.getByText('Assign task')).toBeInTheDocument();
 
     expect(screen.getAllByText('demo')).toHaveLength(2);
   });
@@ -267,7 +267,7 @@ describe('<TaskDetailsHistoryView />', () => {
     );
 
     expect(
-      await screen.findByRole('heading', {name: /assign user task/i}),
+      await screen.findByRole('heading', {name: /assign task/i}),
     ).toBeInTheDocument();
 
     expect(
@@ -315,7 +315,7 @@ describe('<TaskDetailsHistoryView />', () => {
     await user.click(screen.getByRole('button', {name: /open details/i}));
 
     expect(
-      await screen.findByRole('heading', {name: /create user task/i}),
+      await screen.findByRole('heading', {name: /create task/i}),
     ).toBeInTheDocument();
 
     const modal = screen.getByRole('dialog');
@@ -360,7 +360,7 @@ describe('<TaskDetailsHistoryView />', () => {
     await user.click(screen.getByRole('button', {name: /open details/i}));
 
     expect(
-      await screen.findByRole('heading', {name: /create user task/i}),
+      await screen.findByRole('heading', {name: /create task/i}),
     ).toBeInTheDocument();
 
     expect(screen.getByTestId('pathname')).toHaveTextContent(
@@ -374,7 +374,7 @@ describe('<TaskDetailsHistoryView />', () => {
     );
 
     expect(
-      screen.queryByRole('heading', {name: /create user task/i}),
+      screen.queryByRole('heading', {name: /create task/i}),
     ).not.toBeInTheDocument();
 
     expect(screen.getByTestId('pathname')).toHaveTextContent('/0/history');

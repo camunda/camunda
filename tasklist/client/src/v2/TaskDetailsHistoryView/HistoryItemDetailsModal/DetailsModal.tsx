@@ -19,7 +19,7 @@ import {EventSchedule, UserAvatar} from '@carbon/react/icons';
 import {useTranslation} from 'react-i18next';
 import type {QueryUserTaskAuditLogsResponseBody} from '@camunda/camunda-api-zod-schemas/8.9';
 import {formatDate} from 'common/dates/formatDate';
-import {spaceAndCapitalize} from 'common/utils/spaceAndCapitalize';
+import {getOperationTypeTranslationKey} from '../getOperationTypeTranslationKey';
 import styles from './styles.module.scss';
 
 type AuditLogItem = QueryUserTaskAuditLogsResponseBody['items'][number];
@@ -31,13 +31,11 @@ type Props = {
 
 const DetailsModal: React.FC<Props> = ({onClose, auditLog}) => {
   const {t} = useTranslation();
-  const {operationType, entityType, actorId, timestamp} = auditLog;
+  const {operationType, actorId, timestamp} = auditLog;
 
   return (
     <ComposedModal size="md" open onClose={onClose}>
-      <ModalHeader
-        title={`${spaceAndCapitalize(operationType)} ${spaceAndCapitalize(entityType)}`}
-      />
+      <ModalHeader title={t(getOperationTypeTranslationKey(operationType))} />
       <ModalBody>
         <StructuredListWrapper isCondensed isFlush>
           <StructuredListBody>

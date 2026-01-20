@@ -43,8 +43,8 @@ import {
 } from '@carbon/react';
 import {Information} from '@carbon/react/icons';
 import {formatDate} from 'common/dates/formatDate';
-import {spaceAndCapitalize} from 'common/utils/spaceAndCapitalize';
 import {ColumnHeader} from './ColumnHeader';
+import {getOperationTypeTranslationKey} from './getOperationTypeTranslationKey';
 import {getSortParams} from './sortUtils';
 import styles from './styles.module.scss';
 
@@ -173,12 +173,12 @@ const TaskDetailsHistoryView: React.FC = () => {
     () =>
       auditLogs.map((log) => ({
         id: log.auditLogKey,
-        operation: `${spaceAndCapitalize(log.operationType)} ${spaceAndCapitalize(log.entityType)}`,
+        operation: t(getOperationTypeTranslationKey(log.operationType)),
         actor: log.actorId,
         time: formatDate(log.timestamp),
         details: log.auditLogKey,
       })),
-    [auditLogs],
+    [auditLogs, t],
   );
 
   const handleOpenDetails = (auditLogKey: string) => {
