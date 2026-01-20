@@ -7,97 +7,55 @@
  */
 
 import {Popover, Content, Divider} from './styled';
-import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {observer} from 'mobx-react';
 import {flip, offset} from '@floating-ui/react-dom';
 import {Header} from './Header';
 import {Stack} from '@carbon/react';
 import {MultiIncidents} from './Incidents/multiIncidents';
-import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
-import {useElementInstancesSearch} from 'modules/queries/elementInstances/useElementInstancesSearch';
-import {useElementInstance} from 'modules/queries/elementInstances/useElementInstance';
 import {useFlownodeInstancesStatistics} from 'modules/queries/flownodeInstancesStatistics/useFlownodeInstancesStatistics';
-import {useMemo} from 'react';
 import {Details} from './Details';
 import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
-import {convertBpmnJsTypeToAPIType} from './convertBpmnJsTypeToAPIType';
 import {incidentsPanelStore} from 'modules/stores/incidentsPanel';
 import {Incidents} from './Incidents';
 import {useElementInstancesCount} from 'modules/hooks/useElementInstancesCount';
+import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 
 type Props = {
   selectedFlowNodeRef?: SVGGraphicsElement | null;
 };
 
 const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
-  const {data: processInstance} = useProcessInstance();
-  const selection = flowNodeSelectionStore.state.selection;
-  const elementId = selection?.flowNodeId;
-  const elementInstanceKey = selection?.flowNodeInstanceId;
-
+  const {
+    selectedElementId,
+    selectedElementInstanceKey,
+    resolvedElementInstance,
+    isFetchingElement,
+    isSelectedInstanceMultiInstanceBody,
+  } = useProcessInstanceElementSelection();
   const processDefinitionKey = useProcessDefinitionKeyContext();
   const {data} = useProcessInstanceXml({
     processDefinitionKey,
   });
-  const businessObject = elementId ? data?.businessObjects[elementId] : null;
 
+  const businessObject = selectedElementId
+    ? data?.businessObjects[selectedElementId]
+    : null;
   const {data: statistics} = useFlownodeInstancesStatistics();
+  let elementInstancesCount = useElementInstancesCount(
+    selectedElementId ?? undefined,
+  );
 
-  let elementInstancesCount = useElementInstancesCount(elementId);
-  if (selection?.isMultiInstance) {
+  if (isSelectedInstanceMultiInstanceBody) {
     elementInstancesCount = 1;
   }
   const incidentCount =
-    statistics?.items.find((stat) => stat.elementId === elementId)?.incidents ??
-    0;
-
-  const shouldFetchElementInstances =
-    elementInstancesCount === 1 &&
-    !elementInstanceKey &&
-    !!processInstance?.processInstanceKey &&
-    !!elementId;
-
-  const {data: elementInstance, isLoading: isFetchingInstance} =
-    useElementInstance(elementInstanceKey ?? '', {
-      enabled: !!elementInstanceKey && !!elementId,
-    });
-
-  const {
-    data: elementInstancesSearchResult,
-    isLoading: isSearchingElementInstances,
-  } = useElementInstancesSearch({
-    elementId: elementId ?? '',
-    processInstanceKey: processInstance?.processInstanceKey ?? '',
-    elementType: convertBpmnJsTypeToAPIType(businessObject?.$type),
-    enabled: shouldFetchElementInstances,
-  });
-
-  const elementInstanceMetadata = useMemo(() => {
-    if (elementInstanceKey && elementInstance) {
-      return elementInstance;
-    }
-
-    if (
-      !elementInstanceKey &&
-      elementInstancesCount === 1 &&
-      elementInstancesSearchResult?.items?.length === 1
-    ) {
-      return elementInstancesSearchResult.items[0];
-    }
-
-    return null;
-  }, [
-    elementInstanceKey,
-    elementInstance,
-    elementInstancesCount,
-    elementInstancesSearchResult,
-  ]);
+    statistics?.items.find((stat) => stat.elementId === selectedElementId)
+      ?.incidents ?? 0;
 
   if (
-    elementId === undefined ||
-    (shouldFetchElementInstances && isSearchingElementInstances) ||
-    (!!elementInstanceKey && isFetchingInstance)
+    selectedElementId === null ||
+    (!!selectedElementInstanceKey && isFetchingElement)
   ) {
     return null;
   }
@@ -116,7 +74,7 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
       <Stack gap={3}>
         {elementInstancesCount !== null &&
           elementInstancesCount > 1 &&
-          !elementInstanceKey && (
+          !selectedElementInstanceKey && (
             <>
               <Header
                 title={`This element instance triggered ${elementInstancesCount} times`}
@@ -128,29 +86,31 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
             </>
           )}
 
-        {elementInstanceMetadata && (
+        {resolvedElementInstance && (
           <>
             <Details
-              elementInstance={elementInstanceMetadata}
+              elementInstance={resolvedElementInstance}
               businessObject={businessObject}
             />
-            {elementInstanceMetadata.hasIncident && (
+            {resolvedElementInstance.hasIncident && (
               <Incidents
-                elementInstanceKey={elementInstanceMetadata.elementInstanceKey}
-                elementName={elementInstanceMetadata.elementName}
-                elementId={elementId}
+                elementInstanceKey={resolvedElementInstance.elementInstanceKey}
+                elementName={resolvedElementInstance.elementName}
+                elementId={selectedElementId}
               />
             )}
           </>
         )}
 
-        {!elementInstanceMetadata && incidentCount > 0 && (
+        {!resolvedElementInstance && incidentCount > 0 && (
           <>
             <Divider />
             <MultiIncidents
               count={incidentCount}
               onButtonClick={() => {
-                incidentsPanelStore.showIncidentsForElementId(elementId);
+                incidentsPanelStore.showIncidentsForElementId(
+                  selectedElementId,
+                );
               }}
             />
           </>

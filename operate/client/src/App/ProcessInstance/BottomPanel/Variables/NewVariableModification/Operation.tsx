@@ -10,13 +10,10 @@ import {useField} from 'react-final-form';
 import {createNewVariableFieldName} from '../createVariableFieldName';
 
 import {modificationsStore} from 'modules/stores/modifications';
-import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {Button} from '@carbon/react';
 import {TrashCan} from '@carbon/react/icons';
 import {Operations} from '../Operations';
 import {useNewScopeKeyForElement} from 'modules/hooks/modifications';
-import {getScopeId} from 'modules/utils/variables';
-import {IS_ELEMENT_SELECTION_V2} from 'modules/feature-flags';
 import {useVariableScopeKey} from 'modules/hooks/variables';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 
@@ -30,16 +27,8 @@ const Operation: React.FC<Props> = ({variableName, onRemove}) => {
     input: {value: currentId},
   } = useField(createNewVariableFieldName(variableName, 'id'));
   const {selectedElementId} = useProcessInstanceElementSelection();
-  const newScopeKeyForElement = useNewScopeKeyForElement(
-    IS_ELEMENT_SELECTION_V2
-      ? selectedElementId
-      : (flowNodeSelectionStore.state.selection?.flowNodeId ?? null),
-  );
-  const scopeKey = IS_ELEMENT_SELECTION_V2
-    ? // eslint-disable-next-line react-hooks/rules-of-hooks
-      useVariableScopeKey(newScopeKeyForElement)
-    : (getScopeId() ?? newScopeKeyForElement);
-
+  const newScopeKeyForElement = useNewScopeKeyForElement(selectedElementId);
+  const scopeKey = useVariableScopeKey(newScopeKeyForElement);
   return (
     <Operations>
       <Button
