@@ -70,6 +70,22 @@
       <artifactId>mcp-core</artifactId>
     </dependency>
 
+    <!-- required for custom models -->
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-core</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-annotations</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.swagger.core.v3</groupId>
+      <artifactId>swagger-annotations-jakarta</artifactId>
+    </dependency>
+
     <!-- utilities -->
     <dependency>
       <groupId>org.springframework.boot</groupId>
