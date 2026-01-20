@@ -206,7 +206,8 @@ public class CompleteJobUserTaskListenerInstructionTest {
 
     jobResultHandlerCaptor.getValue().accept(jobResult);
 
-    verify(jobResult).deny(true, "Task not ready");
+    verify(jobResult).deny(true);
+    verify(jobResult).deniedReason("Task not ready");
 
     verifyNoMoreInteractions(camundaClient, processTestContext, assertionFacade);
   }

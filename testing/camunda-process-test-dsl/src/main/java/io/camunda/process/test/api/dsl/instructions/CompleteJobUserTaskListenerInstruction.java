@@ -21,6 +21,7 @@ import io.camunda.process.test.api.dsl.TestCaseInstruction;
 import io.camunda.process.test.api.dsl.TestCaseInstructionType;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.immutables.value.Value;
 
 /** An instruction to complete a job of a user task listener. */
@@ -63,17 +64,14 @@ public interface CompleteJobUserTaskListenerInstruction extends TestCaseInstruct
    *
    * @return the denied reason
    */
-  @Value.Default
-  default String getDeniedReason() {
-    return "";
-  }
+  Optional<String> getDeniedReason();
 
   /**
    * The corrections to apply to the user task. Optional.
    *
    * @return the corrections
    */
-  Corrections getCorrections();
+  Optional<Corrections> getCorrections();
 
   /** Corrections to apply to the user task attributes. */
   @Value.Immutable
@@ -85,30 +83,21 @@ public interface CompleteJobUserTaskListenerInstruction extends TestCaseInstruct
      *
      * @return the assignee
      */
-    @Value.Default
-    default String getAssignee() {
-      return "";
-    }
+    Optional<String> getAssignee();
 
     /**
      * The due date of the task.
      *
      * @return the due date
      */
-    @Value.Default
-    default String getDueDate() {
-      return "";
-    }
+    Optional<String> getDueDate();
 
     /**
      * The follow up date of the task.
      *
      * @return the follow up date
      */
-    @Value.Default
-    default String getFollowUpDate() {
-      return "";
-    }
+    Optional<String> getFollowUpDate();
 
     /**
      * The candidate users of the task.
@@ -127,8 +116,8 @@ public interface CompleteJobUserTaskListenerInstruction extends TestCaseInstruct
     /**
      * The priority of the task.
      *
-     * @return the priority or null if not set
+     * @return the priority
      */
-    Integer getPriority();
+    Optional<Integer> getPriority();
   }
 }

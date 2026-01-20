@@ -17,6 +17,7 @@ package io.camunda.process.test.impl.extensions;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.clearInvocations;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -447,6 +448,188 @@ public class CompleteJobTest {
 
       // then
       verify(camundaClient, times(2)).newCompleteCommand(JOB_KEY);
+    }
+  }
+
+  @Nested
+  class CompleteJobOfUserTaskListener {
+
+    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
+    private JobFilter jobFilter;
+
+    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
+    private JobStateProperty jobStateProperty;
+
+    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
+    private IntegerProperty retriesProperty;
+
+    @Captor private ArgumentCaptor<Consumer<JobFilter>> jobFilterCaptor;
+    @Captor private ArgumentCaptor<Consumer<JobStateProperty>> jobStatePropertyCaptor;
+    @Captor private ArgumentCaptor<Consumer<IntegerProperty>> retriesPropertyCaptor;
+
+    @Mock private CompleteJobCommandJobResultStep completeJobCommandJobResultStep;
+    @Mock private io.camunda.client.api.command.CompleteUserTaskJobResultStep1 completeUserTaskJobResultStep;
+    @Mock private Consumer<io.camunda.client.api.command.CompleteUserTaskJobResultStep1> jobResultConsumer;
+
+    @Captor
+    private ArgumentCaptor<Function<CompleteJobCommandJobResultStep, CompleteJobResult>>
+        jobResultFunctionCaptor;
+
+    @BeforeEach
+    void setup() {
+      camundaProcessTestContext =
+          new CamundaProcessTestContextImpl(
+              camundaProcessTestRuntime,
+              clientCreationCallback,
+              camundaManagementClient,
+              DevAwaitBehavior.expectSuccess(),
+              jsonMapper,
+              zeebeJsonMapper);
+
+      when(camundaClient
+              .newJobSearchRequest()
+              .filter(jobFilterCaptor.capture())
+              .send()
+              .join()
+              .items())
+          .thenReturn(Collections.singletonList(job));
+
+      lenient().when(job.getJobKey()).thenReturn(JOB_KEY);
+      lenient().when(job.getType()).thenReturn(JOB_TYPE);
+      lenient().when(job.getKind()).thenReturn(JobKind.TASK_LISTENER);
+    }
+
+    @Test
+    void shouldCompleteUserTaskListenerJobWithoutVariables() {
+      // when
+      camundaProcessTestContext.completeJobOfUserTaskListener(
+          JobSelectors.byJobType(JOB_TYPE), result -> {});
+
+      // then
+      verify(camundaClient.newCompleteCommand(JOB_KEY).variables(Collections.emptyMap()))
+          .withResult(ArgumentMatchers.any());
+    }
+
+    @Test
+    void shouldCompleteUserTaskListenerJobWithVariables() {
+      // given
+      final Map<String, Object> variables = Collections.singletonMap("result", "okay");
+
+      // when
+      camundaProcessTestContext.completeJobOfUserTaskListener(
+          JobSelectors.byJobType(JOB_TYPE), variables, result -> {});
+
+      // then
+      verify(camundaClient.newCompleteCommand(JOB_KEY).variables(variables))
+          .withResult(ArgumentMatchers.any());
+    }
+
+    @Test
+    void shouldInvokeJobResultConsumer() {
+      // given
+      when(completeJobCommandJobResultStep.forUserTask())
+          .thenReturn(completeUserTaskJobResultStep);
+
+      // when
+      camundaProcessTestContext.completeJobOfUserTaskListener(
+          JobSelectors.byJobType(JOB_TYPE), jobResultConsumer);
+
+      // then - verify that withResult was called
+      verify(camundaClient.newCompleteCommand(JOB_KEY).variables(Collections.emptyMap()))
+          .withResult(jobResultFunctionCaptor.capture());
+
+      // and invoke the captured function to verify our consumer is called
+      jobResultFunctionCaptor.getValue().apply(completeJobCommandJobResultStep);
+      verify(jobResultConsumer).accept(completeUserTaskJobResultStep);
+    }
+
+    @Test
+    void shouldSearchByJobTypeAndKind() {
+      // when
+      camundaProcessTestContext.completeJobOfUserTaskListener(
+          JobSelectors.byJobType(JOB_TYPE), result -> {});
+
+      // then
+      jobFilterCaptor.getValue().accept(jobFilter);
+      verify(jobFilter).kind(JobKind.TASK_LISTENER);
+      verify(jobFilter).type(JOB_TYPE);
+      verify(jobFilter).state(jobStatePropertyCaptor.capture());
+      verify(jobFilter.state(jobStatePropertyCaptor.getValue()))
+          .retries(retriesPropertyCaptor.capture());
+
+      jobStatePropertyCaptor.getValue().accept(jobStateProperty);
+      verify(jobStateProperty)
+          .in(JobState.CREATED, JobState.FAILED, JobState.RETRIES_UPDATED, JobState.TIMED_OUT);
+
+      retriesPropertyCaptor.getValue().accept(retriesProperty);
+      verify(retriesProperty).gte(1);
+    }
+
+    @Test
+    void shouldAwaitUntilJobIsPresent() {
+      // given
+      when(camundaClient
+              .newJobSearchRequest()
+              .filter(jobFilterCaptor.capture())
+              .send()
+              .join()
+              .items())
+          .thenReturn(Collections.emptyList())
+          .thenReturn(Collections.singletonList(job));
+
+      clearInvocations(camundaClient);
+
+      // when
+      camundaProcessTestContext.completeJobOfUserTaskListener(
+          JobSelectors.byJobType(JOB_TYPE), result -> {});
+
+      // then
+      verify(camundaClient, times(2)).newJobSearchRequest();
+    }
+
+    @Test
+    void shouldRetryCompletion() {
+      // given
+      when(camundaClient
+              .newCompleteCommand(JOB_KEY)
+              .variables(Collections.emptyMap())
+              .withResult(ArgumentMatchers.any())
+              .send()
+              .join())
+          .thenThrow(new ClientException("expected"))
+          .thenReturn(mock(CompleteJobResponse.class));
+
+      clearInvocations(camundaClient);
+
+      // when
+      camundaProcessTestContext.completeJobOfUserTaskListener(
+          JobSelectors.byJobType(JOB_TYPE), result -> {});
+
+      // then
+      verify(camundaClient, times(2)).newCompleteCommand(JOB_KEY);
+    }
+
+    @Test
+    void shouldFailIfNoUserTaskListenerJobIsPresent() {
+      // given - override the default mock behavior
+      clearInvocations(camundaClient);
+      when(camundaClient
+              .newJobSearchRequest()
+              .filter(ArgumentMatchers.<Consumer<JobFilter>>any())
+              .send()
+              .join()
+              .items())
+          .thenReturn(Collections.emptyList());
+
+      // when/then
+      assertThatThrownBy(
+              () ->
+                  camundaProcessTestContext.completeJobOfUserTaskListener(
+                      JobSelectors.byJobType(JOB_TYPE), result -> {}))
+          .isInstanceOf(AssertionError.class)
+          .hasMessageContaining(
+              "Expected to complete job [jobKind: TASK_LISTENER, jobType: %s] but no job is available.",
+              JOB_TYPE);
     }
   }
 }

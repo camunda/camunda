@@ -41,36 +41,26 @@ public class CompleteJobUserTaskListenerInstructionHandler
         result -> {
           // Apply denial if specified
           if (instruction.getDenied()) {
-            if (!instruction.getDeniedReason().isEmpty()) {
-              result.deny(true, instruction.getDeniedReason());
-            } else {
-              result.deny(true);
-            }
+            result.deny(true);
+            instruction.getDeniedReason().ifPresent(result::deniedReason);
           }
 
           // Apply corrections if specified
-          final CompleteJobUserTaskListenerInstruction.Corrections corrections =
-              instruction.getCorrections();
-          if (corrections != null) {
-            if (!corrections.getAssignee().isEmpty()) {
-              result.correctAssignee(corrections.getAssignee());
-            }
-            if (!corrections.getDueDate().isEmpty()) {
-              result.correctDueDate(corrections.getDueDate());
-            }
-            if (!corrections.getFollowUpDate().isEmpty()) {
-              result.correctFollowUpDate(corrections.getFollowUpDate());
-            }
-            if (!corrections.getCandidateUsers().isEmpty()) {
-              result.correctCandidateUsers(corrections.getCandidateUsers());
-            }
-            if (!corrections.getCandidateGroups().isEmpty()) {
-              result.correctCandidateGroups(corrections.getCandidateGroups());
-            }
-            if (corrections.getPriority() != null) {
-              result.correctPriority(corrections.getPriority());
-            }
-          }
+          instruction
+              .getCorrections()
+              .ifPresent(
+                  corrections -> {
+                    corrections.getAssignee().ifPresent(result::correctAssignee);
+                    corrections.getDueDate().ifPresent(result::correctDueDate);
+                    corrections.getFollowUpDate().ifPresent(result::correctFollowUpDate);
+                    if (!corrections.getCandidateUsers().isEmpty()) {
+                      result.correctCandidateUsers(corrections.getCandidateUsers());
+                    }
+                    if (!corrections.getCandidateGroups().isEmpty()) {
+                      result.correctCandidateGroups(corrections.getCandidateGroups());
+                    }
+                    corrections.getPriority().ifPresent(result::correctPriority);
+                  });
         });
   }
 
