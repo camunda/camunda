@@ -152,14 +152,14 @@ public final class BackupRangeResolver {
       final int expectedNodeCount,
       final Map<NodePartitionId, Collection<BackupStatus>> backupsByNodePartition,
       final List<String> failures) {
-    final Set<Integer> nodesFound =
+    final var nodesFound =
         backupsByNodePartition.keySet().stream()
             .map(NodePartitionId::nodeId)
             .collect(Collectors.toSet());
 
     if (nodesFound.size() != expectedNodeCount) {
       final Set<Integer> expectedNodes = new HashSet<>();
-      for (int i = 0; i < expectedNodeCount; i++) {
+      for (var i = 0; i < expectedNodeCount; i++) {
         expectedNodes.add(i);
       }
       final Set<Integer> missingNodes = new HashSet<>(expectedNodes);
@@ -254,6 +254,26 @@ public final class BackupRangeResolver {
         continue;
       }
 
+      // Validate that the backups actually cover the required range
+      final var firstCheckpointId = sortedBackups.getFirst().id().checkpointId();
+      final var lastCheckpointId = sortedBackups.getLast().id().checkpointId();
+
+      if (firstCheckpointId > safeStart) {
+        failures.add(
+            String.format(
+                "Partition %d: %s first backup at checkpoint %d is after safe start %d",
+                partitionId, nodePartition, firstCheckpointId, safeStart));
+        continue;
+      }
+
+      if (lastCheckpointId < globalCheckpointId) {
+        failures.add(
+            String.format(
+                "Partition %d: %s last backup at checkpoint %d is before global checkpoint %d",
+                partitionId, nodePartition, lastCheckpointId, globalCheckpointId));
+        continue;
+      }
+
       validateBackupChainContiguity(partitionId, nodePartition, sortedBackups, failures);
     }
   }
@@ -275,7 +295,7 @@ public final class BackupRangeResolver {
       final List<BackupStatus> sortedBackups,
       final List<String> failures) {
 
-    for (int i = 1; i < sortedBackups.size(); i++) {
+    for (var i = 1; i < sortedBackups.size(); i++) {
       final var prevBackup = sortedBackups.get(i - 1);
       final var currBackup = sortedBackups.get(i);
 
