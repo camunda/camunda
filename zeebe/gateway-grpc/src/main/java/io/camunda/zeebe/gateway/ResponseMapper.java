@@ -501,7 +501,7 @@ public final class ResponseMapper {
         DeleteResourceResponse.newBuilder()
             .setResourceKey(String.valueOf(brokerResponse.getResourceKey()));
 
-    if (brokerResponse.isDeleteHistory() && brokerResponse.getBatchOperationKey() != -1) {
+    if (brokerResponse.isDeleteHistory() && brokerResponse.getBatchOperationKey() > 0) {
       final var batchOperationBuilder =
           GatewayOuterClass.BatchOperationCreatedResult.newBuilder()
               .setBatchOperationKey(String.valueOf(brokerResponse.getBatchOperationKey()))

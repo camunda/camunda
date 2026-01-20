@@ -366,7 +366,7 @@ public final class ResponseMapper {
         new DeleteResourceResponse()
             .resourceKey(KeyUtil.keyToString(brokerResponse.getResourceKey()));
 
-    if (brokerResponse.isDeleteHistory() && brokerResponse.getBatchOperationKey() != -1) {
+    if (brokerResponse.isDeleteHistory() && brokerResponse.getBatchOperationKey() > 0) {
       final var batchOperationCreatedResult =
           new BatchOperationCreatedResult()
               .batchOperationKey(KeyUtil.keyToString(brokerResponse.getBatchOperationKey()))
