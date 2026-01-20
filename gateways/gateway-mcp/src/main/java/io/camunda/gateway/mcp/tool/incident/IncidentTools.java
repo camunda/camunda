@@ -14,10 +14,10 @@ import io.camunda.gateway.mapping.http.GatewayErrorMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.mcp.mapper.CallToolResultMapper;
+import io.camunda.gateway.mcp.model.McpIncidentFilter;
+import io.camunda.gateway.mcp.model.McpSearchQueryPageRequest;
 import io.camunda.gateway.protocol.model.IncidentSearchQuerySortRequest;
 import io.camunda.gateway.protocol.model.JobActivationResult;
-import io.camunda.gateway.protocol.model.simple.IncidentFilter;
-import io.camunda.gateway.protocol.model.simple.SearchQueryPageRequest;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
@@ -63,11 +63,11 @@ public class IncidentTools {
       annotations = @McpAnnotations(readOnlyHint = true))
   public CallToolResult searchIncidents(
       @McpToolParam(description = "Filter search by the given fields", required = false)
-          final IncidentFilter filter,
+          final McpIncidentFilter filter,
       @McpToolParam(description = "Sort criteria", required = false)
           final List<IncidentSearchQuerySortRequest> sort,
       @McpToolParam(description = "Pagination criteria", required = false)
-          final SearchQueryPageRequest page) {
+          final McpSearchQueryPageRequest page) {
     try {
       final var incidentSearchQuery = SearchQueryRequestMapper.toIncidentQuery(filter, page, sort);
 
