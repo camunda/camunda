@@ -161,6 +161,16 @@ For [the ZPT (zeebe-process-test) project](https://github.com/camunda/zeebe-proc
 
 More details on how benchmark tests work can be found in our [reliability testing documentation](https://github.com/camunda/camunda/blob/main/docs/testing/reliability-testing.md).
 
+**👨‍🔧 Release Manager Ownership for Benchmark Issues**
+
+Owner during releases: The zeebe-release-manager owns benchmark/load-test issues for the release (for as long as this role exists).
+
+When a release benchmark fails, the release manager (RM) must:
+- Include: failing CI job link, version/RC + release line, and Grafana dashboard link.
+- If it's deploy/infra/Helm/cluster health, ping Reliability/Testing (and reference medics).
+- If it's an application-level regression, escalate to the owning product team (usually Core Features first), CC Reliability/Testing if infra may be involved.
+- Make sure medics are aware, since they watch daily/weekly/release load tests until alerts are in place.
+
 ### Camunda 8 Testing Clusters
 
 Camunda 8 testing clusters provide isolated environments for validating release builds, executing targeted test flows, and verifying features and bug fixes across all core components. The cluster creation and management processes can be manual or automated depending on the test type and the stage of the monorepo release process.
