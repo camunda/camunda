@@ -25,11 +25,19 @@ public class BatchOperationEntity extends AbstractExporterEntity<BatchOperationE
   @BeforeVersion880 private OffsetDateTime endDate;
   @BeforeVersion880 private String username;
 
-  // the type of the actor that performed the operation, (USER or CLIENT)
+  /**
+   * the type of the actor that performed the operation
+   *
+   * @since 8.9.0 - so null for older versions
+   */
   @SinceVersion(value = "8.9.0", requireDefault = false)
   private AuditLogActorType actorType;
 
-  // the id of the actor that performed the operation
+  /**
+   * the id of the actor that performed the operation
+   *
+   * @since 8.9.0 - so null for older versions
+   */
   @SinceVersion(value = "8.9.0", requireDefault = false)
   private String actorId;
 

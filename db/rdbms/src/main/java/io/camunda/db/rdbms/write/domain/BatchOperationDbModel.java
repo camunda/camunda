@@ -25,16 +25,16 @@ public class BatchOperationDbModel implements Copyable<BatchOperationDbModel> {
   private OffsetDateTime endDate;
 
   /**
-   * The type of the actor that performed the operation, (USER or CLIENT).
+   * The type of the actor that performed the operation.
    *
-   * @since 8.9.0
+   * @since 8.9.0 - so null for older versions
    */
   private final AuditLogActorType actorType;
 
   /**
    * The id of the actor that performed the operation.
    *
-   * @since 8.9.0
+   * @since 8.9.0 - so null for older versions
    */
   private final String actorId;
 

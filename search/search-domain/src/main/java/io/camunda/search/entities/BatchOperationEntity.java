@@ -22,16 +22,16 @@ public record BatchOperationEntity(
     BatchOperationType operationType,
     OffsetDateTime startDate,
     OffsetDateTime endDate,
-    /**
-     * The type of the actor who started the batch operation (USER or CLIENT).
+    /*
+     * The type of the actor who started the batch operation.
      *
-     * @since 8.9.0
+     * @since 8.9.0 - so null for older versions
      */
     AuditLogActorType actorType,
-    /**
+    /*
      * The id of the actor who started the batch operation.
      *
-     * @since 8.9.0
+     * @since 8.9.0 - so null for older versions
      */
     String actorId,
     Integer operationsTotalCount,
