@@ -137,7 +137,7 @@ public class HistoryDeletionJob implements BackgroundTask {
 
     return deleterRepository
         .deleteDocumentsByField(
-            auditLogTemplate.getFullQualifiedName() + "*",
+            auditLogTemplate.getIndexPattern(),
             AuditLogTemplate.PROCESS_DEFINITION_KEY,
             processDefinitions)
         .thenCompose(
