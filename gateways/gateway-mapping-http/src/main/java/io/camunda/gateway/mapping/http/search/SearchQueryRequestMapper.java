@@ -504,6 +504,17 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, IncidentQuery> toIncidentQuery(
+      final io.camunda.gateway.protocol.model.simple.IncidentFilter filter,
+      final io.camunda.gateway.protocol.model.simple.SearchQueryPageRequest page,
+      final List<IncidentSearchQuerySortRequest> sort) {
+    return toIncidentQuery(
+        new IncidentSearchQuery()
+            .filter(SimpleSearchQueryMapper.toIncidentFilter(filter))
+            .page(SimpleSearchQueryMapper.toPageRequest(page))
+            .sort(sort == null ? List.of() : sort));
+  }
+
+  public static Either<ProblemDetail, IncidentQuery> toIncidentQuery(
       final IncidentSearchQuery request) {
 
     if (request == null) {
