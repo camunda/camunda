@@ -363,9 +363,9 @@ public class AuditLogEntry {
     final AuditLogEntry log =
         new AuditLogEntry()
             .setEntityKey(String.valueOf(record.getKey()))
-            .setEntityType(info.entityType())
-            .setCategory(info.category())
-            .setOperationType(info.operationType())
+            //            .setEntityType(info.entityType())
+            //            .setCategory(info.category())
+            //            .setOperationType(info.operationType())
             .setActor(info.actor())
             .setTenant(AuditLogTenant.of(record))
             .setBatchOperationKey(getBatchOperationKey(record))
