@@ -12,6 +12,7 @@ import io.camunda.zeebe.el.EvaluationResult;
 import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.ResultType;
+import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.model.bpmn.util.time.Interval;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.util.Either;
@@ -31,8 +32,11 @@ import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.slf4j.Logger;
 
 public final class ExpressionProcessor {
+
+  private static final Logger LOG = Loggers.ENGINE_PROCESSING_LOGGER;
 
   private static final ExecutorService VIRTUAL_THREAD_EXECUTOR =
       Executors.newVirtualThreadPerTaskExecutor();
@@ -449,6 +453,10 @@ public final class ExpressionProcessor {
     try {
       result = future.get(expressionEvaluationTimeout.toMillis(), TimeUnit.MILLISECONDS);
     } catch (final TimeoutException e) {
+      LOG.debug(
+          "Expression evaluation at scope '{}' timed out after {} ms",
+          variableScopeKey,
+          expressionEvaluationTimeout.toMillis());
       future.cancel(true);
       return Either.left(
           new Failure(
@@ -458,6 +466,7 @@ public final class ExpressionProcessor {
               variableScopeKey));
 
     } catch (final InterruptedException e) {
+      LOG.debug("Expression evaluation at scope '{}' was interrupted", variableScopeKey);
       future.cancel(true);
       Thread.currentThread().interrupt();
       final var message =
@@ -466,6 +475,7 @@ public final class ExpressionProcessor {
       throw new EvaluationException(message, e);
 
     } catch (final ExecutionException e) {
+      LOG.warn("Expression evaluation at scope '{}' failed unexpectedly", variableScopeKey);
       final var message =
           "Expected to evaluate expression '%s', but an exception was thrown"
               .formatted(expression.getExpression());
