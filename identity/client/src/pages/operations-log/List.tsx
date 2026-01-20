@@ -13,6 +13,8 @@ import EntityList from "src/components/entityList";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
 import { useApi, usePagination, SortConfig } from "src/utility/api";
 import { searchAuditLogs } from "src/utility/api/audit-logs";
+import { spaceAndCapitalize } from "src/utility/format/spaceAndCapitalize";
+import { OperationLogName, SuccessIcon, ErrorIcon } from "./components/styled";
 
 type AuditLogSort = { field: string; order: "asc" | "desc" };
 
@@ -81,9 +83,24 @@ const List: FC = () => {
         data={
           auditLogs?.items.map((log) => ({
             id: log.auditLogKey,
-            operationType: log.operationType,
-            entityType: log.entityType,
-            result: log.result,
+            operationType: (
+              <OperationLogName>
+                {spaceAndCapitalize(log.operationType)}{" "}
+                {spaceAndCapitalize(log.entityType)}
+              </OperationLogName>
+            ),
+            entityType: spaceAndCapitalize(log.entityType),
+            result: (
+              <OperationLogName>
+                {log.result === "SUCCESS" ? (
+                  <SuccessIcon size={20} />
+                ) : (
+                  <ErrorIcon size={20} />
+                )}
+                {spaceAndCapitalize(log.result)}
+              </OperationLogName>
+            ),
+            appliedTo: log.entityKey,
             actorId: log.actorId,
             timestamp: new Date(log.timestamp).toLocaleString(),
           })) || []
@@ -92,6 +109,7 @@ const List: FC = () => {
           { header: t("operation"), key: "operationType", isSortable: true },
           { header: t("entity"), key: "entityType", isSortable: true },
           { header: t("status"), key: "result" },
+          { header: t("appliedTo"), key: "appliedTo" },
           { header: t("actor"), key: "actorId", isSortable: true },
           { header: t("time"), key: "timestamp", isSortable: true },
         ]}

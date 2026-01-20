@@ -3,6 +3,7 @@
   "operation": "Operation",
   "entity": "Entity",
   "status": "Status",
+  "appliedTo": "Applied to",
   "actor": "Actor",
   "time": "Time",
   "operationsLogCouldNotLoad": "Operations log could not be loaded"
