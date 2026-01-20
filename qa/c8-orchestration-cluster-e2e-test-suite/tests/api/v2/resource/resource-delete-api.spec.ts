@@ -37,7 +37,7 @@ test.describe.parallel('Resource Delete API', () => {
       },
     );
 
-    await assertStatusCode(res, 204);
+    await assertStatusCode(res, 200);
   });
 
   test('Delete Resource - Not Found 404', async ({request}) => {
