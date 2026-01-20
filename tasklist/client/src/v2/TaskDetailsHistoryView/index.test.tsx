@@ -177,15 +177,11 @@ describe('<TaskDetailsHistoryView />', () => {
     ).toBeInTheDocument();
 
     expect(screen.getByText('Operation')).toBeInTheDocument();
-    expect(screen.getByText('Status')).toBeInTheDocument();
     expect(screen.getByText('Actor')).toBeInTheDocument();
     expect(screen.getByText('Time')).toBeInTheDocument();
 
     expect(screen.getByText('Create User task')).toBeInTheDocument();
     expect(screen.getByText('Assign User task')).toBeInTheDocument();
-
-    expect(screen.getAllByTestId('success-icon')).toHaveLength(2);
-    expect(screen.getAllByText('Success')).toHaveLength(2);
 
     expect(screen.getAllByText('demo')).toHaveLength(2);
   });
@@ -208,31 +204,6 @@ describe('<TaskDetailsHistoryView />', () => {
     expect(
       await screen.findByText('No history entries found for this task'),
     ).toBeInTheDocument();
-  });
-
-  it('should display fail status icon for failed operations', async () => {
-    nodeMockServer.use(
-      http.post(
-        endpoints.queryUserTaskAuditLogs.getUrl({
-          userTaskKey: ':userTaskKey',
-        }),
-        () =>
-          HttpResponse.json(
-            auditLogMocks.getQueryUserTaskAuditLogsResponseMock([
-              auditLogMocks.auditLog({result: 'FAIL'}),
-            ]),
-          ),
-      ),
-    );
-
-    render(<RouterProvider router={getRouter()} />, {wrapper: getWrapper()});
-
-    expect(
-      await screen.findByTestId('task-details-history-view'),
-    ).toBeInTheDocument();
-
-    expect(screen.getByTestId('fail-icon')).toBeInTheDocument();
-    expect(screen.getByText('Fail')).toBeInTheDocument();
   });
 
   it('should display details button for each row', async () => {
@@ -348,7 +319,6 @@ describe('<TaskDetailsHistoryView />', () => {
     ).toBeInTheDocument();
 
     const modal = screen.getByRole('dialog');
-    expect(within(modal).getByText('Status')).toBeInTheDocument();
     expect(within(modal).getByText('Actor')).toBeInTheDocument();
     expect(within(modal).getByText('Time')).toBeInTheDocument();
     expect(within(modal).getByText('testuser')).toBeInTheDocument();

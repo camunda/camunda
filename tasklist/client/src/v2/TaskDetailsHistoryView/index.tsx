@@ -44,7 +44,6 @@ import {
 import {Information} from '@carbon/react/icons';
 import {formatDate} from 'common/dates/formatDate';
 import {spaceAndCapitalize} from 'common/utils/spaceAndCapitalize';
-import {AuditLogItemStatusIcon} from 'v2/features/tasks/task-history/AuditLogItemStatusIcon';
 import {ColumnHeader} from './ColumnHeader';
 import {getSortParams} from './sortUtils';
 import styles from './styles.module.scss';
@@ -64,13 +63,6 @@ const HEADERS_MAP = {
     key: 'operation',
     header: 'taskDetailsHistoryOperationHeader',
     sortKey: 'operationType',
-    isDefault: false,
-    isDisabled: false,
-  },
-  status: {
-    key: 'status',
-    header: 'taskDetailsHistoryStatusHeader',
-    sortKey: undefined,
     isDefault: false,
     isDisabled: false,
   },
@@ -103,7 +95,6 @@ function isHeaderKey(key: string): key is keyof typeof HEADERS_MAP {
 
 const HEADERS: HeaderConfig[] = [
   HEADERS_MAP['operation'],
-  HEADERS_MAP['status'],
   HEADERS_MAP['actor'],
   HEADERS_MAP['time'],
   HEADERS_MAP['details'],
@@ -183,7 +174,6 @@ const TaskDetailsHistoryView: React.FC = () => {
       auditLogs.map((log) => ({
         id: log.auditLogKey,
         operation: `${spaceAndCapitalize(log.operationType)} ${spaceAndCapitalize(log.entityType)}`,
-        status: log.result,
         actor: log.actorId,
         time: formatDate(log.timestamp),
         details: log.auditLogKey,
@@ -247,34 +237,21 @@ const TaskDetailsHistoryView: React.FC = () => {
                       <TableRow key={key} {...rowProps}>
                         {row.cells.map((cell) => (
                           <TableCell key={cell.id}>
-                            {cell.info.header === 'status' ? (
-                              <div className={styles.statusCell}>
-                                <AuditLogItemStatusIcon status={cell.value} />
-                                {spaceAndCapitalize(cell.value)}
-                              </div>
-                            ) : (
-                              <>
-                                {cell.info.header === 'details' ? (
-                                  <Button
-                                    kind="ghost"
-                                    size="sm"
-                                    tooltipPosition="left"
-                                    iconDescription={t(
-                                      'taskDetailsHistoryDetailsLabel',
-                                    )}
-                                    aria-label={t(
-                                      'taskDetailsHistoryDetailsLabel',
-                                    )}
-                                    onClick={() =>
-                                      handleOpenDetails(cell.value)
-                                    }
-                                    hasIconOnly
-                                    renderIcon={Information}
-                                  />
-                                ) : (
-                                  cell.value
+                            {cell.info.header === 'details' ? (
+                              <Button
+                                kind="ghost"
+                                size="sm"
+                                tooltipPosition="left"
+                                iconDescription={t(
+                                  'taskDetailsHistoryDetailsLabel',
                                 )}
-                              </>
+                                aria-label={t('taskDetailsHistoryDetailsLabel')}
+                                onClick={() => handleOpenDetails(cell.value)}
+                                hasIconOnly
+                                renderIcon={Information}
+                              />
+                            ) : (
+                              cell.value
                             )}
                           </TableCell>
                         ))}

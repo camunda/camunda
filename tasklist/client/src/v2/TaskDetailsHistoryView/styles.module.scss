@@ -18,20 +18,6 @@
   overflow: auto;
 }
 
-.statusCell {
-  display: flex;
-  align-items: center;
-  gap: var(--cds-spacing-02);
-}
-
-.successIcon {
-  fill: var(--cds-support-success);
-}
-
-.failIcon {
-  fill: var(--cds-support-error);
-}
-
 .emptyContainer {
   display: flex;
   justify-content: center;

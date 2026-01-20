@@ -15,12 +15,11 @@ import {
   StructuredListRow,
   StructuredListWrapper,
 } from '@carbon/react';
-import {CheckmarkOutline, EventSchedule, UserAvatar} from '@carbon/react/icons';
+import {EventSchedule, UserAvatar} from '@carbon/react/icons';
 import {useTranslation} from 'react-i18next';
 import type {QueryUserTaskAuditLogsResponseBody} from '@camunda/camunda-api-zod-schemas/8.9';
 import {formatDate} from 'common/dates/formatDate';
 import {spaceAndCapitalize} from 'common/utils/spaceAndCapitalize';
-import {AuditLogItemStatusIcon} from 'v2/features/tasks/task-history/AuditLogItemStatusIcon';
 import styles from './styles.module.scss';
 
 type AuditLogItem = QueryUserTaskAuditLogsResponseBody['items'][number];
@@ -32,7 +31,7 @@ type Props = {
 
 const DetailsModal: React.FC<Props> = ({onClose, auditLog}) => {
   const {t} = useTranslation();
-  const {operationType, entityType, result, actorId, timestamp} = auditLog;
+  const {operationType, entityType, actorId, timestamp} = auditLog;
 
   return (
     <ComposedModal size="md" open onClose={onClose}>
@@ -42,20 +41,6 @@ const DetailsModal: React.FC<Props> = ({onClose, auditLog}) => {
       <ModalBody>
         <StructuredListWrapper isCondensed isFlush>
           <StructuredListBody>
-            <StructuredListRow className={styles.verticallyAlignedRow}>
-              <StructuredListCell noWrap className={styles.firstColumn}>
-                <div className={styles.iconText}>
-                  <CheckmarkOutline />
-                  {t('taskDetailsHistoryModalStatus')}
-                </div>
-              </StructuredListCell>
-              <StructuredListCell>
-                <div className={styles.iconText}>
-                  <AuditLogItemStatusIcon status={result} />
-                  {spaceAndCapitalize(result)}
-                </div>
-              </StructuredListCell>
-            </StructuredListRow>
             <StructuredListRow className={styles.verticallyAlignedRow}>
               <StructuredListCell className={styles.firstColumn}>
                 <div className={styles.iconText}>
