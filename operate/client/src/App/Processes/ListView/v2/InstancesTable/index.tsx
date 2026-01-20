@@ -16,16 +16,25 @@ import {Paths} from 'modules/Routes';
 import {tracking} from 'modules/tracking';
 import {Link} from 'modules/components/Link';
 import {useFilters} from 'modules/hooks/useFilters';
-import type {ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.8';
+import type {
+  ProcessInstance,
+  BatchOperationItem,
+} from '@camunda/camunda-api-zod-schemas/8.8';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {Toolbar} from './Toolbar';
 import {getProcessInstanceFilters} from 'modules/utils/filter/getProcessInstanceFilters';
 import {useLocation, useSearchParams} from 'react-router-dom';
 import {BatchModificationFooter} from './BatchModificationFooter';
-import type {InstanceEntityState} from 'modules/types/operate';
+import type {
+  InstanceEntityState,
+  OperationEntityType,
+} from 'modules/types/operate';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelectionV2';
 import {InstanceOperations} from './InstanceOperations';
 import {getProcessDefinitionName} from 'modules/utils/instance';
+import {useOperationItemsForInstances} from 'modules/queries/batch-operations/useOperationItemsForInstances';
+import {useActiveOperationItemsForInstances} from 'modules/queries/batch-operations/useActiveOperationItemsForInstances';
+import {InlineLoading} from '@carbon/react';
 
 type InstancesTableProps = {
   state: 'skeleton' | 'loading' | 'error' | 'empty' | 'content';
@@ -61,6 +70,31 @@ const InstancesTable: React.FC<InstancesTableProps> = observer(
       (tenant === undefined || tenant === 'all');
 
     const batchOperationId = searchParams.get('operationId') ?? undefined;
+    const isOperationStateColumnVisible = !!batchOperationId;
+
+    const processInstanceKeys = processInstances.map(
+      (instance) => instance.processInstanceKey,
+    );
+
+    const {data: operationItemsData, isLoading: isLoadingOperationItems} =
+      useOperationItemsForInstances(batchOperationId, processInstanceKeys);
+
+    const operationItemsMap = new Map<string, BatchOperationItem>();
+    operationItemsData?.items.forEach((item) => {
+      operationItemsMap.set(item.processInstanceKey, item);
+    });
+
+    const {data: activeOperationItemsData} =
+      useActiveOperationItemsForInstances(processInstanceKeys);
+
+    const activeOperationsMap = new Map<string, OperationEntityType[]>();
+    activeOperationItemsData?.items.forEach((item) => {
+      const existing = activeOperationsMap.get(item.processInstanceKey) ?? [];
+      activeOperationsMap.set(item.processInstanceKey, [
+        ...existing,
+        item.operationType,
+      ]);
+    });
 
     const getEmptyListMessage = () => {
       return {
@@ -100,6 +134,16 @@ const InstancesTable: React.FC<InstancesTableProps> = observer(
               rowId,
             );
           }}
+          rowOperationError={
+            isOperationStateColumnVisible
+              ? (rowId) => {
+                  const operationItem = operationItemsMap.get(rowId);
+                  return operationItem?.state === 'FAILED'
+                    ? (operationItem.errorMessage ?? 'Operation failed')
+                    : null;
+                }
+              : undefined
+          }
           emptyMessage={getEmptyListMessage()}
           onVerticalScrollStartReach={onVerticalScrollStartReach}
           onVerticalScrollEndReach={onVerticalScrollEndReach}
@@ -107,6 +151,10 @@ const InstancesTable: React.FC<InstancesTableProps> = observer(
             const instanceState: InstanceEntityState = instance.hasIncident
               ? 'INCIDENT'
               : instance.state;
+
+            const operationItem = operationItemsMap.get(
+              instance.processInstanceKey,
+            );
 
             return {
               id: instance.processInstanceKey,
@@ -139,6 +187,13 @@ const InstancesTable: React.FC<InstancesTableProps> = observer(
               processVersion: instance.processDefinitionVersion,
               versionTag: instance.processDefinitionVersionTag ?? '--',
               tenant: isTenantColumnVisible ? instance.tenantId : undefined,
+              ...(isOperationStateColumnVisible && {
+                instanceOperationState: isLoadingOperationItems ? (
+                  <InlineLoading description="Loading..." />
+                ) : (
+                  (operationItem?.state ?? '--')
+                ),
+              }),
               startDate: formatDate(instance.startDate),
               endDate: formatDate(instance.endDate ?? null),
               parentInstanceId: (
@@ -171,6 +226,9 @@ const InstancesTable: React.FC<InstancesTableProps> = observer(
                     instance.state === 'ACTIVE' || instance.hasIncident
                   }
                   hasIncident={instance.hasIncident}
+                  activeOperations={
+                    activeOperationsMap.get(instance.processInstanceKey) ?? []
+                  }
                 />
               ),
             };
@@ -181,6 +239,14 @@ const InstancesTable: React.FC<InstancesTableProps> = observer(
               key: 'processName',
               sortKey: 'processDefinitionName',
             },
+            ...(isOperationStateColumnVisible
+              ? [
+                  {
+                    header: 'Operation State',
+                    key: 'instanceOperationState',
+                  },
+                ]
+              : []),
             {
               header: 'Process Instance Key',
               key: 'processInstanceKey',
