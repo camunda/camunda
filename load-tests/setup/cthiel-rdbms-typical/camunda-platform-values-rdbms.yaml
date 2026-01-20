@@ -23,12 +23,12 @@ orchestration:
         username: camunda
         secret:
           inlineSecret: camunda
-        queueSize: 1001
+        queueSize: 2001
         history:
-          defaultHistoryTTL: PT1H
+          defaultHistoryTTL: PT1M
           minHistoryCleanupInterval: PT2S
           maxHistoryCleanupInterval: PT1M
-          historyCleanupBatchSize: 10000
+          historyCleanupBatchSize: 50000
   # We set extra configuration to configure additional settings for Broker and Gateway, that are part
   # of the orchestration cluster.
   # This allows adding configurations without the need of overwriting all environment variables from the Platform chart.
@@ -59,7 +59,7 @@ orchestration:
       # RocksDB memory limit setting, limits the overall RocksDB memory usage
       # ZEEBE_BROKER_EXPERIMENTAL_ROCKSDB_MEMORYLIMIT
       zeebe.broker.experimental.rocksdb.memoryLimit: "64MB"
-      # camunda.data.audit-log.enabled: "false"
+      camunda.data.audit-log.enabled: "false"
 
 ########################################################################################
 ################################################### Disable ElasticSearch for RDBMS

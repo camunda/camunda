@@ -16,6 +16,7 @@ services:
     #    target: /dev/shm
     #    tmpfs:
     #      size: 134217728 # 128*2^20 bytes = 128Mb
+    command: postgres -c shared_preload_libraries=pg_stat_statements -c pg_stat_statements.track=all -c max_connections=20
     environment:
       POSTGRES_USER: camunda
       POSTGRES_PASSWORD: camunda

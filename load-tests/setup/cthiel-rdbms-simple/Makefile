@@ -1,9 +1,9 @@
-namespace ?= __NAMESPACE__
-secondary_storage ?= __STORAGE_TYPE__
+namespace ?= cthiel-rdbms-simple
+secondary_storage ?= postgresql
 helm_chart ?= camunda-platform-8.9
 curl_image ?= curlimages/curl:7.87.0
 camunda_management_url ?= http://camunda:9600
-prometheus_elasticsearch_exporter_chart_version ?= 7.2.1
+prometheus_postgresql_exporter_chart_version ?= 7.2.1
 # Optional: additional Helm configuration for the Camunda Platform release.
 # Use this to pass extra `--set`/`-f` flags, for example:
 #   make install additional_platform_configuration="--set zeebeGateway.env[0].name=FOO --set zeebeGateway.env[0].value=bar"
@@ -19,28 +19,39 @@ ifeq ($(secondary_storage),postgresql)
 storage_values_file := camunda-platform-values-rdbms.yaml
 else ifeq ($(secondary_storage),opensearch)
 storage_values_file := camunda-platform-values-opensearch.yaml
-else # default is elasticsearch
-storage_values_file := camunda-platform-values-elasticsearch.yaml
+else # cthiel-rdbms-simple is postgresql
+storage_values_file := camunda-platform-values-postgresql.yaml
 endif
 
 .PHONY: all
 all: install
 
 .PHONY: install
-install: install-storage install-platform install-load-test install-elasticsearch-exporter
+install: install-storage install-platform install-load-test install-postgresql-exporter
 
 .PHONY: install-stable
-install-stable: install-storage install-platform-stable install-load-test install-elasticsearch-exporter
+install-stable: install-storage install-platform-stable install-load-test install-postgresql-exporter
 
 # Install PostgreSQL database if secondary_storage is postgresql, or OpenSearch if secondary_storage is opensearch
 .PHONY: install-storage
 install-storage:
 ifeq ($(secondary_storage),postgresql)
 	@echo "Installing PostgreSQL database for namespace $(namespace)..."
-	# Install Postgres database - all configuration in secondary-storage-values-postgresql.yaml
+	# Install Postgres database with
+	# - cthiel-rdbms-simple user camunda:camunda
+	# - additional extension pg_stat_statements for advanced query performance monitoring (must be activated with postgres user before use)
 	helm upgrade --install postgres oci://registry-1.docker.io/bitnamicharts/postgresql \
 		--namespace $(namespace) \
-		-f secondary-storage-values-postgresql.yaml
+		--set global.postgresql.auth.database=camunda \
+		--set global.postgresql.auth.username=camunda \
+		--set global.postgresql.auth.password=camunda \
+		--set global.postgresql.auth.postgresPassword=camunda \
+		--set postgresqlSharedPreloadLibraries=pg_stat_statements \
+		--set primary.resources.requests.memory=4Gi \
+		--set primary.resources.requests.cpu=3000m \
+		--set primary.resources.limits.memory=6Gi \
+		--set primary.resources.limits.cpu=6000m \
+		--set primary.persistence.size=128Gi
 else ifeq ($(secondary_storage),opensearch)
 	@echo "Installing OpenSearch cluster for namespace $(namespace)..."
 	helm upgrade --install opensearch opensearch/opensearch \
@@ -51,17 +62,17 @@ else
 	@echo "Skipping secondary storage installation (secondary_storage=$(secondary_storage))"
 endif
 
-# Install Elasticsearch Prometheus exporter if secondary_storage is elasticsearch
-.PHONY: install-elasticsearch-exporter
-install-elasticsearch-exporter:
-ifeq ($(secondary_storage),elasticsearch)
+# Install Elasticsearch Prometheus exporter if secondary_storage is postgresql
+.PHONY: install-postgresql-exporter
+install-postgresql-exporter:
+ifeq ($(secondary_storage),postgresql)
 	@echo "Installing Elasticsearch Prometheus Exporter for namespace $(namespace)..."
-	helm upgrade --install elasticsearch-exporter oci://ghcr.io/prometheus-community/charts/prometheus-elasticsearch-exporter \
+	helm upgrade --install postgresql-exporter oci://ghcr.io/prometheus-community/charts/prometheus-elasticsearch-exporter \
     --namespace $(namespace) \
-    --version $(prometheus_elasticsearch_exporter_chart_version) \
+    --version $(prometheus_postgresql_exporter_chart_version) \
     --wait --timeout 5m0s \
-    -f prometheus-elasticsearch-exporter-values.yaml \
-    --set es.uri="http://$(namespace)-elasticsearch:9200"
+    -f prometheus-postgresql-exporter-values.yaml \
+    --set es.uri="http://$(namespace)-postgresql:9200"
 else
 	@echo "Skipping Elasticsearch Prometheus Exporter installation (secondary_storage=$(secondary_storage))"
 endif
@@ -99,6 +110,7 @@ install-load-test:
 		--namespace $(namespace) \
 		--reuse-values \
 		--render-subchart-notes \
+        --set starter.rate=200 \
 		$(additional_load_test_configuration)
 
 # Setup leader balancing cronjob
@@ -135,9 +147,9 @@ template-stable:
 clean:
 	-helm --namespace $(namespace) uninstall $(namespace)
 	-helm --namespace $(namespace) uninstall $(namespace)-test
-	-helm --namespace $(namespace) uninstall elasticsearch-exporter
+	-helm --namespace $(namespace) uninstall postgresql-exporter
 	-kubectl delete -n $(namespace) pvc -l app.kubernetes.io/instance=$(namespace)
-	-kubectl delete -n $(namespace) pvc -l app=elasticsearch-master
+	-kubectl delete -n $(namespace) pvc -l app=postgresql-master
 	-kubectl delete -n $(namespace) cronjob leader-balancer
 ifeq ($(secondary_storage),postgresql)
 	@echo "Cleaning up PostgreSQL database for namespace $(namespace)..."

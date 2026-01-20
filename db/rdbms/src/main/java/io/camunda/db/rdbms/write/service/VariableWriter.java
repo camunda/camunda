@@ -22,7 +22,7 @@ import java.time.OffsetDateTime;
 
 public class VariableWriter extends ProcessInstanceDependant implements RdbmsWriter {
 
-  private static final int INSERT_BATCH_SIZE = 50;
+  private static final int INSERT_BATCH_SIZE = 10;
 
   private final ExecutionQueue executionQueue;
   private final VariableMapper mapper;

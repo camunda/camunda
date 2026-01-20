@@ -462,6 +462,7 @@
 
   <delete id="cleanupHistory">
     <bind name="tableName" value="'PROCESS_INSTANCE'"/>
+    <bind name="primaryKeyColumn" value="'PROCESS_INSTANCE_KEY'"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.historyCleanup"/>
   </delete>
 

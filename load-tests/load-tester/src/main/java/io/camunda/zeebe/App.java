@@ -14,6 +14,7 @@ import io.camunda.client.CredentialsProvider;
 import io.camunda.client.api.command.ClientStatusException;
 import io.camunda.client.api.response.Topology;
 import io.camunda.client.impl.NoopCredentialsProvider;
+import io.camunda.zeebe.benchmark.MetricsReader;
 import io.camunda.zeebe.config.AppCfg;
 import io.camunda.zeebe.config.AppConfigLoader;
 import io.camunda.zeebe.config.AuthCfg.AuthType;
@@ -202,6 +203,10 @@ abstract class App implements Runnable {
         };
 
     return builder.credentialsProvider(credentialsProvider);
+  }
+
+  protected MetricsReader createMetricsReader() {
+    return new MetricsReader(config.getBrokerManagementUrl());
   }
 
   protected String readVariables(final String payloadPath) {

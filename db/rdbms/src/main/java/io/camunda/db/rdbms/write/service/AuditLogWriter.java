@@ -24,7 +24,7 @@ import java.time.OffsetDateTime;
 
 public class AuditLogWriter extends ProcessInstanceDependant implements RdbmsWriter {
 
-  private static final int INSERT_BATCH_SIZE = 50;
+  private static final int INSERT_BATCH_SIZE = 10;
 
   private final AuditLogMapper mapper;
   private final ExecutionQueue executionQueue;
