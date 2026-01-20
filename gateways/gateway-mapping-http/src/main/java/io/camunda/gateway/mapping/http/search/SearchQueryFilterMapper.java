@@ -352,7 +352,7 @@ public class SearchQueryFilterMapper {
           .map(mapToOperations(String.class))
           .ifPresent(builder::operationTypeOperations);
       ofNullable(filter.getActorType())
-          .map(io.camunda.gateway.protocol.model.BatchOperationActorTypeEnum::getValue)
+          .map(io.camunda.gateway.protocol.model.AuditLogActorTypeEnum::getValue)
           .map(String::toUpperCase)
           .ifPresent(builder::actorTypes);
       ofNullable(filter.getActorId())

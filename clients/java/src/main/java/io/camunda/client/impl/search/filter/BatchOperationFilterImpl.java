@@ -106,8 +106,7 @@ public class BatchOperationFilterImpl
     }
 
     filter.setActorType(
-        EnumUtil.convert(
-            actorType, io.camunda.client.protocol.rest.BatchOperationActorTypeEnum.class));
+        EnumUtil.convert(actorType, io.camunda.client.protocol.rest.AuditLogActorTypeEnum.class));
     return this;
   }
 

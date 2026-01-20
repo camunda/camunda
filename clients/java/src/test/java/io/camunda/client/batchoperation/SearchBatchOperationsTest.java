@@ -183,7 +183,7 @@ class SearchBatchOperationsTest extends ClientRestTest {
                         .batchOperationKey("123")
                         .startDate(dateTime.toString())
                         .endDate(dateTime.toString())
-                        .actorType(io.camunda.client.protocol.rest.BatchOperationActorTypeEnum.USER)
+                        .actorType(io.camunda.client.protocol.rest.AuditLogActorTypeEnum.USER)
                         .actorId("demo-user")));
 
     gatewayService.onSearchBatchOperationsRequest(searchResult);
@@ -216,7 +216,7 @@ class SearchBatchOperationsTest extends ClientRestTest {
 
     assertThat(request.getFilter()).isNotNull();
     assertThat(request.getFilter().getActorType())
-        .isEqualTo(io.camunda.client.protocol.rest.BatchOperationActorTypeEnum.USER);
+        .isEqualTo(io.camunda.client.protocol.rest.AuditLogActorTypeEnum.USER);
     assertThat(request.getFilter().getActorId().get$Eq()).isEqualTo("demo-user");
   }
 

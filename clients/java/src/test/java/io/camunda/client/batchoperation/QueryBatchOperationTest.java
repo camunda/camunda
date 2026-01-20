@@ -80,7 +80,7 @@ public class QueryBatchOperationTest extends ClientRestTest {
         batchOperationKey,
         Instancio.create(BatchOperationResponse.class)
             .batchOperationKey(batchOperationKey)
-            .actorType(io.camunda.client.protocol.rest.BatchOperationActorTypeEnum.USER)
+            .actorType(io.camunda.client.protocol.rest.AuditLogActorTypeEnum.USER)
             .actorId("demo-user")
             .endDate(OffsetDateTime.now().toString())
             .startDate(OffsetDateTime.now().toString()));
