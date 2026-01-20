@@ -36,8 +36,11 @@ function aggregateRunningInstancesCount(
 function useRunningInstancesCountStatistics() {
   return useQuery({
     queryKey: queryKeys.processDefinitionStatistics.runningInstancesCount(),
+    refetchInterval: 5000,
     queryFn: async () => {
-      const {response, error} = await fetchProcessDefinitionStatistics();
+      const {response, error} = await fetchProcessDefinitionStatistics({
+        sort: [{field: 'activeInstancesWithoutIncidentCount', order: 'desc'}],
+      });
       if (error) {
         throw error;
       }
@@ -48,6 +51,7 @@ function useRunningInstancesCountStatistics() {
 
       const {response: remaining, error: remainingError} =
         await fetchProcessDefinitionStatistics({
+          sort: [{field: 'activeInstancesWithoutIncidentCount', order: 'desc'}],
           page: {from: response.items.length, limit: response.page.totalItems},
         });
       if (remainingError) {
@@ -57,7 +61,6 @@ function useRunningInstancesCountStatistics() {
       const allItems = response.items.concat(remaining.items);
       return aggregateRunningInstancesCount(allItems);
     },
-    refetchInterval: 5000,
   });
 }
 
