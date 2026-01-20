@@ -385,7 +385,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Print metadata
         uses: ./.github/actions/print-metadata
-      - uses: hadolint/hadolint-action@v3.1.0
+      - uses: hadolint/hadolint-action@v3.3.0
         with:
           ignore: DL3018 # redundant when pinning the base image
           dockerfile: tasklist.Dockerfile
