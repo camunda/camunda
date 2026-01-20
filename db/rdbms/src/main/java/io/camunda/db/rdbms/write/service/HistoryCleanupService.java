@@ -161,70 +161,52 @@ public class HistoryCleanupService {
         // Delete up to batchSize child entities for all expired PIs
         // If any child entities remain, the PI won't be deleted and will be retried in next cycle
         // This keeps each cleanup cycle bounded and simple
-        final int deletedFlowNodes =
+        numDeletedRecords.put(
+            "flowNodeInstance",
             flowNodeInstanceWriter.deleteProcessInstanceRelatedData(
-                expiredProcessInstanceKeys, cleanupBatchSize);
-        numDeletedRecords.put("flowNodeInstance", deletedFlowNodes);
-
-        final int deletedIncidents =
+                expiredProcessInstanceKeys, cleanupBatchSize));
+        numDeletedRecords.put(
+            "incident",
             incidentWriter.deleteProcessInstanceRelatedData(
-                expiredProcessInstanceKeys, cleanupBatchSize);
-        numDeletedRecords.put("incident", deletedIncidents);
-
-        final int deletedUserTasks =
+                expiredProcessInstanceKeys, cleanupBatchSize));
+        numDeletedRecords.put(
+            "userTask",
             userTaskWriter.deleteProcessInstanceRelatedData(
-                expiredProcessInstanceKeys, cleanupBatchSize);
-        numDeletedRecords.put("userTask", deletedUserTasks);
-
-        final int deletedVariables =
+                expiredProcessInstanceKeys, cleanupBatchSize));
+        numDeletedRecords.put(
+            "variable",
             variableInstanceWriter.deleteProcessInstanceRelatedData(
-                expiredProcessInstanceKeys, cleanupBatchSize);
-        numDeletedRecords.put("variable", deletedVariables);
-
-        final int deletedDecisions =
+                expiredProcessInstanceKeys, cleanupBatchSize));
+        numDeletedRecords.put(
+            "decisionInstance",
             decisionInstanceWriter.deleteProcessInstanceRelatedData(
-                expiredProcessInstanceKeys, cleanupBatchSize);
-        numDeletedRecords.put("decisionInstance", deletedDecisions);
-
-        final int deletedJobs =
+                expiredProcessInstanceKeys, cleanupBatchSize));
+        numDeletedRecords.put(
+            "job",
             jobWriter.deleteProcessInstanceRelatedData(
-                expiredProcessInstanceKeys, cleanupBatchSize);
-        numDeletedRecords.put("job", deletedJobs);
-
-        final int deletedSequenceFlows =
+                expiredProcessInstanceKeys, cleanupBatchSize));
+        numDeletedRecords.put(
+            "sequenceFlow",
             sequenceFlowWriter.deleteProcessInstanceRelatedData(
-                expiredProcessInstanceKeys, cleanupBatchSize);
-        numDeletedRecords.put("sequenceFlow", deletedSequenceFlows);
-
-        final int deletedMessageSubs =
+                expiredProcessInstanceKeys, cleanupBatchSize));
+        numDeletedRecords.put(
+            "messageSubscription",
             messageSubscriptionWriter.deleteProcessInstanceRelatedData(
-                expiredProcessInstanceKeys, cleanupBatchSize);
-        numDeletedRecords.put("messageSubscription", deletedMessageSubs);
-
-        final int deletedCorrelatedMessageSubs =
+                expiredProcessInstanceKeys, cleanupBatchSize));
+        numDeletedRecords.put(
+            "correlatedMessageSubscription",
             correlatedMessageSubscriptionWriter.deleteProcessInstanceRelatedData(
-                expiredProcessInstanceKeys, cleanupBatchSize);
-        numDeletedRecords.put("correlatedMessageSubscription", deletedCorrelatedMessageSubs);
-
-        final int deletedAuditLogs =
+                expiredProcessInstanceKeys, cleanupBatchSize));
+        numDeletedRecords.put(
+            "auditLog",
             auditLogWriter.deleteProcessInstanceRelatedData(
-                expiredProcessInstanceKeys, cleanupBatchSize);
-        numDeletedRecords.put("auditLog", deletedAuditLogs);
+                expiredProcessInstanceKeys, cleanupBatchSize));
 
         // Calculate total child entities deleted - if any deletion hit the batch size limit,
         // there might be more to delete. Otherwise, we can assume all children are gone.
-        final boolean anyDeletionHitBatchLimit =
-            deletedFlowNodes >= cleanupBatchSize
-                || deletedIncidents >= cleanupBatchSize
-                || deletedUserTasks >= cleanupBatchSize
-                || deletedVariables >= cleanupBatchSize
-                || deletedDecisions >= cleanupBatchSize
-                || deletedJobs >= cleanupBatchSize
-                || deletedSequenceFlows >= cleanupBatchSize
-                || deletedMessageSubs >= cleanupBatchSize
-                || deletedCorrelatedMessageSubs >= cleanupBatchSize
-                || deletedAuditLogs >= cleanupBatchSize;
 
+        final boolean anyDeletionHitBatchLimit =
+            numDeletedRecords.values().stream().anyMatch(num -> num >= cleanupBatchSize);
         final int totalChildEntitiesDeleted =
             numDeletedRecords.values().stream().mapToInt(Integer::intValue).sum();
 
