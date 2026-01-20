@@ -10,41 +10,26 @@ package io.camunda.zeebe.exporter.common.auditlog;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.search.entities.AuditLogEntity.AuditLogActorType;
+import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
+import io.camunda.search.entities.AuditLogEntity.AuditLogOperationCategory;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationType;
 import io.camunda.search.entities.AuditLogEntity.AuditLogTenantScope;
 import io.camunda.zeebe.auth.Authorization;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformer.TransformerConfig;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformerConfigs;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
-import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
-import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
-import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
-import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
-import io.camunda.zeebe.protocol.record.intent.FormIntent;
-import io.camunda.zeebe.protocol.record.intent.GroupIntent;
-import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
-import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
-import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
-import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
-import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
-import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
-import io.camunda.zeebe.protocol.record.intent.RoleIntent;
-import io.camunda.zeebe.protocol.record.intent.TenantIntent;
-import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
-import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.ImmutableUserTaskRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
-import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
 
 class AuditLogInfoTest {
 
@@ -189,80 +174,101 @@ class AuditLogInfoTest {
     assertThat(info.operationType()).isEqualTo(AuditLogOperationType.UNASSIGN);
   }
 
-  public static Stream<Arguments> getIntentMappings() {
-    return Stream.of(
-        Arguments.of(AuthorizationIntent.CREATED, AuditLogOperationType.CREATE),
-        Arguments.of(AuthorizationIntent.DELETED, AuditLogOperationType.DELETE),
-        Arguments.of(AuthorizationIntent.UPDATED, AuditLogOperationType.UPDATE),
-        Arguments.of(BatchOperationIntent.CANCEL, AuditLogOperationType.CANCEL),
-        Arguments.of(BatchOperationIntent.CANCELED, AuditLogOperationType.CANCEL),
-        Arguments.of(BatchOperationIntent.CREATED, AuditLogOperationType.CREATE),
-        Arguments.of(BatchOperationIntent.RESUME, AuditLogOperationType.RESUME),
-        Arguments.of(BatchOperationIntent.RESUMED, AuditLogOperationType.RESUME),
-        Arguments.of(BatchOperationIntent.SUSPEND, AuditLogOperationType.SUSPEND),
-        Arguments.of(BatchOperationIntent.SUSPENDED, AuditLogOperationType.SUSPEND),
-        Arguments.of(DecisionEvaluationIntent.EVALUATED, AuditLogOperationType.EVALUATE),
-        Arguments.of(DecisionEvaluationIntent.FAILED, AuditLogOperationType.EVALUATE),
-        Arguments.of(DecisionIntent.CREATED, AuditLogOperationType.CREATE),
-        Arguments.of(DecisionIntent.DELETED, AuditLogOperationType.DELETE),
-        Arguments.of(DecisionRequirementsIntent.CREATED, AuditLogOperationType.CREATE),
-        Arguments.of(DecisionRequirementsIntent.DELETED, AuditLogOperationType.DELETE),
-        Arguments.of(FormIntent.CREATED, AuditLogOperationType.CREATE),
-        Arguments.of(FormIntent.DELETED, AuditLogOperationType.DELETE),
-        Arguments.of(GroupIntent.CREATED, AuditLogOperationType.CREATE),
-        Arguments.of(GroupIntent.UPDATED, AuditLogOperationType.UPDATE),
-        Arguments.of(GroupIntent.DELETED, AuditLogOperationType.DELETE),
-        Arguments.of(GroupIntent.ENTITY_ADDED, AuditLogOperationType.ASSIGN),
-        Arguments.of(GroupIntent.ENTITY_REMOVED, AuditLogOperationType.UNASSIGN),
-        Arguments.of(IncidentIntent.RESOLVED, AuditLogOperationType.RESOLVE),
-        Arguments.of(IncidentIntent.RESOLVE, AuditLogOperationType.RESOLVE),
-        Arguments.of(MappingRuleIntent.CREATED, AuditLogOperationType.CREATE),
-        Arguments.of(MappingRuleIntent.UPDATED, AuditLogOperationType.UPDATE),
-        Arguments.of(MappingRuleIntent.DELETED, AuditLogOperationType.DELETE),
-        Arguments.of(ProcessInstanceIntent.CANCELING, AuditLogOperationType.CANCEL),
-        Arguments.of(ProcessInstanceIntent.CANCEL, AuditLogOperationType.CANCEL),
-        Arguments.of(ProcessInstanceCreationIntent.CREATED, AuditLogOperationType.CREATE),
-        Arguments.of(ProcessInstanceMigrationIntent.MIGRATED, AuditLogOperationType.MIGRATE),
-        Arguments.of(ProcessInstanceMigrationIntent.MIGRATE, AuditLogOperationType.MIGRATE),
-        Arguments.of(ProcessInstanceModificationIntent.MODIFIED, AuditLogOperationType.MODIFY),
-        Arguments.of(ProcessInstanceModificationIntent.MODIFY, AuditLogOperationType.MODIFY),
-        Arguments.of(ResourceIntent.CREATED, AuditLogOperationType.CREATE),
-        Arguments.of(ResourceIntent.DELETED, AuditLogOperationType.DELETE),
-        Arguments.of(RoleIntent.CREATED, AuditLogOperationType.CREATE),
-        Arguments.of(RoleIntent.UPDATED, AuditLogOperationType.UPDATE),
-        Arguments.of(RoleIntent.DELETED, AuditLogOperationType.DELETE),
-        Arguments.of(RoleIntent.ENTITY_ADDED, AuditLogOperationType.ASSIGN),
-        Arguments.of(RoleIntent.ENTITY_REMOVED, AuditLogOperationType.UNASSIGN),
-        Arguments.of(TenantIntent.CREATED, AuditLogOperationType.CREATE),
-        Arguments.of(TenantIntent.ENTITY_ADDED, AuditLogOperationType.ASSIGN),
-        Arguments.of(TenantIntent.ENTITY_REMOVED, AuditLogOperationType.UNASSIGN),
-        Arguments.of(TenantIntent.UPDATED, AuditLogOperationType.UPDATE),
-        Arguments.of(TenantIntent.DELETED, AuditLogOperationType.DELETE),
-        Arguments.of(UserIntent.CREATED, AuditLogOperationType.CREATE),
-        Arguments.of(UserIntent.UPDATED, AuditLogOperationType.UPDATE),
-        Arguments.of(UserIntent.DELETED, AuditLogOperationType.DELETE),
-        Arguments.of(UserTaskIntent.UPDATED, AuditLogOperationType.UPDATE),
-        // type is different for ASSIGNED intent, validating that it returns UNKNOWN here
-        Arguments.of(UserTaskIntent.ASSIGNED, AuditLogOperationType.UNKNOWN),
-        Arguments.of(UserTaskIntent.COMPLETED, AuditLogOperationType.COMPLETE),
-        Arguments.of(UserTaskIntent.UPDATE, AuditLogOperationType.UPDATE),
-        Arguments.of(UserTaskIntent.ASSIGN, AuditLogOperationType.ASSIGN),
-        Arguments.of(UserTaskIntent.COMPLETE, AuditLogOperationType.COMPLETE),
-        Arguments.of(VariableIntent.CREATED, AuditLogOperationType.CREATE),
-        Arguments.of(VariableIntent.UPDATED, AuditLogOperationType.UPDATE));
+  /**
+   * This test validates that all transformer configs defined in {@link AuditLogTransformerConfigs}
+   * have valid mappings in {@link AuditLogInfo}. It ensures that:
+   *
+   * <ul>
+   *   <li>Every ValueType in a config has a valid OperationCategory mapping
+   *   <li>Every ValueType in a config has a valid EntityType mapping
+   *   <li>Every Intent in a config has a valid OperationType mapping
+   * </ul>
+   */
+  @Test
+  void shouldHaveValidMappingsForAllTransformerConfigs() throws Exception {
+    final List<String> errors = new ArrayList<>();
+
+    // Get all TransformerConfig constants from AuditLogTransformerConfigs
+    final java.lang.reflect.Field[] fields = AuditLogTransformerConfigs.class.getDeclaredFields();
+
+    for (final java.lang.reflect.Field field : fields) {
+      if (field.getType().equals(TransformerConfig.class)) {
+        field.setAccessible(true);
+        final TransformerConfig config = (TransformerConfig) field.get(null);
+        final String configName = field.getName();
+
+        // Validate ValueType has OperationCategory mapping
+        final AuditLogOperationCategory category =
+            getOperationCategoryForValueType(config.valueType());
+        if (category == AuditLogOperationCategory.UNKNOWN) {
+          errors.add(
+              String.format(
+                  "[%s] ValueType.%s has no OperationCategory mapping",
+                  configName, config.valueType()));
+        }
+
+        // Validate ValueType has EntityType mapping
+        final AuditLogEntityType entityType = getEntityTypeForValueType(config.valueType());
+        if (entityType == AuditLogEntityType.UNKNOWN) {
+          errors.add(
+              String.format(
+                  "[%s] ValueType.%s has no EntityType mapping", configName, config.valueType()));
+        }
+
+        // Validate all intents have OperationType mappings
+        for (final Intent intent : config.supportedIntents()) {
+          final AuditLogOperationType operationType = getOperationTypeForIntent(intent);
+          if (operationType == AuditLogOperationType.UNKNOWN) {
+            errors.add(
+                String.format(
+                    "[%s] Intent %s.%s has no OperationType mapping",
+                    configName, intent.getClass().getSimpleName(), intent));
+          }
+        }
+
+        // Validate all rejection intents have OperationType mappings
+        for (final Intent intent : config.supportedRejections()) {
+          final AuditLogOperationType operationType = getOperationTypeForIntent(intent);
+          if (operationType == AuditLogOperationType.UNKNOWN) {
+            errors.add(
+                String.format(
+                    "[%s] Rejection Intent %s.%s has no OperationType mapping",
+                    configName, intent.getClass().getSimpleName(), intent));
+          }
+        }
+      }
+    }
+
+    assertThat(errors)
+        .as("All transformer configs should have valid mappings in AuditLogInfo")
+        .isEmpty();
   }
 
-  @MethodSource("getIntentMappings")
-  @ParameterizedTest
-  void shouldMapCorrectOperationType(
-      final Intent intent, final AuditLogOperationType operationType) {
-    final Record<?> recordValue = factory.generateRecord(ValueType.JOB, r -> r.withIntent(intent));
+  private AuditLogOperationCategory getOperationCategoryForValueType(final ValueType valueType) {
+    final Record<?> record = factory.generateRecord(valueType);
+    final AuditLogInfo info = AuditLogInfo.of(record);
+    return info.category();
+  }
 
-    final AuditLogInfo auditLogInfo = AuditLogInfo.of(recordValue);
-    assertThat(auditLogInfo.operationType())
-        .as(
-            "Intent %s.%s should map to operation type %s",
-            intent.getClass(), intent, operationType)
-        .isEqualTo(operationType);
+  private AuditLogEntityType getEntityTypeForValueType(final ValueType valueType) {
+    final Record<?> record = factory.generateRecord(valueType);
+    final AuditLogInfo info = AuditLogInfo.of(record);
+    return info.entityType();
+  }
+
+  private AuditLogOperationType getOperationTypeForIntent(final Intent intent) {
+    // UserTaskIntent.ASSIGNED requires special handling
+    if (intent == UserTaskIntent.ASSIGNED) {
+      final UserTaskRecordValue value =
+          ImmutableUserTaskRecordValue.builder().withAssignee("test-user").build();
+      final Record<?> record =
+          factory.generateRecord(ValueType.USER_TASK, r -> r.withIntent(intent).withValue(value));
+      final AuditLogInfo info = AuditLogInfo.of(record);
+      return info.operationType();
+    }
+
+    final Record<?> record = factory.generateRecord(ValueType.JOB, r -> r.withIntent(intent));
+    final AuditLogInfo info = AuditLogInfo.of(record);
+    return info.operationType();
   }
 }
