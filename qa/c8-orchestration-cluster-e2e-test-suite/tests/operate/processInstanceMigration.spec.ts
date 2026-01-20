@@ -299,12 +299,20 @@ test.describe.serial('Process Instance Migration', () => {
       await operateOperationPanelPage.clickOperationEntryById(migratedIds[0]);
 
       await validateURL(page, /operationId=/);
-      await expect(page.getByText('6 results')).toBeVisible({
-        timeout: 30000,
-      });
-
-      await expect(operateProcessesPage.getVersionCells('2')).toHaveCount(6, {
-        timeout: 30000,
+      
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(page.getByText('6 results')).toBeVisible({
+            timeout: 30000,
+          });
+          await expect(operateProcessesPage.getVersionCells('2')).toHaveCount(6, {
+            timeout: 30000,
+          });
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+        maxRetries: 5,
       });
     });
   });

@@ -100,7 +100,7 @@ class OperateProcessInstancePage {
 
   async getProcessInstanceKey(): Promise<string> {
     const url = this.page.url();
-    const matches = url.match(/instances\/(\d+)/);
+    const matches = url.match(/processes\/(\d+)/);
     return matches ? matches[1] : '';
   }
 
