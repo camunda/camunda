@@ -36,7 +36,7 @@
 
     <!-- EXTERNAL LIBS -->
     <version.agrona>1.23.1</version.agrona>
-    <version.animal-sniffer>1.26</version.animal-sniffer>
+    <version.animal-sniffer>1.27</version.animal-sniffer>
     <version.assertj>3.27.6</version.assertj>
     <version.awaitility>4.3.0</version.awaitility>
     <version.bouncycastle>1.81</version.bouncycastle>
