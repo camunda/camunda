@@ -104,9 +104,9 @@ components:
         conditionalEvaluationKey:
           allOf:
             - $ref: '#/components/schemas/ConditionalEvaluationKey'
-          description: The unique key of the evaluated conditional.
+          description: The unique key of the conditional evaluation operation.
         tenantId:
-          description: The tenant ID of the evaluated conditional.
+          description: The tenant ID of the conditional evaluation operation.
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/TenantId'
         processInstances:

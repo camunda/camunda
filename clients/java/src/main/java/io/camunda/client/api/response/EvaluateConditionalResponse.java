@@ -20,12 +20,12 @@ import java.util.List;
 public interface EvaluateConditionalResponse {
 
   /**
-   * @return the unique key of the evaluated conditional.
+   * @return the unique key of the conditional evaluation operation.
    */
   long getConditionalEvaluationKey();
 
   /**
-   * @return the tenant ID of the evaluated conditional.
+   * @return the tenant ID of the conditional evaluation operation.
    */
   String getTenantId();
 
