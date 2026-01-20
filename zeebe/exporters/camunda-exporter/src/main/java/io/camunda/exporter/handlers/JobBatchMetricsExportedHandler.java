@@ -14,6 +14,8 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobMetricsBatchIntent;
 import io.camunda.zeebe.protocol.record.value.JobMetricsBatchRecordValue;
+import io.camunda.zeebe.protocol.record.value.JobMetricsBatchRecordValue.JobMetricsValue;
+import io.camunda.zeebe.protocol.record.value.JobMetricsExportState;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -21,11 +23,6 @@ import java.util.List;
 
 public class JobBatchMetricsExportedHandler
     implements ExportHandler<JobMetricsBatchEntity, JobMetricsBatchRecordValue> {
-
-  // Status metric indices matching JobMetricsExportState enum
-  private static final int CREATED_INDEX = 0;
-  private static final int COMPLETED_INDEX = 1;
-  private static final int FAILED_INDEX = 2;
 
   private final String indexName;
 
@@ -101,24 +98,18 @@ public class JobBatchMetricsExportedHandler
                 Instant.ofEpochMilli(jobMetricsBatchRecord.getBatchEndTime()), ZoneOffset.UTC))
         .setIncompleteBatch(jobMetricsBatchRecord.getRecordSizeLimitExceeded())
         .setTenantId(encodedStrings.get(jobMetrics.getTenantIdIndex()))
-        .setFailedCount(jobMetrics.getStatusMetrics().get(FAILED_INDEX).getCount())
-        .setLastFailedAt(
-            OffsetDateTime.ofInstant(
-                Instant.ofEpochMilli(
-                    jobMetrics.getStatusMetrics().get(FAILED_INDEX).getLastUpdatedAt()),
-                ZoneOffset.UTC))
-        .setCompletedCount(jobMetrics.getStatusMetrics().get(COMPLETED_INDEX).getCount())
-        .setLastCompletedAt(
-            OffsetDateTime.ofInstant(
-                Instant.ofEpochMilli(
-                    jobMetrics.getStatusMetrics().get(COMPLETED_INDEX).getLastUpdatedAt()),
-                ZoneOffset.UTC))
-        .setCreatedCount(jobMetrics.getStatusMetrics().get(CREATED_INDEX).getCount())
-        .setLastCreatedAt(
-            OffsetDateTime.ofInstant(
-                Instant.ofEpochMilli(
-                    jobMetrics.getStatusMetrics().get(CREATED_INDEX).getLastUpdatedAt()),
-                ZoneOffset.UTC))
+        .setFailedCount(
+            jobMetrics.getStatusMetrics().get(JobMetricsExportState.FAILED.getIndex()).getCount())
+        .setLastFailedAt(getLastUpdatedAtForStatus(jobMetrics, JobMetricsExportState.FAILED))
+        .setCompletedCount(
+            jobMetrics
+                .getStatusMetrics()
+                .get(JobMetricsExportState.COMPLETED.getIndex())
+                .getCount())
+        .setLastCompletedAt(getLastUpdatedAtForStatus(jobMetrics, JobMetricsExportState.COMPLETED))
+        .setCreatedCount(
+            jobMetrics.getStatusMetrics().get(JobMetricsExportState.CREATED.getIndex()).getCount())
+        .setLastCreatedAt(getLastUpdatedAtForStatus(jobMetrics, JobMetricsExportState.CREATED))
         .setJobType(encodedStrings.get(jobMetrics.getJobTypeIndex()))
         .setWorker(encodedStrings.get(jobMetrics.getWorkerNameIndex()));
   }
@@ -132,5 +123,12 @@ public class JobBatchMetricsExportedHandler
   @Override
   public String getIndexName() {
     return indexName;
+  }
+
+  private OffsetDateTime getLastUpdatedAtForStatus(
+      final JobMetricsValue jobMetrics, final JobMetricsExportState jobState) {
+    return OffsetDateTime.ofInstant(
+        Instant.ofEpochMilli(jobMetrics.getStatusMetrics().get(jobState.getIndex()).getLastUpdatedAt()),
+        ZoneOffset.UTC);
   }
 }

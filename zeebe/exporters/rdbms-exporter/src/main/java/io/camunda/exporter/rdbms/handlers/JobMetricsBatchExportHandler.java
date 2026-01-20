@@ -14,6 +14,8 @@ import io.camunda.exporter.rdbms.RdbmsExportHandler;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.JobMetricsBatchIntent;
 import io.camunda.zeebe.protocol.record.value.JobMetricsBatchRecordValue;
+import io.camunda.zeebe.protocol.record.value.JobMetricsBatchRecordValue.JobMetricsValue;
+import io.camunda.zeebe.protocol.record.value.JobMetricsExportState;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -21,11 +23,6 @@ import java.util.List;
 
 public class JobMetricsBatchExportHandler
     implements RdbmsExportHandler<JobMetricsBatchRecordValue> {
-
-  // Status metric indices matching JobMetricsExportState enum
-  private static final int CREATED_INDEX = 0;
-  private static final int COMPLETED_INDEX = 1;
-  private static final int FAILED_INDEX = 2;
 
   private final JobMetricsBatchWriter jobMetricsBatchWriter;
 
@@ -68,33 +65,38 @@ public class JobMetricsBatchExportHandler
                             ZoneOffset.UTC))
                     .incompleteBatch(jobMetricsBatchRecord.getRecordSizeLimitExceeded())
                     .tenantId(encodedString.get(jobMetrics.getTenantIdIndex()))
-                    .failedCount(jobMetrics.getStatusMetrics().get(FAILED_INDEX).getCount())
+                    .failedCount(
+                        jobMetrics
+                            .getStatusMetrics()
+                            .get(JobMetricsExportState.FAILED.getIndex())
+                            .getCount())
                     .lastFailedAt(
-                        OffsetDateTime.ofInstant(
-                            Instant.ofEpochMilli(
-                                jobMetrics.getStatusMetrics().get(FAILED_INDEX).getLastUpdatedAt()),
-                            ZoneOffset.UTC))
-                    .completedCount(jobMetrics.getStatusMetrics().get(COMPLETED_INDEX).getCount())
+                        getLastUpdatedAtForStatus(jobMetrics, JobMetricsExportState.FAILED))
+                    .completedCount(
+                        jobMetrics
+                            .getStatusMetrics()
+                            .get(JobMetricsExportState.COMPLETED.getIndex())
+                            .getCount())
                     .lastCompletedAt(
-                        OffsetDateTime.ofInstant(
-                            Instant.ofEpochMilli(
-                                jobMetrics
-                                    .getStatusMetrics()
-                                    .get(COMPLETED_INDEX)
-                                    .getLastUpdatedAt()),
-                            ZoneOffset.UTC))
-                    .createdCount(jobMetrics.getStatusMetrics().get(CREATED_INDEX).getCount())
+                        getLastUpdatedAtForStatus(jobMetrics, JobMetricsExportState.COMPLETED))
+                    .createdCount(
+                        jobMetrics
+                            .getStatusMetrics()
+                            .get(JobMetricsExportState.CREATED.getIndex())
+                            .getCount())
                     .lastCreatedAt(
-                        OffsetDateTime.ofInstant(
-                            Instant.ofEpochMilli(
-                                jobMetrics
-                                    .getStatusMetrics()
-                                    .get(CREATED_INDEX)
-                                    .getLastUpdatedAt()),
-                            ZoneOffset.UTC))
+                        getLastUpdatedAtForStatus(jobMetrics, JobMetricsExportState.CREATED))
                     .jobType(encodedString.get(jobMetrics.getJobTypeIndex()))
                     .worker(encodedString.get(jobMetrics.getWorkerNameIndex()))
                     .build())
         .toList();
+  }
+
+  private OffsetDateTime getLastUpdatedAtForStatus(
+      final JobMetricsValue jobMetrics, final JobMetricsExportState jobState) {
+    return OffsetDateTime.ofInstant(
+        Instant.ofEpochMilli(
+            jobMetrics.getStatusMetrics().get(jobState.getIndex()).getLastUpdatedAt()),
+        ZoneOffset.UTC);
   }
 }

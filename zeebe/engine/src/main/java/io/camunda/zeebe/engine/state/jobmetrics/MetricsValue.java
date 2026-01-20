@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.state.jobmetrics;
 
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.record.value.JobMetricsExportState;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
