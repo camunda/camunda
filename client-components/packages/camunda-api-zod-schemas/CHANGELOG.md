@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.0.33
+
+### 🚀 Enhancements
+
+- update resource deletion request and response schema ([#31690](https://github.com/camunda/camunda/issues/31690))
+
 ## v0.0.32
 
 ### 🚀 Enhancements

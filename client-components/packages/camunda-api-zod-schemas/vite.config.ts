@@ -56,6 +56,7 @@ export default defineConfig({
 				'8.9/audit-log': resolve(__dirname, 'lib/8.9/audit-log.ts'),
 				'8.9/user-task': resolve(__dirname, 'lib/8.9/user-task.ts'),
 				'8.9/process-instance': resolve(__dirname, 'lib/8.9/process-instance.ts'),
+				'8.9/resource': resolve(__dirname, 'lib/8.9/resource.ts'),
 			},
 			formats: ['es'],
 		},
