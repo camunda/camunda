@@ -25,6 +25,7 @@ import {
 } from './batch-operation';
 import {pinClock, resetClock} from './clock';
 import {getTopology} from './cluster';
+import {evaluateConditionals} from './conditional';
 import {
 	queryDecisionDefinitions,
 	getDecisionDefinition,
@@ -40,6 +41,7 @@ import {
 	updateElementInstanceVariables,
 	queryElementInstanceIncidents,
 } from './element-instance';
+import {evaluateExpression} from './expression';
 import {
 	createGroup,
 	getGroup,
@@ -197,6 +199,7 @@ const endpoints = {
 	pinClock,
 	resetClock,
 	getTopology,
+	evaluateConditionals,
 	queryDecisionDefinitions,
 	getDecisionDefinition,
 	getDecisionDefinitionXml,
@@ -215,6 +218,7 @@ const endpoints = {
 	queryElementInstanceIncidents,
 	getElementInstance,
 	updateElementInstanceVariables,
+	evaluateExpression,
 	createGroup,
 	getGroup,
 	updateGroup,
@@ -472,6 +476,13 @@ export {
 	type GetTopologyResponseBody,
 } from './cluster';
 export {
+	evaluateConditionalsRequestBodySchema,
+	evaluateConditionalsResponseBodySchema,
+	evaluateConditionals,
+	type EvaluateConditionalsRequestBody,
+	type EvaluateConditionalsResponseBody,
+} from './conditional';
+export {
 	decisionDefinitionSchema,
 	queryDecisionDefinitionsRequestBodySchema,
 	queryDecisionDefinitionsResponseBodySchema,
@@ -554,6 +565,13 @@ export {
 	type QueryElementInstanceIncidentsRequestBody,
 	type QueryElementInstanceIncidentsResponseBody,
 } from './element-instance';
+export {
+	evaluateExpressionRequestBodySchema,
+	evaluateExpressionResponseBodySchema,
+	evaluateExpression,
+	type EvaluateExpressionRequestBody,
+	type EvaluateExpressionResponseBody,
+} from './expression';
 export {
 	createGroupRequestBodySchema,
 	createGroupResponseBodySchema,
