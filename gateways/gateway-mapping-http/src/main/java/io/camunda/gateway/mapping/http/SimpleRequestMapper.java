@@ -40,8 +40,7 @@ public class SimpleRequestMapper {
                   .startInstructions(
                       mapCreateProcessInstanceStartInstructions(request.getStartInstructions()))
                   .runtimeInstructions(
-                      mapCreateProcessInstanceRuntimeInstructions(
-                          request.getRuntimeInstructions()))
+                      mapCreateProcessInstanceRuntimeInstructions(request.getRuntimeInstructions()))
                   .awaitCompletion(request.getAwaitCompletion())
                   .fetchVariables(request.getFetchVariables())
                   .requestTimeout(request.getRequestTimeout())
