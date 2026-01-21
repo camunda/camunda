@@ -85,7 +85,7 @@ const VariablesFilter: React.FC<Props> = observer(
       <>
         <IconTextInput
           Icon={Edit}
-          id="variables-filter"
+          id="variable-filter"
           labelText="Variables"
           value={getDisplayValue()}
           title={getDisplayValue()}
