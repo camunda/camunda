@@ -181,15 +181,6 @@ const migrateProcessInstance: Endpoint<{processInstanceKey: string}> = {
 	getUrl: ({processInstanceKey}) => `/${API_VERSION}/process-instances/${processInstanceKey}/migration`,
 };
 
-const resolveProcessInstanceIncidentsResponseBodySchema = batchOperationCreatedResultSchema;
-type ResolveProcessInstanceIncidentsResponseBody = z.infer<typeof resolveProcessInstanceIncidentsResponseBodySchema>;
-
-const resolveProcessInstanceIncidents = {
-	method: 'POST',
-	getUrl: ({processInstanceKey}) =>
-		`/${API_VERSION}/process-instances/${processInstanceKey}/incident-resolution` as const,
-} as const satisfies Endpoint<Pick<ProcessInstance, 'processInstanceKey'>>;
-
 export {
 	createProcessInstance,
 	getProcessInstance,
@@ -205,7 +196,6 @@ export {
 	createModificationBatchOperation,
 	modifyProcessInstance,
 	migrateProcessInstance,
-	resolveProcessInstanceIncidents,
 	createProcessInstanceRequestBodySchema,
 	createProcessInstanceResponseBodySchema,
 	modifyProcessInstanceRequestBodySchema,
@@ -218,7 +208,6 @@ export {
 	getProcessInstanceCallHierarchyResponseBodySchema,
 	getProcessInstanceStatisticsResponseBodySchema,
 	getProcessInstanceSequenceFlowsResponseBodySchema,
-	resolveProcessInstanceIncidentsResponseBodySchema,
 	processInstanceStateSchema,
 	processInstanceSchema,
 	sequenceFlowSchema,
@@ -249,5 +238,4 @@ export type {
 	CreateModificationBatchOperationResponseBody,
 	ModifyProcessInstanceRequestBody,
 	MigrateProcessInstanceRequestBody,
-	ResolveProcessInstanceIncidentsResponseBody,
 };
