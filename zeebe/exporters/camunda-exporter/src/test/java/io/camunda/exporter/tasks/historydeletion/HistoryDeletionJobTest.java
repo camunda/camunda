@@ -276,9 +276,8 @@ final class HistoryDeletionJobTest {
         .thenReturn(CompletableFuture.completedFuture(new HistoryDeletionBatch(List.of(entity))));
     when(repository.deleteDocumentsByField(anyString(), anyString(), anyList()))
         .thenReturn(CompletableFuture.completedFuture(List.of()));
-    verify(repository, atMostOnce())
-        .deleteDocumentsById(
-            processIndex.getFullQualifiedName(), List.of(String.valueOf(entity.getResourceKey())));
+    when(repository.deleteDocumentsById(eq(processIndex.getFullQualifiedName()), any()))
+        .thenReturn(CompletableFuture.failedFuture(new RuntimeException("Failed deleting")));
 
     // when
     job.execute().exceptionally(ex -> 0).toCompletableFuture().join();
