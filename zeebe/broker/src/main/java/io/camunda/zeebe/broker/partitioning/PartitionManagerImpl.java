@@ -171,6 +171,8 @@ public final class PartitionManagerImpl
 
     healthCheckService.registerBootstrapPartitions(memberPartitions);
     for (final var partitionMetadata : memberPartitions) {
+      final var fixedMetadata = partitionMetadata.withGroupName(partitionGroup);
+
       final var initialPartitionConfig =
           clusterConfigurationService
               .getInitialClusterConfiguration()
@@ -178,7 +180,7 @@ public final class PartitionManagerImpl
               .get(localMemberId)
               .getPartition(partitionMetadata.id().id())
               .config();
-      bootstrapPartition(partitionMetadata, initialPartitionConfig, false);
+      bootstrapPartition(fixedMetadata, initialPartitionConfig, false);
     }
   }
 

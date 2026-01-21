@@ -83,7 +83,8 @@ public final class ZeebePartition extends Actor
     transition.setConcurrencyControl(actor);
 
     final var partitionId = context.getPartitionId();
-    actorName = buildActorName("ZeebePartition", partitionId);
+    actorName =
+        buildActorName("ZeebePartition-" + context.getFullPartitionId().group() + "-", partitionId);
     transitionContext.setComponentHealthMonitor(
         new CriticalComponentsHealthMonitor(
             componentName(partitionId),

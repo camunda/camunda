@@ -215,9 +215,6 @@ final class BrokerRequestManager extends Actor {
   }
 
   private BrokerAddressProvider determineBrokerNodeIdProvider(final BrokerRequest<?> request) {
-    // TODO: Should be done already by the service
-    request.setPartitionGroup("raft-partition");
-
     if (request.getBrokerId().isPresent()) {
       return new BrokerAddressProvider(clusterState -> request.getBrokerId().orElseThrow());
     } else if (request.addressesSpecificPartition()) {

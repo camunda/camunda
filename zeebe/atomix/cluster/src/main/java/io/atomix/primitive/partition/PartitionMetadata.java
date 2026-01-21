@@ -28,9 +28,9 @@ import java.util.Set;
  * partition and to get member priorities.
  */
 public class PartitionMetadata {
+  public final Map<MemberId, Integer> priority;
   private final PartitionId id;
   private final Set<MemberId> members;
-  private final Map<MemberId, Integer> priority;
   private final int targetPriority;
   private final MemberId primary;
 
@@ -45,6 +45,11 @@ public class PartitionMetadata {
     this.priority = priority;
     this.targetPriority = targetPriority;
     this.primary = primary;
+  }
+
+  public PartitionMetadata withGroupName(final String groupName) {
+    return new PartitionMetadata(
+        new PartitionId(groupName, id.id()), members, priority, targetPriority, primary);
   }
 
   /**
