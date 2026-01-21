@@ -14,10 +14,14 @@ import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.search.enums.UserTaskState;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.worker.JobWorker;
+import io.camunda.exporter.CamundaExporter;
+import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration.ProcessInstanceRetentionMode;
 import io.camunda.qa.util.multidb.CamundaMultiDBExtension.DatabaseType;
 import io.camunda.qa.util.multidb.HistoryMultiDbTest;
+import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
@@ -41,9 +45,23 @@ import org.slf4j.LoggerFactory;
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 public class ProcessInstanceHistoryCleanupIT {
 
+  // TODO remove this once default retention mode is PI_HIERARCHY
+  @MultiDbTestApplication
+  static final TestStandaloneBroker BROKER =
+      new TestStandaloneBroker()
+          .withExporterMutator(
+              CamundaExporter.class.getSimpleName().toLowerCase(),
+              args -> {
+                final Map<String, Object> history =
+                    new HashMap<>((Map<String, Object>) args.get("history"));
+                history.put(
+                    "processInstanceRetentionMode",
+                    ProcessInstanceRetentionMode.PI_HIERARCHY.name());
+                args.put("history", history);
+              });
+
   private static final Logger LOGGER =
       LoggerFactory.getLogger(ProcessInstanceHistoryCleanupIT.class);
-
   private static CamundaClient client;
   private static DatabaseType databaseType;
 

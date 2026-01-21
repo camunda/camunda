@@ -63,6 +63,7 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
   private final Camunda unifiedConfig;
   private final CamundaSecurityProperties securityConfig;
   private boolean isGatewayEnabled = true;
+  private final Map<String, Consumer<Map<String, Object>>> exporterMutators = new HashMap<>();
 
   public TestStandaloneBroker() {
     super(
@@ -330,7 +331,13 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
                   .computeIfAbsent(id, ignored -> new io.camunda.configuration.Exporter());
           unifiedExporter.setClassName(tempExporterCfg.getClassName());
           unifiedExporter.setJarPath(tempExporterCfg.getJarPath());
-          unifiedExporter.setArgs(tempExporterCfg.getArgs());
+          if (exporterMutators.containsKey(id)) {
+            final Map<String, Object> args = new HashMap<>(tempExporterCfg.getArgs());
+            exporterMutators.get(id).accept(args);
+            unifiedExporter.setArgs(args);
+          } else {
+            unifiedExporter.setArgs(tempExporterCfg.getArgs());
+          }
         });
   }
 
@@ -427,6 +434,20 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
   @Override
   public Optional<AuthenticationMethod> clientAuthenticationMethod() {
     return apiAuthenticationMethod();
+  }
+
+  /**
+   * Registers a mutator function that will be applied to the exporter arguments for the exporter
+   * with the given ID after the exporter is set to the application
+   *
+   * @param id the ID of the exporter
+   * @param modifier a configuration function that accepts the exporter arguments map
+   * @return itself for chaining
+   */
+  public TestStandaloneBroker withExporterMutator(
+      final String id, final Consumer<Map<String, Object>> modifier) {
+    exporterMutators.put(id, modifier);
+    return this;
   }
 
   /**
