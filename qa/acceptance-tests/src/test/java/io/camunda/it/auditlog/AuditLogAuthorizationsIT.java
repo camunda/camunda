@@ -188,7 +188,7 @@ public class AuditLogAuthorizationsIT {
   void shouldAuthorizeByCategoryWildcard(
       @Authenticated(USER_A_USERNAME) final CamundaClient client) {
     // when
-    final var logs = client.newAuditLogSearchRequest().send().join();
+    final var logs = client.newAuditLogSearchRequest().page(p -> p.limit(200)).execute();
 
     // then
     assertThat(logs.items()).isNotEmpty();
