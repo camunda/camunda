@@ -459,6 +459,33 @@ class ProcessInstanceToolsTest extends ToolsTest {
     }
 
     @Test
+    void shouldFailCreateProcessInstanceOnException() {
+      // given
+      when(multiTenancyConfiguration.isChecksEnabled()).thenReturn(false);
+
+      when(processInstanceServices.createProcessInstance(any(ProcessInstanceCreateRequest.class)))
+          .thenThrow(new ServiceException("Expected failure", Status.INVALID_ARGUMENT));
+
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder()
+                  .name("createProcessInstance")
+                  .arguments(Map.of("processDefinitionId", "invalidProcessId"))
+                  .build());
+
+      // then
+      assertThat(result.isError()).isTrue();
+      assertThat(result.content()).isEmpty();
+
+      final var problemDetail =
+          objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
+      assertThat(problemDetail.getDetail()).isEqualTo("Expected failure");
+      assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
+      assertThat(problemDetail.getTitle()).isEqualTo("INVALID_ARGUMENT");
+    }
+
+    @Test
     void shouldFailCreateProcessInstanceWhenNoDefinitionProvided() {
       // when
       final CallToolResult result =
