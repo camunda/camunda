@@ -48,7 +48,7 @@ const ProcessOperations: React.FC<Props> = observer(
           });
         },
         onError: (error) => {
-          handleOperationError(error.status);
+          handleOperationError(error?.response?.status);
         },
       },
     );
@@ -64,13 +64,15 @@ const ProcessOperations: React.FC<Props> = observer(
           <OperationItems>
             <DangerButton
               title={
-                (runningInstancesCount ?? 0) > 0
+                runningInstancesCount && runningInstancesCount > 0
                   ? 'Only process definitions without running instances can be deleted.'
                   : `Delete Process Definition "${processName} - Version ${processVersion}"`
               }
               type="DELETE"
               disabled={
-                isOperationRunning || (runningInstancesCount ?? 0) !== 0
+                isOperationRunning ||
+                !runningInstancesCount ||
+                runningInstancesCount !== 0
               }
               onClick={() => {
                 tracking.track({

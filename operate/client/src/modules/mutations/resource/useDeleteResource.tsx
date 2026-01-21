@@ -6,26 +6,27 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useMutation, type UseMutationOptions} from '@tanstack/react-query';
+import {useMutation} from '@tanstack/react-query';
 import {deleteResource} from 'modules/api/v2/resource/deleteResource';
 import {type DeleteResourceRequestBody} from '@camunda/camunda-api-zod-schemas/8.9';
+import type {RequestError} from 'modules/request';
 
 function useDeleteResource(
   resourceKey: string,
   request: DeleteResourceRequestBody,
-  options?: Pick<
-    UseMutationOptions<Response, {status: number; statusText: string}>,
-    'onSuccess' | 'onError'
-  >,
+  options?: {
+    onSuccess?: () => void;
+    onError?: (error: RequestError) => void;
+  },
 ) {
-  return useMutation<Response, {status: number; statusText: string}, void>({
+  return useMutation({
     mutationFn: async () => {
-      const response = await deleteResource(resourceKey, request);
-      if (!response.ok) {
-        throw {status: response.status, statusText: response.statusText};
+      const {response, error} = await deleteResource(resourceKey, request);
+      if (response !== null) {
+        return response;
       }
 
-      return response;
+      throw error;
     },
     ...options,
   });
