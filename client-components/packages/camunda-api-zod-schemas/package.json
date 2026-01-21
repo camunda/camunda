@@ -207,16 +207,142 @@
 				"default": "./dist/8.9.js"
 			}
 		},
+		"./8.9/ad-hoc-sub-process": {
+			"import": {
+				"types": "./dist/8.9/ad-hoc-sub-process.d.ts",
+				"default": "./dist/8.9/ad-hoc-sub-process.js"
+			}
+		},
 		"./8.9/audit-log": {
 			"import": {
 				"types": "./dist/8.9/audit-log.d.ts",
 				"default": "./dist/8.9/audit-log.js"
 			}
 		},
-		"./8.9/user-task": {
+		"./8.9/authentication": {
 			"import": {
-				"types": "./dist/8.9/user-task.d.ts",
-				"default": "./dist/8.9/user-task.js"
+				"types": "./dist/8.9/authentication.d.ts",
+				"default": "./dist/8.9/authentication.js"
+			}
+		},
+		"./8.9/authorization": {
+			"import": {
+				"types": "./dist/8.9/authorization.d.ts",
+				"default": "./dist/8.9/authorization.js"
+			}
+		},
+		"./8.9/batch-operation": {
+			"import": {
+				"types": "./dist/8.9/batch-operation.d.ts",
+				"default": "./dist/8.9/batch-operation.js"
+			}
+		},
+		"./8.9/clock": {
+			"import": {
+				"types": "./dist/8.9/clock.d.ts",
+				"default": "./dist/8.9/clock.js"
+			}
+		},
+		"./8.9/cluster": {
+			"import": {
+				"types": "./dist/8.9/cluster.d.ts",
+				"default": "./dist/8.9/cluster.js"
+			}
+		},
+		"./8.9/cluster-variable": {
+			"import": {
+				"types": "./dist/8.9/cluster-variable.d.ts",
+				"default": "./dist/8.9/cluster-variable.js"
+			}
+		},
+		"./8.9/conditional": {
+			"import": {
+				"types": "./dist/8.9/conditional.d.ts",
+				"default": "./dist/8.9/conditional.js"
+			}
+		},
+		"./8.9/decision-definition": {
+			"import": {
+				"types": "./dist/8.9/decision-definition.d.ts",
+				"default": "./dist/8.9/decision-definition.js"
+			}
+		},
+		"./8.9/decision-instance": {
+			"import": {
+				"types": "./dist/8.9/decision-instance.d.ts",
+				"default": "./dist/8.9/decision-instance.js"
+			}
+		},
+		"./8.9/decision-requirements": {
+			"import": {
+				"types": "./dist/8.9/decision-requirements.d.ts",
+				"default": "./dist/8.9/decision-requirements.js"
+			}
+		},
+		"./8.9/document": {
+			"import": {
+				"types": "./dist/8.9/document.d.ts",
+				"default": "./dist/8.9/document.js"
+			}
+		},
+		"./8.9/element-instance": {
+			"import": {
+				"types": "./dist/8.9/element-instance.d.ts",
+				"default": "./dist/8.9/element-instance.js"
+			}
+		},
+		"./8.9/expression": {
+			"import": {
+				"types": "./dist/8.9/expression.d.ts",
+				"default": "./dist/8.9/expression.js"
+			}
+		},
+		"./8.9/group": {
+			"import": {
+				"types": "./dist/8.9/group.d.ts",
+				"default": "./dist/8.9/group.js"
+			}
+		},
+		"./8.9/incident": {
+			"import": {
+				"types": "./dist/8.9/incident.d.ts",
+				"default": "./dist/8.9/incident.js"
+			}
+		},
+		"./8.9/job": {
+			"import": {
+				"types": "./dist/8.9/job.d.ts",
+				"default": "./dist/8.9/job.js"
+			}
+		},
+		"./8.9/license": {
+			"import": {
+				"types": "./dist/8.9/license.d.ts",
+				"default": "./dist/8.9/license.js"
+			}
+		},
+		"./8.9/mapping-rule": {
+			"import": {
+				"types": "./dist/8.9/mapping-rule.d.ts",
+				"default": "./dist/8.9/mapping-rule.js"
+			}
+		},
+		"./8.9/message": {
+			"import": {
+				"types": "./dist/8.9/message.d.ts",
+				"default": "./dist/8.9/message.js"
+			}
+		},
+		"./8.9/message-subscriptions": {
+			"import": {
+				"types": "./dist/8.9/message-subscriptions.d.ts",
+				"default": "./dist/8.9/message-subscriptions.js"
+			}
+		},
+		"./8.9/process-definition": {
+			"import": {
+				"types": "./dist/8.9/process-definition.d.ts",
+				"default": "./dist/8.9/process-definition.js"
 			}
 		},
 		"./8.9/process-instance": {
@@ -231,10 +357,52 @@
 				"default": "./dist/8.9/resource.js"
 			}
 		},
-		"./8.9/incident": {
+		"./8.9/role": {
 			"import": {
-				"types": "./dist/8.9/incident.d.ts",
-				"default": "./dist/8.9/incident.js"
+				"types": "./dist/8.9/role.d.ts",
+				"default": "./dist/8.9/role.js"
+			}
+		},
+		"./8.9/setup": {
+			"import": {
+				"types": "./dist/8.9/setup.d.ts",
+				"default": "./dist/8.9/setup.js"
+			}
+		},
+		"./8.9/signal": {
+			"import": {
+				"types": "./dist/8.9/signal.d.ts",
+				"default": "./dist/8.9/signal.js"
+			}
+		},
+		"./8.9/tenant": {
+			"import": {
+				"types": "./dist/8.9/tenant.d.ts",
+				"default": "./dist/8.9/tenant.js"
+			}
+		},
+		"./8.9/usage-metrics": {
+			"import": {
+				"types": "./dist/8.9/usage-metrics.d.ts",
+				"default": "./dist/8.9/usage-metrics.js"
+			}
+		},
+		"./8.9/user": {
+			"import": {
+				"types": "./dist/8.9/user.d.ts",
+				"default": "./dist/8.9/user.js"
+			}
+		},
+		"./8.9/user-task": {
+			"import": {
+				"types": "./dist/8.9/user-task.d.ts",
+				"default": "./dist/8.9/user-task.js"
+			}
+		},
+		"./8.9/variable": {
+			"import": {
+				"types": "./dist/8.9/variable.d.ts",
+				"default": "./dist/8.9/variable.js"
 			}
 		},
 		"./package.json": "./package.json"
