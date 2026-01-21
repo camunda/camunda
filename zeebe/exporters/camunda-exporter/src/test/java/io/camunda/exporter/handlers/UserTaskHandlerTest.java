@@ -854,6 +854,7 @@ public class UserTaskHandlerTest {
 
     underTest.flush(taskEntity, mockRequest);
     final Map<String, Object> expectedUpdates = new HashMap<>();
+    expectedUpdates.put(TaskTemplate.KEY, taskEntity.getKey());
     expectedUpdates.put(TaskTemplate.ASSIGNEE, taskEntity.getAssignee());
     expectedUpdates.put(TaskTemplate.CHANGED_ATTRIBUTES, List.of("assignee"));
     expectedUpdates.put(TaskTemplate.STATE, TaskState.CREATED);
@@ -897,6 +898,7 @@ public class UserTaskHandlerTest {
 
     underTest.flush(taskEntity, mockRequest);
     final Map<String, Object> expectedUpdates = new HashMap<>();
+    expectedUpdates.put(TaskTemplate.KEY, taskEntity.getKey());
     expectedUpdates.put(TaskTemplate.ASSIGNEE, null);
     expectedUpdates.put(TaskTemplate.CHANGED_ATTRIBUTES, List.of("assignee"));
     expectedUpdates.put(TaskTemplate.STATE, TaskState.CREATED);
@@ -992,6 +994,7 @@ public class UserTaskHandlerTest {
 
     underTest.flush(taskEntity, mockRequest);
     final Map<String, Object> expectedUpdates = new HashMap<>();
+    expectedUpdates.put(TaskTemplate.KEY, taskEntity.getKey());
     expectedUpdates.put(TaskTemplate.PRIORITY, taskEntity.getPriority());
     expectedUpdates.put(TaskTemplate.FOLLOW_UP_DATE, taskEntity.getFollowUpDate());
     expectedUpdates.put(TaskTemplate.DUE_DATE, taskEntity.getDueDate());
@@ -1064,6 +1067,7 @@ public class UserTaskHandlerTest {
 
     underTest.flush(taskEntity, mockRequest);
     final Map<String, Object> expectedUpdates = new HashMap<>();
+    expectedUpdates.put(TaskTemplate.KEY, taskEntity.getKey());
     expectedUpdates.put(TaskTemplate.PRIORITY, taskEntity.getPriority());
     expectedUpdates.put(TaskTemplate.ASSIGNEE, taskEntity.getAssignee());
     expectedUpdates.put(TaskTemplate.CHANGED_ATTRIBUTES, List.of("priority", "assignee"));
