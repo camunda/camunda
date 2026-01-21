@@ -10,6 +10,10 @@ import {getAuditLog, queryAuditLogs} from './audit-log';
 import {queryUserTaskAuditLogs} from './user-task';
 import {deleteProcessInstance} from './process-instance';
 import {createDeployment, deleteResource, getResource, getResourceContent} from './resource';
+import {
+	getIncidentProcessInstanceStatisticsByError,
+	getIncidentProcessInstanceStatisticsByDefinition,
+} from './incident';
 
 const endpoints = {
 	queryAuditLogs,
@@ -20,6 +24,8 @@ const endpoints = {
 	deleteResource,
 	getResource,
 	getResourceContent,
+	getIncidentProcessInstanceStatisticsByError,
+	getIncidentProcessInstanceStatisticsByDefinition,
 } as const;
 
 export {endpoints};
@@ -84,3 +90,18 @@ export {
 	type FormDeployment,
 	type ResourceDeployment,
 } from './resource';
+
+export {
+	getIncidentProcessInstanceStatisticsByErrorRequestBodySchema,
+	getIncidentProcessInstanceStatisticsByErrorResponseBodySchema,
+	incidentProcessInstanceStatisticsByErrorSchema,
+	getIncidentProcessInstanceStatisticsByDefinitionRequestBodySchema,
+	getIncidentProcessInstanceStatisticsByDefinitionResponseBodySchema,
+	incidentProcessInstanceStatisticsByDefinitionSchema,
+	type IncidentProcessInstanceStatisticsByError,
+	type GetIncidentProcessInstanceStatisticsByErrorRequestBody,
+	type GetIncidentProcessInstanceStatisticsByErrorResponseBody,
+	type IncidentProcessInstanceStatisticsByDefinition,
+	type GetIncidentProcessInstanceStatisticsByDefinitionRequestBody,
+	type GetIncidentProcessInstanceStatisticsByDefinitionResponseBody,
+} from './incident';

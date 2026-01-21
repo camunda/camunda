@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.0.34
+
+### 🚀 Enhancements
+
+- add incident statistics API schemas for v8.9 ([#44463](https://github.com/camunda/camunda/pull/44463))
+
+### ❤️ Contributors
+
+- Eddie Tsedeke ([@tsedekey](https://github.com/tsedekey))
+
 ## v0.0.33
 
 ### 🚀 Enhancements
