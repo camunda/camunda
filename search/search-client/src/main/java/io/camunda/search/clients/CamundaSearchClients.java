@@ -535,7 +535,9 @@ public class CamundaSearchClients implements SearchClientsProxy {
   protected ResourceAccessChecks disableTenantCheck(
       final ResourceAccessChecks resourceAccessChecks) {
     return ResourceAccessChecks.of(
-        resourceAccessChecks.authorizationCheck(), TenantCheck.disabled());
+        resourceAccessChecks.authorizationCheck(),
+        TenantCheck.disabled(),
+        resourceAccessChecks.authentication());
   }
 
   protected <T> SearchQueryResult<T> ensureSingeResultIfNecessary(
