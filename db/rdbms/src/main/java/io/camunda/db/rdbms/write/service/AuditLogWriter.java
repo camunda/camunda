@@ -21,6 +21,7 @@ import io.camunda.db.rdbms.write.queue.UpdateHistoryCleanupDateMerger;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
 import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
 import java.time.OffsetDateTime;
+import java.util.List;
 
 public class AuditLogWriter extends ProcessInstanceDependant implements RdbmsWriter {
 
@@ -101,5 +102,10 @@ public class AuditLogWriter extends ProcessInstanceDependant implements RdbmsWri
             .cleanupDate(cleanupDate)
             .limit(rowsToRemove)
             .build());
+  }
+
+  public int deleteProcessDefinitionRelatedData(
+      final List<Long> processDefinitionKeys, final int limit) {
+    return mapper.deleteProcessDefinitionRelatedData(processDefinitionKeys, limit);
   }
 }

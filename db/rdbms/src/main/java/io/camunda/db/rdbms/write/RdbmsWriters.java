@@ -19,6 +19,7 @@ import io.camunda.db.rdbms.sql.HistoryDeletionMapper;
 import io.camunda.db.rdbms.sql.IncidentMapper;
 import io.camunda.db.rdbms.sql.JobMapper;
 import io.camunda.db.rdbms.sql.MessageSubscriptionMapper;
+import io.camunda.db.rdbms.sql.ProcessDefinitionMapper;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
 import io.camunda.db.rdbms.sql.PurgeMapper;
 import io.camunda.db.rdbms.sql.SequenceFlowMapper;
@@ -81,6 +82,7 @@ public class RdbmsWriters {
       final FlowNodeInstanceMapper flowNodeInstanceMapper,
       final IncidentMapper incidentMapper,
       final ProcessInstanceMapper processInstanceMapper,
+      final ProcessDefinitionMapper processDefinitionMapper,
       final PurgeMapper purgeMapper,
       final UserTaskMapper userTaskMapper,
       final VariableMapper variableMapper,
@@ -117,7 +119,9 @@ public class RdbmsWriters {
     writers.put(
         IncidentWriter.class,
         new IncidentWriter(executionQueue, incidentMapper, vendorDatabaseProperties));
-    writers.put(ProcessDefinitionWriter.class, new ProcessDefinitionWriter(executionQueue));
+    writers.put(
+        ProcessDefinitionWriter.class,
+        new ProcessDefinitionWriter(processDefinitionMapper, executionQueue));
     writers.put(
         ProcessInstanceWriter.class,
         new ProcessInstanceWriter(processInstanceMapper, executionQueue));

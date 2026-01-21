@@ -177,7 +177,7 @@
 
   <delete id="deleteProcessInstanceRelatedData">
     <bind name="tableName" value="'VARIABLE'"/>
-    <include refid="io.camunda.db.rdbms.sql.Commons.historyDeletion"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.processInstanceHistoryDeletion"/>
   </delete>
 
   <update id="migrateToProcess" parameterType="java.util.Map">
