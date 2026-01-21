@@ -1,9 +1,6 @@
 # hadolint global ignore=DL3006
-ARG BASE_IMAGE="reg.mini.dev/1212/openjre-base:21-dev"
-ARG BASE_DIGEST="sha256:1374fb954464843a022aa8087e5b21c7ea5c130371b6555e8d63e46b1c52e214"
-ARG TINI_VERSION="v0.19.0"
-ARG TINI_CHECKSUM_AMD64="93dcc18adc78c65a028a84799ecf8ad40c936fdfc5f2a57b1acda5a8117fa82c"
-ARG TINI_CHECKSUM_ARM64="07952557df20bfd2a95f9bef198b445e006171969499a1d361bd9e6f8e5e0e81"
+ARG BASE_IMAGE="reg.mini.dev/1212/openjre-base-compat:21-dev"
+ARG BASE_DIGEST="sha256:6d72cf910cea8b66f3c4691b69371527c0c2dd528eddf87af55c1870e904707d"
 ARG JATTACH_VERSION="v2.2"
 ARG JATTACH_CHECKSUM_AMD64="acd9e17f15749306be843df392063893e97bfecc5260eef73ee98f06e5cfe02f"
 ARG JATTACH_CHECKSUM_ARM64="288ae5ed87ee7fe0e608c06db5a23a096a6217c9878ede53c4e33710bdcaab51"
@@ -14,16 +11,13 @@ ARG WAITFORIT_CHECKSUM="b7a04f38de1e51e7455ecf63151c8c7e405bd2d45a2d4e16f6419db7
 #ARG BASE_IMAGE="eclipse-temurin:21-jre-noble"
 #ARG BASE_DIGEST="sha256:20e7f7288e1c18eebe8f06a442c9f7183342d9b022d3b9a9677cae2b558ddddd"
 
-### Download jattach and tini ###
+### Download jattach ###
 # hadolint ignore=DL3006,DL3007
 FROM alpine AS tools
 ARG TARGETARCH
 ARG JATTACH_VERSION
 ARG JATTACH_CHECKSUM_AMD64
 ARG JATTACH_CHECKSUM_ARM64
-ARG TINI_VERSION
-ARG TINI_CHECKSUM_AMD64
-ARG TINI_CHECKSUM_ARM64
 ARG WAITFORIT_CHECKSUM
 
 # hadolint ignore=DL4006,DL3018
@@ -32,13 +26,9 @@ RUN --mount=type=cache,target=/root/.tools,rw \
     if [ "${TARGETARCH}" = "amd64" ]; then \
       JATTACH_BINARY="linux-x64"; \
       JATTACH_CHECKSUM="${JATTACH_CHECKSUM_AMD64}"; \
-      TINI_BINARY="tini-amd64"; \
-      TINI_CHECKSUM="${TINI_CHECKSUM_AMD64}"; \
     else  \
       JATTACH_BINARY="linux-arm64"; \
       JATTACH_CHECKSUM="${JATTACH_CHECKSUM_ARM64}"; \
-      TINI_BINARY="tini-arm64"; \
-      TINI_CHECKSUM="${TINI_CHECKSUM_ARM64}"; \
     fi && \
     # Download jattach \
     curl -sL "https://github.com/jattach/jattach/releases/download/${JATTACH_VERSION}/jattach-${JATTACH_BINARY}.tgz" -o jattach.tgz && \
@@ -46,10 +36,6 @@ RUN --mount=type=cache,target=/root/.tools,rw \
     tar -xzf "jattach.tgz" && \
     chmod +x jattach && \
     mv jattach /jattach && \
-    # Download tini \
-    curl -sL "https://github.com/krallin/tini/releases/download/${TINI_VERSION}/${TINI_BINARY}" -o /tini && \
-    echo "${TINI_CHECKSUM} /tini" | sha256sum -c && \
-    chmod +x /tini && \
     # Download wait-for-it.sh \
     curl -sL "https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh" -o /wait-for-it.sh && \
     echo "${WAITFORIT_CHECKSUM} /wait-for-it.sh" | sha256sum -c && \
@@ -126,11 +112,9 @@ RUN addgroup -S -g 1001 camunda && \
     chown 1001:1001 /optimize
 
 COPY --from=tools --chown=1001:0 /jattach /usr/bin/jattach
-COPY --from=tools --chown=1001:0 /tini /usr/bin/tini
 COPY --from=tools --chown=1001:0 /wait-for-it.sh /usr/local/bin/wait-for-it.sh
 COPY --chown=1001:1001 --from=base /tmp/build .
 
 USER 1001:1001
 
-ENTRYPOINT ["tini", "--"]
-CMD ["./optimize.sh"]
+ENTRYPOINT ["tini", "--", "./optimize.sh"]
