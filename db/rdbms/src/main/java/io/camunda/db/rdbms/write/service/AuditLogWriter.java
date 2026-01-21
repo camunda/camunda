@@ -24,8 +24,6 @@ import java.time.OffsetDateTime;
 
 public class AuditLogWriter extends ProcessInstanceDependant implements RdbmsWriter {
 
-  private static final int INSERT_BATCH_SIZE = 50;
-
   private final AuditLogMapper mapper;
   private final ExecutionQueue executionQueue;
   private final RdbmsWriterConfig config;
@@ -58,7 +56,8 @@ public class AuditLogWriter extends ProcessInstanceDependant implements RdbmsWri
 
     final var wasMerged =
         executionQueue.tryMergeWithExistingQueueItem(
-            new InsertAuditLogMerger(finalAuditLog, INSERT_BATCH_SIZE));
+            new InsertAuditLogMerger(
+                finalAuditLog, config.insertBatchingConfig().auditLogInsertBatchSize()));
 
     if (!wasMerged) {
       executionQueue.executeInQueue(

@@ -101,6 +101,7 @@ public class SecondaryStorageRdbmsTest {
             + MAX_BATCH_OPERATIONS_CACHE_SIZE,
         "camunda.data.secondary-storage.rdbms.exportBatchOperationItemsOnCreation=false",
         "camunda.data.secondary-storage.rdbms.batchOperationItemInsertBlockSize=1234",
+        "camunda.data.secondary-storage.rdbms.insert-batching.max-audit-log-insert-batch-size=50",
       })
   class WithOnlyUnifiedConfigSet {
     final OperateProperties operateProperties;
@@ -177,6 +178,8 @@ public class SecondaryStorageRdbmsTest {
       assertThat(exporterConfiguration.isExportBatchOperationItemsOnCreation()).isFalse();
 
       assertThat(exporterConfiguration.getBatchOperationItemInsertBlockSize()).isEqualTo(1234);
+      assertThat(exporterConfiguration.getInsertBatching().getMaxAuditLogInsertBatchSize())
+          .isEqualTo(50);
     }
 
     @Test

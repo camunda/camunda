@@ -893,6 +893,17 @@ public class BrokerBasedPropertiesOverride {
                         .getBatchOperationCache()
                         .setMaxSize(database.getBatchOperationCache().getMaxSize());
                   }
+
+                  if (database.getInsertBatching() != null) {
+                    config
+                        .getInsertBatching()
+                        .setMaxAuditLogInsertBatchSize(
+                            database.getInsertBatching().getMaxAuditLogInsertBatchSize());
+                    config
+                        .getInsertBatching()
+                        .setMaxVariableInsertBatchSize(
+                            database.getInsertBatching().getMaxVariableInsertBatchSize());
+                  }
                 })
             .toArgs());
   }

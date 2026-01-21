@@ -32,6 +32,9 @@ class BatchInsertMerger<T extends BatchInsertDto<T, M>, M> implements QueueItemM
 
   @Override
   public boolean canBeMerged(final QueueItem queueItem) {
+    if (maxBatchSize == 1) {
+      return false;
+    }
     return queueItem.contextType() == contextType
         && queueItem.statementType() == WriteStatementType.INSERT
         && dtoClass.isInstance(queueItem.parameter())

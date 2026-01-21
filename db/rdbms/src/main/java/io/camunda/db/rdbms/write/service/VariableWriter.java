@@ -11,6 +11,7 @@ import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.sql.HistoryCleanupMapper.CleanupHistoryDto;
 import io.camunda.db.rdbms.sql.ProcessBasedHistoryCleanupMapper;
 import io.camunda.db.rdbms.sql.VariableMapper;
+import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.domain.VariableDbModel;
 import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
@@ -22,20 +23,21 @@ import java.time.OffsetDateTime;
 
 public class VariableWriter extends ProcessInstanceDependant implements RdbmsWriter {
 
-  private static final int INSERT_BATCH_SIZE = 50;
-
   private final ExecutionQueue executionQueue;
   private final VariableMapper mapper;
   private final VendorDatabaseProperties vendorDatabaseProperties;
+  private final RdbmsWriterConfig config;
 
   public VariableWriter(
       final ExecutionQueue executionQueue,
       final VariableMapper mapper,
-      final VendorDatabaseProperties vendorDatabaseProperties) {
+      final VendorDatabaseProperties vendorDatabaseProperties,
+      final RdbmsWriterConfig config) {
     super(mapper);
     this.executionQueue = executionQueue;
     this.mapper = mapper;
     this.vendorDatabaseProperties = vendorDatabaseProperties;
+    this.config = config;
   }
 
   public void create(final VariableDbModel variable) {
@@ -46,7 +48,8 @@ public class VariableWriter extends ProcessInstanceDependant implements RdbmsWri
 
     final var wasMerged =
         executionQueue.tryMergeWithExistingQueueItem(
-            new InsertVariableMerger(truncatedVariable, INSERT_BATCH_SIZE));
+            new InsertVariableMerger(
+                truncatedVariable, config.insertBatchingConfig().variableInsertBatchSize()));
 
     if (!wasMerged) {
       executionQueue.executeInQueue(

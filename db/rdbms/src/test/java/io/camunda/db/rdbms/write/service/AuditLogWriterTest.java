@@ -20,6 +20,7 @@ import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 class AuditLogWriterTest {
 
@@ -27,7 +28,8 @@ class AuditLogWriterTest {
   private final AuditLogMapper mapper = mock(AuditLogMapper.class);
   private final VendorDatabaseProperties vendorDatabaseProperties =
       mock(VendorDatabaseProperties.class);
-  private final RdbmsWriterConfig config = mock(RdbmsWriterConfig.class);
+  private final RdbmsWriterConfig config =
+      mock(RdbmsWriterConfig.class, Mockito.RETURNS_DEEP_STUBS);
   private final AuditLogWriter writer =
       new AuditLogWriter(executionQueue, mapper, vendorDatabaseProperties, config);
 
