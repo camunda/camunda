@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.exporter.api.context;
 
+import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -63,7 +64,16 @@ public interface Context {
    */
   void setFilter(RecordFilter filter);
 
-  /** A filter to limit the records which are exported. */
+  /**
+   * A filter to limit the records which are exported.
+   *
+   * <p>This interface is used in two distinct phases of filtering:
+   *
+   * <ul>
+   *   <li>filtering on metadata to avoid deserialization (faster but limited data to filter on)
+   *   <li>filtering on fully deserialized records (slower but richer data to filter on)
+   * </ul>
+   */
   interface RecordFilter {
 
     /**
@@ -90,6 +100,15 @@ public interface Context {
      */
     default boolean acceptIntent(final Intent intent) {
       // default implementation accepts all intents
+      return true;
+    }
+
+    /**
+     * Filters a fully deserialized {@link Record}.
+     *
+     * <p>Used to filter using full record instead of just metadata
+     */
+    default boolean acceptRecord(final Record<?> record) {
       return true;
     }
   }
