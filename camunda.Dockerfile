@@ -5,6 +5,7 @@
 
 ARG BASE_IMAGE="reg.mini.dev/1212/openjre-base-compat:21-dev"
 ARG BASE_DIGEST="sha256:6d72cf910cea8b66f3c4691b69371527c0c2dd528eddf87af55c1870e904707d"
+ARG BUILD_IMAGE="reg.mini.dev/1212/openjdk:21.0.9-dev"
 ARG JATTACH_VERSION="v2.2"
 ARG JATTACH_CHECKSUM_AMD64="acd9e17f15749306be843df392063893e97bfecc5260eef73ee98f06e5cfe02f"
 ARG JATTACH_CHECKSUM_ARM64="288ae5ed87ee7fe0e608c06db5a23a096a6217c9878ede53c4e33710bdcaab51"
@@ -18,7 +19,7 @@ ARG JATTACH_CHECKSUM_ARM64="288ae5ed87ee7fe0e608c06db5a23a096a6217c9878ede53c4e3
 ARG DIST="distball"
 
 ### Build camunda from scratch ###
-FROM reg.mini.dev/openjdk:21.0.9-dev AS build
+FROM ${BUILD_IMAGE} AS build
 
 # hadolint ignore=DL3002
 USER root
@@ -58,7 +59,7 @@ RUN --mount=type=cache,target=/root/.tools,rw \
 
 ### Extract camunda from distball ###
 # hadolint ignore=DL3006,DL3007
-FROM ubuntu:noble AS distball
+FROM ${BASE_IMAGE}@${BASE_DIGEST} AS distball
 
 # hadolint ignore=DL3002
 USER root
