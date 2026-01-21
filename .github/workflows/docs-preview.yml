@@ -6,9 +6,7 @@ name: Docs PR Preview
 
 on:
   pull_request:
-    types: [opened, synchronize]
-  pull_request_target:
-    types: [closed] # triggers cleanup when the PR is being closed
+    types: [opened, synchronize, closed]
 
 # Limit workflow to 1 concurrent run per PR: new commit -> old runs are canceled to save costs
 concurrency:
@@ -28,13 +26,12 @@ env:
 jobs:
   # Detect changes to avoid unnecessary builds
   detect-changes:
-    if: github.event.action != 'closed'
     outputs:
       docs-changes: ${{ steps.filter.outputs.docs-changes }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
-      pull-requests: read
+      contents: read
     steps:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
@@ -45,33 +42,35 @@ jobs:
         id: filter
 
   build-preview:
-    if: |
-      github.event.action != 'closed' && 
-      needs.detect-changes.outputs.docs-changes == 'true'
-    name: Build Documentation Preview
-    needs: detect-changes
+    # Only run if documentation files were changed in the PR
+    if: needs.detect-changes.outputs.docs-changes == 'true'
+    name: Build and Deploy PR Preview
+    needs: [detect-changes]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
       contents: write
       pull-requests: write
-    
+
     steps:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
 
       - name: Setup Node.js
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        if: github.event.action != 'closed'
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
           cache-dependency-path: monorepo-docs-site/package-lock.json
 
       - name: Install dependencies
+        if: github.event.action != 'closed'
         working-directory: monorepo-docs-site
         run: npm ci
 
       - name: Build documentation with PR preview base URL
+        if: github.event.action != 'closed'
         working-directory: monorepo-docs-site
         run: npm run build
         env:
@@ -83,37 +82,8 @@ jobs:
           source-dir: ./monorepo-docs-site/build/
           preview-branch: gh-pages
           umbrella-dir: pr-preview
-          action: auto
-
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          build_status: ${{ job.status }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-
-  cleanup-preview:
-    if: github.event.action == 'closed'
-    name: Cleanup PR Preview
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    permissions:
-      contents: write
-      pull-requests: write
-    
-    steps:
-      - name: Checkout
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
-
-      - name: Cleanup PR Preview
-        uses: rossjrw/pr-preview-action@ffa7509e91a3ec8dfc2e5536c4d5c1acdf7a6de9 # v1.8.1
-        with:
-          preview-branch: gh-pages
-          umbrella-dir: pr-preview
-          action: remove
+          action: auto #autodetect if the page must be deployed or removed https://github.com/rossjrw/pr-preview-action?tab=readme-ov-file#inputs-configuration
+          wait-for-pages-deployment: true
 
       - name: Observe build status
         if: always()
