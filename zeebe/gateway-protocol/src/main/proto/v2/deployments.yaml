@@ -121,9 +121,17 @@ paths:
       operationId: deleteResource
       summary: Delete resource
       description: |
-        Deletes a deployed resource.
-        This can be a process definition, decision requirements definition, or form definition
-        deployed using the deploy resources endpoint. Specify the resource you want to delete in the `resourceKey` parameter.
+        Deletes a deployed resource. This can be a process definition, decision requirements
+        definition, or form definition deployed using the deploy resources endpoint. Specify the
+        resource you want to delete in the `resourceKey` parameter.
+
+        Once a resource has been deleted it cannot be recovered. If the resource needs to be
+        available again, a new deployment of the resource is required.
+
+        By default, only the resource itself is deleted from the runtime state. To also delete the
+        historic data associated with a resource, set the `deleteHistory` flag in the request body
+        to `true`. The historic data is deleted asynchronously via a batch operation. The details of
+        the created batch operation are included in the response.
       parameters:
         - name: resourceKey
           in: path
