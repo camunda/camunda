@@ -513,6 +513,7 @@ public final class BpmnStateTransitionBehavior {
 
     runtimeInstructionRecord.reset();
     runtimeInstructionRecord.setProcessInstanceKey(context.getProcessInstanceKey());
+    runtimeInstructionRecord.setProcessDefinitionKey(context.getProcessDefinitionKey());
     runtimeInstructionRecord.setTenantId(context.getTenantId());
     runtimeInstructionRecord.setElementId(runtimeInstruction.getAfterElementId());
 

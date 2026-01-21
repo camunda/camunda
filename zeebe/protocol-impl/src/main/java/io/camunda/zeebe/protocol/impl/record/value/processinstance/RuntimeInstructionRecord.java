@@ -21,12 +21,15 @@ public class RuntimeInstructionRecord extends UnifiedRecordValue
 
   private final LongProperty processInstanceKeyProperty =
       new LongProperty("processInstanceKey", -1);
+  private final LongProperty processDefinitionKeyProperty =
+      new LongProperty("processDefinitionKey", -1);
   private final StringProperty tenantIdProperty = new StringProperty("tenantId", "");
   private final StringProperty elementIdProperty = new StringProperty("elementId", "");
 
   public RuntimeInstructionRecord() {
-    super(3);
+    super(4);
     declareProperty(processInstanceKeyProperty)
+        .declareProperty(processDefinitionKeyProperty)
         .declareProperty(tenantIdProperty)
         .declareProperty(elementIdProperty);
   }
@@ -51,11 +54,14 @@ public class RuntimeInstructionRecord extends UnifiedRecordValue
     return this;
   }
 
-  // This record is not used for audit log and thus process definition key has not been implemented
-  @JsonIgnore
   @Override
   public long getProcessDefinitionKey() {
-    return -1L;
+    return processDefinitionKeyProperty.getValue();
+  }
+
+  public RuntimeInstructionRecord setProcessDefinitionKey(final long processDefinitionKey) {
+    processDefinitionKeyProperty.setValue(processDefinitionKey);
+    return this;
   }
 
   @Override

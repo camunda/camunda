@@ -34,6 +34,8 @@ public final class MessageCorrelationRecord extends UnifiedRecordValue
   private static final StringValue REQUEST_ID_KEY = new StringValue("requestId");
   private static final StringValue REQUEST_STREAM_ID_KEY = new StringValue("requestStreamId");
   private static final StringValue PROCESS_INSTANCE_KEY_KEY = new StringValue("processInstanceKey");
+  private static final StringValue PROCESS_DEFINITION_KEY_KEY =
+      new StringValue("processDefinitionKey");
 
   private final StringProperty nameProp = new StringProperty(NAME_KEY);
   private final StringProperty correlationKeyProp = new StringProperty(CORRELATION_KEY_KEY);
@@ -47,9 +49,11 @@ public final class MessageCorrelationRecord extends UnifiedRecordValue
       new IntegerProperty(REQUEST_STREAM_ID_KEY, -1);
   private final LongProperty processInstanceKeyProp =
       new LongProperty(PROCESS_INSTANCE_KEY_KEY, -1L);
+  private final LongProperty processDefinitionKeyProp =
+      new LongProperty(PROCESS_DEFINITION_KEY_KEY, -1L);
 
   public MessageCorrelationRecord() {
-    super(7);
+    super(8);
     declareProperty(nameProp)
         .declareProperty(correlationKeyProp)
         .declareProperty(variablesProp)
@@ -57,7 +61,8 @@ public final class MessageCorrelationRecord extends UnifiedRecordValue
         .declareProperty(messageKey)
         .declareProperty(requestIdProp)
         .declareProperty(requestStreamIdProp)
-        .declareProperty(processInstanceKeyProp);
+        .declareProperty(processInstanceKeyProp)
+        .declareProperty(processDefinitionKeyProp);
   }
 
   public void wrap(final MessageCorrelationRecord record) {
@@ -163,10 +168,13 @@ public final class MessageCorrelationRecord extends UnifiedRecordValue
     return this;
   }
 
-  // This record is not used for audit log and thus process definition key has not been implemented
-  @JsonIgnore
   @Override
   public long getProcessDefinitionKey() {
-    return -1L;
+    return processDefinitionKeyProp.getValue();
+  }
+
+  public MessageCorrelationRecord setProcessDefinitionKey(final long processDefinitionKey) {
+    processDefinitionKeyProp.setValue(processDefinitionKey);
+    return this;
   }
 }

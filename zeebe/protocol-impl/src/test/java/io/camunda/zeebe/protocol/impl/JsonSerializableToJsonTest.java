@@ -3080,7 +3080,8 @@ final class JsonSerializableToJsonTest {
                   .setProcessInstanceKey(processInstanceKey)
                   .setMessageKey(messageKey)
                   .setRequestId(requestId)
-                  .setRequestStreamId(requestStreamId);
+                  .setRequestStreamId(requestStreamId)
+                  .setProcessDefinitionKey(5L);
             },
         """
                 {
@@ -3093,7 +3094,8 @@ final class JsonSerializableToJsonTest {
                   "processInstanceKey": 1,
                   "messageKey": 2,
                   "requestId": 3,
-                  "requestStreamId": 4
+                  "requestStreamId": 4,
+                  "processDefinitionKey": 5
                 }
                 """
       },
@@ -3287,7 +3289,8 @@ final class JsonSerializableToJsonTest {
                   "processInstanceKey": -1,
                   "messageKey": -1,
                   "requestId": -1,
-                  "requestStreamId": -1
+                  "requestStreamId": -1,
+                  "processDefinitionKey": -1
                 }
                 """
       },
@@ -4097,13 +4100,15 @@ final class JsonSerializableToJsonTest {
             () ->
                 new RuntimeInstructionRecord()
                     .setProcessInstanceKey(12345L)
+                    .setProcessDefinitionKey(6L)
                     .setTenantId("tenant_1")
                     .setElementId("element_1"),
         """
       {
         "tenantId": "tenant_1",
         "elementId": "element_1",
-        "processInstanceKey": 12345
+        "processInstanceKey": 12345,
+        "processDefinitionKey": 6
       }
       """
       },
@@ -4117,7 +4122,8 @@ final class JsonSerializableToJsonTest {
       {
         "tenantId": "",
         "elementId": "",
-        "processInstanceKey": -1
+        "processInstanceKey": -1,
+        "processDefinitionKey": -1
       }
       """
       },
