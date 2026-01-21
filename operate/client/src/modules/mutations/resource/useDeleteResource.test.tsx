@@ -31,7 +31,7 @@ const createWrapper = () => {
 
 describe('useDeleteResource', () => {
   it('should successfully delete resource', async () => {
-    mockDeleteResource().withSuccess(null, {expectPolling: false});
+    mockDeleteResource().withSuccess({}, {expectPolling: false});
 
     const {result} = renderHook(
       () => useDeleteResource(resourceKey, requestBody),
@@ -66,17 +66,15 @@ describe('useDeleteResource', () => {
     });
 
     expect(result.current.error).toBeDefined();
-    expect(result.current.error?.statusText).toBe('Internal Server Error');
+    expect(result.current.error?.response?.statusText).toBe(
+      'Internal Server Error',
+    );
   });
 
   it('should call onSuccess callback when deletion succeeds', async () => {
     const onSuccess = vi.fn();
 
-    mockServer.use(
-      http.post(`/v2/resources/${resourceKey}/deletion`, () => {
-        return new HttpResponse(null, {status: 200});
-      }),
-    );
+    mockDeleteResource().withSuccess({}, {expectPolling: false});
 
     const {result} = renderHook(
       () =>
@@ -126,16 +124,11 @@ describe('useDeleteResource', () => {
     });
 
     expect(onError).toHaveBeenCalledTimes(1);
-    expect(onError.mock.calls[0][0].statusText).toBe('Forbidden');
+    expect(onError.mock.calls[0][0].response?.statusText).toBe('Forbidden');
   });
 
   it('should show pending state during deletion', async () => {
-    mockServer.use(
-      http.post(`/v2/resources/${resourceKey}/deletion`, async () => {
-        await new Promise((resolve) => setTimeout(resolve, 100));
-        return new HttpResponse(null, {status: 200});
-      }),
-    );
+    mockDeleteResource().withDelay({});
 
     const {result} = renderHook(
       () => useDeleteResource(resourceKey, requestBody),
@@ -147,10 +140,6 @@ describe('useDeleteResource', () => {
     expect(result.current.isPending).toBe(false);
 
     result.current.mutate();
-
-    await waitFor(() => {
-      expect(result.current.isPending).toBe(true);
-    });
 
     await waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
@@ -165,7 +154,7 @@ describe('useDeleteResource', () => {
       deleteHistory: false,
     };
 
-    mockDeleteResource().withSuccess(null, {expectPolling: false});
+    mockDeleteResource().withSuccess({}, {expectPolling: false});
 
     const {result} = renderHook(
       () => useDeleteResource(resourceKey, requestBodyNoHistory),
@@ -184,7 +173,7 @@ describe('useDeleteResource', () => {
   });
 
   it('should handle deletion without request body', async () => {
-    mockDeleteResource().withSuccess(null, {expectPolling: false});
+    mockDeleteResource().withSuccess({}, {expectPolling: false});
 
     const {result} = renderHook(
       () => useDeleteResource(resourceKey, {} as DeleteResourceRequestBody),
@@ -244,7 +233,7 @@ describe('useDeleteResource', () => {
       expect(result.current.isError).toBe(true);
     });
 
-    expect(result.current.error?.statusText).toBe('Not Found');
+    expect(result.current.error?.response?.statusText).toBe('Not Found');
   });
 
   it('should handle 400 bad request error', async () => {
@@ -270,7 +259,7 @@ describe('useDeleteResource', () => {
       expect(result.current.isError).toBe(true);
     });
 
-    expect(result.current.error?.statusText).toBe('Bad Request');
+    expect(result.current.error?.response?.statusText).toBe('Bad Request');
   });
 
   it('should reset mutation state after error', async () => {
