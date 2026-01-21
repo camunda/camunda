@@ -22,7 +22,7 @@
     "final-form-arrays": "3.1.0",
     "i18next": "^23.12.1",
     "i18next-browser-languagedetector": "^8.0.0",
-    "lodash": "4.17.21",
+    "lodash": "4.17.23",
     "mixpanel-browser": "2.55.1",
     "mobx": "6.13.7",
     "mobx-react-lite": "4.0.7",
