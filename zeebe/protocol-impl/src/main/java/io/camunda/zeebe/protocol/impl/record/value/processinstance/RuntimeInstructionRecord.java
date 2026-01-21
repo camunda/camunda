@@ -51,6 +51,7 @@ public class RuntimeInstructionRecord extends UnifiedRecordValue
     return this;
   }
 
+  // This record is not used for audit log and thus process definition key has not been implemented
   @JsonIgnore
   @Override
   public long getProcessDefinitionKey() {

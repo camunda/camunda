@@ -22,12 +22,6 @@
             "processInstanceKey": {
               "type": "long"
             },
-            "processDefinitionKey": {
-              "type": "long"
-            },
-            "bpmnProcessId": {
-              "type": "keyword"
-            },
             "batchElementInstanceKey": {
               "type": "long"
             },

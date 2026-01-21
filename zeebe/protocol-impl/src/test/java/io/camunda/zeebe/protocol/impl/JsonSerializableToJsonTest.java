@@ -2737,15 +2737,13 @@ final class JsonSerializableToJsonTest {
                 new ProcessInstanceBatchRecord()
                     .setProcessInstanceKey(123L)
                     .setBatchElementInstanceKey(456L)
-                    .setIndex(10L)
-                    .setProcessDefinitionKey(789L),
+                    .setIndex(10L),
         """
                 {
                   "processInstanceKey": 123,
                   "batchElementInstanceKey": 456,
                   "index": 10,
-                  "tenantId": "<default>",
-                  "processDefinitionKey": 789
+                  "tenantId": "<default>"
                 }
                 """
       },
@@ -2767,8 +2765,7 @@ final class JsonSerializableToJsonTest {
                   "processInstanceKey": 123,
                   "batchElementInstanceKey": 456,
                   "index": -1,
-                  "tenantId": "<default>",
-                  "processDefinitionKey": -1
+                  "tenantId": "<default>"
                 }
                 """
       },

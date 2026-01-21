@@ -51,12 +51,6 @@ public class RuntimeInstructionRecord extends UnifiedRecordValue
     return this;
   }
 
-  @JsonIgnore
-  @Override
-  public long getProcessDefinitionKey() {
-    return -1L;
-  }
-
   @Override
   public String getTenantId() {
     return bufferAsString(tenantIdProperty.getValue());
@@ -70,5 +64,12 @@ public class RuntimeInstructionRecord extends UnifiedRecordValue
   @JsonIgnore
   public DirectBuffer getElementIdBuffer() {
     return elementIdProperty.getValue();
+  }
+
+  // This record is not used for audit log and thus process definition key has not been implemented
+  @JsonIgnore
+  @Override
+  public long getProcessDefinitionKey() {
+    return -1L;
   }
 }

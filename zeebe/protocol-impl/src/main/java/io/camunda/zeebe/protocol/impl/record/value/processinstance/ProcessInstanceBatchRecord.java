@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.processinstance;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceBatchRecordValue;
@@ -18,8 +19,6 @@ public final class ProcessInstanceBatchRecord extends UnifiedRecordValue
   private final LongProperty processInstanceKeyProperty = new LongProperty("processInstanceKey");
   private final LongProperty batchElementInstanceKeyProperty =
       new LongProperty("batchElementInstanceKey");
-  private final LongProperty processDefinitionKeyProperty =
-      new LongProperty("processDefinitionKey", -1L);
 
   /**
    * The index is used to keep track of the position in the batch. When the index is -1, there won't
@@ -37,11 +36,10 @@ public final class ProcessInstanceBatchRecord extends UnifiedRecordValue
   private final LongProperty indexProperty = new LongProperty("index", -1L);
 
   public ProcessInstanceBatchRecord() {
-    super(4);
+    super(3);
     declareProperty(processInstanceKeyProperty)
         .declareProperty(batchElementInstanceKeyProperty)
-        .declareProperty(indexProperty)
-        .declareProperty(processDefinitionKeyProperty);
+        .declareProperty(indexProperty);
   }
 
   @Override
@@ -54,14 +52,11 @@ public final class ProcessInstanceBatchRecord extends UnifiedRecordValue
     return this;
   }
 
+  // This record is not used for audit log and thus process definition key has not been implemented
+  @JsonIgnore
   @Override
   public long getProcessDefinitionKey() {
-    return processDefinitionKeyProperty.getValue();
-  }
-
-  public ProcessInstanceBatchRecord setProcessDefinitionKey(final long processDefinitionKey) {
-    processDefinitionKeyProperty.setValue(processDefinitionKey);
-    return this;
+    return -1L;
   }
 
   @Override
