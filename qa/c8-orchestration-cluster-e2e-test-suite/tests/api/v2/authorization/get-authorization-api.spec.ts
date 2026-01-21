@@ -10,8 +10,6 @@ import {test, expect, APIRequestContext} from '@playwright/test';
 import {
   jsonHeaders,
   buildUrl,
-  assertBadRequest,
-  assertInvalidArgument,
   assertUnauthorizedRequest,
   assertNotFoundRequest,
   encode,
@@ -23,20 +21,12 @@ import {cleanupUsers} from '../../../../utils/usersCleanup';
 import {
   createUser,
   createComponentAuthorization,
-  createRole,
-  createGroup,
-  createMappingRule,
-  expectAuthorizationCanBeFound,
   verifyAuthorizationFields,
   type Authorization,
   grantUserResourceAuthorization,
 } from '@requestHelpers';
 import {CREATE_CUSTOM_AUTHORIZATION_BODY} from '../../../../utils/beans/requestBeans';
-import {waitForAssertion} from 'utils/waitForAssertion';
-import {cleanupRoles} from 'utils/rolesCleanup';
-import {cleanupGroups} from 'utils/groupsCleanup';
-import {cleanupMappingRules} from 'utils/mappingRuleCleanup';
-import {sleep} from 'utils/sleep';
+import { validateResponse } from 'json-body-assertions';
 
 test.describe.parallel('Get Authorization API', () => {
   const cleanups: ((request: APIRequestContext) => Promise<void>)[] = [];
@@ -92,6 +82,12 @@ test.describe.parallel('Get Authorization API', () => {
           },
         );
         await assertStatusCode(res, 200);
+        await validateResponse(
+        {
+            path: '/authorizations/{authorizationKey}',
+            method: 'GET',
+            status: '200',
+        },res);
         const authBody = await res.json();
         verifyAuthorizationFields(authBody, expectedUserAuthorization);
       }).toPass(defaultAssertionOptions);
@@ -124,7 +120,6 @@ test.describe.parallel('Get Authorization API', () => {
       password: string;
     };
     let userAuthorizationKey: string = '';
-    let originalUserAuthorization: Authorization = {} as Authorization;
     await test.step('Setup - Create user for authorization tests', async () => {
       user = await createUser(request);
       cleanups.push(async (request) => {
@@ -144,13 +139,7 @@ test.describe.parallel('Get Authorization API', () => {
         request,
         authorizationBody,
       );
-      originalUserAuthorization = authorizationBody;
     });
-
-    const expectedUserAuthorization = {
-      ...originalUserAuthorization,
-      authorizationKey: userAuthorizationKey,
-    };
 
     await test.step('Get Authorization without authorization header', async () => {
       await expect(async () => {
@@ -186,7 +175,6 @@ test.describe.parallel('Get Authorization API', () => {
       password: string;
     };
     let userAuthorizationKey: string = '';
-    let originalUserAuthorization: Authorization = {} as Authorization;
 
     await test.step('Setup - Create test user with Resource Authorization and user for granting Authorization', async () => {
       userWithResourcesAuthorizationToSendRequest = await createUser(request);
@@ -218,7 +206,6 @@ test.describe.parallel('Get Authorization API', () => {
         request,
         authorizationBody,
       );
-      originalUserAuthorization = authorizationBody;
     });
 
     await test.step('Get Authorization and assert results', async () => {
@@ -231,7 +218,6 @@ test.describe.parallel('Get Authorization API', () => {
           buildUrl(`/authorizations/${userAuthorizationKey}`),
           {
             headers: jsonHeaders(token), // overrides default demo:demo
-            data: {},
           },
         );
         await assertForbiddenRequest(
