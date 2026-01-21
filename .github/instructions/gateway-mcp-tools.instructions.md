@@ -121,22 +121,38 @@ Example:
 
 ## Tests
 
-- Add tool tests in `gateways/gateway-mcp/src/test/java/...` mirroring `IncidentToolsTest`.
+- Add tool tests in `gateways/gateway-mcp/src/test/java/...` mirroring `ProcessDefinitionToolsTest`
+  (preferred) or `IncidentToolsTest`.
+- Structure tests with `@Nested` classes, **one per MCP tool** (e.g. `GetIncident`, `SearchIncidents`,
+  `ResolveIncident`). This keeps each tool contract and its assertions together.
 
 Testing pattern:
 
 - Extend `ToolsTest` and use `@ContextConfiguration(classes = {YourTools.class})`.
 - Mock services with `@MockitoBean` and call `mockApiServiceAuthentication(service)` in
   `@BeforeEach`.
+- Group test methods into `@Nested` classes, one per MCP tool method.
+- For happy-path results, assert on the tool output model (i.e. `CallToolResult` → Jackson
+  `objectMapper.convertValue(..., <ProtocolModel>.class)`), and then verify **all fields which are**:
+  1) present in your example test entity/data, and
+  2) returned by the tool response model.
+  (For search results: also assert `page` metadata (`totalItems`, `hasMoreTotalItems`,
+  `startCursor`, `endCursor`) + all returned item fields that are backed by the example entity/data.)
+  - Avoid comparing against the mapping layer (`SearchQueryResponseMapper`, etc.) in tests.
+  - Avoid full-object recursive comparison unless you build an explicit expected *protocol model*
+    instance in the test.
+  - Prefer helper methods like `assertExample<Thing>(...)` to reuse the same assertions in get/search
+    tests.
 - Validate:
-  1) happy-path structured content mapping
+  1) happy-path content (assert all fields present in example data that are returned by the tool)
   2) error mapping to `ProblemDetail` when service throws
   3) bean validation (e.g., negative key)
-  4) search mapping: verify captured query filter/sort/page
+  4) search mapping: verify captured query filter/sort/page (query captor)
   5) date range filter mapping: verify operators and parsed `OffsetDateTime`
 
 Reference:
 
+- `ProcessDefinitionToolsTest.shouldSearchProcessDefinitionsWithFilterSortAndPaging`
 - `IncidentToolsTest.shouldSearchIncidentsWithCreationTimeDateRangeFilter`
 
 ## Build / verification (scoped)

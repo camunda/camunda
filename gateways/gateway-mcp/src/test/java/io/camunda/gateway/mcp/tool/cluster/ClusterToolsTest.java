@@ -32,6 +32,7 @@ import io.modelcontextprotocol.spec.McpSchema.TextContent;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -52,160 +53,168 @@ class ClusterToolsTest extends ToolsTest {
     mockApiServiceAuthentication(topologyServices);
   }
 
-  @ParameterizedTest
-  @EnumSource(ClusterStatus.class)
-  void shouldLoadClusterStatus(final ClusterStatus status) {
-    // given
-    when(topologyServices.getStatus()).thenReturn(CompletableFuture.completedFuture(status));
+  @Nested
+  class GetClusterStatus {
 
-    // when
-    final CallToolResult result =
-        mcpClient.callTool(CallToolRequest.builder().name("getClusterStatus").build());
+    @ParameterizedTest
+    @EnumSource(ClusterStatus.class)
+    void shouldLoadClusterStatus(final ClusterStatus status) {
+      // given
+      when(topologyServices.getStatus()).thenReturn(CompletableFuture.completedFuture(status));
 
-    // then
-    assertThat(result.isError()).isFalse();
-    assertThat(result.content())
-        .hasSize(1)
-        .first()
-        .isInstanceOfSatisfying(
-            TextContent.class,
-            textContent -> assertThat(textContent.text()).isEqualTo(status.name()));
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(CallToolRequest.builder().name("getClusterStatus").build());
+
+      // then
+      assertThat(result.isError()).isFalse();
+      assertThat(result.content())
+          .hasSize(1)
+          .first()
+          .isInstanceOfSatisfying(
+              TextContent.class,
+              textContent -> assertThat(textContent.text()).isEqualTo(status.name()));
+    }
+
+    @Test
+    void shouldFailLoadingClusterStatusOnException() {
+      // given
+      when(topologyServices.getStatus())
+          .thenReturn(
+              CompletableFuture.failedFuture(
+                  new ServiceException("Expected failure", Status.INVALID_STATE)));
+
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(CallToolRequest.builder().name("getClusterStatus").build());
+
+      // then
+      assertThat(result.isError()).isTrue();
+      assertThat(result.content()).isEmpty();
+      assertThat(result.structuredContent()).isNotNull();
+
+      final var problemDetail =
+          objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
+      assertThat(problemDetail.getDetail()).isEqualTo("Expected failure");
+      assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.CONFLICT.value());
+      assertThat(problemDetail.getTitle()).isEqualTo("INVALID_STATE");
+    }
   }
 
-  @Test
-  void shouldFailLoadingClusterStatusOnException() {
-    // given
-    when(topologyServices.getStatus())
-        .thenReturn(
-            CompletableFuture.failedFuture(
-                new ServiceException("Expected failure", Status.INVALID_STATE)));
+  @Nested
+  class GetTopology {
 
-    // when
-    final CallToolResult result =
-        mcpClient.callTool(CallToolRequest.builder().name("getClusterStatus").build());
+    @Test
+    void shouldLoadTopology() {
+      // given
+      final var version = VersionUtil.getVersion();
+      final var expectedResponse =
+          new TopologyResponse()
+              .clusterId("cluster-id")
+              .gatewayVersion(version)
+              .clusterSize(3)
+              .partitionsCount(1)
+              .replicationFactor(3)
+              .lastCompletedChangeId("1")
+              .addBrokersItem(
+                  new BrokerInfo()
+                      .nodeId(0)
+                      .host("localhost")
+                      .port(26501)
+                      .version(version)
+                      .addPartitionsItem(
+                          new Partition()
+                              .partitionId(1)
+                              .health(HealthEnum.HEALTHY)
+                              .role(RoleEnum.LEADER)))
+              .addBrokersItem(
+                  new BrokerInfo()
+                      .nodeId(1)
+                      .host("localhost")
+                      .port(26502)
+                      .version(version)
+                      .addPartitionsItem(
+                          new Partition()
+                              .partitionId(1)
+                              .health(HealthEnum.HEALTHY)
+                              .role(RoleEnum.FOLLOWER)))
+              .addBrokersItem(
+                  new BrokerInfo()
+                      .nodeId(2)
+                      .host("localhost")
+                      .port(26503)
+                      .version(version)
+                      .addPartitionsItem(
+                          new Partition()
+                              .partitionId(1)
+                              .health(HealthEnum.UNHEALTHY)
+                              .role(RoleEnum.INACTIVE)));
+      final var topologyResponse =
+          new Topology(
+              List.of(
+                  new Broker(
+                      0,
+                      "localhost",
+                      26501,
+                      List.of(new TopologyServices.Partition(1, Role.LEADER, Health.HEALTHY)),
+                      version),
+                  new Broker(
+                      1,
+                      "localhost",
+                      26502,
+                      List.of(new TopologyServices.Partition(1, Role.FOLLOWER, Health.HEALTHY)),
+                      version),
+                  new Broker(
+                      2,
+                      "localhost",
+                      26503,
+                      List.of(new TopologyServices.Partition(1, Role.INACTIVE, Health.UNHEALTHY)),
+                      version)),
+              "cluster-id",
+              3,
+              1,
+              3,
+              version,
+              1L);
 
-    // then
-    assertThat(result.isError()).isTrue();
-    assertThat(result.content()).isEmpty();
-    assertThat(result.structuredContent()).isNotNull();
+      when(topologyServices.getTopology())
+          .thenReturn(CompletableFuture.completedFuture(topologyResponse));
 
-    final var problemDetail =
-        objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
-    assertThat(problemDetail.getDetail()).isEqualTo("Expected failure");
-    assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.CONFLICT.value());
-    assertThat(problemDetail.getTitle()).isEqualTo("INVALID_STATE");
-  }
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(CallToolRequest.builder().name("getTopology").build());
 
-  @Test
-  void shouldLoadTopology() {
-    // given
-    final var version = VersionUtil.getVersion();
-    final var expectedResponse =
-        new TopologyResponse()
-            .clusterId("cluster-id")
-            .gatewayVersion(version)
-            .clusterSize(3)
-            .partitionsCount(1)
-            .replicationFactor(3)
-            .lastCompletedChangeId("1")
-            .addBrokersItem(
-                new BrokerInfo()
-                    .nodeId(0)
-                    .host("localhost")
-                    .port(26501)
-                    .version(version)
-                    .addPartitionsItem(
-                        new Partition()
-                            .partitionId(1)
-                            .health(HealthEnum.HEALTHY)
-                            .role(RoleEnum.LEADER)))
-            .addBrokersItem(
-                new BrokerInfo()
-                    .nodeId(1)
-                    .host("localhost")
-                    .port(26502)
-                    .version(version)
-                    .addPartitionsItem(
-                        new Partition()
-                            .partitionId(1)
-                            .health(HealthEnum.HEALTHY)
-                            .role(RoleEnum.FOLLOWER)))
-            .addBrokersItem(
-                new BrokerInfo()
-                    .nodeId(2)
-                    .host("localhost")
-                    .port(26503)
-                    .version(version)
-                    .addPartitionsItem(
-                        new Partition()
-                            .partitionId(1)
-                            .health(HealthEnum.UNHEALTHY)
-                            .role(RoleEnum.INACTIVE)));
-    final var topologyResponse =
-        new Topology(
-            List.of(
-                new Broker(
-                    0,
-                    "localhost",
-                    26501,
-                    List.of(new TopologyServices.Partition(1, Role.LEADER, Health.HEALTHY)),
-                    version),
-                new Broker(
-                    1,
-                    "localhost",
-                    26502,
-                    List.of(new TopologyServices.Partition(1, Role.FOLLOWER, Health.HEALTHY)),
-                    version),
-                new Broker(
-                    2,
-                    "localhost",
-                    26503,
-                    List.of(new TopologyServices.Partition(1, Role.INACTIVE, Health.UNHEALTHY)),
-                    version)),
-            "cluster-id",
-            3,
-            1,
-            3,
-            version,
-            1L);
+      // then
+      assertThat(result.isError()).isFalse();
+      assertThat(result.structuredContent()).isNotNull();
 
-    when(topologyServices.getTopology())
-        .thenReturn(CompletableFuture.completedFuture(topologyResponse));
+      final var topology =
+          objectMapper.convertValue(result.structuredContent(), TopologyResponse.class);
+      assertThat(topology).usingRecursiveComparison().isEqualTo(expectedResponse);
+    }
 
-    // when
-    final CallToolResult result =
-        mcpClient.callTool(CallToolRequest.builder().name("getTopology").build());
+    @Test
+    void shouldFailLoadingTopologyOnException() {
+      // given
+      when(topologyServices.getTopology())
+          .thenReturn(
+              CompletableFuture.failedFuture(
+                  new ServiceException("Expected failure", Status.INVALID_STATE)));
 
-    // then
-    assertThat(result.isError()).isFalse();
-    assertThat(result.structuredContent()).isNotNull();
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(CallToolRequest.builder().name("getTopology").build());
 
-    final var topology =
-        objectMapper.convertValue(result.structuredContent(), TopologyResponse.class);
-    assertThat(topology).usingRecursiveComparison().isEqualTo(expectedResponse);
-  }
+      // then
+      assertThat(result.isError()).isTrue();
+      assertThat(result.content()).isEmpty();
+      assertThat(result.structuredContent()).isNotNull();
 
-  @Test
-  void shouldFailLoadingTopologyOnException() {
-    // given
-    when(topologyServices.getTopology())
-        .thenReturn(
-            CompletableFuture.failedFuture(
-                new ServiceException("Expected failure", Status.INVALID_STATE)));
-
-    // when
-    final CallToolResult result =
-        mcpClient.callTool(CallToolRequest.builder().name("getTopology").build());
-
-    // then
-    assertThat(result.isError()).isTrue();
-    assertThat(result.content()).isEmpty();
-    assertThat(result.structuredContent()).isNotNull();
-
-    final var problemDetail =
-        objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
-    assertThat(problemDetail.getDetail()).isEqualTo("Expected failure");
-    assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.CONFLICT.value());
-    assertThat(problemDetail.getTitle()).isEqualTo("INVALID_STATE");
+      final var problemDetail =
+          objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
+      assertThat(problemDetail.getDetail()).isEqualTo("Expected failure");
+      assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.CONFLICT.value());
+      assertThat(problemDetail.getTitle()).isEqualTo("INVALID_STATE");
+    }
   }
 }

@@ -15,10 +15,11 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.mcp.tool.ToolsTest;
 import io.camunda.gateway.protocol.model.CreateProcessInstanceResult;
 import io.camunda.gateway.protocol.model.ProcessInstanceResult;
+import io.camunda.gateway.protocol.model.ProcessInstanceSearchQueryResult;
+import io.camunda.gateway.protocol.model.ProcessInstanceStateEnum;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.search.filter.Operation;
@@ -102,6 +103,23 @@ class ProcessInstanceToolsTest extends ToolsTest {
     mockApiServiceAuthentication(processInstanceServices);
   }
 
+  private void assertExampleProcessInstance(final ProcessInstanceResult processInstance) {
+    assertThat(processInstance.getProcessInstanceKey()).isEqualTo("123");
+    assertThat(processInstance.getProcessDefinitionId()).isEqualTo("demoProcess");
+    assertThat(processInstance.getProcessDefinitionName()).isEqualTo("Demo Process");
+    assertThat(processInstance.getProcessDefinitionVersion()).isEqualTo(5);
+    assertThat(processInstance.getProcessDefinitionVersionTag()).isEqualTo("v5");
+    assertThat(processInstance.getProcessDefinitionKey()).isEqualTo("789");
+    assertThat(processInstance.getParentProcessInstanceKey()).isEqualTo("333");
+    assertThat(processInstance.getParentElementInstanceKey()).isEqualTo("777");
+    assertThat(processInstance.getStartDate()).isEqualTo("2024-01-01T00:00:00.000Z");
+    assertThat(processInstance.getEndDate()).isNull();
+    assertThat(processInstance.getState()).isEqualTo(ProcessInstanceStateEnum.ACTIVE);
+    assertThat(processInstance.getHasIncident()).isFalse();
+    assertThat(processInstance.getTenantId()).isEqualTo("tenant");
+    assertThat(processInstance.getTags()).containsExactlyInAnyOrder("tag1", "tag2");
+  }
+
   @Nested
   class GetProcessInstance {
 
@@ -124,9 +142,7 @@ class ProcessInstanceToolsTest extends ToolsTest {
 
       final var processInstance =
           objectMapper.convertValue(result.structuredContent(), ProcessInstanceResult.class);
-      assertThat(processInstance)
-          .usingRecursiveComparison()
-          .isEqualTo(SearchQueryResponseMapper.toProcessInstance(PROCESS_INSTANCE_ENTITY));
+      assertExampleProcessInstance(processInstance);
 
       verify(processInstanceServices).getByKey(123L);
     }
@@ -219,6 +235,19 @@ class ProcessInstanceToolsTest extends ToolsTest {
 
       // then
       assertThat(result.isError()).isFalse();
+      assertThat(result.structuredContent()).isNotNull();
+
+      final var searchResult =
+          objectMapper.convertValue(
+              result.structuredContent(), ProcessInstanceSearchQueryResult.class);
+      assertThat(searchResult.getPage().getTotalItems()).isEqualTo(1L);
+      assertThat(searchResult.getPage().getHasMoreTotalItems()).isFalse();
+      assertThat(searchResult.getPage().getStartCursor()).isEqualTo("f");
+      assertThat(searchResult.getPage().getEndCursor()).isEqualTo("v");
+      assertThat(searchResult.getItems())
+          .hasSize(1)
+          .first()
+          .satisfies(ProcessInstanceToolsTest.this::assertExampleProcessInstance);
 
       verify(processInstanceServices).search(queryCaptor.capture());
       final ProcessInstanceQuery capturedQuery = queryCaptor.getValue();
