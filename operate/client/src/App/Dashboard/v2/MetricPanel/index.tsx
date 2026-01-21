@@ -7,12 +7,7 @@
  */
 
 import {observer} from 'mobx-react';
-import {
-  Title,
-  LabelContainer,
-  Label,
-  ErrorMessage,
-} from '../../MetricPanel/styled';
+import {Title, LabelContainer, Label, ErrorMessage} from './styled';
 import {Locations} from 'modules/Routes';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {tracking} from 'modules/tracking';

@@ -7,18 +7,8 @@
  */
 
 import type {Route} from '@playwright/test';
-import type {
-  IncidentByErrorDto,
-  ProcessInstanceByNameDto,
-  CoreStatisticsDto,
-} from '@/types';
+import type {IncidentByErrorDto} from '@/types';
 import type {GetProcessDefinitionInstanceStatisticsResponseBody} from '@camunda/camunda-api-zod-schemas/8.8';
-
-const mockStatistics = {
-  running: 891,
-  active: 277,
-  withIncidents: 614,
-};
 
 const mockIncidentsByError = [
   {
@@ -1540,11 +1530,9 @@ const mockProcessDefinitionVersionStatistics = {
 };
 
 function mockResponses({
-  statistics,
   incidentsByError,
   processDefinitionStatistics,
 }: {
-  statistics?: CoreStatisticsDto;
   incidentsByError?: IncidentByErrorDto[];
   processDefinitionStatistics?: GetProcessDefinitionInstanceStatisticsResponseBody;
 }) {
@@ -1560,18 +1548,6 @@ function mockResponses({
           c8Links: {},
           username: 'demo',
         }),
-        headers: {
-          'content-type': 'application/json',
-        },
-      });
-    }
-
-    if (
-      route.request().url().includes('/api/process-instances/core-statistics')
-    ) {
-      return route.fulfill({
-        status: statistics === undefined ? 400 : 200,
-        body: JSON.stringify(statistics),
         headers: {
           'content-type': 'application/json',
         },
@@ -1629,7 +1605,6 @@ function mockResponses({
 }
 
 export {
-  mockStatistics,
   mockIncidentsByError,
   mockIncidentsByProcess,
   mockProcessDefinitionStatistics,

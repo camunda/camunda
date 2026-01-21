@@ -12,7 +12,6 @@ import {
   mockIncidentsByError,
   mockProcessDefinitionStatistics,
   mockResponses,
-  mockStatistics,
 } from '../mocks/dashboard.mocks';
 import {URL_API_PATTERN} from '../constants';
 import {clientConfigMock} from '../mocks/clientConfig';
@@ -34,11 +33,6 @@ test.describe('dashboard page', () => {
     await page.route(
       URL_API_PATTERN,
       mockResponses({
-        statistics: {
-          running: 0,
-          active: 0,
-          withIncidents: 0,
-        },
         incidentsByError: [],
         processDefinitionStatistics: {items: [], page: {totalItems: 0}},
       }),
@@ -66,7 +60,6 @@ test.describe('dashboard page', () => {
     await page.route(
       URL_API_PATTERN,
       mockResponses({
-        statistics: mockStatistics,
         incidentsByError: mockIncidentsByError,
         processDefinitionStatistics: mockProcessDefinitionStatistics,
       }),
@@ -81,7 +74,6 @@ test.describe('dashboard page', () => {
     await page.route(
       URL_API_PATTERN,
       mockResponses({
-        statistics: mockStatistics,
         incidentsByError: mockIncidentsByError,
         processDefinitionStatistics: mockProcessDefinitionStatistics,
       }),

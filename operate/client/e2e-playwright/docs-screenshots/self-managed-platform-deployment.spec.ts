@@ -10,7 +10,6 @@ import {test} from '../visual-fixtures';
 import {
   mockIncidentsByError,
   mockProcessDefinitionStatistics,
-  mockStatistics as mockDashboardStatistics,
   mockResponses as mockDashboardResponses,
 } from '../mocks/dashboard.mocks';
 import {URL_API_PATTERN} from '../constants';
@@ -25,7 +24,6 @@ test.describe('self managed platform deployment', () => {
     await page.route(
       URL_API_PATTERN,
       mockDashboardResponses({
-        statistics: {running: 0, withIncidents: 0, active: 0},
         incidentsByError: [],
         processDefinitionStatistics: {items: [], page: {totalItems: 0}},
       }),
@@ -42,7 +40,6 @@ test.describe('self managed platform deployment', () => {
     await page.route(
       URL_API_PATTERN,
       mockDashboardResponses({
-        statistics: mockDashboardStatistics,
         incidentsByError: mockIncidentsByError,
         processDefinitionStatistics: mockProcessDefinitionStatistics,
       }),

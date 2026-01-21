@@ -10,18 +10,16 @@ import React from 'react';
 import {render, screen} from 'modules/testing-library';
 import {MemoryRouter} from 'react-router-dom';
 import {PAGE_TITLE} from 'modules/constants';
-import {statisticsStore} from 'modules/stores/statistics';
 import {Dashboard} from './index';
 import {mockIncidentsByError} from './IncidentsByError/index.setup';
 import {mockWithSingleVersion} from './v2/InstancesByProcessDefinition/index.setup';
-import {statistics} from 'modules/mocks/statistics';
-import {mockFetchProcessCoreStatistics} from 'modules/mocks/api/processInstances/fetchProcessCoreStatistics';
 import {mockFetchIncidentsByError} from 'modules/mocks/api/incidents/fetchIncidentsByError';
 import {mockFetchProcessDefinitionStatistics} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionStatistics';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {mockMe} from 'modules/mocks/api/v2/me';
 import {createUser, searchResult} from 'modules/testUtils';
+import {createProcessDefinitionInstancesStatistics} from 'modules/mocks/mockProcessDefinitionStatistics';
 
 type Props = {
   children?: React.ReactNode;
@@ -37,14 +35,20 @@ const Wrapper = ({children}: Props) => {
 
 describe('Dashboard', () => {
   beforeEach(() => {
-    statisticsStore.reset();
     mockMe().withSuccess(createUser());
   });
 
   it('should render', async () => {
-    mockFetchProcessCoreStatistics().withSuccess(statistics);
     mockFetchIncidentsByError().withSuccess(mockIncidentsByError);
     mockFetchProcessDefinitionStatistics().withSuccess(mockWithSingleVersion);
+    mockFetchProcessDefinitionStatistics().withSuccess(
+      searchResult([
+        createProcessDefinitionInstancesStatistics({
+          activeInstancesWithIncidentCount: 877,
+          activeInstancesWithoutIncidentCount: 210,
+        }),
+      ]),
+    );
 
     render(<Dashboard />, {wrapper: Wrapper});
 
@@ -61,8 +65,8 @@ describe('Dashboard', () => {
   });
 
   it('should render empty state (no instances)', async () => {
-    mockFetchProcessCoreStatistics().withSuccess(statistics);
     mockFetchIncidentsByError().withSuccess(mockIncidentsByError);
+    mockFetchProcessDefinitionStatistics().withSuccess(searchResult([]));
     mockFetchProcessDefinitionStatistics().withSuccess(searchResult([]));
 
     render(<Dashboard />, {wrapper: Wrapper});
@@ -76,8 +80,8 @@ describe('Dashboard', () => {
   });
 
   it('should render empty state (no incidents)', async () => {
-    mockFetchProcessCoreStatistics().withSuccess(statistics);
     mockFetchIncidentsByError().withSuccess([]);
+    mockFetchProcessDefinitionStatistics().withSuccess(mockWithSingleVersion);
     mockFetchProcessDefinitionStatistics().withSuccess(mockWithSingleVersion);
 
     render(<Dashboard />, {wrapper: Wrapper});

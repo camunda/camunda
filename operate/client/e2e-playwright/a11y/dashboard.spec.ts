@@ -11,7 +11,6 @@ import {test} from '../visual-fixtures';
 import {
   mockIncidentsByError,
   mockProcessDefinitionStatistics,
-  mockStatistics,
   mockResponses,
 } from '../mocks/dashboard.mocks';
 import {validateResults} from './validateResults';
@@ -35,7 +34,6 @@ test.describe('dashboard', () => {
     await page.route(
       URL_API_PATTERN,
       mockResponses({
-        statistics: mockStatistics,
         incidentsByError: mockIncidentsByError,
         processDefinitionStatistics: mockProcessDefinitionStatistics,
       }),
@@ -56,7 +54,6 @@ test.describe('dashboard', () => {
     await page.route(
       URL_API_PATTERN,
       mockResponses({
-        statistics: mockStatistics,
         incidentsByError: mockIncidentsByError,
         processDefinitionStatistics: mockProcessDefinitionStatistics,
       }),

@@ -231,21 +231,6 @@ type IncidentByErrorDto = {
   processes: ProcessStatisticsDto[];
 };
 
-type ProcessInstanceByNameDto = {
-  bpmnProcessId: string;
-  tenantId: string;
-  processName: null | string;
-  instancesWithActiveIncidentsCount: number;
-  activeInstancesCount: number;
-  processes: ProcessStatisticsDto[];
-};
-
-type CoreStatisticsDto = {
-  running: number;
-  active: number;
-  withIncidents: number;
-};
-
 type DecisionInstanceEntityState = 'EVALUATED' | 'FAILED';
 
 interface DecisionInstanceEntity {
@@ -296,8 +281,6 @@ export type {
   SequenceFlowDto,
   SequenceFlowsDto,
   IncidentByErrorDto,
-  ProcessInstanceByNameDto,
-  CoreStatisticsDto,
   DecisionInstancesDto,
   DecisionDto,
 };

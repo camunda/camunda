@@ -10,7 +10,6 @@ import {test} from '../visual-fixtures';
 import {
   mockIncidentsByError,
   mockProcessDefinitionStatistics,
-  mockStatistics as mockDashboardStatistics,
   mockResponses as mockDashboardResponses,
 } from '../mocks/dashboard.mocks';
 
@@ -39,7 +38,6 @@ test.describe('get familiar with operate', () => {
     await page.route(
       URL_API_PATTERN,
       mockDashboardResponses({
-        statistics: mockDashboardStatistics,
         incidentsByError: mockIncidentsByError,
         processDefinitionStatistics: mockProcessDefinitionStatistics,
       }),
