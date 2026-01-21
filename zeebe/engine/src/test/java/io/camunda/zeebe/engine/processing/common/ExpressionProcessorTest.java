@@ -409,8 +409,12 @@ class ExpressionProcessorTest {
           .isTrue();
 
       evaluationThread.interrupt();
-      blockingEL.release(); // unblock EL so it can notice interrupt/fail fast
-      evaluationThread.join(TimeUnit.SECONDS.toMillis(5));
+      try {
+        evaluationThread.join(TimeUnit.SECONDS.toMillis(5));
+      } finally {
+        // ensure we release the blocking EL to avoid leaking threads
+        blockingEL.release();
+      }
 
       // then
       Assertions.assertThat(evaluationThread.isAlive())
