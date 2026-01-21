@@ -54,10 +54,6 @@ class OperateProcessesPage {
   readonly scheduledOperationsIcons: Locator;
   readonly processInstanceLinkByName: (name: string) => Locator;
   readonly processInstanceLinkByKey: (processInstanceKey: string) => Locator;
-  getOperationAndResultsContainer: (
-    operation: string,
-    resultCount?: number,
-  ) => Locator;
   getParentInstanceCell: (parentInstanceKey: string) => Locator;
   getVersionCells: (version: string) => Locator;
   readonly viewParentInstanceLinkInList: Locator;
@@ -174,15 +170,6 @@ class OperateProcessesPage {
         .filter({hasText: name})
         .first()
         .getByRole('link', {name: /^View instance \d+/});
-    this.getOperationAndResultsContainer = (
-      operation: string,
-      resultCount?: number,
-    ) => {
-      const pattern = resultCount
-        ? new RegExp(`${operation}.*${resultCount} results`)
-        : new RegExp(`${operation}.*\\d+ results`);
-      return page.locator('div').filter({hasText: pattern});
-    };
     this.getParentInstanceCell = (parentInstanceKey: string) =>
       this.dataList.getByRole('cell', {name: parentInstanceKey});
     this.getVersionCells = (version: string) =>
@@ -377,7 +364,7 @@ class OperateProcessesPage {
           await checkbox.waitFor({state: 'attached', timeout: 5000});
           await sleep(200);
           if (!(await checkbox.isChecked())) {
-            await checkbox.click({timeout: 10000});
+            await checkbox.click();
           }
           await sleep(100);
           break;

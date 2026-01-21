@@ -564,6 +564,10 @@ test.describe('Process Instances Filters', () => {
         },
         onFailure: async () => {
           await page.reload();
+          await operateFiltersPanelPage.selectProcess(
+            'Process With Multiple Versions',
+          );
+          await operateFiltersPanelPage.selectVersion('2');
         },
       });
     });

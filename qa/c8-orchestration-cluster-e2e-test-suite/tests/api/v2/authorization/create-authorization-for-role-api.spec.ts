@@ -39,7 +39,8 @@ import {
 
 const CREATE_AUTHORIZATION_ENDPOINT = '/authorizations';
 
-test.describe.serial('Create Authorization API for role - Success and Conflict', () => {
+test.describe
+  .serial('Create Authorization API for role - Success and Conflict', () => {
   const uid = generateUniqueId();
   let successRole = {
     roleId: `role-create-authorization-${uid}`,
@@ -105,10 +106,7 @@ test.describe.serial('Create Authorization API for role - Success and Conflict',
       'ROLE',
       '*',
       'MAPPING_RULE',
-      [
-        'CREATE',
-        'READ'
-      ],
+      ['CREATE', 'READ'],
     );
 
     await expect(async () => {
