@@ -60,7 +60,7 @@ public class DefaultResourceAccessProvider implements ResourceAccessProvider {
     if (authorizationScopes.contains(WILDCARD)) {
       // no authorization check required, user can access
       // the respective resources.
-      return ResourceAccess.wildcard(authorization.with(WILDCARD.getResourceId()));
+      return ResourceAccess.wildcard(authorization.withResourceId(WILDCARD.getResourceId()));
     }
 
     final var authorizedResourceIds =

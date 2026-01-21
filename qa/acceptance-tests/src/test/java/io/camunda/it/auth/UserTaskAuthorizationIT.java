@@ -24,11 +24,15 @@ import io.camunda.client.api.search.enums.ResourceType;
 import io.camunda.client.api.search.response.Authorization;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.qa.util.auth.Authenticated;
+import io.camunda.qa.util.auth.GroupDefinition;
+import io.camunda.qa.util.auth.Membership;
 import io.camunda.qa.util.auth.Permissions;
+import io.camunda.qa.util.auth.TestGroup;
 import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.time.Duration;
 import java.util.List;
@@ -49,6 +53,7 @@ class UserTaskAuthorizationIT {
   private static final String PROCESS_ID_1 = "bpmProcessVariable";
   private static final String PROCESS_ID_2 = "processWithForm";
   private static final String ADMIN = "admin";
+  private static final String USER_WITHOUT_PERMISSIONS = "userWithoutPermissions";
   private static final String USER_WITH_PROCESS_DEF_READ_USER_TASK_PROCESS_1 =
       "userWithProcessDefReadUserTaskProcess1";
   private static final String USER_WITH_PROCESS_DEF_READ_USER_TASK_PROCESS_2 =
@@ -56,6 +61,12 @@ class UserTaskAuthorizationIT {
   private static final String USER_WITH_USER_TASK_READ_WILDCARD = "userWithUserTaskReadWildcard";
   private static final String USER_WITH_USER_TASK_READ_PROCESS_1_FIRST_TASK =
       "userWithUserTaskReadProcessId1FirstTask";
+  private static final String USER_WITH_USER_TASK_READ_BY_ASSIGNEE_PROPERTY = "userAssignee";
+  private static final String USER_WITH_USER_TASK_READ_BY_CANDIDATE_USER_PROPERTY =
+      "userCandidateUser";
+  private static final String USER_WITH_USER_TASK_READ_BY_CANDIDATE_GROUP_PROPERTY =
+      "userCandidateGroup";
+  private static final String GROUP_CANDIDATE_GROUP = "candidateGroup";
 
   // Task keys captured during setup for reuse in tests
   private static long processId1FirstTaskKey;
@@ -68,34 +79,38 @@ class UserTaskAuthorizationIT {
           ADMIN,
           "password",
           List.of(
-              new Permissions(AUTHORIZATION, CREATE, List.of("*")),
-              new Permissions(AUTHORIZATION, READ, List.of("*")),
-              new Permissions(RESOURCE, CREATE, List.of("*")),
-              new Permissions(PROCESS_DEFINITION, CREATE_PROCESS_INSTANCE, List.of("*")),
-              new Permissions(PROCESS_DEFINITION, READ_PROCESS_DEFINITION, List.of("*")),
-              new Permissions(PROCESS_DEFINITION, READ_PROCESS_INSTANCE, List.of("*")),
-              new Permissions(PROCESS_DEFINITION, READ_USER_TASK, List.of("*"))));
+              Permissions.withWildcard(AUTHORIZATION, CREATE),
+              Permissions.withWildcard(AUTHORIZATION, READ),
+              Permissions.withWildcard(RESOURCE, CREATE),
+              Permissions.withWildcard(PROCESS_DEFINITION, CREATE_PROCESS_INSTANCE),
+              Permissions.withWildcard(PROCESS_DEFINITION, READ_PROCESS_DEFINITION),
+              Permissions.withWildcard(PROCESS_DEFINITION, READ_PROCESS_INSTANCE),
+              Permissions.withWildcard(PROCESS_DEFINITION, READ_USER_TASK)));
+
+  @UserDefinition
+  private static final TestUser USER_WITHOUT_PERMISSIONS_USER =
+      new TestUser(USER_WITHOUT_PERMISSIONS, "password", List.of());
 
   @UserDefinition
   private static final TestUser USER_WITH_PROCESS_DEF_READ_USER_TASK_PROCESS_1_USER =
       new TestUser(
           USER_WITH_PROCESS_DEF_READ_USER_TASK_PROCESS_1,
           "password",
-          List.of(new Permissions(PROCESS_DEFINITION, READ_USER_TASK, List.of(PROCESS_ID_1))));
+          List.of(Permissions.withResourceId(PROCESS_DEFINITION, READ_USER_TASK, PROCESS_ID_1)));
 
   @UserDefinition
   private static final TestUser USER_WITH_PROCESS_DEF_READ_USER_TASK_PROCESS_2_USER =
       new TestUser(
           USER_WITH_PROCESS_DEF_READ_USER_TASK_PROCESS_2,
           "password",
-          List.of(new Permissions(PROCESS_DEFINITION, READ_USER_TASK, List.of(PROCESS_ID_2))));
+          List.of(Permissions.withResourceId(PROCESS_DEFINITION, READ_USER_TASK, PROCESS_ID_2)));
 
   @UserDefinition
   private static final TestUser USER_WITH_USER_TASK_READ_WILDCARD_USER =
       new TestUser(
           USER_WITH_USER_TASK_READ_WILDCARD,
           "password",
-          List.of(new Permissions(USER_TASK, READ, List.of("*"))));
+          List.of(Permissions.withWildcard(USER_TASK, READ)));
 
   @UserDefinition
   private static final TestUser USER_WITH_USER_TASK_READ_PROCESS_1_FIRST_TASK_USER =
@@ -103,6 +118,36 @@ class UserTaskAuthorizationIT {
           USER_WITH_USER_TASK_READ_PROCESS_1_FIRST_TASK,
           "password",
           List.of()); // Empty permissions - will be added dynamically in @BeforeAll
+
+  @UserDefinition
+  private static final TestUser USER_WITH_ASSIGNEE_PROPERTY_USER =
+      new TestUser(
+          USER_WITH_USER_TASK_READ_BY_ASSIGNEE_PROPERTY,
+          "password",
+          List.of(Permissions.withPropertyName(USER_TASK, READ, "assignee")));
+
+  @UserDefinition
+  private static final TestUser USER_WITH_CANDIDATE_USER_PROPERTY_USER =
+      new TestUser(
+          USER_WITH_USER_TASK_READ_BY_CANDIDATE_USER_PROPERTY,
+          "password",
+          List.of(Permissions.withPropertyName(USER_TASK, READ, "candidateUsers")));
+
+  @UserDefinition
+  private static final TestUser USER_WITH_CANDIDATE_GROUP_PROPERTY_USER =
+      new TestUser(
+          USER_WITH_USER_TASK_READ_BY_CANDIDATE_GROUP_PROPERTY,
+          "password",
+          List.of(Permissions.withPropertyName(USER_TASK, READ, "candidateGroups")));
+
+  @GroupDefinition
+  private static final TestGroup CANDIDATE_GROUP =
+      TestGroup.withoutPermissions(
+          GROUP_CANDIDATE_GROUP,
+          GROUP_CANDIDATE_GROUP,
+          List.of(
+              new Membership(
+                  USER_WITH_USER_TASK_READ_BY_CANDIDATE_GROUP_PROPERTY, EntityType.USER)));
 
   @BeforeAll
   static void setUp(@Authenticated(ADMIN) final CamundaClient adminClient) {
@@ -298,6 +343,149 @@ class UserTaskAuthorizationIT {
     assertThat(problemException.details().getDetail())
         .isEqualTo(
             "Unauthorized to perform any of the operations: 'READ_USER_TASK' on 'PROCESS_DEFINITION' or 'READ' on 'USER_TASK'");
+  }
+
+  @Test
+  void searchShouldReturnTaskForUserWithAssigneeProperty(
+      @Authenticated(USER_WITH_USER_TASK_READ_BY_ASSIGNEE_PROPERTY)
+          final CamundaClient camundaClient) {
+    // when
+    final var result = camundaClient.newUserTaskSearchRequest().send().join();
+
+    // then - return only task from PROCESS_ID_2(processWithForm) where assignee=userAssignee
+    assertThat(result.items())
+        .singleElement()
+        .satisfies(
+            task -> {
+              assertThat(task.getBpmnProcessId()).isEqualTo(PROCESS_ID_2);
+              assertThat(task.getAssignee())
+                  .isEqualTo(USER_WITH_USER_TASK_READ_BY_ASSIGNEE_PROPERTY);
+            });
+  }
+
+  @Test
+  void getByKeyShouldReturnTaskForUserWithAssigneeProperty(
+      @Authenticated(USER_WITH_USER_TASK_READ_BY_ASSIGNEE_PROPERTY)
+          final CamundaClient camundaClient) {
+    // when
+    final var result = camundaClient.newUserTaskGetRequest(processId2TaskKey).send().join();
+
+    // then
+    assertThat(result).isNotNull();
+    assertThat(result.getBpmnProcessId()).isEqualTo(PROCESS_ID_2);
+    assertThat(result.getAssignee()).isEqualTo(USER_WITH_USER_TASK_READ_BY_ASSIGNEE_PROPERTY);
+  }
+
+  @Test
+  void getByKeyShouldReturnForbiddenForUserWithAssigneePropertyAccessingUnauthorizedTask(
+      @Authenticated(USER_WITH_USER_TASK_READ_BY_ASSIGNEE_PROPERTY)
+          final CamundaClient camundaClient) {
+    // when - try to access task from PROCESS_ID_1 without assignee match
+    final ThrowingCallable executeGet =
+        () -> camundaClient.newUserTaskGetRequest(processId1FirstTaskKey).send().join();
+
+    // then
+    final var problemException =
+        assertThatExceptionOfType(ProblemException.class).isThrownBy(executeGet).actual();
+    assertThat(problemException.code()).isEqualTo(403);
+    assertThat(problemException.details().getDetail())
+        .isEqualTo(
+            "Unauthorized to perform any of the operations: 'READ_USER_TASK' on 'PROCESS_DEFINITION' or 'READ' on 'USER_TASK'");
+  }
+
+  @Test
+  void searchShouldReturnTaskForUserWithCandidateUserProperty(
+      @Authenticated(USER_WITH_USER_TASK_READ_BY_CANDIDATE_USER_PROPERTY)
+          final CamundaClient camundaClient) {
+    // when
+    final var result = camundaClient.newUserTaskSearchRequest().send().join();
+
+    // then - return only task from PROCESS_ID_1 where candidateUsers includes userCandidateUser
+    assertThat(result.items())
+        .singleElement()
+        .satisfies(
+            task -> {
+              assertThat(task.getBpmnProcessId()).isEqualTo(PROCESS_ID_1);
+              assertThat(task.getCandidateUsers())
+                  .contains(USER_WITH_USER_TASK_READ_BY_CANDIDATE_USER_PROPERTY);
+            });
+  }
+
+  @Test
+  void getByKeyShouldReturnTaskForUserWithCandidateUserProperty(
+      @Authenticated(USER_WITH_USER_TASK_READ_BY_CANDIDATE_USER_PROPERTY)
+          final CamundaClient camundaClient) {
+    // when
+    final var result = camundaClient.newUserTaskGetRequest(processId1SecondTaskKey).send().join();
+
+    // then
+    assertThat(result).isNotNull();
+    assertThat(result.getBpmnProcessId()).isEqualTo(PROCESS_ID_1);
+    assertThat(result.getCandidateUsers())
+        .contains(USER_WITH_USER_TASK_READ_BY_CANDIDATE_USER_PROPERTY);
+  }
+
+  @Test
+  void searchShouldReturnEmptyForUserBeingACandidateUserToTaskWithoutPermissions(
+      @Authenticated(USER_WITHOUT_PERMISSIONS) final CamundaClient camundaClient) {
+    // given - user is candidate user for form_process task in PROCESS_ID_2 but has no
+    // USER_TASK[READ](by candidateUsers) permission
+
+    // when
+    final var result = camundaClient.newUserTaskSearchRequest().send().join();
+
+    // then - return empty list, being candidate user alone is insufficient without proper
+    // permissions
+    assertThat(result.items()).isEmpty();
+  }
+
+  @Test
+  void getByKeyShouldReturnForbiddenForUserBeingACandidateUserToTaskWithoutPermissions(
+      @Authenticated(USER_WITHOUT_PERMISSIONS) final CamundaClient camundaClient) {
+    // given - user is candidate user for form_process task in PROCESS_ID_2 but has no
+    // USER_TASK[READ](by candidateUsers) permission
+
+    // when
+    final ThrowingCallable executeGet =
+        () -> camundaClient.newUserTaskGetRequest(processId2TaskKey).send().join();
+
+    // then - return 403, being candidate user alone is insufficient without proper permissions
+    final var problemException =
+        assertThatExceptionOfType(ProblemException.class).isThrownBy(executeGet).actual();
+    assertThat(problemException.code()).isEqualTo(403);
+    assertThat(problemException.details().getDetail())
+        .isEqualTo(
+            "Unauthorized to perform any of the operations: 'READ_USER_TASK' on 'PROCESS_DEFINITION' or 'READ' on 'USER_TASK'");
+  }
+
+  @Test
+  void searchShouldReturnTaskForUserWithCandidateGroupProperty(
+      @Authenticated(USER_WITH_USER_TASK_READ_BY_CANDIDATE_GROUP_PROPERTY)
+          final CamundaClient camundaClient) {
+    // when
+    final var result = camundaClient.newUserTaskSearchRequest().send().join();
+
+    // then - return only task from PROCESS_ID_2 where candidateGroups contains 'candidateGroup'
+    assertThat(result.items())
+        .singleElement()
+        .satisfies(
+            task -> {
+              assertThat(task.getBpmnProcessId()).isEqualTo(PROCESS_ID_2);
+              assertThat(task.getCandidateGroups()).contains(GROUP_CANDIDATE_GROUP);
+            });
+  }
+
+  @Test
+  void getByKeyShouldReturnTaskForUserWithCandidateGroupProperty(
+      @Authenticated(USER_WITH_USER_TASK_READ_BY_CANDIDATE_GROUP_PROPERTY)
+          final CamundaClient camundaClient) {
+    // when
+    final var result = camundaClient.newUserTaskGetRequest(processId2TaskKey).send().join();
+
+    // then
+    assertThat(result).isNotNull();
+    assertThat(result.getBpmnProcessId()).isEqualTo(PROCESS_ID_2);
+    assertThat(result.getCandidateGroups()).contains(GROUP_CANDIDATE_GROUP);
   }
 
   private static long getUserTaskKey(final CamundaClient camundaClient, final String processId) {

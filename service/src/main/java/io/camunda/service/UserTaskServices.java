@@ -10,9 +10,9 @@ package io.camunda.service;
 import static io.camunda.search.query.SearchQueryBuilders.auditLogSearchQuery;
 import static io.camunda.search.query.SearchQueryBuilders.userTaskSearchQuery;
 import static io.camunda.search.query.SearchQueryBuilders.variableSearchQuery;
-import static io.camunda.security.auth.Authorization.withAuthorization;
 import static io.camunda.service.authorization.Authorizations.PROCESS_DEFINITION_READ_USER_TASK_AUTHORIZATION;
 import static io.camunda.service.authorization.Authorizations.USER_TASK_READ_AUTHORIZATION;
+import static io.camunda.service.authorization.Authorizations.USER_TASK_READ_BY_PROPERTIES_AUTHORIZATION;
 
 import io.camunda.search.clients.UserTaskSearchClient;
 import io.camunda.search.entities.AuditLogEntity;
@@ -27,6 +27,7 @@ import io.camunda.search.query.VariableQuery;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.SecurityContext;
+import io.camunda.security.auth.condition.AuthorizationCondition;
 import io.camunda.security.auth.condition.AuthorizationConditions;
 import io.camunda.service.cache.ProcessCache;
 import io.camunda.service.cache.ProcessCacheItem;
@@ -54,6 +55,14 @@ public final class UserTaskServices
 
   private static final Predicate<UserTaskEntity> NEEDS_CACHE_ENRICHMENT =
       u -> !u.hasName() || !u.hasProcessName();
+
+  private static final AuthorizationCondition USER_TASK_AUTHORIZATIONS =
+      AuthorizationConditions.anyOf(
+          PROCESS_DEFINITION_READ_USER_TASK_AUTHORIZATION.withResourceIdSupplier(
+              UserTaskEntity::processDefinitionId),
+          USER_TASK_READ_AUTHORIZATION.withResourceIdSupplier(
+              ut -> String.valueOf(ut.userTaskKey())),
+          USER_TASK_READ_BY_PROPERTIES_AUTHORIZATION);
 
   private final UserTaskSearchClient userTaskSearchClient;
   private final FormServices formServices;
@@ -108,10 +117,7 @@ public final class UserTaskServices
   public SearchQueryResult<UserTaskEntity> search(final UserTaskQuery query) {
     return search(
         query,
-        securityContextProvider.provideSecurityContext(
-            authentication,
-            AuthorizationConditions.anyOf(
-                PROCESS_DEFINITION_READ_USER_TASK_AUTHORIZATION, USER_TASK_READ_AUTHORIZATION)));
+        securityContextProvider.provideSecurityContext(authentication, USER_TASK_AUTHORIZATIONS));
   }
 
   private SearchQueryResult<UserTaskEntity> search(
@@ -202,13 +208,7 @@ public final class UserTaskServices
                 userTaskSearchClient
                     .withSecurityContext(
                         securityContextProvider.provideSecurityContext(
-                            authentication,
-                            AuthorizationConditions.anyOf(
-                                withAuthorization(
-                                    PROCESS_DEFINITION_READ_USER_TASK_AUTHORIZATION,
-                                    UserTaskEntity::processDefinitionId),
-                                withAuthorization(
-                                    USER_TASK_READ_AUTHORIZATION, String.valueOf(userTaskKey)))))
+                            authentication, USER_TASK_AUTHORIZATIONS))
                     .getUserTask(userTaskKey));
 
     final var cachedItem = processCache.getCacheItem(result.processDefinitionKey());
