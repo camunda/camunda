@@ -7,60 +7,32 @@
  */
 
 import {z} from 'zod';
+import {API_VERSION, type Endpoint} from '../common';
 import {
-	API_VERSION,
-	advancedDateTimeFilterSchema,
-	advancedStringFilterSchema,
-	getEnumFilterSchema,
-	getQueryRequestBodySchema,
-	getQueryResponseBodySchema,
-	type Endpoint,
-} from './common';
+	auditLogEntityTypeEnumSchema,
+	auditLogOperationTypeEnumSchema,
+	auditLogActorTypeEnumSchema,
+	auditLogResultEnumSchema,
+	auditLogCategoryEnumSchema,
+	auditLogResultSchema,
+	auditLogFilterSchema as genAuditLogFilterSchema,
+	auditLogSearchQueryRequestSchema,
+	auditLogSearchQueryResultSchema,
+} from './gen';
 
-const auditLogEntityTypeSchema = z.enum([
-	'AUTHORIZATION',
-	'BATCH',
-	'DECISION',
-	'GROUP',
-	'INCIDENT',
-	'JOB',
-	'MAPPING_RULE',
-	'PROCESS_INSTANCE',
-	'ROLE',
-	'TENANT',
-	'USER',
-	'USER_TASK',
-	'RESOURCE',
-	'VARIABLE',
-	'CLIENT',
-]);
+const auditLogEntityTypeSchema = auditLogEntityTypeEnumSchema;
 type AuditLogEntityType = z.infer<typeof auditLogEntityTypeSchema>;
 
-const auditLogOperationTypeSchema = z.enum([
-	'ASSIGN',
-	'CANCEL',
-	'COMPLETE',
-	'CREATE',
-	'DELETE',
-	'EVALUATE',
-	'MIGRATE',
-	'MODIFY',
-	'RESOLVE',
-	'RESUME',
-	'SUSPEND',
-	'UNASSIGN',
-	'UNKNOWN',
-	'UPDATE',
-]);
+const auditLogOperationTypeSchema = auditLogOperationTypeEnumSchema;
 type AuditLogOperationType = z.infer<typeof auditLogOperationTypeSchema>;
 
-const auditLogActorTypeSchema = z.enum(['USER', 'CLIENT', 'ANONYMOUS', 'UNKNOWN']);
+const auditLogActorTypeSchema = auditLogActorTypeEnumSchema;
 type AuditLogActorType = z.infer<typeof auditLogActorTypeSchema>;
 
-const auditLogResultSchema = z.enum(['SUCCESS', 'FAIL']);
-type AuditLogResult = z.infer<typeof auditLogResultSchema>;
+const auditLogResultStatusSchema = auditLogResultEnumSchema;
+type AuditLogResultStatus = z.infer<typeof auditLogResultStatusSchema>;
 
-const auditLogCategorySchema = z.enum(['DEPLOYED_RESOURCES', 'USER_TASKS', 'ADMIN']);
+const auditLogCategorySchema = auditLogCategoryEnumSchema;
 type AuditLogCategory = z.infer<typeof auditLogCategorySchema>;
 
 const auditLogBatchOperationTypeSchema = z.enum([
@@ -76,99 +48,15 @@ const auditLogBatchOperationTypeSchema = z.enum([
 	'DELETE_DECISION_INSTANCE',
 ]);
 
-const auditLogSchema = z.object({
-	auditLogKey: z.string(),
-	entityKey: z.string(),
-	entityType: auditLogEntityTypeSchema,
-	operationType: auditLogOperationTypeSchema,
-	batchOperationKey: z.string().nullable(),
-	batchOperationType: auditLogBatchOperationTypeSchema.nullable(),
-	timestamp: z.string(),
-	actorId: z.string(),
-	actorType: auditLogActorTypeSchema,
-	tenantId: z.string().nullable(),
-	result: auditLogResultSchema,
-	category: auditLogCategorySchema,
-	processDefinitionId: z.string().nullable(),
-	processDefinitionKey: z.string().nullable(),
-	processInstanceKey: z.string().nullable(),
-	rootProcessInstanceKey: z.string().nullable(),
-	elementInstanceKey: z.string().nullable(),
-	jobKey: z.string().nullable(),
-	userTaskKey: z.string().nullable(),
-	decisionRequirementsId: z.string().nullable(),
-	decisionRequirementsKey: z.string().nullable(),
-	decisionDefinitionId: z.string().nullable(),
-	decisionDefinitionKey: z.string().nullable(),
-	decisionEvaluationKey: z.string().nullable(),
-	deploymentKey: z.string().nullable(),
-	formKey: z.string().nullable(),
-	resourceKey: z.string().nullable(),
-	relatedEntityKey: z.string().nullable(),
-	relatedEntityType: auditLogEntityTypeSchema.nullable(),
-	entityDescription: z.string().nullable(),
-	agentElementId: z.string().nullable(),
-});
+const auditLogSchema = auditLogResultSchema;
 type AuditLog = z.infer<typeof auditLogSchema>;
 
-const auditLogFilterSchema = z
-	.object({
-		auditLogKey: advancedStringFilterSchema.optional(),
-		processDefinitionKey: advancedStringFilterSchema.optional(),
-		processDefinitionId: advancedStringFilterSchema.optional(),
-		processInstanceKey: advancedStringFilterSchema.optional(),
-		elementInstanceKey: advancedStringFilterSchema.optional(),
-		operationType: getEnumFilterSchema(auditLogOperationTypeSchema).optional(),
-		result: getEnumFilterSchema(auditLogResultSchema).optional(),
-		timestamp: advancedDateTimeFilterSchema.optional(),
-		actorId: advancedStringFilterSchema.optional(),
-		actorType: getEnumFilterSchema(auditLogActorTypeSchema).optional(),
-		entityType: getEnumFilterSchema(auditLogEntityTypeSchema).optional(),
-		tenantId: advancedStringFilterSchema.optional(),
-		category: getEnumFilterSchema(auditLogCategorySchema).optional(),
-		deploymentKey: advancedStringFilterSchema.optional(),
-		formKey: advancedStringFilterSchema.optional(),
-		resourceKey: advancedStringFilterSchema.optional(),
-		relatedEntityType: getEnumFilterSchema(auditLogEntityTypeSchema).optional(),
-		relatedEntityKey: advancedStringFilterSchema.optional(),
-		entityDescription: advancedStringFilterSchema.optional(),
-	})
-	.partial();
+const auditLogFilterSchema = genAuditLogFilterSchema;
 
-const auditLogSortFieldEnum = z.enum([
-	'actorId',
-	'actorType',
-	'auditLogKey',
-	'batchOperationKey',
-	'batchOperationType',
-	'category',
-	'decisionDefinitionId',
-	'decisionDefinitionKey',
-	'decisionEvaluationKey',
-	'decisionRequirementsId',
-	'decisionRequirementsKey',
-	'elementInstanceKey',
-	'entityKey',
-	'entityType',
-	'jobKey',
-	'operationType',
-	'processDefinitionId',
-	'processDefinitionKey',
-	'processInstanceKey',
-	'result',
-	'tenantId',
-	'timestamp',
-	'userTaskKey',
-]);
-type AuditLogSortField = z.infer<typeof auditLogSortFieldEnum>;
-
-const queryAuditLogsRequestBodySchema = getQueryRequestBodySchema({
-	sortFields: auditLogSortFieldEnum.options as [string, ...string[]],
-	filter: auditLogFilterSchema,
-});
+const queryAuditLogsRequestBodySchema = auditLogSearchQueryRequestSchema;
 type QueryAuditLogsRequestBody = z.infer<typeof queryAuditLogsRequestBodySchema>;
 
-const queryAuditLogsResponseBodySchema = getQueryResponseBodySchema(auditLogSchema);
+const queryAuditLogsResponseBodySchema = auditLogSearchQueryResultSchema;
 type QueryAuditLogsResponseBody = z.infer<typeof queryAuditLogsResponseBodySchema>;
 
 const queryAuditLogs: Endpoint = {
@@ -188,11 +76,10 @@ export {
 	auditLogEntityTypeSchema,
 	auditLogOperationTypeSchema,
 	auditLogActorTypeSchema,
-	auditLogResultSchema,
+	auditLogResultStatusSchema,
 	auditLogCategorySchema,
 	auditLogSchema,
 	auditLogFilterSchema,
-	auditLogSortFieldEnum,
 	queryAuditLogsRequestBodySchema,
 	queryAuditLogsResponseBodySchema,
 	getAuditLogResponseBodySchema,
@@ -204,9 +91,8 @@ export type {
 	AuditLogEntityType,
 	AuditLogOperationType,
 	AuditLogActorType,
-	AuditLogResult,
+	AuditLogResultStatus,
 	AuditLogCategory,
-	AuditLogSortField,
 	QueryAuditLogsRequestBody,
 	QueryAuditLogsResponseBody,
 	GetAuditLogResponseBody,
