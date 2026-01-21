@@ -7,112 +7,46 @@
  */
 
 import {z} from 'zod';
+import {API_VERSION, type Endpoint} from '../common';
 import {
-	API_VERSION,
-	advancedStringFilterSchema,
-	getQueryRequestBodySchema,
-	getQueryResponseBodySchema,
-	getEnumFilterSchema,
-	type Endpoint,
-	basicStringFilterSchema,
-} from '../common';
+	jobStateEnumSchema,
+	jobKindEnumSchema,
+	jobListenerEventTypeEnumSchema,
+	jobSearchResultSchema,
+	jobSearchQuerySchema,
+	jobSearchQueryResultSchema,
+	jobActivationRequestSchema,
+	jobActivationResultSchema,
+	activatedJobResultSchema,
+	jobFailRequestSchema,
+	jobErrorRequestSchema,
+	jobCompletionRequestSchema,
+	jobUpdateRequestSchema,
+	jobChangesetSchema,
+	jobResultSchema,
+	jobResultCorrectionsSchema,
+	jobStateFilterPropertySchema,
+	jobKindFilterPropertySchema,
+	jobListenerEventTypeFilterPropertySchema,
+} from './gen';
 
-const jobStateSchema = z.enum([
-	'CREATED',
-	'COMPLETED',
-	'FAILED',
-	'RETRIES_UPDATED',
-	'TIMED_OUT',
-	'CANCELED',
-	'ERROR_THROWN',
-	'MIGRATED',
-]);
+const jobStateSchema = jobStateEnumSchema;
 type JobState = z.infer<typeof jobStateSchema>;
 
-const jobKindSchema = z.enum(['BPMN_ELEMENT', 'EXECUTION_LISTENER', 'TASK_LISTENER']);
+const jobKindSchema = jobKindEnumSchema;
 type JobKind = z.infer<typeof jobKindSchema>;
 
-const listenerEventTypeSchema = z.enum([
-	'UNSPECIFIED',
-	'START',
-	'END',
-	'CREATING',
-	'ASSIGNING',
-	'UPDATING',
-	'COMPLETING',
-	'CANCELING',
-]);
+const listenerEventTypeSchema = jobListenerEventTypeEnumSchema;
 type ListenerEventType = z.infer<typeof listenerEventTypeSchema>;
 
-const jobStateFilterSchema = getEnumFilterSchema(jobStateSchema);
-const jobKindFilterSchema = getEnumFilterSchema(jobKindSchema);
-const listenerEventTypeFilterSchema = getEnumFilterSchema(listenerEventTypeSchema);
+const jobStateFilterSchema = jobStateFilterPropertySchema;
+const jobKindFilterSchema = jobKindFilterPropertySchema;
+const listenerEventTypeFilterSchema = jobListenerEventTypeFilterPropertySchema;
 
-const jobSchema = z.object({
-	jobKey: z.string(),
-	type: z.string(),
-	worker: z.string(),
-	state: jobStateSchema,
-	kind: jobKindSchema,
-	listenerEventType: listenerEventTypeSchema,
-	retries: z.number(),
-	isDenied: z.boolean(),
-	deniedReason: z.string(),
-	hasFailedWithRetriesLeft: z.boolean(),
-	errorCode: z.string(),
-	errorMessage: z.string(),
-	customHeaders: z.record(z.string(), z.unknown()).optional(),
-	deadline: z.string(),
-	endTime: z.string(),
-	processDefinitionId: z.string(),
-	processDefinitionKey: z.string(),
-	processInstanceKey: z.string(),
-	elementId: z.string(),
-	elementInstanceKey: z.string(),
-	tenantId: z.string(),
-});
+const jobSchema = jobSearchResultSchema;
 type Job = z.infer<typeof jobSchema>;
 
-const queryJobsRequestBodySchema = getQueryRequestBodySchema({
-	sortFields: [
-		'jobKey',
-		'type',
-		'worker',
-		'state',
-		'kind',
-		'listenerEventType',
-		'retries',
-		'isDenied',
-		'deniedReason',
-		'hasFailedWithRetriesLeft',
-		'errorCode',
-		'errorMessage',
-		'customHeaders',
-		'deadline',
-		'endTime',
-		'processDefinitionId',
-		'processDefinitionKey',
-		'processInstanceKey',
-		'elementId',
-		'elementInstanceKey',
-		'tenantId',
-	] as const,
-	filter: z.object({
-		jobKey: basicStringFilterSchema.optional(),
-		type: advancedStringFilterSchema.optional(),
-		worker: advancedStringFilterSchema.optional(),
-		state: jobStateFilterSchema.optional(),
-		kind: jobKindFilterSchema.optional(),
-		listenerEventType: listenerEventTypeFilterSchema.optional(),
-		processDefinitionId: advancedStringFilterSchema.optional(),
-		processDefinitionKey: basicStringFilterSchema.optional(),
-		processInstanceKey: basicStringFilterSchema.optional(),
-		elementId: advancedStringFilterSchema.optional(),
-		elementInstanceKey: basicStringFilterSchema.optional(),
-		tenantId: advancedStringFilterSchema.optional(),
-	}),
-});
-
+const queryJobsRequestBodySchema = jobSearchQuerySchema;
 type QueryJobsRequestBody = z.infer<typeof queryJobsRequestBodySchema>;
 
 const queryJobs: Endpoint = {
@@ -122,41 +56,16 @@ const queryJobs: Endpoint = {
 	},
 };
 
-const queryJobsResponseBodySchema = getQueryResponseBodySchema(jobSchema);
+const queryJobsResponseBodySchema = jobSearchQueryResultSchema;
 type QueryJobsResponseBody = z.infer<typeof queryJobsResponseBodySchema>;
 
-const activateJobsRequestBodySchema = z.object({
-	type: z.string(),
-	worker: z.string().optional(),
-	timeout: z.number(),
-	maxJobsToActivate: z.number(),
-	fetchVariable: z.array(z.string()).optional(),
-	requestTimeout: z.number().optional(),
-	tenantIds: z.array(z.string()).optional(),
-});
+const activateJobsRequestBodySchema = jobActivationRequestSchema;
 type ActivateJobsRequestBody = z.infer<typeof activateJobsRequestBodySchema>;
 
-const activatedJobSchema = z.object({
-	type: z.string(),
-	processDefinitionId: z.string(),
-	processDefinitionVersion: z.number(),
-	elementId: z.string(),
-	customHeaders: z.record(z.string(), z.unknown()).optional(),
-	worker: z.string(),
-	retries: z.number(),
-	deadline: z.number(),
-	variables: z.record(z.string(), z.unknown()).optional(),
-	tenantId: z.string(),
-	jobKey: z.string(),
-	processInstanceKey: z.string(),
-	processDefinitionKey: z.string(),
-	elementInstanceKey: z.string(),
-});
+const activatedJobSchema = activatedJobResultSchema;
 type ActivatedJob = z.infer<typeof activatedJobSchema>;
 
-const activateJobsResponseBodySchema = z.object({
-	jobs: z.array(activatedJobSchema),
-});
+const activateJobsResponseBodySchema = jobActivationResultSchema;
 type ActivateJobsResponseBody = z.infer<typeof activateJobsResponseBodySchema>;
 
 const activateJobs: Endpoint = {
@@ -166,15 +75,10 @@ const activateJobs: Endpoint = {
 	},
 };
 
-const failJobRequestBodySchema = z.object({
-	retries: z.number().optional(),
-	errorMessage: z.string().optional(),
-	retryBackOff: z.number().optional(),
-	variables: z.record(z.string(), z.unknown()).optional(),
-});
+const failJobRequestBodySchema = jobFailRequestSchema;
 type FailJobRequestBody = z.infer<typeof failJobRequestBodySchema>;
 
-const failJob: Endpoint<Pick<Job, 'jobKey'>> = {
+const failJob: Endpoint<{jobKey: string}> = {
 	method: 'POST',
 	getUrl(params) {
 		const {jobKey} = params;
@@ -183,14 +87,10 @@ const failJob: Endpoint<Pick<Job, 'jobKey'>> = {
 	},
 };
 
-const throwJobErrorRequestBodySchema = z.object({
-	errorCode: z.string(),
-	errorMessage: z.string().optional(),
-	variables: z.record(z.string(), z.unknown()).optional(),
-});
+const throwJobErrorRequestBodySchema = jobErrorRequestSchema;
 type ThrowJobErrorRequestBody = z.infer<typeof throwJobErrorRequestBodySchema>;
 
-const throwJobError: Endpoint<Pick<Job, 'jobKey'>> = {
+const throwJobError: Endpoint<{jobKey: string}> = {
 	method: 'POST',
 	getUrl(params) {
 		const {jobKey} = params;
@@ -199,23 +99,15 @@ const throwJobError: Endpoint<Pick<Job, 'jobKey'>> = {
 	},
 };
 
-const jobResultCorrectionsSchema = z.object({}).passthrough();
-type JobResultCorrections = z.infer<typeof jobResultCorrectionsSchema>;
+const jobResultCorrections = jobResultCorrectionsSchema;
+type JobResultCorrections = z.infer<typeof jobResultCorrections>;
 
-const jobResultSchema = z.object({
-	denied: z.boolean().optional(),
-	deniedReason: z.string().optional(),
-	corrections: jobResultCorrectionsSchema.optional(),
-});
 type JobResult = z.infer<typeof jobResultSchema>;
 
-const completeJobRequestBodySchema = z.object({
-	variables: z.record(z.string(), z.unknown()).optional(),
-	result: jobResultSchema.optional(),
-});
+const completeJobRequestBodySchema = jobCompletionRequestSchema;
 type CompleteJobRequestBody = z.infer<typeof completeJobRequestBodySchema>;
 
-const completeJob: Endpoint<Pick<Job, 'jobKey'>> = {
+const completeJob: Endpoint<{jobKey: string}> = {
 	method: 'POST',
 	getUrl(params) {
 		const {jobKey} = params;
@@ -224,18 +116,12 @@ const completeJob: Endpoint<Pick<Job, 'jobKey'>> = {
 	},
 };
 
-const jobChangesetSchema = z.object({
-	retries: z.number().optional(),
-	timeout: z.number().optional(),
-});
 type JobChangeset = z.infer<typeof jobChangesetSchema>;
 
-const updateJobRequestBodySchema = z.object({
-	changeset: jobChangesetSchema,
-});
+const updateJobRequestBodySchema = jobUpdateRequestSchema;
 type UpdateJobRequestBody = z.infer<typeof updateJobRequestBodySchema>;
 
-const updateJob: Endpoint<Pick<Job, 'jobKey'>> = {
+const updateJob: Endpoint<{jobKey: string}> = {
 	method: 'PATCH',
 	getUrl(params) {
 		const {jobKey} = params;
