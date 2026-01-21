@@ -241,9 +241,4 @@ public class BatchOperationWriter implements RdbmsWriter {
   public int cleanupHistory(final OffsetDateTime cleanupDate, final int rowsToRemove) {
     return mapper.cleanupHistory(new CleanupBatchOperationHistoryDto(cleanupDate, rowsToRemove));
   }
-
-  public int cleanupItemHistory(final OffsetDateTime cleanupDate, final int rowsToRemove) {
-    return mapper.cleanupItemHistory(
-        new CleanupBatchOperationHistoryDto(cleanupDate, rowsToRemove));
-  }
 }

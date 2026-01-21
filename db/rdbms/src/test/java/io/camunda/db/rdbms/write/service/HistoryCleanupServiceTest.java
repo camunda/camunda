@@ -87,7 +87,6 @@ class HistoryCleanupServiceTest {
         .thenReturn(0);
     when(auditLogWriter.deleteProcessInstanceRelatedData(any(), anyInt())).thenReturn(0);
 
-    when(batchOperationWriter.cleanupItemHistory(any(), anyInt())).thenReturn(0);
     when(batchOperationWriter.cleanupHistory(any(), anyInt())).thenReturn(0);
     when(usageMetricWriter.cleanupMetrics(anyInt(), any(), anyInt())).thenReturn(0);
     when(usageMetricTUWriter.cleanupMetrics(anyInt(), any(), anyInt())).thenReturn(0);
@@ -150,7 +149,6 @@ class HistoryCleanupServiceTest {
         .thenReturn(0);
     when(auditLogWriter.deleteProcessInstanceRelatedData(any(), anyInt())).thenReturn(0);
     when(processInstanceWriter.deleteByKeys(any())).thenReturn(3);
-    when(batchOperationWriter.cleanupItemHistory(any(), anyInt())).thenReturn(1);
     when(batchOperationWriter.cleanupHistory(any(), anyInt())).thenReturn(1);
 
     // when
@@ -178,7 +176,6 @@ class HistoryCleanupServiceTest {
     verify(auditLogWriter).deleteProcessInstanceRelatedData(expiredProcessInstanceKeys, 100);
     // PIs deleted since no child entities were found
     verify(processInstanceWriter).deleteByKeys(expiredProcessInstanceKeys);
-    verify(batchOperationWriter).cleanupItemHistory(CLEANUP_DATE, 100);
     verify(batchOperationWriter).cleanupHistory(CLEANUP_DATE, 100);
   }
 
@@ -200,7 +197,6 @@ class HistoryCleanupServiceTest {
     when(correlatedMessageSubscriptionWriter.deleteProcessInstanceRelatedData(any(), anyInt()))
         .thenReturn(0);
     when(auditLogWriter.deleteProcessInstanceRelatedData(any(), anyInt())).thenReturn(0);
-    when(batchOperationWriter.cleanupItemHistory(any(), anyInt())).thenReturn(1);
     when(batchOperationWriter.cleanupHistory(any(), anyInt())).thenReturn(1);
 
     // when
@@ -219,7 +215,6 @@ class HistoryCleanupServiceTest {
     verify(jobWriter).deleteProcessInstanceRelatedData(expiredProcessInstanceKeys, 100);
     // PIs NOT deleted because child entities were found
     verify(processInstanceWriter, Mockito.never()).deleteByKeys(any());
-    verify(batchOperationWriter).cleanupItemHistory(CLEANUP_DATE, 100);
     verify(batchOperationWriter).cleanupHistory(CLEANUP_DATE, 100);
   }
 

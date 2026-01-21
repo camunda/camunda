@@ -232,9 +232,6 @@ public class HistoryCleanupService {
 
       // Keep existing logic for batch operations (no change needed)
       numDeletedRecords.put(
-          "batchOperationItem",
-          batchOperationWriter.cleanupItemHistory(cleanupDate, cleanupBatchSize));
-      numDeletedRecords.put(
           "batchOperation", batchOperationWriter.cleanupHistory(cleanupDate, cleanupBatchSize));
 
       final long end = System.currentTimeMillis();

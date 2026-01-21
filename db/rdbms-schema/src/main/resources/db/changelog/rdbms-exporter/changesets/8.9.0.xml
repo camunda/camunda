@@ -664,7 +664,6 @@
       <column name="PROCESSED_DATE" type="TIMESTAMP WITH TIME ZONE(3)"/>
       <column name="ERROR_MESSAGE" type="VARCHAR(4000)"/>
       <column name="STATE" type="VARCHAR(20)" defaultValue="ACTIVE"/>
-      <column name="HISTORY_CLEANUP_DATE" type="TIMESTAMP WITH TIME ZONE(3)"/>
     </createTable>
 
     <createTable tableName="${prefix}BATCH_OPERATION_ERROR">
