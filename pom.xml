@@ -79,6 +79,11 @@
               <exclude>operate/client/**/*</exclude>
               <exclude>optimize/client/**/*.md</exclude>
               <exclude>client-components/**/*</exclude>
+              <!--
+              can be removed once upgrading to spotless >= 3.1.0 which supports enabling the
+              YamlFrontMatter flexmark extension
+              -->
+              <exclude>.github/instructions/**/*.md</exclude>
             </excludes>
             <flexmark/>
           </markdown>
