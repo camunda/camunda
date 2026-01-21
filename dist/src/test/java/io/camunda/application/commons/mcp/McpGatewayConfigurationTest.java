@@ -14,6 +14,7 @@ import io.camunda.application.commons.service.CamundaServicesConfiguration;
 import io.camunda.application.initializers.McpGatewayInitializer;
 import io.camunda.gateway.mcp.tool.cluster.ClusterTools;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -32,6 +33,7 @@ class McpGatewayConfigurationTest {
     WebApplicationContextRunner runner =
         new WebApplicationContextRunner()
             .withInitializer(new McpGatewayInitializer())
+            .withBean(MultiTenancyConfiguration.class, MultiTenancyConfiguration::new)
             .withUserConfiguration(McpGatewayConfiguration.class);
 
     final List<Class<?>> mockBeans = new ArrayList<>();
