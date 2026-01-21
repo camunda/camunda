@@ -19,6 +19,7 @@ ARG JATTACH_CHECKSUM_ARM64="288ae5ed87ee7fe0e608c06db5a23a096a6217c9878ede53c4e3
 ARG DIST="distball"
 
 ### Build zeebe from scratch ###
+# hadolint ignore=DL3006
 FROM ${BUILD_IMAGE} AS build
 
 # hadolint ignore=DL3002
