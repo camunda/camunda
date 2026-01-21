@@ -48,7 +48,7 @@ const ProcessOperations: React.FC<Props> = observer(
           });
         },
         onError: (error) => {
-          handleOperationError(error.status);
+          handleOperationError(error?.response?.status);
         },
       },
     );
