@@ -286,6 +286,27 @@ public class SimpleSearchQueryMapper {
     return fields;
   }
 
+  public static io.camunda.gateway.protocol.model.ProcessDefinitionFilter toProcessDefinitionFilter(
+      final io.camunda.gateway.protocol.model.simple.ProcessDefinitionFilter filter) {
+    final var filterModel = new io.camunda.gateway.protocol.model.ProcessDefinitionFilter();
+    if (filter != null) {
+      ofNullable(filter.getName())
+          .map(SimpleSearchQueryMapper::getStringFilter)
+          .ifPresent(filterModel::name);
+      ofNullable(filter.getIsLatestVersion()).ifPresent(filterModel::isLatestVersion);
+      ofNullable(filter.getResourceName()).ifPresent(filterModel::resourceName);
+      ofNullable(filter.getVersion()).ifPresent(filterModel::version);
+      ofNullable(filter.getVersionTag()).ifPresent(filterModel::versionTag);
+      ofNullable(filter.getProcessDefinitionId())
+          .map(SimpleSearchQueryMapper::getStringFilter)
+          .ifPresent(filterModel::processDefinitionId);
+      ofNullable(filter.getTenantId()).ifPresent(filterModel::tenantId);
+      ofNullable(filter.getProcessDefinitionKey()).ifPresent(filterModel::processDefinitionKey);
+      ofNullable(filter.getHasStartForm()).ifPresent(filterModel::hasStartForm);
+    }
+    return filterModel;
+  }
+
   public static io.camunda.gateway.protocol.model.VariableFilter toVariableFilter(
       final io.camunda.gateway.protocol.model.simple.VariableFilter filter) {
     final var filterModel = new io.camunda.gateway.protocol.model.VariableFilter();

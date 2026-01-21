@@ -10,6 +10,7 @@ package io.camunda.gateway.mcp.tool.process.instance;
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.EVENTUAL_CONSISTENCY_NOTE;
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.FILTER_DESCRIPTION;
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.PAGE_DESCRIPTION;
+import static io.camunda.gateway.mcp.tool.ToolDescriptions.PROCESS_DEFINITION_KEY_DESCRIPTION;
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.PROCESS_INSTANCE_KEY_POSITIVE_MESSAGE;
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.SORT_DESCRIPTION;
 
@@ -115,10 +116,7 @@ public class ProcessInstanceTools {
           of timeouts.
           """)
   public CallToolResult createProcessInstance(
-      @McpToolParam(
-              description =
-                  "The unique key identifying the process definition, for example, returned for a process in the deploy resources endpoint.",
-              required = false)
+      @McpToolParam(description = PROCESS_DEFINITION_KEY_DESCRIPTION, required = false)
           final String processDefinitionKey,
       @McpToolParam(
               description =
