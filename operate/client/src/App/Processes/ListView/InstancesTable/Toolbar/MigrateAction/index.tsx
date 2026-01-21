@@ -124,7 +124,7 @@ const MigrateAction: React.FC = observer(() => {
           localStorageKey={localStorageKey}
           onSubmit={handleSubmit}
         >
-          <Stack as={OrderedList} nested gap={5}>
+          <Stack as={OrderedList} gap={5}>
             <ListItem>
               Migrate is used to migrate running process instances to a
               different process definition.
