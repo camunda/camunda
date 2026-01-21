@@ -11,7 +11,6 @@ import {
 	advancedDateTimeFilterSchema,
 	API_VERSION,
 	advancedStringFilterSchema,
-	getCollectionResponseBodySchema,
 	getQueryRequestBodySchema,
 	getQueryResponseBodySchema,
 	type Endpoint,
@@ -22,23 +21,29 @@ import {
 import {
 	processDefinitionSchema,
 	processDefinitionStatisticSchema,
-	processInstanceStateSchema,
 	type ProcessDefinition,
 	type StatisticName,
 	type ProcessDefinitionStatistic,
 } from './processes';
+import {
+	processDefinitionSearchQuerySchema,
+	processDefinitionSearchQueryResultSchema,
+	processDefinitionElementStatisticsQuerySchema,
+	processDefinitionElementStatisticsQueryResultSchema,
+	advancedProcessInstanceStateFilterSchema,
+} from './gen';
 
-const getProcessDefinition: Endpoint<Pick<ProcessDefinition, 'processDefinitionKey'>> = {
+const getProcessDefinition: Endpoint<{processDefinitionKey: string}> = {
 	method: 'GET',
 	getUrl: ({processDefinitionKey}) => `/${API_VERSION}/process-definitions/${processDefinitionKey}`,
 };
 
-const getProcessDefinitionXml: Endpoint<Pick<ProcessDefinition, 'processDefinitionKey'>> = {
+const getProcessDefinitionXml: Endpoint<{processDefinitionKey: string}> = {
 	method: 'GET',
 	getUrl: ({processDefinitionKey}) => `/${API_VERSION}/process-definitions/${processDefinitionKey}/xml`,
 };
 
-const getProcessStartForm: Endpoint<Pick<ProcessDefinition, 'processDefinitionKey'>> = {
+const getProcessStartForm: Endpoint<{processDefinitionKey: string}> = {
 	method: 'GET',
 	getUrl: ({processDefinitionKey}) => `/${API_VERSION}/process-definitions/${processDefinitionKey}/form`,
 };
@@ -47,16 +52,6 @@ const getProcessDefinitionInstanceStatistics: Endpoint = {
 	method: 'POST',
 	getUrl: () => `/${API_VERSION}/process-definitions/statistics/process-instances`,
 };
-
-const advancedProcessInstanceStateFilterSchema = z
-	.object({
-		$eq: processInstanceStateSchema,
-		$neq: processInstanceStateSchema,
-		$exists: z.boolean(),
-		$in: z.array(processInstanceStateSchema),
-		$like: z.string(),
-	})
-	.partial();
 
 const processDefinitionStatisticsVariableFilterSchema = z.object({
 	name: z.string(),
@@ -82,19 +77,13 @@ const processDefinitionStatisticsFilterFieldsSchema = z.object({
 	incidentErrorHashCode: advancedIntegerFilterSchema,
 });
 
-const getProcessDefinitionStatisticsRequestBodySchema = z
-	.object({
-		filter: getOrFilterSchema(processDefinitionStatisticsFilterFieldsSchema.partial()),
-	})
-	.partial();
+const getProcessDefinitionStatisticsRequestBodySchema = processDefinitionElementStatisticsQuerySchema;
 type GetProcessDefinitionStatisticsRequestBody = z.infer<typeof getProcessDefinitionStatisticsRequestBodySchema>;
 
-const getProcessDefinitionStatisticsResponseBodySchema = getCollectionResponseBodySchema(
-	processDefinitionStatisticSchema,
-);
+const getProcessDefinitionStatisticsResponseBodySchema = processDefinitionElementStatisticsQueryResultSchema;
 type GetProcessDefinitionStatisticsResponseBody = z.infer<typeof getProcessDefinitionStatisticsResponseBodySchema>;
 
-type GetProcessDefinitionStatisticsParams = Pick<ProcessDefinition, 'processDefinitionKey'> & {
+type GetProcessDefinitionStatisticsParams = {processDefinitionKey: string} & {
 	statisticName: StatisticName;
 };
 
@@ -104,31 +93,10 @@ const getProcessDefinitionStatistics: Endpoint<GetProcessDefinitionStatisticsPar
 		`/${API_VERSION}/process-definitions/${processDefinitionKey}/statistics/${statisticName}`,
 };
 
-const queryProcessDefinitionsRequestBodySchema = getQueryRequestBodySchema({
-	sortFields: [
-		'processDefinitionKey',
-		'name',
-		'resourceName',
-		'version',
-		'versionTag',
-		'processDefinitionId',
-		'tenantId',
-	] as const,
-	filter: processDefinitionSchema
-		.omit({
-			processDefinitionId: true,
-			name: true,
-		})
-		.extend({
-			isLatestVersion: z.boolean(),
-			processDefinitionId: advancedStringFilterSchema,
-			name: advancedStringFilterSchema,
-		})
-		.partial(),
-});
+const queryProcessDefinitionsRequestBodySchema = processDefinitionSearchQuerySchema;
 type QueryProcessDefinitionsRequestBody = z.infer<typeof queryProcessDefinitionsRequestBodySchema>;
 
-const queryProcessDefinitionsResponseBodySchema = getQueryResponseBodySchema(processDefinitionSchema);
+const queryProcessDefinitionsResponseBodySchema = processDefinitionSearchQueryResultSchema;
 type QueryProcessDefinitionsResponseBody = z.infer<typeof queryProcessDefinitionsResponseBodySchema>;
 
 const queryProcessDefinitions: Endpoint = {
@@ -199,7 +167,7 @@ type GetProcessDefinitionInstanceVersionStatisticsResponseBody = z.infer<
 	typeof getProcessDefinitionInstanceVersionStatisticsResponseBodySchema
 >;
 
-const getProcessDefinitionInstanceVersionStatistics: Endpoint<Pick<ProcessDefinition, 'processDefinitionId'>> = {
+const getProcessDefinitionInstanceVersionStatistics: Endpoint<{processDefinitionId: string}> = {
 	method: 'POST',
 	getUrl: ({processDefinitionId}) =>
 		`/${API_VERSION}/process-definitions/${processDefinitionId}/statistics/process-instances`,
