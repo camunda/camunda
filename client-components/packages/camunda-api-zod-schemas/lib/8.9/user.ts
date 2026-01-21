@@ -67,7 +67,7 @@ const deleteUser: Endpoint<{username: string}> = {
 };
 
 const updateUser: Endpoint<{username: string}> = {
-	method: 'PATCH',
+	method: 'PUT',
 	getUrl(params) {
 		const {username} = params;
 
