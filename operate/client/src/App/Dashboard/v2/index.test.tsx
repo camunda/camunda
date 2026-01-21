@@ -22,6 +22,7 @@ import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {mockMe} from 'modules/mocks/api/v2/me';
 import {createUser, searchResult} from 'modules/testUtils';
+import {createProcessDefinitionInstancesStatistics} from 'modules/mocks/mockProcessDefinitionStatistics';
 
 type Props = {
   children?: React.ReactNode;
@@ -45,6 +46,14 @@ describe('Dashboard', () => {
     mockFetchProcessCoreStatistics().withSuccess(statistics);
     mockFetchIncidentsByError().withSuccess(mockIncidentsByError);
     mockFetchProcessDefinitionStatistics().withSuccess(mockWithSingleVersion);
+    mockFetchProcessDefinitionStatistics().withSuccess(
+      searchResult([
+        createProcessDefinitionInstancesStatistics({
+          activeInstancesWithIncidentCount: 877,
+          activeInstancesWithoutIncidentCount: 210,
+        }),
+      ]),
+    );
 
     render(<Dashboard />, {wrapper: Wrapper});
 
@@ -64,6 +73,7 @@ describe('Dashboard', () => {
     mockFetchProcessCoreStatistics().withSuccess(statistics);
     mockFetchIncidentsByError().withSuccess(mockIncidentsByError);
     mockFetchProcessDefinitionStatistics().withSuccess(searchResult([]));
+    mockFetchProcessDefinitionStatistics().withSuccess(searchResult([]));
 
     render(<Dashboard />, {wrapper: Wrapper});
 
@@ -78,6 +88,7 @@ describe('Dashboard', () => {
   it('should render empty state (no incidents)', async () => {
     mockFetchProcessCoreStatistics().withSuccess(statistics);
     mockFetchIncidentsByError().withSuccess([]);
+    mockFetchProcessDefinitionStatistics().withSuccess(mockWithSingleVersion);
     mockFetchProcessDefinitionStatistics().withSuccess(mockWithSingleVersion);
 
     render(<Dashboard />, {wrapper: Wrapper});
