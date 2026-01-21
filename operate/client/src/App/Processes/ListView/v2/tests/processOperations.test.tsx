@@ -23,7 +23,7 @@ import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/v2/processI
 import {mockMe} from 'modules/mocks/api/v2/me';
 import {mockSearchProcessDefinitions} from 'modules/mocks/api/v2/processDefinitions/searchProcessDefinitions';
 import {mockSearchProcessInstances} from 'modules/mocks/api/v2/processInstances/searchProcessInstances';
-import {mockApplyProcessDefinitionOperation} from 'modules/mocks/api/processes/operations';
+import {mockDeleteResource} from 'modules/mocks/api/v2/resource/deleteResource';
 import {notificationsStore} from 'modules/stores/notifications';
 
 vi.mock('modules/stores/notifications', () => ({
@@ -170,7 +170,7 @@ describe('<ListView /> - operations', () => {
       page: {totalItems: 0},
     });
 
-    mockApplyProcessDefinitionOperation().withServerError(403);
+    mockDeleteResource().withServerError(403);
 
     const {user} = render(<ListView />, {
       wrapper: getWrapper('/processes?process=demoProcess&version=1'),

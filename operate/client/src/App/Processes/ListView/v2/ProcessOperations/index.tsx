@@ -12,7 +12,6 @@ import {OperationItems} from 'modules/components/OperationItems';
 import {DeleteButtonContainer} from 'modules/components/DeleteDefinition/styled';
 import {InlineLoading, Link, ListItem, Stack} from '@carbon/react';
 import {DeleteDefinitionModal} from 'modules/components/DeleteDefinitionModal';
-import {operationsStore} from 'modules/stores/operations';
 import {StructuredList} from 'modules/components/StructuredList';
 import {UnorderedList} from 'modules/components/DeleteDefinitionModal/Warning/styled';
 import {notificationsStore} from 'modules/stores/notifications';
@@ -20,6 +19,7 @@ import {handleOperationError} from 'modules/utils/notifications';
 import {tracking} from 'modules/tracking';
 import {observer} from 'mobx-react';
 import {useRunningInstancesCount} from 'modules/queries/processInstance/useRunningInstancesCount';
+import {useDeleteResource} from 'modules/mutations/resource/useDeleteResource';
 
 type Props = {
   processDefinitionKey: string;
@@ -32,11 +32,28 @@ const ProcessOperations: React.FC<Props> = observer(
     const [isDeleteModalVisible, setIsDeleteModalVisible] =
       useState<boolean>(false);
 
-    const [isOperationRunning, setIsOperationRunning] = useState(false);
-
     const {data: runningInstancesCount} = useRunningInstancesCount({
-      processDefinitionKey: processDefinitionKey,
+      processDefinitionKey,
     });
+
+    const deleteResourceMutation = useDeleteResource(
+      processDefinitionKey,
+      {operationReference: Date.now(), deleteHistory: true},
+      {
+        onSuccess: () => {
+          notificationsStore.displayNotification({
+            kind: 'success',
+            title: 'Operation created',
+            isDismissable: true,
+          });
+        },
+        onError: (error) => {
+          handleOperationError(error?.response?.status);
+        },
+      },
+    );
+
+    const isOperationRunning = deleteResourceMutation.isPending;
 
     return (
       <>
@@ -119,7 +136,6 @@ const ProcessOperations: React.FC<Props> = observer(
           }
           onClose={() => setIsDeleteModalVisible(false)}
           onDelete={() => {
-            setIsOperationRunning(true);
             setIsDeleteModalVisible(false);
 
             tracking.track({
@@ -128,21 +144,7 @@ const ProcessOperations: React.FC<Props> = observer(
               version: processVersion.toString(),
             });
 
-            operationsStore.applyDeleteProcessDefinitionOperation({
-              processDefinitionId: processDefinitionKey,
-              onSuccess: () => {
-                setIsOperationRunning(false);
-                notificationsStore.displayNotification({
-                  kind: 'success',
-                  title: 'Operation created',
-                  isDismissable: true,
-                });
-              },
-              onError: (statusCode: number) => {
-                setIsOperationRunning(false);
-                handleOperationError(statusCode);
-              },
-            });
+            deleteResourceMutation.mutate();
           }}
         />
       </>
