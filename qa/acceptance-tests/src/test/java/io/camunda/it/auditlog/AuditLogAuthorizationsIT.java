@@ -22,6 +22,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.enums.AuditLogCategoryEnum;
+import io.camunda.client.api.search.request.SearchRequestPage;
 import io.camunda.client.api.search.response.AuditLogResult;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
@@ -33,6 +34,7 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
@@ -116,6 +118,10 @@ public class AuditLogAuthorizationsIT {
               new Permissions(PROCESS_DEFINITION, READ_PROCESS_INSTANCE, List.of(PROCESS_A_ID)),
               new Permissions(PROCESS_DEFINITION, READ_USER_TASK, List.of(PROCESS_B_ID))));
 
+  // At test execution time, we already have 100+ audit log entries.
+  // Custom page limit ensures all entries are retrieved for test assertions.
+  private static final Consumer<SearchRequestPage> PAGE_CONFIG = p -> p.limit(200);
+
   private static CamundaClient adminClient;
 
   @BeforeAll
@@ -139,7 +145,7 @@ public class AuditLogAuthorizationsIT {
   void shouldNotAuthorizeWithoutPermissionsSearch(
       @Authenticated(USER_UNAUTHORIZED_NAME) final CamundaClient client) {
     // when
-    final var logs = client.newAuditLogSearchRequest().send().join();
+    final var logs = client.newAuditLogSearchRequest().page(PAGE_CONFIG).execute();
 
     // then
     assertThat(logs.items()).isEmpty();
@@ -173,7 +179,7 @@ public class AuditLogAuthorizationsIT {
       @Authenticated(USER_UNAUTHORIZED_NAME) final CamundaClient unauthorizedClient,
       @Authenticated(USER_A_USERNAME) final CamundaClient authorizedClient) {
     // when
-    final var logs = authorizedClient.newAuditLogSearchRequest().send().join();
+    final var logs = authorizedClient.newAuditLogSearchRequest().page(PAGE_CONFIG).execute();
 
     // then - unauthorized client should throw exception when trying to get by key
     assertThat(logs.items()).isNotEmpty();
@@ -194,7 +200,7 @@ public class AuditLogAuthorizationsIT {
   @Test
   void shouldAuthorizeByTenant(@Authenticated(USER_A_USERNAME) final CamundaClient client) {
     // when
-    final var logs = client.newAuditLogSearchRequest().send().join();
+    final var logs = client.newAuditLogSearchRequest().page(PAGE_CONFIG).execute();
 
     // then
     assertThat(logs.items()).isNotEmpty();
@@ -210,7 +216,7 @@ public class AuditLogAuthorizationsIT {
   void shouldAuthorizeByCategoryWildcard(
       @Authenticated(USER_A_USERNAME) final CamundaClient client) {
     // when
-    final var logs = client.newAuditLogSearchRequest().send().join();
+    final var logs = client.newAuditLogSearchRequest().page(PAGE_CONFIG).execute();
 
     // then
     assertThat(logs.items()).isNotEmpty();
@@ -232,7 +238,7 @@ public class AuditLogAuthorizationsIT {
   @Test
   void shouldAuthorizeByCategory(@Authenticated(USER_AA_USERNAME) final CamundaClient client) {
     // when
-    final var logs = client.newAuditLogSearchRequest().send().join();
+    final var logs = client.newAuditLogSearchRequest().page(PAGE_CONFIG).execute();
 
     // then
     assertThat(logs.items()).isNotEmpty();
@@ -247,7 +253,7 @@ public class AuditLogAuthorizationsIT {
   void shouldAuthorizeByProcessIdWildcard(
       @Authenticated(USER_B_USERNAME) final CamundaClient client) {
     // when
-    final var logs = client.newAuditLogSearchRequest().send().join();
+    final var logs = client.newAuditLogSearchRequest().page(PAGE_CONFIG).execute();
 
     // then
     assertThat(logs.items()).isNotEmpty();
@@ -272,7 +278,7 @@ public class AuditLogAuthorizationsIT {
   @Test
   void shouldAuthorizeByProcessId(@Authenticated(USER_BB_USERNAME) final CamundaClient client) {
     // when
-    final var logs = client.newAuditLogSearchRequest().send().join();
+    final var logs = client.newAuditLogSearchRequest().page(PAGE_CONFIG).execute();
 
     // then
     assertThat(logs.items()).isNotEmpty();
@@ -287,7 +293,7 @@ public class AuditLogAuthorizationsIT {
   void shouldAuthorizeByUserTaskProcessIdWildcard(
       @Authenticated(USER_C_USERNAME) final CamundaClient client) {
     // when
-    final var logs = client.newAuditLogSearchRequest().send().join();
+    final var logs = client.newAuditLogSearchRequest().page(PAGE_CONFIG).execute();
 
     // then
     assertThat(logs.items()).isNotEmpty();
@@ -310,7 +316,7 @@ public class AuditLogAuthorizationsIT {
   void shouldAuthorizeByUserTaskProcessId(
       @Authenticated(USER_CC_USERNAME) final CamundaClient client) {
     // when
-    final var logs = client.newAuditLogSearchRequest().send().join();
+    final var logs = client.newAuditLogSearchRequest().page(PAGE_CONFIG).execute();
 
     // then
     assertThat(logs.items()).isNotEmpty();
@@ -364,7 +370,7 @@ public class AuditLogAuthorizationsIT {
   void shouldAuthorizeWithCompositePermissions(
       @Authenticated(USER_D_USERNAME) final CamundaClient client) {
     // when
-    final var logs = client.newAuditLogSearchRequest().send().join();
+    final var logs = client.newAuditLogSearchRequest().page(PAGE_CONFIG).execute();
 
     // then
     assertThat(logs.items()).isNotEmpty();

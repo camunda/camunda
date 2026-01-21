@@ -17,19 +17,13 @@ import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.enums.OwnerType;
 import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
+import io.camunda.client.api.search.filter.AuthorizationFilter;
 import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.test.util.Strings;
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.util.List;
 import java.util.UUID;
+import java.util.function.Consumer;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -43,7 +37,6 @@ public class RoleIT {
   private static final String EXISTING_ROLE_NAME = "ARoleName";
   private static final ObjectMapper OBJECT_MAPPER =
       new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-  @AutoClose private final HttpClient httpClient = HttpClient.newHttpClient();
 
   @BeforeAll
   static void setup() {
@@ -211,19 +204,23 @@ public class RoleIT {
         .send()
         .join();
 
-    // Verify it was created
-    Awaitility.await()
+    final Consumer<AuthorizationFilter> createdAuthorizationFilter =
+        af ->
+            af.resourceIds("resourceId")
+                .resourceType(ResourceType.RESOURCE)
+                .ownerType(OwnerType.ROLE)
+                .ownerId(roleId);
+
+    Awaitility.await("Authorization was created")
         .untilAsserted(
             () ->
                 assertThat(
-                        searchAuthorizations(
-                                camundaClient.getConfiguration().getRestAddress().toString())
+                        camundaClient
+                            .newAuthorizationSearchRequest()
+                            .filter(createdAuthorizationFilter)
+                            .execute()
                             .items())
-                    .anyMatch(
-                        auth ->
-                            auth.resourceId().equals("resourceId")
-                                && auth.resourceType().equals(ResourceType.RESOURCE)
-                                && auth.ownerId().equals(roleId)));
+                    .isNotEmpty());
 
     camundaClient.newDeleteRoleCommand(roleId).send().join();
 
@@ -239,14 +236,12 @@ public class RoleIT {
         .untilAsserted(
             () ->
                 assertThat(
-                        searchAuthorizations(
-                                camundaClient.getConfiguration().getRestAddress().toString())
+                        camundaClient
+                            .newAuthorizationSearchRequest()
+                            .filter(createdAuthorizationFilter)
+                            .execute()
                             .items())
-                    .noneMatch(
-                        auth ->
-                            auth.resourceId().equals("resourceId")
-                                && auth.resourceType().equals(ResourceType.RESOURCE)
-                                && auth.ownerId().equals(roleId)));
+                    .isEmpty());
   }
 
   private static void createRole(
@@ -329,28 +324,4 @@ public class RoleIT {
               assertThat(role.getDescription()).isEqualTo(description);
             });
   }
-
-  // TODO once available, this test should use the client to make the request
-  private AuthorizationSearchResponse searchAuthorizations(final String restAddress)
-      throws URISyntaxException, IOException, InterruptedException {
-    final HttpRequest request =
-        HttpRequest.newBuilder()
-            .uri(new URI("%s%s".formatted(restAddress, "v2/authorizations/search")))
-            .POST(HttpRequest.BodyPublishers.ofString(""))
-            .build();
-
-    final HttpResponse<String> response =
-        httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-    return OBJECT_MAPPER.readValue(response.body(), AuthorizationSearchResponse.class);
-  }
-
-  private record AuthorizationSearchResponse(List<RoleIT.AuthorizationResponse> items) {}
-
-  private record AuthorizationResponse(
-      String ownerId,
-      OwnerType ownerType,
-      ResourceType resourceType,
-      String resourceId,
-      List<PermissionType> permissionTypes,
-      String authorizationKey) {}
 }
