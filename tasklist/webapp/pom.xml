@@ -398,7 +398,7 @@
      classes on the classpath to resolve the AWS credentials -->
             <dependency>software.amazon.awssdk:sts</dependency>
           </usedDependencies>
-          <ignoredUnusedDeclaredDependencies combine.children="append">
+          <ignoredUnusedDeclaredDependencies>
             <dep>jakarta.servlet:jakarta.servlet-api</dep>
             <dep>jakarta.annotation:jakarta.annotation-api</dep>
             <dep>org.springframework:spring-aspects</dep>

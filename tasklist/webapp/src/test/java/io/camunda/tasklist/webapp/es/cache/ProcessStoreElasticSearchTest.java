@@ -196,7 +196,6 @@ class ProcessStoreElasticSearchTest {
     when(es8Client.search(any(SearchRequest.class), eq(ProcessEntity.class)))
         .thenReturn(searchResponse);
 
-    // Level 1: bpmnProcessId_tenantId_buckets -> sterms() with empty buckets
     final var bpmnProcessIdTermsAggregate =
         mock(co.elastic.clients.elasticsearch._types.aggregations.StringTermsAggregate.class);
     final var aggregate = mock(Aggregate.class);
