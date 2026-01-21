@@ -8,88 +8,43 @@
 
 import {z} from 'zod';
 import {API_VERSION, type Endpoint} from '../common';
+import {
+	deploymentProcessResultSchema,
+	deploymentDecisionResultSchema,
+	deploymentDecisionRequirementsResultSchema,
+	deploymentFormResultSchema,
+	deploymentResourceResultSchema,
+	deploymentResultSchema,
+	resourceResultSchema,
+	deleteResourceRequestSchema,
+	getResourceContent200Schema,
+} from './gen';
 
-const processDeploymentSchema = z.object({
-	processDefinitionId: z.string(),
-	processDefinitionVersion: z.number().int(),
-	resourceName: z.string(),
-	tenantId: z.string(),
-	processDefinitionKey: z.string(),
-});
+const processDeploymentSchema = deploymentProcessResultSchema;
 type ProcessDeployment = z.infer<typeof processDeploymentSchema>;
 
-const decisionDeploymentSchema = z.object({
-	decisionDefinitionId: z.string(),
-	version: z.number().int(),
-	name: z.string(),
-	tenantId: z.string(),
-	decisionRequirementsId: z.string(),
-	decisionDefinitionKey: z.string(),
-	decisionRequirementsKey: z.string(),
-});
+const decisionDeploymentSchema = deploymentDecisionResultSchema;
 type DecisionDeployment = z.infer<typeof decisionDeploymentSchema>;
 
-const decisionRequirementsDeploymentSchema = z.object({
-	decisionRequirementsId: z.string(),
-	version: z.number().int(),
-	decisionRequirementsName: z.string(),
-	tenantId: z.string(),
-	resourceName: z.string(),
-	decisionRequirementsKey: z.string(),
-});
+const decisionRequirementsDeploymentSchema = deploymentDecisionRequirementsResultSchema;
 type DecisionRequirementsDeployment = z.infer<typeof decisionRequirementsDeploymentSchema>;
 
-const formDeploymentSchema = z.object({
-	formId: z.string(),
-	version: z.number().int(),
-	resourceName: z.string(),
-	tenantId: z.string(),
-	formKey: z.string(),
-});
+const formDeploymentSchema = deploymentFormResultSchema;
 type FormDeployment = z.infer<typeof formDeploymentSchema>;
 
-const resourceDeploymentSchema = z.object({
-	resourceId: z.string(),
-	version: z.number().int(),
-	resourceName: z.string(),
-	tenantId: z.string(),
-	resourceKey: z.string(),
-});
+const resourceDeploymentSchema = deploymentResourceResultSchema;
 type ResourceDeployment = z.infer<typeof resourceDeploymentSchema>;
 
-const createDeploymentResponseBodySchema = z.object({
-	tenantId: z.string(),
-	deploymentKey: z.string(),
-	deployments: z.array(
-		z.union([
-			processDeploymentSchema,
-			decisionDeploymentSchema,
-			decisionRequirementsDeploymentSchema,
-			formDeploymentSchema,
-			resourceDeploymentSchema,
-		]),
-	),
-});
+const createDeploymentResponseBodySchema = deploymentResultSchema;
 type CreateDeploymentResponseBody = z.infer<typeof createDeploymentResponseBodySchema>;
 
-const deleteResourceRequestBodySchema = z
-	.object({
-		operationReference: z.number().int().min(1),
-	})
-	.optional();
+const deleteResourceRequestBodySchema = deleteResourceRequestSchema;
 type DeleteResourceRequestBody = z.infer<typeof deleteResourceRequestBodySchema>;
 
-const resourceSchema = z.object({
-	resourceName: z.string(),
-	version: z.number().int(),
-	versionTag: z.string(),
-	resourceId: z.string(),
-	tenantId: z.string(),
-	resourceKey: z.string(),
-});
+const resourceSchema = resourceResultSchema;
 type Resource = z.infer<typeof resourceSchema>;
 
-const getResourceContentResponseBodySchema = z.string();
+const getResourceContentResponseBodySchema = getResourceContent200Schema;
 type GetResourceContentResponseBody = z.infer<typeof getResourceContentResponseBodySchema>;
 
 const createDeployment: Endpoint = {
