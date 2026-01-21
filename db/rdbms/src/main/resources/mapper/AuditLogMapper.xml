@@ -346,6 +346,46 @@
     <include refid="io.camunda.db.rdbms.sql.Commons.processInstanceHistoryDeletion"/>
   </delete>
 
+  <delete id="deleteProcessDefinitionRelatedData">
+    DELETE
+    FROM ${prefix}AUDIT_LOG
+    WHERE PROCESS_DEFINITION_KEY IN
+    <foreach collection="processDefinitionKeys" item="key" open="(" separator=", " close=")">
+      #{key}
+    </foreach>
+    LIMIT #{limit}
+  </delete>
+  <delete id="deleteProcessDefinitionRelatedData" databaseId="mssql">
+    DELETE TOP (#{limit})
+    FROM ${prefix}AUDIT_LOG
+    WHERE PROCESS_DEFINITION_KEY IN
+    <foreach collection="processDefinitionKeys" item="key" open="(" separator=", " close=")">
+      #{key}
+    </foreach>
+  </delete>
+  <delete id="deleteProcessDefinitionRelatedData" databaseId="oracle">
+    DELETE
+    FROM ${prefix}AUDIT_LOG
+    WHERE rowid IN (SELECT rowid
+    FROM ${prefix}AUDIT_LOG
+    WHERE PROCESS_DEFINITION_KEY IN
+    <foreach collection="deleteProcessDefinitionRelatedData" item="key" open="(" separator=", " close=")">
+      #{key}
+    </foreach>
+    AND ROWNUM &lt;= #{limit})
+  </delete>
+  <delete id="deleteProcessDefinitionRelatedData" databaseId="postgresql">
+    DELETE
+    FROM ${prefix}AUDIT_LOG
+    WHERE ctid IN (SELECT ctid
+    FROM ${prefix}AUDIT_LOG
+    WHERE PROCESS_DEFINITION_KEY IN
+    <foreach collection="processDefinitionKeys" item="key" open="(" separator=", " close=")">
+      #{key}
+    </foreach>
+    LIMIT #{limit})
+  </delete>
+
   <delete id="cleanupHistory">
     <bind name="tableName" value="'AUDIT_LOG'"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.historyCleanup"/>

@@ -117,6 +117,20 @@ public class HistoryDeletionService {
     if (processDefinitionKeys.isEmpty()) {
       return List.of();
     }
+
+    final var amountOfRowsDeleted =
+        rdbmsWriters
+            .getAuditLogWriter()
+            .deleteProcessDefinitionRelatedData(processDefinitionKeys, config.dependentRowLimit());
+
+    if (amountOfRowsDeleted >= config.dependentRowLimit()) {
+      LOG.debug(
+          "Not all process definition dependant data is deleted. Deleted {} rows. Skipping deletion of process definitions: {}",
+          amountOfRowsDeleted,
+          processDefinitionKeys);
+      return List.of();
+    }
+
     rdbmsWriters.getProcessDefinitionWriter().deleteByKeys(processDefinitionKeys);
 
     return processDefinitionKeys;

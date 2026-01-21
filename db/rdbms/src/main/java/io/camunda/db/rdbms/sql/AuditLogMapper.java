@@ -23,6 +23,8 @@ public interface AuditLogMapper extends ProcessInstanceDependantMapper, HistoryC
 
   List<AuditLogDbModel> search(AuditLogDbQuery filter);
 
+  int deleteProcessDefinitionRelatedData(List<Long> processDefinitionKeys, int limit);
+
   record BatchInsertAuditLogsDto(List<AuditLogDbModel> auditLogs)
       implements BatchInsertDto<BatchInsertAuditLogsDto, AuditLogDbModel> {
 
