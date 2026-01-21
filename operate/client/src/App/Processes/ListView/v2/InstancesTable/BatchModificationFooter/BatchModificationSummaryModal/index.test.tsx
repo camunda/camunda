@@ -9,14 +9,13 @@
 import {useEffect} from 'react';
 import {observer} from 'mobx-react';
 import {render, screen, waitFor} from 'modules/testing-library';
-import {processesStore} from 'modules/stores/processes/processes.list';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelectionV2';
 import {BatchModificationSummaryModal} from './index';
 import {MemoryRouter} from 'react-router-dom';
 import {Paths} from 'modules/Routes';
 import {
-  mockProcessDefinitions,
+  createProcessDefinition,
   mockProcessStatisticsV2,
   mockProcessXML,
 } from 'modules/testUtils';
@@ -24,13 +23,12 @@ import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/v2/processI
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
-import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
 import {mockModifyProcessInstancesBatchOperation} from 'modules/mocks/api/v2/processes/mockModifyProcessInstancesBatchOperation';
 import {mockQueryBatchOperations} from 'modules/mocks/api/v2/batchOperations/queryBatchOperations';
 import {tracking} from 'modules/tracking';
-import {mockSearchProcessDefinitions} from 'modules/mocks/api/v2/processDefinitions/searchProcessDefinitions';
 import {notificationsStore} from 'modules/stores/notifications';
+import {SelectedProcessDefinitionContext} from '../../../../selectedProcessDefinitionContext';
 
 vi.mock('modules/tracking', () => ({
   tracking: {
@@ -43,28 +41,34 @@ vi.mock('modules/stores/notifications', () => ({
   },
 }));
 
+const selectedProcessDefinition = createProcessDefinition({
+  processDefinitionId: 'bigVarProcess',
+  version: 1,
+  processDefinitionKey: '123',
+});
+
 const Wrapper: React.FC<{children?: React.ReactNode}> = observer(
   ({children}) => {
     useEffect(() => {
       return () => {
-        processesStore.reset();
         batchModificationStore.reset();
         processInstancesSelectionStore.reset();
       };
     });
 
     return (
-      <ProcessDefinitionKeyContext.Provider value={'123'}>
+      <SelectedProcessDefinitionContext.Provider
+        value={selectedProcessDefinition}
+      >
         <QueryClientProvider client={getMockQueryClient()}>
           <MemoryRouter
             initialEntries={[
-              `${Paths.processes()}?process=bigVarProcess&version=1&flowNodeId=ServiceTask_0kt6c5i`,
+              `${Paths.processes()}?process=${selectedProcessDefinition.processDefinitionId}&version=${selectedProcessDefinition.version}&flowNodeId=ServiceTask_0kt6c5i`,
             ]}
           >
             {children}
             <button
-              onClick={async () => {
-                await processesStore.fetchProcesses();
+              onClick={() => {
                 batchModificationStore.enable();
                 batchModificationStore.selectTargetElement('StartEvent_1');
               }}
@@ -73,7 +77,7 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = observer(
             </button>
           </MemoryRouter>
         </QueryClientProvider>
-      </ProcessDefinitionKeyContext.Provider>
+      </SelectedProcessDefinitionContext.Provider>
     );
   },
 );
@@ -82,7 +86,6 @@ describe('BatchModificationSummaryModal', () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-    mockSearchProcessDefinitions().withSuccess(mockProcessDefinitions);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatisticsV2);
     mockFetchProcessInstances().withSuccess({

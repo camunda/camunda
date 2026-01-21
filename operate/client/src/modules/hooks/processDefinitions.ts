@@ -122,6 +122,26 @@ function useProcessDefinitionSelection() {
   });
 }
 
+function useSelectedProcessDefinition() {
+  const filters = useProcessDefinitionsSearchFilter();
+  return useProcessDefinitionsSearch<ProcessDefinition | undefined>({
+    enabled: !!filters.processDefinitionId && !!filters.version,
+    payload: {
+      filter: {
+        processDefinitionId: filters.processDefinitionId,
+        version: filters.version,
+        tenantId: filters.tenantId,
+      },
+      sort: [{field: 'version', order: 'desc'}],
+    },
+    select: (definitions) => {
+      if (definitions.length === 1) {
+        return definitions[0];
+      }
+    },
+  });
+}
+
 function useProcessDefinitionsSearchFilter() {
   const [searchParams] = useSearchParams();
   return useMemo(
@@ -138,4 +158,5 @@ export {
   useProcessDefinitions,
   useProcessDefinitionVersions,
   useProcessDefinitionSelection,
+  useSelectedProcessDefinition,
 };

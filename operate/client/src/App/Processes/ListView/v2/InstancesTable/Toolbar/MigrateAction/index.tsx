@@ -7,13 +7,10 @@
  */
 
 import {observer} from 'mobx-react';
-import {useLocation} from 'react-router-dom';
 import {Link, OrderedList, Stack, TableBatchAction} from '@carbon/react';
 import {MigrateAlt} from '@carbon/react/icons';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelectionV2';
-import {getProcessInstanceFilters} from 'modules/utils/filter/getProcessInstanceFilters';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
-import {processesStore} from 'modules/stores/processes/processes.list';
 import {ModalStateManager} from 'modules/components/ModalStateManager';
 import {getProcessInstancesRequestFilters} from 'modules/utils/filter';
 import {ListItem} from './styled';
@@ -21,14 +18,12 @@ import {tracking} from 'modules/tracking';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {HelperModal} from 'modules/components/HelperModal';
 import {getStateLocally} from 'modules/utils/localStorage';
-import {useProcessDefinitionKeyContext} from '../../../../processDefinitionKeyContext';
 import {useListViewXml} from 'modules/queries/processDefinitions/useListViewXml';
+import {useSelectedProcessDefinitionContext} from '../../../../selectedProcessDefinitionContext';
 
 const localStorageKey = 'hideMigrationHelperModal';
 
 const MigrateAction: React.FC = observer(() => {
-  const location = useLocation();
-  const {version, process, tenant} = getProcessInstanceFilters(location.search);
   const {
     selectedProcessInstanceIds,
     hasSelectedRunningInstances,
@@ -36,20 +31,20 @@ const MigrateAction: React.FC = observer(() => {
     state: {selectionMode},
   } = processInstancesSelectionStore;
 
-  const isVersionSelected = version !== undefined && version !== 'all';
-
-  const processDefinitionKey = useProcessDefinitionKeyContext();
-  const processDefinition = useListViewXml({processDefinitionKey});
-  const hasXmlError = processDefinition?.isError;
+  const selectedProcessDefinition = useSelectedProcessDefinitionContext();
+  const processDefinitionXml = useListViewXml({
+    processDefinitionKey: selectedProcessDefinition?.processDefinitionKey,
+  });
+  const hasXmlError = processDefinitionXml?.isError;
 
   const isDisabled =
     batchModificationStore.state.isEnabled ||
-    !isVersionSelected ||
+    !selectedProcessDefinition ||
     !hasSelectedRunningInstances ||
     hasXmlError;
 
   const getTooltipText = () => {
-    if (!isVersionSelected) {
+    if (!selectedProcessDefinition) {
       return 'To start the migration process, choose a process and version first.';
     }
 
@@ -64,11 +59,7 @@ const MigrateAction: React.FC = observer(() => {
 
   const handleSubmit = () => {
     processInstanceMigrationStore.setSourceProcessDefinitionKey(
-      processesStore.getProcessId({
-        process,
-        tenant,
-        version,
-      }),
+      selectedProcessDefinition?.processDefinitionKey,
     );
 
     const requestFilterParameters = {
