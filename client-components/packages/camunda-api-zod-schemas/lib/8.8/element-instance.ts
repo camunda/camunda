@@ -15,8 +15,6 @@ import {
 	elementInstanceSearchQuerySchema,
 	elementInstanceSearchQueryResultSchema,
 	setVariableRequestSchema,
-	incidentSearchQuerySchema,
-	incidentSearchQueryResultSchema,
 } from './gen';
 
 const elementInstanceStateSchema = elementInstanceStateEnumSchema;
@@ -91,17 +89,6 @@ const updateElementInstanceVariables: Endpoint<{elementInstanceKey: string}> = {
 	},
 };
 
-const queryElementInstanceIncidentsRequestBodySchema = incidentSearchQuerySchema;
-type QueryElementInstanceIncidentsRequestBody = z.infer<typeof queryElementInstanceIncidentsRequestBodySchema>;
-
-const queryElementInstanceIncidentsResponseBodySchema = incidentSearchQueryResultSchema;
-type QueryElementInstanceIncidentsResponseBody = z.infer<typeof queryElementInstanceIncidentsResponseBodySchema>;
-
-const queryElementInstanceIncidents: Endpoint<{elementInstanceKey: string}> = {
-	method: 'POST',
-	getUrl: ({elementInstanceKey}) => `/${API_VERSION}/element-instances/${elementInstanceKey}/incidents/search`,
-};
-
 export {
 	queryElementInstances,
 	getElementInstance,
@@ -114,9 +101,6 @@ export {
 	elementInstanceTypeSchema,
 	elementInstanceSchema,
 	elementInstanceFilterSchema,
-	queryElementInstanceIncidentsRequestBodySchema,
-	queryElementInstanceIncidentsResponseBodySchema,
-	queryElementInstanceIncidents,
 };
 export type {
 	ElementInstanceState,
@@ -126,6 +110,4 @@ export type {
 	QueryElementInstancesResponseBody,
 	GetElementInstanceResponseBody,
 	UpdateElementInstanceVariablesRequestBody,
-	QueryElementInstanceIncidentsRequestBody,
-	QueryElementInstanceIncidentsResponseBody,
 };
