@@ -521,7 +521,7 @@ test.describe.parallel('Update Authorization API', () => {
     });
   });
 
-  test('Update User Authorization - empty requestBody - 400 invalid argument', async ({
+  test('Update User Authorization - empty requestBody - 400 bad request', async ({
     request,
   }) => {
     let user: {
