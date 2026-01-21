@@ -57,6 +57,8 @@ public class Rdbms extends SecondaryStorageDatabase<RdbmsHistory> {
 
   @NestedConfigurationProperty private RdbmsMetrics metrics = new RdbmsMetrics();
 
+  @NestedConfigurationProperty private RdbmsConnectionPool connectionPool = new RdbmsConnectionPool();
+
   public String getPrefix() {
     return prefix;
   }
@@ -138,6 +140,14 @@ public class Rdbms extends SecondaryStorageDatabase<RdbmsHistory> {
 
   public void setMetrics(final RdbmsMetrics metrics) {
     this.metrics = metrics;
+  }
+
+  public RdbmsConnectionPool getConnectionPool() {
+    return connectionPool;
+  }
+
+  public void setConnectionPool(final RdbmsConnectionPool connectionPool) {
+    this.connectionPool = connectionPool;
   }
 
   @Override

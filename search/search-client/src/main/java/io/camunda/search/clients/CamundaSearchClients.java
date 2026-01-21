@@ -124,7 +124,8 @@ public class CamundaSearchClients implements SearchClientsProxy {
   public CamundaSearchClients(
       final SearchClientReaders readers,
       final ResourceAccessController resourceAccessController,
-      final SecurityContext securityContext, final String engineName) {
+      final SecurityContext securityContext,
+      final String engineName) {
     this.readers = readers;
     this.resourceAccessController = resourceAccessController;
     this.securityContext = securityContext;

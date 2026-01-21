@@ -33,6 +33,7 @@ public class ExporterContextTest {
         LOG,
         new ExporterTestConfiguration<>(exporterId, Collections.emptyMap()),
         partitionId,
+        "raft-partition",
         underlying,
         FIXED_INSTANT_SOURCE);
   }

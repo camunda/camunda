@@ -7,6 +7,8 @@
  */
 package io.camunda.configuration;
 
+import java.util.ArrayList;
+import java.util.List;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
@@ -26,6 +28,7 @@ public class Camunda {
   @NestedConfigurationProperty private Processing processing = new Processing();
   @NestedConfigurationProperty private Monitoring monitoring = new Monitoring();
   @NestedConfigurationProperty private Security security = new Security();
+  @NestedConfigurationProperty private List<Engine> engines = new ArrayList<>();
 
   public Cluster getCluster() {
     return cluster;
@@ -81,5 +84,13 @@ public class Camunda {
 
   public void setSecurity(final Security security) {
     this.security = security;
+  }
+
+  public List<Engine> getEngines() {
+    return engines;
+  }
+
+  public void setEngines(final List<Engine> engines) {
+    this.engines = engines;
   }
 }

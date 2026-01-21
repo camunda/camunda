@@ -56,6 +56,10 @@ public interface Context {
    */
   int getPartitionId();
 
+  default String getEngineName() {
+    return "";
+  }
+
   /**
    * Apply the given filter to limit the records which are exported.
    *

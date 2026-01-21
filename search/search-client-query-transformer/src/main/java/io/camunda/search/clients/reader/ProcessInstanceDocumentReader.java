@@ -64,4 +64,9 @@ public class ProcessInstanceDocumentReader extends DocumentBasedReader
     return getSearchExecutor()
         .search(query, ProcessInstanceForListViewEntity.class, resourceAccessChecks);
   }
+
+  @Override
+  public ProcessInstanceReader withEngineName(final String engineName) {
+    return this;
+  }
 }

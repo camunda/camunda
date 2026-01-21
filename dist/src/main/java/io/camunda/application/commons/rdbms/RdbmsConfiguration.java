@@ -87,6 +87,7 @@ import io.camunda.search.clients.reader.ProcessDefinitionMessageSubscriptionStat
 import io.micrometer.core.instrument.MeterRegistry;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
+import java.util.Map;
 import javax.sql.DataSource;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.slf4j.Logger;
@@ -341,6 +342,7 @@ public class RdbmsConfiguration {
   @Bean
   public RdbmsWriterFactory rdbmsWriterFactory(
       final SqlSessionFactory sqlSessionFactory,
+      final Map<String, SqlSessionFactory> engineSqlSessionFactories,
       final ExporterPositionMapper exporterPositionMapper,
       final VendorDatabaseProperties vendorDatabaseProperties,
       final AuditLogMapper auditLogMapper,
@@ -364,6 +366,7 @@ public class RdbmsConfiguration {
       final HistoryDeletionMapper historyDeletionMapper) {
     return new RdbmsWriterFactory(
         sqlSessionFactory,
+        engineSqlSessionFactories,
         exporterPositionMapper,
         vendorDatabaseProperties,
         auditLogMapper,

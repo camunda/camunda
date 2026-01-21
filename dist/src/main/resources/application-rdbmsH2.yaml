@@ -74,7 +74,16 @@ zeebe:
       rdbms:
         className: io.camunda.exporter.rdbms.RdbmsExporter
 
+spring:
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
 camunda:
+  cluster:
+    network:
+      advertised-host: localhost
   data:
     secondary-storage:
       type: rdbms
@@ -134,6 +143,27 @@ camunda:
       url: http://localhost:9200
       # Index prefix, configured in Zeebe Elasticsearch exporter
       prefix: zeebe-record
+  engines:
+    - name: raft-partition
+      data:
+        secondary-storage:
+          type: rdbms
+          rdbms:
+            url: jdbc:postgresql:camunda
+            username: camunda
+            password: camunda
+            flushInterval: PT0.5S
+            queueSize: 1000
+    - name: engine-2
+      data:
+        secondary-storage:
+          type: rdbms
+          rdbms:
+            url: jdbc:h2:mem:camunda
+            username: sa
+            password:
+            flushInterval: PT0.5S
+            queueSize: 1000
 logging:
   level:
     io:

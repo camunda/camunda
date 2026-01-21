@@ -7,6 +7,7 @@
  */
 package io.camunda.db.rdbms.read.service;
 
+import io.camunda.db.rdbms.MultiEngineAware;
 import io.camunda.db.rdbms.read.domain.ProcessInstanceDbQuery;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
 import io.camunda.db.rdbms.sql.columns.ProcessInstanceSearchColumn;
@@ -80,5 +81,11 @@ public class ProcessInstanceDbReader extends AbstractEntityReader<ProcessInstanc
 
   public SearchQueryResult<ProcessInstanceEntity> search(final ProcessInstanceQuery query) {
     return search(query, ResourceAccessChecks.disabled());
+  }
+
+  @Override
+  public ProcessInstanceReader withEngineName(final String engineName) {
+    return new ProcessInstanceDbReader(
+        ((MultiEngineAware<ProcessInstanceMapper>) processInstanceMapper).withEngine(engineName));
   }
 }

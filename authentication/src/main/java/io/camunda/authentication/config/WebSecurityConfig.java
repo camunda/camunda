@@ -159,7 +159,8 @@ public class WebSecurityConfig {
           // deprecated Tasklist v1 Public Endpoints
           "/new/**",
           "/tasklist/new/**",
-          "/favicon.ico");
+          "/favicon.ico",
+          "/h2-console/**");
   private static final String SPRING_DEFAULT_UI_CSS = "/default-ui.css";
   public static final Set<String> WEBAPP_PATHS =
       Set.of(
@@ -317,13 +318,14 @@ public class WebSecurityConfig {
       }
     }
 
+    /*
     if (headerConfig.getContentSecurityPolicy().isEnabled()) {
       final String policy = getContentSecurityPolicy(headerConfig, isSaas);
       headers.contentSecurityPolicy(csp -> csp.policyDirectives(policy));
       if (headerConfig.getContentSecurityPolicy().isReportOnly()) {
         headers.contentSecurityPolicy(csp -> csp.reportOnly().policyDirectives(policy));
       }
-    }
+    }*/
 
     headers.referrerPolicy(
         rp ->

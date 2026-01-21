@@ -94,6 +94,7 @@ class RdbmsExporterBatchOperationsIT {
                 "foo",
                 Map.of("queueSize", 0, "exportBatchOperationItemsOnCreation", exportPendingItems)),
             1,
+            "raft-partition",
             Mockito.mock(MeterRegistry.class, Mockito.RETURNS_DEEP_STUBS),
             null));
     exporter.open(controller);

@@ -23,19 +23,19 @@ import org.slf4j.Logger;
 public final class ExporterContext implements Context, AutoCloseable {
 
   private static final RecordFilter DEFAULT_FILTER = new AcceptAllRecordsFilter();
-
   private final Logger logger;
   private final Configuration configuration;
   private final int partitionId;
+  private final String engineName;
   private final CompositeMeterRegistry meterRegistry;
   private final InstantSource clock;
-
   private RecordFilter filter = DEFAULT_FILTER;
 
   public ExporterContext(
       final Logger logger,
       final Configuration configuration,
       final int partitionId,
+      final String engineName,
       final MeterRegistry meterRegistry,
       final InstantSource clock) {
     this.logger = logger;
@@ -47,6 +47,7 @@ public final class ExporterContext implements Context, AutoCloseable {
             Tags.concat(
                 PartitionKeyNames.tags(partitionId), Tags.of("exporterId", configuration.getId())));
     this.clock = clock;
+    this.engineName = engineName;
   }
 
   @Override
@@ -72,6 +73,11 @@ public final class ExporterContext implements Context, AutoCloseable {
   @Override
   public int getPartitionId() {
     return partitionId;
+  }
+
+  @Override
+  public String getEngineName() {
+    return engineName;
   }
 
   public RecordFilter getFilter() {

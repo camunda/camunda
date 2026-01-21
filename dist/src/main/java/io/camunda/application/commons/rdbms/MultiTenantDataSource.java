@@ -5,13 +5,13 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.search.clients.reader;
+package io.camunda.application.commons.rdbms;
 
-import io.camunda.search.entities.ProcessInstanceEntity;
-import io.camunda.search.query.ProcessInstanceQuery;
+import org.springframework.jdbc.datasource.lookup.AbstractRoutingDataSource;
 
-public interface ProcessInstanceReader
-    extends SearchEntityReader<ProcessInstanceEntity, ProcessInstanceQuery> {
-
-  ProcessInstanceReader withEngineName(String engineName);
+public class MultiTenantDataSource extends AbstractRoutingDataSource {
+  @Override
+  protected Object determineCurrentLookupKey() {
+    return null; // TenantContext.getCurrentTenant();
+  }
 }

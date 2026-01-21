@@ -179,7 +179,7 @@ public class ExporterConfiguration {
     }
   }
 
-  public RdbmsWriterConfig createRdbmsWriterConfig(final int partitionId) {
+  public RdbmsWriterConfig createRdbmsWriterConfig(final int partitionId, final String engineName) {
     final var historyConfig =
         new HistoryConfig.Builder()
             .defaultHistoryTTL(history.getDefaultHistoryTTL())
@@ -206,6 +206,7 @@ public class ExporterConfiguration {
         .batchOperationItemInsertBlockSize(batchOperationItemInsertBlockSize)
         .exportBatchOperationItemsOnCreation(exportBatchOperationItemsOnCreation)
         .history(historyConfig)
+        .engineName(engineName)
         .build();
   }
 

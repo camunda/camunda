@@ -103,6 +103,7 @@ public final class ExporterRepository {
               LOG,
               descriptor.getConfiguration(),
               NULL_PARTITION_ID,
+              "fake-engine-name",
               new SimpleMeterRegistry(),
               InstantSource.system())) {
 

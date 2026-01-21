@@ -33,6 +33,7 @@ public final class ExporterDirectorContext {
   private EventFilter positionsToSkipFilter;
   private MeterRegistry meterRegistry;
   private InstantSource clock;
+  private String engineName;
 
   public int getId() {
     return id;
@@ -133,6 +134,15 @@ public final class ExporterDirectorContext {
   public ExporterDirectorContext clock(final InstantSource clock) {
     this.clock = clock;
     return this;
+  }
+
+  public ExporterDirectorContext engineName(final String engineName) {
+    this.engineName = engineName;
+    return this;
+  }
+
+  public String getEngineName() {
+    return engineName;
   }
 
   public enum ExporterMode {

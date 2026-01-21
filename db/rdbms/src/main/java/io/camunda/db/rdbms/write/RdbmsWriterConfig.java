@@ -7,11 +7,13 @@
  */
 package io.camunda.db.rdbms.write;
 
+import io.camunda.security.auth.CamundaAuthentication.Builder;
 import io.camunda.util.ObjectBuilder;
 import java.time.Duration;
 
 public record RdbmsWriterConfig(
     int partitionId,
+    String engineName,
     int queueSize,
     /*
      * Maximum memory (in MB) that the execution queue can consume before flushing.
@@ -43,6 +45,7 @@ public record RdbmsWriterConfig(
   public static class Builder implements ObjectBuilder<RdbmsWriterConfig> {
 
     private int partitionId;
+    private String engineName;
     private int queueSize = DEFAULT_QUEUE_SIZE;
     private int queueMemoryLimit = DEFAULT_QUEUE_MEMORY_LIMIT;
     private int batchOperationItemInsertBlockSize = DEFAULT_BATCH_OPERATION_ITEM_INSERT_BLOCK_SIZE;
@@ -85,11 +88,17 @@ public record RdbmsWriterConfig(
     public RdbmsWriterConfig build() {
       return new RdbmsWriterConfig(
           partitionId,
+          engineName,
           queueSize,
           queueMemoryLimit,
           batchOperationItemInsertBlockSize,
           exportBatchOperationItemsOnCreation,
           history);
+    }
+
+    public Builder engineName(final String engineName) {
+      this.engineName = engineName;
+      return this;
     }
   }
 

@@ -91,6 +91,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   private ExporterStateDistributionService exporterDistributionService;
   private ScheduledTimer exporterDistributionTimer;
   private final int partitionId;
+  private final String engineName;
   private final EventFilter positionsToSkipFilter;
   private final MeterRegistry meterRegistry;
   // When idle, exporter director is not exporting any records because no exporters are configured.
@@ -111,6 +112,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     name = context.getName();
     logStream = Objects.requireNonNull(context.getLogStream());
     partitionId = logStream.getPartitionId();
+    engineName = context.getEngineName();
     meterRegistry = context.getMeterRegistry();
     clock = context.getClock();
     containers =
@@ -120,6 +122,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
                     new ExporterContainer(
                         descriptorEntry.getKey(),
                         partitionId,
+                        engineName,
                         descriptorEntry.getValue(),
                         meterRegistry,
                         clock))
@@ -327,7 +330,8 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     }
 
     final ExporterContainer container =
-        new ExporterContainer(descriptor, partitionId, initializationInfo, meterRegistry, clock);
+        new ExporterContainer(
+            descriptor, partitionId, engineName, initializationInfo, meterRegistry, clock);
     container.initContainer(actor, metrics, state, exporterPhase);
     try {
       container.configureExporter();

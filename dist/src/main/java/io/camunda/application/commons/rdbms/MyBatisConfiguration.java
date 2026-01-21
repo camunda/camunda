@@ -7,6 +7,11 @@
  */
 package io.camunda.application.commons.rdbms;
 
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
+import io.camunda.configuration.Camunda;
+import io.camunda.configuration.Engine;
+import io.camunda.configuration.Rdbms;
 import io.camunda.db.rdbms.LiquibaseSchemaManager;
 import io.camunda.db.rdbms.NoopSchemaManager;
 import io.camunda.db.rdbms.RdbmsSchemaManager;
@@ -43,6 +48,7 @@ import io.camunda.db.rdbms.sql.UserMapper;
 import io.camunda.db.rdbms.sql.UserTaskMapper;
 import io.camunda.db.rdbms.sql.VariableMapper;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import javax.sql.DataSource;
@@ -52,18 +58,17 @@ import org.apache.ibatis.session.SqlSessionFactory;
 import org.apache.ibatis.type.JdbcType;
 import org.apache.ibatis.type.OffsetDateTimeTypeHandler;
 import org.mybatis.spring.SqlSessionFactoryBean;
-import org.mybatis.spring.mapper.MapperFactoryBean;
+import org.mybatis.spring.SqlSessionTemplate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Primary;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 
-@Import(DataSourceAutoConfiguration.class)
+// @Import(DataSourceAutoConfiguration.class)
 public class MyBatisConfiguration {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(MyBatisConfiguration.class);
@@ -76,13 +81,16 @@ public class MyBatisConfiguration {
       matchIfMissing = true)
   public RdbmsSchemaManager rdbmsExporterLiquibase(
       final DataSource dataSource,
+      final Map<String, DataSource> engineDataSources,
       final VendorDatabaseProperties vendorDatabaseProperties,
-      @Value("${camunda.data.secondary-storage.rdbms.prefix:}") final String prefix) {
+      @Value("${camunda.data.secondary-storage.rdbms.prefix:}") final String prefix,
+      final Camunda camunda) {
     final String trimmedPrefix = StringUtils.trimToEmpty(prefix);
     LOGGER.info(
         "Initializing Liquibase for RDBMS with global table trimmedPrefix '{}'.", trimmedPrefix);
 
     final var moduleConfig = new LiquibaseSchemaManager();
+    moduleConfig.setEngineDataSources(engineDataSources);
     moduleConfig.setDataSource(dataSource);
     moduleConfig.setDatabaseChangeLogTable(trimmedPrefix + "DATABASECHANGELOG");
     moduleConfig.setDatabaseChangeLogLockTable(trimmedPrefix + "DATABASECHANGELOGLOCK");
@@ -94,8 +102,37 @@ public class MyBatisConfiguration {
             Integer.toString(vendorDatabaseProperties.userCharColumnSize())));
     // changelog file located in src/main/resources directly in the module
     moduleConfig.setChangeLog("db/changelog/rdbms-exporter/changelog-master.xml");
-
+    /*
+    final Map<String, DataSource> engineDataSources = new HashMap<>();
+    for (int i = 0; i < camunda.getEngines().size(); i++) {
+      final Engine engine = camunda.getEngines().get(i);
+      String engineName = engine.getName();
+      if (engineName == null || engineName.isBlank()) {
+        engineName = String.valueOf(i);
+      }
+      final var rdbms = engine.getData().getSecondaryStorage().getRdbms();
+      final var engineDataSource = createDataSource(rdbms);
+      engineDataSources.put(engineName, engineDataSource);
+    }
+    moduleConfig.setTenantDataSources(engineDataSource);
+     */
     return moduleConfig;
+  }
+
+  @Bean
+  public Map<String, DataSource> engineDataSources(final Camunda camunda) {
+    final Map<String, DataSource> engineDataSources = new HashMap<>();
+    for (int i = 0; i < camunda.getEngines().size(); i++) {
+      final Engine engine = camunda.getEngines().get(i);
+      String engineName = engine.getName();
+      if (engineName == null || engineName.isBlank()) {
+        engineName = String.valueOf(i);
+      }
+      final var rdbms = engine.getData().getSecondaryStorage().getRdbms();
+      final var engineDataSource = createDataSource(rdbms);
+      engineDataSources.put(engineName, engineDataSource);
+    }
+    return engineDataSources;
   }
 
   @Bean
@@ -121,11 +158,56 @@ public class MyBatisConfiguration {
   }
 
   @Bean
+  public Map<String, SqlSessionFactory> engineSqlSessionFactories(
+      final Camunda camunda, final DatabaseIdProvider databaseIdProvider) throws Exception {
+    final Map<String, SqlSessionFactory> engineSqlSessionFactories = new HashMap<>();
+
+    for (int i = 0; i < camunda.getEngines().size(); i++) {
+      final Engine engine = camunda.getEngines().get(i);
+      String engineName = engine.getName();
+      if (engineName == null || engineName.isBlank()) {
+        engineName = String.valueOf(i);
+      }
+      final var rdbms = engine.getData().getSecondaryStorage().getRdbms();
+      final var engineDataSource = createDataSource(rdbms);
+
+      final var databaseId = databaseIdProvider.getDatabaseId(engineDataSource);
+      final var databaseProperties = VendorDatabasePropertiesLoader.load(databaseId);
+      final var prefix = rdbms.getPrefix();
+
+      final var sqlSessionFactory =
+          createSqlSessionFactory(
+              engineDataSource,
+              databaseIdProvider,
+              databaseProperties,
+              prefix != null ? prefix : "");
+      engineSqlSessionFactories.put(engineName, sqlSessionFactory);
+    }
+
+    return engineSqlSessionFactories;
+  }
+
+  @Bean
+  @Primary
   public SqlSessionFactory sqlSessionFactory(
       final DataSource dataSource,
       final DatabaseIdProvider databaseIdProvider,
       final VendorDatabaseProperties databaseProperties,
       @Value("${camunda.data.secondary-storage.rdbms.prefix:}") final String prefix)
+      throws Exception {
+    return createSqlSessionFactory(dataSource, databaseIdProvider, databaseProperties, prefix);
+  }
+
+  @Bean
+  public DataSource dataSource(final Camunda camunda) {
+    return createDataSource(camunda.getData().getSecondaryStorage().getRdbms());
+  }
+
+  private SqlSessionFactory createSqlSessionFactory(
+      final DataSource dataSource,
+      final DatabaseIdProvider databaseIdProvider,
+      final VendorDatabaseProperties databaseProperties,
+      final String prefix)
       throws Exception {
 
     final var configuration = new org.apache.ibatis.session.Configuration();
@@ -147,183 +229,285 @@ public class MyBatisConfiguration {
   }
 
   @Bean
-  public MapperFactoryBean<AuthorizationMapper> authorizationMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, AuthorizationMapper.class);
+  public AuditLogMapper auditLogMapper(
+      final SqlSessionFactory sqlSessionFactory,
+      final Map<String, SqlSessionTemplate> engineSqlSessionTemplates) {
+    return createEngineAwareMapper(
+        AuditLogMapper.class, sqlSessionFactory, engineSqlSessionTemplates);
   }
 
   @Bean
-  public MapperFactoryBean<AuditLogMapper> auditLogMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, AuditLogMapper.class);
+  public AuthorizationMapper authorizationMapper(
+      final SqlSessionFactory defaultSqlSessionFactory,
+      final Map<String, SqlSessionTemplate> engineSqlSessionTemplates) {
+    return createEngineAwareMapper(
+        AuthorizationMapper.class, defaultSqlSessionFactory, engineSqlSessionTemplates);
   }
 
   @Bean
-  public MapperFactoryBean<DecisionDefinitionMapper> decisionDefinitionMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, DecisionDefinitionMapper.class);
+  public Map<String, SqlSessionTemplate> engineSqlSessionTemplates(
+      final Map<String, SqlSessionFactory> engineSqlSessionFactories) {
+    final Map<String, SqlSessionTemplate> templates = new HashMap<>();
+    for (final var entry : engineSqlSessionFactories.entrySet()) {
+      templates.put(entry.getKey(), new SqlSessionTemplate(entry.getValue()));
+    }
+    return templates;
   }
 
   @Bean
-  public MapperFactoryBean<DecisionInstanceMapper> decisionInstanceMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, DecisionInstanceMapper.class);
+  public DecisionDefinitionMapper decisionDefinitionMapper(
+      final SqlSessionFactory defaultSqlSessionFactory,
+      final Map<String, SqlSessionTemplate> engineSqlSessionTemplates) {
+    return createEngineAwareMapper(
+        DecisionDefinitionMapper.class, defaultSqlSessionFactory, engineSqlSessionTemplates);
   }
 
   @Bean
-  public MapperFactoryBean<DecisionRequirementsMapper> decisionRequirementsMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, DecisionRequirementsMapper.class);
+  public DecisionInstanceMapper decisionInstanceMapper(
+      final SqlSessionFactory defaultSqlSessionFactory,
+      final Map<String, SqlSessionTemplate> engineSqlSessionTemplates) {
+    return createEngineAwareMapper(
+        DecisionInstanceMapper.class, defaultSqlSessionFactory, engineSqlSessionTemplates);
   }
 
   @Bean
-  public MapperFactoryBean<FlowNodeInstanceMapper> flowNodeInstanceMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, FlowNodeInstanceMapper.class);
+  public DecisionRequirementsMapper decisionRequirementsMapper(
+      final SqlSessionFactory defaultSqlSessionFactory,
+      final Map<String, SqlSessionTemplate> engineSqlSessionTemplates) {
+    return createEngineAwareMapper(
+        DecisionRequirementsMapper.class, defaultSqlSessionFactory, engineSqlSessionTemplates);
   }
 
   @Bean
-  public MapperFactoryBean<GroupMapper> groupInstanceMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, GroupMapper.class);
+  public FlowNodeInstanceMapper flowNodeInstanceMapper(
+      final SqlSessionFactory defaultSqlSessionFactory,
+      final Map<String, SqlSessionTemplate> engineSqlSessionTemplates) {
+    return createEngineAwareMapper(
+        FlowNodeInstanceMapper.class, defaultSqlSessionFactory, engineSqlSessionTemplates);
   }
 
   @Bean
-  public MapperFactoryBean<IncidentMapper> incidentMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, IncidentMapper.class);
+  public GroupMapper groupInstanceMapper(
+      final SqlSessionFactory defaultSqlSessionFactory,
+      final Map<String, SqlSessionTemplate> engineSqlSessionTemplates) {
+    return createEngineAwareMapper(
+        GroupMapper.class, defaultSqlSessionFactory, engineSqlSessionTemplates);
   }
 
   @Bean
-  public MapperFactoryBean<ProcessInstanceMapper> processInstanceMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, ProcessInstanceMapper.class);
+  public IncidentMapper incidentMapper(
+      final SqlSessionFactory defaultSqlSessionFactory,
+      final Map<String, SqlSessionTemplate> engineSqlSessionTemplates) {
+    return createEngineAwareMapper(
+        IncidentMapper.class, defaultSqlSessionFactory, engineSqlSessionTemplates);
   }
 
   @Bean
-  public MapperFactoryBean<ProcessDefinitionMapper> processDeploymentMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, ProcessDefinitionMapper.class);
+  public ProcessInstanceMapper processInstanceMapper(
+      final SqlSessionFactory defaultSqlSessionFactory,
+      final Map<String, SqlSessionTemplate> engineSqlSessionTemplates) {
+    return createEngineAwareMapper(
+        ProcessInstanceMapper.class, defaultSqlSessionFactory, engineSqlSessionTemplates);
   }
 
   @Bean
-  public MapperFactoryBean<TenantMapper> tenantMapper(final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, TenantMapper.class);
+  public ProcessDefinitionMapper processDeploymentMapper(
+      final SqlSessionFactory defaultSqlSessionFactory,
+      final Map<String, SqlSessionTemplate> engineSqlSessionTemplates) {
+    return createEngineAwareMapper(
+        ProcessDefinitionMapper.class, defaultSqlSessionFactory, engineSqlSessionTemplates);
   }
 
   @Bean
-  public MapperFactoryBean<VariableMapper> variableMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, VariableMapper.class);
+  public TenantMapper tenantMapper(
+      final SqlSessionFactory defaultSqlSessionFactory,
+      final Map<String, SqlSessionTemplate> engineSqlSessionTemplates) {
+    return createEngineAwareMapper(
+        TenantMapper.class, defaultSqlSessionFactory, engineSqlSessionTemplates);
   }
 
   @Bean
-  public MapperFactoryBean<ClusterVariableMapper> clusterVariableMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, ClusterVariableMapper.class);
+  public VariableMapper variableMapper(
+      final SqlSessionFactory defaultSqlSessionFactory,
+      final Map<String, SqlSessionTemplate> engineSqlSessionTemplates) {
+    return createEngineAwareMapper(
+        VariableMapper.class, defaultSqlSessionFactory, engineSqlSessionTemplates);
   }
 
   @Bean
-  public MapperFactoryBean<RoleMapper> roleMapper(final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, RoleMapper.class);
+  public ClusterVariableMapper clusterVariableMapper(
+      final SqlSessionFactory defaultSqlSessionFactory,
+      final Map<String, SqlSessionTemplate> engineSqlSessionTemplates) {
+    return createEngineAwareMapper(
+        ClusterVariableMapper.class, defaultSqlSessionFactory, engineSqlSessionTemplates);
   }
 
   @Bean
-  public MapperFactoryBean<UserMapper> userMapper(final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, UserMapper.class);
+  public RoleMapper roleMapper(
+      final SqlSessionFactory defaultSqlSessionFactory,
+      final Map<String, SqlSessionTemplate> engineSqlSessionTemplates) {
+    return createEngineAwareMapper(
+        RoleMapper.class, defaultSqlSessionFactory, engineSqlSessionTemplates);
   }
 
   @Bean
-  public MapperFactoryBean<UserTaskMapper> userTaskMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, UserTaskMapper.class);
+  public UserMapper userMapper(
+      final SqlSessionFactory defaultSqlSessionFactory,
+      final Map<String, SqlSessionTemplate> engineSqlSessionTemplates) {
+    return createEngineAwareMapper(
+        UserMapper.class, defaultSqlSessionFactory, engineSqlSessionTemplates);
   }
 
   @Bean
-  public MapperFactoryBean<FormMapper> formMapper(final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, FormMapper.class);
+  public UserTaskMapper userTaskMapper(
+      final SqlSessionFactory defaultSqlSessionFactory,
+      final Map<String, SqlSessionTemplate> engineSqlSessionTemplates) {
+    return createEngineAwareMapper(
+        UserTaskMapper.class, defaultSqlSessionFactory, engineSqlSessionTemplates);
   }
 
   @Bean
-  public MapperFactoryBean<MappingRuleMapper> mappingMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, MappingRuleMapper.class);
+  public FormMapper formMapper(
+      final SqlSessionFactory defaultSqlSessionFactory,
+      final Map<String, SqlSessionTemplate> engineSqlSessionTemplates) {
+    return createEngineAwareMapper(
+        FormMapper.class, defaultSqlSessionFactory, engineSqlSessionTemplates);
   }
 
   @Bean
-  public MapperFactoryBean<ExporterPositionMapper> exporterPosition(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, ExporterPositionMapper.class);
+  public MappingRuleMapper mappingMapper(
+      final SqlSessionFactory defaultSqlSessionFactory,
+      final Map<String, SqlSessionTemplate> engineSqlSessionTemplates) {
+    return createEngineAwareMapper(
+        MappingRuleMapper.class, defaultSqlSessionFactory, engineSqlSessionTemplates);
   }
 
   @Bean
-  public MapperFactoryBean<PurgeMapper> purgeMapper(final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, PurgeMapper.class);
+  public ExporterPositionMapper exporterPosition(
+      final SqlSessionFactory defaultSqlSessionFactory,
+      final Map<String, SqlSessionTemplate> engineSqlSessionTemplates) {
+    return createEngineAwareMapper(
+        ExporterPositionMapper.class, defaultSqlSessionFactory, engineSqlSessionTemplates);
   }
 
   @Bean
-  public MapperFactoryBean<BatchOperationMapper> batchOperationMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, BatchOperationMapper.class);
+  public PurgeMapper purgeMapper(
+      final SqlSessionFactory defaultSqlSessionFactory,
+      final Map<String, SqlSessionTemplate> engineSqlSessionTemplates) {
+    return createEngineAwareMapper(
+        PurgeMapper.class, defaultSqlSessionFactory, engineSqlSessionTemplates);
   }
 
   @Bean
-  public MapperFactoryBean<JobMapper> jobMapper(final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, JobMapper.class);
+  public BatchOperationMapper batchOperationMapper(
+      final SqlSessionFactory defaultSqlSessionFactory,
+      final Map<String, SqlSessionTemplate> engineSqlSessionTemplates) {
+    return createEngineAwareMapper(
+        BatchOperationMapper.class, defaultSqlSessionFactory, engineSqlSessionTemplates);
   }
 
   @Bean
-  public MapperFactoryBean<SequenceFlowMapper> sequenceFlowMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, SequenceFlowMapper.class);
+  public JobMapper jobMapper(
+      final SqlSessionFactory defaultSqlSessionFactory,
+      final Map<String, SqlSessionTemplate> engineSqlSessionTemplates) {
+    return createEngineAwareMapper(
+        JobMapper.class, defaultSqlSessionFactory, engineSqlSessionTemplates);
   }
 
   @Bean
-  public MapperFactoryBean<UsageMetricMapper> usageMetricMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, UsageMetricMapper.class);
+  public SequenceFlowMapper sequenceFlowMapper(
+      final SqlSessionFactory defaultSqlSessionFactory,
+      final Map<String, SqlSessionTemplate> engineSqlSessionTemplates) {
+    return createEngineAwareMapper(
+        SequenceFlowMapper.class, defaultSqlSessionFactory, engineSqlSessionTemplates);
   }
 
   @Bean
-  public MapperFactoryBean<UsageMetricTUMapper> usageMetricTUMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, UsageMetricTUMapper.class);
+  public UsageMetricMapper usageMetricMapper(
+      final SqlSessionFactory defaultSqlSessionFactory,
+      final Map<String, SqlSessionTemplate> engineSqlSessionTemplates) {
+    return createEngineAwareMapper(
+        UsageMetricMapper.class, defaultSqlSessionFactory, engineSqlSessionTemplates);
   }
 
   @Bean
-  MapperFactoryBean<MessageSubscriptionMapper> messageSubscriptionMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, MessageSubscriptionMapper.class);
+  public UsageMetricTUMapper usageMetricTUMapper(
+      final SqlSessionFactory defaultSqlSessionFactory,
+      final Map<String, SqlSessionTemplate> engineSqlSessionTemplates) {
+    return createEngineAwareMapper(
+        UsageMetricTUMapper.class, defaultSqlSessionFactory, engineSqlSessionTemplates);
   }
 
   @Bean
-  MapperFactoryBean<CorrelatedMessageSubscriptionMapper> correlatedMessageSubscriptionMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, CorrelatedMessageSubscriptionMapper.class);
+  public MessageSubscriptionMapper messageSubscriptionMapper(
+      final SqlSessionFactory defaultSqlSessionFactory,
+      final Map<String, SqlSessionTemplate> engineSqlSessionTemplates) {
+    return createEngineAwareMapper(
+        MessageSubscriptionMapper.class, defaultSqlSessionFactory, engineSqlSessionTemplates);
   }
 
   @Bean
-  MapperFactoryBean<TableMetricsMapper> tableMetricsMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, TableMetricsMapper.class);
+  public CorrelatedMessageSubscriptionMapper correlatedMessageSubscriptionMapper(
+      final SqlSessionFactory defaultSqlSessionFactory,
+      final Map<String, SqlSessionTemplate> engineSqlSessionTemplates) {
+    return createEngineAwareMapper(
+        CorrelatedMessageSubscriptionMapper.class,
+        defaultSqlSessionFactory,
+        engineSqlSessionTemplates);
   }
 
   @Bean
-  MapperFactoryBean<HistoryDeletionMapper> historyDeletionMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, HistoryDeletionMapper.class);
+  public TableMetricsMapper tableMetricsMapper(
+      final SqlSessionFactory defaultSqlSessionFactory,
+      final Map<String, SqlSessionTemplate> engineSqlSessionTemplates) {
+    return createEngineAwareMapper(
+        TableMetricsMapper.class, defaultSqlSessionFactory, engineSqlSessionTemplates);
   }
 
   @Bean
-  MapperFactoryBean<PersistentWebSessionMapper> persistentWebSessionMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, PersistentWebSessionMapper.class);
+  public HistoryDeletionMapper historyDeletionMapper(
+      final SqlSessionFactory defaultSqlSessionFactory,
+      final Map<String, SqlSessionTemplate> engineSqlSessionTemplates) {
+    return createEngineAwareMapper(
+        HistoryDeletionMapper.class, defaultSqlSessionFactory, engineSqlSessionTemplates);
   }
 
-  private <T> MapperFactoryBean<T> createMapperFactoryBean(
-      final SqlSessionFactory sqlSessionFactory, final Class<T> clazz) {
-    final MapperFactoryBean<T> factoryBean = new MapperFactoryBean<>(clazz);
-    factoryBean.setSqlSessionFactory(sqlSessionFactory);
-    return factoryBean;
+  @Bean
+  public PersistentWebSessionMapper persistentWebSessionMapper(
+      final SqlSessionFactory defaultSqlSessionFactory,
+      final Map<String, SqlSessionTemplate> engineSqlSessionTemplates) {
+    return createEngineAwareMapper(
+        PersistentWebSessionMapper.class, defaultSqlSessionFactory, engineSqlSessionTemplates);
+  }
+
+  private <T> T createEngineAwareMapper(
+      final Class<T> mapperClass,
+      final SqlSessionFactory defaultSqlSessionFactory,
+      final Map<String, SqlSessionTemplate> engineSqlSessionTemplates) {
+    final SqlSessionTemplate defaultTemplate = new SqlSessionTemplate(defaultSqlSessionFactory);
+    final T defaultMapper = defaultTemplate.getMapper(mapperClass);
+
+    final Map<String, T> engineMappers = new HashMap<>();
+    for (final var entry : engineSqlSessionTemplates.entrySet()) {
+      engineMappers.put(entry.getKey(), entry.getValue().getMapper(mapperClass));
+    }
+
+    return MultiEngineMapperProxy.create(mapperClass, defaultMapper, engineMappers);
+  }
+
+  private DataSource createDataSource(final Rdbms rdbms) {
+    final var config = new HikariConfig();
+    config.setJdbcUrl(rdbms.getUrl());
+    config.setUsername(rdbms.getUsername());
+    config.setPassword(rdbms.getPassword());
+
+    final var connectionPool = rdbms.getConnectionPool();
+    config.setMaximumPoolSize(connectionPool.getMaximumPoolSize());
+    config.setMinimumIdle(connectionPool.getMinimumIdle());
+    config.setIdleTimeout(connectionPool.getIdleTimeout());
+    config.setMaxLifetime(connectionPool.getMaxLifetime());
+    config.setConnectionTimeout(connectionPool.getConnectionTimeout());
+
+    return new HikariDataSource(config);
   }
 }

@@ -7,7 +7,11 @@
  */
 package io.camunda.db.rdbms;
 
+import java.util.HashMap;
+import java.util.Map;
+import javax.sql.DataSource;
 import liquibase.integration.spring.MultiTenantSpringLiquibase;
+import liquibase.integration.spring.SpringLiquibase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,10 +29,30 @@ public class LiquibaseSchemaManager extends MultiTenantSpringLiquibase
   private static final Logger LOG = LoggerFactory.getLogger(LiquibaseSchemaManager.class);
 
   private volatile boolean initialized = false;
+  private Map<String, DataSource> engineDataSources = new HashMap<>();
+
+  public void setEngineDataSources(final Map<String, DataSource> engineDataSources) {
+    this.engineDataSources = engineDataSources;
+  }
 
   @Override
   public void afterPropertiesSet() throws Exception {
     super.afterPropertiesSet();
+
+    for (final var entry : engineDataSources.entrySet()) {
+      final var engineName = entry.getKey();
+      final var dataSource = entry.getValue();
+      LOG.info("Initializing Liquibase for engine '{}'", engineName);
+
+      final var liquibase = new SpringLiquibase();
+      liquibase.setDataSource(dataSource);
+      liquibase.setChangeLog(getChangeLog());
+      liquibase.setChangeLogParameters(getParameters());
+      liquibase.setDatabaseChangeLogTable(getDatabaseChangeLogTable());
+      liquibase.setDatabaseChangeLogLockTable(getDatabaseChangeLogLockTable());
+      liquibase.afterPropertiesSet();
+    }
+
     initialized = true;
     LOG.debug("Liquibase migrations completed.");
   }

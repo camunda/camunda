@@ -7,6 +7,7 @@
  */
 package io.camunda.db.rdbms.write;
 
+import io.camunda.db.rdbms.MultiEngineAware;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.read.service.BatchOperationDbReader;
 import io.camunda.db.rdbms.sql.AuditLogMapper;
@@ -30,11 +31,15 @@ import io.camunda.db.rdbms.sql.VariableMapper;
 import io.camunda.db.rdbms.write.queue.DefaultExecutionQueue;
 import io.camunda.db.rdbms.write.service.ExporterPositionService;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ibatis.session.SqlSessionFactory;
 
 public class RdbmsWriterFactory {
 
+  private static final AtomicBoolean INITIALIZED = new AtomicBoolean(false);
   private final SqlSessionFactory sqlSessionFactory;
+  private final Map<String, SqlSessionFactory> engineSqlSessionFactories;
   private final ExporterPositionMapper exporterPositionMapper;
   private final VendorDatabaseProperties vendorDatabaseProperties;
   private final AuditLogMapper auditLogMapper;
@@ -59,6 +64,7 @@ public class RdbmsWriterFactory {
 
   public RdbmsWriterFactory(
       final SqlSessionFactory sqlSessionFactory,
+      final Map<String, SqlSessionFactory> engineSqlSessionFactories,
       final ExporterPositionMapper exporterPositionMapper,
       final VendorDatabaseProperties vendorDatabaseProperties,
       final AuditLogMapper auditLogMapper,
@@ -81,6 +87,7 @@ public class RdbmsWriterFactory {
       final ClusterVariableMapper clusterVariableMapper,
       final HistoryDeletionMapper historyDeletionMapper) {
     this.sqlSessionFactory = sqlSessionFactory;
+    this.engineSqlSessionFactories = engineSqlSessionFactories;
     this.exporterPositionMapper = exporterPositionMapper;
     this.vendorDatabaseProperties = vendorDatabaseProperties;
     this.auditLogMapper = auditLogMapper;
@@ -106,36 +113,49 @@ public class RdbmsWriterFactory {
 
   public RdbmsWriters createWriter(final RdbmsWriterConfig config) {
     final var metrics = new RdbmsWriterMetrics(meterRegistry, config.partitionId());
+    final String engineName = config.engineName();
+    final SqlSessionFactory factory;
+
+    if (engineName != null && engineSqlSessionFactories.containsKey(engineName)) {
+      factory = engineSqlSessionFactories.get(engineName);
+    } else {
+      factory = sqlSessionFactory;
+    }
+
     final var executionQueue =
         new DefaultExecutionQueue(
-            sqlSessionFactory,
-            config.partitionId(),
-            config.queueSize(),
-            config.queueMemoryLimit(),
-            metrics);
+            factory, config.partitionId(), config.queueSize(), config.queueMemoryLimit(), metrics);
     return new RdbmsWriters(
         config,
         executionQueue,
-        new ExporterPositionService(executionQueue, exporterPositionMapper),
+        new ExporterPositionService(executionQueue, getMapper(exporterPositionMapper, engineName)),
         metrics,
-        auditLogMapper,
-        decisionInstanceMapper,
-        flowNodeInstanceMapper,
-        incidentMapper,
-        processInstanceMapper,
-        purgeMapper,
-        userTaskMapper,
-        variableMapper,
+        getMapper(auditLogMapper, engineName),
+        getMapper(decisionInstanceMapper, engineName),
+        getMapper(flowNodeInstanceMapper, engineName),
+        getMapper(incidentMapper, engineName),
+        getMapper(processInstanceMapper, engineName),
+        getMapper(purgeMapper, engineName),
+        getMapper(userTaskMapper, engineName),
+        getMapper(variableMapper, engineName),
         vendorDatabaseProperties,
-        batchOperationReader,
-        jobMapper,
-        sequenceFlowMapper,
-        usageMetricMapper,
-        usageMetricTUMapper,
-        batchOperationMapper,
-        messageSubscriptionMapper,
-        correlatedMessageSubscriptionMapper,
-        clusterVariableMapper,
-        historyDeletionMapper);
+        batchOperationReader, // Reader, might need handling too? But Readers are usually
+        // stateless/proxy.
+        getMapper(jobMapper, engineName),
+        getMapper(sequenceFlowMapper, engineName),
+        getMapper(usageMetricMapper, engineName),
+        getMapper(usageMetricTUMapper, engineName),
+        getMapper(batchOperationMapper, engineName),
+        getMapper(messageSubscriptionMapper, engineName),
+        getMapper(correlatedMessageSubscriptionMapper, engineName),
+        getMapper(clusterVariableMapper, engineName),
+        getMapper(historyDeletionMapper, engineName));
+  }
+
+  private <T> T getMapper(final T mapper, final String engineName) {
+    if (engineName != null && mapper instanceof MultiEngineAware) {
+      return (T) ((MultiEngineAware) mapper).withEngine(engineName);
+    }
+    return mapper;
   }
 }

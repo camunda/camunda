@@ -11,12 +11,24 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 public class Engine {
 
+  private String name;
+
   /** Configuration properties for the engine's distribution settings. */
   @NestedConfigurationProperty private Distribution distribution = new Distribution();
 
   /** Configuration properties for the engine's batch operation settings. */
   @NestedConfigurationProperty
   private EngineBatchOperation batchOperations = new EngineBatchOperation();
+
+  @NestedConfigurationProperty private Data data = new Data();
+
+  public String getName() {
+    return name;
+  }
+
+  public void setName(final String name) {
+    this.name = name;
+  }
 
   public Distribution getDistribution() {
     return distribution;
@@ -32,5 +44,13 @@ public class Engine {
 
   public void setBatchOperations(final EngineBatchOperation batchOperations) {
     this.batchOperations = batchOperations;
+  }
+
+  public Data getData() {
+    return data;
+  }
+
+  public void setData(final Data data) {
+    this.data = data;
   }
 }

@@ -5,13 +5,9 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.search.clients.reader;
+package io.camunda.db.rdbms;
 
-import io.camunda.search.entities.ProcessInstanceEntity;
-import io.camunda.search.query.ProcessInstanceQuery;
+public interface MultiEngineAware<T> {
 
-public interface ProcessInstanceReader
-    extends SearchEntityReader<ProcessInstanceEntity, ProcessInstanceQuery> {
-
-  ProcessInstanceReader withEngineName(String engineName);
+  T withEngine(String engineName);
 }
