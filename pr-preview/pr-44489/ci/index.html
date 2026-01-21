@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.9.2">
 <title data-rh="true">CI &amp; Automation | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-44489/ci/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="CI &amp; Automation | Camunda Platform"><meta data-rh="true" name="description" content="This page has information and answers questions around how the C8 monorepo CI and related tools like Renovate work. It should serve as a knowledge base including FAQ for Camunda and external contributors."><meta data-rh="true" property="og:description" content="This page has information and answers questions around how the C8 monorepo CI and related tools like Renovate work. It should serve as a knowledge base including FAQ for Camunda and external contributors."><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-44489/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-44489/ci/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-44489/ci/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-44489/ci/" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"CI & Automation","item":"https://camunda.github.io/camunda/pr-preview/pr-44489/ci"}]}</script><link rel="stylesheet" href="/camunda/pr-preview/pr-44489/assets/css/styles.9181a4df.css">
-<script src="/camunda/pr-preview/pr-44489/assets/js/runtime~main.c1c0601e.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-44489/assets/js/main.6240d3c3.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-44489/assets/js/runtime~main.538544f0.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-44489/assets/js/main.f95e17ab.js" defer="defer"></script>
 </head>
 <body class="navigation-with-keyboard">
 <svg style="display: none;"><defs>
@@ -420,24 +420,25 @@ mxschmitt/action-tmate@<em>,
 ncipollo/release-action@</em>,
 nick-fields/retry@<em>,
 octokit/</em>@<em>,
-peter-evans/create-or-update-comment@</em>,
-peter-evans/find-comment@<em>,
-peter-evans/slash-command-dispatch@</em>,
-redhat-actions/oc-login@<em>,
-requarks/changelog-action@</em>,
-rodrigo-lourenco-lopes/move-to-current-iteration@<em>,
-rossjrw/pr-preview-action@</em>,
-s4u/maven-settings-action@<em>,
-s4u/setup-maven-action@</em>,
-slackapi/slack-github-action@<em>,
-snyk/actions/setup@</em>,
-stCarolas/setup-maven@<em>,
-stefanzweifel/git-auto-commit-action@</em>,
-teleport-actions/auth-k8s@<em>,
-teleport-actions/setup@</em>,
-test-summary/action@<em>,
-tibdex/github-app-token@</em>,
-wagoid/commitlint-github-action@*,<p></p></div></div></details>
+peaceiris/actions-gh-pages@</em>,
+peter-evans/create-or-update-comment@<em>,
+peter-evans/find-comment@</em>,
+peter-evans/slash-command-dispatch@<em>,
+redhat-actions/oc-login@</em>,
+requarks/changelog-action@<em>,
+rodrigo-lourenco-lopes/move-to-current-iteration@</em>,
+rossjrw/pr-preview-action@<em>,
+s4u/maven-settings-action@</em>,
+s4u/setup-maven-action@<em>,
+slackapi/slack-github-action@</em>,
+snyk/actions/setup@<em>,
+stCarolas/setup-maven@</em>,
+stefanzweifel/git-auto-commit-action@<em>,
+teleport-actions/auth-k8s@</em>,
+teleport-actions/setup@<em>,
+test-summary/action@</em>,
+tibdex/github-app-token@<em>,
+wagoid/commitlint-github-action@</em>,<p></p></div></div></details>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="preview-environments">Preview Environments<a href="#preview-environments" class="hash-link" aria-label="Direct link to Preview Environments" title="Direct link to Preview Environments" translate="no">​</a></h2>
 <p>Engineers can request Preview Environments for specific Pull Requests of the C8 monorepo to be available via a designated URL, to allow more thorough testing and demonstration of the product features before the feature branches are merged into the base branch. For the C8 monorepo the components Identity, Operate, Optimize, Tasklist and Zeebe will get provisioned based on the <a href="https://github.com/camunda/camunda-platform-helm/" target="_blank" rel="noopener noreferrer" class="">camunda-platform</a> Helm chart.</p>
 <p>Assign the <a href="https://github.com/camunda/camunda/labels/deploy-preview" target="_blank" rel="noopener noreferrer" class=""><code>deploy-preview</code></a> label to any PR to request creation of a Preview Environment. The following base branches are supported, with their corresponding Helm chart versions:</p>
