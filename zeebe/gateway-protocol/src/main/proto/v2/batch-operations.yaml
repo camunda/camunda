@@ -286,7 +286,7 @@ components:
         actorType:
           description: The type of the actor who performed the operation.
           allOf:
-            - $ref: '#/components/schemas/BatchOperationActorTypeEnum'
+            - $ref: 'audit-logs.yaml#/components/schemas/AuditLogActorTypeEnum'
         actorId:
           description: The ID of the actor who performed the operation.
           allOf:
@@ -324,7 +324,7 @@ components:
           description: The end date of the batch operation.
           format: date-time
         actorType:
-          $ref: '#/components/schemas/BatchOperationActorTypeEnum'
+          $ref: 'audit-logs.yaml#/components/schemas/AuditLogActorTypeEnum'
         actorId:
           type: string
           description: The ID of the actor who performed the operation. Available for batch operations created since 8.9.
@@ -623,13 +623,6 @@ components:
         - MODIFY_PROCESS_INSTANCE
         - RESOLVE_INCIDENT
         - UPDATE_VARIABLE
-
-    BatchOperationActorTypeEnum:
-      description: The type of the actor. Available for batch operations created since 8.9.
-      type: string
-      enum:
-        - CLIENT
-        - USER
 
     ## Filters
 

@@ -12,7 +12,7 @@ import static io.camunda.exporter.utils.ExporterUtil.map;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.store.BatchRequest;
-import io.camunda.webapps.schema.entities.operation.BatchOperationActorType;
+import io.camunda.webapps.schema.entities.auditlog.AuditLogActorType;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity.BatchOperationState;
 import io.camunda.webapps.schema.entities.operation.OperationType;
@@ -100,7 +100,7 @@ public class BatchOperationCreatedHandler
     return indexName;
   }
 
-  private record ActorInfo(BatchOperationActorType type, String id) {
+  private record ActorInfo(AuditLogActorType type, String id) {
     static final ActorInfo NULL_VALUES = new ActorInfo(null, null);
   }
 
@@ -127,10 +127,10 @@ public class BatchOperationCreatedHandler
 
       final var actorType =
           switch (auditLogActor.actorType()) {
-            case USER -> BatchOperationActorType.USER;
-            case CLIENT -> BatchOperationActorType.CLIENT;
-            case ANONYMOUS -> null;
-            case UNKNOWN -> null;
+            case USER -> AuditLogActorType.USER;
+            case CLIENT -> AuditLogActorType.CLIENT;
+            case ANONYMOUS -> AuditLogActorType.ANONYMOUS;
+            case UNKNOWN -> AuditLogActorType.UNKNOWN;
             case null -> null;
           };
       return new ActorInfo(actorType, auditLogActor.actorId());

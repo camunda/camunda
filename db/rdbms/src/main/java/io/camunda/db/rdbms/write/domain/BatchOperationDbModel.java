@@ -7,7 +7,7 @@
  */
 package io.camunda.db.rdbms.write.domain;
 
-import io.camunda.search.entities.BatchOperationEntity.BatchOperationActorType;
+import io.camunda.search.entities.AuditLogEntity.AuditLogActorType;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationState;
 import io.camunda.search.entities.BatchOperationType;
 import io.camunda.util.ObjectBuilder;
@@ -25,16 +25,16 @@ public class BatchOperationDbModel implements Copyable<BatchOperationDbModel> {
   private OffsetDateTime endDate;
 
   /**
-   * The type of the actor that performed the operation, (USER or CLIENT).
+   * The type of the actor that performed the operation.
    *
-   * @since 8.9.0
+   * @since 8.9.0 - so null for older versions
    */
-  private final BatchOperationActorType actorType;
+  private final AuditLogActorType actorType;
 
   /**
    * The id of the actor that performed the operation.
    *
-   * @since 8.9.0
+   * @since 8.9.0 - so null for older versions
    */
   private final String actorId;
 
@@ -49,7 +49,7 @@ public class BatchOperationDbModel implements Copyable<BatchOperationDbModel> {
       final BatchOperationType operationType,
       final OffsetDateTime startDate,
       final OffsetDateTime endDate,
-      final BatchOperationActorType actorType,
+      final AuditLogActorType actorType,
       final String actorId,
       final Integer operationsTotalCount,
       final Integer operationsFailedCount,
@@ -72,7 +72,7 @@ public class BatchOperationDbModel implements Copyable<BatchOperationDbModel> {
       final BatchOperationType operationType,
       final OffsetDateTime startDate,
       final OffsetDateTime endDate,
-      final BatchOperationActorType actorType,
+      final AuditLogActorType actorType,
       final String actorId,
       final Integer operationsTotalCount,
       final Integer operationsFailedCount,
@@ -140,7 +140,7 @@ public class BatchOperationDbModel implements Copyable<BatchOperationDbModel> {
     this.endDate = endDate;
   }
 
-  public BatchOperationActorType actorType() {
+  public AuditLogActorType actorType() {
     return actorType;
   }
 
@@ -201,7 +201,7 @@ public class BatchOperationDbModel implements Copyable<BatchOperationDbModel> {
     private BatchOperationType operationType;
     private OffsetDateTime startDate;
     private OffsetDateTime endDate;
-    private BatchOperationActorType actorType;
+    private AuditLogActorType actorType;
     private String actorId;
     private Integer operationsTotalCount = 0;
     private Integer operationsFailedCount = 0;
@@ -240,7 +240,7 @@ public class BatchOperationDbModel implements Copyable<BatchOperationDbModel> {
       return this;
     }
 
-    public Builder actorType(final BatchOperationActorType actorType) {
+    public Builder actorType(final AuditLogActorType actorType) {
       this.actorType = actorType;
       return this;
     }

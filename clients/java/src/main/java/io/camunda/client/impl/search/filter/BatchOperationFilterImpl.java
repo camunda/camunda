@@ -15,7 +15,7 @@
  */
 package io.camunda.client.impl.search.filter;
 
-import io.camunda.client.api.search.enums.BatchOperationActorTypeEnum;
+import io.camunda.client.api.search.enums.AuditLogActorTypeEnum;
 import io.camunda.client.api.search.enums.BatchOperationState;
 import io.camunda.client.api.search.enums.BatchOperationType;
 import io.camunda.client.api.search.filter.builder.BasicStringProperty;
@@ -99,15 +99,14 @@ public class BatchOperationFilterImpl
 
   @Override
   public io.camunda.client.api.search.filter.BatchOperationFilter actorType(
-      final BatchOperationActorTypeEnum actorType) {
+      final AuditLogActorTypeEnum actorType) {
     if (actorType == null) {
       filter.setActorType(null);
       return this;
     }
 
     filter.setActorType(
-        EnumUtil.convert(
-            actorType, io.camunda.client.protocol.rest.BatchOperationActorTypeEnum.class));
+        EnumUtil.convert(actorType, io.camunda.client.protocol.rest.AuditLogActorTypeEnum.class));
     return this;
   }
 

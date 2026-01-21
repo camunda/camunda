@@ -15,7 +15,7 @@
  */
 package io.camunda.client.impl.search.response;
 
-import io.camunda.client.api.search.enums.BatchOperationActorTypeEnum;
+import io.camunda.client.api.search.enums.AuditLogActorTypeEnum;
 import io.camunda.client.api.search.enums.BatchOperationState;
 import io.camunda.client.api.search.enums.BatchOperationType;
 import io.camunda.client.api.search.response.BatchOperation;
@@ -36,7 +36,7 @@ public class BatchOperationImpl implements BatchOperation {
   private final BatchOperationState status;
   private final OffsetDateTime startDate;
   private final OffsetDateTime endDate;
-  private final BatchOperationActorTypeEnum actorType;
+  private final AuditLogActorTypeEnum actorType;
   private final String actorId;
   private final Integer operationsTotalCount;
   private final Integer operationsFailedCount;
@@ -63,7 +63,7 @@ public class BatchOperationImpl implements BatchOperation {
     status = EnumUtil.convert(item.getState(), BatchOperationState.class);
     startDate = ParseUtil.parseOffsetDateTimeOrNull(item.getStartDate());
     endDate = ParseUtil.parseOffsetDateTimeOrNull(item.getEndDate());
-    actorType = EnumUtil.convert(item.getActorType(), BatchOperationActorTypeEnum.class);
+    actorType = EnumUtil.convert(item.getActorType(), AuditLogActorTypeEnum.class);
     actorId = item.getActorId();
     operationsTotalCount = item.getOperationsTotalCount();
     operationsFailedCount = item.getOperationsFailedCount();
@@ -121,7 +121,7 @@ public class BatchOperationImpl implements BatchOperation {
   }
 
   @Override
-  public BatchOperationActorTypeEnum getActorType() {
+  public AuditLogActorTypeEnum getActorType() {
     return actorType;
   }
 
