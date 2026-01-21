@@ -7,15 +7,31 @@
  */
 
 import {z} from 'zod';
-import {API_VERSION, getQueryResponseBodySchema, getQueryRequestBodySchema, type Endpoint} from '../common';
-import {mappingRuleSchema, type MappingRule} from './mapping-rule';
-import {userSchema} from './user';
-import {roleSchema, groupSchema, type Group} from './group-role';
+import {API_VERSION, type Endpoint} from '../common';
+import {
+	groupResultSchema,
+	groupCreateRequestSchema,
+	groupCreateResultSchema,
+	groupUpdateRequestSchema,
+	groupUpdateResultSchema,
+	groupSearchQueryRequestSchema,
+	groupSearchQueryResultSchema,
+	groupUserSearchQueryRequestSchema,
+	groupUserSearchResultSchema,
+	groupClientSearchQueryRequestSchema,
+	groupClientSearchResultSchema,
+	roleGroupSearchQueryRequestSchema,
+	roleGroupSearchResultSchema,
+	mappingRuleSearchQueryRequestSchema,
+	mappingRuleSearchQueryResultSchema,
+} from './gen';
+import {groupSchema, type Group} from './group-role';
+import type {MappingRule} from './mapping-rule';
 
-const createGroupRequestBodySchema = groupSchema;
+const createGroupRequestBodySchema = groupCreateRequestSchema;
 type CreateGroupRequestBody = z.infer<typeof createGroupRequestBodySchema>;
 
-const createGroupResponseBodySchema = groupSchema;
+const createGroupResponseBodySchema = groupCreateResultSchema;
 type CreateGroupResponseBody = z.infer<typeof createGroupResponseBodySchema>;
 
 const createGroup = {
@@ -34,16 +50,13 @@ const getGroup = {
 	},
 } as const satisfies Endpoint<Pick<Group, 'groupId'>>;
 
-const getGroupResponseBodySchema = groupSchema;
+const getGroupResponseBodySchema = groupResultSchema;
 type GetGroupResponseBody = z.infer<typeof getGroupResponseBodySchema>;
 
-const updateGroupRequestBodySchema = groupSchema.pick({
-	name: true,
-	description: true,
-});
+const updateGroupRequestBodySchema = groupUpdateRequestSchema;
 type UpdateGroupRequestBody = z.infer<typeof updateGroupRequestBodySchema>;
 
-const updateGroupResponseBodySchema = groupSchema;
+const updateGroupResponseBodySchema = groupUpdateResultSchema;
 type UpdateGroupResponseBody = z.infer<typeof updateGroupResponseBodySchema>;
 
 const updateGroup = {
@@ -64,18 +77,10 @@ const deleteGroup = {
 	},
 } as const satisfies Endpoint<Pick<Group, 'groupId'>>;
 
-const queryGroupsRequestBodySchema = getQueryRequestBodySchema({
-	sortFields: ['name', 'groupId'] as const,
-	filter: groupSchema
-		.pick({
-			groupId: true,
-			name: true,
-		})
-		.partial(),
-});
+const queryGroupsRequestBodySchema = groupSearchQueryRequestSchema;
 type QueryGroupsRequestBody = z.infer<typeof queryGroupsRequestBodySchema>;
 
-const queryGroupsResponseBodySchema = getQueryResponseBodySchema(groupSchema);
+const queryGroupsResponseBodySchema = groupSearchQueryResultSchema;
 type QueryGroupsResponseBody = z.infer<typeof queryGroupsResponseBodySchema>;
 
 const queryGroups = {
@@ -85,13 +90,10 @@ const queryGroups = {
 	},
 } as const satisfies Endpoint;
 
-const queryUsersByGroupRequestBodySchema = getQueryRequestBodySchema({
-	sortFields: ['username'] as const,
-	filter: z.never(),
-});
+const queryUsersByGroupRequestBodySchema = groupUserSearchQueryRequestSchema;
 type QueryUsersByGroupRequestBody = z.infer<typeof queryUsersByGroupRequestBodySchema>;
 
-const queryUsersByGroupResponseBodySchema = getQueryResponseBodySchema(userSchema.pick({username: true}));
+const queryUsersByGroupResponseBodySchema = groupUserSearchResultSchema;
 type QueryUsersByGroupResponseBody = z.infer<typeof queryUsersByGroupResponseBodySchema>;
 
 const queryUsersByGroup = {
@@ -103,17 +105,10 @@ const queryUsersByGroup = {
 	},
 } as const satisfies Endpoint<Pick<Group, 'groupId'>>;
 
-const queryClientsByGroupRequestBodySchema = getQueryRequestBodySchema({
-	sortFields: ['clientId'] as const,
-	filter: z.never(),
-});
+const queryClientsByGroupRequestBodySchema = groupClientSearchQueryRequestSchema;
 type QueryClientsByGroupRequestBody = z.infer<typeof queryClientsByGroupRequestBodySchema>;
 
-const queryClientsByGroupResponseBodySchema = getQueryResponseBodySchema(
-	z.object({
-		clientId: z.string(),
-	}),
-);
+const queryClientsByGroupResponseBodySchema = groupClientSearchResultSchema;
 type QueryClientsByGroupResponseBody = z.infer<typeof queryClientsByGroupResponseBodySchema>;
 
 const queryClientsByGroup = {
@@ -125,18 +120,10 @@ const queryClientsByGroup = {
 	},
 } as const satisfies Endpoint<Pick<Group, 'groupId'>>;
 
-const queryRolesByGroupRequestBodySchema = getQueryRequestBodySchema({
-	sortFields: ['name', 'roleId'] as const,
-	filter: z
-		.object({
-			roleId: z.string(),
-			name: z.string(),
-		})
-		.partial(),
-});
+const queryRolesByGroupRequestBodySchema = roleGroupSearchQueryRequestSchema;
 type QueryRolesByGroupRequestBody = z.infer<typeof queryRolesByGroupRequestBodySchema>;
 
-const queryRolesByGroupResponseBodySchema = getQueryResponseBodySchema(roleSchema.pick({roleId: true, name: true}));
+const queryRolesByGroupResponseBodySchema = roleGroupSearchResultSchema;
 type QueryRolesByGroupResponseBody = z.infer<typeof queryRolesByGroupResponseBodySchema>;
 
 const queryRolesByGroup = {
@@ -148,19 +135,10 @@ const queryRolesByGroup = {
 	},
 } as const satisfies Endpoint<Pick<Group, 'groupId'>>;
 
-const queryMappingRulesByGroupRequestBodySchema = getQueryRequestBodySchema({
-	sortFields: ['claimName', 'claimValue', 'name'] as const,
-	filter: mappingRuleSchema
-		.pick({
-			claimName: true,
-			claimValue: true,
-			name: true,
-		})
-		.partial(),
-});
+const queryMappingRulesByGroupRequestBodySchema = mappingRuleSearchQueryRequestSchema;
 type QueryMappingRulesByGroupRequestBody = z.infer<typeof queryMappingRulesByGroupRequestBodySchema>;
 
-const queryMappingRulesByGroupResponseBodySchema = getQueryResponseBodySchema(mappingRuleSchema);
+const queryMappingRulesByGroupResponseBodySchema = mappingRuleSearchQueryResultSchema;
 type QueryMappingRulesByGroupResponseBody = z.infer<typeof queryMappingRulesByGroupResponseBodySchema>;
 
 const queryMappingRulesByGroup = {
