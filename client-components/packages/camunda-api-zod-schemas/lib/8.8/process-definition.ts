@@ -19,19 +19,19 @@ import {
 	advancedIntegerFilterSchema,
 } from '../common';
 import {
-	processDefinitionSchema,
-	processDefinitionStatisticSchema,
-	type ProcessDefinition,
-	type StatisticName,
-	type ProcessDefinitionStatistic,
-} from './processes';
-import {
 	processDefinitionSearchQuerySchema,
 	processDefinitionSearchQueryResultSchema,
 	processDefinitionElementStatisticsQuerySchema,
 	processDefinitionElementStatisticsQueryResultSchema,
 	advancedProcessInstanceStateFilterSchema,
+	processDefinitionResultSchema,
+	processElementStatisticsResultSchema,
 } from './gen';
+
+const processDefinitionSchema = processDefinitionResultSchema;
+type ProcessDefinition = z.infer<typeof processDefinitionSchema>;
+const processDefinitionStatisticSchema = processElementStatisticsResultSchema;
+type ProcessDefinitionStatistic = z.infer<typeof processDefinitionStatisticSchema>;
 
 const getProcessDefinition: Endpoint<{processDefinitionKey: string}> = {
 	method: 'GET',
@@ -84,7 +84,7 @@ const getProcessDefinitionStatisticsResponseBodySchema = processDefinitionElemen
 type GetProcessDefinitionStatisticsResponseBody = z.infer<typeof getProcessDefinitionStatisticsResponseBodySchema>;
 
 type GetProcessDefinitionStatisticsParams = {processDefinitionKey: string} & {
-	statisticName: StatisticName;
+	statisticName: 'element-instances';
 };
 
 const getProcessDefinitionStatistics: Endpoint<GetProcessDefinitionStatisticsParams> = {

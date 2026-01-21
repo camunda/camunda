@@ -8,13 +8,6 @@
 
 import {z} from 'zod';
 import {API_VERSION, type Endpoint} from '../common';
-import {
-	processInstanceSchema,
-	processInstanceStateSchema,
-	type ProcessInstance,
-	type ProcessInstanceState,
-	type StatisticName,
-} from './processes';
 import {queryIncidentsRequestBodySchema, queryIncidentsResponseBodySchema} from './incident';
 import {
 	cancelProcessInstanceRequestSchema,
@@ -33,7 +26,14 @@ import {
 	batchOperationCreatedResultSchema,
 	getProcessInstanceCallHierarchy200Schema,
 	getProcessInstanceStatistics200Schema,
+	processInstanceResultSchema,
+	processInstanceStateEnumSchema,
 } from './gen';
+
+const processInstanceSchema = processInstanceResultSchema;
+type ProcessInstance = z.infer<typeof processInstanceSchema>;
+const processInstanceStateSchema = processInstanceStateEnumSchema;
+type ProcessInstanceState = z.infer<typeof processInstanceStateSchema>;
 
 const queryProcessInstancesRequestBodySchema = processInstanceSearchQuerySchema;
 type QueryProcessInstancesRequestBody = z.infer<typeof queryProcessInstancesRequestBodySchema>;
@@ -101,7 +101,7 @@ const getProcessInstanceStatisticsResponseBodySchema = getProcessInstanceStatist
 type GetProcessInstanceStatisticsResponseBody = z.infer<typeof getProcessInstanceStatisticsResponseBodySchema>;
 
 type GetProcessInstanceStatisticsParams = {processInstanceKey: string} & {
-	statisticName: StatisticName;
+	statisticName: 'element-instances';
 };
 
 const getProcessInstanceSequenceFlows: Endpoint<{processInstanceKey: string}> = {
@@ -225,7 +225,6 @@ export type {
 	SequenceFlow,
 	GetProcessInstanceSequenceFlowsResponseBody,
 	ProcessInstanceState,
-	StatisticName,
 	ProcessInstance,
 	GetProcessInstanceStatisticsResponseBody,
 	CreateIncidentResolutionBatchOperationRequestBody,
