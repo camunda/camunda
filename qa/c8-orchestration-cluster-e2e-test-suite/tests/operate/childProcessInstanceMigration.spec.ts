@@ -77,7 +77,7 @@ test.beforeAll(async () => {
 
   const childProcessV2: ProcessDeployment = {
     bpmnProcessId: 'childProcess',
-    version: secondChildProcessVersion ? secondChildProcessVersion : 2,
+    version: secondChildProcessVersion ?? 2,
     processDefinitionKey: '',
   };
   expect(childProcessV2.version).toBe(childProcessV1.version + 1);
@@ -118,9 +118,6 @@ test.describe('Child Process Instance Migration', () => {
     const targetVersion = testProcesses.childProcessV2.version.toString();
     const targetBpmnProcessId = testProcesses.childProcessV2.bpmnProcessId;
     const parentInstanceKey = testProcesses.parentProcessInstanceKeys[0]!;
-    console.log('Parent Process:', testProcesses.parentProcess.version);
-    console.log('Child Process V1:', testProcesses.childProcessV1.version);
-    console.log('Child Process V2:', testProcesses.childProcessV2.version);
 
     await test.step('Navigate to parent process instance and view called child processes', async () => {
       await operateFiltersPanelPage.selectProcess(
