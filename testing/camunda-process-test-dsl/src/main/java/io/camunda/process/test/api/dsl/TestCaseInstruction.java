@@ -28,6 +28,7 @@ import io.camunda.process.test.api.dsl.instructions.AssertVariablesInstruction;
 import io.camunda.process.test.api.dsl.instructions.BroadcastSignalInstruction;
 import io.camunda.process.test.api.dsl.instructions.CompleteJobAdHocSubProcessInstruction;
 import io.camunda.process.test.api.dsl.instructions.CompleteJobInstruction;
+import io.camunda.process.test.api.dsl.instructions.CompleteJobUserTaskListenerInstruction;
 import io.camunda.process.test.api.dsl.instructions.CompleteUserTaskInstruction;
 import io.camunda.process.test.api.dsl.instructions.CreateProcessInstanceInstruction;
 import io.camunda.process.test.api.dsl.instructions.EvaluateConditionalStartEventInstruction;
@@ -80,6 +81,9 @@ import io.camunda.process.test.api.dsl.instructions.UpdateVariablesInstruction;
   @JsonSubTypes.Type(
       value = CompleteJobAdHocSubProcessInstruction.class,
       name = TestCaseInstructionType.COMPLETE_JOB_AD_HOC_SUB_PROCESS),
+  @JsonSubTypes.Type(
+      value = CompleteJobUserTaskListenerInstruction.class,
+      name = TestCaseInstructionType.COMPLETE_JOB_USER_TASK_LISTENER),
   @JsonSubTypes.Type(
       value = CompleteUserTaskInstruction.class,
       name = TestCaseInstructionType.COMPLETE_USER_TASK),

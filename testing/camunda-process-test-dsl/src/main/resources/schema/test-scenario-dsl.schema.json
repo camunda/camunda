@@ -78,6 +78,9 @@
           "$ref": "#/definitions/CompleteJobAdHocSubProcessInstruction"
         },
         {
+          "$ref": "#/definitions/CompleteJobUserTaskListenerInstruction"
+        },
+        {
           "$ref": "#/definitions/CompleteUserTaskInstruction"
         },
         {
@@ -681,6 +684,72 @@
           "description": "Whether the completion condition of the ad-hoc sub-process is fulfilled. Defaults to false.",
           "type": "boolean",
           "default": false
+        }
+      },
+      "required": [
+        "type",
+        "jobSelector"
+      ],
+      "additionalProperties": false
+    },
+    "CompleteJobUserTaskListenerInstruction": {
+      "description": "An instruction to complete a job of a user task listener.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "The type of the instruction.",
+          "type": "string",
+          "const": "COMPLETE_JOB_USER_TASK_LISTENER"
+        },
+        "jobSelector": {
+          "description": "The selector to identify the job to complete.",
+          "$ref": "#/definitions/JobSelector"
+        },
+        "denied": {
+          "description": "Whether the worker denies the work. Defaults to false.",
+          "type": "boolean",
+          "default": false
+        },
+        "deniedReason": {
+          "description": "The reason for denying the job. Optional.",
+          "type": "string"
+        },
+        "corrections": {
+          "description": "The corrections to apply to the user task. Optional. Only applicable if denied is false.",
+          "type": "object",
+          "properties": {
+            "assignee": {
+              "description": "The assignee of the task.",
+              "type": "string"
+            },
+            "dueDate": {
+              "description": "The due date of the task.",
+              "type": "string"
+            },
+            "followUpDate": {
+              "description": "The follow up date of the task.",
+              "type": "string"
+            },
+            "candidateUsers": {
+              "description": "The candidate users of the task.",
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "candidateGroups": {
+              "description": "The candidate groups of the task.",
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "priority": {
+              "description": "The priority of the task.",
+              "type": "integer"
+            }
+          },
+          "additionalProperties": false
         }
       },
       "required": [

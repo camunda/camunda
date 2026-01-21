@@ -21,6 +21,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.CompleteAdHocSubProcessResultStep1;
+import io.camunda.client.api.command.CompleteUserTaskJobResultStep1;
 import io.camunda.client.api.command.ThrowErrorCommandStep1;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.search.enums.ElementInstanceState;
@@ -512,6 +513,29 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   }
 
   @Override
+  public void resolveIncident(final IncidentSelector incidentSelector) {
+    final CamundaClient client = createClient();
+
+    awaitIncident(
+        incidentSelector,
+        client,
+        incident -> {
+          final long incidentKey = incident.getIncidentKey();
+
+          // If the incident has a job key, update the job retries to 1 before resolving
+          // This allows the job to be retried once, enabling the process instance to continue
+          if (incident.getJobKey() != null) {
+            final long jobKey = incident.getJobKey();
+            LOGGER.debug("Updating job retries for job key: {}", jobKey);
+            client.newUpdateRetriesCommand(jobKey).retries(1).send().join();
+          }
+
+          LOGGER.debug("Resolving incident [{}]", incidentSelector.describe());
+          client.newResolveIncidentCommand(incidentKey).send().join();
+        });
+  }
+
+  @Override
   public void completeJobOfAdHocSubProcess(
       final JobSelector jobSelector, final Consumer<CompleteAdHocSubProcessResultStep1> jobResult) {
     completeJobOfAdHocSubProcess(jobSelector, Collections.emptyMap(), jobResult);
@@ -551,25 +575,30 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   }
 
   @Override
-  public void resolveIncident(final IncidentSelector incidentSelector) {
+  public void completeJobOfUserTaskListener(
+      final JobSelector jobSelector, final Consumer<CompleteUserTaskJobResultStep1> jobResult) {
     final CamundaClient client = createClient();
 
-    awaitIncident(
-        incidentSelector,
+    // completing the job inside the await block to handle the eventual consistency of the API
+    awaitJob(
+        JobSelectors.byJobKind(JobKind.TASK_LISTENER).and(jobSelector),
         client,
-        incident -> {
-          final long incidentKey = incident.getIncidentKey();
+        job -> {
+          LOGGER.debug(
+              "Mock: Complete user task listener job [{}, jobKey: '{}']",
+              jobSelector.describe(),
+              job.getJobKey());
 
-          // If the incident has a job key, update the job retries to 1 before resolving
-          // This allows the job to be retried once, enabling the process instance to continue
-          if (incident.getJobKey() != null) {
-            final long jobKey = incident.getJobKey();
-            LOGGER.debug("Updating job retries for job key: {}", jobKey);
-            client.newUpdateRetriesCommand(jobKey).retries(1).send().join();
-          }
-
-          LOGGER.debug("Resolving incident [{}]", incidentSelector.describe());
-          client.newResolveIncidentCommand(incidentKey).send().join();
+          client
+              .newCompleteCommand(job.getJobKey())
+              .withResult(
+                  result -> {
+                    final CompleteUserTaskJobResultStep1 userTaskResult = result.forUserTask();
+                    jobResult.accept(userTaskResult);
+                    return userTaskResult;
+                  })
+              .send()
+              .join();
         });
   }
 

@@ -18,6 +18,7 @@ package io.camunda.process.test.api;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.api.command.CompleteAdHocSubProcessResultStep1;
+import io.camunda.client.api.command.CompleteUserTaskJobResultStep1;
 import io.camunda.process.test.api.assertions.ElementSelector;
 import io.camunda.process.test.api.assertions.IncidentSelector;
 import io.camunda.process.test.api.assertions.JobSelector;
@@ -363,4 +364,13 @@ public interface CamundaProcessTestContext {
       final ProcessInstanceSelector processInstanceSelector,
       final ElementSelector elementSelector,
       final Map<String, Object> variables);
+
+  /**
+   * Completes a job of a user task listener matching the specified selector.
+   *
+   * @param jobSelector the selector to identify the job to complete
+   * @param jobResult the consumer to configure the user task job result
+   */
+  void completeJobOfUserTaskListener(
+      final JobSelector jobSelector, final Consumer<CompleteUserTaskJobResultStep1> jobResult);
 }

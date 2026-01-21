@@ -16,6 +16,7 @@
 package io.camunda.process.test.impl.extensions;
 
 import static io.camunda.process.test.api.CamundaAssert.assertThatProcessInstance;
+import static io.camunda.process.test.api.CamundaAssert.assertThatUserTask;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.DeploymentEvent;
@@ -363,5 +364,37 @@ public class CamundaProcessTestCompletionApiIT {
         .hasCompletedElements("ad-hoc-sub-process", "A")
         .hasVariable("var", "updated")
         .isCompleted();
+  }
+
+  @Test
+  void shouldCompleteJobOfUserTaskListener() {
+    // given
+    deployProcessModel(
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("task")
+            .zeebeUserTask()
+            .zeebeTaskListener(t -> t.type("user-task-listener").creating())
+            .done());
+
+    final long processInstanceKey =
+        client
+            .newCreateInstanceCommand()
+            .bpmnProcessId("process")
+            .latestVersion()
+            .send()
+            .join()
+            .getProcessInstanceKey();
+
+    // when
+    processTestContext.completeJobOfUserTaskListener(
+        JobSelectors.byJobType("user-task-listener"),
+        result -> result.correctAssignee("me").correctPriority(100));
+
+    // then
+    assertThatUserTask(UserTaskSelectors.byProcessInstanceKey(processInstanceKey))
+        .isCreated()
+        .hasAssignee("me")
+        .hasPriority(100);
   }
 }
