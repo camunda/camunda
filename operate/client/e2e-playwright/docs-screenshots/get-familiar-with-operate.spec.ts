@@ -9,7 +9,7 @@
 import {test} from '../visual-fixtures';
 import {
   mockIncidentsByError,
-  mockIncidentsByProcess,
+  mockProcessDefinitionStatistics,
   mockStatistics as mockDashboardStatistics,
   mockResponses as mockDashboardResponses,
 } from '../mocks/dashboard.mocks';
@@ -41,7 +41,7 @@ test.describe('get familiar with operate', () => {
       mockDashboardResponses({
         statistics: mockDashboardStatistics,
         incidentsByError: mockIncidentsByError,
-        incidentsByProcess: mockIncidentsByProcess,
+        processDefinitionStatistics: mockProcessDefinitionStatistics,
       }),
     );
 

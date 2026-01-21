@@ -10,29 +10,20 @@ import {useEffect} from 'react';
 import {VisuallyHiddenH1} from 'modules/components/VisuallyHiddenH1';
 import {MetricPanel} from './MetricPanel';
 import {PAGE_TITLE} from 'modules/constants';
-import {processInstancesByNameStore} from 'modules/stores/processInstancesByName';
 import {Grid, ScrollableContent, Tile, TileTitle} from './styled';
-import {observer} from 'mobx-react';
-import {useLocation} from 'react-router-dom';
-import {InstancesByProcess} from './InstancesByProcess';
+import {InstancesByProcessDefinition} from './v2/InstancesByProcessDefinition';
 import {IncidentsByError} from './IncidentsByError';
+import {useProcessDefinitionStatistics} from 'modules/queries/processDefinitionStatistics/useProcessDefinitionStatistics';
+import {NoInstancesEmptyState} from './NoInstancesEmptyState';
 
-const Dashboard = observer(() => {
-  const location = useLocation();
-  const {hasNoInstances} = processInstancesByNameStore;
+const Dashboard: React.FC = () => {
+  const processStats = useProcessDefinitionStatistics();
+  const hasNoInstances =
+    processStats.status === 'success' && processStats.data.items.length === 0;
 
   useEffect(() => {
     document.title = PAGE_TITLE.DASHBOARD;
-
-    processInstancesByNameStore.init();
-    return () => {
-      processInstancesByNameStore.reset();
-    };
   }, []);
-
-  useEffect(() => {
-    processInstancesByNameStore.getProcessInstancesByName();
-  }, [location.key]);
 
   return (
     <Grid $numberOfColumns={hasNoInstances ? 1 : 2}>
@@ -43,7 +34,14 @@ const Dashboard = observer(() => {
       <Tile>
         <TileTitle>Process Instances by Name</TileTitle>
         <ScrollableContent>
-          <InstancesByProcess />
+          {hasNoInstances ? (
+            <NoInstancesEmptyState />
+          ) : (
+            <InstancesByProcessDefinition
+              status={processStats.status}
+              items={processStats.data?.items ?? []}
+            />
+          )}
         </ScrollableContent>
       </Tile>
 
@@ -57,6 +55,6 @@ const Dashboard = observer(() => {
       )}
     </Grid>
   );
-});
+};
 
 export {Dashboard};

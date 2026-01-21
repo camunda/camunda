@@ -42,11 +42,11 @@ export class OperateDashboardPage {
     this.totalInstancesLink = page.getByTestId('total-instances-link');
     this.activeInstancesLink = page.getByTestId('active-instances-link');
     this.incidentInstancesLink = page.getByTestId('incident-instances-link');
-    this.instancesByProcess = page.getByTestId('instances-by-process');
+    this.instancesByProcess = page.getByTestId('instances-by-process-definition');
     this.incidentsByError = page.getByTestId('incident-byError');
 
     this.instancesByProcessItem = (index: number) =>
-      page.getByTestId(`instances-by-process-${index}`);
+      page.getByTestId(`instances-by-process-definition-${index}`);
 
     this.incidentsByErrorItem = (index: number) =>
       page.getByTestId(`incident-byError-${index}`);

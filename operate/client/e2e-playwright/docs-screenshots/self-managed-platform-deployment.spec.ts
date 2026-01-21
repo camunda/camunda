@@ -9,7 +9,7 @@
 import {test} from '../visual-fixtures';
 import {
   mockIncidentsByError,
-  mockIncidentsByProcess,
+  mockProcessDefinitionStatistics,
   mockStatistics as mockDashboardStatistics,
   mockResponses as mockDashboardResponses,
 } from '../mocks/dashboard.mocks';
@@ -27,7 +27,7 @@ test.describe('self managed platform deployment', () => {
       mockDashboardResponses({
         statistics: {running: 0, withIncidents: 0, active: 0},
         incidentsByError: [],
-        incidentsByProcess: [],
+        processDefinitionStatistics: {items: [], page: {totalItems: 0}},
       }),
     );
 
@@ -44,7 +44,7 @@ test.describe('self managed platform deployment', () => {
       mockDashboardResponses({
         statistics: mockDashboardStatistics,
         incidentsByError: mockIncidentsByError,
-        incidentsByProcess: mockIncidentsByProcess,
+        processDefinitionStatistics: mockProcessDefinitionStatistics,
       }),
     );
 
