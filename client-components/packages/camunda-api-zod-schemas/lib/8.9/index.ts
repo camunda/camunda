@@ -8,6 +8,7 @@
 
 import {getCurrentUser} from './authentication';
 import {activateAdHocSubProcessActivities} from './ad-hoc-sub-process';
+import {queryAuditLogs, getAuditLog} from './audit-log';
 import {
 	createGlobalClusterVariable,
 	getGlobalClusterVariable,
@@ -178,6 +179,8 @@ import {getUsageMetrics} from './usage-metrics';
 const endpoints = {
 	getCurrentUser,
 	activateAdHocSubProcessActivities,
+	queryAuditLogs,
+	getAuditLog,
 	createGlobalClusterVariable,
 	getGlobalClusterVariable,
 	deleteGlobalClusterVariable,
@@ -350,6 +353,29 @@ export {
 	type ActivatableActivity,
 	type ActivateActivityWithinAdHocSubProcessRequestBody,
 } from './ad-hoc-sub-process';
+export {
+	auditLogEntityTypeSchema,
+	auditLogOperationTypeSchema,
+	auditLogActorTypeSchema,
+	auditLogResultStatusSchema,
+	auditLogCategorySchema,
+	auditLogSchema,
+	auditLogFilterSchema,
+	queryAuditLogsRequestBodySchema,
+	queryAuditLogsResponseBodySchema,
+	getAuditLogResponseBodySchema,
+	queryAuditLogs,
+	getAuditLog,
+	type AuditLog,
+	type AuditLogEntityType,
+	type AuditLogOperationType,
+	type AuditLogActorType,
+	type AuditLogResultStatus,
+	type AuditLogCategory,
+	type QueryAuditLogsRequestBody,
+	type QueryAuditLogsResponseBody,
+	type GetAuditLogResponseBody,
+} from './audit-log';
 export {
 	clusterVariableScopeSchema,
 	clusterVariableSchema,
