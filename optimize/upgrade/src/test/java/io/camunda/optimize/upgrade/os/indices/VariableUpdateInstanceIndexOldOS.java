@@ -16,6 +16,6 @@ public class VariableUpdateInstanceIndexOldOS extends VariableUpdateInstanceInde
   @Override
   public Builder addStaticSetting(
       final String key, final int value, final Builder indexSettingsBuilder) throws IOException {
-    return indexSettingsBuilder.numberOfShards(Integer.toString(value));
+    return indexSettingsBuilder.numberOfShards(value);
   }
 }

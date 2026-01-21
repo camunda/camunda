@@ -14,8 +14,10 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.opensearch.client.json.JsonData;
+import org.opensearch.client.opensearch._types.BuiltinScriptLanguage;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.Script;
+import org.opensearch.client.opensearch._types.ScriptLanguage;
 import org.opensearch.client.opensearch._types.SortOptions;
 import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
@@ -38,7 +40,8 @@ import org.opensearch.client.opensearch._types.query_dsl.WildcardQuery;
 import org.opensearch.client.opensearch.core.search.SourceConfig;
 
 public interface QueryDSL {
-  String DEFAULT_SCRIPT_LANG = "painless";
+  ScriptLanguage DEFAULT_SCRIPT_LANG =
+      ScriptLanguage.builder().builtin(BuiltinScriptLanguage.Painless).build();
 
   private static <A> List<A> nonNull(final A[] items) {
     return nonNull(Arrays.asList(items));
@@ -54,11 +57,11 @@ public interface QueryDSL {
   }
 
   static Query and(final Query... queries) {
-    return BoolQuery.of(q -> q.must(nonNull(queries)))._toQuery();
+    return BoolQuery.of(q -> q.must(nonNull(queries))).toQuery();
   }
 
   static Query and(final List<Query> queries) {
-    return BoolQuery.of(q -> q.must(nonNull(queries)))._toQuery();
+    return BoolQuery.of(q -> q.must(nonNull(queries))).toQuery();
   }
 
   static Query withTenantCheck(final Query query) {
@@ -77,40 +80,40 @@ public interface QueryDSL {
   }
 
   static Query constantScore(final Query query) {
-    return ConstantScoreQuery.of(q -> q.filter(query))._toQuery();
+    return ConstantScoreQuery.of(q -> q.filter(query)).toQuery();
   }
 
   static Query exists(final String field) {
-    return ExistsQuery.of(q -> q.field(field))._toQuery();
+    return ExistsQuery.of(q -> q.field(field)).toQuery();
   }
 
   static <A> Query gt(final String field, final A gt) {
-    return RangeQuery.of(q -> q.field(field).gt(json(gt)))._toQuery();
+    return RangeQuery.of(q -> q.field(field).gt(json(gt))).toQuery();
   }
 
   static <A> Query gteLte(final String field, final A gte, final A lte) {
-    return RangeQuery.of(q -> q.field(field).gte(json(gte)).lte(json(lte)))._toQuery();
+    return RangeQuery.of(q -> q.field(field).gte(json(gte)).lte(json(lte))).toQuery();
   }
 
   static <A> Query gtLte(final String field, final A gt, final A lte) {
-    return RangeQuery.of(q -> q.field(field).gt(json(gt)).lte(json(lte)))._toQuery();
+    return RangeQuery.of(q -> q.field(field).gt(json(gt)).lte(json(lte))).toQuery();
   }
 
   static <A> Query gteLt(final String field, final A gte, final A lt) {
-    return RangeQuery.of(q -> q.field(field).gte(json(gte)).lt(json(lt)))._toQuery();
+    return RangeQuery.of(q -> q.field(field).gte(json(gte)).lt(json(lt))).toQuery();
   }
 
   static Query hasChildQuery(final String type, final Query query) {
     return HasChildQuery.of(q -> q.query(query).type(type).scoreMode(ChildScoreMode.None))
-        ._toQuery();
+        .toQuery();
   }
 
   static Query ids(final List<String> ids) {
-    return IdsQuery.of(q -> q.values(nonNull(ids)))._toQuery();
+    return IdsQuery.of(q -> q.values(nonNull(ids))).toQuery();
   }
 
   static Query ids(final Collection<String> ids) {
-    return IdsQuery.of(q -> q.values(ids.stream().toList()))._toQuery();
+    return IdsQuery.of(q -> q.values(ids.stream().toList())).toQuery();
   }
 
   static Query ids(final String... ids) {
@@ -133,11 +136,11 @@ public interface QueryDSL {
       final String field, final Collection<A> values, final Function<A, FieldValue> toFieldValue) {
     final List<FieldValue> fieldValues = values.stream().map(toFieldValue).toList();
     return TermsQuery.of(q -> q.field(field).terms(TermsQueryField.of(f -> f.value(fieldValues))))
-        ._toQuery();
+        .toQuery();
   }
 
   static <A> Query lte(final String field, final A lte) {
-    return RangeQuery.of(q -> q.field(field).lte(json(lte)))._toQuery();
+    return RangeQuery.of(q -> q.field(field).lte(json(lte))).toQuery();
   }
 
   static <A> Query match(
@@ -150,7 +153,7 @@ public interface QueryDSL {
         .query(toFieldValue.apply(value))
         .operator(operator)
         .build()
-        ._toQuery();
+        .toQuery();
   }
 
   static Query match(final String field, final String value, final Operator operator) {
@@ -158,23 +161,23 @@ public interface QueryDSL {
   }
 
   static Query matchAll() {
-    return new MatchAllQuery.Builder().build()._toQuery();
+    return new MatchAllQuery.Builder().build().toQuery();
   }
 
   static Query matchNone() {
-    return new MatchNoneQuery.Builder().build()._toQuery();
+    return new MatchNoneQuery.Builder().build().toQuery();
   }
 
   static Query not(final Query... queries) {
-    return BoolQuery.of(q -> q.mustNot(nonNull(queries)))._toQuery();
+    return BoolQuery.of(q -> q.mustNot(nonNull(queries))).toQuery();
   }
 
   static Query or(final Query... queries) {
-    return BoolQuery.of(q -> q.should(nonNull(queries)))._toQuery();
+    return BoolQuery.of(q -> q.should(nonNull(queries))).toQuery();
   }
 
   static Query prefix(final String field, final String value) {
-    return PrefixQuery.of(q -> q.field(field).value(value))._toQuery();
+    return PrefixQuery.of(q -> q.field(field).value(value)).toQuery();
   }
 
   static SortOrder reverseOrder(final SortOrder sortOrder) {
@@ -253,11 +256,11 @@ public interface QueryDSL {
 
   static <A> Query term(
       final String field, final A value, final Function<A, FieldValue> toFieldValue) {
-    return TermQuery.of(q -> q.field(field).value(toFieldValue.apply(value)))._toQuery();
+    return TermQuery.of(q -> q.field(field).value(toFieldValue.apply(value))).toQuery();
   }
 
   static Query wildcardQuery(final String field, final String value) {
-    return WildcardQuery.of(q -> q.field(field).value(value))._toQuery();
+    return WildcardQuery.of(q -> q.field(field).value(value)).toQuery();
   }
 
   static Query matchDateQuery(
@@ -267,6 +270,6 @@ public interface QueryDSL {
     // https://www.elastic.co/guide/en/elasticsearch/reference/current/common-options.html#date-math
     return RangeQuery.of(
             q -> q.field(name).gte(json(dateAsString)).lte(json(dateAsString)).format(dateFormat))
-        ._toQuery();
+        .toQuery();
   }
 }

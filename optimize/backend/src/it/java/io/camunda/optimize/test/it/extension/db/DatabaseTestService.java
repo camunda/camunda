@@ -299,9 +299,6 @@ public abstract class DatabaseTestService {
   public abstract void insertTestDocuments(int amount, String indexName, String jsonDocument)
       throws IOException;
 
-  public abstract void performLowLevelBulkRequest(
-      String methodName, String endpoint, String bulkPayload) throws IOException;
-
   public abstract void initSchema(final DatabaseSchemaManager schemaManager);
 
   public abstract Map<String, ? extends Object> getMappingFields(final String indexName)

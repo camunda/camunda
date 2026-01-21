@@ -48,7 +48,8 @@
 			},
 			"joinRelation": {
 				"type": "join",
-				"relations": {
+        "eager_global_ordinals": true,
+        "relations": {
 					"processInstance": [
 						"activity",
 						"variable"

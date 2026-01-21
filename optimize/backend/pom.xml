@@ -532,13 +532,6 @@
       <artifactId>jakarta.validation-api</artifactId>
     </dependency>
 
-    <!-- scope here is wider than test. Dependency:analyze error suppressed -->
-    <dependency>
-      <groupId>org.opensearch.client</groupId>
-      <artifactId>opensearch-rest-client</artifactId>
-      <version>${version.opensearch}</version>
-    </dependency>
-
     <dependency>
       <groupId>co.elastic.clients</groupId>
       <artifactId>elasticsearch-java</artifactId>
