@@ -17,9 +17,11 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.mcp.tool.ToolsTest;
+import io.camunda.gateway.protocol.model.IncidentErrorTypeEnum;
 import io.camunda.gateway.protocol.model.IncidentResult;
+import io.camunda.gateway.protocol.model.IncidentSearchQueryResult;
+import io.camunda.gateway.protocol.model.IncidentStateEnum;
 import io.camunda.gateway.protocol.model.JobActivationResult;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.IncidentEntity.ErrorType;
@@ -96,6 +98,21 @@ class IncidentToolsTest extends ToolsTest {
     mockApiServiceAuthentication(jobServices);
   }
 
+  private void assertExampleIncident(final IncidentResult incident) {
+    assertThat(incident.getIncidentKey()).isEqualTo("5");
+    assertThat(incident.getProcessDefinitionKey()).isEqualTo("23");
+    assertThat(incident.getProcessDefinitionId()).isEqualTo("complexProcess");
+    assertThat(incident.getProcessInstanceKey()).isEqualTo("42");
+    assertThat(incident.getErrorType()).isEqualTo(IncidentErrorTypeEnum.JOB_NO_RETRIES);
+    assertThat(incident.getErrorMessage()).isEqualTo("No retries left.");
+    assertThat(incident.getElementId()).isEqualTo("elementId");
+    assertThat(incident.getElementInstanceKey()).isEqualTo("17");
+    assertThat(incident.getCreationTime()).isEqualTo("2024-05-23T23:05:00.000Z");
+    assertThat(incident.getState()).isEqualTo(IncidentStateEnum.ACTIVE);
+    assertThat(incident.getJobKey()).isEqualTo("101");
+    assertThat(incident.getTenantId()).isEqualTo("tenantId");
+  }
+
   @Test
   void shouldGetIncidentByKey() {
     // given
@@ -115,9 +132,7 @@ class IncidentToolsTest extends ToolsTest {
 
     final var incident =
         objectMapper.convertValue(result.structuredContent(), IncidentResult.class);
-    assertThat(incident)
-        .usingRecursiveComparison()
-        .isEqualTo(SearchQueryResponseMapper.toIncident(INCIDENT_ENTITY));
+    assertExampleIncident(incident);
 
     verify(incidentServices).getByKey(5L);
   }
@@ -226,6 +241,15 @@ class IncidentToolsTest extends ToolsTest {
 
     // then
     assertThat(result.isError()).isFalse();
+    assertThat(result.structuredContent()).isNotNull();
+
+    final var searchResult =
+        objectMapper.convertValue(result.structuredContent(), IncidentSearchQueryResult.class);
+    assertThat(searchResult.getPage().getTotalItems()).isEqualTo(1L);
+    assertThat(searchResult.getPage().getHasMoreTotalItems()).isFalse();
+    assertThat(searchResult.getPage().getStartCursor()).isEqualTo("f");
+    assertThat(searchResult.getPage().getEndCursor()).isEqualTo("v");
+    assertThat(searchResult.getItems()).hasSize(1).first().satisfies(this::assertExampleIncident);
 
     verify(incidentServices).search(queryCaptor.capture());
     final IncidentQuery capturedQuery = queryCaptor.getValue();

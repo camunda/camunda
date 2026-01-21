@@ -14,10 +14,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.mcp.tool.ToolsTest;
 import io.camunda.gateway.protocol.model.VariableResult;
 import io.camunda.gateway.protocol.model.VariableSearchQueryResult;
+import io.camunda.gateway.protocol.model.VariableSearchResult;
 import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.Operator;
@@ -84,6 +84,23 @@ class VariableToolsTest extends ToolsTest {
     mockApiServiceAuthentication(variableServices);
   }
 
+  private void assertExampleVariable(final VariableResult variable) {
+    assertThat(variable.getVariableKey()).isEqualTo("123");
+    assertThat(variable.getName()).isEqualTo("demoVar");
+    assertThat(variable.getValue()).isEqualTo(FULL_VALUE);
+    assertThat(variable.getProcessInstanceKey()).isEqualTo("789");
+    assertThat(variable.getTenantId()).isEqualTo("tenantId");
+    assertThat(variable.getScopeKey()).isEqualTo("333");
+  }
+
+  private void assertExampleVariable(final VariableSearchResult variable) {
+    assertThat(variable.getVariableKey()).isEqualTo("123");
+    assertThat(variable.getName()).isEqualTo("demoVar");
+    assertThat(variable.getProcessInstanceKey()).isEqualTo("789");
+    assertThat(variable.getTenantId()).isEqualTo("tenantId");
+    assertThat(variable.getScopeKey()).isEqualTo("333");
+  }
+
   @Test
   void shouldGetVariableByKey() {
     // given
@@ -103,9 +120,7 @@ class VariableToolsTest extends ToolsTest {
 
     final var variable =
         objectMapper.convertValue(result.structuredContent(), VariableResult.class);
-    assertThat(variable)
-        .usingRecursiveComparison()
-        .isEqualTo(SearchQueryResponseMapper.toVariableItem(VARIABLE_ENTITY));
+    assertExampleVariable(variable);
 
     verify(variableServices).getByKey(123L);
   }
@@ -186,11 +201,16 @@ class VariableToolsTest extends ToolsTest {
 
     final var variables =
         objectMapper.convertValue(result.structuredContent(), VariableSearchQueryResult.class);
+    assertThat(variables.getPage().getTotalItems()).isEqualTo(1L);
+    assertThat(variables.getPage().getHasMoreTotalItems()).isFalse();
+    assertThat(variables.getPage().getStartCursor()).isEqualTo("f");
+    assertThat(variables.getPage().getEndCursor()).isEqualTo("v");
     assertThat(variables.getItems())
         .hasSize(1)
         .first()
         .satisfies(
             variable -> {
+              assertExampleVariable(variable);
               assertThat(variable.getIsTruncated()).isFalse();
               assertThat(variable.getValue()).isEqualTo(FULL_VALUE);
             });
@@ -222,11 +242,16 @@ class VariableToolsTest extends ToolsTest {
 
     final var variables =
         objectMapper.convertValue(result.structuredContent(), VariableSearchQueryResult.class);
+    assertThat(variables.getPage().getTotalItems()).isEqualTo(1L);
+    assertThat(variables.getPage().getHasMoreTotalItems()).isFalse();
+    assertThat(variables.getPage().getStartCursor()).isEqualTo("f");
+    assertThat(variables.getPage().getEndCursor()).isEqualTo("v");
     assertThat(variables.getItems())
         .hasSize(1)
         .first()
         .satisfies(
             variable -> {
+              assertExampleVariable(variable);
               assertThat(variable.getIsTruncated()).isTrue();
               assertThat(variable.getValue()).isEqualTo(TRUNCATED_VALUE);
             });
