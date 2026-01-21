@@ -9,6 +9,17 @@
 import {getCurrentUser} from './authentication';
 import {activateAdHocSubProcessActivities} from './ad-hoc-sub-process';
 import {
+	createGlobalClusterVariable,
+	getGlobalClusterVariable,
+	deleteGlobalClusterVariable,
+	queryClusterVariables,
+	createTenantClusterVariable,
+	getTenantClusterVariable,
+	deleteTenantClusterVariable,
+} from './cluster-variable';
+import {evaluateConditionals} from './conditional';
+import {evaluateExpression} from './expression';
+import {
 	createAuthorization,
 	updateAuthorization,
 	getAuthorization,
@@ -35,7 +46,12 @@ import {
 import {queryDecisionInstances, getDecisionInstance} from './decision-instance';
 import {queryDecisionRequirements, getDecisionRequirements, getDecisionRequirementsXml} from './decision-requirements';
 import {createDocument, createDocuments, getDocument, deleteDocument, createDocumentLink} from './document';
-import {queryElementInstances, getElementInstance, updateElementInstanceVariables} from './element-instance';
+import {
+	queryElementInstances,
+	getElementInstance,
+	updateElementInstanceVariables,
+	queryElementInstanceIncidents,
+} from './element-instance';
 import {
 	createGroup,
 	getGroup,
@@ -53,7 +69,13 @@ import {
 	assignMappingToGroup,
 	unassignMappingFromGroup,
 } from './group';
-import {resolveIncident, getIncident, queryIncidents} from './incident';
+import {
+	resolveIncident,
+	getIncident,
+	queryIncidents,
+	getProcessInstanceStatisticsByDefinition,
+	getProcessInstanceStatisticsByError,
+} from './incident';
 import {getLicense} from './license';
 import {
 	createMappingRule,
@@ -77,8 +99,11 @@ import {
 	createCancellationBatchOperation,
 	createMigrationBatchOperation,
 	createModificationBatchOperation,
+	createDeletionBatchOperation,
 	modifyProcessInstance,
 	migrateProcessInstance,
+	deleteProcessInstance,
+	resolveProcessInstanceIncidents,
 } from './process-instance';
 import {
 	getUserTask,
@@ -89,6 +114,7 @@ import {
 	unassignTask,
 	completeTask,
 	queryVariablesByUserTask,
+	queryUserTaskAuditLogs,
 	updateUserTask,
 } from './user-task';
 import {getVariable, queryVariables} from './variable';
@@ -98,6 +124,9 @@ import {
 	getProcessDefinitionXml,
 	getProcessStartForm,
 	getProcessDefinitionStatistics,
+	getProcessDefinitionMessageSubscriptionStatistics,
+	getProcessDefinitionInstanceStatistics,
+	getProcessDefinitionInstanceVersionStatistics,
 	queryProcessDefinitions,
 } from './process-definition';
 import {createDeployment, deleteResource, getResource, getResourceContent} from './resource';
@@ -149,6 +178,15 @@ import {getUsageMetrics} from './usage-metrics';
 const endpoints = {
 	getCurrentUser,
 	activateAdHocSubProcessActivities,
+	createGlobalClusterVariable,
+	getGlobalClusterVariable,
+	deleteGlobalClusterVariable,
+	queryClusterVariables,
+	createTenantClusterVariable,
+	getTenantClusterVariable,
+	deleteTenantClusterVariable,
+	evaluateConditionals,
+	evaluateExpression,
 	createAuthorization,
 	updateAuthorization,
 	getAuthorization,
@@ -182,6 +220,7 @@ const endpoints = {
 	queryElementInstances,
 	getElementInstance,
 	updateElementInstanceVariables,
+	queryElementInstanceIncidents,
 	createGroup,
 	getGroup,
 	updateGroup,
@@ -200,6 +239,8 @@ const endpoints = {
 	resolveIncident,
 	getIncident,
 	queryIncidents,
+	getProcessInstanceStatisticsByDefinition,
+	getProcessInstanceStatisticsByError,
 	getLicense,
 	createMappingRule,
 	updateMappingRule,
@@ -218,6 +259,7 @@ const endpoints = {
 	unassignTask,
 	completeTask,
 	queryVariablesByUserTask,
+	queryUserTaskAuditLogs,
 	updateUserTask,
 	createProcessInstance,
 	getVariable,
@@ -232,6 +274,9 @@ const endpoints = {
 	getProcessDefinitionXml,
 	getProcessStartForm,
 	getProcessDefinitionStatistics,
+	getProcessDefinitionMessageSubscriptionStatistics,
+	getProcessDefinitionInstanceStatistics,
+	getProcessDefinitionInstanceVersionStatistics,
 	queryProcessDefinitions,
 	getProcessInstance,
 	queryProcessInstances,
@@ -292,7 +337,10 @@ const endpoints = {
 	createCancellationBatchOperation,
 	createMigrationBatchOperation,
 	createModificationBatchOperation,
+	createDeletionBatchOperation,
 	modifyProcessInstance,
+	deleteProcessInstance,
+	resolveProcessInstanceIncidents,
 	migrateProcessInstance,
 } as const;
 
@@ -302,6 +350,41 @@ export {
 	type ActivatableActivity,
 	type ActivateActivityWithinAdHocSubProcessRequestBody,
 } from './ad-hoc-sub-process';
+export {
+	clusterVariableScopeSchema,
+	clusterVariableSchema,
+	clusterVariableSearchItemSchema,
+	createClusterVariableRequestBodySchema,
+	queryClusterVariablesRequestBodySchema,
+	queryClusterVariablesResponseBodySchema,
+	createGlobalClusterVariable,
+	getGlobalClusterVariable,
+	deleteGlobalClusterVariable,
+	queryClusterVariables,
+	createTenantClusterVariable,
+	getTenantClusterVariable,
+	deleteTenantClusterVariable,
+	type ClusterVariableScope,
+	type ClusterVariable,
+	type ClusterVariableSearchItem,
+	type CreateClusterVariableRequestBody,
+	type QueryClusterVariablesRequestBody,
+	type QueryClusterVariablesResponseBody,
+} from './cluster-variable';
+export {
+	evaluateConditionalsRequestBodySchema,
+	evaluateConditionalsResponseBodySchema,
+	evaluateConditionals,
+	type EvaluateConditionalsRequestBody,
+	type EvaluateConditionalsResponseBody,
+} from './conditional';
+export {
+	evaluateExpressionRequestBodySchema,
+	evaluateExpressionResponseBodySchema,
+	evaluateExpression,
+	type EvaluateExpressionRequestBody,
+	type EvaluateExpressionResponseBody,
+} from './expression';
 export {
 	permissionTypeSchema,
 	resourceTypeSchema,
@@ -429,6 +512,7 @@ export {
 	elementInstanceTypeSchema,
 	elementInstanceSchema,
 	elementInstanceFilterSchema,
+	queryElementInstanceIncidents,
 	type ElementInstanceState,
 	type ElementInstanceType,
 	type ElementInstance,
@@ -475,6 +559,12 @@ export {
 	getIncidentResponseBodySchema,
 	queryIncidentsRequestBodySchema,
 	queryIncidentsResponseBodySchema,
+	getProcessInstanceStatisticsByDefinitionRequestBodySchema,
+	getProcessInstanceStatisticsByDefinitionResponseBodySchema,
+	getProcessInstanceStatisticsByErrorRequestBodySchema,
+	getProcessInstanceStatisticsByErrorResponseBodySchema,
+	getProcessInstanceStatisticsByDefinition,
+	getProcessInstanceStatisticsByError,
 	incidentErrorTypeSchema,
 	incidentStateSchema,
 	incidentSchema,
@@ -484,6 +574,10 @@ export {
 	type GetIncidentResponseBody,
 	type QueryIncidentsRequestBody,
 	type QueryIncidentsResponseBody,
+	type GetProcessInstanceStatisticsByDefinitionRequestBody,
+	type GetProcessInstanceStatisticsByDefinitionResponseBody,
+	type GetProcessInstanceStatisticsByErrorRequestBody,
+	type GetProcessInstanceStatisticsByErrorResponseBody,
 } from './incident';
 export {
 	queryJobsRequestBodySchema,
@@ -576,6 +670,11 @@ export {
 	getProcessInstanceCallHierarchyResponseBodySchema,
 	getProcessInstanceStatisticsResponseBodySchema,
 	getProcessInstanceSequenceFlowsResponseBodySchema,
+	deleteProcessInstanceRequestBodySchema,
+	deleteProcessInstanceResponseBodySchema,
+	createDeletionBatchOperationRequestBodySchema,
+	createDeletionBatchOperationResponseBodySchema,
+	resolveProcessInstanceIncidentsResponseBodySchema,
 	processInstanceStateSchema,
 	processInstanceSchema,
 	sequenceFlowSchema,
@@ -602,8 +701,13 @@ export {
 	type CreateMigrationBatchOperationResponseBody,
 	type CreateModificationBatchOperationRequestBody,
 	type CreateModificationBatchOperationResponseBody,
+	type CreateDeletionBatchOperationRequestBody,
+	type CreateDeletionBatchOperationResponseBody,
 	type ModifyProcessInstanceRequestBody,
 	type MigrateProcessInstanceRequestBody,
+	type DeleteProcessInstanceRequestBody,
+	type DeleteProcessInstanceResponseBody,
+	type ResolveProcessInstanceIncidentsResponseBody,
 } from './process-instance';
 export {
 	userTaskSchema,
@@ -614,6 +718,8 @@ export {
 	completeTaskRequestBodySchema,
 	queryVariablesByUserTaskRequestBodySchema,
 	queryVariablesByUserTaskResponseBodySchema,
+	queryUserTaskAuditLogsRequestBodySchema,
+	queryUserTaskAuditLogsResponseBodySchema,
 	updateUserTaskRequestBodySchema,
 	type UserTask,
 	type QueryUserTasksResponseBody,
@@ -623,6 +729,8 @@ export {
 	type CompleteTaskRequestBody,
 	type QueryVariablesByUserTaskRequestBody,
 	type QueryVariablesByUserTaskResponseBody,
+	type QueryUserTaskAuditLogsRequestBody,
+	type QueryUserTaskAuditLogsResponseBody,
 	type UpdateUserTaskRequestBody,
 } from './user-task';
 export {
@@ -637,6 +745,12 @@ export {
 	processDefinitionStatisticSchema,
 	getProcessDefinitionStatisticsRequestBodySchema,
 	getProcessDefinitionStatisticsResponseBodySchema,
+	getProcessDefinitionMessageSubscriptionStatisticsRequestBodySchema,
+	getProcessDefinitionMessageSubscriptionStatisticsResponseBodySchema,
+	getProcessDefinitionInstanceStatisticsRequestBodySchema,
+	getProcessDefinitionInstanceStatisticsResponseBodySchema,
+	getProcessDefinitionInstanceVersionStatisticsRequestBodySchema,
+	getProcessDefinitionInstanceVersionStatisticsResponseBodySchema,
 	queryProcessDefinitionsRequestBodySchema,
 	queryProcessDefinitionsResponseBodySchema,
 	processDefinitionSchema,
@@ -644,6 +758,12 @@ export {
 	type ProcessDefinitionStatistic,
 	type GetProcessDefinitionStatisticsRequestBody,
 	type GetProcessDefinitionStatisticsResponseBody,
+	type GetProcessDefinitionMessageSubscriptionStatisticsRequestBody,
+	type GetProcessDefinitionMessageSubscriptionStatisticsResponseBody,
+	type GetProcessDefinitionInstanceStatisticsRequestBody,
+	type GetProcessDefinitionInstanceStatisticsResponseBody,
+	type GetProcessDefinitionInstanceVersionStatisticsRequestBody,
+	type GetProcessDefinitionInstanceVersionStatisticsResponseBody,
 	type QueryProcessDefinitionsRequestBody,
 	type QueryProcessDefinitionsResponseBody,
 } from './process-definition';

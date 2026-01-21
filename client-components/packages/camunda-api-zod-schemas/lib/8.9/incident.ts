@@ -8,7 +8,15 @@
 
 import {z} from 'zod';
 import {API_VERSION, type Endpoint} from '../common';
-import {incidentResultSchema, incidentSearchQuerySchema, incidentSearchQueryResultSchema} from './gen';
+import {
+	incidentResultSchema,
+	incidentSearchQuerySchema,
+	incidentSearchQueryResultSchema,
+	incidentProcessInstanceStatisticsByDefinitionQuerySchema,
+	incidentProcessInstanceStatisticsByDefinitionQueryResultSchema,
+	incidentProcessInstanceStatisticsByErrorQuerySchema,
+	incidentProcessInstanceStatisticsByErrorQueryResultSchema,
+} from './gen';
 
 const incidentErrorTypeSchema = incidentResultSchema.shape.errorType.unwrap();
 type IncidentErrorType = z.infer<typeof incidentErrorTypeSchema>;
@@ -43,13 +51,51 @@ const queryIncidents: Endpoint = {
 	getUrl: () => `/${API_VERSION}/incidents/search`,
 };
 
+const getProcessInstanceStatisticsByDefinitionRequestBodySchema =
+	incidentProcessInstanceStatisticsByDefinitionQuerySchema;
+type GetProcessInstanceStatisticsByDefinitionRequestBody = z.infer<
+	typeof getProcessInstanceStatisticsByDefinitionRequestBodySchema
+>;
+
+const getProcessInstanceStatisticsByDefinitionResponseBodySchema =
+	incidentProcessInstanceStatisticsByDefinitionQueryResultSchema;
+type GetProcessInstanceStatisticsByDefinitionResponseBody = z.infer<
+	typeof getProcessInstanceStatisticsByDefinitionResponseBodySchema
+>;
+
+const getProcessInstanceStatisticsByDefinition: Endpoint = {
+	method: 'POST',
+	getUrl: () => `/${API_VERSION}/incidents/statistics/process-instances-by-definition`,
+};
+
+const getProcessInstanceStatisticsByErrorRequestBodySchema = incidentProcessInstanceStatisticsByErrorQuerySchema;
+type GetProcessInstanceStatisticsByErrorRequestBody = z.infer<
+	typeof getProcessInstanceStatisticsByErrorRequestBodySchema
+>;
+
+const getProcessInstanceStatisticsByErrorResponseBodySchema = incidentProcessInstanceStatisticsByErrorQueryResultSchema;
+type GetProcessInstanceStatisticsByErrorResponseBody = z.infer<
+	typeof getProcessInstanceStatisticsByErrorResponseBodySchema
+>;
+
+const getProcessInstanceStatisticsByError: Endpoint = {
+	method: 'POST',
+	getUrl: () => `/${API_VERSION}/incidents/statistics/process-instances-by-error`,
+};
+
 export {
 	resolveIncident,
 	getIncident,
 	queryIncidents,
+	getProcessInstanceStatisticsByDefinition,
+	getProcessInstanceStatisticsByError,
 	getIncidentResponseBodySchema,
 	queryIncidentsRequestBodySchema,
 	queryIncidentsResponseBodySchema,
+	getProcessInstanceStatisticsByDefinitionRequestBodySchema,
+	getProcessInstanceStatisticsByDefinitionResponseBodySchema,
+	getProcessInstanceStatisticsByErrorRequestBodySchema,
+	getProcessInstanceStatisticsByErrorResponseBodySchema,
 	incidentErrorTypeSchema,
 	incidentStateSchema,
 	incidentSchema,
@@ -61,4 +107,8 @@ export type {
 	GetIncidentResponseBody,
 	QueryIncidentsRequestBody,
 	QueryIncidentsResponseBody,
+	GetProcessInstanceStatisticsByDefinitionRequestBody,
+	GetProcessInstanceStatisticsByDefinitionResponseBody,
+	GetProcessInstanceStatisticsByErrorRequestBody,
+	GetProcessInstanceStatisticsByErrorResponseBody,
 };
