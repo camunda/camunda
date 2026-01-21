@@ -23,6 +23,7 @@ import {
 	processInstanceMigrationBatchOperationRequestSchema,
 	processInstanceModificationBatchOperationRequestSchema,
 	processInstanceModificationInstructionSchema,
+	processInstanceMigrationInstructionSchema,
 	batchOperationCreatedResultSchema,
 	getProcessInstanceCallHierarchy200Schema,
 	getProcessInstanceStatistics200Schema,
@@ -172,6 +173,14 @@ const modifyProcessInstance: Endpoint<{processInstanceKey: string}> = {
 	getUrl: ({processInstanceKey}) => `/${API_VERSION}/process-instances/${processInstanceKey}/modification`,
 };
 
+const migrateProcessInstanceRequestBodySchema = processInstanceMigrationInstructionSchema;
+type MigrateProcessInstanceRequestBody = z.infer<typeof migrateProcessInstanceRequestBodySchema>;
+
+const migrateProcessInstance: Endpoint<{processInstanceKey: string}> = {
+	method: 'POST',
+	getUrl: ({processInstanceKey}) => `/${API_VERSION}/process-instances/${processInstanceKey}/migration`,
+};
+
 const resolveProcessInstanceIncidentsResponseBodySchema = batchOperationCreatedResultSchema;
 type ResolveProcessInstanceIncidentsResponseBody = z.infer<typeof resolveProcessInstanceIncidentsResponseBodySchema>;
 
@@ -194,10 +203,12 @@ export {
 	createMigrationBatchOperation,
 	createModificationBatchOperation,
 	modifyProcessInstance,
+	migrateProcessInstance,
 	resolveProcessInstanceIncidents,
 	createProcessInstanceRequestBodySchema,
 	createProcessInstanceResponseBodySchema,
 	modifyProcessInstanceRequestBodySchema,
+	migrateProcessInstanceRequestBodySchema,
 	queryProcessInstancesRequestBodySchema,
 	queryProcessInstancesResponseBodySchema,
 	cancelProcessInstanceRequestBodySchema,
@@ -236,5 +247,6 @@ export type {
 	CreateModificationBatchOperationRequestBody,
 	CreateModificationBatchOperationResponseBody,
 	ModifyProcessInstanceRequestBody,
+	MigrateProcessInstanceRequestBody,
 	ResolveProcessInstanceIncidentsResponseBody,
 };
