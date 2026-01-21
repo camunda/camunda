@@ -123,9 +123,9 @@ test.describe('Process Instance', () => {
         },
       });
 
-      await expect(operateProcessInstancePage.incidentsTableRows).toHaveCount(
-        1,
-      );
+      await expect
+        .poll(() => operateProcessInstancePage.incidentsTableRows.count())
+        .toBe(1);
 
       await expect(
         operateProcessInstancePage.incidentsTable.getByText(/is cool\?/i),

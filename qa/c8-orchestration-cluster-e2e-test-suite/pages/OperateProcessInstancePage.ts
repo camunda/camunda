@@ -59,7 +59,7 @@ class OperateProcessInstancePage {
   readonly incidentBannerButton: (count: number) => Locator;
   readonly incidentTypeFilter: Locator;
   readonly executionCountToggle: Locator;
-  readonly executionCountToggleButton: Locator;
+  readonly executionCountToggleLabel: Locator;
   readonly endDateField: Locator;
   readonly incidentsViewHeader: Locator;
   readonly modificationModeText: Locator;
@@ -158,12 +158,6 @@ class OperateProcessInstancePage {
     this.incidentTypeFilter = page.getByRole('combobox', {
       name: /filter by incident type/i,
     });
-    this.executionCountToggle = this.instanceHistory.locator(
-      '[aria-label="show execution count"], [aria-label="hide execution count"]',
-    );
-    this.executionCountToggleButton = this.instanceHistory.locator(
-      'button[aria-label="Execution count"][role="switch"]',
-    );
     this.endDateField = this.instanceHeader.getByTestId('end-date');
     this.incidentsViewHeader = page.getByText(/incidents\s+-\s+/i);
     this.modificationModeText = page.getByText(
@@ -193,6 +187,10 @@ class OperateProcessInstancePage {
     this.viewParentInstanceLink = page.getByRole('link', {
       name: /view parent instance/i,
     });
+    this.executionCountToggle = this.page.locator('#toggle-execution-count');
+    this.executionCountToggleLabel = this.page.locator(
+      '#toggle-execution-count_label',
+    );
   }
 
   async connectorResultVariableName(name: string): Promise<Locator> {
@@ -564,18 +562,14 @@ class OperateProcessInstancePage {
   }
 
   async toggleExecutionCount(): Promise<void> {
-    await this.executionCountToggleButton.waitFor({state: 'visible'});
-    const isChecked =
-      await this.executionCountToggleButton.getAttribute('aria-checked');
-
-    if (isChecked === 'false') {
-      await this.executionCountToggleButton.click({force: true});
-      await expect(this.executionCountToggleButton).toHaveAttribute(
+    await this.executionCountToggle.waitFor({state: 'visible'});
+    if (
+      (await this.executionCountToggle.getAttribute('aria-checked')) !== 'true'
+    ) {
+      await this.executionCountToggleLabel.click();
+      await expect(this.executionCountToggle).toHaveAttribute(
         'aria-checked',
         'true',
-        {
-          timeout: 5000,
-        },
       );
     }
   }

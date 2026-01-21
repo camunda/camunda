@@ -80,6 +80,7 @@ test.beforeAll(async () => {
     version: secondChildProcessVersion ? secondChildProcessVersion : 2,
     processDefinitionKey: '',
   };
+  expect(childProcessV2.version).toBe(childProcessV1.version + 1);
 
   testProcesses = {
     parentProcess,
