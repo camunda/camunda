@@ -11,6 +11,7 @@ import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsA
 import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_FILTER_CANCELED;
 import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_FILTER_COMPLETED;
 import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_FILTER_INCIDENTS;
+import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_GROUP_FILTERS;
 import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_GROUP_FLOW_NODE_ID;
 import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_TERMS_SIZE;
 import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_TO_PARENT_PI;
@@ -20,7 +21,7 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.search.clients.aggregator.SearchAggregator;
-import io.camunda.search.clients.aggregator.SearchFilterAggregator;
+import io.camunda.search.clients.aggregator.SearchFiltersAggregator;
 import io.camunda.search.clients.aggregator.SearchParentAggregator;
 import io.camunda.search.clients.aggregator.SearchTermsAggregator;
 import io.camunda.search.clients.core.SearchQueryRequest;
@@ -45,17 +46,37 @@ public class ProcessDefinitionFlowNodeStatisticsQueryTransformerTest {
     return transformers.getTypedSearchQueryTransformer(query.getClass()).apply(query);
   }
 
-  private void assertSubAggregations(final List<SearchAggregator> subAggregations) {
+  private void assertFiltersAggregation(final List<SearchAggregator> subAggregations) {
     assertThat(subAggregations).hasSize(1);
 
-    final var termsAgg = (SearchTermsAggregator) subAggregations.getFirst();
-    assertThat(termsAgg.name()).isEqualTo(AGGREGATION_GROUP_FLOW_NODE_ID);
-    assertThat(termsAgg.field()).isEqualTo(ListViewTemplate.ACTIVITY_ID);
-    assertThat(termsAgg.size()).isEqualTo(AGGREGATION_TERMS_SIZE);
-    assertThat(termsAgg.minDocCount()).isEqualTo(1);
-    assertThat(termsAgg.aggregations()).hasSize(1);
+    final var filtersAgg = (SearchFiltersAggregator) subAggregations.getFirst();
+    assertThat(filtersAgg.name()).isEqualTo(AGGREGATION_GROUP_FILTERS);
 
-    final var parentAgg = (SearchParentAggregator) termsAgg.aggregations().getFirst();
+    // Verify all 4 filter queries are present
+    final var queries = filtersAgg.queries();
+    assertThat(queries).hasSize(4);
+
+    assertThat(queries.get(AGGREGATION_FILTER_ACTIVE))
+        .isEqualTo(
+            and(
+                term(ListViewTemplate.INCIDENT, false),
+                term(ListViewTemplate.ACTIVITY_STATE, FlowNodeState.ACTIVE.toString())));
+
+    assertThat(queries.get(AGGREGATION_FILTER_COMPLETED))
+        .isEqualTo(term(ListViewTemplate.ACTIVITY_STATE, FlowNodeState.COMPLETED.toString()));
+
+    assertThat(queries.get(AGGREGATION_FILTER_CANCELED))
+        .isEqualTo(term(ListViewTemplate.ACTIVITY_STATE, FlowNodeState.TERMINATED.toString()));
+
+    assertThat(queries.get(AGGREGATION_FILTER_INCIDENTS))
+        .isEqualTo(
+            and(
+                term(ListViewTemplate.INCIDENT, true),
+                term(ListViewTemplate.ACTIVITY_STATE, FlowNodeState.ACTIVE.toString())));
+
+    // Verify parent aggregation is nested inside filters
+    assertThat(filtersAgg.aggregations()).hasSize(1);
+    final var parentAgg = (SearchParentAggregator) filtersAgg.aggregations().getFirst();
     assertThat(parentAgg.name()).isEqualTo(AGGREGATION_TO_PARENT_PI);
     assertThat(parentAgg.type()).isEqualTo(ListViewTemplate.ACTIVITIES_JOIN_RELATION);
     assertThat(parentAgg.aggregations()).isNull();
@@ -76,52 +97,21 @@ public class ProcessDefinitionFlowNodeStatisticsQueryTransformerTest {
     assertThat(searchRequest.from()).isZero();
     assertThat(searchRequest.size()).isZero();
 
+    // Verify there is now a single top-level aggregation (terms by flow node ID)
     final var aggregations = searchRequest.aggregations();
-    assertThat(aggregations).hasSize(4);
+    assertThat(aggregations).hasSize(1);
 
-    assertThat(aggregations.get(0))
+    assertThat(aggregations.getFirst())
         .isInstanceOfSatisfying(
-            SearchFilterAggregator.class,
-            activeFilter -> {
-              assertThat(activeFilter.name()).isEqualTo(AGGREGATION_FILTER_ACTIVE);
-              assertThat(activeFilter.query())
-                  .isEqualTo(
-                      and(
-                          term(ListViewTemplate.INCIDENT, false),
-                          term(ListViewTemplate.ACTIVITY_STATE, FlowNodeState.ACTIVE.toString())));
-              assertSubAggregations(activeFilter.aggregations());
-            });
-    assertThat(aggregations.get(1))
-        .isInstanceOfSatisfying(
-            SearchFilterAggregator.class,
-            completedFilter -> {
-              assertThat(completedFilter.name()).isEqualTo(AGGREGATION_FILTER_COMPLETED);
-              assertThat(completedFilter.query())
-                  .isEqualTo(
-                      term(ListViewTemplate.ACTIVITY_STATE, FlowNodeState.COMPLETED.toString()));
-              assertSubAggregations(completedFilter.aggregations());
-            });
-    assertThat(aggregations.get(2))
-        .isInstanceOfSatisfying(
-            SearchFilterAggregator.class,
-            canceledFilter -> {
-              assertThat(canceledFilter.name()).isEqualTo(AGGREGATION_FILTER_CANCELED);
-              assertThat(canceledFilter.query())
-                  .isEqualTo(
-                      term(ListViewTemplate.ACTIVITY_STATE, FlowNodeState.TERMINATED.toString()));
-              assertSubAggregations(canceledFilter.aggregations());
-            });
-    assertThat(aggregations.get(3))
-        .isInstanceOfSatisfying(
-            SearchFilterAggregator.class,
-            incidentsFilter -> {
-              assertThat(incidentsFilter.name()).isEqualTo(AGGREGATION_FILTER_INCIDENTS);
-              assertThat(incidentsFilter.query())
-                  .isEqualTo(
-                      and(
-                          term(ListViewTemplate.INCIDENT, true),
-                          term(ListViewTemplate.ACTIVITY_STATE, FlowNodeState.ACTIVE.toString())));
-              assertSubAggregations(incidentsFilter.aggregations());
+            SearchTermsAggregator.class,
+            termsAgg -> {
+              assertThat(termsAgg.name()).isEqualTo(AGGREGATION_GROUP_FLOW_NODE_ID);
+              assertThat(termsAgg.field()).isEqualTo(ListViewTemplate.ACTIVITY_ID);
+              assertThat(termsAgg.size()).isEqualTo(AGGREGATION_TERMS_SIZE);
+              assertThat(termsAgg.minDocCount()).isEqualTo(1);
+
+              // Verify filters aggregation is nested inside terms
+              assertFiltersAggregation(termsAgg.aggregations());
             });
 
     final var queryVariant = searchRequest.query().queryOption();

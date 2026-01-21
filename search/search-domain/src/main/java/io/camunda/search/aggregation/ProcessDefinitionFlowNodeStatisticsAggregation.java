@@ -13,8 +13,9 @@ public record ProcessDefinitionFlowNodeStatisticsAggregation(
     ProcessDefinitionStatisticsFilter filter) implements AggregationBase {
 
   public static final int AGGREGATION_TERMS_SIZE = 10000;
-  public static final String AGGREGATION_TO_PARENT_PI = "parents-process-instances";
+  public static final String AGGREGATION_GROUP_FILTERS = "group-filters";
   public static final String AGGREGATION_GROUP_FLOW_NODE_ID = "terms-flow-nodes";
+  public static final String AGGREGATION_TO_PARENT_PI = "parents-process-instances";
   public static final String AGGREGATION_FILTER_ACTIVE = "active";
   public static final String AGGREGATION_FILTER_COMPLETED = "completed";
   public static final String AGGREGATION_FILTER_CANCELED = "canceled";
