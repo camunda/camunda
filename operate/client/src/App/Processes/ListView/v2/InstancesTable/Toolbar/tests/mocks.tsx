@@ -15,6 +15,7 @@ import {batchModificationStore} from 'modules/stores/batchModification';
 import type {ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.8';
 import {createProcessDefinition} from 'modules/testUtils';
 import {SelectedProcessDefinitionContext} from 'App/Processes/ListView/selectedProcessDefinitionContext';
+import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 
 const PROCESS_DEFINITION_ID = 'eventBasedGatewayProcess';
 const PROCESS_DEFINITION_KEY = '2251799813685249';
@@ -121,32 +122,36 @@ function createWrapper(
     }, []);
 
     return (
-      <SelectedProcessDefinitionContext.Provider
-        value={selectedProcessDefinition}
+      <ProcessDefinitionKeyContext.Provider
+        value={selectedProcessDefinition.processDefinitionKey}
       >
-        <QueryClientProvider client={getMockQueryClient()}>
-          <MemoryRouter initialEntries={[initialPath]}>
-            {children}
-            {withTestButtons && (
-              <>
-                <button
-                  onClick={
-                    processInstancesSelectionStore.selectAllProcessInstances
-                  }
-                >
-                  Select all instances
-                </button>
-                <button onClick={batchModificationStore.enable}>
-                  Enter batch modification mode
-                </button>
-                <button onClick={batchModificationStore.reset}>
-                  Exit batch modification mode
-                </button>
-              </>
-            )}
-          </MemoryRouter>
-        </QueryClientProvider>
-      </SelectedProcessDefinitionContext.Provider>
+        <SelectedProcessDefinitionContext.Provider
+          value={selectedProcessDefinition}
+        >
+          <QueryClientProvider client={getMockQueryClient()}>
+            <MemoryRouter initialEntries={[initialPath]}>
+              {children}
+              {withTestButtons && (
+                <>
+                  <button
+                    onClick={
+                      processInstancesSelectionStore.selectAllProcessInstances
+                    }
+                  >
+                    Select all instances
+                  </button>
+                  <button onClick={batchModificationStore.enable}>
+                    Enter batch modification mode
+                  </button>
+                  <button onClick={batchModificationStore.reset}>
+                    Exit batch modification mode
+                  </button>
+                </>
+              )}
+            </MemoryRouter>
+          </QueryClientProvider>
+        </SelectedProcessDefinitionContext.Provider>
+      </ProcessDefinitionKeyContext.Provider>
     );
   };
 
