@@ -944,6 +944,7 @@ public class RequestMapper {
                     validateCreateProcessInstanceRequest(request)
                         .map(Either::<ProblemDetail, String>left)
                         .orElseGet(() -> Either.right(tenant)));
+
     return validationResponse.map(
         tenantId ->
             new ProcessInstanceCreateRequest(
@@ -982,7 +983,13 @@ public class RequestMapper {
   public static Either<ProblemDetail, ProcessInstanceCreateRequest> toCreateProcessInstance(
       final ProcessInstanceCreationInstructionByKey request, final boolean multiTenancyEnabled) {
     final Either<ProblemDetail, String> validationResponse =
-        validateTenantId(request.getTenantId(), multiTenancyEnabled, "Create Process Instance");
+        validateTenantId(request.getTenantId(), multiTenancyEnabled, "Create Process Instance")
+            .flatMap(
+                tenant ->
+                    validateCreateProcessInstanceRequest(request)
+                        .map(Either::<ProblemDetail, String>left)
+                        .orElseGet(() -> Either.right(tenant)));
+
     return validationResponse.map(
         tenantId ->
             new ProcessInstanceCreateRequest(

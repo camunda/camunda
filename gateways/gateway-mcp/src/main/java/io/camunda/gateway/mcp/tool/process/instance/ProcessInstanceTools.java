@@ -13,17 +13,27 @@ import static io.camunda.gateway.mcp.tool.ToolDescriptions.PAGE_DESCRIPTION;
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.PROCESS_INSTANCE_KEY_POSITIVE_MESSAGE;
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.SORT_DESCRIPTION;
 
+import io.camunda.gateway.mapping.http.ResponseMapper;
+import io.camunda.gateway.mapping.http.SimpleRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.mcp.mapper.CallToolResultMapper;
 import io.camunda.gateway.mcp.model.McpProcessInstanceFilter;
 import io.camunda.gateway.mcp.model.McpSearchQueryPageRequest;
 import io.camunda.gateway.protocol.model.ProcessInstanceSearchQuerySortRequest;
+import io.camunda.gateway.protocol.model.simple.ProcessInstanceCreationInstruction;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.ProcessInstanceServices;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import org.springaicommunity.mcp.annotation.McpTool;
 import org.springaicommunity.mcp.annotation.McpTool.McpAnnotations;
 import org.springaicommunity.mcp.annotation.McpToolParam;
@@ -35,12 +45,15 @@ import org.springframework.validation.annotation.Validated;
 public class ProcessInstanceTools {
 
   private final ProcessInstanceServices processInstanceServices;
+  private final MultiTenancyConfiguration multiTenancyCfg;
   private final CamundaAuthenticationProvider authenticationProvider;
 
   public ProcessInstanceTools(
       final ProcessInstanceServices processInstanceServices,
+      final MultiTenancyConfiguration multiTenancyCfg,
       final CamundaAuthenticationProvider authenticationProvider) {
     this.processInstanceServices = processInstanceServices;
+    this.multiTenancyCfg = multiTenancyCfg;
     this.authenticationProvider = authenticationProvider;
   }
 
@@ -85,6 +98,95 @@ public class ProcessInstanceTools {
               processInstanceServices
                   .withAuthentication(authenticationProvider.getCamundaAuthentication())
                   .getByKey(processInstanceKey)));
+    } catch (final Exception e) {
+      return CallToolResultMapper.mapErrorToResult(e);
+    }
+  }
+
+  @McpTool(
+      description =
+          """
+          Create a new process instance of the given process definition. Either a processDefinitionKey or
+          a processDefinitionId (with an optional processDefinitionVersion) need to be passed.
+
+          When using the awaitCompletion flag, the tool will wait for the process instance to complete
+          and return its result variables. When using awaitCompletion, always include a unique tag
+          `mcp-tool:<uniqueId>` which can be used to search for the started process instance in case
+          of timeouts.
+          """)
+  public CallToolResult createProcessInstance(
+      @McpToolParam(
+              description =
+                  "The unique key identifying the process definition, for example, returned for a process in the deploy resources endpoint.",
+              required = false)
+          final String processDefinitionKey,
+      @McpToolParam(
+              description =
+                  "The BPMN process id of the process definition to start an instance of.",
+              required = false)
+          @Pattern(regexp = "^[a-zA-Z_][a-zA-Z0-9_\\-.]*$")
+          @Size(min = 1)
+          final String processDefinitionId,
+      @McpToolParam(
+              description =
+                  "The version of the process. By default, the latest version of the process is used. Can only be used in combination with processDefinitionId.",
+              required = false)
+          final Integer processDefinitionVersion,
+      @McpToolParam(
+              description =
+                  "Set of variables to instantiate in the root variable scope of the process instance. Can include nested/complex objects. Which variables to set depends on the process definition.",
+              required = false)
+          final Map<@NotBlank String, Object> variables,
+      @McpToolParam(
+              description =
+                  "Wait for the process instance to complete. If the process instance does not complete within request timeout limits, the waiting will time out and the tool will return a 504 response status. Use the unique tag you added to query process instance status. Disabled by default.",
+              required = false)
+          final Boolean awaitCompletion,
+      @McpToolParam(
+              description =
+                  "List of variables by name to be included in the response when awaitCompletion is set to true. If empty, all visible variables in the root scope will be returned.",
+              required = false)
+          final List<@NotBlank String> fetchVariables,
+      @McpToolParam(
+              description =
+                  "List of tags to apply to the process instance. Tags must start with a letter, followed by letters, digits, or the special characters `_`, `-`, `:`, or `.`; length ≤ 100.",
+              required = false)
+          final Set<
+                  @Pattern(regexp = "^[A-Za-z][A-Za-z0-9_\\-:.]{0,99}$") @Size(min = 1, max = 100)
+                  String>
+              tags) {
+    try {
+      final var instruction =
+          new ProcessInstanceCreationInstruction()
+              .processDefinitionKey(processDefinitionKey)
+              .processDefinitionId(processDefinitionId)
+              .processDefinitionVersion(processDefinitionVersion)
+              .awaitCompletion(awaitCompletion != null && awaitCompletion);
+
+      Optional.ofNullable(variables).ifPresent(instruction::variables);
+      Optional.ofNullable(fetchVariables).ifPresent(instruction::fetchVariables);
+      Optional.ofNullable(tags).ifPresent(instruction::tags);
+
+      final var request =
+          SimpleRequestMapper.toCreateProcessInstance(
+              instruction, multiTenancyCfg.isChecksEnabled());
+      if (request.isLeft()) {
+        return CallToolResultMapper.mapProblemToResult(request.getLeft());
+      }
+
+      final var authenticatedServices =
+          processInstanceServices.withAuthentication(
+              authenticationProvider.getCamundaAuthentication());
+
+      if (Boolean.TRUE.equals(awaitCompletion)) {
+        return CallToolResultMapper.from(
+            authenticatedServices.createProcessInstanceWithResult(request.get()),
+            ResponseMapper::toCreateProcessInstanceWithResultResponse);
+      }
+
+      return CallToolResultMapper.from(
+          authenticatedServices.createProcessInstance(request.get()),
+          ResponseMapper::toCreateProcessInstanceResponse);
     } catch (final Exception e) {
       return CallToolResultMapper.mapErrorToResult(e);
     }

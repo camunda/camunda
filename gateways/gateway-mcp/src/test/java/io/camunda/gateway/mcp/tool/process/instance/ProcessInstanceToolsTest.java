@@ -8,6 +8,7 @@
 package io.camunda.gateway.mcp.tool.process.instance;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
@@ -16,6 +17,7 @@ import static org.mockito.Mockito.when;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.mcp.tool.ToolsTest;
+import io.camunda.gateway.protocol.model.CreateProcessInstanceResult;
 import io.camunda.gateway.protocol.model.ProcessInstanceResult;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
@@ -29,9 +31,14 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.search.sort.SortOption.FieldSorting;
 import io.camunda.search.sort.SortOrder;
+import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.ProcessInstanceServices;
+import io.camunda.service.ProcessInstanceServices.ProcessInstanceCreateRequest;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
+import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceResultRecord;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.TextContent;
@@ -39,7 +46,10 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -80,185 +90,439 @@ class ProcessInstanceToolsTest extends ToolsTest {
           .build();
 
   @MockitoBean private ProcessInstanceServices processInstanceServices;
+  @MockitoBean private MultiTenancyConfiguration multiTenancyConfiguration;
 
   @Autowired private ObjectMapper objectMapper;
 
   @Captor private ArgumentCaptor<ProcessInstanceQuery> queryCaptor;
+  @Captor private ArgumentCaptor<ProcessInstanceCreateRequest> createRequestCaptor;
 
   @BeforeEach
   void mockApiServices() {
     mockApiServiceAuthentication(processInstanceServices);
   }
 
-  @Test
-  void shouldGetProcessInstanceByKey() {
-    // given
-    when(processInstanceServices.getByKey(any())).thenReturn(PROCESS_INSTANCE_ENTITY);
+  @Nested
+  class GetProcessInstance {
 
-    // when
-    final CallToolResult result =
-        mcpClient.callTool(
-            CallToolRequest.builder()
-                .name("getProcessInstance")
-                .arguments(Map.of("processInstanceKey", 123L))
-                .build());
+    @Test
+    void shouldGetProcessInstanceByKey() {
+      // given
+      when(processInstanceServices.getByKey(any())).thenReturn(PROCESS_INSTANCE_ENTITY);
 
-    // then
-    assertThat(result.isError()).isFalse();
-    assertThat(result.structuredContent()).isNotNull();
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder()
+                  .name("getProcessInstance")
+                  .arguments(Map.of("processInstanceKey", 123L))
+                  .build());
 
-    final var processInstance =
-        objectMapper.convertValue(result.structuredContent(), ProcessInstanceResult.class);
-    assertThat(processInstance)
-        .usingRecursiveComparison()
-        .isEqualTo(SearchQueryResponseMapper.toProcessInstance(PROCESS_INSTANCE_ENTITY));
+      // then
+      assertThat(result.isError()).isFalse();
+      assertThat(result.structuredContent()).isNotNull();
 
-    verify(processInstanceServices).getByKey(123L);
+      final var processInstance =
+          objectMapper.convertValue(result.structuredContent(), ProcessInstanceResult.class);
+      assertThat(processInstance)
+          .usingRecursiveComparison()
+          .isEqualTo(SearchQueryResponseMapper.toProcessInstance(PROCESS_INSTANCE_ENTITY));
+
+      verify(processInstanceServices).getByKey(123L);
+    }
+
+    @Test
+    void shouldFailGetProcessInstanceByKeyOnException() {
+      // given
+      when(processInstanceServices.getByKey(any()))
+          .thenThrow(new ServiceException("Expected failure", Status.NOT_FOUND));
+
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder()
+                  .name("getProcessInstance")
+                  .arguments(Map.of("processInstanceKey", 123L))
+                  .build());
+
+      // then
+      assertThat(result.isError()).isTrue();
+      assertThat(result.content()).isEmpty();
+      assertThat(result.structuredContent()).isNotNull();
+
+      final var problemDetail =
+          objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
+      assertThat(problemDetail.getDetail()).isEqualTo("Expected failure");
+      assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
+      assertThat(problemDetail.getTitle()).isEqualTo("NOT_FOUND");
+    }
+
+    @Test
+    void shouldFailGetProcessInstanceByKeyOnInvalidKey() {
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder()
+                  .name("getProcessInstance")
+                  .arguments(Map.of("processInstanceKey", -3L))
+                  .build());
+
+      // then
+      assertThat(result.isError()).isTrue();
+      assertThat(result.structuredContent()).isNull();
+      assertThat(result.content())
+          .hasSize(1)
+          .first()
+          .isInstanceOfSatisfying(
+              TextContent.class,
+              textContent ->
+                  assertThat(textContent.text())
+                      .contains("Process instance key must be a positive number."));
+    }
   }
 
-  @Test
-  void shouldFailGetProcessInstanceByKeyOnException() {
-    // given
-    when(processInstanceServices.getByKey(any()))
-        .thenThrow(new ServiceException("Expected failure", Status.NOT_FOUND));
+  @Nested
+  class SearchProcessInstances {
 
-    // when
-    final CallToolResult result =
-        mcpClient.callTool(
-            CallToolRequest.builder()
-                .name("getProcessInstance")
-                .arguments(Map.of("processInstanceKey", 123L))
-                .build());
+    @Test
+    void shouldSearchProcessInstancesWithFilterSortAndPaging() {
+      // given
+      when(processInstanceServices.search(any(ProcessInstanceQuery.class)))
+          .thenReturn(SEARCH_QUERY_RESULT);
 
-    // then
-    assertThat(result.isError()).isTrue();
-    assertThat(result.content()).isEmpty();
-    assertThat(result.structuredContent()).isNotNull();
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder()
+                  .name("searchProcessInstances")
+                  .arguments(
+                      Map.of(
+                          "filter",
+                          Map.of(
+                              "state",
+                              "ACTIVE",
+                              "startDate",
+                              Map.of("from", "2024-01-01T00:00:00Z", "to", "2024-02-01T00:00:00Z"),
+                              "processDefinitionId",
+                              "demoProcess",
+                              "processDefinitionVersion",
+                              5,
+                              "tags",
+                              List.of("tag1"),
+                              "variables",
+                              List.of(Map.of("name", "orderId", "value", "123"))),
+                          "sort",
+                          List.of(Map.of("field", "processInstanceKey", "order", "DESC")),
+                          "page",
+                          Map.of("limit", 25, "after", "WzEwMjRd")))
+                  .build());
 
-    final var problemDetail =
-        objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
-    assertThat(problemDetail.getDetail()).isEqualTo("Expected failure");
-    assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
-    assertThat(problemDetail.getTitle()).isEqualTo("NOT_FOUND");
+      // then
+      assertThat(result.isError()).isFalse();
+
+      verify(processInstanceServices).search(queryCaptor.capture());
+      final ProcessInstanceQuery capturedQuery = queryCaptor.getValue();
+
+      final ProcessInstanceFilter filter = capturedQuery.filter();
+      assertThat(filter.stateOperations())
+          .extracting(Operation::operator, Operation::value)
+          .containsExactly(tuple(Operator.EQUALS, "ACTIVE"));
+
+      assertThat(filter.processDefinitionIdOperations())
+          .extracting(Operation::operator, Operation::value)
+          .containsExactly(tuple(Operator.EQUALS, "demoProcess"));
+
+      assertThat(filter.processDefinitionVersionOperations())
+          .extracting(Operation::operator, Operation::value)
+          .containsExactly(tuple(Operator.EQUALS, 5));
+
+      assertThat(filter.startDateOperations())
+          .extracting(Operation::operator, Operation::value)
+          .containsExactly(
+              tuple(Operator.GREATER_THAN_EQUALS, OffsetDateTime.parse("2024-01-01T00:00:00Z")),
+              tuple(Operator.LOWER_THAN, OffsetDateTime.parse("2024-02-01T00:00:00Z")));
+
+      assertThat(filter.tags()).containsExactly("tag1");
+
+      assertThat(filter.variableFilters()).hasSize(1);
+      final VariableValueFilter variableFilter = filter.variableFilters().getFirst();
+      assertThat(variableFilter.name()).isEqualTo("orderId");
+      assertThat(variableFilter.valueOperations())
+          .extracting(UntypedOperation::operator, UntypedOperation::value)
+          .containsExactly(tuple(Operator.EQUALS, 123L));
+
+      assertThat(capturedQuery.sort().orderings())
+          .extracting(FieldSorting::field, FieldSorting::order)
+          .containsExactly(tuple("processInstanceKey", SortOrder.DESC));
+
+      assertThat(capturedQuery.page().size()).isEqualTo(25);
+      assertThat(capturedQuery.page().after()).isEqualTo("WzEwMjRd");
+    }
+
+    @Test
+    void shouldFailSearchProcessInstancesOnException() {
+      // given
+      when(processInstanceServices.search(any(ProcessInstanceQuery.class)))
+          .thenThrow(new ServiceException("Expected failure", Status.NOT_FOUND));
+
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder().name("searchProcessInstances").arguments(Map.of()).build());
+
+      // then
+      assertThat(result.isError()).isTrue();
+      assertThat(result.content()).isEmpty();
+
+      final var problemDetail =
+          objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
+      assertThat(problemDetail.getDetail()).isEqualTo("Expected failure");
+      assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
+      assertThat(problemDetail.getTitle()).isEqualTo("NOT_FOUND");
+    }
   }
 
-  @Test
-  void shouldFailGetProcessInstanceByKeyOnInvalidKey() {
-    // when
-    final CallToolResult result =
-        mcpClient.callTool(
-            CallToolRequest.builder()
-                .name("getProcessInstance")
-                .arguments(Map.of("processInstanceKey", -3L))
-                .build());
+  @Nested
+  class CreateProcessInstance {
 
-    // then
-    assertThat(result.isError()).isTrue();
-    assertThat(result.structuredContent()).isNull();
-    assertThat(result.content())
-        .hasSize(1)
-        .first()
-        .isInstanceOfSatisfying(
-            TextContent.class,
-            textContent ->
-                assertThat(textContent.text())
-                    .contains("Process instance key must be a positive number."));
-  }
+    @Test
+    void shouldCreateProcessInstanceByKey() {
+      // given
+      when(multiTenancyConfiguration.isChecksEnabled()).thenReturn(false);
 
-  @Test
-  void shouldSearchProcessInstancesWithFilterSortAndPaging() {
-    // given
-    when(processInstanceServices.search(any(ProcessInstanceQuery.class)))
-        .thenReturn(SEARCH_QUERY_RESULT);
+      final var createResponse =
+          new ProcessInstanceCreationRecord()
+              .setProcessDefinitionKey(123L)
+              .setBpmnProcessId("testProcessId")
+              .setVersion(-1)
+              .setProcessInstanceKey(456L)
+              .setTenantId("<default>")
+              .setTags(Set.of());
 
-    // when
-    final CallToolResult result =
-        mcpClient.callTool(
-            CallToolRequest.builder()
-                .name("searchProcessInstances")
-                .arguments(
-                    Map.of(
-                        "filter",
-                        Map.of(
-                            "state",
-                            "ACTIVE",
-                            "startDate",
-                            Map.of("from", "2024-01-01T00:00:00Z", "to", "2024-02-01T00:00:00Z"),
-                            "processDefinitionId",
-                            "demoProcess",
-                            "processDefinitionVersion",
-                            5,
-                            "tags",
-                            List.of("tag1"),
-                            "variables",
-                            List.of(Map.of("name", "orderId", "value", "123"))),
-                        "sort",
-                        List.of(Map.of("field", "processInstanceKey", "order", "DESC")),
-                        "page",
-                        Map.of("limit", 25, "after", "WzEwMjRd")))
-                .build());
+      when(processInstanceServices.createProcessInstance(any(ProcessInstanceCreateRequest.class)))
+          .thenReturn(CompletableFuture.completedFuture(createResponse));
 
-    // then
-    assertThat(result.isError()).isFalse();
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder()
+                  .name("createProcessInstance")
+                  .arguments(
+                      Map.of(
+                          "processDefinitionKey",
+                          "123",
+                          "variables",
+                          Map.of("foo", "bar"),
+                          "tags",
+                          Set.of("mcp-tool:abc")))
+                  .build());
 
-    verify(processInstanceServices).search(queryCaptor.capture());
-    final ProcessInstanceQuery capturedQuery = queryCaptor.getValue();
+      // then
+      assertThat(result.isError()).isFalse();
+      assertThat(result.structuredContent()).isNotNull();
 
-    final ProcessInstanceFilter filter = capturedQuery.filter();
-    assertThat(filter.stateOperations())
-        .extracting(Operation::operator, Operation::value)
-        .containsExactly(tuple(Operator.EQUALS, "ACTIVE"));
+      verify(processInstanceServices).createProcessInstance(createRequestCaptor.capture());
+      final var capturedRequest = createRequestCaptor.getValue();
+      assertThat(capturedRequest.processDefinitionKey()).isEqualTo(123L);
+      assertThat(capturedRequest.tenantId()).isEqualTo("<default>");
+      assertThat(capturedRequest.variables()).containsExactly(entry("foo", "bar"));
+      assertThat(capturedRequest.tags()).containsExactly("mcp-tool:abc");
 
-    assertThat(filter.processDefinitionIdOperations())
-        .extracting(Operation::operator, Operation::value)
-        .containsExactly(tuple(Operator.EQUALS, "demoProcess"));
+      final var actualResult =
+          objectMapper.convertValue(result.structuredContent(), CreateProcessInstanceResult.class);
+      assertThat(actualResult.getProcessDefinitionKey()).isEqualTo("123");
+      assertThat(actualResult.getProcessDefinitionId()).isEqualTo("testProcessId");
+      assertThat(actualResult.getProcessDefinitionVersion()).isEqualTo(-1);
+      assertThat(actualResult.getProcessInstanceKey()).isEqualTo("456");
+      assertThat(actualResult.getTenantId()).isEqualTo("<default>");
+      assertThat(actualResult.getVariables()).isEmpty();
+      assertThat(actualResult.getTags()).isEmpty();
+    }
 
-    assertThat(filter.processDefinitionVersionOperations())
-        .extracting(Operation::operator, Operation::value)
-        .containsExactly(tuple(Operator.EQUALS, 5));
+    @Test
+    void shouldCreateProcessInstanceById() {
+      // given
+      when(multiTenancyConfiguration.isChecksEnabled()).thenReturn(false);
 
-    assertThat(filter.startDateOperations())
-        .extracting(Operation::operator, Operation::value)
-        .containsExactly(
-            tuple(Operator.GREATER_THAN_EQUALS, OffsetDateTime.parse("2024-01-01T00:00:00Z")),
-            tuple(Operator.LOWER_THAN, OffsetDateTime.parse("2024-02-01T00:00:00Z")));
+      final var createResponse =
+          new ProcessInstanceCreationRecord()
+              .setProcessDefinitionKey(123L)
+              .setBpmnProcessId("testProcessId")
+              .setVersion(7)
+              .setProcessInstanceKey(456L)
+              .setTenantId("<default>")
+              .setTags(Set.of("mcp-tool:abc"));
 
-    assertThat(filter.tags()).containsExactly("tag1");
+      when(processInstanceServices.createProcessInstance(any(ProcessInstanceCreateRequest.class)))
+          .thenReturn(CompletableFuture.completedFuture(createResponse));
 
-    assertThat(filter.variableFilters()).hasSize(1);
-    final VariableValueFilter variableFilter = filter.variableFilters().getFirst();
-    assertThat(variableFilter.name()).isEqualTo("orderId");
-    assertThat(variableFilter.valueOperations())
-        .extracting(UntypedOperation::operator, UntypedOperation::value)
-        .containsExactly(tuple(Operator.EQUALS, 123L));
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder()
+                  .name("createProcessInstance")
+                  .arguments(
+                      Map.of(
+                          "processDefinitionId",
+                          "testProcessId",
+                          "processDefinitionVersion",
+                          7,
+                          "variables",
+                          Map.of("foo", "bar"),
+                          "tags",
+                          Set.of("mcp-tool:abc")))
+                  .build());
 
-    assertThat(capturedQuery.sort().orderings())
-        .extracting(FieldSorting::field, FieldSorting::order)
-        .containsExactly(tuple("processInstanceKey", SortOrder.DESC));
+      // then
+      assertThat(result.isError()).isFalse();
 
-    assertThat(capturedQuery.page().size()).isEqualTo(25);
-    assertThat(capturedQuery.page().after()).isEqualTo("WzEwMjRd");
-  }
+      verify(processInstanceServices).createProcessInstance(createRequestCaptor.capture());
+      final var capturedRequest = createRequestCaptor.getValue();
+      assertThat(capturedRequest.bpmnProcessId()).contains("testProcessId");
+      assertThat(capturedRequest.version()).isEqualTo(7);
+      assertThat(capturedRequest.tenantId()).isEqualTo("<default>");
+      assertThat(capturedRequest.variables()).containsExactly(entry("foo", "bar"));
+      assertThat(capturedRequest.awaitCompletion()).isFalse();
+      assertThat(capturedRequest.tags()).containsExactly("mcp-tool:abc");
 
-  @Test
-  void shouldFailSearchProcessInstancesOnException() {
-    // given
-    when(processInstanceServices.search(any(ProcessInstanceQuery.class)))
-        .thenThrow(new ServiceException("Expected failure", Status.NOT_FOUND));
+      final var actualResult =
+          objectMapper.convertValue(result.structuredContent(), CreateProcessInstanceResult.class);
+      assertThat(actualResult.getProcessDefinitionKey()).isEqualTo("123");
+      assertThat(actualResult.getProcessDefinitionId()).isEqualTo("testProcessId");
+      assertThat(actualResult.getProcessDefinitionVersion()).isEqualTo(7);
+      assertThat(actualResult.getProcessInstanceKey()).isEqualTo("456");
+      assertThat(actualResult.getTenantId()).isEqualTo("<default>");
+      assertThat(actualResult.getVariables()).isEmpty();
+      assertThat(actualResult.getTags()).containsExactly("mcp-tool:abc");
+    }
 
-    // when
-    final CallToolResult result =
-        mcpClient.callTool(
-            CallToolRequest.builder().name("searchProcessInstances").arguments(Map.of()).build());
+    @Test
+    void shouldCreateProcessInstanceWithAwaitCompletionAndFetchVariables() {
+      // given
+      when(multiTenancyConfiguration.isChecksEnabled()).thenReturn(false);
 
-    // then
-    assertThat(result.isError()).isTrue();
-    assertThat(result.content()).isEmpty();
+      final var variables = Map.of("foo", "bar", "nested", Map.of("x", 1));
+      final var createResponse =
+          new ProcessInstanceResultRecord()
+              .setProcessDefinitionKey(123L)
+              .setBpmnProcessId("testProcessId")
+              .setVersion(7)
+              .setProcessInstanceKey(456L)
+              .setTenantId("<default>")
+              .setVariables(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(variables)))
+              .setTags(Set.of("mcp-tool:abc"));
 
-    final var problemDetail =
-        objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
-    assertThat(problemDetail.getDetail()).isEqualTo("Expected failure");
-    assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
-    assertThat(problemDetail.getTitle()).isEqualTo("NOT_FOUND");
+      when(processInstanceServices.createProcessInstanceWithResult(
+              any(ProcessInstanceCreateRequest.class)))
+          .thenReturn(CompletableFuture.completedFuture(createResponse));
+
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder()
+                  .name("createProcessInstance")
+                  .arguments(
+                      Map.of(
+                          "processDefinitionId",
+                          "testProcessId",
+                          "processDefinitionVersion",
+                          7,
+                          "variables",
+                          variables,
+                          "awaitCompletion",
+                          true,
+                          "fetchVariables",
+                          List.of("foo"),
+                          "tags",
+                          Set.of("mcp-tool:abc")))
+                  .build());
+
+      // then
+      assertThat(result.isError()).isFalse();
+
+      verify(processInstanceServices)
+          .createProcessInstanceWithResult(createRequestCaptor.capture());
+      final var capturedRequest = createRequestCaptor.getValue();
+      assertThat(capturedRequest.awaitCompletion()).isTrue();
+      assertThat(capturedRequest.fetchVariables()).containsExactly("foo");
+
+      final var actualResult =
+          objectMapper.convertValue(result.structuredContent(), CreateProcessInstanceResult.class);
+      assertThat(actualResult.getProcessDefinitionKey()).isEqualTo("123");
+      assertThat(actualResult.getProcessDefinitionId()).isEqualTo("testProcessId");
+      assertThat(actualResult.getProcessDefinitionVersion()).isEqualTo(7);
+      assertThat(actualResult.getProcessInstanceKey()).isEqualTo("456");
+      assertThat(actualResult.getTenantId()).isEqualTo("<default>");
+      assertThat(actualResult.getVariables())
+          .containsExactly(entry("foo", "bar"), entry("nested", Map.of("x", 1)));
+      assertThat(actualResult.getTags()).containsExactly("mcp-tool:abc");
+    }
+
+    @Test
+    void shouldFailCreateProcessInstanceOnException() {
+      // given
+      when(multiTenancyConfiguration.isChecksEnabled()).thenReturn(false);
+
+      when(processInstanceServices.createProcessInstance(any(ProcessInstanceCreateRequest.class)))
+          .thenThrow(new ServiceException("Expected failure", Status.INVALID_ARGUMENT));
+
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder()
+                  .name("createProcessInstance")
+                  .arguments(Map.of("processDefinitionId", "invalidProcessId"))
+                  .build());
+
+      // then
+      assertThat(result.isError()).isTrue();
+      assertThat(result.content()).isEmpty();
+
+      final var problemDetail =
+          objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
+      assertThat(problemDetail.getDetail()).isEqualTo("Expected failure");
+      assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
+      assertThat(problemDetail.getTitle()).isEqualTo("INVALID_ARGUMENT");
+    }
+
+    @Test
+    void shouldFailCreateProcessInstanceWhenNoDefinitionProvided() {
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder().name("createProcessInstance").arguments(Map.of()).build());
+
+      // then
+      assertThat(result.isError()).isTrue();
+
+      final var problemDetail =
+          objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
+      assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
+      assertThat(problemDetail.getTitle()).isEqualTo("INVALID_ARGUMENT");
+      assertThat(problemDetail.getDetail())
+          .contains("At least one of [processDefinitionId, processDefinitionKey] is required");
+    }
+
+    @Test
+    void shouldFailCreateProcessInstanceWhenBothDefinitionKeyAndIdProvided() {
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder()
+                  .name("createProcessInstance")
+                  .arguments(
+                      Map.of("processDefinitionKey", "123", "processDefinitionId", "testProcessId"))
+                  .build());
+
+      // then
+      assertThat(result.isError()).isTrue();
+
+      final var problemDetail =
+          objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
+      assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
+      assertThat(problemDetail.getTitle()).isEqualTo("INVALID_ARGUMENT");
+      assertThat(problemDetail.getDetail())
+          .contains("Only one of [processDefinitionId, processDefinitionKey] is allowed");
+    }
   }
 }
