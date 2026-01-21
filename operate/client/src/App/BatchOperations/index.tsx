@@ -48,6 +48,7 @@ const BatchOperations: React.FC = () => {
     {key: 'operationType', header: 'Operation', sortKey: 'operationType'},
     {key: 'state', header: 'Batch state', sortKey: 'state'},
     {key: 'items', header: 'Items', isDisabled: true},
+    {key: 'actor', header: 'Actor', sortKey: 'actorId'},
     {key: 'startDate', header: 'Start date', sortKey: 'startDate'},
   ];
 
@@ -83,6 +84,7 @@ const BatchOperations: React.FC = () => {
       operationsFailedCount,
       operationsTotalCount,
       startDate,
+      actorId,
     }) => {
       return {
         id: batchOperationKey,
@@ -99,6 +101,7 @@ const BatchOperations: React.FC = () => {
             operationsTotalCount={operationsTotalCount}
           />
         ),
+        actor: actorId ?? '--',
         startDate: formatDate(startDate ?? ''),
       };
     },
