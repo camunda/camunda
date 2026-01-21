@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
+import io.camunda.client.api.search.enums.AuditLogActorTypeEnum;
 import io.camunda.client.api.search.enums.AuditLogCategoryEnum;
 import io.camunda.client.api.search.enums.AuditLogEntityTypeEnum;
 import io.camunda.client.api.search.enums.AuditLogOperationTypeEnum;
@@ -76,16 +77,19 @@ public class AuditLogIdentityOperationsIT {
   @Test
   void shouldTrackUserCreate(@Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
     // when
+    final var newUsername = "user-" + Strings.newRandomValidIdentityId();
+    client.newCreateUserCommand().username(newUsername).password("password").send().join();
     final var auditLogs =
-        findAuditLogs(client, AuditLogEntityTypeEnum.USER, AuditLogOperationTypeEnum.CREATE);
+        awaitAuditLogEntry(
+            client, AuditLogEntityTypeEnum.USER, AuditLogOperationTypeEnum.CREATE, newUsername);
 
     // then
     assertThat(auditLogs).hasSizeGreaterThanOrEqualTo(1);
     assertAuditLog(
-        findByEntityKey(auditLogs, DEFAULT_USERNAME),
+        findByEntityKey(auditLogs, newUsername),
         AuditLogEntityTypeEnum.USER,
         AuditLogOperationTypeEnum.CREATE,
-        DEFAULT_USERNAME);
+        newUsername);
   }
 
   @Test
@@ -256,7 +260,8 @@ public class AuditLogIdentityOperationsIT {
   void shouldTrackRoleCreate(@Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
     // when
     final var auditLogs =
-        findAuditLogs(client, AuditLogEntityTypeEnum.ROLE, AuditLogOperationTypeEnum.CREATE);
+        awaitAuditLogEntry(
+            client, AuditLogEntityTypeEnum.ROLE, AuditLogOperationTypeEnum.CREATE, ROLE_A_ID);
 
     // then
     assertAuditLog(
@@ -319,7 +324,8 @@ public class AuditLogIdentityOperationsIT {
   void shouldTrackRoleAssign(@Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
     // when
     final var auditLogs =
-        findAuditLogs(client, AuditLogEntityTypeEnum.ROLE, AuditLogOperationTypeEnum.ASSIGN);
+        awaitAuditLogEntry(
+            client, AuditLogEntityTypeEnum.ROLE, AuditLogOperationTypeEnum.ASSIGN, ROLE_A_ID);
 
     // then
     assertAuditLog(
@@ -361,7 +367,8 @@ public class AuditLogIdentityOperationsIT {
   void shouldTrackGroupCreate(@Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
     // when
     final var auditLogs =
-        findAuditLogs(client, AuditLogEntityTypeEnum.GROUP, AuditLogOperationTypeEnum.CREATE);
+        awaitAuditLogEntry(
+            client, AuditLogEntityTypeEnum.GROUP, AuditLogOperationTypeEnum.CREATE, GROUP_A_ID);
 
     // then
     assertAuditLog(
@@ -424,7 +431,8 @@ public class AuditLogIdentityOperationsIT {
   void shouldTrackGroupAssign(@Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
     // when
     final var auditLogs =
-        findAuditLogs(client, AuditLogEntityTypeEnum.GROUP, AuditLogOperationTypeEnum.ASSIGN);
+        awaitAuditLogEntry(
+            client, AuditLogEntityTypeEnum.GROUP, AuditLogOperationTypeEnum.ASSIGN, GROUP_A_ID);
 
     // then
     assertAuditLog(
@@ -467,8 +475,11 @@ public class AuditLogIdentityOperationsIT {
   void shouldTrackMappingRuleCreate(@Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
     // when
     final var auditLogs =
-        findAuditLogs(
-            client, AuditLogEntityTypeEnum.MAPPING_RULE, AuditLogOperationTypeEnum.CREATE);
+        awaitAuditLogEntry(
+            client,
+            AuditLogEntityTypeEnum.MAPPING_RULE,
+            AuditLogOperationTypeEnum.CREATE,
+            MAPPING_RULE_A.id());
 
     // then
     assertAuditLog(
@@ -702,6 +713,8 @@ public class AuditLogIdentityOperationsIT {
     assertThat(auditLog.getTenantId()).isNull();
     assertThat(auditLog.getResult()).isEqualTo(AuditLogResultEnum.SUCCESS);
     assertThat(auditLog.getCategory()).isEqualTo(AuditLogCategoryEnum.ADMIN);
+    assertThat(auditLog.getActorId()).isEqualTo(DEFAULT_USERNAME);
+    assertThat(auditLog.getActorType()).isEqualTo(AuditLogActorTypeEnum.USER);
   }
 
   private List<AuditLogResult> awaitAuditLogEntry(

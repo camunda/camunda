@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
+import io.camunda.client.api.search.enums.AuditLogActorTypeEnum;
 import io.camunda.client.api.search.enums.AuditLogCategoryEnum;
 import io.camunda.client.api.search.enums.AuditLogEntityTypeEnum;
 import io.camunda.client.api.search.enums.AuditLogOperationTypeEnum;
@@ -98,10 +99,7 @@ public class AuditLogUserTaskOperationsIT {
     final var auditLog = auditLogItems.items().getFirst();
     assertThat(auditLog).isNotNull();
     assertThat(auditLog.getUserTaskKey()).isEqualTo(String.valueOf(userTaskKey));
-    assertThat(auditLog.getEntityType()).isEqualTo(AuditLogEntityTypeEnum.USER_TASK);
-    assertThat(auditLog.getOperationType()).isEqualTo(AuditLogOperationTypeEnum.ASSIGN);
-    assertThat(auditLog.getCategory()).isEqualTo(AuditLogCategoryEnum.USER_TASKS);
-    assertThat(auditLog.getResult()).isEqualTo(AuditLogResultEnum.SUCCESS);
+    assertUserTaskAuditLog(auditLog, AuditLogOperationTypeEnum.ASSIGN);
   }
 
   @Test
@@ -122,10 +120,7 @@ public class AuditLogUserTaskOperationsIT {
     final var auditLog = auditLogItems.items().getFirst();
     assertThat(auditLog).isNotNull();
     assertThat(auditLog.getUserTaskKey()).isEqualTo(String.valueOf(userTaskKey));
-    assertThat(auditLog.getEntityType()).isEqualTo(AuditLogEntityTypeEnum.USER_TASK);
-    assertThat(auditLog.getOperationType()).isEqualTo(AuditLogOperationTypeEnum.UPDATE);
-    assertThat(auditLog.getCategory()).isEqualTo(AuditLogCategoryEnum.USER_TASKS);
-    assertThat(auditLog.getResult()).isEqualTo(AuditLogResultEnum.SUCCESS);
+    assertUserTaskAuditLog(auditLog, AuditLogOperationTypeEnum.UPDATE);
   }
 
   @Test
@@ -146,10 +141,28 @@ public class AuditLogUserTaskOperationsIT {
     final var auditLog = auditLogItems.items().getFirst();
     assertThat(auditLog).isNotNull();
     assertThat(auditLog.getUserTaskKey()).isEqualTo(String.valueOf(userTaskKey));
+    assertUserTaskAuditLog(auditLog, AuditLogOperationTypeEnum.COMPLETE);
+  }
+
+  // ========================================================================================
+  // Helper Methods
+  // ========================================================================================
+
+  /**
+   * Asserts common audit log fields for user task operations.
+   *
+   * @param auditLog the audit log to verify
+   * @param operationType the expected operation type
+   */
+  private void assertUserTaskAuditLog(
+      final io.camunda.client.api.search.response.AuditLogResult auditLog,
+      final AuditLogOperationTypeEnum operationType) {
     assertThat(auditLog.getEntityType()).isEqualTo(AuditLogEntityTypeEnum.USER_TASK);
-    assertThat(auditLog.getOperationType()).isEqualTo(AuditLogOperationTypeEnum.COMPLETE);
+    assertThat(auditLog.getOperationType()).isEqualTo(operationType);
     assertThat(auditLog.getCategory()).isEqualTo(AuditLogCategoryEnum.USER_TASKS);
     assertThat(auditLog.getResult()).isEqualTo(AuditLogResultEnum.SUCCESS);
+    assertThat(auditLog.getActorId()).isEqualTo(DEFAULT_USERNAME);
+    assertThat(auditLog.getActorType()).isEqualTo(AuditLogActorTypeEnum.USER);
   }
 
   public static void updateUserTask(final UserTaskRecordValue userTask) {
