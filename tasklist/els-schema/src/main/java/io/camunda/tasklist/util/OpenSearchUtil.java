@@ -40,7 +40,6 @@ import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch._types.query_dsl.QueryVariant;
 import org.opensearch.client.opensearch.core.*;
-import org.opensearch.client.opensearch.core.bulk.BulkOperation;
 import org.opensearch.client.opensearch.core.bulk.BulkResponseItem;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.core.search.HitsMetadata;
@@ -62,8 +61,6 @@ public abstract class OpenSearchUtil {
   public static final int UPDATE_RETRY_COUNT = 3;
   public static final Function<Hit, Long> SEARCH_HIT_ID_TO_LONG = (hit) -> Long.valueOf(hit.id());
   public static final Function<Hit, String> SEARCH_HIT_ID_TO_STRING = Hit::id;
-  private static final long ESTIMATED_OPERATION_SIZE_BYTES =
-      1024L; // Rough estimate for bulk operation size
   private static final Logger LOGGER = LoggerFactory.getLogger(OpenSearchUtil.class);
 
   public static void clearScroll(final String scrollId, final OpenSearchClient osClient) {
@@ -213,78 +210,6 @@ public abstract class OpenSearchUtil {
   }
 
   public static void processBulkRequest(
-      final OpenSearchClient osClient, final BulkRequest bulkRequest) throws PersistenceException {
-    processLimitedBulkRequest(osClient, bulkRequest);
-  }
-
-  public static void processBulkRequest(
-      final OpenSearchClient osClient,
-      final BulkRequest bulkRequest,
-      final long maxBulkRequestSizeInBytes)
-      throws PersistenceException {
-    final long estimatedSize = estimateBulkRequestSize(bulkRequest);
-    if (estimatedSize > maxBulkRequestSizeInBytes) {
-      divideLargeBulkRequestAndProcess(osClient, bulkRequest, maxBulkRequestSizeInBytes);
-    } else {
-      processLimitedBulkRequest(osClient, bulkRequest);
-    }
-  }
-
-  private static long estimateBulkRequestSize(final BulkRequest bulkRequest) {
-    // Rough estimate based on number of operations
-    // Each operation typically takes around 1KB, but this is conservative
-    return bulkRequest.operations().size() * ESTIMATED_OPERATION_SIZE_BYTES;
-  }
-
-  private static void divideLargeBulkRequestAndProcess(
-      final OpenSearchClient osClient,
-      final BulkRequest bulkRequest,
-      final long maxBulkRequestSizeInBytes)
-      throws PersistenceException {
-    LOGGER.debug(
-        "Bulk request has approximately {} bytes > {} max bytes ({} operations). Will divide it into smaller bulk requests.",
-        estimateBulkRequestSize(bulkRequest),
-        maxBulkRequestSizeInBytes,
-        bulkRequest.operations().size());
-
-    final List<BulkOperation> operations = bulkRequest.operations();
-    final List<BulkOperation> batch = new ArrayList<>();
-    long currentSize = 0;
-
-    for (final BulkOperation operation : operations) {
-      // Rough estimate: each operation is about 1KB
-      final long operationSize = ESTIMATED_OPERATION_SIZE_BYTES;
-
-      if (operationSize > maxBulkRequestSizeInBytes) {
-        throw new PersistenceException(
-            String.format(
-                "One of the operations with estimated size of %d bytes is greater than max allowed %d bytes",
-                operationSize, maxBulkRequestSizeInBytes));
-      }
-
-      if (currentSize + operationSize < maxBulkRequestSizeInBytes) {
-        batch.add(operation);
-        currentSize += operationSize;
-      } else {
-        LOGGER.debug(
-            "Submit bulk of {} operations, estimated size {} bytes.", batch.size(), currentSize);
-        final BulkRequest limitedBulkRequest = new BulkRequest.Builder().operations(batch).build();
-        processLimitedBulkRequest(osClient, limitedBulkRequest);
-        batch.clear();
-        batch.add(operation);
-        currentSize = operationSize;
-      }
-    }
-
-    if (!batch.isEmpty()) {
-      LOGGER.debug(
-          "Submit bulk of {} operations, estimated size {} bytes.", batch.size(), currentSize);
-      final BulkRequest limitedBulkRequest = new BulkRequest.Builder().operations(batch).build();
-      processLimitedBulkRequest(osClient, limitedBulkRequest);
-    }
-  }
-
-  private static void processLimitedBulkRequest(
       final OpenSearchClient osClient, final BulkRequest bulkRequest) throws PersistenceException {
 
     if (bulkRequest.operations().size() > 0) {
