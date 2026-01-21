@@ -7,6 +7,8 @@
  */
 package io.camunda.security.configuration.headers;
 
+import java.util.List;
+
 /**
  * Configures Content Security Policy (CSP) to prevent XSS and other content injection attacks.
  *
@@ -41,23 +43,6 @@ public class ContentSecurityPolicyConfig {
           + "child-src; "
           + "script-src-attr 'none'";
 
-  public static final String DEFAULT_SM_SECURITY_POLICY =
-      "default-src 'self'; "
-          + "base-uri 'self'; "
-          + "script-src 'self' https: *.chargebee.com *.mixpanel.com ajax.cloudflare.com static.cloudflareinsights.com; "
-          + "script-src-elem 'self' cdn.jsdelivr.net ; "
-          + "connect-src 'self' https: *.mixpanel.com cloudflareinsights.com *.appcues.net wss://api.appcues.net cdn.jsdelivr.net; "
-          + "style-src 'self' https: 'unsafe-inline' cdn.jsdelivr.net *.googleapis.com *.chargebee.com; "
-          + "img-src data: 'self'; "
-          + "form-action 'self'; "
-          + "frame-ancestors 'self'; "
-          + "frame-src 'self' https: *.chargebee.com blob: ; "
-          + "object-src 'self' blob:; "
-          + "font-src 'self' data: fonts.camunda.io cdn.jsdelivr.net; "
-          + "worker-src 'self' blob:; "
-          + "child-src; "
-          + "script-src-attr 'none'";
-
   /**
    * Controls whether CSP headers are sent.
    *
@@ -88,6 +73,29 @@ public class ContentSecurityPolicyConfig {
    * Content-Security-Policy.
    */
   private boolean reportOnly = false;
+
+  public static String getDefaultSmSecurityPolicy(final List<String> allowedConnectUrls) {
+    final String defaultSmSecurityPolicy =
+        "default-src 'self'; "
+            + "base-uri 'self'; "
+            + "script-src 'self' https: *.chargebee.com *.mixpanel.com ajax.cloudflare.com static.cloudflareinsights.com; "
+            + "script-src-elem 'self' cdn.jsdelivr.net ; "
+            + "connect-src 'self' https: *.mixpanel.com cloudflareinsights.com *.appcues.net wss://api.appcues.net cdn.jsdelivr.net "
+            + String.join(" ", allowedConnectUrls)
+            + "; "
+            + "style-src 'self' https: 'unsafe-inline' cdn.jsdelivr.net *.googleapis.com *.chargebee.com; "
+            + "img-src data: 'self'; "
+            + "form-action 'self'; "
+            + "frame-ancestors 'self'; "
+            + "frame-src 'self' https: *.chargebee.com blob: ; "
+            + "object-src 'self' blob:; "
+            + "font-src 'self' data: fonts.camunda.io cdn.jsdelivr.net; "
+            + "worker-src 'self' blob:; "
+            + "child-src; "
+            + "script-src-attr 'none'";
+
+    return defaultSmSecurityPolicy;
+  }
 
   public boolean isEnabled() {
     return enabled;

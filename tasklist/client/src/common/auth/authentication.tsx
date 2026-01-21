@@ -55,7 +55,7 @@ class Authentication {
     this.status = status;
   };
 
-  #handleThirdPartySessionExpiration = () => {
+  #handleThirdPartySessionExpiration = (redirectUrl: string) => {
     const wasReloaded = getStateLocally('wasReloaded');
 
     this.setStatus('invalid-third-party-session');
@@ -66,11 +66,16 @@ class Authentication {
 
     storeStateLocally('wasReloaded', true);
 
+    if (redirectUrl && redirectUrl.length > 0) {
+      window.location.href = redirectUrl;
+      return;
+    }
+
     window.location.reload();
   };
 
   handleLogout = async () => {
-    const {error} = await request(commonApi.logout(), {
+    const {response, error} = await request(commonApi.logout(), {
       skipSessionCheck: true,
     });
 
@@ -81,11 +86,18 @@ class Authentication {
     reactQueryClient.clear();
 
     if (!getClientConfig().canLogout || getClientConfig().isLoginDelegated) {
-      this.#handleThirdPartySessionExpiration();
+      let redirectUrl = "";
+      if (response.headers.get('Content-Type')?.includes('application/json')) {
+        const json = await response.json();
+        redirectUrl = json.url;
+      }
+
+      this.#handleThirdPartySessionExpiration(redirectUrl);
       return;
     }
 
     this.setStatus('logged-out');
+
     return;
   };
 
@@ -96,7 +108,7 @@ class Authentication {
 
   disableSession = () => {
     if (!getClientConfig().canLogout || getClientConfig().isLoginDelegated) {
-      this.#handleThirdPartySessionExpiration();
+      this.#handleThirdPartySessionExpiration("");
 
       return;
     }

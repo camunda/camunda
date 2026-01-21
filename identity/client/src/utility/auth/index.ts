@@ -60,9 +60,18 @@ export function logout(): Promise<void> {
   return fetch(getLogoutApiUrl(), {
     method: "post",
     body: data,
+    headers: { "Content-Type": "application/x-www-form-urlencoded", 'Accept': 'application/json, text/plain', },
   })
     .then((response: Response) => {
-      if (response.status < 400) {
+      if (response.status > 400) {
+        return Promise.reject(`Server returned ${response.status}`);
+      }
+
+      return response.json();
+    }).then((json: any) => {
+      if (json && json.url && json.url.length > 0) {
+        window.location.href = json.url;
+      } else {
         window.location.href = `${getBaseUrl()}/`;
       }
     })
