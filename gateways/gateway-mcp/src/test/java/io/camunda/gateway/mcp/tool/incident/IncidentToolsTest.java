@@ -50,6 +50,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -113,312 +114,330 @@ class IncidentToolsTest extends ToolsTest {
     assertThat(incident.getTenantId()).isEqualTo("tenantId");
   }
 
-  @Test
-  void shouldGetIncidentByKey() {
-    // given
-    when(incidentServices.getByKey(any())).thenReturn(INCIDENT_ENTITY);
+  @Nested
+  class GetIncident {
 
-    // when
-    final CallToolResult result =
-        mcpClient.callTool(
-            CallToolRequest.builder()
-                .name("getIncident")
-                .arguments(Map.of("incidentKey", 5L))
-                .build());
+    @Test
+    void shouldGetIncidentByKey() {
+      // given
+      when(incidentServices.getByKey(any())).thenReturn(INCIDENT_ENTITY);
 
-    // then
-    assertThat(result.isError()).isFalse();
-    assertThat(result.structuredContent()).isNotNull();
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder()
+                  .name("getIncident")
+                  .arguments(Map.of("incidentKey", 5L))
+                  .build());
 
-    final var incident =
-        objectMapper.convertValue(result.structuredContent(), IncidentResult.class);
-    assertExampleIncident(incident);
+      // then
+      assertThat(result.isError()).isFalse();
+      assertThat(result.structuredContent()).isNotNull();
 
-    verify(incidentServices).getByKey(5L);
+      final var incident =
+          objectMapper.convertValue(result.structuredContent(), IncidentResult.class);
+      assertExampleIncident(incident);
+
+      verify(incidentServices).getByKey(5L);
+    }
+
+    @Test
+    void shouldFailGetIncidentByKeyOnException() {
+      // given
+      when(incidentServices.getByKey(any()))
+          .thenThrow(new ServiceException("Expected failure", Status.NOT_FOUND));
+
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder()
+                  .name("getIncident")
+                  .arguments(Map.of("incidentKey", 5L))
+                  .build());
+
+      // then
+      assertThat(result.isError()).isTrue();
+      assertThat(result.content()).isEmpty();
+      assertThat(result.structuredContent()).isNotNull();
+
+      final var problemDetail =
+          objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
+      assertThat(problemDetail.getDetail()).isEqualTo("Expected failure");
+      assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
+      assertThat(problemDetail.getTitle()).isEqualTo("NOT_FOUND");
+    }
+
+    @Test
+    void shouldFailGetIncidentByKeyOnInvalidKey() {
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder()
+                  .name("getIncident")
+                  .arguments(Map.of("incidentKey", -3L))
+                  .build());
+
+      // then
+      assertThat(result.isError()).isTrue();
+      assertThat(result.structuredContent()).isNull();
+      assertThat(result.content())
+          .hasSize(1)
+          .first()
+          .isInstanceOfSatisfying(
+              TextContent.class,
+              textContent ->
+                  assertThat(textContent.text())
+                      .contains("Incident key must be a positive number."));
+    }
   }
 
-  @Test
-  void shouldFailGetIncidentByKeyOnException() {
-    // given
-    when(incidentServices.getByKey(any()))
-        .thenThrow(new ServiceException("Expected failure", Status.NOT_FOUND));
+  @Nested
+  class SearchIncidents {
 
-    // when
-    final CallToolResult result =
-        mcpClient.callTool(
-            CallToolRequest.builder()
-                .name("getIncident")
-                .arguments(Map.of("incidentKey", 5L))
-                .build());
+    @Test
+    void shouldSearchIncidentsWithCreationTimeDateRangeFilter() {
+      // given
+      when(incidentServices.search(any(IncidentQuery.class))).thenReturn(SEARCH_QUERY_RESULT);
 
-    // then
-    assertThat(result.isError()).isTrue();
-    assertThat(result.content()).isEmpty();
-    assertThat(result.structuredContent()).isNotNull();
+      final var creationTimeFrom = OffsetDateTime.of(2025, 5, 23, 9, 35, 12, 0, ZoneOffset.UTC);
+      final var creationTimeTo = OffsetDateTime.of(2025, 12, 18, 17, 22, 33, 0, ZoneOffset.UTC);
 
-    final var problemDetail =
-        objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
-    assertThat(problemDetail.getDetail()).isEqualTo("Expected failure");
-    assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
-    assertThat(problemDetail.getTitle()).isEqualTo("NOT_FOUND");
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder()
+                  .name("searchIncidents")
+                  .arguments(
+                      Map.of(
+                          "filter",
+                          Map.of(
+                              "creationTime",
+                              Map.of(
+                                  "from", "2025-05-23T09:35:12Z", "to", "2025-12-18T17:22:33Z"))))
+                  .build());
+
+      // then
+      assertThat(result.isError()).isFalse();
+
+      verify(incidentServices).search(queryCaptor.capture());
+      final IncidentQuery capturedQuery = queryCaptor.getValue();
+
+      assertThat(capturedQuery.filter().creationTimeOperations())
+          .extracting(Operation::operator, Operation::value)
+          .containsExactly(
+              tuple(Operator.GREATER_THAN_EQUALS, creationTimeFrom),
+              tuple(Operator.LOWER_THAN, creationTimeTo));
+    }
+
+    @Test
+    void shouldSearchIncidentsWithFilterSortAndPaging() {
+      // given
+      when(incidentServices.search(any(IncidentQuery.class))).thenReturn(SEARCH_QUERY_RESULT);
+
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder()
+                  .name("searchIncidents")
+                  .arguments(
+                      Map.of(
+                          "filter",
+                          Map.of("state", "ACTIVE", "errorType", "JOB_NO_RETRIES"),
+                          "sort",
+                          List.of(Map.of("field", "incidentKey", "order", "DESC")),
+                          "page",
+                          Map.of("limit", 25, "after", "WzEwMjRd")))
+                  .build());
+
+      // then
+      assertThat(result.isError()).isFalse();
+      assertThat(result.structuredContent()).isNotNull();
+
+      final var searchResult =
+          objectMapper.convertValue(result.structuredContent(), IncidentSearchQueryResult.class);
+      assertThat(searchResult.getPage().getTotalItems()).isEqualTo(1L);
+      assertThat(searchResult.getPage().getHasMoreTotalItems()).isFalse();
+      assertThat(searchResult.getPage().getStartCursor()).isEqualTo("f");
+      assertThat(searchResult.getPage().getEndCursor()).isEqualTo("v");
+      assertThat(searchResult.getItems())
+          .hasSize(1)
+          .first()
+          .satisfies(IncidentToolsTest.this::assertExampleIncident);
+
+      verify(incidentServices).search(queryCaptor.capture());
+      final IncidentQuery capturedQuery = queryCaptor.getValue();
+
+      final IncidentFilter filter = capturedQuery.filter();
+      assertThat(filter.stateOperations())
+          .extracting(Operation::operator, Operation::value)
+          .containsExactly(tuple(Operator.EQUALS, "ACTIVE"));
+
+      assertThat(filter.errorTypeOperations())
+          .extracting(Operation::operator, Operation::value)
+          .containsExactly(tuple(Operator.EQUALS, "JOB_NO_RETRIES"));
+
+      assertThat(capturedQuery.sort().orderings())
+          .extracting(FieldSorting::field, FieldSorting::order)
+          .containsExactly(tuple("incidentKey", SortOrder.DESC));
+
+      assertThat(capturedQuery.page().size()).isEqualTo(25);
+      assertThat(capturedQuery.page().after()).isEqualTo("WzEwMjRd");
+    }
+
+    @Test
+    void shouldFailSearchIncidentsOnException() {
+      // given
+      when(incidentServices.search(any(IncidentQuery.class)))
+          .thenThrow(new ServiceException("Expected failure", Status.NOT_FOUND));
+
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder().name("searchIncidents").arguments(Map.of()).build());
+
+      // then
+      assertThat(result.isError()).isTrue();
+      assertThat(result.content()).isEmpty();
+      assertThat(result.structuredContent()).isNotNull();
+
+      final var problemDetail =
+          objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
+      assertThat(problemDetail.getDetail()).isEqualTo("Expected failure");
+      assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
+      assertThat(problemDetail.getTitle()).isEqualTo("NOT_FOUND");
+    }
   }
 
-  @Test
-  void shouldFailGetIncidentByKeyOnInvalidKey() {
-    // when
-    final CallToolResult result =
-        mcpClient.callTool(
-            CallToolRequest.builder()
-                .name("getIncident")
-                .arguments(Map.of("incidentKey", -3L))
-                .build());
+  @Nested
+  class ResolveIncident {
 
-    // then
-    assertThat(result.isError()).isTrue();
-    assertThat(result.structuredContent()).isNull();
-    assertThat(result.content())
-        .hasSize(1)
-        .first()
-        .isInstanceOfSatisfying(
-            TextContent.class,
-            textContent ->
-                assertThat(textContent.text()).contains("Incident key must be a positive number."));
-  }
+    @Test
+    void shouldResolveIncidentByKey() {
+      // given
+      when(incidentServices.resolveIncident(anyLong(), any()))
+          .thenReturn(CompletableFuture.completedFuture(new IncidentRecord()));
 
-  @Test
-  void shouldSearchIncidentsWithCreationTimeDateRangeFilter() {
-    // given
-    when(incidentServices.search(any(IncidentQuery.class))).thenReturn(SEARCH_QUERY_RESULT);
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder()
+                  .name("resolveIncident")
+                  .arguments(Map.of("incidentKey", 5L))
+                  .build());
 
-    final var creationTimeFrom = OffsetDateTime.of(2025, 5, 23, 9, 35, 12, 0, ZoneOffset.UTC);
-    final var creationTimeTo = OffsetDateTime.of(2025, 12, 18, 17, 22, 33, 0, ZoneOffset.UTC);
+      // then
+      assertThat(result.isError()).isFalse();
+      assertThat(result.content())
+          .hasSize(1)
+          .first()
+          .isInstanceOfSatisfying(
+              TextContent.class,
+              textContent ->
+                  assertThat(textContent.text()).isEqualTo("Incident with key 5 resolved."));
 
-    // when
-    final CallToolResult result =
-        mcpClient.callTool(
-            CallToolRequest.builder()
-                .name("searchIncidents")
-                .arguments(
-                    Map.of(
-                        "filter",
-                        Map.of(
-                            "creationTime",
-                            Map.of("from", "2025-05-23T09:35:12Z", "to", "2025-12-18T17:22:33Z"))))
-                .build());
+      verify(incidentServices).resolveIncident(5L, null);
+    }
 
-    // then
-    assertThat(result.isError()).isFalse();
+    @Test
+    void shouldResolveJobIncidentByKey() {
+      // given
+      final var incidentEntity = mock(IncidentEntity.class);
+      // noinspection unchecked
+      when(incidentServices.resolveIncident(anyLong(), any()))
+          .thenReturn(
+              CompletableFuture.failedFuture(
+                  new ServiceException("no retries left", Status.INVALID_STATE)),
+              CompletableFuture.completedFuture(new IncidentRecord()));
+      when(incidentEntity.jobKey()).thenReturn(4L);
+      when(incidentServices.getByKey(anyLong())).thenReturn(incidentEntity);
+      when(jobServices.updateJob(anyLong(), any(), any(UpdateJobChangeset.class)))
+          .thenReturn(CompletableFuture.completedFuture(new JobRecord()));
 
-    verify(incidentServices).search(queryCaptor.capture());
-    final IncidentQuery capturedQuery = queryCaptor.getValue();
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder()
+                  .name("resolveIncident")
+                  .arguments(Map.of("incidentKey", 5L))
+                  .build());
 
-    assertThat(capturedQuery.filter().creationTimeOperations())
-        .extracting(Operation::operator, Operation::value)
-        .containsExactly(
-            tuple(Operator.GREATER_THAN_EQUALS, creationTimeFrom),
-            tuple(Operator.LOWER_THAN, creationTimeTo));
-  }
+      // then
+      assertThat(result.isError()).isFalse();
+      assertThat(result.content())
+          .hasSize(1)
+          .first()
+          .isInstanceOfSatisfying(
+              TextContent.class,
+              textContent ->
+                  assertThat(textContent.text()).isEqualTo("Incident with key 5 resolved."));
 
-  @Test
-  void shouldSearchIncidentsWithFilterSortAndPaging() {
-    // given
-    when(incidentServices.search(any(IncidentQuery.class))).thenReturn(SEARCH_QUERY_RESULT);
+      verify(incidentServices, times(2)).resolveIncident(5L, null);
+      verify(incidentServices).getByKey(5L);
+      verify(jobServices).updateJob(4L, null, new UpdateJobChangeset(1, null));
+    }
 
-    // when
-    final CallToolResult result =
-        mcpClient.callTool(
-            CallToolRequest.builder()
-                .name("searchIncidents")
-                .arguments(
-                    Map.of(
-                        "filter",
-                        Map.of("state", "ACTIVE", "errorType", "JOB_NO_RETRIES"),
-                        "sort",
-                        List.of(Map.of("field", "incidentKey", "order", "DESC")),
-                        "page",
-                        Map.of("limit", 25, "after", "WzEwMjRd")))
-                .build());
+    @Test
+    void shouldFailResolveJobIncidentByKey() {
+      // given
+      final var incidentEntity = mock(IncidentEntity.class);
+      // noinspection unchecked
+      when(incidentServices.resolveIncident(anyLong(), any()))
+          .thenReturn(
+              CompletableFuture.failedFuture(
+                  new ServiceException("no retries left", Status.INVALID_STATE)),
+              CompletableFuture.completedFuture(new IncidentRecord()));
+      when(incidentEntity.jobKey()).thenReturn(4L);
+      when(incidentServices.getByKey(anyLong())).thenReturn(incidentEntity);
+      when(jobServices.updateJob(anyLong(), any(), any(UpdateJobChangeset.class)))
+          .thenReturn(
+              CompletableFuture.failedFuture(
+                  new ServiceException("Expected failure", Status.NOT_FOUND)));
 
-    // then
-    assertThat(result.isError()).isFalse();
-    assertThat(result.structuredContent()).isNotNull();
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder()
+                  .name("resolveIncident")
+                  .arguments(Map.of("incidentKey", 5L))
+                  .build());
 
-    final var searchResult =
-        objectMapper.convertValue(result.structuredContent(), IncidentSearchQueryResult.class);
-    assertThat(searchResult.getPage().getTotalItems()).isEqualTo(1L);
-    assertThat(searchResult.getPage().getHasMoreTotalItems()).isFalse();
-    assertThat(searchResult.getPage().getStartCursor()).isEqualTo("f");
-    assertThat(searchResult.getPage().getEndCursor()).isEqualTo("v");
-    assertThat(searchResult.getItems()).hasSize(1).first().satisfies(this::assertExampleIncident);
+      // then
+      assertThat(result.isError()).isTrue();
+      assertThat(result.content()).isEmpty();
+      assertThat(result.structuredContent()).isNotNull();
 
-    verify(incidentServices).search(queryCaptor.capture());
-    final IncidentQuery capturedQuery = queryCaptor.getValue();
+      final var problemDetail =
+          objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
+      assertThat(problemDetail.getDetail()).isEqualTo("Expected failure");
+      assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
+      assertThat(problemDetail.getTitle()).isEqualTo("NOT_FOUND");
 
-    final IncidentFilter filter = capturedQuery.filter();
-    assertThat(filter.stateOperations())
-        .extracting(Operation::operator, Operation::value)
-        .containsExactly(tuple(Operator.EQUALS, "ACTIVE"));
+      verify(incidentServices).resolveIncident(5L, null);
+      verify(incidentServices).getByKey(5L);
+      verify(jobServices).updateJob(4L, null, new UpdateJobChangeset(1, null));
+    }
 
-    assertThat(filter.errorTypeOperations())
-        .extracting(Operation::operator, Operation::value)
-        .containsExactly(tuple(Operator.EQUALS, "JOB_NO_RETRIES"));
+    @Test
+    void shouldFailResolveIncidentByKeyOnInvalidKey() {
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder()
+                  .name("resolveIncident")
+                  .arguments(Map.of("incidentKey", -3L))
+                  .build());
 
-    assertThat(capturedQuery.sort().orderings())
-        .extracting(FieldSorting::field, FieldSorting::order)
-        .containsExactly(tuple("incidentKey", SortOrder.DESC));
-
-    assertThat(capturedQuery.page().size()).isEqualTo(25);
-    assertThat(capturedQuery.page().after()).isEqualTo("WzEwMjRd");
-  }
-
-  @Test
-  void shouldFailSearchIncidentsOnException() {
-    // given
-    when(incidentServices.search(any(IncidentQuery.class)))
-        .thenThrow(new ServiceException("Expected failure", Status.NOT_FOUND));
-
-    // when
-    final CallToolResult result =
-        mcpClient.callTool(
-            CallToolRequest.builder().name("searchIncidents").arguments(Map.of()).build());
-
-    // then
-    assertThat(result.isError()).isTrue();
-    assertThat(result.content()).isEmpty();
-    assertThat(result.structuredContent()).isNotNull();
-
-    final var problemDetail =
-        objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
-    assertThat(problemDetail.getDetail()).isEqualTo("Expected failure");
-    assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
-    assertThat(problemDetail.getTitle()).isEqualTo("NOT_FOUND");
-  }
-
-  @Test
-  void shouldResolveIncidentByKey() {
-    // given
-    when(incidentServices.resolveIncident(anyLong(), any()))
-        .thenReturn(CompletableFuture.completedFuture(new IncidentRecord()));
-
-    // when
-    final CallToolResult result =
-        mcpClient.callTool(
-            CallToolRequest.builder()
-                .name("resolveIncident")
-                .arguments(Map.of("incidentKey", 5L))
-                .build());
-
-    // then
-    assertThat(result.isError()).isFalse();
-    assertThat(result.content())
-        .hasSize(1)
-        .first()
-        .isInstanceOfSatisfying(
-            TextContent.class,
-            textContent ->
-                assertThat(textContent.text()).isEqualTo("Incident with key 5 resolved."));
-
-    verify(incidentServices).resolveIncident(5L, null);
-  }
-
-  @Test
-  void shouldResolveJobIncidentByKey() {
-    // given
-    final var incidentEntity = mock(IncidentEntity.class);
-    // noinspection unchecked
-    when(incidentServices.resolveIncident(anyLong(), any()))
-        .thenReturn(
-            CompletableFuture.failedFuture(
-                new ServiceException("no retries left", Status.INVALID_STATE)),
-            CompletableFuture.completedFuture(new IncidentRecord()));
-    when(incidentEntity.jobKey()).thenReturn(4L);
-    when(incidentServices.getByKey(anyLong())).thenReturn(incidentEntity);
-    when(jobServices.updateJob(anyLong(), any(), any(UpdateJobChangeset.class)))
-        .thenReturn(CompletableFuture.completedFuture(new JobRecord()));
-
-    // when
-    final CallToolResult result =
-        mcpClient.callTool(
-            CallToolRequest.builder()
-                .name("resolveIncident")
-                .arguments(Map.of("incidentKey", 5L))
-                .build());
-
-    // then
-    assertThat(result.isError()).isFalse();
-    assertThat(result.content())
-        .hasSize(1)
-        .first()
-        .isInstanceOfSatisfying(
-            TextContent.class,
-            textContent ->
-                assertThat(textContent.text()).isEqualTo("Incident with key 5 resolved."));
-
-    verify(incidentServices, times(2)).resolveIncident(5L, null);
-    verify(incidentServices).getByKey(5L);
-    verify(jobServices).updateJob(4L, null, new UpdateJobChangeset(1, null));
-  }
-
-  @Test
-  void shouldFailResolveJobIncidentByKey() {
-    // given
-    final var incidentEntity = mock(IncidentEntity.class);
-    // noinspection unchecked
-    when(incidentServices.resolveIncident(anyLong(), any()))
-        .thenReturn(
-            CompletableFuture.failedFuture(
-                new ServiceException("no retries left", Status.INVALID_STATE)),
-            CompletableFuture.completedFuture(new IncidentRecord()));
-    when(incidentEntity.jobKey()).thenReturn(4L);
-    when(incidentServices.getByKey(anyLong())).thenReturn(incidentEntity);
-    when(jobServices.updateJob(anyLong(), any(), any(UpdateJobChangeset.class)))
-        .thenReturn(
-            CompletableFuture.failedFuture(
-                new ServiceException("Expected failure", Status.NOT_FOUND)));
-
-    // when
-    final CallToolResult result =
-        mcpClient.callTool(
-            CallToolRequest.builder()
-                .name("resolveIncident")
-                .arguments(Map.of("incidentKey", 5L))
-                .build());
-
-    // then
-    assertThat(result.isError()).isTrue();
-    assertThat(result.content()).isEmpty();
-    assertThat(result.structuredContent()).isNotNull();
-
-    final var problemDetail =
-        objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
-    assertThat(problemDetail.getDetail()).isEqualTo("Expected failure");
-    assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
-    assertThat(problemDetail.getTitle()).isEqualTo("NOT_FOUND");
-
-    verify(incidentServices).resolveIncident(5L, null);
-    verify(incidentServices).getByKey(5L);
-    verify(jobServices).updateJob(4L, null, new UpdateJobChangeset(1, null));
-  }
-
-  @Test
-  void shouldFailResolveIncidentByKeyOnInvalidKey() {
-    // when
-    final CallToolResult result =
-        mcpClient.callTool(
-            CallToolRequest.builder()
-                .name("resolveIncident")
-                .arguments(Map.of("incidentKey", -3L))
-                .build());
-
-    // then
-    assertThat(result.isError()).isTrue();
-    assertThat(result.structuredContent()).isNull();
-    assertThat(result.content())
-        .hasSize(1)
-        .first()
-        .isInstanceOfSatisfying(
-            TextContent.class,
-            textContent ->
-                assertThat(textContent.text()).contains("Incident key must be a positive number."));
+      // then
+      assertThat(result.isError()).isTrue();
+      assertThat(result.structuredContent()).isNull();
+      assertThat(result.content())
+          .hasSize(1)
+          .first()
+          .isInstanceOfSatisfying(
+              TextContent.class,
+              textContent ->
+                  assertThat(textContent.text())
+                      .contains("Incident key must be a positive number."));
+    }
   }
 }

@@ -37,6 +37,7 @@ import io.modelcontextprotocol.spec.McpSchema.TextContent;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -101,204 +102,215 @@ class VariableToolsTest extends ToolsTest {
     assertThat(variable.getScopeKey()).isEqualTo("333");
   }
 
-  @Test
-  void shouldGetVariableByKey() {
-    // given
-    when(variableServices.getByKey(any())).thenReturn(VARIABLE_ENTITY);
+  @Nested
+  class GetVariable {
 
-    // when
-    final CallToolResult result =
-        mcpClient.callTool(
-            CallToolRequest.builder()
-                .name("getVariable")
-                .arguments(Map.of("variableKey", 123L))
-                .build());
+    @Test
+    void shouldGetVariableByKey() {
+      // given
+      when(variableServices.getByKey(any())).thenReturn(VARIABLE_ENTITY);
 
-    // then
-    assertThat(result.isError()).isFalse();
-    assertThat(result.structuredContent()).isNotNull();
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder()
+                  .name("getVariable")
+                  .arguments(Map.of("variableKey", 123L))
+                  .build());
 
-    final var variable =
-        objectMapper.convertValue(result.structuredContent(), VariableResult.class);
-    assertExampleVariable(variable);
+      // then
+      assertThat(result.isError()).isFalse();
+      assertThat(result.structuredContent()).isNotNull();
 
-    verify(variableServices).getByKey(123L);
+      final var variable =
+          objectMapper.convertValue(result.structuredContent(), VariableResult.class);
+      assertExampleVariable(variable);
+
+      verify(variableServices).getByKey(123L);
+    }
+
+    @Test
+    void shouldFailGetVariableByKeyOnException() {
+      // given
+      when(variableServices.getByKey(any()))
+          .thenThrow(new ServiceException("Expected failure", Status.NOT_FOUND));
+
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder()
+                  .name("getVariable")
+                  .arguments(Map.of("variableKey", 123L))
+                  .build());
+
+      // then
+      assertThat(result.isError()).isTrue();
+      assertThat(result.content()).isEmpty();
+      assertThat(result.structuredContent()).isNotNull();
+
+      final var problemDetail =
+          objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
+      assertThat(problemDetail.getDetail()).isEqualTo("Expected failure");
+      assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
+      assertThat(problemDetail.getTitle()).isEqualTo("NOT_FOUND");
+    }
+
+    @Test
+    void shouldFailGetVariableByKeyOnInvalidKey() {
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder()
+                  .name("getVariable")
+                  .arguments(Map.of("variableKey", -3L))
+                  .build());
+
+      // then
+      assertThat(result.isError()).isTrue();
+      assertThat(result.structuredContent()).isNull();
+      assertThat(result.content())
+          .hasSize(1)
+          .first()
+          .isInstanceOfSatisfying(
+              TextContent.class,
+              textContent ->
+                  assertThat(textContent.text())
+                      .contains("Variable key must be a positive number."));
+    }
   }
 
-  @Test
-  void shouldFailGetVariableByKeyOnException() {
-    // given
-    when(variableServices.getByKey(any()))
-        .thenThrow(new ServiceException("Expected failure", Status.NOT_FOUND));
+  @Nested
+  class SearchVariables {
 
-    // when
-    final CallToolResult result =
-        mcpClient.callTool(
-            CallToolRequest.builder()
-                .name("getVariable")
-                .arguments(Map.of("variableKey", 123L))
-                .build());
+    @Test
+    void shouldSearchVariablesWithNonTruncatedValue() {
+      // given
+      when(variableServices.search(any(VariableQuery.class))).thenReturn(SEARCH_QUERY_RESULT);
 
-    // then
-    assertThat(result.isError()).isTrue();
-    assertThat(result.content()).isEmpty();
-    assertThat(result.structuredContent()).isNotNull();
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder()
+                  .name("searchVariables")
+                  .arguments(
+                      Map.of(
+                          "filter",
+                          Map.of(
+                              "name", "demoVar", "value", FULL_VALUE, "processInstanceKey", "789"),
+                          "sort",
+                          List.of(Map.of("field", "variableKey", "order", "DESC")),
+                          "page",
+                          Map.of("limit", 25, "after", "WzEwMjRd"),
+                          "truncateValues",
+                          false))
+                  .build());
 
-    final var problemDetail =
-        objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
-    assertThat(problemDetail.getDetail()).isEqualTo("Expected failure");
-    assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
-    assertThat(problemDetail.getTitle()).isEqualTo("NOT_FOUND");
-  }
+      // then
+      assertThat(result.isError()).isFalse();
+      assertThat(result.structuredContent()).isNotNull();
 
-  @Test
-  void shouldFailGetVariableByKeyOnInvalidKey() {
-    // when
-    final CallToolResult result =
-        mcpClient.callTool(
-            CallToolRequest.builder()
-                .name("getVariable")
-                .arguments(Map.of("variableKey", -3L))
-                .build());
+      final var variables =
+          objectMapper.convertValue(result.structuredContent(), VariableSearchQueryResult.class);
+      assertThat(variables.getPage().getTotalItems()).isEqualTo(1L);
+      assertThat(variables.getPage().getHasMoreTotalItems()).isFalse();
+      assertThat(variables.getPage().getStartCursor()).isEqualTo("f");
+      assertThat(variables.getPage().getEndCursor()).isEqualTo("v");
+      assertThat(variables.getItems())
+          .hasSize(1)
+          .first()
+          .satisfies(
+              variable -> {
+                assertExampleVariable(variable);
+                assertThat(variable.getIsTruncated()).isFalse();
+                assertThat(variable.getValue()).isEqualTo(FULL_VALUE);
+              });
+    }
 
-    // then
-    assertThat(result.isError()).isTrue();
-    assertThat(result.structuredContent()).isNull();
-    assertThat(result.content())
-        .hasSize(1)
-        .first()
-        .isInstanceOfSatisfying(
-            TextContent.class,
-            textContent ->
-                assertThat(textContent.text()).contains("Variable key must be a positive number."));
-  }
+    @Test
+    void shouldSearchVariablesWithFilterSortAndPaging() {
+      // given
+      when(variableServices.search(any(VariableQuery.class))).thenReturn(SEARCH_QUERY_RESULT);
 
-  @Test
-  void shouldSearchVariablesWithNonTruncatedValue() {
-    // given
-    when(variableServices.search(any(VariableQuery.class))).thenReturn(SEARCH_QUERY_RESULT);
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder()
+                  .name("searchVariables")
+                  .arguments(
+                      Map.of(
+                          "filter",
+                          Map.of(
+                              "name", "demoVar", "value", FULL_VALUE, "processInstanceKey", "789"),
+                          "sort",
+                          List.of(Map.of("field", "variableKey", "order", "DESC")),
+                          "page",
+                          Map.of("limit", 25, "after", "WzEwMjRd")))
+                  .build());
 
-    // when
-    final CallToolResult result =
-        mcpClient.callTool(
-            CallToolRequest.builder()
-                .name("searchVariables")
-                .arguments(
-                    Map.of(
-                        "filter",
-                        Map.of("name", "demoVar", "value", FULL_VALUE, "processInstanceKey", "789"),
-                        "sort",
-                        List.of(Map.of("field", "variableKey", "order", "DESC")),
-                        "page",
-                        Map.of("limit", 25, "after", "WzEwMjRd"),
-                        "truncateValues",
-                        false))
-                .build());
+      // then
+      assertThat(result.isError()).isFalse();
+      assertThat(result.structuredContent()).isNotNull();
 
-    // then
-    assertThat(result.isError()).isFalse();
-    assertThat(result.structuredContent()).isNotNull();
+      final var variables =
+          objectMapper.convertValue(result.structuredContent(), VariableSearchQueryResult.class);
+      assertThat(variables.getPage().getTotalItems()).isEqualTo(1L);
+      assertThat(variables.getPage().getHasMoreTotalItems()).isFalse();
+      assertThat(variables.getPage().getStartCursor()).isEqualTo("f");
+      assertThat(variables.getPage().getEndCursor()).isEqualTo("v");
+      assertThat(variables.getItems())
+          .hasSize(1)
+          .first()
+          .satisfies(
+              variable -> {
+                assertExampleVariable(variable);
+                assertThat(variable.getIsTruncated()).isTrue();
+                assertThat(variable.getValue()).isEqualTo(TRUNCATED_VALUE);
+              });
 
-    final var variables =
-        objectMapper.convertValue(result.structuredContent(), VariableSearchQueryResult.class);
-    assertThat(variables.getPage().getTotalItems()).isEqualTo(1L);
-    assertThat(variables.getPage().getHasMoreTotalItems()).isFalse();
-    assertThat(variables.getPage().getStartCursor()).isEqualTo("f");
-    assertThat(variables.getPage().getEndCursor()).isEqualTo("v");
-    assertThat(variables.getItems())
-        .hasSize(1)
-        .first()
-        .satisfies(
-            variable -> {
-              assertExampleVariable(variable);
-              assertThat(variable.getIsTruncated()).isFalse();
-              assertThat(variable.getValue()).isEqualTo(FULL_VALUE);
-            });
-  }
+      verify(variableServices).search(queryCaptor.capture());
+      final VariableQuery capturedQuery = queryCaptor.getValue();
 
-  @Test
-  void shouldSearchVariablesWithFilterSortAndPaging() {
-    // given
-    when(variableServices.search(any(VariableQuery.class))).thenReturn(SEARCH_QUERY_RESULT);
+      final VariableFilter filter = capturedQuery.filter();
+      assertThat(filter.nameOperations())
+          .extracting(Operation::operator, Operation::value)
+          .containsExactly(tuple(Operator.EQUALS, "demoVar"));
 
-    // when
-    final CallToolResult result =
-        mcpClient.callTool(
-            CallToolRequest.builder()
-                .name("searchVariables")
-                .arguments(
-                    Map.of(
-                        "filter",
-                        Map.of("name", "demoVar", "value", FULL_VALUE, "processInstanceKey", "789"),
-                        "sort",
-                        List.of(Map.of("field", "variableKey", "order", "DESC")),
-                        "page",
-                        Map.of("limit", 25, "after", "WzEwMjRd")))
-                .build());
+      assertThat(filter.valueOperations())
+          .extracting(UntypedOperation::operator, UntypedOperation::value)
+          .containsExactly(tuple(Operator.EQUALS, FULL_VALUE));
 
-    // then
-    assertThat(result.isError()).isFalse();
-    assertThat(result.structuredContent()).isNotNull();
+      assertThat(filter.processInstanceKeyOperations())
+          .extracting(Operation::operator, Operation::value)
+          .containsExactly(tuple(Operator.EQUALS, 789L));
 
-    final var variables =
-        objectMapper.convertValue(result.structuredContent(), VariableSearchQueryResult.class);
-    assertThat(variables.getPage().getTotalItems()).isEqualTo(1L);
-    assertThat(variables.getPage().getHasMoreTotalItems()).isFalse();
-    assertThat(variables.getPage().getStartCursor()).isEqualTo("f");
-    assertThat(variables.getPage().getEndCursor()).isEqualTo("v");
-    assertThat(variables.getItems())
-        .hasSize(1)
-        .first()
-        .satisfies(
-            variable -> {
-              assertExampleVariable(variable);
-              assertThat(variable.getIsTruncated()).isTrue();
-              assertThat(variable.getValue()).isEqualTo(TRUNCATED_VALUE);
-            });
+      assertThat(capturedQuery.sort().orderings())
+          .extracting(FieldSorting::field, FieldSorting::order)
+          .containsExactly(tuple("variableKey", SortOrder.DESC));
 
-    verify(variableServices).search(queryCaptor.capture());
-    final VariableQuery capturedQuery = queryCaptor.getValue();
+      assertThat(capturedQuery.page().size()).isEqualTo(25);
+      assertThat(capturedQuery.page().after()).isEqualTo("WzEwMjRd");
+    }
 
-    final VariableFilter filter = capturedQuery.filter();
-    assertThat(filter.nameOperations())
-        .extracting(Operation::operator, Operation::value)
-        .containsExactly(tuple(Operator.EQUALS, "demoVar"));
+    @Test
+    void shouldFailSearchVariablesOnException() {
+      // given
+      when(variableServices.search(any(VariableQuery.class)))
+          .thenThrow(new ServiceException("Expected failure", Status.NOT_FOUND));
 
-    assertThat(filter.valueOperations())
-        .extracting(UntypedOperation::operator, UntypedOperation::value)
-        .containsExactly(tuple(Operator.EQUALS, FULL_VALUE));
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder().name("searchVariables").arguments(Map.of()).build());
 
-    assertThat(filter.processInstanceKeyOperations())
-        .extracting(Operation::operator, Operation::value)
-        .containsExactly(tuple(Operator.EQUALS, 789L));
+      // then
+      assertThat(result.isError()).isTrue();
+      assertThat(result.content()).isEmpty();
 
-    assertThat(capturedQuery.sort().orderings())
-        .extracting(FieldSorting::field, FieldSorting::order)
-        .containsExactly(tuple("variableKey", SortOrder.DESC));
-
-    assertThat(capturedQuery.page().size()).isEqualTo(25);
-    assertThat(capturedQuery.page().after()).isEqualTo("WzEwMjRd");
-  }
-
-  @Test
-  void shouldFailSearchVariablesOnException() {
-    // given
-    when(variableServices.search(any(VariableQuery.class)))
-        .thenThrow(new ServiceException("Expected failure", Status.NOT_FOUND));
-
-    // when
-    final CallToolResult result =
-        mcpClient.callTool(
-            CallToolRequest.builder().name("searchVariables").arguments(Map.of()).build());
-
-    // then
-    assertThat(result.isError()).isTrue();
-    assertThat(result.content()).isEmpty();
-
-    final var problemDetail =
-        objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
-    assertThat(problemDetail.getDetail()).isEqualTo("Expected failure");
-    assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
-    assertThat(problemDetail.getTitle()).isEqualTo("NOT_FOUND");
+      final var problemDetail =
+          objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
+      assertThat(problemDetail.getDetail()).isEqualTo("Expected failure");
+      assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
+      assertThat(problemDetail.getTitle()).isEqualTo("NOT_FOUND");
+    }
   }
 }

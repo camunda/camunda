@@ -123,12 +123,15 @@ Example:
 
 - Add tool tests in `gateways/gateway-mcp/src/test/java/...` mirroring `ProcessDefinitionToolsTest`
   (preferred) or `IncidentToolsTest`.
+- Structure tests with `@Nested` classes, **one per MCP tool** (e.g. `GetIncident`, `SearchIncidents`,
+  `ResolveIncident`). This keeps each tool contract and its assertions together.
 
 Testing pattern:
 
 - Extend `ToolsTest` and use `@ContextConfiguration(classes = {YourTools.class})`.
 - Mock services with `@MockitoBean` and call `mockApiServiceAuthentication(service)` in
   `@BeforeEach`.
+- Group test methods into `@Nested` classes, one per MCP tool method.
 - For happy-path results, assert on the tool output model (i.e. `CallToolResult` → Jackson
   `objectMapper.convertValue(..., <ProtocolModel>.class)`), and then verify **all fields which are**:
   1) present in your example test entity/data, and
