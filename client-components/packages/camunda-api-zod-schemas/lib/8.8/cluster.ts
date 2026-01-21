@@ -8,11 +8,7 @@
 
 import {z} from 'zod';
 import {API_VERSION, type Endpoint} from '../common';
-import {
-	partitionSchema as generatedPartitionSchema,
-	brokerInfoSchema as generatedBrokerInfoSchema,
-	topologyResponseSchema,
-} from './gen';
+import {partitionSchema, brokerInfoSchema, topologyResponseSchema} from './gen';
 
 const partitionRoleSchema = z.enum(['leader', 'follower', 'inactive']);
 type PartitionRole = z.infer<typeof partitionRoleSchema>;
@@ -20,11 +16,11 @@ type PartitionRole = z.infer<typeof partitionRoleSchema>;
 const partitionHealthSchema = z.enum(['healthy', 'unhealthy', 'dead']);
 type PartitionHealth = z.infer<typeof partitionHealthSchema>;
 
-const partitionSchema = generatedPartitionSchema;
-type Partition = z.infer<typeof partitionSchema>;
+const clusterPartitionSchema = partitionSchema;
+type Partition = z.infer<typeof clusterPartitionSchema>;
 
-const brokerInfoSchema = generatedBrokerInfoSchema;
-type BrokerInfo = z.infer<typeof brokerInfoSchema>;
+const clusterBrokerInfoSchema = brokerInfoSchema;
+type BrokerInfo = z.infer<typeof clusterBrokerInfoSchema>;
 
 const getTopologyResponseBodySchema = topologyResponseSchema;
 type GetTopologyResponseBody = z.infer<typeof getTopologyResponseBodySchema>;
@@ -37,8 +33,8 @@ const getTopology: Endpoint = {
 export {
 	partitionRoleSchema,
 	partitionHealthSchema,
-	partitionSchema,
-	brokerInfoSchema,
+	clusterPartitionSchema as partitionSchema,
+	clusterBrokerInfoSchema as brokerInfoSchema,
 	getTopologyResponseBodySchema,
 	getTopology,
 };
