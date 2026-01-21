@@ -20,6 +20,8 @@ describe('authentication store', () => {
     authenticationStore.reset();
   });
 
+  const mockHref = 'http://example.com/unchangedHref';
+
   it('should assume that there is an existing session', () => {
     expect(authenticationStore.status).toBe('initial');
   });
@@ -53,6 +55,7 @@ describe('authentication store', () => {
     vi.spyOn(window, 'location', 'get').mockReturnValue({
       ...window.location,
       reload: mockReload,
+      href: mockHref,
     });
 
     mockLogin().withSuccess({});
@@ -67,6 +70,7 @@ describe('authentication store', () => {
 
     expect(authenticationStore.status).toBe('logged-out');
 
+    expect(window.location.href).toBe(mockHref);
     expect(mockReload).toHaveBeenCalledTimes(0);
     expect(getStateLocally()).toEqual({
       wasReloaded: false,
@@ -84,6 +88,7 @@ describe('authentication store', () => {
     vi.spyOn(window, 'location', 'get').mockReturnValue({
       ...window.location,
       reload: mockReload,
+      href: mockHref,
     });
 
     vi.stubGlobal('clientConfig', {
@@ -99,6 +104,7 @@ describe('authentication store', () => {
 
     expect(authenticationStore.status).toBe('session-expired');
 
+    expect(window.location.href).toBe(mockHref);
     expect(mockReload).toHaveBeenCalledTimes(0);
     expect(getStateLocally()).toEqual({
       wasReloaded: false,
@@ -124,6 +130,7 @@ describe('authentication store', () => {
       vi.spyOn(window, 'location', 'get').mockReturnValue({
         ...window.location,
         reload: mockReload,
+        href: mockHref,
       });
 
       vi.stubGlobal('clientConfig', {
@@ -148,6 +155,7 @@ describe('authentication store', () => {
 
       expect(authenticationStore.status).toBe('logged-in');
 
+      expect(window.location.href).toBe(mockHref);
       expect(mockReload).toHaveBeenCalledTimes(1);
       expect(getStateLocally()).toEqual({
         wasReloaded: false,
@@ -174,7 +182,7 @@ describe('authentication store', () => {
 
       mockLogin().withSuccess({});
       mockMe().withSuccess(mockUserResponse);
-      mockLogout().withSuccess({});
+      mockLogout().withSuccess({}, {statusCode: 204});
       mockLogin().withSuccess({});
       mockMe().withSuccess(mockUserResponse);
 
@@ -201,4 +209,40 @@ describe('authentication store', () => {
       });
     },
   );
+
+  it('should redirect to logoutUrl returned by backend during logout', async () => {
+    const mockReload = vi.fn();
+    vi.spyOn(window, 'location', 'get').mockReturnValue({
+      ...window.location,
+      reload: mockReload,
+      href: mockHref,
+    });
+
+    vi.stubGlobal('clientConfig', {
+      canLogout: true,
+      isLoginDelegated: true,
+    });
+
+    const mockIdpLogoutUrl = 'http://example.com/idpLogout';
+
+    mockLogin().withSuccess({});
+    mockMe().withSuccess(mockUserResponse);
+    mockLogout().withSuccess({url: mockIdpLogoutUrl});
+    mockLogin().withSuccess({});
+    mockMe().withSuccess(mockUserResponse);
+
+    await authenticationStore.handleLogin('demo', 'demo');
+
+    expect(authenticationStore.status).toBe('logged-in');
+
+    await authenticationStore.handleLogout();
+
+    expect(authenticationStore.status).toBe('invalid-third-party-session');
+
+    expect(window.location.href).toBe(mockIdpLogoutUrl);
+    expect(mockReload).toHaveBeenCalledTimes(0);
+    expect(getStateLocally()).toEqual({
+      wasReloaded: true,
+    });
+  });
 });
