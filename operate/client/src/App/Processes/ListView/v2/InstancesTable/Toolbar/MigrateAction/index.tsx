@@ -9,7 +9,7 @@
 import {observer} from 'mobx-react';
 import {Link, OrderedList, Stack, TableBatchAction} from '@carbon/react';
 import {MigrateAlt} from '@carbon/react/icons';
-import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
+import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelectionV2';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 import {ModalStateManager} from 'modules/components/ModalStateManager';
 import {getProcessInstancesRequestFilters} from 'modules/utils/filter';

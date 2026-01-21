@@ -15,8 +15,8 @@ import {tracking} from 'modules/tracking';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import type {ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.8';
 import {
-  PROCESS_ID,
   PROCESS_DEFINITION_ID,
+  PROCESS_DEFINITION_KEY,
   mockProcessInstancesV2,
   setupSelectionStoreWithInstances,
   getProcessInstance,
@@ -27,7 +27,7 @@ const mockCalledProcessInstancesV2: ProcessInstance[] = [
   {
     processInstanceKey: '5',
     processDefinitionId: PROCESS_DEFINITION_ID,
-    processDefinitionKey: PROCESS_DEFINITION_ID,
+    processDefinitionKey: PROCESS_DEFINITION_KEY,
     processDefinitionName: 'Event Based Gateway Process',
     processDefinitionVersion: 1,
     state: 'ACTIVE',
@@ -211,7 +211,7 @@ describe('<MigrateAction />', () => {
   });
 
   it.skip('should set correct store states after migrate click', async () => {
-    const SEARCH_STRING = `?process=${PROCESS_ID}&version=1&active=true&incidents=false`;
+    const SEARCH_STRING = `?process=${PROCESS_DEFINITION_ID}&version=1&active=true&incidents=false`;
     vi.stubGlobal('clientConfig', {
       ...window.clientConfig,
       search: SEARCH_STRING,
@@ -244,7 +244,7 @@ describe('<MigrateAction />', () => {
       excludeIds: [],
       ids: [instance.processInstanceKey],
       incidents: false,
-      processIds: [PROCESS_DEFINITION_ID],
+      processIds: [PROCESS_DEFINITION_KEY],
       running: true,
     });
   });
