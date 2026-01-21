@@ -13,6 +13,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.response.ProcessInstanceEvent;
+import io.camunda.client.api.search.enums.AuditLogActorTypeEnum;
 import io.camunda.client.api.search.enums.AuditLogEntityTypeEnum;
 import io.camunda.client.api.search.enums.AuditLogOperationTypeEnum;
 import io.camunda.client.api.search.response.TenantUser;
@@ -206,6 +207,29 @@ public class AuditLogUtils {
             });
   }
 
+  private void awaitUserTenantAssignmentsAuditLogs() {
+    final var assignmentCount = userTenantAssignments.size();
+
+    // tenant assignment audit logs
+    Awaitility.await("User is assigned to tenant")
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .untilAsserted(
+            () -> {
+              final var auditLogs =
+                  defaultClient
+                      .newAuditLogSearchRequest()
+                      .filter(
+                          f ->
+                              f.operationType(AuditLogOperationTypeEnum.ASSIGN)
+                                  .entityType(AuditLogEntityTypeEnum.TENANT)
+                                  .actorType(AuditLogActorTypeEnum.USER))
+                      .send()
+                      .join();
+
+              assertThat(auditLogs.items()).hasSize(assignmentCount);
+            });
+  }
+
   private void awaitProcessInstances(final ProcessInstanceEvent processInstance) {
     // wait until audit log for the process instance is exported
     final var processInstanceKey = String.valueOf(processInstance.getProcessInstanceKey());
@@ -253,6 +277,7 @@ public class AuditLogUtils {
     if (!getUserTenantAssignments().isEmpty()) {
       // this waits for the creation export
       awaitUserTenantAssignments();
+      awaitUserTenantAssignmentsAuditLogs();
     }
 
     // this waits for the actual audit log
