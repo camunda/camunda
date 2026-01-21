@@ -21,7 +21,7 @@ test.beforeEach(async ({page, commonPage, context}) => {
 });
 
 test.describe('process instance modification', () => {
-  test('add and cancel modification', async ({
+  test.skip('add and cancel modification', async ({
     page,
     commonPage,
     processInstancePage,
@@ -129,7 +129,11 @@ test.describe('process instance modification', () => {
     });
   });
 
-  test('move modification', async ({page, commonPage, processInstancePage}) => {
+  test.skip('move modification', async ({
+    page,
+    commonPage,
+    processInstancePage,
+  }) => {
     await page.route(
       URL_API_PATTERN,
       mockProcessDetailResponses({

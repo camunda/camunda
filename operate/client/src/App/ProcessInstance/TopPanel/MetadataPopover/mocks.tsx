@@ -7,34 +7,28 @@
  */
 
 import {Paths} from 'modules/Routes';
-import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
-import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
-import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {LocationLog} from 'modules/utils/LocationLog';
-import {useEffect} from 'react';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
-import {MetadataPopover} from '.';
+import {MetadataPopover} from './indexV2';
 import {ProcessInstance} from 'modules/testUtils/pages/ProcessInstance/v2';
 import {render} from 'modules/testing-library';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 
-const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
-  useEffect(() => {
-    return () => {
-      flowNodeMetaDataStore.reset();
-      flowNodeSelectionStore.reset();
-      processInstanceDetailsStore.reset();
-    };
-  }, []);
+const Wrapper: React.FC<{
+  children?: React.ReactNode;
+  initialSearchParams?: Record<string, string>;
+}> = ({children, initialSearchParams}) => {
+  const searchParams = new URLSearchParams(initialSearchParams);
+  const path =
+    Paths.processInstance('2251799813685591') +
+    (searchParams.toString() ? `?${searchParams.toString()}` : '');
 
   return (
     <ProcessDefinitionKeyContext.Provider value="123">
       <QueryClientProvider client={getMockQueryClient()}>
-        <MemoryRouter
-          initialEntries={[Paths.processInstance('2251799813685591')]}
-        >
+        <MemoryRouter initialEntries={[path]}>
           <Routes>
             <Route path={Paths.processInstance()} element={children} />
             <Route path={Paths.decisionInstance()} element={<></>} />
@@ -46,14 +40,18 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   );
 };
 
-const renderPopover = () => {
+const renderPopover = (initialSearchParams?: Record<string, string>) => {
   const svgElement = document.createElementNS(
     'http://www.w3.org/2000/svg',
     'svg',
   );
 
+  const WrapperWithParams: React.FC<{children?: React.ReactNode}> = ({
+    children,
+  }) => <Wrapper initialSearchParams={initialSearchParams}>{children}</Wrapper>;
+
   return render(<MetadataPopover selectedFlowNodeRef={svgElement} />, {
-    wrapper: Wrapper,
+    wrapper: WrapperWithParams,
   });
 };
 

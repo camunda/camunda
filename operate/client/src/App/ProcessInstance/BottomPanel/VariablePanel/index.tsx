@@ -9,7 +9,6 @@
 import React, {useState} from 'react';
 import {observer} from 'mobx-react';
 
-import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {TabView} from 'modules/components/TabView';
 import {useProcessInstancePageParams} from '../../useProcessInstancePageParams';
 import {InputOutputMappings} from './InputOutputMappings';
@@ -18,10 +17,8 @@ import {Listeners, type ListenerTypeFilter} from './Listeners';
 import {OperationsLog} from './OperationsLog';
 import {WarningFilled} from './styled';
 import {useJobs} from 'modules/queries/jobs/useJobs';
-import {useIsRootNodeSelected} from 'modules/hooks/flowNodeSelection';
 import {useElementSelectionInstanceKey} from 'modules/hooks/useElementSelectionInstanceKey';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
-import {IS_ELEMENT_SELECTION_V2} from 'modules/feature-flags';
 
 const tabIds = {
   variables: 'variables',
@@ -43,18 +40,6 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
   const {processInstanceId = ''} = useProcessInstancePageParams();
   let {hasSelection, selectedElementId} = useProcessInstanceElementSelection();
   let resolvedElementInstanceKey = useElementSelectionInstanceKey();
-
-  // TODO: Remove these assignments to remove the feature flag from the component
-  hasSelection = IS_ELEMENT_SELECTION_V2
-    ? hasSelection
-    : // eslint-disable-next-line react-hooks/rules-of-hooks
-      !useIsRootNodeSelected();
-  selectedElementId = IS_ELEMENT_SELECTION_V2
-    ? selectedElementId
-    : (flowNodeSelectionStore.state.selection?.flowNodeId ?? null);
-  resolvedElementInstanceKey = IS_ELEMENT_SELECTION_V2
-    ? resolvedElementInstanceKey
-    : (flowNodeSelectionStore.state.selection?.flowNodeInstanceId ?? null);
 
   const [listenerTypeFilter, setListenerTypeFilter] =
     useState<ListenerTypeFilter>();

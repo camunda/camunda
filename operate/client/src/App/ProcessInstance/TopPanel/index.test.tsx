@@ -14,21 +14,12 @@ import {
 } from 'modules/testing-library';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {TopPanel} from './index';
-import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {modificationsStore} from 'modules/stores/modifications';
-import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
-import {
-  calledInstanceMetadata,
-  incidentFlowNodeMetaData,
-  PROCESS_INSTANCE_ID,
-} from 'modules/mocks/metadata';
+import {calledInstanceMetadata} from 'modules/mocks/metadata';
 import {createInstance, createIncident} from 'modules/testUtils';
-import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
 import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {open} from 'modules/mocks/diagrams';
-import {mockNestedSubprocess} from 'modules/mocks/mockNestedSubprocess';
-import {IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED} from 'modules/feature-flags';
 import {Paths} from 'modules/Routes';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {QueryClientProvider} from '@tanstack/react-query';
@@ -37,16 +28,11 @@ import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinit
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockFetchProcessSequenceFlows} from 'modules/mocks/api/v2/flownodeInstances/sequenceFlows';
 import type {
-  ElementInstance,
   ProcessInstance,
   SequenceFlow,
 } from '@camunda/camunda-api-zod-schemas/8.8';
-import {selectFlowNode} from 'modules/utils/flowNodeSelection';
 import {http, HttpResponse} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
-import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
-import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
-import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance';
 import {mockSearchIncidentsByProcessInstance} from 'modules/mocks/api/v2/incidents/searchIncidentsByProcessInstance';
 import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
 import {mockSearchDecisionInstances} from 'modules/mocks/api/v2/decisionInstances/searchDecisionInstances';
@@ -124,20 +110,6 @@ const mockProcessInstance: ProcessInstance = {
   tenantId: '<default>',
   processDefinitionName: 'someProcessName',
   hasIncident: true,
-};
-
-const mockElementInstance: ElementInstance = {
-  elementInstanceKey: '2251799813699889',
-  elementId: 'service-task-1',
-  elementName: 'Service Task',
-  type: 'SERVICE_TASK',
-  state: 'ACTIVE',
-  startDate: '2018-06-21',
-  processDefinitionId: 'process-def-1',
-  processInstanceKey: 'instance_id',
-  processDefinitionKey: '2',
-  hasIncident: false,
-  tenantId: '<default>',
 };
 
 const getWrapper = (
@@ -240,10 +212,7 @@ describe('TopPanel', () => {
   });
 
   afterEach(() => {
-    processInstanceDetailsStore.reset();
-    flowNodeSelectionStore.reset();
     modificationsStore.reset();
-    flowNodeMetaDataStore.reset();
   });
 
   it('should render spinner while loading', async () => {
@@ -256,8 +225,6 @@ describe('TopPanel', () => {
       wrapper: getWrapper(),
     });
 
-    processInstanceDetailsStore.init({id: 'active_instance'});
-
     expect(screen.getByTestId('diagram-spinner')).toBeInTheDocument();
     await waitForElementToBeRemoved(screen.queryByTestId('diagram-spinner'));
   });
@@ -269,7 +236,6 @@ describe('TopPanel', () => {
       wrapper: getWrapper(),
     });
 
-    processInstanceDetailsStore.init({id: 'instance_with_incident'});
     expect(await screen.findByText('1 Incident occurred')).toBeInTheDocument();
   });
 
@@ -280,8 +246,6 @@ describe('TopPanel', () => {
     render(<TopPanel />, {
       wrapper: getWrapper(),
     });
-
-    processInstanceDetailsStore.init({id: 'instance_with_incident'});
 
     expect(
       await screen.findByText('Data could not be fetched'),
@@ -314,8 +278,6 @@ describe('TopPanel', () => {
       wrapper: getWrapper(),
     });
 
-    processInstanceDetailsStore.init({id: 'instance_with_incident'});
-
     expect(
       await screen.findByText('Missing permissions to view the Definition'),
     ).toBeInTheDocument();
@@ -335,8 +297,6 @@ describe('TopPanel', () => {
       wrapper: getWrapper(),
     });
 
-    processInstanceDetailsStore.init({id: 'instance_with_incident'});
-
     await waitFor(() =>
       expect(
         screen.queryByText('Incidents - 1 result'),
@@ -351,331 +311,4 @@ describe('TopPanel', () => {
 
     expect(screen.queryByText('Incidents - 1 result')).not.toBeInTheDocument();
   });
-
-  it('should render metadata for default mode and modification dropdown for modification mode', async () => {
-    mockFetchFlowNodeMetadata().withSuccess({
-      ...calledInstanceMetadata,
-      flowNodeId: 'service-task-1',
-      flowNodeInstanceId: '2251799813699889',
-    });
-    mockFetchElementInstance('2251799813699889').withSuccess(
-      mockElementInstance,
-    );
-    mockFetchProcessInstance().withSuccess(mockProcessInstance);
-    mockSearchElementInstances().withSuccess({
-      items: [mockElementInstance],
-      page: {totalItems: 1},
-    });
-
-    mockSearchIncidentsByProcessInstance('instance_id').withSuccess({
-      items: [],
-      page: {totalItems: 0},
-    });
-
-    mockFetchFlownodeInstancesStatistics().withSuccess({
-      items: [
-        {
-          elementId: mockElementInstance.elementId,
-          active: 1,
-          completed: 0,
-          canceled: 0,
-          incidents: 0,
-        },
-      ],
-    });
-
-    flowNodeMetaDataStore.setMetaData({
-      ...calledInstanceMetadata,
-      flowNodeId: 'service-task-1',
-      flowNodeInstanceId: '2251799813699889',
-    });
-
-    processInstanceDetailsStore.setProcessInstance(
-      createInstance({
-        id: 'instance_id',
-        state: 'ACTIVE',
-      }),
-    );
-    render(<TopPanel />, {
-      wrapper: getWrapper(),
-    });
-
-    selectFlowNode(
-      {},
-      {
-        flowNodeId: 'service-task-1',
-        flowNodeInstanceId: '2251799813699889',
-      },
-    );
-
-    await waitForElementToBeRemoved(() =>
-      screen.queryByTestId('diagram-spinner'),
-    );
-
-    await waitFor(() =>
-      expect(
-        screen.queryByText(/Element Instance Key/),
-      ).not.toBeInTheDocument(),
-    );
-
-    await screen.findByText(/Execution Duration/);
-
-    modificationsStore.enableModificationMode();
-
-    expect(screen.queryByText(/Start Date/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/End Date/)).not.toBeInTheDocument();
-
-    mockFetchFlowNodeMetadata().withSuccess(calledInstanceMetadata);
-
-    selectFlowNode(
-      {},
-      {
-        flowNodeId: 'service-task-1',
-      },
-    );
-
-    expect(
-      await screen.findByText(/Flow Node Modifications/),
-    ).toBeInTheDocument();
-    expect(
-      await screen.findByTitle(/Add single flow node instance/),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByTitle(/Cancel selected instance in this flow node/),
-    ).toBeInTheDocument();
-
-    expect(
-      screen.getByTitle(
-        /Move selected instance in this flow node to another target/,
-      ),
-    ).toBeInTheDocument();
-  });
-
-  it('should display multiple instances banner when a flow node with multiple running instances is selected', async () => {
-    processInstanceDetailsStore.init({id: 'active_instance'});
-
-    mockFetchFlowNodeMetadata().withSuccess(incidentFlowNodeMetaData);
-
-    render(<TopPanel />, {
-      wrapper: getWrapper(),
-    });
-
-    modificationsStore.enableModificationMode();
-
-    selectFlowNode(
-      {},
-      {
-        flowNodeId: 'service-task-7',
-      },
-    );
-
-    expect(
-      await screen.findByText(
-        /Flow node has multiple instances. To select one, use the instance history tree below./i,
-      ),
-    ).toBeInTheDocument();
-
-    mockFetchFlowNodeMetadata().withSuccess(incidentFlowNodeMetaData);
-
-    selectFlowNode(
-      {},
-      {
-        flowNodeId: 'service-task-1',
-      },
-    );
-
-    await waitForElementToBeRemoved(() =>
-      screen.queryByText(
-        /Flow node has multiple instances. To select one, use the instance history tree below./i,
-      ),
-    );
-
-    selectFlowNode(
-      {},
-      {
-        flowNodeId: 'service-task-7',
-      },
-    );
-
-    expect(
-      await screen.findByText(
-        /Flow node has multiple instances. To select one, use the instance history tree below./i,
-      ),
-    ).toBeInTheDocument();
-
-    mockFetchFlowNodeMetadata().withSuccess(incidentFlowNodeMetaData);
-
-    selectFlowNode(
-      {},
-      {
-        flowNodeId: 'service-task-7',
-        flowNodeInstanceId: 'some-instance-id',
-      },
-    );
-
-    await waitForElementToBeRemoved(() =>
-      screen.queryByText(
-        /Flow node has multiple instances. To select one, use the instance history tree below./i,
-      ),
-    );
-  });
-
-  it('should display move token banner in moving mode', async () => {
-    mockFetchProcessDefinitionXml().withSuccess(
-      open('diagramForModifications.bpmn'),
-    );
-    mockFetchFlowNodeMetadata().withSuccess(calledInstanceMetadata);
-
-    processInstanceDetailsStore.setProcessInstance(
-      createInstance({
-        id: PROCESS_INSTANCE_ID,
-        state: 'ACTIVE',
-      }),
-    );
-
-    const {user} = render(<TopPanel />, {
-      wrapper: getWrapper(),
-    });
-
-    modificationsStore.enableModificationMode();
-
-    selectFlowNode(
-      {},
-      {
-        flowNodeId: 'service-task-1',
-      },
-    );
-
-    expect(
-      await screen.findByText(/Flow Node Modifications/),
-    ).toBeInTheDocument();
-
-    expect(
-      screen.queryByText(/select the target flow node in the diagram/i),
-    ).not.toBeInTheDocument();
-
-    await user.click(await screen.findByRole('button', {name: /move/i}));
-
-    expect(
-      await screen.findByText(/select the target flow node in the diagram/i),
-    ).toBeInTheDocument();
-
-    await user.click(screen.getByRole('button', {name: 'Discard'}));
-
-    expect(
-      screen.queryByText(/select the target flow node in the diagram/i),
-    ).not.toBeInTheDocument();
-  });
-
-  it('should render modification info banner when move modification requires an ancestor', async () => {
-    mockFetchProcessDefinitionXml().withSuccess(
-      open('subprocessInsideMultiInstance.bpmn'),
-    );
-
-    const parentElement = {
-      flowNodeId: 'sub-2',
-    };
-    const element = {
-      flowNodeInstanceId: '2251799813699889',
-      flowNodeId: 'task-1',
-    };
-
-    mockFetchFlownodeInstancesStatistics().withSuccess({
-      items: [
-        {
-          elementId: element.flowNodeId,
-          active: 2,
-          completed: 0,
-          canceled: 0,
-          incidents: 0,
-        },
-        {
-          elementId: parentElement.flowNodeId,
-          active: 2,
-          completed: 0,
-          canceled: 0,
-          incidents: 0,
-        },
-      ],
-    });
-
-    flowNodeMetaDataStore.setMetaData({
-      ...calledInstanceMetadata,
-      ...element,
-      instanceMetadata: {
-        ...calledInstanceMetadata.instanceMetadata,
-        endDate: null,
-      },
-    });
-
-    const {user} = render(<TopPanel />, {
-      wrapper: getWrapper(),
-    });
-
-    modificationsStore.enableModificationMode();
-
-    selectFlowNode({}, element);
-
-    expect(
-      screen.queryByText(/select the target flow node in the diagram/i),
-    ).not.toBeInTheDocument();
-
-    await user.click(await screen.findByRole('button', {name: /move/i}));
-
-    expect(
-      await screen.findByText(/select the target flow node in the diagram/i),
-    ).toBeInTheDocument();
-
-    await user.click(await screen.findByTestId('task-2'));
-
-    expect(
-      await screen.findByText(
-        /Target flow node has multiple parent scopes. Please select parent node from Instance History to move./i,
-      ),
-    ).toBeInTheDocument();
-  });
-
-  /* eslint-disable vitest/no-standalone-expect -- eslint doesn't understand dynamically skipped tests */
-  (IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED ? it : it.skip)(
-    'should display parent selection banner when trying to add a token on a flow node that has multiple scopes',
-    async () => {
-      mockFetchProcessDefinitionXml().withSuccess(mockNestedSubprocess);
-
-      processInstanceDetailsStore.init({id: 'active_instance'});
-
-      mockFetchFlowNodeMetadata().withSuccess(incidentFlowNodeMetaData);
-
-      const {user} = render(<TopPanel />, {
-        wrapper: getWrapper(),
-      });
-
-      modificationsStore.enableModificationMode();
-
-      selectFlowNode(
-        {},
-        {
-          flowNodeId: 'user_task',
-        },
-      );
-
-      await user.click(
-        await screen.findByTitle(/Add single flow node instance/),
-      );
-
-      expect(
-        await screen.findByText(
-          /Flow node has multiple parent scopes. Please select parent node from Instance History to Add./i,
-        ),
-      ).toBeInTheDocument();
-
-      await user.click(screen.getByRole('button', {name: 'Discard'}));
-
-      expect(
-        screen.queryByText(
-          /Flow node has multiple parent scopes. Please select parent node from Instance History to Add./i,
-        ),
-      ).not.toBeInTheDocument();
-    },
-  );
-  /* eslint-enable vitest/no-standalone-expect */
 });

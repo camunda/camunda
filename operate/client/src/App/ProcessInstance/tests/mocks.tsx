@@ -9,14 +9,13 @@
 import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {testData} from './index.setup';
 import {createUser, createvariable} from 'modules/testUtils';
-import {createMemoryRouter, RouterProvider} from 'react-router-dom';
+import {
+  createMemoryRouter,
+  RouterProvider,
+  useNavigate,
+} from 'react-router-dom';
 import {Paths} from 'modules/Routes';
 import {LocationLog} from 'modules/utils/LocationLog';
-import {
-  type Selection,
-  flowNodeSelectionStore,
-} from 'modules/stores/flowNodeSelection';
-import {useEffect} from 'react';
 import {mockFetchProcess} from 'modules/mocks/api/processes/fetchProcess';
 import {mockProcess} from 'modules/mocks/api/mocks/process';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
@@ -28,7 +27,6 @@ import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fe
 import {type SequenceFlow} from '@camunda/camunda-api-zod-schemas/8.8';
 import {mockFetchCallHierarchy} from 'modules/mocks/api/v2/processInstances/fetchCallHierarchy';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
-import {selectFlowNode} from 'modules/utils/flowNodeSelection';
 import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
 import {mockMe} from 'modules/mocks/api/v2/me';
 import {mockProcessInstance} from 'modules/mocks/api/v2/mocks/processInstance';
@@ -112,6 +110,12 @@ const mockRequests = () => {
       totalItems: 1,
     },
   });
+  mockSearchVariables().withSuccess({
+    items: [],
+    page: {
+      totalItems: 0,
+    },
+  });
   mockSearchIncidentsByProcessInstance('4294980768').withSuccess({
     items: [],
     page: {totalItems: 0},
@@ -134,23 +138,48 @@ const mockRequests = () => {
     items: [],
     page: {totalItems: 0},
   });
+  mockSearchElementInstances().withSuccess({
+    items: [],
+    page: {totalItems: 0},
+  });
 };
 
 type FlowNodeSelectorProps = {
-  selectableFlowNode: Selection;
+  selectableFlowNode: {
+    flowNodeId?: string;
+    flowNodeInstanceId?: string;
+    isMultiInstance?: boolean;
+  };
 };
 
 const FlowNodeSelector: React.FC<FlowNodeSelectorProps> = ({
   selectableFlowNode,
-}) => (
-  <button
-    onClick={() => {
-      selectFlowNode({}, selectableFlowNode);
-    }}
-  >
-    {`Select flow node`}
-  </button>
-);
+}) => {
+  const navigate = useNavigate();
+
+  return (
+    <button
+      onClick={() => {
+        const searchParams = new URLSearchParams();
+        if (selectableFlowNode.flowNodeId) {
+          searchParams.set('elementId', selectableFlowNode.flowNodeId);
+        }
+        if (selectableFlowNode.flowNodeInstanceId) {
+          searchParams.set(
+            'elementInstanceKey',
+            selectableFlowNode.flowNodeInstanceId,
+          );
+        }
+        if (selectableFlowNode.isMultiInstance) {
+          searchParams.set('isMultiInstanceBody', 'true');
+        }
+        navigate(`?${searchParams.toString()}`, {replace: true});
+      }}
+    >
+      {`Select flow node`}
+    </button>
+  );
+};
 
 type Props = {
   children?: React.ReactNode;
@@ -159,7 +188,11 @@ type Props = {
 function getWrapper(options?: {
   initialPath?: string;
   contextPath?: string;
-  selectableFlowNode?: Selection;
+  selectableFlowNode?: {
+    flowNodeId?: string;
+    flowNodeInstanceId?: string;
+    isMultiInstance?: boolean;
+  };
 }) {
   const {
     initialPath = Paths.processInstance('4294980768'),
@@ -168,10 +201,6 @@ function getWrapper(options?: {
   } = options ?? {};
 
   const Wrapper: React.FC<Props> = ({children}) => {
-    useEffect(() => {
-      return flowNodeSelectionStore.reset;
-    }, []);
-
     const router = createMemoryRouter(
       [
         {

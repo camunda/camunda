@@ -15,7 +15,6 @@ import {useEffect, useRef, useState} from 'react';
 import {modificationsStore} from 'modules/stores/modifications';
 import {reaction, when} from 'mobx';
 import {instanceHistoryModificationStore} from 'modules/stores/instanceHistoryModification';
-import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {flowNodeTimeStampStore} from 'modules/stores/flowNodeTimeStamp';
 import {ProcessInstanceHeader} from './ProcessInstanceHeader';
 import {TopPanel} from './TopPanel';
@@ -35,17 +34,14 @@ import {useProcessInstance} from 'modules/queries/processInstance/useProcessInst
 import {useProcessTitle} from 'modules/queries/processInstance/useProcessTitle';
 import {useCallHierarchy} from 'modules/queries/callHierarchy/useCallHierarchy';
 import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
-import {init as initFlowNodeSelection} from 'modules/utils/flowNodeSelection';
 import {
   useClearSelectionOnModificationUndo,
-  useIsRootNodeSelected,
   useRootNode,
 } from 'modules/hooks/flowNodeSelection';
 import {notificationsStore} from 'modules/stores/notifications';
 import {useNavigate} from 'react-router-dom';
 import {Locations} from 'modules/Routes';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
-import {IS_ELEMENT_SELECTION_V2} from 'modules/feature-flags';
 
 const ProcessInstance: React.FC = observer(() => {
   const {data: processInstance, error} = useProcessInstance();
@@ -56,7 +52,6 @@ const ProcessInstance: React.FC = observer(() => {
     {enabled: processInstanceKey !== undefined},
   );
   const {processInstanceId = ''} = useProcessInstancePageParams();
-  const isRootNodeSelected = useIsRootNodeSelected();
   const rootNode = useRootNode();
   const navigate = useNavigate();
   const {clearSelection} = useProcessInstanceElementSelection();
@@ -67,9 +62,7 @@ const ProcessInstance: React.FC = observer(() => {
       ignoreSearchParams: true,
     });
 
-  if (IS_ELEMENT_SELECTION_V2) {
-    useClearSelectionOnModificationUndo();
-  }
+  useClearSelectionOnModificationUndo();
 
   useEffect(() => {
     if (error?.response?.status === 404 && processInstanceId) {
@@ -92,9 +85,7 @@ const ProcessInstance: React.FC = observer(() => {
     const disposer = reaction(
       () => modificationsStore.isModificationModeEnabled,
       (isModificationModeEnabled) => {
-        if (IS_ELEMENT_SELECTION_V2) {
-          clearSelection();
-        }
+        clearSelection();
         if (!isModificationModeEnabled) {
           instanceHistoryModificationStore.reset();
         }
@@ -113,18 +104,14 @@ const ProcessInstance: React.FC = observer(() => {
       processInstance?.processInstanceKey &&
       rootNode
     ) {
-      if (!IS_ELEMENT_SELECTION_V2) {
-        initFlowNodeSelection(rootNode, processInstanceId, isRootNodeSelected);
-      }
       isInitialized.current = true;
     }
-  }, [processInstance, rootNode, processInstanceId, isRootNodeSelected]);
+  }, [processInstance, rootNode, processInstanceId]);
 
   useEffect(() => {
     return () => {
       instanceHistoryModificationStore.reset();
       flowNodeTimeStampStore.reset();
-      flowNodeSelectionStore.reset();
       modificationsStore.reset();
       isInitialized.current = false;
     };
