@@ -218,8 +218,8 @@ final class AsymmetricNetworkPartitionIT {
    * table, so we can restore it between tests.
    */
   private static void installNetworkUtilities(final ZeebeNode<?> container) {
-    exec(container, "apt-get -qq update");
-    exec(container, "apt-get -qq -y install iproute2");
+    exec(container, "apk update");
+    exec(container, "apk add iproute2");
   }
 
   private static void exec(final ZeebeNode<?> container, final String command) {
