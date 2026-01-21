@@ -27,49 +27,9 @@
 
 zeebe:
   broker:
-    gateway:
-      # Enable the embedded gateway to start on broker startup.
-      # This setting can also be overridden using the environment variable ZEEBE_BROKER_GATEWAY_ENABLE.
-      enable: true
-
-      network:
-        # Sets the port the embedded gateway binds to.
-        # This setting can also be overridden using the environment variable ZEEBE_BROKER_GATEWAY_NETWORK_PORT.
-        port: 26500
-
     data:
-      # Specify a directory in which data is stored.
-      # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_DIRECTORY.
-      directory: data
-      # The size of data log segment files.
-      # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_LOGSEGMENTSIZE.
-      logSegmentSize: 128MB
-      # How often we take snapshots of streams (time unit)
-      # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_SNAPSHOTPERIOD.
       snapshotPeriod: 1m
 
-    cluster:
-      # Specifies the Zeebe cluster size.
-      # This can also be overridden using the environment variable ZEEBE_BROKER_CLUSTER_CLUSTERSIZE.
-      clusterSize: 1
-      # Controls the replication factor, which defines the count of replicas per partition.
-      # This can also be overridden using the environment variable ZEEBE_BROKER_CLUSTER_REPLICATIONFACTOR.
-      replicationFactor: 1
-      # Controls the number of partitions, which should exist in the cluster.
-      # This can also be overridden using the environment variable ZEEBE_BROKER_CLUSTER_PARTITIONSCOUNT.
-      partitionsCount: 1
-
-    threads:
-      # Controls the number of non-blocking CPU threads to be used.
-      # WARNING: You should never specify a value that is larger than the number of physical cores
-      # available. Good practice is to leave 1-2 cores for ioThreads and the operating
-      # system (it has to run somewhere). For example, when running Zeebe on a machine
-      # which has 4 cores, a good value would be 2.
-      # This setting can also be overridden using the environment variable ZEEBE_BROKER_THREADS_CPUTHREADCOUNT
-      cpuThreadCount: 2
-      # Controls the number of io threads to be used.
-      # This setting can also be overridden using the environment variable ZEEBE_BROKER_THREADS_IOTHREADCOUNT
-      ioThreadCount: 2
     exporters:
       rdbms:
         # Classname doesn't matter, since this exporter is present via spring bean
@@ -90,56 +50,6 @@ camunda:
     url: jdbc:sqlserver://localhost:1433;Encrypt=false
     username: sa
     password: Camunda#8_demo
-  # Operate configuration properties
-  operate:
-    # Set operate username and password.
-    # If user with <username> does not exists it will be created.
-    # Default: demo/demo
-    #username:
-    #password:
-    # ELS instance to store Operate data
-    elasticsearch:
-      # Cluster name
-      clusterName: elasticsearch
-      # URL
-      url: http://localhost:9200
-    # Zeebe instance
-    zeebe:
-      # Gateway address
-      gatewayAddress: localhost:26500
-    # ELS instance to export Zeebe data to
-    zeebeElasticsearch:
-      # Cluster name
-      clusterName: elasticsearch
-      # URL
-      url: http://localhost:9200
-      # Index prefix, configured in Zeebe Elasticsearch exporter
-      prefix: zeebe-record
-  # Tasklist configuration properties
-  tasklist:
-    # Set Tasklist username and password.
-    # If user with <username> does not exists it will be created.
-    # Default: demo/demo
-    #username:
-    #password:
-    # ELS instance to store Tasklist data
-    elasticsearch:
-      # Cluster name
-      clusterName: elasticsearch
-      # URL
-      url: http://localhost:9200
-    # Zeebe instance
-    zeebe:
-      # Gateway address
-      gatewayAddress: localhost:26500
-    # ELS instance to export Zeebe data to
-    zeebeElasticsearch:
-      # Cluster name
-      clusterName: elasticsearch
-      # Url
-      url: http://localhost:9200
-      # Index prefix, configured in Zeebe Elasticsearch exporter
-      prefix: zeebe-record
 logging:
   level:
     io:
