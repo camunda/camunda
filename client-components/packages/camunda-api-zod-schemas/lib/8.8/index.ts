@@ -35,12 +35,7 @@ import {
 import {queryDecisionInstances, getDecisionInstance} from './decision-instance';
 import {queryDecisionRequirements, getDecisionRequirements, getDecisionRequirementsXml} from './decision-requirements';
 import {createDocument, createDocuments, getDocument, deleteDocument, createDocumentLink} from './document';
-import {
-	queryElementInstances,
-	getElementInstance,
-	updateElementInstanceVariables,
-	queryElementInstanceIncidents,
-} from './element-instance';
+import {queryElementInstances, getElementInstance, updateElementInstanceVariables} from './element-instance';
 import {
 	createGroup,
 	getGroup,
@@ -84,7 +79,6 @@ import {
 	createModificationBatchOperation,
 	modifyProcessInstance,
 	migrateProcessInstance,
-	resolveProcessInstanceIncidents,
 } from './process-instance';
 import {
 	getUserTask,
@@ -105,8 +99,6 @@ import {
 	getProcessStartForm,
 	getProcessDefinitionStatistics,
 	queryProcessDefinitions,
-	getProcessDefinitionInstanceStatistics,
-	getProcessDefinitionInstanceVersionStatistics,
 } from './process-definition';
 import {createDeployment, deleteResource, getResource, getResourceContent} from './resource';
 import {
@@ -188,7 +180,6 @@ const endpoints = {
 	deleteDocument,
 	createDocumentLink,
 	queryElementInstances,
-	queryElementInstanceIncidents,
 	getElementInstance,
 	updateElementInstanceVariables,
 	createGroup,
@@ -242,8 +233,6 @@ const endpoints = {
 	getProcessStartForm,
 	getProcessDefinitionStatistics,
 	queryProcessDefinitions,
-	getProcessDefinitionInstanceStatistics,
-	getProcessDefinitionInstanceVersionStatistics,
 	getProcessInstance,
 	queryProcessInstances,
 	cancelProcessInstance,
@@ -305,7 +294,6 @@ const endpoints = {
 	createModificationBatchOperation,
 	modifyProcessInstance,
 	migrateProcessInstance,
-	resolveProcessInstanceIncidents,
 } as const;
 
 export {currentUserSchema, getCurrentUser, type CurrentUser} from './authentication';
@@ -441,8 +429,6 @@ export {
 	elementInstanceTypeSchema,
 	elementInstanceSchema,
 	elementInstanceFilterSchema,
-	queryElementInstanceIncidentsRequestBodySchema,
-	queryElementInstanceIncidentsResponseBodySchema,
 	type ElementInstanceState,
 	type ElementInstanceType,
 	type ElementInstance,
@@ -450,8 +436,6 @@ export {
 	type QueryElementInstancesResponseBody,
 	type GetElementInstanceResponseBody,
 	type UpdateElementInstanceVariablesRequestBody,
-	type QueryElementInstanceIncidentsRequestBody,
-	type QueryElementInstanceIncidentsResponseBody,
 } from './element-instance';
 export {
 	createGroupRequestBodySchema,
@@ -620,7 +604,6 @@ export {
 	type CreateModificationBatchOperationResponseBody,
 	type ModifyProcessInstanceRequestBody,
 	type MigrateProcessInstanceRequestBody,
-	type ResolveProcessInstanceIncidentsResponseBody,
 } from './process-instance';
 export {
 	userTaskSchema,
@@ -657,24 +640,12 @@ export {
 	queryProcessDefinitionsRequestBodySchema,
 	queryProcessDefinitionsResponseBodySchema,
 	processDefinitionSchema,
-	getProcessDefinitionInstanceStatisticsRequestBodySchema,
-	getProcessDefinitionInstanceStatisticsResponseBodySchema,
-	processDefinitionInstanceStatisticsSchema,
-	getProcessDefinitionInstanceVersionStatisticsRequestBodySchema,
-	getProcessDefinitionInstanceVersionStatisticsResponseBodySchema,
-	processDefinitionInstanceVersionStatisticsSchema,
 	type ProcessDefinition,
 	type ProcessDefinitionStatistic,
 	type GetProcessDefinitionStatisticsRequestBody,
 	type GetProcessDefinitionStatisticsResponseBody,
 	type QueryProcessDefinitionsRequestBody,
 	type QueryProcessDefinitionsResponseBody,
-	type GetProcessDefinitionInstanceStatisticsRequestBody,
-	type GetProcessDefinitionInstanceStatisticsResponseBody,
-	type ProcessDefinitionInstanceStatistics,
-	type GetProcessDefinitionInstanceVersionStatisticsRequestBody,
-	type GetProcessDefinitionInstanceVersionStatisticsResponseBody,
-	type ProcessDefinitionInstanceVersionStatistics,
 } from './process-definition';
 export {
 	problemDetailsSchema,
