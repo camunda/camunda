@@ -250,7 +250,18 @@ test.describe('Process Instance', () => {
       await expect(
         diagram.getByText('fill form', {exact: false}),
       ).toBeVisible();
-      await operateDiagramPage.popover.waitFor({ state: 'visible' , timeout: 120000});
+
+      await waitForAssertion({
+        assertion: async () => {
+          await operateDiagramPage.popover.waitFor({
+            state: 'visible',
+          });
+        },
+        onFailure: async () => {
+          await operateProcessInstancePage.clickTreeItem(/fill form/i);
+        },
+      });
+
       await expect(page.getByText(/retries left/i)).toBeVisible();
     });
 

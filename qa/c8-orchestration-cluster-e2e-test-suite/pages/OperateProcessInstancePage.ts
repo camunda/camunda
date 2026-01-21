@@ -517,6 +517,7 @@ class OperateProcessInstancePage {
   }
 
   async clickTreeItem(name: string | RegExp, exact?: boolean): Promise<void> {
+    await expect(this.getTreeItem(name, exact)).toBeVisible();
     await this.getTreeItem(name, exact).click();
   }
 

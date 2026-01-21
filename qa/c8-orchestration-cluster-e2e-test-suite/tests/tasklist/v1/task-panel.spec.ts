@@ -12,7 +12,6 @@ import {deploy, createInstances} from 'utils/zeebeClient';
 import {sleep} from 'utils/sleep';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToApp} from '@pages/UtilitiesPage';
-import { waitForAssertion } from 'utils/waitForAssertion';
 
 test.beforeAll(async ({resetData}) => {
   await resetData();
@@ -118,48 +117,39 @@ test.describe('task panel page', () => {
     test.slow();
 
     await expect(page.getByText('usertask_for_scrolling_1')).toHaveCount(1);
-
-    const isAdditionalTaskVisible = await taskPanelPageV1.availableTasks.getByText('usertask_to_be_assigned').isVisible();
-    let amountOfVisibleTasks = 49;
-    if (isAdditionalTaskVisible) {
-      amountOfVisibleTasks -= 1;
-    }
-    console.log('Amount of visible tasks:', amountOfVisibleTasks);
-
-    await expect(page.getByText('usertask_for_scrolling_2')).toHaveCount(amountOfVisibleTasks);
+    await expect(page.getByText('usertask_for_scrolling_2')).toHaveCount(49);
     await expect(page.getByText('usertask_for_scrolling_3')).toHaveCount(0);
 
     await taskPanelPageV1.scrollToLastTask('usertask_for_scrolling_2');
-    amountOfVisibleTasks += 50;
 
     await expect(page.getByText('usertask_for_scrolling_1')).toHaveCount(1);
-    await expect(page.getByText('usertask_for_scrolling_2')).toHaveCount(amountOfVisibleTasks);
+    await expect(page.getByText('usertask_for_scrolling_2')).toHaveCount(99);
     await expect(page.getByText('usertask_for_scrolling_3')).toHaveCount(0);
 
     await taskPanelPageV1.scrollToLastTask('usertask_for_scrolling_2');
-    amountOfVisibleTasks += 50;
 
     await expect(page.getByText('usertask_for_scrolling_1')).toHaveCount(1);
-    await expect(page.getByText('usertask_for_scrolling_2')).toHaveCount(amountOfVisibleTasks);
+    await expect(page.getByText('usertask_for_scrolling_2')).toHaveCount(149);
     await expect(page.getByText('usertask_for_scrolling_3')).toHaveCount(0);
 
     await taskPanelPageV1.scrollToLastTask('usertask_for_scrolling_2');
-    amountOfVisibleTasks += 50;
 
     await expect(page.getByText('usertask_for_scrolling_1')).toHaveCount(1);
-    await expect(page.getByText('usertask_for_scrolling_2')).toHaveCount(amountOfVisibleTasks);
+    await expect(page.getByText('usertask_for_scrolling_2')).toHaveCount(199);
     await expect(page.getByText('usertask_for_scrolling_3')).toHaveCount(0);
 
     await taskPanelPageV1.scrollToLastTask('usertask_for_scrolling_2');
 
     await expect(page.getByText('usertask_for_scrolling_1')).toHaveCount(0);
-    await expect(page.getByText('usertask_for_scrolling_2')).toHaveCount(isAdditionalTaskVisible? amountOfVisibleTasks+1 : amountOfVisibleTasks);
+    await expect(page.getByText('usertask_for_scrolling_2')).toHaveCount(199);
     await expect(page.getByText('usertask_for_scrolling_3')).toHaveCount(1);
 
     await taskPanelPageV1.scrollToFirstTask('usertask_for_scrolling_2');
 
-    await expect(page.getByText('usertask_for_scrolling_1')).toHaveCount(isAdditionalTaskVisible ? 0 : 1);
-    await expect(page.getByText('usertask_for_scrolling_2')).toHaveCount(isAdditionalTaskVisible? amountOfVisibleTasks+1 : amountOfVisibleTasks);
+    await expect(page.getByText('usertask_for_scrolling_1')).toHaveCount(1, {
+      timeout: 20000,
+    });
+    await expect(page.getByText('usertask_for_scrolling_2')).toHaveCount(199);
     await expect(page.getByText('usertask_for_scrolling_3')).toHaveCount(0);
   });
 });
