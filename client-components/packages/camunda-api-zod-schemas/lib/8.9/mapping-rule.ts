@@ -7,55 +7,35 @@
  */
 
 import {z} from 'zod';
-import {API_VERSION, getQueryRequestBodySchema, getQueryResponseBodySchema, type Endpoint} from './common';
+import {API_VERSION, type Endpoint} from '../common';
+import {
+	mappingRuleResultSchema,
+	mappingRuleCreateRequestSchema,
+	mappingRuleUpdateRequestSchema,
+	mappingRuleSearchQueryRequestSchema,
+	mappingRuleSearchQueryResultSchema,
+} from './gen';
 
-const mappingRuleSchema = z.object({
-	mappingId: z.string(),
-	claimName: z.string(),
-	claimValue: z.string(),
-	name: z.string(),
-});
+const mappingRuleSchema = mappingRuleResultSchema;
 type MappingRule = z.infer<typeof mappingRuleSchema>;
 
-const mappingRuleResultSchema = mappingRuleSchema.omit({mappingId: true}).extend({
-	mappingRuleId: z.string(),
-});
-type MappingRuleResult = z.infer<typeof mappingRuleResultSchema>;
-
-const createMappingRuleRequestBodySchema = mappingRuleSchema;
+const createMappingRuleRequestBodySchema = mappingRuleCreateRequestSchema;
 type CreateMappingRuleRequestBody = z.infer<typeof createMappingRuleRequestBodySchema>;
 
 const createMappingRuleResponseBodySchema = mappingRuleResultSchema;
 type CreateMappingRuleResponseBody = z.infer<typeof createMappingRuleResponseBodySchema>;
 
-const updateMappingRuleRequestBodySchema = mappingRuleSchema.pick({
-	claimName: true,
-	claimValue: true,
-	name: true,
-});
+const updateMappingRuleRequestBodySchema = mappingRuleUpdateRequestSchema;
 type UpdateMappingRuleRequestBody = z.infer<typeof updateMappingRuleRequestBodySchema>;
 
 const updateMappingRuleResponseBodySchema = mappingRuleResultSchema;
 type UpdateMappingRuleResponseBody = z.infer<typeof updateMappingRuleResponseBodySchema>;
 
-const queryMappingRulesRequestBodySchema = getQueryRequestBodySchema({
-	sortFields: ['mappingId', 'claimName', 'claimValue', 'name'] as const,
-	filter: mappingRuleSchema
-		.pick({
-			mappingId: true,
-			claimName: true,
-			claimValue: true,
-			name: true,
-		})
-		.partial(),
-});
+const queryMappingRulesRequestBodySchema = mappingRuleSearchQueryRequestSchema;
 type QueryMappingRulesRequestBody = z.infer<typeof queryMappingRulesRequestBodySchema>;
 
-const queryMappingRulesResponseBodySchema = getQueryResponseBodySchema(mappingRuleResultSchema);
+const queryMappingRulesResponseBodySchema = mappingRuleSearchQueryResultSchema;
 type QueryMappingRulesResponseBody = z.infer<typeof queryMappingRulesResponseBodySchema>;
-
-const getMappingRuleResponseBodySchema = mappingRuleResultSchema;
-type GetMappingRuleResponseBody = z.infer<typeof getMappingRuleResponseBodySchema>;
 
 const createMappingRule: Endpoint = {
 	method: 'POST',
@@ -64,7 +44,7 @@ const createMappingRule: Endpoint = {
 	},
 };
 
-const updateMappingRule: Endpoint<Pick<MappingRuleResult, 'mappingRuleId'>> = {
+const updateMappingRule: Endpoint<{mappingRuleId: string}> = {
 	method: 'PUT',
 	getUrl(params) {
 		const {mappingRuleId} = params;
@@ -73,7 +53,7 @@ const updateMappingRule: Endpoint<Pick<MappingRuleResult, 'mappingRuleId'>> = {
 	},
 };
 
-const deleteMappingRule: Endpoint<Pick<MappingRuleResult, 'mappingRuleId'>> = {
+const deleteMappingRule: Endpoint<{mappingRuleId: string}> = {
 	method: 'DELETE',
 	getUrl(params) {
 		const {mappingRuleId} = params;
@@ -82,7 +62,7 @@ const deleteMappingRule: Endpoint<Pick<MappingRuleResult, 'mappingRuleId'>> = {
 	},
 };
 
-const getMappingRule: Endpoint<Pick<MappingRuleResult, 'mappingRuleId'>> = {
+const getMappingRule: Endpoint<{mappingRuleId: string}> = {
 	method: 'GET',
 	getUrl(params) {
 		const {mappingRuleId} = params;
@@ -108,20 +88,16 @@ export {
 	createMappingRuleResponseBodySchema,
 	updateMappingRuleRequestBodySchema,
 	updateMappingRuleResponseBodySchema,
-	getMappingRuleResponseBodySchema,
 	queryMappingRulesRequestBodySchema,
 	queryMappingRulesResponseBodySchema,
 	mappingRuleSchema,
-	mappingRuleResultSchema,
 };
 export type {
 	CreateMappingRuleRequestBody,
 	CreateMappingRuleResponseBody,
 	UpdateMappingRuleRequestBody,
 	UpdateMappingRuleResponseBody,
-	GetMappingRuleResponseBody,
 	QueryMappingRulesRequestBody,
 	QueryMappingRulesResponseBody,
 	MappingRule,
-	MappingRuleResult,
 };

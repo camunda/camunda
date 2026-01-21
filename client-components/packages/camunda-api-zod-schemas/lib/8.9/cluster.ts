@@ -7,7 +7,8 @@
  */
 
 import {z} from 'zod';
-import {API_VERSION, type Endpoint} from './common';
+import {API_VERSION, type Endpoint} from '../common';
+import {partitionSchema, brokerInfoSchema, topologyResponseSchema} from './gen';
 
 const partitionRoleSchema = z.enum(['leader', 'follower', 'inactive']);
 type PartitionRole = z.infer<typeof partitionRoleSchema>;
@@ -15,31 +16,13 @@ type PartitionRole = z.infer<typeof partitionRoleSchema>;
 const partitionHealthSchema = z.enum(['healthy', 'unhealthy', 'dead']);
 type PartitionHealth = z.infer<typeof partitionHealthSchema>;
 
-const partitionSchema = z.object({
-	partitionId: z.number().int(),
-	role: partitionRoleSchema,
-	health: partitionHealthSchema,
-});
-type Partition = z.infer<typeof partitionSchema>;
+const clusterPartitionSchema = partitionSchema;
+type Partition = z.infer<typeof clusterPartitionSchema>;
 
-const brokerInfoSchema = z.object({
-	nodeId: z.number().int(),
-	host: z.string(),
-	port: z.number().int(),
-	partitions: z.array(partitionSchema),
-	version: z.string(),
-});
-type BrokerInfo = z.infer<typeof brokerInfoSchema>;
+const clusterBrokerInfoSchema = brokerInfoSchema;
+type BrokerInfo = z.infer<typeof clusterBrokerInfoSchema>;
 
-const getTopologyResponseBodySchema = z.object({
-	brokers: z.array(brokerInfoSchema),
-	clusterId: z.string().nullable(),
-	clusterSize: z.number().int().nullable(),
-	partitionsCount: z.number().int().nullable(),
-	replicationFactor: z.number().int().nullable(),
-	gatewayVersion: z.string().nullable(),
-	lastCompletedChangeId: z.string().nullable(),
-});
+const getTopologyResponseBodySchema = topologyResponseSchema;
 type GetTopologyResponseBody = z.infer<typeof getTopologyResponseBodySchema>;
 
 const getTopology: Endpoint = {
@@ -47,13 +30,19 @@ const getTopology: Endpoint = {
 	getUrl: () => `/${API_VERSION}/topology`,
 };
 
+const getStatus: Endpoint = {
+	method: 'GET',
+	getUrl: () => `/${API_VERSION}/status`,
+};
+
 export {
 	partitionRoleSchema,
 	partitionHealthSchema,
-	partitionSchema,
-	brokerInfoSchema,
+	clusterPartitionSchema as partitionSchema,
+	clusterBrokerInfoSchema as brokerInfoSchema,
 	getTopologyResponseBodySchema,
 	getTopology,
+	getStatus,
 };
 
 export type {PartitionRole, PartitionHealth, Partition, BrokerInfo, GetTopologyResponseBody};

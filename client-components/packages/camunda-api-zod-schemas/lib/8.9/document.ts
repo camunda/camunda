@@ -7,55 +7,33 @@
  */
 
 import {z} from 'zod';
-import {API_VERSION, type Endpoint} from './common';
+import {API_VERSION, type Endpoint} from '../common';
+import {
+	documentMetadataSchema,
+	documentReferenceSchema,
+	documentCreationFailureDetailSchema,
+	documentCreationBatchResponseSchema,
+	documentLinkRequestSchema,
+	documentLinkSchema,
+} from './gen';
 
-const documentMetadataSchema = z.object({
-	contentType: z.string(),
-	fileName: z.string(),
-	expiresAt: z.string(),
-	size: z.number(),
-	processDefinitionId: z.string(),
-	processInstanceKey: z.string(),
-	customProperties: z.record(z.string(), z.unknown()),
-});
-type DocumentMetadata = z.infer<typeof documentMetadataSchema>;
+const docMetadataSchema = documentMetadataSchema;
+type DocumentMetadata = z.infer<typeof docMetadataSchema>;
 
-const documentReferenceSchema = z.object({
-	'camunda.document.type': z.literal('camunda'),
-	storeId: z.string(),
-	documentId: z.string(),
-	contentHash: z.string(),
-	metadata: documentMetadataSchema,
-});
-type DocumentReference = z.infer<typeof documentReferenceSchema>;
+const docReferenceSchema = documentReferenceSchema;
+type DocumentReference = z.infer<typeof docReferenceSchema>;
 
-const documentCreationFailureDetailSchema = z.object({
-	fileName: z.string(),
-	status: z.number().int(),
-	title: z.string(),
-	detail: z.string(),
-});
-type DocumentCreationFailureDetail = z.infer<typeof documentCreationFailureDetailSchema>;
+const docCreationFailureDetailSchema = documentCreationFailureDetailSchema;
+type DocumentCreationFailureDetail = z.infer<typeof docCreationFailureDetailSchema>;
 
-const createDocumentsResponseBodySchema = z.object({
-	createdDocuments: z.array(documentReferenceSchema),
-	failedDocuments: z.array(documentCreationFailureDetailSchema),
-});
+const createDocumentsResponseBodySchema = documentCreationBatchResponseSchema;
 type CreateDocumentsResponseBody = z.infer<typeof createDocumentsResponseBodySchema>;
 
-const documentLinkRequestBodySchema = z.object({
-	timeToLive: z.number().optional().default(3600000),
-});
+const documentLinkRequestBodySchema = documentLinkRequestSchema;
 type DocumentLinkRequestBody = z.infer<typeof documentLinkRequestBodySchema>;
 
-const documentLinkSchema = z.object({
-	url: z.string(),
-	expiresAt: z.string(),
-});
-type DocumentLink = z.infer<typeof documentLinkSchema>;
-
-const getDocumentResponseBodySchema = z.string();
-type GetDocumentResponseBody = z.infer<typeof getDocumentResponseBodySchema>;
+const docLinkSchema = documentLinkSchema;
+type DocumentLink = z.infer<typeof docLinkSchema>;
 
 const createDocument: Endpoint<{
 	storeId?: string;
@@ -143,13 +121,12 @@ const createDocumentLink: Endpoint<{
 };
 
 export {
-	documentMetadataSchema,
-	documentReferenceSchema,
-	documentCreationFailureDetailSchema,
+	docMetadataSchema as documentMetadataSchema,
+	docReferenceSchema as documentReferenceSchema,
+	docCreationFailureDetailSchema as documentCreationFailureDetailSchema,
 	createDocumentsResponseBodySchema,
 	documentLinkRequestBodySchema,
-	documentLinkSchema,
-	getDocumentResponseBodySchema,
+	docLinkSchema as documentLinkSchema,
 	createDocument,
 	createDocuments,
 	getDocument,
@@ -163,5 +140,4 @@ export type {
 	CreateDocumentsResponseBody,
 	DocumentLinkRequestBody,
 	DocumentLink,
-	GetDocumentResponseBody,
 };
