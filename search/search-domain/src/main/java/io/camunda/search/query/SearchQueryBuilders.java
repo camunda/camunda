@@ -36,6 +36,10 @@ public final class SearchQueryBuilders {
     return new ProcessInstanceQuery.Builder();
   }
 
+  public static GlobalJobStatisticsQuery.Builder globalJobStatisticsSearchQuery() {
+    return new GlobalJobStatisticsQuery.Builder();
+  }
+
   public static ProcessInstanceQuery processInstanceSearchQuery(
       final Function<ProcessInstanceQuery.Builder, ObjectBuilder<ProcessInstanceQuery>> fn) {
     return fn.apply(processInstanceSearchQuery()).build();

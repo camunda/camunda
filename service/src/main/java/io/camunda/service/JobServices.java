@@ -10,9 +10,12 @@ package io.camunda.service;
 import static io.camunda.service.authorization.Authorizations.JOB_READ_AUTHORIZATION;
 
 import io.camunda.search.clients.JobSearchClient;
+import io.camunda.search.entities.GlobalJobStatisticsEntity;
 import io.camunda.search.entities.JobEntity;
+import io.camunda.search.query.GlobalJobStatisticsQuery;
 import io.camunda.search.query.JobQuery;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.search.core.SearchQueryService;
@@ -135,6 +138,15 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
                     securityContextProvider.provideSecurityContext(
                         authentication, JOB_READ_AUTHORIZATION))
                 .searchJobs(query));
+  }
+
+  public GlobalJobStatisticsEntity getGlobalStatistics(final GlobalJobStatisticsQuery query) {
+    final var authJobSearchClient =
+        jobSearchClient.withSecurityContext(
+            securityContextProvider.provideSecurityContext(
+                authentication, Authorization.of(a -> a.system().readJobMetric())));
+
+    return authJobSearchClient.getGlobalJobStatistics(query);
   }
 
   public record ActivateJobsRequest(

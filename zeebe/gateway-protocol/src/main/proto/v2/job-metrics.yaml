@@ -1,0 +1,117 @@
+## Endpoint definitions
+
+paths:
+  /jobs/statistics/global:
+    post:
+      x-eventually-consistent: true
+      tags:
+        - Job metrics
+      operationId: getGlobalJobStatistics
+      summary: Global job statistics
+      description: |
+        Returns global aggregated counts for jobs. Optionally filter by the creation time window and/or jobType.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GlobalJobStatisticsQuery'
+      responses:
+        "200":
+          description: Global job metrics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GlobalJobStatisticsQueryResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+
+## Schema definitions
+
+components:
+  schemas:
+    GlobalJobStatisticsQuery:
+      type: object
+      additionalProperties: false
+      required:
+        - filter
+      properties:
+        filter:
+          $ref: '#/components/schemas/GlobalJobStatisticsFilter'
+
+    GlobalJobStatisticsFilter:
+      description: Filters for global job statistics query.
+      type: object
+      additionalProperties: false
+      required:
+        - from
+        - to
+      properties:
+        from:
+          description: |
+            Start of the time window to filter metrics. ISO 8601 date-time format.
+          type: string
+          format: date-time
+          example: "2024-07-28T15:51:28.071Z"
+        to:
+          description: |
+            End of the time window to filter metrics. ISO 8601 date-time format.
+          type: string
+          format: date-time
+          example: "2024-07-29T15:51:28.071Z"
+        jobType:
+          description: Optional job type to limit the aggregation to a single job type.
+          type: string
+          example: "fetch-customer-data"
+
+    GlobalJobStatisticsQueryResult:
+      description: Global job statistics query result.
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          description: List of aggregated job statistics.
+          type: array
+          items:
+            $ref: '#/components/schemas/GlobalJobStatisticsItem'
+
+    GlobalJobStatisticsItem:
+      description: Aggregated job metrics for a time bucket.
+      type: object
+      required:
+        - created
+        - completed
+        - failed
+      properties:
+        created:
+          $ref: '#/components/schemas/StatusMetric'
+        completed:
+          $ref: '#/components/schemas/StatusMetric'
+        failed:
+          $ref: '#/components/schemas/StatusMetric'
+
+    StatusMetric:
+      description: Metric for a single job status.
+      type: object
+      required:
+        - count
+        - lastUpdatedAt
+      properties:
+        count:
+          description: Number of jobs in this status.
+          type: integer
+          format: int64
+          example: 145
+        lastUpdatedAt:
+          description: ISO 8601 timestamp of the last update for this status.
+          type: string
+          format: date-time
+          example: "2024-07-29T15:51:28.071Z"
+

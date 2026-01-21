@@ -16,6 +16,8 @@ import io.camunda.gateway.mapping.http.RequestMapper.FailJobRequest;
 import io.camunda.gateway.mapping.http.RequestMapper.UpdateJobRequest;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
+import io.camunda.gateway.protocol.model.GlobalJobStatisticsQuery;
+import io.camunda.gateway.protocol.model.GlobalJobStatisticsQueryResult;
 import io.camunda.gateway.protocol.model.JobActivationRequest;
 import io.camunda.gateway.protocol.model.JobActivationResult;
 import io.camunda.gateway.protocol.model.JobCompletionRequest;
@@ -104,6 +106,14 @@ public class JobController {
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
   }
 
+  @RequiresSecondaryStorage
+  @CamundaPostMapping(path = "/statistics/global")
+  public ResponseEntity<GlobalJobStatisticsQueryResult> getGlobalJobStatistics(
+      @RequestBody final GlobalJobStatisticsQuery request) {
+    return SearchQueryRequestMapper.toGlobalJobStatisticsQuery(request)
+        .fold(RestErrorMapper::mapProblemToResponse, this::getGlobalStatistics);
+  }
+
   private CompletableFuture<ResponseEntity<Object>> activateJobs(
       final ActivateJobsRequest activationRequest) {
     final var result = new CompletableFuture<ResponseEntity<Object>>();
@@ -175,6 +185,19 @@ public class JobController {
               .withAuthentication(authenticationProvider.getCamundaAuthentication())
               .search(query);
       return ResponseEntity.ok(SearchQueryResponseMapper.toJobSearchQueryResponse(result));
+    } catch (final Exception e) {
+      return mapErrorToResponse(e);
+    }
+  }
+
+  private ResponseEntity<GlobalJobStatisticsQueryResult> getGlobalStatistics(
+      final io.camunda.search.query.GlobalJobStatisticsQuery query) {
+    try {
+      final var result =
+          jobServices
+              .withAuthentication(authenticationProvider.getCamundaAuthentication())
+              .getGlobalStatistics(query);
+      return ResponseEntity.ok(SearchQueryResponseMapper.toGlobalJobStatisticsQueryResult(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }

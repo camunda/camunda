@@ -337,4 +337,14 @@ public final class FilterBuilders {
               fn) {
     return fn.apply(incidentProcessInstanceStatisticsByDefinition()).build();
   }
+
+  public static GlobalJobStatisticsFilter.Builder globalJobStatistics() {
+    return new GlobalJobStatisticsFilter.Builder();
+  }
+
+  public static GlobalJobStatisticsFilter globalJobStatistics(
+      final Function<GlobalJobStatisticsFilter.Builder, ObjectBuilder<GlobalJobStatisticsFilter>>
+          fn) {
+    return fn.apply(globalJobStatistics()).build();
+  }
 }
