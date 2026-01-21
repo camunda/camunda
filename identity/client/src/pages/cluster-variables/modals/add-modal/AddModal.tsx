@@ -6,23 +6,23 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { FC, useEffect } from "react";
+import { FC } from "react";
 import {
   createClusterVariable,
   ScopeType,
 } from "src/utility/api/cluster-variables";
-import { Dropdown, RadioButton, RadioButtonGroup, Stack } from "@carbon/react";
+import { RadioButton, RadioButtonGroup, Stack } from "@carbon/react";
 import { Controller, useForm } from "react-hook-form";
 import { useNotifications } from "src/components/notifications";
 import { FormModal, UseModalProps } from "src/components/modal";
 import { spacing06 } from "@carbon/elements";
 import useTranslate from "src/utility/localization";
-import { useApiCall, usePaginatedApi } from "src/utility/api";
+import { useApiCall } from "src/utility/api";
 import TextField from "src/components/form/TextField.tsx";
-import { searchTenant } from "src/utility/api/tenants";
 import JSONEditor from "src/components/form/JSONEditor.tsx";
 import { isValid } from "src/utility/components/editor/jsonUtils.ts";
 import { isSaaS } from "src/configuration";
+import ClusterVariableTenantDropdown from "./ClusterVariableTenantDropdown.tsx";
 
 type FormData = {
   name: string;
@@ -31,7 +31,7 @@ type FormData = {
   tenantId?: string;
 };
 
-const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
+export const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
   const { t } = useTranslate("clusterVariables");
   const { enqueueNotification } = useNotifications();
   const [callAddClusterVariable, { loading, error }] = useApiCall(
@@ -41,7 +41,7 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
     },
   );
 
-  const { control, handleSubmit, watch, setValue } = useForm<FormData>({
+  const { control, handleSubmit, watch } = useForm<FormData>({
     defaultValues: {
       name: "",
       value: "",
@@ -52,28 +52,14 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
   });
 
   const watchedScope = watch("scope");
-  const watchedTenantId = watch("tenantId");
-  const isGlobal = watchedScope === ScopeType.GLOBAL;
-
-  const { data: tenants, loading: tenantLoading } =
-    usePaginatedApi(searchTenant);
-
-  useEffect(() => {
-    if (isGlobal && watchedTenantId) {
-      // Set tenantId to empty for Global
-      setValue("tenantId", "");
-    } else if (!isGlobal && tenants?.items?.length && !watchedTenantId) {
-      // Set tenantId to first tenant if not set
-      setValue("tenantId", tenants.items[0].name);
-    }
-  }, [isGlobal, tenants, watchedTenantId]);
+  const isTenantScoped = watchedScope === ScopeType.TENANT;
 
   const onSubmit = async (data: FormData) => {
     const { success } = await callAddClusterVariable({
       name: data.name.trim(),
       value: JSON.parse(data.value.trim()),
       scope: data.scope,
-      tenantId: data.tenantId,
+      tenantId: isTenantScoped ? data.tenantId : "",
     });
 
     if (success) {
@@ -143,25 +129,14 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
             </RadioButtonGroup>
           )}
         />
-        {!isGlobal && (
+        {isTenantScoped && (
           <Controller
             name="tenantId"
             control={control}
             render={({ field }) => (
-              <Dropdown
-                id="cluster-variable-tenant-id-dropdown"
-                label={t(
-                  tenantLoading
-                    ? "clusterVariableTenantIdLoadingPlaceholder"
-                    : "clusterVariableTenantIdPlaceholder",
-                )}
-                titleText={t("clusterVariableTenantId")}
-                items={tenants?.items.map((tenant) => tenant.name) || []}
-                onChange={({ selectedItem }) => {
-                  field.onChange(selectedItem);
-                }}
-                itemToString={(item: string) => item || ""}
-                selectedItem={field.value}
+              <ClusterVariableTenantDropdown
+                tenantId={field.value}
+                onChange={(tenantId) => field.onChange(tenantId)}
               />
             )}
           />
@@ -193,5 +168,3 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
     </FormModal>
   );
 };
-
-export default AddModal;
