@@ -40,11 +40,10 @@ const VariablesForm: React.FC<FormRenderProps<VariableFormValues>> = observer(
 
     const {isModificationModeEnabled} = modificationsStore;
 
-    const {selectedElementId, resolvedElementInstance} =
-      useProcessInstanceElementSelection();
+    const {resolvedElementInstance} = useProcessInstanceElementSelection();
 
     const isVariableModificationAllowed = computed(() => {
-      if (!isModificationModeEnabled || selectedElementId === null) {
+      if (!isModificationModeEnabled) {
         return false;
       }
 
