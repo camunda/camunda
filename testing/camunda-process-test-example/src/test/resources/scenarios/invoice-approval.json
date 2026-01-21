@@ -172,6 +172,95 @@
       ]
     },
     {
+      "name": "Approval Timeout",
+      "description": "Path when there is a timeout on the approval",
+      "instructions": [
+        {
+          "type": "MOCK_JOB_WORKER_COMPLETE_JOB",
+          "jobType": "archive-invoice"
+        },
+        {
+          "type": "MOCK_JOB_WORKER_COMPLETE_JOB",
+          "jobType": "add-invoice-to-accounting"
+        },
+        {
+          "type": "CREATE_PROCESS_INSTANCE",
+          "processDefinitionSelector": {
+            "processDefinitionId": "Process_InvoiceApproval"
+          },
+          "variables": {
+            "approver": "Zee",
+            "invoice": {
+              "id": "INV-1001",
+              "amount": 12000,
+              "currency": "EUR",
+              "supplier": {
+                "id": "0815",
+                "name": "Acme GmbH"
+              },
+              "contactEmail": "accounting@acme.com"
+            }
+          }
+        },
+        {
+          "type": "ASSERT_ELEMENT_INSTANCES",
+          "processInstanceSelector": {
+            "processDefinitionId": "Process_InvoiceApproval"
+          },
+          "elementSelectors": [
+            {
+              "elementId": "UserTask_ApproveInvoice"
+            }
+          ],
+          "state": "IS_ACTIVE"
+        },
+        {
+          "type": "INCREASE_TIME",
+          "duration": "P5D"
+        },
+        {
+          "type": "ASSERT_ELEMENT_INSTANCES",
+          "processInstanceSelector": {
+            "processDefinitionId": "Process_InvoiceApproval"
+          },
+          "elementSelectors": [
+            {
+              "elementId": "StartEvent_InvoiceReceived"
+            },
+            {
+              "elementId": "ServiceTask_ArchiveInvoice"
+            },
+            {
+              "elementId": "ServiceTask_AddInvoiceAccounting"
+            },
+            {
+              "elementId": "EndEvent_InvoiceApproved"
+            }
+          ],
+          "state": "IS_COMPLETED_IN_ORDER"
+        },
+        {
+          "type": "ASSERT_ELEMENT_INSTANCES",
+          "processInstanceSelector": {
+            "processDefinitionId": "Process_InvoiceApproval"
+          },
+          "elementSelectors": [
+            {
+              "elementId": "UserTask_ApproveInvoice"
+            }
+          ],
+          "state": "IS_TERMINATED"
+        },
+        {
+          "type": "ASSERT_PROCESS_INSTANCE",
+          "processInstanceSelector": {
+            "processDefinitionId": "Process_InvoiceApproval"
+          },
+          "state": "IS_COMPLETED"
+        }
+      ]
+    },
+    {
       "name": "Archive system error",
       "description": "Path when the archive system raises an error",
       "instructions": [
