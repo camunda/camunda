@@ -46,7 +46,7 @@ export const VARIABLE_FILTER_OPERATORS: Array<{
   {id: 'equals', label: 'equals', requiresValue: true},
   {id: 'notEqual', label: 'not equal', requiresValue: true},
   {id: 'contains', label: 'contains', requiresValue: true},
-  {id: 'oneOf', label: 'one of', requiresValue: true},
+  {id: 'oneOf', label: 'is one of', requiresValue: true},
   {id: 'exists', label: 'exists', requiresValue: false},
   {id: 'doesNotExist', label: 'does not exist', requiresValue: false},
 ];
