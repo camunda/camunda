@@ -149,7 +149,7 @@ public class ProcessInstanceTools {
           final List<@NotBlank String> fetchVariables,
       @McpToolParam(
               description =
-                  "List of tags to apply to the process instance. Tags need to start with a letter; then alphanumerics, `_`, `-`, `:`, or `.`; length ≤ 100.",
+                  "List of tags to apply to the process instance. Tags must start with a letter, followed by letters, digits, or the special characters `_`, `-`, `:`, or `.`; length ≤ 100.",
               required = false)
           final Set<
                   @Pattern(regexp = "^[A-Za-z][A-Za-z0-9_\\-:.]{0,99}$") @Size(min = 1, max = 100)
