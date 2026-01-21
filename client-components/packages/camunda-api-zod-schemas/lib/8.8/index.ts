@@ -24,7 +24,8 @@ import {
 	queryBatchOperationItems,
 } from './batch-operation';
 import {pinClock, resetClock} from './clock';
-import {getTopology} from './cluster';
+import {getTopology, getStatus} from './cluster';
+import {createAdminUser} from './setup';
 import {
 	queryDecisionDefinitions,
 	getDecisionDefinition,
@@ -82,6 +83,7 @@ import {
 	createMigrationBatchOperation,
 	createModificationBatchOperation,
 	modifyProcessInstance,
+	migrateProcessInstance,
 	resolveProcessInstanceIncidents,
 } from './process-instance';
 import {
@@ -169,6 +171,8 @@ const endpoints = {
 	pinClock,
 	resetClock,
 	getTopology,
+	getStatus,
+	createAdminUser,
 	queryDecisionDefinitions,
 	getDecisionDefinition,
 	getDecisionDefinitionXml,
@@ -300,6 +304,7 @@ const endpoints = {
 	createMigrationBatchOperation,
 	createModificationBatchOperation,
 	modifyProcessInstance,
+	migrateProcessInstance,
 	resolveProcessInstanceIncidents,
 } as const;
 
@@ -354,12 +359,19 @@ export {
 	partitionSchema,
 	brokerInfoSchema,
 	getTopologyResponseBodySchema,
+	getStatus,
 	type PartitionRole,
 	type PartitionHealth,
 	type Partition,
 	type BrokerInfo,
 	type GetTopologyResponseBody,
 } from './cluster';
+export {
+	createAdminUserRequestBodySchema,
+	createAdminUserResponseBodySchema,
+	type CreateAdminUserRequestBody,
+	type CreateAdminUserResponseBody,
+} from './setup';
 export {
 	decisionDefinitionSchema,
 	queryDecisionDefinitionsRequestBodySchema,
@@ -571,6 +583,7 @@ export {
 	createProcessInstanceRequestBodySchema,
 	createProcessInstanceResponseBodySchema,
 	modifyProcessInstanceRequestBodySchema,
+	migrateProcessInstanceRequestBodySchema,
 	queryProcessInstancesRequestBodySchema,
 	queryProcessInstancesResponseBodySchema,
 	cancelProcessInstanceRequestBodySchema,
@@ -606,6 +619,7 @@ export {
 	type CreateModificationBatchOperationRequestBody,
 	type CreateModificationBatchOperationResponseBody,
 	type ModifyProcessInstanceRequestBody,
+	type MigrateProcessInstanceRequestBody,
 	type ResolveProcessInstanceIncidentsResponseBody,
 } from './process-instance';
 export {

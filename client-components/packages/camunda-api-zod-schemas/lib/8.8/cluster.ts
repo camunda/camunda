@@ -30,6 +30,11 @@ const getTopology: Endpoint = {
 	getUrl: () => `/${API_VERSION}/topology`,
 };
 
+const getStatus: Endpoint = {
+	method: 'GET',
+	getUrl: () => `/${API_VERSION}/status`,
+};
+
 export {
 	partitionRoleSchema,
 	partitionHealthSchema,
@@ -37,6 +42,7 @@ export {
 	clusterBrokerInfoSchema as brokerInfoSchema,
 	getTopologyResponseBodySchema,
 	getTopology,
+	getStatus,
 };
 
 export type {PartitionRole, PartitionHealth, Partition, BrokerInfo, GetTopologyResponseBody};
