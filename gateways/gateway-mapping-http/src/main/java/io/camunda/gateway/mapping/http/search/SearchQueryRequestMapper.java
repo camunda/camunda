@@ -110,6 +110,17 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, ProcessDefinitionQuery> toProcessDefinitionQuery(
+      final io.camunda.gateway.protocol.model.simple.ProcessDefinitionFilter filter,
+      final io.camunda.gateway.protocol.model.simple.SearchQueryPageRequest page,
+      final List<ProcessDefinitionSearchQuerySortRequest> sort) {
+    return toProcessDefinitionQuery(
+        new ProcessDefinitionSearchQuery()
+            .filter(SimpleSearchQueryMapper.toProcessDefinitionFilter(filter))
+            .page(SimpleSearchQueryMapper.toPageRequest(page))
+            .sort(sort == null ? List.of() : sort));
+  }
+
+  public static Either<ProblemDetail, ProcessDefinitionQuery> toProcessDefinitionQuery(
       final ProcessDefinitionSearchQuery request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.processDefinitionSearchQuery().build());
