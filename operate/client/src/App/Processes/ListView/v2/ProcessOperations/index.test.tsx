@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {mockApplyProcessDefinitionOperation} from 'modules/mocks/api/processes/operations';
+import {mockDeleteResource} from 'modules/mocks/api/v2/resource/deleteResource';
 import {operationsStore} from 'modules/stores/operations';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {
@@ -19,7 +19,6 @@ import {
 import {useEffect} from 'react';
 import {ProcessOperations} from './index';
 import {notificationsStore} from 'modules/stores/notifications';
-import type {OperationEntity} from 'modules/types/operate';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {mockSearchProcessInstances} from 'modules/mocks/api/v2/processInstances/searchProcessInstances';
@@ -30,16 +29,7 @@ vi.mock('modules/stores/notifications', () => ({
   },
 }));
 
-const mockOperation: OperationEntity = {
-  id: '2251799813687094',
-  name: 'myProcess - Version 2',
-  type: 'DELETE_PROCESS_DEFINITION',
-  startDate: '2023-02-16T14:23:45.306+0100',
-  endDate: null,
-  instancesCount: 10,
-  operationsTotalCount: 10,
-  operationsFinishedCount: 0,
-};
+const mockQueryClient = getMockQueryClient();
 
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   useEffect(() => {
@@ -50,13 +40,17 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   }, []);
 
   return (
-    <QueryClientProvider client={getMockQueryClient()}>
+    <QueryClientProvider client={mockQueryClient}>
       {children}
     </QueryClientProvider>
   );
 };
 
 describe('<ProcessOperations />', () => {
+  afterEach(() => {
+    mockQueryClient.clear();
+  });
+
   it('should open modal and show content', async () => {
     mockSearchProcessInstances().withSuccess({
       items: [],
@@ -119,7 +113,7 @@ describe('<ProcessOperations />', () => {
   });
 
   it('should apply delete definition operation', async () => {
-    mockApplyProcessDefinitionOperation().withSuccess(mockOperation);
+    mockDeleteResource().withSuccess({});
     mockSearchProcessInstances().withSuccess({
       items: [],
       page: {totalItems: 0},
@@ -149,12 +143,16 @@ describe('<ProcessOperations />', () => {
     await user.click(screen.getByRole('button', {name: /danger Delete/}));
 
     await waitFor(() =>
-      expect(operationsStore.state.operations).toEqual([mockOperation]),
+      expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+        kind: 'success',
+        title: 'Operation created',
+        isDismissable: true,
+      }),
     );
   });
 
   it('should show notification on operation error', async () => {
-    mockApplyProcessDefinitionOperation().withServerError(500);
+    mockDeleteResource().withServerError(500);
     mockSearchProcessInstances().withSuccess({
       items: [],
       page: {totalItems: 0},
@@ -193,7 +191,7 @@ describe('<ProcessOperations />', () => {
   });
 
   it('should show notification on operation auth error', async () => {
-    mockApplyProcessDefinitionOperation().withServerError(403);
+    mockDeleteResource().withServerError(403);
     mockSearchProcessInstances().withSuccess({
       items: [],
       page: {totalItems: 0},
@@ -222,16 +220,18 @@ describe('<ProcessOperations />', () => {
 
     await user.click(screen.getByRole('button', {name: /danger Delete/}));
 
-    expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
-      kind: 'warning',
-      title: "You don't have permission to perform this operation",
-      subtitle: 'Please contact the administrator if you need access.',
-      isDismissable: true,
+    await waitFor(() => {
+      expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+        kind: 'warning',
+        title: "You don't have permission to perform this operation",
+        subtitle: 'Please contact the administrator if you need access.',
+        isDismissable: true,
+      });
     });
   });
 
   it('should disable button and show spinner when delete operation is triggered', async () => {
-    mockApplyProcessDefinitionOperation().withSuccess(mockOperation);
+    mockDeleteResource().withSuccess({});
     mockSearchProcessInstances().withSuccess({
       items: [],
       page: {totalItems: 0},
@@ -268,7 +268,7 @@ describe('<ProcessOperations />', () => {
   });
 
   it('should enable button and remove spinner when delete operation failed', async () => {
-    mockApplyProcessDefinitionOperation().withNetworkError();
+    mockDeleteResource().withNetworkError();
     mockSearchProcessInstances().withSuccess({
       items: [],
       page: {totalItems: 0},
@@ -315,7 +315,7 @@ describe('<ProcessOperations />', () => {
   });
 
   it('should show warning when clicking apply without confirmation', async () => {
-    mockApplyProcessDefinitionOperation().withSuccess(mockOperation);
+    mockDeleteResource().withSuccess({});
     mockSearchProcessInstances().withSuccess({
       items: [],
       page: {totalItems: 0},
@@ -356,7 +356,7 @@ describe('<ProcessOperations />', () => {
   });
 
   it('should initially disable the delete button', async () => {
-    mockApplyProcessDefinitionOperation().withSuccess(mockOperation);
+    mockDeleteResource().withSuccess({});
     mockSearchProcessInstances().withSuccess({
       items: [],
       page: {totalItems: 0},
@@ -381,7 +381,7 @@ describe('<ProcessOperations />', () => {
   });
 
   it('should disable delete button when there are running instances', async () => {
-    mockApplyProcessDefinitionOperation().withSuccess(mockOperation);
+    mockDeleteResource().withSuccess({});
     mockSearchProcessInstances().withSuccess({
       items: [],
       page: {totalItems: 1},
@@ -404,7 +404,7 @@ describe('<ProcessOperations />', () => {
   });
 
   it('should enable delete button when process instances could not be fetched', async () => {
-    mockApplyProcessDefinitionOperation().withSuccess(mockOperation);
+    mockDeleteResource().withSuccess({});
     mockSearchProcessInstances().withServerError();
 
     render(
@@ -428,7 +428,7 @@ describe('<ProcessOperations />', () => {
   });
 
   it('should reset confirmation checkbox to unchecked when delete modal is closed and reopened', async () => {
-    mockApplyProcessDefinitionOperation().withSuccess(mockOperation);
+    mockDeleteResource().withSuccess({});
     mockSearchProcessInstances().withSuccess({
       items: [],
       page: {totalItems: 0},
