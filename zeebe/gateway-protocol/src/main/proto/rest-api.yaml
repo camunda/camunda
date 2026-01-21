@@ -1811,10 +1811,16 @@ paths:
       tags:
         - Resource
       summary: Delete resource
-      description: |
-        Deletes a deployed resource.
-        This can be a process definition, decision requirements definition, or form definition
-        deployed using the deploy resources endpoint. Specify the resource you want to delete in the `resourceKey` parameter.
+      description: |-
+        Deletes a deployed resource. This can be a process definition, decision requirements
+        definition, or form definition deployed using the deploy resources endpoint. Specify the
+        resource you want to delete in the `resourceKey` parameter.
+
+        Once a resource has been deleted it cannot be recovered. If the resource needs to be
+        available again, a new deployment of the resource is required.
+
+        Only the resource itself is deleted from the runtime state. Deleting historic data
+        associated with a resource is not supported.
       parameters:
         - name: resourceKey
           in: path
