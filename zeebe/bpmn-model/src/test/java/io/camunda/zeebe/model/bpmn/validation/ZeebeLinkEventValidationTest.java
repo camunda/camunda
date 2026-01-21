@@ -122,7 +122,7 @@ public class ZeebeLinkEventValidationTest {
             "Event-based gateway must have at least 2 outgoing sequence flows."),
         expect(
             EventBasedGateway.class,
-            "Event-based gateway must not have an outgoing sequence flow to other elements than message/timer/signal intermediate catch events."));
+            "Event-based gateway must not have an outgoing sequence flow to other elements than message/timer/signal/conditional intermediate catch events."));
   }
 
   @Test

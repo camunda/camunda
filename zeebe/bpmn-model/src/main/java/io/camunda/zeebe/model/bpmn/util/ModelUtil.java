@@ -23,6 +23,7 @@ import io.camunda.zeebe.model.bpmn.instance.BaseElement;
 import io.camunda.zeebe.model.bpmn.instance.BoundaryEvent;
 import io.camunda.zeebe.model.bpmn.instance.BpmnModelElementInstance;
 import io.camunda.zeebe.model.bpmn.instance.CallActivity;
+import io.camunda.zeebe.model.bpmn.instance.Condition;
 import io.camunda.zeebe.model.bpmn.instance.ConditionalEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.Error;
 import io.camunda.zeebe.model.bpmn.instance.ErrorEventDefinition;
@@ -401,6 +402,23 @@ public class ModelUtil {
         .map(Entry::getKey);
   }
 
+  public static void verifyNoDuplicatedConditionalExpressions(
+      final Collection<ConditionalEventDefinition> definitions,
+      final Consumer<String> errorCollector) {
+
+    final Stream<String> conditionExpressions =
+        definitions.stream()
+            .map(ConditionalEventDefinition::getCondition)
+            .filter(Objects::nonNull)
+            .map(Condition::getTextContent)
+            .filter(text -> text != null && !text.isEmpty())
+            .map(String::trim);
+
+    getDuplicatedEntries(conditionExpressions)
+        .map(ModelUtil::duplicatedConditionalExpressions)
+        .forEach(errorCollector);
+  }
+
   private static String duplicatedMessageNames(final String messageName) {
     return String.format(
         "Multiple message event definitions with the same name '%s' are not allowed.", messageName);
@@ -448,5 +466,11 @@ public class ModelUtil {
       errorCollector.accept(
           "An escalation boundary event should only be attached to a subprocess, or a call activity.");
     }
+  }
+
+  private static String duplicatedConditionalExpressions(final String expression) {
+    return String.format(
+        "Multiple conditional event definitions with the same condition expression '%s' are not allowed.",
+        expression);
   }
 }

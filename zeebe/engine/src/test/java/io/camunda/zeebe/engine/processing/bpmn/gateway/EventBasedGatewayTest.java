@@ -17,6 +17,7 @@ import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.ConditionalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
@@ -28,13 +29,14 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-public final class EventbasedGatewayTest {
+public final class EventBasedGatewayTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
   private static final BpmnModelInstance PROCESS_WITH_TIMERS =
@@ -449,5 +451,275 @@ public final class EventbasedGatewayTest {
                 .getFirst())
         .hasRecordType(RecordType.COMMAND_REJECTION)
         .hasRejectionType(RejectionType.INVALID_STATE);
+  }
+
+  @Test
+  public void shouldTakeConditionalPathWhenConditionIsTrue() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("PROCESS_WITH_CONDITIONAL")
+            .startEvent()
+            .eventBasedGateway()
+            .id("gateway")
+            .intermediateCatchEvent("conditional")
+            .condition("x > 5")
+            .sequenceFlowId("to-end1")
+            .endEvent("end1")
+            .moveToLastGateway()
+            .intermediateCatchEvent("timer", c -> c.timerWithDuration("PT10S"))
+            .sequenceFlowId("to-end2")
+            .endEvent("end2")
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId("PROCESS_WITH_CONDITIONAL")
+            .withVariable("x", 10)
+            .create();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId("conditional")
+                .exists())
+        .isTrue();
+
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId("end1")
+                .exists())
+        .isTrue();
+
+    assertThat(
+            RecordingExporter.timerRecords(TimerIntent.CANCELED)
+                .withProcessInstanceKey(processInstanceKey)
+                .exists())
+        .isTrue();
+  }
+
+  @Test
+  public void shouldTakeTimerPathWhenConditionIsFalse() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("PROCESS_WITH_CONDITIONAL_FALSE")
+            .startEvent()
+            .eventBasedGateway()
+            .id("gateway")
+            .intermediateCatchEvent("conditional")
+            .condition("x > 100")
+            .sequenceFlowId("to-end1")
+            .endEvent("end1")
+            .moveToLastGateway()
+            .intermediateCatchEvent("timer", c -> c.timerWithDuration("PT1S"))
+            .sequenceFlowId("to-end2")
+            .endEvent("end2")
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId("PROCESS_WITH_CONDITIONAL_FALSE")
+            .withVariable("x", 10)
+            .create();
+
+    ENGINE.increaseTime(Duration.ofSeconds(2));
+
+    // then
+    assertThat(
+            RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
+                .withProcessInstanceKey(processInstanceKey)
+                .exists())
+        .isTrue();
+
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId("end2")
+                .exists())
+        .isTrue();
+
+    assertThat(
+            RecordingExporter.conditionalSubscriptionRecords(ConditionalSubscriptionIntent.DELETED)
+                .withProcessInstanceKey(processInstanceKey)
+                .exists())
+        .isTrue();
+  }
+
+  @Test
+  public void shouldTakeConditionalPathWithMessageEvent() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("PROCESS_WITH_CONDITIONAL_AND_MESSAGE")
+            .startEvent()
+            .eventBasedGateway()
+            .id("gateway")
+            .intermediateCatchEvent("conditional")
+            .condition("x > 5")
+            .sequenceFlowId("to-end1")
+            .endEvent("end1")
+            .moveToLastGateway()
+            .intermediateCatchEvent(
+                "message", c -> c.message(m -> m.name("msg").zeebeCorrelationKeyExpression("key")))
+            .sequenceFlowId("to-end2")
+            .endEvent("end2")
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId("PROCESS_WITH_CONDITIONAL_AND_MESSAGE")
+            .withVariables(Map.of("x", 10, "key", "key-1"))
+            .create();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId("conditional")
+                .exists())
+        .isTrue();
+
+    assertThat(
+            RecordingExporter.conditionalSubscriptionRecords(
+                    ConditionalSubscriptionIntent.TRIGGERED)
+                .withProcessInstanceKey(processInstanceKey)
+                .exists())
+        .isTrue();
+
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId("end1")
+                .exists())
+        .isTrue();
+
+    assertThat(
+            RecordingExporter.processMessageSubscriptionRecords(
+                    ProcessMessageSubscriptionIntent.DELETED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withMessageName("msg")
+                .exists())
+        .isTrue();
+  }
+
+  @Test
+  public void shouldTakeMessagePathWhenConditionIsFalse() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("PROCESS_WITH_CONDITIONAL_AND_MESSAGE_FALSE")
+            .startEvent()
+            .eventBasedGateway()
+            .id("gateway")
+            .intermediateCatchEvent("conditional")
+            .condition("x > 100")
+            .sequenceFlowId("to-end1")
+            .endEvent("end1")
+            .moveToLastGateway()
+            .intermediateCatchEvent(
+                "message", c -> c.message(m -> m.name("msg").zeebeCorrelationKeyExpression("key")))
+            .sequenceFlowId("to-end2")
+            .endEvent("end2")
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId("PROCESS_WITH_CONDITIONAL_AND_MESSAGE_FALSE")
+            .withVariables(Map.of("x", 10, "key", "key-1"))
+            .create();
+
+    ENGINE
+        .message()
+        .withName("msg")
+        .withCorrelationKey("key-1")
+        .withVariables("{\"result\": \"message-received\"}")
+        .publish();
+
+    // then
+    assertThat(
+            RecordingExporter.processMessageSubscriptionRecords(
+                    ProcessMessageSubscriptionIntent.CORRELATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withMessageName("msg")
+                .exists())
+        .isTrue();
+
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId("end2")
+                .exists())
+        .isTrue();
+
+    assertThat(
+            RecordingExporter.conditionalSubscriptionRecords(ConditionalSubscriptionIntent.DELETED)
+                .withProcessInstanceKey(processInstanceKey)
+                .exists())
+        .isTrue();
+  }
+
+  @Test
+  public void shouldTakeSingleConditionalPathWhenMultipleConditionsAreTrue() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("PROCESS_WITH_MULTIPLE_CONDITIONALS")
+            .startEvent()
+            .eventBasedGateway()
+            .id("gateway")
+            .intermediateCatchEvent("conditional1")
+            .condition(c -> c.condition("=x > 5").zeebeVariableNames("x"))
+            .sequenceFlowId("to-end1")
+            .endEvent("end1")
+            .moveToLastGateway()
+            .intermediateCatchEvent("conditional2")
+            .condition(c -> c.condition("=y < 100").zeebeVariableNames("y"))
+            .sequenceFlowId("to-end2")
+            .endEvent("end2")
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId("PROCESS_WITH_MULTIPLE_CONDITIONALS")
+            .withVariables("{\"x\": 10, \"y\": 50}")
+            .create();
+
+    // then
+    final var triggeredConditionalCatchEventId =
+        RecordingExporter.conditionalSubscriptionRecords(ConditionalSubscriptionIntent.TRIGGERED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst()
+            .getValue()
+            .getCatchEventId();
+
+    final var deletedConditionalCatchEventId =
+        RecordingExporter.conditionalSubscriptionRecords(ConditionalSubscriptionIntent.DELETED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst()
+            .getValue()
+            .getCatchEventId();
+
+    assertThat(triggeredConditionalCatchEventId).isNotEqualTo(deletedConditionalCatchEventId);
+
+    assertThat(List.of(triggeredConditionalCatchEventId, deletedConditionalCatchEventId))
+        .containsExactlyInAnyOrder("conditional1", "conditional2");
   }
 }
