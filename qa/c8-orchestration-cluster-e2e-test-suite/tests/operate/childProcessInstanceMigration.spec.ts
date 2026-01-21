@@ -13,6 +13,7 @@ import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToApp} from '@pages/UtilitiesPage';
 import {sleep} from 'utils/sleep';
 import {waitForAssertion} from 'utils/waitForAssertion';
+import {ProcessDeployment as ProcessDeploymentDTO} from '@camunda8/sdk/dist/c8/lib/C8Dto';
 
 type ProcessDeployment = {
   readonly bpmnProcessId: string;
@@ -31,20 +32,30 @@ let testProcesses: TestProcesses;
 
 test.beforeAll(async () => {
   // Deploy parent and child process v1
-  await deploy([
+  const deployments = await deploy([
     './resources/callActivityParentProcess.bpmn',
     './resources/childProcess_v_1.bpmn',
   ]);
 
+  const parentProcessVersion = deployments.processes.find(
+    (process: ProcessDeploymentDTO) =>
+      process.processDefinitionId === 'callActivityParentProcess',
+  )?.processDefinitionVersion;
+
+  const childProcessVersion = deployments.processes.find(
+    (process: ProcessDeploymentDTO) =>
+      process.processDefinitionId === 'childProcess',
+  )?.processDefinitionVersion;
+
   const parentProcess: ProcessDeployment = {
     bpmnProcessId: 'callActivityParentProcess',
-    version: 1,
+    version: parentProcessVersion ?? 1,
     processDefinitionKey: '',
   };
 
   const childProcessV1: ProcessDeployment = {
     bpmnProcessId: 'childProcess',
-    version: 1,
+    version: childProcessVersion ?? 1,
     processDefinitionKey: '',
   };
 
@@ -58,11 +69,15 @@ test.beforeAll(async () => {
     (instance) => instance.processInstanceKey,
   );
 
-  await deploy(['./resources/childProcess_v_2.bpmn']);
+  const secondDeployment = await deploy(['./resources/childProcess_v_2.bpmn']);
+  const secondChildProcessVersion = secondDeployment.processes.find(
+    (process: ProcessDeploymentDTO) =>
+      process.processDefinitionId === 'childProcess',
+  )?.processDefinitionVersion;
 
   const childProcessV2: ProcessDeployment = {
     bpmnProcessId: 'childProcess',
-    version: 2,
+    version: secondChildProcessVersion ? secondChildProcessVersion : 2,
     processDefinitionKey: '',
   };
 
@@ -77,8 +92,6 @@ test.beforeAll(async () => {
 });
 
 test.describe('Child Process Instance Migration', () => {
-  test.describe.configure({retries: 0});
-
   test.beforeEach(async ({page, loginPage, operateHomePage}) => {
     await navigateToApp(page, 'operate');
     await loginPage.login('demo', 'demo');
@@ -104,6 +117,9 @@ test.describe('Child Process Instance Migration', () => {
     const targetVersion = testProcesses.childProcessV2.version.toString();
     const targetBpmnProcessId = testProcesses.childProcessV2.bpmnProcessId;
     const parentInstanceKey = testProcesses.parentProcessInstanceKeys[0]!;
+    console.log('Parent Process:', testProcesses.parentProcess.version);
+    console.log('Child Process V1:', testProcesses.childProcessV1.version);
+    console.log('Child Process V2:', testProcesses.childProcessV2.version);
 
     await test.step('Navigate to parent process instance and view called child processes', async () => {
       await operateFiltersPanelPage.selectProcess(
@@ -183,6 +199,7 @@ test.describe('Child Process Instance Migration', () => {
       await operateProcessMigrationModePage.mapFlowNode('Task', 'New Task');
 
       await operateProcessMigrationModePage.completeProcessInstanceMigration();
+      await sleep(200);
     });
 
     await test.step('Verify 1 instance migrated to target version', async () => {

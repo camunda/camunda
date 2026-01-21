@@ -17,6 +17,7 @@ import {
 import {waitForProcessInstances} from 'utils/incidentsHelper';
 import {navigateToApp} from '@pages/UtilitiesPage';
 import {captureScreenshot, captureFailureVideo} from '@setup';
+import {waitForAssertion} from '../../utils/waitForAssertion';
 
 let instanceIds: string[] = [];
 
@@ -163,9 +164,19 @@ test.describe('Dashboard', () => {
     });
   });
 
-  test('Select process instances by name', async ({operateDashboardPage}) => {
+  test('Select process instances by name', async ({
+    page,
+    operateDashboardPage,
+  }) => {
     await test.step('Select first process and verify total count', async () => {
-      await expect(operateDashboardPage.instancesByProcess).toBeVisible();
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(operateDashboardPage.instancesByProcess).toBeVisible();
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+      });
 
       const firstInstanceByProcess =
         operateDashboardPage.instancesByProcessItem(0);

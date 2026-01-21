@@ -179,7 +179,9 @@ export class OperateFiltersPanelPage {
   }
 
   async selectVersion(option: string) {
+    await expect(this.processNameFilter).toBeVisible();
     await this.processVersionFilter.click();
+    await expect(this.getOptionByName(option)).toBeVisible();
     await this.getOptionByName(option).click({timeout: 30000});
   }
 
