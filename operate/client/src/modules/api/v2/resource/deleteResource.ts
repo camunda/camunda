@@ -10,13 +10,13 @@ import {
   endpoints,
   type DeleteResourceRequestBody,
 } from '@camunda/camunda-api-zod-schemas/8.9';
-import {request} from 'modules/request';
+import {requestWithThrow} from 'modules/request';
 
 const deleteResource = async (
   resourceKey: string,
   payload?: DeleteResourceRequestBody,
 ) => {
-  return request({
+  return requestWithThrow({
     url: endpoints.deleteResource.getUrl({resourceKey}),
     method: endpoints.deleteResource.method,
     body: payload,
