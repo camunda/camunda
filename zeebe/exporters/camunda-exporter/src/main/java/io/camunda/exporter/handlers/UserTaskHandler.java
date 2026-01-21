@@ -189,7 +189,7 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
     if (entity.getState() != null) {
       updateFields.put(TaskTemplate.STATE, entity.getState());
       // Add update fields for migrated user tasks
-      if (entity.getState() == TaskState.CREATING) {
+      if (entity.getState() == TaskState.CREATING || entity.getState() == TaskState.CREATED) {
         updateFields.put(TaskTemplate.KEY, entity.getKey());
         if (entity.getImplementation() != null) {
           updateFields.put(TaskTemplate.IMPLEMENTATION, entity.getImplementation());
