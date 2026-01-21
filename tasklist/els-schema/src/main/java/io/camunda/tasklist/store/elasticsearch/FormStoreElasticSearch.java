@@ -10,6 +10,7 @@ package io.camunda.tasklist.store.elasticsearch;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch.core.CountRequest;
 import co.elastic.clients.elasticsearch.core.GetRequest;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.search.Hit;
@@ -226,15 +227,14 @@ public class FormStoreElasticSearch implements FormStore {
       final var combinedQuery = ElasticsearchUtil.joinWithAnd(formQuery, processDefQuery);
       final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(combinedQuery);
 
-      final var searchRequest =
-          new SearchRequest.Builder()
+      final var countRequest =
+          new CountRequest.Builder()
               .index(taskTemplate.getFullQualifiedName())
               .query(tenantAwareQuery)
-              .size(0)
               .build();
 
-      final var response = es8Client.search(searchRequest, ElasticsearchUtil.MAP_CLASS);
-      return response.hits().total().value() > 0;
+      final var response = es8Client.count(countRequest);
+      return response.count() > 0;
     } catch (final IOException e) {
       final var formIdNotFoundMessage =
           String.format("Error retrieving the version for the formId: [%s]", formId);
@@ -252,15 +252,14 @@ public class FormStoreElasticSearch implements FormStore {
       final var combinedQuery = ElasticsearchUtil.joinWithAnd(formIdQuery, processDefQuery);
       final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(combinedQuery);
 
-      final var searchRequest =
-          new SearchRequest.Builder()
+      final var countRequest =
+          new CountRequest.Builder()
               .index(ElasticsearchUtil.whereToSearch(processIndex, QueryType.ONLY_RUNTIME))
               .query(tenantAwareQuery)
-              .size(0)
               .build();
 
-      final var response = es8Client.search(searchRequest, ElasticsearchUtil.MAP_CLASS);
-      return response.hits().total().value() > 0;
+      final var response = es8Client.count(countRequest);
+      return response.count() > 0;
     } catch (final IOException e) {
       final var formIdNotFoundMessage =
           String.format("Error retrieving the version for the formId: [%s]", formId);

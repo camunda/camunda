@@ -14,6 +14,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch.core.CountRequest;
+import co.elastic.clients.elasticsearch.core.CountResponse;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
@@ -61,7 +63,7 @@ class FormStoreElasticSearchTest {
     // given
     when(formIndex.getIndexName()).thenReturn(FormIndex.INDEX_NAME);
 
-    // Mock ES8 response
+    // Mock ES8 search response for embedded form lookup
     final var es8Response = mock(SearchResponse.class);
     final var es8HitsMetadata = mock(HitsMetadata.class);
     final var es8TotalHits = mock(TotalHits.class);
@@ -70,6 +72,11 @@ class FormStoreElasticSearchTest {
     when(es8Response.hits()).thenReturn(es8HitsMetadata);
     when(es8HitsMetadata.total()).thenReturn(es8TotalHits);
     when(es8TotalHits.value()).thenReturn(0L);
+
+    // Mock ES8 count response for isFormAssociatedToTask and isFormAssociatedToProcess
+    final var countResponse = mock(CountResponse.class);
+    when(es8Client.count(any(CountRequest.class))).thenReturn(countResponse);
+    when(countResponse.count()).thenReturn(0L);
 
     // when - then
     assertThatThrownBy(() -> instance.getForm("id1", "processDefId1", null))
@@ -82,6 +89,7 @@ class FormStoreElasticSearchTest {
     // given - Mock ES8 client to throw IOException
     when(es8Client.search(any(SearchRequest.class), any(Class.class)))
         .thenThrow(new IOException("some error"));
+    when(es8Client.count(any(CountRequest.class))).thenThrow(new IOException("some error"));
 
     // when - then
     assertThatThrownBy(() -> instance.getForm("id2", "processDefId2", null))
