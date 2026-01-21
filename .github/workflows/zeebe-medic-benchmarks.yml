@@ -58,6 +58,21 @@ jobs:
         --set starter.rate=50
         --set workers.worker.replicas=6
         --set starter.bpmnXmlPath="bpmn/typical_process.bpmn"
+  setup-postgres-typical-load-test:
+    name: Typical load test
+    needs:
+      - test-data
+    uses: ./.github/workflows/camunda-load-test.yml
+    secrets: inherit
+    with:
+      name: ${{ needs.test-data.outputs.test }}-postgres-typical
+      ttl: 28
+      reuse-tag: ${{ inputs.reuse-tag || '' }}
+      secondary-storage-type: 'postgresql'
+      load-test-load: >
+        --set starter.rate=50
+        --set workers.worker.replicas=6
+        --set starter.bpmnXmlPath="bpmn/typical_process.bpmn"
   setup-realistic-test:
     name: Realistic load test
     uses: ./.github/workflows/camunda-load-test.yml
