@@ -11,50 +11,26 @@
  */
 
 import {z} from 'zod';
+import {
+	processInstanceResultSchema,
+	processInstanceStateEnumSchema,
+	processDefinitionResultSchema,
+	processElementStatisticsResultSchema,
+} from './gen';
 
-const processInstanceStateSchema = z.enum(['ACTIVE', 'COMPLETED', 'TERMINATED']);
+const processInstanceStateSchema = processInstanceStateEnumSchema;
 type ProcessInstanceState = z.infer<typeof processInstanceStateSchema>;
 const processDefinitionStateSchema = z.enum(['ACTIVE', 'DRAINING', 'DELETED']);
 type ProcessDefinitionState = z.infer<typeof processDefinitionStateSchema>;
 type StatisticName = 'element-instances';
 
-const processInstanceSchema = z.object({
-	processDefinitionId: z.string(),
-	processDefinitionName: z.string(),
-	processDefinitionVersion: z.number(),
-	processDefinitionVersionTag: z.string().optional(),
-	startDate: z.string(),
-	endDate: z.string().optional(),
-	state: processInstanceStateSchema,
-	hasIncident: z.boolean(),
-	tenantId: z.string(),
-	processInstanceKey: z.string(),
-	processDefinitionKey: z.string(),
-	parentProcessInstanceKey: z.string().optional(),
-	parentElementInstanceKey: z.string().optional(),
-});
+const processInstanceSchema = processInstanceResultSchema;
 type ProcessInstance = z.infer<typeof processInstanceSchema>;
 
-const processDefinitionSchema = z.object({
-	name: z.string().optional(),
-	resourceName: z.string().optional(),
-	version: z.number(),
-	versionTag: z.string().optional(),
-	processDefinitionId: z.string(),
-	tenantId: z.string(),
-	processDefinitionKey: z.string(),
-	hasStartForm: z.boolean(),
-	state: processDefinitionStateSchema,
-});
+const processDefinitionSchema = processDefinitionResultSchema;
 type ProcessDefinition = z.infer<typeof processDefinitionSchema>;
 
-const processDefinitionStatisticSchema = z.object({
-	elementId: z.string(),
-	active: z.number(),
-	canceled: z.number(),
-	incidents: z.number(),
-	completed: z.number(),
-});
+const processDefinitionStatisticSchema = processElementStatisticsResultSchema;
 type ProcessDefinitionStatistic = z.infer<typeof processDefinitionStatisticSchema>;
 
 export {
