@@ -494,6 +494,27 @@ public class ProcessStoreIT extends OperateSearchAbstractIT {
     assertThat(deleted).isEqualTo(4);
   }
 
+  @Test
+  public void testGetProcessesGroupedWithEmptyAllowedBpmnProcessIds() {
+    final Map<ProcessStore.ProcessKey, List<ProcessEntity>> results =
+        processStore.getProcessesGrouped(DEFAULT_TENANT_ID, Set.of());
+    assertThat(results).isEmpty();
+  }
+
+  @Test
+  public void testGetProcessesGroupedWithMixedExistingAndNonExistingIds() {
+    final Map<ProcessStore.ProcessKey, List<ProcessEntity>> results =
+        processStore.getProcessesGrouped(
+            DEFAULT_TENANT_ID,
+            Set.of(firstProcessDefinition.getBpmnProcessId(), "nonExistentProcess"));
+
+    assertThat(results).hasSize(1);
+    assertThat(results)
+        .containsKey(
+            new ProcessStore.ProcessKey(
+                firstProcessDefinition.getBpmnProcessId(), DEFAULT_TENANT_ID));
+  }
+
   private String getFullIndexNameForDependant(final String indexName) {
     final ProcessInstanceDependant dependant =
         processInstanceDependantTemplates.stream()
