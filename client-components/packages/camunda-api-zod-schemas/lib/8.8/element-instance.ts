@@ -7,17 +7,19 @@
  */
 
 import {z} from 'zod';
+import {API_VERSION, type Endpoint} from '../common';
 import {
-	API_VERSION,
-	getQueryRequestBodySchema,
-	getQueryResponseBodySchema,
-	getEnumFilterSchema,
-	type Endpoint,
-	advancedDateTimeFilterSchema,
-} from '../common';
-import {queryIncidentsRequestBodySchema, queryIncidentsResponseBodySchema} from './incident';
+	elementInstanceStateEnumSchema,
+	elementInstanceResultSchema,
+	elementInstanceFilterSchema,
+	elementInstanceSearchQuerySchema,
+	elementInstanceSearchQueryResultSchema,
+	setVariableRequestSchema,
+	incidentSearchQuerySchema,
+	incidentSearchQueryResultSchema,
+} from './gen';
 
-const elementInstanceStateSchema = z.enum(['ACTIVE', 'COMPLETED', 'TERMINATED']);
+const elementInstanceStateSchema = elementInstanceStateEnumSchema;
 type ElementInstanceState = z.infer<typeof elementInstanceStateSchema>;
 
 const elementInstanceTypeSchema = z.enum([
@@ -51,62 +53,13 @@ const elementInstanceTypeSchema = z.enum([
 ]);
 type ElementInstanceType = z.infer<typeof elementInstanceTypeSchema>;
 
-const elementInstanceSchema = z.object({
-	processDefinitionId: z.string(),
-	startDate: z.string(),
-	endDate: z.string().optional(),
-	elementId: z.string(),
-	elementName: z.string(),
-	type: elementInstanceTypeSchema,
-	state: elementInstanceStateSchema,
-	hasIncident: z.boolean(),
-	tenantId: z.string(),
-	elementInstanceKey: z.string(),
-	processInstanceKey: z.string(),
-	processDefinitionKey: z.string(),
-	incidentKey: z.string().optional(),
-});
+const elementInstanceSchema = elementInstanceResultSchema;
 type ElementInstance = z.infer<typeof elementInstanceSchema>;
 
-const elementInstanceFilterSchema = z
-	.object({
-		processDefinitionId: z.string(),
-		state: z.union([elementInstanceStateSchema, getEnumFilterSchema(elementInstanceStateSchema)]),
-		type: elementInstanceTypeSchema,
-		elementId: z.string(),
-		elementName: z.string(),
-		hasIncident: z.boolean(),
-		tenantId: z.string(),
-		elementInstanceKey: z.string(),
-		processInstanceKey: z.string(),
-		processDefinitionKey: z.string(),
-		incidentKey: z.string(),
-		startDate: advancedDateTimeFilterSchema,
-		endDate: advancedDateTimeFilterSchema,
-		elementInstanceScopeKey: z.string(),
-	})
-	.partial();
-
-const queryElementInstancesRequestBodySchema = getQueryRequestBodySchema({
-	sortFields: [
-		'elementInstanceKey',
-		'processInstanceKey',
-		'processDefinitionKey',
-		'processDefinitionId',
-		'startDate',
-		'endDate',
-		'elementId',
-		'elementName',
-		'type',
-		'state',
-		'incidentKey',
-		'tenantId',
-	] as const,
-	filter: elementInstanceFilterSchema,
-});
+const queryElementInstancesRequestBodySchema = elementInstanceSearchQuerySchema;
 type QueryElementInstancesRequestBody = z.infer<typeof queryElementInstancesRequestBodySchema>;
 
-const queryElementInstancesResponseBodySchema = getQueryResponseBodySchema(elementInstanceSchema);
+const queryElementInstancesResponseBodySchema = elementInstanceSearchQueryResultSchema;
 type QueryElementInstancesResponseBody = z.infer<typeof queryElementInstancesResponseBodySchema>;
 
 const queryElementInstances: Endpoint = {
@@ -116,7 +69,7 @@ const queryElementInstances: Endpoint = {
 	},
 };
 
-const getElementInstance: Endpoint<Pick<ElementInstance, 'elementInstanceKey'>> = {
+const getElementInstance: Endpoint<{elementInstanceKey: string}> = {
 	method: 'GET',
 	getUrl(params) {
 		const {elementInstanceKey} = params;
@@ -124,16 +77,13 @@ const getElementInstance: Endpoint<Pick<ElementInstance, 'elementInstanceKey'>> 
 	},
 };
 
-const getElementInstanceResponseBodySchema = elementInstanceSchema;
+const getElementInstanceResponseBodySchema = elementInstanceResultSchema;
 type GetElementInstanceResponseBody = z.infer<typeof getElementInstanceResponseBodySchema>;
 
-const updateElementInstanceVariablesRequestBodySchema = z.object({
-	variables: z.record(z.string(), z.unknown()),
-	local: z.boolean().optional(),
-});
+const updateElementInstanceVariablesRequestBodySchema = setVariableRequestSchema;
 type UpdateElementInstanceVariablesRequestBody = z.infer<typeof updateElementInstanceVariablesRequestBodySchema>;
 
-const updateElementInstanceVariables: Endpoint<Pick<ElementInstance, 'elementInstanceKey'>> = {
+const updateElementInstanceVariables: Endpoint<{elementInstanceKey: string}> = {
 	method: 'PUT',
 	getUrl(params) {
 		const {elementInstanceKey} = params;
@@ -141,13 +91,13 @@ const updateElementInstanceVariables: Endpoint<Pick<ElementInstance, 'elementIns
 	},
 };
 
-const queryElementInstanceIncidentsRequestBodySchema = queryIncidentsRequestBodySchema;
+const queryElementInstanceIncidentsRequestBodySchema = incidentSearchQuerySchema;
 type QueryElementInstanceIncidentsRequestBody = z.infer<typeof queryElementInstanceIncidentsRequestBodySchema>;
 
-const queryElementInstanceIncidentsResponseBodySchema = queryIncidentsResponseBodySchema;
+const queryElementInstanceIncidentsResponseBodySchema = incidentSearchQueryResultSchema;
 type QueryElementInstanceIncidentsResponseBody = z.infer<typeof queryElementInstanceIncidentsResponseBodySchema>;
 
-const queryElementInstanceIncidents: Endpoint<Pick<ElementInstance, 'elementInstanceKey'>> = {
+const queryElementInstanceIncidents: Endpoint<{elementInstanceKey: string}> = {
 	method: 'POST',
 	getUrl: ({elementInstanceKey}) => `/${API_VERSION}/element-instances/${elementInstanceKey}/incidents/search`,
 };
