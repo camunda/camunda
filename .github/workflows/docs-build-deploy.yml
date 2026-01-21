@@ -53,7 +53,7 @@ jobs:
       contents: write
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      url: https://camunda.github.io/camunda/
 
     steps:
       - name: Checkout

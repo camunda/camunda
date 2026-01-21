@@ -28,6 +28,7 @@ jobs:
   detect-changes:
     outputs:
       docs-changes: ${{ steps.filter.outputs.docs-changes }}
+      preview-exists: ${{ steps.check_preview.outputs.preview_exists }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -41,9 +42,24 @@ jobs:
         uses: ./.github/actions/paths-filter
         id: filter
 
+      # Check if preview exists for cleanup on PR close
+      - name: Check if preview exists
+        id: check_preview
+        if: github.event.action == 'closed'
+        run: |
+          # Fetch gh-pages branch and check if preview directory exists
+          git fetch origin gh-pages:gh-pages 2>/dev/null || echo "gh-pages branch not found"
+          if git show gh-pages:pr-preview/pr-${{ github.event.pull_request.number }}/ >/dev/null 2>&1; then
+            echo "preview_exists=true" >> $GITHUB_OUTPUT
+            echo "Preview exists for PR ${{ github.event.pull_request.number }}"
+          else
+            echo "preview_exists=false" >> $GITHUB_OUTPUT
+            echo "No preview found for PR ${{ github.event.pull_request.number }}"
+          fi
+
   build-preview:
-    # Only run if documentation files were changed in the PR
-    if: needs.detect-changes.outputs.docs-changes == 'true'
+    # Run if docs changed, or if PR is being closed and a preview exists
+    if: needs.detect-changes.outputs.docs-changes == 'true' || (github.event.action == 'closed' && needs.detect-changes.outputs.preview-exists == 'true')
     name: Build and Deploy PR Preview
     needs: [detect-changes]
     runs-on: ubuntu-latest
