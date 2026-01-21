@@ -46,12 +46,12 @@ const getIncidentProcessInstanceStatisticsByErrorRequestBodySchema = getQueryReq
 });
 
 const incidentProcessInstanceStatisticsByDefinitionFilterSchema = z.object({
-	errorHashCode: z.number().nonoptional,
+	errorHashCode: z.number(),
 });
 
 const getIncidentProcessInstanceStatisticsByDefinitionRequestBodySchema = getQueryRequestBodySchema({
 	sortFields: ['processDefinitionKey', 'activeInstancesWithErrorCount', 'tenantId'] as const,
-	filter: incidentProcessInstanceStatisticsByDefinitionFilterSchema.nonoptional(),
+	filter: incidentProcessInstanceStatisticsByDefinitionFilterSchema,
 });
 
 type GetIncidentProcessInstanceStatisticsByErrorRequestBody = z.infer<
