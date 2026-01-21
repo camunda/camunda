@@ -20,13 +20,14 @@ import io.camunda.client.api.search.enums.AuditLogCategoryEnum;
 import io.camunda.client.api.search.enums.AuditLogEntityTypeEnum;
 import io.camunda.client.api.search.enums.AuditLogOperationTypeEnum;
 import io.camunda.client.api.search.enums.AuditLogResultEnum;
+import io.camunda.client.api.search.enums.BatchOperationType;
 import io.camunda.client.api.search.filter.builder.AuditLogActorTypeFilterProperty;
 import io.camunda.client.api.search.filter.builder.AuditLogCategoryFilterProperty;
 import io.camunda.client.api.search.filter.builder.AuditLogEntityTypeFilterProperty;
-import io.camunda.client.api.search.filter.builder.AuditLogKeyFilterProperty;
 import io.camunda.client.api.search.filter.builder.AuditLogOperationTypeFilterProperty;
 import io.camunda.client.api.search.filter.builder.AuditLogResultFilterProperty;
 import io.camunda.client.api.search.filter.builder.BasicStringProperty;
+import io.camunda.client.api.search.filter.builder.BatchOperationTypeProperty;
 import io.camunda.client.api.search.filter.builder.DateTimeProperty;
 import io.camunda.client.api.search.filter.builder.StringProperty;
 import io.camunda.client.api.search.request.TypedFilterableRequest.SearchRequestFilter;
@@ -43,12 +44,28 @@ public interface AuditLogFilter extends SearchRequestFilter {
   AuditLogFilter auditLogKey(final String auditLogKey);
 
   /**
-   * Filter audit logs by the audit log key using {@link AuditLogKeyFilterProperty} consumer
+   * Filter audit logs by the audit log key using {@link BasicStringProperty} consumer
    *
    * @param fn the audit log key filter consumer
    * @return the updated filter
    */
-  AuditLogFilter auditLogKey(final Consumer<AuditLogKeyFilterProperty> fn);
+  AuditLogFilter auditLogKey(final Consumer<BasicStringProperty> fn);
+
+  /**
+   * Filter audit logs by the process definition ID
+   *
+   * @param processDefinitionId the process definition ID
+   * @return the updated filter
+   */
+  AuditLogFilter processDefinitionId(final String processDefinitionId);
+
+  /**
+   * Filter audit logs by the process definition ID using {@link StringProperty} consumer
+   *
+   * @param fn the process definition ID filter consumer
+   * @return the updated filter
+   */
+  AuditLogFilter processDefinitionId(final Consumer<StringProperty> fn);
 
   /**
    * Filter audit logs by the process definition key
@@ -99,6 +116,38 @@ public interface AuditLogFilter extends SearchRequestFilter {
   AuditLogFilter elementInstanceKey(final Consumer<BasicStringProperty> fn);
 
   /**
+   * Filter audit logs by the job key
+   *
+   * @param jobKey the job key
+   * @return the updated filter
+   */
+  AuditLogFilter jobKey(final String jobKey);
+
+  /**
+   * Filter audit logs by the job key using {@link BasicStringProperty} consumer
+   *
+   * @param fn the job key filter consumer
+   * @return the updated filter
+   */
+  AuditLogFilter jobKey(final Consumer<BasicStringProperty> fn);
+
+  /**
+   * Filter audit logs by the user task key
+   *
+   * @param userTaskKey the user task key
+   * @return the updated filter
+   */
+  AuditLogFilter userTaskKey(final String userTaskKey);
+
+  /**
+   * Filter audit logs by the user task key using {@link StringProperty} consumer
+   *
+   * @param fn the user task key filter consumer
+   * @return the updated filter
+   */
+  AuditLogFilter userTaskKey(final Consumer<StringProperty> fn);
+
+  /**
    * Filter audit logs by the operation type
    *
    * @param operationType the operation type
@@ -114,6 +163,22 @@ public interface AuditLogFilter extends SearchRequestFilter {
    * @return the updated filter
    */
   AuditLogFilter operationType(final Consumer<AuditLogOperationTypeFilterProperty> fn);
+
+  /**
+   * Filter audit logs by the batch operation type
+   *
+   * @param batchOperationType the batch operation type
+   * @return the updated filter
+   */
+  AuditLogFilter batchOperationType(final BatchOperationType batchOperationType);
+
+  /**
+   * Filter audit logs by the batch operation type using {@link BatchOperationTypeProperty} consumer
+   *
+   * @param fn the batch operation type filter consumer
+   * @return the updated filter
+   */
+  AuditLogFilter batchOperationType(final Consumer<BatchOperationTypeProperty> fn);
 
   /**
    * Filter audit logs by the timestamp
@@ -242,6 +307,86 @@ public interface AuditLogFilter extends SearchRequestFilter {
    * @return the updated filter
    */
   AuditLogFilter category(final Consumer<AuditLogCategoryFilterProperty> fn);
+
+  /**
+   * Filter audit logs by the decision requirements ID
+   *
+   * @param decisionRequirementsId the decision requirements ID
+   * @return the updated filter
+   */
+  AuditLogFilter decisionRequirementsId(final String decisionRequirementsId);
+
+  /**
+   * Filter audit logs by the decision requirements ID using {@link StringProperty} consumer
+   *
+   * @param fn the decision requirements ID filter consumer
+   * @return the updated filter
+   */
+  AuditLogFilter decisionRequirementsId(final Consumer<StringProperty> fn);
+
+  /**
+   * Filter audit logs by the decision requirements key
+   *
+   * @param decisionRequirementsKey the decision requirements key
+   * @return the updated filter
+   */
+  AuditLogFilter decisionRequirementsKey(final String decisionRequirementsKey);
+
+  /**
+   * Filter audit logs by the decision requirements key using {@link BasicStringProperty} consumer
+   *
+   * @param fn the decision requirements key filter consumer
+   * @return the updated filter
+   */
+  AuditLogFilter decisionRequirementsKey(final Consumer<BasicStringProperty> fn);
+
+  /**
+   * Filter audit logs by the decision definition ID
+   *
+   * @param decisionDefinitionId the decision definition ID
+   * @return the updated filter
+   */
+  AuditLogFilter decisionDefinitionId(final String decisionDefinitionId);
+
+  /**
+   * Filter audit logs by the decision definition ID using {@link StringProperty} consumer
+   *
+   * @param fn the decision definition ID filter consumer
+   * @return the updated filter
+   */
+  AuditLogFilter decisionDefinitionId(final Consumer<StringProperty> fn);
+
+  /**
+   * Filter audit logs by the decision definition key
+   *
+   * @param decisionDefinitionKey the decision definition key
+   * @return the updated filter
+   */
+  AuditLogFilter decisionDefinitionKey(final String decisionDefinitionKey);
+
+  /**
+   * Filter audit logs by the decision definition key using {@link BasicStringProperty} consumer
+   *
+   * @param fn the decision definition key filter consumer
+   * @return the updated filter
+   */
+  AuditLogFilter decisionDefinitionKey(final Consumer<BasicStringProperty> fn);
+
+  /**
+   * Filter audit logs by the decision evaluation key
+   *
+   * @param decisionEvaluationKey the decision evaluation key
+   * @return the updated filter
+   */
+  AuditLogFilter decisionEvaluationKey(final String decisionEvaluationKey);
+
+  /**
+   * Filter audit logs by the decision evaluation key using {@link BasicStringProperty} consumer
+   *
+   * @param fn the decision evaluation key filter consumer
+   * @return the updated filter
+   */
+  AuditLogFilter decisionEvaluationKey(final Consumer<BasicStringProperty> fn);
 
   /**
    * Filter audit logs by the deployment key

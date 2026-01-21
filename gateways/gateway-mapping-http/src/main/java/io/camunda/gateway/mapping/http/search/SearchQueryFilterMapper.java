@@ -20,6 +20,7 @@ import io.camunda.gateway.mapping.http.converters.AuditLogCategoryConverter;
 import io.camunda.gateway.mapping.http.converters.AuditLogEntityTypeConverter;
 import io.camunda.gateway.mapping.http.converters.AuditLogOperationTypeConverter;
 import io.camunda.gateway.mapping.http.converters.AuditLogResultConverter;
+import io.camunda.gateway.mapping.http.converters.BatchOperationTypeConverter;
 import io.camunda.gateway.mapping.http.converters.DecisionInstanceStateConverter;
 import io.camunda.gateway.mapping.http.converters.ProcessInstanceStateConverter;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
@@ -990,7 +991,33 @@ public class SearchQueryFilterMapper {
     ofNullable(filter.getResourceKey())
         .map(mapToOperations(Long.class))
         .ifPresent(builder::resourceKeyOperations);
-
+    ofNullable(filter.getBatchOperationType())
+        .map(mapToOperations(String.class, new BatchOperationTypeConverter()))
+        .ifPresent(builder::batchOperationTypeOperations);
+    ofNullable(filter.getProcessDefinitionId())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::processDefinitionIdOperations);
+    ofNullable(filter.getJobKey())
+        .map(mapToOperations(Long.class))
+        .ifPresent(builder::jobKeyOperations);
+    ofNullable(filter.getUserTaskKey())
+        .map(mapToOperations(Long.class))
+        .ifPresent(builder::userTaskKeyOperations);
+    ofNullable(filter.getDecisionRequirementsId())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::decisionRequirementsIdOperations);
+    ofNullable(filter.getDecisionRequirementsKey())
+        .map(mapToOperations(Long.class))
+        .ifPresent(builder::decisionRequirementsKeyOperations);
+    ofNullable(filter.getDecisionDefinitionId())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::decisionDefinitionIdOperations);
+    ofNullable(filter.getDecisionDefinitionKey())
+        .map(mapToOperations(Long.class))
+        .ifPresent(builder::decisionDefinitionKeyOperations);
+    ofNullable(filter.getDecisionEvaluationKey())
+        .map(mapToOperations(Long.class))
+        .ifPresent(builder::decisionEvaluationKeyOperations);
     return builder.build();
   }
 

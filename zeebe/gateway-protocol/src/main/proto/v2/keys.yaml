@@ -540,3 +540,80 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/FormKey"
+
+
+    DecisionEvaluationKeyFilterProperty:
+      description: DecisionEvaluationKey property with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: "#/components/schemas/DecisionEvaluationKey"
+        - $ref: '#/components/schemas/AdvancedDecisionEvaluationKeyFilter'
+
+    AdvancedDecisionEvaluationKeyFilter:
+      title: Advanced filter
+      description: Advanced DecisionEvaluationKey filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/DecisionEvaluationKey"
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/DecisionEvaluationKey"
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: "#/components/schemas/DecisionEvaluationKey"
+        $notIn:
+          description: Checks if the property matches none of the provided values.
+          type: array
+          items:
+            $ref: "#/components/schemas/DecisionEvaluationKey"
+
+    DecisionRequirementsKeyFilterProperty:
+      description: DecisionRequirementsKey property with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: "#/components/schemas/DecisionRequirementsKey"
+        - $ref: '#/components/schemas/AdvancedDecisionRequirementsKeyFilter'
+
+    AdvancedDecisionRequirementsKeyFilter:
+      title: Advanced filter
+      description: Advanced DecisionRequirementsKey filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/DecisionRequirementsKey"
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/DecisionRequirementsKey"
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: "#/components/schemas/DecisionRequirementsKey"
+        $notIn:
+          description: Checks if the property matches none of the provided values.
+          type: array
+          items:
+            $ref: "#/components/schemas/DecisionRequirementsKey"

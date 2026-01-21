@@ -86,8 +86,11 @@
                 <typeMapping>ResourceKey=String</typeMapping>
                 <!-- map specific filter properties to basic filter types -->
                 <typeMapping>AuditLogEntityKeyFilterProperty=BasicStringFilterProperty</typeMapping>
+                <typeMapping>AuditLogKeyFilterProperty=BasicStringFilterProperty</typeMapping>
                 <typeMapping>DecisionDefinitionKeyFilterProperty=BasicStringFilterProperty</typeMapping>
                 <typeMapping>DecisionEvaluationInstanceKeyFilterProperty=BasicStringFilterProperty</typeMapping>
+                <typeMapping>DecisionEvaluationKeyFilterProperty=BasicStringFilterProperty</typeMapping>
+                <typeMapping>DecisionRequirementsKeyFilterProperty=BasicStringFilterProperty</typeMapping>
                 <typeMapping>DeploymentKeyFilterProperty=BasicStringFilterProperty</typeMapping>
                 <typeMapping>ElementInstanceKeyFilterProperty=BasicStringFilterProperty</typeMapping>
                 <typeMapping>FormKeyFilterProperty=BasicStringFilterProperty</typeMapping>
