@@ -328,8 +328,9 @@ public final class ProcessInstanceModificationModifyProcessor
     final var extendedRecord = new ProcessInstanceModificationRecord();
     extendedRecord
         .setProcessInstanceKey(value.getProcessInstanceKey())
+        .setProcessDefinitionKey(processInstanceRecord.getProcessDefinitionKey())
         .setRootProcessInstanceKey(processInstanceRecord.getRootProcessInstanceKey())
-        .setTenantId(processInstance.getValue().getTenantId());
+        .setTenantId(processInstanceRecord.getTenantId());
 
     final var requiredKeysForActivation =
         activateInstructions.stream()

@@ -22,6 +22,9 @@
             "processInstanceKey": {
               "type": "long"
             },
+            "processDefinitionKey": {
+              "type": "long"
+            },
             "targetProcessDefinitionKey": {
               "type": "long"
             },

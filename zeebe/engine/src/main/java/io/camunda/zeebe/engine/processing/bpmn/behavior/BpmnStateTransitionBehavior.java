@@ -405,6 +405,7 @@ public final class BpmnStateTransitionBehavior {
     final var record =
         new ProcessInstanceBatchRecord()
             .setProcessInstanceKey(context.getProcessInstanceKey())
+            .setProcessDefinitionKey(context.getProcessDefinitionKey())
             .setBatchElementInstanceKey(context.getElementInstanceKey())
             .setIndex(amount);
 
@@ -444,6 +445,7 @@ public final class BpmnStateTransitionBehavior {
       final var batchRecord =
           new ProcessInstanceBatchRecord()
               .setProcessInstanceKey(context.getProcessInstanceKey())
+              .setProcessDefinitionKey(context.getProcessDefinitionKey())
               .setBatchElementInstanceKey(context.getElementInstanceKey());
       final var key = keyGenerator.nextKey();
       commandWriter.appendFollowUpCommand(key, ProcessInstanceBatchIntent.TERMINATE, batchRecord);
@@ -513,6 +515,7 @@ public final class BpmnStateTransitionBehavior {
 
     runtimeInstructionRecord.reset();
     runtimeInstructionRecord.setProcessInstanceKey(context.getProcessInstanceKey());
+    runtimeInstructionRecord.setProcessDefinitionKey(context.getProcessDefinitionKey());
     runtimeInstructionRecord.setTenantId(context.getTenantId());
     runtimeInstructionRecord.setElementId(runtimeInstruction.getAfterElementId());
 

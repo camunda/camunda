@@ -21,4 +21,9 @@ public interface ProcessInstanceRelated {
    * @return the key of the corresponding process instance
    */
   long getProcessInstanceKey();
+
+  /**
+   * @return the key of the corresponding process definition
+   */
+  long getProcessDefinitionKey();
 }

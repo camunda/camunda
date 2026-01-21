@@ -370,6 +370,7 @@ public class AuditLogEntry {
             .setTenant(AuditLogTenant.of(record))
             .setBatchOperationKey(getBatchOperationKey(record))
             .setProcessInstanceKey(getProcessInstanceKey(record))
+            .setProcessDefinitionKey(getProcessDefinitionKey(record))
             .setEntityVersion(record.getRecordVersion())
             .setEntityValueType(record.getValueType().value())
             .setEntityOperationIntent(record.getIntent().value())
@@ -383,6 +384,16 @@ public class AuditLogEntry {
 
     if (value instanceof ProcessInstanceRelated) {
       return ((ProcessInstanceRelated) value).getProcessInstanceKey();
+    } else {
+      return null;
+    }
+  }
+
+  private static <R extends RecordValue> Long getProcessDefinitionKey(final Record<R> record) {
+    final var value = record.getValue();
+
+    if (value instanceof ProcessInstanceRelated) {
+      return ((ProcessInstanceRelated) value).getProcessDefinitionKey();
     } else {
       return null;
     }

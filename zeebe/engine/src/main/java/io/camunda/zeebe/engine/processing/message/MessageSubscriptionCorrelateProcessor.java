@@ -147,7 +147,8 @@ public final class MessageSubscriptionCorrelateProcessor
               .setVariables(messageSubscription.getVariablesBuffer())
               .setTenantId(messageSubscription.getTenantId())
               .setMessageKey(messageKey)
-              .setProcessInstanceKey(messageSubscription.getProcessInstanceKey());
+              .setProcessInstanceKey(messageSubscription.getProcessInstanceKey())
+              .setProcessDefinitionKey(messageSubscription.getProcessDefinitionKey());
 
       stateWriter.appendFollowUpEvent(
           messageKey, MessageCorrelationIntent.CORRELATED, messageCorrelationRecord);

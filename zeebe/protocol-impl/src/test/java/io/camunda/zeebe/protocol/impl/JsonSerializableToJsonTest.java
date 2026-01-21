@@ -1395,8 +1395,6 @@ final class JsonSerializableToJsonTest {
               final long processDefinitionKey = 6L;
               final String correlationKey = "key";
               final long messageKey = 3L;
-              final long requestId = 4L;
-              final int requestStreamId = 5;
 
               return new MessageSubscriptionRecord()
                   .setElementInstanceKey(elementInstanceKey)
@@ -1799,6 +1797,7 @@ final class JsonSerializableToJsonTest {
               final var ancestorScopeKey = 3L;
               final var variableInstructionElementId = "sub-process";
               final var rootProcessInstanceKey = 4L;
+              final var processDefinitionKey = 5L;
 
               return new ProcessInstanceModificationRecord()
                   .setProcessInstanceKey(key)
@@ -1826,7 +1825,8 @@ final class JsonSerializableToJsonTest {
                                   .setVariables(VARIABLES_MSGPACK)
                                   .setElementId(variableInstructionElementId))
                           .addAncestorScopeKeys(Set.of(key, ancestorScopeKey)))
-                  .setRootProcessInstanceKey(rootProcessInstanceKey);
+                  .setRootProcessInstanceKey(rootProcessInstanceKey)
+                  .setProcessDefinitionKey(processDefinitionKey);
             },
         """
                 {
@@ -1862,7 +1862,8 @@ final class JsonSerializableToJsonTest {
                   }],
                   "ancestorScopeKeys": [1,3],
                   "tenantId": "<default>",
-                  "rootProcessInstanceKey": 4
+                  "rootProcessInstanceKey": 4,
+                  "processDefinitionKey": 5
                 }
                 """
       },
@@ -1884,7 +1885,8 @@ final class JsonSerializableToJsonTest {
                   "activateInstructions": [],
                   "ancestorScopeKeys": [],
                   "tenantId": "<default>",
-                  "rootProcessInstanceKey": -1
+                  "rootProcessInstanceKey": -1,
+                  "processDefinitionKey": -1
                 }
                 """
       },
@@ -2734,11 +2736,13 @@ final class JsonSerializableToJsonTest {
             () ->
                 new ProcessInstanceBatchRecord()
                     .setProcessInstanceKey(123L)
+                    .setProcessDefinitionKey(234L)
                     .setBatchElementInstanceKey(456L)
                     .setIndex(10L),
         """
                 {
                   "processInstanceKey": 123,
+                  "processDefinitionKey": 234,
                   "batchElementInstanceKey": 456,
                   "index": 10,
                   "tenantId": "<default>"
@@ -2761,6 +2765,7 @@ final class JsonSerializableToJsonTest {
         """
                 {
                   "processInstanceKey": 123,
+                  "processDefinitionKey": -1,
                   "batchElementInstanceKey": 456,
                   "index": -1,
                   "tenantId": "<default>"
@@ -2943,7 +2948,8 @@ final class JsonSerializableToJsonTest {
                     .addMappingInstruction(
                         new ProcessInstanceMigrationMappingInstruction()
                             .setTargetElementId("targetId3"))
-                    .setRootProcessInstanceKey(321L),
+                    .setRootProcessInstanceKey(321L)
+                    .setProcessDefinitionKey(234L),
         """
                 {
                   "tenantId": "tenantId",
@@ -2959,7 +2965,8 @@ final class JsonSerializableToJsonTest {
                     "sourceElementId": "",
                     "targetElementId": "targetId3"
                   }],
-                  "rootProcessInstanceKey": 321
+                  "rootProcessInstanceKey": 321,
+                  "processDefinitionKey": 234
                 }
                 """
       },
@@ -2982,7 +2989,8 @@ final class JsonSerializableToJsonTest {
                   "processInstanceKey": 123,
                   "targetProcessDefinitionKey": 456,
                   "mappingInstructions": [],
-                  "rootProcessInstanceKey": -1
+                  "rootProcessInstanceKey": -1,
+                  "processDefinitionKey": -1
                 }
                 """
       },
@@ -3075,7 +3083,8 @@ final class JsonSerializableToJsonTest {
                   .setProcessInstanceKey(processInstanceKey)
                   .setMessageKey(messageKey)
                   .setRequestId(requestId)
-                  .setRequestStreamId(requestStreamId);
+                  .setRequestStreamId(requestStreamId)
+                  .setProcessDefinitionKey(5L);
             },
         """
                 {
@@ -3088,7 +3097,8 @@ final class JsonSerializableToJsonTest {
                   "processInstanceKey": 1,
                   "messageKey": 2,
                   "requestId": 3,
-                  "requestStreamId": 4
+                  "requestStreamId": 4,
+                  "processDefinitionKey": 5
                 }
                 """
       },
@@ -3282,7 +3292,8 @@ final class JsonSerializableToJsonTest {
                   "processInstanceKey": -1,
                   "messageKey": -1,
                   "requestId": -1,
-                  "requestStreamId": -1
+                  "requestStreamId": -1,
+                  "processDefinitionKey": -1
                 }
                 """
       },
@@ -4092,13 +4103,15 @@ final class JsonSerializableToJsonTest {
             () ->
                 new RuntimeInstructionRecord()
                     .setProcessInstanceKey(12345L)
+                    .setProcessDefinitionKey(6L)
                     .setTenantId("tenant_1")
                     .setElementId("element_1"),
         """
       {
         "tenantId": "tenant_1",
         "elementId": "element_1",
-        "processInstanceKey": 12345
+        "processInstanceKey": 12345,
+        "processDefinitionKey": 6
       }
       """
       },
@@ -4112,7 +4125,8 @@ final class JsonSerializableToJsonTest {
       {
         "tenantId": "",
         "elementId": "",
-        "processInstanceKey": -1
+        "processInstanceKey": -1,
+        "processDefinitionKey": -1
       }
       """
       },

@@ -21,6 +21,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.MigrationPlan;
 import io.camunda.client.api.command.ProblemException;
+import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.enums.AuditLogEntityTypeEnum;
 import io.camunda.client.api.search.enums.AuditLogOperationTypeEnum;
 import io.camunda.client.api.search.enums.AuditLogResultEnum;
@@ -67,6 +68,7 @@ public class AuditLogProcessOperationsIT {
 
   // Pre-created process instance for tests that only read/add variables
   private static long sharedProcessInstanceKey;
+  private static long sharedProcessDefinitionKey;
 
   @BeforeAll
   static void setup() {
@@ -102,6 +104,7 @@ public class AuditLogProcessOperationsIT {
             .send()
             .join();
     sharedProcessInstanceKey = sharedInstance.getProcessInstanceKey();
+    sharedProcessDefinitionKey = sharedInstance.getProcessDefinitionKey();
 
     waitForProcessInstancesToStart(
         adminClient, f -> f.processInstanceKey(sharedProcessInstanceKey).tenantId(TENANT_A), 1);
@@ -115,7 +118,8 @@ public class AuditLogProcessOperationsIT {
   void shouldTrackProcessInstanceCreation(
       @Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
     // when - create a process instance
-    final var processInstanceKey = createProcessInstance(client, SERVICE_TASKS_PROCESS_ID);
+    final var processInstance = createProcessInstance(client, SERVICE_TASKS_PROCESS_ID);
+    final var processInstanceKey = processInstance.getProcessInstanceKey();
 
     waitForProcessInstancesToStart(
         client, f -> f.processInstanceKey(processInstanceKey).tenantId(TENANT_A), 1);
@@ -137,6 +141,8 @@ public class AuditLogProcessOperationsIT {
     assertThat(auditLog.getResult()).isEqualTo(AuditLogResultEnum.SUCCESS);
     assertThat(auditLog.getTenantId()).isEqualTo(TENANT_A);
     assertThat(auditLog.getProcessDefinitionId()).isEqualTo(SERVICE_TASKS_PROCESS_ID);
+    assertThat(auditLog.getProcessDefinitionKey())
+        .isEqualTo(String.valueOf(processInstance.getProcessDefinitionKey()));
     assertThat(auditLog.getTimestamp()).isNotNull();
     assertThat(auditLog.getAuditLogKey()).isNotNull();
   }
@@ -145,7 +151,8 @@ public class AuditLogProcessOperationsIT {
   void shouldTrackProcessInstanceMigration(
       @Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
     // given - start a process instance
-    final var processInstanceKey = createProcessInstance(client, PROCESS_V1_ID);
+    final var processInstance = createProcessInstance(client, PROCESS_V1_ID);
+    final var processInstanceKey = processInstance.getProcessInstanceKey();
 
     waitForProcessInstancesToStart(
         client, f -> f.processInstanceKey(processInstanceKey).tenantId(TENANT_A), 1);
@@ -186,6 +193,8 @@ public class AuditLogProcessOperationsIT {
     assertThat(auditLog.getOperationType()).isEqualTo(AuditLogOperationTypeEnum.MIGRATE);
     assertThat(auditLog.getEntityKey()).isNotNull();
     assertThat(auditLog.getProcessInstanceKey()).isEqualTo(String.valueOf(processInstanceKey));
+    assertThat(auditLog.getProcessDefinitionKey())
+        .isEqualTo(String.valueOf(targetProcess.getProcessDefinitionKey()));
     assertThat(auditLog.getResult()).isEqualTo(AuditLogResultEnum.SUCCESS);
     assertThat(auditLog.getTenantId()).isEqualTo(TENANT_A);
     assertThat(auditLog.getTimestamp()).isNotNull();
@@ -196,7 +205,8 @@ public class AuditLogProcessOperationsIT {
   void shouldTrackProcessInstanceModification(
       @Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
     // given - start a process instance
-    final var processInstanceKey = createProcessInstance(client, SERVICE_TASKS_PROCESS_ID);
+    final var processInstance = createProcessInstance(client, SERVICE_TASKS_PROCESS_ID);
+    final var processInstanceKey = processInstance.getProcessInstanceKey();
 
     waitForProcessInstancesToStart(
         client, f -> f.processInstanceKey(processInstanceKey).tenantId(TENANT_A), 1);
@@ -222,6 +232,8 @@ public class AuditLogProcessOperationsIT {
     assertThat(auditLog.getOperationType()).isEqualTo(AuditLogOperationTypeEnum.MODIFY);
     assertThat(auditLog.getEntityKey()).isNotNull();
     assertThat(auditLog.getProcessInstanceKey()).isEqualTo(String.valueOf(processInstanceKey));
+    assertThat(auditLog.getProcessDefinitionKey())
+        .isEqualTo(String.valueOf(processInstance.getProcessDefinitionKey()));
     assertThat(auditLog.getResult()).isEqualTo(AuditLogResultEnum.SUCCESS);
     assertThat(auditLog.getTenantId()).isEqualTo(TENANT_A);
     assertThat(auditLog.getTimestamp()).isNotNull();
@@ -232,7 +244,8 @@ public class AuditLogProcessOperationsIT {
   void shouldTrackProcessInstanceCancellation(
       @Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
     // given - start a process instance
-    final var processInstanceKey = createProcessInstance(client, SERVICE_TASKS_PROCESS_ID);
+    final var processInstance = createProcessInstance(client, SERVICE_TASKS_PROCESS_ID);
+    final var processInstanceKey = processInstance.getProcessInstanceKey();
 
     waitForProcessInstancesToStart(
         client, f -> f.processInstanceKey(processInstanceKey).tenantId(TENANT_A), 1);
@@ -257,6 +270,8 @@ public class AuditLogProcessOperationsIT {
     assertThat(auditLog.getResult()).isEqualTo(AuditLogResultEnum.SUCCESS);
     assertThat(auditLog.getTenantId()).isEqualTo(TENANT_A);
     assertThat(auditLog.getProcessDefinitionId()).isEqualTo(SERVICE_TASKS_PROCESS_ID);
+    assertThat(auditLog.getProcessDefinitionKey())
+        .isEqualTo(String.valueOf(processInstance.getProcessDefinitionKey()));
     assertThat(auditLog.getTimestamp()).isNotNull();
     assertThat(auditLog.getAuditLogKey()).isNotNull();
   }
@@ -293,6 +308,8 @@ public class AuditLogProcessOperationsIT {
     assertThat(auditLog.getProcessInstanceKey()).isEqualTo(String.valueOf(processInstanceKey));
     assertThat(auditLog.getResult()).isEqualTo(AuditLogResultEnum.SUCCESS);
     assertThat(auditLog.getTenantId()).isEqualTo(TENANT_A);
+    assertThat(auditLog.getProcessDefinitionKey())
+        .isEqualTo(String.valueOf(sharedProcessDefinitionKey));
     assertThat(auditLog.getProcessDefinitionId()).isEqualTo(SERVICE_TASKS_PROCESS_ID);
     assertThat(auditLog.getTimestamp()).isNotNull();
     assertThat(auditLog.getAuditLogKey()).isNotNull();
@@ -301,9 +318,11 @@ public class AuditLogProcessOperationsIT {
   @Test
   void shouldTrackVariableUpdate(@Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
     // given - start a process instance and add a variable
-    final var processInstanceKey =
+
+    final ProcessInstanceEvent processInstance =
         createProcessInstance(
             client, SERVICE_TASKS_PROCESS_ID, Map.of("existingVar", "initialValue"));
+    final long processInstanceKey = processInstance.getProcessInstanceKey();
 
     waitForProcessInstancesToStart(
         client, f -> f.processInstanceKey(processInstanceKey).tenantId(TENANT_A), 1);
@@ -332,6 +351,8 @@ public class AuditLogProcessOperationsIT {
     assertThat(auditLog.getResult()).isEqualTo(AuditLogResultEnum.SUCCESS);
     assertThat(auditLog.getTenantId()).isEqualTo(TENANT_A);
     assertThat(auditLog.getProcessDefinitionId()).isEqualTo(SERVICE_TASKS_PROCESS_ID);
+    assertThat(auditLog.getProcessDefinitionKey())
+        .isEqualTo(String.valueOf(processInstance.getProcessDefinitionKey()));
     assertThat(auditLog.getTimestamp()).isNotNull();
     assertThat(auditLog.getAuditLogKey()).isNotNull();
   }
@@ -343,7 +364,8 @@ public class AuditLogProcessOperationsIT {
   @Test
   void shouldTrackIncidentResolve(@Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
     // given - start a process that creates an incident
-    final var processInstanceKey = createProcessInstance(client, INCIDENT_PROCESS_ID);
+    final var processInstance = createProcessInstance(client, INCIDENT_PROCESS_ID);
+    final var processInstanceKey = processInstance.getProcessInstanceKey();
 
     waitForProcessInstancesToStart(
         client, f -> f.processInstanceKey(processInstanceKey).tenantId(TENANT_A), 1);
@@ -393,6 +415,8 @@ public class AuditLogProcessOperationsIT {
     assertThat(auditLog.getResult()).isEqualTo(AuditLogResultEnum.SUCCESS);
     assertThat(auditLog.getTenantId()).isEqualTo(TENANT_A);
     assertThat(auditLog.getProcessDefinitionId()).isEqualTo(INCIDENT_PROCESS_ID);
+    assertThat(auditLog.getProcessDefinitionKey())
+        .isEqualTo(String.valueOf(processInstance.getProcessDefinitionKey()));
     assertThat(auditLog.getTimestamp()).isNotNull();
     assertThat(auditLog.getAuditLogKey()).isNotNull();
   }
@@ -437,12 +461,14 @@ public class AuditLogProcessOperationsIT {
   void shouldTrackBatchProcessInstanceCancel(
       @Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
     // given - start multiple process instances in parallel
-    final var instance1Key =
+    final var instance1 =
         createProcessInstance(
             client, SERVICE_TASKS_PROCESS_ID, Map.of("batchTestCancel", "value1"));
-    final var instance2Key =
+    final var instance2 =
         createProcessInstance(
             client, SERVICE_TASKS_PROCESS_ID, Map.of("batchTestCancel", "value2"));
+    final long instance1Key = instance1.getProcessInstanceKey();
+    final long instance2Key = instance2.getProcessInstanceKey();
 
     waitForProcessInstancesToStart(
         client, f -> f.processInstanceKey(instance1Key).tenantId(TENANT_A), 1);
@@ -484,8 +510,9 @@ public class AuditLogProcessOperationsIT {
   void shouldTrackBatchProcessInstanceMigrate(
       @Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
     // given - start a process instance
-    final var processInstanceKey =
+    final var processInstance =
         createProcessInstance(client, PROCESS_V1_ID, Map.of("batchTestMigrate", "value"));
+    final var processInstanceKey = processInstance.getProcessInstanceKey();
 
     waitForProcessInstancesToStart(
         client, f -> f.processInstanceKey(processInstanceKey).tenantId(TENANT_A), 1);
@@ -541,7 +568,8 @@ public class AuditLogProcessOperationsIT {
   void shouldTrackBatchIncidentResolve(
       @Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
     // given - start a process instance that creates an incident
-    final var instance1Key = createProcessInstance(client, INCIDENT_PROCESS_ID);
+    final var instance1 = createProcessInstance(client, INCIDENT_PROCESS_ID);
+    final var instance1Key = instance1.getProcessInstanceKey();
 
     waitForProcessInstancesToStart(
         client, f -> f.processInstanceKey(instance1Key).tenantId(TENANT_A), 1);
@@ -607,8 +635,9 @@ public class AuditLogProcessOperationsIT {
   void shouldTrackBatchProcessInstanceModify(
       @Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
     // given - start a process instance that will have an active element to move
-    final var processInstanceKey =
+    final var processInstance =
         createProcessInstance(client, PROCESS_V1_ID, Map.of("batchTestModify", "value"));
+    final var processInstanceKey = processInstance.getProcessInstanceKey();
 
     waitForProcessInstancesToStart(
         client, f -> f.processInstanceKey(processInstanceKey).tenantId(TENANT_A), 1);
@@ -652,7 +681,8 @@ public class AuditLogProcessOperationsIT {
    * @param bpmnProcessId the BPMN process ID
    * @return the created process instance key
    */
-  private long createProcessInstance(final CamundaClient client, final String bpmnProcessId) {
+  private ProcessInstanceEvent createProcessInstance(
+      final CamundaClient client, final String bpmnProcessId) {
     return createProcessInstance(client, bpmnProcessId, Map.of());
   }
 
@@ -664,18 +694,16 @@ public class AuditLogProcessOperationsIT {
    * @param variables the process variables
    * @return the created process instance key
    */
-  private long createProcessInstance(
+  private ProcessInstanceEvent createProcessInstance(
       final CamundaClient client, final String bpmnProcessId, final Map<String, Object> variables) {
-    final var processInstance =
-        client
-            .newCreateInstanceCommand()
-            .bpmnProcessId(bpmnProcessId)
-            .latestVersion()
-            .tenantId(AuditLogUtils.TENANT_A)
-            .variables(variables)
-            .send()
-            .join();
-    return processInstance.getProcessInstanceKey();
+    return client
+        .newCreateInstanceCommand()
+        .bpmnProcessId(bpmnProcessId)
+        .latestVersion()
+        .tenantId(AuditLogUtils.TENANT_A)
+        .variables(variables)
+        .send()
+        .join();
   }
 
   private List<AuditLogResult> awaitAuditLogEntry(

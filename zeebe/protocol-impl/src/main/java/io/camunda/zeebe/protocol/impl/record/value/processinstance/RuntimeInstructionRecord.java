@@ -21,12 +21,15 @@ public class RuntimeInstructionRecord extends UnifiedRecordValue
 
   private final LongProperty processInstanceKeyProperty =
       new LongProperty("processInstanceKey", -1);
+  private final LongProperty processDefinitionKeyProperty =
+      new LongProperty("processDefinitionKey", -1);
   private final StringProperty tenantIdProperty = new StringProperty("tenantId", "");
   private final StringProperty elementIdProperty = new StringProperty("elementId", "");
 
   public RuntimeInstructionRecord() {
-    super(3);
+    super(4);
     declareProperty(processInstanceKeyProperty)
+        .declareProperty(processDefinitionKeyProperty)
         .declareProperty(tenantIdProperty)
         .declareProperty(elementIdProperty);
   }
@@ -48,6 +51,16 @@ public class RuntimeInstructionRecord extends UnifiedRecordValue
 
   public RuntimeInstructionRecord setProcessInstanceKey(final long processInstanceKey) {
     processInstanceKeyProperty.setValue(processInstanceKey);
+    return this;
+  }
+
+  @Override
+  public long getProcessDefinitionKey() {
+    return processDefinitionKeyProperty.getValue();
+  }
+
+  public RuntimeInstructionRecord setProcessDefinitionKey(final long processDefinitionKey) {
+    processDefinitionKeyProperty.setValue(processDefinitionKey);
     return this;
   }
 
