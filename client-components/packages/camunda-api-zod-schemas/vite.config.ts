@@ -62,7 +62,7 @@ export default defineConfig({
 		},
 		minify: false,
 		rollupOptions: {
-			external: ['zod'],
+			external: ['zod', 'zod/v4'],
 			preserveEntrySignatures: 'strict',
 			output: {
 				preserveModules: true,
