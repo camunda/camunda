@@ -177,6 +177,7 @@
 
   <delete id="deleteProcessInstanceRelatedData">
     <bind name="tableName" value="'VARIABLE'"/>
+    <bind name="primaryKeyColumn" value="'VAR_KEY'"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.processInstanceHistoryDeletion"/>
   </delete>
 
