@@ -12,6 +12,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -139,6 +140,9 @@ public class HistoryDeletionServiceTest {
     historyDeletionService.deleteHistory(partitionId);
 
     // then
+    verify(rdbmsWritersMock.getAuditLogWriter())
+        .deleteProcessDefinitionRelatedData(
+            eq(List.of(processDefinitionKey1, processDefinitionKey2)), anyInt());
     verify(rdbmsWritersMock.getProcessDefinitionWriter())
         .deleteByKeys(List.of(processDefinitionKey1, processDefinitionKey2));
     verify(rdbmsWritersMock.getHistoryDeletionWriter())
@@ -154,6 +158,27 @@ public class HistoryDeletionServiceTest {
         .thenReturn(List.of(createProcessDefinitionModel(processDefinitionKey, partitionId)));
     when(processInstanceDbReaderMock.search(any()))
         .thenReturn(SearchQueryResult.of(mock(ProcessInstanceEntity.class)));
+
+    // when
+    historyDeletionService.deleteHistory(partitionId);
+
+    // then
+    verify(rdbmsWritersMock.getProcessDefinitionWriter(), never()).deleteByKeys(anyList());
+    verify(rdbmsWritersMock.getHistoryDeletionWriter(), never()).deleteByResourceKeys(anyList());
+  }
+
+  @Test
+  void shouldNotDeleteProcessDefinitionIfNotAllAuditLogsDeleted() {
+    // given
+    final var partitionId = 1;
+    final var processDefinitionKey = 1L;
+    when(historyDeletionDbReaderMock.getNextBatch(anyInt(), anyInt()))
+        .thenReturn(List.of(createProcessDefinitionModel(processDefinitionKey, partitionId)));
+    when(processInstanceDbReaderMock.search(any())).thenReturn(SearchQueryResult.empty());
+    when(rdbmsWritersMock
+            .getAuditLogWriter()
+            .deleteProcessDefinitionRelatedData(anyList(), anyInt()))
+        .thenReturn(Integer.MAX_VALUE);
 
     // when
     historyDeletionService.deleteHistory(partitionId);

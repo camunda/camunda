@@ -21,6 +21,7 @@ import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.AuditLogDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.AuditLogDbModel;
+import io.camunda.db.rdbms.write.service.AuditLogWriter;
 import io.camunda.it.rdbms.db.fixtures.AuditLogFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
@@ -611,5 +612,54 @@ public class AuditLogIT {
         .isEqualTo(original);
     assertThat(instance.entityKey()).isEqualTo(original.entityKey());
     assertThat(instance.entityType()).isEqualTo(original.entityType());
+  }
+
+  @TestTemplate
+  public void shouldDeleteProcessDefinitionRelatedData(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader();
+    final AuditLogWriter auditLogWriter = rdbmsWriters.getAuditLogWriter();
+
+    final var processDefinitionKey1 = nextKey();
+    final var processDefinitionKey2 = nextKey();
+    createAndSaveRandomAuditLogs(rdbmsWriters, b -> b.processDefinitionKey(processDefinitionKey1));
+    createAndSaveRandomAuditLogs(rdbmsWriters, b -> b.processDefinitionKey(processDefinitionKey2));
+
+    var searchResult =
+        auditLogReader.search(
+            AuditLogQuery.of(
+                b ->
+                    b.filter(
+                            f ->
+                                f.processDefinitionKeys(
+                                    processDefinitionKey1, processDefinitionKey2))
+                        .sort(s -> s)
+                        .page(p -> p.from(0).size(1000))));
+    assertThat(searchResult).isNotNull();
+    assertThat(searchResult.items())
+        .isNotEmpty()
+        .extracting(AuditLogEntity::processDefinitionKey)
+        .containsOnly(processDefinitionKey1, processDefinitionKey2);
+
+    // when
+    auditLogWriter.deleteProcessDefinitionRelatedData(
+        List.of(processDefinitionKey1, processDefinitionKey2), 1000);
+
+    // then
+    searchResult =
+        auditLogReader.search(
+            AuditLogQuery.of(
+                b ->
+                    b.filter(
+                            f ->
+                                f.processDefinitionKeys(
+                                    processDefinitionKey1, processDefinitionKey2))
+                        .sort(s -> s)
+                        .page(p -> p.from(0).size(1000))));
+    assertThat(searchResult).isNotNull();
+    assertThat(searchResult.items()).isEmpty();
   }
 }

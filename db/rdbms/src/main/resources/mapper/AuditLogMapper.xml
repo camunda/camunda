@@ -369,7 +369,7 @@
     WHERE rowid IN (SELECT rowid
     FROM ${prefix}AUDIT_LOG
     WHERE PROCESS_DEFINITION_KEY IN
-    <foreach collection="deleteProcessDefinitionRelatedData" item="key" open="(" separator=", " close=")">
+    <foreach collection="processDefinitionKeys" item="key" open="(" separator=", " close=")">
       #{key}
     </foreach>
     AND ROWNUM &lt;= #{limit})
