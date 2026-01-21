@@ -80,39 +80,39 @@ test.describe.parallel('Get Authorization API', () => {
 
     const expectedUserAuthorization = {
       ...originalUserAuthorization,
-        authorizationKey: userAuthorizationKey,
+      authorizationKey: userAuthorizationKey,
     };
 
     await test.step('Get Authorization and assert results', async () => {
-        await expect(async () => {
-            const res = await request.get(
-              buildUrl(`/authorizations/${userAuthorizationKey}`),
-              {
-                headers: jsonHeaders(),
-              },
-            );
-            await assertStatusCode(res, 200);
-            const authBody = await res.json();
-            verifyAuthorizationFields(authBody, expectedUserAuthorization);
-        }).toPass(defaultAssertionOptions);
+      await expect(async () => {
+        const res = await request.get(
+          buildUrl(`/authorizations/${userAuthorizationKey}`),
+          {
+            headers: jsonHeaders(),
+          },
+        );
+        await assertStatusCode(res, 200);
+        const authBody = await res.json();
+        verifyAuthorizationFields(authBody, expectedUserAuthorization);
+      }).toPass(defaultAssertionOptions);
     });
   });
 
   test('Get existing Authorization - not found', async ({request}) => {
     const nonExistentAuthorizationKey = '9999999999999999';
     await test.step('Get Authorization and assert results', async () => {
-        await expect(async () => {
-            const res = await request.get(
-              buildUrl(`/authorizations/${nonExistentAuthorizationKey}`),
-              {
-                headers: jsonHeaders(),
-              },
-            );
-            await assertNotFoundRequest(
-              res,
-              `Authorization with key '${nonExistentAuthorizationKey}' not found`,
-            );
-        }).toPass(defaultAssertionOptions);
+      await expect(async () => {
+        const res = await request.get(
+          buildUrl(`/authorizations/${nonExistentAuthorizationKey}`),
+          {
+            headers: jsonHeaders(),
+          },
+        );
+        await assertNotFoundRequest(
+          res,
+          `Authorization with key '${nonExistentAuthorizationKey}' not found`,
+        );
+      }).toPass(defaultAssertionOptions);
     });
   });
 
@@ -149,36 +149,36 @@ test.describe.parallel('Get Authorization API', () => {
 
     const expectedUserAuthorization = {
       ...originalUserAuthorization,
-        authorizationKey: userAuthorizationKey,
+      authorizationKey: userAuthorizationKey,
     };
 
     await test.step('Get Authorization without authorization header', async () => {
-        await expect(async () => {
-            const res = await request.get(
-              buildUrl(`/authorizations/${userAuthorizationKey}`),
-              {
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-              },
-            );
-            await assertUnauthorizedRequest(res);
-        }).toPass(defaultAssertionOptions);
+      await expect(async () => {
+        const res = await request.get(
+          buildUrl(`/authorizations/${userAuthorizationKey}`),
+          {
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          },
+        );
+        await assertUnauthorizedRequest(res);
+      }).toPass(defaultAssertionOptions);
     });
   });
 
   test('Get existing Authorization - forbidden', async ({request}) => {
     let userWithResourcesAuthorizationToSendRequest: {
-    username: string;
-    name: string;
-    email: string;
-    password: string;
-  } = {} as {
-    username: string;
-    name: string;
-    email: string;
-    password: string;
-};
+      username: string;
+      name: string;
+      email: string;
+      password: string;
+    } = {} as {
+      username: string;
+      name: string;
+      email: string;
+      password: string;
+    };
     let user: {
       username: string;
       name: string;
@@ -189,21 +189,21 @@ test.describe.parallel('Get Authorization API', () => {
     let originalUserAuthorization: Authorization = {} as Authorization;
 
     await test.step('Setup - Create test user with Resource Authorization and user for granting Authorization', async () => {
-        userWithResourcesAuthorizationToSendRequest = await createUser(request);
-        await grantUserResourceAuthorization(
-            request,
-            userWithResourcesAuthorizationToSendRequest,
-        );
-        cleanups.push(async (request) => {
-          await cleanupUsers(request, [
-            userWithResourcesAuthorizationToSendRequest.username,
-          ]);
-        });
-   
-        user = await createUser(request);
-        cleanups.push(async (request) => {
-            await cleanupUsers(request, [user.username]);
-        });
+      userWithResourcesAuthorizationToSendRequest = await createUser(request);
+      await grantUserResourceAuthorization(
+        request,
+        userWithResourcesAuthorizationToSendRequest,
+      );
+      cleanups.push(async (request) => {
+        await cleanupUsers(request, [
+          userWithResourcesAuthorizationToSendRequest.username,
+        ]);
+      });
+
+      user = await createUser(request);
+      cleanups.push(async (request) => {
+        await cleanupUsers(request, [user.username]);
+      });
     });
 
     await test.step('Setup - Grant user necessary authorizations', async () => {
@@ -222,23 +222,23 @@ test.describe.parallel('Get Authorization API', () => {
     });
 
     await test.step('Get Authorization and assert results', async () => {
-        const token = encode(
+      const token = encode(
         `${userWithResourcesAuthorizationToSendRequest.username}:${userWithResourcesAuthorizationToSendRequest.password}`,
       );
-      
-    await expect(async () => {
+
+      await expect(async () => {
         const authRes = await request.get(
-            buildUrl(`/authorizations/${userAuthorizationKey}`),
-            {
+          buildUrl(`/authorizations/${userAuthorizationKey}`),
+          {
             headers: jsonHeaders(token), // overrides default demo:demo
             data: {},
-            },
+          },
         );
         await assertForbiddenRequest(
-            authRes,
-            "Unauthorized to perform operation 'READ' on resource 'AUTHORIZATION'",
+          authRes,
+          "Unauthorized to perform operation 'READ' on resource 'AUTHORIZATION'",
         );
-    }).toPass(defaultAssertionOptions);
+      }).toPass(defaultAssertionOptions);
     });
   });
 });
