@@ -7,145 +7,52 @@
  */
 
 import {z} from 'zod';
-import {
-	API_VERSION,
-	getCollectionResponseBodySchema,
-	getQueryRequestBodySchema,
-	getQueryResponseBodySchema,
-	advancedDateTimeFilterSchema,
-	advancedStringFilterSchema,
-	advancedIntegerFilterSchema,
-	basicStringFilterSchema,
-	getOrFilterSchema,
-	type Endpoint,
-} from '../common';
-import {variableSchema} from './variable';
+import {API_VERSION, type Endpoint} from '../common';
 import {
 	processInstanceSchema,
 	processInstanceStateSchema,
-	processDefinitionStatisticSchema,
 	type ProcessInstance,
 	type ProcessInstanceState,
 	type StatisticName,
 } from './processes';
-import {batchOperationTypeSchema} from './batch-operation';
 import {queryIncidentsRequestBodySchema, queryIncidentsResponseBodySchema} from './incident';
+import {
+	cancelProcessInstanceRequestSchema,
+	processInstanceCreationInstructionSchema,
+	createProcessInstanceResultSchema,
+	processInstanceCallHierarchyEntrySchema,
+	processInstanceSequenceFlowResultSchema,
+	processInstanceSequenceFlowsQueryResultSchema,
+	processInstanceSearchQuerySchema,
+	processInstanceSearchQueryResultSchema,
+	processInstanceCancellationBatchOperationRequestSchema,
+	processInstanceIncidentResolutionBatchOperationRequestSchema,
+	processInstanceMigrationBatchOperationRequestSchema,
+	processInstanceModificationBatchOperationRequestSchema,
+	processInstanceModificationInstructionSchema,
+	batchOperationCreatedResultSchema,
+	getProcessInstanceCallHierarchy200Schema,
+	getProcessInstanceStatistics200Schema,
+} from './gen';
 
-const processInstanceVariableFilterSchema = z.object({
-	name: z.string(),
-	value: advancedStringFilterSchema,
-});
-
-const advancedProcessInstanceStateFilterSchema = z
-	.object({
-		$eq: processInstanceStateSchema,
-		$neq: processInstanceStateSchema,
-		$exists: z.boolean(),
-		$in: z.array(processInstanceStateSchema),
-		$like: z.string(),
-	})
-	.partial();
-
-const queryProcessInstancesFilterSchema = z
-	.object({
-		processDefinitionId: advancedStringFilterSchema,
-		processDefinitionName: advancedStringFilterSchema,
-		processDefinitionVersion: advancedIntegerFilterSchema,
-		processDefinitionVersionTag: advancedStringFilterSchema,
-		processDefinitionKey: basicStringFilterSchema,
-		processInstanceKey: basicStringFilterSchema,
-		parentProcessInstanceKey: basicStringFilterSchema,
-		parentElementInstanceKey: basicStringFilterSchema,
-		startDate: advancedDateTimeFilterSchema,
-		endDate: advancedDateTimeFilterSchema,
-		state: advancedProcessInstanceStateFilterSchema,
-		hasIncident: z.boolean(),
-		tenantId: advancedStringFilterSchema,
-		variables: z.array(processInstanceVariableFilterSchema),
-		batchOperationId: advancedStringFilterSchema,
-		errorMessage: advancedStringFilterSchema,
-		hasRetriesLeft: z.boolean(),
-		elementInstanceState: advancedProcessInstanceStateFilterSchema,
-		elementId: advancedStringFilterSchema,
-		hasElementInstanceIncident: z.boolean(),
-		incidentErrorHashCode: advancedIntegerFilterSchema,
-		tags: z
-			.array(
-				z
-					.string()
-					.min(1)
-					.max(100)
-					.regex(/^[A-Za-z][A-Za-z0-9_\-:.]{0,99}$/),
-			)
-			.max(10),
-	})
-	.partial();
-
-const queryProcessInstancesRequestBodySchema = getQueryRequestBodySchema({
-	sortFields: [
-		'processInstanceKey',
-		'processDefinitionId',
-		'processDefinitionName',
-		'processDefinitionVersion',
-		'processDefinitionVersionTag',
-		'processDefinitionKey',
-		'parentProcessInstanceKey',
-		'parentElementInstanceKey',
-		'startDate',
-		'endDate',
-		'state',
-		'hasIncident',
-		'tenantId',
-	] as const,
-	filter: getOrFilterSchema(queryProcessInstancesFilterSchema),
-});
+const queryProcessInstancesRequestBodySchema = processInstanceSearchQuerySchema;
 type QueryProcessInstancesRequestBody = z.infer<typeof queryProcessInstancesRequestBodySchema>;
 
-const queryProcessInstancesResponseBodySchema = getQueryResponseBodySchema(processInstanceSchema);
+const queryProcessInstancesResponseBodySchema = processInstanceSearchQueryResultSchema;
 type QueryProcessInstancesResponseBody = z.infer<typeof queryProcessInstancesResponseBodySchema>;
 
-const cancelProcessInstanceRequestBodySchema = z
-	.object({
-		operationReference: z.number().int(),
-	})
-	.optional();
+const cancelProcessInstanceRequestBodySchema = cancelProcessInstanceRequestSchema;
 type CancelProcessInstanceRequestBody = z.infer<typeof cancelProcessInstanceRequestBodySchema>;
 
-const getProcessInstance: Endpoint<Pick<ProcessInstance, 'processInstanceKey'>> = {
+const getProcessInstance: Endpoint<{processInstanceKey: string}> = {
 	method: 'GET',
 	getUrl: ({processInstanceKey}) => `/${API_VERSION}/process-instances/${processInstanceKey}`,
 };
 
-const createProcessInstanceRequestBodySchema = z.object({
-	variables: z.record(z.string(), variableSchema).optional(),
-	operationReference: z.number().optional(),
-	startInstructions: z.array(z.string()).optional(),
-	awaitCompletion: z.boolean().optional(),
-	fetchVariables: z.array(z.string()).optional(),
-	requestTimeout: z.number().optional(),
-	...processInstanceSchema
-		.pick({
-			processDefinitionId: true,
-			processDefinitionVersion: true,
-			tenantId: true,
-			processDefinitionKey: true,
-		})
-		.partial().shape,
-});
-
+const createProcessInstanceRequestBodySchema = processInstanceCreationInstructionSchema;
 type CreateProcessInstanceRequestBody = z.infer<typeof createProcessInstanceRequestBodySchema>;
 
-const createProcessInstanceResponseBodySchema = z.object({
-	variables: z.record(z.string(), variableSchema).optional(),
-	...processInstanceSchema.pick({
-		processDefinitionId: true,
-		processDefinitionVersion: true,
-		tenantId: true,
-		processDefinitionKey: true,
-		processInstanceKey: true,
-	}).shape,
-});
-
+const createProcessInstanceResponseBodySchema = createProcessInstanceResultSchema;
 type CreateProcessInstanceResponseBody = z.infer<typeof createProcessInstanceResponseBodySchema>;
 
 const createProcessInstance: Endpoint = {
@@ -158,7 +65,7 @@ const queryProcessInstances: Endpoint = {
 	getUrl: () => `/${API_VERSION}/process-instances/search`,
 };
 
-const cancelProcessInstance: Endpoint<Pick<ProcessInstance, 'processInstanceKey'>> = {
+const cancelProcessInstance: Endpoint<{processInstanceKey: string}> = {
 	method: 'POST',
 	getUrl: ({processInstanceKey}) => `/${API_VERSION}/process-instances/${processInstanceKey}/cancellation`,
 };
@@ -169,23 +76,19 @@ type QueryProcessInstanceIncidentsRequestBody = z.infer<typeof queryProcessInsta
 const queryProcessInstanceIncidentsResponseBodySchema = queryIncidentsResponseBodySchema;
 type QueryProcessInstanceIncidentsResponseBody = z.infer<typeof queryProcessInstanceIncidentsResponseBodySchema>;
 
-const queryProcessInstanceIncidents: Endpoint<Pick<ProcessInstance, 'processInstanceKey'>> = {
+const queryProcessInstanceIncidents: Endpoint<{processInstanceKey: string}> = {
 	method: 'POST',
 	getUrl: ({processInstanceKey}) => `/${API_VERSION}/process-instances/${processInstanceKey}/incidents/search`,
 };
 
-const getProcessInstanceCallHierarchy: Endpoint<Pick<ProcessInstance, 'processInstanceKey'>> = {
+const getProcessInstanceCallHierarchy: Endpoint<{processInstanceKey: string}> = {
 	method: 'GET',
 	getUrl: ({processInstanceKey}) => `/${API_VERSION}/process-instances/${processInstanceKey}/call-hierarchy`,
 };
 
-const callHierarchySchema = z.object({
-	processInstanceKey: z.string(),
-	processDefinitionKey: z.string(),
-	processDefinitionName: z.string(),
-});
+const callHierarchySchema = processInstanceCallHierarchyEntrySchema;
 type CallHierarchy = z.infer<typeof callHierarchySchema>;
-const getProcessInstanceCallHierarchyResponseBodySchema = z.array(callHierarchySchema);
+const getProcessInstanceCallHierarchyResponseBodySchema = getProcessInstanceCallHierarchy200Schema;
 type GetProcessInstanceCallHierarchyResponseBody = z.infer<typeof getProcessInstanceCallHierarchyResponseBodySchema>;
 
 const getProcessInstanceStatistics: Endpoint<GetProcessInstanceStatisticsParams> = {
@@ -194,46 +97,31 @@ const getProcessInstanceStatistics: Endpoint<GetProcessInstanceStatisticsParams>
 		`/${API_VERSION}/process-instances/${processInstanceKey}/statistics/${statisticName}`,
 };
 
-const getProcessInstanceStatisticsResponseBodySchema = getCollectionResponseBodySchema(
-	processDefinitionStatisticSchema,
-);
+const getProcessInstanceStatisticsResponseBodySchema = getProcessInstanceStatistics200Schema;
 type GetProcessInstanceStatisticsResponseBody = z.infer<typeof getProcessInstanceStatisticsResponseBodySchema>;
 
-type GetProcessInstanceStatisticsParams = Pick<ProcessInstance, 'processInstanceKey'> & {
+type GetProcessInstanceStatisticsParams = {processInstanceKey: string} & {
 	statisticName: StatisticName;
 };
 
-const getProcessInstanceSequenceFlows: Endpoint<Pick<ProcessInstance, 'processInstanceKey'>> = {
+const getProcessInstanceSequenceFlows: Endpoint<{processInstanceKey: string}> = {
 	method: 'GET',
 	getUrl: ({processInstanceKey}) => `/${API_VERSION}/process-instances/${processInstanceKey}/sequence-flows`,
 };
 
-const sequenceFlowSchema = z.object({
-	processInstanceKey: z.string(),
-	sequenceFlowId: z.string(),
-	processDefinitionKey: z.string(),
-	processDefinitionId: z.string(),
-	elementId: z.string(),
-	tenantId: z.string(),
-});
+const sequenceFlowSchema = processInstanceSequenceFlowResultSchema;
 type SequenceFlow = z.infer<typeof sequenceFlowSchema>;
 
-const getProcessInstanceSequenceFlowsResponseBodySchema = getCollectionResponseBodySchema(sequenceFlowSchema);
+const getProcessInstanceSequenceFlowsResponseBodySchema = processInstanceSequenceFlowsQueryResultSchema;
 type GetProcessInstanceSequenceFlowsResponseBody = z.infer<typeof getProcessInstanceSequenceFlowsResponseBodySchema>;
 
-const createIncidentResolutionBatchOperationRequestBodySchema = z.object({
-	filter: getOrFilterSchema(queryProcessInstancesFilterSchema),
-});
-
+const createIncidentResolutionBatchOperationRequestBodySchema =
+	processInstanceIncidentResolutionBatchOperationRequestSchema;
 type CreateIncidentResolutionBatchOperationRequestBody = z.infer<
 	typeof createIncidentResolutionBatchOperationRequestBodySchema
 >;
 
-const createIncidentResolutionBatchOperationResponseBodySchema = z.object({
-	batchOperationKey: z.string(),
-	batchOperationType: batchOperationTypeSchema,
-});
-
+const createIncidentResolutionBatchOperationResponseBodySchema = batchOperationCreatedResultSchema;
 type CreateIncidentResolutionBatchOperationResponseBody = z.infer<
 	typeof createIncidentResolutionBatchOperationResponseBodySchema
 >;
@@ -243,17 +131,10 @@ const createIncidentResolutionBatchOperation: Endpoint = {
 	getUrl: () => `/${API_VERSION}/process-instances/incident-resolution`,
 };
 
-const createCancellationBatchOperationRequestBodySchema = z.object({
-	filter: getOrFilterSchema(queryProcessInstancesFilterSchema),
-});
-
+const createCancellationBatchOperationRequestBodySchema = processInstanceCancellationBatchOperationRequestSchema;
 type CreateCancellationBatchOperationRequestBody = z.infer<typeof createCancellationBatchOperationRequestBodySchema>;
 
-const createCancellationBatchOperationResponseBodySchema = z.object({
-	batchOperationKey: z.string(),
-	batchOperationType: batchOperationTypeSchema,
-});
-
+const createCancellationBatchOperationResponseBodySchema = batchOperationCreatedResultSchema;
 type CreateCancellationBatchOperationResponseBody = z.infer<typeof createCancellationBatchOperationResponseBodySchema>;
 
 const createCancellationBatchOperation: Endpoint = {
@@ -261,26 +142,10 @@ const createCancellationBatchOperation: Endpoint = {
 	getUrl: () => `/${API_VERSION}/process-instances/cancellation`,
 };
 
-const createMigrationBatchOperationRequestBodySchema = z.object({
-	filter: getOrFilterSchema(queryProcessInstancesFilterSchema),
-	migrationPlan: z.object({
-		mappingInstructions: z.array(
-			z.object({
-				sourceElementId: z.string(),
-				targetElementId: z.string(),
-			}),
-		),
-		targetProcessDefinitionKey: z.string(),
-	}),
-});
-
+const createMigrationBatchOperationRequestBodySchema = processInstanceMigrationBatchOperationRequestSchema;
 type CreateMigrationBatchOperationRequestBody = z.infer<typeof createMigrationBatchOperationRequestBodySchema>;
 
-const createMigrationBatchOperationResponseBodySchema = z.object({
-	batchOperationKey: z.string(),
-	batchOperationType: batchOperationTypeSchema,
-});
-
+const createMigrationBatchOperationResponseBodySchema = batchOperationCreatedResultSchema;
 type CreateMigrationBatchOperationResponseBody = z.infer<typeof createMigrationBatchOperationResponseBodySchema>;
 
 const createMigrationBatchOperation: Endpoint = {
@@ -288,23 +153,10 @@ const createMigrationBatchOperation: Endpoint = {
 	getUrl: () => `/${API_VERSION}/process-instances/migration`,
 };
 
-const createModificationBatchOperationRequestBodySchema = z.object({
-	filter: getOrFilterSchema(queryProcessInstancesFilterSchema),
-	moveInstructions: z.array(
-		z.object({
-			sourceElementId: z.string(),
-			targetElementId: z.string(),
-		}),
-	),
-});
-
+const createModificationBatchOperationRequestBodySchema = processInstanceModificationBatchOperationRequestSchema;
 type CreateModificationBatchOperationRequestBody = z.infer<typeof createModificationBatchOperationRequestBodySchema>;
 
-const createModificationBatchOperationResponseBodySchema = z.object({
-	batchOperationKey: z.string(),
-	batchOperationType: batchOperationTypeSchema,
-});
-
+const createModificationBatchOperationResponseBodySchema = batchOperationCreatedResultSchema;
 type CreateModificationBatchOperationResponseBody = z.infer<typeof createModificationBatchOperationResponseBodySchema>;
 
 const createModificationBatchOperation: Endpoint = {
@@ -312,45 +164,18 @@ const createModificationBatchOperation: Endpoint = {
 	getUrl: () => `/${API_VERSION}/process-instances/modification`,
 };
 
-const variableInstructionSchema = z.object({
-	variables: z.record(z.string(), z.unknown()),
-	scopeId: z.string().optional(),
-});
-const activateInstructionSchema = z.object({
-	elementId: z.string(),
-	variableInstructions: z.array(variableInstructionSchema).optional(),
-	ancestorElementInstanceKey: z.string().optional(),
-});
-const terminateInstructionSchema = z.object({
-	elementInstanceKey: z.string(),
-});
-
-const modifyProcessInstanceRequestBodySchema = z
-	.object({
-		operationReference: z.number().optional(),
-		activateInstructions: z.array(activateInstructionSchema).optional(),
-		terminateInstructions: z.array(terminateInstructionSchema).optional(),
-	})
-	.refine(
-		({activateInstructions, terminateInstructions}) =>
-			(activateInstructions !== undefined && activateInstructions.length > 0) ||
-			(terminateInstructions !== undefined && terminateInstructions.length > 0),
-	);
+const modifyProcessInstanceRequestBodySchema = processInstanceModificationInstructionSchema;
 type ModifyProcessInstanceRequestBody = z.infer<typeof modifyProcessInstanceRequestBodySchema>;
 
-const modifyProcessInstance: Endpoint<Pick<ProcessInstance, 'processInstanceKey'>> = {
+const modifyProcessInstance: Endpoint<{processInstanceKey: string}> = {
 	method: 'POST',
 	getUrl: ({processInstanceKey}) => `/${API_VERSION}/process-instances/${processInstanceKey}/modification`,
 };
 
-const resolveProcessInstanceIncidentsResponseBodySchema = z.object({
-	batchOperationKey: z.string(),
-	batchOperationType: batchOperationTypeSchema,
-});
-
+const resolveProcessInstanceIncidentsResponseBodySchema = batchOperationCreatedResultSchema;
 type ResolveProcessInstanceIncidentsResponseBody = z.infer<typeof resolveProcessInstanceIncidentsResponseBodySchema>;
 
-const resolveProcessInstanceIncidents: Endpoint<Pick<ProcessInstance, 'processInstanceKey'>> = {
+const resolveProcessInstanceIncidents: Endpoint<{processInstanceKey: string}> = {
 	method: 'POST',
 	getUrl: ({processInstanceKey}) => `/${API_VERSION}/process-instances/${processInstanceKey}/incident-resolution`,
 };
