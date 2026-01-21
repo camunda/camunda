@@ -21,13 +21,18 @@ import io.camunda.gateway.mcp.mapper.CallToolResultMapper;
 import io.camunda.gateway.mcp.model.McpProcessInstanceFilter;
 import io.camunda.gateway.mcp.model.McpSearchQueryPageRequest;
 import io.camunda.gateway.protocol.model.ProcessInstanceSearchQuerySortRequest;
+import io.camunda.gateway.protocol.model.simple.ProcessInstanceCreationInstruction;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.ProcessInstanceServices;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import org.springaicommunity.mcp.annotation.McpTool;
 import org.springaicommunity.mcp.annotation.McpTool.McpAnnotations;
@@ -98,84 +103,69 @@ public class ProcessInstanceTools {
     }
   }
 
-  @McpTool(description = "Create process instance.")
+  @McpTool(
+      description =
+          """
+          Create a new process instance of the given process definition. Either a processDefinitionKey or
+          a processDefinitionId (with an optional processDefinitionVersion) need to be passed.
+
+          When using the awaitCompletion flag, the tool will wait for the process instance to complete
+          and return its result variables. When using awaitCompletion, always include a unique tag
+          `mcp-tool:<uniqueId>` which can be used to search for the started process instance in case
+          of timeouts.
+          """)
   public CallToolResult createProcessInstance(
       @McpToolParam(
               description =
-                  "The unique key identifying the process definition, for example, returned for a process in the deploy resources endpoint. ",
+                  "The unique key identifying the process definition, for example, returned for a process in the deploy resources endpoint.",
               required = false)
           final String processDefinitionKey,
       @McpToolParam(
               description =
-                  "The BPMN process id of the process definition to start an instance of. ",
+                  "The BPMN process id of the process definition to start an instance of.",
               required = false)
+          @Pattern(regexp = "^[a-zA-Z_][a-zA-Z0-9_\\-.]*$")
+          @Size(min = 1)
           final String processDefinitionId,
       @McpToolParam(
               description =
-                  "The version of the process. By default, the latest version of the process is used. ",
+                  "The version of the process. By default, the latest version of the process is used. Can only be used in combination with processDefinitionId.",
               required = false)
           final Integer processDefinitionVersion,
       @McpToolParam(
               description =
-                  "JSON object that will instantiate the variables for the root variable scope of the process instance. ",
+                  "Set of variables to instantiate in the root variable scope of the process instance. Can include nested/complex objects. Which variables to set depends on the process definition.",
               required = false)
-          final Map<String, Object> variables,
+          final Map<@NotBlank String, Object> variables,
       @McpToolParam(
               description =
-                  "Wait for the process instance to complete. If the process instance completion does not occur within the requestTimeout, the request will be closed. This can lead to a 504 response status. Disabled by default. ",
+                  "Wait for the process instance to complete. If the process instance does not complete within request timeout limits, the waiting will time out and the tool will return a 504 response status. Use the unique tag you added to query process instance status. Disabled by default.",
               required = false)
           final Boolean awaitCompletion,
       @McpToolParam(
               description =
-                  "Timeout (in ms) the request waits for the process to complete. By default or when set to 0, the generic request timeout configured in the cluster is applied. ",
+                  "List of variables by name to be included in the response when awaitCompletion is set to true. If empty, all visible variables in the root scope will be returned.",
               required = false)
-          final Long requestTimeout,
+          final List<@NotBlank String> fetchVariables,
       @McpToolParam(
               description =
-                  "List of variables by name to be included in the response when awaitCompletion is set to true. If empty, all visible variables in the root scope will be returned. ",
+                  "List of tags to apply to the process instance. Tags need to start with a letter; then alphanumerics, `_`, `-`, `:`, or `.`; length ≤ 100.",
               required = false)
-          final List<String> fetchVariables,
-      @McpToolParam(
-              description =
-                  "List of tags. Tags need to start with a letter; then alphanumerics, `_`, `-`, `:`, or `.`; length ≤ 100.",
-              required = false)
-          final Set<String> tags) {
+          final Set<
+                  @Pattern(regexp = "^[A-Za-z][A-Za-z0-9_\\-:.]{0,99}$") @Size(min = 1, max = 100)
+                  String>
+              tags) {
     try {
-      final var authentication = authenticationProvider.getCamundaAuthentication();
-      final var tenantId =
-          authentication.authenticatedTenantIds() == null
-                  || authentication.authenticatedTenantIds().isEmpty()
-              ? null
-              : authentication.authenticatedTenantIds().getFirst();
-
       final var instruction =
-          new io.camunda.gateway.protocol.model.simple.ProcessInstanceCreationInstruction()
+          new ProcessInstanceCreationInstruction()
               .processDefinitionKey(processDefinitionKey)
               .processDefinitionId(processDefinitionId)
-              .tenantId(tenantId);
+              .processDefinitionVersion(processDefinitionVersion)
+              .awaitCompletion(awaitCompletion != null && awaitCompletion);
 
-      if (processDefinitionVersion != null) {
-        instruction.processDefinitionVersion(processDefinitionVersion);
-      }
-      if (variables != null) {
-        instruction.variables(variables);
-      }
-
-      if (awaitCompletion != null) {
-        instruction.awaitCompletion(awaitCompletion);
-      }
-
-      if (requestTimeout != null) {
-        instruction.requestTimeout(requestTimeout);
-      }
-
-      if (fetchVariables != null) {
-        instruction.fetchVariables(fetchVariables);
-      }
-
-      if (tags != null) {
-        instruction.tags(tags);
-      }
+      Optional.ofNullable(variables).ifPresent(instruction::variables);
+      Optional.ofNullable(fetchVariables).ifPresent(instruction::fetchVariables);
+      Optional.ofNullable(tags).ifPresent(instruction::tags);
 
       final var request =
           SimpleRequestMapper.toCreateProcessInstance(
@@ -184,16 +174,18 @@ public class ProcessInstanceTools {
         return CallToolResultMapper.mapProblemToResult(request.getLeft());
       }
 
-      final var svc = processInstanceServices.withAuthentication(authentication);
+      final var authenticatedServices =
+          processInstanceServices.withAuthentication(
+              authenticationProvider.getCamundaAuthentication());
 
       if (Boolean.TRUE.equals(awaitCompletion)) {
         return CallToolResultMapper.from(
-            svc.createProcessInstanceWithResult(request.get()),
+            authenticatedServices.createProcessInstanceWithResult(request.get()),
             ResponseMapper::toCreateProcessInstanceWithResultResponse);
       }
 
       return CallToolResultMapper.from(
-          svc.createProcessInstance(request.get()),
+          authenticatedServices.createProcessInstance(request.get()),
           ResponseMapper::toCreateProcessInstanceResponse);
     } catch (final Exception e) {
       return CallToolResultMapper.mapErrorToResult(e);
