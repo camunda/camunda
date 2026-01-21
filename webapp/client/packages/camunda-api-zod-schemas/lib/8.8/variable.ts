@@ -7,24 +7,10 @@
  */
 
 import {z} from 'zod';
-import {
-	advancedStringFilterSchema,
-	API_VERSION,
-	getQueryRequestBodySchema,
-	getQueryResponseBodySchema,
-	type Endpoint,
-} from '../common';
+import {API_VERSION, type Endpoint} from '../common';
+import {variableSearchResultSchema, variableSearchQuerySchema, variableSearchQueryResultSchema} from './gen';
 
-const variableSchema = z.object({
-	name: z.string(),
-	value: z.string(),
-	tenantId: z.string(),
-	isTruncated: z.boolean(),
-	variableKey: z.string(),
-	scopeKey: z.string(),
-	processInstanceKey: z.string(),
-});
-
+const variableSchema = variableSearchResultSchema;
 type Variable = z.infer<typeof variableSchema>;
 
 const getVariable = {
@@ -32,25 +18,10 @@ const getVariable = {
 	getUrl: ({variableKey}) => `/${API_VERSION}/variables/${variableKey}` as const,
 } as const satisfies Endpoint<Pick<Variable, 'variableKey'>>;
 
-const queryVariablesRequestBodySchema = getQueryRequestBodySchema({
-	sortFields: ['name', 'value', 'fullValue', 'tenantId', 'variableKey', 'scopeKey', 'processInstanceKey'] as const,
-	filter: z
-		.object({
-			name: advancedStringFilterSchema,
-			value: advancedStringFilterSchema,
-			variableKey: advancedStringFilterSchema,
-			scopeKey: advancedStringFilterSchema,
-			processInstanceKey: advancedStringFilterSchema,
-			...variableSchema.pick({
-				tenantId: true,
-				isTruncated: true,
-			}).shape,
-		})
-		.partial(),
-});
+const queryVariablesRequestBodySchema = variableSearchQuerySchema;
 type QueryVariablesRequestBody = z.infer<typeof queryVariablesRequestBodySchema>;
 
-const queryVariablesResponseBodySchema = getQueryResponseBodySchema(variableSchema);
+const queryVariablesResponseBodySchema = variableSearchQueryResultSchema;
 type QueryVariablesResponseBody = z.infer<typeof queryVariablesResponseBodySchema>;
 
 const queryVariables = {
