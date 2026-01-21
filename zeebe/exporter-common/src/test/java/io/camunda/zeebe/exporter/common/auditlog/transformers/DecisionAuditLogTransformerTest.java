@@ -47,6 +47,7 @@ class DecisionAuditLogTransformerTest {
     transformer.transform(record, entity);
 
     // then
+    assertThat(entity.getEntityKey()).isEqualTo("789");
     assertThat(entity.getDeploymentKey()).isEqualTo(123L);
     assertThat(entity.getDecisionRequirementsKey()).isEqualTo(456L);
     assertThat(entity.getDecisionDefinitionKey()).isEqualTo(789L);

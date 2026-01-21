@@ -43,6 +43,7 @@ class ResourceAuditLogTransformerTest {
     transformer.transform(record, entity);
 
     // then
+    assertThat(entity.getEntityKey()).isEqualTo("456");
     assertThat(entity.getDeploymentKey()).isEqualTo(123L);
     assertThat(entity.getResourceKey()).isEqualTo(456L);
   }

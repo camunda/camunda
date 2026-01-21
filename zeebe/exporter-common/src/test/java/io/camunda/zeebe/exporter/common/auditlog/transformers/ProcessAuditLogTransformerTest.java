@@ -45,6 +45,7 @@ class ProcessAuditLogTransformerTest {
     transformer.transform(record, entity);
 
     // then
+    assertThat(entity.getEntityKey()).isEqualTo("456");
     assertThat(entity.getDeploymentKey()).isEqualTo(123L);
     assertThat(entity.getProcessDefinitionKey()).isEqualTo(456L);
     assertThat(entity.getProcessDefinitionId()).isEqualTo("process-id");

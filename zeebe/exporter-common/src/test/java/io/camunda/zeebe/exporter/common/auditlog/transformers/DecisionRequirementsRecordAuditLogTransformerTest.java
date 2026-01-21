@@ -46,6 +46,7 @@ class DecisionRequirementsRecordAuditLogTransformerTest {
     transformer.transform(record, entity);
 
     // then
+    assertThat(entity.getEntityKey()).isEqualTo("123");
     assertThat(entity.getDecisionRequirementsKey()).isEqualTo(123L);
     assertThat(entity.getDecisionRequirementsId()).isEqualTo("decision-requirements-1");
     assertThat(entity.getDeploymentKey()).isEqualTo(1234L);
@@ -73,6 +74,7 @@ class DecisionRequirementsRecordAuditLogTransformerTest {
     transformer.transform(record, entity);
 
     // then
+    assertThat(entity.getEntityKey()).isEqualTo("456");
     assertThat(entity.getDecisionRequirementsKey()).isEqualTo(456L);
     assertThat(entity.getDecisionRequirementsId()).isEqualTo("decision-requirements-2");
     assertThat(entity.getDeploymentKey()).isEqualTo(1234L);

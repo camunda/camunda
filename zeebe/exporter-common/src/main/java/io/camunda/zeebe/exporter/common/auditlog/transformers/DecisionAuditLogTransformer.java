@@ -21,6 +21,7 @@ public class DecisionAuditLogTransformer implements AuditLogTransformer<Decision
   @Override
   public void transform(final Record<DecisionRecordValue> record, final AuditLogEntry log) {
     final var value = record.getValue();
+    log.setEntityKey(String.valueOf(value.getDecisionKey()));
     log.setDeploymentKey(value.getDeploymentKey());
     log.setDecisionRequirementsKey(value.getDecisionRequirementsKey());
     log.setDecisionDefinitionKey(value.getDecisionKey());
