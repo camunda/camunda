@@ -89,10 +89,18 @@ const updateElementInstanceVariables: Endpoint<{elementInstanceKey: string}> = {
 	},
 };
 
+const queryElementInstanceIncidents: Endpoint<{elementInstanceKey: string}> = {
+	method: 'POST',
+	getUrl({elementInstanceKey}) {
+		return `/${API_VERSION}/element-instances/${elementInstanceKey}/incidents/search`;
+	},
+};
+
 export {
 	queryElementInstances,
 	getElementInstance,
 	updateElementInstanceVariables,
+	queryElementInstanceIncidents,
 	queryElementInstancesRequestBodySchema,
 	queryElementInstancesResponseBodySchema,
 	getElementInstanceResponseBodySchema,

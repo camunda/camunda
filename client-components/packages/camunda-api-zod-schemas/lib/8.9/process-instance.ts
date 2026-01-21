@@ -24,6 +24,8 @@ import {
 	processInstanceModificationBatchOperationRequestSchema,
 	processInstanceModificationInstructionSchema,
 	processInstanceMigrationInstructionSchema,
+	processInstanceDeletionBatchOperationRequestSchema,
+	deleteProcessInstanceRequestSchema,
 	batchOperationCreatedResultSchema,
 	getProcessInstanceCallHierarchy200Schema,
 	getProcessInstanceStatistics200Schema,
@@ -181,6 +183,36 @@ const migrateProcessInstance: Endpoint<{processInstanceKey: string}> = {
 	getUrl: ({processInstanceKey}) => `/${API_VERSION}/process-instances/${processInstanceKey}/migration`,
 };
 
+const deleteProcessInstanceRequestBodySchema = deleteProcessInstanceRequestSchema;
+type DeleteProcessInstanceRequestBody = z.infer<typeof deleteProcessInstanceRequestBodySchema>;
+
+const deleteProcessInstanceResponseBodySchema = batchOperationCreatedResultSchema;
+type DeleteProcessInstanceResponseBody = z.infer<typeof deleteProcessInstanceResponseBodySchema>;
+
+const deleteProcessInstance: Endpoint<{processInstanceKey: string}> = {
+	method: 'POST',
+	getUrl: ({processInstanceKey}) => `/${API_VERSION}/process-instances/${processInstanceKey}/deletion`,
+};
+
+const createDeletionBatchOperationRequestBodySchema = processInstanceDeletionBatchOperationRequestSchema;
+type CreateDeletionBatchOperationRequestBody = z.infer<typeof createDeletionBatchOperationRequestBodySchema>;
+
+const createDeletionBatchOperationResponseBodySchema = batchOperationCreatedResultSchema;
+type CreateDeletionBatchOperationResponseBody = z.infer<typeof createDeletionBatchOperationResponseBodySchema>;
+
+const createDeletionBatchOperation: Endpoint = {
+	method: 'POST',
+	getUrl: () => `/${API_VERSION}/process-instances/deletion`,
+};
+
+const resolveProcessInstanceIncidentsResponseBodySchema = batchOperationCreatedResultSchema;
+type ResolveProcessInstanceIncidentsResponseBody = z.infer<typeof resolveProcessInstanceIncidentsResponseBodySchema>;
+
+const resolveProcessInstanceIncidents: Endpoint<{processInstanceKey: string}> = {
+	method: 'POST',
+	getUrl: ({processInstanceKey}) => `/${API_VERSION}/process-instances/${processInstanceKey}/incident-resolution`,
+};
+
 export {
 	createProcessInstance,
 	getProcessInstance,
@@ -194,8 +226,11 @@ export {
 	createCancellationBatchOperation,
 	createMigrationBatchOperation,
 	createModificationBatchOperation,
+	createDeletionBatchOperation,
 	modifyProcessInstance,
 	migrateProcessInstance,
+	deleteProcessInstance,
+	resolveProcessInstanceIncidents,
 	createProcessInstanceRequestBodySchema,
 	createProcessInstanceResponseBodySchema,
 	modifyProcessInstanceRequestBodySchema,
@@ -208,6 +243,11 @@ export {
 	getProcessInstanceCallHierarchyResponseBodySchema,
 	getProcessInstanceStatisticsResponseBodySchema,
 	getProcessInstanceSequenceFlowsResponseBodySchema,
+	deleteProcessInstanceRequestBodySchema,
+	deleteProcessInstanceResponseBodySchema,
+	createDeletionBatchOperationRequestBodySchema,
+	createDeletionBatchOperationResponseBodySchema,
+	resolveProcessInstanceIncidentsResponseBodySchema,
 	processInstanceStateSchema,
 	processInstanceSchema,
 	sequenceFlowSchema,
@@ -236,6 +276,11 @@ export type {
 	CreateMigrationBatchOperationResponseBody,
 	CreateModificationBatchOperationRequestBody,
 	CreateModificationBatchOperationResponseBody,
+	CreateDeletionBatchOperationRequestBody,
+	CreateDeletionBatchOperationResponseBody,
 	ModifyProcessInstanceRequestBody,
 	MigrateProcessInstanceRequestBody,
+	DeleteProcessInstanceRequestBody,
+	DeleteProcessInstanceResponseBody,
+	ResolveProcessInstanceIncidentsResponseBody,
 };
