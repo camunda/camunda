@@ -38,6 +38,7 @@
     <module>gateway-rest</module>
     <module>exporter-api</module>
     <module>exporter-common</module>
+    <module>exporter-filter</module>
     <module>exporter-test</module>
     <module>protocol-asserts</module>
     <module>exporters/camunda-exporter</module>
