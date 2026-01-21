@@ -8,77 +8,234 @@
 
 import {z} from 'zod';
 import {API_VERSION, type Endpoint} from '../common';
-import {type ProcessInstance} from '../8.8';
+import {queryIncidentsRequestBodySchema, queryIncidentsResponseBodySchema} from './incident';
+import {
+	cancelProcessInstanceRequestSchema,
+	processInstanceCreationInstructionSchema,
+	createProcessInstanceResultSchema,
+	processInstanceCallHierarchyEntrySchema,
+	processInstanceSequenceFlowResultSchema,
+	processInstanceSequenceFlowsQueryResultSchema,
+	processInstanceSearchQuerySchema,
+	processInstanceSearchQueryResultSchema,
+	processInstanceCancellationBatchOperationRequestSchema,
+	processInstanceIncidentResolutionBatchOperationRequestSchema,
+	processInstanceMigrationBatchOperationRequestSchema,
+	processInstanceModificationBatchOperationRequestSchema,
+	processInstanceModificationInstructionSchema,
+	processInstanceMigrationInstructionSchema,
+	batchOperationCreatedResultSchema,
+	getProcessInstanceCallHierarchy200Schema,
+	getProcessInstanceStatistics200Schema,
+	processInstanceResultSchema,
+	processInstanceStateEnumSchema,
+} from './gen';
 
-const deleteProcessInstanceRequestBodySchema = z
-	.object({
-		operationReference: z.number().int(),
-	})
-	.optional();
-type DeleteProcessInstanceRequestBody = z.infer<typeof deleteProcessInstanceRequestBodySchema>;
+const processInstanceSchema = processInstanceResultSchema;
+type ProcessInstance = z.infer<typeof processInstanceSchema>;
+const processInstanceStateSchema = processInstanceStateEnumSchema;
+type ProcessInstanceState = z.infer<typeof processInstanceStateSchema>;
 
-const deleteProcessInstance: Endpoint<Pick<ProcessInstance, 'processInstanceKey'>> = {
-	method: 'POST',
-	getUrl: ({processInstanceKey}) => `/${API_VERSION}/process-instances/${processInstanceKey}/deletion`,
+const queryProcessInstancesRequestBodySchema = processInstanceSearchQuerySchema;
+type QueryProcessInstancesRequestBody = z.infer<typeof queryProcessInstancesRequestBodySchema>;
+
+const queryProcessInstancesResponseBodySchema = processInstanceSearchQueryResultSchema;
+type QueryProcessInstancesResponseBody = z.infer<typeof queryProcessInstancesResponseBodySchema>;
+
+const cancelProcessInstanceRequestBodySchema = cancelProcessInstanceRequestSchema;
+type CancelProcessInstanceRequestBody = z.infer<typeof cancelProcessInstanceRequestBodySchema>;
+
+const getProcessInstance: Endpoint<{processInstanceKey: string}> = {
+	method: 'GET',
+	getUrl: ({processInstanceKey}) => `/${API_VERSION}/process-instances/${processInstanceKey}`,
 };
 
-const variableInstructionSchema = z.object({
-	variables: z.record(z.string(), z.unknown()),
-	scopeId: z.string().optional(),
-});
-const activateInstructionSchema = z.object({
-	elementId: z.string(),
-	variableInstructions: z.array(variableInstructionSchema).optional(),
-	ancestorElementInstanceKey: z.string().optional(),
-});
-const moveInstructionSchema = z.object({
-	sourceElementInstruction: z.discriminatedUnion('sourceType', [
-		z.object({sourceType: z.literal('byId'), sourceElementId: z.string()}),
-		z.object({sourceType: z.literal('byKey'), sourceElementInstanceKey: z.string()}),
-	]),
-	targetElementId: z.string(),
-	ancestorScopeInstruction: z
-		.discriminatedUnion('ancestorScopeType', [
-			z.object({ancestorScopeType: z.literal('direct'), ancestorElementInstanceKey: z.string()}),
-			z.object({ancestorScopeType: z.literal('inferred')}),
-			z.object({ancestorScopeType: z.literal('sourceParent')}),
-		])
-		.optional(),
-	variableInstructions: z.array(variableInstructionSchema).optional(),
-});
-const terminateInstructionSchema = z.union([
-	z.object({elementId: z.string()}).strict(),
-	z.object({elementInstanceKey: z.string()}).strict(),
-]);
+const createProcessInstanceRequestBodySchema = processInstanceCreationInstructionSchema;
+type CreateProcessInstanceRequestBody = z.infer<typeof createProcessInstanceRequestBodySchema>;
 
-const modifyProcessInstanceRequestBodySchema = z
-	.object({
-		operationReference: z.number().optional(),
-		activateInstructions: z.array(activateInstructionSchema).optional(),
-		moveInstructions: z.array(moveInstructionSchema).optional(),
-		terminateInstructions: z.array(terminateInstructionSchema).optional(),
-	})
-	.refine(
-		({activateInstructions, moveInstructions, terminateInstructions}) =>
-			(activateInstructions !== undefined && activateInstructions.length > 0) ||
-			(moveInstructions !== undefined && moveInstructions.length > 0) ||
-			(terminateInstructions !== undefined && terminateInstructions.length > 0),
-		{
-			message:
-				'At least one instruction (activateInstructions, moveInstructions, or terminateInstructions) must be provided with at least one element',
-		},
-	);
+const createProcessInstanceResponseBodySchema = createProcessInstanceResultSchema;
+type CreateProcessInstanceResponseBody = z.infer<typeof createProcessInstanceResponseBodySchema>;
+
+const createProcessInstance: Endpoint = {
+	method: 'POST',
+	getUrl: () => `/${API_VERSION}/process-instances`,
+};
+
+const queryProcessInstances: Endpoint = {
+	method: 'POST',
+	getUrl: () => `/${API_VERSION}/process-instances/search`,
+};
+
+const cancelProcessInstance: Endpoint<{processInstanceKey: string}> = {
+	method: 'POST',
+	getUrl: ({processInstanceKey}) => `/${API_VERSION}/process-instances/${processInstanceKey}/cancellation`,
+};
+
+const queryProcessInstanceIncidentsRequestBodySchema = queryIncidentsRequestBodySchema;
+type QueryProcessInstanceIncidentsRequestBody = z.infer<typeof queryProcessInstanceIncidentsRequestBodySchema>;
+
+const queryProcessInstanceIncidentsResponseBodySchema = queryIncidentsResponseBodySchema;
+type QueryProcessInstanceIncidentsResponseBody = z.infer<typeof queryProcessInstanceIncidentsResponseBodySchema>;
+
+const queryProcessInstanceIncidents: Endpoint<{processInstanceKey: string}> = {
+	method: 'POST',
+	getUrl: ({processInstanceKey}) => `/${API_VERSION}/process-instances/${processInstanceKey}/incidents/search`,
+};
+
+const getProcessInstanceCallHierarchy: Endpoint<{processInstanceKey: string}> = {
+	method: 'GET',
+	getUrl: ({processInstanceKey}) => `/${API_VERSION}/process-instances/${processInstanceKey}/call-hierarchy`,
+};
+
+const callHierarchySchema = processInstanceCallHierarchyEntrySchema;
+type CallHierarchy = z.infer<typeof callHierarchySchema>;
+const getProcessInstanceCallHierarchyResponseBodySchema = getProcessInstanceCallHierarchy200Schema;
+type GetProcessInstanceCallHierarchyResponseBody = z.infer<typeof getProcessInstanceCallHierarchyResponseBodySchema>;
+
+const getProcessInstanceStatistics: Endpoint<GetProcessInstanceStatisticsParams> = {
+	method: 'GET',
+	getUrl: ({processInstanceKey, statisticName = 'element-instances'}) =>
+		`/${API_VERSION}/process-instances/${processInstanceKey}/statistics/${statisticName}`,
+};
+
+const getProcessInstanceStatisticsResponseBodySchema = getProcessInstanceStatistics200Schema;
+type GetProcessInstanceStatisticsResponseBody = z.infer<typeof getProcessInstanceStatisticsResponseBodySchema>;
+
+type GetProcessInstanceStatisticsParams = {processInstanceKey: string} & {
+	statisticName: 'element-instances';
+};
+
+const getProcessInstanceSequenceFlows: Endpoint<{processInstanceKey: string}> = {
+	method: 'GET',
+	getUrl: ({processInstanceKey}) => `/${API_VERSION}/process-instances/${processInstanceKey}/sequence-flows`,
+};
+
+const sequenceFlowSchema = processInstanceSequenceFlowResultSchema;
+type SequenceFlow = z.infer<typeof sequenceFlowSchema>;
+
+const getProcessInstanceSequenceFlowsResponseBodySchema = processInstanceSequenceFlowsQueryResultSchema;
+type GetProcessInstanceSequenceFlowsResponseBody = z.infer<typeof getProcessInstanceSequenceFlowsResponseBodySchema>;
+
+const createIncidentResolutionBatchOperationRequestBodySchema =
+	processInstanceIncidentResolutionBatchOperationRequestSchema;
+type CreateIncidentResolutionBatchOperationRequestBody = z.infer<
+	typeof createIncidentResolutionBatchOperationRequestBodySchema
+>;
+
+const createIncidentResolutionBatchOperationResponseBodySchema = batchOperationCreatedResultSchema;
+type CreateIncidentResolutionBatchOperationResponseBody = z.infer<
+	typeof createIncidentResolutionBatchOperationResponseBodySchema
+>;
+
+const createIncidentResolutionBatchOperation: Endpoint = {
+	method: 'POST',
+	getUrl: () => `/${API_VERSION}/process-instances/incident-resolution`,
+};
+
+const createCancellationBatchOperationRequestBodySchema = processInstanceCancellationBatchOperationRequestSchema;
+type CreateCancellationBatchOperationRequestBody = z.infer<typeof createCancellationBatchOperationRequestBodySchema>;
+
+const createCancellationBatchOperationResponseBodySchema = batchOperationCreatedResultSchema;
+type CreateCancellationBatchOperationResponseBody = z.infer<typeof createCancellationBatchOperationResponseBodySchema>;
+
+const createCancellationBatchOperation: Endpoint = {
+	method: 'POST',
+	getUrl: () => `/${API_VERSION}/process-instances/cancellation`,
+};
+
+const createMigrationBatchOperationRequestBodySchema = processInstanceMigrationBatchOperationRequestSchema;
+type CreateMigrationBatchOperationRequestBody = z.infer<typeof createMigrationBatchOperationRequestBodySchema>;
+
+const createMigrationBatchOperationResponseBodySchema = batchOperationCreatedResultSchema;
+type CreateMigrationBatchOperationResponseBody = z.infer<typeof createMigrationBatchOperationResponseBodySchema>;
+
+const createMigrationBatchOperation: Endpoint = {
+	method: 'POST',
+	getUrl: () => `/${API_VERSION}/process-instances/migration`,
+};
+
+const createModificationBatchOperationRequestBodySchema = processInstanceModificationBatchOperationRequestSchema;
+type CreateModificationBatchOperationRequestBody = z.infer<typeof createModificationBatchOperationRequestBodySchema>;
+
+const createModificationBatchOperationResponseBodySchema = batchOperationCreatedResultSchema;
+type CreateModificationBatchOperationResponseBody = z.infer<typeof createModificationBatchOperationResponseBodySchema>;
+
+const createModificationBatchOperation: Endpoint = {
+	method: 'POST',
+	getUrl: () => `/${API_VERSION}/process-instances/modification`,
+};
+
+const modifyProcessInstanceRequestBodySchema = processInstanceModificationInstructionSchema;
 type ModifyProcessInstanceRequestBody = z.infer<typeof modifyProcessInstanceRequestBodySchema>;
 
-const modifyProcessInstance: Endpoint<Pick<ProcessInstance, 'processInstanceKey'>> = {
+const modifyProcessInstance: Endpoint<{processInstanceKey: string}> = {
 	method: 'POST',
 	getUrl: ({processInstanceKey}) => `/${API_VERSION}/process-instances/${processInstanceKey}/modification`,
 };
 
-export {
-	deleteProcessInstanceRequestBodySchema,
-	deleteProcessInstance,
-	modifyProcessInstanceRequestBodySchema,
-	modifyProcessInstance,
+const migrateProcessInstanceRequestBodySchema = processInstanceMigrationInstructionSchema;
+type MigrateProcessInstanceRequestBody = z.infer<typeof migrateProcessInstanceRequestBodySchema>;
+
+const migrateProcessInstance: Endpoint<{processInstanceKey: string}> = {
+	method: 'POST',
+	getUrl: ({processInstanceKey}) => `/${API_VERSION}/process-instances/${processInstanceKey}/migration`,
 };
-export type {DeleteProcessInstanceRequestBody, ModifyProcessInstanceRequestBody};
+
+export {
+	createProcessInstance,
+	getProcessInstance,
+	queryProcessInstances,
+	cancelProcessInstance,
+	queryProcessInstanceIncidents,
+	getProcessInstanceCallHierarchy,
+	getProcessInstanceStatistics,
+	getProcessInstanceSequenceFlows,
+	createIncidentResolutionBatchOperation,
+	createCancellationBatchOperation,
+	createMigrationBatchOperation,
+	createModificationBatchOperation,
+	modifyProcessInstance,
+	migrateProcessInstance,
+	createProcessInstanceRequestBodySchema,
+	createProcessInstanceResponseBodySchema,
+	modifyProcessInstanceRequestBodySchema,
+	migrateProcessInstanceRequestBodySchema,
+	queryProcessInstancesRequestBodySchema,
+	queryProcessInstancesResponseBodySchema,
+	cancelProcessInstanceRequestBodySchema,
+	queryProcessInstanceIncidentsRequestBodySchema,
+	queryProcessInstanceIncidentsResponseBodySchema,
+	getProcessInstanceCallHierarchyResponseBodySchema,
+	getProcessInstanceStatisticsResponseBodySchema,
+	getProcessInstanceSequenceFlowsResponseBodySchema,
+	processInstanceStateSchema,
+	processInstanceSchema,
+	sequenceFlowSchema,
+	callHierarchySchema,
+};
+export type {
+	CreateProcessInstanceRequestBody,
+	CreateProcessInstanceResponseBody,
+	QueryProcessInstancesRequestBody,
+	QueryProcessInstancesResponseBody,
+	CancelProcessInstanceRequestBody,
+	QueryProcessInstanceIncidentsRequestBody,
+	QueryProcessInstanceIncidentsResponseBody,
+	CallHierarchy,
+	GetProcessInstanceCallHierarchyResponseBody,
+	SequenceFlow,
+	GetProcessInstanceSequenceFlowsResponseBody,
+	ProcessInstanceState,
+	ProcessInstance,
+	GetProcessInstanceStatisticsResponseBody,
+	CreateIncidentResolutionBatchOperationRequestBody,
+	CreateIncidentResolutionBatchOperationResponseBody,
+	CreateCancellationBatchOperationRequestBody,
+	CreateCancellationBatchOperationResponseBody,
+	CreateMigrationBatchOperationRequestBody,
+	CreateMigrationBatchOperationResponseBody,
+	CreateModificationBatchOperationRequestBody,
+	CreateModificationBatchOperationResponseBody,
+	ModifyProcessInstanceRequestBody,
+	MigrateProcessInstanceRequestBody,
+};

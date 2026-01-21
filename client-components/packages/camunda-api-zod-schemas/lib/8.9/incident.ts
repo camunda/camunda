@@ -7,92 +7,58 @@
  */
 
 import {z} from 'zod';
-import {API_VERSION, getQueryRequestBodySchema, getQueryResponseBodySchema, type Endpoint} from '../common';
+import {API_VERSION, type Endpoint} from '../common';
+import {incidentResultSchema, incidentSearchQuerySchema, incidentSearchQueryResultSchema} from './gen';
 
-const getIncidentProcessInstanceStatisticsByError: Endpoint = {
+const incidentErrorTypeSchema = incidentResultSchema.shape.errorType.unwrap();
+type IncidentErrorType = z.infer<typeof incidentErrorTypeSchema>;
+
+const incidentStateSchema = incidentResultSchema.shape.state.unwrap();
+type IncidentState = z.infer<typeof incidentStateSchema>;
+
+const incidentSchema = incidentResultSchema;
+type Incident = z.infer<typeof incidentSchema>;
+
+const resolveIncident: Endpoint<{incidentKey: string}> = {
 	method: 'POST',
-	getUrl: () => `/${API_VERSION}/incidents/statistics/process-instances-by-error`,
+	getUrl: ({incidentKey}) => `/${API_VERSION}/incidents/${incidentKey}/resolution`,
 };
 
-const getIncidentProcessInstanceStatisticsByDefinition: Endpoint = {
-	method: 'POST',
-	getUrl: () => `/${API_VERSION}/incidents/statistics/process-instances-by-definition`,
+const getIncident: Endpoint<{incidentKey: string}> = {
+	method: 'GET',
+	getUrl: ({incidentKey}) => `/${API_VERSION}/incidents/${incidentKey}`,
 };
 
-const incidentProcessInstanceStatisticsByErrorSchema = z.object({
-	errorHashCode: z.number(),
-	errorMessage: z.string(),
-	activeInstancesWithErrorCount: z.number(),
-});
+const getIncidentResponseBodySchema = incidentResultSchema;
+type GetIncidentResponseBody = z.infer<typeof getIncidentResponseBodySchema>;
 
-const incidentProcessInstanceStatisticsByDefinitionSchema = z.object({
-	processDefinitionId: z.string(),
-	processDefinitionKey: z.number(),
-	processDefinitionName: z.string().optional(),
-	processDefinitionVersion: z.number(),
-	tenantId: z.string(),
-	activeInstancesWithErrorCount: z.number(),
-});
+const queryIncidentsRequestBodySchema = incidentSearchQuerySchema;
+type QueryIncidentsRequestBody = z.infer<typeof queryIncidentsRequestBodySchema>;
 
-type IncidentProcessInstanceStatisticsByError = z.infer<typeof incidentProcessInstanceStatisticsByErrorSchema>;
+const queryIncidentsResponseBodySchema = incidentSearchQueryResultSchema;
+type QueryIncidentsResponseBody = z.infer<typeof queryIncidentsResponseBodySchema>;
 
-type IncidentProcessInstanceStatisticsByDefinition = z.infer<
-	typeof incidentProcessInstanceStatisticsByDefinitionSchema
->;
-
-const getIncidentProcessInstanceStatisticsByErrorRequestBodySchema = getQueryRequestBodySchema({
-	sortFields: ['errorMessage', 'activeInstancesWithErrorCount'] as const,
-	filter: z.never(),
-});
-
-const incidentProcessInstanceStatisticsByDefinitionFilterSchema = z.object({
-	errorHashCode: z.number(),
-});
-
-const getIncidentProcessInstanceStatisticsByDefinitionRequestBodySchema = getQueryRequestBodySchema({
-	sortFields: ['processDefinitionKey', 'activeInstancesWithErrorCount', 'tenantId'] as const,
-	filter: incidentProcessInstanceStatisticsByDefinitionFilterSchema,
-});
-
-type GetIncidentProcessInstanceStatisticsByErrorRequestBody = z.infer<
-	typeof getIncidentProcessInstanceStatisticsByErrorRequestBodySchema
->;
-
-type GetIncidentProcessInstanceStatisticsByDefinitionRequestBody = z.infer<
-	typeof getIncidentProcessInstanceStatisticsByDefinitionRequestBodySchema
->;
-
-const getIncidentProcessInstanceStatisticsByErrorResponseBodySchema = getQueryResponseBodySchema(
-	incidentProcessInstanceStatisticsByErrorSchema,
-);
-
-const getIncidentProcessInstanceStatisticsByDefinitionResponseBodySchema = getQueryResponseBodySchema(
-	incidentProcessInstanceStatisticsByDefinitionSchema,
-);
-
-type GetIncidentProcessInstanceStatisticsByErrorResponseBody = z.infer<
-	typeof getIncidentProcessInstanceStatisticsByErrorResponseBodySchema
->;
-
-type GetIncidentProcessInstanceStatisticsByDefinitionResponseBody = z.infer<
-	typeof getIncidentProcessInstanceStatisticsByDefinitionResponseBodySchema
->;
+const queryIncidents: Endpoint = {
+	method: 'POST',
+	getUrl: () => `/${API_VERSION}/incidents/search`,
+};
 
 export {
-	getIncidentProcessInstanceStatisticsByError,
-	incidentProcessInstanceStatisticsByErrorSchema,
-	getIncidentProcessInstanceStatisticsByErrorRequestBodySchema,
-	getIncidentProcessInstanceStatisticsByErrorResponseBodySchema,
-	getIncidentProcessInstanceStatisticsByDefinition,
-	incidentProcessInstanceStatisticsByDefinitionSchema,
-	getIncidentProcessInstanceStatisticsByDefinitionRequestBodySchema,
-	getIncidentProcessInstanceStatisticsByDefinitionResponseBodySchema,
+	resolveIncident,
+	getIncident,
+	queryIncidents,
+	getIncidentResponseBodySchema,
+	queryIncidentsRequestBodySchema,
+	queryIncidentsResponseBodySchema,
+	incidentErrorTypeSchema,
+	incidentStateSchema,
+	incidentSchema,
 };
 export type {
-	IncidentProcessInstanceStatisticsByError,
-	GetIncidentProcessInstanceStatisticsByErrorRequestBody,
-	GetIncidentProcessInstanceStatisticsByErrorResponseBody,
-	IncidentProcessInstanceStatisticsByDefinition,
-	GetIncidentProcessInstanceStatisticsByDefinitionRequestBody,
-	GetIncidentProcessInstanceStatisticsByDefinitionResponseBody,
+	IncidentErrorType,
+	IncidentState,
+	Incident,
+	GetIncidentResponseBody,
+	QueryIncidentsRequestBody,
+	QueryIncidentsResponseBody,
 };
