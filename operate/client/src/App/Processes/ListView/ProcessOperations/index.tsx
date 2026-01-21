@@ -6,20 +6,20 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
 import {DangerButton} from 'modules/components/OperationItem/DangerButton';
 import {OperationItems} from 'modules/components/OperationItems';
 import {DeleteButtonContainer} from 'modules/components/DeleteDefinition/styled';
 import {InlineLoading, Link, ListItem, Stack} from '@carbon/react';
 import {DeleteDefinitionModal} from 'modules/components/DeleteDefinitionModal';
+import {operationsStore} from 'modules/stores/operations';
 import {StructuredList} from 'modules/components/StructuredList';
 import {UnorderedList} from 'modules/components/DeleteDefinitionModal/Warning/styled';
 import {notificationsStore} from 'modules/stores/notifications';
 import {handleOperationError} from 'modules/utils/notifications';
 import {tracking} from 'modules/tracking';
 import {observer} from 'mobx-react';
-import {useRunningInstancesCount} from 'modules/queries/processInstance/useRunningInstancesCount';
-import {useDeleteResource} from 'modules/mutations/resource/useDeleteResource';
+import {processInstancesStore} from 'modules/stores/processInstances';
 
 type Props = {
   processDefinitionId: string;
@@ -32,28 +32,17 @@ const ProcessOperations: React.FC<Props> = observer(
     const [isDeleteModalVisible, setIsDeleteModalVisible] =
       useState<boolean>(false);
 
-    const {data: runningInstancesCount} = useRunningInstancesCount({
-      processDefinitionKey: processDefinitionId,
-    });
+    const [isOperationRunning, setIsOperationRunning] = useState(false);
+    const {runningInstancesCount} = processInstancesStore.state;
 
-    const deleteResourceMutation = useDeleteResource(
-      processDefinitionId,
-      {operationReference: Date.now(), deleteHistory: true},
-      {
-        onSuccess: () => {
-          notificationsStore.displayNotification({
-            kind: 'success',
-            title: 'Operation created',
-            isDismissable: true,
-          });
-        },
-        onError: (error) => {
-          handleOperationError(error?.response?.status);
-        },
-      },
-    );
+    useEffect(() => {
+      processInstancesStore.fetchRunningInstancesCount();
 
-    const isOperationRunning = deleteResourceMutation.isPending;
+      return () => {
+        setIsOperationRunning(false);
+        processInstancesStore.setRunningInstancesCount(-1);
+      };
+    }, [processDefinitionId]);
 
     return (
       <>
@@ -64,14 +53,12 @@ const ProcessOperations: React.FC<Props> = observer(
           <OperationItems>
             <DangerButton
               title={
-                (runningInstancesCount ?? 0) > 0
+                runningInstancesCount > 0
                   ? 'Only process definitions without running instances can be deleted.'
                   : `Delete Process Definition "${processName} - Version ${processVersion}"`
               }
               type="DELETE"
-              disabled={
-                isOperationRunning || (runningInstancesCount ?? 0) !== 0
-              }
+              disabled={isOperationRunning || runningInstancesCount !== 0}
               onClick={() => {
                 tracking.track({
                   eventName: 'definition-deletion-button',
@@ -136,6 +123,7 @@ const ProcessOperations: React.FC<Props> = observer(
           }
           onClose={() => setIsDeleteModalVisible(false)}
           onDelete={() => {
+            setIsOperationRunning(true);
             setIsDeleteModalVisible(false);
 
             tracking.track({
@@ -144,7 +132,22 @@ const ProcessOperations: React.FC<Props> = observer(
               version: processVersion,
             });
 
-            deleteResourceMutation.mutate();
+            operationsStore.applyDeleteProcessDefinitionOperation({
+              processDefinitionId,
+              onSuccess: () => {
+                setIsOperationRunning(false);
+
+                notificationsStore.displayNotification({
+                  kind: 'success',
+                  title: 'Operation created',
+                  isDismissable: true,
+                });
+              },
+              onError: (statusCode: number) => {
+                setIsOperationRunning(false);
+                handleOperationError(statusCode);
+              },
+            });
           }}
         />
       </>
