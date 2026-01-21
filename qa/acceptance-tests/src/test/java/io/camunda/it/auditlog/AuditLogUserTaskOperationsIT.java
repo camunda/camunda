@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
+import io.camunda.client.api.search.enums.AuditLogActorTypeEnum;
 import io.camunda.client.api.search.enums.AuditLogCategoryEnum;
 import io.camunda.client.api.search.enums.AuditLogEntityTypeEnum;
 import io.camunda.client.api.search.enums.AuditLogOperationTypeEnum;
@@ -102,6 +103,8 @@ public class AuditLogUserTaskOperationsIT {
     assertThat(auditLog.getOperationType()).isEqualTo(AuditLogOperationTypeEnum.ASSIGN);
     assertThat(auditLog.getCategory()).isEqualTo(AuditLogCategoryEnum.USER_TASKS);
     assertThat(auditLog.getResult()).isEqualTo(AuditLogResultEnum.SUCCESS);
+    assertThat(auditLog.getActorId()).isEqualTo(DEFAULT_USERNAME);
+    assertThat(auditLog.getActorType()).isEqualTo(AuditLogActorTypeEnum.USER);
   }
 
   @Test
@@ -126,6 +129,8 @@ public class AuditLogUserTaskOperationsIT {
     assertThat(auditLog.getOperationType()).isEqualTo(AuditLogOperationTypeEnum.UPDATE);
     assertThat(auditLog.getCategory()).isEqualTo(AuditLogCategoryEnum.USER_TASKS);
     assertThat(auditLog.getResult()).isEqualTo(AuditLogResultEnum.SUCCESS);
+    assertThat(auditLog.getActorId()).isEqualTo(DEFAULT_USERNAME);
+    assertThat(auditLog.getActorType()).isEqualTo(AuditLogActorTypeEnum.USER);
   }
 
   @Test
@@ -150,6 +155,8 @@ public class AuditLogUserTaskOperationsIT {
     assertThat(auditLog.getOperationType()).isEqualTo(AuditLogOperationTypeEnum.COMPLETE);
     assertThat(auditLog.getCategory()).isEqualTo(AuditLogCategoryEnum.USER_TASKS);
     assertThat(auditLog.getResult()).isEqualTo(AuditLogResultEnum.SUCCESS);
+    assertThat(auditLog.getActorId()).isEqualTo(DEFAULT_USERNAME);
+    assertThat(auditLog.getActorType()).isEqualTo(AuditLogActorTypeEnum.USER);
   }
 
   public static void updateUserTask(final UserTaskRecordValue userTask) {

@@ -11,6 +11,7 @@ import static io.camunda.it.auditlog.AuditLogUtils.DEFAULT_USERNAME;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.search.enums.AuditLogActorTypeEnum;
 import io.camunda.client.api.search.enums.AuditLogCategoryEnum;
 import io.camunda.client.api.search.enums.AuditLogEntityTypeEnum;
 import io.camunda.client.api.search.enums.AuditLogOperationTypeEnum;
@@ -92,6 +93,8 @@ public class AuditLogSearchClientIT {
     assertThat(auditLog.getProcessInstanceKey())
         .isEqualTo(String.valueOf(processInstance.getProcessInstanceKey()));
     assertThat(auditLog.getResult()).isEqualTo(AuditLogResultEnum.SUCCESS);
+    assertThat(auditLog.getActorId()).isEqualTo(DEFAULT_USERNAME);
+    assertThat(auditLog.getActorType()).isEqualTo(AuditLogActorTypeEnum.USER);
   }
 
   @Test
@@ -120,6 +123,8 @@ public class AuditLogSearchClientIT {
     assertThat(auditLog.getEntityType()).isEqualTo(AuditLogEntityTypeEnum.TENANT);
     assertThat(auditLog.getOperationType()).isEqualTo(AuditLogOperationTypeEnum.CREATE);
     assertThat(auditLog.getResult()).isEqualTo(AuditLogResultEnum.SUCCESS);
+    assertThat(auditLog.getActorId()).isEqualTo(DEFAULT_USERNAME);
+    assertThat(auditLog.getActorType()).isEqualTo(AuditLogActorTypeEnum.USER);
   }
 
   @Test
@@ -139,6 +144,8 @@ public class AuditLogSearchClientIT {
     assertThat(auditLog.getOperationType()).isEqualTo(AuditLogOperationTypeEnum.ASSIGN);
     assertThat(auditLog.getCategory()).isEqualTo(AuditLogCategoryEnum.USER_TASKS);
     assertThat(auditLog.getResult()).isEqualTo(AuditLogResultEnum.SUCCESS);
+    assertThat(auditLog.getActorId()).isEqualTo(DEFAULT_USERNAME);
+    assertThat(auditLog.getActorType()).isEqualTo(AuditLogActorTypeEnum.USER);
   }
 
   @Test
@@ -163,5 +170,7 @@ public class AuditLogSearchClientIT {
     assertThat(auditLog.getOperationType()).isEqualTo(AuditLogOperationTypeEnum.ASSIGN);
     assertThat(auditLog.getCategory()).isEqualTo(AuditLogCategoryEnum.USER_TASKS);
     assertThat(auditLog.getResult()).isEqualTo(AuditLogResultEnum.SUCCESS);
+    assertThat(auditLog.getActorId()).isEqualTo(DEFAULT_USERNAME);
+    assertThat(auditLog.getActorType()).isEqualTo(AuditLogActorTypeEnum.USER);
   }
 }

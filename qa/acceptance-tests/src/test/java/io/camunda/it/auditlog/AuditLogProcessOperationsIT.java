@@ -22,6 +22,7 @@ import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.MigrationPlan;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.ProcessInstanceEvent;
+import io.camunda.client.api.search.enums.AuditLogActorTypeEnum;
 import io.camunda.client.api.search.enums.AuditLogEntityTypeEnum;
 import io.camunda.client.api.search.enums.AuditLogOperationTypeEnum;
 import io.camunda.client.api.search.enums.AuditLogResultEnum;
@@ -141,6 +142,8 @@ public class AuditLogProcessOperationsIT {
     assertThat(auditLog.getResult()).isEqualTo(AuditLogResultEnum.SUCCESS);
     assertThat(auditLog.getTenantId()).isEqualTo(TENANT_A);
     assertThat(auditLog.getProcessDefinitionId()).isEqualTo(SERVICE_TASKS_PROCESS_ID);
+    assertThat(auditLog.getActorId()).isEqualTo(DEFAULT_USERNAME);
+    assertThat(auditLog.getActorType()).isEqualTo(AuditLogActorTypeEnum.USER);
     assertThat(auditLog.getProcessDefinitionKey())
         .isEqualTo(String.valueOf(processInstance.getProcessDefinitionKey()));
     assertThat(auditLog.getTimestamp()).isNotNull();
@@ -197,6 +200,8 @@ public class AuditLogProcessOperationsIT {
         .isEqualTo(String.valueOf(targetProcess.getProcessDefinitionKey()));
     assertThat(auditLog.getResult()).isEqualTo(AuditLogResultEnum.SUCCESS);
     assertThat(auditLog.getTenantId()).isEqualTo(TENANT_A);
+    assertThat(auditLog.getActorId()).isEqualTo(DEFAULT_USERNAME);
+    assertThat(auditLog.getActorType()).isEqualTo(AuditLogActorTypeEnum.USER);
     assertThat(auditLog.getTimestamp()).isNotNull();
     assertThat(auditLog.getAuditLogKey()).isNotNull();
   }
@@ -236,6 +241,8 @@ public class AuditLogProcessOperationsIT {
         .isEqualTo(String.valueOf(processInstance.getProcessDefinitionKey()));
     assertThat(auditLog.getResult()).isEqualTo(AuditLogResultEnum.SUCCESS);
     assertThat(auditLog.getTenantId()).isEqualTo(TENANT_A);
+    assertThat(auditLog.getActorId()).isEqualTo(DEFAULT_USERNAME);
+    assertThat(auditLog.getActorType()).isEqualTo(AuditLogActorTypeEnum.USER);
     assertThat(auditLog.getTimestamp()).isNotNull();
     assertThat(auditLog.getAuditLogKey()).isNotNull();
   }
@@ -270,6 +277,8 @@ public class AuditLogProcessOperationsIT {
     assertThat(auditLog.getResult()).isEqualTo(AuditLogResultEnum.SUCCESS);
     assertThat(auditLog.getTenantId()).isEqualTo(TENANT_A);
     assertThat(auditLog.getProcessDefinitionId()).isEqualTo(SERVICE_TASKS_PROCESS_ID);
+    assertThat(auditLog.getActorId()).isEqualTo(DEFAULT_USERNAME);
+    assertThat(auditLog.getActorType()).isEqualTo(AuditLogActorTypeEnum.USER);
     assertThat(auditLog.getProcessDefinitionKey())
         .isEqualTo(String.valueOf(processInstance.getProcessDefinitionKey()));
     assertThat(auditLog.getTimestamp()).isNotNull();
@@ -311,6 +320,8 @@ public class AuditLogProcessOperationsIT {
     assertThat(auditLog.getProcessDefinitionKey())
         .isEqualTo(String.valueOf(sharedProcessDefinitionKey));
     assertThat(auditLog.getProcessDefinitionId()).isEqualTo(SERVICE_TASKS_PROCESS_ID);
+    assertThat(auditLog.getActorId()).isEqualTo(DEFAULT_USERNAME);
+    assertThat(auditLog.getActorType()).isEqualTo(AuditLogActorTypeEnum.USER);
     assertThat(auditLog.getTimestamp()).isNotNull();
     assertThat(auditLog.getAuditLogKey()).isNotNull();
   }
@@ -353,6 +364,8 @@ public class AuditLogProcessOperationsIT {
     assertThat(auditLog.getProcessDefinitionId()).isEqualTo(SERVICE_TASKS_PROCESS_ID);
     assertThat(auditLog.getProcessDefinitionKey())
         .isEqualTo(String.valueOf(processInstance.getProcessDefinitionKey()));
+    assertThat(auditLog.getActorId()).isEqualTo(DEFAULT_USERNAME);
+    assertThat(auditLog.getActorType()).isEqualTo(AuditLogActorTypeEnum.USER);
     assertThat(auditLog.getTimestamp()).isNotNull();
     assertThat(auditLog.getAuditLogKey()).isNotNull();
   }
@@ -417,6 +430,8 @@ public class AuditLogProcessOperationsIT {
     assertThat(auditLog.getProcessDefinitionId()).isEqualTo(INCIDENT_PROCESS_ID);
     assertThat(auditLog.getProcessDefinitionKey())
         .isEqualTo(String.valueOf(processInstance.getProcessDefinitionKey()));
+    assertThat(auditLog.getActorId()).isEqualTo(DEFAULT_USERNAME);
+    assertThat(auditLog.getActorType()).isEqualTo(AuditLogActorTypeEnum.USER);
     assertThat(auditLog.getTimestamp()).isNotNull();
     assertThat(auditLog.getAuditLogKey()).isNotNull();
   }
@@ -449,6 +464,8 @@ public class AuditLogProcessOperationsIT {
     assertThat(auditLog.getEntityKey()).isNotNull();
     assertThat(auditLog.getResult()).isEqualTo(AuditLogResultEnum.SUCCESS);
     assertThat(auditLog.getTenantId()).isEqualTo(TENANT_A);
+    assertThat(auditLog.getActorId()).isEqualTo(DEFAULT_USERNAME);
+    assertThat(auditLog.getActorType()).isEqualTo(AuditLogActorTypeEnum.USER);
     assertThat(auditLog.getTimestamp()).isNotNull();
     assertThat(auditLog.getAuditLogKey()).isNotNull();
   }
@@ -502,6 +519,8 @@ public class AuditLogProcessOperationsIT {
     assertThat(auditLog.getResult()).isEqualTo(AuditLogResultEnum.SUCCESS);
     assertThat(auditLog.getOperationType()).isEqualTo(AuditLogOperationTypeEnum.CREATE);
     assertThat(auditLog.getEntityKey()).isEqualTo(batchOperationKey);
+    assertThat(auditLog.getActorId()).isEqualTo(DEFAULT_USERNAME);
+    assertThat(auditLog.getActorType()).isEqualTo(AuditLogActorTypeEnum.USER);
     assertThat(auditLog.getTimestamp()).isNotNull();
     assertThat(auditLog.getAuditLogKey()).isNotNull();
   }
@@ -560,6 +579,8 @@ public class AuditLogProcessOperationsIT {
     assertThat(batchAuditLog.getResult()).isEqualTo(AuditLogResultEnum.SUCCESS);
     assertThat(batchAuditLog.getOperationType()).isEqualTo(AuditLogOperationTypeEnum.CREATE);
     assertThat(batchAuditLog.getEntityKey()).isEqualTo(batchOperationKey);
+    assertThat(batchAuditLog.getActorId()).isEqualTo(DEFAULT_USERNAME);
+    assertThat(batchAuditLog.getActorType()).isEqualTo(AuditLogActorTypeEnum.USER);
     assertThat(batchAuditLog.getTimestamp()).isNotNull();
     assertThat(batchAuditLog.getAuditLogKey()).isNotNull();
   }
@@ -627,6 +648,8 @@ public class AuditLogProcessOperationsIT {
     assertThat(batchAuditLog.getResult()).isEqualTo(AuditLogResultEnum.SUCCESS);
     assertThat(batchAuditLog.getOperationType()).isEqualTo(AuditLogOperationTypeEnum.CREATE);
     assertThat(batchAuditLog.getEntityKey()).isEqualTo(batchOperationKey);
+    assertThat(batchAuditLog.getActorId()).isEqualTo(DEFAULT_USERNAME);
+    assertThat(batchAuditLog.getActorType()).isEqualTo(AuditLogActorTypeEnum.USER);
     assertThat(batchAuditLog.getTimestamp()).isNotNull();
     assertThat(batchAuditLog.getAuditLogKey()).isNotNull();
   }
@@ -670,6 +693,8 @@ public class AuditLogProcessOperationsIT {
     assertThat(batchAuditLog.getResult()).isEqualTo(AuditLogResultEnum.SUCCESS);
     assertThat(batchAuditLog.getOperationType()).isEqualTo(AuditLogOperationTypeEnum.CREATE);
     assertThat(batchAuditLog.getEntityKey()).isEqualTo(batchOperationKey);
+    assertThat(batchAuditLog.getActorId()).isEqualTo(DEFAULT_USERNAME);
+    assertThat(batchAuditLog.getActorType()).isEqualTo(AuditLogActorTypeEnum.USER);
     assertThat(batchAuditLog.getTimestamp()).isNotNull();
     assertThat(batchAuditLog.getAuditLogKey()).isNotNull();
   }
