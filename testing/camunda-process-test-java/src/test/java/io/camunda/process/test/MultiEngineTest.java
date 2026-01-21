@@ -15,11 +15,13 @@
  */
 package io.camunda.process.test;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.camunda.client.CamundaClient;
-import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.net.URI;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -48,8 +50,26 @@ public class MultiEngineTest {
       client.newDeployResourceCommand().addProcessModel(process, "process.bpmn").send().join();
 
       // when
-      final ProcessInstanceEvent processInstance =
-          client.newCreateInstanceCommand().bpmnProcessId("process").latestVersion().send().join();
+      final long processInstanceKey =
+          client
+              .newCreateInstanceCommand()
+              .bpmnProcessId("process")
+              .latestVersion()
+              .send()
+              .join()
+              .getProcessInstanceKey();
+
+      Awaitility.await()
+          .untilAsserted(
+              () ->
+                  assertThat(
+                          client
+                              .newProcessInstanceSearchRequest()
+                              .filter(f -> f.processInstanceKey(processInstanceKey))
+                              .send()
+                              .join()
+                              .items())
+                      .hasSize(1));
     }
   }
 }

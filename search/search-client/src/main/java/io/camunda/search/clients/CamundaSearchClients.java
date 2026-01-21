@@ -361,7 +361,7 @@ public class CamundaSearchClients implements SearchClientsProxy {
   @Override
   public SearchQueryResult<ProcessInstanceEntity> searchProcessInstances(
       final ProcessInstanceQuery query) {
-    return doSearchWithReader(readers.processInstanceReader(), query);
+    return doSearchWithReader(readers.processInstanceReader().withEngineName(engineName), query);
   }
 
   @Override
