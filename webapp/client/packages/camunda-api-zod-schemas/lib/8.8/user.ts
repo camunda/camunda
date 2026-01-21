@@ -7,58 +7,31 @@
  */
 
 import {z} from 'zod';
+import {API_VERSION, type Endpoint} from '../common';
 import {
-	API_VERSION,
-	getQueryRequestBodySchema,
-	getQueryResponseBodySchema,
-	advancedStringFilterSchema,
-	type Endpoint,
-} from '../common';
+	userResultSchema,
+	userRequestSchema,
+	userUpdateRequestSchema,
+	userSearchQueryRequestSchema,
+	userSearchResultSchema,
+} from './gen';
 
-const userSchema = z.object({
-	username: z.string(),
-	name: z.string(),
-	email: z.string(),
-});
+const userSchema = userResultSchema;
 type User = z.infer<typeof userSchema>;
 
-const createUserRequestBodySchema = userSchema
-	.pick({
-		username: true,
-		name: true,
-		email: true,
-	})
-	.extend({
-		password: z.string(),
-	});
+const createUserRequestBodySchema = userRequestSchema;
 type CreateUserRequestBody = z.infer<typeof createUserRequestBodySchema>;
 
-const createUserResponseBodySchema = userSchema;
+const createUserResponseBodySchema = userResultSchema;
 type CreateUserResponseBody = z.infer<typeof createUserResponseBodySchema>;
 
-const updateUserRequestBodySchema = userSchema
-	.pick({
-		username: true,
-		name: true,
-		email: true,
-	})
-	.extend({
-		password: z.string(),
-	})
-	.partial();
+const updateUserRequestBodySchema = userUpdateRequestSchema;
 type UpdateUserRequestBody = z.infer<typeof updateUserRequestBodySchema>;
 
-const queryUsersRequestBodySchema = getQueryRequestBodySchema({
-	sortFields: ['username', 'name', 'email'] as const,
-	filter: z.object({
-		username: advancedStringFilterSchema.optional(),
-		name: advancedStringFilterSchema.optional(),
-		email: advancedStringFilterSchema.optional(),
-	}),
-});
+const queryUsersRequestBodySchema = userSearchQueryRequestSchema;
 type QueryUsersRequestBody = z.infer<typeof queryUsersRequestBodySchema>;
 
-const queryUsersResponseBodySchema = getQueryResponseBodySchema(userSchema);
+const queryUsersResponseBodySchema = userSearchResultSchema;
 type QueryUsersResponseBody = z.infer<typeof queryUsersResponseBodySchema>;
 
 const createUser = {
