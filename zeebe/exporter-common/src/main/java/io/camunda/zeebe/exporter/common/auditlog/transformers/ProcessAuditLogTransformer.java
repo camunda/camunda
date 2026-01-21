@@ -21,6 +21,7 @@ public class ProcessAuditLogTransformer implements AuditLogTransformer<Process> 
   @Override
   public void transform(final Record<Process> record, final AuditLogEntry log) {
     final var value = record.getValue();
+    log.setEntityKey(String.valueOf(value.getProcessDefinitionKey()));
     log.setDeploymentKey(value.getDeploymentKey());
     log.setProcessDefinitionKey(value.getProcessDefinitionKey());
     log.setProcessDefinitionId(value.getBpmnProcessId());

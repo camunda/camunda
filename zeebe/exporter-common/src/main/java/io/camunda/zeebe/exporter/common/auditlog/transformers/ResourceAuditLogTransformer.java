@@ -21,6 +21,7 @@ public class ResourceAuditLogTransformer implements AuditLogTransformer<Resource
   @Override
   public void transform(final Record<Resource> record, final AuditLogEntry log) {
     final var value = record.getValue();
+    log.setEntityKey(String.valueOf(value.getResourceKey()));
     log.setDeploymentKey(value.getDeploymentKey());
     log.setResourceKey(value.getResourceKey());
   }

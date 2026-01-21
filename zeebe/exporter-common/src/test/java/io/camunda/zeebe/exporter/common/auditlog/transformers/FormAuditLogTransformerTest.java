@@ -43,6 +43,7 @@ class FormAuditLogTransformerTest {
     transformer.transform(record, entity);
 
     // then
+    assertThat(entity.getEntityKey()).isEqualTo("456");
     assertThat(entity.getDeploymentKey()).isEqualTo(123L);
     assertThat(entity.getFormKey()).isEqualTo(456L);
   }

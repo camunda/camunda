@@ -23,6 +23,7 @@ public class DecisionRequirementsRecordAuditLogTransformer
   public void transform(
       final Record<DecisionRequirementsRecordValue> record, final AuditLogEntry log) {
     final var value = record.getValue();
+    log.setEntityKey(String.valueOf(value.getDecisionRequirementsKey()));
     log.setDecisionRequirementsKey(value.getDecisionRequirementsKey());
     log.setDecisionRequirementsId(value.getDecisionRequirementsId());
     log.setDeploymentKey(value.getDeploymentKey());
