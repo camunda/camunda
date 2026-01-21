@@ -1460,6 +1460,27 @@
       </dependency>
 
       <dependency>
+        <groupId>org.rocksdb</groupId>
+        <artifactId>rocksdbjni</artifactId>
+        <version>${version.rocksdbjni}</version>
+        <classifier>win64</classifier>
+      </dependency>
+
+      <dependency>
+        <groupId>org.rocksdb</groupId>
+        <artifactId>rocksdbjni</artifactId>
+        <version>${version.rocksdbjni}</version>
+        <classifier>osx</classifier>
+      </dependency>
+
+      <dependency>
+        <groupId>org.rocksdb</groupId>
+        <artifactId>rocksdbjni</artifactId>
+        <version>${version.rocksdbjni}</version>
+        <classifier>linux64</classifier>
+      </dependency>
+
+      <dependency>
         <groupId>com.google.api.grpc</groupId>
         <artifactId>proto-google-common-protos</artifactId>
         <version>${version.protobuf-common}</version>
