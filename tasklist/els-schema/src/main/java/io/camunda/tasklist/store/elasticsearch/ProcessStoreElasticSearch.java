@@ -48,7 +48,7 @@ public class ProcessStoreElasticSearch implements ProcessStore {
   @Autowired private ProcessIndex processIndex;
   @Autowired private SecurityConfiguration securityConfiguration;
 
-  @Qualifier("tasklistEs8Client")
+  @Qualifier("tasklistEsClient")
   @Autowired
   private ElasticsearchClient es8Client;
 
