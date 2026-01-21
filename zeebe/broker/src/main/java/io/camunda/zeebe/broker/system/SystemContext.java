@@ -266,10 +266,6 @@ public final class SystemContext {
         .map(ExperimentalCfg::getEngine)
         .map(EngineCfg::getGlobalListeners)
         .ifPresent(c -> validateListenersConfig(c));
-
-    Optional.of(experimental)
-        .map(ExperimentalCfg::getRocksdb)
-        .ifPresent(c -> validateRocksDbConfig(c, cluster.getPartitionsCount()));
   }
 
   private void validateDataConfig(final DataCfg dataCfg) {

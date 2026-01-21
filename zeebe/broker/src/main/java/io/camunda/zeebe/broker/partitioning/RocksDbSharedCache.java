@@ -66,14 +66,6 @@ public class RocksDbSharedCache {
       // correctly set, and if so, we validate the allocated memory does not go above the threshold.
       validateMaxMemoryFraction(rocksdbCfg, totalMemorySize, blockCacheBytes);
     }
-
-    // validate that each partition has at least the minimum required memory
-    if (blockCacheBytes / partitionsCount < MINIMUM_PARTITION_MEMORY_LIMIT) {
-      throw new IllegalArgumentException(
-          String.format(
-              "Expected the allocated memory for RocksDB per partition to be at least %s bytes, but was %s bytes.",
-              MINIMUM_PARTITION_MEMORY_LIMIT, blockCacheBytes / partitionsCount));
-    }
   }
 
   private static void validateMaxMemoryFraction(
