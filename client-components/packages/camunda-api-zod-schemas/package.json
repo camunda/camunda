@@ -207,6 +207,12 @@
 				"default": "./dist/8.9.js"
 			}
 		},
+		"./8.9/ad-hoc-sub-process": {
+			"import": {
+				"types": "./dist/8.9/ad-hoc-sub-process.d.ts",
+				"default": "./dist/8.9/ad-hoc-sub-process.js"
+			}
+		},
 		"./8.9/audit-log": {
 			"import": {
 				"types": "./dist/8.9/audit-log.d.ts",
@@ -323,8 +329,8 @@
 		},
 		"./8.9/user-task": {
 			"import": {
-				"types": "./dist/8.9/user-task.d.ts",
-				"default": "./dist/8.9/user-task.js"
+				"types": "./dist/8.9/process-definition.d.ts",
+				"default": "./dist/8.9/process-definition.js"
 			}
 		},
 		"./8.9/process-instance": {
