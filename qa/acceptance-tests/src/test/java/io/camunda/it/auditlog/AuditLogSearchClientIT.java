@@ -84,17 +84,16 @@ public class AuditLogSearchClientIT {
     // then
     final var auditLog = auditLogItems.items().getFirst();
     assertThat(auditLog).isNotNull();
-    assertThat(auditLog.getEntityType()).isEqualTo(AuditLogEntityTypeEnum.PROCESS_INSTANCE);
-    assertThat(auditLog.getOperationType()).isEqualTo(AuditLogOperationTypeEnum.CREATE);
-    assertThat(auditLog.getCategory()).isEqualTo(AuditLogCategoryEnum.DEPLOYED_RESOURCES);
+    assertCommonAuditLogFields(
+        auditLog,
+        AuditLogEntityTypeEnum.PROCESS_INSTANCE,
+        AuditLogOperationTypeEnum.CREATE,
+        AuditLogCategoryEnum.DEPLOYED_RESOURCES);
     assertThat(auditLog.getProcessDefinitionId()).isEqualTo(processInstance.getBpmnProcessId());
     assertThat(auditLog.getProcessDefinitionKey())
         .isEqualTo(String.valueOf(processInstance.getProcessDefinitionKey()));
     assertThat(auditLog.getProcessInstanceKey())
         .isEqualTo(String.valueOf(processInstance.getProcessInstanceKey()));
-    assertThat(auditLog.getResult()).isEqualTo(AuditLogResultEnum.SUCCESS);
-    assertThat(auditLog.getActorId()).isEqualTo(DEFAULT_USERNAME);
-    assertThat(auditLog.getActorType()).isEqualTo(AuditLogActorTypeEnum.USER);
   }
 
   @Test
@@ -120,11 +119,11 @@ public class AuditLogSearchClientIT {
     final var auditLog = auditLogItems.items().getFirst();
     assertThat(auditLogItems.items().size()).isEqualTo(1);
     assertThat(auditLog).isNotNull();
-    assertThat(auditLog.getEntityType()).isEqualTo(AuditLogEntityTypeEnum.TENANT);
-    assertThat(auditLog.getOperationType()).isEqualTo(AuditLogOperationTypeEnum.CREATE);
-    assertThat(auditLog.getResult()).isEqualTo(AuditLogResultEnum.SUCCESS);
-    assertThat(auditLog.getActorId()).isEqualTo(DEFAULT_USERNAME);
-    assertThat(auditLog.getActorType()).isEqualTo(AuditLogActorTypeEnum.USER);
+    assertCommonAuditLogFields(
+        auditLog,
+        AuditLogEntityTypeEnum.TENANT,
+        AuditLogOperationTypeEnum.CREATE,
+        AuditLogCategoryEnum.ADMIN);
   }
 
   @Test
@@ -140,12 +139,11 @@ public class AuditLogSearchClientIT {
     final var auditLog = auditLogItems.items().getFirst();
     assertThat(auditLog).isNotNull();
     assertThat(auditLog.getUserTaskKey()).isEqualTo(String.valueOf(userTask));
-    assertThat(auditLog.getEntityType()).isEqualTo(AuditLogEntityTypeEnum.USER_TASK);
-    assertThat(auditLog.getOperationType()).isEqualTo(AuditLogOperationTypeEnum.ASSIGN);
-    assertThat(auditLog.getCategory()).isEqualTo(AuditLogCategoryEnum.USER_TASKS);
-    assertThat(auditLog.getResult()).isEqualTo(AuditLogResultEnum.SUCCESS);
-    assertThat(auditLog.getActorId()).isEqualTo(DEFAULT_USERNAME);
-    assertThat(auditLog.getActorType()).isEqualTo(AuditLogActorTypeEnum.USER);
+    assertCommonAuditLogFields(
+        auditLog,
+        AuditLogEntityTypeEnum.USER_TASK,
+        AuditLogOperationTypeEnum.ASSIGN,
+        AuditLogCategoryEnum.USER_TASKS);
   }
 
   @Test
@@ -166,9 +164,33 @@ public class AuditLogSearchClientIT {
     final var auditLog = auditLogItems.items().getFirst();
     assertThat(auditLog).isNotNull();
     assertThat(auditLog.getUserTaskKey()).isEqualTo(String.valueOf(userTask));
-    assertThat(auditLog.getEntityType()).isEqualTo(AuditLogEntityTypeEnum.USER_TASK);
-    assertThat(auditLog.getOperationType()).isEqualTo(AuditLogOperationTypeEnum.ASSIGN);
-    assertThat(auditLog.getCategory()).isEqualTo(AuditLogCategoryEnum.USER_TASKS);
+    assertCommonAuditLogFields(
+        auditLog,
+        AuditLogEntityTypeEnum.USER_TASK,
+        AuditLogOperationTypeEnum.ASSIGN,
+        AuditLogCategoryEnum.USER_TASKS);
+  }
+
+  // ========================================================================================
+  // Helper Methods
+  // ========================================================================================
+
+  /**
+   * Asserts common audit log fields that are present in all audit logs.
+   *
+   * @param auditLog the audit log to verify
+   * @param entityType the expected entity type
+   * @param operationType the expected operation type
+   * @param category the expected category
+   */
+  private void assertCommonAuditLogFields(
+      final io.camunda.client.api.search.response.AuditLogResult auditLog,
+      final AuditLogEntityTypeEnum entityType,
+      final AuditLogOperationTypeEnum operationType,
+      final AuditLogCategoryEnum category) {
+    assertThat(auditLog.getEntityType()).isEqualTo(entityType);
+    assertThat(auditLog.getOperationType()).isEqualTo(operationType);
+    assertThat(auditLog.getCategory()).isEqualTo(category);
     assertThat(auditLog.getResult()).isEqualTo(AuditLogResultEnum.SUCCESS);
     assertThat(auditLog.getActorId()).isEqualTo(DEFAULT_USERNAME);
     assertThat(auditLog.getActorType()).isEqualTo(AuditLogActorTypeEnum.USER);
