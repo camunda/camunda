@@ -19,6 +19,8 @@ import {
 	userTaskCompletionRequestSchema,
 	userTaskVariableSearchQueryRequestSchema,
 	searchUserTaskVariables200Schema,
+	userTaskAuditLogSearchQueryRequestSchema,
+	auditLogSearchQueryResultSchema,
 } from './gen';
 
 const userTaskStateSchema = userTaskStateEnumSchema;
@@ -97,6 +99,17 @@ const queryVariablesByUserTask: Endpoint<{userTaskKey: string; truncateValues?: 
 		`/${API_VERSION}/user-tasks/${userTaskKey}/variables/search${truncateValues !== undefined ? `?truncateValues=${truncateValues}` : ''}`,
 };
 
+const queryUserTaskAuditLogsRequestBodySchema = userTaskAuditLogSearchQueryRequestSchema;
+type QueryUserTaskAuditLogsRequestBody = z.infer<typeof queryUserTaskAuditLogsRequestBodySchema>;
+
+const queryUserTaskAuditLogsResponseBodySchema = auditLogSearchQueryResultSchema;
+type QueryUserTaskAuditLogsResponseBody = z.infer<typeof queryUserTaskAuditLogsResponseBodySchema>;
+
+const queryUserTaskAuditLogs: Endpoint<{userTaskKey: string}> = {
+	method: 'POST',
+	getUrl: ({userTaskKey}) => `/${API_VERSION}/user-tasks/${userTaskKey}/audit-logs/search`,
+};
+
 export {
 	getUserTask,
 	queryUserTasks,
@@ -106,6 +119,7 @@ export {
 	unassignTask,
 	completeTask,
 	queryVariablesByUserTask,
+	queryUserTaskAuditLogs,
 	userTaskSchema,
 	userTaskStateSchema,
 	queryUserTasksResponseBodySchema,
@@ -115,6 +129,8 @@ export {
 	completeTaskRequestBodySchema,
 	queryVariablesByUserTaskRequestBodySchema,
 	queryVariablesByUserTaskResponseBodySchema,
+	queryUserTaskAuditLogsRequestBodySchema,
+	queryUserTaskAuditLogsResponseBodySchema,
 	updateUserTask,
 	updateUserTaskRequestBodySchema,
 };
@@ -127,6 +143,8 @@ export type {
 	CompleteTaskRequestBody,
 	QueryVariablesByUserTaskRequestBody,
 	QueryVariablesByUserTaskResponseBody,
+	QueryUserTaskAuditLogsRequestBody,
+	QueryUserTaskAuditLogsResponseBody,
 	UpdateUserTaskRequestBody,
 	UserTaskState,
 };
