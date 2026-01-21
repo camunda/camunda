@@ -24,7 +24,8 @@ import {
 	queryBatchOperationItems,
 } from './batch-operation';
 import {pinClock, resetClock} from './clock';
-import {getTopology} from './cluster';
+import {getTopology, getStatus} from './cluster';
+import {createAdminUser} from './setup';
 import {
 	queryDecisionDefinitions,
 	getDecisionDefinition,
@@ -34,12 +35,7 @@ import {
 import {queryDecisionInstances, getDecisionInstance} from './decision-instance';
 import {queryDecisionRequirements, getDecisionRequirements, getDecisionRequirementsXml} from './decision-requirements';
 import {createDocument, createDocuments, getDocument, deleteDocument, createDocumentLink} from './document';
-import {
-	queryElementInstances,
-	getElementInstance,
-	updateElementInstanceVariables,
-	queryElementInstanceIncidents,
-} from './element-instance';
+import {queryElementInstances, getElementInstance, updateElementInstanceVariables} from './element-instance';
 import {
 	createGroup,
 	getGroup,
@@ -81,7 +77,8 @@ import {
 	createCancellationBatchOperation,
 	createMigrationBatchOperation,
 	createModificationBatchOperation,
-	resolveProcessInstanceIncidents,
+	modifyProcessInstance,
+	migrateProcessInstance,
 } from './process-instance';
 import {
 	getUserTask,
@@ -102,8 +99,6 @@ import {
 	getProcessStartForm,
 	getProcessDefinitionStatistics,
 	queryProcessDefinitions,
-	getProcessDefinitionInstanceStatistics,
-	getProcessDefinitionInstanceVersionStatistics,
 } from './process-definition';
 import {createDeployment, deleteResource, getResource, getResourceContent} from './resource';
 import {
@@ -157,31 +152,52 @@ import {
 	modifyProcessInstance as modifyProcessInstanceCommand,
 } from './process-instance-commands';
 import {
-	getIncidentProcessInstanceStatisticsByError,
-	getIncidentProcessInstanceStatisticsByDefinition,
-} from './incident-statistics';
+	createRole,
+	getRole,
+	updateRole,
+	deleteRole,
+	queryRoles,
+	queryUsersByRole,
+	queryClientsByRole,
+	assignUserToRole,
+	unassignUserFromRole,
+	assignClientToRole,
+	unassignClientFromRole,
+	assignGroupToRole,
+	unassignGroupFromRole,
+	queryGroupsByRole,
+	assignMappingToRole,
+	unassignMappingFromRole,
+	queryMappingRulesByRole,
+} from './role';
+import {broadcastSignal} from './signal';
 import {
-	searchClusterVariables,
-	createGlobalClusterVariable,
-	createTenantClusterVariable,
-	getGlobalClusterVariable,
-	getTenantClusterVariable,
-	updateGlobalClusterVariable,
-	updateTenantClusterVariable,
-	deleteGlobalClusterVariable,
-	deleteTenantClusterVariable,
-} from './cluster-variable';
-import {
-	searchGlobalTaskListeners,
-	createGlobalTaskListener,
-	getGlobalTaskListener,
-	updateGlobalTaskListener,
-	deleteGlobalTaskListener,
-} from './global-task-listener';
+	createTenant,
+	getTenant,
+	updateTenant,
+	deleteTenant,
+	queryTenants,
+	assignUserToTenant,
+	unassignUserFromTenant,
+	queryUsersByTenant,
+	queryClientsByTenant,
+	queryGroupsByTenant,
+	queryRolesByTenant,
+	assignClientToTenant,
+	unassignClientFromTenant,
+	assignMappingRuleToTenant,
+	unassignMappingRuleFromTenant,
+	queryMappingRulesByTenant,
+	assignGroupToTenant,
+	unassignGroupFromTenant,
+	assignRoleToTenant,
+	unassignRoleFromTenant,
+} from './tenant';
+import {createUser, queryUsers, getUser, deleteUser, updateUser} from './user';
+import {getUsageMetrics} from './usage-metrics';
 
 const endpoints = {
 	getCurrentUser,
-
 	activateAdHocSubProcessActivities,
 	createAuthorization,
 	updateAuthorization,
@@ -197,6 +213,8 @@ const endpoints = {
 	pinClock,
 	resetClock,
 	getTopology,
+	getStatus,
+	createAdminUser,
 	queryDecisionDefinitions,
 	getDecisionDefinition,
 	getDecisionDefinitionXml,
@@ -212,7 +230,6 @@ const endpoints = {
 	deleteDocument,
 	createDocumentLink,
 	queryElementInstances,
-	queryElementInstanceIncidents,
 	getElementInstance,
 	updateElementInstanceVariables,
 	createGroup,
@@ -266,8 +283,6 @@ const endpoints = {
 	getProcessStartForm,
 	getProcessDefinitionStatistics,
 	queryProcessDefinitions,
-	getProcessDefinitionInstanceStatistics,
-	getProcessDefinitionInstanceVersionStatistics,
 	getProcessInstance,
 	queryProcessInstances,
 	cancelProcessInstance,
@@ -327,103 +342,22 @@ const endpoints = {
 	createCancellationBatchOperation,
 	createMigrationBatchOperation,
 	createModificationBatchOperation,
-	modifyProcessInstance: modifyProcessInstanceCommand,
-	deleteProcessInstance,
-	resolveProcessInstanceIncidents,
-	queryAuditLogs,
-	getAuditLog,
-	queryUserTaskAuditLogs,
-	getIncidentProcessInstanceStatisticsByError,
-	getIncidentProcessInstanceStatisticsByDefinition,
-	searchClusterVariables,
-	createGlobalClusterVariable,
-	createTenantClusterVariable,
-	getGlobalClusterVariable,
-	getTenantClusterVariable,
-	updateGlobalClusterVariable,
-	updateTenantClusterVariable,
-	deleteGlobalClusterVariable,
-	deleteTenantClusterVariable,
-	searchGlobalTaskListeners,
-	createGlobalTaskListener,
-	getGlobalTaskListener,
-	updateGlobalTaskListener,
-	deleteGlobalTaskListener,
+	modifyProcessInstance,
+	migrateProcessInstance,
 } as const;
 
-export {
-	auditLogEntityTypeSchema,
-	auditLogOperationTypeSchema,
-	auditLogActorTypeSchema,
-	auditLogResultSchema,
-	auditLogCategorySchema,
-	auditLogSchema,
-	auditLogFilterSchema,
-	auditLogSortFieldEnum,
-	queryAuditLogsRequestBodySchema,
-	queryAuditLogsResponseBodySchema,
-	getAuditLogResponseBodySchema,
-	type AuditLog,
-	type AuditLogEntityType,
-	type AuditLogOperationType,
-	type AuditLogActorType,
-	type AuditLogResult,
-	type AuditLogCategory,
-	type AuditLogSortField,
-	type QueryAuditLogsRequestBody,
-	type QueryAuditLogsResponseBody,
-	type GetAuditLogResponseBody,
-} from './audit-log';
-export {
-	userTaskAuditLogFilterSchema,
-	queryUserTaskAuditLogsRequestBodySchema,
-	queryUserTaskAuditLogsResponseBodySchema,
-	type UserTaskAuditLogFilter,
-	type QueryUserTaskAuditLogsRequestBody,
-	type QueryUserTaskAuditLogsResponseBody,
-} from './user-task-audit-log';
-export {
-	deleteProcessInstanceRequestBodySchema,
-	modifyProcessInstanceRequestBodySchema,
-	type DeleteProcessInstanceRequestBody,
-	type ModifyProcessInstanceRequestBody,
-} from './process-instance-commands';
-export {
-	getIncidentProcessInstanceStatisticsByErrorRequestBodySchema,
-	getIncidentProcessInstanceStatisticsByErrorResponseBodySchema,
-	incidentProcessInstanceStatisticsByErrorSchema,
-	getIncidentProcessInstanceStatisticsByDefinitionRequestBodySchema,
-	getIncidentProcessInstanceStatisticsByDefinitionResponseBodySchema,
-	incidentProcessInstanceStatisticsByDefinitionSchema,
-	type IncidentProcessInstanceStatisticsByError,
-	type GetIncidentProcessInstanceStatisticsByErrorRequestBody,
-	type GetIncidentProcessInstanceStatisticsByErrorResponseBody,
-	type IncidentProcessInstanceStatisticsByDefinition,
-	type GetIncidentProcessInstanceStatisticsByDefinitionRequestBody,
-	type GetIncidentProcessInstanceStatisticsByDefinitionResponseBody,
-} from './incident-statistics';
 export {currentUserSchema, getCurrentUser, type CurrentUser} from './authentication';
 export {
-	activityTypeSchema,
-	queryActivatableActivitiesRequestBodySchema,
-	queryActivatableActivitiesResponseBodySchema,
 	activateActivityWithinAdHocSubProcessRequestBodySchema,
-	activateActivityWithinAdHocSubProcessResponseBodySchema,
-	type ActivityType,
-	type QueryActivatableActivitiesRequestBody,
 	type ActivatableActivity,
-	type QueryActivatableActivitiesResponseBody,
 	type ActivateActivityWithinAdHocSubProcessRequestBody,
-	type ActivateActivityWithinAdHocSubProcessResponseBody,
 } from './ad-hoc-sub-process';
 export {
 	permissionTypeSchema,
 	resourceTypeSchema,
 	ownerTypeSchema,
 	createAuthorizationRequestBodySchema,
-	createAuthorizationResponseBodySchema,
 	updateAuthorizationRequestBodySchema,
-	getAuthorizationResponseBodySchema,
 	queryAuthorizationsRequestBodySchema,
 	queryAuthorizationsResponseBodySchema,
 	authorizationSchema,
@@ -431,8 +365,6 @@ export {
 	type PermissionType,
 	type ResourceType,
 	type OwnerType,
-	type CreateAuthorizationResponseBody,
-	type GetAuthorizationResponseBody,
 	type QueryAuthorizationsRequestBody,
 	type QueryAuthorizationsResponseBody,
 	type CreateAuthorizationRequestBody,
@@ -465,12 +397,19 @@ export {
 	partitionSchema,
 	brokerInfoSchema,
 	getTopologyResponseBodySchema,
+	getStatus,
 	type PartitionRole,
 	type PartitionHealth,
 	type Partition,
 	type BrokerInfo,
 	type GetTopologyResponseBody,
 } from './cluster';
+export {
+	createAdminUserRequestBodySchema,
+	createAdminUserResponseBodySchema,
+	type CreateAdminUserRequestBody,
+	type CreateAdminUserResponseBody,
+} from './setup';
 export {
 	decisionDefinitionSchema,
 	queryDecisionDefinitionsRequestBodySchema,
@@ -524,14 +463,12 @@ export {
 	createDocumentsResponseBodySchema,
 	documentLinkRequestBodySchema,
 	documentLinkSchema,
-	getDocumentResponseBodySchema,
 	type DocumentMetadata,
 	type DocumentReference,
 	type DocumentCreationFailureDetail,
 	type CreateDocumentsResponseBody,
 	type DocumentLinkRequestBody,
 	type DocumentLink,
-	type GetDocumentResponseBody,
 } from './document';
 export {
 	queryElementInstancesRequestBodySchema,
@@ -542,8 +479,6 @@ export {
 	elementInstanceTypeSchema,
 	elementInstanceSchema,
 	elementInstanceFilterSchema,
-	queryElementInstanceIncidentsRequestBodySchema,
-	queryElementInstanceIncidentsResponseBodySchema,
 	type ElementInstanceState,
 	type ElementInstanceType,
 	type ElementInstance,
@@ -551,8 +486,6 @@ export {
 	type QueryElementInstancesResponseBody,
 	type GetElementInstanceResponseBody,
 	type UpdateElementInstanceVariablesRequestBody,
-	type QueryElementInstanceIncidentsRequestBody,
-	type QueryElementInstanceIncidentsResponseBody,
 } from './element-instance';
 export {
 	createGroupRequestBodySchema,
@@ -669,7 +602,6 @@ export {
 	createMappingRuleResponseBodySchema,
 	updateMappingRuleRequestBodySchema,
 	updateMappingRuleResponseBodySchema,
-	getMappingRuleResponseBodySchema,
 	queryMappingRulesRequestBodySchema,
 	queryMappingRulesResponseBodySchema,
 	mappingRuleSchema,
@@ -677,7 +609,6 @@ export {
 	type CreateMappingRuleResponseBody,
 	type UpdateMappingRuleRequestBody,
 	type UpdateMappingRuleResponseBody,
-	type GetMappingRuleResponseBody,
 	type QueryMappingRulesRequestBody,
 	type QueryMappingRulesResponseBody,
 	type MappingRule,
@@ -685,6 +616,8 @@ export {
 export {
 	createProcessInstanceRequestBodySchema,
 	createProcessInstanceResponseBodySchema,
+	modifyProcessInstanceRequestBodySchema,
+	migrateProcessInstanceRequestBodySchema,
 	queryProcessInstancesRequestBodySchema,
 	queryProcessInstancesResponseBodySchema,
 	cancelProcessInstanceRequestBodySchema,
@@ -693,11 +626,6 @@ export {
 	getProcessInstanceCallHierarchyResponseBodySchema,
 	getProcessInstanceStatisticsResponseBodySchema,
 	getProcessInstanceSequenceFlowsResponseBodySchema,
-	createIncidentResolutionBatchOperationResponseBodySchema,
-	createCancellationBatchOperationResponseBodySchema,
-	createMigrationBatchOperationResponseBodySchema,
-	createModificationBatchOperationResponseBodySchema,
-	resolveProcessInstanceIncidentsResponseBodySchema,
 	processInstanceStateSchema,
 	processInstanceSchema,
 	sequenceFlowSchema,
@@ -714,7 +642,6 @@ export {
 	type SequenceFlow,
 	type GetProcessInstanceSequenceFlowsResponseBody,
 	type ProcessInstanceState,
-	type StatisticName,
 	type ProcessInstance,
 	type GetProcessInstanceStatisticsResponseBody,
 	type CreateIncidentResolutionBatchOperationRequestBody,
@@ -725,7 +652,8 @@ export {
 	type CreateMigrationBatchOperationResponseBody,
 	type CreateModificationBatchOperationRequestBody,
 	type CreateModificationBatchOperationResponseBody,
-	type ResolveProcessInstanceIncidentsResponseBody,
+	type ModifyProcessInstanceRequestBody,
+	type MigrateProcessInstanceRequestBody,
 } from './process-instance';
 export {
 	userTaskSchema,
@@ -733,7 +661,6 @@ export {
 	queryUserTasksRequestBodySchema,
 	formSchema,
 	assignTaskRequestBodySchema,
-	unassignTaskRequestBodySchema,
 	completeTaskRequestBodySchema,
 	queryVariablesByUserTaskRequestBodySchema,
 	queryVariablesByUserTaskResponseBodySchema,
@@ -743,7 +670,6 @@ export {
 	type QueryUserTasksRequestBody,
 	type Form,
 	type AssignTaskRequestBody,
-	type UnassignTaskRequestBody,
 	type CompleteTaskRequestBody,
 	type QueryVariablesByUserTaskRequestBody,
 	type QueryVariablesByUserTaskResponseBody,
@@ -759,36 +685,17 @@ export {
 } from './variable';
 export {
 	processDefinitionStatisticSchema,
-	getProcessDefinitionResponseBodySchema,
-	getProcessDefinitionXmlResponseBodySchema,
-	getProcessStartFormResponseBodySchema,
-	processDefinitionResponseSchema,
 	getProcessDefinitionStatisticsRequestBodySchema,
 	getProcessDefinitionStatisticsResponseBodySchema,
 	queryProcessDefinitionsRequestBodySchema,
 	queryProcessDefinitionsResponseBodySchema,
 	processDefinitionSchema,
-	getProcessDefinitionInstanceStatisticsRequestBodySchema,
-	getProcessDefinitionInstanceStatisticsResponseBodySchema,
-	processDefinitionInstanceStatisticsSchema,
-	getProcessDefinitionInstanceVersionStatisticsRequestBodySchema,
-	getProcessDefinitionInstanceVersionStatisticsResponseBodySchema,
-	processDefinitionInstanceVersionStatisticsSchema,
 	type ProcessDefinition,
 	type ProcessDefinitionStatistic,
-	type GetProcessDefinitionResponseBody,
-	type GetProcessDefinitionXmlResponseBody,
-	type GetProcessStartFormResponseBody,
 	type GetProcessDefinitionStatisticsRequestBody,
 	type GetProcessDefinitionStatisticsResponseBody,
 	type QueryProcessDefinitionsRequestBody,
 	type QueryProcessDefinitionsResponseBody,
-	type GetProcessDefinitionInstanceStatisticsRequestBody,
-	type GetProcessDefinitionInstanceStatisticsResponseBody,
-	type ProcessDefinitionInstanceStatistics,
-	type GetProcessDefinitionInstanceVersionStatisticsRequestBody,
-	type GetProcessDefinitionInstanceVersionStatisticsResponseBody,
-	type ProcessDefinitionInstanceVersionStatistics,
 } from './process-definition';
 export {
 	problemDetailsSchema,
@@ -799,12 +706,10 @@ export {
 	type QueryPage,
 	type QuerySortOrder,
 	type ProblemDetailsResponse,
-} from './common';
+} from '../common';
 export {
 	createDeploymentResponseBodySchema,
 	deleteResourceRequestBodySchema,
-	deleteResourceResponseBodySchema,
-	batchOperationCreatedResultSchema,
 	resourceSchema,
 	getResourceContentResponseBodySchema,
 	processDeploymentSchema,
@@ -815,8 +720,6 @@ export {
 	deploymentSchema,
 	type CreateDeploymentResponseBody,
 	type DeleteResourceRequestBody,
-	type DeleteResourceResponseBody,
-	type BatchOperationCreatedResult,
 	type Resource,
 	type GetResourceContentResponseBody,
 	type ProcessDeployment,
@@ -925,36 +828,4 @@ export {
 	type GetUsageMetricsResponseBody,
 	type GetUsageMetricsParams,
 } from './usage-metrics';
-export {
-	clusterVariableScopeSchema,
-	clusterVariableSchema,
-	clusterVariableSearchResultSchema,
-	createClusterVariableRequestBodySchema,
-	updateClusterVariableRequestBodySchema,
-	queryClusterVariablesRequestBodySchema,
-	queryClusterVariablesResponseBodySchema,
-	type ClusterVariableScope,
-	type ClusterVariable,
-	type ClusterVariableSearchResult,
-	type CreateClusterVariableRequestBody,
-	type UpdateClusterVariableRequestBody,
-	type QueryClusterVariablesRequestBody,
-	type QueryClusterVariablesResponseBody,
-} from './cluster-variable';
-export {
-	globalListenerSourceSchema,
-	globalTaskListenerEventTypeSchema,
-	globalTaskListenerSchema,
-	createGlobalTaskListenerRequestBodySchema,
-	updateGlobalTaskListenerRequestBodySchema,
-	queryGlobalTaskListenersRequestBodySchema,
-	queryGlobalTaskListenersResponseBodySchema,
-	type GlobalListenerSource,
-	type GlobalTaskListenerEventType,
-	type GlobalTaskListener,
-	type CreateGlobalTaskListenerRequestBody,
-	type UpdateGlobalTaskListenerRequestBody,
-	type QueryGlobalTaskListenersRequestBody,
-	type QueryGlobalTaskListenersResponseBody,
-} from './global-task-listener';
 export {endpoints};

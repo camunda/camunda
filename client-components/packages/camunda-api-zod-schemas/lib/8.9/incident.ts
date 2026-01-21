@@ -7,105 +7,35 @@
  */
 
 import {z} from 'zod';
-import {
-	API_VERSION,
-	getQueryResponseBodySchema,
-	getQueryRequestBodySchema,
-	advancedDateTimeFilterSchema,
-	advancedStringFilterSchema,
-	basicStringFilterSchema,
-	getEnumFilterSchema,
-	type Endpoint,
-} from './common';
+import {API_VERSION, type Endpoint} from '../common';
+import {incidentResultSchema, incidentSearchQuerySchema, incidentSearchQueryResultSchema} from './gen';
 
-const incidentErrorTypeSchema = z.enum([
-	'AD_HOC_SUB_PROCESS_NO_RETRIES',
-	'UNSPECIFIED',
-	'UNKNOWN',
-	'IO_MAPPING_ERROR',
-	'JOB_NO_RETRIES',
-	'EXECUTION_LISTENER_NO_RETRIES',
-	'TASK_LISTENER_NO_RETRIES',
-	'CONDITION_ERROR',
-	'EXTRACT_VALUE_ERROR',
-	'CALLED_ELEMENT_ERROR',
-	'UNHANDLED_ERROR_EVENT',
-	'MESSAGE_SIZE_EXCEEDED',
-	'CALLED_DECISION_ERROR',
-	'DECISION_EVALUATION_ERROR',
-	'FORM_NOT_FOUND',
-	'RESOURCE_NOT_FOUND',
-]);
+const incidentErrorTypeSchema = incidentResultSchema.shape.errorType.unwrap();
 type IncidentErrorType = z.infer<typeof incidentErrorTypeSchema>;
 
-const incidentStateSchema = z.enum(['ACTIVE', 'MIGRATED', 'RESOLVED', 'PENDING']);
+const incidentStateSchema = incidentResultSchema.shape.state.unwrap();
 type IncidentState = z.infer<typeof incidentStateSchema>;
 
-const incidentSchema = z.object({
-	processDefinitionId: z.string(),
-	errorType: incidentErrorTypeSchema,
-	errorMessage: z.string(),
-	elementId: z.string(),
-	creationTime: z.string(),
-	state: incidentStateSchema,
-	tenantId: z.string(),
-	incidentKey: z.string(),
-	processDefinitionKey: z.string(),
-	processInstanceKey: z.string(),
-	rootProcessInstanceKey: z.string().nullable(),
-	elementInstanceKey: z.string(),
-	jobKey: z.string().nullable(),
-});
+const incidentSchema = incidentResultSchema;
 type Incident = z.infer<typeof incidentSchema>;
 
-const resolveIncident: Endpoint<Pick<Incident, 'incidentKey'>> = {
+const resolveIncident: Endpoint<{incidentKey: string}> = {
 	method: 'POST',
 	getUrl: ({incidentKey}) => `/${API_VERSION}/incidents/${incidentKey}/resolution`,
 };
 
-const getIncident: Endpoint<Pick<Incident, 'incidentKey'>> = {
+const getIncident: Endpoint<{incidentKey: string}> = {
 	method: 'GET',
 	getUrl: ({incidentKey}) => `/${API_VERSION}/incidents/${incidentKey}`,
 };
 
-const getIncidentResponseBodySchema = incidentSchema;
+const getIncidentResponseBodySchema = incidentResultSchema;
 type GetIncidentResponseBody = z.infer<typeof getIncidentResponseBodySchema>;
 
-const queryIncidentsRequestBodySchema = getQueryRequestBodySchema({
-	sortFields: [
-		'incidentKey',
-		'processDefinitionKey',
-		'processDefinitionId',
-		'processInstanceKey',
-		'errorType',
-		'errorMessage',
-		'elementId',
-		'elementInstanceKey',
-		'creationTime',
-		'state',
-		'jobKey',
-		'tenantId',
-	] as const,
-	filter: z
-		.object({
-			processDefinitionId: advancedStringFilterSchema,
-			errorType: getEnumFilterSchema(incidentErrorTypeSchema),
-			errorMessage: advancedStringFilterSchema,
-			elementId: advancedStringFilterSchema,
-			creationTime: advancedDateTimeFilterSchema,
-			state: getEnumFilterSchema(incidentStateSchema),
-			tenantId: advancedStringFilterSchema,
-			incidentKey: basicStringFilterSchema,
-			processDefinitionKey: basicStringFilterSchema,
-			processInstanceKey: basicStringFilterSchema,
-			elementInstanceKey: basicStringFilterSchema,
-			jobKey: basicStringFilterSchema,
-		})
-		.partial(),
-});
+const queryIncidentsRequestBodySchema = incidentSearchQuerySchema;
 type QueryIncidentsRequestBody = z.infer<typeof queryIncidentsRequestBodySchema>;
 
-const queryIncidentsResponseBodySchema = getQueryResponseBodySchema(incidentSchema);
+const queryIncidentsResponseBodySchema = incidentSearchQueryResultSchema;
 type QueryIncidentsResponseBody = z.infer<typeof queryIncidentsResponseBodySchema>;
 
 const queryIncidents: Endpoint = {
@@ -123,8 +53,23 @@ export {
 	incidentErrorTypeSchema,
 	incidentStateSchema,
 	incidentSchema,
+	resolveIncident,
+	getIncident,
+	queryIncidents,
+	getIncidentResponseBodySchema,
+	queryIncidentsRequestBodySchema,
+	queryIncidentsResponseBodySchema,
+	incidentErrorTypeSchema,
+	incidentStateSchema,
+	incidentSchema,
 };
 export type {
+	IncidentErrorType,
+	IncidentState,
+	Incident,
+	GetIncidentResponseBody,
+	QueryIncidentsRequestBody,
+	QueryIncidentsResponseBody,
 	IncidentErrorType,
 	IncidentState,
 	Incident,
