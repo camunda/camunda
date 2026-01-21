@@ -7,12 +7,16 @@
  */
 package io.camunda.exporter.tasks.historydeletion;
 
+import io.camunda.exporter.ExporterResourceProvider;
 import io.camunda.exporter.tasks.BackgroundTask;
 import io.camunda.webapps.schema.descriptors.ProcessInstanceDependant;
 import io.camunda.webapps.schema.descriptors.index.HistoryDeletionIndex;
+import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
+import io.camunda.webapps.schema.descriptors.template.AuditLogTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -36,14 +40,15 @@ public class HistoryDeletionJob implements BackgroundTask {
   private final Logger logger;
   private final HistoryDeletionIndex historyDeletionIndex;
   private final ListViewTemplate listViewTemplate;
+  private final ProcessIndex processIndex;
+  private final AuditLogTemplate auditLogTemplate;
 
   public HistoryDeletionJob(
       final List<ProcessInstanceDependant> processInstanceDependants,
       final Executor executor,
       final HistoryDeletionRepository historyDeletionRepository,
       final Logger logger,
-      final HistoryDeletionIndex historyDeletionIndex,
-      final ListViewTemplate listViewTemplate) {
+      final ExporterResourceProvider resourceProvider) {
     this.processInstanceDependants =
         processInstanceDependants.stream()
             .sorted(Comparator.comparing(ProcessInstanceDependant::getFullQualifiedName))
@@ -51,8 +56,10 @@ public class HistoryDeletionJob implements BackgroundTask {
     this.executor = executor;
     deleterRepository = historyDeletionRepository;
     this.logger = logger;
-    this.historyDeletionIndex = historyDeletionIndex;
-    this.listViewTemplate = listViewTemplate;
+    historyDeletionIndex = resourceProvider.getIndexDescriptor(HistoryDeletionIndex.class);
+    listViewTemplate = resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class);
+    processIndex = resourceProvider.getIndexDescriptor(ProcessIndex.class);
+    auditLogTemplate = resourceProvider.getIndexTemplateDescriptor(AuditLogTemplate.class);
   }
 
   @Override
@@ -75,7 +82,9 @@ public class HistoryDeletionJob implements BackgroundTask {
       return CompletableFuture.completedFuture(0);
     }
 
-    return deleteProcessInstances(batch).thenCompose(this::deleteFromHistoryDeletionIndex);
+    return deleteProcessInstances(batch)
+        .thenCompose(ids -> deleteProcessDefinitions(batch, ids))
+        .thenCompose(this::deleteFromHistoryDeletionIndex);
   }
 
   /**
@@ -116,6 +125,42 @@ public class HistoryDeletionJob implements BackgroundTask {
                   dependentSourceIdx, dependentIdFieldName, processInstanceKeys);
             })
         .thenApply(ignored -> batch.getHistoryDeletionIds(HistoryDeletionType.PROCESS_INSTANCE));
+  }
+
+  /**
+   * This method will delete a batch of process definitions in two steps:
+   *
+   * <ol>
+   *   <li>It deletes the process definition related data from the audit logs
+   *   <li>It deletes the process definitions from the process index
+   * </ol>
+   *
+   * @param batch The batch of entities to delete
+   * @return A future containing the list of history-deletion IDs that were processed
+   */
+  private CompletionStage<List<String>> deleteProcessDefinitions(
+      final HistoryDeletionBatch batch, final List<String> processInstanceDeletionIds) {
+    final var processDefinitions = batch.getResourceKeys(HistoryDeletionType.PROCESS_DEFINITION);
+    if (processDefinitions.isEmpty()) {
+      return CompletableFuture.completedFuture(processInstanceDeletionIds);
+    }
+
+    return deleterRepository
+        .deleteDocumentsByField(
+            auditLogTemplate.getIndexPattern(),
+            AuditLogTemplate.PROCESS_DEFINITION_KEY,
+            processDefinitions)
+        .thenCompose(
+            ignored ->
+                deleterRepository.deleteDocumentsById(
+                    processIndex.getFullQualifiedName(),
+                    processDefinitions.stream().map(Object::toString).toList()))
+        .thenApply(
+            ignored -> {
+              final var ids = new ArrayList<>(processInstanceDeletionIds);
+              ids.addAll(batch.getHistoryDeletionIds(HistoryDeletionType.PROCESS_DEFINITION));
+              return ids;
+            });
   }
 
   private CompletionStage<Integer> deleteFromHistoryDeletionIndex(final List<String> ids) {

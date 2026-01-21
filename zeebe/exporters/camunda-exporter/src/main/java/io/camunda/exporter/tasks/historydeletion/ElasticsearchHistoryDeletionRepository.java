@@ -8,6 +8,7 @@
 package io.camunda.exporter.tasks.historydeletion;
 
 import co.elastic.clients.elasticsearch.ElasticsearchAsyncClient;
+import co.elastic.clients.elasticsearch._types.Conflicts;
 import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
@@ -81,6 +82,8 @@ public class ElasticsearchHistoryDeletionRepository extends ElasticsearchReposit
             .index(sourceIndexName)
             .allowNoIndices(true)
             .ignoreUnavailable(true)
+            .waitForCompletion(true)
+            .conflicts(Conflicts.Proceed)
             .query(
                 q ->
                     q.terms(
@@ -103,6 +106,21 @@ public class ElasticsearchHistoryDeletionRepository extends ElasticsearchReposit
                 logger.error(errorMessage);
                 return CompletableFuture.failedFuture(new RuntimeException(errorMessage));
               }
+
+              if (response.versionConflicts() != null && response.versionConflicts() > 0) {
+                final var debugMessage =
+                    "Deleting documents from index '%s' by field '%s' encountered '%d' conflicts"
+                        .formatted(sourceIndexName, idFieldName, response.versionConflicts());
+                logger.debug(debugMessage);
+                return CompletableFuture.failedFuture(new RuntimeException(debugMessage));
+              }
+
+              logger.debug(
+                  "Deleted {} documents from index '{}' by field '{}' with values: {}",
+                  response.total(),
+                  sourceIndexName,
+                  idFieldName,
+                  fieldValues);
               return CompletableFuture.completedFuture(fieldValues);
             },
             executor);
