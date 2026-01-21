@@ -67,6 +67,7 @@ class AuditLogEntryTest {
 
     assertThat(entry.getBatchOperationKey()).isEqualTo(123L); // no batch operation in this record
     assertThat(entry.getProcessInstanceKey()).isEqualTo(value.getProcessInstanceKey());
+    assertThat(entry.getProcessDefinitionKey()).isEqualTo(value.getProcessDefinitionKey());
     assertThat(entry.getEntityVersion()).isEqualTo(record.getRecordVersion());
     assertThat(entry.getEntityValueType())
         .isEqualTo(ValueType.PROCESS_INSTANCE_MODIFICATION.value());
@@ -81,7 +82,6 @@ class AuditLogEntryTest {
     assertThat(entry.getResult()).isNull();
     assertThat(entry.getAnnotation()).isNull();
     assertThat(entry.getProcessDefinitionId()).isNull();
-    assertThat(entry.getProcessDefinitionKey()).isNull();
     assertThat(entry.getElementInstanceKey()).isNull();
     assertThat(entry.getJobKey()).isNull();
     assertThat(entry.getUserTaskKey()).isNull();
@@ -112,6 +112,7 @@ class AuditLogEntryTest {
     final var entry = AuditLogEntry.of(record);
 
     assertThat(entry.getProcessInstanceKey()).isNull();
+    assertThat(entry.getProcessDefinitionKey()).isNull();
   }
 
   @Test
