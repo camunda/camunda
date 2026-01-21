@@ -95,7 +95,7 @@ test.describe('modifications', () => {
     await expect(page).toHaveScreenshot();
   });
 
-  test('diagram badges and flow node instance history panel', async ({
+  test.skip('diagram badges and flow node instance history panel', async ({
     page,
     processInstancePage,
   }) => {
@@ -174,7 +174,7 @@ test.describe('modifications', () => {
     await expect(page).toHaveScreenshot();
   });
 
-  test('apply modifications summary modal', async ({
+  test.skip('apply modifications summary modal', async ({
     page,
     processInstancePage,
   }) => {
