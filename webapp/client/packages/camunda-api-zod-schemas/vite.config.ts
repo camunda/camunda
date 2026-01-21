@@ -53,6 +53,7 @@ export default defineConfig({
 				'8.8/variable': resolve(__dirname, 'lib/8.8/variable.ts'),
 				'8.9': resolve(__dirname, 'lib/8.9/index.ts'),
 				'8.9/index': resolve(__dirname, 'lib/8.9/index.ts'),
+				'8.9/ad-hoc-sub-process': resolve(__dirname, 'lib/8.9/ad-hoc-sub-process.ts'),
 				'8.9/audit-log': resolve(__dirname, 'lib/8.9/audit-log.ts'),
 				'8.9/ad-hoc-sub-process': resolve(__dirname, 'lib/8.9/ad-hoc-sub-process.ts'),
 				'8.9/authentication': resolve(__dirname, 'lib/8.9/authentication.ts'),
