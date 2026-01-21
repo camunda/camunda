@@ -15,6 +15,7 @@ import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.enums.AuditLogEntityTypeEnum;
 import io.camunda.client.api.search.enums.AuditLogOperationTypeEnum;
+import io.camunda.client.api.search.response.TenantUser;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
@@ -182,25 +183,26 @@ public class AuditLogUtils {
 
   private void awaitUserTenantAssignments() {
     final var lastTenantId = userTenantAssignments.getLast().tenantId;
-    final var assignmentCount =
-        userTenantAssignments.stream().filter(a -> a.tenantId.equals(lastTenantId)).toList().size();
+    final var expectedUsernames =
+        userTenantAssignments.stream()
+            .filter(a -> a.tenantId.equals(lastTenantId))
+            .map(UserTenantAssignment::username)
+            .toList();
 
+    // Use tenant member search instead of audit log search to avoid tenant access issues.
+    // The audit log search requires the user to have tenant access, but at this point
+    // the admin client's authentication might not yet reflect the tenant assignments.
     Awaitility.await("User is assigned to tenant")
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
-              final var auditLogs =
-                  defaultClient
-                      .newAuditLogSearchRequest()
-                      .filter(
-                          f ->
-                              f.operationType(AuditLogOperationTypeEnum.ASSIGN)
-                                  .entityType(AuditLogEntityTypeEnum.TENANT)
-                                  .entityKey(lastTenantId))
-                      .send()
-                      .join();
+              final var tenantMembers =
+                  defaultClient.newUsersByTenantSearchRequest(lastTenantId).send().join();
 
-              assertThat(auditLogs.items()).hasSize(assignmentCount);
+              final var actualUsernames =
+                  tenantMembers.items().stream().map(TenantUser::getUsername).toList();
+
+              assertThat(actualUsernames).containsAll(expectedUsernames);
             });
   }
 

@@ -7,6 +7,7 @@
  */
 package io.camunda.db.rdbms.read.service;
 
+import io.camunda.db.rdbms.read.domain.AuditLogAuthorizationFilter;
 import io.camunda.db.rdbms.read.domain.AuditLogDbQuery;
 import io.camunda.db.rdbms.read.mapper.AuditLogEntityMapper;
 import io.camunda.db.rdbms.sql.AuditLogMapper;
@@ -16,7 +17,6 @@ import io.camunda.search.entities.AuditLogEntity;
 import io.camunda.search.query.AuditLogQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.reader.ResourceAccessChecks;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import java.util.List;
 import java.util.Optional;
 import org.slf4j.Logger;
@@ -47,22 +47,22 @@ public class AuditLogDbReader extends AbstractEntityReader<AuditLogEntity>
       final AuditLogQuery query, final ResourceAccessChecks resourceAccessChecks) {
     final var dbSort = convertSort(query.sort(), AuditLogSearchColumn.TIMESTAMP);
 
-    if (shouldReturnEmptyResult(resourceAccessChecks)) {
+    // Only check for resource access, not tenant access.
+    // Audit logs can be GLOBAL scoped (e.g., ADMIN category operations) and don't require
+    // tenant access. The SQL query already handles this by allowing TENANT_SCOPE = 'GLOBAL'
+    // when authorizedTenantIds is empty.
+    if (noResourceAccess(resourceAccessChecks)) {
       return buildSearchQueryResult(0, List.of(), dbSort);
     }
 
-    final var authorizedResourceIds =
-        resourceAccessChecks
-            .getAuthorizedResourceIdsByType()
-            // FIXME: Adjust to provide correct resource type, once available
-            //  (see https://github.com/camunda/camunda/issues/41120)
-            .getOrDefault(AuthorizationResourceType.UNSPECIFIED.name(), List.of());
+    final var authorizationFilter =
+        AuditLogAuthorizationFilter.of(resourceAccessChecks.authorizationCheck());
     final var dbPage = convertPaging(dbSort, query.page());
     final var dbQuery =
         AuditLogDbQuery.of(
             b ->
                 b.filter(query.filter())
-                    .authorizedResourceIds(authorizedResourceIds)
+                    .authorizationFilter(authorizationFilter)
                     .authorizedTenantIds(resourceAccessChecks.getAuthorizedTenantIds())
                     .sort(dbSort)
                     .page(dbPage));

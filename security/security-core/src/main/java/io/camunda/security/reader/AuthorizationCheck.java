@@ -10,6 +10,9 @@ package io.camunda.security.reader;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.condition.AuthorizationCondition;
 import io.camunda.security.auth.condition.AuthorizationConditions;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 import java.util.function.Predicate;
 
 /**
@@ -28,6 +31,13 @@ public record AuthorizationCheck(boolean enabled, AuthorizationCondition authori
 
   public static AuthorizationCheck disabled() {
     return new AuthorizationCheck(false, null);
+  }
+
+  /** Returns the list of authorizations, or an empty list if none are configured. */
+  public List<Authorization<?>> authorizations() {
+    return Optional.ofNullable(authorizationCondition)
+        .map(AuthorizationCondition::authorizations)
+        .orElse(Collections.emptyList());
   }
 
   public boolean hasAnyResourceAccess() {
