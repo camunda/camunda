@@ -224,7 +224,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
     try {
       final Map<ProcessKey, List<ProcessEntity>> result = new HashMap<>();
 
-      ElasticsearchUtil.scrollAllStream(es8Client, searchRequestBuilder, ProcessEntity.class)
+      ElasticsearchUtil.scrollAllStream(esClient, searchRequestBuilder, ProcessEntity.class)
           .flatMap(searchRes -> searchRes.hits().hits().stream())
           .map(Hit::source)
           .forEach(

@@ -75,7 +75,7 @@ class FormStoreElasticSearchTest {
 
     // Mock ES8 count response for isFormAssociatedToTask and isFormAssociatedToProcess
     final var countResponse = mock(CountResponse.class);
-    when(es8Client.count(any(CountRequest.class))).thenReturn(countResponse);
+    when(esClient.count(any(CountRequest.class))).thenReturn(countResponse);
     when(countResponse.count()).thenReturn(0L);
 
     // when - then
@@ -89,7 +89,7 @@ class FormStoreElasticSearchTest {
     // given - Mock ES8 client to throw IOException
     when(esClient.search(any(SearchRequest.class), any(Class.class)))
         .thenThrow(new IOException("some error"));
-    when(es8Client.count(any(CountRequest.class))).thenThrow(new IOException("some error"));
+    when(esClient.count(any(CountRequest.class))).thenThrow(new IOException("some error"));
 
     // when - then
     assertThatThrownBy(() -> instance.getForm("id2", "processDefId2", null))
