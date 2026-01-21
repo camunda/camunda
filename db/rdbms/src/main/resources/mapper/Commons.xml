@@ -204,7 +204,7 @@
                    LIMIT #{limit})
   </sql>
 
-  <sql id="historyDeletion">
+  <sql id="processInstanceHistoryDeletion">
     DELETE
     FROM ${prefix}${tableName}
     WHERE PROCESS_INSTANCE_KEY IN
@@ -213,7 +213,7 @@
     </foreach>
     LIMIT #{limit}
   </sql>
-  <sql id="historyDeletion" databaseId="mssql">
+  <sql id="processInstanceHistoryDeletion" databaseId="mssql">
     DELETE TOP (#{limit})
     FROM ${prefix}${tableName}
     WHERE PROCESS_INSTANCE_KEY IN
@@ -221,7 +221,7 @@
       #{key}
     </foreach>
   </sql>
-  <sql id="historyDeletion" databaseId="oracle">
+  <sql id="processInstanceHistoryDeletion" databaseId="oracle">
     DELETE
     FROM ${prefix}${tableName}
     WHERE rowid IN (SELECT rowid
@@ -232,7 +232,7 @@
                     </foreach>
                     AND ROWNUM &lt;= #{limit})
   </sql>
-  <sql id="historyDeletion" databaseId="postgresql">
+  <sql id="processInstanceHistoryDeletion" databaseId="postgresql">
     DELETE
     FROM ${prefix}${tableName}
     WHERE ctid IN (SELECT ctid
