@@ -8,6 +8,7 @@
 package io.camunda.operate.connect;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch.cluster.HealthResponse;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
@@ -34,6 +35,7 @@ import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLContext;
+import org.apache.http.Header;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpRequestInterceptor;
 import org.apache.http.auth.AuthScope;
@@ -44,11 +46,9 @@ import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
+import org.apache.http.message.BasicHeader;
 import org.apache.http.ssl.SSLContexts;
 import org.apache.http.ssl.TrustStrategy;
-import org.elasticsearch.ElasticsearchException;
-import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
-import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
 import org.elasticsearch.client.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -80,56 +80,31 @@ public class ElasticsearchConnector {
     this.esClientRepository = esClientRepository;
   }
 
+  @VisibleForTesting
+  public void setObjectMapper(final ObjectMapper objectMapper) {
+    this.objectMapper = objectMapper;
+  }
+
   @Bean
-  public RestHighLevelClient esClient() {
-    // some weird error when ELS sets available processors number for Netty - see
-    // https://discuss.elastic.co/t/elasticsearch-5-4-1-availableprocessors-is-already-set/88036/3
-    System.setProperty("es.set.netty.runtime.available.processors", "false");
+  public ElasticsearchClient esClient() {
     esClientRepository.load(operateProperties.getElasticsearch().getInterceptorPlugins());
     return createEsClient(operateProperties.getElasticsearch(), esClientRepository);
   }
 
-  public RestHighLevelClient createEsClient(
-      final ElasticsearchProperties elsConfig, final PluginRepository pluginRepository) {
-    LOGGER.debug("Creating Elasticsearch connection...");
-    final RestClientBuilder restClientBuilder =
-        RestClient.builder(getHttpHost(elsConfig))
-            .setHttpClientConfigCallback(
-                httpClientBuilder ->
-                    configureHttpClient(
-                        httpClientBuilder, elsConfig, pluginRepository.asRequestInterceptor()));
-    if (elsConfig.getConnectTimeout() != null || elsConfig.getSocketTimeout() != null) {
-      restClientBuilder.setRequestConfigCallback(
-          configCallback -> setTimeouts(configCallback, elsConfig));
-    }
-    final RestHighLevelClient esClient =
-        new RestHighLevelClientBuilder(restClientBuilder.build())
-            .setApiCompatibilityMode(true)
-            .build();
-    if (operateProperties.getElasticsearch().isHealthCheckEnabled()) {
-      if (!checkHealth(esClient)) {
-        LOGGER.warn("Elasticsearch cluster is not accessible");
-      } else {
-        LOGGER.debug("Elasticsearch connection was successfully created.");
-      }
-    } else {
-      LOGGER.warn("Elasticsearch cluster health check is disabled.");
-    }
-    return esClient;
-  }
-
-  @Bean
-  public ElasticsearchClient es8Client() {
-    esClientRepository.load(operateProperties.getElasticsearch().getInterceptorPlugins());
-    return createEs8Client(operateProperties.getElasticsearch(), esClientRepository);
-  }
-
-  public ElasticsearchClient createEs8Client(
+  public ElasticsearchClient createEsClient(
       final ElasticsearchProperties elsConfig, final PluginRepository pluginRepository) {
     LOGGER.debug("Creating Elasticsearch connection...");
 
+    // Create headers for ES8 compatibility when talking to ES9
+    final Header[] defaultHeaders =
+        new Header[] {
+          new BasicHeader("Accept", "application/vnd.elasticsearch+json;compatible-with=8"),
+          new BasicHeader("Content-Type", "application/vnd.elasticsearch+json;compatible-with=8")
+        };
+
     final RestClientBuilder restClientBuilder =
         RestClient.builder(getHttpHost(elsConfig))
+            .setDefaultHeaders(defaultHeaders)
             .setHttpClientConfigCallback(
                 httpClientBuilder ->
                     configureHttpClient(
@@ -281,39 +256,12 @@ public class ElasticsearchConnector {
   }
 
   @VisibleForTesting
-  boolean checkHealth(final RestHighLevelClient esClient) {
-    final ElasticsearchProperties elsConfig = operateProperties.getElasticsearch();
-    try {
-      return RetryOperation.<Boolean>newBuilder()
-          .noOfRetry(50)
-          .retryOn(IOException.class, ElasticsearchException.class)
-          .delayInterval(3, TimeUnit.SECONDS)
-          .message(
-              String.format(
-                  "Connect to Elasticsearch cluster [%s] at %s",
-                  elsConfig.getClusterName(), elsConfig.getUrl()))
-          .retryConsumer(
-              () -> {
-                final ClusterHealthResponse clusterHealthResponse =
-                    esClient.cluster().health(new ClusterHealthRequest(), RequestOptions.DEFAULT);
-                return clusterHealthResponse.getClusterName().equals(elsConfig.getClusterName());
-              })
-          .build()
-          .retry();
-    } catch (final Exception e) {
-      throw new OperateRuntimeException("Couldn't connect to Elasticsearch. Abort.", e);
-    }
-  }
-
-  @VisibleForTesting
   boolean checkHealth(final ElasticsearchClient esClient) {
     final ElasticsearchProperties elsConfig = operateProperties.getElasticsearch();
     try {
       return RetryOperation.<Boolean>newBuilder()
           .noOfRetry(50)
-          .retryOn(
-              IOException.class,
-              co.elastic.clients.elasticsearch._types.ElasticsearchException.class)
+          .retryOn(IOException.class, ElasticsearchException.class)
           .delayInterval(3, TimeUnit.SECONDS)
           .message(
               String.format(

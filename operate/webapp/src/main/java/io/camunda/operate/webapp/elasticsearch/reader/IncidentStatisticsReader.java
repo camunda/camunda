@@ -138,7 +138,7 @@ public class IncidentStatisticsReader extends AbstractReader
             .build();
 
     try {
-      final var searchResponse = es8client.search(searchRequest, MAP_CLASS);
+      final var searchResponse = esClient.search(searchRequest, MAP_CLASS);
 
       final var errorMessageAggregation =
           searchResponse.aggregations().get(GROUP_BY_ERROR_MESSAGE_HASH).lterms();
@@ -180,7 +180,7 @@ public class IncidentStatisticsReader extends AbstractReader
             .build();
 
     try {
-      final var searchResponse = es8client.search(searchRequest, Void.class);
+      final var searchResponse = esClient.search(searchRequest, Void.class);
 
       final var buckets =
           searchResponse.aggregations().get(PROCESS_KEYS).lterms().buckets().array();
@@ -225,7 +225,7 @@ public class IncidentStatisticsReader extends AbstractReader
               .size(0)
               .build();
 
-      final var searchResponse = es8client.search(searchRequest, Void.class);
+      final var searchResponse = esClient.search(searchRequest, Void.class);
 
       final var buckets =
           searchResponse.aggregations().get(PROCESS_KEYS).lterms().buckets().array();

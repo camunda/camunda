@@ -50,7 +50,7 @@ class TaskStoreElasticSearchTest {
 
   @Captor private ArgumentCaptor<SearchRequest> searchRequestCaptor;
 
-  @Mock private ElasticsearchClient es8Client;
+  @Mock private ElasticsearchClient esClient;
 
   @Mock private ElasticsearchTenantHelper tenantHelper;
 
@@ -76,7 +76,7 @@ class TaskStoreElasticSearchTest {
     when(tenantHelper.makeQueryTenantAware(any(Query.class))).thenAnswer(i -> i.getArgument(0));
 
     final SearchResponse<TaskEntity> mockedResponse = mockSearchResponse(taskState);
-    when(es8Client.search(searchRequestCaptor.capture(), eq(TaskEntity.class)))
+    when(esClient.search(searchRequestCaptor.capture(), eq(TaskEntity.class)))
         .thenReturn(mockedResponse);
 
     // When
@@ -92,7 +92,7 @@ class TaskStoreElasticSearchTest {
             });
     assertThat(result).hasSize(1);
     assertThat(result.get(0).getImplementation()).isEqualTo(TaskImplementation.JOB_WORKER);
-    verify(es8Client).search(any(SearchRequest.class), eq(TaskEntity.class));
+    verify(esClient).search(any(SearchRequest.class), eq(TaskEntity.class));
   }
 
   @Test
@@ -108,7 +108,7 @@ class TaskStoreElasticSearchTest {
         .thenAnswer(i -> i.getArgument(0));
 
     final SearchResponse<TaskEntity> mockedResponse = mockSearchResponse(TaskState.CREATED);
-    when(es8Client.search(any(SearchRequest.class), eq(TaskEntity.class)))
+    when(esClient.search(any(SearchRequest.class), eq(TaskEntity.class)))
         .thenReturn(mockedResponse);
 
     // When

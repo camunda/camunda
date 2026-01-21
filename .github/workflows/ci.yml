@@ -504,6 +504,17 @@ jobs:
       database-image-version: "8.18.4"
       it-database-type: "es"
 
+  elasticsearch9-integration-tests:
+    name: "Database Integration Tests / Elasticsearch 9"
+    if: needs.detect-changes.outputs.java-code-changes == 'true'
+    needs: [ detect-changes ]
+    uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
+    secrets: inherit
+    with:
+      database-type: "elasticsearch9"
+      database-image-version: "9.2.4"
+      it-database-type: "es"
+
   opensearch-integration-tests:
     name: "Database Integration Tests / Opensearch"
     uses: ./.github/workflows/ci-database-integration-tests-reusable.yml

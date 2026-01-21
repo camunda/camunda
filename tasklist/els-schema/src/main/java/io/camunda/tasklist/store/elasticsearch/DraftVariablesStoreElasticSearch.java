@@ -46,8 +46,8 @@ public class DraftVariablesStoreElasticSearch implements DraftVariableStore {
   @Autowired private ElasticsearchTenantHelper tenantHelper;
 
   @Autowired
-  @Qualifier("tasklistEs8Client")
-  private ElasticsearchClient es8Client;
+  @Qualifier("tasklistEsClient")
+  private ElasticsearchClient esClient;
 
   @Autowired private DraftTaskVariableTemplate draftTaskVariableTemplate;
 
@@ -59,7 +59,7 @@ public class DraftVariablesStoreElasticSearch implements DraftVariableStore {
   public void createOrUpdate(final Collection<DraftTaskVariableEntity> draftVariables) {
     try {
       final var bulkOperations = draftVariables.stream().map(this::createUpsertOperation).toList();
-      ElasticsearchUtil.executeBulkRequest(es8Client, bulkOperations, Refresh.WaitFor);
+      ElasticsearchUtil.executeBulkRequest(esClient, bulkOperations, Refresh.WaitFor);
     } catch (final IOException e) {
       throw new TasklistRuntimeException("Error persisting draft variables", e);
     }
@@ -73,7 +73,7 @@ public class DraftVariablesStoreElasticSearch implements DraftVariableStore {
             b -> b.index(draftTaskVariableTemplate.getFullQualifiedName()).query(query));
 
     try {
-      final var response = es8Client.deleteByQuery(request);
+      final var response = esClient.deleteByQuery(request);
       return response.deleted(); // Return the count of deleted documents
     } catch (final IOException e) {
       throw new TasklistRuntimeException(
@@ -105,7 +105,7 @@ public class DraftVariablesStoreElasticSearch implements DraftVariableStore {
 
       final var scrollStream =
           ElasticsearchUtil.scrollAllStream(
-              es8Client, searchRequestBuilder, DraftTaskVariableEntity.class);
+              esClient, searchRequestBuilder, DraftTaskVariableEntity.class);
 
       return scrollStream
           .flatMap(response -> response.hits().hits().stream())
@@ -133,7 +133,7 @@ public class DraftVariablesStoreElasticSearch implements DraftVariableStore {
               .query(tenantAwareQuery)
               .build();
 
-      final var response = es8Client.search(searchRequest, DraftTaskVariableEntity.class);
+      final var response = esClient.search(searchRequest, DraftTaskVariableEntity.class);
 
       if (response.hits().total().value() == 0) {
         return Optional.empty();
@@ -160,7 +160,7 @@ public class DraftVariablesStoreElasticSearch implements DraftVariableStore {
               .source(s -> s.filter(f -> f.includes(DraftTaskVariableTemplate.ID)));
 
       return ElasticsearchUtil.scrollAllStream(
-              es8Client, searchRequestBuilder, ElasticsearchUtil.MAP_CLASS)
+              esClient, searchRequestBuilder, ElasticsearchUtil.MAP_CLASS)
           .flatMap(response -> response.hits().hits().stream())
           .map(Hit::id)
           .filter(Objects::nonNull)

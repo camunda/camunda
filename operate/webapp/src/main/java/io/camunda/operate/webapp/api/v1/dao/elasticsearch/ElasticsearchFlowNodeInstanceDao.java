@@ -178,7 +178,7 @@ public class ElasticsearchFlowNodeInstanceDao extends ElasticsearchDao<FlowNodeI
       final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
 
       final var res =
-          es8Client.search(
+          esClient.search(
               s -> s.index(flowNodeInstanceIndex.getAlias()).query(tenantAwareQuery),
               FlowNodeInstance.class);
 

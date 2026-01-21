@@ -90,13 +90,13 @@ public class ElasticsearchVariableDao extends ElasticsearchDao<Variable> impleme
       final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
 
       final var searchReq =
-          new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+          new SearchRequest.Builder()
               .index(variableIndex.getAlias())
               .query(tenantAwareQuery)
               .build();
 
       variables =
-          es8Client.search(searchReq, ElasticsearchUtil.MAP_CLASS).hits().hits().stream()
+          esClient.search(searchReq, ElasticsearchUtil.MAP_CLASS).hits().hits().stream()
               .map(Hit::source)
               .filter(Objects::nonNull)
               .map(src -> postProcessVariableDocument(src, true))

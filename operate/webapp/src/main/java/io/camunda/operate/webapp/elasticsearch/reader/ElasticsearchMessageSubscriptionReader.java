@@ -52,7 +52,7 @@ public class ElasticsearchMessageSubscriptionReader extends AbstractReader
             .build();
 
     try {
-      final var response = es8client.search(searchRequest, MessageSubscriptionEntity.class);
+      final var response = esClient.search(searchRequest, MessageSubscriptionEntity.class);
       final var totalHits = response.hits().total().value();
       if (totalHits >= 1) {
         // take last message subscription

@@ -22,9 +22,6 @@ public interface NoSqlHelper {
 
   boolean checkVariablesExist(final String processInstanceId, final String[] varNames);
 
-  List<String> getIdsFromIndex(
-      final String idFieldName, final String index, final List<String> ids);
-
   List<TaskEntity> getTasksFromIdAndIndex(final String index, final List<String> ids);
 
   List<TaskEntity> getAllTasks(final String index);
