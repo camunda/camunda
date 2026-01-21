@@ -74,7 +74,7 @@ type CreateDeploymentResponseBody = z.infer<typeof createDeploymentResponseBodyS
 
 const deleteResourceRequestBodySchema = z
 	.object({
-		operationReference: z.number().int().min(1),
+		operationReference: z.number().int().min(1).optional(),
 		deleteHistory: z.boolean().optional().default(false),
 	})
 	.optional();
