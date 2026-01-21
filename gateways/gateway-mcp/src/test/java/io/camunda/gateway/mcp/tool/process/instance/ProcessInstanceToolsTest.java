@@ -327,7 +327,6 @@ class ProcessInstanceToolsTest extends ToolsTest {
       assertThat(capturedRequest.tenantId()).isEqualTo("<default>");
       assertThat(capturedRequest.variables()).containsExactly(entry("foo", "bar"));
       assertThat(capturedRequest.tags()).containsExactly("mcp-tool:abc");
-      assertThat(capturedRequest.variables()).containsEntry("foo", "bar");
 
       final var actualResult =
           objectMapper.convertValue(result.structuredContent(), CreateProcessInstanceResult.class);
