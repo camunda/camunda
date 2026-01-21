@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.processinstance;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceBatchRecordValue;
@@ -17,6 +16,8 @@ public final class ProcessInstanceBatchRecord extends UnifiedRecordValue
     implements ProcessInstanceBatchRecordValue {
 
   private final LongProperty processInstanceKeyProperty = new LongProperty("processInstanceKey");
+  private final LongProperty processDefinitionKeyProperty =
+      new LongProperty("processDefinitionKey", -1L);
   private final LongProperty batchElementInstanceKeyProperty =
       new LongProperty("batchElementInstanceKey");
 
@@ -36,8 +37,9 @@ public final class ProcessInstanceBatchRecord extends UnifiedRecordValue
   private final LongProperty indexProperty = new LongProperty("index", -1L);
 
   public ProcessInstanceBatchRecord() {
-    super(3);
+    super(4);
     declareProperty(processInstanceKeyProperty)
+        .declareProperty(processDefinitionKeyProperty)
         .declareProperty(batchElementInstanceKeyProperty)
         .declareProperty(indexProperty);
   }
@@ -52,11 +54,14 @@ public final class ProcessInstanceBatchRecord extends UnifiedRecordValue
     return this;
   }
 
-  // This record is not used for audit log and thus process definition key has not been implemented
-  @JsonIgnore
   @Override
   public long getProcessDefinitionKey() {
-    return -1L;
+    return processDefinitionKeyProperty.getValue();
+  }
+
+  public ProcessInstanceBatchRecord setProcessDefinitionKey(final long processDefinitionKey) {
+    processDefinitionKeyProperty.setValue(processDefinitionKey);
+    return this;
   }
 
   @Override
