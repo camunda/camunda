@@ -11,11 +11,7 @@ import { Controller, useForm } from "react-hook-form";
 import { Checkbox, CheckboxGroup, Dropdown } from "@carbon/react";
 import { useApiCall } from "src/utility/api";
 import useTranslate from "src/utility/localization";
-import {
-  isOIDC,
-  isTenantsApiEnabled,
-  isUserTaskAuthorizationEnabled,
-} from "src/configuration";
+import { isOIDC, isTenantsApiEnabled } from "src/configuration";
 import { FormModal, UseEntityModalProps } from "src/components/modal";
 import {
   Authorization,
@@ -175,12 +171,6 @@ export const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
   if (!isTenantsApiEnabled) {
     resourceTypeItems = resourceTypeItems.filter(
       (type) => type !== ResourceType.TENANT,
-    );
-  }
-
-  if (!isUserTaskAuthorizationEnabled) {
-    resourceTypeItems = resourceTypeItems.filter(
-      (type) => type !== ResourceType.USER_TASK,
     );
   }
 
