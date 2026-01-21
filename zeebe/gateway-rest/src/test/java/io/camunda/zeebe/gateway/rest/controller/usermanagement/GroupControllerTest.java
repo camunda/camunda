@@ -452,6 +452,48 @@ public class GroupControllerTest {
     }
 
     @Test
+    void shouldUpdateGroupWithEmptyDescriptionAndReturnResponse() {
+      // given
+      final var groupKey = 111L;
+      final var groupId = "111";
+      final var groupName = "updatedName";
+      final var description = "";
+      when(groupServices.updateGroup(groupId, groupName, description))
+          .thenReturn(
+              CompletableFuture.completedFuture(
+                  new GroupRecord()
+                      .setGroupKey(groupKey)
+                      .setGroupId(groupId)
+                      .setName(groupName)
+                      .setDescription(description)));
+
+      // when
+      webClient
+          .put()
+          .uri("%s/%s".formatted(GROUP_BASE_URL, groupId))
+          .accept(MediaType.APPLICATION_JSON)
+          .contentType(MediaType.APPLICATION_JSON)
+          .bodyValue(new GroupUpdateRequest().name(groupName).description(description))
+          .exchange()
+          .expectStatus()
+          .isOk()
+          .expectBody()
+          .json(
+              """
+            {
+              "groupId": "%s",
+              "name": "%s",
+              "description": "%s"
+            }
+            """
+                  .formatted(groupId, groupName, description),
+              JsonCompareMode.STRICT);
+
+      // then
+      verify(groupServices, times(1)).updateGroup(groupId, groupName, description);
+    }
+
+    @Test
     void shouldFailOnUpdateGroupWithEmptyName() {
       // given
       final var groupId = "groupId";
