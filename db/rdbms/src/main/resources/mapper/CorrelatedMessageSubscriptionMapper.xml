@@ -197,20 +197,6 @@
     </if>
   </sql>
 
-  <update id="updateHistoryCleanupDate">
-    UPDATE ${prefix}CORRELATED_MESSAGE_SUBSCRIPTION SET
-      HISTORY_CLEANUP_DATE = #{historyCleanupDate, jdbcType=TIMESTAMP}
-    WHERE PROCESS_INSTANCE_KEY IN
-    <foreach collection="processInstanceKeys" item="key" open="(" separator="," close=")">
-      #{key}
-    </foreach>
-  </update>
-
-  <delete id="cleanupHistory">
-    <bind name="tableName" value="'CORRELATED_MESSAGE_SUBSCRIPTION'"/>
-    <include refid="io.camunda.db.rdbms.sql.Commons.historyCleanup"/>
-  </delete>
-
   <delete id="deleteProcessInstanceRelatedData">
     <bind name="tableName" value="'CORRELATED_MESSAGE_SUBSCRIPTION'"/>
     <bind name="primaryKeyColumn" value="''"/>

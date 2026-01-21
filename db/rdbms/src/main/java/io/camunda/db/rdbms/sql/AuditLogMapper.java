@@ -15,7 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 
-public interface AuditLogMapper extends ProcessInstanceDependantMapper, HistoryCleanupMapper {
+public interface AuditLogMapper extends ProcessInstanceDependantMapper {
 
   void insert(BatchInsertAuditLogsDto dto);
 

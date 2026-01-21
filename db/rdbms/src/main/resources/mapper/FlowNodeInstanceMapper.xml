@@ -244,20 +244,6 @@
     WHERE FLOW_NODE_INSTANCE_KEY = #{flowNodeInstanceKey}
   </update>
 
-  <update id="updateHistoryCleanupDate">
-    UPDATE ${prefix}FLOW_NODE_INSTANCE SET
-      HISTORY_CLEANUP_DATE = #{historyCleanupDate, jdbcType=TIMESTAMP}
-    WHERE PROCESS_INSTANCE_KEY IN
-    <foreach collection="processInstanceKeys" item="key" open="(" separator="," close=")">
-      #{key}
-    </foreach>
-  </update>
-
-  <delete id="cleanupHistory">
-    <bind name="tableName" value="'FLOW_NODE_INSTANCE'"/>
-    <include refid="io.camunda.db.rdbms.sql.Commons.historyCleanup"/>
-  </delete>
-
   <delete id="deleteProcessInstanceRelatedData">
     <bind name="tableName" value="'FLOW_NODE_INSTANCE'"/>
     <bind name="primaryKeyColumn" value="'FLOW_NODE_INSTANCE_KEY'"/>

@@ -16,8 +16,7 @@ import io.camunda.search.entities.IncidentProcessInstanceStatisticsByDefinitionE
 import io.camunda.search.entities.IncidentProcessInstanceStatisticsByErrorEntity;
 import java.util.List;
 
-public interface IncidentMapper
-    extends ProcessBasedHistoryCleanupMapper, ProcessInstanceDependantMapper {
+public interface IncidentMapper extends ProcessInstanceDependantMapper {
 
   void insert(IncidentDbModel incident);
 

@@ -460,11 +460,6 @@
     </foreach>
   </update>
 
-  <delete id="cleanupHistory">
-    <bind name="tableName" value="'PROCESS_INSTANCE'"/>
-    <include refid="io.camunda.db.rdbms.sql.Commons.historyCleanup"/>
-  </delete>
-
   <delete id="deleteByKeys">
     DELETE FROM ${prefix}PROCESS_INSTANCE
     WHERE PROCESS_INSTANCE_KEY IN

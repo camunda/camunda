@@ -332,15 +332,6 @@
     </foreach>
   </insert>
 
-  <update id="updateProcessHistoryCleanupDate">
-    UPDATE ${prefix}AUDIT_LOG SET
-    HISTORY_CLEANUP_DATE = #{historyCleanupDate, jdbcType=TIMESTAMP}
-    WHERE PROCESS_INSTANCE_KEY IN
-    <foreach collection="processInstanceKeys" item="key" open="(" separator="," close=")">
-      #{key}
-    </foreach>
-  </update>
-
   <delete id="deleteProcessInstanceRelatedData">
     <bind name="tableName" value="'AUDIT_LOG'"/>
     <bind name="primaryKeyColumn" value="'AUDIT_LOG_KEY'"/>
@@ -385,11 +376,6 @@
       #{key}
     </foreach>
     LIMIT #{limit})
-  </delete>
-
-  <delete id="cleanupHistory">
-    <bind name="tableName" value="'AUDIT_LOG'"/>
-    <include refid="io.camunda.db.rdbms.sql.Commons.historyCleanup"/>
   </delete>
 
 </mapper>

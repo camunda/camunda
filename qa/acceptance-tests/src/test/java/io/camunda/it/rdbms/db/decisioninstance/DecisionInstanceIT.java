@@ -269,7 +269,9 @@ public class DecisionInstanceIT {
   }
 
   @TestTemplate
-  public void shouldCleanup(final CamundaRdbmsTestApplication testApplication) {
+  public void shouldDeleteProcessInstanceRelatedData(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final DecisionInstanceDbReader reader = rdbmsService.getDecisionInstanceReader();
@@ -288,18 +290,15 @@ public class DecisionInstanceIT {
         createAndSaveRandomDecisionInstance(
             rdbmsWriters, b -> b.processDefinitionKey(definition.processDefinitionKey()));
 
-    // set cleanup dates
-    rdbmsWriters
-        .getDecisionInstanceWriter()
-        .scheduleForHistoryCleanup(item1.processInstanceKey(), NOW);
-    rdbmsWriters
-        .getDecisionInstanceWriter()
-        .scheduleForHistoryCleanup(item2.processInstanceKey(), NOW.minusDays(2));
-    rdbmsWriters.flush();
+    // when
+    final int deleted =
+        rdbmsWriters
+            .getDecisionInstanceWriter()
+            .deleteProcessInstanceRelatedData(
+                PARTITION_ID, List.of(item2.processInstanceKey()), 10);
 
-    // cleanup
-    rdbmsWriters.getDecisionInstanceWriter().cleanupHistory(PARTITION_ID, cleanupDate, 10);
-
+    // then
+    assertThat(deleted).isEqualTo(1);
     final var searchResult =
         reader.search(
             DecisionInstanceQuery.of(
