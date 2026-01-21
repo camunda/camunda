@@ -8,36 +8,23 @@
 
 import {z} from 'zod';
 import {API_VERSION, type Endpoint} from '../common';
+import {
+	messagePublicationRequestSchema,
+	messagePublicationResultSchema,
+	messageCorrelationRequestSchema,
+	messageCorrelationResultSchema,
+} from './gen';
 
-const publishMessageRequestBodySchema = z.object({
-	name: z.string(),
-	correlationKey: z.string(),
-	timeToLive: z.number().int().optional(),
-	messageId: z.string().optional(),
-	variables: z.record(z.string(), z.unknown()).optional(),
-	tenantId: z.string().optional(),
-});
+const publishMessageRequestBodySchema = messagePublicationRequestSchema;
 type PublishMessageRequestBody = z.infer<typeof publishMessageRequestBodySchema>;
 
-const publishMessageResponseBodySchema = z.object({
-	tenantId: z.string(),
-	messageKey: z.string(),
-});
+const publishMessageResponseBodySchema = messagePublicationResultSchema;
 type PublishMessageResponseBody = z.infer<typeof publishMessageResponseBodySchema>;
 
-const correlateMessageRequestBodySchema = z.object({
-	name: z.string(),
-	correlationKey: z.string(),
-	variables: z.record(z.string(), z.unknown()).optional(),
-	tenantId: z.string().optional(),
-});
+const correlateMessageRequestBodySchema = messageCorrelationRequestSchema;
 type CorrelateMessageRequestBody = z.infer<typeof correlateMessageRequestBodySchema>;
 
-const correlateMessageResponseBodySchema = z.object({
-	tenantId: z.string(),
-	messageKey: z.string(),
-	processInstanceKey: z.string(),
-});
+const correlateMessageResponseBodySchema = messageCorrelationResultSchema;
 type CorrelateMessageResponseBody = z.infer<typeof correlateMessageResponseBodySchema>;
 
 const publishMessage: Endpoint = {
