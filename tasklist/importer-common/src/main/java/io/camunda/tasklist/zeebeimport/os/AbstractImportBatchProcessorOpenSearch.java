@@ -30,7 +30,7 @@ public abstract class AbstractImportBatchProcessorOpenSearch implements ImportBa
   @Autowired private Metrics metrics;
 
   @Override
-  public void performImport(ImportBatch importBatch) throws PersistenceException {
+  public void performImport(final ImportBatch importBatch) throws PersistenceException {
     final List<BulkOperation> operations = new ArrayList<BulkOperation>();
     processZeebeRecords(importBatch, operations);
     try {
@@ -40,12 +40,12 @@ public abstract class AbstractImportBatchProcessorOpenSearch implements ImportBa
                 osClient, new BulkRequest.Builder().operations(operations).build());
             return null;
           });
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new PersistenceException(e);
     }
   }
 
-  private void withTimer(Callable<Void> callable) throws Exception {
+  private void withTimer(final Callable<Void> callable) throws Exception {
     metrics.getTimer(Metrics.TIMER_NAME_IMPORT_INDEX_QUERY).recordCallable(callable);
   }
 

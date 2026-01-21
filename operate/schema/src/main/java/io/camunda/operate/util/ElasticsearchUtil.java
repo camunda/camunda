@@ -277,47 +277,48 @@ public abstract class ElasticsearchUtil {
       final RestHighLevelClient esClient,
       final BulkRequest bulkRequest,
       final boolean refreshImmediately,
-      final long maxBulkRequestSizeInBytes)
+      final long maxSizeInBytes)
       throws PersistenceException {
     LOGGER.debug(
         "Bulk request has {} bytes > {} max bytes ({} requests). Will divide it into smaller bulk requests.",
         bulkRequest.estimatedSizeInBytes(),
-        maxBulkRequestSizeInBytes,
+        maxSizeInBytes,
         bulkRequest.requests().size());
 
-    int requestCount = 0;
-    final List<DocWriteRequest<?>> requests = bulkRequest.requests();
+    BulkRequest currentBatch = new BulkRequest();
 
-    BulkRequest limitedBulkRequest = new BulkRequest();
-    while (requestCount < requests.size()) {
-      final DocWriteRequest<?> nextRequest = requests.get(requestCount);
-      if (nextRequest.ramBytesUsed() > maxBulkRequestSizeInBytes) {
+    for (final DocWriteRequest<?> request : bulkRequest.requests()) {
+      final long requestSize = request.ramBytesUsed();
+
+      if (requestSize > maxSizeInBytes) {
         throw new PersistenceException(
             String.format(
                 "One of the request with size of %d bytes is greater than max allowed %d bytes",
-                nextRequest.ramBytesUsed(), maxBulkRequestSizeInBytes));
+                requestSize, maxSizeInBytes));
       }
 
-      final long wholeSize = limitedBulkRequest.estimatedSizeInBytes() + nextRequest.ramBytesUsed();
-      if (wholeSize < maxBulkRequestSizeInBytes) {
-        limitedBulkRequest.add(nextRequest);
+      final boolean fitsInCurrentBatch =
+          currentBatch.estimatedSizeInBytes() + requestSize < maxSizeInBytes;
+
+      if (fitsInCurrentBatch) {
+        currentBatch.add(request);
       } else {
         LOGGER.debug(
             "Submit bulk of {} requests, size {} bytes.",
-            limitedBulkRequest.requests().size(),
-            limitedBulkRequest.estimatedSizeInBytes());
-        processLimitedBulkRequest(esClient, limitedBulkRequest, refreshImmediately);
-        limitedBulkRequest = new BulkRequest();
-        limitedBulkRequest.add(nextRequest);
+            currentBatch.requests().size(),
+            currentBatch.estimatedSizeInBytes());
+        processLimitedBulkRequest(esClient, currentBatch, refreshImmediately);
+        currentBatch = new BulkRequest();
+        currentBatch.add(request);
       }
-      requestCount++;
     }
-    if (!limitedBulkRequest.requests().isEmpty()) {
+
+    if (!currentBatch.requests().isEmpty()) {
       LOGGER.debug(
           "Submit bulk of {} requests, size {} bytes.",
-          limitedBulkRequest.requests().size(),
-          limitedBulkRequest.estimatedSizeInBytes());
-      processLimitedBulkRequest(esClient, limitedBulkRequest, refreshImmediately);
+          currentBatch.requests().size(),
+          currentBatch.estimatedSizeInBytes());
+      processLimitedBulkRequest(esClient, currentBatch, refreshImmediately);
     }
   }
 
