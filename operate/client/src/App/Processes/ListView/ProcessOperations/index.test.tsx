@@ -6,7 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {mockDeleteResource} from 'modules/mocks/api/v2/resource/deleteResource';
+import {mockApplyProcessDefinitionOperation} from 'modules/mocks/api/processes/operations';
+import {operationsStore} from 'modules/stores/operations';
 import {
   fireEvent,
   render,
@@ -17,10 +18,8 @@ import {
 import {useEffect} from 'react';
 import {ProcessOperations} from '.';
 import {notificationsStore} from 'modules/stores/notifications';
-import {mockSearchProcessInstances} from 'modules/mocks/api/v2/processInstances/searchProcessInstances';
-import {QueryClientProvider} from '@tanstack/react-query';
-import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
-import {panelStatesStore} from 'modules/stores/panelStates';
+import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
+import type {OperationEntity} from 'modules/types/operate';
 
 vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -28,32 +27,32 @@ vi.mock('modules/stores/notifications', () => ({
   },
 }));
 
-const mockQueryClient = getMockQueryClient();
+const mockOperation: OperationEntity = {
+  id: '2251799813687094',
+  name: 'myProcess - Version 2',
+  type: 'DELETE_PROCESS_DEFINITION',
+  startDate: '2023-02-16T14:23:45.306+0100',
+  endDate: null,
+  instancesCount: 10,
+  operationsTotalCount: 10,
+  operationsFinishedCount: 0,
+};
 
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   useEffect(() => {
     return () => {
-      panelStatesStore.reset();
+      operationsStore.reset();
     };
   }, []);
 
-  return (
-    <QueryClientProvider client={mockQueryClient}>
-      {children}
-    </QueryClientProvider>
-  );
+  return <>{children}</>;
 };
 
 describe('<ProcessOperations />', () => {
-  afterEach(() => {
-    mockQueryClient.clear();
-  });
-
   it('should open modal and show content', async () => {
-    mockDeleteResource().withSuccess({});
-    mockSearchProcessInstances().withSuccess({
-      items: [],
-      page: {totalItems: 0},
+    mockFetchProcessInstances().withSuccess({
+      processInstances: [],
+      totalCount: 0,
     });
 
     const {user} = render(
@@ -112,10 +111,10 @@ describe('<ProcessOperations />', () => {
   });
 
   it('should apply delete definition operation', async () => {
-    mockDeleteResource().withSuccess({});
-    mockSearchProcessInstances().withSuccess({
-      items: [],
-      page: {totalItems: 0},
+    mockApplyProcessDefinitionOperation().withSuccess(mockOperation);
+    mockFetchProcessInstances().withSuccess({
+      processInstances: [],
+      totalCount: 0,
     });
 
     const {user} = render(
@@ -142,19 +141,15 @@ describe('<ProcessOperations />', () => {
     await user.click(screen.getByRole('button', {name: /danger Delete/}));
 
     await waitFor(() =>
-      expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
-        kind: 'success',
-        title: 'Operation created',
-        isDismissable: true,
-      }),
+      expect(operationsStore.state.operations).toEqual([mockOperation]),
     );
   });
 
   it('should show notification on operation error', async () => {
-    mockDeleteResource().withServerError(500);
-    mockSearchProcessInstances().withSuccess({
-      items: [],
-      page: {totalItems: 0},
+    mockApplyProcessDefinitionOperation().withServerError(500);
+    mockFetchProcessInstances().withSuccess({
+      processInstances: [],
+      totalCount: 0,
     });
 
     const {user} = render(
@@ -190,10 +185,10 @@ describe('<ProcessOperations />', () => {
   });
 
   it('should show notification on operation auth error', async () => {
-    mockDeleteResource().withServerError(403);
-    mockSearchProcessInstances().withSuccess({
-      items: [],
-      page: {totalItems: 0},
+    mockApplyProcessDefinitionOperation().withServerError(403);
+    mockFetchProcessInstances().withSuccess({
+      processInstances: [],
+      totalCount: 0,
     });
 
     const {user} = render(
@@ -228,10 +223,10 @@ describe('<ProcessOperations />', () => {
   });
 
   it('should disable button and show spinner when delete operation is triggered', async () => {
-    mockDeleteResource().withSuccess({});
-    mockSearchProcessInstances().withSuccess({
-      items: [],
-      page: {totalItems: 0},
+    mockApplyProcessDefinitionOperation().withSuccess(mockOperation);
+    mockFetchProcessInstances().withSuccess({
+      processInstances: [],
+      totalCount: 0,
     });
 
     const {user} = render(
@@ -265,10 +260,10 @@ describe('<ProcessOperations />', () => {
   });
 
   it('should enable button and remove spinner when delete operation failed', async () => {
-    mockDeleteResource().withNetworkError();
-    mockSearchProcessInstances().withSuccess({
-      items: [],
-      page: {totalItems: 0},
+    mockApplyProcessDefinitionOperation().withNetworkError();
+    mockFetchProcessInstances().withSuccess({
+      processInstances: [],
+      totalCount: 0,
     });
 
     const {user} = render(
@@ -312,10 +307,10 @@ describe('<ProcessOperations />', () => {
   });
 
   it('should show warning when clicking apply without confirmation', async () => {
-    mockDeleteResource().withSuccess({});
-    mockSearchProcessInstances().withSuccess({
-      items: [],
-      page: {totalItems: 0},
+    mockApplyProcessDefinitionOperation().withSuccess(mockOperation);
+    mockFetchProcessInstances().withSuccess({
+      processInstances: [],
+      totalCount: 0,
     });
 
     const {user} = render(
@@ -352,11 +347,11 @@ describe('<ProcessOperations />', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('should enable the delete button when there are no running instances', async () => {
-    mockDeleteResource().withSuccess({});
-    mockSearchProcessInstances().withSuccess({
-      items: [],
-      page: {totalItems: 0},
+  it('should initially disable the delete button', async () => {
+    mockApplyProcessDefinitionOperation().withSuccess(mockOperation);
+    mockFetchProcessInstances().withSuccess({
+      processInstances: [],
+      totalCount: 0,
     });
 
     render(
@@ -368,6 +363,12 @@ describe('<ProcessOperations />', () => {
       {wrapper: Wrapper},
     );
 
+    expect(
+      screen.getByRole('button', {
+        name: /^delete process definition "myProcess - version 2"$/i,
+      }),
+    ).toBeDisabled();
+
     await waitFor(() =>
       expect(
         screen.getByRole('button', {
@@ -378,10 +379,10 @@ describe('<ProcessOperations />', () => {
   });
 
   it('should disable delete button when there are running instances', async () => {
-    mockDeleteResource().withSuccess({});
-    mockSearchProcessInstances().withSuccess({
-      items: [],
-      page: {totalItems: 1},
+    mockApplyProcessDefinitionOperation().withSuccess(mockOperation);
+    mockFetchProcessInstances().withSuccess({
+      processInstances: [],
+      totalCount: 1,
     });
 
     render(
@@ -401,8 +402,8 @@ describe('<ProcessOperations />', () => {
   });
 
   it('should enable delete button when process instances could not be fetched', async () => {
-    mockDeleteResource().withSuccess({});
-    mockSearchProcessInstances().withServerError();
+    mockApplyProcessDefinitionOperation().withSuccess(mockOperation);
+    mockFetchProcessInstances().withServerError();
 
     render(
       <ProcessOperations
@@ -423,10 +424,10 @@ describe('<ProcessOperations />', () => {
   });
 
   it('should reset confirmation checkbox to unchecked when delete modal is closed and reopened', async () => {
-    mockDeleteResource().withSuccess({});
-    mockSearchProcessInstances().withSuccess({
-      items: [],
-      page: {totalItems: 0},
+    mockApplyProcessDefinitionOperation().withSuccess(mockOperation);
+    mockFetchProcessInstances().withSuccess({
+      processInstances: [],
+      totalCount: 0,
     });
 
     const {user} = render(
