@@ -7,98 +7,35 @@
  */
 
 import {z} from 'zod';
+import {API_VERSION, type Endpoint} from '../common';
 import {
-	advancedDateTimeFilterSchema,
-	advancedIntegerFilterSchema,
-	advancedStringFilterSchema,
-	API_VERSION,
-	getEnumFilterSchema,
-	getQueryRequestBodySchema,
-	getQueryResponseBodySchema,
-	type Endpoint,
-} from '../common';
-import {variableSchema} from './variable';
+	userTaskResultSchema,
+	userTaskStateEnumSchema,
+	userTaskSearchQuerySchema,
+	userTaskSearchQueryResultSchema,
+	formResultSchema,
+	userTaskUpdateRequestSchema,
+	userTaskAssignmentRequestSchema,
+	userTaskCompletionRequestSchema,
+	userTaskVariableSearchQueryRequestSchema,
+	searchUserTaskVariables200Schema,
+} from './gen';
 
-const userTaskVariableFilterSchema = variableSchema.pick({
-	name: true,
-	value: true,
-});
-
-const userTaskStateSchema = z.enum([
-	'CREATED',
-	'ASSIGNING',
-	'UPDATING',
-	'COMPLETING',
-	'COMPLETED',
-	'CANCELING',
-	'CANCELED',
-	'FAILED',
-]);
-
+const userTaskStateSchema = userTaskStateEnumSchema;
 type UserTaskState = z.infer<typeof userTaskStateSchema>;
 
-const userTaskSchema = z.object({
-	state: userTaskStateSchema,
-	processDefinitionVersion: z.number(),
-	processDefinitionId: z.string(),
-	processName: z.string().optional(),
-	processInstanceKey: z.string(),
-	processDefinitionKey: z.string(),
-	name: z.string().optional(),
-	elementId: z.string(),
-	elementInstanceKey: z.string(),
-	tenantId: z.string(),
-	userTaskKey: z.string(),
-	assignee: z.string().optional(),
-	candidateGroups: z.array(z.string()),
-	candidateUsers: z.array(z.string()),
-	dueDate: z.string().optional(),
-	followUpDate: z.string().optional(),
-	creationDate: z.string(),
-	completionDate: z.string().optional(),
-	customHeaders: z.record(z.string(), z.unknown()).optional(),
-	formKey: z.string().optional(),
-	externalFormReference: z.string().optional(),
-	priority: z.number().int().min(0).max(100),
-});
+const userTaskSchema = userTaskResultSchema;
 type UserTask = z.infer<typeof userTaskSchema>;
 
-const getUserTask: Endpoint<Pick<UserTask, 'userTaskKey'>> = {
+const getUserTask: Endpoint<{userTaskKey: string}> = {
 	method: 'GET',
 	getUrl: ({userTaskKey}) => `/${API_VERSION}/user-tasks/${userTaskKey}`,
 };
 
-const queryUserTasksRequestBodySchema = getQueryRequestBodySchema({
-	sortFields: ['creationDate', 'completionDate', 'followUpDate', 'dueDate', 'priority'] as const,
-	filter: userTaskSchema
-		.pick({
-			state: true,
-			elementId: true,
-			tenantId: true,
-			processDefinitionId: true,
-			userTaskKey: true,
-			processDefinitionKey: true,
-			processInstanceKey: true,
-			elementInstanceKey: true,
-		})
-		.extend({
-			assignee: advancedStringFilterSchema,
-			priority: advancedIntegerFilterSchema,
-			candidateGroup: advancedStringFilterSchema,
-			candidateUser: advancedStringFilterSchema,
-			creationDate: advancedDateTimeFilterSchema,
-			completionDate: advancedDateTimeFilterSchema,
-			followUpDate: advancedDateTimeFilterSchema,
-			dueDate: advancedDateTimeFilterSchema,
-			localVariables: z.array(userTaskVariableFilterSchema),
-			processInstanceVariables: z.array(userTaskVariableFilterSchema),
-			state: getEnumFilterSchema(userTaskStateSchema),
-		})
-		.partial(),
-});
+const queryUserTasksRequestBodySchema = userTaskSearchQuerySchema;
 type QueryUserTasksRequestBody = z.infer<typeof queryUserTasksRequestBodySchema>;
 
-const queryUserTasksResponseBodySchema = getQueryResponseBodySchema(userTaskSchema);
+const queryUserTasksResponseBodySchema = userTaskSearchQueryResultSchema;
 type QueryUserTasksResponseBody = z.infer<typeof queryUserTasksResponseBodySchema>;
 
 const queryUserTasks: Endpoint = {
@@ -106,89 +43,55 @@ const queryUserTasks: Endpoint = {
 	getUrl: () => `/${API_VERSION}/user-tasks/search`,
 };
 
-const formSchema = z.object({
-	formKey: z.string(),
-	tenantId: z.string(),
-	bpmnId: z.string(),
-	schema: z.string(),
-	version: z.number(),
-});
+const formSchema = formResultSchema;
 type Form = z.infer<typeof formSchema>;
 
-const getUserTaskForm: Endpoint<Pick<UserTask, 'userTaskKey'>> = {
+const getUserTaskForm: Endpoint<{userTaskKey: string}> = {
 	method: 'GET',
 	getUrl: ({userTaskKey}) => `/${API_VERSION}/user-tasks/${userTaskKey}/form`,
 };
 
-const updateUserTaskRequestBodySchema = z.object({
-	changeset: userTaskSchema
-		.pick({
-			dueDate: true,
-			followUpDate: true,
-			candidateUsers: true,
-			candidateGroups: true,
-			priority: true,
-		})
-		.partial(),
-	action: z.string().optional(),
-});
+const updateUserTaskRequestBodySchema = userTaskUpdateRequestSchema;
 type UpdateUserTaskRequestBody = z.infer<typeof updateUserTaskRequestBodySchema>;
 
-const updateUserTask: Endpoint<Pick<UserTask, 'userTaskKey'>> = {
+const updateUserTask: Endpoint<{userTaskKey: string}> = {
 	method: 'PATCH',
 	getUrl: ({userTaskKey}) => `/${API_VERSION}/user-tasks/${userTaskKey}`,
 };
 
-const getTask: Endpoint<Pick<UserTask, 'userTaskKey'>> = {
+const getTask: Endpoint<{userTaskKey: string}> = {
 	method: 'GET',
 	getUrl: ({userTaskKey}) => `/${API_VERSION}/user-tasks/${userTaskKey}`,
 };
 
-const assignTaskRequestBodySchema = z.object({
-	assignee: z.string(),
-	allowOverride: z.boolean().optional(),
-	action: z.string().optional(),
-});
+const assignTaskRequestBodySchema = userTaskAssignmentRequestSchema;
 type AssignTaskRequestBody = z.infer<typeof assignTaskRequestBodySchema>;
 
-const assignTask: Endpoint<Pick<UserTask, 'userTaskKey'>> = {
+const assignTask: Endpoint<{userTaskKey: string}> = {
 	method: 'POST',
 	getUrl: ({userTaskKey}) => `/${API_VERSION}/user-tasks/${userTaskKey}/assignment`,
 };
 
-const unassignTaskRequestBodySchema = z.object({
-	action: z.string().optional(),
-});
-type UnassignTaskRequestBody = z.infer<typeof unassignTaskRequestBodySchema>;
-
-const unassignTask: Endpoint<Pick<UserTask, 'userTaskKey'>> = {
+const unassignTask: Endpoint<{userTaskKey: string}> = {
 	method: 'DELETE',
 	getUrl: ({userTaskKey}) => `/${API_VERSION}/user-tasks/${userTaskKey}/assignee`,
 };
 
-const completeTaskRequestBodySchema = z.object({
-	variables: z.record(z.string(), z.unknown()),
-	action: z.string().optional(),
-});
+const completeTaskRequestBodySchema = userTaskCompletionRequestSchema;
 type CompleteTaskRequestBody = z.infer<typeof completeTaskRequestBodySchema>;
 
-const completeTask: Endpoint<Pick<UserTask, 'userTaskKey'>> = {
+const completeTask: Endpoint<{userTaskKey: string}> = {
 	method: 'POST',
 	getUrl: ({userTaskKey}) => `/${API_VERSION}/user-tasks/${userTaskKey}/completion`,
 };
 
-const queryVariablesByUserTaskRequestBodySchema = getQueryRequestBodySchema({
-	sortFields: ['name', 'value', 'fullValue', 'tenantId', 'variableKey', 'scopeKey', 'processInstanceKey'] as const,
-	filter: z.object({
-		name: advancedStringFilterSchema.optional(),
-	}),
-});
+const queryVariablesByUserTaskRequestBodySchema = userTaskVariableSearchQueryRequestSchema;
 type QueryVariablesByUserTaskRequestBody = z.infer<typeof queryVariablesByUserTaskRequestBodySchema>;
 
-const queryVariablesByUserTaskResponseBodySchema = getQueryResponseBodySchema(variableSchema);
+const queryVariablesByUserTaskResponseBodySchema = searchUserTaskVariables200Schema;
 type QueryVariablesByUserTaskResponseBody = z.infer<typeof queryVariablesByUserTaskResponseBodySchema>;
 
-const queryVariablesByUserTask: Endpoint<Pick<UserTask, 'userTaskKey'> & {truncateValues?: boolean}> = {
+const queryVariablesByUserTask: Endpoint<{userTaskKey: string; truncateValues?: boolean}> = {
 	method: 'POST',
 	getUrl: ({userTaskKey, truncateValues}) =>
 		`/${API_VERSION}/user-tasks/${userTaskKey}/variables/search${truncateValues !== undefined ? `?truncateValues=${truncateValues}` : ''}`,
@@ -209,7 +112,6 @@ export {
 	queryUserTasksRequestBodySchema,
 	formSchema,
 	assignTaskRequestBodySchema,
-	unassignTaskRequestBodySchema,
 	completeTaskRequestBodySchema,
 	queryVariablesByUserTaskRequestBodySchema,
 	queryVariablesByUserTaskResponseBodySchema,
@@ -222,7 +124,6 @@ export type {
 	QueryUserTasksRequestBody,
 	Form,
 	AssignTaskRequestBody,
-	UnassignTaskRequestBody,
 	CompleteTaskRequestBody,
 	QueryVariablesByUserTaskRequestBody,
 	QueryVariablesByUserTaskResponseBody,
