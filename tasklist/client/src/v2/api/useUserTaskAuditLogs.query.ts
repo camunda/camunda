@@ -40,6 +40,7 @@ function getUserTaskAuditLogsQueryOptions(
         api.queryUserTaskAuditLogs({
           userTaskKey,
           sort: [sort],
+          filter: {result: 'SUCCESS'},
           page: {
             from: pageParam,
             limit: MAX_AUDIT_LOGS_PER_REQUEST,

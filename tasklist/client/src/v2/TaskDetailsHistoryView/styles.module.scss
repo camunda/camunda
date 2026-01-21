@@ -11,25 +11,12 @@
   width: 100%;
   display: flex;
   flex-direction: column;
+  margin-top: calc(-1 * var(--cds-spacing-04));
 }
 
 .tableContainer {
   flex: 1;
   overflow: auto;
-}
-
-.statusCell {
-  display: flex;
-  align-items: center;
-  gap: var(--cds-spacing-02);
-}
-
-.successIcon {
-  fill: var(--cds-support-success);
-}
-
-.failIcon {
-  fill: var(--cds-support-error);
 }
 
 .emptyContainer {
