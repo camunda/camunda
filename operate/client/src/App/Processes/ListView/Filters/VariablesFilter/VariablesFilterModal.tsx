@@ -73,7 +73,6 @@ const VariablesFilterModal: React.FC<Props> = ({
       : [createEmptyCondition()],
   );
 
-  // Reset conditions when modal opens with new initial conditions
   useEffect(() => {
     if (isOpen) {
       setConditions(
@@ -102,19 +101,16 @@ const VariablesFilterModal: React.FC<Props> = ({
   );
 
   const handleApply = () => {
-    // Validate all conditions
     const validConditions = conditions.filter((c) => {
       if (!c.name.trim()) return false;
       if (c.operator === 'exists' || c.operator === 'doesNotExist') return true;
       return c.value.trim() !== '';
     });
 
-    // Transform to API format following existing pattern
     try {
       const apiConditions = validConditions.map((c) => {
         const {name, operator, value} = c;
 
-        // Handle operators without values
         if (operator === 'exists') {
           return {name, value: {$exists: true}};
         }
@@ -122,7 +118,6 @@ const VariablesFilterModal: React.FC<Props> = ({
           return {name, value: {$exists: false}};
         }
 
-        // Parse and stringify values (same pattern as buildMutationRequestBody.ts)
         const parsed = (getValidVariableValues(value) ?? []).map((v) =>
           JSON.stringify(v),
         );
@@ -131,17 +126,14 @@ const VariablesFilterModal: React.FC<Props> = ({
           throw new Error(`Invalid value for ${name}`);
         }
 
-        // Apply operator-specific wrapping
         switch (operator) {
           case 'equals':
             return {name, value: {$eq: parsed[0]}};
           case 'notEqual':
             return {name, value: {$neq: parsed[0]}};
           case 'contains':
-            // Auto-wrap with wildcards for $like
             return {name, value: {$like: `*${parsed[0]}*`}};
           case 'oneOf':
-            // Always use $in, even for single value
             return {name, value: {$in: parsed}};
           default:
             return {name, value: {$eq: parsed[0]}};
@@ -162,7 +154,6 @@ const VariablesFilterModal: React.FC<Props> = ({
     onClose();
   };
 
-  // Check if Apply button should be disabled
   const isApplyDisabled = conditions.every(
     (c) =>
       c.name.trim() === '' ||
@@ -182,6 +173,7 @@ const VariablesFilterModal: React.FC<Props> = ({
       onRequestSubmit={handleApply}
       primaryButtonDisabled={isApplyDisabled}
       preventCloseOnClickOutside
+      selectorsFloatingMenus={['.cds--modal *']}
       data-testid="variables-filter-modal"
     >
       <Stack gap={6}>
@@ -197,7 +189,7 @@ const VariablesFilterModal: React.FC<Props> = ({
               onChange={handleConditionChange}
               onDelete={() => handleRemoveCondition(condition.id)}
               isDeleteDisabled={conditions.length === 1}
-              isFirstRow={index === 0}
+              rowIndex={index}
             />
           ))}
         </Styled.FilterRowsContainer>

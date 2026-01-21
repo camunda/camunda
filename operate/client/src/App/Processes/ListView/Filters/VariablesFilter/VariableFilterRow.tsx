@@ -8,7 +8,7 @@
 
 import {useState} from 'react';
 import {Dropdown, TextInput} from '@carbon/react';
-import {Close, Popup} from '@carbon/react/icons';
+import {Close, Maximize} from '@carbon/react/icons';
 import {createPortal} from 'react-dom';
 import {JSONEditorModal} from 'modules/components/JSONEditorModal';
 import {IconTextInput} from 'modules/components/IconInput';
@@ -24,7 +24,7 @@ interface Props {
   onChange: (condition: VariableFilterCondition) => void;
   onDelete: () => void;
   isDeleteDisabled: boolean;
-  isFirstRow: boolean;
+  rowIndex: number;
 }
 
 const VariableFilterRow: React.FC<Props> = ({
@@ -32,7 +32,7 @@ const VariableFilterRow: React.FC<Props> = ({
   onChange,
   onDelete,
   isDeleteDisabled,
-  isFirstRow,
+  rowIndex,
 }) => {
   const [isJsonEditorOpen, setIsJsonEditorOpen] = useState(false);
 
@@ -59,7 +59,6 @@ const VariableFilterRow: React.FC<Props> = ({
     onChange({
       ...condition,
       operator: newOperator,
-      // Clear value if the new operator doesn't require one
       value: operatorConfig?.requiresValue ? condition.value : '',
     });
   };
@@ -79,16 +78,15 @@ const VariableFilterRow: React.FC<Props> = ({
     setIsJsonEditorOpen(false);
   };
 
-  // Get placeholder text based on operator
   const getValuePlaceholder = (): string => {
     switch (selectedOperator?.id) {
       case 'equals':
       case 'notEqual':
-        return '"string value" or 123 or null or {"key":"val"}';
+        return 'value in JSON format';
       case 'contains':
-        return 'search text (wildcards added automatically)';
+        return '"search text"';
       case 'oneOf':
-        return 'val1, val2 or ["val1", "val2"]';
+        return '["val1", "val2"]';
       default:
         return 'Value, in JSON format';
     }
@@ -119,7 +117,7 @@ const VariableFilterRow: React.FC<Props> = ({
               handleOperatorChange(selectedItem?.id ?? null)
             }
             size="sm"
-            direction={isFirstRow ? undefined : 'top'}
+            direction={rowIndex < 2 ? 'bottom' : 'top'}
             data-testid={`variable-filter-operator-${condition.id}`}
           />
         </Styled.ConditionDropdownContainer>
@@ -133,7 +131,7 @@ const VariableFilterRow: React.FC<Props> = ({
               value={condition.value}
               onChange={handleValueChange}
               size="sm"
-              Icon={Popup}
+              Icon={Maximize}
               buttonLabel="Open JSON editor"
               onIconClick={() => setIsJsonEditorOpen(true)}
               data-testid={`variable-filter-value-${condition.id}`}
