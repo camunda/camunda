@@ -110,7 +110,7 @@ public class HistoryDeletionService {
                     deletionModel
                         .resourceType()
                         .equals(HistoryDeletionTypeDbModel.PROCESS_DEFINITION))
-            .filter(this::hasAllDependentsDeleted)
+            .filter(this::hasDeletedAllProcessInstances)
             .map(HistoryDeletionDbModel::resourceKey)
             .toList();
 
@@ -122,7 +122,8 @@ public class HistoryDeletionService {
     return processDefinitionKeys;
   }
 
-  private boolean hasAllDependentsDeleted(final HistoryDeletionDbModel historyDeletionDbModel) {
+  private boolean hasDeletedAllProcessInstances(
+      final HistoryDeletionDbModel historyDeletionDbModel) {
     final boolean hasDependents =
         processInstanceDbReader
                 .search(
@@ -134,9 +135,12 @@ public class HistoryDeletionService {
                                     .build())))
                 .total()
             != 0;
-    LOG.debug(
-        "Process definition {} still has dependent process instances and will not be deleted.",
-        historyDeletionDbModel.resourceKey());
+
+    if (hasDependents) {
+      LOG.debug(
+          "Process definition {} still has process instances and will not be deleted.",
+          historyDeletionDbModel.resourceKey());
+    }
     return !hasDependents;
   }
 
