@@ -1046,16 +1046,12 @@
         <artifactId>mcp-annotations</artifactId>
         <version>${version.spring-ai-community.mcp-annotations}</version>
       </dependency>
-
       <dependency>
         <groupId>io.modelcontextprotocol.sdk</groupId>
-        <artifactId>mcp</artifactId>
+        <artifactId>mcp-bom</artifactId>
         <version>${version.mcp-sdk}</version>
-      </dependency>
-      <dependency>
-        <groupId>io.modelcontextprotocol.sdk</groupId>
-        <artifactId>mcp-core</artifactId>
-        <version>${version.mcp-sdk}</version>
+        <type>pom</type>
+        <scope>import</scope>
       </dependency>
 
       <dependency>
