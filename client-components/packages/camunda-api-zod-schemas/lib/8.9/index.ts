@@ -794,16 +794,6 @@ export {
 	type QueryProcessDefinitionsResponseBody,
 } from './process-definition';
 export {
-	problemDetailsSchema,
-	queryPageSchema,
-	querySortOrderSchema,
-	problemDetailResponseSchema,
-	type ProblemDetails,
-	type QueryPage,
-	type QuerySortOrder,
-	type ProblemDetailsResponse,
-} from '../common';
-export {
 	createDeploymentResponseBodySchema,
 	deleteResourceRequestBodySchema,
 	resourceSchema,
