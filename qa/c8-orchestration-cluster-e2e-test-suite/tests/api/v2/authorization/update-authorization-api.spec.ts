@@ -564,10 +564,9 @@ test.describe.parallel('Update Authorization API', () => {
           },
         },
       );
-      await assertInvalidArgument(
+      await assertBadRequest(
         authRes,
-        400,
-        'No ownerId provided. No ownerType provided. No resourceId provided. No resourceType provided. No permissionTypes provided.',
+        'At least one of [resourceId, resourcePropertyName] is required',
       );
     });
 
@@ -854,7 +853,7 @@ test.describe.parallel('Update Authorization API', () => {
       );
       await assertBadRequest(
         authRes,
-        "Unexpected value 'WRONG_VALUE_FOR_TEST' for enum field 'resourceType'. Use any of the following values: [AUTHORIZATION, MAPPING_RULE, MESSAGE, BATCH, COMPONENT, SYSTEM, TENANT, RESOURCE, PROCESS_DEFINITION, DECISION_REQUIREMENTS_DEFINITION, DECISION_DEFINITION, GROUP, USER, ROLE, DOCUMENT]",
+        "Unexpected value 'WRONG_VALUE_FOR_TEST' for enum field 'resourceType'. Use any of the following values: [AUDIT_LOG, AUTHORIZATION, BATCH, CLUSTER_VARIABLE, COMPONENT, DECISION_DEFINITION, DECISION_REQUIREMENTS_DEFINITION, DOCUMENT, EXPRESSION, GLOBAL_LISTENER, GROUP, MAPPING_RULE, MESSAGE, PROCESS_DEFINITION, RESOURCE, ROLE, SYSTEM, TENANT, USER, USER_TASK]",
       );
     });
   });
