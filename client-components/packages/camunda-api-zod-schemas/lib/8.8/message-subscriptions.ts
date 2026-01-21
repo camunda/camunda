@@ -7,67 +7,27 @@
  */
 
 import {z} from 'zod';
+import {API_VERSION, type Endpoint} from '../common';
 import {
-	advancedDateTimeFilterSchema,
-	advancedIntegerFilterSchema,
-	advancedStringFilterSchema,
-	API_VERSION,
-	type Endpoint,
-	getEnumFilterSchema,
-	getQueryRequestBodySchema,
-	getQueryResponseBodySchema,
-} from '../common';
+	messageSubscriptionResultSchema,
+	messageSubscriptionSearchQuerySchema,
+	messageSubscriptionSearchQueryResultSchema,
+	correlatedMessageSubscriptionResultSchema,
+	correlatedMessageSubscriptionSearchQuerySchema,
+	correlatedMessageSubscriptionSearchQueryResultSchema,
+	messageSubscriptionStateEnumSchema,
+} from './gen';
 
-const messageSubscriptionStateSchema = z.enum(['CORRELATED', 'CREATED', 'DELETED', 'MIGRATED']);
+const messageSubscriptionStateSchema = messageSubscriptionStateEnumSchema;
 type MessageSubscriptionState = z.infer<typeof messageSubscriptionStateSchema>;
 
-const messageSubscriptionSchema = z.object({
-	messageSubscriptionKey: z.string(),
-	processDefinitionId: z.string(),
-	processDefinitionKey: z.string(),
-	processInstanceKey: z.string(),
-	elementId: z.string(),
-	elementInstanceKey: z.string(),
-	messageSubscriptionState: messageSubscriptionStateSchema,
-	lastUpdatedDate: z.string(),
-	messageName: z.string(),
-	correlationKey: z.string(),
-	tenantId: z.string(),
-});
+const messageSubscriptionSchema = messageSubscriptionResultSchema;
 type MessageSubscription = z.infer<typeof messageSubscriptionSchema>;
 
-const queryMessageSubscriptionRequestBodySchema = getQueryRequestBodySchema({
-	sortFields: [
-		'messageSubscriptionKey',
-		'processDefinitionId',
-		'processInstanceKey',
-		'elementId',
-		'elementInstanceKey',
-		'messageSubscriptionState',
-		'lastUpdatedDate',
-		'messageName',
-		'correlationKey',
-		'tenantId',
-	] as const,
-	filter: z
-		.object({
-			messageSubscriptionState: getEnumFilterSchema(messageSubscriptionStateSchema),
-			messageSubscriptionKey: advancedStringFilterSchema,
-			processDefinitionId: advancedStringFilterSchema,
-			lastUpdatedDate: advancedDateTimeFilterSchema,
-			processInstanceKey: advancedStringFilterSchema,
-			elementId: advancedStringFilterSchema,
-			elementInstanceKey: advancedStringFilterSchema,
-			messageName: advancedStringFilterSchema,
-			correlationKey: advancedStringFilterSchema,
-			tenantId: advancedStringFilterSchema,
-		})
-		.partial(),
-});
-
+const queryMessageSubscriptionRequestBodySchema = messageSubscriptionSearchQuerySchema;
 type QueryMessageSubscriptionsRequestBody = z.infer<typeof queryMessageSubscriptionRequestBodySchema>;
 
-const queryMessageSubscriptionsResponseBodySchema = getQueryResponseBodySchema(messageSubscriptionSchema);
+const queryMessageSubscriptionsResponseBodySchema = messageSubscriptionSearchQueryResultSchema;
 type QueryMessageSubscriptionsResponseBody = z.infer<typeof queryMessageSubscriptionsResponseBodySchema>;
 
 const queryMessageSubscriptions: Endpoint = {
@@ -77,63 +37,15 @@ const queryMessageSubscriptions: Endpoint = {
 	},
 };
 
-const correlatedMessageSubscriptionSchema = z.object({
-	subscriptionKey: z.string(),
-	processDefinitionId: z.string(),
-	processDefinitionKey: z.string(),
-	processInstanceKey: z.string(),
-	elementId: z.string(),
-	elementInstanceKey: z.string(),
-	messageSubscriptionState: messageSubscriptionStateSchema,
-	correlationTime: z.string(),
-	messageName: z.string(),
-	correlationKey: z.string(),
-	messageKey: z.string(),
-	partitionId: z.number().int(),
-	tenantId: z.string(),
-});
+const correlatedMessageSubscriptionSchema = correlatedMessageSubscriptionResultSchema;
 type CorrelatedMessageSubscription = z.infer<typeof correlatedMessageSubscriptionSchema>;
 
-const queryCorrelatedMessageSubscriptionRequestBodySchema = getQueryRequestBodySchema({
-	sortFields: [
-		'correlationKey',
-		'correlationTime',
-		'elementId',
-		'elementInstanceKey',
-		'messageKey',
-		'messageName',
-		'partitionId',
-		'processDefinitionId',
-		'processDefinitionKey',
-		'processInstanceKey',
-		'subscriptionKey',
-		'tenantId',
-	] as const,
-	filter: z
-		.object({
-			correlationKey: advancedStringFilterSchema,
-			correlationTime: advancedDateTimeFilterSchema,
-			elementId: advancedStringFilterSchema,
-			elementInstanceKey: advancedStringFilterSchema,
-			messageKey: advancedStringFilterSchema,
-			messageName: advancedStringFilterSchema,
-			partitionId: advancedIntegerFilterSchema,
-			processDefinitionId: advancedStringFilterSchema,
-			processDefinitionKey: advancedStringFilterSchema,
-			processInstanceKey: advancedStringFilterSchema,
-			subscriptionKey: advancedStringFilterSchema,
-			tenantId: advancedStringFilterSchema,
-		})
-		.partial(),
-});
-
+const queryCorrelatedMessageSubscriptionRequestBodySchema = correlatedMessageSubscriptionSearchQuerySchema;
 type QueryCorrelatedMessageSubscriptionsRequestBody = z.infer<
 	typeof queryCorrelatedMessageSubscriptionRequestBodySchema
 >;
 
-const queryCorrelatedMessageSubscriptionsResponseBodySchema = getQueryResponseBodySchema(
-	correlatedMessageSubscriptionSchema,
-);
+const queryCorrelatedMessageSubscriptionsResponseBodySchema = correlatedMessageSubscriptionSearchQueryResultSchema;
 type QueryCorrelatedMessageSubscriptionsResponseBody = z.infer<
 	typeof queryCorrelatedMessageSubscriptionsResponseBodySchema
 >;
@@ -150,6 +62,7 @@ export {
 	queryMessageSubscriptionRequestBodySchema,
 	queryMessageSubscriptionsResponseBodySchema,
 	messageSubscriptionSchema,
+	messageSubscriptionStateSchema,
 	correlatedMessageSubscriptionSchema,
 	queryCorrelatedMessageSubscriptionRequestBodySchema,
 	queryCorrelatedMessageSubscriptionsResponseBodySchema,
