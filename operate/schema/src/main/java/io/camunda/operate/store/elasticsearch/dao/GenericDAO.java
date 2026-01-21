@@ -27,7 +27,7 @@ import org.slf4j.LoggerFactory;
 public class GenericDAO<T extends ExporterEntity, I extends IndexDescriptor> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(GenericDAO.class);
-  private ElasticsearchClient es8Client;
+  private ElasticsearchClient esClient;
   private ObjectMapper objectMapper;
   private I index;
 
@@ -40,22 +40,22 @@ public class GenericDAO<T extends ExporterEntity, I extends IndexDescriptor> {
    *
    * @param objectMapper
    * @param index
-   * @param es8Client
+   * @param esClient
    */
-  GenericDAO(final ObjectMapper objectMapper, final I index, final ElasticsearchClient es8Client) {
+  GenericDAO(final ObjectMapper objectMapper, final I index, final ElasticsearchClient esClient) {
     if (objectMapper == null) {
       throw new IllegalStateException("ObjectMapper can't be null");
     }
     if (index == null) {
       throw new IllegalStateException("Index can't be null");
     }
-    if (es8Client == null) {
+    if (esClient == null) {
       throw new IllegalStateException("ES Client can't be null");
     }
 
     this.objectMapper = objectMapper;
     this.index = index;
-    this.es8Client = es8Client;
+    this.esClient = esClient;
   }
 
   /**
@@ -73,7 +73,7 @@ public class GenericDAO<T extends ExporterEntity, I extends IndexDescriptor> {
   public InsertResponse insert(final T entity) {
     try {
       final var request = buildESIndexRequest(entity);
-      final IndexResponse response = es8Client.index(request);
+      final IndexResponse response = esClient.index(request);
       if (response.result() != Result.Created) {
         return InsertResponse.failure();
       }
@@ -98,7 +98,7 @@ public class GenericDAO<T extends ExporterEntity, I extends IndexDescriptor> {
                       .query(query.getEsQuery())
                       .aggregations(query.getGroupName(), query.getAggregation()));
 
-      final SearchResponse<Void> response = es8Client.search(searchRequest, Void.class);
+      final SearchResponse<Void> response = esClient.search(searchRequest, Void.class);
 
       if (response.aggregations() == null) {
         throw new OperateRuntimeException("Search with aggregation returned no aggregation");
@@ -124,7 +124,7 @@ public class GenericDAO<T extends ExporterEntity, I extends IndexDescriptor> {
    */
   public static class Builder<T extends ExporterEntity, I extends IndexDescriptor> {
     private ObjectMapper objectMapper;
-    private ElasticsearchClient es8Client;
+    private ElasticsearchClient esClient;
     private I index;
 
     public Builder() {}
@@ -139,8 +139,8 @@ public class GenericDAO<T extends ExporterEntity, I extends IndexDescriptor> {
       return this;
     }
 
-    public Builder<T, I> es8Client(final ElasticsearchClient es8Client) {
-      this.es8Client = es8Client;
+    public Builder<T, I> esClient(final ElasticsearchClient esClient) {
+      this.esClient = esClient;
       return this;
     }
 
@@ -151,11 +151,11 @@ public class GenericDAO<T extends ExporterEntity, I extends IndexDescriptor> {
       if (index == null) {
         throw new IllegalStateException("Index can't be null");
       }
-      if (es8Client == null) {
+      if (esClient == null) {
         throw new IllegalStateException("ES Client can't be null");
       }
 
-      return new GenericDAO<>(objectMapper, index, es8Client);
+      return new GenericDAO<>(objectMapper, index, esClient);
     }
   }
 }

@@ -9,6 +9,7 @@ package io.camunda.operate.webapp.api.v1.dao.elasticsearch;
 
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.*;
 
+import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchRequest.Builder;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import io.camunda.operate.conditions.ElasticsearchCondition;
@@ -61,11 +62,7 @@ public class ElasticsearchDecisionInstanceDao extends ElasticsearchDao<DecisionI
   @Override
   public Results<DecisionInstance> search(final Query<DecisionInstance> query) throws APIException {
     final var searchRequestBuilder =
-        buildQueryOn(
-            query,
-            DecisionInstance.ID,
-            new co.elastic.clients.elasticsearch.core.SearchRequest.Builder(),
-            true);
+        buildQueryOn(query, DecisionInstance.ID, new SearchRequest.Builder(), true);
 
     try {
       final var searchReq =
@@ -208,12 +205,12 @@ public class ElasticsearchDecisionInstanceDao extends ElasticsearchDao<DecisionI
     final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
 
     final var searchRequestBuilder =
-        new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+        new SearchRequest.Builder()
             .index(decisionInstanceTemplate.getAlias())
             .query(tenantAwareQuery);
 
     final var decisionInstances =
-        ElasticsearchUtil.scrollAllStream(es8Client, searchRequestBuilder, DecisionInstance.class)
+        ElasticsearchUtil.scrollAllStream(esClient, searchRequestBuilder, DecisionInstance.class)
             .flatMap(res -> res.hits().hits().stream())
             .map(Hit::source)
             .toList();

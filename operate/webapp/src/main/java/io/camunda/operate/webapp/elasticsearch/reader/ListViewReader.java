@@ -116,7 +116,7 @@ public class ListViewReader extends AbstractReader
     LOGGER.debug("Search request will search in: \n{}", searchRequest.index());
 
     try {
-      final var response = es8client.search(searchRequest, ProcessInstanceForListViewEntity.class);
+      final var response = esClient.search(searchRequest, ProcessInstanceForListViewEntity.class);
       result.setTotalCount(response.hits().total().value());
 
       final List<ProcessInstanceForListViewEntity> processInstanceEntities =
@@ -160,7 +160,7 @@ public class ListViewReader extends AbstractReader
                                         ListViewTemplate.PROCESS_NAME,
                                         ListViewTemplate.BPMN_PROCESS_ID))));
     try {
-      final var response = es8client.search(request, MAP_CLASS);
+      final var response = esClient.search(request, MAP_CLASS);
 
       if (response.hits().total().value() < 1) {
         return Tuple.of(null, null);

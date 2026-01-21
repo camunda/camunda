@@ -32,7 +32,7 @@ public class ElasticsearchListViewStore implements ListViewStore {
 
   @Autowired private ListViewTemplate listViewTemplate;
 
-  @Autowired private ElasticsearchClient es8Client;
+  @Autowired private ElasticsearchClient esClient;
 
   @Autowired private ElasticsearchTenantHelper tenantHelper;
 
@@ -51,7 +51,7 @@ public class ElasticsearchListViewStore implements ListViewStore {
 
     final var resStream =
         ElasticsearchUtil.scrollAllStream(
-            es8Client, searchRequestBuilder, ElasticsearchUtil.MAP_CLASS);
+            esClient, searchRequestBuilder, ElasticsearchUtil.MAP_CLASS);
 
     final var processInstanceId2IndexName =
         resStream
