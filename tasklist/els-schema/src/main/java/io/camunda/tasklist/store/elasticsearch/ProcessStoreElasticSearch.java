@@ -108,7 +108,7 @@ public class ProcessStoreElasticSearch implements ProcessStore {
     final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
 
     final var request =
-        new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+        new SearchRequest.Builder()
             .index(processIndex.getAlias())
             .query(tenantAwareQuery)
             .collapse(c -> c.field(ProcessIndex.BPMN_PROCESS_ID))
@@ -137,10 +137,7 @@ public class ProcessStoreElasticSearch implements ProcessStore {
     final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
 
     final var request =
-        new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
-            .index(processIndex.getAlias())
-            .query(tenantAwareQuery)
-            .build();
+        new SearchRequest.Builder().index(processIndex.getAlias()).query(tenantAwareQuery).build();
 
     try {
       final var response = es8Client.search(request, ProcessEntity.class);
@@ -426,7 +423,7 @@ public class ProcessStoreElasticSearch implements ProcessStore {
     final SearchRequest request =
         new SearchRequest.Builder()
             .index(processIndex.getAlias())
-            .query(query)
+            .query(tenantHelper.makeQueryTenantAware(query))
             .aggregations(BPMN_PROCESS_ID_TENANT_ID_AGG_NAME, bpmnProcessIdAgg)
             .size(0)
             .build();
