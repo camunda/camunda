@@ -49,11 +49,11 @@ jobs:
         run: |
           # Fetch gh-pages branch and check if preview directory exists
           git fetch origin gh-pages:gh-pages 2>/dev/null || echo "gh-pages branch not found"
-          if git show gh-pages:pr-preview/pr-${{ github.event.pull_request.number }}/ >/dev/null 2>&1; then
-            echo "preview_exists=true" >> $GITHUB_OUTPUT
+          if git show "gh-pages:pr-preview/pr-${{ github.event.pull_request.number }}/" >/dev/null 2>&1; then
+            echo "preview_exists=true" >> "$GITHUB_OUTPUT"
             echo "Preview exists for PR ${{ github.event.pull_request.number }}"
           else
-            echo "preview_exists=false" >> $GITHUB_OUTPUT
+            echo "preview_exists=false" >> "$GITHUB_OUTPUT"
             echo "No preview found for PR ${{ github.event.pull_request.number }}"
           fi
 
