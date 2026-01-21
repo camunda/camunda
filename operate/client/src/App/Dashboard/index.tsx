@@ -8,7 +8,7 @@
 
 import {useEffect} from 'react';
 import {VisuallyHiddenH1} from 'modules/components/VisuallyHiddenH1';
-import {MetricPanel} from './MetricPanel';
+import {MetricPanel} from './v2/MetricPanel';
 import {PAGE_TITLE} from 'modules/constants';
 import {Grid, ScrollableContent, Tile, TileTitle} from './styled';
 import {InstancesByProcessDefinition} from './v2/InstancesByProcessDefinition';
