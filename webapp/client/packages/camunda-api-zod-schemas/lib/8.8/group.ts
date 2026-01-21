@@ -25,8 +25,10 @@ import {
 	mappingRuleSearchQueryRequestSchema,
 	mappingRuleSearchQueryResultSchema,
 } from './gen';
-import {groupSchema, type Group} from './group-role';
 import type {MappingRule} from './mapping-rule';
+
+const groupSchema = groupResultSchema;
+type Group = z.infer<typeof groupSchema>;
 
 const createGroupRequestBodySchema = groupCreateRequestSchema;
 type CreateGroupRequestBody = z.infer<typeof createGroupRequestBodySchema>;

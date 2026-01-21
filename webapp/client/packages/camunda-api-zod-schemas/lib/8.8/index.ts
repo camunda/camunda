@@ -595,7 +595,6 @@ export {
 	type SequenceFlow,
 	type GetProcessInstanceSequenceFlowsResponseBody,
 	type ProcessInstanceState,
-	type StatisticName,
 	type ProcessInstance,
 	type GetProcessInstanceStatisticsResponseBody,
 	type CreateIncidentResolutionBatchOperationRequestBody,

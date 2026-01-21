@@ -27,8 +27,9 @@ import {
 	mappingRuleSearchQueryRequestSchema,
 	mappingRuleSearchQueryResultSchema,
 } from './gen';
-import type {Group, Role} from './group-role';
+import type {Group} from './group';
 import type {MappingRule} from './mapping-rule';
+import type {Role} from './role';
 
 const tenantSchema = tenantResultSchema;
 type Tenant = z.infer<typeof tenantSchema>;

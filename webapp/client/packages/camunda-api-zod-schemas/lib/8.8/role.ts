@@ -23,9 +23,13 @@ import {
 	roleGroupSearchResultSchema,
 	mappingRuleSearchQueryRequestSchema,
 	mappingRuleSearchQueryResultSchema,
+	roleResultSchema,
 } from './gen';
-import {roleSchema, type Group, type Role} from './group-role';
+import type {Group} from './group';
 import type {MappingRule} from './mapping-rule';
+
+const roleSchema = roleResultSchema;
+type Role = z.infer<typeof roleSchema>;
 
 const createRoleRequestBodySchema = roleCreateRequestSchema;
 type CreateRoleRequestBody = z.infer<typeof createRoleRequestBodySchema>;
