@@ -386,4 +386,44 @@ class BackupManagerOpenSearchTest {
         .isInstanceOf(NotFoundApiException.class)
         .hasMessageContaining("No backup with id [999] found.");
   }
+
+  @Test
+  void shouldIncludeStartTimeInResponseForSuccessfulBackups() throws IOException {
+    // given
+    final long backupId = 3L;
+    final long startTime = Instant.now().toEpochMilli() - 10_000L;
+    final var metadata =
+        new Metadata()
+            .setBackupId(backupId)
+            .setPartCount(1)
+            .setPartNo(1)
+            .setVersion(TASKLIST_VERSION);
+    final var snapshots = new ArrayList<SnapshotInfo>(metadata.getPartCount());
+    for (int i = 1; i <= metadata.getPartCount(); i++) {
+      final var copy = new Metadata(metadata);
+      copy.setPartNo(i);
+      snapshots.add(
+          SnapshotInfo.of(
+              sib ->
+                  sib.snapshot(copy.buildSnapshotName())
+                      .state("SUCCESS")
+                      .uuid(UUID.randomUUID().toString())
+                      .dataStreams(List.of())
+                      .indices(List.of())
+                      .startTimeInMillis(String.valueOf(startTime))));
+    }
+
+    final var snapshotResponse = GetCustomSnapshotResponse.of(b -> b.snapshots(snapshots));
+    when(openSearchTransport.performRequest(any(), any(), any())).thenReturn(snapshotResponse);
+    when(tasklistProperties.getBackup().getRepositoryName()).thenReturn(repositoryName);
+
+    // when
+    final var backupResponse = backupManagerOpenSearch.getBackupState(backupId);
+
+    // then
+    assertThat(backupResponse.getDetails()).isNotEmpty();
+    assertThat(backupResponse.getDetails().getFirst().getStartTime()).isNotNull();
+    assertThat(backupResponse.getDetails().getFirst().getStartTime().toInstant().toEpochMilli())
+        .isEqualTo(startTime);
+  }
 }

@@ -541,7 +541,7 @@ public class BackupManagerOpenSearch extends BackupManager {
     for (final SnapshotInfo snapshot : snapshots) {
       final GetBackupStateResponseDetailDto detail = new GetBackupStateResponseDetailDto();
       detail.setSnapshotName(snapshot.snapshot());
-      if (detail.getStartTime() != null) {
+      if (snapshot.startTimeInMillis() != null) {
         detail.setStartTime(
             OffsetDateTime.ofInstant(
                 Instant.ofEpochMilli(
