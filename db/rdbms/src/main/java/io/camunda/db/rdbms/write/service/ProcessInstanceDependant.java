@@ -21,8 +21,8 @@ public abstract class ProcessInstanceDependant {
   }
 
   public int deleteProcessInstanceRelatedData(
-      final List<Long> processInstanceKeys, final int limit) {
+      final int partitionId, final List<Long> processInstanceKeys, final int limit) {
     return processInstanceDependantMapper.deleteProcessInstanceRelatedData(
-        new DeleteProcessInstanceRelatedDataDto(processInstanceKeys, limit));
+        new DeleteProcessInstanceRelatedDataDto(partitionId, processInstanceKeys, limit));
   }
 }

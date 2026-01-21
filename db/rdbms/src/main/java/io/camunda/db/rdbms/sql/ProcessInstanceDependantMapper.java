@@ -18,5 +18,6 @@ public interface ProcessInstanceDependantMapper {
 
   int deleteProcessInstanceRelatedData(DeleteProcessInstanceRelatedDataDto dto);
 
-  record DeleteProcessInstanceRelatedDataDto(List<Long> processInstanceKeys, int limit) {}
+  record DeleteProcessInstanceRelatedDataDto(
+      int partitionId, List<Long> processInstanceKeys, int limit) {}
 }

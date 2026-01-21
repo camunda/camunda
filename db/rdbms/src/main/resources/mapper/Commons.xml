@@ -207,7 +207,8 @@
   <sql id="processInstanceHistoryDeletion">
     DELETE
     FROM ${prefix}${tableName}
-    WHERE PROCESS_INSTANCE_KEY IN
+    WHERE PARTITION_ID = #{partitionId}
+      AND PROCESS_INSTANCE_KEY IN
     <foreach collection="processInstanceKeys" item="key" open="(" separator=", " close=")">
       #{key}
     </foreach>
@@ -216,28 +217,33 @@
   <sql id="processInstanceHistoryDeletion" databaseId="mssql">
     DELETE TOP (#{limit})
     FROM ${prefix}${tableName}
-    WHERE PROCESS_INSTANCE_KEY IN
+    WHERE PARTITION_ID = #{partitionId}
+      AND PROCESS_INSTANCE_KEY IN
     <foreach collection="processInstanceKeys" item="key" open="(" separator=", " close=")">
       #{key}
     </foreach>
   </sql>
   <sql id="processInstanceHistoryDeletion" databaseId="oracle">
+    <bind name="keyColumn" value="primaryKeyColumn != null &amp;&amp; primaryKeyColumn != '' ? primaryKeyColumn : 'rowid'"/>
     DELETE
     FROM ${prefix}${tableName}
-    WHERE rowid IN (SELECT rowid
+    WHERE ${keyColumn} IN (SELECT ${keyColumn}
                     FROM ${prefix}${tableName}
-                    WHERE PROCESS_INSTANCE_KEY IN
+                    WHERE PARTITION_ID = #{partitionId}
+                      AND PROCESS_INSTANCE_KEY IN
                     <foreach collection="processInstanceKeys" item="key" open="(" separator=", " close=")">
                       #{key}
                     </foreach>
                     AND ROWNUM &lt;= #{limit})
   </sql>
   <sql id="processInstanceHistoryDeletion" databaseId="postgresql">
+    <bind name="keyColumn" value="primaryKeyColumn != null &amp;&amp; primaryKeyColumn != '' ? primaryKeyColumn : 'ctid'"/>
     DELETE
     FROM ${prefix}${tableName}
-    WHERE ctid IN (SELECT ctid
+    WHERE ${keyColumn} IN (SELECT ${keyColumn}
                    FROM ${prefix}${tableName}
-                   WHERE PROCESS_INSTANCE_KEY IN
+                   WHERE PARTITION_ID = #{partitionId}
+                     AND PROCESS_INSTANCE_KEY IN
                    <foreach collection="processInstanceKeys" item="key" open="(" separator=", " close=")">
                      #{key}
                    </foreach>
