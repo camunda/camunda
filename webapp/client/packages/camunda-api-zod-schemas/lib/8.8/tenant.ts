@@ -7,100 +7,84 @@
  */
 
 import {z} from 'zod';
-import {API_VERSION, getQueryRequestBodySchema, getQueryResponseBodySchema, type Endpoint} from '../common';
-import {queryGroupsRequestBodySchema, queryGroupsResponseBodySchema, type Group} from './group';
-import {queryRolesRequestBodySchema, queryRolesResponseBodySchema, type Role} from './role';
+import {API_VERSION, type Endpoint} from '../common';
 import {
-	queryMappingRulesRequestBodySchema,
-	queryMappingRulesResponseBodySchema,
-	type MappingRule,
-} from './mapping-rule';
+	tenantResultSchema,
+	tenantCreateRequestSchema,
+	tenantUpdateRequestSchema,
+	tenantSearchQueryRequestSchema,
+	tenantSearchQueryResultSchema,
+	tenantUserResultSchema,
+	tenantUserSearchQueryRequestSchema,
+	tenantUserSearchResultSchema,
+	tenantClientResultSchema,
+	tenantClientSearchQueryRequestSchema,
+	tenantClientSearchResultSchema,
+	tenantGroupSearchQueryRequestSchema,
+	tenantGroupSearchResultSchema,
+	roleSearchQueryRequestSchema,
+	roleSearchQueryResultSchema,
+	mappingRuleSearchQueryRequestSchema,
+	mappingRuleSearchQueryResultSchema,
+} from './gen';
+import type {Group, Role} from './group-role';
+import type {MappingRule} from './mapping-rule';
 
-const tenantSchema = z.object({
-	tenantKey: z.string(),
-	tenantId: z.string(),
-	name: z.string(),
-	description: z.string().optional(),
-});
+const tenantSchema = tenantResultSchema;
 type Tenant = z.infer<typeof tenantSchema>;
 
-const createTenantRequestBodySchema = tenantSchema.pick({
-	tenantId: true,
-	name: true,
-	description: true,
-});
+const createTenantRequestBodySchema = tenantCreateRequestSchema;
 type CreateTenantRequestBody = z.infer<typeof createTenantRequestBodySchema>;
 
-const createTenantResponseBodySchema = tenantSchema;
+const createTenantResponseBodySchema = tenantResultSchema;
 type CreateTenantResponseBody = z.infer<typeof createTenantResponseBodySchema>;
 
-const updateTenantRequestBodySchema = tenantSchema.pick({
-	name: true,
-	description: true,
-});
+const updateTenantRequestBodySchema = tenantUpdateRequestSchema;
 type UpdateTenantRequestBody = z.infer<typeof updateTenantRequestBodySchema>;
 
-const updateTenantResponseBodySchema = tenantSchema;
+const updateTenantResponseBodySchema = tenantResultSchema;
 type UpdateTenantResponseBody = z.infer<typeof updateTenantResponseBodySchema>;
 
-const queryTenantsRequestBodySchema = getQueryRequestBodySchema({
-	sortFields: ['key', 'name', 'tenantId'] as const,
-	filter: tenantSchema
-		.pick({
-			tenantId: true,
-			name: true,
-		})
-		.partial(),
-});
+const queryTenantsRequestBodySchema = tenantSearchQueryRequestSchema;
 type QueryTenantsRequestBody = z.infer<typeof queryTenantsRequestBodySchema>;
 
-const queryTenantsResponseBodySchema = getQueryResponseBodySchema(tenantSchema);
+const queryTenantsResponseBodySchema = tenantSearchQueryResultSchema;
 type QueryTenantsResponseBody = z.infer<typeof queryTenantsResponseBodySchema>;
 
-const tenantUserSchema = z.object({
-	username: z.string(),
-});
+const tenantUserSchema = tenantUserResultSchema;
 type TenantUser = z.infer<typeof tenantUserSchema>;
 
-const queryUsersByTenantRequestBodySchema = getQueryRequestBodySchema({
-	sortFields: ['username'] as const,
-	filter: z.never(),
-});
+const queryUsersByTenantRequestBodySchema = tenantUserSearchQueryRequestSchema;
 type QueryUsersByTenantRequestBody = z.infer<typeof queryUsersByTenantRequestBodySchema>;
 
-const queryUsersByTenantResponseBodySchema = getQueryResponseBodySchema(tenantUserSchema);
+const queryUsersByTenantResponseBodySchema = tenantUserSearchResultSchema;
 type QueryUsersByTenantResponseBody = z.infer<typeof queryUsersByTenantResponseBodySchema>;
 
-const tenantClientSchema = z.object({
-	clientId: z.string(),
-});
+const tenantClientSchema = tenantClientResultSchema;
 type TenantClient = z.infer<typeof tenantClientSchema>;
 
-const queryClientsByTenantRequestBodySchema = getQueryRequestBodySchema({
-	sortFields: ['clientId'] as const,
-	filter: z.never(),
-});
+const queryClientsByTenantRequestBodySchema = tenantClientSearchQueryRequestSchema;
 type QueryClientsByTenantRequestBody = z.infer<typeof queryClientsByTenantRequestBodySchema>;
 
-const queryClientsByTenantResponseBodySchema = getQueryResponseBodySchema(tenantClientSchema);
+const queryClientsByTenantResponseBodySchema = tenantClientSearchResultSchema;
 type QueryClientsByTenantResponseBody = z.infer<typeof queryClientsByTenantResponseBodySchema>;
 
-const queryGroupsByTenantRequestBodySchema = queryGroupsRequestBodySchema;
+const queryGroupsByTenantRequestBodySchema = tenantGroupSearchQueryRequestSchema;
 type QueryGroupsByTenantRequestBody = z.infer<typeof queryGroupsByTenantRequestBodySchema>;
 
-const queryGroupsByTenantResponseBodySchema = queryGroupsResponseBodySchema;
+const queryGroupsByTenantResponseBodySchema = tenantGroupSearchResultSchema;
 type QueryGroupsByTenantResponseBody = z.infer<typeof queryGroupsByTenantResponseBodySchema>;
 
-const queryRolesByTenantRequestBodySchema = queryRolesRequestBodySchema;
+const queryRolesByTenantRequestBodySchema = roleSearchQueryRequestSchema;
 type QueryRolesByTenantRequestBody = z.infer<typeof queryRolesByTenantRequestBodySchema>;
 
-const queryRolesByTenantResponseBodySchema = queryRolesResponseBodySchema;
+const queryRolesByTenantResponseBodySchema = roleSearchQueryResultSchema;
 type QueryRolesByTenantResponseBody = z.infer<typeof queryRolesByTenantResponseBodySchema>;
 
-const queryMappingRulesByTenantRequestBodySchema = queryMappingRulesRequestBodySchema;
+const queryMappingRulesByTenantRequestBodySchema = mappingRuleSearchQueryRequestSchema;
 type QueryMappingRulesByTenantRequestBody = z.infer<typeof queryMappingRulesByTenantRequestBodySchema>;
 
-const queryMappingRulesByTenantResponseBodySchema = queryMappingRulesResponseBodySchema;
+const queryMappingRulesByTenantResponseBodySchema = mappingRuleSearchQueryResultSchema;
 type QueryMappingRulesByTenantResponseBody = z.infer<typeof queryMappingRulesByTenantResponseBodySchema>;
 
 const createTenant = {
