@@ -7,14 +7,9 @@
  */
 package io.camunda.operate.store.opensearch;
 
-import static io.camunda.operate.store.opensearch.client.sync.OpenSearchDocumentOperations.TERMS_AGG_SIZE;
-import static io.camunda.operate.store.opensearch.client.sync.OpenSearchDocumentOperations.TOPHITS_AGG_SIZE;
 import static io.camunda.operate.store.opensearch.client.sync.OpenSearchRetryOperation.UPDATE_RETRY_COUNT;
 import static io.camunda.operate.store.opensearch.dsl.AggregationDSL.cardinalityAggregation;
 import static io.camunda.operate.store.opensearch.dsl.AggregationDSL.filtersAggregation;
-import static io.camunda.operate.store.opensearch.dsl.AggregationDSL.termAggregation;
-import static io.camunda.operate.store.opensearch.dsl.AggregationDSL.topHitsAggregation;
-import static io.camunda.operate.store.opensearch.dsl.AggregationDSL.withSubaggregations;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.*;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.withTenantCheck;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.QueryType.ALL;
@@ -124,77 +119,45 @@ public class OpensearchProcessStore implements ProcessStore {
   @Override
   public Map<ProcessKey, List<ProcessEntity>> getProcessesGrouped(
       final String tenantId, final Set<String> allowedBPMNProcessIds) {
-    final String tenantsGroupsAggName = "group_by_tenantId";
-    final String groupsAggName = "group_by_bpmnProcessId";
-    final String processesAggName = "processes";
-    final List<String> sourceFields =
-        List.of(
-            ProcessIndex.ID,
-            ProcessIndex.NAME,
-            ProcessIndex.VERSION,
-            ProcessIndex.VERSION_TAG,
-            ProcessIndex.BPMN_PROCESS_ID,
-            ProcessIndex.TENANT_ID);
+
     final Query query =
         allowedBPMNProcessIds == null
             ? matchAll()
-            : stringTerms(ListViewTemplate.BPMN_PROCESS_ID, allowedBPMNProcessIds);
+            : stringTerms(ProcessIndex.BPMN_PROCESS_ID, allowedBPMNProcessIds);
+
     final var searchRequestBuilder =
         searchRequestBuilder(processIndex.getAlias())
             .query(withTenantCheck(withTenantIdQuery(tenantId, query)))
-            .size(0)
-            .aggregations(
-                tenantsGroupsAggName,
-                withSubaggregations(
-                    termAggregation(ProcessIndex.TENANT_ID, TERMS_AGG_SIZE),
-                    Map.of(
-                        groupsAggName,
-                        withSubaggregations(
-                            termAggregation(ProcessIndex.BPMN_PROCESS_ID, TERMS_AGG_SIZE),
-                            Map.of(
-                                processesAggName,
-                                topHitsAggregation(
-                                        sourceFields,
-                                        TOPHITS_AGG_SIZE,
-                                        sortOptions(ProcessIndex.VERSION, SortOrder.Desc))
-                                    ._toAggregation())))));
+            .source(
+                sourceInclude(
+                    ProcessIndex.ID,
+                    ProcessIndex.NAME,
+                    ProcessIndex.VERSION,
+                    ProcessIndex.VERSION_TAG,
+                    ProcessIndex.BPMN_PROCESS_ID,
+                    ProcessIndex.TENANT_ID))
+            .sort(sortOptions(ProcessIndex.VERSION, SortOrder.Desc));
 
-    final SearchResponse<Object> response =
-        richOpenSearchClient.doc().search(searchRequestBuilder, Object.class);
-    final Map<ProcessKey, List<ProcessEntity>> result = new HashMap<>();
+    try {
+      final Map<ProcessKey, List<ProcessEntity>> result = new HashMap<>();
 
-    response
-        .aggregations()
-        .get(tenantsGroupsAggName)
-        .sterms()
-        .buckets()
-        .array()
-        .forEach(
-            tenantBucket ->
-                tenantBucket
-                    .aggregations()
-                    .get(groupsAggName)
-                    .sterms()
-                    .buckets()
-                    .array()
-                    .forEach(
-                        bpmnProcessIdBucket -> {
-                          final String key = tenantBucket.key() + "_" + bpmnProcessIdBucket.key();
-                          final List<ProcessEntity> value =
-                              bpmnProcessIdBucket
-                                  .aggregations()
-                                  .get(processesAggName)
-                                  .topHits()
-                                  .hits()
-                                  .hits()
-                                  .stream()
-                                  .map(h -> h.source().to(ProcessEntity.class))
-                                  .toList();
+      final List<ProcessEntity> allProcesses =
+          richOpenSearchClient.doc().scrollValues(searchRequestBuilder, ProcessEntity.class);
 
-                          result.put(new ProcessKey(key, tenantId), value);
-                        }));
+      for (final ProcessEntity processEntity : allProcesses) {
+        final ProcessKey groupKey =
+            new ProcessKey(processEntity.getBpmnProcessId(), processEntity.getTenantId());
+        result.computeIfAbsent(groupKey, k -> new ArrayList<>()).add(processEntity);
+      }
 
-    return result;
+      return result;
+    } catch (final Exception e) {
+      final String message =
+          String.format(
+              "Exception occurred, while obtaining grouped processes: %s", e.getMessage());
+      LOGGER.error(message, e);
+      throw new OperateRuntimeException(message, e);
+    }
   }
 
   @Override
