@@ -78,8 +78,8 @@
     <!-- testing config -->
     <mockito.version>5.21.0</mockito.version>
     <mockito-inline.version>5.2.0</mockito-inline.version>
-    <junit.jupiter.version>5.13.4</junit.jupiter.version>
-    <junit.platform.version>1.13.4</junit.platform.version>
+    <junit.jupiter.version>5.14.2</junit.jupiter.version>
+    <junit.platform.version>1.14.2</junit.platform.version>
     <mockserver.version>5.15.0</mockserver.version>
     <assertj.version>3.27.6</assertj.version>
     <google-java-format.plugin.version>1.33.0</google-java-format.plugin.version>
