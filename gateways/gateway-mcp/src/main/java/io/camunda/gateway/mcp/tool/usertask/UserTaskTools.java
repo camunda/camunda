@@ -112,10 +112,14 @@ public class UserTaskTools {
       @McpToolParam(description = "Assignment options.", required = false)
           final McpUserTaskAssignmentRequest options) {
     try {
-      // Enrich the options request with the assignee from the root param
+      // Create a copy of the options request and enrich with the assignee from the root param
       final UserTaskAssignmentRequest request =
-          options != null ? options : new UserTaskAssignmentRequest();
-      request.setAssignee(assignee);
+          options != null
+              ? new UserTaskAssignmentRequest()
+                  .assignee(assignee)
+                  .allowOverride(options.getAllowOverride())
+                  .action(options.getAction())
+              : new UserTaskAssignmentRequest().assignee(assignee);
 
       final boolean allowOverride =
           request.getAllowOverride() == null || request.getAllowOverride();
@@ -159,7 +163,7 @@ public class UserTaskTools {
         return CallToolResultMapper.mapProblemToResult(variableSearchQuery.getLeft());
       }
 
-      final boolean shouldTruncate = truncateValues == null || truncateValues;
+      final boolean shouldTruncate = truncateValues != Boolean.FALSE;
       return CallToolResultMapper.from(
           SearchQueryResponseMapper.toVariableSearchQueryResponse(
               userTaskServices
