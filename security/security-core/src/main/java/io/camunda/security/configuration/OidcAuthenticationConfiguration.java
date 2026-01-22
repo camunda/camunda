@@ -290,7 +290,7 @@ public class OidcAuthenticationConfiguration {
         || assertionConfiguration.getKidEncoding() != KidEncoding.BASE64URL
         || assertionConfiguration.getKidCase() != null
         || !DEFAULT_CLOCK_SKEW.equals(clockSkew)
-        || idpLogoutEnabled;
+        || !idpLogoutEnabled;
   }
 
   public static Builder builder() {
@@ -321,7 +321,7 @@ public class OidcAuthenticationConfiguration {
     private String clientAuthenticationMethod = CLIENT_AUTHENTICATION_METHOD_CLIENT_SECRET_BASIC;
     private AssertionConfiguration assertionConfiguration = new AssertionConfiguration();
     private Duration clockSkew = DEFAULT_CLOCK_SKEW;
-    private boolean idpLogoutEnabled;
+    private boolean idpLogoutEnabled = true;
 
     public Builder issuerUri(final String issuerUri) {
       this.issuerUri = issuerUri;
