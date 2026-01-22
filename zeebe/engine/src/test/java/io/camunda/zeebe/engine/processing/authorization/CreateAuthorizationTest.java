@@ -17,6 +17,7 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
@@ -108,6 +109,43 @@ public class CreateAuthorizationTest {
         .hasRejectionReason(
             "Expected to create authorization for owner '%s' for resource identifier '%s', but an authorization for this resource identifier already exists."
                 .formatted("ownerId", "resourceId"));
+  }
+
+  @Test
+  public void shouldRejectWildcardResourceIdPermissionCreationIfAlreadyExists() {
+    // given
+    engine
+        .authorization()
+        .newAuthorization()
+        .withOwnerId("ownerId")
+        .withOwnerType(AuthorizationOwnerType.USER)
+        .withResourceMatcher(AuthorizationScope.WILDCARD.getMatcher())
+        .withResourceId(AuthorizationScope.WILDCARD.getResourceId())
+        .withResourceType(AuthorizationResourceType.RESOURCE)
+        .withPermissions(PermissionType.CREATE)
+        .create();
+
+    // when - try to create duplicate authorization with wildcard resource id
+    final var rejection =
+        engine
+            .authorization()
+            .newAuthorization()
+            .withOwnerId("ownerId")
+            .withOwnerType(AuthorizationOwnerType.USER)
+            .withResourceMatcher(AuthorizationScope.WILDCARD.getMatcher())
+            .withResourceId(AuthorizationScope.WILDCARD.getResourceId())
+            .withResourceType(AuthorizationResourceType.RESOURCE)
+            .withPermissions(PermissionType.CREATE)
+            .expectRejection()
+            .create();
+
+    // then
+    Assertions.assertThat(rejection)
+        .describedAs("Expected authorization with wildcard resource id to already exist")
+        .hasRejectionType(RejectionType.ALREADY_EXISTS)
+        .hasRejectionReason(
+            "Expected to create authorization for owner '%s' for resource identifier '%s', but an authorization for this resource identifier already exists."
+                .formatted("ownerId", AuthorizationScope.WILDCARD.getResourceId()));
   }
 
   @Test
