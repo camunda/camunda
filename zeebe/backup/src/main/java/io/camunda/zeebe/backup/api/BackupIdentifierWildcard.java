@@ -100,6 +100,61 @@ public interface BackupIdentifierWildcard {
       }
     }
 
+    /**
+     * Creates a CheckpointPattern that matches checkpoint IDs within a timestamp range. Uses a
+     * CheckpointIdGenerator to convert raw timestamps to checkpoint IDs (applying the configured
+     * offset), then computes the common prefix to create a Prefix pattern.
+     *
+     * @param fromTimestamp the start of the range (inclusive), in epoch milliseconds
+     * @param toTimestamp the end of the range (inclusive), in epoch milliseconds
+     * @param generator the CheckpointIdGenerator used to convert timestamps to checkpoint IDs
+     * @return a CheckpointPattern (Prefix or Any) that matches checkpoints in the given range
+     */
+    static CheckpointPattern ofTimeRange(
+        final long fromTimestamp,
+        final long toTimestamp,
+        final io.camunda.zeebe.backup.common.CheckpointIdGenerator generator) {
+      if (fromTimestamp < 0) {
+        throw new IllegalArgumentException(
+            "Expected fromTimestamp to be non-negative, but got %d".formatted(fromTimestamp));
+      }
+      if (toTimestamp < 0) {
+        throw new IllegalArgumentException(
+            "Expected toTimestamp to be non-negative, but got %d".formatted(toTimestamp));
+      }
+      if (fromTimestamp > toTimestamp) {
+        throw new IllegalArgumentException(
+            "Expected fromTimestamp to be <= toTimestamp, but got fromTimestamp=%d and toTimestamp=%d"
+                .formatted(fromTimestamp, toTimestamp));
+      }
+
+      // Convert timestamps to checkpoint IDs using the generator
+      final long fromCheckpointId = generator.fromTimestamp(fromTimestamp);
+      final long toCheckpointId = generator.fromTimestamp(toTimestamp);
+
+      // Find the common prefix between checkpoint IDs
+      final String fromStr = String.valueOf(fromCheckpointId);
+      final String toStr = String.valueOf(toCheckpointId);
+
+      int commonPrefixLength = 0;
+      final int minLength = Math.min(fromStr.length(), toStr.length());
+      for (int i = 0; i < minLength; i++) {
+        if (fromStr.charAt(i) == toStr.charAt(i)) {
+          commonPrefixLength++;
+        } else {
+          break;
+        }
+      }
+
+      // Use the common prefix to create a Prefix pattern
+      if (commonPrefixLength > 0) {
+        return new Prefix(fromStr.substring(0, commonPrefixLength));
+      } else {
+        // No common prefix, match any
+        return new Any();
+      }
+    }
+
     record Any() implements CheckpointPattern {
 
       @Override
@@ -116,12 +171,14 @@ public interface BackupIdentifierWildcard {
     record Prefix(String prefix) implements CheckpointPattern {
       public Prefix {
         if (prefix.isEmpty()) {
-          throw new IllegalArgumentException("Prefix must not be empty");
+          throw new IllegalArgumentException(
+              "Expected prefix to be non-empty, but got empty string");
         }
         try {
           Long.valueOf(prefix);
         } catch (final NumberFormatException e) {
-          throw new IllegalArgumentException("Prefix must be a valid number", e);
+          throw new IllegalArgumentException(
+              "Expected prefix to be a valid number, but got '%s'".formatted(prefix), e);
         }
       }
 
@@ -139,7 +196,8 @@ public interface BackupIdentifierWildcard {
     record Exact(long checkpointId) implements CheckpointPattern {
       public Exact {
         if (checkpointId < 0) {
-          throw new IllegalArgumentException("Checkpoint id must be non-negative");
+          throw new IllegalArgumentException(
+              "Expected checkpointId to be non-negative, but got %d".formatted(checkpointId));
         }
       }
 
