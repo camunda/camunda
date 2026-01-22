@@ -46,65 +46,111 @@ public class JobWorkerManager {
     this.jobWorkerFactory = jobWorkerFactory;
   }
 
+  /**
+   * Creates a composite key for tracking job workers per client. This allows the same job type to
+   * be registered on multiple clients.
+   */
+  private String createWorkerKey(final CamundaClient client, final String type) {
+    // Use client's identity hash code to distinguish between different client instances
+    return System.identityHashCode(client) + ":" + type;
+  }
+
   public void createJobWorker(
-      final CamundaClient client, final ManagedJobWorker managedJobWorker, final Object source) {
+      final CamundaClient client,
+      final ManagedJobWorker managedJobWorker,
+      final Object source,
+      final String clientName) {
     final JobWorkerValue jobWorkerValue = managedJobWorker.jobWorkerValue();
     jobWorkerValueCustomizers.forEach(customizer -> customizer.customize(jobWorkerValue));
     final String type = jobWorkerValue.getType().value();
+    final String workerKey = createWorkerKey(client, type);
     final InternalManagedJobWorker internalManagedJobWorker;
-    if (managedJobWorkers.containsKey(type)) {
-      internalManagedJobWorker = managedJobWorkers.get(type);
+    if (managedJobWorkers.containsKey(workerKey)) {
+      internalManagedJobWorker = managedJobWorkers.get(workerKey);
     } else {
       internalManagedJobWorker = new InternalManagedJobWorker();
       internalManagedJobWorker.setSource(source);
       internalManagedJobWorker.setCurrent(jobWorkerValue);
       internalManagedJobWorker.setCamundaClient(client);
       internalManagedJobWorker.setJobHandlerFactory(managedJobWorker.jobHandlerFactory());
-      managedJobWorkers.put(type, internalManagedJobWorker);
+      internalManagedJobWorker.setType(type);
+      internalManagedJobWorker.setClientName(clientName);
+      managedJobWorkers.put(workerKey, internalManagedJobWorker);
+
+      LOGGER.info(
+          "Registering job worker '{}' with type '{}' for engine '{}'",
+          jobWorkerValue.getName().value(),
+          type,
+          clientName != null ? clientName : "default");
     }
     upsertWorker(internalManagedJobWorker, new CreateChangeSet());
   }
 
   public Map<String, JobWorkerValue> getJobWorkers() {
-    return managedJobWorkers.entrySet().stream()
-        .map(e -> Map.entry(e.getKey(), e.getValue().getCurrent()))
-        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    // Return workers keyed by their type (not the composite key)
+    // Note: If the same type is registered on multiple clients, this returns one of them
+    return managedJobWorkers.values().stream()
+        .collect(
+            Collectors.toMap(
+                InternalManagedJobWorker::getType,
+                InternalManagedJobWorker::getCurrent,
+                (existing, replacement) -> existing));
   }
 
   public JobWorkerValue getJobWorker(final String type) {
-    final InternalManagedJobWorker internalManagedJobWorker = findManagedJobWorker(type);
+    final InternalManagedJobWorker internalManagedJobWorker = findManagedJobWorkerByType(type);
     return internalManagedJobWorker.getCurrent();
   }
 
   public void updateJobWorker(final String type, final JobWorkerChangeSet changeSet) {
-    final InternalManagedJobWorker internalManagedJobWorker = findManagedJobWorker(type);
-    upsertWorker(internalManagedJobWorker, changeSet);
+    // Update all workers of this type (across all clients)
+    findAllManagedJobWorkersByType(type).forEach(worker -> upsertWorker(worker, changeSet));
   }
 
   public void updateJobWorkers(final JobWorkerChangeSet changeSet) {
-    managedJobWorkers.keySet().forEach(type -> updateJobWorker(type, changeSet));
+    managedJobWorkers.values().forEach(worker -> upsertWorker(worker, changeSet));
   }
 
   public void resetJobWorker(final String type) {
-    final InternalManagedJobWorker internalManagedJobWorker = findManagedJobWorker(type);
-    upsertWorker(internalManagedJobWorker, new ResetChangeSet());
+    // Reset all workers of this type (across all clients)
+    findAllManagedJobWorkersByType(type)
+        .forEach(worker -> upsertWorker(worker, new ResetChangeSet()));
   }
 
   public void resetJobWorkers() {
-    managedJobWorkers.keySet().forEach(this::resetJobWorker);
+    managedJobWorkers.values().forEach(worker -> upsertWorker(worker, new ResetChangeSet()));
   }
 
   public void closeJobWorker(final String type) {
-    final InternalManagedJobWorker internalManagedJobWorker = findManagedJobWorker(type);
-    upsertWorker(internalManagedJobWorker, new CloseChangeSet());
-    managedJobWorkers.remove(type);
+    // Close all workers of this type (across all clients)
+    final List<String> keysToRemove =
+        managedJobWorkers.entrySet().stream()
+            .filter(e -> e.getValue().getType().equals(type))
+            .map(Map.Entry::getKey)
+            .toList();
+    keysToRemove.forEach(
+        key -> {
+          upsertWorker(managedJobWorkers.get(key), new CloseChangeSet());
+          managedJobWorkers.remove(key);
+        });
   }
 
-  private InternalManagedJobWorker findManagedJobWorker(final String type) {
-    if (!managedJobWorkers.containsKey(type)) {
+  private InternalManagedJobWorker findManagedJobWorkerByType(final String type) {
+    return managedJobWorkers.values().stream()
+        .filter(worker -> worker.getType().equals(type))
+        .findFirst()
+        .orElseThrow(() -> new IllegalArgumentException("Unknown job worker type: " + type));
+  }
+
+  private List<InternalManagedJobWorker> findAllManagedJobWorkersByType(final String type) {
+    final List<InternalManagedJobWorker> workers =
+        managedJobWorkers.values().stream()
+            .filter(worker -> worker.getType().equals(type))
+            .toList();
+    if (workers.isEmpty()) {
       throw new IllegalArgumentException("Unknown job worker type: " + type);
     }
-    return managedJobWorkers.get(type);
+    return workers;
   }
 
   private void upsertWorker(
@@ -147,10 +193,16 @@ public class JobWorkerManager {
   }
 
   public void closeAllJobWorkers(final Object source) {
-    managedJobWorkers.entrySet().stream()
-        .filter(e -> Objects.equals(e.getValue().getSource(), source))
-        .map(Map.Entry::getKey)
-        .forEach(this::closeJobWorker);
+    final List<String> keysToRemove =
+        managedJobWorkers.entrySet().stream()
+            .filter(e -> Objects.equals(e.getValue().getSource(), source))
+            .map(Map.Entry::getKey)
+            .toList();
+    keysToRemove.forEach(
+        key -> {
+          upsertWorker(managedJobWorkers.get(key), new CloseChangeSet());
+          managedJobWorkers.remove(key);
+        });
   }
 
   private static final class InternalManagedJobWorker {
@@ -159,6 +211,8 @@ public class JobWorkerManager {
     private JobWorkerValue current;
     private CamundaClient camundaClient;
     private Object source;
+    private String type;
+    private String clientName;
 
     public JobWorker getJobWorker() {
       return jobWorker;
@@ -198,6 +252,22 @@ public class JobWorkerManager {
 
     public void setSource(final Object source) {
       this.source = source;
+    }
+
+    public String getType() {
+      return type;
+    }
+
+    public void setType(final String type) {
+      this.type = type;
+    }
+
+    public String getClientName() {
+      return clientName;
+    }
+
+    public void setClientName(final String clientName) {
+      this.clientName = clientName;
     }
   }
 }

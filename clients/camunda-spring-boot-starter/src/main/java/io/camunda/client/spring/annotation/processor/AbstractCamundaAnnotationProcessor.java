@@ -35,12 +35,55 @@ public abstract class AbstractCamundaAnnotationProcessor
 
   protected abstract void configureFor(final BeanInfo beanInfo);
 
-  protected abstract void start(CamundaClient client);
+  /**
+   * Called to start the processor with the given client.
+   *
+   * @param client the CamundaClient
+   * @deprecated Override {@link #start(CamundaClient, String)} instead
+   */
+  protected void start(final CamundaClient client) {
+    // Default empty implementation for backwards compatibility
+  }
 
-  protected abstract void stop(CamundaClient client);
+  /**
+   * Called to start the processor with the given client.
+   *
+   * @param client the CamundaClient
+   * @param clientName the name of the client, or null in single-client mode
+   */
+  protected void start(final CamundaClient client, final String clientName) {
+    // Default implementation calls the legacy method for backwards compatibility
+    start(client);
+  }
+
+  /**
+   * Called to stop the processor with the given client.
+   *
+   * @param client the CamundaClient
+   * @deprecated Override {@link #stop(CamundaClient, String)} instead
+   */
+  protected void stop(final CamundaClient client) {
+    // Default empty implementation for backwards compatibility
+  }
+
+  /**
+   * Called to stop the processor with the given client.
+   *
+   * @param client the CamundaClient
+   * @param clientName the name of the client, or null in single-client mode
+   */
+  protected void stop(final CamundaClient client, final String clientName) {
+    // Default implementation calls the legacy method for backwards compatibility
+    stop(client);
+  }
 
   @Override
   public void onStart(final CamundaClient client) {
+    onStart(client, null);
+  }
+
+  @Override
+  public void onStart(final CamundaClient client, final String clientName) {
     for (final String beanName : applicationContext.getBeanDefinitionNames()) {
       final Class<?> beanType = applicationContext.getType(beanName, false);
       if (beanType != null) {
@@ -56,11 +99,16 @@ public abstract class AbstractCamundaAnnotationProcessor
         }
       }
     }
-    start(client);
+    start(client, clientName);
   }
 
   @Override
   public void onStop(final CamundaClient client) {
-    stop(client);
+    onStop(client, null);
+  }
+
+  @Override
+  public void onStop(final CamundaClient client, final String clientName) {
+    stop(client, clientName);
   }
 }

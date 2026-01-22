@@ -18,7 +18,44 @@ package io.camunda.client.lifecycle;
 import io.camunda.client.CamundaClient;
 
 public interface CamundaClientLifecycleAware {
-  void onStart(CamundaClient client);
 
-  void onStop(CamundaClient client);
+  /**
+   * Called when a CamundaClient is started.
+   *
+   * @param client the client that was started
+   */
+  default void onStart(final CamundaClient client) {
+    // Default implementation for backwards compatibility
+  }
+
+  /**
+   * Called when a CamundaClient is started.
+   *
+   * @param client the client that was started
+   * @param clientName the configured name of the client, or null in single-client mode
+   */
+  default void onStart(final CamundaClient client, final String clientName) {
+    // Default implementation calls the legacy method for backwards compatibility
+    onStart(client);
+  }
+
+  /**
+   * Called when a CamundaClient is about to stop.
+   *
+   * @param client the client that is stopping
+   */
+  default void onStop(final CamundaClient client) {
+    // Default implementation for backwards compatibility
+  }
+
+  /**
+   * Called when a CamundaClient is about to stop.
+   *
+   * @param client the client that is stopping
+   * @param clientName the configured name of the client, or null in single-client mode
+   */
+  default void onStop(final CamundaClient client, final String clientName) {
+    // Default implementation calls the legacy method for backwards compatibility
+    onStop(client);
+  }
 }

@@ -61,7 +61,7 @@ public class MultiCamundaLifecycleEventProducer implements SmartLifecycle {
             name -> {
               final CamundaClient client = registry.getClient(name);
               LOG.debug("Publishing CamundaClientCreatedSpringEvent for client '{}'", name);
-              publisher.publishEvent(new CamundaClientCreatedSpringEvent(this, client));
+              publisher.publishEvent(new CamundaClientCreatedSpringEvent(this, client, name));
             });
 
     running = true;
@@ -80,7 +80,7 @@ public class MultiCamundaLifecycleEventProducer implements SmartLifecycle {
             name -> {
               final CamundaClient client = registry.getClient(name);
               LOG.debug("Publishing CamundaClientClosingSpringEvent for client '{}'", name);
-              publisher.publishEvent(new CamundaClientClosingSpringEvent(this, client));
+              publisher.publishEvent(new CamundaClientClosingSpringEvent(this, client, name));
             });
 
     running = false;

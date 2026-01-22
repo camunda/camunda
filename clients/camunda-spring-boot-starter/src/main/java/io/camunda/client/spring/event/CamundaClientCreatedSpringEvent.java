@@ -35,14 +35,30 @@ public class CamundaClientCreatedSpringEvent extends ApplicationEvent
     implements CamundaClientCreatedEvent {
 
   public final CamundaClient client;
+  private final String clientName;
 
   public CamundaClientCreatedSpringEvent(final Object source, final CamundaClient client) {
+    this(source, client, null);
+  }
+
+  public CamundaClientCreatedSpringEvent(
+      final Object source, final CamundaClient client, final String clientName) {
     super(source);
     this.client = client;
+    this.clientName = clientName;
   }
 
   @Override
   public CamundaClient getClient() {
     return client;
+  }
+
+  /**
+   * Returns the configured name of this client, or null if running in single-client mode.
+   *
+   * @return the client name, or null
+   */
+  public String getClientName() {
+    return clientName;
   }
 }
