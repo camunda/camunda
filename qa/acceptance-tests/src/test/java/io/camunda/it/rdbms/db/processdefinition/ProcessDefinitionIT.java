@@ -446,7 +446,11 @@ public class ProcessDefinitionIT {
     final var searchResult =
         processDefinitionReader.search(
             new ProcessDefinitionQuery(
-                new ProcessDefinitionFilter.Builder().build(),
+                new ProcessDefinitionFilter.Builder()
+                    .processDefinitionKeys(
+                        processDefinition1.processDefinitionKey(),
+                        processDefinition2.processDefinitionKey())
+                    .build(),
                 ProcessDefinitionSort.of(b -> b),
                 SearchQueryPage.of(b -> b.from(0).size(10))));
     assertThat(searchResult.total()).isEqualTo(2);
@@ -463,7 +467,11 @@ public class ProcessDefinitionIT {
     final var resultAfterDeletion =
         processDefinitionReader.search(
             new ProcessDefinitionQuery(
-                new ProcessDefinitionFilter.Builder().build(),
+                new ProcessDefinitionFilter.Builder()
+                    .processDefinitionKeys(
+                        processDefinition1.processDefinitionKey(),
+                        processDefinition2.processDefinitionKey())
+                    .build(),
                 ProcessDefinitionSort.of(b -> b),
                 SearchQueryPage.of(b -> b.from(0).size(10))));
     assertThat(resultAfterDeletion.total()).isZero();
