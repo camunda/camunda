@@ -93,9 +93,11 @@ export class IdentityAuthorizationsPage {
         name: ownerId.toLowerCase().replace(/ /g, ''),
       });
     this.resourceTypeOption = (resourceType) =>
-      this.page.getByRole('option', {name: resourceType});
+      this.page.getByRole('option', {
+        name: new RegExp(`^${resourceType}$`, 'i'),
+      });
     this.resourceTypeTab = (resourceType) =>
-      this.page.getByRole('tab', {name: resourceType});
+      this.page.getByRole('tab', {name: new RegExp(`^${resourceType}$`, 'i')});
   }
 
   async navigateToAuthorizations() {
