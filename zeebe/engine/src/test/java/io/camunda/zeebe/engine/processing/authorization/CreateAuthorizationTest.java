@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.authorization;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.engine.processing.identity.authorization.property.UserTaskAuthorizationProperties;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -107,6 +108,56 @@ public class CreateAuthorizationTest {
         .hasRejectionReason(
             "Expected to create authorization for owner '%s' for resource identifier '%s', but an authorization for this resource identifier already exists."
                 .formatted("ownerId", "resourceId"));
+  }
+
+  @Test
+  public void shouldRejectPropertyBasedPermissionCreationIfAlreadyExists() {
+    // given - create initial authorization for a specific property
+    engine
+        .authorization()
+        .newAuthorization()
+        .withOwnerId("ownerId")
+        .withOwnerType(AuthorizationOwnerType.USER)
+        .withResourceMatcher(AuthorizationResourceMatcher.PROPERTY)
+        .withResourcePropertyName(UserTaskAuthorizationProperties.PROP_ASSIGNEE)
+        .withResourceType(AuthorizationResourceType.USER_TASK)
+        .withPermissions(PermissionType.READ)
+        .create();
+
+    // create another authorization for a different property to ensure only the same property causes
+    // rejection
+    engine
+        .authorization()
+        .newAuthorization()
+        .withOwnerId("ownerId")
+        .withOwnerType(AuthorizationOwnerType.USER)
+        .withResourceMatcher(AuthorizationResourceMatcher.PROPERTY)
+        .withResourcePropertyName(UserTaskAuthorizationProperties.PROP_CANDIDATE_USERS)
+        .withResourceType(AuthorizationResourceType.USER_TASK)
+        .withPermissions(PermissionType.READ)
+        .create();
+
+    // when - try to create duplicate authorization for the same property
+    final var rejection =
+        engine
+            .authorization()
+            .newAuthorization()
+            .withOwnerId("ownerId")
+            .withOwnerType(AuthorizationOwnerType.USER)
+            .withResourceMatcher(AuthorizationResourceMatcher.PROPERTY)
+            .withResourcePropertyName(UserTaskAuthorizationProperties.PROP_ASSIGNEE)
+            .withResourceType(AuthorizationResourceType.USER_TASK)
+            .withPermissions(PermissionType.READ)
+            .expectRejection()
+            .create();
+
+    // then
+    Assertions.assertThat(rejection)
+        .describedAs("Expected authorization for the same property to already exist")
+        .hasRejectionType(RejectionType.ALREADY_EXISTS)
+        .hasRejectionReason(
+            "Expected to create authorization for owner '%s' for resource property name '%s', but an authorization for this resource property name already exists."
+                .formatted("ownerId", UserTaskAuthorizationProperties.PROP_ASSIGNEE));
   }
 
   @Test
