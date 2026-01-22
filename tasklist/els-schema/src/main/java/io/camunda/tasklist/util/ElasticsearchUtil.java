@@ -12,11 +12,18 @@ import static io.camunda.tasklist.util.CollectionUtil.throwAwayNullElements;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.Refresh;
+import co.elastic.clients.elasticsearch._types.ScriptLanguage;
+import co.elastic.clients.elasticsearch._types.ScriptSortType;
 import co.elastic.clients.elasticsearch._types.SortOptions;
+import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.Time;
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
 import co.elastic.clients.elasticsearch._types.query_dsl.TermsQueryField;
+import co.elastic.clients.elasticsearch._types.query_dsl.UntypedRangeQuery;
 import co.elastic.clients.elasticsearch.core.ScrollResponse;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.elasticsearch.core.search.ResponseBody;
@@ -67,10 +74,10 @@ public abstract class ElasticsearchUtil {
   }
 
   /**
-   * Scrolls through all search results using ES8 client and collects results into a list, with
+   * Scrolls through all search results using ES client and collects results into a list, with
    * chunking support for large ID lists.
    *
-   * @param client ES8 client
+   * @param client ES client
    * @param ids List of IDs to process in chunks
    * @param chunkSize Maximum number of IDs per chunk
    * @param searchRequestBuilderFactory Factory to create search request builder for each chunk
@@ -80,11 +87,10 @@ public abstract class ElasticsearchUtil {
    * @return List of document sources
    */
   public static <T, ID> List<T> scrollInChunks(
-      final co.elastic.clients.elasticsearch.ElasticsearchClient client,
+      final ElasticsearchClient client,
       final List<ID> ids,
       final int chunkSize,
-      final Function<List<ID>, co.elastic.clients.elasticsearch.core.SearchRequest.Builder>
-          searchRequestBuilderFactory,
+      final Function<List<ID>, SearchRequest.Builder> searchRequestBuilderFactory,
       final Class<T> docClass) {
     final var result = new ArrayList<T>();
     for (final var chunk : ListUtils.partition(ids, chunkSize)) {
@@ -94,36 +100,33 @@ public abstract class ElasticsearchUtil {
   }
 
   /**
-   * Scrolls through all search results using ES8 client and collects document IDs with their index
+   * Scrolls through all search results using ES client and collects document IDs with their index
    * names into a map.
    *
-   * @param client ES8 client
+   * @param client ES client
    * @param searchRequestBuilder Search request builder
    * @return Map of document ID to index name
    */
   public static Map<String, String> scrollIdsWithIndexToMap(
-      final co.elastic.clients.elasticsearch.ElasticsearchClient client,
-      final co.elastic.clients.elasticsearch.core.SearchRequest.Builder searchRequestBuilder) {
+      final ElasticsearchClient client, final SearchRequest.Builder searchRequestBuilder) {
     return scrollAllStream(client, searchRequestBuilder, MAP_CLASS)
         .flatMap(response -> response.hits().hits().stream())
         .collect(Collectors.toMap(Hit::id, Hit::index));
   }
 
-  // ============ ES8 Query Helper Methods ============
+  // ============ ES Query Helper Methods ============
 
   /**
-   * Creates a match-none query for ES8 that returns no results.
+   * Creates a match-none query for ES that returns no results.
    *
    * @return BoolQuery.Builder configured to match no documents
    */
-  public static co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery.Builder
-      createMatchNoneQueryEs8() {
-    return co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders.bool()
-        .must(m -> m.matchNone(mn -> mn));
+  public static BoolQuery.Builder createMatchNoneQueryEs() {
+    return QueryBuilders.bool().must(m -> m.matchNone(mn -> mn));
   }
 
   /**
-   * Creates a terms query for ES8 with a collection of values.
+   * Creates a terms query for ES with a collection of values.
    *
    * @param name Field name
    * @param values Collection of values to match
@@ -149,7 +152,7 @@ public abstract class ElasticsearchUtil {
   }
 
   /**
-   * Creates a terms query for ES8 with a single value.
+   * Creates a terms query for ES with a single value.
    *
    * @param name Field name
    * @param value Single value to match
@@ -170,7 +173,7 @@ public abstract class ElasticsearchUtil {
   }
 
   /**
-   * Joins multiple ES8 queries with AND logic. Returns null if no queries provided, single query if
+   * Joins multiple ES queries with AND logic. Returns null if no queries provided, single query if
    * only one provided, or a bool query with must clauses for multiple queries.
    *
    * @param queries Queries to join
@@ -190,16 +193,16 @@ public abstract class ElasticsearchUtil {
   }
 
   /**
-   * Creates a match-all query for ES8.
+   * Creates a match-all query.
    *
    * @return Query that matches all documents
    */
-  public static Query matchAllQueryEs8() {
+  public static Query matchAllQuery() {
     return Query.of(q -> q.matchAll(m -> m));
   }
 
   /**
-   * Creates an ES8 ids query for the given document IDs.
+   * Creates an ES ids query for the given document IDs.
    *
    * @param ids Document IDs to match
    * @return Query that matches documents with the specified IDs
@@ -220,7 +223,7 @@ public abstract class ElasticsearchUtil {
   }
 
   /**
-   * Creates an ES8 exists query that matches documents containing a value for the specified field.
+   * Creates an ES exists query that matches documents containing a value for the specified field.
    *
    * @param field The field name to check for existence
    * @return Query that matches documents where the field exists
@@ -240,7 +243,7 @@ public abstract class ElasticsearchUtil {
   }
 
   /**
-   * Joins multiple ES8 queries with OR logic. Returns null if no queries provided, single query if
+   * Joins multiple ES queries with OR logic. Returns null if no queries provided, single query if
    * only one provided, or a bool query with should clauses for multiple queries.
    *
    * @param queries Queries to join
@@ -259,7 +262,7 @@ public abstract class ElasticsearchUtil {
   }
 
   /**
-   * Creates an ES8 range query builder for the specified field.
+   * Creates an ES range query builder for the specified field.
    *
    * @param field Field name to apply range on
    * @return A RangeQueryBuilder for chaining range operations
@@ -269,7 +272,7 @@ public abstract class ElasticsearchUtil {
   }
 
   /**
-   * Creates an ES8 script sort option.
+   * Creates an ES script sort option.
    *
    * @param scriptSource The inline script source
    * @param scriptSortType The type of script sort (STRING or NUMBER)
@@ -277,33 +280,24 @@ public abstract class ElasticsearchUtil {
    * @return SortOptions configured for script sorting
    */
   public static SortOptions scriptSort(
-      final String scriptSource,
-      final co.elastic.clients.elasticsearch._types.ScriptSortType scriptSortType,
-      final co.elastic.clients.elasticsearch._types.SortOrder sortOrder) {
+      final String scriptSource, final ScriptSortType scriptSortType, final SortOrder sortOrder) {
     return SortOptions.of(
         s ->
             s.script(
                 sc ->
-                    sc.script(
-                            script ->
-                                script
-                                    .lang(
-                                        co.elastic.clients.elasticsearch._types.ScriptLanguage
-                                            .Painless)
-                                    .source(scriptSource))
+                    sc.script(script -> script.lang(ScriptLanguage.Painless).source(scriptSource))
                         .type(scriptSortType)
                         .order(sortOrder)));
   }
 
   // ===========================================================================================
-  // ES8 Scroll Helper Methods
+  // ES Scroll Helper Methods
   // ===========================================================================================
 
   /**
-   * Scrolls through all search results using the ES8 client and returns a stream of response
-   * bodies.
+   * Scrolls through all search results using the ES client and returns a stream of response bodies.
    *
-   * @param client ES8 client
+   * @param client ES client
    * @param searchRequestBuilder Search request builder
    * @param docClass Document class type
    * @param <T> Type of documents
@@ -363,7 +357,7 @@ public abstract class ElasticsearchUtil {
   /**
    * Clears scroll context silently, logging any errors that occur.
    *
-   * @param client ES8 client
+   * @param client ES client
    * @param scrollId Scroll ID to clear
    */
   private static void clearScrollSilently(
@@ -378,9 +372,9 @@ public abstract class ElasticsearchUtil {
   }
 
   /**
-   * Scrolls through all search results using ES8 client and collects results into a list.
+   * Scrolls through all search results using ES client and collects results into a list.
    *
-   * @param client ES8 client
+   * @param client ES client
    * @param searchRequestBuilder Search request builder
    * @param docClass Document class type
    * @param <T> Type of documents
@@ -398,10 +392,10 @@ public abstract class ElasticsearchUtil {
   }
 
   /**
-   * Scrolls through all search results using ES8 client and collects a specific field's Long values
+   * Scrolls through all search results using ES client and collects a specific field's Long values
    * into a set.
    *
-   * @param client ES8 client
+   * @param client ES client
    * @param searchRequestBuilder Search request builder
    * @param fieldName The field name to extract Long values from
    * @return Set of Long values
@@ -421,11 +415,11 @@ public abstract class ElasticsearchUtil {
   }
 
   // ===========================================================================================
-  // ES8 Sort Helper Methods
+  // ES Sort Helper Methods
   // ===========================================================================================
 
   /**
-   * Creates an ES8 SortOptions for a field with specified order.
+   * Creates an ES SortOptions for a field with specified order.
    *
    * @param field The field name to sort by
    * @param sortOrder The sort order (Asc or Desc)
@@ -437,7 +431,7 @@ public abstract class ElasticsearchUtil {
   }
 
   /**
-   * Creates an ES8 SortOptions for a field with specified order and missing value handling.
+   * Creates an ES SortOptions for a field with specified order and missing value handling.
    *
    * @param field The field name to sort by
    * @param sortOrder The sort order (Asc or Desc)
@@ -488,10 +482,10 @@ public abstract class ElasticsearchUtil {
   }
 
   /**
-   * Converts an array of search_after values to ES8 FieldValue list for pagination.
+   * Converts an array of search_after values to ES FieldValue list for pagination.
    *
    * @param searchAfter Array of sort values from previous search result
-   * @return List of FieldValue objects for ES8 searchAfter parameter
+   * @return List of FieldValue objects for ES searchAfter parameter
    */
   public static List<co.elastic.clients.elasticsearch._types.FieldValue> searchAfterToFieldValues(
       final Object[] searchAfter) {
@@ -500,7 +494,7 @@ public abstract class ElasticsearchUtil {
         .toList();
   }
 
-  /** Builder class for creating ES8 range queries with a fluent API. */
+  /** Builder class for creating ES range queries with a fluent API. */
   public static class RangeQueryBuilder {
     private final String field;
     private Object gt;
@@ -533,8 +527,7 @@ public abstract class ElasticsearchUtil {
     }
 
     public Query build() {
-      final var untypedBuilder =
-          new co.elastic.clients.elasticsearch._types.query_dsl.UntypedRangeQuery.Builder();
+      final var untypedBuilder = new UntypedRangeQuery.Builder();
       untypedBuilder.field(field);
 
       if (gt != null) {

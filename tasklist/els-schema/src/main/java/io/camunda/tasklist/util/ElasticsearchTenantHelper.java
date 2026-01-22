@@ -16,18 +16,17 @@ import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 /**
- * Helper class for applying tenant checks to ES8 queries. This is used to ensure multi-tenancy
+ * Helper class for applying tenant checks to ES queries. This is used to ensure multi-tenancy
  * security by filtering queries based on the authenticated user's tenant access.
  */
 @Conditional(ElasticSearchCondition.class)
 @Component
 public class ElasticsearchTenantHelper {
-  private final Optional<TenantCheckApplier<Query>> es8TenantCheckApplier;
+  private final Optional<TenantCheckApplier<Query>> tenantCheckApplier;
 
   // Using Optional as this is equivalent to @Autowired(required=false) for constructor injection
-  public ElasticsearchTenantHelper(
-      final Optional<TenantCheckApplier<Query>> es8TenantCheckApplier) {
-    this.es8TenantCheckApplier = es8TenantCheckApplier;
+  public ElasticsearchTenantHelper(final Optional<TenantCheckApplier<Query>> tenantCheckApplier) {
+    this.tenantCheckApplier = tenantCheckApplier;
   }
 
   /**
@@ -39,18 +38,18 @@ public class ElasticsearchTenantHelper {
    *     disabled
    */
   public Query makeQueryTenantAware(final Query query) {
-    if (es8TenantCheckApplier.isEmpty()) {
+    if (tenantCheckApplier.isEmpty()) {
       return query;
     }
 
-    return es8TenantCheckApplier.get().apply(query);
+    return tenantCheckApplier.get().apply(query);
   }
 
   public Query makeQueryTenantAware(final Query query, final Collection<String> tenantIds) {
-    if (es8TenantCheckApplier.isEmpty()) {
+    if (tenantCheckApplier.isEmpty()) {
       return query;
     }
 
-    return es8TenantCheckApplier.get().apply(query, tenantIds);
+    return tenantCheckApplier.get().apply(query, tenantIds);
   }
 }

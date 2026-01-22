@@ -639,7 +639,7 @@ public class TaskStoreElasticSearch implements TaskStore {
             priorityQ);
 
     if (jointQ == null) {
-      jointQ = ElasticsearchUtil.matchAllQueryEs8();
+      jointQ = ElasticsearchUtil.matchAllQuery();
     }
     return ElasticsearchUtil.constantScoreQuery(jointQ);
   }
@@ -648,7 +648,7 @@ public class TaskStoreElasticSearch implements TaskStore {
    * Returns list of sort options for the given query.
    *
    * @param query Task query with sort parameters
-   * @return List of SortOptions for ES8 search
+   * @return List of SortOptions for ES search
    */
   private static List<SortOptions> getSortOptions(final TaskQuery query) {
     final List<SortOptions> sortOptions = new ArrayList<>();
