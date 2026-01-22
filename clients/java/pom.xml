@@ -309,7 +309,28 @@
           <generatorName>java</generatorName>
           <inputSpec>${openapi.dir}/rest-api.yaml</inputSpec>
           <modelPackage>io.camunda.client.protocol.rest</modelPackage>
-          <typeMappings>OffsetDateTime=String,ResourceKey=String,ProcessInstanceModificationActivateInstructionAncestorElementInstanceKey=String,DecisionDefinitionKeyFilterProperty=BasicStringFilterProperty,DecisionEvaluationInstanceKeyFilterProperty=BasicStringFilterProperty,ElementInstanceKeyFilterProperty=BasicStringFilterProperty,ProcessInstanceKeyFilterProperty=BasicStringFilterProperty,ProcessInstanceModificationActivateInstructionAncestorElementInstanceKey=String,ScopeKeyFilterProperty=BasicStringFilterProperty,VariableKeyFilterProperty=BasicStringFilterProperty,ProcessDefinitionKeyFilterProperty=BasicStringFilterProperty,JobKeyFilterProperty=BasicStringFilterProperty,MessageSubscriptionKeyFilterProperty=BasicStringFilterProperty,DeploymentKeyFilterProperty=BasicStringFilterProperty,FormKeyFilterProperty=BasicStringFilterProperty,ResourceKeyFilterProperty=BasicStringFilterProperty,AuditLogEntityKeyFilterProperty=BasicStringFilterProperty</typeMappings>
+          <typeMappings>
+            <typeMapping>OffsetDateTime=String</typeMapping>
+            <typeMapping>ResourceKey=String</typeMapping>
+            <typeMapping>ProcessInstanceModificationActivateInstructionAncestorElementInstanceKey=String</typeMapping>
+            <typeMapping>DecisionDefinitionKeyFilterProperty=BasicStringFilterProperty</typeMapping>
+            <typeMapping>DecisionEvaluationInstanceKeyFilterProperty=BasicStringFilterProperty</typeMapping>
+            <typeMapping>ElementInstanceKeyFilterProperty=BasicStringFilterProperty</typeMapping>
+            <typeMapping>ProcessInstanceKeyFilterProperty=BasicStringFilterProperty</typeMapping>
+            <typeMapping>ProcessInstanceModificationActivateInstructionAncestorElementInstanceKey=String</typeMapping>
+            <typeMapping>ScopeKeyFilterProperty=BasicStringFilterProperty</typeMapping>
+            <typeMapping>VariableKeyFilterProperty=BasicStringFilterProperty</typeMapping>
+            <typeMapping>ProcessDefinitionKeyFilterProperty=BasicStringFilterProperty</typeMapping>
+            <typeMapping>JobKeyFilterProperty=BasicStringFilterProperty</typeMapping>
+            <typeMapping>MessageSubscriptionKeyFilterProperty=BasicStringFilterProperty</typeMapping>
+            <typeMapping>DeploymentKeyFilterProperty=BasicStringFilterProperty</typeMapping>
+            <typeMapping>FormKeyFilterProperty=BasicStringFilterProperty</typeMapping>
+            <typeMapping>ResourceKeyFilterProperty=BasicStringFilterProperty</typeMapping>
+            <typeMapping>AuditLogEntityKeyFilterProperty=BasicStringFilterProperty</typeMapping>
+            <typeMapping>AuditLogKeyFilterProperty=BasicStringFilterProperty</typeMapping>
+            <typeMapping>DecisionEvaluationKeyFilterProperty=BasicStringFilterProperty</typeMapping>
+            <typeMapping>DecisionRequirementsKeyFilterProperty=BasicStringFilterProperty</typeMapping>
+          </typeMappings>
           <generateApis>false</generateApis>
           <generateApiTests>false</generateApiTests>
           <generateSupportingFiles>false</generateSupportingFiles>

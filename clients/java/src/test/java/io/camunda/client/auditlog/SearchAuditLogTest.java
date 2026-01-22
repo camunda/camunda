@@ -93,7 +93,15 @@ public class SearchAuditLogTest extends ClientRestTest {
                     .category(AuditLogCategoryEnum.ADMIN)
                     .deploymentKey("deploymentKey")
                     .formKey("formKey")
-                    .resourceKey("resourceKey"))
+                    .resourceKey("resourceKey")
+                    .processDefinitionId("processDefinitionId")
+                    .jobKey("jobKey")
+                    .userTaskKey("userTaskKey")
+                    .decisionRequirementsId("decisionRequirementsId")
+                    .decisionRequirementsKey("decisionRequirementsKey")
+                    .decisionDefinitionId("decisionDefinitionId")
+                    .decisionDefinitionKey("decisionDefinitionKey")
+                    .decisionEvaluationKey("decisionEvaluationKey"))
         .send()
         .join();
 
@@ -105,8 +113,11 @@ public class SearchAuditLogTest extends ClientRestTest {
     assertThat(filter.getAuditLogKey().get$Eq()).isEqualTo("auditLogKey");
     assertThat(filter.getEntityKey().get$Eq()).isEqualTo("entityKey");
     assertThat(filter.getProcessInstanceKey().get$Eq()).isEqualTo("processInstanceKey");
+    assertThat(filter.getProcessDefinitionId().get$Eq()).isEqualTo("processDefinitionId");
     assertThat(filter.getProcessDefinitionKey().get$Eq()).isEqualTo("processDefinitionKey");
     assertThat(filter.getElementInstanceKey().get$Eq()).isEqualTo("elementInstanceKey");
+    assertThat(filter.getJobKey().get$Eq()).isEqualTo("jobKey");
+    assertThat(filter.getUserTaskKey().get$Eq()).isEqualTo("userTaskKey");
     assertThat(filter.getOperationType().get$Eq().getValue()).isEqualTo("CREATE");
     assertThat(filter.getResult().get$Eq().getValue()).isEqualTo("SUCCESS");
     assertThat(filter.getTimestamp().get$Eq()).isEqualTo(OffsetDateTime.MIN.toString());
@@ -115,6 +126,11 @@ public class SearchAuditLogTest extends ClientRestTest {
     assertThat(filter.getEntityType().get$Eq().getValue()).isEqualTo("BATCH");
     assertThat(filter.getTenantId().get$Eq()).isEqualTo("tenantId");
     assertThat(filter.getCategory().get$Eq().getValue()).isEqualTo("ADMIN");
+    assertThat(filter.getDecisionRequirementsId().get$Eq()).isEqualTo("decisionRequirementsId");
+    assertThat(filter.getDecisionRequirementsKey().get$Eq()).isEqualTo("decisionRequirementsKey");
+    assertThat(filter.getDecisionDefinitionId().get$Eq()).isEqualTo("decisionDefinitionId");
+    assertThat(filter.getDecisionDefinitionKey().get$Eq()).isEqualTo(("decisionDefinitionKey"));
+    assertThat(filter.getDecisionEvaluationKey().get$Eq()).isEqualTo(("decisionEvaluationKey"));
     assertThat(filter.getDeploymentKey().get$Eq()).isEqualTo("deploymentKey");
     assertThat(filter.getFormKey().get$Eq()).isEqualTo("formKey");
     assertThat(filter.getResourceKey().get$Eq()).isEqualTo("resourceKey");
@@ -142,7 +158,15 @@ public class SearchAuditLogTest extends ClientRestTest {
                     .category(f -> f.eq(AuditLogCategoryEnum.ADMIN))
                     .deploymentKey(f -> f.eq("deploymentKey"))
                     .formKey(f -> f.eq("formKey"))
-                    .resourceKey(f -> f.eq("resourceKey")))
+                    .resourceKey(f -> f.eq("resourceKey"))
+                    .processDefinitionId(f -> f.eq("processDefinitionId"))
+                    .jobKey(f -> f.in("jobKey"))
+                    .userTaskKey(f -> f.eq("userTaskKey"))
+                    .decisionRequirementsId(f -> f.eq("decisionRequirementsId"))
+                    .decisionRequirementsKey(f -> f.notIn("decisionRequirementsKey"))
+                    .decisionDefinitionId(f -> f.eq("decisionDefinitionId"))
+                    .decisionDefinitionKey(f -> f.eq("decisionDefinitionKey"))
+                    .decisionEvaluationKey(f -> f.eq("decisionEvaluationKey")))
         .send()
         .join();
 
@@ -153,8 +177,11 @@ public class SearchAuditLogTest extends ClientRestTest {
     assertThat(filter).isNotNull();
     assertThat(filter.getAuditLogKey().get$Eq()).isEqualTo("auditLogKey");
     assertThat(filter.getProcessInstanceKey().get$NotIn().get(0)).isEqualTo("processInstanceKey");
+    assertThat(filter.getProcessDefinitionId().get$Eq()).isEqualTo("processDefinitionId");
     assertThat(filter.getProcessDefinitionKey().get$Eq()).isEqualTo("processDefinitionKey");
     assertThat(filter.getElementInstanceKey().get$Exists()).isEqualTo(true);
+    assertThat(filter.getJobKey().get$In().get(0)).isEqualTo("jobKey");
+    assertThat(filter.getUserTaskKey().get$Eq()).isEqualTo("userTaskKey");
     assertThat(filter.getOperationType().get$In().get(0).getValue()).isEqualTo("CREATE");
     assertThat(filter.getResult().get$Neq().getValue()).isEqualTo("SUCCESS");
     assertThat(filter.getTimestamp().get$Gt()).isEqualTo(OffsetDateTime.MIN.toString());
@@ -163,6 +190,12 @@ public class SearchAuditLogTest extends ClientRestTest {
     assertThat(filter.getEntityType().get$Eq().getValue()).isEqualTo("BATCH");
     assertThat(filter.getTenantId().get$Eq()).isEqualTo("tenantId");
     assertThat(filter.getCategory().get$Eq().getValue()).isEqualTo("ADMIN");
+    assertThat(filter.getDecisionRequirementsId().get$Eq()).isEqualTo("decisionRequirementsId");
+    assertThat(filter.getDecisionRequirementsKey().get$NotIn().get(0))
+        .isEqualTo("decisionRequirementsKey");
+    assertThat(filter.getDecisionDefinitionId().get$Eq()).isEqualTo("decisionDefinitionId");
+    assertThat(filter.getDecisionDefinitionKey().get$Eq()).isEqualTo(("decisionDefinitionKey"));
+    assertThat(filter.getDecisionEvaluationKey().get$Eq()).isEqualTo(("decisionEvaluationKey"));
     assertThat(filter.getDeploymentKey().get$Eq()).isEqualTo("deploymentKey");
     assertThat(filter.getFormKey().get$Eq()).isEqualTo("formKey");
     assertThat(filter.getResourceKey().get$Eq()).isEqualTo("resourceKey");

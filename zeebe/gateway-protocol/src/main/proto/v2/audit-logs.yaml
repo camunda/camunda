@@ -278,17 +278,53 @@ components:
           allOf:
             - $ref: '#/components/schemas/CategoryFilterProperty'
         deploymentKey:
-          description: The deployment key filter.
+          description: The deployment key search filter.
           allOf:
             - $ref: 'deployments.yaml#/components/schemas/DeploymentKeyFilterProperty'
         formKey:
-          description: The form key filter.
+          description: The form key search filter.
           allOf:
             - $ref: 'keys.yaml#/components/schemas/FormKeyFilterProperty'
         resourceKey:
-          description: The resource key filter.
+          description: The resource key search filter.
           allOf:
             - $ref: 'deployments.yaml#/components/schemas/ResourceKeyFilterProperty'
+        batchOperationType:
+          description: The batch operation type search filter.
+          allOf:
+            - $ref: 'batch-operations.yaml#/components/schemas/BatchOperationTypeFilterProperty'
+        processDefinitionId:
+          description: The process definition ID search filter.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+        jobKey:
+          description: The job key search filter.
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/JobKeyFilterProperty'
+        userTaskKey:
+          description: The user task key search filter.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/BasicStringFilterProperty'
+        decisionRequirementsId:
+          description: The decision requirements ID search filter.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+        decisionRequirementsKey:
+          description: The decision requirements key search filter.
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/DecisionRequirementsKeyFilterProperty'
+        decisionDefinitionId:
+          description: The decision definition ID search filter.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+        decisionDefinitionKey:
+          description: The decision definition key search filter.
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/DecisionDefinitionKeyFilterProperty'
+        decisionEvaluationKey:
+          description: The decision evaluation key search filter.
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/DecisionEvaluationKeyFilterProperty'
 
     AuditLogSearchQueryResult:
       description: Audit log search response.
