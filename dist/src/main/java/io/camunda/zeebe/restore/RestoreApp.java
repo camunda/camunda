@@ -19,6 +19,8 @@ import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.beans.RestoreProperties;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
+import io.camunda.zeebe.dynamic.nodeid.fs.DataDirectoryProvider;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.util.Objects;
@@ -64,12 +66,14 @@ public class RestoreApp implements ApplicationRunner {
       final BackupStore backupStore,
       final RestoreProperties restoreConfiguration,
       final WorkingDirectory workingDirectory,
-      final MeterRegistry meterRegistry) {
+      final MeterRegistry meterRegistry,
+      final NodeIdProvider nodeIdProvider,
+      final DataDirectoryProvider dataDirectoryProvider) {
     this.configuration = configuration;
     this.backupStore = backupStore;
     this.restoreConfiguration = restoreConfiguration;
     this.meterRegistry = meterRegistry;
-    configuration.init(workingDirectory.path().toAbsolutePath().toString());
+    configuration.getCluster().setNodeId(nodeIdProvider.currentNodeInstance().id());
   }
 
   public static void main(final String[] args) {

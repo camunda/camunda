@@ -5,27 +5,24 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.broker;
+package io.camunda.zeebe.restore;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.atomix.cluster.AtomixCluster;
-import io.camunda.application.commons.configuration.BrokerBasedConfiguration;
+import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.configuration.Cluster;
 import io.camunda.configuration.NodeIdProvider.S3;
 import io.camunda.configuration.UnifiedConfiguration;
-import io.camunda.zeebe.broker.system.BrokerDataDirectoryCopier;
+import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.zeebe.broker.system.configuration.DataCfg;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.dynamic.nodeid.RepositoryNodeIdProvider;
 import io.camunda.zeebe.dynamic.nodeid.fs.ConfiguredDataDirectoryProvider;
-import io.camunda.zeebe.dynamic.nodeid.fs.DataDirectoryCopier;
 import io.camunda.zeebe.dynamic.nodeid.fs.DataDirectoryProvider;
 import io.camunda.zeebe.dynamic.nodeid.fs.NodeIdBasedDataDirectoryProvider;
-import io.camunda.zeebe.dynamic.nodeid.fs.VersionedNodeIdBasedDataDirectoryProvider;
+import io.camunda.zeebe.dynamic.nodeid.fs.UnInitializedVersionedNodeIdBasedDataDirectoryProvider;
 import io.camunda.zeebe.dynamic.nodeid.repository.NodeIdRepository;
 import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository;
 import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository.S3ClientConfig;
-import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
 import java.time.Clock;
@@ -34,24 +31,22 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.SpringApplication;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
-import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Profile;
 import software.amazon.awssdk.regions.Region;
 
 @Configuration(proxyBeanMethods = false)
-@Profile(value = {"broker"})
+@Profile(value = {"restore"})
 @DependsOn("unifiedConfigurationHelper")
-@Import(BrokerShutdownHelper.class)
 public class NodeIdProviderConfiguration {
-
   private static final Logger LOG = LoggerFactory.getLogger(NodeIdProviderConfiguration.class);
+  @Autowired private ApplicationContext appContext;
   private final Cluster cluster;
   private final boolean disableVersionedDirectory;
-  private final int versionedDirectoryRetentionCount;
-  private final ObjectMapper objectMapper;
 
   @Autowired
   public NodeIdProviderConfiguration(
@@ -59,8 +54,6 @@ public class NodeIdProviderConfiguration {
     cluster = configuration.getCamunda().getCluster();
     final var primaryStorage = configuration.getCamunda().getData().getPrimaryStorage();
     disableVersionedDirectory = primaryStorage.disableVersionedDirectory();
-    versionedDirectoryRetentionCount = primaryStorage.getVersionedDirectoryRetentionCount();
-    this.objectMapper = objectMapper;
   }
 
   @Bean
@@ -82,9 +75,7 @@ public class NodeIdProviderConfiguration {
   }
 
   @Bean
-  public NodeIdProvider nodeIdProvider(
-      final Optional<NodeIdRepository> nodeIdRepository,
-      final BrokerShutdownHelper shutdownHelper) {
+  public NodeIdProvider nodeIdProvider(final Optional<NodeIdRepository> nodeIdRepository) {
     final var nodeIdProvider =
         switch (cluster.getNodeIdProvider().getType()) {
           case FIXED -> {
@@ -108,7 +99,8 @@ public class NodeIdProviderConfiguration {
                 taskId,
                 () -> {
                   LOG.warn("NodeIdProvider terminating the process");
-                  shutdownHelper.initiateShutdown(1);
+                  SpringApplication.exit(appContext, () -> 1);
+                  ;
                 });
           }
         };
@@ -137,83 +129,27 @@ public class NodeIdProviderConfiguration {
   @Bean
   public DataDirectoryProvider dataDirectoryProvider(
       final NodeIdProvider nodeIdProvider,
-      final NodeIdProviderReadinessAwaiter readinessAwaiter,
-      final BrokerBasedConfiguration brokerBasedConfiguration) {
+      final BrokerBasedProperties brokerBasedConfiguration,
+      final WorkingDirectory workingDirectory) {
 
-    if (!readinessAwaiter.isReady()) {
-      throw new IllegalStateException("NodeIdProvider is not ready");
-    }
+    brokerBasedConfiguration.init(workingDirectory.path().toAbsolutePath().toString());
 
     final var initializer =
         switch (cluster.getNodeIdProvider().getType()) {
           case FIXED -> new ConfiguredDataDirectoryProvider();
           case S3 -> {
-            final var brokerCopier = new BrokerDataDirectoryCopier();
             final var nodeInstance = nodeIdProvider.currentNodeInstance();
-            final var previousNodeGracefullyShutdown =
-                nodeIdProvider.previousNodeGracefullyShutdown().join();
             yield disableVersionedDirectory
                 ? new NodeIdBasedDataDirectoryProvider(nodeInstance)
-                : new VersionedNodeIdBasedDataDirectoryProvider(
-                    objectMapper,
-                    nodeInstance,
-                    fromBrokerCopier(brokerCopier),
-                    previousNodeGracefullyShutdown,
-                    versionedDirectoryRetentionCount);
+                : new UnInitializedVersionedNodeIdBasedDataDirectoryProvider(nodeInstance);
           }
         };
 
-    final DataCfg data = brokerBasedConfiguration.config().getData();
+    final DataCfg data = brokerBasedConfiguration.getData();
     final var directory = Path.of(data.getDirectory());
     final var configuredDirectory = initializer.initialize(directory).join();
     data.setDirectory(configuredDirectory.toString());
 
     return initializer;
   }
-
-  @Bean
-  public NodeIdProviderReadinessAwaiter nodeIdProviderReadinessAwaiter(
-      final NodeIdProvider nodeIdProvider, final AtomixCluster atomixCluster) {
-    final var membershipService = atomixCluster.getMembershipService();
-    membershipService.addListener(
-        l -> {
-          switch (l.type()) {
-            case MEMBER_ADDED, MEMBER_REMOVED ->
-                nodeIdProvider.setMembers(membershipService.getMembers());
-            default -> {
-              // noop
-            }
-          }
-        });
-
-    // initialize current members
-    nodeIdProvider.setMembers(membershipService.getMembers());
-
-    final var isReady = nodeIdProvider.awaitReadiness().join();
-    return new NodeIdProviderReadinessAwaiter(isReady);
-  }
-
-  // brokerCopier does not implement the interface because it's defined in zeebe-broker module
-  // which does not depend on dynamic-node-id-provider module.
-  private DataDirectoryCopier fromBrokerCopier(final BrokerDataDirectoryCopier brokerCopier) {
-    return new DataDirectoryCopier() {
-      @Override
-      public void copy(
-          final Path source,
-          final Path target,
-          final String markerFileName,
-          final boolean useHardLinks)
-          throws IOException {
-        brokerCopier.copy(source, target, markerFileName, useHardLinks);
-      }
-
-      @Override
-      public void validate(final Path source, final Path target, final String markerFileName)
-          throws IOException {
-        brokerCopier.validate(source, target, markerFileName);
-      }
-    };
-  }
-
-  public record NodeIdProviderReadinessAwaiter(boolean isReady) {}
 }

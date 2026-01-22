@@ -26,4 +26,22 @@ public interface DataDirectoryCopier {
 
   void validate(final Path source, final Path target, final String markerFileName)
       throws IOException;
+
+  static DataDirectoryCopier unsupportedCopier() {
+    return new DataDirectoryCopier() {
+      @Override
+      public void copy(
+          final Path source,
+          final Path target,
+          final String markerFileName,
+          final boolean useHardLinks) {
+        throw new UnsupportedOperationException("Data directory copying is not supported.");
+      }
+
+      @Override
+      public void validate(final Path source, final Path target, final String markerFileName) {
+        throw new UnsupportedOperationException("Data directory copying is not supported.");
+      }
+    };
+  }
 }
