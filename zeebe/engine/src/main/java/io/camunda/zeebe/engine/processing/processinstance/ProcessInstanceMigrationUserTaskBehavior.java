@@ -31,8 +31,8 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import java.util.Map;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 
 public class ProcessInstanceMigrationUserTaskBehavior {
@@ -119,7 +119,7 @@ public class ProcessInstanceMigrationUserTaskBehavior {
     final Map<String, String> customHeaders = job.getCustomHeaders();
     final io.camunda.zeebe.engine.processing.deployment.model.element.UserTaskProperties
         targetProperties = targetUserTask.getUserTaskProperties();
-    final var userTaskProperties = mapUserTaskProperties(customHeaders, targetProperties);
+    final var userTaskProperties = mapUserTaskProperties(customHeaders);
 
     // Create new Zeebe user task
     final var context = new BpmnElementContextImpl();
@@ -131,7 +131,7 @@ public class ProcessInstanceMigrationUserTaskBehavior {
     final var userTaskRecord =
         createNewUserTask(targetProperties, context, userTaskProperties, targetUserTask);
 
-    assignUser(userTaskProperties, userTaskRecord);
+    assignUser(userTaskProperties, userTaskRecord, context, targetProperties);
 
     job.setIsJobToUserTaskMigration(true);
     // Cancel previous job worker job
@@ -139,12 +139,29 @@ public class ProcessInstanceMigrationUserTaskBehavior {
   }
 
   private void assignUser(
-      final UserTaskProperties userTaskProperties, final UserTaskRecord userTaskRecord) {
-    final var assignee = userTaskProperties.getAssignee();
-    if (StringUtils.isNotEmpty(assignee)) {
-      userTaskBehavior.userTaskAssigning(userTaskRecord, assignee);
-      userTaskBehavior.userTaskAssigned(userTaskRecord, assignee);
+      final UserTaskProperties userTaskProperties,
+      final UserTaskRecord userTaskRecord,
+      final BpmnElementContextImpl context,
+      final io.camunda.zeebe.engine.processing.deployment.model.element.UserTaskProperties
+          targetProperties) {
+
+    if (targetProperties.getAssignee() != null) {
+      userTaskBehavior
+          .evaluateAssigneeExpression(
+              targetProperties.getAssignee(),
+              context.getFlowScopeKey(),
+              targetProcessDefinition.getTenantId())
+          .ifRight(userTaskProperties::assignee);
     }
+
+    final var assignee = userTaskProperties.getAssignee();
+    // We always need to sync the assignee because for job-based tasks the assignee value could be
+    // anything in secondary storage
+    userTaskRecord.setAssignee(assignee);
+    userTaskRecord.setAssigneeChanged();
+    stateWriter.appendFollowUpEvent(
+        userTaskRecord.getUserTaskKey(), UserTaskIntent.ASSIGNING, userTaskRecord);
+    userTaskBehavior.userTaskAssigned(userTaskRecord, assignee);
   }
 
   private UserTaskRecord createNewUserTask(
@@ -236,15 +253,9 @@ public class ProcessInstanceMigrationUserTaskBehavior {
     }
   }
 
-  private static UserTaskProperties mapUserTaskProperties(
-      final Map<String, String> customHeaders,
-      final io.camunda.zeebe.engine.processing.deployment.model.element.UserTaskProperties
-          targetProperties) {
+  private static UserTaskProperties mapUserTaskProperties(final Map<String, String> customHeaders) {
     final UserTaskProperties userTaskProperties = new UserTaskProperties();
 
-    if (targetProperties.getAssignee() != null) {
-      userTaskProperties.assignee(targetProperties.getAssignee().getExpression());
-    }
     final String candidateGroups =
         customHeaders.get(Protocol.USER_TASK_CANDIDATE_GROUPS_HEADER_NAME);
     if (candidateGroups != null) {
