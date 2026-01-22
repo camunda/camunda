@@ -15,6 +15,7 @@ import static io.camunda.gateway.mcp.tool.ToolDescriptions.USER_TASK_KEY_POSITIV
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.VARIABLE_FILTER_FORMAT_NOTE;
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.VARIABLE_FORMAT_DESCRIPTION;
 
+import io.camunda.gateway.mapping.http.RequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.mcp.mapper.CallToolResultMapper;
@@ -118,40 +119,63 @@ public class UserTaskTools {
     try {
       // Check if this is an unassignment (assignee is null or empty)
       if (assignee == null || assignee.isBlank()) {
-        // Unassignment path
-        final String action =
-            assignmentOptions != null && assignmentOptions.getAction() != null
-                ? assignmentOptions.getAction()
-                : null;
-
-        return CallToolResultMapper.fromPrimitive(
-            userTaskServices
-                .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                .unassignUserTask(userTaskKey, action),
-            r -> "User task with key %s unassigned.".formatted(userTaskKey));
+        return unassignUserTask(userTaskKey, assignmentOptions);
       } else {
-        // Assignment path
-        // Create a copy of the options request and enrich with the assignee from the root param
-        final UserTaskAssignmentRequest request =
-            assignmentOptions != null
-                ? new UserTaskAssignmentRequest()
-                    .assignee(assignee)
-                    .allowOverride(assignmentOptions.getAllowOverride())
-                    .action(assignmentOptions.getAction())
-                : new UserTaskAssignmentRequest().assignee(assignee);
-
-        final boolean allowOverride =
-            request.getAllowOverride() == null || request.getAllowOverride();
-
-        return CallToolResultMapper.fromPrimitive(
-            userTaskServices
-                .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                .assignUserTask(userTaskKey, assignee, request.getAction(), allowOverride),
-            r -> "User task with key %s assigned to %s.".formatted(userTaskKey, assignee));
+        return assignUserTaskInternal(userTaskKey, assignee, assignmentOptions);
       }
     } catch (final Exception e) {
       return CallToolResultMapper.mapErrorToResult(e);
     }
+  }
+
+  private CallToolResult assignUserTaskInternal(
+      final long userTaskKey,
+      final String assignee,
+      final McpUserTaskAssignmentRequest assignmentOptions) {
+    // Create request and enrich with assignee from root param
+    final UserTaskAssignmentRequest request =
+        assignmentOptions != null
+            ? new UserTaskAssignmentRequest()
+                .assignee(assignee)
+                .allowOverride(assignmentOptions.getAllowOverride())
+                .action(assignmentOptions.getAction())
+            : new UserTaskAssignmentRequest().assignee(assignee);
+
+    // Use RequestMapper for validation and property fallback
+    final var mappedRequest = RequestMapper.toUserTaskAssignmentRequest(request, userTaskKey);
+
+    if (mappedRequest.isLeft()) {
+      return CallToolResultMapper.mapProblemToResult(mappedRequest.getLeft());
+    }
+
+    final var assignRequest = mappedRequest.get();
+    return CallToolResultMapper.fromPrimitive(
+        userTaskServices
+            .withAuthentication(authenticationProvider.getCamundaAuthentication())
+            .assignUserTask(
+                assignRequest.userTaskKey(),
+                assignRequest.assignee(),
+                assignRequest.action(),
+                assignRequest.allowOverride()),
+        r -> "User task with key %s assigned to %s.".formatted(userTaskKey, assignee));
+  }
+
+  private CallToolResult unassignUserTask(
+      final long userTaskKey, final McpUserTaskAssignmentRequest assignmentOptions) {
+    // Use RequestMapper for unassignment with proper defaults
+    final var unassignRequest = RequestMapper.toUserTaskUnassignmentRequest(userTaskKey);
+
+    // Override action if provided in options
+    final String action =
+        assignmentOptions != null && assignmentOptions.getAction() != null
+            ? assignmentOptions.getAction()
+            : unassignRequest.action();
+
+    return CallToolResultMapper.fromPrimitive(
+        userTaskServices
+            .withAuthentication(authenticationProvider.getCamundaAuthentication())
+            .unassignUserTask(userTaskKey, action),
+        r -> "User task with key %s unassigned.".formatted(userTaskKey));
   }
 
   @McpTool(
