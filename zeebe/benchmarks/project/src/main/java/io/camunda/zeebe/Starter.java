@@ -21,17 +21,23 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
 import io.camunda.zeebe.client.api.command.DeployResourceCommandStep1.DeployResourceCommandStep2;
+import io.camunda.zeebe.client.api.search.response.ProcessInstance;
+import io.camunda.zeebe.client.api.search.response.SearchResponsePage;
+import io.camunda.zeebe.client.api.search.sort.ProcessInstanceSort;
 import io.camunda.zeebe.config.AppCfg;
 import io.camunda.zeebe.config.StarterCfg;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.grpc.Status.Code;
 import io.grpc.StatusRuntimeException;
+import io.micrometer.core.instrument.Timer;
 import java.net.URI;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletionStage;
@@ -56,6 +62,10 @@ public class Starter extends App {
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
   private final AppCfg appCfg;
   private final StarterCfg starterCfg;
+  private Timer responseLatencyTimer;
+  private ScheduledExecutorService executorService;
+  private ProcessInstanceStartMeter processInstanceStartMeter;
+  private SearchResponsePage responsePage = null;
 
   Starter(final AppCfg appCfg) {
     this.appCfg = appCfg;
@@ -64,9 +74,13 @@ public class Starter extends App {
 
   @Override
   public void run() {
-    final int rate = starterCfg.getRate();
-    final String processId = starterCfg.getProcessId();
+    responseLatencyTimer =
+        MicrometerUtil.buildTimer(StarterLatencyMetricsDoc.RESPONSE_LATENCY).register(registry);
+
     final ZeebeClient client = createZeebeClient();
+    if (appCfg.isMonitorDataAvailability()) {
+      setupDataAvailabilityMeter(client);
+    }
 
     // init - check for topology and deploy process
     printTopology(client);
@@ -74,8 +88,7 @@ public class Starter extends App {
 
     // setup to start instances on given rate
     final CountDownLatch countDownLatch = new CountDownLatch(1);
-    final ScheduledExecutorService executorService =
-        Executors.newScheduledThreadPool(starterCfg.getThreads());
+    executorService = Executors.newScheduledThreadPool(starterCfg.getThreads());
     final ScheduledFuture<?> scheduledTask =
         scheduleProcessInstanceCreation(executorService, countDownLatch, client);
 
@@ -85,6 +98,9 @@ public class Starter extends App {
                 () -> {
                   if (!executorService.isShutdown()) {
                     executorService.shutdown();
+                    if (appCfg.isMonitorDataAvailability()) {
+                      processInstanceStartMeter.close();
+                    }
                     try {
                       executorService.awaitTermination(60, TimeUnit.SECONDS);
                     } catch (final InterruptedException e) {
@@ -104,6 +120,43 @@ public class Starter extends App {
 
     scheduledTask.cancel(true);
     executorService.shutdown();
+
+    if (appCfg.isMonitorDataAvailability()) {
+      processInstanceStartMeter.close();
+    }
+  }
+
+  private void setupDataAvailabilityMeter(final ZeebeClient client) {
+    LOG.info("Monitor data availability of started process instances");
+    processInstanceStartMeter =
+        new ProcessInstanceStartMeter(
+            registry,
+            Executors.newScheduledThreadPool(1),
+            appCfg.getMonitorDataAvailabilityInterval(),
+            (listOfStartedInstances) -> {
+              final var sendFuture =
+                  client
+                      .newProcessInstanceQuery()
+                      .filter(f -> f.active(true).running(true))
+                      .sort(ProcessInstanceSort::startDate)
+                      .page(
+                          p ->
+                              p.limit(1000)
+                                  .searchAfter(
+                                      responsePage == null
+                                          ? List.of()
+                                          : responsePage.lastSortValues()))
+                      .send();
+
+              return sendFuture.thenApply(
+                  processInstanceSearchResponse -> {
+                    responsePage = processInstanceSearchResponse.page();
+                    return processInstanceSearchResponse.items().stream()
+                        .map(ProcessInstance::getKey)
+                        .toList();
+                  });
+            });
+    processInstanceStartMeter.start();
   }
 
   private ScheduledFuture<?> scheduleProcessInstanceCreation(
@@ -133,6 +186,7 @@ public class Starter extends App {
             final var vars = new HashMap<>(baseVariables);
             vars.put(starterCfg.getBusinessKey(), businessKey.incrementAndGet());
 
+            final var startTime = System.nanoTime();
             final CompletionStage<?> requestFuture;
             if (starterCfg.isStartViaMessage()) {
               requestFuture = startInstanceByMessagePublishing(client, vars);
@@ -140,10 +194,12 @@ public class Starter extends App {
               requestFuture =
                   startInstanceWithAwaitingResult(client, starterCfg.getProcessId(), vars);
             } else {
-              requestFuture = startInstance(client, starterCfg.getProcessId(), vars);
+              requestFuture = startInstance(client, startTime, starterCfg.getProcessId(), vars);
             }
-            requestFuture.exceptionally(
-                (error) -> {
+            requestFuture.whenComplete(
+                (noop, error) -> {
+                  final long durationNanos = System.nanoTime() - startTime;
+                  responseLatencyTimer.record(durationNanos, TimeUnit.NANOSECONDS);
                   if (error instanceof final StatusRuntimeException statusRuntimeException) {
                     if (statusRuntimeException.getStatus().getCode() != Code.RESOURCE_EXHAUSTED) {
                       // we don't want to flood the log
@@ -153,7 +209,6 @@ public class Starter extends App {
                           error);
                     }
                   }
-                  return null;
                 });
           } catch (final Exception e) {
             THROTTLED_LOGGER.error("Error on creating new process instance", e);
@@ -164,14 +219,30 @@ public class Starter extends App {
         TimeUnit.NANOSECONDS);
   }
 
-  private static CompletionStage<?> startInstance(
-      final ZeebeClient client, final String processId, final HashMap<String, Object> variables) {
-    return client
-        .newCreateInstanceCommand()
-        .bpmnProcessId(processId)
-        .latestVersion()
-        .variables(variables)
-        .send();
+  private CompletionStage<?> startInstance(
+      final ZeebeClient client,
+      final long startTime,
+      final String processId,
+      final HashMap<String, Object> variables) {
+    final var businessKey = (long) variables.get(starterCfg.getBusinessKey());
+    final var sendFuture =
+        client
+            .newCreateInstanceCommand()
+            .bpmnProcessId(processId)
+            .latestVersion()
+            .variables(variables)
+            .send();
+
+    if (appCfg.isMonitorDataAvailability()) {
+      return sendFuture.thenApply(
+          (response) -> {
+            final long processInstanceKey = response.getProcessInstanceKey();
+            processInstanceStartMeter.recordProcessInstanceStart(
+                processInstanceKey, businessKey, startTime);
+            return response;
+          });
+    }
+    return sendFuture;
   }
 
   private CompletionStage<?> startInstanceWithAwaitingResult(
@@ -212,6 +283,7 @@ public class Starter extends App {
     final ZeebeClientBuilder builder =
         ZeebeClient.newClientBuilder()
             .grpcAddress(URI.create(appCfg.getBrokerUrl()))
+            .restAddress(URI.create(appCfg.getBrokerRestUrl()))
             .numJobWorkerExecutionThreads(0)
             .withProperties(System.getProperties())
             .withInterceptors(monitoringInterceptor);

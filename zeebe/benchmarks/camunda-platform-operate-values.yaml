@@ -1,0 +1,51 @@
+# Values for Operate in the Camunda Platform Chart.
+
+operate:
+  enabled: true
+  image:
+    repository: gcr.io/zeebe-io/operate
+    tag: 8.7.0
+  # Resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
+  resources:
+    requests:
+      cpu: 600m
+      memory: 400Mi
+    limits:
+      cpu: 2000m
+      memory: 2Gi
+
+  # Retention can be used to define the data in Elasticsearch (ILM).
+  retention:
+    ## @param operate.retention.enabled if true, the ILM Policy is created and applied to the index templates.
+    enabled: true
+    ## @param operate.retention.minimumAge defines how old the data must be, before the data is deleted as a duration.
+    minimumAge: 30m # there is no need to keep data longer for our benchmarks, otherwise we will fill up ES pretty quick
+
+  env:
+    - name: OPERATE_LOG_APPENDER
+      value: Stackdriver
+    - name: OPERATE_LOG_STACKDRIVER_SERVICENAME
+      value: operate
+    - name: OPERATE_LOG_STACKDRIVER_SERVICEVERSION
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.namespace
+
+  logging:
+    level:
+      io.camunda.operate: INFO
+
+zeebe:
+  retention:
+    minimumAge: 1d
+elasticsearch:
+  master:
+    persistence:
+      size: 128Gi
+    resources:
+      requests:
+        cpu: 3
+        memory: 3Gi
+      limits:
+        cpu: 3
+        memory: 6Gi
