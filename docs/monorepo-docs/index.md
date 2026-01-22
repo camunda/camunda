@@ -1,10 +1,3 @@
----
-
-slug: /
-title: Camunda Platform Documentation
-description: Developer documentation for the Camunda platform and orchestration cluster
----------------------------------------------------------------------------------------
-
 # Camunda Platform Documentation
 
 Welcome to the developer documentation for the Camunda platform and orchestration cluster.
@@ -12,6 +5,16 @@ Welcome to the developer documentation for the Camunda platform and orchestratio
 ## Documentation
 
 This site contains comprehensive documentation for the Camunda platform development and deployment:
+
+### DevOps Collaboration
+
+**[DevOps Collaboration](./monorepo-devops-collaboration)** - Guidelines for efficient collaboration with the Monorepo DevOps team including:
+
+- Core principles and ownership boundaries
+- When and how to involve DevOps
+- Heads-Up Pattern for scoping and requests
+- Code review and integration expectations
+- Independent ownership and maintenance guidelines
 
 ### CI & Automation
 
