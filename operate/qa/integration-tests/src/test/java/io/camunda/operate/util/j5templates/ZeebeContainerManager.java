@@ -7,17 +7,14 @@
  */
 package io.camunda.operate.util.j5templates;
 
-import static io.camunda.operate.qa.util.ContainerVersionsUtil.ZEEBE_CURRENTVERSION_DOCKER_PROPERTY_NAME;
-
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.response.Topology;
 import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.qa.util.ContainerVersionsUtil;
 import io.camunda.operate.qa.util.TestContainerUtil;
 import io.camunda.security.configuration.SecurityConfiguration;
-import io.zeebe.containers.ZeebeContainer;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.time.Duration;
 
 public abstract class ZeebeContainerManager {
@@ -26,7 +23,7 @@ public abstract class ZeebeContainerManager {
   protected final OperateProperties operateProperties;
   protected final TestContainerUtil testContainerUtil;
   protected String prefix;
-  protected ZeebeContainer zeebeContainer;
+  protected TestStandaloneBroker zeebeContainer;
   protected CamundaClient client;
   private final SecurityConfiguration securityConfiguration;
 
@@ -49,11 +46,8 @@ public abstract class ZeebeContainerManager {
     updatePrefix();
 
     // Start zeebe
-    final String zeebeVersion =
-        ContainerVersionsUtil.readProperty(ZEEBE_CURRENTVERSION_DOCKER_PROPERTY_NAME);
     zeebeContainer =
         testContainerUtil.startZeebe(
-            zeebeVersion,
             prefix,
             2,
             securityConfiguration.getMultiTenancy().isChecksEnabled(),
@@ -62,7 +56,7 @@ public abstract class ZeebeContainerManager {
     client =
         CamundaClient.newClientBuilder()
             .preferRestOverGrpc(false)
-            .grpcAddress(zeebeContainer.getGrpcAddress())
+            .grpcAddress(zeebeContainer.grpcAddress())
             .defaultRequestTimeout(REQUEST_TIMEOUT)
             .build();
 
