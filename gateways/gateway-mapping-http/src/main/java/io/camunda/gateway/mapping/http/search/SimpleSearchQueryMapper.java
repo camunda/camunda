@@ -323,7 +323,7 @@ public class SimpleSearchQueryMapper {
           .map(SimpleSearchQueryMapper::getBasicStringFilter)
           .ifPresent(filterModel::variableKey);
       ofNullable(filter.getScopeKey())
-          .map(SimpleSearchQueryMapper::getStringFilter)
+          .map(SimpleSearchQueryMapper::getBasicStringFilter)
           .ifPresent(filterModel::scopeKey);
       ofNullable(filter.getProcessInstanceKey())
           .map(SimpleSearchQueryMapper::getBasicStringFilter)
