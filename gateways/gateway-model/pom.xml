@@ -99,7 +99,7 @@
                 <typeMapping>ProcessDefinitionKeyFilterProperty=BasicStringFilterProperty</typeMapping>
                 <typeMapping>ProcessInstanceKeyFilterProperty=BasicStringFilterProperty</typeMapping>
                 <typeMapping>ResourceKeyFilterProperty=BasicStringFilterProperty</typeMapping>
-                <typeMapping>ScopeKeyFilterProperty=StringFilterProperty</typeMapping>
+                <typeMapping>ScopeKeyFilterProperty=BasicStringFilterProperty</typeMapping>
                 <typeMapping>VariableKeyFilterProperty=BasicStringFilterProperty</typeMapping>
               </typeMappings>
               <generateApis>false</generateApis>
@@ -139,12 +139,16 @@
                 <typeMapping>ResourceKey=String</typeMapping>
                 <!-- map specific filter properties to String for equality behavior -->
                 <typeMapping>AuditLogEntityKeyFilterProperty=String</typeMapping>
+                <typeMapping>AuditLogKeyFilterProperty=String</typeMapping>
                 <typeMapping>BasicStringFilterProperty=String</typeMapping>
                 <typeMapping>DecisionDefinitionKeyFilterProperty=String</typeMapping>
                 <typeMapping>DecisionEvaluationInstanceKeyFilterProperty=String</typeMapping>
+                <typeMapping>DecisionEvaluationKeyFilterProperty=String</typeMapping>
+                <typeMapping>DecisionRequirementsKeyFilterProperty=String</typeMapping>
                 <typeMapping>DeploymentKeyFilterProperty=String</typeMapping>
                 <typeMapping>ElementInstanceKeyFilterProperty=String</typeMapping>
                 <typeMapping>FormKeyFilterProperty=String</typeMapping>
+                <typeMapping>IntegerFilterProperty=Integer</typeMapping>
                 <typeMapping>JobKeyFilterProperty=String</typeMapping>
                 <typeMapping>MessageSubscriptionKeyFilterProperty=String</typeMapping>
                 <typeMapping>ProcessDefinitionKeyFilterProperty=String</typeMapping>
@@ -152,7 +156,6 @@
                 <typeMapping>ResourceKeyFilterProperty=String</typeMapping>
                 <typeMapping>ScopeKeyFilterProperty=String</typeMapping>
                 <typeMapping>StringFilterProperty=String</typeMapping>
-                <typeMapping>IntegerFilterProperty=Integer</typeMapping>
                 <typeMapping>VariableKeyFilterProperty=String</typeMapping>
                 <!-- map to custom model classes -->
                 <typeMapping>DateTimeFilterProperty=SimpleDateTimeFilterProperty</typeMapping>
