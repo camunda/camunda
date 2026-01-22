@@ -87,7 +87,18 @@ jobs:
              "georgios-goulos",
              "vsgoulart",
              "tsedekey",
-             "lev-safro"]'
+             "lev-safro",
+             "npepinpe",
+             "deepthidevaki",
+             "ChrisKujawa",
+             "lenaschoenburg",
+             "entangled90",
+             "panagiotisgts",
+             "rodrigo-lourenco-lopes",
+             "bmudric",
+             "Ben-Sheppard",
+             "ana-vinogradova-camunda",
+             "mrm1st3r"]'
           ), github.actor) &&
        !contains(github.event.pull_request.labels.*.name, 'skip-always-green'))
     steps:
