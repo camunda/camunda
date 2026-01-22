@@ -172,14 +172,13 @@ public class WebSecurityConfig {
           "/oauth2/authorization/**",
           // old Tasklist and Operate webapps routes
           "/processes",
-          "/processes/*",
-          "/{regex:[\\d]+}", // user task id
-          "/processes/*/start",
-          "/new/*",
+          "/processes/**",
+          "/{taskId:[\\d]+}", // user task id (numeric only)
+          "/new/**",
           "/decisions",
-          "/decisions/*",
+          "/decisions/**",
           "/instances",
-          "/instances/*",
+          "/instances/**",
           SPRING_DEFAULT_UI_CSS);
   private static final Logger LOG = LoggerFactory.getLogger(WebSecurityConfig.class);
   // Used for chains that grant unauthenticated access, always comes first.

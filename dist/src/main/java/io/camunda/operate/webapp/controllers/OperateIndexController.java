@@ -31,7 +31,11 @@ public class OperateIndexController {
     return "operate/index";
   }
 
-  @RequestMapping(value = {"/operate/{regex:[\\w-]+}", "/operate/**/{regex:[\\w-]+}"})
+  /**
+   * Forwards all sub-paths under /operate to the Operate frontend. Uses {*path} syntax which is
+   * compatible with PathPatternParser (Spring Framework 6+).
+   */
+  @RequestMapping("/operate/{*path}")
   public String forwardToOperate(final HttpServletRequest request) {
     return webappsRequestForwardManager.forward(request, "operate");
   }
@@ -39,8 +43,17 @@ public class OperateIndexController {
   /**
    * Redirects the old frontend routes to the /operate sub-path. This can be removed after the
    * creation of the auto-discovery service.
+   *
+   * <p>Note: Patterns like /processes/{segment} require at least one path segment (e.g.,
+   * /processes/123), while /processes alone will return 404. This matches the legacy behavior.
    */
-  @GetMapping({"/processes/*", "/decisions", "/decisions/*", "/instances", "/instances/*"})
+  @GetMapping({
+    "/processes/{segment}",
+    "/decisions",
+    "/decisions/{segment}",
+    "/instances",
+    "/instances/{segment}"
+  })
   public String redirectOldRoutes(final HttpServletRequest request) {
     return "redirect:/operate" + getRequestedUrl(request);
   }

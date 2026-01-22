@@ -36,8 +36,11 @@ public class IdentityIndexController {
     return "identity/index";
   }
 
-  @RequestMapping(
-      value = {"/identity/", "/identity/{regex:[\\w-]+}", "/identity/**/{regex:[\\w-]+}"})
+  /**
+   * Forwards all sub-paths under /identity to the Identity frontend. Uses {*path} syntax which is
+   * compatible with PathPatternParser (Spring Framework 6+).
+   */
+  @RequestMapping("/identity/{*path}")
   public String forwardToIdentity(final HttpServletRequest request) {
     return webappsRequestForwardManager.forward(request, "identity");
   }
