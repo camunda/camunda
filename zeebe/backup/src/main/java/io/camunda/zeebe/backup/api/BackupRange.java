@@ -12,7 +12,11 @@ import java.util.Set;
 public sealed interface BackupRange {
 
   /** A complete backup range without deletions. */
-  record Complete(long startCheckpointId, long endCheckpointId) implements BackupRange {}
+  record Complete(long startCheckpointId, long endCheckpointId) implements BackupRange {
+    public boolean contains(final long start, final long end) {
+      return start >= startCheckpointId && end <= endCheckpointId;
+    }
+  }
 
   /**
    * A backup range with deletions. Verification of all contained backups is required to determine
