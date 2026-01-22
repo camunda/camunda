@@ -11,6 +11,7 @@ import static io.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static io.camunda.optimize.service.util.ExceptionUtil.isTooManyBucketsException;
 import static java.util.stream.Collectors.mapping;
 
+import io.camunda.optimize.OptimizeMetrics;
 import io.camunda.optimize.dto.optimize.DefinitionType;
 import io.camunda.optimize.dto.optimize.RoleType;
 import io.camunda.optimize.dto.optimize.TenantDto;
@@ -44,6 +45,7 @@ import io.camunda.optimize.service.identity.CollapsedSubprocessNodesService;
 import io.camunda.optimize.service.report.ReportService;
 import io.camunda.optimize.service.util.ValidationHelper;
 import io.camunda.optimize.service.variable.ProcessVariableService;
+import io.micrometer.core.instrument.Timer;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
@@ -97,12 +99,23 @@ public abstract class ReportEvaluationHandler {
                         String.format(
                             "User [%s] is not authorized to evaluate report [%s].",
                             evaluationInfo.getUserId(), evaluationInfo.getReport().getName())));
+
+    // Start timer for report evaluation metrics
+    final String reportType = evaluationInfo.getReport().isCombined() ? "combined" : "single";
+    final Timer.Sample timerSample = Timer.start();
+
     final ReportEvaluationResult result;
-    if (evaluationInfo.getReport().isCombined()) {
-      result = evaluateCombinedReport(evaluationInfo, currentUserRole);
-    } else {
-      result = evaluateSingleReportWithErrorCheck(evaluationInfo, currentUserRole);
+    try {
+      if (evaluationInfo.getReport().isCombined()) {
+        result = evaluateCombinedReport(evaluationInfo, currentUserRole);
+      } else {
+        result = evaluateSingleReportWithErrorCheck(evaluationInfo, currentUserRole);
+      }
+    } finally {
+      // Record the time taken to evaluate the report
+      timerSample.stop(OptimizeMetrics.getReportEvaluationTimer(reportType));
     }
+
     return new AuthorizedReportEvaluationResult(result, currentUserRole);
   }
 
@@ -140,7 +153,7 @@ public abstract class ReportEvaluationHandler {
         processReportData.setDefinitions(definitionsForManagementReport);
       } else if (processReportData.isInstantPreviewReport()
           && !reportEvaluationInfo.isSharedReport()) {
-        // Same logic as above, but just for the single process definition in the report
+        // The same logic as above, but just for the single process definition in the report
         final String key =
             ((SingleReportDataDto) reportEvaluationInfo.getReport().getData()).getDefinitionKey();
         final List<ReportDataDefinitionDto> definitionForInstantPreviewReport =

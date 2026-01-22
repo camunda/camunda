@@ -16,8 +16,12 @@ public enum MetricEnum {
       "Records the time spent indexing data from Zeebe into Optimize Elasticsearch indexes"),
   NEW_PAGE_FETCH_TIME_METRIC(
       "newPageFetchTime",
-      "Records the time spent for fetching next import page from Zeebe Elasticsearch");
+      "Records the time spent for fetching next import page from Zeebe Elasticsearch"),
+  REPORT_EVALUATION_DURATION_METRIC(
+      "reportEvaluationDuration",
+      "Records the time spent evaluating/querying a report");
   private static final String IMPORT_METRICS_PREFIX = "optimize.import";
+  private static final String REPORT_METRICS_PREFIX = "optimize.report";
   private final String id;
   private final String name;
   private final String description;
@@ -25,7 +29,11 @@ public enum MetricEnum {
   MetricEnum(final String id, final String description) {
     this.id = id;
     this.description = description;
-    name = IMPORT_METRICS_PREFIX + "." + id;
+    if ("reportEvaluationDuration".equals(id)) {
+      name = REPORT_METRICS_PREFIX + "." + id;
+    } else {
+      name = IMPORT_METRICS_PREFIX + "." + id;
+    }
   }
 
   public String getId() {
