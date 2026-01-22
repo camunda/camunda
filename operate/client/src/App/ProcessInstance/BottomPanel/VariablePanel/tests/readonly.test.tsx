@@ -148,7 +148,7 @@ describe('VariablePanel', () => {
     );
   });
 
-  it('should be readonly if root node is selected and applying modifications will cancel the whole process', async () => {
+  it('should be readonly if root node is selected in modification mode', async () => {
     const mockData: GetProcessInstanceStatisticsResponseBody = {
       items: [
         {
@@ -199,22 +199,9 @@ describe('VariablePanel', () => {
     expect(await screen.findByText('testVariableName')).toBeInTheDocument();
 
     expect(
-      screen.getByRole('button', {name: /add variable/i}),
-    ).toBeInTheDocument();
-
-    expect(
-      await screen.findByTestId('edit-variable-value'),
-    ).toBeInTheDocument();
-
-    act(() => {
-      cancelAllTokens('Activity_0qtp1k6', 1, 1, {});
-    });
-
-    await waitFor(() =>
-      expect(
-        screen.queryByTestId('edit-variable-value'),
-      ).not.toBeInTheDocument(),
-    );
+      screen.queryByRole('button', {name: /add variable/i}),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByTestId('edit-variable-value')).not.toBeInTheDocument();
   });
 
   it('should display readonly state for existing node if cancel modification is applied on the flow node and one new token is added', async () => {
@@ -264,10 +251,6 @@ describe('VariablePanel', () => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
     });
     expect(await screen.findByText('testVariableName')).toBeInTheDocument();
-
-    expect(
-      screen.getByRole('button', {name: /add variable/i}),
-    ).toBeInTheDocument();
 
     mockSearchVariables().withSuccess({
       items: [],
@@ -370,11 +353,6 @@ describe('VariablePanel', () => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
     });
     expect(await screen.findByText('testVariableName')).toBeInTheDocument();
-
-    expect(
-      screen.getByRole('button', {name: /add variable/i}),
-    ).toBeInTheDocument();
-    expect(screen.getByText('testVariableName')).toBeInTheDocument();
 
     mockSearchVariables().withSuccess({
       items: [],
@@ -487,12 +465,6 @@ describe('VariablePanel', () => {
     });
     expect(await screen.findByText('testVariableName')).toBeInTheDocument();
 
-    expect(
-      screen.getByRole('button', {name: /add variable/i}),
-    ).toBeInTheDocument();
-    expect(screen.getByText('testVariableName')).toBeInTheDocument();
-    expect(screen.getByTestId('edit-variable-value')).toBeInTheDocument();
-
     mockSearchVariables().withSuccess({
       items: [
         createvariable({
@@ -577,12 +549,6 @@ describe('VariablePanel', () => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
     });
     expect(await screen.findByText('testVariableName')).toBeInTheDocument();
-
-    expect(
-      screen.getByRole('button', {name: /add variable/i}),
-    ).toBeInTheDocument();
-    expect(screen.getByText('testVariableName')).toBeInTheDocument();
-    expect(screen.getByTestId('edit-variable-value')).toBeInTheDocument();
 
     mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
     mockSearchVariables().withSuccess({

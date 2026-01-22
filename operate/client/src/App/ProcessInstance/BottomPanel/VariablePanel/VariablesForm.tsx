@@ -17,7 +17,6 @@ import {type FormRenderProps} from 'react-final-form';
 
 import {AddVariableButton, Form, VariablesContainer} from './styled';
 import {Variables} from '../Variables';
-import {useWillAllFlowNodesBeCanceled} from 'modules/hooks/modifications';
 import {
   useHasPendingCancelOrMoveModification,
   useIsPlaceholderSelected,
@@ -28,7 +27,6 @@ import {IS_ELEMENT_SELECTION_V2} from 'modules/feature-flags';
 
 const VariablesForm: React.FC<FormRenderProps<VariableFormValues>> = observer(
   ({handleSubmit, form, values}) => {
-    const willAllFlowNodesBeCanceled = useWillAllFlowNodesBeCanceled();
     const hasPendingCancelOrMoveModification =
       useHasPendingCancelOrMoveModification();
     const isPlaceholderSelected = useIsPlaceholderSelected();
@@ -47,12 +45,12 @@ const VariablesForm: React.FC<FormRenderProps<VariableFormValues>> = observer(
       useProcessInstanceElementSelection();
 
     const isVariableModificationAllowed = computed(() => {
-      if (!isModificationModeEnabled || selectedElementId === null) {
+      if (
+        !isModificationModeEnabled ||
+        selectedElementId === null ||
+        isRootNodeSelected
+      ) {
         return false;
-      }
-
-      if (isRootNodeSelected) {
-        return !willAllFlowNodesBeCanceled;
       }
 
       return (
@@ -65,13 +63,10 @@ const VariablesForm: React.FC<FormRenderProps<VariableFormValues>> = observer(
     const isVariableModificationAllowedV1 = computed(() => {
       if (
         !isModificationModeEnabled ||
-        flowNodeSelectionStore.state.selection === null
+        flowNodeSelectionStore.state.selection === null ||
+        isRootNodeSelected
       ) {
         return false;
-      }
-
-      if (isRootNodeSelected) {
-        return !willAllFlowNodesBeCanceled;
       }
 
       return (
