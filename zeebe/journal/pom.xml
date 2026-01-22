@@ -169,25 +169,6 @@
           </usedDependencies>
         </configuration>
       </plugin>
-
-      <!--      NEED to open java.base for FFI -->
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <!-- required to access the raw file descriptor from FileDescriptor -->
-          <argLine>--add-opens=java.base/java.io=ALL-UNNAMED</argLine>
-        </configuration>
-      </plugin>
-
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-failsafe-plugin</artifactId>
-        <configuration>
-          <!-- required to access the raw file descriptor from FileDescriptor -->
-          <argLine>--add-opens=java.base/java.io=ALL-UNNAMED</argLine>
-        </configuration>
-      </plugin>
     </plugins>
   </build>
 
