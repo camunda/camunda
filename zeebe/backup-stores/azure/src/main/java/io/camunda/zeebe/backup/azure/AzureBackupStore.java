@@ -317,7 +317,7 @@ public final class AzureBackupStore implements BackupStore {
         new BlobBatchClientBuilder(blobContainerClient.getServiceClient()).buildClient();
     return CompletableFuture.allOf(
         StreamSupport.stream(
-                Iterables.partition(blobUrls, MAX_DELETE_BLOB_BATCH_SIZE).spliterator(), true)
+                Iterables.partition(blobUrls, MAX_DELETE_BLOB_BATCH_SIZE).spliterator(), false)
             .map(
                 batch -> {
                   final var batchRequest = blobBatchClient.getBlobBatch();

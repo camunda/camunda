@@ -30,6 +30,10 @@ public interface BackupStore {
    */
   CompletableFuture<Void> delete(BackupIdentifier id);
 
+  /**
+   * Delete all state related to the supplied backups from the storage, ignoring the backup's
+   * status.
+   */
   CompletableFuture<Void> delete(Collection<BackupIdentifier> ids);
 
   /** Restores the backup */
@@ -50,7 +54,7 @@ public interface BackupStore {
   /** Deletes a given {@link BackupRangeMarker} for the given partition. */
   CompletableFuture<Void> deleteRangeMarker(int partitionId, BackupRangeMarker marker);
 
-  /** Deletes a given {@link BackupRangeMarker} for the given partition. */
+  /** Deletes the given collection of {@link BackupRangeMarker}s for the given partition. */
   CompletableFuture<Void> deleteRangeMarkers(
       int partitionId, Collection<BackupRangeMarker> markers);
 
