@@ -62,7 +62,7 @@ public class CreateAuthorizationTest {
   }
 
   @Test
-  public void shouldRejectIfPermissionAlreadyExistsDirectly() {
+  public void shouldRejectIdBasedPermissionCreationIfAlreadyExists() {
     // given
     engine
         .authorization()
@@ -102,7 +102,7 @@ public class CreateAuthorizationTest {
 
     // then
     Assertions.assertThat(rejection)
-        .describedAs("Authorization already exists")
+        .describedAs("Expected authorization for the same resource ID to already exist")
         .hasRejectionType(RejectionType.ALREADY_EXISTS)
         .hasRejectionReason(
             "Expected to create authorization for owner '%s' for resource identifier '%s', but an authorization for this resource identifier already exists."
