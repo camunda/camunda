@@ -1,1 +1,2 @@
 io.camunda.client.spring.configuration.CamundaAutoConfiguration
+io.camunda.client.spring.configuration.MultiCamundaClientAutoConfiguration
