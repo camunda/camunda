@@ -570,6 +570,7 @@ public class OpensearchEngineClient implements SearchEngineClient {
               utils.new SchemaSettingsAppender(templateFile)
                   .withNumberOfShards(settings.getNumberOfShards())
                   .withNumberOfReplicas(settings.getNumberOfReplicas())
+                  .withRefreshInterval(settings.getRefreshInterval())
                   .build());
 
       return PutIndexTemplateRequest.of(
@@ -601,7 +602,8 @@ public class OpensearchEngineClient implements SearchEngineClient {
       final var configuredSettings =
           utils.new SchemaSettingsAppender(templateFile)
               .withNumberOfShards(indexConfiguration.getNumberOfShards())
-              .withNumberOfReplicas(indexConfiguration.getNumberOfReplicas());
+              .withNumberOfReplicas(indexConfiguration.getNumberOfReplicas())
+              .withRefreshInterval(indexConfiguration.getRefreshInterval());
       final var configuredPriority = indexConfiguration.getTemplatePriority();
       if (areTemplateSettingsEqualToConfigured(
           currentTemplate, configuredSettings, configuredPriority)) {
@@ -686,6 +688,7 @@ public class OpensearchEngineClient implements SearchEngineClient {
               utils.new SchemaSettingsAppender(templateFile)
                   .withNumberOfShards(settings.getNumberOfShards())
                   .withNumberOfReplicas(settings.getNumberOfReplicas())
+                  .withRefreshInterval(settings.getRefreshInterval())
                   .build());
 
       return new CreateIndexRequest.Builder()
