@@ -37,7 +37,7 @@ import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatchers;
 
-public class JobTimeoutCheckerTest {
+public class JobTimeoutCheckSchedulerTest {
   public static final int NUMBER_OF_ACTIVE_JOBS = 10;
   @Rule public final ProcessingStateRule stateRule = new ProcessingStateRule();
 
@@ -89,7 +89,7 @@ public class JobTimeoutCheckerTest {
     final int batchLimit = Integer.MAX_VALUE;
 
     final var task =
-        new JobTimeoutChecker(jobState, pollingInterval, batchLimit, InstantSource.system());
+        new JobTimeoutCheckScheduler(jobState, pollingInterval, batchLimit, InstantSource.system());
     task.setProcessingContext(mockContext);
     task.setShouldReschedule(true);
 
@@ -120,7 +120,7 @@ public class JobTimeoutCheckerTest {
     final int batchLimit = 3;
 
     final var task =
-        new JobTimeoutChecker(jobState, pollingInterval, batchLimit, InstantSource.system());
+        new JobTimeoutCheckScheduler(jobState, pollingInterval, batchLimit, InstantSource.system());
     task.setProcessingContext(mockContext);
     task.setShouldReschedule(true);
 
@@ -164,7 +164,7 @@ public class JobTimeoutCheckerTest {
     final int batchLimit = Integer.MAX_VALUE;
 
     final var task =
-        new JobTimeoutChecker(jobState, pollingInterval, batchLimit, InstantSource.system());
+        new JobTimeoutCheckScheduler(jobState, pollingInterval, batchLimit, InstantSource.system());
     task.setProcessingContext(mockContext);
     task.setShouldReschedule(true);
 

@@ -17,7 +17,7 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
 
-public class JobCommandPreconditionChecker {
+public class JobCommandPreconditionValidator {
 
   public static final String NO_JOB_FOUND_MESSAGE =
       "Expected to %s job with key '%d', but no such job was found";
@@ -30,7 +30,7 @@ public class JobCommandPreconditionChecker {
   private final List<JobCommandCheck> customChecks;
   private final AuthorizationCheckBehavior authorizationCheckBehavior;
 
-  public JobCommandPreconditionChecker(
+  public JobCommandPreconditionValidator(
       final JobState jobState,
       final String intent,
       final List<State> validStates,
@@ -38,7 +38,7 @@ public class JobCommandPreconditionChecker {
     this(jobState, intent, validStates, List.of(), authorizationCheckBehavior);
   }
 
-  public JobCommandPreconditionChecker(
+  public JobCommandPreconditionValidator(
       final JobState jobState,
       final String intent,
       final List<State> validStates,

@@ -18,7 +18,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 
-public class AuthorizationEntityChecker {
+public class AuthorizationEntityValidator {
   public static final String MAPPING_RULE_DOES_NOT_EXIST_ERROR_MESSAGE =
       "Expected to create or update authorization with ownerId or resourceId '%s', but a mapping rule with this ID does not exist.";
   public static final String ROLE_DOES_NOT_EXIST_ERROR_MESSAGE =
@@ -47,7 +47,7 @@ public class AuthorizationEntityChecker {
   private final GroupState groupState;
   private final RoleState roleState;
 
-  public AuthorizationEntityChecker(final ProcessingState processingState) {
+  public AuthorizationEntityValidator(final ProcessingState processingState) {
     userState = processingState.getUserState();
     mappingRuleState = processingState.getMappingRuleState();
     groupState = processingState.getGroupState();

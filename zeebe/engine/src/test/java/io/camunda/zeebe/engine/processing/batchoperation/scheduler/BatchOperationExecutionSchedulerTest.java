@@ -10,7 +10,7 @@ package io.camunda.zeebe.engine.processing.batchoperation.scheduler;
 import static io.camunda.zeebe.protocol.record.value.BatchOperationType.CANCEL_PROCESS_INSTANCE;
 import static org.mockito.Mockito.*;
 
-import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationInitializer.BatchOperationInitializationException;
+import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationInitializationHelper.BatchOperationInitializationException;
 import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationRetryHandler.RetryResult;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation.BatchOperationStatus;
@@ -43,7 +43,7 @@ public class BatchOperationExecutionSchedulerTest {
   @Mock private ReadonlyStreamProcessorContext streamProcessorContext;
   @Mock private ProcessingScheduleService scheduleService;
   @Mock private BatchOperationState batchOperationState;
-  @Mock private BatchOperationInitializer batchOperationInitializer;
+  @Mock private BatchOperationInitializationHelper batchOperationInitializer;
   @Mock private BatchOperationRetryHandler retryHandler;
 
   @Captor private ArgumentCaptor<Task> taskCaptor;

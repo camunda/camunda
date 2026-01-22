@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
 public final class JobTimeoutCheckerScheduler implements StreamProcessorLifecycleAware {
   private static final Logger LOG = LoggerFactory.getLogger(JobTimeoutCheckerScheduler.class);
   private final Duration pollingInterval;
-  private final JobTimeoutChecker jobTimeoutChecker;
+  private final JobTimeoutCheckScheduler jobTimeoutChecker;
 
   public JobTimeoutCheckerScheduler(
       final JobState state,
@@ -26,7 +26,7 @@ public final class JobTimeoutCheckerScheduler implements StreamProcessorLifecycl
       final int batchLimit,
       final InstantSource clock) {
     this.pollingInterval = pollingInterval;
-    jobTimeoutChecker = new JobTimeoutChecker(state, pollingInterval, batchLimit, clock);
+    jobTimeoutChecker = new JobTimeoutCheckScheduler(state, pollingInterval, batchLimit, clock);
   }
 
   @Override

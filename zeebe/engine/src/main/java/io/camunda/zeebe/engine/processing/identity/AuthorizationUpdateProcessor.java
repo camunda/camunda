@@ -35,7 +35,7 @@ public class AuthorizationUpdateProcessor
   private final SideEffectWriter sideEffectWriter;
   private final AuthorizationCheckBehavior authorizationCheckBehavior;
   private final PermissionsBehavior permissionsBehavior;
-  private final AuthorizationEntityChecker authorizationEntityChecker;
+  private final AuthorizationEntityValidator authorizationEntityChecker;
 
   public AuthorizationUpdateProcessor(
       final Writers writers,
@@ -51,7 +51,7 @@ public class AuthorizationUpdateProcessor
     sideEffectWriter = writers.sideEffect();
     authorizationCheckBehavior = authCheckBehavior;
     permissionsBehavior = new PermissionsBehavior(processingState, authCheckBehavior);
-    authorizationEntityChecker = new AuthorizationEntityChecker(processingState);
+    authorizationEntityChecker = new AuthorizationEntityValidator(processingState);
   }
 
   @Override
