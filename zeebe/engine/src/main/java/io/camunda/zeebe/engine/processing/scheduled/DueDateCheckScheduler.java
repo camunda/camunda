@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.scheduled;
 
-import io.camunda.zeebe.engine.processing.scheduled.DueDateChecker.NextExecution.None;
-import io.camunda.zeebe.engine.processing.scheduled.DueDateChecker.NextExecution.Scheduled;
+import io.camunda.zeebe.engine.processing.scheduled.DueDateCheckScheduler.NextExecution.None;
+import io.camunda.zeebe.engine.processing.scheduled.DueDateCheckScheduler.NextExecution.Scheduled;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.api.scheduling.SimpleProcessingScheduleService.ScheduledTask;
@@ -30,7 +30,7 @@ import java.util.function.Function;
  * that multiple executions are scheduled. See the comment in {@link #execute(TaskResultBuilder)}
  * for details.
  */
-public final class DueDateChecker implements StreamProcessorLifecycleAware {
+public final class DueDateCheckScheduler implements StreamProcessorLifecycleAware {
   private final boolean scheduleAsync;
   private final long timerResolution;
   private final Function<TaskResultBuilder, Long> visitor;
@@ -56,7 +56,7 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
    * @param scheduleAsync Whether to schedule the execution happens asynchronously or not
    * @param visitor Function that runs the task and returns the next due date or -1 if there is none
    */
-  public DueDateChecker(
+  public DueDateCheckScheduler(
       final long timerResolution,
       final boolean scheduleAsync,
       final Function<TaskResultBuilder, Long> visitor,

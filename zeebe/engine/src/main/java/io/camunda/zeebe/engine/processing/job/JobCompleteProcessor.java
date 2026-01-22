@@ -118,7 +118,7 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
   private final UserTaskState userTaskState;
   private final JobState jobState;
   private final ElementInstanceState elementInstanceState;
-  private final JobCommandPreconditionChecker preconditionChecker;
+  private final JobCommandPreconditionValidator preconditionChecker;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final JobProcessingMetrics jobMetrics;
   private final EventHandle eventHandle;
@@ -146,7 +146,7 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
     preconditionChecker =
-        new JobCommandPreconditionChecker(
+        new JobCommandPreconditionValidator(
             state.getJobState(),
             "complete",
             List.of(State.ACTIVATABLE, State.ACTIVATED),

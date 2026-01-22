@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.identity;
 
-import static io.camunda.zeebe.engine.processing.identity.AuthorizationEntityChecker.*;
+import static io.camunda.zeebe.engine.processing.identity.AuthorizationEntityValidator.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
@@ -41,7 +41,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class AuthorizationEntityCheckerTest {
+class AuthorizationEntityValidatorTest {
 
   @Mock private ProcessingState processingState;
   @Mock private UserState userState;
@@ -51,7 +51,7 @@ class AuthorizationEntityCheckerTest {
 
   @Mock private TypedRecord<AuthorizationRecord> command;
 
-  private AuthorizationEntityChecker checker;
+  private AuthorizationEntityValidator checker;
 
   @BeforeEach
   void setUp() {
@@ -60,7 +60,7 @@ class AuthorizationEntityCheckerTest {
     when(processingState.getGroupState()).thenReturn(groupState);
     when(processingState.getRoleState()).thenReturn(roleState);
 
-    checker = new AuthorizationEntityChecker(processingState);
+    checker = new AuthorizationEntityValidator(processingState);
     lenient().when(userState.getUser("user1")).thenReturn(Optional.of(mock(PersistedUser.class)));
     lenient().when(roleState.getRole("role1")).thenReturn(Optional.of(mock(PersistedRole.class)));
     lenient().when(groupState.get("group1")).thenReturn(Optional.of(mock(PersistedGroup.class)));
