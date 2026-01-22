@@ -35,7 +35,7 @@ public class OidcFlowTestContext {
   public CamundaAuthenticationProvider createCamundaAuthenticationProvider() {
     return () ->
         new CamundaAuthentication(
-            "dummyUsername", null, List.of(), List.of(), List.of(), List.of(), Map.of());
+            "dummyUsername", null, false, List.of(), List.of(), List.of(), List.of(), Map.of());
   }
 
   @Bean
