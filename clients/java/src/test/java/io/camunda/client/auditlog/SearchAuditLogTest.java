@@ -161,7 +161,7 @@ public class SearchAuditLogTest extends ClientRestTest {
                     .resourceKey(f -> f.eq("resourceKey"))
                     .processDefinitionId(f -> f.eq("processDefinitionId"))
                     .jobKey(f -> f.in("jobKey"))
-                    .userTaskKey(f -> f.like("userTaskKey"))
+                    .userTaskKey(f -> f.eq("userTaskKey"))
                     .decisionRequirementsId(f -> f.eq("decisionRequirementsId"))
                     .decisionRequirementsKey(f -> f.notIn("decisionRequirementsKey"))
                     .decisionDefinitionId(f -> f.eq("decisionDefinitionId"))
@@ -181,7 +181,7 @@ public class SearchAuditLogTest extends ClientRestTest {
     assertThat(filter.getProcessDefinitionKey().get$Eq()).isEqualTo("processDefinitionKey");
     assertThat(filter.getElementInstanceKey().get$Exists()).isEqualTo(true);
     assertThat(filter.getJobKey().get$In().get(0)).isEqualTo("jobKey");
-    assertThat(filter.getUserTaskKey().get$Like()).isEqualTo("userTaskKey");
+    assertThat(filter.getUserTaskKey().get$Eq()).isEqualTo("userTaskKey");
     assertThat(filter.getOperationType().get$In().get(0).getValue()).isEqualTo("CREATE");
     assertThat(filter.getResult().get$Neq().getValue()).isEqualTo("SUCCESS");
     assertThat(filter.getTimestamp().get$Gt()).isEqualTo(OffsetDateTime.MIN.toString());

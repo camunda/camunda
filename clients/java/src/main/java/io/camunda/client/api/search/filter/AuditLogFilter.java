@@ -140,12 +140,12 @@ public interface AuditLogFilter extends SearchRequestFilter {
   AuditLogFilter userTaskKey(final String userTaskKey);
 
   /**
-   * Filter audit logs by the user task key using {@link StringProperty} consumer
+   * Filter audit logs by the user task key using {@link BasicStringProperty} consumer
    *
    * @param fn the user task key filter consumer
    * @return the updated filter
    */
-  AuditLogFilter userTaskKey(final Consumer<StringProperty> fn);
+  AuditLogFilter userTaskKey(final Consumer<BasicStringProperty> fn);
 
   /**
    * Filter audit logs by the operation type

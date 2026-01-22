@@ -304,7 +304,7 @@ components:
         userTaskKey:
           description: The user task key search filter.
           allOf:
-            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+            - $ref: 'filters.yaml#/components/schemas/BasicStringFilterProperty'
         decisionRequirementsId:
           description: The decision requirements ID search filter.
           allOf:

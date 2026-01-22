@@ -138,8 +138,8 @@ public class AuditLogFilterImpl
   }
 
   @Override
-  public AuditLogFilter userTaskKey(final Consumer<StringProperty> fn) {
-    final StringProperty property = new StringPropertyImpl();
+  public AuditLogFilter userTaskKey(final Consumer<BasicStringProperty> fn) {
+    final BasicStringProperty property = new BasicStringPropertyImpl();
     fn.accept(property);
     filter.setUserTaskKey(provideSearchRequestProperty(property));
     return this;
