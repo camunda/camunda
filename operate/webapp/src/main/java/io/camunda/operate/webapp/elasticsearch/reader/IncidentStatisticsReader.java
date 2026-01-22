@@ -7,7 +7,7 @@
  */
 package io.camunda.operate.webapp.elasticsearch.reader;
 
-import static io.camunda.operate.store.elasticsearch.ElasticsearchIncidentStore.ACTIVE_INCIDENT_QUERY_ES8;
+import static io.camunda.operate.store.elasticsearch.ElasticsearchIncidentStore.ACTIVE_INCIDENT_QUERY;
 import static io.camunda.operate.util.ElasticsearchUtil.MAP_CLASS;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 
@@ -126,7 +126,7 @@ public class IncidentStatisticsReader extends AbstractReader
             .build();
 
     final var query =
-        joinWithAnd(ACTIVE_INCIDENT_QUERY_ES8, createQueryForProcessInstancesWithReadPermission());
+        joinWithAnd(ACTIVE_INCIDENT_QUERY, createQueryForProcessInstancesWithReadPermission());
     final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
 
     final var searchRequest =
@@ -138,7 +138,7 @@ public class IncidentStatisticsReader extends AbstractReader
             .build();
 
     try {
-      final var searchResponse = es8client.search(searchRequest, MAP_CLASS);
+      final var searchResponse = esClient.search(searchRequest, MAP_CLASS);
 
       final var errorMessageAggregation =
           searchResponse.aggregations().get(GROUP_BY_ERROR_MESSAGE_HASH).lterms();
@@ -180,7 +180,7 @@ public class IncidentStatisticsReader extends AbstractReader
             .build();
 
     try {
-      final var searchResponse = es8client.search(searchRequest, Void.class);
+      final var searchResponse = esClient.search(searchRequest, Void.class);
 
       final var buckets =
           searchResponse.aggregations().get(PROCESS_KEYS).lterms().buckets().array();
@@ -225,7 +225,7 @@ public class IncidentStatisticsReader extends AbstractReader
               .size(0)
               .build();
 
-      final var searchResponse = es8client.search(searchRequest, Void.class);
+      final var searchResponse = esClient.search(searchRequest, Void.class);
 
       final var buckets =
           searchResponse.aggregations().get(PROCESS_KEYS).lterms().buckets().array();

@@ -13,12 +13,12 @@ import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static io.camunda.operate.util.ElasticsearchUtil.scrollAllStream;
 import static io.camunda.operate.util.ElasticsearchUtil.sortOrder;
 import static io.camunda.operate.util.ElasticsearchUtil.whereToSearch;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.aggregations.TermsAggregation;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.elasticsearch.core.search.ResponseBody;
 import co.elastic.clients.util.NamedValue;
@@ -39,7 +39,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
-import org.elasticsearch.index.query.QueryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,13 +49,11 @@ import org.springframework.stereotype.Component;
 @Component
 public class ElasticsearchIncidentStore implements IncidentStore {
 
-  public static final QueryBuilder ACTIVE_INCIDENT_QUERY =
-      termQuery(IncidentTemplate.STATE, IncidentState.ACTIVE);
-  public static final Query ACTIVE_INCIDENT_QUERY_ES8 =
+  public static final Query ACTIVE_INCIDENT_QUERY =
       ElasticsearchUtil.termsQuery(IncidentTemplate.STATE, IncidentState.ACTIVE);
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchIncidentStore.class);
 
-  @Autowired private ElasticsearchClient es8Client;
+  @Autowired private ElasticsearchClient esClient;
 
   @Autowired private IncidentTemplate incidentTemplate;
 
@@ -68,18 +65,18 @@ public class ElasticsearchIncidentStore implements IncidentStore {
   public IncidentEntity getIncidentById(final Long incidentKey) {
     final var idQuery = ElasticsearchUtil.idsQuery(incidentKey.toString());
 
-    final var queryEs8 =
-        ElasticsearchUtil.constantScoreQuery(joinWithAnd(idQuery, ACTIVE_INCIDENT_QUERY_ES8));
-    final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(queryEs8);
+    final var query =
+        ElasticsearchUtil.constantScoreQuery(joinWithAnd(idQuery, ACTIVE_INCIDENT_QUERY));
+    final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
 
-    final var searchRequestEs8 =
-        new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+    final var searchRequest =
+        new SearchRequest.Builder()
             .index(whereToSearch(incidentTemplate, ONLY_RUNTIME))
             .query(tenantAwareQuery)
             .build();
 
     try {
-      final var res = es8Client.search(searchRequestEs8, IncidentEntity.class);
+      final var res = esClient.search(searchRequest, IncidentEntity.class);
       if (res.hits().hits().size() == 1) {
         return res.hits().hits().getFirst().source();
       } else if (res.hits().hits().size() > 1) {
@@ -104,7 +101,7 @@ public class ElasticsearchIncidentStore implements IncidentStore {
         ElasticsearchUtil.constantScoreQuery(
             ElasticsearchUtil.joinWithAnd(
                 ElasticsearchUtil.termsQuery(IncidentTemplate.TREE_PATH, treePath),
-                ACTIVE_INCIDENT_QUERY_ES8));
+                ACTIVE_INCIDENT_QUERY));
 
     final String errorTypesAggName = "errorTypesAgg";
 
@@ -117,7 +114,7 @@ public class ElasticsearchIncidentStore implements IncidentStore {
             ._toAggregation();
 
     final var searchRequestBuilder =
-        new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+        new SearchRequest.Builder()
             .index(whereToSearch(incidentTemplate, ONLY_RUNTIME))
             .query(query)
             .aggregations(errorTypesAggName, errorTypesAgg);
@@ -125,8 +122,7 @@ public class ElasticsearchIncidentStore implements IncidentStore {
     try {
       final var firstResponse = new AtomicBoolean(true);
 
-      return ElasticsearchUtil.scrollAllStream(
-              es8Client, searchRequestBuilder, IncidentEntity.class)
+      return ElasticsearchUtil.scrollAllStream(esClient, searchRequestBuilder, IncidentEntity.class)
           .peek(
               res -> {
                 if (firstResponse.compareAndSet(true, false)) {
@@ -152,20 +148,17 @@ public class ElasticsearchIncidentStore implements IncidentStore {
             joinWithAnd(
                 ElasticsearchUtil.termsQuery(
                     IncidentTemplate.PROCESS_INSTANCE_KEY, processInstanceKey),
-                ACTIVE_INCIDENT_QUERY_ES8));
+                ACTIVE_INCIDENT_QUERY));
     final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
 
     final var searchRequestBuilder =
-        new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+        new SearchRequest.Builder()
             .index(whereToSearch(incidentTemplate, ONLY_RUNTIME))
             .query(tenantAwareQuery)
-            .sort(
-                sortOrder(
-                    IncidentTemplate.CREATION_TIME,
-                    co.elastic.clients.elasticsearch._types.SortOrder.Asc));
+            .sort(sortOrder(IncidentTemplate.CREATION_TIME, SortOrder.Asc));
 
     try {
-      return scrollAllStream(es8Client, searchRequestBuilder, IncidentEntity.class)
+      return scrollAllStream(esClient, searchRequestBuilder, IncidentEntity.class)
           .flatMap(res -> res.hits().hits().stream())
           .map(Hit::source)
           .toList();
@@ -185,20 +178,17 @@ public class ElasticsearchIncidentStore implements IncidentStore {
             joinWithAnd(
                 ElasticsearchUtil.termsQuery(
                     IncidentTemplate.ERROR_MSG_HASH, incidentErrorHashCode),
-                ACTIVE_INCIDENT_QUERY_ES8));
+                ACTIVE_INCIDENT_QUERY));
     final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
 
     final var searchRequestBuilder =
-        new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+        new SearchRequest.Builder()
             .index(whereToSearch(incidentTemplate, ONLY_RUNTIME))
             .query(tenantAwareQuery)
-            .sort(
-                sortOrder(
-                    IncidentTemplate.CREATION_TIME,
-                    co.elastic.clients.elasticsearch._types.SortOrder.Asc));
+            .sort(sortOrder(IncidentTemplate.CREATION_TIME, SortOrder.Asc));
 
     try {
-      return scrollAllStream(es8Client, searchRequestBuilder, IncidentEntity.class)
+      return scrollAllStream(esClient, searchRequestBuilder, IncidentEntity.class)
           .flatMap(res -> res.hits().hits().stream())
           .map(Hit::source)
           .toList();
@@ -220,11 +210,11 @@ public class ElasticsearchIncidentStore implements IncidentStore {
             ElasticsearchUtil.joinWithAnd(
                 ElasticsearchUtil.termsQuery(
                     IncidentTemplate.PROCESS_INSTANCE_KEY, processInstanceKeys),
-                ACTIVE_INCIDENT_QUERY_ES8));
+                ACTIVE_INCIDENT_QUERY));
     final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
 
     final var searchRequestBuilder =
-        new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+        new SearchRequest.Builder()
             .index(whereToSearch(incidentTemplate, ONLY_RUNTIME))
             .query(tenantAwareQuery)
             .source(s -> s.filter(f -> f.includes(IncidentTemplate.PROCESS_INSTANCE_KEY)))
@@ -232,7 +222,7 @@ public class ElasticsearchIncidentStore implements IncidentStore {
 
     try {
       final var resStream =
-          ElasticsearchUtil.scrollAllStream(es8Client, searchRequestBuilder, MAP_CLASS);
+          ElasticsearchUtil.scrollAllStream(esClient, searchRequestBuilder, MAP_CLASS);
       return resStream
           .flatMap(res -> res.hits().hits().stream())
           .collect(

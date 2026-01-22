@@ -7,7 +7,7 @@
  */
 package io.camunda.operate.webapp.elasticsearch.reader;
 
-import static io.camunda.operate.store.elasticsearch.ElasticsearchIncidentStore.ACTIVE_INCIDENT_QUERY_ES8;
+import static io.camunda.operate.store.elasticsearch.ElasticsearchIncidentStore.ACTIVE_INCIDENT_QUERY;
 import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ALL;
 import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ONLY_RUNTIME;
 import static io.camunda.operate.util.ElasticsearchUtil.TERMS_AGG_SIZE;
@@ -191,7 +191,7 @@ public class FlowNodeInstanceReader extends AbstractReader
             .build();
 
     try {
-      final var response = es8client.search(request, FlowNodeInstanceEntity.class);
+      final var response = esClient.search(request, FlowNodeInstanceEntity.class);
 
       final Set<String> incidentPaths = new HashSet<>();
       processAggregation(response.aggregations(), incidentPaths, new AtomicBoolean());
@@ -241,7 +241,7 @@ public class FlowNodeInstanceReader extends AbstractReader
               .source(s -> s.fetch(false))
               .build();
 
-      final var response = es8client.search(searchRequest, FlowNodeInstanceEntity.class);
+      final var response = esClient.search(searchRequest, FlowNodeInstanceEntity.class);
 
       return response.hits().hits().stream()
           .map(hit -> Long.parseLong(hit.fields().get(ID).to(List.class).get(0).toString()))
@@ -268,7 +268,7 @@ public class FlowNodeInstanceReader extends AbstractReader
 
     try {
       return ElasticsearchUtil.scrollAllStream(
-              es8client, searchRequestBuilder, FlowNodeInstanceEntity.class)
+              esClient, searchRequestBuilder, FlowNodeInstanceEntity.class)
           .flatMap(res -> res.hits().hits().stream())
           .map(Hit::source)
           .toList();
@@ -454,7 +454,7 @@ public class FlowNodeInstanceReader extends AbstractReader
             .build();
 
     try {
-      final var response = es8client.search(request, FlowNodeInstanceEntity.class);
+      final var response = esClient.search(request, FlowNodeInstanceEntity.class);
       final var filterBuckets =
           response.aggregations().get(NUMBER_OF_INCIDENTS_FOR_TREE_PATH).filters();
 
@@ -515,7 +515,7 @@ public class FlowNodeInstanceReader extends AbstractReader
     final var runningParent = new AtomicBoolean();
     final List<FlowNodeInstanceEntity> children =
         ElasticsearchUtil.scrollAllStream(
-                es8client, searchRequestBuilder, FlowNodeInstanceEntity.class)
+                esClient, searchRequestBuilder, FlowNodeInstanceEntity.class)
             .flatMap(
                 response -> {
                   processAggregation(response.aggregations(), null, runningParent);
@@ -535,7 +535,7 @@ public class FlowNodeInstanceReader extends AbstractReader
 
   private FlowNodeInstanceResponseDto getOnePage(
       final SearchRequest searchRequest, final String processInstanceId) throws IOException {
-    final var searchResponse = es8client.search(searchRequest, FlowNodeInstanceEntity.class);
+    final var searchResponse = esClient.search(searchRequest, FlowNodeInstanceEntity.class);
 
     final var runningParent = new AtomicBoolean();
     final Set<String> incidentPaths = new HashSet<>();
@@ -648,7 +648,7 @@ public class FlowNodeInstanceReader extends AbstractReader
         ElasticsearchUtil.constantScoreQuery(
             joinWithAnd(
                 ElasticsearchUtil.termsQuery(IncidentTemplate.TREE_PATH, incidentTreePath),
-                ACTIVE_INCIDENT_QUERY_ES8));
+                ACTIVE_INCIDENT_QUERY));
     final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
 
     final var request =
@@ -658,7 +658,7 @@ public class FlowNodeInstanceReader extends AbstractReader
             .build();
 
     try {
-      final var response = es8client.search(request, IncidentEntity.class);
+      final var response = esClient.search(request, IncidentEntity.class);
       flowNodeMetadata.setIncidentCount(response.hits().total().value());
 
       if (response.hits().total().value() == 1) {
@@ -704,7 +704,7 @@ public class FlowNodeInstanceReader extends AbstractReader
         ElasticsearchUtil.constantScoreQuery(
             joinWithAnd(
                 ElasticsearchUtil.termsQuery(IncidentTemplate.TREE_PATH, flowNodeInstancesTreePath),
-                ACTIVE_INCIDENT_QUERY_ES8));
+                ACTIVE_INCIDENT_QUERY));
     final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
 
     final var request =
@@ -714,7 +714,7 @@ public class FlowNodeInstanceReader extends AbstractReader
             .build();
 
     try {
-      final var response = es8client.search(request, IncidentEntity.class);
+      final var response = esClient.search(request, IncidentEntity.class);
       flowNodeMetadata.setIncidentCount(response.hits().total().value());
 
       if (response.hits().total().value() == 1) {
@@ -763,7 +763,7 @@ public class FlowNodeInstanceReader extends AbstractReader
               .source(s -> s.filter(f -> f.includes(DECISION_NAME, DECISION_ID)))
               .build();
 
-      final var response = es8client.search(request, DecisionInstanceEntity.class);
+      final var response = esClient.search(request, DecisionInstanceEntity.class);
 
       if (response.hits().total().value() > 0) {
         final var hit = response.hits().hits().get(0);
@@ -800,7 +800,7 @@ public class FlowNodeInstanceReader extends AbstractReader
               .size(1)
               .build();
 
-      final var response = es8client.search(request, FlowNodeInstanceEntity.class);
+      final var response = esClient.search(request, FlowNodeInstanceEntity.class);
 
       if (response.hits().total().value() == 0) {
         throw new OperateRuntimeException("No data found for flow node instance.");
@@ -844,7 +844,7 @@ public class FlowNodeInstanceReader extends AbstractReader
             .build();
 
     try {
-      final var response = es8client.search(request, FlowNodeInstanceEntity.class);
+      final var response = esClient.search(request, FlowNodeInstanceEntity.class);
 
       final var levelsAggResult = response.aggregations().get(LEVELS_AGG_NAME);
       if (levelsAggResult != null && levelsAggResult.isLterms()) {
@@ -886,7 +886,7 @@ public class FlowNodeInstanceReader extends AbstractReader
     final var request = requestBuilder.build();
 
     try {
-      final var response = es8client.search(request, FlowNodeInstanceEntity.class);
+      final var response = esClient.search(request, FlowNodeInstanceEntity.class);
 
       final FlowNodeMetadataDto result = new FlowNodeMetadataDto();
 

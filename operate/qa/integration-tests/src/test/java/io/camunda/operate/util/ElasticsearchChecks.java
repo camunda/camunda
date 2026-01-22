@@ -16,7 +16,9 @@ import static io.camunda.webapps.schema.descriptors.template.IncidentTemplate.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch.core.CountRequest;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
@@ -72,7 +74,7 @@ public class ElasticsearchChecks {
 
   @Autowired UserTaskReader userTaskReader;
 
-  @Autowired private ElasticsearchClient es8Client;
+  @Autowired private ElasticsearchClient esClient;
 
   @Autowired private ProcessReader processReader;
   @Autowired private ProcessInstanceReader processInstanceReader;
@@ -100,7 +102,7 @@ public class ElasticsearchChecks {
   @Autowired private VariableReader variableReader;
 
   /**
-   * Helper method to get document count using ES8 client.
+   * Helper method to get document count using ES client.
    *
    * @param indexAlias the index alias to count documents in
    * @return the number of documents in the index
@@ -112,7 +114,7 @@ public class ElasticsearchChecks {
             .index(indexAlias)
             .query(ElasticsearchUtil.matchAllQuery())
             .build();
-    final var response = es8Client.count(countRequest);
+    final var response = esClient.count(countRequest);
     return response.count();
   }
 
@@ -488,15 +490,12 @@ public class ElasticsearchChecks {
             ElasticsearchUtil.termsQuery(
                 FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY, processInstanceKey));
     final var searchRequestBuilder =
-        new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+        new SearchRequest.Builder()
             .index(whereToSearch(flowNodeInstanceTemplate, QueryType.ALL))
             .query(query)
-            .sort(
-                sortOrder(
-                    FlowNodeInstanceTemplate.POSITION,
-                    co.elastic.clients.elasticsearch._types.SortOrder.Asc));
+            .sort(sortOrder(FlowNodeInstanceTemplate.POSITION, SortOrder.Asc));
     try {
-      return scrollAllStream(es8Client, searchRequestBuilder, FlowNodeInstanceEntity.class)
+      return scrollAllStream(esClient, searchRequestBuilder, FlowNodeInstanceEntity.class)
           .flatMap(res -> res.hits().hits().stream())
           .map(Hit::source)
           .toList();
@@ -512,15 +511,12 @@ public class ElasticsearchChecks {
             ElasticsearchUtil.termsQuery(
                 FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY, processInstanceKey));
     final var searchRequestBuilder =
-        new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+        new SearchRequest.Builder()
             .index(whereToSearch(messageSubscriptionTemplate, QueryType.ALL))
             .query(query)
-            .sort(
-                sortOrder(
-                    FlowNodeInstanceTemplate.POSITION,
-                    co.elastic.clients.elasticsearch._types.SortOrder.Asc));
+            .sort(sortOrder(FlowNodeInstanceTemplate.POSITION, SortOrder.Asc));
     try {
-      return scrollAllStream(es8Client, searchRequestBuilder, MessageSubscriptionEntity.class)
+      return scrollAllStream(esClient, searchRequestBuilder, MessageSubscriptionEntity.class)
           .flatMap(res -> res.hits().hits().stream())
           .map(Hit::source)
           .toList();
@@ -532,15 +528,12 @@ public class ElasticsearchChecks {
 
   public List<FlowNodeInstanceEntity> getAllFlowNodeInstances() {
     final var searchRequestBuilder =
-        new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+        new SearchRequest.Builder()
             .index(whereToSearch(flowNodeInstanceTemplate, QueryType.ALL))
             .query(q -> q.matchAll(m -> m))
-            .sort(
-                sortOrder(
-                    FlowNodeInstanceTemplate.POSITION,
-                    co.elastic.clients.elasticsearch._types.SortOrder.Asc));
+            .sort(sortOrder(FlowNodeInstanceTemplate.POSITION, SortOrder.Asc));
     try {
-      return scrollAllStream(es8Client, searchRequestBuilder, FlowNodeInstanceEntity.class)
+      return scrollAllStream(esClient, searchRequestBuilder, FlowNodeInstanceEntity.class)
           .flatMap(res -> res.hits().hits().stream())
           .map(Hit::source)
           .toList();
@@ -618,11 +611,11 @@ public class ElasticsearchChecks {
             ElasticsearchUtil.termsQuery(
                 VariableTemplate.PROCESS_INSTANCE_KEY, processInstanceKey));
     final var searchRequestBuilder =
-        new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+        new SearchRequest.Builder()
             .index(whereToSearch(variableTemplate, QueryType.ALL))
             .query(query);
     try {
-      return scrollAllStream(es8Client, searchRequestBuilder, VariableEntity.class)
+      return scrollAllStream(esClient, searchRequestBuilder, VariableEntity.class)
           .flatMap(res -> res.hits().hits().stream())
           .map(Hit::source)
           .toList();
@@ -767,10 +760,10 @@ public class ElasticsearchChecks {
     final var countRequest =
         new CountRequest.Builder()
             .index(whereToSearch(incidentTemplate, QueryType.ALL))
-            .query(ElasticsearchIncidentStore.ACTIVE_INCIDENT_QUERY_ES8)
+            .query(ElasticsearchIncidentStore.ACTIVE_INCIDENT_QUERY)
             .build();
     try {
-      final var response = es8Client.count(countRequest);
+      final var response = esClient.count(countRequest);
       return response.count();
     } catch (final IOException e) {
       throw new RuntimeException(e);
@@ -785,7 +778,7 @@ public class ElasticsearchChecks {
             .query(query)
             .build();
     try {
-      final var response = es8Client.count(countRequest);
+      final var response = esClient.count(countRequest);
       return response.count();
     } catch (final IOException e) {
       throw new RuntimeException(e);
@@ -799,7 +792,7 @@ public class ElasticsearchChecks {
             .query(ElasticsearchUtil.matchAllQuery())
             .build();
     try {
-      final var response = es8Client.count(countRequest);
+      final var response = esClient.count(countRequest);
       return response.count();
     } catch (final IOException e) {
       throw new RuntimeException(e);
@@ -809,7 +802,7 @@ public class ElasticsearchChecks {
   public long getActiveIncidentsCount(final Long processInstanceKey) {
     final var query =
         joinWithAnd(
-            ElasticsearchIncidentStore.ACTIVE_INCIDENT_QUERY_ES8,
+            ElasticsearchIncidentStore.ACTIVE_INCIDENT_QUERY,
             ElasticsearchUtil.termsQuery(PROCESS_INSTANCE_KEY, processInstanceKey));
     final var countRequest =
         new CountRequest.Builder()
@@ -817,7 +810,7 @@ public class ElasticsearchChecks {
             .query(query)
             .build();
     try {
-      final var response = es8Client.count(countRequest);
+      final var response = esClient.count(countRequest);
       return response.count();
     } catch (final IOException e) {
       throw new RuntimeException(e);
@@ -835,7 +828,7 @@ public class ElasticsearchChecks {
             .query(query)
             .build();
     try {
-      final var response = es8Client.count(countRequest);
+      final var response = esClient.count(countRequest);
       return response.count();
     } catch (final IOException e) {
       throw new RuntimeException(e);
@@ -853,7 +846,7 @@ public class ElasticsearchChecks {
             .query(query)
             .build();
     try {
-      final var response = es8Client.count(countRequest);
+      final var response = esClient.count(countRequest);
       return response.count();
     } catch (final IOException e) {
       throw new RuntimeException(e);
@@ -874,7 +867,7 @@ public class ElasticsearchChecks {
             .query(query)
             .build();
     try {
-      final var response = es8Client.count(countRequest);
+      final var response = esClient.count(countRequest);
       return response.count();
     } catch (final IOException e) {
       throw new RuntimeException(e);
@@ -893,7 +886,7 @@ public class ElasticsearchChecks {
             .query(ElasticsearchUtil.matchAllQuery())
             .build();
     try {
-      final var response = es8Client.count(countRequest);
+      final var response = esClient.count(countRequest);
       return response.count();
     } catch (final IOException e) {
       throw new RuntimeException(e);

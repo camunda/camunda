@@ -35,7 +35,7 @@ public class ElasticsearchFlowNodeStore implements FlowNodeStore {
 
   @Autowired private ElasticsearchTenantHelper tenantHelper;
 
-  @Autowired private ElasticsearchClient es8Client;
+  @Autowired private ElasticsearchClient esClient;
 
   @Override
   public Map<String, String> getFlowNodeIdsForFlowNodeInstances(
@@ -58,7 +58,7 @@ public class ElasticsearchFlowNodeStore implements FlowNodeStore {
 
     try {
       final var resStream =
-          ElasticsearchUtil.scrollAllStream(es8Client, searchRequestBuilder, MAP_CLASS);
+          ElasticsearchUtil.scrollAllStream(esClient, searchRequestBuilder, MAP_CLASS);
 
       return resStream
           .flatMap(res -> res.hits().hits().stream())

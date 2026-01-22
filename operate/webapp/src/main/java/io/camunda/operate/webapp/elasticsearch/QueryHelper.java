@@ -262,7 +262,7 @@ public class QueryHelper {
             ? null
             : incidents.stream().map(IncidentEntity::getErrorMessage).toList();
     if ((errors == null) || errors.isEmpty()) {
-      return ElasticsearchUtil.createMatchNoneQueryEs8().build()._toQuery();
+      return ElasticsearchUtil.createMatchNoneQuery().build()._toQuery();
     }
 
     final var boolBuilder = new BoolQuery.Builder();
@@ -294,7 +294,7 @@ public class QueryHelper {
 
     if (!running && !finished) {
       // empty list should be returned
-      return ElasticsearchUtil.createMatchNoneQueryEs8().build()._toQuery();
+      return ElasticsearchUtil.createMatchNoneQuery().build()._toQuery();
     }
 
     if (running && finished && active && incidents && completed && canceled) {
@@ -339,7 +339,7 @@ public class QueryHelper {
     final Query processInstanceQuery = joinWithOr(runningQuery, finishedQuery);
 
     if (processInstanceQuery == null) {
-      return ElasticsearchUtil.createMatchNoneQueryEs8().build()._toQuery();
+      return ElasticsearchUtil.createMatchNoneQuery().build()._toQuery();
     }
 
     return processInstanceQuery;

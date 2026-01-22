@@ -8,6 +8,7 @@
 package io.camunda.operate.webapp.elasticsearch.transform;
 
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
+import co.elastic.clients.elasticsearch._types.aggregations.Buckets;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.webapp.elasticsearch.reader.OperationReader;
@@ -80,12 +81,6 @@ public class ElasticsearchDataAggregator extends DataAggregator {
 
     return Map.of(
         OperationTemplate.METADATA_AGGREGATION,
-        Aggregation.of(
-            a ->
-                a.filters(
-                    f ->
-                        f.filters(
-                            co.elastic.clients.elasticsearch._types.aggregations.Buckets.of(
-                                b -> b.keyed(filterBuckets))))));
+        Aggregation.of(a -> a.filters(f -> f.filters(Buckets.of(b -> b.keyed(filterBuckets))))));
   }
 }

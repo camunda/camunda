@@ -49,7 +49,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
 
   @Autowired private OperateProperties operateProperties;
 
-  @Autowired private ElasticsearchClient es8Client;
+  @Autowired private ElasticsearchClient esClient;
 
   @Override
   public BatchRequest add(final String index, final ExporterEntity entity)
@@ -167,7 +167,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
   public void execute() throws PersistenceException {
     try {
       ElasticsearchUtil.processBulkRequest(
-          es8Client,
+          esClient,
           bulkRequestBuilder,
           operateProperties.getElasticsearch().getBulkRequestMaxSizeInBytes());
     } catch (final MissingRequiredPropertyException ignored) {
@@ -179,7 +179,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
   public void executeWithRefresh() {
     try {
       ElasticsearchUtil.processBulkRequest(
-          es8Client,
+          esClient,
           bulkRequestBuilder,
           true,
           operateProperties.getElasticsearch().getBulkRequestMaxSizeInBytes());

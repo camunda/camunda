@@ -7,49 +7,34 @@
  */
 package io.camunda.operate.util;
 
-import static io.camunda.operate.util.CollectionUtil.map;
 import static io.camunda.operate.util.CollectionUtil.throwAwayNullElements;
-import static org.elasticsearch.index.query.QueryBuilders.*;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._helpers.bulk.BulkIngester;
 import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.Refresh;
 import co.elastic.clients.elasticsearch._types.SortOptions;
+import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.Time;
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.ChildScoreMode;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
 import co.elastic.clients.elasticsearch._types.query_dsl.TermsQueryField;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.ScrollResponse;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
+import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.ResponseBody;
 import co.elastic.clients.util.MissingRequiredPropertyException;
-import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.operate.entities.HitEntity;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.store.ScrollException;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.stream.Stream;
-import org.elasticsearch.action.search.ClearScrollRequest;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.action.search.SearchScrollRequest;
-import org.elasticsearch.client.*;
-import org.elasticsearch.core.TimeValue;
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.search.SearchHit;
-import org.elasticsearch.search.SearchHits;
-import org.elasticsearch.search.aggregations.Aggregations;
-import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,24 +45,9 @@ public abstract class ElasticsearchUtil {
   public static final int QUERY_MAX_SIZE = 10000;
   public static final int TOPHITS_AGG_SIZE = 100;
   public static final int UPDATE_RETRY_COUNT = 3;
-  public static final Function<SearchHit, Long> SEARCH_HIT_ID_TO_LONG =
-      (hit) -> Long.valueOf(hit.getId());
-  public static final Function<SearchHit, String> SEARCH_HIT_ID_TO_STRING = SearchHit::getId;
   public static final Class<Map<String, Object>> MAP_CLASS =
       (Class<Map<String, Object>>) (Class<?>) Map.class;
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchUtil.class);
-
-  public static SearchRequest createSearchRequest(final IndexTemplateDescriptor template) {
-    return createSearchRequest(template, QueryType.ALL);
-  }
-
-  /* CREATE QUERIES */
-
-  public static SearchRequest createSearchRequest(
-      final IndexTemplateDescriptor template, final QueryType queryType) {
-    final SearchRequest searchRequest = new SearchRequest(whereToSearch(template, queryType));
-    return searchRequest;
-  }
 
   public static String whereToSearch(
       final IndexTemplateDescriptor template, final QueryType queryType) {
@@ -90,39 +60,6 @@ public abstract class ElasticsearchUtil {
     }
   }
 
-  public static QueryBuilder joinWithOr(
-      final BoolQueryBuilder boolQueryBuilder, final QueryBuilder... queries) {
-    final List<QueryBuilder> notNullQueries = throwAwayNullElements(queries);
-    for (final QueryBuilder query : notNullQueries) {
-      boolQueryBuilder.should(query);
-    }
-    return boolQueryBuilder;
-  }
-
-  /**
-   * Join queries with OR clause. If 0 queries are passed for wrapping, then null is returned. If 1
-   * parameter is passed, it will be returned back as ia. Otherwise, the new BoolQuery will be
-   * created and returned.
-   *
-   * @param queries
-   * @return
-   */
-  public static QueryBuilder joinWithOr(final QueryBuilder... queries) {
-    final List<QueryBuilder> notNullQueries = throwAwayNullElements(queries);
-    switch (notNullQueries.size()) {
-      case 0:
-        return null;
-      case 1:
-        return notNullQueries.get(0);
-      default:
-        final BoolQueryBuilder boolQ = boolQuery();
-        for (final QueryBuilder query : notNullQueries) {
-          boolQ.should(query);
-        }
-        return boolQ;
-    }
-  }
-
   public static Query joinWithOr(final Query... queries) {
     final List<Query> notNullQueries = throwAwayNullElements(queries);
 
@@ -131,34 +68,6 @@ public abstract class ElasticsearchUtil {
       case 1 -> notNullQueries.get(0);
       default -> Query.of(q -> q.bool(b -> b.should(notNullQueries)));
     };
-  }
-
-  public static QueryBuilder joinWithOr(final Collection<QueryBuilder> queries) {
-    return joinWithOr(queries.toArray(new QueryBuilder[queries.size()]));
-  }
-
-  /**
-   * Join queries with AND clause. If 0 queries are passed for wrapping, then null is returned. If 1
-   * parameter is passed, it will be returned back as ia. Otherwise, the new BoolQuery will be
-   * created and returned.
-   *
-   * @param queries
-   * @return
-   */
-  public static QueryBuilder joinWithAnd(final QueryBuilder... queries) {
-    final List<QueryBuilder> notNullQueries = throwAwayNullElements(queries);
-    switch (notNullQueries.size()) {
-      case 0:
-        return null;
-      case 1:
-        return notNullQueries.get(0);
-      default:
-        final BoolQueryBuilder boolQ = boolQuery();
-        for (final QueryBuilder query : notNullQueries) {
-          boolQ.must(query);
-        }
-        return boolQ;
-    }
   }
 
   /**
@@ -179,13 +88,8 @@ public abstract class ElasticsearchUtil {
     };
   }
 
-  public static BoolQueryBuilder createMatchNoneQuery() {
-    return boolQuery().must(QueryBuilders.wrapperQuery("{\"match_none\": {}}"));
-  }
-
-  public static BoolQuery.Builder createMatchNoneQueryEs8() {
-    return co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders.bool()
-        .must(m -> m.matchNone(mn -> mn));
+  public static BoolQuery.Builder createMatchNoneQuery() {
+    return QueryBuilders.bool().must(m -> m.matchNone(mn -> mn));
   }
 
   public static void processBulkRequest(
@@ -196,8 +100,7 @@ public abstract class ElasticsearchUtil {
   }
 
   public static String getFieldFromResponseObject(
-      final co.elastic.clients.elasticsearch.core.SearchResponse<Map<String, Object>> response,
-      final String fieldName) {
+      final SearchResponse<Map<String, Object>> response, final String fieldName) {
     if (response.hits().hits().size() != 1) {
       throw new IllegalArgumentException(
           "Expected exactly one document in response object " + response);
@@ -240,7 +143,7 @@ public abstract class ElasticsearchUtil {
    * @param type The child type to query
    * @param query The query to run on child documents
    * @param scoreMode How to score the parent documents
-   * @return ES8 Query object
+   * @return ES Query object
    */
   public static Query hasChildQuery(
       final String type, final Query query, final ChildScoreMode scoreMode) {
@@ -296,31 +199,6 @@ public abstract class ElasticsearchUtil {
                 .globalSettings(s -> s.refresh(refreshVal)));
   }
 
-  /* MAP QUERY RESULTS */
-  public static <T> List<T> mapSearchHits(
-      final List<HitEntity> hits, final ObjectMapper objectMapper, final JavaType valueType) {
-    return map(hits, h -> fromSearchHit(h.getSourceAsString(), objectMapper, valueType));
-  }
-
-  public static <T> List<T> mapSearchHits(
-      final HitEntity[] searchHits, final ObjectMapper objectMapper, final Class<T> clazz) {
-    return map(
-        searchHits,
-        (searchHit) -> fromSearchHit(searchHit.getSourceAsString(), objectMapper, clazz));
-  }
-
-  public static <T> List<T> mapSearchHits(
-      final SearchHit[] searchHits, final Function<SearchHit, T> searchHitMapper) {
-    return map(searchHits, searchHitMapper);
-  }
-
-  public static <T> List<T> mapSearchHits(
-      final SearchHit[] searchHits, final ObjectMapper objectMapper, final Class<T> clazz) {
-    return map(
-        searchHits,
-        (searchHit) -> fromSearchHit(searchHit.getSourceAsString(), objectMapper, clazz));
-  }
-
   public static <T> T fromSearchHit(
       final String searchHitString, final ObjectMapper objectMapper, final Class<T> clazz) {
     final T entity;
@@ -339,109 +217,15 @@ public abstract class ElasticsearchUtil {
     return entity;
   }
 
-  public static <T> List<T> mapSearchHits(
-      final SearchHit[] searchHits, final ObjectMapper objectMapper, final JavaType valueType) {
-    return map(
-        searchHits,
-        (searchHit) -> fromSearchHit(searchHit.getSourceAsString(), objectMapper, valueType));
-  }
-
-  public static <T> T fromSearchHit(
-      final String searchHitString, final ObjectMapper objectMapper, final JavaType valueType) {
-    final T entity;
-    try {
-      entity = objectMapper.readValue(searchHitString, valueType);
-    } catch (final IOException e) {
-      LOGGER.error(
-          String.format(
-              "Error while reading entity of type %s from Elasticsearch!", valueType.toString()),
-          e);
-      throw new OperateRuntimeException(
-          String.format(
-              "Error while reading entity of type %s from Elasticsearch!", valueType.toString()),
-          e);
-    }
-    return entity;
-  }
-
-  public static <T> List<T> scroll(
-      final SearchRequest searchRequest,
-      final Class<T> clazz,
-      final ObjectMapper objectMapper,
-      final RestHighLevelClient esClient)
-      throws IOException {
-    return scroll(searchRequest, clazz, objectMapper, esClient, null, null);
-  }
-
-  public static <T> List<T> scroll(
-      final SearchRequest searchRequest,
-      final Class<T> clazz,
-      final ObjectMapper objectMapper,
-      final RestHighLevelClient esClient,
-      final Consumer<SearchHits> searchHitsProcessor,
-      final Consumer<Aggregations> aggsProcessor)
-      throws IOException {
-    return scroll(
-        searchRequest, clazz, objectMapper, esClient, null, searchHitsProcessor, aggsProcessor);
-  }
-
-  public static <T> List<T> scroll(
-      final SearchRequest searchRequest,
-      final Class<T> clazz,
-      final ObjectMapper objectMapper,
-      final RestHighLevelClient esClient,
-      final Function<SearchHit, T> searchHitMapper,
-      final Consumer<SearchHits> searchHitsProcessor,
-      final Consumer<Aggregations> aggsProcessor)
-      throws IOException {
-
-    searchRequest.scroll(TimeValue.timeValueMillis(SCROLL_KEEP_ALIVE_MS));
-    SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
-
-    // call aggregations processor
-    if (aggsProcessor != null) {
-      aggsProcessor.accept(response.getAggregations());
-    }
-
-    final List<T> result = new ArrayList<>();
-    String scrollId = response.getScrollId();
-    SearchHits hits = response.getHits();
-
-    while (hits.getHits().length != 0) {
-      if (searchHitMapper != null) {
-        result.addAll(mapSearchHits(hits.getHits(), searchHitMapper));
-      } else {
-        result.addAll(mapSearchHits(hits.getHits(), objectMapper, clazz));
-      }
-
-      // call response processor
-      if (searchHitsProcessor != null) {
-        searchHitsProcessor.accept(response.getHits());
-      }
-
-      final SearchScrollRequest scrollRequest = new SearchScrollRequest(scrollId);
-      scrollRequest.scroll(TimeValue.timeValueMillis(SCROLL_KEEP_ALIVE_MS));
-
-      response = esClient.scroll(scrollRequest, RequestOptions.DEFAULT);
-
-      scrollId = response.getScrollId();
-      hits = response.getHits();
-    }
-
-    clearScroll(scrollId, esClient);
-
-    return result;
-  }
-
   public static <T> Stream<ResponseBody<T>> scrollAllStream(
       final ElasticsearchClient client,
-      final co.elastic.clients.elasticsearch.core.SearchRequest.Builder searchRequestBuilder,
+      final SearchRequest.Builder searchRequestBuilder,
       final Class<T> docClass) {
     final AtomicReference<String> lastScrollId = new AtomicReference<>(null);
 
     final var scrollKeepAlive = Time.of(t -> t.time(SCROLL_KEEP_ALIVE_MS + "ms"));
 
-    final co.elastic.clients.elasticsearch.core.SearchResponse<T> searchRes;
+    final SearchResponse<T> searchRes;
     searchRequestBuilder.scroll(scrollKeepAlive);
 
     try {
@@ -493,48 +277,16 @@ public abstract class ElasticsearchUtil {
     }
   }
 
-  public static void clearScroll(final String scrollId, final RestHighLevelClient esClient) {
-    if (scrollId != null) {
-      // clear the scroll
-      final ClearScrollRequest clearScrollRequest = new ClearScrollRequest();
-      clearScrollRequest.addScrollId(scrollId);
-      try {
-        esClient.clearScroll(clearScrollRequest, RequestOptions.DEFAULT);
-      } catch (final Exception e) {
-        LOGGER.warn("Error occurred when clearing the scroll with id [{}]", scrollId);
-      }
-    }
-  }
-
-  public static RequestOptions requestOptionsFor(final int maxSizeInBytes) {
-    final RequestOptions.Builder options = RequestOptions.DEFAULT.toBuilder();
-    options.setHttpAsyncResponseConsumerFactory(
-        new HttpAsyncResponseConsumerFactory.HeapBufferedResponseConsumerFactory(maxSizeInBytes));
-    return options.build();
-  }
-
   public static SortOrder reverseOrder(final SortOrder sortOrder) {
-    if (sortOrder.equals(SortOrder.ASC)) {
-      return SortOrder.DESC;
+    if (sortOrder.equals(SortOrder.Asc)) {
+      return SortOrder.Desc;
     } else {
-      return SortOrder.ASC;
+      return SortOrder.Asc;
     }
   }
 
-  public static co.elastic.clients.elasticsearch._types.SortOrder reverseOrder(
-      final co.elastic.clients.elasticsearch._types.SortOrder sortOrder) {
-    if (sortOrder.equals(co.elastic.clients.elasticsearch._types.SortOrder.Asc)) {
-      return co.elastic.clients.elasticsearch._types.SortOrder.Desc;
-    } else {
-      return co.elastic.clients.elasticsearch._types.SortOrder.Asc;
-    }
-  }
-
-  public static co.elastic.clients.elasticsearch._types.SortOrder toSortOrder(
-      final String sortOrder) {
-    return "desc".equalsIgnoreCase(sortOrder)
-        ? co.elastic.clients.elasticsearch._types.SortOrder.Desc
-        : co.elastic.clients.elasticsearch._types.SortOrder.Asc;
+  public static SortOrder toSortOrder(final String sortOrder) {
+    return "desc".equalsIgnoreCase(sortOrder) ? SortOrder.Desc : SortOrder.Asc;
   }
 
   public static Query termsQuery(final String name, final Collection<?> values) {
@@ -569,29 +321,23 @@ public abstract class ElasticsearchUtil {
     return termsQuery(name, Collections.singletonList(value));
   }
 
-  public static SortOptions sortOrder(
-      final String field, final co.elastic.clients.elasticsearch._types.SortOrder sortOrder) {
+  public static SortOptions sortOrder(final String field, final SortOrder sortOrder) {
     return SortOptions.of(s -> s.field(f -> f.field(field).order(sortOrder)));
   }
 
   public static SortOptions sortOrder(
-      final String field,
-      final co.elastic.clients.elasticsearch._types.SortOrder sortOrder,
-      final String missing) {
+      final String field, final SortOrder sortOrder, final String missing) {
     return SortOptions.of(s -> s.field(f -> f.field(field).order(sortOrder).missing(missing)));
   }
 
   /**
-   * Converts an array of search_after values to ES8 FieldValue list for pagination.
+   * Converts an array of search_after values to ES FieldValue list for pagination.
    *
    * @param searchAfter Array of sort values from previous search result
-   * @return List of FieldValue objects for ES8 searchAfter parameter
+   * @return List of FieldValue objects for ES searchAfter parameter
    */
-  public static List<co.elastic.clients.elasticsearch._types.FieldValue> searchAfterToFieldValues(
-      final Object[] searchAfter) {
-    return Arrays.stream(searchAfter)
-        .map(co.elastic.clients.elasticsearch._types.FieldValue::of)
-        .toList();
+  public static List<FieldValue> searchAfterToFieldValues(final Object[] searchAfter) {
+    return Arrays.stream(searchAfter).map(FieldValue::of).toList();
   }
 
   public enum QueryType {
