@@ -27,6 +27,7 @@ import io.camunda.zeebe.backup.common.Manifest;
 import io.camunda.zeebe.backup.gcs.GcsBackupStoreException.ConfigurationException;
 import io.camunda.zeebe.backup.gcs.GcsConnectionConfig.Authentication.None;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Objects;
 import java.util.Optional;
@@ -126,16 +127,15 @@ public final class GcsBackupStore implements BackupStore {
 
   @Override
   public CompletableFuture<Void> delete(final Collection<BackupIdentifier> ids) {
-    return manifestManager
-        .manifestIds(ids)
-        .thenCombineAsync(
-            fileSetManager.backupDataUrls(ids),
-            (manifestUrls, objectUrls) -> {
-              manifestUrls.addAll(objectUrls);
-              return manifestUrls;
-            },
-            executor)
-        .thenComposeAsync(this::deleteBlobs, executor);
+    return CompletableFuture.runAsync(
+        () -> {
+          final var manifestUrls = manifestManager.manifestUrls(ids);
+          final var backupUrls = fileSetManager.backupDataUrls(ids);
+          final var blobUrls = new ArrayList<>(backupUrls);
+          blobUrls.addAll(manifestUrls);
+          deleteBlobs(blobUrls).join();
+        },
+        executor);
   }
 
   @Override
