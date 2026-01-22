@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -42,11 +43,11 @@ public class BenchmarkBatchOperationCancelProcessInstanceTest {
   private static final Logger LOGGER =
       LoggerFactory.getLogger(BenchmarkBatchOperationCancelProcessInstanceTest.class);
 
-  private final CamundaClient camundaClient = new CamundaClientBuilderImpl().build();
+  @AutoClose private final CamundaClient camundaClient = new CamundaClientBuilderImpl().build();
 
   @Test
   void shouldCancelProcessInstancesWithBatch() throws Exception {
-    final int numberOfProcesses = 10000; // Number of processes to deploy
+    final int numberOfProcesses = 10000; // Number of process instances to create
     final int numberOfRuns = 3; // Number of runs to execute
 
     deployResource(camundaClient, "process/service_tasks_v1.bpmn");
@@ -83,8 +84,8 @@ public class BenchmarkBatchOperationCancelProcessInstanceTest {
     LOGGER.info("Creating {} processes for benchmark", numProcessInstances);
     createProcessInstances(numProcessInstances, testScopeId);
     LOGGER.info("Created {} processes for benchmark", numProcessInstances);
-    LOGGER.info("Sleep for 5 seconds to give the exporter some time to catch up");
-    Thread.sleep(5000);
+    LOGGER.info("Waiting for 5 seconds to give the exporter some time to catch up");
+    await().pollDelay(Duration.ofSeconds(5)).until(() -> true);
 
     // when
 
