@@ -22,11 +22,16 @@ import io.atomix.cluster.ClusterMembershipEvent.Type;
 import io.atomix.cluster.Member;
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.impl.DefaultClusterMembershipService;
+import io.camunda.zeebe.backup.retention.BackupRetention;
 import io.camunda.zeebe.backup.schedule.CheckpointScheduler;
 import io.camunda.zeebe.backup.schedule.Schedule;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.broker.partitioning.PartitionManager;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg;
+import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg.BackupStoreType;
+import io.camunda.zeebe.broker.system.configuration.backup.BackupSchedulerRetentionCfg;
+import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -49,6 +54,7 @@ public class CheckpointSchedulerServiceTest {
   private BrokerClient brokerClient;
   private DefaultClusterMembershipService membershipService;
   private ActorScheduler scheduler;
+  private PartitionManager mockPartitionManager;
   private Member member1;
   private Member member2;
   private Member member3;
@@ -61,6 +67,8 @@ public class CheckpointSchedulerServiceTest {
   @BeforeEach
   public void setup() {
     brokerClient = mock(BrokerClient.class);
+    mockPartitionManager = mock(PartitionManager.class);
+    final var partition = mock(ZeebePartition.class);
     membershipService = mock(DefaultClusterMembershipService.class);
     member1 = mock(Member.class);
     member2 = mock(Member.class);
@@ -72,11 +80,17 @@ public class CheckpointSchedulerServiceTest {
     brokerConfig.getData().getBackup().setSchedule("PT10M");
     brokerConfig.getData().getBackup().setCheckpointInterval(Duration.ofMinutes(1L));
     brokerConfig.getData().getBackup().setContinuous(true);
+    brokerConfig.getData().getBackup().setRetention(new BackupSchedulerRetentionCfg());
+    brokerConfig.getData().getBackup().getRetention().setCleanupSchedule("PT10M");
+    brokerConfig.getData().getBackup().getRetention().setWindow(Duration.ofHours(1L));
+    brokerConfig.getData().getBackup().setStore(BackupStoreType.FILESYSTEM);
+    brokerConfig.getData().getBackup().getFilesystem().setBasePath("base-path");
 
     doReturn(MemberId.from("0")).when(member1).id();
     doReturn(MemberId.from("1")).when(member2).id();
     doReturn(MemberId.from("2")).when(member3).id();
     doNothing().when(membershipService).addListener(any());
+    doReturn(Set.of(partition)).when(mockPartitionManager).getZeebePartitions();
 
     doReturn(CONCURRENCY_CONTROL.completedFuture(null)).when(scheduler).submitActor(any());
 
@@ -86,7 +100,8 @@ public class CheckpointSchedulerServiceTest {
             scheduler,
             brokerConfig.getData().getBackup(),
             brokerClient,
-            new SimpleMeterRegistry());
+            new SimpleMeterRegistry(),
+            mockPartitionManager);
   }
 
   @Test
@@ -105,6 +120,8 @@ public class CheckpointSchedulerServiceTest {
             () ->
                 verify(scheduler, times(1))
                     .submitActor(argThat(CheckpointScheduler.class::isInstance)));
+
+    verify(scheduler, times(1)).submitActor(argThat(BackupRetention.class::isInstance));
   }
 
   @Test
@@ -123,6 +140,7 @@ public class CheckpointSchedulerServiceTest {
 
     // then
     verify(scheduler, times(0)).submitActor(argThat(CheckpointScheduler.class::isInstance));
+    verify(scheduler, times(0)).submitActor(argThat(BackupRetention.class::isInstance));
   }
 
   @Test
@@ -145,6 +163,7 @@ public class CheckpointSchedulerServiceTest {
             () ->
                 verify(scheduler, times(1))
                     .submitActor(argThat(CheckpointScheduler.class::isInstance)));
+    verify(scheduler, times(1)).submitActor(argThat(BackupRetention.class::isInstance));
   }
 
   @Test
@@ -167,6 +186,7 @@ public class CheckpointSchedulerServiceTest {
             () ->
                 verify(scheduler, times(1))
                     .submitActor(argThat(CheckpointScheduler.class::isInstance)));
+    verify(scheduler, times(1)).submitActor(argThat(BackupRetention.class::isInstance));
   }
 
   @Test
@@ -185,6 +205,7 @@ public class CheckpointSchedulerServiceTest {
 
     // then
     verify(scheduler, times(0)).submitActor(argThat(CheckpointScheduler.class::isInstance));
+    verify(scheduler, times(0)).submitActor(argThat(BackupRetention.class::isInstance));
   }
 
   @Test
@@ -197,6 +218,7 @@ public class CheckpointSchedulerServiceTest {
     schedulingService.onActorStarted();
     verify(scheduler, times(1)).submitActor(argThat(CheckpointScheduler.class::isInstance));
     final var checkpointCreatorSpy = getCheckpointCreator(schedulingService);
+    final var retentionJobSpy = getRetentionJob(schedulingService);
 
     // when
     doReturn(Set.of(member1, member2, member3)).when(membershipService).getMembers();
@@ -204,6 +226,7 @@ public class CheckpointSchedulerServiceTest {
 
     // then
     assertThat(checkpointCreatorSpy.isActorClosed()).isTrue();
+    assertThat(retentionJobSpy.isActorClosed()).isTrue();
   }
 
   @Test
@@ -244,7 +267,8 @@ public class CheckpointSchedulerServiceTest {
             scheduler,
             brokerConfig.getData().getBackup(),
             brokerClient,
-            new SimpleMeterRegistry());
+            new SimpleMeterRegistry(),
+            mockPartitionManager);
 
     final var member = mock(Member.class);
     doReturn(Set.of(member)).when(membershipService).getMembers();
@@ -299,6 +323,14 @@ public class CheckpointSchedulerServiceTest {
         CheckpointSchedulingService.class.getDeclaredField("checkpointScheduler");
     checkpointCreatorField.setAccessible(true);
     return (CheckpointScheduler) checkpointCreatorField.get(schedulingService);
+  }
+
+  private BackupRetention getRetentionJob(final CheckpointSchedulingService schedulingService)
+      throws NoSuchFieldException, IllegalAccessException {
+    final Field retentionJobField =
+        CheckpointSchedulingService.class.getDeclaredField("backupRetentionJob");
+    retentionJobField.setAccessible(true);
+    return (BackupRetention) retentionJobField.get(schedulingService);
   }
 
   private Schedule getSchedule(
