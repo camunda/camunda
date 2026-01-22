@@ -88,7 +88,7 @@ public abstract class ElasticsearchUtil {
     };
   }
 
-  public static BoolQuery.Builder createMatchNoneQueryEs8() {
+  public static BoolQuery.Builder createMatchNoneQuery() {
     return QueryBuilders.bool().must(m -> m.matchNone(mn -> mn));
   }
 
@@ -143,7 +143,7 @@ public abstract class ElasticsearchUtil {
    * @param type The child type to query
    * @param query The query to run on child documents
    * @param scoreMode How to score the parent documents
-   * @return ES8 Query object
+   * @return ES Query object
    */
   public static Query hasChildQuery(
       final String type, final Query query, final ChildScoreMode scoreMode) {
@@ -331,10 +331,10 @@ public abstract class ElasticsearchUtil {
   }
 
   /**
-   * Converts an array of search_after values to ES8 FieldValue list for pagination.
+   * Converts an array of search_after values to ES FieldValue list for pagination.
    *
    * @param searchAfter Array of sort values from previous search result
-   * @return List of FieldValue objects for ES8 searchAfter parameter
+   * @return List of FieldValue objects for ES searchAfter parameter
    */
   public static List<FieldValue> searchAfterToFieldValues(final Object[] searchAfter) {
     return Arrays.stream(searchAfter).map(FieldValue::of).toList();

@@ -17,19 +17,18 @@ import org.springframework.stereotype.Component;
 @Conditional(ElasticsearchCondition.class)
 @Component
 public class ElasticsearchTenantHelper {
-  private final Optional<TenantCheckApplier<Query>> es8TenantCheckApplier;
+  private final Optional<TenantCheckApplier<Query>> tenantCheckApplier;
 
   // Using optional as this is equivalent to @Autowired(required=false) for constructor injection
-  public ElasticsearchTenantHelper(
-      final Optional<TenantCheckApplier<Query>> es8TenantCheckApplier) {
-    this.es8TenantCheckApplier = es8TenantCheckApplier;
+  public ElasticsearchTenantHelper(final Optional<TenantCheckApplier<Query>> tenantCheckApplier) {
+    this.tenantCheckApplier = tenantCheckApplier;
   }
 
   public Query makeQueryTenantAware(final Query query) {
-    if (es8TenantCheckApplier.isEmpty()) {
+    if (tenantCheckApplier.isEmpty()) {
       return query;
     }
 
-    return es8TenantCheckApplier.get().apply(query);
+    return tenantCheckApplier.get().apply(query);
   }
 }

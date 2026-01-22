@@ -133,14 +133,14 @@ public class OperationReader extends AbstractReader
       return result;
     }
 
-    final var es8Query =
+    final var query =
         ElasticsearchUtil.constantScoreQuery(
             ElasticsearchUtil.termsQuery(PROCESS_INSTANCE_KEY, processInstanceKeys));
 
     final var searchRequestBuilder =
         new SearchRequest.Builder()
             .index(whereToSearch(operationTemplate, ALL))
-            .query(es8Query)
+            .query(query)
             .sort(sortOrder(PROCESS_INSTANCE_KEY, SortOrder.Asc), sortOrder(ID, SortOrder.Asc));
 
     try {
@@ -168,14 +168,14 @@ public class OperationReader extends AbstractReader
       return result;
     }
 
-    final var es8Query =
+    final var query =
         ElasticsearchUtil.constantScoreQuery(
             ElasticsearchUtil.termsQuery(PROCESS_INSTANCE_KEY, processInstanceId));
 
     final var searchRequestBuilder =
         new SearchRequest.Builder()
             .index(whereToSearch(operationTemplate, ONLY_RUNTIME))
-            .query(es8Query)
+            .query(query)
             .sort(sortOrder(INCIDENT_KEY, SortOrder.Asc), sortOrder(ID, SortOrder.Asc));
 
     try {

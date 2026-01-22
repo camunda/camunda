@@ -82,7 +82,7 @@ public class Query {
 
   @Override
   public int hashCode() {
-    // Use string representations for hashCode since ES8 client objects don't implement proper
+    // Use string representations for hashCode since ES client objects don't implement proper
     // equals/hashCode
     return Objects.hash(
         esQuery != null ? esQuery.toString() : null,
@@ -99,7 +99,7 @@ public class Query {
       return false;
     }
     final Query query = (Query) o;
-    // Compare string representations since ES8 client objects don't implement proper equals()
+    // Compare string representations since E client objects don't implement proper equals()
     return Objects.equals(
             esQuery != null ? esQuery.toString() : null,
             query.esQuery != null ? query.esQuery.toString() : null)

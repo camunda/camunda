@@ -7,7 +7,7 @@
  */
 package io.camunda.operate.webapp.elasticsearch.reader;
 
-import static io.camunda.operate.store.elasticsearch.ElasticsearchIncidentStore.ACTIVE_INCIDENT_QUERY_ES8;
+import static io.camunda.operate.store.elasticsearch.ElasticsearchIncidentStore.ACTIVE_INCIDENT_QUERY;
 import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ALL;
 import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ONLY_RUNTIME;
 import static io.camunda.operate.util.ElasticsearchUtil.TERMS_AGG_SIZE;
@@ -648,7 +648,7 @@ public class FlowNodeInstanceReader extends AbstractReader
         ElasticsearchUtil.constantScoreQuery(
             joinWithAnd(
                 ElasticsearchUtil.termsQuery(IncidentTemplate.TREE_PATH, incidentTreePath),
-                ACTIVE_INCIDENT_QUERY_ES8));
+                ACTIVE_INCIDENT_QUERY));
     final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
 
     final var request =
@@ -704,7 +704,7 @@ public class FlowNodeInstanceReader extends AbstractReader
         ElasticsearchUtil.constantScoreQuery(
             joinWithAnd(
                 ElasticsearchUtil.termsQuery(IncidentTemplate.TREE_PATH, flowNodeInstancesTreePath),
-                ACTIVE_INCIDENT_QUERY_ES8));
+                ACTIVE_INCIDENT_QUERY));
     final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
 
     final var request =

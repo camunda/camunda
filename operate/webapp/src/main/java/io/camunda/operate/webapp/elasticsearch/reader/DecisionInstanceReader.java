@@ -417,7 +417,7 @@ public class DecisionInstanceReader extends AbstractReader
     } else if (query.isEvaluated()) {
       return ElasticsearchUtil.termsQuery(STATE, EVALUATED);
     } else {
-      return ElasticsearchUtil.createMatchNoneQueryEs8().build()._toQuery();
+      return ElasticsearchUtil.createMatchNoneQuery().build()._toQuery();
     }
   }
 }

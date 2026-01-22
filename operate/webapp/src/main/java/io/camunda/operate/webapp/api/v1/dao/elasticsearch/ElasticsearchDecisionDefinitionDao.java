@@ -145,7 +145,7 @@ public class ElasticsearchDecisionDefinitionDao extends ElasticsearchDao<Decisio
             ElasticsearchUtil::termsQuery);
 
     final var filteringQ =
-        buildFilteringByEs8(
+        buildFilteringBy(
             filter.getDecisionRequirementsName(), filter.getDecisionRequirementsVersion());
 
     final var andOfAllQueries =
@@ -164,7 +164,7 @@ public class ElasticsearchDecisionDefinitionDao extends ElasticsearchDao<Decisio
    * @return the query to filter decision definitions by decisionRequirementsName and
    *     decisionRequirementsVersion, or null if no filter is needed
    */
-  private co.elastic.clients.elasticsearch._types.query_dsl.Query buildFilteringByEs8(
+  private co.elastic.clients.elasticsearch._types.query_dsl.Query buildFilteringBy(
       final String decisionRequirementsName, final Integer decisionRequirementsVersion) {
 
     final var nameQuery =
@@ -202,7 +202,7 @@ public class ElasticsearchDecisionDefinitionDao extends ElasticsearchDao<Decisio
             .toList();
 
     if (nonNullKeys.isEmpty()) {
-      return ElasticsearchUtil.createMatchNoneQueryEs8().build()._toQuery();
+      return ElasticsearchUtil.createMatchNoneQuery().build()._toQuery();
     }
 
     return ElasticsearchUtil.termsQuery(DecisionDefinition.DECISION_REQUIREMENTS_KEY, nonNullKeys);

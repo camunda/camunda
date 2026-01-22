@@ -7,7 +7,7 @@
  */
 package io.camunda.operate.webapp.elasticsearch.reader;
 
-import static io.camunda.operate.store.elasticsearch.ElasticsearchIncidentStore.ACTIVE_INCIDENT_QUERY_ES8;
+import static io.camunda.operate.store.elasticsearch.ElasticsearchIncidentStore.ACTIVE_INCIDENT_QUERY;
 import static io.camunda.operate.util.ElasticsearchUtil.MAP_CLASS;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 
@@ -126,7 +126,7 @@ public class IncidentStatisticsReader extends AbstractReader
             .build();
 
     final var query =
-        joinWithAnd(ACTIVE_INCIDENT_QUERY_ES8, createQueryForProcessInstancesWithReadPermission());
+        joinWithAnd(ACTIVE_INCIDENT_QUERY, createQueryForProcessInstancesWithReadPermission());
     final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
 
     final var searchRequest =

@@ -49,7 +49,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class ElasticsearchIncidentStore implements IncidentStore {
 
-  public static final Query ACTIVE_INCIDENT_QUERY_ES8 =
+  public static final Query ACTIVE_INCIDENT_QUERY =
       ElasticsearchUtil.termsQuery(IncidentTemplate.STATE, IncidentState.ACTIVE);
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchIncidentStore.class);
 
@@ -65,18 +65,18 @@ public class ElasticsearchIncidentStore implements IncidentStore {
   public IncidentEntity getIncidentById(final Long incidentKey) {
     final var idQuery = ElasticsearchUtil.idsQuery(incidentKey.toString());
 
-    final var queryEs8 =
-        ElasticsearchUtil.constantScoreQuery(joinWithAnd(idQuery, ACTIVE_INCIDENT_QUERY_ES8));
-    final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(queryEs8);
+    final var query =
+        ElasticsearchUtil.constantScoreQuery(joinWithAnd(idQuery, ACTIVE_INCIDENT_QUERY));
+    final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
 
-    final var searchRequestEs8 =
+    final var searchRequest =
         new SearchRequest.Builder()
             .index(whereToSearch(incidentTemplate, ONLY_RUNTIME))
             .query(tenantAwareQuery)
             .build();
 
     try {
-      final var res = esClient.search(searchRequestEs8, IncidentEntity.class);
+      final var res = esClient.search(searchRequest, IncidentEntity.class);
       if (res.hits().hits().size() == 1) {
         return res.hits().hits().getFirst().source();
       } else if (res.hits().hits().size() > 1) {
@@ -101,7 +101,7 @@ public class ElasticsearchIncidentStore implements IncidentStore {
         ElasticsearchUtil.constantScoreQuery(
             ElasticsearchUtil.joinWithAnd(
                 ElasticsearchUtil.termsQuery(IncidentTemplate.TREE_PATH, treePath),
-                ACTIVE_INCIDENT_QUERY_ES8));
+                ACTIVE_INCIDENT_QUERY));
 
     final String errorTypesAggName = "errorTypesAgg";
 
@@ -148,7 +148,7 @@ public class ElasticsearchIncidentStore implements IncidentStore {
             joinWithAnd(
                 ElasticsearchUtil.termsQuery(
                     IncidentTemplate.PROCESS_INSTANCE_KEY, processInstanceKey),
-                ACTIVE_INCIDENT_QUERY_ES8));
+                ACTIVE_INCIDENT_QUERY));
     final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
 
     final var searchRequestBuilder =
@@ -178,7 +178,7 @@ public class ElasticsearchIncidentStore implements IncidentStore {
             joinWithAnd(
                 ElasticsearchUtil.termsQuery(
                     IncidentTemplate.ERROR_MSG_HASH, incidentErrorHashCode),
-                ACTIVE_INCIDENT_QUERY_ES8));
+                ACTIVE_INCIDENT_QUERY));
     final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
 
     final var searchRequestBuilder =
@@ -210,7 +210,7 @@ public class ElasticsearchIncidentStore implements IncidentStore {
             ElasticsearchUtil.joinWithAnd(
                 ElasticsearchUtil.termsQuery(
                     IncidentTemplate.PROCESS_INSTANCE_KEY, processInstanceKeys),
-                ACTIVE_INCIDENT_QUERY_ES8));
+                ACTIVE_INCIDENT_QUERY));
     final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
 
     final var searchRequestBuilder =

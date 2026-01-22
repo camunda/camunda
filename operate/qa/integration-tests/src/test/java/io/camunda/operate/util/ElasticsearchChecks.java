@@ -102,7 +102,7 @@ public class ElasticsearchChecks {
   @Autowired private VariableReader variableReader;
 
   /**
-   * Helper method to get document count using ES8 client.
+   * Helper method to get document count using ES client.
    *
    * @param indexAlias the index alias to count documents in
    * @return the number of documents in the index
@@ -760,7 +760,7 @@ public class ElasticsearchChecks {
     final var countRequest =
         new CountRequest.Builder()
             .index(whereToSearch(incidentTemplate, QueryType.ALL))
-            .query(ElasticsearchIncidentStore.ACTIVE_INCIDENT_QUERY_ES8)
+            .query(ElasticsearchIncidentStore.ACTIVE_INCIDENT_QUERY)
             .build();
     try {
       final var response = esClient.count(countRequest);
@@ -802,7 +802,7 @@ public class ElasticsearchChecks {
   public long getActiveIncidentsCount(final Long processInstanceKey) {
     final var query =
         joinWithAnd(
-            ElasticsearchIncidentStore.ACTIVE_INCIDENT_QUERY_ES8,
+            ElasticsearchIncidentStore.ACTIVE_INCIDENT_QUERY,
             ElasticsearchUtil.termsQuery(PROCESS_INSTANCE_KEY, processInstanceKey));
     final var countRequest =
         new CountRequest.Builder()

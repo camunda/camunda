@@ -200,7 +200,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
   public Map<ProcessKey, List<ProcessEntity>> getProcessesGrouped(
       final String tenantId, @Nullable final Set<String> allowedBPMNProcessIds) {
 
-    final var query = buildQueryEs8(tenantId, allowedBPMNProcessIds);
+    final var query = buildQuery(tenantId, allowedBPMNProcessIds);
     final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
 
     final var searchRequestBuilder =
@@ -224,7 +224,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
     try {
       final Map<ProcessKey, List<ProcessEntity>> result = new HashMap<>();
 
-      ElasticsearchUtil.scrollAllStream(es8Client, searchRequestBuilder, ProcessEntity.class)
+      ElasticsearchUtil.scrollAllStream(esClient, searchRequestBuilder, ProcessEntity.class)
           .flatMap(searchRes -> searchRes.hits().hits().stream())
           .map(Hit::source)
           .forEach(
@@ -475,7 +475,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
 
   @Override
   public void deleteProcessInstanceFromTreePath(final String processInstanceKey) {
-    final BulkRequest.Builder es8BulkRequest = new BulkRequest.Builder();
+    final BulkRequest.Builder bulkRequest = new BulkRequest.Builder();
     // select process instance - get tree path
     final String treePath = getProcessInstanceTreePathById(processInstanceKey);
 
@@ -515,7 +515,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
                         .removeProcessInstance(processInstanceKey)
                         .toString();
                 updateFields.put(TREE_PATH, newTreePath);
-                es8BulkRequest.operations(
+                bulkRequest.operations(
                     op ->
                         op.update(
                             u ->
@@ -527,7 +527,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
 
       ElasticsearchUtil.processBulkRequest(
           esClient,
-          es8BulkRequest,
+          bulkRequest,
           operateProperties.getElasticsearch().getBulkRequestMaxSizeInBytes());
     } catch (final Exception e) {
       throw new OperateRuntimeException(
@@ -666,7 +666,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
     return esClient.count(countRequest).count();
   }
 
-  private Query buildQueryEs8(final String tenantId, final Set<String> allowedBPMNProcessIds) {
+  private Query buildQuery(final String tenantId, final Set<String> allowedBPMNProcessIds) {
     final var bpmnQuery =
         allowedBPMNProcessIds != null
             ? ElasticsearchUtil.termsQuery(BPMN_PROCESS_ID, allowedBPMNProcessIds)

@@ -30,7 +30,7 @@ public class ElasticsearchTenantCheckApplier implements TenantCheckApplier<Query
     final var tenantIds = tenantAccess.tenantIds();
 
     if (tenantAccess.denied()) {
-      return ElasticsearchUtil.createMatchNoneQueryEs8().build()._toQuery();
+      return ElasticsearchUtil.createMatchNoneQuery().build()._toQuery();
     } else if (tenantAccess.wildcard()) {
       return query;
     } else {
