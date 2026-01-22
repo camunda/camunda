@@ -42,7 +42,7 @@ public class BenchmarkBatchOperationCancelProcessInstanceTest {
   private static final Logger LOGGER =
       LoggerFactory.getLogger(BenchmarkBatchOperationCancelProcessInstanceTest.class);
 
-  private final CamundaClient camundaClient = new CamundaClientBuilderImpl().usePlaintext().build();
+  private final CamundaClient camundaClient = new CamundaClientBuilderImpl().build();
 
   @Test
   void shouldCancelProcessInstancesWithBatch() throws Exception {
