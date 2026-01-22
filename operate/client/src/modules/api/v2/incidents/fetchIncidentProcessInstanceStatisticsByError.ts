@@ -25,4 +25,4 @@ const fetchIncidentProcessInstanceStatisticsByError = async (
   );
 };
 
-export default fetchIncidentProcessInstanceStatisticsByError;
+export {fetchIncidentProcessInstanceStatisticsByError};

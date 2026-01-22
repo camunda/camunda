@@ -25,4 +25,4 @@ const fetchIncidentProcessInstanceStatisticsByDefinition = async (
   );
 };
 
-export default fetchIncidentProcessInstanceStatisticsByDefinition;
+export {fetchIncidentProcessInstanceStatisticsByDefinition};

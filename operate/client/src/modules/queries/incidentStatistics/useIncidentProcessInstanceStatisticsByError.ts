@@ -7,7 +7,7 @@
  */
 
 import {useQuery} from '@tanstack/react-query';
-import fetchIncidentProcessInstanceStatisticsByError from 'modules/api/v2/incidents/fetchIncidentProcessInstanceStatisticsByError';
+import {fetchIncidentProcessInstanceStatisticsByError} from 'modules/api/v2/incidents/fetchIncidentProcessInstanceStatisticsByError';
 import {queryKeys} from '../queryKeys';
 import type {GetIncidentProcessInstanceStatisticsByErrorRequestBody} from '@camunda/camunda-api-zod-schemas/8.9';
 
