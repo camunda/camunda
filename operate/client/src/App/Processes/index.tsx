@@ -10,11 +10,9 @@ import {observer} from 'mobx-react';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 import {MigrationView} from './MigrationView';
 import {ListView} from './ListView';
-import {ListView as ListViewV2} from './ListView/v2';
 import {useEffect} from 'react';
 import {useCallbackPrompt} from 'modules/hooks/useCallbackPrompt';
 import {Modal} from '@carbon/react';
-import {getClientConfig} from 'modules/utils/getClientConfig';
 
 const Processes: React.FC = observer(() => {
   useEffect(() => {
@@ -30,8 +28,6 @@ const Processes: React.FC = observer(() => {
     <>
       {processInstanceMigrationStore.isEnabled ? (
         <MigrationView />
-      ) : getClientConfig()?.databaseType === 'rdbms' ? (
-        <ListViewV2 />
       ) : (
         <ListView />
       )}

@@ -19,11 +19,6 @@ import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinit
 import {mockProcessXML} from 'modules/testUtils';
 
 vi.mock('modules/hooks/useProcessInstanceStatisticsFilters');
-vi.mock('modules/stores/processes/processes.list', () => ({
-  processesStore: {
-    getProcessIdByLocation: () => '123',
-  },
-}));
 
 const notificationText1 =
   'Please select where you want to move the selected instances on the diagram.';

@@ -12,18 +12,18 @@ import {Modal} from '@carbon/react';
 import {useLocation} from 'react-router-dom';
 import {type StateProps} from 'modules/components/ModalStateManager';
 import {getProcessInstanceFilters} from 'modules/utils/filter';
-import {processesStore} from 'modules/stores/processes/processes.list';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {Title, DataTable} from './styled';
 import {tracking} from 'modules/tracking';
-import {useInstancesCount} from 'modules/queries/processInstancesStatistics/useInstancesCount';
-import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
+import {useInstancesCountV2} from 'modules/queries/processInstancesStatistics/useInstancesCountV2';
 import {useListViewXml} from 'modules/queries/processDefinitions/useListViewXml';
 import {getFlowNodeName} from 'modules/utils/flowNodes';
 import {handleOperationError} from 'modules/utils/notifications';
 import {useModifyProcessInstancesBatchOperation} from 'modules/mutations/processes/useModifyProcessInstancesBatchOperation';
 import {useBatchOperationMutationRequestBody} from 'modules/hooks/useBatchOperationMutationRequestBody';
 import {useBatchOperationSuccessNotification} from 'modules/hooks/useBatchOperationSuccessNotification';
+import {useSelectedProcessDefinitionContext} from '../../../selectedProcessDefinitionContext';
+import {getProcessDefinitionName} from 'modules/hooks/processDefinitions';
 
 const BatchModificationSummaryModal: React.FC<StateProps> = observer(
   ({open, setOpen}) => {
@@ -33,15 +33,13 @@ const BatchModificationSummaryModal: React.FC<StateProps> = observer(
       useBatchOperationMutationRequestBody();
 
     const processInstancesFilters = getProcessInstanceFilters(location.search);
-    const {flowNodeId: sourceElementId, process: bpmnProcessId} =
-      processInstancesFilters;
-    const process = processesStore.getProcess({bpmnProcessId});
-    const processName = process?.name ?? process?.bpmnProcessId ?? 'Process';
+    const {flowNodeId: sourceElementId} = processInstancesFilters;
+    const process = useSelectedProcessDefinitionContext();
+    const processName = process ? getProcessDefinitionName(process) : 'Process';
     const {selectedTargetElementId} = batchModificationStore.state;
 
-    const processDefinitionKey = useProcessDefinitionKeyContext();
     const {data: processDefinitionData} = useListViewXml({
-      processDefinitionKey,
+      processDefinitionKey: process?.processDefinitionKey,
     });
 
     const sourceFlowNodeName = getFlowNodeName({
@@ -54,9 +52,9 @@ const BatchModificationSummaryModal: React.FC<StateProps> = observer(
       flowNodeId: selectedTargetElementId ?? undefined,
     });
 
-    const {data: instancesCount} = useInstancesCount(
+    const {data: instancesCount} = useInstancesCountV2(
       {},
-      processDefinitionKey,
+      process?.processDefinitionKey,
       sourceElementId,
     );
 

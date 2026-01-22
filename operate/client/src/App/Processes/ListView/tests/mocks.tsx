@@ -8,32 +8,36 @@
 
 import {MemoryRouter} from 'react-router-dom';
 import {useEffect} from 'react';
-import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
-import {processInstancesStore} from 'modules/stores/processInstances';
+import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelectionV2';
 import {operationsStore} from 'modules/stores/operations';
-import {processesStore} from 'modules/stores/processes/processes.list';
+import {batchModificationStore} from 'modules/stores/batchModification';
 import {Paths} from 'modules/Routes';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import {QueryClientProvider} from '@tanstack/react-query';
+import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
+import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 
-function createWrapper(initialPath: string = Paths.dashboard()) {
+function getWrapper(initialPath: string = Paths.processes()) {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     useEffect(() => {
+      processInstancesSelectionStore.init();
+
       return () => {
         processInstancesSelectionStore.reset();
-        processInstancesStore.reset();
         operationsStore.reset();
-        processesStore.reset();
+        batchModificationStore.reset();
       };
     }, []);
 
     return (
-      <QueryClientProvider client={new QueryClient()}>
-        <MemoryRouter initialEntries={[initialPath]}>{children}</MemoryRouter>
-      </QueryClientProvider>
+      <ProcessDefinitionKeyContext.Provider value="2251799813685249">
+        <QueryClientProvider client={getMockQueryClient()}>
+          <MemoryRouter initialEntries={[initialPath]}>{children}</MemoryRouter>
+        </QueryClientProvider>
+      </ProcessDefinitionKeyContext.Provider>
     );
   };
 
   return Wrapper;
 }
 
-export {createWrapper};
+export {getWrapper};
