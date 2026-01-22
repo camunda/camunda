@@ -106,7 +106,14 @@ public interface Context {
     /**
      * Filters a fully deserialized {@link Record}.
      *
-     * <p>Used to filter using full record instead of just metadata
+     * <p>Use this when filtering needs access to the complete record data instead of just its
+     * metadata. This is less efficient than metadata-based filtering because it runs in the second
+     * phase of the filtering pipeline:
+     *
+     * <ul>
+     *   <li>Phase 1: filter on metadata to avoid deserialization (faster but limited information)
+     *   <li>Phase 2: filter on fully deserialized records (slower but with richer information)
+     * </ul>
      */
     default boolean acceptRecord(final Record<?> record) {
       return true;
