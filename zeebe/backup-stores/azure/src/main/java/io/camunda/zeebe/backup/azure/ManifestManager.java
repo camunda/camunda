@@ -184,13 +184,11 @@ public final class ManifestManager {
     blobClient.delete();
   }
 
-  public CompletableFuture<Collection<String>> manifestUrls(
-      final Collection<BackupIdentifier> ids) {
-    return CompletableFuture.completedFuture(
-        ids.stream()
-            .map(id -> blobContainerClient.getBlobClient(manifestIdPath(id)))
-            .map(BlobClient::getBlobUrl)
-            .collect(Collectors.toSet()));
+  public Collection<String> manifestUrls(final Collection<BackupIdentifier> ids) {
+    return ids.stream()
+        .map(id -> blobContainerClient.getBlobClient(manifestIdPath(id)))
+        .map(BlobClient::getBlobUrl)
+        .collect(Collectors.toSet());
   }
 
   Manifest getManifest(final BackupIdentifier id) {

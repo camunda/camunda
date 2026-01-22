@@ -30,6 +30,7 @@ import io.camunda.zeebe.backup.common.BackupStatusImpl;
 import io.camunda.zeebe.backup.common.BackupStoreException.UnexpectedManifestState;
 import io.camunda.zeebe.backup.common.Manifest;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -186,16 +187,15 @@ public final class AzureBackupStore implements BackupStore {
 
   @Override
   public CompletableFuture<Void> delete(final Collection<BackupIdentifier> ids) {
-    return manifestManager
-        .manifestUrls(ids)
-        .thenCombineAsync(
-            fileSetManager.backupDataUrls(ids),
-            (manifestUrls, objectUrls) -> {
-              manifestUrls.addAll(objectUrls);
-              return manifestUrls;
-            },
-            executor)
-        .thenComposeAsync(this::deleteBlobs, executor);
+    return CompletableFuture.runAsync(
+        () -> {
+          final var manifestUrls = manifestManager.manifestUrls(ids);
+          final var backupUrls = fileSetManager.backupDataUrls(ids);
+          final var blobUrls = new ArrayList<>(backupUrls);
+          blobUrls.addAll(manifestUrls);
+          deleteBlobs(blobUrls).join();
+        },
+        executor);
   }
 
   @Override
@@ -326,7 +326,9 @@ public final class AzureBackupStore implements BackupStore {
                   }
                   return batchRequest;
                 })
-            .map(batch -> CompletableFuture.runAsync(() -> blobBatchClient.submitBatch(batch)))
+            .map(
+                batch ->
+                    CompletableFuture.runAsync(() -> blobBatchClient.submitBatch(batch), executor))
             .toArray(CompletableFuture[]::new));
   }
 
