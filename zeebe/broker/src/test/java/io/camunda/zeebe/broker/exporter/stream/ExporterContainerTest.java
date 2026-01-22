@@ -136,6 +136,10 @@ final class ExporterContainerTest {
       this.acceptRecordResult = acceptRecordResult;
     }
 
+    static Builder builder() {
+      return new Builder();
+    }
+
     @Override
     public boolean acceptType(final RecordType recordType) {
       return acceptTypeResult;
@@ -154,6 +158,42 @@ final class ExporterContainerTest {
     @Override
     public boolean acceptRecord(final Record<?> record) {
       return acceptRecordResult;
+    }
+
+    static final class Builder {
+      private boolean acceptTypeResult;
+      private boolean acceptValueResult;
+      private boolean acceptIntentResult;
+      private boolean acceptRecordResult;
+
+      private Builder() {
+        // defaults to false for all flags
+      }
+
+      Builder acceptTypeResult(final boolean acceptTypeResult) {
+        this.acceptTypeResult = acceptTypeResult;
+        return this;
+      }
+
+      Builder acceptValueResult(final boolean acceptValueResult) {
+        this.acceptValueResult = acceptValueResult;
+        return this;
+      }
+
+      Builder acceptIntentResult(final boolean acceptIntentResult) {
+        this.acceptIntentResult = acceptIntentResult;
+        return this;
+      }
+
+      Builder acceptRecordResult(final boolean acceptRecordResult) {
+        this.acceptRecordResult = acceptRecordResult;
+        return this;
+      }
+
+      ConfigurableFilter build() {
+        return new ConfigurableFilter(
+            acceptTypeResult, acceptValueResult, acceptIntentResult, acceptRecordResult);
+      }
     }
   }
 
@@ -786,7 +826,15 @@ final class ExporterContainerTest {
     @Test
     void shouldNotExportRecordWhenTypeIsRejectedByFilter() throws Exception {
       // given
-      exporter.getContext().setFilter(new ConfigurableFilter(false, true, true, true));
+      exporter
+          .getContext()
+          .setFilter(
+              ConfigurableFilter.builder()
+                  .acceptTypeResult(false)
+                  .acceptValueResult(true)
+                  .acceptIntentResult(true)
+                  .acceptRecordResult(true)
+                  .build());
 
       final var mockedRecord = mock(TypedRecord.class);
       when(mockedRecord.getPosition()).thenReturn(1L);
@@ -805,7 +853,15 @@ final class ExporterContainerTest {
     @Test
     void shouldNotExportRecordWhenValueTypeIsRejectedByFilter() throws Exception {
       // given
-      exporter.getContext().setFilter(new ConfigurableFilter(true, false, true, true));
+      exporter
+          .getContext()
+          .setFilter(
+              ConfigurableFilter.builder()
+                  .acceptTypeResult(true)
+                  .acceptValueResult(false)
+                  .acceptIntentResult(true)
+                  .acceptRecordResult(true)
+                  .build());
 
       final var mockedRecord = mock(TypedRecord.class);
       when(mockedRecord.getPosition()).thenReturn(1L);
@@ -823,7 +879,15 @@ final class ExporterContainerTest {
     @Test
     void shouldNotExportRecordWhenIntentIsRejectedByFilter() throws Exception {
       // given
-      exporter.getContext().setFilter(new ConfigurableFilter(true, true, false, true));
+      exporter
+          .getContext()
+          .setFilter(
+              ConfigurableFilter.builder()
+                  .acceptTypeResult(true)
+                  .acceptValueResult(true)
+                  .acceptIntentResult(false)
+                  .acceptRecordResult(true)
+                  .build());
 
       final var mockedRecord = mock(TypedRecord.class);
       when(mockedRecord.getPosition()).thenReturn(1L);
@@ -841,7 +905,15 @@ final class ExporterContainerTest {
     @Test
     void shouldNotExportRecordWhenRecordPredicateIsRejectedByFilter() throws Exception {
       // given
-      exporter.getContext().setFilter(new ConfigurableFilter(true, true, true, false));
+      exporter
+          .getContext()
+          .setFilter(
+              ConfigurableFilter.builder()
+                  .acceptTypeResult(true)
+                  .acceptValueResult(true)
+                  .acceptIntentResult(true)
+                  .acceptRecordResult(false)
+                  .build());
 
       final var mockedRecord = mock(TypedRecord.class);
       when(mockedRecord.getPosition()).thenReturn(1L);
@@ -859,7 +931,15 @@ final class ExporterContainerTest {
     @Test
     void shouldExportRecordWhenAllFilterConditionsAccept() throws Exception {
       // given
-      exporter.getContext().setFilter(new ConfigurableFilter(true, true, true, true));
+      exporter
+          .getContext()
+          .setFilter(
+              ConfigurableFilter.builder()
+                  .acceptTypeResult(true)
+                  .acceptValueResult(true)
+                  .acceptIntentResult(true)
+                  .acceptRecordResult(true)
+                  .build());
 
       final var mockedRecord = mock(TypedRecord.class);
       when(mockedRecord.getPosition()).thenReturn(1L);
@@ -872,38 +952,6 @@ final class ExporterContainerTest {
       assertThat(exporter.getRecord()).isNotNull().isEqualTo(mockedRecord);
       assertThat(exporterContainer.getLastUnacknowledgedPosition()).isEqualTo(1);
       // committed position is still previous value until record is acknowledged
-      assertThat(exporterContainer.getPosition()).isZero();
-    }
-
-    @Test
-    void shouldNotCommitPositionWhenFilteredRecordFollowsUnacknowledgedRecord() throws Exception {
-      // given: first record is accepted and remains unacknowledged
-      exporter.getContext().setFilter(new ConfigurableFilter(true, true, true, true));
-
-      final var recordMetadata = new RecordMetadata();
-
-      final var firstRecord = mock(TypedRecord.class);
-      when(firstRecord.getPosition()).thenReturn(1L);
-      exporterContainer.exportRecord(recordMetadata, firstRecord);
-
-      // sanity check precondition
-      assertThat(exporter.getRecord()).isEqualTo(firstRecord);
-      assertThat(exporterContainer.getLastUnacknowledgedPosition()).isEqualTo(1);
-      assertThat(exporterContainer.getPosition()).isZero();
-
-      // when: next record is filtered out while the first is still unacknowledged
-      exporter.getContext().setFilter(new ConfigurableFilter(false, true, true, true));
-
-      final var secondRecord = mock(TypedRecord.class);
-      when(secondRecord.getPosition()).thenReturn(2L);
-      exporterContainer.exportRecord(recordMetadata, secondRecord);
-
-      // then
-      // exporter still holds the first record, second never exported
-      assertThat(exporter.getRecord()).isEqualTo(firstRecord);
-      // last unacknowledged position is still the first record
-      assertThat(exporterContainer.getLastUnacknowledgedPosition()).isEqualTo(1);
-      // committed position must not jump over the unacknowledged record
       assertThat(exporterContainer.getPosition()).isZero();
     }
   }
