@@ -11,6 +11,7 @@ import static io.camunda.gateway.mcp.tool.ToolDescriptions.EVENTUAL_CONSISTENCY_
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.FILTER_DESCRIPTION;
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.PAGE_DESCRIPTION;
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.SORT_DESCRIPTION;
+import static io.camunda.gateway.mcp.tool.ToolDescriptions.VARIABLE_FORMAT_DESCRIPTION;
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.VARIABLE_KEY_POSITIVE_MESSAGE;
 
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
@@ -46,7 +47,9 @@ public class VariableTools {
 
   @McpTool(
       description =
-          "Search for variables. The variable value is returned in serialized JSON format and may be truncated depending on the truncateValues parameter. "
+          "Search for variables. "
+              + VARIABLE_FORMAT_DESCRIPTION
+              + " The value may be truncated depending on the truncateValues parameter. "
               + EVENTUAL_CONSISTENCY_NOTE,
       annotations = @McpAnnotations(readOnlyHint = true))
   public CallToolResult searchVariables(
@@ -81,8 +84,7 @@ public class VariableTools {
 
   @McpTool(
       description =
-          "Get variable by key. The variable value is returned in serialized JSON format. "
-              + EVENTUAL_CONSISTENCY_NOTE,
+          "Get variable by key. " + VARIABLE_FORMAT_DESCRIPTION + " " + EVENTUAL_CONSISTENCY_NOTE,
       annotations = @McpAnnotations(readOnlyHint = true))
   public CallToolResult getVariable(
       @McpToolParam @Positive(message = VARIABLE_KEY_POSITIVE_MESSAGE) final Long variableKey) {
