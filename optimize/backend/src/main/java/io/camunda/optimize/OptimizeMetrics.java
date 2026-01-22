@@ -21,6 +21,7 @@ public class OptimizeMetrics {
 
   public static final String RECORD_TYPE_TAG = "RECORD_TYPE";
   public static final String PARTITION_ID_TAG = "PARTITION_ID";
+  public static final String REPORT_TYPE_TAG = "REPORT_TYPE";
   public static final String METRICS_ENDPOINT = "metrics";
 
   public static <T extends ZeebeRecordDto<?, ?>> void recordOverallEntitiesImportTime(
@@ -42,6 +43,13 @@ public class OptimizeMetrics {
         .description(metric.getDescription())
         .tag(RECORD_TYPE_TAG, recordType)
         .tag(PARTITION_ID_TAG, String.valueOf(partitionId))
+        .register(Metrics.globalRegistry);
+  }
+
+  public static Timer getReportEvaluationTimer(final String reportType) {
+    return Timer.builder(MetricEnum.REPORT_EVALUATION_DURATION_METRIC.getName())
+        .description(MetricEnum.REPORT_EVALUATION_DURATION_METRIC.getDescription())
+        .tag(REPORT_TYPE_TAG, reportType)
         .register(Metrics.globalRegistry);
   }
 }
