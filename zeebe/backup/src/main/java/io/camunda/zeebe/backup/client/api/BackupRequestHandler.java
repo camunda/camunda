@@ -9,6 +9,7 @@ package io.camunda.zeebe.backup.client.api;
 
 import static java.lang.Long.max;
 
+import io.camunda.zeebe.backup.common.CheckpointIdGenerator;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
@@ -19,7 +20,6 @@ import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse;
 import io.camunda.zeebe.protocol.management.BackupStatusCode;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.util.VisibleForTesting;
-import java.time.InstantSource;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -36,18 +36,25 @@ public final class BackupRequestHandler implements BackupApi {
 
   final BrokerClient brokerClient;
   final BrokerTopologyManager topologyManager;
-  final long backupIdOffset;
+  final CheckpointIdGenerator checkpointIdGenerator;
 
   public BackupRequestHandler(final BrokerClient brokerClient) {
     this.brokerClient = brokerClient;
     topologyManager = brokerClient.getTopologyManager();
-    backupIdOffset = 0L;
+    checkpointIdGenerator = new CheckpointIdGenerator();
   }
 
   public BackupRequestHandler(final BrokerClient brokerClient, final long backupIdOffset) {
     this.brokerClient = brokerClient;
     topologyManager = brokerClient.getTopologyManager();
-    this.backupIdOffset = backupIdOffset;
+    checkpointIdGenerator = new CheckpointIdGenerator(backupIdOffset);
+  }
+
+  public BackupRequestHandler(
+      final BrokerClient brokerClient, final CheckpointIdGenerator checkpointIdGenerator) {
+    this.brokerClient = brokerClient;
+    topologyManager = brokerClient.getTopologyManager();
+    this.checkpointIdGenerator = checkpointIdGenerator;
   }
 
   @Override
@@ -57,7 +64,7 @@ public final class BackupRequestHandler implements BackupApi {
 
   @Override
   public CompletionStage<Long> takeBackup() {
-    final var backupId = generateCheckpointId();
+    final var backupId = checkpointIdGenerator.generateCheckpointId();
     return takeBackup(backupId);
   }
 
@@ -143,7 +150,7 @@ public final class BackupRequestHandler implements BackupApi {
    * @return the checkpoint id created
    */
   public CompletionStage<Long> checkpoint(final CheckpointType checkpointType) {
-    final var checkpointId = generateCheckpointId();
+    final var checkpointId = checkpointIdGenerator.generateCheckpointId();
     return takeBackup(checkpointId, checkpointType);
   }
 
@@ -400,14 +407,6 @@ public final class BackupRequestHandler implements BackupApi {
     final var request = new BrokerCheckpointStateRequest();
     request.setPartitionId(partitionId);
     return request;
-  }
-
-  private long generateCheckpointId() {
-    var backupId = InstantSource.system().instant().toEpochMilli();
-    if (backupIdOffset > 0) {
-      backupId += backupIdOffset;
-    }
-    return backupId;
   }
 
   private static class IncompleteTopologyException extends RuntimeException {

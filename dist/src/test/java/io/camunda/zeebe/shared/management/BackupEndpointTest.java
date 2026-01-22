@@ -183,7 +183,8 @@ final class BackupEndpointTest {
     void backupIdShouldBeCloseToNowWhenContinuousBackupsEnabled() throws InterruptedException {
 
       // given
-      final var requestHandler = mock(BackupRequestHandler.class);
+      final var requestHandler =
+          mock(BackupRequestHandler.class, withSettings().useConstructor(mock(BrokerClient.class)));
       final var config = mock(BackupCfg.class);
       when(config.isContinuous()).thenReturn(true);
       final var endpoint = new BackupEndpoint(requestHandler, config);
