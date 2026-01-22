@@ -99,7 +99,7 @@ public class UserTaskTools {
     }
   }
 
-  @McpTool(description = "Assign user task to an assignee. " + EVENTUAL_CONSISTENCY_NOTE)
+  @McpTool(description = "Assign user task to an assignee.")
   public CallToolResult assignUserTask(
       @McpToolParam(description = "The key of the user task to assign.")
           @Positive(message = USER_TASK_KEY_POSITIVE_MESSAGE)
