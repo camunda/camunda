@@ -224,6 +224,7 @@
 
   <delete id="deleteProcessInstanceRelatedData">
     <bind name="tableName" value="'MESSAGE_SUBSCRIPTION'"/>
+    <bind name="primaryKeyColumn" value="'MESSAGE_SUBSCRIPTION_KEY'"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.processInstanceHistoryDeletion"/>
   </delete>
 

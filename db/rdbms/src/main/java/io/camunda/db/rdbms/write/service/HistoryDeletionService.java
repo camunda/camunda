@@ -59,7 +59,7 @@ public class HistoryDeletionService {
     final var batch = historyDeletionDbReader.getNextBatch(partitionId, config.queueBatchSize());
     LOG.trace("Deleting historic data for entities: {}", batch);
 
-    final List<Long> deletedProcessInstances = deleteProcessInstances(batch);
+    final List<Long> deletedProcessInstances = deleteProcessInstances(partitionId, batch);
     final List<Long> deletedProcessDefinitions = deleteProcessDefinitions(batch);
     final List<Long> deletedResources =
         Stream.concat(deletedProcessInstances.stream(), deletedProcessDefinitions.stream())
@@ -69,7 +69,8 @@ public class HistoryDeletionService {
     return nextDelay(deletedResourceCount);
   }
 
-  private List<Long> deleteProcessInstances(final List<HistoryDeletionDbModel> batch) {
+  private List<Long> deleteProcessInstances(
+      final int partitionId, final List<HistoryDeletionDbModel> batch) {
     final var processInstanceKeys =
         batch.stream()
             .filter(
@@ -90,7 +91,8 @@ public class HistoryDeletionService {
                 dependant -> {
                   final var limit = config.dependentRowLimit();
                   final var deletedRows =
-                      dependant.deleteProcessInstanceRelatedData(processInstanceKeys, limit);
+                      dependant.deleteProcessInstanceRelatedData(
+                          partitionId, processInstanceKeys, limit);
                   return deletedRows < limit;
                 });
 

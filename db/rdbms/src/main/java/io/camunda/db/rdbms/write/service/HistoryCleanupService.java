@@ -164,43 +164,43 @@ public class HistoryCleanupService {
         numDeletedRecords.put(
             "flowNodeInstance",
             flowNodeInstanceWriter.deleteProcessInstanceRelatedData(
-                expiredProcessInstanceKeys, cleanupBatchSize));
+                partitionId, expiredProcessInstanceKeys, cleanupBatchSize));
         numDeletedRecords.put(
             "incident",
             incidentWriter.deleteProcessInstanceRelatedData(
-                expiredProcessInstanceKeys, cleanupBatchSize));
+                partitionId, expiredProcessInstanceKeys, cleanupBatchSize));
         numDeletedRecords.put(
             "userTask",
             userTaskWriter.deleteProcessInstanceRelatedData(
-                expiredProcessInstanceKeys, cleanupBatchSize));
+                partitionId, expiredProcessInstanceKeys, cleanupBatchSize));
         numDeletedRecords.put(
             "variable",
             variableInstanceWriter.deleteProcessInstanceRelatedData(
-                expiredProcessInstanceKeys, cleanupBatchSize));
+                partitionId, expiredProcessInstanceKeys, cleanupBatchSize));
         numDeletedRecords.put(
             "decisionInstance",
             decisionInstanceWriter.deleteProcessInstanceRelatedData(
-                expiredProcessInstanceKeys, cleanupBatchSize));
+                partitionId, expiredProcessInstanceKeys, cleanupBatchSize));
         numDeletedRecords.put(
             "job",
             jobWriter.deleteProcessInstanceRelatedData(
-                expiredProcessInstanceKeys, cleanupBatchSize));
+                partitionId, expiredProcessInstanceKeys, cleanupBatchSize));
         numDeletedRecords.put(
             "sequenceFlow",
             sequenceFlowWriter.deleteProcessInstanceRelatedData(
-                expiredProcessInstanceKeys, cleanupBatchSize));
+                partitionId, expiredProcessInstanceKeys, cleanupBatchSize));
         numDeletedRecords.put(
             "messageSubscription",
             messageSubscriptionWriter.deleteProcessInstanceRelatedData(
-                expiredProcessInstanceKeys, cleanupBatchSize));
+                partitionId, expiredProcessInstanceKeys, cleanupBatchSize));
         numDeletedRecords.put(
             "correlatedMessageSubscription",
             correlatedMessageSubscriptionWriter.deleteProcessInstanceRelatedData(
-                expiredProcessInstanceKeys, cleanupBatchSize));
+                partitionId, expiredProcessInstanceKeys, cleanupBatchSize));
         numDeletedRecords.put(
             "auditLog",
             auditLogWriter.deleteProcessInstanceRelatedData(
-                expiredProcessInstanceKeys, cleanupBatchSize));
+                partitionId, expiredProcessInstanceKeys, cleanupBatchSize));
 
         // Calculate total child entities deleted - if any deletion hit the batch size limit,
         // there might be more to delete. Otherwise, we can assume all children are gone.
