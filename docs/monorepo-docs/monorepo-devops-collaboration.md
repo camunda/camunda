@@ -1,7 +1,4 @@
----
-title: Monorepo DevOps Collaboration Guidelines
-sidebar_label: Monorepo DevOps Collaboration
----
+# Monorepo DevOps Collaboration Guidelines
 
 These are our baseline expectations.
 
@@ -96,9 +93,9 @@ You're encouraged to:
 * Use existing Monorepo patterns and integration points
 * Communicate results and reasoning clearly in Slack / issues
 * Iterate independently as long as you don't:
-    * Change shared infrastructure
-    * Change release train behavior
-    * Impact other teams without coordination
+  * Change shared infrastructure
+  * Change release train behavior
+  * Impact other teams without coordination
 
 When any of those become true → loop in Monorepo DevOps.
 
@@ -123,7 +120,7 @@ When any of those become true → loop in Monorepo DevOps.
 ## FAQ ❓
 
 **Q: How early should I reach out?**
-A: As soon as you have a rough idea, that might affect the release process. Better to ask too early than too late.
+A: As soon as you have a rough idea that might affect the release process. Better to ask too early than too late.
 
 **Q: What if I'm not sure about ownership boundaries?**
 A: Use the heads-up template to start the conversation. We'll work together to clarify ownership.
