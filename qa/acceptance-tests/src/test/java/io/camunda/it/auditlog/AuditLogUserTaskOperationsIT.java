@@ -99,7 +99,8 @@ public class AuditLogUserTaskOperationsIT {
     final var auditLog = auditLogItems.items().getFirst();
     assertThat(auditLog).isNotNull();
     assertThat(auditLog.getUserTaskKey()).isEqualTo(String.valueOf(userTaskKey));
-    assertUserTaskAuditLog(auditLog, AuditLogOperationTypeEnum.ASSIGN);
+    assertUserTaskAuditLog(
+        auditLog, AuditLogOperationTypeEnum.ASSIGN, userTask.getProcessDefinitionKey());
   }
 
   @Test
@@ -120,7 +121,8 @@ public class AuditLogUserTaskOperationsIT {
     final var auditLog = auditLogItems.items().getFirst();
     assertThat(auditLog).isNotNull();
     assertThat(auditLog.getUserTaskKey()).isEqualTo(String.valueOf(userTaskKey));
-    assertUserTaskAuditLog(auditLog, AuditLogOperationTypeEnum.UPDATE);
+    assertUserTaskAuditLog(
+        auditLog, AuditLogOperationTypeEnum.UPDATE, userTask.getProcessDefinitionKey());
   }
 
   @Test
@@ -141,7 +143,8 @@ public class AuditLogUserTaskOperationsIT {
     final var auditLog = auditLogItems.items().getFirst();
     assertThat(auditLog).isNotNull();
     assertThat(auditLog.getUserTaskKey()).isEqualTo(String.valueOf(userTaskKey));
-    assertUserTaskAuditLog(auditLog, AuditLogOperationTypeEnum.COMPLETE);
+    assertUserTaskAuditLog(
+        auditLog, AuditLogOperationTypeEnum.COMPLETE, userTask.getProcessDefinitionKey());
   }
 
   // ========================================================================================
@@ -153,16 +156,19 @@ public class AuditLogUserTaskOperationsIT {
    *
    * @param auditLog the audit log to verify
    * @param operationType the expected operation type
+   * @param processDefinitionKey the expected process definition key
    */
   private void assertUserTaskAuditLog(
       final io.camunda.client.api.search.response.AuditLogResult auditLog,
-      final AuditLogOperationTypeEnum operationType) {
+      final AuditLogOperationTypeEnum operationType,
+      final long processDefinitionKey) {
     assertThat(auditLog.getEntityType()).isEqualTo(AuditLogEntityTypeEnum.USER_TASK);
     assertThat(auditLog.getOperationType()).isEqualTo(operationType);
     assertThat(auditLog.getCategory()).isEqualTo(AuditLogCategoryEnum.USER_TASKS);
     assertThat(auditLog.getResult()).isEqualTo(AuditLogResultEnum.SUCCESS);
     assertThat(auditLog.getActorId()).isEqualTo(DEFAULT_USERNAME);
     assertThat(auditLog.getActorType()).isEqualTo(AuditLogActorTypeEnum.USER);
+    assertThat(auditLog.getProcessDefinitionKey()).isEqualTo(String.valueOf(processDefinitionKey));
   }
 
   public static void updateUserTask(final UserTaskRecordValue userTask) {

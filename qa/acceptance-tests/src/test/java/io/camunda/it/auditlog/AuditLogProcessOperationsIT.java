@@ -135,13 +135,12 @@ public class AuditLogProcessOperationsIT {
 
     assertThat(auditLogItems).isNotEmpty();
     final var auditLog = auditLogItems.stream().findFirst().orElseThrow();
-    assertThat(auditLog.getProcessDefinitionKey())
-        .isEqualTo(String.valueOf(processInstance.getProcessDefinitionKey()));
     assertProcessInstanceAuditLog(
         auditLog,
         AuditLogEntityTypeEnum.PROCESS_INSTANCE,
         AuditLogOperationTypeEnum.CREATE,
         processInstanceKey,
+        processInstance.getProcessDefinitionKey(),
         SERVICE_TASKS_PROCESS_ID);
   }
 
@@ -187,13 +186,12 @@ public class AuditLogProcessOperationsIT {
 
     assertThat(auditLogItems).isNotEmpty();
     final var auditLog = auditLogItems.stream().findFirst().orElseThrow();
-    assertThat(auditLog.getProcessDefinitionKey())
-        .isEqualTo(String.valueOf(targetProcess.getProcessDefinitionKey()));
     assertProcessInstanceAuditLog(
         auditLog,
         AuditLogEntityTypeEnum.PROCESS_INSTANCE,
         AuditLogOperationTypeEnum.MIGRATE,
         processInstanceKey,
+        targetProcess.getProcessDefinitionKey(),
         null);
   }
 
@@ -224,13 +222,12 @@ public class AuditLogProcessOperationsIT {
 
     assertThat(auditLogItems).isNotEmpty();
     final var auditLog = auditLogItems.stream().findFirst().orElseThrow();
-    assertThat(auditLog.getProcessDefinitionKey())
-        .isEqualTo(String.valueOf(processInstance.getProcessDefinitionKey()));
     assertProcessInstanceAuditLog(
         auditLog,
         AuditLogEntityTypeEnum.PROCESS_INSTANCE,
         AuditLogOperationTypeEnum.MODIFY,
         processInstanceKey,
+        processInstance.getProcessDefinitionKey(),
         null);
   }
 
@@ -257,13 +254,12 @@ public class AuditLogProcessOperationsIT {
 
     assertThat(auditLogItems).isNotEmpty();
     final var auditLog = auditLogItems.stream().findFirst().orElseThrow();
-    assertThat(auditLog.getProcessDefinitionKey())
-        .isEqualTo(String.valueOf(processInstance.getProcessDefinitionKey()));
     assertProcessInstanceAuditLog(
         auditLog,
         AuditLogEntityTypeEnum.PROCESS_INSTANCE,
         AuditLogOperationTypeEnum.CANCEL,
         processInstanceKey,
+        processInstance.getProcessDefinitionKey(),
         SERVICE_TASKS_PROCESS_ID);
   }
 
@@ -293,10 +289,12 @@ public class AuditLogProcessOperationsIT {
 
     assertThat(auditLogItems).isNotEmpty();
     final var auditLog = auditLogItems.getFirst();
-    assertThat(auditLog.getProcessDefinitionKey())
-        .isEqualTo(String.valueOf(sharedProcessDefinitionKey));
     assertVariableAuditLog(
-        auditLog, AuditLogOperationTypeEnum.CREATE, processInstanceKey, SERVICE_TASKS_PROCESS_ID);
+        auditLog,
+        AuditLogOperationTypeEnum.CREATE,
+        processInstanceKey,
+        sharedProcessDefinitionKey,
+        SERVICE_TASKS_PROCESS_ID);
   }
 
   @Test
@@ -328,10 +326,12 @@ public class AuditLogProcessOperationsIT {
 
     assertThat(auditLogItems).isNotEmpty();
     final var auditLog = auditLogItems.getFirst();
-    assertThat(auditLog.getProcessDefinitionKey())
-        .isEqualTo(String.valueOf(processInstance.getProcessDefinitionKey()));
     assertVariableAuditLog(
-        auditLog, AuditLogOperationTypeEnum.UPDATE, processInstanceKey, SERVICE_TASKS_PROCESS_ID);
+        auditLog,
+        AuditLogOperationTypeEnum.UPDATE,
+        processInstanceKey,
+        processInstance.getProcessDefinitionKey(),
+        SERVICE_TASKS_PROCESS_ID);
   }
 
   // ========================================================================================
@@ -385,13 +385,12 @@ public class AuditLogProcessOperationsIT {
 
     assertThat(auditLogItems).isNotEmpty();
     final var auditLog = auditLogItems.stream().findFirst().orElseThrow();
-    assertThat(auditLog.getProcessDefinitionKey())
-        .isEqualTo(String.valueOf(processInstance.getProcessDefinitionKey()));
     assertIncidentAuditLog(
         auditLog,
         AuditLogOperationTypeEnum.RESOLVE,
         incident.getIncidentKey(),
         processInstanceKey,
+        processInstance.getProcessDefinitionKey(),
         INCIDENT_PROCESS_ID);
   }
 
@@ -653,6 +652,7 @@ public class AuditLogProcessOperationsIT {
    * @param entityType the expected entity type
    * @param operationType the expected operation type
    * @param processInstanceKey the expected process instance key
+   * @param processDefinitionKey the expected process definition key
    * @param processDefinitionId the expected process definition ID (can be null)
    */
   private void assertProcessInstanceAuditLog(
@@ -660,10 +660,12 @@ public class AuditLogProcessOperationsIT {
       final AuditLogEntityTypeEnum entityType,
       final AuditLogOperationTypeEnum operationType,
       final long processInstanceKey,
+      final long processDefinitionKey,
       final String processDefinitionId) {
     assertCommonAuditLogFields(auditLog, entityType, operationType);
     assertThat(auditLog.getEntityKey()).isNotNull();
     assertThat(auditLog.getProcessInstanceKey()).isEqualTo(String.valueOf(processInstanceKey));
+    assertThat(auditLog.getProcessDefinitionKey()).isEqualTo(String.valueOf(processDefinitionKey));
     assertThat(auditLog.getTenantId()).isEqualTo(TENANT_A);
     assertThat(auditLog.getProcessDefinitionId()).isEqualTo(processDefinitionId);
   }
@@ -674,16 +676,19 @@ public class AuditLogProcessOperationsIT {
    * @param auditLog the audit log to verify
    * @param operationType the expected operation type
    * @param processInstanceKey the expected process instance key
+   * @param processDefinitionKey the expected process definition key
    * @param processDefinitionId the expected process definition ID
    */
   private void assertVariableAuditLog(
       final AuditLogResult auditLog,
       final AuditLogOperationTypeEnum operationType,
       final long processInstanceKey,
+      final long processDefinitionKey,
       final String processDefinitionId) {
     assertCommonAuditLogFields(auditLog, AuditLogEntityTypeEnum.VARIABLE, operationType);
     assertThat(auditLog.getEntityKey()).isNotNull();
     assertThat(auditLog.getProcessInstanceKey()).isEqualTo(String.valueOf(processInstanceKey));
+    assertThat(auditLog.getProcessDefinitionKey()).isEqualTo(String.valueOf(processDefinitionKey));
     assertThat(auditLog.getTenantId()).isEqualTo(TENANT_A);
     assertThat(auditLog.getProcessDefinitionId()).isEqualTo(processDefinitionId);
   }
@@ -695,6 +700,7 @@ public class AuditLogProcessOperationsIT {
    * @param operationType the expected operation type
    * @param incidentKey the expected incident key
    * @param processInstanceKey the expected process instance key
+   * @param processDefinitionKey the expected process definition key
    * @param processDefinitionId the expected process definition ID
    */
   private void assertIncidentAuditLog(
@@ -702,10 +708,12 @@ public class AuditLogProcessOperationsIT {
       final AuditLogOperationTypeEnum operationType,
       final long incidentKey,
       final long processInstanceKey,
+      final long processDefinitionKey,
       final String processDefinitionId) {
     assertCommonAuditLogFields(auditLog, AuditLogEntityTypeEnum.INCIDENT, operationType);
     assertThat(auditLog.getEntityKey()).isEqualTo(String.valueOf(incidentKey));
     assertThat(auditLog.getProcessInstanceKey()).isEqualTo(String.valueOf(processInstanceKey));
+    assertThat(auditLog.getProcessDefinitionKey()).isEqualTo(String.valueOf(processDefinitionKey));
     assertThat(auditLog.getTenantId()).isEqualTo(TENANT_A);
     assertThat(auditLog.getProcessDefinitionId()).isEqualTo(processDefinitionId);
   }
