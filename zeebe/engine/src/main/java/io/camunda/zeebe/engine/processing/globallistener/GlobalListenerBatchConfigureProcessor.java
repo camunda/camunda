@@ -8,11 +8,9 @@
 package io.camunda.zeebe.engine.processing.globallistener;
 
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
-import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
-import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.globallistener.GlobalListenersState;
-import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerBatchRecord;
 import io.camunda.zeebe.protocol.record.intent.GlobalListenerBatchIntent;
@@ -26,26 +24,23 @@ import java.util.stream.Collectors;
 
 @ExcludeAuthorizationCheck
 public final class GlobalListenerBatchConfigureProcessor
-    implements DistributedTypedRecordProcessor<GlobalListenerBatchRecord> {
+    implements TypedRecordProcessor<GlobalListenerBatchRecord> {
 
   private final KeyGenerator keyGenerator;
   private final Writers writers;
-  private final CommandDistributionBehavior distributionBehavior;
   private final GlobalListenersState globalListenersState;
 
   public GlobalListenerBatchConfigureProcessor(
       final KeyGenerator keyGenerator,
       final Writers writers,
-      final CommandDistributionBehavior distributionBehavior,
       final ProcessingState processingState) {
     this.keyGenerator = keyGenerator;
     this.writers = writers;
-    this.distributionBehavior = distributionBehavior;
     globalListenersState = processingState.getGlobalListenersState();
   }
 
   @Override
-  public void processNewCommand(final TypedRecord<GlobalListenerBatchRecord> command) {
+  public void processRecord(final TypedRecord<GlobalListenerBatchRecord> command) {
     // Note: key generation is done here to have a single key for all resulting commands/events
     // since they are all related to the same configuration change, generating a single new
     // configuration version.
@@ -88,29 +83,8 @@ public final class GlobalListenerBatchConfigureProcessor
 
     // Finally, write the CONFIGURED event for the batch, marking the completion of the
     // configuration change
-    appendConfiguredEvent(key, command.getValue());
-
-    distributeCommand(key, command);
-  }
-
-  @Override
-  public void processDistributedCommand(final TypedRecord<GlobalListenerBatchRecord> command) {
-    final var record = command.getValue();
-    appendConfiguredEvent(command.getKey(), record);
-    distributionBehavior.acknowledgeCommand(command);
-  }
-
-  private void appendConfiguredEvent(final long key, final GlobalListenerBatchRecord record) {
     writers
         .state()
-        .appendFollowUpEvent(key, GlobalListenerBatchIntent.CONFIGURED, record);
-  }
-
-  private void distributeCommand(
-      final long key, final TypedRecord<GlobalListenerBatchRecord> command) {
-    distributionBehavior
-        .withKey(key)
-        .inQueue(DistributionQueue.GLOBAL_LISTENERS.getQueueId())
-        .distribute(command);
+        .appendFollowUpEvent(key, GlobalListenerBatchIntent.CONFIGURED, command.getValue());
   }
 }
