@@ -8,8 +8,6 @@
 package io.camunda.gateway.mapping.http;
 
 import static io.camunda.gateway.mapping.http.validator.AdHocSubProcessActivityRequestValidator.validateAdHocSubProcessActivationRequest;
-import static io.camunda.gateway.mapping.http.validator.AuthorizationRequestValidator.validateIdBasedRequest;
-import static io.camunda.gateway.mapping.http.validator.AuthorizationRequestValidator.validatePropertyBasedRequest;
 import static io.camunda.gateway.mapping.http.validator.ClockValidator.validateClockPinRequest;
 import static io.camunda.gateway.mapping.http.validator.ConditionalEvaluationRequestValidator.validateConditionalEvaluationRequest;
 import static io.camunda.gateway.mapping.http.validator.DocumentValidator.validateDocumentLinkParams;
@@ -42,22 +40,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.document.api.DocumentMetadataModel;
 import io.camunda.gateway.mapping.http.search.SearchQueryFilterMapper;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
-import io.camunda.gateway.mapping.http.validator.ClusterVariableRequestValidator;
 import io.camunda.gateway.mapping.http.validator.DocumentValidator;
-import io.camunda.gateway.mapping.http.validator.GroupRequestValidator;
-import io.camunda.gateway.mapping.http.validator.MappingRuleRequestValidator;
-import io.camunda.gateway.mapping.http.validator.RoleRequestValidator;
-import io.camunda.gateway.mapping.http.validator.TenantRequestValidator;
-import io.camunda.gateway.mapping.http.validator.UserRequestValidator;
 import io.camunda.gateway.protocol.model.AdHocSubProcessActivateActivitiesInstruction;
-import io.camunda.gateway.protocol.model.AuthorizationIdBasedRequest;
-import io.camunda.gateway.protocol.model.AuthorizationPropertyBasedRequest;
-import io.camunda.gateway.protocol.model.AuthorizationRequest;
 import io.camunda.gateway.protocol.model.CancelProcessInstanceRequest;
 import io.camunda.gateway.protocol.model.Changeset;
 import io.camunda.gateway.protocol.model.ClockPinRequest;
 import io.camunda.gateway.protocol.model.ConditionalEvaluationInstruction;
-import io.camunda.gateway.protocol.model.CreateClusterVariableRequest;
 import io.camunda.gateway.protocol.model.DecisionEvaluationById;
 import io.camunda.gateway.protocol.model.DecisionEvaluationByKey;
 import io.camunda.gateway.protocol.model.DecisionEvaluationInstruction;
@@ -65,8 +53,6 @@ import io.camunda.gateway.protocol.model.DeleteResourceRequest;
 import io.camunda.gateway.protocol.model.DirectAncestorKeyInstruction;
 import io.camunda.gateway.protocol.model.DocumentLinkRequest;
 import io.camunda.gateway.protocol.model.DocumentMetadata;
-import io.camunda.gateway.protocol.model.GroupCreateRequest;
-import io.camunda.gateway.protocol.model.GroupUpdateRequest;
 import io.camunda.gateway.protocol.model.JobActivationRequest;
 import io.camunda.gateway.protocol.model.JobCompletionRequest;
 import io.camunda.gateway.protocol.model.JobErrorRequest;
@@ -74,12 +60,9 @@ import io.camunda.gateway.protocol.model.JobFailRequest;
 import io.camunda.gateway.protocol.model.JobResultAdHocSubProcess;
 import io.camunda.gateway.protocol.model.JobResultUserTask;
 import io.camunda.gateway.protocol.model.JobUpdateRequest;
-import io.camunda.gateway.protocol.model.MappingRuleCreateRequest;
-import io.camunda.gateway.protocol.model.MappingRuleUpdateRequest;
 import io.camunda.gateway.protocol.model.MessageCorrelationRequest;
 import io.camunda.gateway.protocol.model.MessagePublicationRequest;
 import io.camunda.gateway.protocol.model.ModifyProcessInstanceVariableInstruction;
-import io.camunda.gateway.protocol.model.PermissionTypeEnum;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionById;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionByKey;
@@ -91,36 +74,24 @@ import io.camunda.gateway.protocol.model.ProcessInstanceModificationInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceModificationMoveBatchOperationInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceModificationTerminateByIdInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceModificationTerminateByKeyInstruction;
-import io.camunda.gateway.protocol.model.RoleCreateRequest;
-import io.camunda.gateway.protocol.model.RoleUpdateRequest;
 import io.camunda.gateway.protocol.model.SetVariableRequest;
 import io.camunda.gateway.protocol.model.SignalBroadcastRequest;
 import io.camunda.gateway.protocol.model.SourceElementIdInstruction;
 import io.camunda.gateway.protocol.model.SourceElementInstanceKeyInstruction;
-import io.camunda.gateway.protocol.model.TenantCreateRequest;
-import io.camunda.gateway.protocol.model.TenantUpdateRequest;
 import io.camunda.gateway.protocol.model.UseSourceParentKeyInstruction;
-import io.camunda.gateway.protocol.model.UserRequest;
 import io.camunda.gateway.protocol.model.UserTaskAssignmentRequest;
 import io.camunda.gateway.protocol.model.UserTaskCompletionRequest;
 import io.camunda.gateway.protocol.model.UserTaskUpdateRequest;
-import io.camunda.gateway.protocol.model.UserUpdateRequest;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.service.AdHocSubProcessActivityServices.AdHocSubProcessActivateActivitiesRequest;
 import io.camunda.service.AdHocSubProcessActivityServices.AdHocSubProcessActivateActivitiesRequest.AdHocSubProcessActivateActivityReference;
-import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
-import io.camunda.service.AuthorizationServices.UpdateAuthorizationRequest;
-import io.camunda.service.ClusterVariableServices.ClusterVariableRequest;
 import io.camunda.service.ConditionalServices.EvaluateConditionalRequest;
 import io.camunda.service.DocumentServices.DocumentCreateRequest;
 import io.camunda.service.DocumentServices.DocumentLinkParams;
 import io.camunda.service.ElementInstanceServices.SetVariablesRequest;
 import io.camunda.service.ExpressionServices.ExpressionEvaluationRequest;
-import io.camunda.service.GroupServices.GroupDTO;
-import io.camunda.service.GroupServices.GroupMemberDTO;
 import io.camunda.service.JobServices.ActivateJobsRequest;
 import io.camunda.service.JobServices.UpdateJobChangeset;
-import io.camunda.service.MappingRuleServices.MappingRuleDTO;
 import io.camunda.service.MessageServices.CorrelateMessageRequest;
 import io.camunda.service.MessageServices.PublicationMessageRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCancelRequest;
@@ -131,12 +102,6 @@ import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyBatchOper
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyRequest;
 import io.camunda.service.ResourceServices.DeployResourcesRequest;
 import io.camunda.service.ResourceServices.ResourceDeletionRequest;
-import io.camunda.service.RoleServices.CreateRoleRequest;
-import io.camunda.service.RoleServices.RoleMemberRequest;
-import io.camunda.service.RoleServices.UpdateRoleRequest;
-import io.camunda.service.TenantServices.TenantMemberRequest;
-import io.camunda.service.TenantServices.TenantRequest;
-import io.camunda.service.UserServices.UserDTO;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResultActivateElement;
@@ -149,13 +114,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationTerminateInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationVariableInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
-import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
-import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
-import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.JobResultType;
-import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.RuntimeInstructionType;
 import io.camunda.zeebe.util.Either;
 import jakarta.servlet.http.Part;
@@ -168,16 +127,23 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.web.multipart.MultipartFile;
 
+/**
+ * This class is way too big and also way too big to be all static, causing leaky abstraction (e.g.
+ * identifierPattern being passed through multiple layers to the IdentifierValidator).
+ *
+ * <p>As refactoring it at once would be a huge task, it should be split up and changed to be more
+ * OOP piece by piece.
+ *
+ * <p>the split-up classes should be put in the @io.camunda.gateway.mapping.http.mapper package
+ */
 public class RequestMapper {
 
   public static final String VND_CAMUNDA_API_KEYS_STRING_JSON = "vnd.camunda.api.keys.string+json";
@@ -226,18 +192,6 @@ public class RequestMapper {
                 userTaskKey,
                 getRecordWithChangedAttributes(updateRequest),
                 getStringOrEmpty(updateRequest, UserTaskUpdateRequest::getAction)));
-  }
-
-  public static Either<ProblemDetail, UserDTO> toUserUpdateRequest(
-      final UserUpdateRequest updateRequest, final String username) {
-    return getResult(
-        UserRequestValidator.validateUpdateRequest(updateRequest),
-        () ->
-            new UserDTO(
-                username,
-                updateRequest.getName(),
-                updateRequest.getEmail(),
-                updateRequest.getPassword()));
   }
 
   public static Either<ProblemDetail, Long> getPinnedEpoch(final ClockPinRequest pinRequest) {
@@ -334,193 +288,6 @@ public class RequestMapper {
                 new UpdateJobChangeset(
                     updateRequest.getChangeset().getRetries(),
                     updateRequest.getChangeset().getTimeout())));
-  }
-
-  public static Either<ProblemDetail, UpdateRoleRequest> toRoleUpdateRequest(
-      final RoleUpdateRequest roleUpdateRequest, final String roleId) {
-    return getResult(
-        RoleRequestValidator.validateUpdateRequest(roleUpdateRequest),
-        () ->
-            new UpdateRoleRequest(
-                roleId, roleUpdateRequest.getName(), roleUpdateRequest.getDescription()));
-  }
-
-  public static Either<ProblemDetail, CreateRoleRequest> toRoleCreateRequest(
-      final RoleCreateRequest roleCreateRequest, final Pattern identifierPattern) {
-    return getResult(
-        RoleRequestValidator.validateCreateRequest(roleCreateRequest, identifierPattern),
-        () ->
-            new CreateRoleRequest(
-                roleCreateRequest.getRoleId(),
-                roleCreateRequest.getName(),
-                roleCreateRequest.getDescription()));
-  }
-
-  public static Either<ProblemDetail, RoleMemberRequest> toRoleMemberRequest(
-      final String roleId,
-      final String memberId,
-      final EntityType entityType,
-      final Pattern identifierPattern) {
-    return getResult(
-        RoleRequestValidator.validateMemberRequest(
-            roleId, memberId, entityType, identifierPattern, identifierPattern),
-        () -> new RoleMemberRequest(roleId, memberId, entityType));
-  }
-
-  public static Either<ProblemDetail, RoleMemberRequest> toRoleMemberRequest(
-      final String roleId,
-      final String memberId,
-      final EntityType entityType,
-      final Pattern roleIdentifierPattern,
-      final Pattern memberIdentifierPattern) {
-    return getResult(
-        RoleRequestValidator.validateMemberRequest(
-            roleId, memberId, entityType, roleIdentifierPattern, memberIdentifierPattern),
-        () -> new RoleMemberRequest(roleId, memberId, entityType));
-  }
-
-  public static Either<ProblemDetail, GroupDTO> toGroupCreateRequest(
-      final GroupCreateRequest groupCreateRequest, final Pattern identifierPattern) {
-    return getResult(
-        GroupRequestValidator.validateCreateRequest(groupCreateRequest, identifierPattern),
-        () ->
-            new GroupDTO(
-                groupCreateRequest.getGroupId(),
-                groupCreateRequest.getName(),
-                groupCreateRequest.getDescription()));
-  }
-
-  public static Either<ProblemDetail, GroupDTO> toGroupUpdateRequest(
-      final GroupUpdateRequest groupUpdateRequest,
-      final String groupId,
-      final Pattern identifierPattern) {
-    return getResult(
-        GroupRequestValidator.validateUpdateRequest(groupId, groupUpdateRequest, identifierPattern),
-        () ->
-            new GroupDTO(
-                groupId, groupUpdateRequest.getName(), groupUpdateRequest.getDescription()));
-  }
-
-  public static Either<ProblemDetail, GroupMemberDTO> toGroupMemberRequest(
-      final String groupId,
-      final String memberId,
-      final EntityType entityType,
-      final Pattern identifierPattern) {
-    return getResult(
-        GroupRequestValidator.validateMemberRequest(
-            groupId, memberId, entityType, identifierPattern),
-        () -> new GroupMemberDTO(groupId, memberId, entityType));
-  }
-
-  public static Either<ProblemDetail, CreateAuthorizationRequest> toCreateAuthorizationRequest(
-      final AuthorizationRequest request, final Pattern idPattern) {
-    return switch (request) {
-      case final AuthorizationIdBasedRequest idReq ->
-          toCreateAuthorizationRequest(idReq, idPattern);
-      case final AuthorizationPropertyBasedRequest propReq ->
-          toCreateAuthorizationRequest(propReq, idPattern);
-      default -> Either.left(createUnsupportedAuthorizationProblemDetail(request));
-    };
-  }
-
-  public static Either<ProblemDetail, CreateAuthorizationRequest> toCreateAuthorizationRequest(
-      final AuthorizationIdBasedRequest request, final Pattern idPattern) {
-    return getResult(
-        validateIdBasedRequest(request, idPattern),
-        () ->
-            new CreateAuthorizationRequest(
-                request.getOwnerId(),
-                AuthorizationOwnerType.valueOf(request.getOwnerType().name()),
-                resolveIdBasedResourceMatcher(request.getResourceId()),
-                request.getResourceId(),
-                "",
-                AuthorizationResourceType.valueOf(request.getResourceType().name()),
-                transformPermissionTypes(request.getPermissionTypes())));
-  }
-
-  public static Either<ProblemDetail, CreateAuthorizationRequest> toCreateAuthorizationRequest(
-      final AuthorizationPropertyBasedRequest request, final Pattern idPattern) {
-
-    return getResult(
-        validatePropertyBasedRequest(request, idPattern),
-        () ->
-            new CreateAuthorizationRequest(
-                request.getOwnerId(),
-                AuthorizationOwnerType.valueOf(request.getOwnerType().name()),
-                AuthorizationResourceMatcher.PROPERTY,
-                "",
-                request.getResourcePropertyName(),
-                AuthorizationResourceType.valueOf(request.getResourceType().name()),
-                transformPermissionTypes(request.getPermissionTypes())));
-  }
-
-  public static Either<ProblemDetail, UpdateAuthorizationRequest> toUpdateAuthorizationRequest(
-      final long authorizationKey, final AuthorizationRequest request, final Pattern idPattern) {
-    return switch (request) {
-      case final AuthorizationIdBasedRequest idReq ->
-          toUpdateAuthorizationRequest(authorizationKey, idReq, idPattern);
-      case final AuthorizationPropertyBasedRequest propReq ->
-          toUpdateAuthorizationRequest(authorizationKey, propReq, idPattern);
-      default -> Either.left(createUnsupportedAuthorizationProblemDetail(request));
-    };
-  }
-
-  public static Either<ProblemDetail, UpdateAuthorizationRequest> toUpdateAuthorizationRequest(
-      final long authorizationKey,
-      final AuthorizationIdBasedRequest request,
-      final Pattern idPattern) {
-    return getResult(
-        validateIdBasedRequest(request, idPattern),
-        () ->
-            new UpdateAuthorizationRequest(
-                authorizationKey,
-                request.getOwnerId(),
-                AuthorizationOwnerType.valueOf(request.getOwnerType().name()),
-                resolveIdBasedResourceMatcher(request.getResourceId()),
-                request.getResourceId(),
-                "",
-                AuthorizationResourceType.valueOf(request.getResourceType().name()),
-                transformPermissionTypes(request.getPermissionTypes())));
-  }
-
-  public static Either<ProblemDetail, UpdateAuthorizationRequest> toUpdateAuthorizationRequest(
-      final long authorizationKey,
-      final AuthorizationPropertyBasedRequest request,
-      final Pattern idPattern) {
-    return getResult(
-        validatePropertyBasedRequest(request, idPattern),
-        () ->
-            new UpdateAuthorizationRequest(
-                authorizationKey,
-                request.getOwnerId(),
-                AuthorizationOwnerType.valueOf(request.getOwnerType().name()),
-                AuthorizationResourceMatcher.PROPERTY,
-                "",
-                request.getResourcePropertyName(),
-                AuthorizationResourceType.valueOf(request.getResourceType().name()),
-                transformPermissionTypes(request.getPermissionTypes())));
-  }
-
-  private static AuthorizationResourceMatcher resolveIdBasedResourceMatcher(
-      final String resourceId) {
-    return AuthorizationScope.WILDCARD.getResourceId().equals(resourceId)
-        ? AuthorizationResourceMatcher.ANY
-        : AuthorizationResourceMatcher.ID;
-  }
-
-  private static ProblemDetail createUnsupportedAuthorizationProblemDetail(
-      final AuthorizationRequest request) {
-    return GatewayErrorMapper.createProblemDetail(
-        HttpStatus.BAD_REQUEST,
-        "Unsupported authorization request: " + request.getClass().getSimpleName(),
-        "Only authorization by id or property is supported.");
-  }
-
-  private static Set<PermissionType> transformPermissionTypes(
-      final List<PermissionTypeEnum> permissionTypes) {
-    return permissionTypes.stream()
-        .map(permission -> PermissionType.valueOf(permission.name()))
-        .collect(Collectors.toSet());
   }
 
   public static Either<ProblemDetail, DocumentCreateRequest> toDocumentCreateRequest(
@@ -676,73 +443,6 @@ public class RequestMapper {
     return getResult(
         validateDocumentLinkParams(documentLinkRequest),
         () -> new DocumentLinkParams(Duration.ofMillis(documentLinkRequest.getTimeToLive())));
-  }
-
-  public static Either<ProblemDetail, UserDTO> toUserRequest(
-      final UserRequest request, final Pattern identifierPattern) {
-    return getResult(
-        UserRequestValidator.validateCreateRequest(request, identifierPattern),
-        () ->
-            new UserDTO(
-                request.getUsername(),
-                request.getName(),
-                request.getEmail(),
-                request.getPassword()));
-  }
-
-  public static Either<ProblemDetail, MappingRuleDTO> toMappingRuleCreateRequest(
-      final MappingRuleCreateRequest request, final Pattern identifierPattern) {
-    return getResult(
-        MappingRuleRequestValidator.validateCreateRequest(request, identifierPattern),
-        () ->
-            new MappingRuleDTO(
-                request.getClaimName(),
-                request.getClaimValue(),
-                request.getName(),
-                request.getMappingRuleId()));
-  }
-
-  public static Either<ProblemDetail, MappingRuleDTO> toMappingRuleUpdateRequest(
-      final String mappingRuleId, final MappingRuleUpdateRequest request) {
-    return getResult(
-        MappingRuleRequestValidator.validateUpdateRequest(request),
-        () ->
-            new MappingRuleDTO(
-                request.getClaimName(), request.getClaimValue(), request.getName(), mappingRuleId));
-  }
-
-  public static Either<ProblemDetail, ClusterVariableRequest> toGlobalClusterVariableCreateRequest(
-      final CreateClusterVariableRequest request, final Pattern identifierPattern) {
-    return getResult(
-        ClusterVariableRequestValidator.validateGlobalClusterVariableCreateRequest(
-            request, identifierPattern),
-        () -> new ClusterVariableRequest(request.getName(), request.getValue(), null));
-  }
-
-  public static Either<ProblemDetail, ClusterVariableRequest> toGlobalClusterVariableRequest(
-      final String name, final Pattern identifierPattern) {
-    return getResult(
-        ClusterVariableRequestValidator.validateGlobalClusterVariableRequest(
-            name, identifierPattern),
-        () -> new ClusterVariableRequest(name, null, null));
-  }
-
-  public static Either<ProblemDetail, ClusterVariableRequest> toTenantClusterVariableCreateRequest(
-      final CreateClusterVariableRequest request,
-      final String tenantId,
-      final Pattern identifierPattern) {
-    return getResult(
-        ClusterVariableRequestValidator.validateTenantClusterVariableCreateRequest(
-            request, tenantId, identifierPattern),
-        () -> new ClusterVariableRequest(request.getName(), request.getValue(), tenantId));
-  }
-
-  public static Either<ProblemDetail, ClusterVariableRequest> toTenantClusterVariableRequest(
-      final String name, final String tenantId, final Pattern identifierPattern) {
-    return getResult(
-        ClusterVariableRequestValidator.validateTenantClusterVariableRequest(
-            name, tenantId, identifierPattern),
-        () -> new ClusterVariableRequest(name, null, tenantId));
   }
 
   public static Either<ProblemDetail, ExpressionEvaluationRequest> toExpressionEvaluationRequest(
@@ -1162,41 +862,6 @@ public class RequestMapper {
                 getKeyOrDefault(request, DecisionEvaluationByKey::getDecisionDefinitionKey, -1L),
                 getMapOrEmpty(request, DecisionEvaluationByKey::getVariables),
                 tenantId));
-  }
-
-  public static Either<ProblemDetail, TenantRequest> toTenantCreateDto(
-      final TenantCreateRequest tenantCreateRequest) {
-    return getResult(
-        TenantRequestValidator.validateCreateRequest(tenantCreateRequest),
-        () ->
-            new TenantRequest(
-                null,
-                tenantCreateRequest.getTenantId(),
-                tenantCreateRequest.getName(),
-                tenantCreateRequest.getDescription()));
-  }
-
-  public static Either<ProblemDetail, TenantRequest> toTenantUpdateDto(
-      final String tenantId, final TenantUpdateRequest tenantUpdateRequest) {
-    return getResult(
-        TenantRequestValidator.validateUpdateRequest(tenantUpdateRequest),
-        () ->
-            new TenantRequest(
-                null,
-                tenantId,
-                tenantUpdateRequest.getName(),
-                tenantUpdateRequest.getDescription()));
-  }
-
-  public static Either<ProblemDetail, TenantMemberRequest> toTenantMemberRequest(
-      final String tenantId,
-      final String memberId,
-      final EntityType entityType,
-      final Pattern identifierPattern) {
-    return getResult(
-        TenantRequestValidator.validateMemberRequest(
-            tenantId, memberId, entityType, identifierPattern),
-        () -> new TenantMemberRequest(tenantId, memberId, entityType));
   }
 
   public static Either<ProblemDetail, AdHocSubProcessActivateActivitiesRequest>

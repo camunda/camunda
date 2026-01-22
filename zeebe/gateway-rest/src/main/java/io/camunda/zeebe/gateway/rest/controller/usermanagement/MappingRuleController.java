@@ -9,10 +9,11 @@ package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
 import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToResponse;
 
-import io.camunda.gateway.mapping.http.RequestMapper;
 import io.camunda.gateway.mapping.http.ResponseMapper;
+import io.camunda.gateway.mapping.http.mapper.MappingRuleMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
+import io.camunda.gateway.mapping.http.validator.MappingRuleRequestValidator;
 import io.camunda.gateway.protocol.model.MappingRuleCreateRequest;
 import io.camunda.gateway.protocol.model.MappingRuleResult;
 import io.camunda.gateway.protocol.model.MappingRuleSearchQueryRequest;
@@ -20,7 +21,8 @@ import io.camunda.gateway.protocol.model.MappingRuleSearchQueryResult;
 import io.camunda.gateway.protocol.model.MappingRuleUpdateRequest;
 import io.camunda.search.query.MappingRuleQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.validation.IdentifierValidator;
+import io.camunda.security.validation.MappingRuleValidator;
 import io.camunda.service.MappingRuleServices;
 import io.camunda.service.MappingRuleServices.MappingRuleDTO;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaDeleteMapping;
@@ -43,22 +45,24 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public class MappingRuleController {
   private final MappingRuleServices mappingRuleServices;
   private final CamundaAuthenticationProvider authenticationProvider;
-  private final SecurityConfiguration securityConfiguration;
+  private final MappingRuleMapper mappingRuleMapper;
 
   public MappingRuleController(
       final MappingRuleServices mappingRuleServices,
       final CamundaAuthenticationProvider authenticationProvider,
-      final SecurityConfiguration securityConfiguration) {
+      final IdentifierValidator identifierValidator) {
     this.mappingRuleServices = mappingRuleServices;
     this.authenticationProvider = authenticationProvider;
-    this.securityConfiguration = securityConfiguration;
+    mappingRuleMapper =
+        new MappingRuleMapper(
+            new MappingRuleRequestValidator(new MappingRuleValidator(identifierValidator)));
   }
 
   @CamundaPostMapping
   public CompletableFuture<ResponseEntity<Object>> create(
       @RequestBody final MappingRuleCreateRequest mappingRuleRequest) {
-    return RequestMapper.toMappingRuleCreateRequest(
-            mappingRuleRequest, securityConfiguration.getCompiledIdValidationPattern())
+    return mappingRuleMapper
+        .toMappingRuleCreateRequest(mappingRuleRequest)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::createMappingRule);
   }
 
@@ -66,7 +70,8 @@ public class MappingRuleController {
   public CompletableFuture<ResponseEntity<Object>> update(
       @PathVariable final String mappingRuleId,
       @RequestBody final MappingRuleUpdateRequest mappingRuleRequest) {
-    return RequestMapper.toMappingRuleUpdateRequest(mappingRuleId, mappingRuleRequest)
+    return mappingRuleMapper
+        .toMappingRuleUpdateRequest(mappingRuleId, mappingRuleRequest)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::updateMappingRule);
   }
 
