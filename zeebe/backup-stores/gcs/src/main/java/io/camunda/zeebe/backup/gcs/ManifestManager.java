@@ -33,7 +33,6 @@ import java.io.UncheckedIOException;
 import java.util.Collection;
 import java.util.Spliterator;
 import java.util.Spliterators;
-import java.util.concurrent.CompletableFuture;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -204,12 +203,11 @@ public final class ManifestManager {
     client.delete(manifestBlobInfo(id).getBlobId());
   }
 
-  public CompletableFuture<Collection<BlobId>> manifestIds(final Collection<BackupIdentifier> ids) {
-    return CompletableFuture.completedFuture(
-        ids.stream()
-            .map(this::manifestBlobInfo)
-            .map(BlobInfo::getBlobId)
-            .collect(Collectors.toSet()));
+  public Collection<BlobId> manifestUrls(final Collection<BackupIdentifier> ids) {
+    return ids.stream()
+        .map(this::manifestBlobInfo)
+        .map(BlobInfo::getBlobId)
+        .collect(Collectors.toSet());
   }
 
   private BlobInfo manifestBlobInfo(final BackupIdentifier id) {

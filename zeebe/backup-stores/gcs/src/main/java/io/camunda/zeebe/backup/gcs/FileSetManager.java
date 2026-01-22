@@ -27,7 +27,6 @@ import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Spliterator;
 import java.util.Spliterators;
-import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -79,24 +78,20 @@ final class FileSetManager {
     }
   }
 
-  public CompletableFuture<Collection<BlobId>> backupDataUrls(
-      final Collection<BackupIdentifier> ids) {
+  public Collection<BlobId> backupDataUrls(final Collection<BackupIdentifier> ids) {
 
-    final var futures = ids.stream().map(this::listBackupObjects).toList();
-
-    return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
-        .thenApply(v -> futures.stream().flatMap(f -> f.join().stream()).toList());
+    return ids.stream()
+        .parallel()
+        .map(this::listBackupObjects)
+        .flatMap(Collection::stream)
+        .collect(Collectors.toSet());
   }
 
-  private CompletableFuture<Collection<BlobId>> listBackupObjects(final BackupIdentifier id) {
-    final var snapshotFuture =
-        CompletableFuture.supplyAsync(() -> listBlobUrls(id, SNAPSHOT_FILESET_NAME));
-    final var segmentFuture =
-        CompletableFuture.supplyAsync(() -> listBlobUrls(id, SEGMENTS_FILESET_NAME));
+  private Collection<BlobId> listBackupObjects(final BackupIdentifier id) {
+    final var snapshotBlobs = listBlobUrls(id, SNAPSHOT_FILESET_NAME);
+    final var segmentBlobs = listBlobUrls(id, SEGMENTS_FILESET_NAME);
 
-    return snapshotFuture.thenCombine(
-        segmentFuture,
-        (snapshots, segments) -> Stream.concat(snapshots.stream(), segments.stream()).toList());
+    return Stream.concat(snapshotBlobs.stream(), segmentBlobs.stream()).collect(Collectors.toSet());
   }
 
   private Collection<BlobId> listBlobUrls(final BackupIdentifier id, final String fileSetName) {
