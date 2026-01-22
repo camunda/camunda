@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.backup.testkit;
 
+import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupRangeMarker;
@@ -16,11 +18,13 @@ import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.testkit.support.TestBackupProvider;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -55,10 +59,10 @@ public interface BackupRetention {
     ids.parallelStream()
         .forEach(
             id ->
-                Assertions.assertThat(getStore().getStatus(id).join())
-                    .returns(
-                        BackupStatusCode.DOES_NOT_EXIST,
-                        Assertions.from(BackupStatus::statusCode)));
+                Assertions.assertThat(getStore().getStatus(id))
+                    .succeedsWithin(Duration.ofMinutes(1))
+                    .extracting(BackupStatus::statusCode)
+                    .isEqualTo(BackupStatusCode.DOES_NOT_EXIST));
   }
 
   @Test
@@ -103,6 +107,9 @@ public interface BackupRetention {
                 entry
                     .getValue()
                     .forEach(marker -> getStore().storeRangeMarker(entry.getKey(), marker).join()));
+
+    IntStream.range(1, PARTITION_COUNT)
+        .forEach(partitionId -> assertThat(getStore().rangeMarkers(1).join()).isNotEmpty());
 
     // when
     markers.entrySet().parallelStream()
