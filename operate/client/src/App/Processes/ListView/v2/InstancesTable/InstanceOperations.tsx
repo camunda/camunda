@@ -14,13 +14,13 @@ import {useCancelProcessInstance} from 'modules/mutations/processInstance/useCan
 import {useDeleteProcessInstance} from 'modules/mutations/processInstance/useDeleteProcessInstance';
 import {useResolveProcessInstanceIncidents} from 'modules/mutations/processInstance/useResolveProcessInstanceIncidents';
 import type {OperationConfig} from 'modules/components/Operations/types';
-import type {OperationEntityType} from 'modules/types/operate';
+import type {BatchOperationType} from '@camunda/camunda-api-zod-schemas/8.8';
 
 type Props = {
   processInstanceKey: string;
   hasIncident: boolean;
   isInstanceActive: boolean;
-  activeOperations: OperationEntityType[];
+  activeOperations: BatchOperationType[];
 };
 
 const InstanceOperations: React.FC<Props> = ({

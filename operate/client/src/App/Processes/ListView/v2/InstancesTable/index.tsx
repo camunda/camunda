@@ -19,16 +19,14 @@ import {useFilters} from 'modules/hooks/useFilters';
 import type {
   ProcessInstance,
   BatchOperationItem,
+  ProcessInstanceState,
+  BatchOperationType,
 } from '@camunda/camunda-api-zod-schemas/8.8';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {Toolbar} from './Toolbar';
 import {getProcessInstanceFilters} from 'modules/utils/filter/getProcessInstanceFilters';
 import {useLocation, useSearchParams} from 'react-router-dom';
 import {BatchModificationFooter} from './BatchModificationFooter';
-import type {
-  InstanceEntityState,
-  OperationEntityType,
-} from 'modules/types/operate';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelectionV2';
 import {InstanceOperations} from './InstanceOperations';
 import {getProcessDefinitionName} from 'modules/utils/instance';
@@ -87,13 +85,14 @@ const InstancesTable: React.FC<InstancesTableProps> = observer(
     const {data: activeOperationItemsData} =
       useActiveOperationItemsForInstances(processInstanceKeys);
 
-    const activeOperationsMap = new Map<string, OperationEntityType[]>();
+    const activeOperationsMap = new Map<string, BatchOperationType[]>();
     activeOperationItemsData?.items.forEach((item) => {
-      const existing = activeOperationsMap.get(item.processInstanceKey) ?? [];
-      activeOperationsMap.set(item.processInstanceKey, [
-        ...existing,
-        item.operationType,
-      ]);
+      const existing = activeOperationsMap.get(item.processInstanceKey);
+      if (existing) {
+        existing.push(item.operationType);
+      } else {
+        activeOperationsMap.set(item.processInstanceKey, [item.operationType]);
+      }
     });
 
     const getEmptyListMessage = () => {
@@ -148,9 +147,8 @@ const InstancesTable: React.FC<InstancesTableProps> = observer(
           onVerticalScrollStartReach={onVerticalScrollStartReach}
           onVerticalScrollEndReach={onVerticalScrollEndReach}
           rows={processInstances.map((instance) => {
-            const instanceState: InstanceEntityState = instance.hasIncident
-              ? 'INCIDENT'
-              : instance.state;
+            const instanceState: ProcessInstanceState | 'INCIDENT' =
+              instance.hasIncident ? 'INCIDENT' : instance.state;
 
             const operationItem = operationItemsMap.get(
               instance.processInstanceKey,

@@ -8,10 +8,7 @@
 
 import {useQuery} from '@tanstack/react-query';
 import {queryBatchOperationItems} from 'modules/api/v2/batchOperations/queryBatchOperationItems';
-import type {
-  BatchOperationItem,
-  QueryBatchOperationItemsResponseBody,
-} from '@camunda/camunda-api-zod-schemas/8.8';
+import type {QueryBatchOperationItemsResponseBody} from '@camunda/camunda-api-zod-schemas/8.8';
 import {queryKeys} from '../queryKeys';
 
 const useOperationItemsForInstances = (
@@ -34,13 +31,9 @@ const useOperationItemsForInstances = (
       {batchOperationKey, processInstanceKeys},
     ],
     queryFn: async (): Promise<QueryBatchOperationItemsResponseBody> => {
-      if (!batchOperationKey || processInstanceKeys.length === 0) {
-        return {items: [] as BatchOperationItem[], page: {totalItems: 0}};
-      }
-
       const {response, error} = await queryBatchOperationItems({
         filter: {
-          batchOperationKey: {$eq: batchOperationKey},
+          batchOperationKey: {$eq: batchOperationKey!},
           processInstanceKey: {$in: processInstanceKeys},
         },
         page: {

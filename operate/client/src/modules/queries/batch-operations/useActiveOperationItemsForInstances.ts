@@ -39,7 +39,9 @@ const useActiveOperationItemsForInstances = (processInstanceKeys: string[]) => {
           state: {$eq: 'ACTIVE'},
         },
         page: {
-          limit: processInstanceKeys.length * 3, // Allow up to 3 operations per instance
+          // Limit based on assumption that instances typically have ~3 active operations
+          // Provides reasonable buffer while preventing over-fetching
+          limit: processInstanceKeys.length * 3,
         },
       });
 
