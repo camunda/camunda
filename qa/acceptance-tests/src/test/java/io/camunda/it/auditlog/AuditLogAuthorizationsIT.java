@@ -60,6 +60,8 @@ public class AuditLogAuthorizationsIT {
   private static final String USER_C_USERNAME = "userC";
   private static final String USER_CC_USERNAME = "userCC";
   private static final String USER_D_USERNAME = "userD";
+  private static final String USER_E_USERNAME = "userE";
+  private static final String USER_F_USERNAME = "userF";
   private static final String PASSWORD = "password";
   private static final List WILDCARD = List.of(AuthorizationScope.WILDCARD.getResourceId());
 
@@ -118,6 +120,30 @@ public class AuditLogAuthorizationsIT {
               new Permissions(PROCESS_DEFINITION, READ_PROCESS_INSTANCE, List.of(PROCESS_A_ID)),
               new Permissions(PROCESS_DEFINITION, READ_USER_TASK, List.of(PROCESS_B_ID))));
 
+  // User with two different AUDIT_LOG categories
+  @UserDefinition
+  private static final TestUser USER_E =
+      new TestUser(
+          USER_E_USERNAME,
+          PASSWORD,
+          List.of(
+              new Permissions(
+                  AUDIT_LOG,
+                  READ,
+                  List.of(
+                      AuditLogCategoryEnum.USER_TASKS.name(),
+                      AuditLogCategoryEnum.DEPLOYED_RESOURCES.name()))));
+
+  // User with ADMIN read and PROCESS_DEFINITION+READ_USER_TASK for PROCESS_B
+  @UserDefinition
+  private static final TestUser USER_F =
+      new TestUser(
+          USER_F_USERNAME,
+          PASSWORD,
+          List.of(
+              new Permissions(AUDIT_LOG, READ, List.of(AuditLogCategoryEnum.ADMIN.name())),
+              new Permissions(PROCESS_DEFINITION, READ_USER_TASK, List.of(PROCESS_B_ID))));
+
   // At test execution time, we already have 100+ audit log entries.
   // Custom page limit ensures all entries are retrieved for test assertions.
   private static final Consumer<SearchRequestPage> PAGE_CONFIG = p -> p.limit(200);
@@ -138,6 +164,8 @@ public class AuditLogAuthorizationsIT {
     utils.assignUserToTenant(USER_C_USERNAME, TENANT_B);
     utils.assignUserToTenant(USER_CC_USERNAME, TENANT_B);
     utils.assignUserToTenant(USER_D_USERNAME, TENANT_A);
+    utils.assignUserToTenant(USER_E_USERNAME, TENANT_A);
+    utils.assignUserToTenant(USER_F_USERNAME, TENANT_A);
     utils.await();
   }
 
@@ -385,6 +413,67 @@ public class AuditLogAuthorizationsIT {
             logs.items().stream()
                 .filter(log -> PROCESS_B_ID.equals(log.getProcessDefinitionId()))
                 .allMatch(log -> AuditLogCategoryEnum.USER_TASKS.equals(log.getCategory())))
+        .isTrue();
+    assertGetByKeyAccess(client, logs.items().getFirst());
+  }
+
+  @Test
+  void shouldAuthorizeByTwoDifferentAuditLogCategories(
+      @Authenticated(USER_E_USERNAME) final CamundaClient client) {
+    // when
+    final var logs = client.newAuditLogSearchRequest().page(PAGE_CONFIG).execute();
+
+    // then
+    assertThat(logs.items()).isNotEmpty();
+    // Verify only USER_TASKS and DEPLOYED_RESOURCES categories are returned
+    assertThat(
+            logs.items().stream()
+                .allMatch(
+                    log ->
+                        AuditLogCategoryEnum.USER_TASKS.equals(log.getCategory())
+                            || AuditLogCategoryEnum.DEPLOYED_RESOURCES.equals(log.getCategory())))
+        .isTrue();
+    // Verify both categories are present
+    assertThat(
+            logs.items().stream()
+                .anyMatch(log -> AuditLogCategoryEnum.USER_TASKS.equals(log.getCategory())))
+        .isTrue();
+    assertThat(
+            logs.items().stream()
+                .anyMatch(log -> AuditLogCategoryEnum.DEPLOYED_RESOURCES.equals(log.getCategory())))
+        .isTrue();
+    assertGetByKeyAccess(client, logs.items().getFirst());
+  }
+
+  @Test
+  void shouldAuthorizeByAdminCategoryAndProcessDefinitionReadUserTask(
+      @Authenticated(USER_F_USERNAME) final CamundaClient client) {
+    // when
+    final var logs = client.newAuditLogSearchRequest().page(PAGE_CONFIG).execute();
+
+    // then
+    assertThat(logs.items()).isNotEmpty();
+    // Verify all logs are either ADMIN category or USER_TASKS with PROCESS_B
+    assertThat(
+            logs.items().stream()
+                .allMatch(
+                    log ->
+                        AuditLogCategoryEnum.ADMIN.equals(log.getCategory())
+                            || (AuditLogCategoryEnum.USER_TASKS.equals(log.getCategory())
+                                && PROCESS_B_ID.equals(log.getProcessDefinitionId()))))
+        .isTrue();
+    // Verify user can see ADMIN category logs
+    assertThat(
+            logs.items().stream()
+                .anyMatch(log -> AuditLogCategoryEnum.ADMIN.equals(log.getCategory())))
+        .isTrue();
+    // Verify user can see USER_TASKS logs for PROCESS_B
+    assertThat(
+            logs.items().stream()
+                .anyMatch(
+                    log ->
+                        AuditLogCategoryEnum.USER_TASKS.equals(log.getCategory())
+                            && PROCESS_B_ID.equals(log.getProcessDefinitionId())))
         .isTrue();
     assertGetByKeyAccess(client, logs.items().getFirst());
   }
