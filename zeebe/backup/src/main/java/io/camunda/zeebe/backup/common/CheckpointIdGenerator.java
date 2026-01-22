@@ -23,10 +23,6 @@ public final class CheckpointIdGenerator {
     this.offset = offset;
   }
 
-  public CheckpointIdGenerator(final InstantSource instantSource) {
-    this(instantSource, 0L);
-  }
-
   public CheckpointIdGenerator(final long offset) {
     this(InstantSource.system(), offset);
   }
@@ -41,17 +37,11 @@ public final class CheckpointIdGenerator {
    * @return the generated checkpoint ID
    */
   public long generateCheckpointId() {
-    var checkpointId = instantSource.instant().toEpochMilli();
-    if (offset > 0) {
-      checkpointId += offset;
-    }
-    return checkpointId;
+    return fromTimestamp(instantSource.instant().toEpochMilli());
   }
 
   /**
-   * Converts a raw timestamp to a checkpoint ID by applying the configured offset. This is useful
-   * for converting user-provided timestamps (e.g., --from/--to parameters) to checkpoint IDs that
-   * can be used for querying backups.
+   * Converts a raw timestamp to a checkpoint ID by applying the configured offset.
    *
    * @param timestamp the raw timestamp in epoch milliseconds
    * @return the checkpoint ID (timestamp + offset)
@@ -73,14 +63,5 @@ public final class CheckpointIdGenerator {
       return timestamp + offset;
     }
     return timestamp;
-  }
-
-  /**
-   * Returns the configured offset.
-   *
-   * @return the offset added to timestamps when generating checkpoint IDs
-   */
-  public long getOffset() {
-    return offset;
   }
 }
