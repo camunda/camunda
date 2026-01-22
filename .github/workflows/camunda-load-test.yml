@@ -27,6 +27,11 @@ on:
         type: string
         default: ""
         required: false
+      use-official-docker-images:
+        description: 'Use official Camunda Docker images from Docker Hub instead of building from source'
+        type: boolean
+        required: false
+        default: false
       load-test-load:
         description: 'Specifie which load test components to deploy. For example, `starter` can be assigned with the rate at which they start instances. Allows arbitrary helm arguments, like --set starter.rate=100'
         required: false
@@ -71,6 +76,11 @@ on:
         type: string
         default: ""
         required: false
+      use-official-docker-images:
+        description: 'Use official Camunda Docker images from Docker Hub instead of building from source'
+        type: boolean
+        required: false
+        default: false
       platform-helm-values:
         description: 'Allows to specify additional values/configurations for the Camunda platform Helm chart, which will be deployed. For example, the Orchestration cluster `resources` can be modified. Allows arbitrary helm arguments, like --set orchestration.resources.limits.memory=2Gi'
         type: string
@@ -269,7 +279,7 @@ jobs:
 
   build-load-test-images:
     name: Build Starter and Worker
-    if: ${{ inputs.reuse-tag == '' }}
+    if: ${{ inputs.reuse-tag == '' && inputs.use-official-docker-images == false }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     needs: calculate-image-tag
@@ -380,10 +390,12 @@ jobs:
           --reset-then-reuse-values
           --render-subchart-notes
           --set global.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
-          --set zeebe.image.repository=gcr.io/zeebe-io/zeebe
+          --set zeebe.image.repository=${{ inputs.use-official-docker-images && 'camunda/camunda' || 'gcr.io/zeebe-io/zeebe' }}
+          --set zeebe.image.registry=${{ inputs.use-official-docker-images && 'docker.io'}}
           --set zeebe.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
-          --set zeebeGateway.image.repository=gcr.io/zeebe-io/zeebe
+          --set zeebeGateway.image.repository=${{ inputs.use-official-docker-images && 'camunda/camunda' || 'gcr.io/zeebe-io/zeebe' }}
           --set zeebeGateway.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
+          --set zeebeGateway.image.registry=${{ inputs.use-official-docker-images && 'docker.io'}}
           --set zeebe.retention.minimumAge=1d
           -f https://raw.githubusercontent.com/camunda/camunda/${{ github.ref }}/zeebe/benchmarks/camunda-platform-values.yaml
           ${{ steps.find-chart-release.outputs.chart-release != '' && format('--version {0}', steps.find-chart-release.outputs.chart-release) || '' }}
