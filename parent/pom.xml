@@ -2457,6 +2457,8 @@
           <artifactId>maven-surefire-plugin</artifactId>
           <version>${plugin.version.surefire}</version>
           <configuration>
+            <!-- Required to access the raw file descriptor from FileDescriptor for NativeFS -->
+            <argLine>--add-opens=java.base/java.io=ALL-UNNAMED</argLine>
             <!-- by default, exclude performance and strace tests -->
             <excludedGroups>performance, strace</excludedGroups>
             <failIfNoTests>false</failIfNoTests>
@@ -2495,6 +2497,8 @@
           <artifactId>maven-failsafe-plugin</artifactId>
           <version>${plugin.version.failsafe}</version>
           <configuration>
+            <!-- Required to access the raw file descriptor from FileDescriptor for NativeFS -->
+            <argLine>--add-opens=java.base/java.io=ALL-UNNAMED</argLine>
             <failIfNoTests>false</failIfNoTests>
             <trimStackTrace>false</trimStackTrace>
             <redirectTestOutputToFile>true</redirectTestOutputToFile>
