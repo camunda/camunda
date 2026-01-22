@@ -12,7 +12,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>8.9.0-SNAPSHOT</version>
+    <version>8.9.0-alpha4-rc1</version>
     <relativePath>../../parent/pom.xml</relativePath>
   </parent>
   <artifactId>camunda-gateway-model</artifactId>
@@ -213,7 +213,7 @@
                 <includes>
                   <include>**/io/camunda/gateway/protocol/model/**/*.java</include>
                 </includes>
-                <removeUnusedImports/>
+                <removeUnusedImports />
               </java>
             </configuration>
           </execution>
