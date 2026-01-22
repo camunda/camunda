@@ -5,6 +5,13 @@
 # called by: zeebe-medic-benchmarks.yml, zeebe-pr-benchmark.yaml
 # type: CI
 # owner: camunda/orchestration-cluster-team
+#
+# Infos from Infra:
+# - Using the infra benchmark prod cluster requires to use Teleport to authenticate.
+# - Camunda images are pushed to registry.camunda.cloud/team-zeebe and pulled from there.
+#   To use them in a namespace, the namespace must be labeled with "registry=harbor"
+#   You must also set the image pull secret to "harbor-registry" in the helm values.
+
 name: Camunda load test
 on:
   workflow_dispatch:
@@ -106,7 +113,10 @@ on:
         default: elasticsearch
 
 env:
+  CLUSTER: camunda-benchmark-prod  # change this to dev when experimenting
+  TELEPORT_JOIN_TOKEN: infra-benchmark-prod-github-action-zeebe  # change this to dev when experimenting
   HELM_CHART: camunda-platform-8.9
+  NAMESPACE: c8-${{ inputs.name }}
 
 defaults:
   run:
@@ -147,6 +157,7 @@ jobs:
       - uses: ./.github/actions/setup-build
         with:
           dockerhub-readonly: true
+          harbor: true
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
@@ -180,16 +191,10 @@ jobs:
           token_format: 'access_token'
           workload_identity_provider: 'projects/628707732411/locations/global/workloadIdentityPools/zeebe-gh-actions/providers/gha-provider'
           service_account: 'zeebe-gh-actions@zeebe-io.iam.gserviceaccount.com'
-      - name: Login to GCR
-        uses: docker/login-action@v3
-        with:
-          registry: gcr.io
-          username: oauth2accesstoken
-          password: ${{ steps.auth.outputs.access_token }}
       - uses: ./.github/actions/build-platform-docker
         name: Build Camunda Docker Image
         with:
-          repository: 'gcr.io/zeebe-io/zeebe'
+          repository: 'registry.camunda.cloud/team-zeebe/zeebe'
           revision: ${{ inputs.ref }}
           push: true
           version: ${{ needs.calculate-image-tag.outputs.image-tag }}
@@ -218,30 +223,18 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.ref }}
-      - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v2
-        id: auth
-        with:
-          token_format: 'access_token'
-          workload_identity_provider: 'projects/628707732411/locations/global/workloadIdentityPools/zeebe-gh-actions/providers/gha-provider'
-          service_account: 'zeebe-gh-actions@zeebe-io.iam.gserviceaccount.com'
-      - name: Login to GAR
-        uses: docker/login-action@v3
-        with:
-          registry: us-docker.pkg.dev
-          username: oauth2accesstoken
-          password: ${{ steps.auth.outputs.access_token }}
       - uses: ./.github/actions/setup-build
         with:
           dockerhub-readonly: true
+          harbor: true
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - run: ./mvnw -B -D skipTests -D skipChecks -P\!include-optimize -pl load-tests/load-tester -am install
       - name: Build Starter Image
-        run: ./mvnw -pl load-tests/load-tester jib:build -P starter -P\!include-optimize -D image="gcr.io/zeebe-io/starter:${{ needs.calculate-image-tag.outputs.image-tag }}"
+        run: ./mvnw -pl load-tests/load-tester jib:build -P starter -P\!include-optimize -D image="registry.camunda.cloud/team-zeebe/starter:${{ needs.calculate-image-tag.outputs.image-tag }}"
       - name: Build Worker Image
-        run: ./mvnw -pl load-tests/load-tester jib:build -P worker -P\!include-optimize -D image="gcr.io/zeebe-io/worker:${{ needs.calculate-image-tag.outputs.image-tag }}"
+        run: ./mvnw -pl load-tests/load-tester jib:build -P worker -P\!include-optimize -D image="registry.camunda.cloud/team-zeebe/worker:${{ needs.calculate-image-tag.outputs.image-tag }}"
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -273,14 +266,19 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.ref }}
-      - uses: google-github-actions/auth@v2
+      # Authenticate with Teleport
+      - name: Set up Teleport
+        uses: teleport-actions/setup@v1
         with:
-          workload_identity_provider: 'projects/628707732411/locations/global/workloadIdentityPools/zeebe-gh-actions/providers/gha-provider'
-          service_account: 'zeebe-gh-actions@zeebe-io.iam.gserviceaccount.com'
-      - uses: google-github-actions/get-gke-credentials@v2.3.5
+            version: 17.2.2
+
+      - name: Authenticate to Cluster using Teleport
+        uses: teleport-actions/auth-k8s@v2
         with:
-          cluster_name: zeebe-cluster
-          location: europe-west1-b
+            proxy: camunda.teleport.sh:443
+            token: ${{ env.TELEPORT_JOIN_TOKEN }}
+            kubernetes-cluster: ${{ env.CLUSTER }}
+      
       - name: Create namespace if not exists
         run: |
           cd load-tests/setup
@@ -288,21 +286,21 @@ jobs:
           # the GitHub action by default. We need to correctly configure the git user here to make it work
           git config user.name ${{ github.actor }}
           # Create the namespace for the load test
-          ./newLoadTest.sh ${{ inputs.name }} ${{ inputs.secondary-storage-type }} ${{ inputs.ttl }}
+          ./newLoadTest.sh ${{ env.NAMESPACE }} ${{ inputs.secondary-storage-type }} ${{ inputs.ttl }}
       - name: Install latest Camunda Platform
         run: |
-          cd load-tests/setup/${{ inputs.name }}
+          cd load-tests/setup/${{ env.NAMESPACE }}
           make ${{ inputs.stable-vms && 'install-stable' || 'install' }} \
             secondary_storage=${{ inputs.secondary-storage-type }} \
-            additional_platform_configuration="--set global.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }} --set orchestration.image.registry=gcr.io --set orchestration.image.repository=zeebe-io/zeebe --set orchestration.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }} ${{ inputs.platform-helm-values }}" \
-            additional_load_test_configuration="--set global.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }} ${{ inputs.realistic && '-f https://raw.githubusercontent.com/camunda/camunda-load-tests-helm/refs/heads/main/charts/camunda-load-tests/values-realistic-benchmark.yaml' || '' }} ${{ inputs.load-test-load }}"
+            additional_platform_configuration="--set global.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }} --set orchestration.image.registry=registry.camunda.cloud --set orchestration.image.repository=team-zeebe/zeebe --set orchestration.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }} ${{ inputs.platform-helm-values }}" \
+            additional_load_test_configuration="--set global.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }} --set global.image.repository=registry.camunda.cloud/team-zeebe --set global.image.pullSecrets[0].name=harbor-registry ${{ inputs.realistic && '-f https://raw.githubusercontent.com/camunda/camunda-load-tests-helm/refs/heads/main/charts/camunda-load-tests/values-realistic-benchmark.yaml' || '' }} ${{ inputs.load-test-load }}"
       - name: Summarize platform deployment
         if: success()
         run: |
           cat >> "$GITHUB_STEP_SUMMARY" <<EOF
             ## Camunda platform \`${{ inputs.name }}\` values
             \`\`\`yaml
-            $(helm get values ${{ inputs.name }} -n ${{ inputs.name }})
+            $(helm get values ${{ inputs.name }} -n ${{ env.NAMESPACE }})
             \`\`\`
           EOF
       - name: Summarize load test deployment
@@ -310,10 +308,10 @@ jobs:
         run: |
           cat >> "$GITHUB_STEP_SUMMARY" <<EOF
             # Load test
-            The test has been set up successfully. You can observe it [here](https://grafana.dev.zeebe.io/d/zeebe-dashboard/zeebe?var-namespace=${{ inputs.name }})
+            The test has been set up successfully. You can observe it [here](https://grafana.dev.zeebe.io/d/zeebe-dashboard/zeebe?var-namespace=${{ env.NAMESPACE }})
             ## Load test \`${{ inputs.name }}\` values
             \`\`\`yaml
-            $(helm get values ${{ inputs.name }}-test -n ${{ inputs.name }})
+            $(helm get values ${{ inputs.name }}-test -n ${{ env.NAMESPACE }})
             \`\`\`
           EOF
       - name: Observe build status

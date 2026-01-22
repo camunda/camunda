@@ -15,13 +15,14 @@ global:
     enabled: false
   image:
     # Image.repository defines the repository from which to fetch the docker images
-    repository: "gcr.io/zeebe-io"
+    repository: "registry.camunda.cloud/team-zeebe"
     # Image.tag defines the tag / version which should be used in the chart
     tag: SNAPSHOT
     ## @param global.image.pullPolicy defines the image pull policy which should be used https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy
     pullPolicy: Always
     ## @param global.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
-    pullSecrets: []
+    pullSecrets:
+      - name: harbor-registry
   # By default, we run without Identity
   identity:
     auth:
@@ -72,14 +73,20 @@ orchestration:
   # Resources of the orchestration cluster
   resources:
     requests:
-      cpu: 3500m
+      cpu: 3400m # max on n2-standard-4 due to other overhead
       memory: 2Gi
     limits:
-      cpu: 3500m
+      cpu: 3400m # max on n2-standard-4 due to other overhead
       memory: 2Gi
 
   nodeSelector:
     cloud.google.com/gke-nodepool: n2-standard-4
+
+  tolerations:
+    - key: nodepool
+      operator: Equal
+      value: n2-standard-4
+      effect: NoSchedule
 
   ## @param core.pvcSize defines the persistent volume claim size, which is used by each broker pod https://kubernetes.io/docs/concepts/storage/persistent-volumes/#persistentvolumeclaims
   pvcSize: "64Gi"
@@ -147,3 +154,38 @@ prometheusServiceMonitor:
   labels:
     release: monitoring
   scrapeInterval: 30s
+
+########################################################################################
+################################################### Elasticsearch cluster configuration
+########################################################################################
+elasticsearch:
+  master:
+    fullnameOverride: elastic
+    nameOverride: elastic
+    ## @param elasticsearch.master.replicaCount defines number of master-eligible replicas to deploy
+    replicaCount: 3
+    pdb:
+      minAvailable: 2
+    ## @param elasticsearch.master.heapSize
+    heapSize: 3g
+    persistence:
+      ## @param elasticsearch.master.persistence.size
+      size: 128Gi
+      storageClass: "ssd"
+      accessModes: ["ReadWriteOnce"]
+    resources:
+      requests:
+        cpu: 3
+        memory: 3Gi
+      limits:
+        cpu: 3
+        memory: 6Gi
+    nodeSelector:
+      cloud.google.com/gke-nodepool: n2-standard-4
+    tolerations:
+      - key: nodepool
+        operator: Equal
+        value: n2-standard-4
+        effect: NoSchedule
+  extraConfig:
+    logger.org.elasticsearch.deprecation: "OFF"
