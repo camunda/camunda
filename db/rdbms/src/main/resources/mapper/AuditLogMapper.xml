@@ -356,10 +356,10 @@
     </foreach>
   </insert>
 
-  <delete id="deleteProcessInstanceRelatedData">
+  <delete id="deleteRootProcessInstanceRelatedData">
     <bind name="tableName" value="'AUDIT_LOG'"/>
     <bind name="primaryKeyColumn" value="'AUDIT_LOG_KEY'"/>
-    <include refid="io.camunda.db.rdbms.sql.Commons.processInstanceHistoryDeletion"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.rootProcessInstanceHistoryDeletion"/>
   </delete>
 
   <delete id="deleteProcessDefinitionRelatedData">

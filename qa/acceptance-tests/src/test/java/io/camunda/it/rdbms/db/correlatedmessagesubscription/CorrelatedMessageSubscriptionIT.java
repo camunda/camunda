@@ -257,7 +257,7 @@ public class CorrelatedMessageSubscriptionIT {
     final int deleted =
         rdbmsWriters
             .getCorrelatedMessageSubscriptionWriter()
-            .deleteProcessInstanceRelatedData(
+            .deleteRootProcessInstanceRelatedData(
                 PARTITION_ID, List.of(item2.processInstanceKey()), 10);
 
     // then

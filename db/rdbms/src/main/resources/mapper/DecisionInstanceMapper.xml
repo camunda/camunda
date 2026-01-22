@@ -320,9 +320,9 @@
     <include refid="io.camunda.db.rdbms.sql.Commons.historyCleanup"/>
   </delete>
 
-  <delete id="deleteProcessInstanceRelatedData">
+  <delete id="deleteRootProcessInstanceRelatedData">
     <bind name="tableName" value="'DECISION_INSTANCE'"/>
     <bind name="primaryKeyColumn" value="'DECISION_INSTANCE_ID'"/>
-    <include refid="io.camunda.db.rdbms.sql.Commons.processInstanceHistoryDeletion"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.rootProcessInstanceHistoryDeletion"/>
   </delete>
 </mapper>

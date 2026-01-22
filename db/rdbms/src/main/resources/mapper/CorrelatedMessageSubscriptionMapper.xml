@@ -193,9 +193,9 @@
     </if>
   </sql>
 
-  <delete id="deleteProcessInstanceRelatedData">
+  <delete id="deleteRootProcessInstanceRelatedData">
     <bind name="tableName" value="'CORRELATED_MESSAGE_SUBSCRIPTION'"/>
     <bind name="primaryKeyColumn" value="''"/>
-    <include refid="io.camunda.db.rdbms.sql.Commons.processInstanceHistoryDeletion"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.rootProcessInstanceHistoryDeletion"/>
   </delete>
 </mapper>

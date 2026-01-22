@@ -468,7 +468,7 @@
     </foreach>
   </delete>
 
-  <select id="selectExpiredProcessInstances" resultType="java.lang.Long">
+  <select id="selectExpiredRootProcessInstances" resultType="java.lang.Long">
     SELECT PROCESS_INSTANCE_KEY
     FROM ${prefix}PROCESS_INSTANCE
     WHERE PARTITION_ID = #{partitionId}

@@ -10,6 +10,7 @@ package io.camunda.db.rdbms.read.service;
 import io.camunda.db.rdbms.read.domain.DbQueryPage;
 import io.camunda.db.rdbms.read.domain.ProcessInstanceDbQuery;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
+import io.camunda.db.rdbms.sql.ProcessInstanceMapper.SelectExpiredRootProcessInstancesDto;
 import io.camunda.db.rdbms.sql.columns.ProcessInstanceSearchColumn;
 import io.camunda.search.clients.reader.ProcessInstanceReader;
 import io.camunda.search.entities.ProcessInstanceEntity;
@@ -84,10 +85,10 @@ public class ProcessInstanceDbReader extends AbstractEntityReader<ProcessInstanc
     return search(query, ResourceAccessChecks.disabled());
   }
 
-  public List<Long> selectExpiredProcessInstances(
+  public List<Long> selectExpiredRootProcessInstances(
       final int partitionId, final OffsetDateTime cleanupDate, final int limit) {
-    return processInstanceMapper.selectExpiredProcessInstances(
-        new ProcessInstanceMapper.SelectExpiredProcessInstancesDto(
+    return processInstanceMapper.selectExpiredRootProcessInstances(
+        new SelectExpiredRootProcessInstancesDto(
             partitionId, cleanupDate, new DbQueryPage(limit, null, null)));
   }
 }

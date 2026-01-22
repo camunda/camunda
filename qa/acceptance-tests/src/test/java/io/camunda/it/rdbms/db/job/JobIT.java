@@ -277,7 +277,7 @@ public class JobIT {
     final int deleted =
         rdbmsWriters
             .getJobWriter()
-            .deleteProcessInstanceRelatedData(
+            .deleteRootProcessInstanceRelatedData(
                 PARTITION_ID, List.of(item2.processInstanceKey()), 10);
 
     // then

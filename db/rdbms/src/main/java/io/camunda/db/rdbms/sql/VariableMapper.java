@@ -14,7 +14,7 @@ import io.camunda.search.entities.VariableEntity;
 import io.camunda.util.ObjectBuilder;
 import java.util.List;
 
-public interface VariableMapper extends ProcessInstanceDependantMapper {
+public interface VariableMapper extends RootProcessInstanceDependantMapper {
 
   void insert(BatchInsertDto<VariableDbModel> dto);
 

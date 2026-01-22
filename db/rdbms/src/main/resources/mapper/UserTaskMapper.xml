@@ -416,10 +416,10 @@
     WHERE USER_TASK_KEY = #{userTaskKey}
   </update>
 
-  <delete id="deleteProcessInstanceRelatedData">
+  <delete id="deleteRootProcessInstanceRelatedData">
     <bind name="tableName" value="'USER_TASK'"/>
     <bind name="primaryKeyColumn" value="'USER_TASK_KEY'"/>
-    <include refid="io.camunda.db.rdbms.sql.Commons.processInstanceHistoryDeletion"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.rootProcessInstanceHistoryDeletion"/>
   </delete>
 
 </mapper>

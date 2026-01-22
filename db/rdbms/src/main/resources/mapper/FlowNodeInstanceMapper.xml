@@ -244,10 +244,10 @@
     WHERE FLOW_NODE_INSTANCE_KEY = #{flowNodeInstanceKey}
   </update>
 
-  <delete id="deleteProcessInstanceRelatedData">
+  <delete id="deleteRootProcessInstanceRelatedData">
     <bind name="tableName" value="'FLOW_NODE_INSTANCE'"/>
     <bind name="primaryKeyColumn" value="'FLOW_NODE_INSTANCE_KEY'"/>
-    <include refid="io.camunda.db.rdbms.sql.Commons.processInstanceHistoryDeletion"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.rootProcessInstanceHistoryDeletion"/>
   </delete>
 
 </mapper>

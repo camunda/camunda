@@ -203,10 +203,10 @@
     WHERE MESSAGE_SUBSCRIPTION_KEY = #{messageSubscriptionKey}
   </update>
 
-  <delete id="deleteProcessInstanceRelatedData">
+  <delete id="deleteRootProcessInstanceRelatedData">
     <bind name="tableName" value="'MESSAGE_SUBSCRIPTION'"/>
     <bind name="primaryKeyColumn" value="'MESSAGE_SUBSCRIPTION_KEY'"/>
-    <include refid="io.camunda.db.rdbms.sql.Commons.processInstanceHistoryDeletion"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.rootProcessInstanceHistoryDeletion"/>
   </delete>
 
   <!-- Message Subscription Process Definition Statistics Aggregation -->
