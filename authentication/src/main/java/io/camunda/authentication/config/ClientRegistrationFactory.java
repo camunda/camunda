@@ -49,7 +49,9 @@ public final class ClientRegistrationFactory {
       builder.authorizationUri(configuration.getAuthorizationUri());
     }
     if (configuration.getEndSessionEndpointUri() != null) {
-      // end_session_endpoint should be in the provider metadata
+      // end_session_endpoint should be located in the provider metadata
+      // this will also override any other metadata provided by the builder previously
+      // there is no way to get the current builder metadata or merge into it
       final Map<String, Object> metadata = new HashMap<>();
       metadata.put("end_session_endpoint", configuration.getEndSessionEndpointUri());
       builder.providerConfigurationMetadata(metadata);
