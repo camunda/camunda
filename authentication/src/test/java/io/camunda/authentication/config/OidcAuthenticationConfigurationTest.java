@@ -50,6 +50,12 @@ public class OidcAuthenticationConfigurationTest {
             OidcAuthenticationConfiguration.builder().authorizationUri("auth-uri").build(),
             true),
         Arguments.of(
+            "endSessionEndpointUri is set",
+            OidcAuthenticationConfiguration.builder()
+                .endSessionEndpointUri("end-session-endpoint-uri")
+                .build(),
+            true),
+        Arguments.of(
             "clientId is set",
             OidcAuthenticationConfiguration.builder().clientId("cid").build(),
             true),

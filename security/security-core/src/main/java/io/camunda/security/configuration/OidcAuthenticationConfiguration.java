@@ -40,6 +40,7 @@ public class OidcAuthenticationConfiguration {
   private List<String> scope = Arrays.asList("openid", "profile");
   private String jwkSetUri;
   private String authorizationUri;
+  private String endSessionEndpointUri;
   private String tokenUri;
   private AuthorizeRequestConfiguration authorizeRequestConfiguration =
       new AuthorizeRequestConfiguration();
@@ -147,6 +148,14 @@ public class OidcAuthenticationConfiguration {
     this.authorizationUri = authorizationUri;
   }
 
+  public String getEndSessionEndpointUri() {
+    return endSessionEndpointUri;
+  }
+
+  public void setEndSessionEndpointUri(final String endSessionEndpointUri) {
+    this.endSessionEndpointUri = endSessionEndpointUri;
+  }
+
   public String getTokenUri() {
     return tokenUri;
   }
@@ -252,6 +261,7 @@ public class OidcAuthenticationConfiguration {
         || !Arrays.asList("openid", "profile").equals(scope)
         || jwkSetUri != null
         || authorizationUri != null
+        || endSessionEndpointUri != null
         || tokenUri != null
         || authorizeRequestConfiguration == null
         || authorizeRequestConfiguration.isSet()
@@ -288,6 +298,7 @@ public class OidcAuthenticationConfiguration {
     private List<String> scope = Arrays.asList("openid", "profile");
     private String jwkSetUri;
     private String authorizationUri;
+    private String endSessionEndpointUri;
     private String tokenUri;
     private AuthorizeRequestConfiguration authorizeRequestConfiguration =
         new AuthorizeRequestConfiguration();
@@ -348,6 +359,11 @@ public class OidcAuthenticationConfiguration {
 
     public Builder authorizationUri(final String authorizationUri) {
       this.authorizationUri = authorizationUri;
+      return this;
+    }
+
+    public Builder endSessionEndpointUri(final String endSessionEndpointUri) {
+      this.endSessionEndpointUri = endSessionEndpointUri;
       return this;
     }
 
@@ -417,6 +433,7 @@ public class OidcAuthenticationConfiguration {
       config.setIdTokenAlgorithm(idTokenAlgorithm);
       config.setGrantType(grantType);
       config.setRedirectUri(redirectUri);
+      config.setEndSessionEndpointUri(endSessionEndpointUri);
       config.setScope(scope);
       config.setJwkSetUri(jwkSetUri);
       config.setAuthorizationUri(authorizationUri);
