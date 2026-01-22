@@ -14,7 +14,7 @@ import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.util.List;
 
-public class JobCommandPreconditionChecker {
+public class JobCommandPreconditionValidator {
 
   private static final String NO_JOB_FOUND_MESSAGE =
       "Expected to %s job with key '%d', but no such job was found";
@@ -24,8 +24,26 @@ public class JobCommandPreconditionChecker {
   private final List<JobState.State> validStates;
   private final String intent;
 
+<<<<<<< HEAD:zeebe/engine/src/main/java/io/camunda/zeebe/engine/processing/job/JobCommandPreconditionChecker.java
   public JobCommandPreconditionChecker(
       final String intent, final List<JobState.State> validStates) {
+=======
+  public JobCommandPreconditionValidator(
+      final JobState jobState,
+      final String intent,
+      final List<State> validStates,
+      final AuthorizationCheckBehavior authorizationCheckBehavior) {
+    this(jobState, intent, validStates, List.of(), authorizationCheckBehavior);
+  }
+
+  public JobCommandPreconditionValidator(
+      final JobState jobState,
+      final String intent,
+      final List<State> validStates,
+      final List<JobCommandCheck> customChecks,
+      final AuthorizationCheckBehavior authorizationCheckBehavior) {
+    this.jobState = jobState;
+>>>>>>> 2593f717 (refactor: align naming convention for classes related to scheduled tasks):zeebe/engine/src/main/java/io/camunda/zeebe/engine/processing/job/JobCommandPreconditionValidator.java
     this.intent = intent;
     this.validStates = validStates;
   }

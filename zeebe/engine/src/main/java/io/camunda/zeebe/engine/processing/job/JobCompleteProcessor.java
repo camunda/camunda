@@ -32,7 +32,12 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
 
   private final JobState jobState;
   private final ElementInstanceState elementInstanceState;
+<<<<<<< HEAD
   private final DefaultJobCommandPreconditionGuard defaultProcessor;
+=======
+  private final JobCommandPreconditionValidator preconditionChecker;
+  private final AuthorizationCheckBehavior authCheckBehavior;
+>>>>>>> 2593f717 (refactor: align naming convention for classes related to scheduled tasks)
   private final JobProcessingMetrics jobMetrics;
   private final EventHandle eventHandle;
 
@@ -42,8 +47,30 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
       final EventHandle eventHandle) {
     jobState = state.getJobState();
     elementInstanceState = state.getElementInstanceState();
+<<<<<<< HEAD
     defaultProcessor =
         new DefaultJobCommandPreconditionGuard("complete", jobState, this::acceptCommand);
+=======
+    commandWriter = writers.command();
+    stateWriter = writers.state();
+    responseWriter = writers.response();
+    rejectionWriter = writers.rejection();
+    preconditionChecker =
+        new JobCommandPreconditionValidator(
+            state.getJobState(),
+            "complete",
+            List.of(State.ACTIVATABLE, State.ACTIVATED),
+            List.of(
+                this::checkAdHocSubprocessActivationTargetsAreValid,
+                this::checkAdHocSubprocessInstanceIsActive,
+                this::checkTaskListenerJobForProvidingVariables,
+                this::checkTaskListenerJobForSupportingDenying,
+                this::checkTaskListenerJobForDenyingWithCorrections,
+                this::checkCreatingListenerJobForAssigneeCorrection,
+                this::checkTaskListenerJobForUnknownPropertyCorrections),
+            authCheckBehavior);
+    this.authCheckBehavior = authCheckBehavior;
+>>>>>>> 2593f717 (refactor: align naming convention for classes related to scheduled tasks)
     this.jobMetrics = jobMetrics;
     this.eventHandle = eventHandle;
   }

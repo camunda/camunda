@@ -32,9 +32,9 @@ import org.slf4j.LoggerFactory;
  * retry until it reaches the maximum backoff duration. This backoff is tracked for each retriable
  * distribution individually.
  */
-public final class CommandRedistributor implements StreamProcessorLifecycleAware {
+public final class CommandRedistributionScheduler implements StreamProcessorLifecycleAware {
 
-  private static final Logger LOG = LoggerFactory.getLogger(CommandRedistributor.class);
+  private static final Logger LOG = LoggerFactory.getLogger(CommandRedistributionScheduler.class);
 
   /**
    * Specifies how often this redistributor runs, i.e. the fixed delay between runs. It is also used
@@ -60,9 +60,15 @@ public final class CommandRedistributor implements StreamProcessorLifecycleAware
    */
   private final Map<RetriableDistribution, Long> retryCyclesPerDistribution = new HashMap<>();
 
+<<<<<<< HEAD:zeebe/engine/src/main/java/io/camunda/zeebe/engine/processing/distribution/CommandRedistributor.java
   public CommandRedistributor(
       final DistributionState distributionState,
       final InterPartitionCommandSender commandSender,
+=======
+  public CommandRedistributionScheduler(
+      final CommandDistributionBehavior distributionBehavior,
+      final RoutingInfo routingInfo,
+>>>>>>> 2593f717 (refactor: align naming convention for classes related to scheduled tasks):zeebe/engine/src/main/java/io/camunda/zeebe/engine/processing/distribution/CommandRedistributionScheduler.java
       final EngineConfiguration config) {
     this.distributionState = distributionState;
     this.commandSender = commandSender;

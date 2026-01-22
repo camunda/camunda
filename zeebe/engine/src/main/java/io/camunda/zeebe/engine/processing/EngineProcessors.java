@@ -22,12 +22,12 @@ import io.camunda.zeebe.engine.processing.deployment.DeploymentCreateProcessor;
 import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributeProcessor;
 import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributionCommandSender;
 import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributionCompleteProcessor;
-import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentRedistributor;
+import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentRedistributionScheduler;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionAcknowledgeProcessor;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionContinueProcessor;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionFinishProcessor;
-import io.camunda.zeebe.engine.processing.distribution.CommandRedistributor;
+import io.camunda.zeebe.engine.processing.distribution.CommandRedistributionScheduler;
 import io.camunda.zeebe.engine.processing.dmn.DecisionEvaluationEvaluteProcessor;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationProcessors;
 import io.camunda.zeebe.engine.processing.incident.IncidentEventProcessors;
@@ -42,7 +42,12 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+<<<<<<< HEAD
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker;
+=======
+import io.camunda.zeebe.engine.processing.tenant.TenantProcessors;
+import io.camunda.zeebe.engine.processing.timer.DueDateTimerCheckScheduler;
+>>>>>>> 2593f717 (refactor: align naming convention for classes related to scheduled tasks)
 import io.camunda.zeebe.engine.processing.user.UserProcessors;
 import io.camunda.zeebe.engine.processing.usertask.UserTaskEventProcessors;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
@@ -93,8 +98,8 @@ public final class EngineProcessors {
     final int partitionId = typedRecordProcessorContext.getPartitionId();
     final var config = typedRecordProcessorContext.getConfig();
 
-    final DueDateTimerChecker timerChecker =
-        new DueDateTimerChecker(
+    final DueDateTimerCheckScheduler timerChecker =
+        new DueDateTimerCheckScheduler(
             scheduledTaskStateFactory.get().getTimerState(), featureFlags, clock);
 
     final var jobMetrics = new JobProcessingMetrics(typedRecordProcessorContext.getMeterRegistry());
@@ -240,7 +245,7 @@ public final class EngineProcessors {
       final Writers writers,
       final SubscriptionCommandSender subscriptionCommandSender,
       final RoutingInfo routingInfo,
-      final DueDateTimerChecker timerChecker,
+      final DueDateTimerCheckScheduler timerChecker,
       final JobStreamer jobStreamer,
       final JobProcessingMetrics jobMetrics,
       final DecisionBehavior decisionBehavior,
@@ -268,7 +273,7 @@ public final class EngineProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final SubscriptionCommandSender subscriptionCommandSender,
       final Writers writers,
-      final DueDateTimerChecker timerChecker,
+      final DueDateTimerCheckScheduler timerChecker,
       final CommandDistributionBehavior commandDistributionBehavior,
       final int partitionId,
       final RoutingInfo routingInfo,
@@ -322,7 +327,7 @@ public final class EngineProcessors {
 
     // periodically retries deployment distribution
     final var deploymentRedistributor =
-        new DeploymentRedistributor(
+        new DeploymentRedistributionScheduler(
             deploymentDistributionCommandSender,
             scheduledTaskStateSupplier.get().getDeploymentState());
     typedRecordProcessors.withListener(deploymentRedistributor);
@@ -449,12 +454,31 @@ public final class EngineProcessors {
       final InterPartitionCommandSender interPartitionCommandSender,
       final EngineConfiguration config) {
 
+<<<<<<< HEAD
     // periodically retries command distribution
     typedRecordProcessors.withListener(
         new CommandRedistributor(
             scheduledTaskStateFactory.get().getDistributionState(),
             interPartitionCommandSender,
             config));
+=======
+    {
+      final var scheduledTaskState = scheduledTaskStateSupplier.get();
+      // periodically retries command distribution
+      // Note that the CommandRedistributionScheduler runs in a separate actor, so it must not use
+      // the same
+      // state as the StreamProcessors as it runs in another RocksDB transaction as well.
+      // It can only use the state from scheduledTaskStateSupplier.
+      typedRecordProcessors.withListener(
+          new CommandRedistributionScheduler(
+              commandDistributionBehavior.withScheduledState(
+                  scheduledTaskState.getDistributionState()),
+              RoutingInfo.dynamic(
+                  scheduledTaskState.getRoutingState(),
+                  RoutingInfo.forStaticPartitions(staticPartitionsCount)),
+              config));
+    }
+>>>>>>> 2593f717 (refactor: align naming convention for classes related to scheduled tasks)
 
     final var distributionState = processingState.getDistributionState();
     typedRecordProcessors.onCommand(

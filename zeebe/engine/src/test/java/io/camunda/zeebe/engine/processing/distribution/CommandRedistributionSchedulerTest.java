@@ -32,7 +32,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith({MockitoExtension.class, ProcessingStateExtension.class})
-public class CommandRedistributorTest {
+public class CommandRedistributionSchedulerTest {
 
   /** Injected by {@link ProcessingStateExtension} */
   private MutableProcessingState processingState;
@@ -41,7 +41,7 @@ public class CommandRedistributorTest {
   @Mock private InterPartitionCommandSender mockCommandSender;
   @Mock private ReadonlyStreamProcessorContext mockContext;
 
-  private CommandRedistributor commandRedistributor;
+  private CommandRedistributionScheduler commandRedistributor;
   private long distributionKey;
   private UserRecord recordValue;
   private MutableDistributionState distributionState;
@@ -109,7 +109,7 @@ public class CommandRedistributorTest {
         .sendCommand(1, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue);
   }
 
-  private CommandRedistributor getCommandRedistributor(
+  private CommandRedistributionScheduler getCommandRedistributor(
       final boolean commandDistributionPaused,
       final Duration redistributionInterval,
       final Duration maxBackoffDuration) {
@@ -119,8 +119,75 @@ public class CommandRedistributorTest {
             .setCommandRedistributionInterval(redistributionInterval)
             .setCommandRedistributionMaxBackoff(maxBackoffDuration);
 
+<<<<<<< HEAD:zeebe/engine/src/test/java/io/camunda/zeebe/engine/processing/distribution/CommandRedistributorTest.java
     return new CommandRedistributor(
         processingState.getDistributionState(), mockCommandSender, config);
+=======
+    return new CommandRedistributionScheduler(behavior, routingInfo, config);
+  }
+
+  @Nested
+  class ScalingUpPartitions {
+
+    @BeforeEach
+    void setUp() {
+      // Simulate scaling up partition 3
+      routingState.setDesiredPartitions(Set.of(1, 2, 3), 111L);
+
+      distributionState.addRetriableDistribution(distributionKey, 3);
+    }
+
+    @Test
+    void shouldNotRedistributeToScalingPartitions() {
+      // given
+      // when
+      // run cycle twice, since first one always does not try distributing the records
+      commandRedistributor.runRetryCycle();
+      commandRedistributor.runRetryCycle();
+
+      // then
+      verify(mockCommandSender, times(1))
+          .sendCommand(
+              1, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, new AuthInfo());
+      verify(mockCommandSender, times(1))
+          .sendCommand(
+              2, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, new AuthInfo());
+      verify(mockCommandSender, never())
+          .sendCommand(
+              3, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, new AuthInfo());
+    }
+
+    @Test
+    void shouldRedistributeToScaledPartition() {
+      // given
+      // when
+      // run cycle twice, since first one always does not try distributing the records
+      commandRedistributor.runRetryCycle();
+      commandRedistributor.runRetryCycle();
+
+      // then
+      verify(mockCommandSender, times(1))
+          .sendCommand(
+              1, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, new AuthInfo());
+      verify(mockCommandSender, times(1))
+          .sendCommand(
+              2, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, new AuthInfo());
+      verify(mockCommandSender, never())
+          .sendCommand(
+              3, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, new AuthInfo());
+
+      // then
+      // Partition 3 is now scaled up, so it should be redistributed to
+      routingState.activatePartition(3);
+
+      // run cycle twice, since first one always does not try distributing the records
+      commandRedistributor.runRetryCycle();
+      commandRedistributor.runRetryCycle();
+      verify(mockCommandSender, times(1))
+          .sendCommand(
+              3, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, new AuthInfo());
+    }
+>>>>>>> 2593f717 (refactor: align naming convention for classes related to scheduled tasks):zeebe/engine/src/test/java/io/camunda/zeebe/engine/processing/distribution/CommandRedistributionSchedulerTest.java
   }
 
   @Nested

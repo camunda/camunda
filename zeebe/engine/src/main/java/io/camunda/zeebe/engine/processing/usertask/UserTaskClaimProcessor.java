@@ -34,14 +34,20 @@ public class UserTaskClaimProcessor implements TypedRecordProcessor<UserTaskReco
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
+<<<<<<< HEAD:zeebe/engine/src/main/java/io/camunda/zeebe/engine/processing/usertask/UserTaskClaimProcessor.java
   private final UserTaskCommandPreconditionChecker preconditionChecker;
+=======
+  private final AsyncRequestState asyncRequestState;
+  private final AsyncRequestBehavior asyncRequestBehavior;
+  private final UserTaskCommandPreconditionValidator preconditionChecker;
+>>>>>>> 2593f717 (refactor: align naming convention for classes related to scheduled tasks):zeebe/engine/src/main/java/io/camunda/zeebe/engine/processing/usertask/processors/UserTaskClaimProcessor.java
 
   public UserTaskClaimProcessor(final ProcessingState state, final Writers writers) {
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
     preconditionChecker =
-        new UserTaskCommandPreconditionChecker(
+        new UserTaskCommandPreconditionValidator(
             List.of(LifecycleState.CREATED),
             "claim",
             UserTaskClaimProcessor::checkClaim,

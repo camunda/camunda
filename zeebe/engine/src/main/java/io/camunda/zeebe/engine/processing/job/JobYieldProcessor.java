@@ -26,7 +26,12 @@ public final class JobYieldProcessor implements TypedRecordProcessor<JobRecord> 
   private final BpmnJobActivationBehavior jobActivationBehavior;
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
+<<<<<<< HEAD
   private final JobCommandPreconditionChecker preconditionChecker;
+=======
+  private final JobCommandPreconditionValidator preconditionChecker;
+  private final AuthorizationCheckBehavior authorizationCheckBehavior;
+>>>>>>> 2593f717 (refactor: align naming convention for classes related to scheduled tasks)
 
   public JobYieldProcessor(
       final ProcessingState state, final BpmnBehaviors bpmnBehaviors, final Writers writers) {
@@ -34,7 +39,14 @@ public final class JobYieldProcessor implements TypedRecordProcessor<JobRecord> 
     jobActivationBehavior = bpmnBehaviors.jobActivationBehavior();
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
+<<<<<<< HEAD
     preconditionChecker = new JobCommandPreconditionChecker("yield", List.of(State.ACTIVATED));
+=======
+    this.authorizationCheckBehavior = authorizationCheckBehavior;
+    preconditionChecker =
+        new JobCommandPreconditionValidator(
+            jobState, "yield", List.of(State.ACTIVATED), authorizationCheckBehavior);
+>>>>>>> 2593f717 (refactor: align naming convention for classes related to scheduled tasks)
   }
 
   @Override

@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.timer;
 
-import io.camunda.zeebe.engine.processing.scheduled.DueDateChecker;
+import io.camunda.zeebe.engine.processing.scheduled.DueDateCheckScheduler;
 import io.camunda.zeebe.engine.state.immutable.TimerInstanceState;
 import io.camunda.zeebe.engine.state.immutable.TimerInstanceState.TimerVisitor;
 import io.camunda.zeebe.engine.state.instance.TimerInstance;
@@ -21,18 +21,18 @@ import java.time.Duration;
 import java.time.InstantSource;
 import java.util.function.Function;
 
-public class DueDateTimerChecker implements StreamProcessorLifecycleAware {
+public class DueDateTimerCheckScheduler implements StreamProcessorLifecycleAware {
 
   private static final long TIMER_RESOLUTION = Duration.ofMillis(100).toMillis();
   private static final double GIVE_YIELD_FACTOR = 0.5;
-  private final DueDateChecker dueDateChecker;
+  private final DueDateCheckScheduler dueDateChecker;
 
-  public DueDateTimerChecker(
+  public DueDateTimerCheckScheduler(
       final TimerInstanceState timerInstanceState,
       final FeatureFlags featureFlags,
       final InstantSource clock) {
     dueDateChecker =
-        new DueDateChecker(
+        new DueDateCheckScheduler(
             TIMER_RESOLUTION,
             featureFlags.enableTimerDueDateCheckerAsync(),
             new TriggerTimersSideEffect(

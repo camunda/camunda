@@ -38,10 +38,11 @@ public class TimerTriggerSchedulingTest {
    * schedules a timer event every second, we should not produce many Timer TRIGGER commands for any
    * of these timers.
    *
-   * <p>This was a problem previously because every time the DueDateChecker ran, it would reschedule
-   * another execution for the next timer (the one further in the future). This would cause the
-   * DueDateChecker to run many times in a row for this same timer, and not benefit from the command
-   * cache because executions are scheduled beforehand and executed before the cache is persisted.
+   * <p>This was a problem previously because every time the DueDateCheckScheduler ran, it would
+   * reschedule another execution for the next timer (the one further in the future). This would
+   * cause the DueDateCheckScheduler to run many times in a row for this same timer, and not benefit
+   * from the command cache because executions are scheduled beforehand and executed before the
+   * cache is persisted.
    */
   @Test
   public void shouldTriggerTimerOnlyOnce() {

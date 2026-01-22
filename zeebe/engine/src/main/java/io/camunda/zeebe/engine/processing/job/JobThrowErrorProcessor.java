@@ -60,7 +60,12 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
 
   private final JobState jobState;
   private final ElementInstanceState elementInstanceState;
+<<<<<<< HEAD
   private final DefaultJobCommandPreconditionGuard defaultProcessor;
+=======
+  private final JobCommandPreconditionValidator preconditionChecker;
+  private final AuthorizationCheckBehavior authCheckBehavior;
+>>>>>>> 2593f717 (refactor: align naming convention for classes related to scheduled tasks)
   private final CatchEventAnalyzer stateAnalyzer;
   private final KeyGenerator keyGenerator;
   private final EventScopeInstanceState eventScopeInstanceState;
@@ -79,8 +84,17 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
     processState = state.getProcessState();
     eventScopeInstanceState = state.getEventScopeInstanceState();
 
+<<<<<<< HEAD
     defaultProcessor =
         new DefaultJobCommandPreconditionGuard("throw an error for", jobState, this::acceptCommand);
+=======
+    preconditionChecker =
+        new JobCommandPreconditionValidator(
+            jobState,
+            "throw an error for",
+            List.of(State.ACTIVATABLE, State.ACTIVATED),
+            authCheckBehavior);
+>>>>>>> 2593f717 (refactor: align naming convention for classes related to scheduled tasks)
 
     stateAnalyzer = new CatchEventAnalyzer(state.getProcessState(), elementInstanceState);
     this.eventPublicationBehavior = eventPublicationBehavior;

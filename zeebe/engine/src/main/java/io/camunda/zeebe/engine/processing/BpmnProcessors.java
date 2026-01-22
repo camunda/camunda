@@ -12,7 +12,12 @@ import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnStreamProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
+<<<<<<< HEAD
 import io.camunda.zeebe.engine.processing.message.PendingProcessMessageSubscriptionChecker;
+=======
+import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.message.PendingProcessMessageSubscriptionCheckScheduler;
+>>>>>>> 2593f717 (refactor: align naming convention for classes related to scheduled tasks)
 import io.camunda.zeebe.engine.processing.message.ProcessMessageSubscriptionCorrelateProcessor;
 import io.camunda.zeebe.engine.processing.message.ProcessMessageSubscriptionCreateProcessor;
 import io.camunda.zeebe.engine.processing.message.ProcessMessageSubscriptionDeleteProcessor;
@@ -27,7 +32,7 @@ import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceModific
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
-import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker;
+import io.camunda.zeebe.engine.processing.timer.DueDateTimerCheckScheduler;
 import io.camunda.zeebe.engine.processing.timer.TimerCancelProcessor;
 import io.camunda.zeebe.engine.processing.timer.TimerTriggerProcessor;
 import io.camunda.zeebe.engine.processing.variable.VariableDocumentUpdateProcessor;
@@ -62,7 +67,7 @@ public final class BpmnProcessors {
       final BpmnBehaviors bpmnBehaviors,
       final TypedRecordProcessors typedRecordProcessors,
       final SubscriptionCommandSender subscriptionCommandSender,
-      final DueDateTimerChecker timerChecker,
+      final DueDateTimerCheckScheduler timerChecker,
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior,
       final int partitionId,
@@ -173,7 +178,7 @@ public final class BpmnProcessors {
             new ProcessMessageSubscriptionDeleteProcessor(
                 subscriptionState, writers, transientProcessMessageSubscriptionState))
         .withListener(
-            new PendingProcessMessageSubscriptionChecker(
+            new PendingProcessMessageSubscriptionCheckScheduler(
                 subscriptionCommandSender,
                 scheduledTaskState.get().getPendingProcessMessageSubscriptionState(),
                 clock));
@@ -181,7 +186,7 @@ public final class BpmnProcessors {
 
   private static void addTimerStreamProcessors(
       final TypedRecordProcessors typedRecordProcessors,
-      final DueDateTimerChecker timerChecker,
+      final DueDateTimerCheckScheduler timerChecker,
       final MutableProcessingState processingState,
       final BpmnBehaviors bpmnBehaviors,
       final Writers writers) {

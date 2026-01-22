@@ -53,11 +53,11 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
   private final TypedResponseWriter responseWriter;
   private final KeyGenerator keyGenerator;
   private final JobProcessingMetrics jobMetrics;
-  private final JobBackoffChecker jobBackoffChecker;
+  private final JobBackoffCheckScheduler jobBackoffChecker;
   private final VariableBehavior variableBehavior;
   private final BpmnJobActivationBehavior jobActivationBehavior;
   private final SideEffectWriter sideEffectWriter;
-  private final JobCommandPreconditionChecker preconditionChecker;
+  private final JobCommandPreconditionValidator preconditionChecker;
   private final ElementInstanceState elementInstanceState;
   private final ProcessState processState;
 
@@ -66,8 +66,14 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
       final Writers writers,
       final KeyGenerator keyGenerator,
       final JobProcessingMetrics jobMetrics,
+<<<<<<< HEAD
       final JobBackoffChecker jobBackoffChecker,
       final BpmnBehaviors bpmnBehaviors) {
+=======
+      final JobBackoffCheckScheduler jobBackoffChecker,
+      final BpmnBehaviors bpmnBehaviors,
+      final AuthorizationCheckBehavior authCheckBehavior) {
+>>>>>>> 2593f717 (refactor: align naming convention for classes related to scheduled tasks)
     jobState = state.getJobState();
     elementInstanceState = state.getElementInstanceState();
     processState = state.getProcessState();
@@ -78,7 +84,12 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
     variableBehavior = bpmnBehaviors.variableBehavior();
     jobActivationBehavior = bpmnBehaviors.jobActivationBehavior();
     preconditionChecker =
+<<<<<<< HEAD
         new JobCommandPreconditionChecker("fail", List.of(State.ACTIVATABLE, State.ACTIVATED));
+=======
+        new JobCommandPreconditionValidator(
+            jobState, "fail", List.of(State.ACTIVATABLE, State.ACTIVATED), authCheckBehavior);
+>>>>>>> 2593f717 (refactor: align naming convention for classes related to scheduled tasks)
     this.keyGenerator = keyGenerator;
     this.jobBackoffChecker = jobBackoffChecker;
     this.jobMetrics = jobMetrics;

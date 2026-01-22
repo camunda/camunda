@@ -34,7 +34,12 @@ public final class UserTaskCompleteProcessor implements TypedRecordProcessor<Use
   private final TypedCommandWriter commandWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
+<<<<<<< HEAD:zeebe/engine/src/main/java/io/camunda/zeebe/engine/processing/usertask/UserTaskCompleteProcessor.java
   private final UserTaskCommandPreconditionChecker preconditionChecker;
+=======
+  private final UserTaskCommandPreconditionValidator preconditionChecker;
+  private final AsyncRequestBehavior asyncRequestBehavior;
+>>>>>>> 2593f717 (refactor: align naming convention for classes related to scheduled tasks):zeebe/engine/src/main/java/io/camunda/zeebe/engine/processing/usertask/processors/UserTaskCompleteProcessor.java
 
   public UserTaskCompleteProcessor(
       final ProcessingState state, final EventHandle eventHandle, final Writers writers) {
@@ -45,8 +50,17 @@ public final class UserTaskCompleteProcessor implements TypedRecordProcessor<Use
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
     preconditionChecker =
+<<<<<<< HEAD:zeebe/engine/src/main/java/io/camunda/zeebe/engine/processing/usertask/UserTaskCompleteProcessor.java
         new UserTaskCommandPreconditionChecker(
             List.of(LifecycleState.CREATED), "complete", state.getUserTaskState());
+=======
+        new UserTaskCommandPreconditionValidator(
+            List.of(LifecycleState.CREATED),
+            "complete",
+            state.getUserTaskState(),
+            authCheckBehavior);
+    this.asyncRequestBehavior = asyncRequestBehavior;
+>>>>>>> 2593f717 (refactor: align naming convention for classes related to scheduled tasks):zeebe/engine/src/main/java/io/camunda/zeebe/engine/processing/usertask/processors/UserTaskCompleteProcessor.java
   }
 
   @Override
