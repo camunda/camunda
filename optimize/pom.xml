@@ -76,7 +76,7 @@
     <quartz.version>2.5.2</quartz.version>
 
     <!-- testing config -->
-    <mockito.version>5.18.0</mockito.version>
+    <mockito.version>5.21.0</mockito.version>
     <mockito-inline.version>5.2.0</mockito-inline.version>
     <junit.jupiter.version>5.13.4</junit.jupiter.version>
     <junit.platform.version>1.13.4</junit.platform.version>
