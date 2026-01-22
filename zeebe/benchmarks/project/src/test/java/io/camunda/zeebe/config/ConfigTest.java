@@ -32,7 +32,7 @@ public class ConfigTest {
     assertThat(appCfg.getBrokerUrl()).isEqualTo("localhost:26500");
     assertThat(appCfg.isTls()).isFalse();
     assertThat(appCfg.getMonitoringPort()).isEqualTo(9600);
-    assertThat(appCfg.isMonitorDataAvailability()).isTrue();
+    assertThat(appCfg.isMonitorDataAvailability()).isFalse();
     assertThat(appCfg.getMonitorDataAvailabilityInterval()).hasMillis(250);
 
     // starter
@@ -81,7 +81,7 @@ public class ConfigTest {
     assertThat(appCfg.getBrokerUrl()).isEqualTo("localhost:26500");
     assertThat(appCfg.isTls()).isFalse();
     assertThat(appCfg.getMonitoringPort()).isEqualTo(9600);
-    assertThat(appCfg.isMonitorDataAvailability()).isFalse();
+    assertThat(appCfg.isMonitorDataAvailability()).isTrue();
     assertThat(appCfg.getMonitorDataAvailabilityInterval()).hasMillis(50);
 
     // starter
