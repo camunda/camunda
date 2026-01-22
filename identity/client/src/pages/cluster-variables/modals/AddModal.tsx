@@ -22,6 +22,7 @@ import TextField from "src/components/form/TextField.tsx";
 import { searchTenant } from "src/utility/api/tenants";
 import JSONEditor from "src/components/form/JSONEditor.tsx";
 import { isValid } from "src/utility/components/editor/jsonUtils.ts";
+import { isSaaS } from "src/configuration";
 
 type FormData = {
   name: string;
@@ -136,6 +137,7 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
                 checked={field.value === ScopeType.TENANT}
                 onClick={() => field.onChange(ScopeType.TENANT)}
                 labelText={<span>{t("clusterVariableScopeTypeTenant")}</span>}
+                disabled={isSaaS}
                 type="radio"
               />
             </RadioButtonGroup>
