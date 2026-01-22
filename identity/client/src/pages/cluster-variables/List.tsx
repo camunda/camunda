@@ -17,10 +17,10 @@ import {
   ScopeType,
   searchClusterVariables,
 } from "src/utility/api/cluster-variables";
-import PageEmptyState from "src/components/layout/PageEmptyState.tsx";
-import AddModal from "src/pages/cluster-variables/modals/AddModal.tsx";
-import DeleteModal from "src/pages/cluster-variables/modals/DeleteModal.tsx";
-import DetailsModal from "src/pages/cluster-variables/modals/DetailsModal.tsx";
+import PageEmptyState from "src/components/layout/PageEmptyState";
+import { AddModal } from "./modals/add-modal";
+import DeleteModal from "./modals/DeleteModal";
+import DetailsModal from "./modals/DetailsModal";
 
 export default function List() {
   const { t } = useTranslate("clusterVariables");
