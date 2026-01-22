@@ -449,7 +449,7 @@ class UserTaskToolsTest extends ToolsTest {
                           5L,
                           "assignee",
                           "jane.doe",
-                          "options",
+                          "assignmentOptions",
                           Map.of("allowOverride", false, "action", "claim")))
                   .build());
 
@@ -465,6 +465,92 @@ class UserTaskToolsTest extends ToolsTest {
                       .isEqualTo("User task with key 5 assigned to jane.doe."));
 
       verify(userTaskServices).assignUserTask(5L, "jane.doe", "claim", false);
+    }
+
+    @Test
+    void shouldUnassignUserTaskWhenAssigneeIsNull() {
+      // given
+      when(userTaskServices.unassignUserTask(anyLong(), anyString()))
+          .thenReturn(CompletableFuture.completedFuture(new UserTaskRecord()));
+
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder()
+                  .name("assignUserTask")
+                  .arguments(Map.of("userTaskKey", 5L))
+                  .build());
+
+      // then
+      assertThat(result.isError()).isFalse();
+      assertThat(result.content())
+          .hasSize(1)
+          .first()
+          .isInstanceOfSatisfying(
+              TextContent.class,
+              textContent ->
+                  assertThat(textContent.text()).isEqualTo("User task with key 5 unassigned."));
+
+      verify(userTaskServices).unassignUserTask(5L, null);
+    }
+
+    @Test
+    void shouldUnassignUserTaskWhenAssigneeIsEmpty() {
+      // given
+      when(userTaskServices.unassignUserTask(anyLong(), anyString()))
+          .thenReturn(CompletableFuture.completedFuture(new UserTaskRecord()));
+
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder()
+                  .name("assignUserTask")
+                  .arguments(Map.of("userTaskKey", 5L, "assignee", ""))
+                  .build());
+
+      // then
+      assertThat(result.isError()).isFalse();
+      assertThat(result.content())
+          .hasSize(1)
+          .first()
+          .isInstanceOfSatisfying(
+              TextContent.class,
+              textContent ->
+                  assertThat(textContent.text()).isEqualTo("User task with key 5 unassigned."));
+
+      verify(userTaskServices).unassignUserTask(5L, null);
+    }
+
+    @Test
+    void shouldUnassignUserTaskWithAction() {
+      // given
+      when(userTaskServices.unassignUserTask(anyLong(), anyString()))
+          .thenReturn(CompletableFuture.completedFuture(new UserTaskRecord()));
+
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder()
+                  .name("assignUserTask")
+                  .arguments(
+                      Map.of(
+                          "userTaskKey",
+                          5L,
+                          "assignmentOptions",
+                          Map.of("action", "unassign")))
+                  .build());
+
+      // then
+      assertThat(result.isError()).isFalse();
+      assertThat(result.content())
+          .hasSize(1)
+          .first()
+          .isInstanceOfSatisfying(
+              TextContent.class,
+              textContent ->
+                  assertThat(textContent.text()).isEqualTo("User task with key 5 unassigned."));
+
+      verify(userTaskServices).unassignUserTask(5L, "unassign");
     }
 
     @Test
@@ -516,28 +602,6 @@ class UserTaskToolsTest extends ToolsTest {
               textContent ->
                   assertThat(textContent.text())
                       .contains("User task key must be a positive number."));
-    }
-
-    @Test
-    void shouldFailAssignUserTaskOnBlankAssignee() {
-      // when
-      final CallToolResult result =
-          mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("assignUserTask")
-                  .arguments(Map.of("userTaskKey", 5L, "assignee", ""))
-                  .build());
-
-      // then
-      assertThat(result.isError()).isTrue();
-      assertThat(result.structuredContent()).isNull();
-      assertThat(result.content())
-          .hasSize(1)
-          .first()
-          .isInstanceOfSatisfying(
-              TextContent.class,
-              textContent ->
-                  assertThat(textContent.text()).contains("Assignee must not be blank."));
     }
   }
 

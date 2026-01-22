@@ -28,7 +28,6 @@ import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.UserTaskServices;
 import io.camunda.service.VariableServices;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Positive;
 import java.util.List;
 import org.springaicommunity.mcp.annotation.McpTool;
@@ -99,36 +98,52 @@ public class UserTaskTools {
     }
   }
 
-  @McpTool(description = "Assign user task to an assignee.")
+  @McpTool(description = "Assign or unassign a user task. Provide an assignee to assign the task, or omit/provide null to unassign it.")
   public CallToolResult assignUserTask(
-      @McpToolParam(description = "The key of the user task to assign.")
+      @McpToolParam(description = "The key of the user task to assign or unassign.")
           @Positive(message = USER_TASK_KEY_POSITIVE_MESSAGE)
           final Long userTaskKey,
       @McpToolParam(
               description =
-                  "The assignee for the user task. The assignee must not be empty or `null`.")
-          @NotBlank(message = "Assignee must not be blank.")
+                  "The assignee for the user task. Provide a value to assign the task to that user, or omit/provide null to unassign the task.",
+              required = false)
           final String assignee,
       @McpToolParam(description = "Assignment options.", required = false)
-          final McpUserTaskAssignmentRequest options) {
+          final McpUserTaskAssignmentRequest assignmentOptions) {
     try {
-      // Create a copy of the options request and enrich with the assignee from the root param
-      final UserTaskAssignmentRequest request =
-          options != null
-              ? new UserTaskAssignmentRequest()
-                  .assignee(assignee)
-                  .allowOverride(options.getAllowOverride())
-                  .action(options.getAction())
-              : new UserTaskAssignmentRequest().assignee(assignee);
+      // Check if this is an unassignment (assignee is null or empty)
+      if (assignee == null || assignee.isBlank()) {
+        // Unassignment path
+        final String action =
+            assignmentOptions != null && assignmentOptions.getAction() != null
+                ? assignmentOptions.getAction()
+                : null;
 
-      final boolean allowOverride =
-          request.getAllowOverride() == null || request.getAllowOverride();
+        return CallToolResultMapper.fromPrimitive(
+            userTaskServices
+                .withAuthentication(authenticationProvider.getCamundaAuthentication())
+                .unassignUserTask(userTaskKey, action),
+            r -> "User task with key %s unassigned.".formatted(userTaskKey));
+      } else {
+        // Assignment path
+        // Create a copy of the options request and enrich with the assignee from the root param
+        final UserTaskAssignmentRequest request =
+            assignmentOptions != null
+                ? new UserTaskAssignmentRequest()
+                    .assignee(assignee)
+                    .allowOverride(assignmentOptions.getAllowOverride())
+                    .action(assignmentOptions.getAction())
+                : new UserTaskAssignmentRequest().assignee(assignee);
 
-      return CallToolResultMapper.fromPrimitive(
-          userTaskServices
-              .withAuthentication(authenticationProvider.getCamundaAuthentication())
-              .assignUserTask(userTaskKey, assignee, request.getAction(), allowOverride),
-          r -> "User task with key %s assigned to %s.".formatted(userTaskKey, assignee));
+        final boolean allowOverride =
+            request.getAllowOverride() == null || request.getAllowOverride();
+
+        return CallToolResultMapper.fromPrimitive(
+            userTaskServices
+                .withAuthentication(authenticationProvider.getCamundaAuthentication())
+                .assignUserTask(userTaskKey, assignee, request.getAction(), allowOverride),
+            r -> "User task with key %s assigned to %s.".formatted(userTaskKey, assignee));
+      }
     } catch (final Exception e) {
       return CallToolResultMapper.mapErrorToResult(e);
     }
