@@ -16,6 +16,7 @@ import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListener
 import io.camunda.zeebe.protocol.record.intent.GlobalListenerBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.GlobalListenerIntent;
 import io.camunda.zeebe.protocol.record.value.GlobalListenerRecordValue;
+import io.camunda.zeebe.protocol.record.value.GlobalListenerSource;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.util.Collections;
@@ -59,9 +60,11 @@ public final class GlobalListenerBatchConfigureProcessor
             .collect(Collectors.toMap(GlobalListenerRecordValue::getId, l -> l));
 
     // The new configuration should completely replace the old one.
-    // This means that any existing listener which is no longer present in the new configuration
-    // should be deleted.
+    // This means that any existing configuration-defined listener which is no longer present in the
+    // new configuration should be deleted.
     existingListeners.values().stream()
+        // only consider configuration-defined listeners
+        .filter(l -> l.getSource() == GlobalListenerSource.CONFIGURATION)
         // filter out listeners which are still present in the new configuration
         .filter(l -> !newListeners.containsKey(l.getId()))
         .forEach(
@@ -75,6 +78,7 @@ public final class GlobalListenerBatchConfigureProcessor
         .forEach(
             listener -> {
               if (existingListeners.containsKey(listener.getId())) {
+                // Note: the old listener is replaced even if it was API-defined
                 writers.command().appendFollowUpCommand(key, GlobalListenerIntent.UPDATE, listener);
               } else {
                 writers.command().appendFollowUpCommand(key, GlobalListenerIntent.CREATE, listener);
