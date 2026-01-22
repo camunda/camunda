@@ -42,6 +42,7 @@ public class ElasticsearchProperties {
   private boolean createSchema = true;
 
   private String url;
+  private List<String> urls;
   private String username;
   private String password;
 
@@ -155,6 +156,14 @@ public class ElasticsearchProperties {
 
   public void setUrl(final String url) {
     this.url = url;
+  }
+
+  public List<String> getUrls() {
+    return urls;
+  }
+
+  public void setUrls(final List<String> urls) {
+    this.urls = urls;
   }
 
   public Integer getSocketTimeout() {
