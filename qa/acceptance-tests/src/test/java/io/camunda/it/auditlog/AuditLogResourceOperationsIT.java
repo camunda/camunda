@@ -338,6 +338,71 @@ public class AuditLogResourceOperationsIT {
   }
 
   // ========================================================================================
+  // RPA Resource Create/Delete Tests
+  // ========================================================================================
+
+  @Test
+  void shouldTrackRpaResourceCreate(@Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
+    // when - deploy an RPA resource
+    final var deployment =
+        client
+            .newDeployResourceCommand()
+            .addResourceFromClasspath("rpa/test-rpa.rpa")
+            .tenantId(TENANT_A)
+            .send()
+            .join();
+
+    final var resourceKey = deployment.getResource().getFirst().getResourceKey();
+
+    // then - wait for audit log entry and verify (RPA resources map to RESOURCE entity)
+    final var auditLogItems =
+        awaitAuditLogEntry(
+            client,
+            AuditLogEntityTypeEnum.RESOURCE,
+            AuditLogOperationTypeEnum.CREATE,
+            String.valueOf(resourceKey));
+
+    assertThat(auditLogItems).isNotEmpty();
+    final var auditLog = findByEntityKey(auditLogItems, String.valueOf(resourceKey));
+    assertResourceAuditLog(auditLog, AuditLogOperationTypeEnum.CREATE, String.valueOf(resourceKey));
+  }
+
+  @Test
+  void shouldTrackRpaResourceDelete(@Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
+    // given - deploy an RPA resource
+    final var deployment =
+        client
+            .newDeployResourceCommand()
+            .addResourceFromClasspath("rpa/test-rpa.rpa")
+            .tenantId(TENANT_A)
+            .send()
+            .join();
+
+    final var resourceKey = deployment.getResource().getFirst().getResourceKey();
+
+    awaitAuditLogEntry(
+        client,
+        AuditLogEntityTypeEnum.RESOURCE,
+        AuditLogOperationTypeEnum.CREATE,
+        String.valueOf(resourceKey));
+
+    // when - delete the RPA resource
+    client.newDeleteResourceCommand(resourceKey).send().join();
+
+    // then - wait for audit log entry and verify (RPA resources map to RESOURCE entity)
+    final var auditLogItems =
+        awaitAuditLogEntry(
+            client,
+            AuditLogEntityTypeEnum.RESOURCE,
+            AuditLogOperationTypeEnum.DELETE,
+            String.valueOf(resourceKey));
+
+    assertThat(auditLogItems).isNotEmpty();
+    final var auditLog = findByEntityKey(auditLogItems, String.valueOf(resourceKey));
+    assertResourceAuditLog(auditLog, AuditLogOperationTypeEnum.DELETE, String.valueOf(resourceKey));
+  }
+
+  // ========================================================================================
   // Helper Methods
   // ========================================================================================
 
