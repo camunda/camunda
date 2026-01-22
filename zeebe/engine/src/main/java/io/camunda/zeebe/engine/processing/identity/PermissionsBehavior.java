@@ -76,32 +76,31 @@ public class PermissionsBehavior {
   public Either<Rejection, AuthorizationRecord> permissionsAlreadyExist(
       final AuthorizationRecord record) {
     for (final PermissionType permission : record.getPermissionTypes()) {
-      final var addedAuthorizationScope =
-          new AuthorizationScope(
-              record.getResourceMatcher(),
-              record.getResourceId(),
-              record.getResourcePropertyName());
+      final var addedAuthorizationScope = createAuthorizationScope(record);
       final var currentAuthorizationScopes =
           authCheckBehavior.getDirectAuthorizedAuthorizationScopes(
               record.getOwnerType(), record.getOwnerId(), record.getResourceType(), permission);
 
       if (currentAuthorizationScopes.contains(addedAuthorizationScope)) {
-        if (record.getResourceMatcher() == AuthorizationResourceMatcher.PROPERTY) {
-          return Either.left(
-              new Rejection(
-                  RejectionType.ALREADY_EXISTS,
-                  PERMISSIONS_FOR_RESOURCE_PROPERTY_NAME_ALREADY_EXISTS_MESSAGE.formatted(
-                      record.getOwnerId(), addedAuthorizationScope.getResourcePropertyName())));
-        }
-
-        return Either.left(
-            new Rejection(
-                RejectionType.ALREADY_EXISTS,
-                PERMISSIONS_FOR_RESOURCE_IDENTIFIER_ALREADY_EXISTS_MESSAGE.formatted(
-                    record.getOwnerId(), addedAuthorizationScope.getResourceId())));
+        final var rejectionReason = createDuplicatePermissionRejectionReason(record);
+        return Either.left(new Rejection(RejectionType.ALREADY_EXISTS, rejectionReason));
       }
     }
     return Either.right(record);
+  }
+
+  private AuthorizationScope createAuthorizationScope(final AuthorizationRecord record) {
+    return new AuthorizationScope(
+        record.getResourceMatcher(), record.getResourceId(), record.getResourcePropertyName());
+  }
+
+  private String createDuplicatePermissionRejectionReason(final AuthorizationRecord record) {
+    final var ownerId = record.getOwnerId();
+    return record.getResourceMatcher() == AuthorizationResourceMatcher.PROPERTY
+        ? PERMISSIONS_FOR_RESOURCE_PROPERTY_NAME_ALREADY_EXISTS_MESSAGE.formatted(
+            ownerId, record.getResourcePropertyName())
+        : PERMISSIONS_FOR_RESOURCE_IDENTIFIER_ALREADY_EXISTS_MESSAGE.formatted(
+            ownerId, record.getResourceId());
   }
 
   public Either<Rejection, AuthorizationRecord> hasValidPermissionTypes(
