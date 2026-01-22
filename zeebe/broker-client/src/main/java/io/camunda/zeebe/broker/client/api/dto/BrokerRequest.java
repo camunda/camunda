@@ -49,13 +49,13 @@ public abstract class BrokerRequest<T> implements ClientRequest {
     return new PartitionId(partitionGroup, getPartitionId());
   }
 
-  public String setPartitionGroup(final String partitionGroup) {
-    this.partitionGroup = partitionGroup;
+  public String getPartitionGroup() {
     return partitionGroup;
   }
 
-  public String getPartitionGroup() {
-    return partitionGroup;
+  public BrokerRequest<T> setPartitionGroup(final String partitionGroup) {
+    this.partitionGroup = partitionGroup;
+    return this;
   }
 
   public abstract void setPartitionId(int partitionId);
