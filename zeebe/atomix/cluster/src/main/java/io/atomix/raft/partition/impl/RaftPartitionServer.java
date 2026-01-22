@@ -315,13 +315,14 @@ public class RaftPartitionServer implements HealthMonitorable {
 
   private RaftServerCommunicator createServerProtocol() {
     return new RaftServerCommunicator(
-        partition.name(),
+        partition.id(),
         Serializer.using(RaftNamespaces.RAFT_PROTOCOL),
         clusterCommunicator,
         requestTimeout,
         snapshotRequestTimeout,
         configurationChangeTimeout,
-        meterRegistry);
+        meterRegistry,
+        false);
   }
 
   public CompletableFuture<Void> stepDown() {

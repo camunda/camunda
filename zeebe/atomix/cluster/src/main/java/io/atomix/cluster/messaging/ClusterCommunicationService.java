@@ -145,6 +145,16 @@ public interface ClusterCommunicationService {
       Function<M, CompletableFuture<R>> handler,
       Function<R, byte[]> encoder);
 
+  default <M, R> void replyTo(
+      final String[] subject,
+      final Function<byte[], M> decoder,
+      final Function<M, CompletableFuture<R>> handler,
+      final Function<R, byte[]> encoder) {
+    for (final String s : subject) {
+      replyTo(s, decoder, handler, encoder);
+    }
+  }
+
   /**
    * Adds a new subscriber for the specified message subject which does not return any reply.
    *
