@@ -332,7 +332,7 @@ public class ElementInstanceIT {
     final int deleted =
         rdbmsWriters
             .getFlowNodeInstanceWriter()
-            .deleteProcessInstanceRelatedData(
+            .deleteRootProcessInstanceRelatedData(
                 PARTITION_ID, List.of(item2.processInstanceKey()), 10);
 
     // then

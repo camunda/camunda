@@ -204,26 +204,26 @@
                    LIMIT #{limit})
   </sql>
 
-  <sql id="processInstanceHistoryDeletion">
+  <sql id="rootProcessInstanceHistoryDeletion">
     DELETE
     FROM ${prefix}${tableName}
     WHERE PARTITION_ID = #{partitionId}
       AND PROCESS_INSTANCE_KEY IN
-    <foreach collection="processInstanceKeys" item="key" open="(" separator=", " close=")">
+    <foreach collection="rootProcessInstanceKeys" item="key" open="(" separator=", " close=")">
       #{key}
     </foreach>
     LIMIT #{limit}
   </sql>
-  <sql id="processInstanceHistoryDeletion" databaseId="mssql">
+  <sql id="rootProcessInstanceHistoryDeletion" databaseId="mssql">
     DELETE TOP (#{limit})
     FROM ${prefix}${tableName}
     WHERE PARTITION_ID = #{partitionId}
       AND PROCESS_INSTANCE_KEY IN
-    <foreach collection="processInstanceKeys" item="key" open="(" separator=", " close=")">
+    <foreach collection="rootProcessInstanceKeys" item="key" open="(" separator=", " close=")">
       #{key}
     </foreach>
   </sql>
-  <sql id="processInstanceHistoryDeletion" databaseId="oracle">
+  <sql id="rootProcessInstanceHistoryDeletion" databaseId="oracle">
     <bind name="keyColumn" value="primaryKeyColumn != null &amp;&amp; primaryKeyColumn != '' ? primaryKeyColumn : 'rowid'"/>
     DELETE
     FROM ${prefix}${tableName}
@@ -231,12 +231,12 @@
                     FROM ${prefix}${tableName}
                     WHERE PARTITION_ID = #{partitionId}
                       AND PROCESS_INSTANCE_KEY IN
-                    <foreach collection="processInstanceKeys" item="key" open="(" separator=", " close=")">
+                    <foreach collection="rootProcessInstanceKeys" item="key" open="(" separator=", " close=")">
                       #{key}
                     </foreach>
                     AND ROWNUM &lt;= #{limit})
   </sql>
-  <sql id="processInstanceHistoryDeletion" databaseId="postgresql">
+  <sql id="rootProcessInstanceHistoryDeletion" databaseId="postgresql">
     <bind name="keyColumn" value="primaryKeyColumn != null &amp;&amp; primaryKeyColumn != '' ? primaryKeyColumn : 'ctid'"/>
     DELETE
     FROM ${prefix}${tableName}
@@ -244,7 +244,7 @@
                    FROM ${prefix}${tableName}
                    WHERE PARTITION_ID = #{partitionId}
                      AND PROCESS_INSTANCE_KEY IN
-                   <foreach collection="processInstanceKeys" item="key" open="(" separator=", " close=")">
+                   <foreach collection="rootProcessInstanceKeys" item="key" open="(" separator=", " close=")">
                      #{key}
                    </foreach>
                    LIMIT #{limit})

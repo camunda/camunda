@@ -19,7 +19,7 @@ import io.camunda.db.rdbms.write.queue.WriteStatementType;
 import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
 import java.util.List;
 
-public class AuditLogWriter extends ProcessInstanceDependant implements RdbmsWriter {
+public class AuditLogWriter extends RootProcessInstanceDependant implements RdbmsWriter {
 
   private final ExecutionQueue executionQueue;
   private final AuditLogMapper mapper;

@@ -309,7 +309,7 @@ public class IncidentIT {
     final int deleted =
         rdbmsWriters
             .getIncidentWriter()
-            .deleteProcessInstanceRelatedData(
+            .deleteRootProcessInstanceRelatedData(
                 PARTITION_ID, List.of(item2.processInstanceKey()), 10);
 
     // then

@@ -21,7 +21,7 @@ import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
 import java.time.OffsetDateTime;
 import java.util.function.Function;
 
-public class FlowNodeInstanceWriter extends ProcessInstanceDependant implements RdbmsWriter {
+public class FlowNodeInstanceWriter extends RootProcessInstanceDependant implements RdbmsWriter {
 
   private final ExecutionQueue executionQueue;
 

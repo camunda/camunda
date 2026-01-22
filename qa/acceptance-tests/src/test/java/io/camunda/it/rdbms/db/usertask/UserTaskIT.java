@@ -1489,7 +1489,7 @@ public class UserTaskIT {
     final int deleted =
         rdbmsWriters
             .getUserTaskWriter()
-            .deleteProcessInstanceRelatedData(
+            .deleteRootProcessInstanceRelatedData(
                 PARTITION_ID, List.of(item2.processInstanceKey()), 10);
 
     // then

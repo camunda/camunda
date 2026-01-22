@@ -438,7 +438,7 @@ public class ProcessInstanceIT {
     final var expiredPIs =
         rdbmsService
             .getProcessInstanceReader()
-            .selectExpiredProcessInstances(partitionId, cleanupDate, 10);
+            .selectExpiredRootProcessInstances(partitionId, cleanupDate, 10);
 
     assertThat(expiredPIs).hasSize(2);
     assertThat(expiredPIs)
@@ -488,7 +488,7 @@ public class ProcessInstanceIT {
     final var expiredPIs =
         rdbmsService
             .getProcessInstanceReader()
-            .selectExpiredProcessInstances(partitionId, cleanupDate, 3);
+            .selectExpiredRootProcessInstances(partitionId, cleanupDate, 3);
 
     assertThat(expiredPIs).hasSize(3);
     assertThat(expiredPIs)
@@ -528,7 +528,7 @@ public class ProcessInstanceIT {
     final var expiredPIs =
         rdbmsService
             .getProcessInstanceReader()
-            .selectExpiredProcessInstances(partitionId, cleanupDate, 10);
+            .selectExpiredRootProcessInstances(partitionId, cleanupDate, 10);
 
     assertThat(expiredPIs).hasSize(1);
     assertThat(expiredPIs).containsExactly(pi1.processInstanceKey());
@@ -560,7 +560,7 @@ public class ProcessInstanceIT {
     final var expiredPIs =
         rdbmsService
             .getProcessInstanceReader()
-            .selectExpiredProcessInstances(partitionId, cleanupDate, 10);
+            .selectExpiredRootProcessInstances(partitionId, cleanupDate, 10);
 
     assertThat(expiredPIs).hasSize(1);
     assertThat(expiredPIs).containsExactly(pi1.processInstanceKey());
