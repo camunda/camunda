@@ -8,6 +8,7 @@
 package io.camunda.tasklist.qa.util;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch.indices.DeleteIndexRequest;
 import co.elastic.clients.elasticsearch.indices.DeleteIndexTemplateRequest;
 import co.elastic.clients.elasticsearch.indices.GetIndexRequest;
@@ -27,11 +28,11 @@ public final class TestUtil {
 
   private TestUtil() {}
 
-  public static String createRandomString(int length) {
+  public static String createRandomString(final int length) {
     return UUID.randomUUID().toString().substring(0, length);
   }
 
-  public static void removeAllIndices(OpenSearchClient osClient, String prefix) {
+  public static void removeAllIndices(final OpenSearchClient osClient, final String prefix) {
     try {
       LOGGER.info("Removing indices");
       final var indexResponses = osClient.indices().get(ir -> ir.index(List.of(prefix + "*")));
@@ -48,23 +49,23 @@ public final class TestUtil {
               t -> {
                 try {
                   osClient.indices().deleteIndexTemplate(dit -> dit.name(t.name()));
-                } catch (IOException e) {
+                } catch (final IOException e) {
                   throw new RuntimeException(e);
                 }
               });
 
-    } catch (IOException ex) {
+    } catch (final IOException ex) {
       LOGGER.error(ex.getMessage(), ex);
     }
   }
 
-  public static void removeAllIndices(ElasticsearchClient esClient, String prefix) {
+  public static void removeAllIndices(final ElasticsearchClient esClient, final String prefix) {
     try {
       LOGGER.info("Removing indices");
       final var indexResponse =
           esClient.indices().get(GetIndexRequest.of(r -> r.index(prefix + "*")));
 
-      for (String index : indexResponse.result().keySet()) {
+      for (final String index : indexResponse.result().keySet()) {
         esClient.indices().delete(DeleteIndexRequest.of(r -> r.index(index)));
       }
 
@@ -73,12 +74,12 @@ public final class TestUtil {
               .indices()
               .getIndexTemplate(GetIndexTemplateRequest.of(r -> r.name(prefix + "*")));
 
-      for (var template : templateResponse.indexTemplates()) {
+      for (final var template : templateResponse.indexTemplates()) {
         esClient
             .indices()
             .deleteIndexTemplate(DeleteIndexTemplateRequest.of(r -> r.name(template.name())));
       }
-    } catch (IOException ex) {
+    } catch (final IOException | ElasticsearchException ex) {
       LOGGER.error(ex.getMessage(), ex);
     }
   }

@@ -10,6 +10,7 @@ package io.camunda.tasklist.qa.util;
 import static io.camunda.webapps.schema.SupportedVersions.SUPPORTED_ELASTICSEARCH_VERSION;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch._types.HealthStatus;
 import co.elastic.clients.elasticsearch.cluster.HealthResponse;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
@@ -351,7 +352,7 @@ public class TestContainerUtil {
       } else {
         LOGGER.warn("ElasticSearch cluster health status is : '{}'", healthStatus);
       }
-    } catch (final IOException e) {
+    } catch (final IOException | ElasticsearchException e) {
       throw new TasklistRuntimeException(e);
     }
   }
