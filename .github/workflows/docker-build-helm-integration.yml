@@ -359,7 +359,7 @@ jobs:
     name: Trigger SaaS E2E tests
     runs-on: ubuntu-latest
     needs: [build-and-push, format-identifier]
-    timeout-minutes: 20
+    timeout-minutes: 30
     permissions: { }
     steps:
       - name: Checkout repository
