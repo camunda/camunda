@@ -39,6 +39,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -46,7 +47,6 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -275,13 +275,18 @@ public final class S3BackupStore implements BackupStore {
 
   @Override
   public CompletableFuture<Void> delete(final Collection<BackupIdentifier> ids) {
-    return ids.stream()
-        .map(this::collectBackupObjects)
-        .reduce(
-            CompletableFuture.completedFuture(new HashSet<ObjectIdentifier>()),
-            (combined, future) -> combined.thenCombine(future, this::mergeSets),
-            (a, b) -> a.thenCombine(b, this::mergeSets))
-        .thenComposeAsync(this::deleteIdentifierBatch);
+    final var futures = ids.stream().map(this::collectBackupObjects).toList();
+
+    return CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new))
+        .thenApply(
+            ignored ->
+                futures.stream()
+                    .map(CompletableFuture::join)
+                    .flatMap(HashSet::stream)
+                    // Push manifests to the end to avoid leaving orphaned content objects
+                    .sorted(Comparator.comparing(id -> id.key().endsWith(MANIFEST_OBJECT_KEY)))
+                    .toList())
+        .thenCompose(this::deleteIdentifierBatch);
   }
 
   @Override
@@ -356,8 +361,7 @@ public final class S3BackupStore implements BackupStore {
                     ObjectIdentifier.builder()
                         .key(rangeMarkersPrefix(partitionId) + BackupRangeMarker.toName(marker))
                         .build())
-            .collect(Collectors.toSet());
-
+            .toList();
     return deleteIdentifierBatch(markerIdentifiers);
   }
 
@@ -367,19 +371,13 @@ public final class S3BackupStore implements BackupStore {
     return CompletableFuture.completedFuture(null);
   }
 
-  private CompletableFuture<Void> deleteIdentifierBatch(
-      final Collection<ObjectIdentifier> identifiers) {
-    // S3 DeleteObjects API has a maximum of 1000 objects per request
-    if (identifiers.size() > MAX_DELETE_BATCH_SIZE) {
-      final var futures =
-          StreamSupport.stream(
-                  Iterables.partition(identifiers, MAX_DELETE_BATCH_SIZE).spliterator(), true)
-              .map(this::deleteBackupObjects)
-              .toArray(CompletableFuture[]::new);
-      return CompletableFuture.allOf(futures);
-    } else {
-      return deleteBackupObjects(identifiers);
-    }
+  private CompletableFuture<Void> deleteIdentifierBatch(final List<ObjectIdentifier> identifiers) {
+    final var futures =
+        StreamSupport.stream(
+                Iterables.partition(identifiers, MAX_DELETE_BATCH_SIZE).spliterator(), false)
+            .map(this::deleteBackupObjects)
+            .toArray(CompletableFuture[]::new);
+    return CompletableFuture.allOf(futures);
   }
 
   private String rangeMarkersPrefix(final int partitionId) {
@@ -431,10 +429,10 @@ public final class S3BackupStore implements BackupStore {
   private CompletableFuture<HashSet<ObjectIdentifier>> collectBackupObjects(
       final BackupIdentifier id) {
     return readManifestObject(id)
-        .thenComposeAsync(
+        .thenCompose(
             manifest ->
                 listObjects(manifest, Directory.MANIFESTS)
-                    .thenCombineAsync(
+                    .thenCombine(
                         listObjects(manifest, Directory.CONTENTS),
                         (manifestObjects, contentObjects) -> {
                           final var allObjects = new HashSet<>(manifestObjects);
@@ -651,12 +649,6 @@ public final class S3BackupStore implements BackupStore {
                         "Invalid broker version format in manifest: " + descriptor.brokerVersion(),
                         null));
     return brokerVersion.major() == 8 && brokerVersion.minor() <= 8;
-  }
-
-  private HashSet<ObjectIdentifier> mergeSets(
-      final HashSet<ObjectIdentifier> set1, final HashSet<ObjectIdentifier> set2) {
-    set1.addAll(set2);
-    return set1;
   }
 
   public static S3AsyncClient buildClient(final S3BackupConfig config) {
