@@ -126,7 +126,7 @@ func usage(exitcode int) {
 
 func getBaseCommand() (string, error) {
 	if len(os.Args) == 1 {
-		usage(1)
+		usage(0)
 	}
 
 	switch os.Args[1] {
