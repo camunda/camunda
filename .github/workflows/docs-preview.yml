@@ -78,7 +78,7 @@ jobs:
           BASE_URL: /camunda/pr-preview/pr-${{ github.event.pull_request.number }}/
 
       - name: Deploy PR Preview
-        uses: rossjrw/pr-preview-action@f31d5aa7b364955ea86228b9dcd346dc3f29c408 # v1.4.7
+        uses: rossjrw/pr-preview-action@ffa7509e91a3ec8dfc2e5536c4d5c1acdf7a6de9 # v1.8.1
         with:
           source-dir: ./monorepo-docs-site/build/
           preview-branch: gh-pages
@@ -109,7 +109,7 @@ jobs:
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
 
       - name: Cleanup PR Preview
-        uses: rossjrw/pr-preview-action@f31d5aa7b364955ea86228b9dcd346dc3f29c408 # v1.4.7
+        uses: rossjrw/pr-preview-action@ffa7509e91a3ec8dfc2e5536c4d5c1acdf7a6de9 # v1.8.1
         with:
           preview-branch: gh-pages
           umbrella-dir: pr-preview
