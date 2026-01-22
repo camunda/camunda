@@ -70,7 +70,7 @@
     <version.jackson>2.21.0</version.jackson>
     <version.json-base>3.0.0</version.json-base>
     <version.json-flattener>0.18.0</version.json-flattener>
-    <version.junit>5.13.4</version.junit>
+    <version.junit>5.14.2</version.junit>
     <version.junit4>4.13.2</version.junit4>
     <version.log4j>2.25.3</version.log4j>
     <version.minlog>1.3.1</version.minlog>
