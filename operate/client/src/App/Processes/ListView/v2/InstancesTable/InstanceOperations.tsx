@@ -14,17 +14,20 @@ import {useCancelProcessInstance} from 'modules/mutations/processInstance/useCan
 import {useDeleteProcessInstance} from 'modules/mutations/processInstance/useDeleteProcessInstance';
 import {useResolveProcessInstanceIncidents} from 'modules/mutations/processInstance/useResolveProcessInstanceIncidents';
 import type {OperationConfig} from 'modules/components/Operations/types';
+import type {BatchOperationType} from '@camunda/camunda-api-zod-schemas/8.8';
 
 type Props = {
   processInstanceKey: string;
   hasIncident: boolean;
   isInstanceActive: boolean;
+  activeOperations: BatchOperationType[];
 };
 
 const InstanceOperations: React.FC<Props> = ({
   processInstanceKey,
   hasIncident,
   isInstanceActive,
+  activeOperations,
 }) => {
   const handleOperationSuccess = useHandleOperationSuccess();
 
@@ -83,6 +86,7 @@ const InstanceOperations: React.FC<Props> = ({
   });
 
   const isLoading =
+    activeOperations.length > 0 ||
     isCancelProcessInstancePending ||
     isResolveIncidentsPending ||
     isDeletePending;
@@ -93,7 +97,9 @@ const InstanceOperations: React.FC<Props> = ({
     operations.push({
       type: 'RESOLVE_INCIDENT',
       onExecute: () => resolveProcessInstanceIncidents(),
-      disabled: isResolveIncidentsPending,
+      disabled:
+        isResolveIncidentsPending ||
+        activeOperations.includes('RESOLVE_INCIDENT'),
     });
   }
 
@@ -101,7 +107,9 @@ const InstanceOperations: React.FC<Props> = ({
     operations.push({
       type: 'CANCEL_PROCESS_INSTANCE',
       onExecute: () => cancelProcessInstance(),
-      disabled: isCancelProcessInstancePending,
+      disabled:
+        isCancelProcessInstancePending ||
+        activeOperations.includes('CANCEL_PROCESS_INSTANCE'),
     });
   }
 
@@ -109,7 +117,8 @@ const InstanceOperations: React.FC<Props> = ({
     operations.push({
       type: 'DELETE_PROCESS_INSTANCE',
       onExecute: () => deleteProcessInstance(),
-      disabled: isDeletePending,
+      disabled:
+        isDeletePending || activeOperations.includes('DELETE_PROCESS_INSTANCE'),
     });
   }
 

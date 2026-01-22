@@ -61,12 +61,10 @@ const parseProcessInstancesSearchFilter = (
 ): ProcessInstancesSearchFilter | undefined => {
   const filter = parseProcessInstancesFilter(search);
 
-  if (
-    !filter.active &&
-    !filter.completed &&
-    !filter.canceled &&
-    !filter.incidents
-  ) {
+  const hasStateFilters =
+    filter.active || filter.completed || filter.canceled || filter.incidents;
+
+  if (!hasStateFilters && !filter.operationId) {
     return undefined;
   }
 

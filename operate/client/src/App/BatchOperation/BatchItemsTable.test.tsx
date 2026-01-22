@@ -25,6 +25,7 @@ const createMockBatchOperationItems = (
   options?: {
     withErrors?: boolean;
     state?: BatchOperationItem['state'];
+    operationType?: BatchOperationItem['operationType'];
   },
 ): BatchOperationItem[] => {
   return Array.from({length: count}, (_, i) => ({
@@ -32,7 +33,7 @@ const createMockBatchOperationItems = (
     itemKey: `item-${i + 1}`,
     processInstanceKey: `2251799813685${250 + i}`,
     state: options?.state ?? 'COMPLETED',
-    operationType: 'MIGRATE_PROCESS_INSTANCE',
+    operationType: options?.operationType ?? 'CANCEL_PROCESS_INSTANCE',
     processedDate: '2023-11-22T09:03:29.564+0100',
     errorMessage: options?.withErrors
       ? `Error processing item ${i + 1}`

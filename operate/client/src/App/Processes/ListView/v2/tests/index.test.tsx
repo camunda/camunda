@@ -15,6 +15,7 @@ import {
   mockProcessInstancesV2 as mockProcessInstances,
   createUser,
   searchResult,
+  createProcessInstance,
 } from 'modules/testUtils';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelectionV2';
 import {processesStore} from 'modules/stores/processes/processes.list';
@@ -24,6 +25,7 @@ import {mockSearchProcessInstances} from 'modules/mocks/api/v2/processInstances/
 import {act, useEffect} from 'react';
 import {Paths} from 'modules/Routes';
 import {mockQueryBatchOperations} from 'modules/mocks/api/v2/batchOperations/queryBatchOperations';
+import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations/queryBatchOperationItems';
 import {notificationsStore} from 'modules/stores/notifications';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {QueryClientProvider} from '@tanstack/react-query';
@@ -68,6 +70,37 @@ function getWrapper(initialPath: string = Paths.processes()) {
   return Wrapper;
 }
 
+const mockProcessInstancesV2WithOperation = {
+  items: [
+    createProcessInstance({
+      processInstanceKey: '0000000000000002',
+      processDefinitionKey: '2251799813685612',
+      processDefinitionId: 'someKey',
+      processDefinitionName: 'someProcessName',
+      state: 'ACTIVE',
+    }),
+  ],
+  page: {
+    totalItems: 1,
+  },
+};
+
+const mockBatchOperationItemsWithFailure = {
+  items: [
+    {
+      batchOperationKey: 'f4be6304-a0e0-4976-b81b-7a07fb4e96e5',
+      itemKey: 'item-key-1',
+      processInstanceKey: '0000000000000002',
+      state: 'FAILED' as const,
+      operationType: 'MODIFY_PROCESS_INSTANCE' as const,
+      errorMessage: 'Batch Operation Error Message',
+    },
+  ],
+  page: {
+    totalItems: 1,
+  },
+};
+
 describe('Instances', () => {
   beforeEach(() => {
     mockSearchProcessDefinitions().withSuccess(searchResult([]));
@@ -76,6 +109,12 @@ describe('Instances', () => {
     mockSearchProcessInstances().withSuccess(mockProcessInstances);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
     mockQueryBatchOperations().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+      },
+    });
+    mockQueryBatchOperationItems().withSuccess({
       items: [],
       page: {
         totalItems: 0,
@@ -367,5 +406,129 @@ describe('Instances', () => {
 
     vi.clearAllTimers();
     vi.useRealTimers();
+  });
+
+  it('should hide Operation State column when Operation Id filter is not set', async () => {
+    mockSearchProcessInstances().withSuccess(
+      mockProcessInstancesV2WithOperation,
+    );
+
+    render(<ListView />, {
+      wrapper: getWrapper(`${Paths.processes()}?active=true`),
+    });
+
+    await screen.findByRole('heading', {
+      name: /process instances - 1 result/i,
+    });
+
+    expect(screen.queryByText('Operation State')).not.toBeInTheDocument();
+  });
+
+  it('should show Operation State column when Operation Id filter is set', async () => {
+    const queryString = '?operationId=f4be6304-a0e0-4976-b81b-7a07fb4e96e5';
+
+    vi.stubGlobal('location', {
+      ...window.location,
+      search: queryString,
+    });
+
+    mockSearchProcessInstances().withSuccess(
+      mockProcessInstancesV2WithOperation,
+    );
+    mockQueryBatchOperationItems().withSuccess(
+      mockBatchOperationItemsWithFailure,
+    );
+
+    render(<ListView />, {
+      wrapper: getWrapper(`${Paths.processes()}${queryString}`),
+    });
+
+    await screen.findByRole('heading', {
+      name: /process instances - 1 result/i,
+    });
+
+    expect(screen.getByText('Operation State')).toBeInTheDocument();
+  });
+
+  it('should show correct error message when error row is expanded', async () => {
+    const queryString = '?operationId=f4be6304-a0e0-4976-b81b-7a07fb4e96e5';
+
+    vi.stubGlobal('location', {
+      ...window.location,
+      search: queryString,
+    });
+
+    mockSearchProcessInstances().withSuccess(
+      mockProcessInstancesV2WithOperation,
+    );
+    mockQueryBatchOperationItems().withSuccess(
+      mockBatchOperationItemsWithFailure,
+    );
+
+    const {user} = render(<ListView />, {
+      wrapper: getWrapper(`${Paths.processes()}${queryString}`),
+    });
+
+    await screen.findByRole('heading', {
+      name: /process instances - 1 result/i,
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByText('Loading...')).not.toBeInTheDocument();
+    });
+
+    expect(screen.getByText('0000000000000002')).toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(
+        screen.getByText('Batch Operation Error Message'),
+      ).toBeInTheDocument();
+    });
+    expect(screen.getByText('Batch Operation Error Message')).not.toBeVisible();
+
+    const withinRow = within(
+      screen.getByRole('row', {name: /0000000000000002/i}),
+    );
+    const expandButton = withinRow.getByRole('button', {
+      name: 'Expand current row',
+    });
+
+    await user.click(expandButton);
+
+    expect(screen.getByText('Batch Operation Error Message')).toBeVisible();
+  });
+
+  it('should display correct operation from process instance with multiple operations', async () => {
+    const queryString = '?operationId=f4be6304-a0e0-4976-b81b-7a07fb4e96e5';
+
+    vi.stubGlobal('location', {
+      ...window.location,
+      search: queryString,
+    });
+
+    mockSearchProcessInstances().withSuccess(
+      mockProcessInstancesV2WithOperation,
+    );
+    mockQueryBatchOperationItems().withSuccess(
+      mockBatchOperationItemsWithFailure,
+    );
+
+    render(<ListView />, {
+      wrapper: getWrapper(`${Paths.processes()}${queryString}`),
+    });
+
+    await screen.findByRole('heading', {
+      name: /process instances - 1 result/i,
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByText('Loading...')).not.toBeInTheDocument();
+    });
+
+    const withinRow = within(
+      screen.getByRole('row', {name: /0000000000000002/i}),
+    );
+
+    expect(withinRow.getByText('FAILED')).toBeInTheDocument();
   });
 });
