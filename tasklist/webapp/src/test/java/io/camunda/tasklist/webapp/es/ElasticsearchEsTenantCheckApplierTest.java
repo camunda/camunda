@@ -14,7 +14,7 @@ import static org.mockito.Mockito.when;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import io.camunda.security.reader.TenantAccess;
 import io.camunda.tasklist.util.ElasticsearchUtil;
-import io.camunda.tasklist.webapp.es.tenant.ElasticsearchEs8TenantCheckApplier;
+import io.camunda.tasklist.webapp.es.tenant.ElasticsearchEsTenantCheckApplier;
 import io.camunda.tasklist.webapp.tenant.TenantService;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -24,11 +24,11 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class ElasticsearchEs8TenantCheckApplierTest {
+public class ElasticsearchEsTenantCheckApplierTest {
 
   @Mock private TenantService tenantService;
 
-  @InjectMocks private ElasticsearchEs8TenantCheckApplier instance;
+  @InjectMocks private ElasticsearchEsTenantCheckApplier instance;
 
   @Test
   void checkIfQueryContainsTenant() {

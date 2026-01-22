@@ -31,6 +31,7 @@ import co.elastic.clients.elasticsearch._types.aggregations.LongTermsBucket;
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
+import co.elastic.clients.elasticsearch.core.IndexResponse;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
@@ -80,9 +81,9 @@ public class TaskMetricsStoreElasticSearchTest {
             .setEndTime(now)
             .setTenantId("<default>")
             .setPartitionId(0);
-    final var indexRes = mock(co.elastic.clients.elasticsearch.core.IndexResponse.class);
+    final var indexRes = mock(IndexResponse.class);
     final var expectedReq =
-        co.elastic.clients.elasticsearch.core.IndexRequest.of(
+        IndexRequest.of(
             b ->
                 b.index(template.getFullQualifiedName())
                     .id(expectedEntry.getId())

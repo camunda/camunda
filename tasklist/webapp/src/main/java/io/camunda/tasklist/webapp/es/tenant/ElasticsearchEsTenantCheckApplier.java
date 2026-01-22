@@ -28,7 +28,7 @@ import org.springframework.stereotype.Component;
 
 @Conditional(ElasticSearchCondition.class)
 @Component
-public class ElasticsearchEs8TenantCheckApplier implements TenantCheckApplier<Query> {
+public class ElasticsearchEsTenantCheckApplier implements TenantCheckApplier<Query> {
 
   @Autowired private TenantService tenantService;
 
@@ -58,7 +58,7 @@ public class ElasticsearchEs8TenantCheckApplier implements TenantCheckApplier<Qu
       return query;
 
     } else if (tenantAccess.denied() || CollectionUtils.isEmpty(searchByTenantIds)) {
-      return ElasticsearchUtil.createMatchNoneQueryEs8().build()._toQuery();
+      return ElasticsearchUtil.createMatchNoneQueryEs().build()._toQuery();
 
     } else if (tenantAccess.allowed()) {
       final var tenantTermsQuery = ElasticsearchUtil.termsQuery(TENANT_ID, searchByTenantIds);
