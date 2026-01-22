@@ -11,9 +11,9 @@ import {render, screen} from 'modules/testing-library';
 import {MemoryRouter} from 'react-router-dom';
 import {PAGE_TITLE} from 'modules/constants';
 import {Dashboard} from './index';
-import {mockIncidentsByError} from './IncidentsByError/index.setup';
+import {mockIncidentsByError} from './v2/IncidentsByError/index.setup';
 import {mockWithSingleVersion} from './v2/InstancesByProcessDefinition/index.setup';
-import {mockFetchIncidentsByError} from 'modules/mocks/api/incidents/fetchIncidentsByError';
+import {mockFetchIncidentProcessInstanceStatisticsByError} from 'modules/mocks/api/v2/incidents/fetchIncidentProcessInstanceStatisticsByError';
 import {mockFetchProcessDefinitionStatistics} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionStatistics';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
@@ -39,7 +39,9 @@ describe('Dashboard', () => {
   });
 
   it('should render', async () => {
-    mockFetchIncidentsByError().withSuccess(mockIncidentsByError);
+    mockFetchIncidentProcessInstanceStatisticsByError().withSuccess(
+      mockIncidentsByError,
+    );
     mockFetchProcessDefinitionStatistics().withSuccess(mockWithSingleVersion);
     mockFetchProcessDefinitionStatistics().withSuccess(
       searchResult([
@@ -65,7 +67,9 @@ describe('Dashboard', () => {
   });
 
   it('should render empty state (no instances)', async () => {
-    mockFetchIncidentsByError().withSuccess(mockIncidentsByError);
+    mockFetchIncidentProcessInstanceStatisticsByError().withSuccess(
+      mockIncidentsByError,
+    );
     mockFetchProcessDefinitionStatistics().withSuccess(searchResult([]));
     mockFetchProcessDefinitionStatistics().withSuccess(searchResult([]));
 
@@ -80,7 +84,9 @@ describe('Dashboard', () => {
   });
 
   it('should render empty state (no incidents)', async () => {
-    mockFetchIncidentsByError().withSuccess([]);
+    mockFetchIncidentProcessInstanceStatisticsByError().withSuccess(
+      searchResult([]),
+    );
     mockFetchProcessDefinitionStatistics().withSuccess(mockWithSingleVersion);
     mockFetchProcessDefinitionStatistics().withSuccess(mockWithSingleVersion);
 

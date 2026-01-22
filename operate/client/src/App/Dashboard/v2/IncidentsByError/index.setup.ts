@@ -15,7 +15,7 @@ import {searchResult} from 'modules/testUtils';
 const bigErrorMessage =
   'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Tempor nec feugiat nisl pretium fusce id. Pulvinar sapien et ligula ullamcorper malesuada. Iaculis nunc sed augue lacus viverra vitae congue eu. Aliquet lectus proin nibh nisl condimentum id. Tempus iaculis urna id volutpat.';
 
-const incidentStatisticsByError =
+const mockIncidentsByError =
   searchResult<IncidentProcessInstanceStatisticsByError>([
     {
       errorHashCode: 234254,
@@ -24,7 +24,7 @@ const incidentStatisticsByError =
     },
   ]);
 
-const incidentStatisticsByErrorWithBigMessage =
+const mockIncidentStatisticsByErrorWithBigMessage =
   searchResult<IncidentProcessInstanceStatisticsByError>([
     {
       errorHashCode: 234254,
@@ -33,7 +33,7 @@ const incidentStatisticsByErrorWithBigMessage =
     },
   ]);
 
-const incidentStatisticsByDefinition =
+const mockIncidentStatisticsByDefinition =
   searchResult<IncidentProcessInstanceStatisticsByDefinition>([
     {
       processDefinitionId: 'call-level-2-process',
@@ -54,8 +54,8 @@ const incidentStatisticsByDefinition =
   ]);
 
 export {
-  incidentStatisticsByError,
-  incidentStatisticsByDefinition,
+  mockIncidentsByError,
+  mockIncidentStatisticsByDefinition,
   bigErrorMessage,
-  incidentStatisticsByErrorWithBigMessage,
+  mockIncidentStatisticsByErrorWithBigMessage,
 };
