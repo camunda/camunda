@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { FC } from "react";
+import { FC, useEffect } from "react";
 import { usePaginatedApi } from "src/utility/api";
 import { searchTenant, Tenant } from "src/utility/api/tenants";
 import { Dropdown } from "@carbon/react";
@@ -27,12 +27,15 @@ const ClusterVariableTenantDropdown: FC<TenantDropdownProps> = ({
     usePaginatedApi(searchTenant);
 
   // Set tenantId to first tenant if not set
-  if (
-    tenants?.items?.length &&
-    (!tenantId || !tenants.items.some((tenant) => tenant.tenantId === tenantId))
-  ) {
-    onChange(tenants.items[0].tenantId);
-  }
+  useEffect(() => {
+    if (
+      tenants?.items?.length &&
+      (!tenantId ||
+        !tenants.items.some((tenant) => tenant.tenantId === tenantId))
+    ) {
+      onChange(tenants.items[0].tenantId);
+    }
+  }, [tenants, tenantId, onChange]);
 
   return (
     <Dropdown
