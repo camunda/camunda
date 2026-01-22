@@ -31,12 +31,18 @@ public final class ToolDescriptions {
   public static final String SORT_DESCRIPTION = "Sort criteria";
   public static final String PAGE_DESCRIPTION = "Pagination criteria";
 
-  /**
-   * Description for variable format information. Use this in descriptions of tools that return
-   * variable values.
-   */
   public static final String VARIABLE_FORMAT_DESCRIPTION =
       "The variable value is returned in serialized JSON format.";
+
+  public static final String SIMPLE_JSON_EXAMPLE_VALUE = "\\\"myValue\\\"";
+  public static final String NESTED_JSON_EXAMPLE_VALUE = "\"{\\\"myVar\\\":\\\"myValue\\\"}\"";
+
+  public static final String VARIABLE_FILTER_FORMAT_NOTE =
+      "Variable values in filters are in serialized JSON format. Example string value: "
+          + SIMPLE_JSON_EXAMPLE_VALUE
+          + ". Example nested JSON value: "
+          + NESTED_JSON_EXAMPLE_VALUE
+          + ".";
 
   public static final String PROCESS_DEFINITION_KEY_DESCRIPTION =
       "The assigned key of the process definition, which acts as a unique identifier for this process definition.";

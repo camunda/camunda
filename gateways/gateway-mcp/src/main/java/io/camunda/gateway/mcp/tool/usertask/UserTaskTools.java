@@ -12,6 +12,7 @@ import static io.camunda.gateway.mcp.tool.ToolDescriptions.FILTER_DESCRIPTION;
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.PAGE_DESCRIPTION;
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.SORT_DESCRIPTION;
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.USER_TASK_KEY_POSITIVE_MESSAGE;
+import static io.camunda.gateway.mcp.tool.ToolDescriptions.VARIABLE_FILTER_FORMAT_NOTE;
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.VARIABLE_FORMAT_DESCRIPTION;
 
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
@@ -54,7 +55,11 @@ public class UserTaskTools {
   }
 
   @McpTool(
-      description = "Search for user tasks. " + EVENTUAL_CONSISTENCY_NOTE,
+      description =
+          "Search for user tasks. "
+              + EVENTUAL_CONSISTENCY_NOTE
+              + " "
+              + VARIABLE_FILTER_FORMAT_NOTE,
       annotations = @McpAnnotations(readOnlyHint = true))
   public CallToolResult searchUserTasks(
       @McpToolParam(description = FILTER_DESCRIPTION, required = false)
