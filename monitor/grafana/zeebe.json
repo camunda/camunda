@@ -1667,7 +1667,7 @@
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
-              "expr": "container_memory_rss{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", container=~\"zeebe.*\"}",
+              "expr": "container_memory_rss{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", container=~\".*(orchestration|zeebe|camunda).*\"}",
               "format": "time_series",
               "hide": false,
               "interval": "",
@@ -1679,7 +1679,7 @@
               "datasource": {
                 "uid": "$DS_PROMETHEUS"
               },
-              "expr": "max(kube_pod_container_resource_limits_memory_bytes{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", container=~\"zeebe.*\"})",
+              "expr": "max(kube_pod_container_resource_limits_memory_bytes{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", container=~\".*(orchestration|zeebe|camunda).*\"})",
               "hide": false,
               "interval": "",
               "legendFormat": "limit",
@@ -1690,7 +1690,7 @@
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
-              "expr": "min(kube_pod_container_resource_requests_memory_bytes{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", container=~\"zeebe.*\"})",
+              "expr": "min(kube_pod_container_resource_requests_memory_bytes{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", container=~\".*(orchestration|zeebe|camunda).*\"})",
               "interval": "",
               "legendFormat": "request",
               "refId": "C"
@@ -5654,7 +5654,7 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "container_memory_rss{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\".*zeebe.*|core.*\", container=~\"zeebe.*|core.*\"}",
+              "expr": "container_memory_rss{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\".*(orchestration|zeebe|camunda).*\", container=~\".*(orchestration|zeebe|camunda).*\"}",
               "format": "time_series",
               "hide": false,
               "interval": "",
@@ -5669,7 +5669,7 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "max(kube_pod_container_resource_limits_memory_bytes{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\".*zeebe.*|core.*\", container=~\"zeebe.*|core.*\"})",
+              "expr": "max(kube_pod_container_resource_limits_memory_bytes{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\".*(orchestration|zeebe|camunda).*\", container=~\".*(orchestration|zeebe|camunda).*\"})",
               "hide": false,
               "interval": "",
               "legendFormat": "limit",
@@ -5682,7 +5682,7 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "min(kube_pod_container_resource_requests_memory_bytes{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\".*zeebe.*|core.*\", container=~\"zeebe.*|core.*\"})",
+              "expr": "min(kube_pod_container_resource_requests_memory_bytes{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\".*(orchestration|zeebe|camunda).*\", container=~\".*(orchestration|zeebe|camunda).*\"})",
               "interval": "",
               "legendFormat": "request",
               "range": true,
