@@ -25,6 +25,7 @@ public enum AuditLogSearchColumn implements SearchColumn<AuditLogEntity> {
   PROCESS_DEFINITION_ID("processDefinitionId"),
   PROCESS_DEFINITION_KEY("processDefinitionKey"),
   PROCESS_INSTANCE_KEY("processInstanceKey"),
+  ELEMENT_INSTANCE_KEY("elementInstanceKey"),
   JOB_KEY("jobKey"),
   USER_TASK_KEY("userTaskKey"),
   DECISION_REQUIREMENTS_ID("decisionRequirementsId"),
