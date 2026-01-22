@@ -25,7 +25,6 @@ import io.camunda.zeebe.backup.common.FileSet.NamedFile;
 import io.camunda.zeebe.backup.common.NamedFileSetImpl;
 import java.nio.file.Path;
 import java.util.Collection;
-import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -95,25 +94,21 @@ final class FileSetManager {
     return new NamedFileSetImpl(pathByName);
   }
 
-  public CompletableFuture<Collection<String>> backupDataUrls(
-      final Collection<BackupIdentifier> ids) {
+  public Collection<String> backupDataUrls(final Collection<BackupIdentifier> ids) {
     assureContainerCreated();
 
-    final var futures = ids.stream().map(this::listBackupObjects).toList();
-
-    return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
-        .thenApply(v -> futures.stream().flatMap(f -> f.join().stream()).toList());
+    return ids.stream()
+        .parallel()
+        .map(this::listBackupObjects)
+        .flatMap(Collection::stream)
+        .toList();
   }
 
-  private CompletableFuture<Collection<String>> listBackupObjects(final BackupIdentifier id) {
-    final var snapshotFuture =
-        CompletableFuture.supplyAsync(() -> listBlobUrls(id, SNAPSHOT_FILESET_NAME));
-    final var segmentFuture =
-        CompletableFuture.supplyAsync(() -> listBlobUrls(id, SEGMENTS_FILESET_NAME));
+  private Collection<String> listBackupObjects(final BackupIdentifier id) {
+    final var snapshotBlobs = listBlobUrls(id, SNAPSHOT_FILESET_NAME);
+    final var segmentBlobs = listBlobUrls(id, SEGMENTS_FILESET_NAME);
 
-    return snapshotFuture.thenCombine(
-        segmentFuture,
-        (snapshots, segments) -> Stream.concat(snapshots.stream(), segments.stream()).toList());
+    return Stream.concat(snapshotBlobs.stream(), segmentBlobs.stream()).toList();
   }
 
   private Collection<String> listBlobUrls(final BackupIdentifier id, final String fileSetName) {
