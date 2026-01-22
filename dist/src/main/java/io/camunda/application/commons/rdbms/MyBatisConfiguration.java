@@ -27,6 +27,7 @@ import io.camunda.db.rdbms.sql.GroupMapper;
 import io.camunda.db.rdbms.sql.HistoryDeletionMapper;
 import io.camunda.db.rdbms.sql.IncidentMapper;
 import io.camunda.db.rdbms.sql.JobMapper;
+import io.camunda.db.rdbms.sql.JobMetricsBatchMapper;
 import io.camunda.db.rdbms.sql.MappingRuleMapper;
 import io.camunda.db.rdbms.sql.MessageSubscriptionMapper;
 import io.camunda.db.rdbms.sql.PersistentWebSessionMapper;
@@ -221,6 +222,12 @@ public class MyBatisConfiguration {
   public MapperFactoryBean<ClusterVariableMapper> clusterVariableMapper(
       final SqlSessionFactory sqlSessionFactory) {
     return createMapperFactoryBean(sqlSessionFactory, ClusterVariableMapper.class);
+  }
+
+  @Bean
+  public MapperFactoryBean<JobMetricsBatchMapper> jobMetricsBatchMapper(
+      final SqlSessionFactory sqlSessionFactory) {
+    return createMapperFactoryBean(sqlSessionFactory, JobMetricsBatchMapper.class);
   }
 
   @Bean

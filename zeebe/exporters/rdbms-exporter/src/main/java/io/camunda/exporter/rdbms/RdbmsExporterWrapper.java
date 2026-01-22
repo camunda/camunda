@@ -32,6 +32,7 @@ import io.camunda.exporter.rdbms.handlers.GroupExportHandler;
 import io.camunda.exporter.rdbms.handlers.HistoryDeletionDeletedHandler;
 import io.camunda.exporter.rdbms.handlers.IncidentExportHandler;
 import io.camunda.exporter.rdbms.handlers.JobExportHandler;
+import io.camunda.exporter.rdbms.handlers.JobMetricsBatchExportHandler;
 import io.camunda.exporter.rdbms.handlers.MappingRuleExportHandler;
 import io.camunda.exporter.rdbms.handlers.MessageSubscriptionExportHandler;
 import io.camunda.exporter.rdbms.handlers.ProcessExportHandler;
@@ -284,6 +285,9 @@ public class RdbmsExporterWrapper implements Exporter {
     builder.withHandler(
         ValueType.HISTORY_DELETION,
         new HistoryDeletionDeletedHandler(rdbmsWriters.getHistoryDeletionWriter()));
+    builder.withHandler(
+        ValueType.JOB_METRICS_BATCH,
+        new JobMetricsBatchExportHandler(rdbmsWriters.getJobMetricsBatchWriter()));
 
     if (config.getAuditLog().isEnabled()) {
       registerAuditLogHandlers(rdbmsWriters, builder, config, partitionId);

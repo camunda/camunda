@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.engine.state.mutable;
 
-import io.camunda.zeebe.engine.state.jobmetrics.JobMetricsExportState;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.protocol.record.value.JobMetricsExportState;
 
 /** Mutable interface for managing job metrics state. */
 public interface MutableJobMetricsState
