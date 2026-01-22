@@ -248,6 +248,8 @@ test.describe('Processes', () => {
         `${baseUrl}/operate/processes?process=testProcess&version=1`,
       );
 
+      await expect(page).toHaveURL(`${baseUrl}/operate/processes?process=testProcess&version=1`);
+
       await waitForAssertion({
         assertion: async () => {
           await expect(operateFiltersPanelPage.processNameFilter).toBeDisabled({
@@ -257,6 +259,7 @@ test.describe('Processes', () => {
         onFailure: async () => {
           page.reload();
         },
+        maxRetries: 5,
       });
 
       await expect(operateDiagramPage.diagramSpinner).toBeVisible();

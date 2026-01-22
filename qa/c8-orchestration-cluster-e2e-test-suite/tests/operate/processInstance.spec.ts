@@ -123,9 +123,9 @@ test.describe('Process Instance', () => {
         },
       });
 
-      await expect(operateProcessInstancePage.incidentsTableRows).toHaveCount(
-        1,
-      );
+      await expect
+        .poll(() => operateProcessInstancePage.incidentsTableRows.count())
+        .toBe(1);
 
       await expect(
         operateProcessInstancePage.incidentsTable.getByText(/is cool\?/i),
@@ -220,6 +220,7 @@ test.describe('Process Instance', () => {
   test('Should render collapsed sub process and navigate between planes', async ({
     page,
     operateProcessInstancePage,
+    operateDiagramPage,
   }) => {
     const {diagram} = operateProcessInstancePage;
 
@@ -246,10 +247,21 @@ test.describe('Process Instance', () => {
     await test.step('Navigate to fill form flow node', async () => {
       await page.keyboard.press('ArrowRight');
       await operateProcessInstancePage.clickTreeItem(/fill form/i);
-
       await expect(
         diagram.getByText('fill form', {exact: false}),
       ).toBeVisible();
+
+      await waitForAssertion({
+        assertion: async () => {
+          await operateDiagramPage.popover.waitFor({
+            state: 'visible',
+          });
+        },
+        onFailure: async () => {
+          await operateProcessInstancePage.clickTreeItem(/fill form/i);
+        },
+      });
+
       await expect(page.getByText(/retries left/i)).toBeVisible();
     });
 
