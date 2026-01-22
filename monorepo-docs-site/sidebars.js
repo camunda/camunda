@@ -15,6 +15,7 @@
 const sidebars = {
   tutorialSidebar: [
     'index',
+    'monorepo-devops-collaboration',
     'ci',
     'release',
   ],
