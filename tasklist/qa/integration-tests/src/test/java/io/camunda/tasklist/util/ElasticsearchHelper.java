@@ -173,8 +173,7 @@ public class ElasticsearchHelper implements NoSqlHelper {
   @Override
   public List<TaskEntity> getAllTasks(final String index) {
     try {
-      final Query query =
-          ElasticsearchUtil.constantScoreQuery(ElasticsearchUtil.matchAllQuery());
+      final Query query = ElasticsearchUtil.constantScoreQuery(ElasticsearchUtil.matchAllQuery());
 
       final SearchRequest searchRequest =
           SearchRequest.of(s -> s.index(index).query(query).size(100));

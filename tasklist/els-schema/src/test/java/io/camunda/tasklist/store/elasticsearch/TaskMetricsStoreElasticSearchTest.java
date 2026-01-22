@@ -23,6 +23,7 @@ import static org.mockito.Mockito.when;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.ExpandWildcard;
+import co.elastic.clients.elasticsearch._types.Result;
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
 import co.elastic.clients.elasticsearch._types.aggregations.Buckets;
@@ -31,6 +32,7 @@ import co.elastic.clients.elasticsearch._types.aggregations.LongTermsBucket;
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
+import co.elastic.clients.elasticsearch.core.IndexRequest;
 import co.elastic.clients.elasticsearch.core.IndexResponse;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
@@ -88,9 +90,8 @@ public class TaskMetricsStoreElasticSearchTest {
                 b.index(template.getFullQualifiedName())
                     .id(expectedEntry.getId())
                     .document(expectedEntry));
-    when(esClient.index(any(co.elastic.clients.elasticsearch.core.IndexRequest.class)))
-        .thenReturn(indexRes);
-    when(indexRes.result()).thenReturn(co.elastic.clients.elasticsearch._types.Result.Created);
+    when(esClient.index(any(IndexRequest.class))).thenReturn(indexRes);
+    when(indexRes.result()).thenReturn(Result.Created);
 
     // When
     instance.registerTaskAssigned(task);
