@@ -38,6 +38,7 @@ public class JobServiceTest {
             client,
             null,
             mock(ApiServicesExecutorProvider.class),
+            null,
             null);
   }
 

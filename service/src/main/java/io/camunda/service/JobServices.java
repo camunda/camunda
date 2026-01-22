@@ -36,6 +36,7 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
 
   private final ActivateJobsHandler<T> activateJobsHandler;
   private final JobSearchClient jobSearchClient;
+  private final String engineName;
 
   public JobServices(
       final BrokerClient brokerClient,
@@ -44,7 +45,8 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
       final JobSearchClient jobSearchClient,
       final CamundaAuthentication authentication,
       final ApiServicesExecutorProvider executorProvider,
-      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
+      final String engineName) {
     super(
         brokerClient,
         securityContextProvider,
@@ -53,6 +55,7 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
         brokerRequestAuthorizationConverter);
     this.activateJobsHandler = activateJobsHandler;
     this.jobSearchClient = jobSearchClient;
+    this.engineName = engineName;
   }
 
   @Override
@@ -64,7 +67,21 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
         jobSearchClient,
         authentication,
         executorProvider,
-        brokerRequestAuthorizationConverter);
+        brokerRequestAuthorizationConverter,
+        engineName);
+  }
+
+  @Override
+  public JobServices<T> withEngineName(final String engineName) {
+    return new JobServices<>(
+        brokerClient,
+        securityContextProvider,
+        activateJobsHandler,
+        jobSearchClient,
+        authentication,
+        executorProvider,
+        brokerRequestAuthorizationConverter,
+        engineName);
   }
 
   public void activateJobs(
@@ -78,6 +95,7 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
             .setTimeout(request.timeout())
             .setWorker(request.worker())
             .setVariables(request.fetchVariable());
+    brokerRequest.setPartitionGroup(engineName);
     final var brokerRequestAuthorization =
         brokerRequestAuthorizationConverter.convert(authentication);
     brokerRequest.setAuthorization(brokerRequestAuthorization);
@@ -95,6 +113,7 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
         new BrokerFailJobRequest(jobKey, retries, retryBackOff)
             .setVariables(getDocumentOrEmpty(variables))
             .setErrorMessage(errorMessage);
+    request.setPartitionGroup(engineName);
     return sendBrokerRequest(request);
   }
 
@@ -107,13 +126,15 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
         new BrokerThrowErrorRequest(jobKey, errorCode)
             .setErrorMessage(errorMessage)
             .setVariables(getDocumentOrEmpty(variables));
+    request.setPartitionGroup(engineName);
     return sendBrokerRequest(request);
   }
 
   public CompletableFuture<JobRecord> completeJob(
       final long jobKey, final Map<String, Object> variables, final JobResult result) {
-    return sendBrokerRequest(
-        new BrokerCompleteJobRequest(jobKey, getDocumentOrEmpty(variables), result));
+    final var request = new BrokerCompleteJobRequest(jobKey, getDocumentOrEmpty(variables), result);
+    request.setPartitionGroup(engineName);
+    return sendBrokerRequest(request);
   }
 
   public CompletableFuture<JobRecord> updateJob(
@@ -123,6 +144,7 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
     if (operationReference != null) {
       brokerRequest.setOperationReference(operationReference);
     }
+    brokerRequest.setPartitionGroup(engineName);
     return sendBrokerRequest(brokerRequest);
   }
 

@@ -121,7 +121,8 @@ public class CamundaServicesConfiguration {
         jobSearchClient,
         null,
         executorProvider,
-        brokerRequestAuthorizationConverter);
+        brokerRequestAuthorizationConverter,
+        null);
   }
 
   @Bean

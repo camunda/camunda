@@ -38,10 +38,8 @@ import java.util.concurrent.CompletableFuture;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
 
-@CamundaRestController
-@RequestMapping("/v2/jobs")
+@CamundaRestController("/v2/jobs")
 public class JobController {
 
   private final ResponseObserverProvider responseObserverProvider;
@@ -62,38 +60,51 @@ public class JobController {
 
   @CamundaPostMapping(path = "/activation")
   public CompletableFuture<ResponseEntity<Object>> activateJobs(
+      @PathVariable(name = "engineName", required = false) final String engineName,
       @RequestBody final JobActivationRequest activationRequest) {
     return RequestMapper.toJobsActivationRequest(
             activationRequest, multiTenancyCfg.isChecksEnabled())
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::activateJobs);
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            (request) -> activateJobs(request, engineName));
   }
 
   @CamundaPostMapping(path = "/{jobKey}/failure")
   public CompletableFuture<ResponseEntity<Object>> failureJob(
+      @PathVariable(name = "engineName", required = false) final String engineName,
       @PathVariable final long jobKey,
       @RequestBody(required = false) final JobFailRequest failureRequest) {
-    return failJob(RequestMapper.toJobFailRequest(failureRequest, jobKey));
+    return failJob(RequestMapper.toJobFailRequest(failureRequest, jobKey), engineName);
   }
 
   @CamundaPostMapping(path = "/{jobKey}/error")
   public CompletableFuture<ResponseEntity<Object>> errorJob(
-      @PathVariable final long jobKey, @RequestBody final JobErrorRequest errorRequest) {
+      @PathVariable(name = "engineName", required = false) final String engineName,
+      @PathVariable final long jobKey,
+      @RequestBody final JobErrorRequest errorRequest) {
     return RequestMapper.toJobErrorRequest(errorRequest, jobKey)
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::errorJob);
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            (request) -> errorJob(request, engineName));
   }
 
   @CamundaPostMapping(path = "/{jobKey}/completion")
   public CompletableFuture<ResponseEntity<Object>> completeJob(
+      @PathVariable(name = "engineName", required = false) final String engineName,
       @PathVariable final long jobKey,
       @RequestBody(required = false) final JobCompletionRequest completionRequest) {
-    return completeJob(RequestMapper.toJobCompletionRequest(completionRequest, jobKey));
+    return completeJob(RequestMapper.toJobCompletionRequest(completionRequest, jobKey), engineName);
   }
 
   @CamundaPatchMapping(path = "/{jobKey}")
   public CompletableFuture<ResponseEntity<Object>> updateJob(
-      @PathVariable final long jobKey, @RequestBody final JobUpdateRequest jobUpdateRequest) {
+      @PathVariable(name = "engineName", required = false) final String engineName,
+      @PathVariable final long jobKey,
+      @RequestBody final JobUpdateRequest jobUpdateRequest) {
     return RequestMapper.toJobUpdateRequest(jobUpdateRequest, jobKey)
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::updateJob);
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            (request) -> updateJob(request, engineName));
   }
 
   @RequiresSecondaryStorage
@@ -105,10 +116,11 @@ public class JobController {
   }
 
   private CompletableFuture<ResponseEntity<Object>> activateJobs(
-      final ActivateJobsRequest activationRequest) {
+      final ActivateJobsRequest activationRequest, final String engineName) {
     final var result = new CompletableFuture<ResponseEntity<Object>>();
     final var responseObserver = responseObserverProvider.apply(result);
     jobServices
+        .withEngineName(engineName)
         .withAuthentication(authenticationProvider.getCamundaAuthentication())
         .activateJobs(activationRequest, responseObserver, responseObserver::setCancelationHandler);
     return result.handleAsync(
@@ -118,10 +130,12 @@ public class JobController {
         });
   }
 
-  private CompletableFuture<ResponseEntity<Object>> failJob(final FailJobRequest failJobRequest) {
+  private CompletableFuture<ResponseEntity<Object>> failJob(
+      final FailJobRequest failJobRequest, final String engineName) {
     return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
             jobServices
+                .withEngineName(engineName)
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .failJob(
                     failJobRequest.jobKey(),
@@ -132,10 +146,11 @@ public class JobController {
   }
 
   private CompletableFuture<ResponseEntity<Object>> errorJob(
-      final ErrorJobRequest errorJobRequest) {
+      final ErrorJobRequest errorJobRequest, final String engineName) {
     return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
             jobServices
+                .withEngineName(engineName)
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .errorJob(
                     errorJobRequest.jobKey(),
@@ -145,10 +160,11 @@ public class JobController {
   }
 
   private CompletableFuture<ResponseEntity<Object>> completeJob(
-      final CompleteJobRequest completeJobRequest) {
+      final CompleteJobRequest completeJobRequest, final String engineName) {
     return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
             jobServices
+                .withEngineName(engineName)
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .completeJob(
                     completeJobRequest.jobKey(),
@@ -157,10 +173,11 @@ public class JobController {
   }
 
   private CompletableFuture<ResponseEntity<Object>> updateJob(
-      final UpdateJobRequest updateJobRequest) {
+      final UpdateJobRequest updateJobRequest, final String engineName) {
     return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
             jobServices
+                .withEngineName(engineName)
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .updateJob(
                     updateJobRequest.jobKey(),
