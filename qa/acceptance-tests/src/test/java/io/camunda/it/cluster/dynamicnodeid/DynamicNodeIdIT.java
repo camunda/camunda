@@ -32,9 +32,9 @@ import io.camunda.zeebe.qa.util.actuator.BrokerHealthActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.cluster.TestHealthProbe;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
-import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -261,9 +261,7 @@ public class DynamicNodeIdIT {
     }
 
     // Start all brokers
-    for (final var broker : testCluster.brokers().values()) {
-      broker.start().await(TestHealthProbe.READY);
-    }
+    testCluster.start();
     testCluster.awaitHealthyTopology();
 
     // then - verify new directories are created for all brokers
@@ -295,22 +293,25 @@ public class DynamicNodeIdIT {
     try (final CamundaClient client = testCluster.newClientBuilder().build()) {
       final var completedJobs = new ArrayList<ActivatedJob>();
 
-      while (completedJobs.size() < startedProcesses) {
-        final var jobActivation =
-            client
-                .newActivateJobsCommand()
-                .jobType("taskA")
-                .maxJobsToActivate(5)
-                .send()
-                .toCompletableFuture();
-        assertThat(jobActivation).succeedsWithin(Duration.ofSeconds(30));
-        final var jobs = jobActivation.join().getJobs();
-        assertThat(jobs).isNotEmpty();
-        for (final var job : jobs) {
-          TestHelper.completeJob(client, job.getKey());
-          completedJobs.add(job);
-        }
-      }
+      Awaitility.await("Until all jobs are completed")
+          .atMost(Duration.ofMinutes(2))
+          .untilAsserted(
+              () -> {
+                final var jobActivation =
+                    client
+                        .newActivateJobsCommand()
+                        .jobType("taskA")
+                        .maxJobsToActivate(startedProcesses - completedJobs.size())
+                        .send()
+                        .toCompletableFuture();
+                assertThat(jobActivation).succeedsWithin(Duration.ofSeconds(30));
+                final var jobs = jobActivation.join().getJobs();
+                for (final var job : jobs) {
+                  TestHelper.completeJob(client, job.getKey());
+                  completedJobs.add(job);
+                }
+                assertThat(completedJobs.size()).isEqualTo(startedProcesses);
+              });
     }
   }
 
