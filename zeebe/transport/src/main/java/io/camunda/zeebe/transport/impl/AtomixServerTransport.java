@@ -66,10 +66,15 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
     return actor.call(
         () -> {
           final var topicName = topicName(partitionId, requestType);
+          final var prefixed = "default-" + topicName;
           LOG.trace("Subscribe for topic {}", topicName);
           partitionsRequestMap.computeIfAbsent(partitionId, id -> new Long2ObjectHashMap<>());
           messagingService.registerHandler(
               topicName,
+              (sender, request) ->
+                  handleAtomixRequest(request, partitionId, requestType, requestHandler));
+          messagingService.registerHandler(
+              prefixed,
               (sender, request) ->
                   handleAtomixRequest(request, partitionId, requestType, requestHandler));
         });
@@ -93,8 +98,10 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
 
   private void removeRequestHandlers(final int partitionId, final RequestType requestType) {
     final var topicName = topicName(partitionId, requestType);
+    final var prefixed = "default-" + topicName;
     LOG.trace("Unsubscribe from topic {}", topicName);
     messagingService.unregisterHandler(topicName);
+    messagingService.unregisterHandler(prefixed);
   }
 
   private CompletableFuture<byte[]> handleAtomixRequest(
