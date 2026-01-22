@@ -18,6 +18,7 @@ import io.camunda.zeebe.model.bpmn.builder.SubProcessBuilder;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.ConditionalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -2914,12 +2915,141 @@ public class ModifyProcessInstanceTest {
             ProcessInstanceIntent.ELEMENT_TERMINATING, ProcessInstanceIntent.ELEMENT_TERMINATED);
   }
 
-  private void assertThatJobIsCancelled(final long processInstanceKey, final String elementId) {
+  @Test
+  public void shouldSubscribeToConditionalBoundaryEvent() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .userTask("A")
+                .zeebeUserTask()
+                .userTask("C")
+                .zeebeUserTask()
+                .boundaryEvent("conditionalBoundary")
+                .cancelActivity(true)
+                .condition(c -> c.condition("=x > 10").zeebeVariableNames("x"))
+                .endEvent()
+                .moveToNode("C")
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .moveElements("A", "C")
+        .modify();
+
+    // then
     assertThat(
-            RecordingExporter.jobRecords(JobIntent.CANCELED)
+            RecordingExporter.processInstanceRecords()
+                .onlyEvents()
                 .withProcessInstanceKey(processInstanceKey)
-                .withElementId(elementId)
+                .withElementId("A"))
+        .extracting(Record::getIntent)
+        .containsSequence(
+            ProcessInstanceIntent.ELEMENT_TERMINATING, ProcessInstanceIntent.ELEMENT_TERMINATED);
+
+    assertThat(
+            RecordingExporter.conditionalSubscriptionRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .withCatchEventId("conditionalBoundary")
+                .withIntent(ConditionalSubscriptionIntent.CREATED)
                 .exists())
+        .describedAs("Expect the conditional event subscription to have been created")
+        .isTrue();
+  }
+
+  @Test
+  public void shouldUnsubscribeFromConditionalCatchEvent() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .userTask("A")
+                .zeebeUserTask()
+                .boundaryEvent("conditionalBoundary")
+                .cancelActivity(true)
+                .condition(c -> c.condition("=x > 10").zeebeVariableNames("x"))
+                .endEvent()
+                .moveToNode("A")
+                .userTask("C")
+                .zeebeUserTask()
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .moveElements("A", "C")
+        .modify();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .onlyEvents()
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId("A"))
+        .extracting(Record::getIntent)
+        .containsSequence(
+            ProcessInstanceIntent.ELEMENT_TERMINATING, ProcessInstanceIntent.ELEMENT_TERMINATED);
+
+    assertThat(
+            RecordingExporter.conditionalSubscriptionRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .withCatchEventId("conditionalBoundary")
+                .withIntent(ConditionalSubscriptionIntent.DELETED)
+                .exists())
+        .describedAs("Expect the conditional event subscription to have been deleted")
+        .isTrue();
+  }
+
+  @Test
+  public void shouldSubscribeToIntermediateConditionalCatchEventWhenTokenIsAdded() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .userTask("A")
+                .zeebeUserTask()
+                .intermediateCatchEvent("conditionalCatch")
+                .condition(c -> c.condition("=x > 10").zeebeVariableNames("x"))
+                .userTask("B")
+                .zeebeUserTask()
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .moveElements("A", "conditionalCatch")
+        .modify();
+
+    // then
+    assertThat(
+            RecordingExporter.conditionalSubscriptionRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .withCatchEventId("conditionalCatch")
+                .withIntent(ConditionalSubscriptionIntent.CREATED)
+                .exists())
+        .describedAs("Expect the conditional event subscription to have been created")
         .isTrue();
   }
 
