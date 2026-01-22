@@ -1,0 +1,239 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+  <!-- PostgreSQL: Create AUDIT_LOG table with list partitioning -->
+  <changeSet id="create_audit_log_table_postgresql" author="camunda" dbms="postgresql">
+    <sql splitStatements="false">
+      CREATE TABLE ${prefix}AUDIT_LOG (
+        AUDIT_LOG_KEY VARCHAR(${userCharColumnSize}),
+        ENTITY_KEY VARCHAR(${userCharColumnSize}),
+        ENTITY_TYPE VARCHAR(50),
+        OPERATION_TYPE VARCHAR(50),
+        ENTITY_VERSION INTEGER,
+        ENTITY_VALUE_TYPE SMALLINT,
+        ENTITY_OPERATION_INTENT SMALLINT,
+        BATCH_OPERATION_KEY BIGINT,
+        BATCH_OPERATION_TYPE VARCHAR(50),
+        TIMESTAMP TIMESTAMP(3) WITH TIME ZONE NOT NULL,
+        ACTOR_TYPE VARCHAR(50),
+        ACTOR_ID VARCHAR(${userCharColumnSize}),
+        TENANT_ID VARCHAR(${userCharColumnSize}),
+        TENANT_SCOPE VARCHAR(50),
+        RESULT VARCHAR(50),
+        ANNOTATION VARCHAR(4000),
+        CATEGORY VARCHAR(50),
+        PROCESS_DEFINITION_ID VARCHAR(${userCharColumnSize}),
+        DECISION_REQUIREMENTS_ID VARCHAR(${userCharColumnSize}),
+        DECISION_DEFINITION_ID VARCHAR(${userCharColumnSize}),
+        PROCESS_DEFINITION_KEY BIGINT,
+        PROCESS_INSTANCE_KEY BIGINT,
+        ROOT_PROCESS_INSTANCE_KEY BIGINT,
+        ELEMENT_INSTANCE_KEY BIGINT,
+        JOB_KEY BIGINT,
+        USER_TASK_KEY BIGINT,
+        DECISION_REQUIREMENTS_KEY BIGINT,
+        DECISION_DEFINITION_KEY BIGINT,
+        DECISION_EVALUATION_KEY BIGINT,
+        DEPLOYMENT_KEY BIGINT,
+        FORM_KEY BIGINT,
+        RESOURCE_KEY BIGINT,
+        PARTITION_ID INTEGER,
+        HISTORY_CLEANUP_DATE TIMESTAMP(3) WITH TIME ZONE,
+        PRIMARY KEY (AUDIT_LOG_KEY, PARTITION_ID)
+      ) PARTITION BY LIST (PARTITION_ID);
+    </sql>
+  </changeSet>
+
+  <changeSet id="create_audit_log_partitions_postgresql" author="camunda" dbms="postgresql">
+    <sql splitStatements="false">
+      DO $$
+      DECLARE
+        partition_count INTEGER := ${partitionsCount};
+        i INTEGER;
+      BEGIN
+        FOR i IN 1..(partition_count) LOOP
+          EXECUTE format('CREATE TABLE ${prefix}AUDIT_LOG_PART_%s PARTITION OF ${prefix}AUDIT_LOG FOR VALUES IN (%s)', i, i);
+        END LOOP;
+      END $$;
+    </sql>
+  </changeSet>
+
+  <!-- Oracle: Create AUDIT_LOG table with hash partitioning -->
+  <changeSet id="create_audit_log_table_oracle" author="camunda" dbms="oracle">
+    <sql splitStatements="false">
+      CREATE TABLE ${prefix}AUDIT_LOG (
+        AUDIT_LOG_KEY VARCHAR2(${userCharColumnSize}),
+        ENTITY_KEY VARCHAR2(${userCharColumnSize}),
+        ENTITY_TYPE VARCHAR2(50),
+        OPERATION_TYPE VARCHAR2(50),
+        ENTITY_VERSION NUMBER,
+        ENTITY_VALUE_TYPE NUMBER(5),
+        ENTITY_OPERATION_INTENT NUMBER(5),
+        BATCH_OPERATION_KEY NUMBER(19),
+        BATCH_OPERATION_TYPE VARCHAR2(50),
+        TIMESTAMP TIMESTAMP(3) WITH TIME ZONE NOT NULL,
+        ACTOR_TYPE VARCHAR2(50),
+        ACTOR_ID VARCHAR2(${userCharColumnSize}),
+        TENANT_ID VARCHAR2(${userCharColumnSize}),
+        TENANT_SCOPE VARCHAR2(50),
+        RESULT VARCHAR2(50),
+        ANNOTATION VARCHAR2(4000),
+        CATEGORY VARCHAR2(50),
+        PROCESS_DEFINITION_ID VARCHAR2(${userCharColumnSize}),
+        DECISION_REQUIREMENTS_ID VARCHAR2(${userCharColumnSize}),
+        DECISION_DEFINITION_ID VARCHAR2(${userCharColumnSize}),
+        PROCESS_DEFINITION_KEY NUMBER(19),
+        PROCESS_INSTANCE_KEY NUMBER(19),
+        ROOT_PROCESS_INSTANCE_KEY NUMBER(19),
+        ELEMENT_INSTANCE_KEY NUMBER(19),
+        JOB_KEY NUMBER(19),
+        USER_TASK_KEY NUMBER(19),
+        DECISION_REQUIREMENTS_KEY NUMBER(19),
+        DECISION_DEFINITION_KEY NUMBER(19),
+        DECISION_EVALUATION_KEY NUMBER(19),
+        DEPLOYMENT_KEY NUMBER(19),
+        FORM_KEY NUMBER(19),
+        RESOURCE_KEY NUMBER(19),
+        PARTITION_ID NUMBER,
+        HISTORY_CLEANUP_DATE TIMESTAMP(3) WITH TIME ZONE,
+        PRIMARY KEY (AUDIT_LOG_KEY, PARTITION_ID)
+      ) PARTITION BY HASH (PARTITION_ID) PARTITIONS ${partitionsCount}
+    </sql>
+  </changeSet>
+
+  <!-- MSSQL: Create partition function and scheme -->
+  <changeSet id="create_audit_log_partition_function_mssql" author="camunda" dbms="mssql">
+    <preConditions onFail="MARK_RAN">
+      <sqlCheck expectedResult="0">
+        SELECT COUNT(*) FROM sys.partition_functions WHERE name = '${prefix}PF_AUDIT_LOG'
+      </sqlCheck>
+    </preConditions>
+    <sql splitStatements="false">
+      DECLARE @partitionCount INT = ${partitionsCount};
+      DECLARE @sql NVARCHAR(MAX);
+      DECLARE @i INT = 0;
+
+      SET @sql = N'CREATE PARTITION FUNCTION ${prefix}PF_AUDIT_LOG (INT) AS RANGE LEFT FOR VALUES (';
+      WHILE @i &lt; @partitionCount - 1
+      BEGIN
+        SET @sql = @sql + CAST(@i AS NVARCHAR(10));
+        IF @i &lt; @partitionCount - 2
+          SET @sql = @sql + N', ';
+        SET @i = @i + 1;
+      END;
+      SET @sql = @sql + N')';
+      EXEC sp_executesql @sql;
+
+      SET @sql = N'CREATE PARTITION SCHEME ${prefix}PS_AUDIT_LOG AS PARTITION ${prefix}PF_AUDIT_LOG ALL TO ([PRIMARY])';
+      EXEC sp_executesql @sql;
+    </sql>
+  </changeSet>
+
+  <!-- MSSQL: Create AUDIT_LOG table (after partition function/scheme) -->
+  <changeSet id="create_audit_log_table_mssql" author="camunda" dbms="mssql">
+    <sql splitStatements="false">
+      CREATE TABLE ${prefix}AUDIT_LOG (
+        AUDIT_LOG_KEY NVARCHAR(${userCharColumnSize}),
+        ENTITY_KEY NVARCHAR(${userCharColumnSize}),
+        ENTITY_TYPE NVARCHAR(50),
+        OPERATION_TYPE NVARCHAR(50),
+        ENTITY_VERSION INT,
+        ENTITY_VALUE_TYPE SMALLINT,
+        ENTITY_OPERATION_INTENT SMALLINT,
+        BATCH_OPERATION_KEY BIGINT,
+        BATCH_OPERATION_TYPE NVARCHAR(50),
+        TIMESTAMP DATETIMEOFFSET(3) NOT NULL,
+        ACTOR_TYPE NVARCHAR(50),
+        ACTOR_ID NVARCHAR(${userCharColumnSize}),
+        TENANT_ID NVARCHAR(${userCharColumnSize}),
+        TENANT_SCOPE NVARCHAR(50),
+        RESULT NVARCHAR(50),
+        ANNOTATION NVARCHAR(4000),
+        CATEGORY NVARCHAR(50),
+        PROCESS_DEFINITION_ID NVARCHAR(${userCharColumnSize}),
+        DECISION_REQUIREMENTS_ID NVARCHAR(${userCharColumnSize}),
+        DECISION_DEFINITION_ID NVARCHAR(${userCharColumnSize}),
+        PROCESS_DEFINITION_KEY BIGINT,
+        PROCESS_INSTANCE_KEY BIGINT,
+        ROOT_PROCESS_INSTANCE_KEY BIGINT,
+        ELEMENT_INSTANCE_KEY BIGINT,
+        JOB_KEY BIGINT,
+        USER_TASK_KEY BIGINT,
+        DECISION_REQUIREMENTS_KEY BIGINT,
+        DECISION_DEFINITION_KEY BIGINT,
+        DECISION_EVALUATION_KEY BIGINT,
+        DEPLOYMENT_KEY BIGINT,
+        FORM_KEY BIGINT,
+        RESOURCE_KEY BIGINT,
+        PARTITION_ID INT,
+        HISTORY_CLEANUP_DATE DATETIMEOFFSET(3),
+        PRIMARY KEY (AUDIT_LOG_KEY, PARTITION_ID)
+      )
+    </sql>
+  </changeSet>
+
+  <!-- MariaDB/MySQL: Create AUDIT_LOG table (no partitioning support) -->
+  <changeSet id="create_audit_log_table" author="camunda" dbms="h2,mariadb,mysql">
+    <createTable tableName="${prefix}AUDIT_LOG">
+      <column name="AUDIT_LOG_KEY" type="VARCHAR(${userCharColumnSize})">
+        <constraints primaryKey="true" nullable="false"/>
+      </column>
+      <column name="ENTITY_KEY" type="VARCHAR(${userCharColumnSize})"/>
+      <column name="ENTITY_TYPE" type="VARCHAR(50)"/>
+      <column name="OPERATION_TYPE" type="VARCHAR(50)"/>
+      <column name="ENTITY_VERSION" type="INT"/>
+      <column name="ENTITY_VALUE_TYPE" type="SMALLINT"/>
+      <column name="ENTITY_OPERATION_INTENT" type="SMALLINT"/>
+      <column name="BATCH_OPERATION_KEY" type="BIGINT"/>
+      <column name="BATCH_OPERATION_TYPE" type="VARCHAR(50)"/>
+      <column name="TIMESTAMP" type="TIMESTAMP(3)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="ACTOR_TYPE" type="VARCHAR(50)"/>
+      <column name="ACTOR_ID" type="VARCHAR(${userCharColumnSize})"/>
+      <column name="TENANT_ID" type="VARCHAR(${userCharColumnSize})"/>
+      <column name="TENANT_SCOPE" type="VARCHAR(50)"/>
+      <column name="RESULT" type="VARCHAR(50)"/>
+      <column name="ANNOTATION" type="VARCHAR(4000)"/>
+      <column name="CATEGORY" type="VARCHAR(50)"/>
+      <column name="PROCESS_DEFINITION_ID" type="VARCHAR(${userCharColumnSize})"/>
+      <column name="DECISION_REQUIREMENTS_ID" type="VARCHAR(${userCharColumnSize})"/>
+      <column name="DECISION_DEFINITION_ID" type="VARCHAR(${userCharColumnSize})"/>
+      <column name="PROCESS_DEFINITION_KEY" type="BIGINT"/>
+      <column name="PROCESS_INSTANCE_KEY" type="BIGINT"/>
+      <column name="ROOT_PROCESS_INSTANCE_KEY" type="BIGINT"/>
+      <column name="ELEMENT_INSTANCE_KEY" type="BIGINT"/>
+      <column name="JOB_KEY" type="BIGINT"/>
+      <column name="USER_TASK_KEY" type="BIGINT"/>
+      <column name="DECISION_REQUIREMENTS_KEY" type="BIGINT"/>
+      <column name="DECISION_DEFINITION_KEY" type="BIGINT"/>
+      <column name="DECISION_EVALUATION_KEY" type="BIGINT"/>
+      <column name="DEPLOYMENT_KEY" type="BIGINT"/>
+      <column name="FORM_KEY" type="BIGINT"/>
+      <column name="RESOURCE_KEY" type="BIGINT"/>
+      <column name="PARTITION_ID" type="INT"/>
+      <column name="HISTORY_CLEANUP_DATE" type="TIMESTAMP(3)"/>
+    </createTable>
+  </changeSet>
+
+  <!-- Generic indices for all databases -->
+  <changeSet id="create_audit_log_indices" author="camunda">
+    <createIndex tableName="${prefix}AUDIT_LOG" indexName="${prefix}IDX_AUDIT_LOG_PI_KEY">
+      <column name="PROCESS_INSTANCE_KEY"/>
+    </createIndex>
+
+    <createIndex tableName="${prefix}AUDIT_LOG" indexName="${prefix}IDX_AUDIT_LOG_RPI_KEY">
+      <column name="ROOT_PROCESS_INSTANCE_KEY"/>
+    </createIndex>
+  </changeSet>
+
+</databaseChangeLog>

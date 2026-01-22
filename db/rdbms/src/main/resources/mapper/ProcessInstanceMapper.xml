@@ -444,10 +444,10 @@
   </update>
 
   <insert id="insertTags" parameterType="io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel">
-    INSERT INTO ${prefix}PROCESS_INSTANCE_TAG (PROCESS_INSTANCE_KEY, TAG_VALUE)
+    INSERT INTO ${prefix}PROCESS_INSTANCE_TAG (PROCESS_INSTANCE_KEY, PARTITION_ID, TAG_VALUE)
     VALUES
       <foreach collection="tags" item="tag" separator=",">
-        (#{processInstanceKey}, #{tag})
+        (#{processInstanceKey}, #{partitionId}, #{tag})
       </foreach>
   </insert>
 

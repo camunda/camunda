@@ -38,13 +38,15 @@ public class LiquibaseScriptGenerator {
   /**
    * Generates Liquibase SQL scripts for a given database type.
    *
-   * <p>arg0: target directory arg1: project version arg2: table prefix (optional)
+   * <p>arg0: target directory arg1: project version arg2: table prefix (optional) arg3: partitions
+   * count (optional, default: 1)
    */
   public static void main(final String[] args) throws Exception {
     final var targetDir = args[0] + "/liquibase/sql";
     final var projectVersion = args[1];
 
     final var prefix = args.length >= 3 ? args[2] : "";
+    final var partitionsCount = args.length >= 4 ? args[3] : "1";
 
     for (final var database : DATABASES) {
       // We generate create scripts for the latest version from the changelog-master.xml
@@ -52,6 +54,7 @@ public class LiquibaseScriptGenerator {
           database,
           CHANGELOG_PATH + "changelog-master.xml",
           prefix,
+          partitionsCount,
           targetDir + "/create",
           database + "_create_" + projectVersion + ".sql");
 
@@ -76,6 +79,7 @@ public class LiquibaseScriptGenerator {
             database,
             changesetFile,
             prefix,
+            partitionsCount,
             sqlOutputDir,
             String.format(
                 "%s_upgrade_%s_to_%s.sql",
@@ -90,13 +94,15 @@ public class LiquibaseScriptGenerator {
       final String databaseType,
       final String changesetFile,
       final String prefix,
+      final String partitionsCount,
       final String targetBaseDir,
       final String outputFileName)
       throws Exception {
     final var properties = VendorDatabasePropertiesLoader.load(databaseType);
 
     final var sqlScript =
-        generateSqlScript(databaseType, changesetFile, prefix, properties.userCharColumnSize());
+        generateSqlScript(
+            databaseType, changesetFile, prefix, properties.userCharColumnSize(), partitionsCount);
 
     final String basedir = targetBaseDir + "/" + databaseType;
     Files.createDirectories(Paths.get(basedir));
@@ -111,7 +117,8 @@ public class LiquibaseScriptGenerator {
       final String databaseType,
       final String changesetFile,
       final String prefix,
-      final int userCharColumnSize)
+      final int userCharColumnSize,
+      final String partitionsCount)
       throws LiquibaseException {
 
     final var database = DatabaseFactory.getInstance().getDatabase(databaseType);
@@ -120,6 +127,7 @@ public class LiquibaseScriptGenerator {
         new Liquibase(changesetFile, new ClassLoaderResourceAccessor(), database);
     liquibase.setChangeLogParameter("prefix", prefix);
     liquibase.setChangeLogParameter("userCharColumnSize", userCharColumnSize);
+    liquibase.setChangeLogParameter("partitionsCount", partitionsCount);
 
     final var changelog = liquibase.getDatabaseChangeLog();
 

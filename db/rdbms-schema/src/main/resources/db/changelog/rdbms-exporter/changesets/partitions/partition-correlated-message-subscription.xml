@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+  <!-- PostgreSQL: Create CORRELATED_MESSAGE_SUBSCRIPTION table with list partitioning -->
+  <changeSet id="create_correlated_message_subscription_table_postgresql" author="camunda" dbms="postgresql">
+    <sql splitStatements="false">
+      CREATE TABLE ${prefix}CORRELATED_MESSAGE_SUBSCRIPTION (
+        CORRELATION_KEY VARCHAR(${userCharColumnSize}),
+        CORRELATION_TIME TIMESTAMP(3) WITH TIME ZONE,
+        FLOW_NODE_ID VARCHAR(${userCharColumnSize}),
+        FLOW_NODE_INSTANCE_KEY BIGINT,
+        HISTORY_CLEANUP_DATE TIMESTAMP(3) WITH TIME ZONE,
+        MESSAGE_KEY BIGINT,
+        MESSAGE_NAME VARCHAR(${userCharColumnSize}),
+        PARTITION_ID INTEGER,
+        PROCESS_DEFINITION_ID VARCHAR(${userCharColumnSize}),
+        PROCESS_DEFINITION_KEY BIGINT,
+        PROCESS_INSTANCE_KEY BIGINT,
+        ROOT_PROCESS_INSTANCE_KEY BIGINT,
+        SUBSCRIPTION_KEY BIGINT,
+        SUBSCRIPTION_TYPE VARCHAR(255),
+        TENANT_ID VARCHAR(${userCharColumnSize}),
+        PRIMARY KEY (MESSAGE_KEY, SUBSCRIPTION_KEY, PARTITION_ID)
+      ) PARTITION BY LIST (PARTITION_ID);
+    </sql>
+  </changeSet>
+
+  <changeSet id="create_correlated_message_subscription_partitions_postgresql" author="camunda" dbms="postgresql">
+    <sql splitStatements="false">
+      DO $$
+      DECLARE
+        partition_count INTEGER := ${partitionsCount};
+        i INTEGER;
+      BEGIN
+        FOR i IN 1..(partition_count) LOOP
+          EXECUTE format('CREATE TABLE ${prefix}CORRELATED_MESSAGE_SUBSCRIPTION_PART_%s PARTITION OF ${prefix}CORRELATED_MESSAGE_SUBSCRIPTION FOR VALUES IN (%s)', i, i);
+        END LOOP;
+      END $$;
+    </sql>
+  </changeSet>
+
+  <!-- Oracle: Create CORRELATED_MESSAGE_SUBSCRIPTION table with hash partitioning -->
+  <changeSet id="create_correlated_message_subscription_table_oracle" author="camunda" dbms="oracle">
+    <sql splitStatements="false">
+      CREATE TABLE ${prefix}CORRELATED_MESSAGE_SUBSCRIPTION (
+        CORRELATION_KEY VARCHAR2(${userCharColumnSize}),
+        CORRELATION_TIME TIMESTAMP(3) WITH TIME ZONE,
+        FLOW_NODE_ID VARCHAR2(${userCharColumnSize}),
+        FLOW_NODE_INSTANCE_KEY NUMBER(19),
+        HISTORY_CLEANUP_DATE TIMESTAMP(3) WITH TIME ZONE,
+        MESSAGE_KEY NUMBER(19),
+        MESSAGE_NAME VARCHAR2(${userCharColumnSize}),
+        PARTITION_ID NUMBER,
+        PROCESS_DEFINITION_ID VARCHAR2(${userCharColumnSize}),
+        PROCESS_DEFINITION_KEY NUMBER(19),
+        PROCESS_INSTANCE_KEY NUMBER(19),
+        ROOT_PROCESS_INSTANCE_KEY NUMBER(19),
+        SUBSCRIPTION_KEY NUMBER(19),
+        SUBSCRIPTION_TYPE VARCHAR2(255),
+        TENANT_ID VARCHAR2(${userCharColumnSize}),
+        PRIMARY KEY (MESSAGE_KEY, SUBSCRIPTION_KEY, PARTITION_ID)
+      ) PARTITION BY HASH (PARTITION_ID) PARTITIONS ${partitionsCount}
+    </sql>
+  </changeSet>
+
+  <!-- MSSQL: Create partition function and scheme -->
+  <changeSet id="create_correlated_message_subscription_partition_function_mssql" author="camunda" dbms="mssql">
+    <preConditions onFail="MARK_RAN">
+      <sqlCheck expectedResult="0">
+        SELECT COUNT(*) FROM sys.partition_functions WHERE name = '${prefix}PF_CORRELATED_MESSAGE_SUBSCRIPTION'
+      </sqlCheck>
+    </preConditions>
+    <sql splitStatements="false">
+      DECLARE @partitionCount INT = ${partitionsCount};
+      DECLARE @sql NVARCHAR(MAX);
+      DECLARE @i INT = 0;
+
+      SET @sql = N'CREATE PARTITION FUNCTION ${prefix}PF_CORRELATED_MESSAGE_SUBSCRIPTION (INT) AS RANGE LEFT FOR VALUES (';
+      WHILE @i &lt; @partitionCount - 1
+      BEGIN
+        SET @sql = @sql + CAST(@i AS NVARCHAR(10));
+        IF @i &lt; @partitionCount - 2
+          SET @sql = @sql + N', ';
+        SET @i = @i + 1;
+      END;
+      SET @sql = @sql + N')';
+      EXEC sp_executesql @sql;
+
+      SET @sql = N'CREATE PARTITION SCHEME ${prefix}PS_CORRELATED_MESSAGE_SUBSCRIPTION AS PARTITION ${prefix}PF_CORRELATED_MESSAGE_SUBSCRIPTION ALL TO ([PRIMARY])';
+      EXEC sp_executesql @sql;
+    </sql>
+  </changeSet>
+
+  <!-- MSSQL: Create CORRELATED_MESSAGE_SUBSCRIPTION table (after partition function/scheme) -->
+  <changeSet id="create_correlated_message_subscription_table_mssql" author="camunda" dbms="mssql">
+    <sql splitStatements="false">
+      CREATE TABLE ${prefix}CORRELATED_MESSAGE_SUBSCRIPTION (
+        CORRELATION_KEY NVARCHAR(${userCharColumnSize}),
+        CORRELATION_TIME DATETIMEOFFSET(3),
+        FLOW_NODE_ID NVARCHAR(${userCharColumnSize}),
+        FLOW_NODE_INSTANCE_KEY BIGINT,
+        HISTORY_CLEANUP_DATE DATETIMEOFFSET(3),
+        MESSAGE_KEY BIGINT,
+        MESSAGE_NAME NVARCHAR(${userCharColumnSize}),
+        PARTITION_ID INT,
+        PROCESS_DEFINITION_ID NVARCHAR(${userCharColumnSize}),
+        PROCESS_DEFINITION_KEY BIGINT,
+        PROCESS_INSTANCE_KEY BIGINT,
+        ROOT_PROCESS_INSTANCE_KEY BIGINT,
+        SUBSCRIPTION_KEY BIGINT,
+        SUBSCRIPTION_TYPE NVARCHAR(255),
+        TENANT_ID NVARCHAR(${userCharColumnSize}),
+        PRIMARY KEY (MESSAGE_KEY, SUBSCRIPTION_KEY, PARTITION_ID)
+      )
+    </sql>
+  </changeSet>
+
+  <!-- MariaDB/MySQL: Create CORRELATED_MESSAGE_SUBSCRIPTION table (no partitioning support) -->
+  <changeSet id="create_correlated_message_subscription_table" author="camunda" dbms="h2,mariadb,mysql">
+    <createTable tableName="${prefix}CORRELATED_MESSAGE_SUBSCRIPTION">
+      <column name="CORRELATION_KEY" type="VARCHAR(${userCharColumnSize})"/>
+      <column name="CORRELATION_TIME" type="TIMESTAMP(3)"/>
+      <column name="FLOW_NODE_ID" type="VARCHAR(${userCharColumnSize})"/>
+      <column name="FLOW_NODE_INSTANCE_KEY" type="BIGINT"/>
+      <column name="HISTORY_CLEANUP_DATE" type="TIMESTAMP(3)"/>
+      <column name="MESSAGE_KEY" type="BIGINT">
+        <constraints primaryKey="true"/>
+      </column>
+      <column name="MESSAGE_NAME" type="VARCHAR(${userCharColumnSize})"/>
+      <column name="PARTITION_ID" type="INT"/>
+      <column name="PROCESS_DEFINITION_ID" type="VARCHAR(${userCharColumnSize})"/>
+      <column name="PROCESS_DEFINITION_KEY" type="BIGINT"/>
+      <column name="PROCESS_INSTANCE_KEY" type="BIGINT"/>
+      <column name="ROOT_PROCESS_INSTANCE_KEY" type="BIGINT"/>
+      <column name="SUBSCRIPTION_KEY" type="BIGINT">
+        <constraints primaryKey="true"/>
+      </column>
+      <column name="SUBSCRIPTION_TYPE" type="VARCHAR(255)"/>
+      <column name="TENANT_ID" type="VARCHAR(${userCharColumnSize})"/>
+    </createTable>
+  </changeSet>
+
+  <!-- Generic indices for all databases -->
+  <changeSet id="create_correlated_message_subscription_indices" author="camunda">
+    <createIndex tableName="${prefix}CORRELATED_MESSAGE_SUBSCRIPTION" indexName="${prefix}IDX_CORRELATED_MESSAGE_SUBSCRIPTION_PI_KEY">
+      <column name="PROCESS_INSTANCE_KEY"/>
+    </createIndex>
+
+    <createIndex tableName="${prefix}CORRELATED_MESSAGE_SUBSCRIPTION" indexName="${prefix}IDX_CORRELATED_MESSAGE_SUBSCRIPTION_RPI_KEY">
+      <column name="ROOT_PROCESS_INSTANCE_KEY"/>
+    </createIndex>
+
+    <createIndex tableName="${prefix}CORRELATED_MESSAGE_SUBSCRIPTION" indexName="${prefix}IDX_CORRELATED_MESSAGE_SUBSCRIPTION_FNI_KEY">
+      <column name="FLOW_NODE_INSTANCE_KEY"/>
+    </createIndex>
+  </changeSet>
+
+</databaseChangeLog>

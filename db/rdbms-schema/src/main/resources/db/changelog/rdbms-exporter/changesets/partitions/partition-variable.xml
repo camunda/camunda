@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+  <!-- PostgreSQL: Create VARIABLE table with list partitioning -->
+  <changeSet id="create_variable_table_postgresql" author="camunda" dbms="postgresql">
+    <sql splitStatements="false">
+      CREATE TABLE ${prefix}VARIABLE (
+                VAR_KEY BIGINT,
+        PROCESS_INSTANCE_KEY BIGINT,
+        ROOT_PROCESS_INSTANCE_KEY BIGINT,
+        PROCESS_DEFINITION_ID VARCHAR(${userCharColumnSize}),
+        SCOPE_KEY BIGINT,
+        TYPE VARCHAR(255),
+        VAR_NAME VARCHAR(${userCharColumnSize}),
+        DOUBLE_VALUE DOUBLE PRECISION,
+        LONG_VALUE BIGINT,
+        VAR_VALUE VARCHAR(8192),
+        VAR_FULL_VALUE TEXT,
+        TENANT_ID VARCHAR(${userCharColumnSize}),
+        IS_PREVIEW BOOLEAN,
+        PARTITION_ID INTEGER,
+        HISTORY_CLEANUP_DATE TIMESTAMP(3) WITH TIME ZONE,
+        PRIMARY KEY (VAR_KEY, PARTITION_ID)
+      ) PARTITION BY LIST (PARTITION_ID);
+    </sql>
+  </changeSet>
+
+  <changeSet id="create_variable_partitions_postgresql" author="camunda" dbms="postgresql">
+    <sql splitStatements="false">
+      DO $$
+      DECLARE
+        partition_count INTEGER := ${partitionsCount};
+        i INTEGER;
+      BEGIN
+        FOR i IN 1..(partition_count) LOOP
+          EXECUTE format('CREATE TABLE ${prefix}VARIABLE_PART_%s PARTITION OF ${prefix}VARIABLE FOR VALUES IN (%s)', i, i);
+        END LOOP;
+      END $$;
+    </sql>
+  </changeSet>
+
+  <!-- Oracle: Create VARIABLE table with hash partitioning -->
+  <changeSet id="create_variable_table_oracle" author="camunda" dbms="oracle">
+    <sql splitStatements="false">
+      CREATE TABLE ${prefix}VARIABLE (
+                VAR_KEY NUMBER(19),
+        PROCESS_INSTANCE_KEY NUMBER(19),
+        ROOT_PROCESS_INSTANCE_KEY NUMBER(19),
+        PROCESS_DEFINITION_ID VARCHAR2(${userCharColumnSize}),
+        SCOPE_KEY NUMBER(19),
+        TYPE VARCHAR2(255),
+        VAR_NAME VARCHAR2(${userCharColumnSize}),
+        DOUBLE_VALUE BINARY_DOUBLE,
+        LONG_VALUE NUMBER(19),
+        VAR_VALUE VARCHAR2(4000),
+        VAR_FULL_VALUE CLOB,
+        TENANT_ID VARCHAR2(${userCharColumnSize}),
+        IS_PREVIEW NUMBER(1),
+        PARTITION_ID NUMBER,
+        HISTORY_CLEANUP_DATE TIMESTAMP(3) WITH TIME ZONE,
+        PRIMARY KEY (VAR_KEY, PARTITION_ID)
+      ) PARTITION BY HASH (PARTITION_ID) PARTITIONS ${partitionsCount}
+    </sql>
+  </changeSet>
+
+  <!-- MSSQL: Create partition function and scheme -->
+  <changeSet id="create_variable_partition_function_mssql" author="camunda" dbms="mssql">
+    <preConditions onFail="MARK_RAN">
+      <sqlCheck expectedResult="0">
+        SELECT COUNT(*) FROM sys.partition_functions WHERE name = '${prefix}PF_VARIABLE'
+      </sqlCheck>
+    </preConditions>
+    <sql splitStatements="false">
+      DECLARE @partitionCount INT = ${partitionsCount};
+      DECLARE @sql NVARCHAR(MAX);
+      DECLARE @i INT = 0;
+
+      SET @sql = N'CREATE PARTITION FUNCTION ${prefix}PF_VARIABLE (INT) AS RANGE LEFT FOR VALUES (';
+      WHILE @i &lt; @partitionCount - 1
+      BEGIN
+        SET @sql = @sql + CAST(@i AS NVARCHAR(10));
+        IF @i &lt; @partitionCount - 2
+          SET @sql = @sql + N', ';
+        SET @i = @i + 1;
+      END;
+      SET @sql = @sql + N')';
+      EXEC sp_executesql @sql;
+
+      SET @sql = N'CREATE PARTITION SCHEME ${prefix}PS_VARIABLE AS PARTITION ${prefix}PF_VARIABLE ALL TO ([PRIMARY])';
+      EXEC sp_executesql @sql;
+    </sql>
+  </changeSet>
+
+  <!-- MSSQL: Create VARIABLE table (after partition function/scheme) -->
+  <changeSet id="create_variable_table_mssql" author="camunda" dbms="mssql">
+    <sql splitStatements="false">
+      CREATE TABLE ${prefix}VARIABLE (
+        VAR_KEY BIGINT,
+        PROCESS_INSTANCE_KEY BIGINT,
+        ROOT_PROCESS_INSTANCE_KEY BIGINT,
+        PROCESS_DEFINITION_ID NVARCHAR(${userCharColumnSize}),
+        SCOPE_KEY BIGINT,
+        TYPE NVARCHAR(255),
+        VAR_NAME NVARCHAR(${userCharColumnSize}),
+        DOUBLE_VALUE FLOAT,
+        LONG_VALUE BIGINT,
+        VAR_VALUE VARCHAR(4000),
+        VAR_FULL_VALUE NVARCHAR(MAX),
+        TENANT_ID NVARCHAR(${userCharColumnSize}),
+        IS_PREVIEW BIT,
+        PARTITION_ID INT,
+        HISTORY_CLEANUP_DATE DATETIMEOFFSET(3),
+        PRIMARY KEY (VAR_KEY, PARTITION_ID)
+      )
+    </sql>
+  </changeSet>
+
+  <!-- MariaDB/MySQL: Create VARIABLE table (no partitioning support) -->
+  <changeSet id="create_variable_table" author="camunda" dbms="h2,mariadb,mysql">
+    <createTable tableName="${prefix}VARIABLE">
+      <column name="VAR_KEY" type="BIGINT">
+        <constraints primaryKey="true"/>
+      </column>
+      <column name="PROCESS_INSTANCE_KEY" type="BIGINT"/>
+      <column name="ROOT_PROCESS_INSTANCE_KEY" type="BIGINT"/>
+      <column name="PROCESS_DEFINITION_ID" type="VARCHAR(${userCharColumnSize})"/>
+      <column name="SCOPE_KEY" type="BIGINT"/>
+      <column name="TYPE" type="VARCHAR(255)"/>
+      <column name="VAR_NAME" type="VARCHAR(${userCharColumnSize})"/>
+      <column name="DOUBLE_VALUE" type="DOUBLE"/>
+      <column name="LONG_VALUE" type="BIGINT"/>
+      <column name="VAR_VALUE" type="VARCHAR(8192)"/>
+      <column name="VAR_FULL_VALUE" type="CLOB"/>
+      <column name="TENANT_ID" type="VARCHAR(${userCharColumnSize})"/>
+      <column name="IS_PREVIEW" type="BOOLEAN"/>
+      <column name="PARTITION_ID" type="INT"/>
+      <column name="HISTORY_CLEANUP_DATE" type="TIMESTAMP(3)"/>
+    </createTable>
+  </changeSet>
+
+  <!-- Generic indices for all databases -->
+  <changeSet id="create_variable_indices" author="camunda">
+    <createIndex tableName="${prefix}VARIABLE" indexName="${prefix}IDX_VARIABLE_PROCESS_INSTANCE_KEY">
+      <column name="PROCESS_INSTANCE_KEY"/>
+    </createIndex>
+
+    <createIndex tableName="${prefix}VARIABLE" indexName="${prefix}IDX_VARIABLE_ROOT_PROCESS_INSTANCE_KEY">
+      <column name="ROOT_PROCESS_INSTANCE_KEY"/>
+    </createIndex>
+
+    <createIndex tableName="${prefix}VARIABLE" indexName="${prefix}IDX_VARIABLE_TENANT_ID">
+      <column name="TENANT_ID"/>
+    </createIndex>
+  </changeSet>
+
+</databaseChangeLog>

@@ -245,11 +245,11 @@
   </insert>
 
   <insert id="insertInput" parameterType="io.camunda.db.rdbms.write.domain.DecisionInstanceDbModel">
-    INSERT INTO ${prefix}DECISION_INSTANCE_INPUT (DECISION_INSTANCE_ID, INPUT_ID, INPUT_NAME,
+    INSERT INTO ${prefix}DECISION_INSTANCE_INPUT (DECISION_INSTANCE_ID, PARTITION_ID, INPUT_ID, INPUT_NAME,
     INPUT_VALUE)
     VALUES
     <foreach collection="evaluatedInputs" item="item" separator=", ">
-      (#{decisionInstanceId}, #{item.id}, #{item.name}, #{item.value})
+      (#{decisionInstanceId}, #{partitionId}, #{item.id}, #{item.name}, #{item.value})
     </foreach>
   </insert>
 
@@ -279,9 +279,9 @@
   <insert id="insertOutput"
     parameterType="io.camunda.db.rdbms.write.domain.DecisionInstanceDbModel">
     INSERT INTO ${prefix}DECISION_INSTANCE_OUTPUT
-    (DECISION_INSTANCE_ID, OUTPUT_ID, OUTPUT_NAME, OUTPUT_VALUE, RULE_ID, RULE_INDEX) VALUES
+    (DECISION_INSTANCE_ID, PARTITION_ID, OUTPUT_ID, OUTPUT_NAME, OUTPUT_VALUE, RULE_ID, RULE_INDEX) VALUES
     <foreach collection="evaluatedOutputs" item="item" separator=", ">
-      (#{decisionInstanceId}, #{item.id}, #{item.name}, #{item.value}, #{item.ruleId},
+      (#{decisionInstanceId}, #{partitionId}, #{item.id}, #{item.name}, #{item.value}, #{item.ruleId},
       #{item.ruleIndex})
     </foreach>
   </insert>

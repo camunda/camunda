@@ -26,7 +26,7 @@ orchestration:
         # set to 2001 and not 2000 o´to directly see when queue is full in metrics dashboard
         queueSize: 2001
         history:
-          defaultHistoryTTL: PT1H
+          defaultHistoryTTL: PT3H
           minHistoryCleanupInterval: PT1S
           maxHistoryCleanupInterval: PT1M
 
