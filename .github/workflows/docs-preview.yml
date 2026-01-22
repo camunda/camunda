@@ -7,6 +7,7 @@ name: Docs PR Preview
 on:
   pull_request:
     types: [opened, synchronize, closed]
+  workflow_dispatch: {}
 
 # Limit workflow to 1 concurrent run per PR: new commit -> old runs are canceled to save costs
 concurrency:
