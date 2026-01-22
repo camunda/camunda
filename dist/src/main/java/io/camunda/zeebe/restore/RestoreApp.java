@@ -21,6 +21,7 @@ import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
+import java.time.Instant;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import org.slf4j.Logger;
@@ -51,9 +52,17 @@ public class RestoreApp implements ApplicationRunner {
   private final BrokerCfg configuration;
   private final BackupStore backupStore;
 
-  @Value("${backupId}")
-  // Parsed from commandline Eg:-`--backupId=100`
+  @Value("${backupId:#{null}}")
+  // Parsed from commandline Eg:-`--backupId=100` (optional, mutually exclusive with from/to)
   private long[] backupId;
+
+  @Value("${from:#{null}}")
+  // Parsed from commandline Eg:-`--from=2024-01-01T10:00:00Z` (optional, requires --to)
+  private Instant from;
+
+  @Value("${to:#{null}}")
+  // Parsed from commandline Eg:-`--to=2024-01-01T12:00:00Z` (optional, requires --from)
+  private Instant to;
 
   private final RestoreProperties restoreConfiguration;
   private final MeterRegistry meterRegistry;
@@ -100,15 +109,57 @@ public class RestoreApp implements ApplicationRunner {
   @Override
   public void run(final ApplicationArguments args)
       throws IOException, ExecutionException, InterruptedException {
-    LOG.info(
-        "Starting to restore from backup {} with the following configuration: {}",
-        backupId,
-        restoreConfiguration);
-    new RestoreManager(configuration, backupStore, meterRegistry)
-        .restore(
-            backupId,
-            restoreConfiguration.validateConfig(),
-            restoreConfiguration.ignoreFilesInTarget());
-    LOG.info("Successfully restored broker from backup {}", backupId);
+    validateParameters();
+
+    final var restoreManager = new RestoreManager(configuration, backupStore, meterRegistry);
+
+    if (backupId != null) {
+      LOG.info(
+          "Starting to restore from backup {} with the following configuration: {}",
+          backupId,
+          restoreConfiguration);
+      restoreManager.restore(
+          backupId,
+          restoreConfiguration.validateConfig(),
+          restoreConfiguration.ignoreFilesInTarget());
+      LOG.info("Successfully restored broker from backup {}", backupId);
+    } else {
+      LOG.info(
+          "Starting to restore from backups in time range [{}, {}] with the following configuration: {}",
+          from,
+          to,
+          restoreConfiguration);
+      restoreManager.restore(
+          from, to, restoreConfiguration.validateConfig(), restoreConfiguration.ignoreFilesInTarget());
+      LOG.info("Successfully restored broker from backups in time range [{}, {}]", from, to);
+    }
+  }
+
+  private void validateParameters() {
+    final boolean hasBackupId = backupId != null && backupId.length > 0;
+    final boolean hasTimeRange = from != null && to != null;
+
+    if (!hasBackupId && !hasTimeRange) {
+      throw new IllegalArgumentException(
+          "Either --backupId or both --from and --to parameters must be provided");
+    }
+
+    if (hasBackupId && hasTimeRange) {
+      throw new IllegalArgumentException(
+          "Cannot specify both --backupId and --from/--to parameters. Choose one approach.");
+    }
+
+    if (from != null && to == null) {
+      throw new IllegalArgumentException("--from parameter requires --to parameter");
+    }
+
+    if (to != null && from == null) {
+      throw new IllegalArgumentException("--to parameter requires --from parameter");
+    }
+
+    if (hasTimeRange && from.isAfter(to)) {
+      throw new IllegalArgumentException(
+          "Invalid time range: --from (%s) must be before --to (%s)".formatted(from, to));
+    }
   }
 }
