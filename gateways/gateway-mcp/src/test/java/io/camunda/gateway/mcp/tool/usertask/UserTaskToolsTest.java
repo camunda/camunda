@@ -13,6 +13,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -22,7 +23,9 @@ import io.camunda.gateway.protocol.model.UserTaskResult;
 import io.camunda.gateway.protocol.model.UserTaskSearchQueryResult;
 import io.camunda.gateway.protocol.model.UserTaskStateEnum;
 import io.camunda.gateway.protocol.model.VariableResult;
+import io.camunda.gateway.protocol.model.VariableResultBase;
 import io.camunda.gateway.protocol.model.VariableSearchQueryResult;
+import io.camunda.gateway.protocol.model.VariableSearchResult;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.UserTaskEntity.UserTaskState;
 import io.camunda.search.entities.VariableEntity;
@@ -66,31 +69,29 @@ class UserTaskToolsTest extends ToolsTest {
   static final UserTaskEntity USER_TASK_ENTITY =
       new UserTaskEntity(
           5L,
-          "Task Name",
-          UserTaskState.CREATED,
-          "john.doe",
           "elementId",
-          List.of("group1", "group2"),
-          List.of("user1", "user2"),
+          "Task Name",
           "complexProcess",
+          "Process Name",
           OffsetDateTime.parse("2024-05-23T23:05:00.000Z"),
           null,
+          "john.doe",
+          UserTaskState.CREATED,
+          101L,
+          23L,
+          42L,
           null,
-          null,
+          17L,
           "tenantId",
+          null,
+          null,
+          List.of("group1", "group2"),
+          List.of("user1", "user2"),
           null,
           2,
           Map.of("header1", "value1"),
           50,
-          23L,
-          42L,
-          17L,
-          101L,
-          null,
-          Set.of("tag1", "tag2"),
-          "Process Name",
-          true,
-          true);
+          Set.of("tag1", "tag2"));
 
   static final SearchQueryResult<UserTaskEntity> USER_TASK_SEARCH_QUERY_RESULT =
       new Builder<UserTaskEntity>()
@@ -105,11 +106,12 @@ class UserTaskToolsTest extends ToolsTest {
           10L,
           "varName",
           "\"varValue\"",
-          "varValue".length(),
+          "\"varValue\"",
           false,
           101L,
+          42L,
+          null,
           "complexProcess",
-          23L,
           "tenantId");
 
   static final SearchQueryResult<VariableEntity> VARIABLE_SEARCH_QUERY_RESULT =
@@ -155,14 +157,17 @@ class UserTaskToolsTest extends ToolsTest {
     assertThat(userTask.getProcessName()).isEqualTo("Process Name");
   }
 
-  private void assertExampleVariable(final VariableResult variable) {
+  private void assertExampleVariable(final VariableResultBase variable) {
     assertThat(variable.getVariableKey()).isEqualTo("10");
     assertThat(variable.getName()).isEqualTo("varName");
-    assertThat(variable.getValue()).isEqualTo("\"varValue\"");
     assertThat(variable.getScopeKey()).isEqualTo("101");
-    assertThat(variable.getProcessDefinitionId()).isEqualTo("complexProcess");
-    assertThat(variable.getProcessDefinitionKey()).isEqualTo("23");
+    assertThat(variable.getProcessInstanceKey()).isEqualTo("42");
     assertThat(variable.getTenantId()).isEqualTo("tenantId");
+    if (variable instanceof VariableSearchResult searchResult) {
+      assertThat(searchResult.getValue()).isEqualTo("\"varValue\"");
+    } else if (variable instanceof VariableResult result) {
+      assertThat(result.getValue()).isEqualTo("\"varValue\"");
+    }
   }
 
   @Nested
@@ -176,7 +181,10 @@ class UserTaskToolsTest extends ToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder().name("getUserTask").arguments(Map.of("userTaskKey", 5L)).build());
+              CallToolRequest.builder()
+                  .name("getUserTask")
+                  .arguments(Map.of("userTaskKey", 5L))
+                  .build());
 
       // then
       assertThat(result.isError()).isFalse();
@@ -198,7 +206,10 @@ class UserTaskToolsTest extends ToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder().name("getUserTask").arguments(Map.of("userTaskKey", 5L)).build());
+              CallToolRequest.builder()
+                  .name("getUserTask")
+                  .arguments(Map.of("userTaskKey", 5L))
+                  .build());
 
       // then
       assertThat(result.isError()).isTrue();
@@ -361,7 +372,7 @@ class UserTaskToolsTest extends ToolsTest {
       // then
       verify(userTaskServices).search(userTaskQueryCaptor.capture());
       final UserTaskQuery capturedQuery = userTaskQueryCaptor.getValue();
-      assertThat(capturedQuery.filter().tenantIds()).isEmpty();
+      assertThat(capturedQuery.filter().tenantIdOperations()).isEmpty();
       assertThat(capturedQuery.filter().candidateGroupOperations()).isEmpty();
       assertThat(capturedQuery.filter().candidateUserOperations()).isEmpty();
     }
@@ -569,7 +580,7 @@ class UserTaskToolsTest extends ToolsTest {
           .first()
           .satisfies(UserTaskToolsTest.this::assertExampleVariable);
 
-      verify(userTaskServices).searchUserTaskVariables(5L, variableQueryCaptor.getValue());
+      verify(userTaskServices).searchUserTaskVariables(eq(5L), variableQueryCaptor.capture());
     }
 
     @Test
@@ -619,7 +630,7 @@ class UserTaskToolsTest extends ToolsTest {
       // then
       assertThat(result.isError()).isFalse();
 
-      verify(userTaskServices).searchUserTaskVariables(anyLong(), any(VariableQuery.class));
+      verify(userTaskServices).searchUserTaskVariables(eq(5L), variableQueryCaptor.capture());
       final VariableQuery capturedQuery = variableQueryCaptor.getValue();
 
       assertThat(capturedQuery.filter().nameOperations())
