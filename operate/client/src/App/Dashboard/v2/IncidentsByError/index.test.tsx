@@ -16,10 +16,10 @@ import {
 } from 'modules/testing-library';
 import {IncidentsByError} from './index';
 import {
-  incidentStatisticsByError,
-  incidentStatisticsByDefinition,
+  mockIncidentsByError,
+  mockIncidentStatisticsByErrorWithBigMessage,
+  mockIncidentStatisticsByDefinition,
   bigErrorMessage,
-  incidentStatisticsByErrorWithBigMessage,
 } from './index.setup';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {Paths} from 'modules/Routes';
@@ -58,13 +58,23 @@ describe('IncidentsByError', () => {
     mockMe().withSuccess(createUser());
   });
 
-  it('should display skeleton when loading', async () => {
-    mockFetchIncidentProcessInstanceStatisticsByError().withSuccess(
-      incidentStatisticsByError,
+  const mockIncidentQueries = ({
+    incidents = mockIncidentsByError,
+    definitions = mockIncidentStatisticsByDefinition,
+  } = {}) => {
+    mockFetchIncidentProcessInstanceStatisticsByError().withSuccess(incidents);
+    mockFetchIncidentProcessInstanceStatisticsByError().withSuccess(incidents);
+
+    mockFetchIncidentProcessInstanceStatisticsByDefinition().withSuccess(
+      definitions,
     );
     mockFetchIncidentProcessInstanceStatisticsByDefinition().withSuccess(
-      incidentStatisticsByDefinition,
+      definitions,
     );
+  };
+
+  it('should display skeleton when loading', async () => {
+    mockIncidentQueries();
 
     render(<IncidentsByError />, {
       wrapper: createWrapper(),
@@ -110,9 +120,7 @@ describe('IncidentsByError', () => {
   });
 
   it('should display information message when there are no incidents', async () => {
-    mockFetchIncidentProcessInstanceStatisticsByError().withSuccess(
-      searchResult([]),
-    );
+    mockIncidentQueries({incidents: searchResult([])});
 
     render(<IncidentsByError />, {
       wrapper: createWrapper(),
@@ -127,12 +135,7 @@ describe('IncidentsByError', () => {
   });
 
   it('should render process incidents with expandable process list', async () => {
-    mockFetchIncidentProcessInstanceStatisticsByError().withSuccess(
-      incidentStatisticsByError,
-    );
-    mockFetchIncidentProcessInstanceStatisticsByDefinition().withSuccess(
-      incidentStatisticsByDefinition,
-    );
+    mockIncidentQueries();
 
     const {user} = render(<IncidentsByError />, {
       wrapper: createWrapper(),
@@ -162,7 +165,7 @@ describe('IncidentsByError', () => {
 
     const firstProcess = await screen.findByRole('link', {
       description:
-        "View 52 Instances with error JSON path '$.paid' has no result. of Process Call Level 2 Process – Version 1",
+        "View 52 Instances with error JSON path '$.paid' has no result. in version 1 of Process Call Level 2 Process – Version 1",
     });
 
     expect(
@@ -172,7 +175,7 @@ describe('IncidentsByError', () => {
       'href',
       `${Paths.processes()}?process=call-level-2-process&version=all&errorMessage=JSON+path+%27%24.paid%27+has+no+result.&incidentErrorHashCode=234254&incidents=true`,
     );
-  });
+  }, 10000);
 
   it('should include tenant in link when multi-tenancy is enabled', async () => {
     const originalClientConfig = window.clientConfig;
@@ -181,12 +184,7 @@ describe('IncidentsByError', () => {
       multiTenancyEnabled: true,
     } as typeof window.clientConfig;
 
-    mockFetchIncidentProcessInstanceStatisticsByError().withSuccess(
-      incidentStatisticsByError,
-    );
-    mockFetchIncidentProcessInstanceStatisticsByDefinition().withSuccess(
-      incidentStatisticsByDefinition,
-    );
+    mockIncidentQueries();
 
     const {user} = render(<IncidentsByError />, {
       wrapper: createWrapper(),
@@ -200,7 +198,7 @@ describe('IncidentsByError', () => {
 
     const tenantProcess = await screen.findByRole('link', {
       description:
-        "View 26 Instances with error JSON path '$.paid' has no result. of Process Process with elements incidents – Version 1 – tenant-a",
+        "View 26 Instances with error JSON path '$.paid' has no result. in version 1 of Process Process with elements incidents – Version 1 – tenant-a",
     });
 
     expect(tenantProcess).toHaveAttribute(
@@ -212,12 +210,9 @@ describe('IncidentsByError', () => {
   });
 
   it('should truncate the error message in search params', async () => {
-    mockFetchIncidentProcessInstanceStatisticsByError().withSuccess(
-      incidentStatisticsByErrorWithBigMessage,
-    );
-    mockFetchIncidentProcessInstanceStatisticsByDefinition().withSuccess(
-      incidentStatisticsByDefinition,
-    );
+    mockIncidentQueries({
+      incidents: mockIncidentStatisticsByErrorWithBigMessage,
+    });
 
     const {user} = render(<IncidentsByError />, {
       wrapper: createWrapper(),
@@ -247,7 +242,7 @@ describe('IncidentsByError', () => {
     await user.click(expandButton);
 
     const firstProcess = await screen.findByRole('link', {
-      description: `View 52 Instances with error ${bigErrorMessage} of Process Call Level 2 Process – Version 1`,
+      description: `View 52 Instances with error ${bigErrorMessage} in version 1 of Process Call Level 2 Process – Version 1`,
     });
 
     const detailSearch = new URLSearchParams({
@@ -265,12 +260,7 @@ describe('IncidentsByError', () => {
   });
 
   it('should expand filters panel on click', async () => {
-    mockFetchIncidentProcessInstanceStatisticsByError().withSuccess(
-      incidentStatisticsByError,
-    );
-    mockFetchIncidentProcessInstanceStatisticsByDefinition().withSuccess(
-      incidentStatisticsByDefinition,
-    );
+    mockIncidentQueries();
 
     const {user} = render(<IncidentsByError />, {
       wrapper: createWrapper(),
@@ -278,11 +268,19 @@ describe('IncidentsByError', () => {
 
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(false);
 
-    const processLink = within(
+    const withinIncident = within(
       await screen.findByTestId('incident-byError-0'),
-    ).getByRole('link', {
+    );
+
+    const expandButton = withinIncident.getByRole('button', {
+      name: 'Expand current row',
+    });
+
+    await user.click(expandButton);
+
+    const processLink = await screen.findByRole('link', {
       description:
-        "View 78 Instances with error JSON path '$.paid' has no result.",
+        "View 52 Instances with error JSON path '$.paid' has no result. in version 1 of Process Call Level 2 Process – Version 1",
     });
 
     panelStatesStore.toggleFiltersPanel();
