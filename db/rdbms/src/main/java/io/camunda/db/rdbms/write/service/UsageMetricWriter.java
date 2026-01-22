@@ -8,7 +8,6 @@
 package io.camunda.db.rdbms.write.service;
 
 import io.camunda.db.rdbms.sql.HistoryCleanupMapper.CleanupHistoryDto;
-import io.camunda.db.rdbms.sql.ProcessBasedHistoryCleanupMapper;
 import io.camunda.db.rdbms.sql.UsageMetricMapper;
 import io.camunda.db.rdbms.write.domain.UsageMetricDbModel;
 import io.camunda.db.rdbms.write.queue.ContextType;
@@ -36,20 +35,6 @@ public class UsageMetricWriter implements RdbmsWriter {
             dbModel.getId(),
             "io.camunda.db.rdbms.sql.UsageMetricMapper.insert",
             dbModel));
-  }
-
-  public void scheduleForHistoryCleanup(
-      final Long processInstanceKey, final OffsetDateTime historyCleanupDate) {
-    executionQueue.executeInQueue(
-        new QueueItem(
-            ContextType.USAGE_METRIC,
-            WriteStatementType.UPDATE,
-            processInstanceKey,
-            "io.camunda.db.rdbms.sql.UsageMetricMapper.updateHistoryCleanupDate",
-            new ProcessBasedHistoryCleanupMapper.UpdateHistoryCleanupDateDto.Builder()
-                .processInstanceKey(processInstanceKey)
-                .historyCleanupDate(historyCleanupDate)
-                .build()));
   }
 
   public int cleanupMetrics(

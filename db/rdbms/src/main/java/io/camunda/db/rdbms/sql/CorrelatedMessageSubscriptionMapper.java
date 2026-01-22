@@ -11,8 +11,7 @@ import io.camunda.db.rdbms.read.domain.CorrelatedMessageSubscriptionDbQuery;
 import io.camunda.db.rdbms.write.domain.CorrelatedMessageSubscriptionDbModel;
 import java.util.List;
 
-public interface CorrelatedMessageSubscriptionMapper
-    extends HistoryCleanupMapper, ProcessInstanceDependantMapper {
+public interface CorrelatedMessageSubscriptionMapper extends ProcessInstanceDependantMapper {
 
   Long count(CorrelatedMessageSubscriptionDbQuery query);
 

@@ -8,8 +8,6 @@
 package io.camunda.db.rdbms.write.service;
 
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
-import io.camunda.db.rdbms.sql.HistoryCleanupMapper.CleanupHistoryDto;
-import io.camunda.db.rdbms.sql.ProcessBasedHistoryCleanupMapper;
 import io.camunda.db.rdbms.sql.VariableMapper;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.domain.VariableDbModel;
@@ -17,14 +15,11 @@ import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.InsertVariableMerger;
 import io.camunda.db.rdbms.write.queue.QueueItem;
-import io.camunda.db.rdbms.write.queue.UpdateHistoryCleanupDateMerger;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
-import java.time.OffsetDateTime;
 
 public class VariableWriter extends ProcessInstanceDependant implements RdbmsWriter {
 
   private final ExecutionQueue executionQueue;
-  private final VariableMapper mapper;
   private final VendorDatabaseProperties vendorDatabaseProperties;
   private final RdbmsWriterConfig config;
 
@@ -35,7 +30,6 @@ public class VariableWriter extends ProcessInstanceDependant implements RdbmsWri
       final RdbmsWriterConfig config) {
     super(mapper);
     this.executionQueue = executionQueue;
-    this.mapper = mapper;
     this.vendorDatabaseProperties = vendorDatabaseProperties;
     this.config = config;
   }
@@ -76,27 +70,6 @@ public class VariableWriter extends ProcessInstanceDependant implements RdbmsWri
                 vendorDatabaseProperties.charColumnMaxBytes())));
   }
 
-  public void scheduleForHistoryCleanup(
-      final Long processInstanceKey, final OffsetDateTime historyCleanupDate) {
-    final var wasMerged =
-        executionQueue.tryMergeWithExistingQueueItem(
-            new UpdateHistoryCleanupDateMerger(
-                ContextType.VARIABLE, processInstanceKey, historyCleanupDate));
-
-    if (!wasMerged) {
-      executionQueue.executeInQueue(
-          new QueueItem(
-              ContextType.VARIABLE,
-              WriteStatementType.UPDATE,
-              processInstanceKey,
-              "io.camunda.db.rdbms.sql.VariableMapper.updateHistoryCleanupDate",
-              new ProcessBasedHistoryCleanupMapper.UpdateHistoryCleanupDateDto.Builder()
-                  .processInstanceKey(processInstanceKey)
-                  .historyCleanupDate(historyCleanupDate)
-                  .build()));
-    }
-  }
-
   public void migrateToProcess(final long variableKey, final String processDefinitionId) {
     executionQueue.executeInQueue(
         new QueueItem(
@@ -107,15 +80,5 @@ public class VariableWriter extends ProcessInstanceDependant implements RdbmsWri
             new VariableMapper.MigrateToProcessDto.Builder()
                 .variableKey(variableKey)
                 .processDefinitionId(processDefinitionId)));
-  }
-
-  public int cleanupHistory(
-      final int partitionId, final OffsetDateTime cleanupDate, final int rowsToRemove) {
-    return mapper.cleanupHistory(
-        new CleanupHistoryDto.Builder()
-            .partitionId(partitionId)
-            .cleanupDate(cleanupDate)
-            .limit(rowsToRemove)
-            .build());
   }
 }

@@ -30,6 +30,7 @@ import io.camunda.search.query.VariableQuery;
 import io.camunda.search.sort.VariableSort;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import java.time.OffsetDateTime;
+import java.util.List;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -302,7 +303,9 @@ public class VariableIT {
   }
 
   @TestTemplate
-  public void shouldCleanup(final CamundaRdbmsTestApplication testApplication) {
+  public void shouldDeleteProcessInstanceRelatedData(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final VariableDbReader reader = rdbmsService.getVariableReader();
@@ -314,16 +317,15 @@ public class VariableIT {
     final var item2 = createAndSaveVariable(rdbmsService, b -> b.tenantId(tenantId));
     final var item3 = createAndSaveVariable(rdbmsService, b -> b.tenantId(tenantId));
 
-    // set cleanup dates
-    rdbmsWriters.getVariableWriter().scheduleForHistoryCleanup(item1.processInstanceKey(), NOW);
-    rdbmsWriters
-        .getVariableWriter()
-        .scheduleForHistoryCleanup(item2.processInstanceKey(), NOW.minusDays(2));
-    rdbmsWriters.flush();
+    // when
+    final int deleted =
+        rdbmsWriters
+            .getVariableWriter()
+            .deleteProcessInstanceRelatedData(
+                PARTITION_ID, List.of(item2.processInstanceKey()), 10);
 
-    // cleanup
-    rdbmsWriters.getVariableWriter().cleanupHistory(PARTITION_ID, cleanupDate, 10);
-
+    // then
+    assertThat(deleted).isEqualTo(1);
     final var searchResult =
         reader.search(
             VariableQuery.of(

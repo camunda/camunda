@@ -8,19 +8,15 @@
 package io.camunda.db.rdbms.write.service;
 
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
-import io.camunda.db.rdbms.sql.HistoryCleanupMapper.CleanupHistoryDto;
 import io.camunda.db.rdbms.sql.IncidentMapper;
-import io.camunda.db.rdbms.sql.ProcessBasedHistoryCleanupMapper;
 import io.camunda.db.rdbms.write.domain.IncidentDbModel;
 import io.camunda.db.rdbms.write.domain.IncidentDbModel.Builder;
 import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
-import io.camunda.db.rdbms.write.queue.UpdateHistoryCleanupDateMerger;
 import io.camunda.db.rdbms.write.queue.UpsertMerger;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
 import io.camunda.search.entities.IncidentEntity.IncidentState;
-import java.time.OffsetDateTime;
 import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,7 +26,6 @@ public class IncidentWriter extends ProcessInstanceDependant implements RdbmsWri
   private static final Logger LOG = LoggerFactory.getLogger(IncidentWriter.class);
 
   private final ExecutionQueue executionQueue;
-  private final IncidentMapper mapper;
   private final VendorDatabaseProperties vendorDatabaseProperties;
 
   public IncidentWriter(
@@ -39,7 +34,6 @@ public class IncidentWriter extends ProcessInstanceDependant implements RdbmsWri
       final VendorDatabaseProperties vendorDatabaseProperties) {
     super(mapper);
     this.executionQueue = executionQueue;
-    this.mapper = mapper;
     this.vendorDatabaseProperties = vendorDatabaseProperties;
   }
 
@@ -83,39 +77,8 @@ public class IncidentWriter extends ProcessInstanceDependant implements RdbmsWri
     }
   }
 
-  public void scheduleForHistoryCleanup(
-      final Long processInstanceKey, final OffsetDateTime historyCleanupDate) {
-    final var wasMerged =
-        executionQueue.tryMergeWithExistingQueueItem(
-            new UpdateHistoryCleanupDateMerger(
-                ContextType.INCIDENT, processInstanceKey, historyCleanupDate));
-
-    if (!wasMerged) {
-      executionQueue.executeInQueue(
-          new QueueItem(
-              ContextType.INCIDENT,
-              WriteStatementType.UPDATE,
-              processInstanceKey,
-              "io.camunda.db.rdbms.sql.IncidentMapper.updateHistoryCleanupDate",
-              new ProcessBasedHistoryCleanupMapper.UpdateHistoryCleanupDateDto.Builder()
-                  .processInstanceKey(processInstanceKey)
-                  .historyCleanupDate(historyCleanupDate)
-                  .build()));
-    }
-  }
-
   private boolean mergeToQueue(final long key, final Function<Builder, Builder> mergeFunction) {
     return executionQueue.tryMergeWithExistingQueueItem(
         new UpsertMerger<>(ContextType.INCIDENT, key, IncidentDbModel.class, mergeFunction));
-  }
-
-  public int cleanupHistory(
-      final int partitionId, final OffsetDateTime cleanupDate, final int rowsToRemove) {
-    return mapper.cleanupHistory(
-        new CleanupHistoryDto.Builder()
-            .partitionId(partitionId)
-            .cleanupDate(cleanupDate)
-            .limit(rowsToRemove)
-            .build());
   }
 }

@@ -223,20 +223,6 @@
     WHERE INCIDENT_KEY = #{incidentKey}
   </update>
 
-  <update id="updateHistoryCleanupDate">
-    UPDATE ${prefix}INCIDENT SET
-      HISTORY_CLEANUP_DATE = #{historyCleanupDate, jdbcType=TIMESTAMP}
-    WHERE PROCESS_INSTANCE_KEY IN
-    <foreach collection="processInstanceKeys" item="key" open="(" separator="," close=")">
-      #{key}
-    </foreach>
-  </update>
-
-  <delete id="cleanupHistory">
-    <bind name="tableName" value="'INCIDENT'"/>
-    <include refid="io.camunda.db.rdbms.sql.Commons.historyCleanup"/>
-  </delete>
-
   <delete id="deleteProcessInstanceRelatedData">
     <bind name="tableName" value="'INCIDENT'"/>
     <bind name="primaryKeyColumn" value="'INCIDENT_KEY'"/>

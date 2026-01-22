@@ -7,8 +7,6 @@
  */
 package io.camunda.db.rdbms.write.service;
 
-import io.camunda.db.rdbms.sql.HistoryCleanupMapper.CleanupHistoryDto;
-import io.camunda.db.rdbms.sql.ProcessBasedHistoryCleanupMapper;
 import io.camunda.db.rdbms.sql.UserTaskMapper;
 import io.camunda.db.rdbms.write.domain.UserTaskDbModel;
 import io.camunda.db.rdbms.write.domain.UserTaskDbModel.UserTaskState;
@@ -16,19 +14,15 @@ import io.camunda.db.rdbms.write.domain.UserTaskMigrationDbModel;
 import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
-import io.camunda.db.rdbms.write.queue.UpdateHistoryCleanupDateMerger;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
-import java.time.OffsetDateTime;
 
 public class UserTaskWriter extends ProcessInstanceDependant implements RdbmsWriter {
 
   private final ExecutionQueue executionQueue;
-  private final UserTaskMapper mapper;
 
   public UserTaskWriter(final ExecutionQueue executionQueue, final UserTaskMapper mapper) {
     super(mapper);
     this.executionQueue = executionQueue;
-    this.mapper = mapper;
   }
 
   public void create(final UserTaskDbModel userTaskDbModel) {
@@ -121,27 +115,6 @@ public class UserTaskWriter extends ProcessInstanceDependant implements RdbmsWri
             new UserTaskDbModel.Builder().userTaskKey(userTaskKey).state(state).build()));
   }
 
-  public void scheduleForHistoryCleanup(
-      final Long processInstanceKey, final OffsetDateTime historyCleanupDate) {
-    final var wasMerged =
-        executionQueue.tryMergeWithExistingQueueItem(
-            new UpdateHistoryCleanupDateMerger(
-                ContextType.USER_TASK, processInstanceKey, historyCleanupDate));
-
-    if (!wasMerged) {
-      executionQueue.executeInQueue(
-          new QueueItem(
-              ContextType.USER_TASK,
-              WriteStatementType.UPDATE,
-              processInstanceKey,
-              "io.camunda.db.rdbms.sql.UserTaskMapper.updateHistoryCleanupDate",
-              new ProcessBasedHistoryCleanupMapper.UpdateHistoryCleanupDateDto.Builder()
-                  .processInstanceKey(processInstanceKey)
-                  .historyCleanupDate(historyCleanupDate)
-                  .build()));
-    }
-  }
-
   public void migrateToProcess(final UserTaskMigrationDbModel model) {
     executionQueue.executeInQueue(
         new QueueItem(
@@ -150,15 +123,5 @@ public class UserTaskWriter extends ProcessInstanceDependant implements RdbmsWri
             model.userTaskKey(),
             "io.camunda.db.rdbms.sql.UserTaskMapper.migrateToProcess",
             model));
-  }
-
-  public int cleanupHistory(
-      final int partitionId, final OffsetDateTime cleanupDate, final int rowsToRemove) {
-    return mapper.cleanupHistory(
-        new CleanupHistoryDto.Builder()
-            .partitionId(partitionId)
-            .cleanupDate(cleanupDate)
-            .limit(rowsToRemove)
-            .build());
   }
 }

@@ -16,8 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 
-public interface VariableMapper
-    extends ProcessBasedHistoryCleanupMapper, ProcessInstanceDependantMapper {
+public interface VariableMapper extends ProcessInstanceDependantMapper {
 
   void insert(BatchInsertVariablesDto dto);
 

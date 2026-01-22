@@ -409,15 +409,6 @@
     WHERE USER_TASK_KEY = #{userTaskKey}
   </delete>
 
-  <update id="updateHistoryCleanupDate">
-    UPDATE ${prefix}USER_TASK SET
-    HISTORY_CLEANUP_DATE = #{historyCleanupDate, jdbcType=TIMESTAMP}
-    WHERE PROCESS_INSTANCE_KEY IN
-    <foreach collection="processInstanceKeys" item="key" open="(" separator="," close=")">
-      #{key}
-    </foreach>
-  </update>
-
   <update id="migrateToProcess" parameterType="java.util.Map">
     UPDATE ${prefix}USER_TASK SET
     ELEMENT_ID = #{elementId},
@@ -427,11 +418,6 @@
     PROCESS_DEFINITION_VERSION = #{processDefinitionVersion}
     WHERE USER_TASK_KEY = #{userTaskKey}
   </update>
-
-  <delete id="cleanupHistory">
-    <bind name="tableName" value="'USER_TASK'"/>
-    <include refid="io.camunda.db.rdbms.sql.Commons.historyCleanup"/>
-  </delete>
 
   <delete id="deleteProcessInstanceRelatedData">
     <bind name="tableName" value="'USER_TASK'"/>

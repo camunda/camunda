@@ -10,14 +10,11 @@ package io.camunda.db.rdbms.write.service;
 import io.camunda.db.rdbms.sql.FlowNodeInstanceMapper;
 import io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.EndFlowNodeDto;
 import io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.UpdateIncidentDto;
-import io.camunda.db.rdbms.sql.HistoryCleanupMapper.CleanupHistoryDto;
-import io.camunda.db.rdbms.sql.ProcessBasedHistoryCleanupMapper;
 import io.camunda.db.rdbms.write.domain.FlowNodeInstanceDbModel;
 import io.camunda.db.rdbms.write.domain.FlowNodeInstanceDbModel.FlowNodeInstanceDbModelBuilder;
 import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
-import io.camunda.db.rdbms.write.queue.UpdateHistoryCleanupDateMerger;
 import io.camunda.db.rdbms.write.queue.UpsertMerger;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
@@ -27,13 +24,11 @@ import java.util.function.Function;
 public class FlowNodeInstanceWriter extends ProcessInstanceDependant implements RdbmsWriter {
 
   private final ExecutionQueue executionQueue;
-  private final FlowNodeInstanceMapper mapper;
 
   public FlowNodeInstanceWriter(
       final ExecutionQueue executionQueue, final FlowNodeInstanceMapper mapper) {
     super(mapper);
     this.executionQueue = executionQueue;
-    this.mapper = mapper;
   }
 
   public void create(final FlowNodeInstanceDbModel flowNode) {
@@ -111,27 +106,6 @@ public class FlowNodeInstanceWriter extends ProcessInstanceDependant implements 
     }
   }
 
-  public void scheduleForHistoryCleanup(
-      final Long processInstanceKey, final OffsetDateTime historyCleanupDate) {
-    final var wasMerged =
-        executionQueue.tryMergeWithExistingQueueItem(
-            new UpdateHistoryCleanupDateMerger(
-                ContextType.FLOW_NODE, processInstanceKey, historyCleanupDate));
-
-    if (!wasMerged) {
-      executionQueue.executeInQueue(
-          new QueueItem(
-              ContextType.FLOW_NODE,
-              WriteStatementType.UPDATE,
-              processInstanceKey,
-              "io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.updateHistoryCleanupDate",
-              new ProcessBasedHistoryCleanupMapper.UpdateHistoryCleanupDateDto.Builder()
-                  .processInstanceKey(processInstanceKey)
-                  .historyCleanupDate(historyCleanupDate)
-                  .build()));
-    }
-  }
-
   private void updateIncident(final long flowNodeInstanceKey, final Long incidentKey) {
     final boolean wasMerged = mergeToQueue(flowNodeInstanceKey, b -> b.incidentKey(incidentKey));
 
@@ -154,15 +128,5 @@ public class FlowNodeInstanceWriter extends ProcessInstanceDependant implements 
     return executionQueue.tryMergeWithExistingQueueItem(
         new UpsertMerger<>(
             ContextType.FLOW_NODE, key, FlowNodeInstanceDbModel.class, mergeFunction));
-  }
-
-  public int cleanupHistory(
-      final int partitionId, final OffsetDateTime cleanupDate, final int rowsToRemove) {
-    return mapper.cleanupHistory(
-        new CleanupHistoryDto.Builder()
-            .partitionId(partitionId)
-            .cleanupDate(cleanupDate)
-            .limit(rowsToRemove)
-            .build());
   }
 }

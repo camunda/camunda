@@ -285,20 +285,6 @@
     WHERE JOB_KEY = #{jobKey}
   </update>
 
-  <update id="updateHistoryCleanupDate">
-    UPDATE ${prefix}JOB SET
-      HISTORY_CLEANUP_DATE = #{historyCleanupDate, jdbcType=TIMESTAMP}
-    WHERE PROCESS_INSTANCE_KEY IN
-    <foreach collection="processInstanceKeys" item="key" open="(" separator="," close=")">
-      #{key}
-    </foreach>
-  </update>
-
-  <delete id="cleanupHistory">
-    <bind name="tableName" value="'JOB'"/>
-    <include refid="io.camunda.db.rdbms.sql.Commons.historyCleanup"/>
-  </delete>
-
   <delete id="deleteProcessInstanceRelatedData">
     <bind name="tableName" value="'JOB'"/>
     <bind name="primaryKeyColumn" value="'JOB_KEY'"/>

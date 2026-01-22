@@ -29,6 +29,7 @@ import io.camunda.search.sort.FlowNodeInstanceSort;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import org.assertj.core.data.TemporalUnitWithinOffset;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
@@ -306,7 +307,9 @@ public class ElementInstanceIT {
   }
 
   @TestTemplate
-  public void shouldCleanup(final CamundaRdbmsTestApplication testApplication) {
+  public void shouldDeleteProcessInstanceRelatedData(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final FlowNodeInstanceDbReader reader = rdbmsService.getFlowNodeInstanceReader();
@@ -325,18 +328,15 @@ public class ElementInstanceIT {
         createAndSaveRandomElementInstance(
             rdbmsWriters, b -> b.processDefinitionKey(definition.processDefinitionKey()));
 
-    // set cleanup dates
-    rdbmsWriters
-        .getFlowNodeInstanceWriter()
-        .scheduleForHistoryCleanup(item1.processInstanceKey(), NOW);
-    rdbmsWriters
-        .getFlowNodeInstanceWriter()
-        .scheduleForHistoryCleanup(item2.processInstanceKey(), NOW.minusDays(2));
-    rdbmsWriters.flush();
+    // when
+    final int deleted =
+        rdbmsWriters
+            .getFlowNodeInstanceWriter()
+            .deleteProcessInstanceRelatedData(
+                PARTITION_ID, List.of(item2.processInstanceKey()), 10);
 
-    // cleanup
-    rdbmsWriters.getFlowNodeInstanceWriter().cleanupHistory(PARTITION_ID, cleanupDate, 10);
-
+    // then
+    assertThat(deleted).isEqualTo(1);
     final var searchResult =
         reader.search(
             FlowNodeInstanceQuery.of(

@@ -203,20 +203,6 @@
               #{historyCleanupDate, jdbcType=TIMESTAMP});
   </insert>
 
-  <update id="updateHistoryCleanupDate">
-    UPDATE ${prefix}SEQUENCE_FLOW
-    SET HISTORY_CLEANUP_DATE = #{historyCleanupDate, jdbcType=TIMESTAMP}
-    WHERE PROCESS_INSTANCE_KEY IN
-    <foreach collection="processInstanceKeys" item="key" open="(" separator="," close=")">
-      #{key}
-    </foreach>
-  </update>
-
-  <delete id="cleanupHistory">
-    <bind name="tableName" value="'SEQUENCE_FLOW'"/>
-    <include refid="io.camunda.db.rdbms.sql.Commons.historyCleanup"/>
-  </delete>
-
   <delete id="deleteProcessInstanceRelatedData">
     <bind name="tableName" value="'SEQUENCE_FLOW'"/>
     <bind name="primaryKeyColumn" value="''"/>
