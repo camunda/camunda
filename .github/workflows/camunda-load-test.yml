@@ -56,11 +56,6 @@ on:
         type: boolean
         required: false
         default: false
-      realistic:
-        description: 'Should run a realistic load test, with real-world process and load. This is ignored when scenario is not "custom".'
-        type: boolean
-        required: false
-        default: false
       secondary-storage-type:
         description: 'Specifies the type of the secondary database used by Camunda Platform, can be "elasticsearch", "opensearch" or "postgresql"'
         type: choice
@@ -159,7 +154,6 @@ jobs:
     permissions: { }
     outputs:
       load-test-load: ${{ steps.config.outputs.load-test-load }}
-      realistic: ${{ steps.config.outputs.realistic }}
     steps:
       - name: Calculate configuration based on scenario
         id: config
@@ -174,25 +168,20 @@ jobs:
           case "$scenario" in
             latency)
               echo "load-test-load=--set starter.rate=1 --set workers.worker.replicas=1" >> "$GITHUB_OUTPUT"
-              echo "realistic=false" >> "$GITHUB_OUTPUT"
               ;;
             realistic)
-              echo "load-test-load=" >> "$GITHUB_OUTPUT"
-              echo "realistic=true" >> "$GITHUB_OUTPUT"
+              echo "load-test-load=-f https://raw.githubusercontent.com/camunda/camunda-load-tests-helm/refs/heads/main/charts/camunda-load-tests/values-realistic-benchmark.yaml" >> "$GITHUB_OUTPUT"
               ;;
             typical)
               # Output typical configuration directly to avoid quote escaping issues
               echo "load-test-load=--set starter.rate=50 --set workers.worker.replicas=6 --set starter.bpmnXmlPath=bpmn/typical_process.bpmn" >> "$GITHUB_OUTPUT"
-              echo "realistic=false" >> "$GITHUB_OUTPUT"
               ;;
             max)
               echo "load-test-load=--set starter.rate=300" >> "$GITHUB_OUTPUT"
-              echo "realistic=false" >> "$GITHUB_OUTPUT"
               ;;
             custom)
-              # Use the provided load-test-load and realistic inputs
+              # Use the provided load-test-load inputs
               echo "load-test-load=${{ inputs.load-test-load }}" >> "$GITHUB_OUTPUT"
-              echo "realistic=${{ inputs.realistic }}" >> "$GITHUB_OUTPUT"
               ;;
             *)
               echo "Error: Unknown scenario '$scenario'"
@@ -374,9 +363,6 @@ jobs:
 
           # Build additional load test configuration
           load_test_config="--set global.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}"
-          if [[ "${{ needs.calculate-scenario-config.outputs.realistic }}" == "true" ]]; then
-            load_test_config="$load_test_config -f https://raw.githubusercontent.com/camunda/camunda-load-tests-helm/refs/heads/main/charts/camunda-load-tests/values-realistic-benchmark.yaml"
-          fi
           # Append load-test-load configuration if not empty
           if [[ -n "${{ needs.calculate-scenario-config.outputs.load-test-load }}" ]]; then
             load_test_config="$load_test_config ${{ needs.calculate-scenario-config.outputs.load-test-load }}"
