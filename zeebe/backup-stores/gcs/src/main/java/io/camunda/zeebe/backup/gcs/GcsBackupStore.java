@@ -262,7 +262,7 @@ public final class GcsBackupStore implements BackupStore {
   private CompletableFuture<Void> deleteBlobs(final Collection<BlobId> blobIds) {
     return CompletableFuture.allOf(
         StreamSupport.stream(
-                Iterables.partition(blobIds, MAX_DELETE_BLOB_BATCH_SIZE).spliterator(), true)
+                Iterables.partition(blobIds, MAX_DELETE_BLOB_BATCH_SIZE).spliterator(), false)
             .map(batch -> CompletableFuture.runAsync(() -> client.delete(batch)))
             .toArray(CompletableFuture[]::new));
   }
