@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.job;
 
-import io.camunda.zeebe.engine.processing.scheduled.DueDateChecker;
+import io.camunda.zeebe.engine.processing.scheduled.DueDateCheckScheduler;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
@@ -15,15 +15,15 @@ import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import java.time.Duration;
 import java.time.InstantSource;
 
-public final class JobBackoffChecker implements StreamProcessorLifecycleAware {
+public final class JobBackoffCheckScheduler implements StreamProcessorLifecycleAware {
 
   static final long BACKOFF_RESOLUTION = Duration.ofMillis(100).toMillis();
 
-  private final DueDateChecker backOffDueDateChecker;
+  private final DueDateCheckScheduler backOffDueDateChecker;
 
-  public JobBackoffChecker(final InstantSource clock, final JobState jobState) {
+  public JobBackoffCheckScheduler(final InstantSource clock, final JobState jobState) {
     backOffDueDateChecker =
-        new DueDateChecker(
+        new DueDateCheckScheduler(
             BACKOFF_RESOLUTION,
             false,
             taskResultBuilder ->

@@ -124,7 +124,7 @@ Using different queue ids per partition or conversely maintaining order across p
 
 A command distribution means we have network traffic between partition. Where there's network
 traffic there's a chance of failure. If this happens we need a way to redistribute the command. For
-this we have the `CommandRedistributor`.
+this we have the `CommandRedistributionScheduler`.
 
 As shown in the diagram we store multiple things in the state. First there's the record metadata and
 the raw record value. Next there's a pending command distribution. Both of these are used during
@@ -151,7 +151,7 @@ is under heavy load, and we want to prevent it from receiving more commands.
 
 To pause command redistribution we can set the `ZEEBE_BROKER_EXPERIMENTAL_ENGINE_DISTRIBUTION_PAUSECOMMANDDISTRIBUTION`
 (i.e. `zeebe.broker.experimental.engine.distribution.pauseCommandDistribution`) flag to `true` and
-restart the brokers. This will prevent the `CommandRedistributor` from scheduling the retry cycle
+restart the brokers. This will prevent the `CommandRedistributionScheduler` from scheduling the retry cycle
 and allow an engineer to investigate any issues.
 
 #### Configuring retry intervals

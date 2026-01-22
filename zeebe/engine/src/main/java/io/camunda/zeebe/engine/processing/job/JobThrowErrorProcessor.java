@@ -69,7 +69,7 @@ public class JobThrowErrorProcessor implements TypedRecordProcessor<JobRecord> {
 
   private final JobState jobState;
   private final ElementInstanceState elementInstanceState;
-  private final JobCommandPreconditionChecker preconditionChecker;
+  private final JobCommandPreconditionValidator preconditionChecker;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final CatchEventAnalyzer stateAnalyzer;
   private final KeyGenerator keyGenerator;
@@ -96,7 +96,7 @@ public class JobThrowErrorProcessor implements TypedRecordProcessor<JobRecord> {
     this.authCheckBehavior = authCheckBehavior;
 
     preconditionChecker =
-        new JobCommandPreconditionChecker(
+        new JobCommandPreconditionValidator(
             jobState,
             "throw an error for",
             List.of(State.ACTIVATABLE, State.ACTIVATED),

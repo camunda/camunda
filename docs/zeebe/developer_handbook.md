@@ -178,7 +178,7 @@ In some cases, a partition needs to communicate with other partitions:
 
 The engine can send a command to another partition using `InterPartitionCommandSender`. Note that this may fail because network communication is not reliable. So for all inter-partition communication, you must use some retry mechanism.
 
-For example, the `DeploymentRedistributor` resends deployment distribution commands to other partitions.
+For example, the `DeploymentRedistributionScheduler` resends deployment distribution commands to other partitions.
 
 > **Note**
 > There is no response for inter-partition communication. It is a case of "fire and forget".

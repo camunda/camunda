@@ -17,7 +17,7 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
 
-public class UserTaskCommandPreconditionChecker {
+public class UserTaskCommandPreconditionValidator {
 
   private static final String NO_USER_TASK_FOUND_MESSAGE =
       "Expected to %s user task with key '%d', but no such user task was found";
@@ -29,7 +29,7 @@ public class UserTaskCommandPreconditionChecker {
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final UserTaskState userTaskState;
 
-  public UserTaskCommandPreconditionChecker(
+  public UserTaskCommandPreconditionValidator(
       final List<LifecycleState> validLifecycleStates,
       final String intent,
       final UserTaskState userTaskState,

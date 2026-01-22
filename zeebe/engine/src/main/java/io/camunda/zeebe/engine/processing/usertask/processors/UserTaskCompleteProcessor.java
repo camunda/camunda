@@ -43,7 +43,7 @@ public final class UserTaskCompleteProcessor implements UserTaskCommandProcessor
   private final StateWriter stateWriter;
   private final TypedCommandWriter commandWriter;
   private final TypedResponseWriter responseWriter;
-  private final UserTaskCommandPreconditionChecker commandChecker;
+  private final UserTaskCommandPreconditionValidator commandChecker;
   private final AsyncRequestBehavior asyncRequestBehavior;
   private final AuthorizationCheckBehavior authCheckBehavior;
 
@@ -60,7 +60,7 @@ public final class UserTaskCompleteProcessor implements UserTaskCommandProcessor
     commandWriter = writers.command();
     responseWriter = writers.response();
     commandChecker =
-        new UserTaskCommandPreconditionChecker(
+        new UserTaskCommandPreconditionValidator(
             List.of(LifecycleState.CREATED),
             "complete",
             state.getUserTaskState(),

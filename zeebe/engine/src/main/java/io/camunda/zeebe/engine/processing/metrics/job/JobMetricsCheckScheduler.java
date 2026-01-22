@@ -26,9 +26,9 @@ import org.slf4j.LoggerFactory;
  * Task that periodically sends a JOB_METRICS_BATCH EXPORT command to trigger the export of job
  * worker metrics.
  */
-public class JobMetricsChecker implements Task {
+public class JobMetricsCheckScheduler implements Task {
 
-  private static final Logger LOG = LoggerFactory.getLogger(JobMetricsChecker.class);
+  private static final Logger LOG = LoggerFactory.getLogger(JobMetricsCheckScheduler.class);
 
   private final Duration exportInterval;
   private final InstantSource clock;
@@ -36,7 +36,7 @@ public class JobMetricsChecker implements Task {
   private volatile boolean shouldReschedule = false;
   private final AtomicReference<ScheduledTask> scheduledTask = new AtomicReference<>(null);
 
-  public JobMetricsChecker(final Duration exportInterval, final InstantSource clock) {
+  public JobMetricsCheckScheduler(final Duration exportInterval, final InstantSource clock) {
     this.exportInterval = exportInterval;
     this.clock = clock;
   }
@@ -50,7 +50,7 @@ public class JobMetricsChecker implements Task {
           processingContext
               .getScheduleService()
               .runAt(clock.millis() + exportInterval.toMillis(), this);
-      LOG.trace("JobMetricsChecker scheduled");
+      LOG.trace("JobMetricsCheckScheduler scheduled");
     }
 
     ofNullable(scheduledTask.getAndSet(nextTask)).ifPresent(ScheduledTask::cancel);
@@ -58,7 +58,7 @@ public class JobMetricsChecker implements Task {
 
   @Override
   public TaskResult execute(final TaskResultBuilder taskResultBuilder) {
-    LOG.trace("JobMetricsChecker running...");
+    LOG.trace("JobMetricsCheckScheduler running...");
     final JobMetricsBatchRecord record = new JobMetricsBatchRecord();
     // trigger the export by writing the EXPORT command with an empty record
     // the JobMetricsBatchExportProcessor will use the JobMetricsState to fill in the data

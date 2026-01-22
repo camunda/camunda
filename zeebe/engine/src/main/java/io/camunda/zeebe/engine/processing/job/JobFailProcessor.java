@@ -56,12 +56,12 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
   private final TypedResponseWriter responseWriter;
   private final KeyGenerator keyGenerator;
   private final JobProcessingMetrics jobMetrics;
-  private final JobBackoffChecker jobBackoffChecker;
+  private final JobBackoffCheckScheduler jobBackoffChecker;
   private final VariableBehavior variableBehavior;
   private final BpmnJobActivationBehavior jobActivationBehavior;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final SideEffectWriter sideEffectWriter;
-  private final JobCommandPreconditionChecker preconditionChecker;
+  private final JobCommandPreconditionValidator preconditionChecker;
   private final ElementInstanceState elementInstanceState;
   private final ProcessState processState;
 
@@ -70,7 +70,7 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
       final Writers writers,
       final KeyGenerator keyGenerator,
       final JobProcessingMetrics jobMetrics,
-      final JobBackoffChecker jobBackoffChecker,
+      final JobBackoffCheckScheduler jobBackoffChecker,
       final BpmnBehaviors bpmnBehaviors,
       final AuthorizationCheckBehavior authCheckBehavior) {
     jobState = state.getJobState();
@@ -84,7 +84,7 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
     jobActivationBehavior = bpmnBehaviors.jobActivationBehavior();
     this.authCheckBehavior = authCheckBehavior;
     preconditionChecker =
-        new JobCommandPreconditionChecker(
+        new JobCommandPreconditionValidator(
             jobState, "fail", List.of(State.ACTIVATABLE, State.ACTIVATED), authCheckBehavior);
     this.keyGenerator = keyGenerator;
     this.jobBackoffChecker = jobBackoffChecker;

@@ -48,7 +48,7 @@ import org.slf4j.LoggerFactory;
  * processing.
  *
  * @see StreamProcessorLifecycleAware
- * @see BatchOperationInitializer
+ * @see BatchOperationInitializationHelper
  * @see BatchOperationRetryHandler
  */
 public class BatchOperationExecutionScheduler implements StreamProcessorLifecycleAware {
@@ -56,7 +56,7 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
 
   private final Duration initialPollingInterval;
   private final BatchOperationState batchOperationState;
-  private final BatchOperationInitializer batchOperationInitializer;
+  private final BatchOperationInitializationHelper batchOperationInitializer;
   private final BatchOperationRetryHandler retryHandler;
   private final AtomicBoolean executing = new AtomicBoolean(false);
   private final AtomicReference<ExecutionLoopState> initializing = new AtomicReference<>();
@@ -65,7 +65,7 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
 
   public BatchOperationExecutionScheduler(
       final Supplier<ScheduledTaskState> scheduledTaskStateFactory,
-      final BatchOperationInitializer batchOperationInitializer,
+      final BatchOperationInitializationHelper batchOperationInitializer,
       final BatchOperationRetryHandler retryHandler,
       final Duration batchOperationSchedulerInterval) {
 
