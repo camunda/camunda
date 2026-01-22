@@ -111,7 +111,7 @@ const DropdownSearch = <Item extends Record<string, unknown>>({
     }
   }, [search, allItems, fuse]);
 
-  const handleChange = (e: { target: HTMLInputElement; type: "change" }) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { value } = e.target;
     setSearch(value);
     debounce(() => onChange(value));
