@@ -12,6 +12,7 @@ import {deploy, createInstances} from 'utils/zeebeClient';
 import {sleep} from 'utils/sleep';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToApp} from '@pages/UtilitiesPage';
+import {waitForAssertion} from '../../../utils/waitForAssertion';
 
 test.beforeAll(async ({resetData}) => {
   await resetData();
@@ -112,11 +113,19 @@ test.describe('task panel page', () => {
   });
 
   //Skipped due to bug 44583: https://github.com/camunda/camunda/issues/44583
-  test.skip('scrolling', async ({page, taskPanelPageV1}) => {
+  test('scrolling', async ({page, taskPanelPageV1}) => {
     // TODO: This test fails in V2 mode - investigate if this is expected behavior or a bug
     // V2 mode may have different scrolling/pagination behavior that affects task count expectations
     test.slow();
-
+    await waitForAssertion({
+      assertion: async () => {
+        await expect(page.getByText('usertask_to_be_assigned')).toHaveCount(0);
+      },
+      onFailure: async () => {
+        await page.reload();
+        await sleep(3000);
+      },
+    });
     await expect(page.getByText('usertask_for_scrolling_1')).toHaveCount(1);
     await expect(page.getByText('usertask_for_scrolling_2')).toHaveCount(49);
     await expect(page.getByText('usertask_for_scrolling_3')).toHaveCount(0);
