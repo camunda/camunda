@@ -24,7 +24,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 public class HistoryCleanupIT {
 
   @TestTemplate
-  public void shouldSaveAndFindByKey(final CamundaRdbmsTestApplication testApplication) {
+  public void shouldExecuteHistoryCleanupSuccessfully(
+      final CamundaRdbmsTestApplication testApplication) {
     final var writers = testApplication.getRdbmsService().createWriter(0);
     final var historyCleanupService =
         new HistoryCleanupService(

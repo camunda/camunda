@@ -211,6 +211,14 @@ class HistoryCleanupServiceTest {
         .thenReturn(100);
     when(decisionInstanceWriter.deleteProcessInstanceRelatedData(anyInt(), any(), anyInt()))
         .thenReturn(0);
+    when(jobWriter.deleteProcessInstanceRelatedData(anyInt(), any(), anyInt())).thenReturn(0);
+    when(sequenceFlowWriter.deleteProcessInstanceRelatedData(anyInt(), any(), anyInt()))
+        .thenReturn(0);
+    when(messageSubscriptionWriter.deleteProcessInstanceRelatedData(anyInt(), any(), anyInt()))
+        .thenReturn(0);
+    when(correlatedMessageSubscriptionWriter.deleteProcessInstanceRelatedData(
+            anyInt(), any(), anyInt()))
+        .thenReturn(0);
     when(auditLogWriter.deleteProcessInstanceRelatedData(anyInt(), any(), anyInt())).thenReturn(0);
     when(batchOperationWriter.cleanupHistory(any(), anyInt())).thenReturn(1);
 
@@ -226,9 +234,21 @@ class HistoryCleanupServiceTest {
         .deleteProcessInstanceRelatedData(PARTITION_ID, expiredProcessInstanceKeys, 100);
     verify(incidentWriter)
         .deleteProcessInstanceRelatedData(PARTITION_ID, expiredProcessInstanceKeys, 100);
+    verify(userTaskWriter)
+        .deleteProcessInstanceRelatedData(PARTITION_ID, expiredProcessInstanceKeys, 100);
     verify(variableInstanceWriter)
         .deleteProcessInstanceRelatedData(PARTITION_ID, expiredProcessInstanceKeys, 100);
+    verify(decisionInstanceWriter)
+        .deleteProcessInstanceRelatedData(PARTITION_ID, expiredProcessInstanceKeys, 100);
     verify(jobWriter)
+        .deleteProcessInstanceRelatedData(PARTITION_ID, expiredProcessInstanceKeys, 100);
+    verify(sequenceFlowWriter)
+        .deleteProcessInstanceRelatedData(PARTITION_ID, expiredProcessInstanceKeys, 100);
+    verify(messageSubscriptionWriter)
+        .deleteProcessInstanceRelatedData(PARTITION_ID, expiredProcessInstanceKeys, 100);
+    verify(correlatedMessageSubscriptionWriter)
+        .deleteProcessInstanceRelatedData(PARTITION_ID, expiredProcessInstanceKeys, 100);
+    verify(auditLogWriter)
         .deleteProcessInstanceRelatedData(PARTITION_ID, expiredProcessInstanceKeys, 100);
     // PIs NOT deleted because child entities were found
     verify(processInstanceWriter, Mockito.never()).deleteByKeys(any());
