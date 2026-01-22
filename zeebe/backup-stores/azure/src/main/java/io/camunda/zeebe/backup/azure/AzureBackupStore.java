@@ -259,7 +259,7 @@ public final class AzureBackupStore implements BackupStore {
     return CompletableFuture.runAsync(
         () -> {
           assureContainerCreated();
-          final var blobName = rangeMarkersPrefix(partitionId) + BackupRangeMarker.toName(marker);
+          final var blobName = markerBlobUrl(partitionId, marker);
           final var blobClient = blobContainerClient.getBlobClient(blobName);
           blobClient.upload(BinaryData.fromBytes(new byte[0]), true);
         },
@@ -272,7 +272,7 @@ public final class AzureBackupStore implements BackupStore {
     return CompletableFuture.runAsync(
         () -> {
           assureContainerCreated();
-          final var blobName = rangeMarkersPrefix(partitionId) + BackupRangeMarker.toName(marker);
+          final var blobName = markerBlobUrl(partitionId, marker);
           final var blobClient = blobContainerClient.getBlobClient(blobName);
           blobClient.deleteIfExists();
         },
@@ -286,7 +286,7 @@ public final class AzureBackupStore implements BackupStore {
             () -> {
               assureContainerCreated();
               return markers.stream()
-                  .map(marker -> rangeMarkersPrefix(partitionId) + BackupRangeMarker.toName(marker))
+                  .map(marker -> markerBlobUrl(partitionId, marker))
                   .map(blobName -> blobContainerClient.getBlobClient(blobName).getBlobUrl())
                   .collect(Collectors.toSet());
             },
@@ -334,6 +334,10 @@ public final class AzureBackupStore implements BackupStore {
 
   private String rangeMarkersPrefix(final int partitionId) {
     return "ranges/" + partitionId + "/";
+  }
+
+  private String markerBlobUrl(final int partitionId, final BackupRangeMarker marker) {
+    return rangeMarkersPrefix(partitionId) + BackupRangeMarker.toName(marker);
   }
 
   private void assureContainerCreated() {

@@ -336,7 +336,7 @@ public final class S3BackupStore implements BackupStore {
   @Override
   public CompletableFuture<Void> storeRangeMarker(
       final int partitionId, final BackupRangeMarker marker) {
-    final var key = rangeMarkersPrefix(partitionId) + BackupRangeMarker.toName(marker);
+    final var key = markerKey(partitionId, marker);
     return client
         .putObject(req -> req.bucket(config.bucketName()).key(key), AsyncRequestBody.empty())
         .thenApply(resp -> null);
@@ -345,7 +345,7 @@ public final class S3BackupStore implements BackupStore {
   @Override
   public CompletableFuture<Void> deleteRangeMarker(
       final int partitionId, final BackupRangeMarker marker) {
-    final var key = rangeMarkersPrefix(partitionId) + BackupRangeMarker.toName(marker);
+    final var key = markerKey(partitionId, marker);
     return client
         .deleteObject(req -> req.bucket(config.bucketName()).key(key))
         .thenApply(resp -> null);
@@ -356,11 +356,7 @@ public final class S3BackupStore implements BackupStore {
       final int partitionId, final Collection<BackupRangeMarker> markers) {
     final var markerIdentifiers =
         markers.stream()
-            .map(
-                marker ->
-                    ObjectIdentifier.builder()
-                        .key(rangeMarkersPrefix(partitionId) + BackupRangeMarker.toName(marker))
-                        .build())
+            .map(marker -> ObjectIdentifier.builder().key(markerKey(partitionId, marker)).build())
             .toList();
     return deleteIdentifierBatch(markerIdentifiers);
   }
@@ -649,6 +645,10 @@ public final class S3BackupStore implements BackupStore {
                         "Invalid broker version format in manifest: " + descriptor.brokerVersion(),
                         null));
     return brokerVersion.major() == 8 && brokerVersion.minor() <= 8;
+  }
+
+  private String markerKey(final int partitionId, final BackupRangeMarker marker) {
+    return rangeMarkersPrefix(partitionId) + BackupRangeMarker.toName(marker);
   }
 
   public static S3AsyncClient buildClient(final S3BackupConfig config) {
