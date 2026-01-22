@@ -193,15 +193,8 @@ public class SimpleSearchQueryMapper {
 
     ofNullable(source.getVariables())
         .filter(not(List::isEmpty))
-        .ifPresent(
-            vars ->
-                target.variables(
-                    vars.stream()
-                        .map(
-                            v ->
-                                new VariableValueFilterProperty(
-                                    v.getName(), getStringFilter(v.getValue())))
-                        .toList()));
+        .map(SimpleSearchQueryMapper::convertVariableValueFilterProperties)
+        .ifPresent(target::variables);
 
     ofNullable(source.getProcessInstanceKey())
         .map(SimpleSearchQueryMapper::getBasicStringFilter)
