@@ -101,6 +101,11 @@ const Details: React.FC<Props> = ({elementInstance, businessObject}) => {
   const calledProcessInstance = calledProcessInstancesSearchResult?.items?.[0];
   const job = jobSearchResult?.[0];
 
+  if (window.clientConfig && !window.clientConfig.tasklistUrl) {
+    window.clientConfig.tasklistUrl = 'http://localhost:8080/tasklist';
+  }
+  console.log(`clientConfig: ${JSON.stringify(window.clientConfig)}`);
+
   return (
     <>
       <Header
