@@ -187,17 +187,25 @@ test.describe.parallel('Tenants API Tests', () => {
     }).toPass(defaultAssertionOptions);
   });
 
-  test('Update Tenant Missing Description Invalid Body 400', async ({
+  test('Update Tenant Missing Description success 200', async ({
     request,
   }) => {
     const p = {tenantId: state['tenantId1'] as string};
+    const expectedBody = {
+      ...p,
+      name: 'missing description',
+      description: '',
+    };
     await expect(async () => {
       const res = await request.put(buildUrl('/tenants/{tenantId}', p), {
         headers: jsonHeaders(),
         data: {name: 'missing description'},
       });
 
-      await assertBadRequest(res, /.*\b(description)\b.*/i, 'INVALID_ARGUMENT');
+      expect(res.status()).toBe(200);
+      const json = await res.json();
+      assertRequiredFields(json, tenantRequiredFields);
+      assertEqualsForKeys(json, expectedBody, tenantRequiredFields);
     }).toPass(defaultAssertionOptions);
   });
 
