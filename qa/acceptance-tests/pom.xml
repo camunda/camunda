@@ -196,7 +196,7 @@
 
     <dependency>
       <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-test-autoconfigure</artifactId>
+      <artifactId>spring-boot-data-jdbc-test</artifactId>
       <scope>test</scope>
     </dependency>
 

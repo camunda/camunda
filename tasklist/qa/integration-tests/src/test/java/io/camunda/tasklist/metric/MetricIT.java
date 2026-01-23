@@ -21,10 +21,12 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.boot.resttestclient.TestRestTemplate;
+import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRestTemplate;
 import org.springframework.boot.test.web.server.LocalManagementPort;
 import org.springframework.http.ResponseEntity;
 
+@AutoConfigureTestRestTemplate
 public class MetricIT extends TasklistZeebeIntegrationTest {
 
   public static final String ENDPOINT = "/actuator/prometheus";
@@ -147,7 +149,7 @@ public class MetricIT extends TasklistZeebeIntegrationTest {
     final ResponseEntity<String> prometheusResponse =
         testRestTemplate.getForEntity(
             "http://localhost:" + managementPort + ENDPOINT, String.class);
-    assertThat(prometheusResponse.getStatusCodeValue()).isEqualTo(200);
+    assertThat(prometheusResponse.getStatusCode().value()).isEqualTo(200);
     final List<String> metricLines = List.of(prometheusResponse.getBody().split("\n"));
     return filter(
         metricLines, line -> line.startsWith((TASKLIST_NAMESPACE + key).replaceAll("\\.", "_")));

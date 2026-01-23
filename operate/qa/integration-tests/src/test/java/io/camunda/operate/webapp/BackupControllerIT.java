@@ -32,8 +32,6 @@ import co.elastic.clients.json.JsonpMapper;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.TransportException;
 import co.elastic.clients.util.ObjectBuilder;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.management.backups.Error;
@@ -62,9 +60,13 @@ import org.junit.runner.RunWith;
 import org.mockito.Answers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.endpoint.web.WebEndpointResponse;
+import org.springframework.boot.resttestclient.TestRestTemplate;
+import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRestTemplate;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalManagementPort;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -75,6 +77,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 anymore, it will be done in a follow-up PR
 */
 @RunWith(SpringRunner.class)
+@AutoConfigureTestRestTemplate
 @SpringBootTest(
     classes = {
       TestApplication.class,
@@ -670,18 +673,14 @@ public class BackupControllerIT {
         GetSnapshotResponse.of(b -> b.snapshots(snapshotInfos).remaining(1).total(1)));
 
     final var res =
-        testRestTemplate.getForEntity(
-            "http://localhost:" + managementPort + "/actuator/backupHistory", String.class);
+        testRestTemplate.exchange(
+            "http://localhost:" + managementPort + "/actuator/backupHistory",
+            HttpMethod.GET,
+            HttpEntity.EMPTY,
+            new ParameterizedTypeReference<List<HistoryBackupInfo>>() {});
     assertThat(res.getStatusCode().is2xxSuccessful()).isTrue();
 
-    final ObjectMapper objectMapper = new ObjectMapper();
-    objectMapper.registerModule(new JavaTimeModule());
-    final List<HistoryBackupInfo> backups =
-        objectMapper.readValue(
-            res.getBody(),
-            objectMapper
-                .getTypeFactory()
-                .constructCollectionType(List.class, HistoryBackupInfo.class));
+    final List<HistoryBackupInfo> backups = res.getBody();
 
     assertThat(backups).hasSize(1);
 
