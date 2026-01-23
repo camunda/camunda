@@ -12,8 +12,8 @@ import io.camunda.tasklist.schema.IndexSchemaValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.actuate.health.Health;
-import org.springframework.boot.actuate.health.HealthIndicator;
+import org.springframework.boot.health.contributor.Health;
+import org.springframework.boot.health.contributor.HealthIndicator;
 import org.springframework.stereotype.Component;
 
 @Component("searchEngineCheck")
@@ -23,11 +23,6 @@ public class SearchEngineHealthIndicator implements HealthIndicator {
   private static final Logger LOGGER = LoggerFactory.getLogger(SearchEngineHealthIndicator.class);
 
   @Autowired private IndexSchemaValidator indexSchemaValidator;
-
-  @Override
-  public Health getHealth(final boolean includeDetails) {
-    return health();
-  }
 
   @Override
   public Health health() {

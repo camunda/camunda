@@ -160,7 +160,7 @@ class SchemaManagerStartupIT {
             () ->
                 assertThat(camunda.getLogs())
                     .contains(
-                        "org.springframework.boot.web.embedded.tomcat.GracefulShutdown - Graceful shutdown complete")
+                        "org.springframework.boot.tomcat.GracefulShutdown - Graceful shutdown complete")
                     .contains("io.camunda.zeebe.broker.system - Broker shut down"));
     assertThat(camunda.getLogs())
         .doesNotContain("Failed to start application")

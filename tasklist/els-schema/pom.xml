@@ -54,7 +54,7 @@
 
     <dependency>
       <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-actuator</artifactId>
+      <artifactId>spring-boot-health</artifactId>
     </dependency>
 
     <dependency>

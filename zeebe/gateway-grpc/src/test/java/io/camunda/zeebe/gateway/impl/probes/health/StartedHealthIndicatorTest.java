@@ -13,7 +13,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.camunda.zeebe.gateway.health.Status;
 import java.util.Optional;
 import org.junit.Test;
-import org.springframework.boot.actuate.health.Health;
+import org.springframework.boot.health.contributor.Health;
 
 public class StartedHealthIndicatorTest {
 
@@ -33,7 +33,8 @@ public class StartedHealthIndicatorTest {
     final Health actual = sutHealthIndicator.health();
 
     // then
-    assertThat(actual.getStatus()).isSameAs(org.springframework.boot.actuate.health.Status.UNKNOWN);
+    assertThat(actual.getStatus())
+        .isSameAs(org.springframework.boot.health.contributor.Status.UNKNOWN);
   }
 
   @Test
@@ -46,7 +47,8 @@ public class StartedHealthIndicatorTest {
     final Health actual = sutHealthIndicator.health();
 
     // then
-    assertThat(actual.getStatus()).isSameAs(org.springframework.boot.actuate.health.Status.DOWN);
+    assertThat(actual.getStatus())
+        .isSameAs(org.springframework.boot.health.contributor.Status.DOWN);
   }
 
   @Test
@@ -59,7 +61,8 @@ public class StartedHealthIndicatorTest {
     final Health actual = sutHealthIndicator.health();
 
     // then
-    assertThat(actual.getStatus()).isSameAs(org.springframework.boot.actuate.health.Status.DOWN);
+    assertThat(actual.getStatus())
+        .isSameAs(org.springframework.boot.health.contributor.Status.DOWN);
   }
 
   @Test
@@ -72,7 +75,7 @@ public class StartedHealthIndicatorTest {
     final Health actual = sutHealthIndicator.health();
 
     // then
-    assertThat(actual.getStatus()).isSameAs(org.springframework.boot.actuate.health.Status.UP);
+    assertThat(actual.getStatus()).isSameAs(org.springframework.boot.health.contributor.Status.UP);
   }
 
   @Test
@@ -86,6 +89,6 @@ public class StartedHealthIndicatorTest {
 
     // then
     assertThat(actual.getStatus())
-        .isSameAs(org.springframework.boot.actuate.health.Status.OUT_OF_SERVICE);
+        .isSameAs(org.springframework.boot.health.contributor.Status.OUT_OF_SERVICE);
   }
 }
