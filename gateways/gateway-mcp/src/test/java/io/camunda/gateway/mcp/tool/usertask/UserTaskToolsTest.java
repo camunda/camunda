@@ -22,10 +22,8 @@ import io.camunda.gateway.mcp.tool.ToolsTest;
 import io.camunda.gateway.protocol.model.UserTaskResult;
 import io.camunda.gateway.protocol.model.UserTaskSearchQueryResult;
 import io.camunda.gateway.protocol.model.UserTaskStateEnum;
-import io.camunda.gateway.protocol.model.VariableResult;
 import io.camunda.gateway.protocol.model.VariableResultBase;
 import io.camunda.gateway.protocol.model.VariableSearchQueryResult;
-import io.camunda.gateway.protocol.model.VariableSearchResult;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.UserTaskEntity.UserTaskState;
 import io.camunda.search.entities.VariableEntity;
@@ -100,13 +98,16 @@ class UserTaskToolsTest extends ToolsTest {
           .endCursor("v")
           .build();
 
+  static final String TRUNCATED_VALUE = "\"varValue";
+  static final String FULL_VALUE = "\"varValue\"";
+
   static final VariableEntity VARIABLE_ENTITY =
       new VariableEntity(
           10L,
           "varName",
-          "\"varValue\"",
-          "\"varValue\"",
-          false,
+          TRUNCATED_VALUE,
+          FULL_VALUE,
+          true,
           101L,
           42L,
           null,
@@ -160,11 +161,6 @@ class UserTaskToolsTest extends ToolsTest {
     assertThat(variable.getScopeKey()).isEqualTo("101");
     assertThat(variable.getProcessInstanceKey()).isEqualTo("42");
     assertThat(variable.getTenantId()).isEqualTo("tenantId");
-    if (variable instanceof VariableSearchResult searchResult) {
-      assertThat(searchResult.getValue()).isEqualTo("\"varValue\"");
-    } else if (variable instanceof VariableResult result) {
-      assertThat(result.getValue()).isEqualTo("\"varValue\"");
-    }
   }
 
   @Nested
@@ -426,7 +422,7 @@ class UserTaskToolsTest extends ToolsTest {
                   assertThat(textContent.text())
                       .isEqualTo("User task with key 5 assigned to jane.doe."));
 
-      verify(userTaskServices).assignUserTask(5L, "jane.doe", null, true);
+      verify(userTaskServices).assignUserTask(5L, "jane.doe", "assign", true);
     }
 
     @Test
@@ -488,7 +484,7 @@ class UserTaskToolsTest extends ToolsTest {
               textContent ->
                   assertThat(textContent.text()).isEqualTo("User task with key 5 unassigned."));
 
-      verify(userTaskServices).unassignUserTask(5L, null);
+      verify(userTaskServices).unassignUserTask(5L, "unassign");
     }
 
     @Test
@@ -503,34 +499,6 @@ class UserTaskToolsTest extends ToolsTest {
               CallToolRequest.builder()
                   .name("assignUserTask")
                   .arguments(Map.of("userTaskKey", 5L, "assignee", ""))
-                  .build());
-
-      // then
-      assertThat(result.isError()).isFalse();
-      assertThat(result.content())
-          .hasSize(1)
-          .first()
-          .isInstanceOfSatisfying(
-              TextContent.class,
-              textContent ->
-                  assertThat(textContent.text()).isEqualTo("User task with key 5 unassigned."));
-
-      verify(userTaskServices).unassignUserTask(5L, null);
-    }
-
-    @Test
-    void shouldUnassignUserTaskWithAction() {
-      // given
-      when(userTaskServices.unassignUserTask(anyLong(), anyString()))
-          .thenReturn(CompletableFuture.completedFuture(new UserTaskRecord()));
-
-      // when
-      final CallToolResult result =
-          mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("assignUserTask")
-                  .arguments(
-                      Map.of("userTaskKey", 5L, "assignmentOptions", Map.of("action", "unassign")))
                   .build());
 
       // then
@@ -635,7 +603,12 @@ class UserTaskToolsTest extends ToolsTest {
       assertThat(searchResult.getItems())
           .hasSize(1)
           .first()
-          .satisfies(UserTaskToolsTest.this::assertExampleVariable);
+          .satisfies(
+              variable -> {
+                assertExampleVariable(variable);
+                assertThat(variable.getIsTruncated()).isTrue();
+                assertThat(variable.getValue()).isEqualTo(TRUNCATED_VALUE);
+              });
 
       verify(userTaskServices).searchUserTaskVariables(eq(5L), variableQueryCaptor.capture());
     }
@@ -658,7 +631,19 @@ class UserTaskToolsTest extends ToolsTest {
       assertThat(result.isError()).isFalse();
       assertThat(result.structuredContent()).isNotNull();
 
-      verify(userTaskServices).searchUserTaskVariables(5L, variableQueryCaptor.getValue());
+      final var searchResult =
+          objectMapper.convertValue(result.structuredContent(), VariableSearchQueryResult.class);
+      assertThat(searchResult.getItems())
+          .hasSize(1)
+          .first()
+          .satisfies(
+              variable -> {
+                assertExampleVariable(variable);
+                assertThat(variable.getIsTruncated()).isFalse();
+                assertThat(variable.getValue()).isEqualTo(FULL_VALUE);
+              });
+
+      verify(userTaskServices).searchUserTaskVariables(eq(5L), variableQueryCaptor.capture());
     }
 
     @Test
