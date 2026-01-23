@@ -19,12 +19,12 @@ const Container = styled.div`
 `;
 
 const OverflowMenu = styled(BaseOverflowMenu)`
-  color: var(--cds-link-primary);
-  &:hover {
-    color: var(--cds-link-primary);
-  }
   width: unset;
   padding: 0 var(--cds-spacing-04);
+
+  svg {
+    fill: var(--cds-link-primary) !important; // Carbon styles are wrong
+  }
 `;
 
 const ButtonStack = styled(Stack)`

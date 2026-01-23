@@ -42,11 +42,7 @@ const FilterMultiselect: React.FC<FilterMultiselectProps> = ({
             useTitleInItem={false}
             titleText={titleText}
             onChange={({selectedItems}) => {
-              if (selectedItems.length === 0) {
-                input.onChange(undefined);
-              } else {
-                input.onChange(selectedItems);
-              }
+              input.onChange(selectedItems?.length ? selectedItems : undefined);
             }}
             size="sm"
           />

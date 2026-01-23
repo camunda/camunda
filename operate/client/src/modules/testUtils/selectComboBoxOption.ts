@@ -13,17 +13,13 @@ const selectComboBoxOption = async ({
   user,
   fieldName,
   option,
-  listBoxLabel,
 }: {
   user: UserEvent;
   fieldName: string;
   option: string;
-  listBoxLabel: string;
 }) => {
   await user.click(screen.getByRole('combobox', {name: fieldName}));
-  await user.selectOptions(screen.getByRole('listbox', {name: listBoxLabel}), [
-    screen.getByRole('option', {name: option}),
-  ]);
+  await user.click(screen.getByRole('option', {name: option}));
 };
 
 type SelectProps = {user: UserEvent; option: string};
@@ -33,22 +29,18 @@ const selectProcess = ({user, option}: SelectProps) => {
     user,
     option,
     fieldName: 'Name',
-    listBoxLabel: 'Select a Process',
   });
 };
 
 const selectProcessVersion = async ({user, option}: SelectProps) => {
-  await user.click(screen.getByLabelText('Version', {selector: 'button'}));
-  await user.selectOptions(
-    within(screen.getByLabelText('Select a Process Version')).getByRole(
-      'listbox',
-    ),
-    [screen.getByRole('option', {name: option})],
+  await user.click(
+    screen.getByRole('combobox', {name: 'Select a Process Version'}),
   );
+  await user.click(screen.getByRole('option', {name: option}));
 };
 
 const selectTenant = async ({user, option}: SelectProps) => {
-  await user.click(screen.getByRole('combobox', {name: 'Tenant'}));
+  await user.click(screen.getByRole('combobox', {name: 'Select a tenant'}));
   await user.click(screen.getByRole('option', {name: option}));
 };
 
@@ -57,7 +49,6 @@ const selectFlowNode = ({user, option}: SelectProps) => {
     user,
     option,
     fieldName: 'Flow Node',
-    listBoxLabel: 'Select a Flow Node',
   });
 };
 
@@ -66,18 +57,12 @@ const selectDecision = ({user, option}: SelectProps) => {
     user,
     option,
     fieldName: 'Name',
-    listBoxLabel: 'Select a Decision',
   });
 };
 
 const selectDecisionVersion = async ({user, option}: SelectProps) => {
   await user.click(screen.getByLabelText('Version', {selector: 'button'}));
-  await user.selectOptions(
-    within(screen.getByLabelText('Select a Decision Version')).getByRole(
-      'listbox',
-    ),
-    [screen.getByRole('option', {name: option})],
-  );
+  await user.click(screen.getByRole('option', {name: option}));
 };
 
 const clearComboBox = async ({
@@ -87,7 +72,9 @@ const clearComboBox = async ({
   user: UserEvent;
   fieldName: string;
 }) => {
-  const parentElement = screen.getByLabelText(fieldName).parentElement;
+  const parentElement = screen.getByRole('combobox', {
+    name: fieldName,
+  }).parentElement;
 
   await waitFor(() => expect(parentElement).toBeInTheDocument());
 

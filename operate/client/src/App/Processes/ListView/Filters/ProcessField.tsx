@@ -40,14 +40,16 @@ const ProcessField: React.FC = observer(() => {
           aria-label="Select a Process"
           placeholder="Search by Process Name"
           onChange={({selectedItem}) => {
-            const matchingProcess = definitions.find(
-              (d) => d.identifier === selectedItem?.id,
-            );
-            input.onChange(selectedItem?.id);
-            form.change('version', matchingProcess?.version ?? '');
-            form.change('flowNodeId', undefined);
-            if (isMultiTenancyEnabled && matchingProcess) {
-              form.change('tenant', matchingProcess.tenantId);
+            if (selectedItem?.id !== input.value) {
+              const matchingProcess = definitions.find(
+                (d) => d.identifier === selectedItem?.id,
+              );
+              input.onChange(selectedItem?.id);
+              form.change('version', matchingProcess?.version ?? '');
+              form.change('flowNodeId', undefined);
+              if (isMultiTenancyEnabled && matchingProcess) {
+                form.change('tenant', matchingProcess.tenantId);
+              }
             }
           }}
           items={definitions.map((definition) => {

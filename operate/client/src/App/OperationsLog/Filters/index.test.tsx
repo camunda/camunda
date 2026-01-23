@@ -82,9 +82,9 @@ describe('OperationsLog Filters', () => {
       wrapper: getWrapper(),
     });
 
-    expect(screen.getByRole('combobox', {name: 'Tenant'})).toHaveTextContent(
-      'Select a tenant',
-    );
+    expect(
+      screen.getByRole('combobox', {name: /Select a tenant/i}),
+    ).toHaveTextContent('Select a tenant');
   });
 
   it('should not render tenant field when multi-tenancy is disabled', () => {
@@ -197,10 +197,10 @@ describe('OperationsLog Filters', () => {
       expect(screen.getByRole('combobox', {name: 'Name'})).toHaveValue(
         'Process 1',
       );
-      expect(screen.getByRole('combobox', {name: 'Version'})).toHaveAttribute(
-        'title',
-        '1',
-      );
+
+      expect(
+        screen.getByRole('combobox', {name: 'Select a Process Version'}),
+      ).toHaveAttribute('title', '1');
     });
   });
 });

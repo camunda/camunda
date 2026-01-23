@@ -13,6 +13,7 @@ import {processesStore} from 'modules/stores/processes/processes.migration';
 import {Stack} from '@carbon/react';
 import {ComboBox} from 'modules/components/ComboBox';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
+import {useMemo} from 'react';
 
 const TargetProcessField: React.FC = observer(() => {
   const {
@@ -20,6 +21,15 @@ const TargetProcessField: React.FC = observer(() => {
     processes,
     migrationState: {selectedTargetProcess},
   } = processesStore;
+
+  const items = useMemo(() => {
+    return processes.map(({id, label}) => {
+      return {
+        label,
+        id,
+      };
+    });
+  }, [processes]);
 
   return (
     <Stack orientation="horizontal" gap={5}>
@@ -29,12 +39,7 @@ const TargetProcessField: React.FC = observer(() => {
         title="Target"
         id="targetProcess"
         placeholder="Search by process name"
-        items={processes.map(({id, label}) => {
-          return {
-            label,
-            id,
-          };
-        })}
+        items={items}
         onChange={({selectedItem}) => {
           processInstanceMigrationStore.resetElementMapping();
 

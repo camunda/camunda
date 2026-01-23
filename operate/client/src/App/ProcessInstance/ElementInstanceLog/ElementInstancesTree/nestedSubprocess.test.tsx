@@ -113,16 +113,18 @@ describe('ElementInstancesTree - Nested Subprocesses', () => {
     expect(await screen.findByText('Sub Process 1')).toBeInTheDocument();
 
     await user.type(
-      screen.getByLabelText('Sub Process 1', {
-        selector: "[aria-expanded='false']",
+      screen.getByRole('treeitem', {
+        name: /sub process 1/i,
+        expanded: false,
       }),
       '{arrowright}',
     );
     expect(await screen.findByText('Sub Process 2')).toBeInTheDocument();
 
     await user.type(
-      screen.getByLabelText('Sub Process 2', {
-        selector: "[aria-expanded='false']",
+      screen.getByRole('treeitem', {
+        name: /sub process 2/i,
+        expanded: false,
       }),
       '{arrowright}',
     );
@@ -178,16 +180,18 @@ describe('ElementInstancesTree - Nested Subprocesses', () => {
     expect(await screen.findByText('Sub Process 1')).toBeInTheDocument();
 
     await user.type(
-      screen.getByLabelText('Sub Process 1', {
-        selector: "[aria-expanded='false']",
+      screen.getByRole('treeitem', {
+        name: /sub process 1/i,
+        expanded: false,
       }),
       '{arrowright}',
     );
     expect(await screen.findByText('Sub Process 2')).toBeInTheDocument();
 
     await user.type(
-      screen.getByLabelText('Sub Process 2', {
-        selector: "[aria-expanded='false']",
+      screen.getByRole('treeitem', {
+        name: /sub process 2/i,
+        expanded: false,
       }),
       '{arrowright}',
     );

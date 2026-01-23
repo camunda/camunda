@@ -42,11 +42,11 @@ type HeaderColumn = {
   isDisabled?: boolean;
 } & DataTableHeader;
 
-type Props = {
+interface Props<_ extends Record<string, unknown>, ColTypes extends unknown[]> {
   state: 'skeleton' | 'loading' | 'error' | 'empty' | 'content';
   selectionType?: 'checkbox' | 'row' | 'none';
-  headerColumns: HeaderColumn[];
-  rows: DataTableRow[];
+  headerColumns: (HeaderColumn & {sortKey?: string})[];
+  rows: Omit<DataTableRow<ColTypes>, 'cells'>[];
   emptyMessage?: {message: string; additionalInfo?: string};
   onSelectAll?: () => void;
   onSelect?: (rowId: string) => void;
@@ -59,12 +59,18 @@ type Props = {
   batchOperationId?: string;
   size?: React.ComponentProps<typeof Table>['size'];
   stickyHeader?: boolean;
-} & Pick<
-  React.ComponentProps<typeof InfiniteScroller>,
-  'onVerticalScrollStartReach' | 'onVerticalScrollEndReach'
->;
+  onVerticalScrollStartReach?: React.ComponentProps<
+    typeof InfiniteScroller
+  >['onVerticalScrollStartReach'];
+  onVerticalScrollEndReach?: React.ComponentProps<
+    typeof InfiniteScroller
+  >['onVerticalScrollEndReach'];
+}
 
-const SortableTable: React.FC<Props> = ({
+const SortableTable = <
+  RowType extends Record<string, unknown>,
+  ColTypes extends React.ReactNode[],
+>({
   size = 'sm',
   state,
   selectionType = 'none',
@@ -82,7 +88,7 @@ const SortableTable: React.FC<Props> = ({
   columnsWithNoContentPadding,
   batchOperationId,
   stickyHeader = false,
-}) => {
+}: Props<RowType, ColTypes>) => {
   let scrollableContentRef = useRef<HTMLDivElement | null>(null);
 
   if (['empty', 'error'].includes(state)) {
@@ -107,7 +113,7 @@ const SortableTable: React.FC<Props> = ({
         showHeader={false}
         showToolbar={false}
         headers={headerColumns.map(({header}) => ({
-          header: header.toString(),
+          header,
         }))}
       />
     );
@@ -115,7 +121,7 @@ const SortableTable: React.FC<Props> = ({
 
   return (
     <Container ref={scrollableContentRef} $isScrollable={state === 'content'}>
-      <DataTable
+      <DataTable<RowType, ColTypes>
         rows={rows}
         headers={headerColumns}
         size={size}
@@ -146,7 +152,7 @@ const SortableTable: React.FC<Props> = ({
                       indeterminate={checkIsIndeterminate?.() ?? false}
                     />
                   )}
-                  {headers.map((header) => {
+                  {headers.map((header, index) => {
                     const {key, ...props} = getHeaderProps({
                       header,
                       isSortable: state === 'content',
@@ -157,9 +163,9 @@ const SortableTable: React.FC<Props> = ({
                         {...props}
                         key={key}
                         label={header.header}
-                        sortKey={header.sortKey ?? header.key}
-                        isDefault={header.isDefault}
-                        isDisabled={header.isDisabled}
+                        sortKey={headerColumns[index].sortKey ?? header.key}
+                        isDefault={headerColumns[index].isDefault}
+                        isDisabled={headerColumns[index].isDisabled}
                       />
                     );
                   })}

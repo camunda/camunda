@@ -186,6 +186,8 @@ const Toolbar: React.FC<Props> = observer(({selectedInstancesCount}) => {
                 return `${selectedInstancesCount} items selected`;
               case 'carbon.table.batch.item.selected':
                 return `${selectedInstancesCount} item selected`;
+              case 'carbon.table.batch.selectAll':
+                return 'All items selected';
             }
           }}
         >

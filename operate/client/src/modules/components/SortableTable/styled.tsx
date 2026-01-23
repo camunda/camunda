@@ -38,6 +38,7 @@ const Container = styled.div<ContainerProps>`
 
 type TableExpandRowProps = {
   $isClickable?: boolean;
+  onClick?: React.MouseEventHandler<HTMLTableRowElement>;
 };
 
 const TableExpandRow = styled(BaseTableExpandRow)<TableExpandRowProps>`
