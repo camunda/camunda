@@ -145,7 +145,16 @@ public final class MessageEventProcessors {
                 subscriptionCommandSender,
                 authCheckBehavior))
         .withListener(
-            new MessageObserver(
+            new MessageTimeToLiveCheckScheduler(
+                scheduledTaskStateFactory,
+                scheduledTaskStateFactory.get().getPendingMessageSubscriptionState(),
+                subscriptionCommandSender,
+                config.getMessagesTtlCheckerInterval(),
+                config.getMessagesTtlCheckerBatchLimit(),
+                featureFlags.enableMessageTTLCheckerAsync(),
+                clock))
+        .withListener(
+            new PendingMessageSubscriptionCheckScheduler(
                 scheduledTaskStateFactory,
                 scheduledTaskStateFactory.get().getPendingMessageSubscriptionState(),
                 subscriptionCommandSender,

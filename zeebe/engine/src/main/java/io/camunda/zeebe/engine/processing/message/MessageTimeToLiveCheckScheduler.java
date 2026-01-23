@@ -7,16 +7,22 @@
  */
 package io.camunda.zeebe.engine.processing.message;
 
+import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.engine.state.immutable.MessageState.Index;
+import io.camunda.zeebe.engine.state.immutable.PendingMessageSubscriptionState;
+import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageBatchRecord;
 import io.camunda.zeebe.protocol.record.intent.MessageBatchIntent;
+import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
+import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
 import io.camunda.zeebe.stream.api.scheduling.Task;
 import io.camunda.zeebe.stream.api.scheduling.TaskResult;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
 import java.time.Duration;
 import java.time.InstantSource;
+import java.util.function.Supplier;
 import org.agrona.collections.MutableInteger;
 
 /**
@@ -31,7 +37,10 @@ import org.agrona.collections.MutableInteger;
  * it left off the last time. Otherwise, it starts with the first expired message deadline it can
  * find.
  */
-public final class MessageTimeToLiveCheckScheduler implements Task {
+public final class MessageTimeToLiveCheckScheduler implements Task, StreamProcessorLifecycleAware {
+
+  public static final Duration SUBSCRIPTION_TIMEOUT = Duration.ofSeconds(10);
+  public static final Duration SUBSCRIPTION_CHECK_INTERVAL = Duration.ofSeconds(30);
 
   /** This determines the duration that the TTL checker is idle after it completes an execution. */
   private final Duration executionInterval;
@@ -67,6 +76,17 @@ public final class MessageTimeToLiveCheckScheduler implements Task {
     this.scheduleService = scheduleService;
     this.clock = clock;
     lastIndex = null;
+  }
+
+  public MessageTimeToLiveCheckScheduler(
+      final Supplier<ScheduledTaskState> scheduledTaskStateFactory,
+      final PendingMessageSubscriptionState pendingState,
+      final SubscriptionCommandSender subscriptionCommandSender,
+      final Duration messagesTtlCheckerInterval,
+      final int messagesTtlCheckerBatchLimit,
+      final boolean enableMessageTtlCheckerAsync,
+      final InstantSource clock) {
+    this(messagesTtlCheckerInterval, messagesTtlCheckerBatchLimit, enableMessageTtlCheckerAsync, null, scheduledTaskStateFactory.get().getMessageState(), clock);
   }
 
   @Override
@@ -117,5 +137,43 @@ public final class MessageTimeToLiveCheckScheduler implements Task {
     } else {
       scheduleService.runAt(timestamp, this);
     }
+  }
+
+  @Override
+  public void onRecovered(final ReadonlyStreamProcessorContext context) {
+    scheduleMessageTtlChecker(context);
+    schedulePendingMessageSubscriptionChecker(context);
+  }
+
+  private void scheduleMessageTtlChecker(final ReadonlyStreamProcessorContext context) {
+    final var scheduleService = context.getScheduleService();
+    final var timestamp = clock.millis() + executionInterval.toMillis();
+    final var timeToLiveChecker =
+        new MessageTimeToLiveCheckScheduler(
+            executionInterval,
+            batchLimit,
+            enableMessageTtlCheckerAsync,
+            scheduleService,
+            messageState,
+            context.getClock());
+    if (enableMessageTtlCheckerAsync) {
+      scheduleService.runAtAsync(timestamp, timeToLiveChecker);
+    } else {
+      scheduleService.runAt(timestamp, timeToLiveChecker);
+    }
+  }
+
+  private void schedulePendingMessageSubscriptionChecker(
+      final ReadonlyStreamProcessorContext context) {
+    /* NOT APPLICABLE HERE
+    final var scheduleService = context.getScheduleService();
+    final var pendingSubscriptionChecker =
+        new PendingMessageSubscriptionCheckScheduler(
+            subscriptionCommandSender,
+            pendingState,
+            SUBSCRIPTION_TIMEOUT.toMillis(),
+            context.getClock());
+    scheduleService.runAtFixedRate(SUBSCRIPTION_CHECK_INTERVAL, pendingSubscriptionChecker);
+    */
   }
 }

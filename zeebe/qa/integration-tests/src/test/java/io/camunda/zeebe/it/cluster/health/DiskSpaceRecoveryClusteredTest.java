@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
-import io.camunda.zeebe.engine.processing.message.MessageObserver;
+import io.camunda.zeebe.engine.processing.message.PendingMessageSubscriptionCheckScheduler;
 import io.camunda.zeebe.it.cluster.clustering.ClusteringRule;
 import io.camunda.zeebe.it.util.GrpcClientRule;
 import io.camunda.zeebe.it.util.ZeebeAssertHelper;
@@ -120,7 +120,8 @@ public class DiskSpaceRecoveryClusteredTest {
 
     waitUntilDiskSpaceAvailable(failingBroker);
 
-    final var timeout = MessageObserver.SUBSCRIPTION_CHECK_INTERVAL.multipliedBy(2);
+    final var timeout =
+        PendingMessageSubscriptionCheckScheduler.SUBSCRIPTION_CHECK_INTERVAL.multipliedBy(2);
     clusteringRule.getClock().addTime(timeout);
 
     // then
