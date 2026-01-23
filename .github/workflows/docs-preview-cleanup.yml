@@ -35,6 +35,8 @@ jobs:
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
 
       - name: Cleanup orphaned documentation previews
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           # Fetch gh-pages branch
           git fetch origin gh-pages:gh-pages 2>/dev/null || {
@@ -92,6 +94,12 @@ jobs:
           file_pattern: "pr-preview/"
           commit_user_name: "github-actions[bot]"
           commit_user_email: "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Checkout main branch for observe-build-status
+        if: always()
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          ref: main
 
       - name: Observe build status
         if: always()
