@@ -101,7 +101,7 @@ Commands:
 
 Options:
   --config <path>           Use a custom Zeebe application.yaml
-  --oracle-driver <path>    Copy an Oracle JDBC driver into the Camunda lib directory before startup
+  --extra-driver <path>     Copy a JDBC driver into the Camunda lib directory before startup (repeat per jar)
   --keystore <path>         Enable HTTPS with a TLS certificate (JKS format)
   --keystorePassword <pw>  Password for the provided keystore
   --port <number>           Set the main Camunda port (default: 8080)
@@ -124,6 +124,17 @@ Docs & Support:
 func usage(exitcode int) {
 	fmt.Printf(helpTemplate, os.Args[0])
 	os.Exit(exitcode)
+}
+
+type stringSliceFlag []string
+
+func (s *stringSliceFlag) String() string {
+	return strings.Join(*s, ",")
+}
+
+func (s *stringSliceFlag) Set(value string) error {
+	*s = append(*s, value)
+	return nil
 }
 
 func getBaseCommand() (string, error) {
@@ -219,7 +230,7 @@ func flagPassed(fs *flag.FlagSet, name string) bool {
 func createStartFlagSet(settings *types.C8RunSettings) *flag.FlagSet {
 	startFlagSet := flag.NewFlagSet("start", flag.ExitOnError)
 	startFlagSet.StringVar(&settings.Config, "config", "", "Applies the specified configuration file.")
-	startFlagSet.StringVar(&settings.OracleDriverPath, "oracle-driver", "", "Path to an Oracle JDBC driver jar that should be copied into the Camunda lib directory.")
+	startFlagSet.Var((*stringSliceFlag)(&settings.ExtraDrivers), "extra-driver", "Path to a JDBC driver jar to copy into the Camunda lib directory (repeatable).")
 	startFlagSet.BoolVar(&settings.Detached, "detached", false, "Starts Camunda Run as a detached process")
 	startFlagSet.IntVar(&settings.Port, "port", 8080, "Port to run Camunda on")
 	startFlagSet.StringVar(&settings.Keystore, "keystore", "", "Provide a JKS filepath to enable TLS")
@@ -307,14 +318,16 @@ func initialize(baseCommand string, baseDir string) *types.State {
 	applySecondaryStorageDefaults(baseDir, &settings)
 
 	if strings.EqualFold(settings.SecondaryStorageType, "rdbms") && settings.ResolvedConfigPath != "" {
+		var vendor string
 		url, err := detectRdbmsURLFromConfig(settings.ResolvedConfigPath)
 		if err != nil {
 			log.Debug().Err(err).Msg("Unable to detect RDBMS URL from configuration")
-		} else if rdbmsVendorFromURL(url) == "oracle" {
-			if err := ensureOracleDriverAvailable(baseDir, camundaVersion, &settings); err != nil {
-				fmt.Println(err.Error())
-				os.Exit(1)
-			}
+		} else {
+			vendor = rdbmsVendorFromURL(url)
+		}
+		if err := ensureDriversAvailable(baseDir, camundaVersion, vendor, settings.ExtraDrivers); err != nil {
+			fmt.Println(err.Error())
+			os.Exit(1)
 		}
 	}
 
@@ -534,9 +547,17 @@ func rdbmsVendorFromURL(url string) string {
 	return ""
 }
 
-func ensureOracleDriverAvailable(baseDir, camundaVersion string, settings *types.C8RunSettings) error {
+var externalDriverPatterns = map[string][]string{
+	"oracle": {"ojdbc*.jar"},
+	"mysql":  {"mysql-connector-java-*.jar", "mysql-connector-j-*.jar"},
+}
+
+func ensureDriversAvailable(baseDir, camundaVersion, vendor string, extraDrivers []string) error {
 	if camundaVersion == "" {
-		return fmt.Errorf("CAMUNDA_VERSION is not set; unable to determine lib directory for Oracle driver")
+		if len(extraDrivers) == 0 && !needsExternalDriver(vendor) {
+			return nil
+		}
+		return fmt.Errorf("CAMUNDA_VERSION is not set; unable to determine lib directory for JDBC drivers")
 	}
 
 	libDir := filepath.Join(baseDir, fmt.Sprintf("camunda-zeebe-%s", camundaVersion), "lib")
@@ -544,21 +565,41 @@ func ensureOracleDriverAvailable(baseDir, camundaVersion string, settings *types
 		return fmt.Errorf("unable to locate Camunda lib directory (%s): %w", libDir, err)
 	}
 
-	if settings.OracleDriverPath != "" {
-		dest := filepath.Join(libDir, filepath.Base(settings.OracleDriverPath))
-		if err := copyFile(settings.OracleDriverPath, dest); err != nil {
-			return fmt.Errorf("failed to copy Oracle driver: %w", err)
+	for _, src := range extraDrivers {
+		dest := filepath.Join(libDir, filepath.Base(src))
+		if err := copyFile(src, dest); err != nil {
+			return fmt.Errorf("failed to copy JDBC driver %s: %w", src, err)
 		}
-		log.Info().Str("source", settings.OracleDriverPath).Str("destination", dest).Msg("Oracle JDBC driver copied")
-		return nil
+		log.Info().Str("source", src).Str("destination", dest).Msg("Copied extra JDBC driver")
 	}
 
-	matches, _ := filepath.Glob(filepath.Join(libDir, "ojdbc*.jar"))
-	if len(matches) > 0 {
-		return nil
+	if needsExternalDriver(vendor) && !driverPresent(libDir, vendor) {
+		return fmt.Errorf("JDBC driver for %s not found in %s. Download it and re-run with --extra-driver <path-to-jar>", vendor, libDir)
 	}
 
-	return fmt.Errorf("Oracle JDBC driver not found in %s. Download it from Oracle and re-run with --oracle-driver <path>", libDir)
+	return nil
+}
+
+func needsExternalDriver(vendor string) bool {
+	_, ok := externalDriverPatterns[vendor]
+	return ok
+}
+
+func driverPresent(libDir, vendor string) bool {
+	patterns, ok := externalDriverPatterns[vendor]
+	if !ok {
+		return true
+	}
+	for _, pattern := range patterns {
+		matches, err := filepath.Glob(filepath.Join(libDir, pattern))
+		if err != nil {
+			continue
+		}
+		if len(matches) > 0 {
+			return true
+		}
+	}
+	return false
 }
 
 func copyFile(src, dst string) error {
