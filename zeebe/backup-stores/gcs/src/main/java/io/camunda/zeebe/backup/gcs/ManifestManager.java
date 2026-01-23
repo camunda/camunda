@@ -31,6 +31,7 @@ import io.camunda.zeebe.backup.common.Manifest.InProgressManifest;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Collection;
+import java.util.Map;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.function.Predicate;
@@ -203,11 +204,10 @@ public final class ManifestManager {
     client.delete(manifestBlobInfo(id).getBlobId());
   }
 
-  public Collection<BlobId> manifestUrls(final Collection<BackupIdentifier> ids) {
+  public Map<BackupIdentifier, BlobId> manifestUrls(final Collection<BackupIdentifier> ids) {
     return ids.stream()
-        .map(this::manifestBlobInfo)
-        .map(BlobInfo::getBlobId)
-        .collect(Collectors.toSet());
+        .parallel()
+        .collect(Collectors.toMap(id -> id, id -> manifestBlobInfo(id).getBlobId()));
   }
 
   private BlobInfo manifestBlobInfo(final BackupIdentifier id) {
