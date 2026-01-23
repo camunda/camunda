@@ -13,6 +13,7 @@ import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.opensearch.ExtendedOpenSearchClient;
 import io.camunda.operate.property.OpensearchProperties;
 import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.property.ProxyProperties;
 import io.camunda.operate.property.SslProperties;
 import io.camunda.search.connect.plugin.PluginRepository;
 import java.io.BufferedInputStream;
@@ -211,23 +212,39 @@ public class OpensearchConnector {
     return new HttpHost[] {getHttpHost(osConfig)};
   }
 
-  private HttpAsyncClientBuilder setupAuthentication(
-      final HttpAsyncClientBuilder builder, final OpensearchProperties osConfig) {
+  private void setupAuthentication(
+      final BasicCredentialsProvider credentialsProvider, final OpensearchProperties osConfig) {
     if (!StringUtils.hasText(osConfig.getUsername())
         || !StringUtils.hasText(osConfig.getPassword())) {
       LOGGER.warn(
           "Username and/or password for are empty. Basic authentication for OpenSearch is not used.");
-      return builder;
+      return;
     }
 
-    final BasicCredentialsProvider credentialsProvider = new BasicCredentialsProvider();
     credentialsProvider.setCredentials(
         new AuthScope(null, -1),
         new UsernamePasswordCredentials(
             osConfig.getUsername(), osConfig.getPassword().toCharArray()));
+  }
 
-    builder.setDefaultCredentialsProvider(credentialsProvider);
-    return builder;
+  private void setupProxyAuthentication(
+      final BasicCredentialsProvider credentialsProvider, final ProxyProperties proxyConfig) {
+    final String username = proxyConfig.getUsername();
+    final String password = proxyConfig.getPassword();
+
+    if (username == null || password == null || username.isEmpty() || password.isEmpty()) {
+      return;
+    }
+
+    final HttpHost proxyHost =
+        new HttpHost(
+            proxyConfig.isSslEnabled() ? "https" : "http",
+            proxyConfig.getHost(),
+            proxyConfig.getPort());
+    credentialsProvider.setCredentials(
+        new AuthScope(proxyHost),
+        new UsernamePasswordCredentials(
+            proxyConfig.getUsername(), proxyConfig.getPassword().toCharArray()));
   }
 
   private void setupSSLContext(
@@ -314,7 +331,9 @@ public class OpensearchConnector {
       final HttpAsyncClientBuilder httpAsyncClientBuilder,
       final OpensearchProperties osConfig,
       final HttpRequestInterceptor... requestInterceptors) {
-    setupAuthentication(httpAsyncClientBuilder, osConfig);
+    final BasicCredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+
+    setupAuthentication(credentialsProvider, osConfig);
 
     LOGGER.trace("Attempt to load interceptor plugins");
     for (final HttpRequestInterceptor interceptor : requestInterceptors) {
@@ -324,7 +343,29 @@ public class OpensearchConnector {
     if (osConfig.getSsl() != null) {
       setupSSLContext(httpAsyncClientBuilder, osConfig.getSsl());
     }
+
+    final ProxyProperties proxyConfig = osConfig.getProxy();
+    if (proxyConfig != null && proxyConfig.isEnabled()) {
+      setupProxy(httpAsyncClientBuilder, proxyConfig);
+      setupProxyAuthentication(credentialsProvider, proxyConfig);
+    }
+
+    httpAsyncClientBuilder.setDefaultCredentialsProvider(credentialsProvider);
+
     return httpAsyncClientBuilder;
+  }
+
+  private void setupProxy(
+      final HttpAsyncClientBuilder httpAsyncClientBuilder, final ProxyProperties proxyConfig) {
+    httpAsyncClientBuilder.setProxy(
+        new HttpHost(
+            proxyConfig.isSslEnabled() ? "https" : "http",
+            proxyConfig.getHost(),
+            proxyConfig.getPort()));
+    LOGGER.debug(
+        "Using proxy {}:{} for OpenSearch connection",
+        proxyConfig.getHost(),
+        proxyConfig.getPort());
   }
 
   private RequestConfig.Builder setTimeouts(

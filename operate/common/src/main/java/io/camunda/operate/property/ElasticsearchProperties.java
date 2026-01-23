@@ -9,6 +9,7 @@ package io.camunda.operate.property;
 
 import static io.camunda.operate.util.ConversionUtils.stringIsEmpty;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.operate.connect.OperateDateTimeFormatter;
 import io.camunda.search.connect.plugin.PluginConfiguration;
 import java.net.URI;
@@ -50,6 +51,8 @@ public class ElasticsearchProperties {
   private int bulkRequestMaxSizeInBytes = BULK_REQUEST_MAX_SIZE_IN_BYTES_DEFAULT;
 
   @NestedConfigurationProperty private SslProperties ssl;
+
+  @NestedConfigurationProperty private ProxyProperties proxy;
 
   private List<PluginConfiguration> interceptorPlugins;
 
@@ -189,6 +192,18 @@ public class ElasticsearchProperties {
 
   public void setSsl(final SslProperties ssl) {
     this.ssl = ssl;
+  }
+
+  @JsonIgnore
+  public ProxyProperties getProxy() {
+    if (proxy != null) {
+      proxy.validate();
+    }
+    return proxy;
+  }
+
+  public void setProxy(final ProxyProperties proxy) {
+    this.proxy = proxy;
   }
 
   public long getBulkRequestMaxSizeInBytes() {
