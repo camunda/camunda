@@ -175,11 +175,14 @@ jobs:
           HOTFIX_VERSION="${{ matrix.version }}-${{ needs.validate-inputs.outputs.support-ticket-id }}.${{ steps.get-sha.outputs.short-sha }}"
           echo "📋 Hotfix version: $HOTFIX_VERSION"
 
-          # Set version in the BOM only - parent and root inherit from BOM through Maven inheritance
-          # Maven inheritance hierarchy: BOM -> Parent -> Root
-          # The parent/pom.xml and pom.xml inherit their versions and cannot be set directly
-          echo "🔧 Updating version in BOM (parent and root will inherit automatically)..."
-          ./mvnw versions:set -DnewVersion="$HOTFIX_VERSION" -DgenerateBackupPoms=false -f bom/pom.xml
+          # Handle different version inheritance structures
+          if [[ "${{ matrix.component }}" == "optimize" && -f "optimize/pom.xml" ]] && ! grep -q "zeebe-parent" optimize/pom.xml; then
+            echo "🔧 Detected standalone optimize branch - updating optimize parent version..."
+            ./mvnw versions:set -DnewVersion="$HOTFIX_VERSION" -DgenerateBackupPoms=false -f optimize/pom.xml
+          else
+            echo "🔧 Updating version in BOM (parent and root will inherit automatically)..."
+            ./mvnw versions:set -DnewVersion="$HOTFIX_VERSION" -DgenerateBackupPoms=false -f bom/pom.xml
+          fi
 
           echo "✅ Project version updated to $HOTFIX_VERSION"
           echo "🔍 Verifying version change..."
