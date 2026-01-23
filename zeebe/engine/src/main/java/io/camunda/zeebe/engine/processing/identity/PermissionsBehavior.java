@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -24,8 +25,10 @@ import java.util.Set;
 
 public class PermissionsBehavior {
 
-  public static final String PERMISSIONS_ALREADY_EXISTS_MESSAGE =
+  public static final String PERMISSIONS_FOR_RESOURCE_IDENTIFIER_ALREADY_EXISTS_MESSAGE =
       "Expected to create authorization for owner '%s' for resource identifier '%s', but an authorization for this resource identifier already exists.";
+  public static final String PERMISSIONS_FOR_RESOURCE_PROPERTY_NAME_ALREADY_EXISTS_MESSAGE =
+      "Expected to create authorization for owner '%s' for resource property name '%s', but an authorization for this resource property name already exists.";
   public static final String AUTHORIZATION_DOES_NOT_EXIST_ERROR_MESSAGE_UPDATE =
       "Expected to update authorization with key %s, but an authorization with this key does not exist";
   public static final String AUTHORIZATION_DOES_NOT_EXIST_ERROR_MESSAGE_DELETION =
@@ -73,20 +76,31 @@ public class PermissionsBehavior {
   public Either<Rejection, AuthorizationRecord> permissionsAlreadyExist(
       final AuthorizationRecord record) {
     for (final PermissionType permission : record.getPermissionTypes()) {
-      final var addedAuthorizationScope = AuthorizationScope.of(record.getResourceId());
+      final var addedAuthorizationScope = createAuthorizationScope(record);
       final var currentAuthorizationScopes =
           authCheckBehavior.getDirectAuthorizedAuthorizationScopes(
               record.getOwnerType(), record.getOwnerId(), record.getResourceType(), permission);
 
       if (currentAuthorizationScopes.contains(addedAuthorizationScope)) {
-        return Either.left(
-            new Rejection(
-                RejectionType.ALREADY_EXISTS,
-                PERMISSIONS_ALREADY_EXISTS_MESSAGE.formatted(
-                    record.getOwnerId(), addedAuthorizationScope.getResourceId())));
+        final var rejectionReason = createDuplicatePermissionRejectionReason(record);
+        return Either.left(new Rejection(RejectionType.ALREADY_EXISTS, rejectionReason));
       }
     }
     return Either.right(record);
+  }
+
+  private AuthorizationScope createAuthorizationScope(final AuthorizationRecord record) {
+    return new AuthorizationScope(
+        record.getResourceMatcher(), record.getResourceId(), record.getResourcePropertyName());
+  }
+
+  private String createDuplicatePermissionRejectionReason(final AuthorizationRecord record) {
+    final var ownerId = record.getOwnerId();
+    return record.getResourceMatcher() == AuthorizationResourceMatcher.PROPERTY
+        ? PERMISSIONS_FOR_RESOURCE_PROPERTY_NAME_ALREADY_EXISTS_MESSAGE.formatted(
+            ownerId, record.getResourcePropertyName())
+        : PERMISSIONS_FOR_RESOURCE_IDENTIFIER_ALREADY_EXISTS_MESSAGE.formatted(
+            ownerId, record.getResourceId());
   }
 
   public Either<Rejection, AuthorizationRecord> hasValidPermissionTypes(
