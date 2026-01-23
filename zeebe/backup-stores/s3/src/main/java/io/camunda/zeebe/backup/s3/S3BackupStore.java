@@ -462,6 +462,7 @@ public final class S3BackupStore implements BackupStore {
             (legacyManifests, manifests) -> {
               final var combined = new HashSet<>(legacyManifests);
               combined.addAll(manifests);
+              combined.removeIf(m -> !wildcard.matches(m.id()));
               return combined;
             });
   }

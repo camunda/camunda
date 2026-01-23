@@ -39,6 +39,7 @@ import org.apache.commons.lang3.RandomUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 public interface ListingBackups {
 
@@ -90,12 +91,13 @@ public interface ListingBackups {
     return TestBackupProvider.minimalBackupWithId(id);
   }
 
-  @Test
-  default void shouldFilterBackupsInTimeRange() throws IOException {
+  @ParameterizedTest
+  @ValueSource(longs = {0, 12093L})
+  default void shouldFilterBackupsInTimeRange(final long offset) throws IOException {
     // given
     final var from = Instant.parse("2024-01-01T00:00:00Z");
     final var to = Instant.parse("2024-01-01T12:00:00Z");
-    final var generator = new CheckpointIdGenerator(0L);
+    final var generator = new CheckpointIdGenerator(offset);
 
     final var timestampInRange = Instant.parse("2024-01-01T06:00:00Z");
     final var timestampBeforeRange = Instant.parse("2023-12-31T23:59:59Z");

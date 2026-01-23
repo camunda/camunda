@@ -193,6 +193,7 @@ public final class ManifestManager {
                 throw new UncheckedIOException(e);
               }
             })
+        .filter(m -> wildcard.matches(m.id()))
         .toList();
   }
 
