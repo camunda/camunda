@@ -124,7 +124,7 @@ public class FilesystemBackupStoreIT implements BackupStoreTestKit {
 
   @ParameterizedTest
   @MethodSource("provideBackups")
-  void parentDirectoriesAreDeletedAfterDeletion(final Backup backup) throws IOException {
+  void parentDirectoriesAreDeletedAfterDeletion(final Backup backup) {
     // given
     getStore().save(backup).join();
 
@@ -136,10 +136,8 @@ public class FilesystemBackupStoreIT implements BackupStoreTestKit {
         backupDir.resolve("contents").resolve(String.valueOf(backup.id().partitionId()));
     final var partitionManifestsDir =
         backupDir.resolve("manifests").resolve(String.valueOf(backup.id().partitionId()));
-    assertThat(partitionContentsDir).isDirectory();
-    assertThat(Files.list(partitionContentsDir)).isEmpty();
-    assertThat(partitionManifestsDir).isDirectory();
-    assertThat(Files.list(partitionManifestsDir)).isEmpty();
+    assertThat(partitionContentsDir).isEmptyDirectory();
+    assertThat(partitionManifestsDir).isEmptyDirectory();
   }
 
   void uploadInProgressManifest(final Backup backup) {
