@@ -492,6 +492,35 @@ class UserTaskAuthorizationIT {
     return getUserTaskKeys(camundaClient, processId).findFirst().orElseThrow();
   }
 
+  @Test
+  void searchUserTaskAuditLogsShouldReturnLogsForUserWithAssigneeProperty(
+      @Authenticated(USER_WITH_USER_TASK_READ_BY_ASSIGNEE_PROPERTY)
+          final CamundaClient camundaClient) {
+    // when
+    final var result =
+        camundaClient.newUserTaskAuditLogSearchRequest(processId2TaskKey).send().join();
+
+    // then
+    assertThat(result.items()).isNotEmpty();
+  }
+
+  @Test
+  void searchUserTaskAuditLogShouldReturnForbiddenForUserWithAssigneePropertyTaskUnauthorized(
+      @Authenticated(USER_WITH_USER_TASK_READ_BY_ASSIGNEE_PROPERTY)
+          final CamundaClient camundaClient) {
+    // when
+    final ThrowingCallable executeGet =
+        () -> camundaClient.newUserTaskAuditLogSearchRequest(processId1FirstTaskKey).send().join();
+
+    // then
+    final var problemException =
+        assertThatExceptionOfType(ProblemException.class).isThrownBy(executeGet).actual();
+    assertThat(problemException.code()).isEqualTo(403);
+    assertThat(problemException.details().getDetail())
+        .isEqualTo(
+            "Unauthorized to perform any of the operations: 'READ_USER_TASK' on 'PROCESS_DEFINITION' or 'READ' on 'USER_TASK'");
+  }
+
   private static Stream<Long> getUserTaskKeys(
       final CamundaClient camundaClient, final String processId) {
     return camundaClient
