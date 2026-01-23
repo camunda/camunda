@@ -268,12 +268,10 @@ public final class FilesystemBackupStore implements BackupStore {
    *
    * @param path the initial path
    * @param limitDir the limit directory name to stop backtracking at
-   * @throws IOException
    */
-  static void backtrackDeleteEmptyParents(final Path path, final String limitDir)
-      throws IOException {
+  static void backtrackDeleteEmptyParents(final Path path, final Path limitDir) throws IOException {
     var traversePath = path;
-    while (!traversePath.endsWith(limitDir)) {
+    while (!traversePath.equals(limitDir)) {
       try (final var dirStream = Files.list(traversePath)) {
         if (dirStream.findAny().isPresent()) {
           break;
@@ -282,7 +280,7 @@ public final class FilesystemBackupStore implements BackupStore {
       Files.delete(traversePath);
       traversePath = traversePath.getParent();
     }
-    FileUtil.flushDirectory(traversePath.getParent());
+    FileUtil.flushDirectory(traversePath);
   }
 
   public static BackupStore of(final FilesystemBackupConfig storeConfig) {
