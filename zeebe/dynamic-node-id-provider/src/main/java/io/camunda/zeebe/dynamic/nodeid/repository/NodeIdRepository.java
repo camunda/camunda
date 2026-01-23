@@ -9,6 +9,7 @@ package io.camunda.zeebe.dynamic.nodeid.repository;
 
 import io.camunda.zeebe.dynamic.nodeid.Lease;
 import io.camunda.zeebe.dynamic.nodeid.NodeInstance;
+import io.camunda.zeebe.dynamic.nodeid.StoredRestoreStatus;
 import io.camunda.zeebe.dynamic.nodeid.Version;
 import java.time.Duration;
 import java.time.InstantSource;
@@ -53,6 +54,10 @@ public interface NodeIdRepository extends AutoCloseable {
    * @param lease the lease to release
    */
   void release(StoredLease.Initialized lease);
+
+  void markRestored(StoredRestoreStatus.RestoreStatus restoreStatus, String etag);
+
+  StoredRestoreStatus getRestoreStatus();
 
   /**
    * A StoredLease represents the Lease stored in a Repository such as S3. It can be

@@ -59,6 +59,8 @@ public class RestoreApp implements ApplicationRunner {
 
   private final RestoreProperties restoreConfiguration;
   private final MeterRegistry meterRegistry;
+  private final PostRestoreAction postRestoreAction;
+  private final PreRestoreAction preRestoreAction;
 
   @Autowired
   public RestoreApp(
@@ -68,11 +70,15 @@ public class RestoreApp implements ApplicationRunner {
       final WorkingDirectory workingDirectory,
       final MeterRegistry meterRegistry,
       final NodeIdProvider nodeIdProvider,
-      final DataDirectoryProvider dataDirectoryProvider) {
+      final DataDirectoryProvider dataDirectoryProvider,
+      final PostRestoreAction postRestoreAction,
+      final PreRestoreAction preRestoreAction) {
     this.configuration = configuration;
     this.backupStore = backupStore;
     this.restoreConfiguration = restoreConfiguration;
     this.meterRegistry = meterRegistry;
+    this.postRestoreAction = postRestoreAction;
+    this.preRestoreAction = preRestoreAction;
     configuration.getCluster().setNodeId(nodeIdProvider.currentNodeInstance().id());
   }
 
@@ -108,11 +114,23 @@ public class RestoreApp implements ApplicationRunner {
         "Starting to restore from backup {} with the following configuration: {}",
         backupId,
         restoreConfiguration);
+    // TODO: handle array of backup ids
+    preRestoreAction.beforeRestore(backupId[0], configuration.getCluster().getNodeId());
     new RestoreManager(configuration, backupStore, meterRegistry)
         .restore(
             backupId,
             restoreConfiguration.validateConfig(),
             restoreConfiguration.ignoreFilesInTarget());
     LOG.info("Successfully restored broker from backup {}", backupId);
+    // TODO handle arrays of backup ids
+    postRestoreAction.restored(backupId[0], configuration.getCluster().getNodeId());
+  }
+
+  public interface PreRestoreAction {
+    void beforeRestore(long backupId, int nodeId);
+  }
+
+  public interface PostRestoreAction {
+    void restored(long backupId, int nodeId) throws InterruptedException;
   }
 }

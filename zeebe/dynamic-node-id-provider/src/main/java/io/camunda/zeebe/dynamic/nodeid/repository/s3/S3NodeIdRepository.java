@@ -10,6 +10,8 @@ package io.camunda.zeebe.dynamic.nodeid.repository.s3;
 import static io.camunda.zeebe.dynamic.nodeid.Lease.OBJECT_MAPPER;
 
 import io.camunda.zeebe.dynamic.nodeid.Lease;
+import io.camunda.zeebe.dynamic.nodeid.StoredRestoreStatus;
+import io.camunda.zeebe.dynamic.nodeid.StoredRestoreStatus.RestoreStatus;
 import io.camunda.zeebe.dynamic.nodeid.repository.Metadata;
 import io.camunda.zeebe.dynamic.nodeid.repository.NodeIdRepository;
 import java.io.IOException;
@@ -124,6 +126,58 @@ public class S3NodeIdRepository implements NodeIdRepository {
       LOG.debug("Lease released gracefully: {}", lease);
     } catch (final Exception e) {
       LOG.warn("Failed to release the lease gracefully {}", lease, e);
+    }
+  }
+
+  @Override
+  public void markRestored(final RestoreStatus restoreStatus, final String etag) {
+    final PutObjectRequest.Builder putRequestBuilder =
+        PutObjectRequest.builder()
+            .bucket(config.bucketName)
+            .key("restore")
+            .contentType("application/json");
+
+    if (etag == null || etag.isEmpty()) {
+      putRequestBuilder.ifNoneMatch("*");
+    } else {
+      putRequestBuilder.ifMatch(etag);
+    }
+
+    final var putRequest = putRequestBuilder.build();
+
+    try {
+      LOG.debug("Marking restore restoreStatus as {}", restoreStatus);
+      final var response =
+          client.putObject(
+              putRequest, RequestBody.fromBytes(restoreStatus.toJsonBytes(OBJECT_MAPPER)));
+      LOG.debug("Restore restoreStatus marked successfully with ETag {}", response.eTag());
+    } catch (final Exception e) {
+      LOG.warn("Failed to mark restore restoreStatus {}", restoreStatus, e);
+      throw e;
+    }
+  }
+
+  @Override
+  public StoredRestoreStatus getRestoreStatus() {
+    final var request = GetObjectRequest.builder().bucket(config.bucketName).key("restore").build();
+    try {
+      final var response = client.getObject(request);
+      final var bytes = response.readAllBytes();
+      if (bytes.length > 0) {
+        final var restoreStatus = RestoreStatus.fromJsonBytes(OBJECT_MAPPER, bytes);
+        LOG.trace("Restore restoreStatus is {}", restoreStatus);
+        return new StoredRestoreStatus(restoreStatus, response.response().eTag());
+      }
+      return null;
+    } catch (final S3Exception e) {
+      if (e.statusCode() == 404) {
+        LOG.debug("Restore restoreStatus object not found");
+        return null;
+      }
+      LOG.warn("Failed to get restore restoreStatus", e);
+      throw e;
+    } catch (final IOException e) {
+      throw new RuntimeException(e);
     }
   }
 

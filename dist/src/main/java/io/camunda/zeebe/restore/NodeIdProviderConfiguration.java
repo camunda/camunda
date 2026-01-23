@@ -16,6 +16,7 @@ import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.zeebe.broker.system.configuration.DataCfg;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.dynamic.nodeid.RepositoryNodeIdProvider;
+import io.camunda.zeebe.dynamic.nodeid.RestoreStatusManager;
 import io.camunda.zeebe.dynamic.nodeid.fs.ConfiguredDataDirectoryProvider;
 import io.camunda.zeebe.dynamic.nodeid.fs.DataDirectoryProvider;
 import io.camunda.zeebe.dynamic.nodeid.fs.NodeIdBasedDataDirectoryProvider;
@@ -23,9 +24,12 @@ import io.camunda.zeebe.dynamic.nodeid.fs.UnInitializedVersionedNodeIdBasedDataD
 import io.camunda.zeebe.dynamic.nodeid.repository.NodeIdRepository;
 import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository;
 import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository.S3ClientConfig;
+import io.camunda.zeebe.restore.RestoreApp.PostRestoreAction;
+import io.camunda.zeebe.restore.RestoreApp.PreRestoreAction;
 import java.net.URI;
 import java.nio.file.Path;
 import java.time.Clock;
+import java.time.Duration;
 import java.util.Optional;
 import java.util.UUID;
 import org.slf4j.Logger;
@@ -70,6 +74,40 @@ public class NodeIdProviderConfiguration {
                 s3Config.getLeaseDuration(),
                 s3Config.getReadinessCheckTimeout());
         yield S3NodeIdRepository.of(clientConfig, config, Clock.systemUTC());
+      }
+    };
+  }
+
+  @Bean
+  public PreRestoreAction preRestoreAction(final Optional<NodeIdRepository> nodeIdRepository) {
+    return switch (cluster.getNodeIdProvider().getType()) {
+      case FIXED -> (ignoreId, ignore) -> {};
+      case S3 -> {
+        if (nodeIdRepository.isEmpty()) {
+          throw new IllegalStateException(
+              "PreRestoreAction configured to use S3: missing s3 node id repository");
+        }
+        final var restoreStatusManager = new RestoreStatusManager(nodeIdRepository.get());
+        yield ((backupId, nodeId) -> restoreStatusManager.initializeRestore(backupId));
+      }
+    };
+  }
+
+  @Bean
+  public PostRestoreAction postRestoreAction(final Optional<NodeIdRepository> nodeIdRepository) {
+    return switch (cluster.getNodeIdProvider().getType()) {
+      case FIXED -> (ignoreId, ignore) -> {};
+      case S3 -> {
+        if (nodeIdRepository.isEmpty()) {
+          throw new IllegalStateException(
+              "PostRestoreAction configured to use S3: missing s3 node id repository");
+        }
+        final var restoreStatusManager = new RestoreStatusManager(nodeIdRepository.get());
+        yield ((backupId, nodeId) -> {
+          restoreStatusManager.markNodeRestored(nodeId);
+
+          restoreStatusManager.waitForAllNodesRestored(cluster.getSize(), Duration.ofSeconds(10));
+        });
       }
     };
   }
