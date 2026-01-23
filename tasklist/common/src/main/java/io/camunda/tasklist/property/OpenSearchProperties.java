@@ -194,9 +194,6 @@ public class OpenSearchProperties {
   }
 
   public ProxyProperties getProxy() {
-    if (proxy != null) {
-      proxy.validate();
-    }
     return proxy;
   }
 

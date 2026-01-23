@@ -201,9 +201,6 @@ public class ElasticsearchProperties {
   }
 
   public ProxyProperties getProxy() {
-    if (proxy != null) {
-      proxy.validate();
-    }
     return proxy;
   }
 

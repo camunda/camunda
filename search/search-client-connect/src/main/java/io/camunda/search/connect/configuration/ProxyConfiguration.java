@@ -7,7 +7,6 @@
  */
 package io.camunda.search.connect.configuration;
 
-import io.camunda.search.connect.SearchClientConnectException;
 import java.util.Objects;
 
 public class ProxyConfiguration {
@@ -18,18 +17,6 @@ public class ProxyConfiguration {
   private boolean sslEnabled;
   private String username;
   private String password;
-
-  public void validate() {
-    if (enabled) {
-      if (host == null || host.isEmpty()) {
-        throw new SearchClientConnectException(
-            "Proxy host must be set and not empty if proxy is enabled");
-      }
-      if (port == null) {
-        throw new SearchClientConnectException("Proxy port must be set if proxy is enabled");
-      }
-    }
-  }
 
   public boolean isEnabled() {
     return enabled;
