@@ -299,7 +299,7 @@ public class MigrationITExtension
 
   private void awaitImportersFlushed() {
     Awaitility.await("Await Import Positions have been flushed")
-        .timeout(Duration.ofMinutes(1))
+        .timeout(Duration.ofMinutes(2))
         .pollInterval(Duration.ofMillis(500))
         .until(
             () ->

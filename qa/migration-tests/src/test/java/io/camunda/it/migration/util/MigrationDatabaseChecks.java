@@ -96,6 +96,7 @@ public class MigrationDatabaseChecks extends ElasticOpenSearchSetupHelper {
     }
     final JsonNode jsonResponse = OBJECT_MAPPER.readTree(response.body());
     final int totalDocs = jsonResponse.at("/hits/total/value").asInt();
+    LOGGER.info("Found {} import position documents for component: {}", totalDocs, component);
     return totalDocs > 0;
   }
 
