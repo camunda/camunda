@@ -27,10 +27,10 @@ import {
   createSingleIncidentProcessInstance,
   expectBatchState,
   verifyIncidentsForProcessInstance,
-  expectProcessInstanceCanBeFound
+  expectProcessInstanceCanBeFound,
 } from '@requestHelpers';
 import {sleep} from 'utils/sleep';
-import { waitForAssertion } from 'utils/waitForAssertion';
+import {waitForAssertion} from 'utils/waitForAssertion';
 
 const SEARCH_BATCH_OPERATION_ITEMS_PATH = '/batch-operation-items/search';
 
@@ -64,17 +64,25 @@ test.describe.parallel('Batch Operation Items Search API Tests', () => {
     await createSingleIncidentProcessInstance(localState, request);
     const incidentKeys = localState['incidentKeys'] as string[];
     const incidentKey = incidentKeys[0];
-    const processInstanceKeyToResolveIncident = localState.processInstanceKey as string;
+    const processInstanceKeyToResolveIncident =
+      localState.processInstanceKey as string;
     processInstanceKeys.push(processInstanceKeyToResolveIncident);
 
     await test.step('Verify that the process instance has incidents', async () => {
-      await verifyIncidentsForProcessInstance(request, processInstanceKeyToResolveIncident, 1);
+      await verifyIncidentsForProcessInstance(
+        request,
+        processInstanceKeyToResolveIncident,
+        1,
+      );
     });
 
     await sleep(10000);
 
     await test.step('Poll process instance can be found', async () => {
-      await expectProcessInstanceCanBeFound(request, processInstanceKeyToResolveIncident);
+      await expectProcessInstanceCanBeFound(
+        request,
+        processInstanceKeyToResolveIncident,
+      );
     });
 
     await test.step('Create Batch Operation to Resolve Incidents', async () => {
@@ -109,42 +117,43 @@ test.describe.parallel('Batch Operation Items Search API Tests', () => {
       await waitForAssertion({
         assertion: async () => {
           await expect(async () => {
-          const res = await request.post(
-            buildUrl(SEARCH_BATCH_OPERATION_ITEMS_PATH),
-            {
-              headers: jsonHeaders(),
-              data: {
-                filter: {
-                  itemKey: incidentKey,
+            const res = await request.post(
+              buildUrl(SEARCH_BATCH_OPERATION_ITEMS_PATH),
+              {
+                headers: jsonHeaders(),
+                data: {
+                  filter: {
+                    itemKey: incidentKey,
+                  },
                 },
               },
-            },
-          );
+            );
 
-          await assertStatusCode(res, 200);
-          await validateResponse(
-            {
-              path: SEARCH_BATCH_OPERATION_ITEMS_PATH,
-              method: 'POST',
-              status: '200',
-            },
-            res,
-          );
+            await assertStatusCode(res, 200);
+            await validateResponse(
+              {
+                path: SEARCH_BATCH_OPERATION_ITEMS_PATH,
+                method: 'POST',
+                status: '200',
+              },
+              res,
+            );
 
-          const body = await res.json();
-          expect(body.page.totalItems).toBeGreaterThanOrEqual(1);
-          expect(body.items.length).toEqual(1);
+            const body = await res.json();
+            expect(body.page.totalItems).toBeGreaterThanOrEqual(1);
+            expect(body.items.length).toEqual(1);
 
-          const item = body.items[0];
-          expect(item.itemKey).toBe(incidentKey);
-          expect(item.operationType).toBe('RESOLVE_INCIDENT');
-          expect(item.state).toBeDefined();
-          expect(item.processInstanceKey).toBe(processInstanceKeyToResolveIncident);
-        }).toPass(defaultAssertionOptions);
+            const item = body.items[0];
+            expect(item.itemKey).toBe(incidentKey);
+            expect(item.operationType).toBe('RESOLVE_INCIDENT');
+            expect(item.state).toBeDefined();
+            expect(item.processInstanceKey).toBe(
+              processInstanceKeyToResolveIncident,
+            );
+          }).toPass(defaultAssertionOptions);
         },
         onFailure: async () => {},
-    });
-      
+      });
     });
   });
 
@@ -160,7 +169,10 @@ test.describe.parallel('Batch Operation Items Search API Tests', () => {
     });
 
     await test.step('Poll process instance can be found', async () => {
-      await expectProcessInstanceCanBeFound(request, processInstanceKeyToCancel);
+      await expectProcessInstanceCanBeFound(
+        request,
+        processInstanceKeyToCancel,
+      );
     });
 
     await test.step('Create a Batch Operation to Cancel Process Instance - Success', async () => {
@@ -201,39 +213,39 @@ test.describe.parallel('Batch Operation Items Search API Tests', () => {
       await waitForAssertion({
         assertion: async () => {
           await expect(async () => {
-          const res = await request.post(
-            buildUrl(SEARCH_BATCH_OPERATION_ITEMS_PATH),
-            {
-              headers: jsonHeaders(),
-              data: {
-                filter: {
-                  processInstanceKey: processInstanceKeyToCancel,
+            const res = await request.post(
+              buildUrl(SEARCH_BATCH_OPERATION_ITEMS_PATH),
+              {
+                headers: jsonHeaders(),
+                data: {
+                  filter: {
+                    processInstanceKey: processInstanceKeyToCancel,
+                  },
                 },
               },
-            },
-          );
+            );
 
-          await assertStatusCode(res, 200);
-          await validateResponse(
-            {
-              path: SEARCH_BATCH_OPERATION_ITEMS_PATH,
-              method: 'POST',
-              status: '200',
-            },
-            res,
-          );
+            await assertStatusCode(res, 200);
+            await validateResponse(
+              {
+                path: SEARCH_BATCH_OPERATION_ITEMS_PATH,
+                method: 'POST',
+                status: '200',
+              },
+              res,
+            );
 
-          const body = await res.json();
-          expect(body.page.totalItems).toBeGreaterThanOrEqual(1);
-          expect(body.items.length).toEqual(1);
+            const body = await res.json();
+            expect(body.page.totalItems).toBeGreaterThanOrEqual(1);
+            expect(body.items.length).toEqual(1);
 
-          const item = body.items[0];
-          expect(item.itemKey).toBe(processInstanceKeyToCancel);
-          expect(item.batchOperationKey).toBe(batchOperationKey);
-          expect(item.operationType).toBe('CANCEL_PROCESS_INSTANCE');
-          expect(item.state).toBeDefined();
-          expect(item.processInstanceKey).toBe(processInstanceKeyToCancel);
-        }).toPass(defaultAssertionOptions);
+            const item = body.items[0];
+            expect(item.itemKey).toBe(processInstanceKeyToCancel);
+            expect(item.batchOperationKey).toBe(batchOperationKey);
+            expect(item.operationType).toBe('CANCEL_PROCESS_INSTANCE');
+            expect(item.state).toBeDefined();
+            expect(item.processInstanceKey).toBe(processInstanceKeyToCancel);
+          }).toPass(defaultAssertionOptions);
         },
         onFailure: async () => {},
       });
@@ -273,10 +285,8 @@ test.describe.parallel('Batch Operation Items Search API Tests', () => {
         const woofData = {
           filter: {
             processInstanceKey: {
-              $in: [
-                processInstanceKey1, processInstanceKey2
-              ],
-            }
+              $in: [processInstanceKey1, processInstanceKey2],
+            },
           },
         };
         const res = await request.post(
@@ -302,53 +312,51 @@ test.describe.parallel('Batch Operation Items Search API Tests', () => {
     });
 
     await test.step('Search Batch Operation Items - by multiple process instance key as itemKey', async () => {
-
       await waitForAssertion({
         assertion: async () => {
           await expect(async () => {
-          const res = await request.post(
-            buildUrl(SEARCH_BATCH_OPERATION_ITEMS_PATH),
-            {
-              headers: jsonHeaders(),
-              data: {
-                filter: {
-                  itemKey: {
-                    $in: [processInstanceKey1, processInstanceKey2],
+            const res = await request.post(
+              buildUrl(SEARCH_BATCH_OPERATION_ITEMS_PATH),
+              {
+                headers: jsonHeaders(),
+                data: {
+                  filter: {
+                    itemKey: {
+                      $in: [processInstanceKey1, processInstanceKey2],
+                    },
                   },
                 },
               },
-            },
-          );
+            );
 
-          await assertStatusCode(res, 200);
-          await validateResponse(
-            {
-              path: SEARCH_BATCH_OPERATION_ITEMS_PATH,
-              method: 'POST',
-              status: '200',
-            },
-            res,
-          );
+            await assertStatusCode(res, 200);
+            await validateResponse(
+              {
+                path: SEARCH_BATCH_OPERATION_ITEMS_PATH,
+                method: 'POST',
+                status: '200',
+              },
+              res,
+            );
 
-          const body = await res.json();
-          expect(body.page.totalItems).toEqual(2);
-          expect(body.items.length).toEqual(2);
+            const body = await res.json();
+            expect(body.page.totalItems).toEqual(2);
+            expect(body.items.length).toEqual(2);
 
-          const item = body.items[0];
-          expect([processInstanceKey1, processInstanceKey2]).toContain(
-            item.itemKey,
-          );
-          expect(item.batchOperationKey).toBe(batchOperationKey);
-          expect(item.operationType).toBe('CANCEL_PROCESS_INSTANCE');
-          expect(item.state).toBeDefined();
-          expect([processInstanceKey1, processInstanceKey2]).toContain(
-            item.processInstanceKey,
-          );
-        }).toPass(defaultAssertionOptions);
+            const item = body.items[0];
+            expect([processInstanceKey1, processInstanceKey2]).toContain(
+              item.itemKey,
+            );
+            expect(item.batchOperationKey).toBe(batchOperationKey);
+            expect(item.operationType).toBe('CANCEL_PROCESS_INSTANCE');
+            expect(item.state).toBeDefined();
+            expect([processInstanceKey1, processInstanceKey2]).toContain(
+              item.processInstanceKey,
+            );
+          }).toPass(defaultAssertionOptions);
         },
         onFailure: async () => {},
       });
-
     });
   });
 
