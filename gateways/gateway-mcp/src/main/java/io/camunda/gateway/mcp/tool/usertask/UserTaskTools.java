@@ -117,65 +117,53 @@ public class UserTaskTools {
       @McpToolParam(description = "Assignment options.", required = false)
           final McpUserTaskAssignmentRequest assignmentOptions) {
     try {
-      // Check if this is an unassignment (assignee is null or empty)
       if (assignee == null || assignee.isBlank()) {
-        return unassignUserTask(userTaskKey, assignmentOptions);
+        return unassignUserTask(userTaskKey);
       } else {
-        return assignUserTaskInternal(userTaskKey, assignee, assignmentOptions);
+        // merge assignee root param with potential assignment options
+        UserTaskAssignmentRequest request = new UserTaskAssignmentRequest().assignee(assignee);
+        if (assignmentOptions != null) {
+          request =
+              request
+                  .allowOverride(assignmentOptions.getAllowOverride())
+                  .action(assignmentOptions.getAction());
+        }
+
+        return assignUserTask(userTaskKey, request);
       }
     } catch (final Exception e) {
       return CallToolResultMapper.mapErrorToResult(e);
     }
   }
 
-  private CallToolResult assignUserTaskInternal(
-      final long userTaskKey,
-      final String assignee,
-      final McpUserTaskAssignmentRequest assignmentOptions) {
-    // Create request and enrich with assignee from root param
-    final UserTaskAssignmentRequest request =
-        assignmentOptions != null
-            ? new UserTaskAssignmentRequest()
-                .assignee(assignee)
-                .allowOverride(assignmentOptions.getAllowOverride())
-                .action(assignmentOptions.getAction())
-            : new UserTaskAssignmentRequest().assignee(assignee);
-
-    // Use RequestMapper for validation and property fallback
+  private CallToolResult assignUserTask(final Long userTaskKey, UserTaskAssignmentRequest request) {
     final var mappedRequest = RequestMapper.toUserTaskAssignmentRequest(request, userTaskKey);
-
     if (mappedRequest.isLeft()) {
       return CallToolResultMapper.mapProblemToResult(mappedRequest.getLeft());
     }
 
-    final var assignRequest = mappedRequest.get();
+    final var assignmentRequest = mappedRequest.get();
     return CallToolResultMapper.fromPrimitive(
         userTaskServices
             .withAuthentication(authenticationProvider.getCamundaAuthentication())
             .assignUserTask(
-                assignRequest.userTaskKey(),
-                assignRequest.assignee(),
-                assignRequest.action(),
-                assignRequest.allowOverride()),
-        r -> "User task with key %s assigned to %s.".formatted(userTaskKey, assignee));
+                assignmentRequest.userTaskKey(),
+                assignmentRequest.assignee(),
+                assignmentRequest.action(),
+                assignmentRequest.allowOverride()),
+        r ->
+            "User task with key %s assigned to %s."
+                .formatted(assignmentRequest.userTaskKey(), assignmentRequest.assignee()));
   }
 
-  private CallToolResult unassignUserTask(
-      final long userTaskKey, final McpUserTaskAssignmentRequest assignmentOptions) {
-    // Use RequestMapper for unassignment with proper defaults
+  private CallToolResult unassignUserTask(final long userTaskKey) {
     final var unassignRequest = RequestMapper.toUserTaskUnassignmentRequest(userTaskKey);
-
-    // Override action if provided in options
-    final String action =
-        assignmentOptions != null && assignmentOptions.getAction() != null
-            ? assignmentOptions.getAction()
-            : unassignRequest.action();
 
     return CallToolResultMapper.fromPrimitive(
         userTaskServices
             .withAuthentication(authenticationProvider.getCamundaAuthentication())
-            .unassignUserTask(userTaskKey, action),
-        r -> "User task with key %s unassigned.".formatted(userTaskKey));
+            .unassignUserTask(unassignRequest.userTaskKey(), unassignRequest.action()),
+        r -> "User task with key %s unassigned.".formatted(unassignRequest.userTaskKey()));
   }
 
   @McpTool(
