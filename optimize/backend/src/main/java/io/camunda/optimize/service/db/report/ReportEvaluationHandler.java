@@ -113,7 +113,10 @@ public abstract class ReportEvaluationHandler {
       }
     } finally {
       // Record the time taken to evaluate the report
-      timerSample.stop(OptimizeMetrics.getReportEvaluationTimer(reportType));
+      timerSample.stop(
+          OptimizeMetrics.getReportEvaluationTimer(
+              reportType,
+              Optional.ofNullable(evaluationInfo.getReport().getName()).orElse("unknown")));
     }
 
     return new AuthorizedReportEvaluationResult(result, currentUserRole);

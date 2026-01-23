@@ -18,8 +18,7 @@ public enum MetricEnum {
       "newPageFetchTime",
       "Records the time spent for fetching next import page from Zeebe Elasticsearch"),
   REPORT_EVALUATION_DURATION_METRIC(
-      "reportEvaluationDuration",
-      "Records the time spent evaluating/querying a report");
+      "reportEvaluationDuration", "Records the time spent evaluating/querying a report");
   private static final String IMPORT_METRICS_PREFIX = "optimize.import";
   private static final String REPORT_METRICS_PREFIX = "optimize.report";
   private final String id;
