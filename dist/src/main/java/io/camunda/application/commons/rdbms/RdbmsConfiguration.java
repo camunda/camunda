@@ -93,7 +93,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.health.contributor.HealthContributor;
-import org.springframework.boot.actuate.jdbc.DataSourceHealthIndicator;
+import org.springframework.boot.jdbc.health.DataSourceHealthIndicator;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
