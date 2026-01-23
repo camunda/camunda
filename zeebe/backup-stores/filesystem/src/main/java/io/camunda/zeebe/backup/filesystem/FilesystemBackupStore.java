@@ -263,6 +263,28 @@ public final class FilesystemBackupStore implements BackupStore {
     }
   }
 
+  /**
+   * Backtracks from the given path up to the limit and deletes any empty parent directories.
+   *
+   * @param path the initial path
+   * @param limitDir the limit directory name to stop backtracking at
+   * @throws IOException
+   */
+  static void backtrackDeleteEmptyParents(final Path path, final String limitDir)
+      throws IOException {
+    var traversePath = path;
+    while (!traversePath.endsWith(limitDir)) {
+      try (final var dirStream = Files.list(traversePath)) {
+        if (dirStream.findAny().isPresent()) {
+          break;
+        }
+      }
+      Files.delete(traversePath);
+      traversePath = traversePath.getParent();
+    }
+    FileUtil.flushDirectory(traversePath.getParent());
+  }
+
   public static BackupStore of(final FilesystemBackupConfig storeConfig) {
     return new FilesystemBackupStore(storeConfig);
   }

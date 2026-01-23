@@ -151,7 +151,8 @@ public final class ManifestManager {
     try {
       final var path = manifestPath(manifest);
       Files.delete(path);
-      FileUtil.flushDirectory(path.getParent());
+      FilesystemBackupStore.backtrackDeleteEmptyParents(
+          path.getParent(), String.valueOf(id.partitionId()));
     } catch (final NoSuchFileException e) {
       LOGGER.warn("Try to remove unknown manifest with id {}", id);
     } catch (final IOException e) {

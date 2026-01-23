@@ -122,6 +122,26 @@ public class FilesystemBackupStoreIT implements BackupStoreTestKit {
                 but was in state 'IN_PROGRESS'""");
   }
 
+  @ParameterizedTest
+  @MethodSource("provideBackups")
+  void parentDirectoriesAreDeletedAfterDeletion(final Backup backup) throws IOException {
+    // given
+    getStore().save(backup).join();
+
+    // when
+    getStore().delete(backup.id()).join();
+
+    // then
+    final var partitionContentsDir =
+        backupDir.resolve("contents").resolve(String.valueOf(backup.id().partitionId()));
+    final var partitionManifestsDir =
+        backupDir.resolve("manifests").resolve(String.valueOf(backup.id().partitionId()));
+    assertThat(partitionContentsDir).isDirectory();
+    assertThat(Files.list(partitionContentsDir)).isEmpty();
+    assertThat(partitionManifestsDir).isDirectory();
+    assertThat(Files.list(partitionManifestsDir)).isEmpty();
+  }
+
   void uploadInProgressManifest(final Backup backup) {
     final var manifest = Manifest.createInProgress(backup);
     final byte[] serializedManifest;

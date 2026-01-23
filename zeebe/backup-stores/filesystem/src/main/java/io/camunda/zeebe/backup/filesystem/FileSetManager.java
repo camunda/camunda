@@ -70,7 +70,8 @@ final class FileSetManager {
     final var fileSetPath = fileSetPath(id, fileSetName);
     try {
       FileUtil.deleteFolder(fileSetPath);
-      FileUtil.flushDirectory(fileSetPath.getParent());
+      FilesystemBackupStore.backtrackDeleteEmptyParents(
+          fileSetPath.getParent(), String.valueOf(id.partitionId()));
     } catch (final NoSuchFileException e) {
       LOGGER.warn("Try to remove unknown fileset {} in backup {}", fileSetName, id);
     } catch (final IOException e) {
