@@ -17,8 +17,8 @@
 # - Platforms are not configurable, they are by default set to linux/amd64 and linux/arm64
 #
 # The workflow validates inputs, builds the requested images, and pushes them to the Camunda hotfix registry following
-# the naming convention: registry.camunda.cloud/hotfixes/<image>:<application-version>-<support-issue-id>-<short-sha>
-# Example: registry.camunda.cloud/hotfixes/camunda:8.6.1-support-12345
+# the naming convention: registry.camunda.cloud/hotfixes/<image>:<application-version>-<support-issue-id>.<short-sha>
+# Example: registry.camunda.cloud/hotfixes/camunda:8.6.1-SUPPORT-12345.abc123
 name: Create Urgent Hotfix Image
 
 on:
@@ -67,7 +67,6 @@ jobs:
           COMMIT="${{ github.event.inputs.commit }}"
           TICKET_ID="${{ github.event.inputs.support-ticket-id }}"
           COMPONENTS="${{ github.event.inputs.components_with_versions }}"
-
 
           [[ -z "$BRANCH" && -z "$COMMIT" ]] && { echo "❌ Either branch or commit required"; exit 1; }
           [[ -n "$BRANCH" && "$BRANCH" =~ [[:space:]] ]] && { echo "❌ Branch name cannot contain whitespace"; exit 1; }
@@ -164,6 +163,31 @@ jobs:
           maven-mirrors: '[{"id": "camunda-nexus", "name": "Camunda Nexus", "url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "mirrorOf": "*"}]'  
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+        
+      - name: Set project version
+        id: set-version
+        working-directory: build-repo
+        run: |
+          echo "🔧 Setting project version to ${{ matrix.version }}..."
+
+          # Create semver-compatible hotfix version: <version>-<ticket>.<sha>
+          # Format: 8.8.88-SUPPORT.12345.abc123 (dots instead of hyphens for semver compatibility)
+          HOTFIX_VERSION="${{ matrix.version }}-${{ needs.validate-inputs.outputs.support-ticket-id }}.${{ steps.get-sha.outputs.short-sha }}"
+          echo "📋 Hotfix version: $HOTFIX_VERSION"
+
+          # Set version in the BOM only - parent and root inherit from BOM through Maven inheritance
+          # Maven inheritance hierarchy: BOM -> Parent -> Root
+          # The parent/pom.xml and pom.xml inherit their versions and cannot be set directly
+          echo "🔧 Updating version in BOM (parent and root will inherit automatically)..."
+          ./mvnw versions:set -DnewVersion="$HOTFIX_VERSION" -DgenerateBackupPoms=false -f bom/pom.xml
+
+          echo "✅ Project version updated to $HOTFIX_VERSION"
+          echo "🔍 Verifying version change..."
+          ./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout
+          
+          # Store the hotfix version for later steps
+          echo "hotfix-version=$HOTFIX_VERSION" >> "$GITHUB_OUTPUT"
+    
       - name: Build Maven artifacts
         working-directory: build-repo
         run: |
@@ -195,15 +219,10 @@ jobs:
         run: |
           BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
 
-          if [[ "${{ matrix.component }}" == "optimize" ]]; then
-            BUILD_ARGS="VERSION=*
-            DATE=$BUILD_DATE
-            REVISION=${{ steps.get-sha.outputs.full-sha }}"
-          else
-            BUILD_ARGS="VERSION=${{ matrix.version }}
-            DATE=$BUILD_DATE
-            REVISION=${{ steps.get-sha.outputs.full-sha }}"
-          fi
+          # Use the full semver-compatible hotfix version for consistency
+          BUILD_ARGS="VERSION=${{ steps.set-version.outputs.hotfix-version }}
+          DATE=$BUILD_DATE
+          REVISION=${{ steps.get-sha.outputs.full-sha }}"
 
           {
             echo "args<<EOF"
@@ -221,13 +240,13 @@ jobs:
           provenance: false
           build-args: ${{ steps.build-args.outputs.args }}
           tags: |
-            ${{ env.HOTFIX_REGISTRY }}/${{ matrix.component }}:${{ matrix.version }}-${{ needs.validate-inputs.outputs.support-ticket-id }}-${{ steps.get-sha.outputs.short-sha }}
+            ${{ env.HOTFIX_REGISTRY }}/${{ matrix.component }}:${{ steps.set-version.outputs.hotfix-version }}
           labels: |
             org.opencontainers.image.title=Camunda ${{ matrix.component }} ${{ matrix.version }} Hotfix
             org.opencontainers.image.description=Hotfix image for ${{ matrix.component }} ${{ matrix.version }} - Ticket: ${{ needs.validate-inputs.outputs.support-ticket-id }}
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.revision=${{ steps.get-sha.outputs.full-sha }}
-            org.opencontainers.image.version=${{ matrix.version }}
+            org.opencontainers.image.version=${{ steps.set-version.outputs.hotfix-version }}
             camunda.hotfix.ticket-id=${{ needs.validate-inputs.outputs.support-ticket-id }}
             camunda.hotfix.component=${{ matrix.component }}
             camunda.hotfix.version=${{ matrix.version }}
@@ -268,7 +287,9 @@ jobs:
             for ITEM in "${COMP_ARRAY[@]}"; do
               ITEM=$(echo "$ITEM" | xargs)
               if [[ "$ITEM" =~ ^([^:]+):(.+)$ ]]; then
-                TAG="${{ env.HOTFIX_REGISTRY }}/${BASH_REMATCH[1]}:${BASH_REMATCH[2]}-${TICKET_ID}-${SHORT_SHA}"
+                # Use the same hotfix version format: version-ticket.sha
+                HOTFIX_TAG="${BASH_REMATCH[2]}-${TICKET_ID}.${SHORT_SHA}"
+                TAG="${{ env.HOTFIX_REGISTRY }}/${BASH_REMATCH[1]}:${HOTFIX_TAG}"
                 echo "- \`$TAG\`" >> "$GITHUB_STEP_SUMMARY"
               fi
             done
