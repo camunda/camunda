@@ -146,21 +146,13 @@ public final class MessageEventProcessors {
                 authCheckBehavior))
         .withListener(
             new MessageTimeToLiveCheckScheduler(
-                scheduledTaskStateFactory,
-                scheduledTaskStateFactory.get().getPendingMessageSubscriptionState(),
-                subscriptionCommandSender,
                 config.getMessagesTtlCheckerInterval(),
                 config.getMessagesTtlCheckerBatchLimit(),
                 featureFlags.enableMessageTTLCheckerAsync(),
-                clock))
+                scheduledTaskStateFactory.get().getMessageState()))
         .withListener(
             new PendingMessageSubscriptionCheckScheduler(
-                scheduledTaskStateFactory,
-                scheduledTaskStateFactory.get().getPendingMessageSubscriptionState(),
                 subscriptionCommandSender,
-                config.getMessagesTtlCheckerInterval(),
-                config.getMessagesTtlCheckerBatchLimit(),
-                featureFlags.enableMessageTTLCheckerAsync(),
-                clock));
+                scheduledTaskStateFactory.get().getPendingMessageSubscriptionState()));
   }
 }

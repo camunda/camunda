@@ -9,7 +9,6 @@ package io.camunda.zeebe.engine.processing.metrics.usage;
 
 import static java.util.Optional.ofNullable;
 
-import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.protocol.impl.record.value.metrics.UsageMetricRecord;
 import io.camunda.zeebe.protocol.record.intent.UsageMetricIntent;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.EventType;
@@ -38,10 +37,6 @@ public class UsageMetricsCheckScheduler implements Task, StreamProcessorLifecycl
   public UsageMetricsCheckScheduler(final Duration exportInterval, final InstantSource clock) {
     this.exportInterval = exportInterval;
     this.clock = clock;
-  }
-
-  public UsageMetricsCheckScheduler(final EngineConfiguration engineConfiguration, final InstantSource clock) {
-    this(engineConfiguration.getUsageMetricsExportInterval(), clock);
   }
 
   public void schedule(final boolean immediately) {
@@ -73,39 +68,41 @@ public class UsageMetricsCheckScheduler implements Task, StreamProcessorLifecycl
     return taskResultBuilder.build();
   }
 
-  public void setProcessingContext(final ReadonlyStreamProcessorContext processingContext) {
-    this.processingContext = processingContext;
-  }
-
-  public void setShouldReschedule(final boolean shouldReschedule) {
-    this.shouldReschedule = shouldReschedule;
-  }
-
   @Override
   public void onRecovered(final ReadonlyStreamProcessorContext processingContext) {
-    setProcessingContext(processingContext);
-    setShouldReschedule(true);
+    this.processingContext = processingContext;
+    shouldReschedule = true;
     schedule(true);
   }
 
   @Override
   public void onClose() {
-    setShouldReschedule(false);
+    shouldReschedule = false;
   }
 
   @Override
   public void onFailed() {
-    setShouldReschedule(false);
+    shouldReschedule = false;
   }
 
   @Override
   public void onPaused() {
-    setShouldReschedule(false);
+    shouldReschedule = false;
   }
 
   @Override
   public void onResumed() {
-    setShouldReschedule(true);
+    shouldReschedule = true;
     schedule(true);
+  }
+
+  // Package-private setters for tests
+
+  void setProcessingContext(final ReadonlyStreamProcessorContext processingContext) {
+    this.processingContext = processingContext;
+  }
+
+  void setShouldReschedule(final boolean shouldReschedule) {
+    this.shouldReschedule = shouldReschedule;
   }
 }

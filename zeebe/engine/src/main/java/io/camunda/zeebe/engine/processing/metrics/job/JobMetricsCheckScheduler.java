@@ -42,10 +42,6 @@ public class JobMetricsCheckScheduler implements Task, StreamProcessorLifecycleA
     this.clock = clock;
   }
 
-  public JobMetricsCheckScheduler(final EngineConfiguration engineConfiguration, final InstantSource clock) {
-    this(engineConfiguration.getJobMetricsExportInterval(), clock);
-  }
-
   public void schedule(final boolean immediately) {
     final ScheduledTask nextTask;
     if (immediately) {
@@ -76,39 +72,31 @@ public class JobMetricsCheckScheduler implements Task, StreamProcessorLifecycleA
     return taskResultBuilder.build();
   }
 
-  public void setProcessingContext(final ReadonlyStreamProcessorContext processingContext) {
-    this.processingContext = processingContext;
-  }
-
-  public void setShouldReschedule(final boolean shouldReschedule) {
-    this.shouldReschedule = shouldReschedule;
-  }
-
   @Override
   public void onRecovered(final ReadonlyStreamProcessorContext processingContext) {
-    this.setProcessingContext(processingContext);
-    this.setShouldReschedule(true);
-    this.schedule(true);
+    this.processingContext = processingContext;
+    shouldReschedule = true;
+    schedule(true);
   }
 
   @Override
   public void onClose() {
-    this.setShouldReschedule(false);
+    shouldReschedule = false;
   }
 
   @Override
   public void onFailed() {
-    this.setShouldReschedule(false);
+    shouldReschedule = false;
   }
 
   @Override
   public void onPaused() {
-    this.setShouldReschedule(false);
+    shouldReschedule = false;
   }
 
   @Override
   public void onResumed() {
-    this.setShouldReschedule(true);
-    this.schedule(true);
+    shouldReschedule = true;
+    schedule(true);
   }
 }
