@@ -23,12 +23,15 @@ import io.camunda.search.connect.plugin.PluginRepository;
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.security.KeyStore;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import javax.net.ssl.SSLContext;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpHost;
@@ -120,8 +123,8 @@ public class ElasticsearchClientBuilder {
       final SSLContext sslContext,
       final HttpRequestInterceptor... requestInterceptors) {
     return httpClientBuilder -> {
-      final CredentialsProvider credentialsProvider =
-          buildCredentialsProvider(configurationService);
+      buildCredentialsProviderIfConfigured(configurationService)
+          .ifPresent(httpClientBuilder::setDefaultCredentialsProvider);
 
       for (final HttpRequestInterceptor interceptor : requestInterceptors) {
         httpClientBuilder.addInterceptorLast(interceptor);
@@ -137,7 +140,7 @@ public class ElasticsearchClientBuilder {
                 proxyConfig.getHost(),
                 proxyConfig.getPort(),
                 proxyConfig.isSslEnabled() ? HTTPS : HTTP));
-        setupProxyAuthentication(credentialsProvider, proxyConfig);
+        addPreemptiveProxyAuthInterceptor(httpClientBuilder, proxyConfig);
       }
 
       if (configurationService.getElasticSearchConfiguration().getSkipHostnameVerification()) {
@@ -145,22 +148,34 @@ public class ElasticsearchClientBuilder {
         httpClientBuilder.setSSLHostnameVerifier((s, sslSession) -> true);
       }
 
-      httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider);
-
       return httpClientBuilder;
     };
   }
 
-  private static void setupProxyAuthentication(
-      final CredentialsProvider credentialsProvider, final ProxyConfiguration proxyConfig) {
+  private static void addPreemptiveProxyAuthInterceptor(
+      final org.apache.http.impl.nio.client.HttpAsyncClientBuilder httpAsyncClientBuilder,
+      final ProxyConfiguration proxyConfig) {
     final String username = proxyConfig.getUsername();
     final String password = proxyConfig.getPassword();
+
     if (username == null || password == null || username.isEmpty() || password.isEmpty()) {
       return;
     }
-    credentialsProvider.setCredentials(
-        new AuthScope(proxyConfig.getHost(), proxyConfig.getPort()),
-        new UsernamePasswordCredentials(username, password));
+
+    final String credentials = username + ":" + password;
+    final String encodedCredentials =
+        Base64.getEncoder().encodeToString(credentials.getBytes(StandardCharsets.UTF_8));
+    final String proxyAuthHeaderValue = "Basic " + encodedCredentials;
+
+    httpAsyncClientBuilder.addInterceptorFirst(
+        (HttpRequestInterceptor)
+            (request, context) -> {
+              if (!request.containsHeader("Proxy-Authorization")) {
+                request.addHeader("Proxy-Authorization", proxyAuthHeaderValue);
+              }
+            });
+
+    LOGGER.debug("Preemptive proxy authentication enabled for proxy");
   }
 
   private static RestClientBuilder buildDefaultRestClient(
@@ -196,11 +211,12 @@ public class ElasticsearchClientBuilder {
         .toArray(HttpHost[]::new);
   }
 
-  private static CredentialsProvider buildCredentialsProvider(
+  private static Optional<CredentialsProvider> buildCredentialsProviderIfConfigured(
       final ConfigurationService configurationService) {
-    final CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+    CredentialsProvider credentialsProvider = null;
     if (configurationService.getElasticSearchConfiguration().getSecurityUsername() != null
         && configurationService.getElasticSearchConfiguration().getSecurityPassword() != null) {
+      credentialsProvider = new BasicCredentialsProvider();
       credentialsProvider.setCredentials(
           AuthScope.ANY,
           new UsernamePasswordCredentials(
@@ -210,7 +226,7 @@ public class ElasticsearchClientBuilder {
       LOGGER.debug(
           "Elasticsearch username and password not provided, skipping connection credential setup.");
     }
-    return credentialsProvider;
+    return Optional.ofNullable(credentialsProvider);
   }
 
   private static KeyStore loadCustomTrustStore(final ConfigurationService configurationService) {
