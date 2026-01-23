@@ -10,6 +10,7 @@ package io.camunda.search.connect.os;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.search.connect.SearchClientConnectException;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
+import io.camunda.search.connect.configuration.ProxyConfiguration;
 import io.camunda.search.connect.configuration.SecurityConfiguration;
 import io.camunda.search.connect.jackson.JacksonConfiguration;
 import io.camunda.search.connect.os.json.SearchRequestJacksonJsonpMapperWrapper;
@@ -182,7 +183,9 @@ public final class OpensearchConnector {
       final HttpAsyncClientBuilder httpAsyncClientBuilder,
       final ConnectConfiguration osConfig,
       final HttpRequestInterceptor... interceptors) {
-    setupAuthentication(httpAsyncClientBuilder, osConfig);
+    final BasicCredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+
+    setupAuthentication(credentialsProvider, osConfig);
 
     for (final HttpRequestInterceptor interceptor : interceptors) {
       httpAsyncClientBuilder.addRequestInterceptorLast(interceptor);
@@ -191,6 +194,14 @@ public final class OpensearchConnector {
     if (osConfig.getSecurity() != null && osConfig.getSecurity().isEnabled()) {
       setupSSLContext(httpAsyncClientBuilder, osConfig.getSecurity());
     }
+
+    final var proxyConfig = osConfig.getProxy();
+    if (proxyConfig != null && proxyConfig.isEnabled()) {
+      setupProxy(httpAsyncClientBuilder, proxyConfig);
+      setupProxyAuthentication(credentialsProvider, proxyConfig);
+    }
+
+    httpAsyncClientBuilder.setDefaultCredentialsProvider(credentialsProvider);
     return httpAsyncClientBuilder;
   }
 
@@ -206,25 +217,47 @@ public final class OpensearchConnector {
     return builder;
   }
 
-  private HttpAsyncClientBuilder setupAuthentication(
-      final HttpAsyncClientBuilder builder, final ConnectConfiguration configuration) {
+  private void setupAuthentication(
+      final BasicCredentialsProvider credentialsProvider,
+      final ConnectConfiguration configuration) {
     final var username = configuration.getUsername();
     final var password = configuration.getPassword();
 
     if (username == null || password == null || username.isEmpty() || password.isEmpty()) {
       LOGGER.warn(
           "Username and/or password for are empty. Basic authentication for OpenSearch is not used.");
-      return builder;
+      return;
     }
 
-    final var credentialsProvider = new BasicCredentialsProvider();
     credentialsProvider.setCredentials(
         new AuthScope(null, -1),
-        new UsernamePasswordCredentials(
-            configuration.getUsername(), configuration.getPassword().toCharArray()));
+        new UsernamePasswordCredentials(username, password.toCharArray()));
+  }
 
-    builder.setDefaultCredentialsProvider(credentialsProvider);
-    return builder;
+  private void setupProxy(
+      final HttpAsyncClientBuilder httpAsyncClientBuilder, final ProxyConfiguration proxyConfig) {
+    httpAsyncClientBuilder.setProxy(
+        new HttpHost(
+            proxyConfig.isSslEnabled() ? "https" : "http",
+            proxyConfig.getHost(),
+            proxyConfig.getPort()));
+  }
+
+  private void setupProxyAuthentication(
+      final BasicCredentialsProvider credentialsProvider, final ProxyConfiguration proxyConfig) {
+    final String username = proxyConfig.getUsername();
+    final String password = proxyConfig.getPassword();
+    if (username == null || password == null || username.isEmpty() || password.isEmpty()) {
+      return;
+    }
+    final HttpHost proxyHost =
+        new HttpHost(
+            proxyConfig.isSslEnabled() ? "https" : "http",
+            proxyConfig.getHost(),
+            proxyConfig.getPort());
+    credentialsProvider.setCredentials(
+        new AuthScope(proxyHost),
+        new UsernamePasswordCredentials(username, password.toCharArray()));
   }
 
   private void setupSSLContext(

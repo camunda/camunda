@@ -14,6 +14,7 @@ import co.elastic.clients.transport.rest_client.RestClientTransport;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.search.connect.SearchClientConnectException;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
+import io.camunda.search.connect.configuration.ProxyConfiguration;
 import io.camunda.search.connect.configuration.SecurityConfiguration;
 import io.camunda.search.connect.jackson.JacksonConfiguration;
 import io.camunda.search.connect.plugin.PluginRepository;
@@ -23,6 +24,7 @@ import org.apache.http.HttpHost;
 import org.apache.http.HttpRequestInterceptor;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.client.CredentialsProvider;
 import org.apache.http.client.config.RequestConfig.Builder;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.impl.client.BasicCredentialsProvider;
@@ -122,7 +124,10 @@ public final class ElasticsearchConnector {
       final HttpAsyncClientBuilder httpAsyncClientBuilder,
       final ConnectConfiguration configuration,
       final HttpRequestInterceptor... interceptors) {
-    setupAuthentication(httpAsyncClientBuilder, configuration);
+    final CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+
+    setupAuthentication(credentialsProvider, configuration);
+
     final var security = configuration.getSecurity();
     if (security != null && security.isEnabled()) {
       setupSSLContext(httpAsyncClientBuilder, security);
@@ -132,6 +137,13 @@ public final class ElasticsearchConnector {
       httpAsyncClientBuilder.addInterceptorLast(interceptor);
     }
 
+    final var proxyConfig = configuration.getProxy();
+    if (proxyConfig != null && proxyConfig.isEnabled()) {
+      setupProxy(httpAsyncClientBuilder, proxyConfig);
+      setupProxyAuthentication(credentialsProvider, proxyConfig);
+    }
+
+    httpAsyncClientBuilder.setDefaultCredentialsProvider(credentialsProvider);
     return httpAsyncClientBuilder;
   }
 
@@ -185,7 +197,7 @@ public final class ElasticsearchConnector {
   }
 
   private void setupAuthentication(
-      final HttpAsyncClientBuilder builder, final ConnectConfiguration configuration) {
+      final CredentialsProvider credentialsProvider, final ConnectConfiguration configuration) {
     final var username = configuration.getUsername();
     final var password = configuration.getPassword();
 
@@ -195,9 +207,28 @@ public final class ElasticsearchConnector {
       return;
     }
 
-    final var credentialsProvider = new BasicCredentialsProvider();
     credentialsProvider.setCredentials(
         AuthScope.ANY, new UsernamePasswordCredentials(username, password));
-    builder.setDefaultCredentialsProvider(credentialsProvider);
+  }
+
+  private void setupProxy(
+      final HttpAsyncClientBuilder httpAsyncClientBuilder, final ProxyConfiguration proxyConfig) {
+    httpAsyncClientBuilder.setProxy(
+        new HttpHost(
+            proxyConfig.getHost(),
+            proxyConfig.getPort(),
+            proxyConfig.isSslEnabled() ? "https" : "http"));
+  }
+
+  private void setupProxyAuthentication(
+      final CredentialsProvider credentialsProvider, final ProxyConfiguration proxyConfig) {
+    final String username = proxyConfig.getUsername();
+    final String password = proxyConfig.getPassword();
+    if (username == null || password == null || username.isEmpty() || password.isEmpty()) {
+      return;
+    }
+    credentialsProvider.setCredentials(
+        new AuthScope(proxyConfig.getHost(), proxyConfig.getPort()),
+        new UsernamePasswordCredentials(username, password));
   }
 }
