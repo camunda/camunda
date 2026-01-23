@@ -458,6 +458,7 @@
     <foreach collection="processInstanceKeys" item="key" open="(" separator="," close=")">
       #{key}
     </foreach>
+    AND ROOT_PROCESS_INSTANCE_KEY = PROCESS_INSTANCE_KEY
   </update>
 
   <delete id="deleteByKeys">
@@ -473,6 +474,7 @@
     FROM ${prefix}PROCESS_INSTANCE
     WHERE PARTITION_ID = #{partitionId}
       AND HISTORY_CLEANUP_DATE &lt; #{cleanupDate}
+      AND ROOT_PROCESS_INSTANCE_KEY = PROCESS_INSTANCE_KEY
     ORDER BY HISTORY_CLEANUP_DATE
     ${keysetPaging.limit}
   </select>

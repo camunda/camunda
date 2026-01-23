@@ -12,6 +12,7 @@ import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.resourceAccessCheck
 import static io.camunda.it.rdbms.db.fixtures.ProcessInstanceFixtures.createAndSaveProcessInstance;
 import static io.camunda.it.rdbms.db.fixtures.ProcessInstanceFixtures.createAndSaveRandomProcessInstance;
 import static io.camunda.it.rdbms.db.fixtures.ProcessInstanceFixtures.createAndSaveRandomProcessInstances;
+import static io.camunda.it.rdbms.db.fixtures.ProcessInstanceFixtures.createAndSaveRandomRootProcessInstance;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
@@ -467,7 +468,7 @@ public class ProcessInstanceIT {
   }
 
   @TestTemplate
-  public void shouldSelectExpiredProcessInstances(
+  public void shouldSelectRootExpiredRootProcessInstances(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final var partitionId = (int) (Math.random() * 1000);
@@ -478,11 +479,11 @@ public class ProcessInstanceIT {
 
     // Create process instances with different cleanup dates
     final var pi1 =
-        createAndSaveRandomProcessInstance(rdbmsWriters, b -> b.partitionId(partitionId));
+        createAndSaveRandomRootProcessInstance(rdbmsWriters, b -> b.partitionId(partitionId));
     final var pi2 =
-        createAndSaveRandomProcessInstance(rdbmsWriters, b -> b.partitionId(partitionId));
+        createAndSaveRandomRootProcessInstance(rdbmsWriters, b -> b.partitionId(partitionId));
     final var pi3 =
-        createAndSaveRandomProcessInstance(rdbmsWriters, b -> b.partitionId(partitionId));
+        createAndSaveRandomRootProcessInstance(rdbmsWriters, b -> b.partitionId(partitionId));
 
     // pi1: expired (cleanup date in the past)
     rdbmsWriters
@@ -510,7 +511,7 @@ public class ProcessInstanceIT {
   }
 
   @TestTemplate
-  public void shouldSelectExpiredProcessInstancesWithLimit(
+  public void shouldSelectExpiredRootProcessInstancesWithLimit(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final var partitionId = (int) (Math.random() * 1000);
@@ -520,15 +521,15 @@ public class ProcessInstanceIT {
 
     // Create 5 expired process instances
     final var pi1 =
-        createAndSaveRandomProcessInstance(rdbmsWriters, b -> b.partitionId(partitionId));
+        createAndSaveRandomRootProcessInstance(rdbmsWriters, b -> b.partitionId(partitionId));
     final var pi2 =
-        createAndSaveRandomProcessInstance(rdbmsWriters, b -> b.partitionId(partitionId));
+        createAndSaveRandomRootProcessInstance(rdbmsWriters, b -> b.partitionId(partitionId));
     final var pi3 =
-        createAndSaveRandomProcessInstance(rdbmsWriters, b -> b.partitionId(partitionId));
+        createAndSaveRandomRootProcessInstance(rdbmsWriters, b -> b.partitionId(partitionId));
     final var pi4 =
-        createAndSaveRandomProcessInstance(rdbmsWriters, b -> b.partitionId(partitionId));
+        createAndSaveRandomRootProcessInstance(rdbmsWriters, b -> b.partitionId(partitionId));
     final var pi5 =
-        createAndSaveRandomProcessInstance(rdbmsWriters, b -> b.partitionId(partitionId));
+        createAndSaveRandomRootProcessInstance(rdbmsWriters, b -> b.partitionId(partitionId));
 
     // All expired
     rdbmsWriters
@@ -565,7 +566,7 @@ public class ProcessInstanceIT {
   }
 
   @TestTemplate
-  public void shouldNotSelectExpiredProcessInstancesFromDifferentPartition(
+  public void shouldNotSelectExpiredRootProcessInstancesFromDifferentPartition(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final var partitionId = (int) (Math.random() * 1000);
@@ -575,9 +576,9 @@ public class ProcessInstanceIT {
 
     // Create process instances in different partitions
     final var pi1 =
-        createAndSaveRandomProcessInstance(rdbmsWriters, b -> b.partitionId(partitionId));
+        createAndSaveRandomRootProcessInstance(rdbmsWriters, b -> b.partitionId(partitionId));
     final var pi2 =
-        createAndSaveRandomProcessInstance(rdbmsWriters, b -> b.partitionId(PARTITION_ID));
+        createAndSaveRandomRootProcessInstance(rdbmsWriters, b -> b.partitionId(PARTITION_ID));
 
     // Both expired
     rdbmsWriters
@@ -599,7 +600,7 @@ public class ProcessInstanceIT {
   }
 
   @TestTemplate
-  public void shouldNotSelectProcessInstancesWithoutCleanupDate(
+  public void shouldNotSelectRootProcessInstancesWithoutCleanupDate(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final var partitionId = (int) (Math.random() * 1000);
@@ -609,9 +610,9 @@ public class ProcessInstanceIT {
 
     // Create process instances
     final var pi1 =
-        createAndSaveRandomProcessInstance(rdbmsWriters, b -> b.partitionId(partitionId));
+        createAndSaveRandomRootProcessInstance(rdbmsWriters, b -> b.partitionId(partitionId));
     final var pi2 =
-        createAndSaveRandomProcessInstance(rdbmsWriters, b -> b.partitionId(partitionId));
+        createAndSaveRandomRootProcessInstance(rdbmsWriters, b -> b.partitionId(partitionId));
 
     // pi1: has cleanup date (expired)
     rdbmsWriters
@@ -628,5 +629,34 @@ public class ProcessInstanceIT {
 
     assertThat(expiredPIs).hasSize(1);
     assertThat(expiredPIs).containsExactly(pi1.processInstanceKey());
+  }
+
+  @TestTemplate
+  public void shouldNotScheduleNonRootProcessInstancesForCleanupByThemselves(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final var partitionId = (int) (Math.random() * 1000);
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(partitionId);
+
+    final var cleanupDate = NOW;
+
+    // Create non-root process instances
+    final var pi1 =
+        createAndSaveRandomProcessInstance(rdbmsWriters, b -> b.partitionId(partitionId));
+
+    // should update nothing
+    rdbmsWriters
+        .getProcessInstanceWriter()
+        .scheduleForHistoryCleanup(pi1.processInstanceKey(), NOW.minusDays(1));
+
+    rdbmsWriters.flush();
+
+    // Select expired process instances
+    final var expiredPIs =
+        rdbmsService
+            .getProcessInstanceReader()
+            .selectExpiredRootProcessInstances(partitionId, cleanupDate, 10);
+
+    assertThat(expiredPIs).hasSize(0);
   }
 }

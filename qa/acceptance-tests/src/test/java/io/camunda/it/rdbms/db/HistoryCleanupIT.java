@@ -14,20 +14,19 @@ import io.camunda.application.commons.rdbms.RdbmsConfiguration;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.RdbmsWriters;
+import io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel;
+import io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel.ProcessInstanceDbModelBuilder;
 import io.camunda.db.rdbms.write.service.HistoryCleanupService;
 import io.camunda.it.rdbms.db.fixtures.AuditLogFixtures;
 import io.camunda.it.rdbms.db.fixtures.BatchOperationFixtures;
 import io.camunda.it.rdbms.db.fixtures.DecisionInstanceFixtures;
-import io.camunda.it.rdbms.db.fixtures.ElementInstanceFixtures;
-import io.camunda.it.rdbms.db.fixtures.IncidentFixtures;
 import io.camunda.it.rdbms.db.fixtures.ProcessInstanceFixtures;
-import io.camunda.it.rdbms.db.fixtures.UserTaskFixtures;
-import io.camunda.it.rdbms.db.fixtures.VariableFixtures;
 import io.camunda.it.rdbms.db.util.RdbmsTestConfiguration;
 import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
 import io.camunda.search.entities.BatchOperationType;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.function.Function;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -63,9 +62,14 @@ public class HistoryCleanupIT {
   }
 
   @Test
-  public void shouldUpdateHistoryCleanupDateForProcess() {
+  public void shouldUpdateHistoryCleanupDateForRootProcessInstance() {
     // GIVEN
-    final Long processInstanceKey = createRandomProcessWithCleanupRelevantData();
+    final Long rootProcessInstanceKey = ProcessInstanceFixtures.nextKey();
+    final Long processInstanceKey =
+        createRandomProcessInstance(
+            b ->
+                b.processInstanceKey(rootProcessInstanceKey)
+                    .rootProcessInstanceKey(rootProcessInstanceKey));
 
     // WHEN we schedule history cleanup
     final OffsetDateTime now = OffsetDateTime.now();
@@ -94,6 +98,31 @@ public class HistoryCleanupIT {
   }
 
   @Test
+  public void shouldNotUpdateHistoryCleanupDateForNonRootProcessInstance() {
+    // GIVEN
+    final Long processInstanceKey = createRandomProcessInstance();
+
+    // WHEN we schedule history cleanup
+    final OffsetDateTime now = OffsetDateTime.now();
+    historyCleanupService.scheduleProcessForHistoryCleanup(processInstanceKey, now);
+    rdbmsWriters.flush();
+
+    // THEN
+    final var historyCleanupDate =
+        jdbcTemplate.queryForObject(
+            "SELECT HISTORY_CLEANUP_DATE FROM "
+                + "PROCESS_INSTANCE"
+                + " WHERE PROCESS_INSTANCE_KEY = "
+                + processInstanceKey,
+            OffsetDateTime.class);
+
+    assertThat(historyCleanupDate)
+        .describedAs(
+            "should not update the history cleanup date for PROCESS_INSTANCE but date was not null")
+        .isNull();
+  }
+
+  @Test
   public void shouldUpdateHistoryCleanupDateForBatchOperation() {
     // GIVEN
     final var batchOperation =
@@ -119,30 +148,16 @@ public class HistoryCleanupIT {
         .isCloseTo(expectedDate, within(10, ChronoUnit.MILLIS));
   }
 
-  private Long createRandomProcessWithCleanupRelevantData() {
-    final Long processInstanceKey =
-        ProcessInstanceFixtures.createAndSaveRandomProcessInstance(rdbmsWriters, b -> b)
-            .processInstanceKey();
+  private Long createRandomProcessInstance() {
+    return createRandomProcessInstance(b -> b);
+  }
 
-    ElementInstanceFixtures.createAndSaveRandomElementInstances(
-        rdbmsWriters, b -> b.processInstanceKey(processInstanceKey));
-
-    UserTaskFixtures.createAndSaveRandomUserTasks(
-        rdbmsService, b -> b.processInstanceKey(processInstanceKey));
-
-    VariableFixtures.createAndSaveRandomVariables(
-        rdbmsService, b -> b.processInstanceKey(processInstanceKey));
-
-    IncidentFixtures.createAndSaveRandomIncidents(
-        rdbmsWriters, b -> b.processInstanceKey(processInstanceKey));
-
-    DecisionInstanceFixtures.createAndSaveRandomDecisionInstances(
-        rdbmsWriters, b -> b.processInstanceKey(processInstanceKey));
-
-    AuditLogFixtures.createAndSaveRandomAuditLogs(
-        rdbmsWriters, b -> b.processInstanceKey(processInstanceKey));
-
-    return processInstanceKey;
+  private Long createRandomProcessInstance(
+      final Function<ProcessInstanceDbModelBuilder, ProcessInstanceDbModelBuilder>
+          builderFunction) {
+    final ProcessInstanceDbModel processInstance =
+        ProcessInstanceFixtures.createAndSaveRandomProcessInstance(rdbmsWriters, builderFunction);
+    return processInstance.processInstanceKey();
   }
 
   private OffsetDateTime getBatchOperationHistoryCleanupDate(final String batchOperationKey) {

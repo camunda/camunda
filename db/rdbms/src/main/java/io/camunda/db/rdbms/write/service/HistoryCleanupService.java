@@ -162,26 +162,34 @@ public class HistoryCleanupService {
         // Delete up to batchSize child entities for all expired PIs
         // If any child entities remain, the PI won't be deleted and will be retried in next cycle
         // This keeps each cleanup cycle bounded and simple
+        int totalChildEntitiesDeleted = 0;
+        boolean anyDeletionHitBatchLimit = false;
         for (final var entry : rootProcessInstanceDependentChildWriters.entrySet()) {
           final var writer = entry.getValue();
           final var numDeleted =
               writer.deleteRootProcessInstanceRelatedData(
                   partitionId, expiredRootProcessInstanceKeys, cleanupBatchSize);
+          totalChildEntitiesDeleted += numDeleted;
+          anyDeletionHitBatchLimit = anyDeletionHitBatchLimit || (numDeleted >= cleanupBatchSize);
           numDeletedRecords.put(entry.getKey(), numDeleted);
         }
 
-        // Calculate total child entities deleted - if any deletion hit the batch size limit,
-        // there might be more to delete. Otherwise, we can assume all children are gone.
-
-        final boolean anyDeletionHitBatchLimit =
-            numDeletedRecords.values().stream().anyMatch(num -> num >= cleanupBatchSize);
-        final int totalChildEntitiesDeleted =
-            numDeletedRecords.values().stream().mapToInt(Integer::intValue).sum();
-
         // Only delete PIs if we're confident all children are gone:
-        // - No child entities were deleted in this cycle, OR
-        // - Some were deleted but none hit the batch limit (meaning all remaining were deleted)
-        if (totalChildEntitiesDeleted == 0 || !anyDeletionHitBatchLimit) {
+        // as long as no entity deletion hit the batch limit, we can be sure all children are gone
+        int deletedChildPIs = 0;
+        if (!anyDeletionHitBatchLimit) {
+          deletedChildPIs =
+              processInstanceWriter.deleteChildrenByRootProcessInstances(
+                  partitionId, expiredRootProcessInstanceKeys, cleanupBatchSize);
+          totalChildEntitiesDeleted += deletedChildPIs;
+          LOG.debug(
+              "Deleted {} child process instances with no remaining dependents on partition {}",
+              deletedChildPIs,
+              partitionId);
+          numDeletedRecords.put("childProcessInstance", deletedChildPIs);
+        }
+        // Only delete Root PIs if we're confident all related PIs and their children are gone
+        if (!anyDeletionHitBatchLimit && deletedChildPIs < cleanupBatchSize) {
           final int deletedRPIs =
               processInstanceWriter.deleteByKeys(expiredRootProcessInstanceKeys);
           numDeletedRecords.put("rootProcessInstance", deletedRPIs);
