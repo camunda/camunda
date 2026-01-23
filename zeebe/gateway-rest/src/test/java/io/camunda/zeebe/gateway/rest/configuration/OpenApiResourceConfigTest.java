@@ -12,7 +12,7 @@ import io.camunda.zeebe.gateway.rest.RestTest;
 import io.camunda.zeebe.gateway.rest.config.OpenApiResourceConfig;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
