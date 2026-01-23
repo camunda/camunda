@@ -14,7 +14,7 @@ import io.camunda.gateway.protocol.model.UserTaskAssignmentRequest;
  * MCP-specific user task assignment request that hides the assignee field from the MCP JSON schema.
  *
  * <p>The assignee is exposed as a separate root-level tool parameter with its own description. This
- * class contains only the options (allowOverride and action), allowing us to reuse the schema
+ * class accepts only the options (allowOverride and action), allowing us to reuse the schema
  * descriptions from the API spec without duplication.
  */
 public class McpUserTaskAssignmentRequest extends UserTaskAssignmentRequest {
