@@ -24,10 +24,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.withSettings;
 
 import io.camunda.zeebe.backup.client.api.BackupRequestHandler;
-import io.camunda.zeebe.backup.common.CheckpointIdGenerator;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
@@ -65,9 +63,8 @@ public class CheckpointScheduleTest {
   @BeforeEach
   void setup() {
     meterRegistry.clear();
-    backupRequestHandler =
-        mock(BackupRequestHandler.class, withSettings().useConstructor(mock(BrokerClient.class)));
     brokerClient = mock(BrokerClient.class);
+    backupRequestHandler = new BackupRequestHandler(brokerClient);
     final var topologyManager = mock(BrokerTopologyManager.class);
     final var clusterState = mock(BrokerClusterState.class);
     lenient().when(brokerClient.getTopologyManager()).thenReturn(topologyManager);
@@ -428,11 +425,7 @@ public class CheckpointScheduleTest {
     try {
       final var scheduler =
           new CheckpointScheduler(
-              checkpointSchedule,
-              backupSchedule,
-              brokerClient,
-              new CheckpointIdGenerator(),
-              meterRegistry);
+              checkpointSchedule, backupSchedule, backupRequestHandler, meterRegistry);
       final Field checkpointCreatorField =
           CheckpointScheduler.class.getDeclaredField("backupRequestHandler");
       checkpointCreatorField.setAccessible(true);
