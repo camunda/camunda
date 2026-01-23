@@ -8,6 +8,7 @@
 package io.camunda.exporter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableSet;
 import io.camunda.exporter.cache.ExporterEntityCacheProvider;
 import io.camunda.exporter.cache.form.CachedFormEntity;
 import io.camunda.exporter.config.ConnectionTypes;
@@ -155,7 +156,7 @@ import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.cache.CaffeineCacheStatsCounter;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -220,9 +221,9 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 indexDescriptors.get(FormIndex.class).getFullQualifiedName()),
             new CaffeineCacheStatsCounter(NAMESPACE, "form", meterRegistry));
 
-    exportHandlers = new HashSet<>();
+    exportHandlers = new LinkedHashSet<>();
     exportHandlers.addAll(
-        Set.of(
+        ImmutableSet.of(
             new RoleCreateUpdateHandler(
                 indexDescriptors.get(RoleIndex.class).getFullQualifiedName()),
             new RoleDeletedHandler(indexDescriptors.get(RoleIndex.class).getFullQualifiedName()),
