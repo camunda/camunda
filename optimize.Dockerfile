@@ -3,11 +3,21 @@ ARG BASE_IMAGE="reg.mini.dev/1212/openjre-base:21-dev"
 ARG BASE_DIGEST="sha256:8a3a3df9e3db35af08f854c2837c68294abbbf2720a26da670a96c6a5038e475"
 
 # If you don't have access to Minimus hardened base images, you can use public
-# base images like this instead on your own risk:
-#ARG BASE_IMAGE="alpine:3.23.0"
-#ARG BASE_DIGEST="sha256:51183f2cfa6320055da30872f211093f9ff1d3cf06f39a0bdb212314c5dc7375"
+# base images like this instead on your own risk.
+# Simply pass `--build-arg BASE=public` in order to build with the Temurin JDK.
+ARG BASE_IMAGE_PUBLIC="alpine:3.23.0"
+ARG BASE_DIGEST_PUBLIC="sha256:51183f2cfa6320055da30872f211093f9ff1d3cf06f39a0bdb212314c5dc7375"
+ARG BASE="hardened"
 
-FROM ${BASE_IMAGE}@${BASE_DIGEST} AS base
+### Base Application Image ###
+# hadolint ignore=DL3006
+FROM ${BASE_IMAGE}@${BASE_DIGEST} AS base-hardened
+
+### Base Public Application Image ###
+# hadolint ignore=DL3006
+FROM ${BASE_IMAGE_PUBLIC}@${BASE_DIGEST_PUBLIC} AS base-public
+
+FROM base-${BASE} AS base
 WORKDIR /
 
 ARG VERSION=""
