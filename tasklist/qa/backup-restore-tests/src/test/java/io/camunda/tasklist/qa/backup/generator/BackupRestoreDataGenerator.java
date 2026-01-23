@@ -9,17 +9,17 @@ package io.camunda.tasklist.qa.backup.generator;
 
 import io.camunda.tasklist.qa.backup.BackupRestoreTestContext;
 import java.io.IOException;
-import org.springframework.retry.annotation.Backoff;
-import org.springframework.retry.annotation.Retryable;
+import org.springframework.resilience.annotation.Retryable;
 
+/** Interface for backup/restore test data generators. */
 public interface BackupRestoreDataGenerator {
 
   void createData(BackupRestoreTestContext testContext) throws Exception;
 
-  @Retryable(retryFor = AssertionError.class, maxAttempts = 10, backoff = @Backoff(delay = 2000))
+  @Retryable(maxRetries = 10, delay = 2000, includes = AssertionError.class)
   void assertData() throws IOException;
 
-  @Retryable(retryFor = AssertionError.class, maxAttempts = 10, backoff = @Backoff(delay = 2000))
+  @Retryable(maxRetries = 10, delay = 2000, includes = AssertionError.class)
   void assertDataAfterChange() throws IOException;
 
   void changeData(BackupRestoreTestContext testContext) throws IOException;
