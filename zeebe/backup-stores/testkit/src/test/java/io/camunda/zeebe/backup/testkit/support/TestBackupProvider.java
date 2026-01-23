@@ -16,9 +16,11 @@ import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupImpl;
 import io.camunda.zeebe.backup.common.NamedFileSetImpl;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
+import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.VersionUtil;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Map;
@@ -28,6 +30,26 @@ import org.junit.jupiter.params.provider.Arguments;
 
 public final class TestBackupProvider {
 
+  private static final Path tempDir;
+
+  static {
+    try {
+      tempDir = Files.createTempDirectory(TestBackupProvider.class.getSimpleName());
+      Runtime.getRuntime()
+          .addShutdownHook(
+              new Thread(
+                  () -> {
+                    try {
+                      FileUtil.deleteFolderIfExists(tempDir);
+                    } catch (final IOException e) {
+                      throw new RuntimeException(e);
+                    }
+                  }));
+    } catch (final IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
   public static Stream<? extends Arguments> provideArguments() throws Exception {
     return Stream.of(
         arguments(named("stub", simpleBackup())),
@@ -35,10 +57,10 @@ public final class TestBackupProvider {
   }
 
   public static Backup backupWithoutSnapshot() throws IOException {
-    final var tempDir = Files.createTempDirectory("backup");
-    Files.createDirectory(tempDir.resolve("segments/"));
-    final var seg1 = Files.createFile(tempDir.resolve("segments/segment-file-1"));
-    final var seg2 = Files.createFile(tempDir.resolve("segments/segment-file-2"));
+    final var backupDir = Files.createTempDirectory(tempDir, "backup");
+    Files.createDirectory(backupDir.resolve("segments/"));
+    final var seg1 = Files.createFile(backupDir.resolve("segments/segment-file-1"));
+    final var seg2 = Files.createFile(backupDir.resolve("segments/segment-file-2"));
     Files.write(seg1, RandomUtils.nextBytes(1024));
     Files.write(seg2, RandomUtils.nextBytes(1024));
 
@@ -59,16 +81,16 @@ public final class TestBackupProvider {
   }
 
   public static Backup simpleBackupWithId(final BackupIdentifierImpl id) throws IOException {
-    final var tempDir = Files.createTempDirectory("backup");
-    Files.createDirectory(tempDir.resolve("segments/"));
-    final var seg1 = Files.createFile(tempDir.resolve("segments/segment-file-1"));
-    final var seg2 = Files.createFile(tempDir.resolve("segments/segment-file-2"));
+    final var backupDir = Files.createTempDirectory(tempDir, "backup");
+    Files.createDirectory(backupDir.resolve("segments/"));
+    final var seg1 = Files.createFile(backupDir.resolve("segments/segment-file-1"));
+    final var seg2 = Files.createFile(backupDir.resolve("segments/segment-file-2"));
     Files.write(seg1, RandomUtils.nextBytes(1024));
     Files.write(seg2, RandomUtils.nextBytes(1024));
 
-    Files.createDirectory(tempDir.resolve("snapshot/"));
-    final var s1 = Files.createFile(tempDir.resolve("snapshot/snapshot-file-1"));
-    final var s2 = Files.createFile(tempDir.resolve("snapshot/snapshot-file-2"));
+    Files.createDirectory(backupDir.resolve("snapshot/"));
+    final var s1 = Files.createFile(backupDir.resolve("snapshot/snapshot-file-1"));
+    final var s2 = Files.createFile(backupDir.resolve("snapshot/snapshot-file-2"));
     Files.write(s1, RandomUtils.nextBytes(1024));
     Files.write(s2, RandomUtils.nextBytes(1024));
 
@@ -86,9 +108,9 @@ public final class TestBackupProvider {
   }
 
   public static Backup minimalBackupWithId(final BackupIdentifierImpl id) throws IOException {
-    final var tempDir = Files.createTempDirectory("backup");
-    Files.createDirectory(tempDir.resolve("segments/"));
-    final var seg1 = Files.createFile(tempDir.resolve("segments/segment-file-1"));
+    final var backupDir = Files.createTempDirectory(tempDir, "backup");
+    Files.createDirectory(backupDir.resolve("segments/"));
+    final var seg1 = Files.createFile(backupDir.resolve("segments/segment-file-1"));
     Files.write(seg1, RandomUtils.nextBytes(1));
 
     return new BackupImpl(
