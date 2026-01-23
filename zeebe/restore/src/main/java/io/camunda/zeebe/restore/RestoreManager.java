@@ -90,7 +90,7 @@ public class RestoreManager {
 
     final var backups =
         backupStore
-            .inTimeRange(from, to, checkpointIdGenerator)
+            .listWithinRange(from, to, checkpointIdGenerator)
             .thenApply(
                 b ->
                     b.stream().filter(bs -> bs.statusCode() == BackupStatusCode.COMPLETED).toList())
@@ -247,11 +247,8 @@ public class RestoreManager {
             markers.stream()
                 .filter(
                     r ->
-                        switch (r) {
-                          case final BackupRange.Complete complete ->
-                              complete.contains(minBackup, maxBackup);
-                          default -> false;
-                        })
+                        r instanceof final BackupRange.Complete complete
+                            && complete.contains(minBackup, maxBackup))
                 .findFirst();
 
         if (validRange.isEmpty()) {

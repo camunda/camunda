@@ -8,8 +8,6 @@
 package io.camunda.zeebe.backup.schedule;
 
 import io.camunda.zeebe.backup.client.api.BackupRequestHandler;
-import io.camunda.zeebe.backup.common.CheckpointIdGenerator;
-import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse;
 import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse.PartitionCheckpointState;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
@@ -47,13 +45,12 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
   public CheckpointScheduler(
       final Schedule checkpointSchedule,
       final Schedule backupSchedule,
-      final BrokerClient brokerClient,
-      final CheckpointIdGenerator checkpointIdGenerator,
+      final BackupRequestHandler backupRequestHandler,
       final MeterRegistry meterRegistry) {
     this.checkpointSchedule = checkpointSchedule;
     this.backupSchedule = backupSchedule;
     metrics = new SchedulerMetrics(meterRegistry);
-    backupRequestHandler = new BackupRequestHandler(brokerClient, checkpointIdGenerator);
+    this.backupRequestHandler = backupRequestHandler;
     errorStrategy = new ExponentialBackoff(BACKOFF_MAX_DELAY_MS, BACKOFF_INITIAL_DELAY_MS, 1.2, 0);
   }
 
