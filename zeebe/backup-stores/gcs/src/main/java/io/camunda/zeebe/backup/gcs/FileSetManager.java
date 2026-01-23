@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.Map;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.stream.Collectors;
@@ -78,13 +79,10 @@ final class FileSetManager {
     }
   }
 
-  public Collection<BlobId> backupDataUrls(final Collection<BackupIdentifier> ids) {
+  public Map<BackupIdentifier, Collection<BlobId>> backupDataUrls(
+      final Collection<BackupIdentifier> ids) {
 
-    return ids.stream()
-        .parallel()
-        .map(this::listBackupObjects)
-        .flatMap(Collection::stream)
-        .collect(Collectors.toSet());
+    return ids.stream().parallel().collect(Collectors.toMap((id) -> id, this::listBackupObjects));
   }
 
   private Collection<BlobId> listBackupObjects(final BackupIdentifier id) {
