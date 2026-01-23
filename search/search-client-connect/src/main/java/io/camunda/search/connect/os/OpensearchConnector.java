@@ -18,6 +18,8 @@ import io.camunda.search.connect.plugin.PluginRepository;
 import io.camunda.search.connect.util.SecurityUtil;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import org.apache.hc.client5.http.auth.AuthScope;
 import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -183,9 +185,7 @@ public final class OpensearchConnector {
       final HttpAsyncClientBuilder httpAsyncClientBuilder,
       final ConnectConfiguration osConfig,
       final HttpRequestInterceptor... interceptors) {
-    final BasicCredentialsProvider credentialsProvider = new BasicCredentialsProvider();
-
-    setupAuthentication(credentialsProvider, osConfig);
+    setupAuthentication(httpAsyncClientBuilder, osConfig);
 
     for (final HttpRequestInterceptor interceptor : interceptors) {
       httpAsyncClientBuilder.addRequestInterceptorLast(interceptor);
@@ -198,10 +198,9 @@ public final class OpensearchConnector {
     final var proxyConfig = osConfig.getProxy();
     if (proxyConfig != null && proxyConfig.isEnabled()) {
       setupProxy(httpAsyncClientBuilder, proxyConfig);
-      setupProxyAuthentication(credentialsProvider, proxyConfig);
+      addPreemptiveProxyAuthInterceptor(httpAsyncClientBuilder, proxyConfig);
     }
 
-    httpAsyncClientBuilder.setDefaultCredentialsProvider(credentialsProvider);
     return httpAsyncClientBuilder;
   }
 
@@ -217,21 +216,25 @@ public final class OpensearchConnector {
     return builder;
   }
 
-  private void setupAuthentication(
-      final BasicCredentialsProvider credentialsProvider,
-      final ConnectConfiguration configuration) {
+  private HttpAsyncClientBuilder setupAuthentication(
+      final HttpAsyncClientBuilder builder, final ConnectConfiguration configuration) {
     final var username = configuration.getUsername();
     final var password = configuration.getPassword();
 
     if (username == null || password == null || username.isEmpty() || password.isEmpty()) {
       LOGGER.warn(
           "Username and/or password for are empty. Basic authentication for OpenSearch is not used.");
-      return;
+      return builder;
     }
 
+    final var credentialsProvider = new BasicCredentialsProvider();
     credentialsProvider.setCredentials(
         new AuthScope(null, -1),
-        new UsernamePasswordCredentials(username, password.toCharArray()));
+        new UsernamePasswordCredentials(
+            configuration.getUsername(), configuration.getPassword().toCharArray()));
+
+    builder.setDefaultCredentialsProvider(credentialsProvider);
+    return builder;
   }
 
   private void setupProxy(
@@ -243,21 +246,28 @@ public final class OpensearchConnector {
             proxyConfig.getPort()));
   }
 
-  private void setupProxyAuthentication(
-      final BasicCredentialsProvider credentialsProvider, final ProxyConfiguration proxyConfig) {
+  private void addPreemptiveProxyAuthInterceptor(
+      final HttpAsyncClientBuilder httpAsyncClientBuilder, final ProxyConfiguration proxyConfig) {
     final String username = proxyConfig.getUsername();
     final String password = proxyConfig.getPassword();
+
     if (username == null || password == null || username.isEmpty() || password.isEmpty()) {
       return;
     }
-    final HttpHost proxyHost =
-        new HttpHost(
-            proxyConfig.isSslEnabled() ? "https" : "http",
-            proxyConfig.getHost(),
-            proxyConfig.getPort());
-    credentialsProvider.setCredentials(
-        new AuthScope(proxyHost),
-        new UsernamePasswordCredentials(username, password.toCharArray()));
+
+    final String credentials = username + ":" + password;
+    final String encodedCredentials =
+        Base64.getEncoder().encodeToString(credentials.getBytes(StandardCharsets.UTF_8));
+    final String proxyAuthHeaderValue = "Basic " + encodedCredentials;
+
+    httpAsyncClientBuilder.addRequestInterceptorFirst(
+        (request, entity, context) -> {
+          if (!request.containsHeader("Proxy-Authorization")) {
+            request.addHeader("Proxy-Authorization", proxyAuthHeaderValue);
+          }
+        });
+
+    LOGGER.debug("Preemptive proxy authentication enabled for proxy");
   }
 
   private void setupSSLContext(

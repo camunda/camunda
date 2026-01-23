@@ -21,6 +21,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -29,6 +30,7 @@ import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.time.Duration;
+import java.util.Base64;
 import javax.net.ssl.SSLContext;
 import net.jodah.failsafe.Failsafe;
 import net.jodah.failsafe.RetryPolicy;
@@ -41,6 +43,7 @@ import org.apache.hc.client5.http.impl.nio.PoolingAsyncClientConnectionManager;
 import org.apache.hc.client5.http.impl.nio.PoolingAsyncClientConnectionManagerBuilder;
 import org.apache.hc.client5.http.ssl.ClientTlsStrategyBuilder;
 import org.apache.hc.core5.http.HttpHost;
+import org.apache.hc.core5.http.HttpRequestInterceptor;
 import org.apache.hc.core5.http.nio.ssl.TlsStrategy;
 import org.apache.hc.core5.util.Timeout;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
@@ -169,18 +172,22 @@ public class OpenSearchConnector {
     }
   }
 
-  private void setupAuthentication(
-      final BasicCredentialsProvider credentialsProvider, final OpenSearchProperties osConfig) {
+  private HttpAsyncClientBuilder setupAuthentication(
+      final HttpAsyncClientBuilder builder, final OpenSearchProperties osConfig) {
     if (!useBasicAuthentication(osConfig)) {
       LOGGER.warn(
           "Username and/or password for are empty. Basic authentication for OpenSearch is not used.");
-      return;
+      return builder;
     }
 
+    final BasicCredentialsProvider credentialsProvider = new BasicCredentialsProvider();
     credentialsProvider.setCredentials(
         new AuthScope(null, -1),
         new UsernamePasswordCredentials(
             osConfig.getUsername(), osConfig.getPassword().toCharArray()));
+
+    builder.setDefaultCredentialsProvider(credentialsProvider);
+    return builder;
   }
 
   private void setupSSLContext(
@@ -267,9 +274,7 @@ public class OpenSearchConnector {
       final HttpAsyncClientBuilder httpAsyncClientBuilder,
       final OpenSearchProperties osConfig,
       final org.apache.hc.core5.http.HttpRequestInterceptor... httpRequestInterceptors) {
-    final BasicCredentialsProvider credentialsProvider = new BasicCredentialsProvider();
-
-    setupAuthentication(credentialsProvider, osConfig);
+    setupAuthentication(httpAsyncClientBuilder, osConfig);
 
     LOGGER.trace("Attempt to load interceptor plugins");
     for (final var interceptor : httpRequestInterceptors) {
@@ -283,10 +288,8 @@ public class OpenSearchConnector {
     final ProxyProperties proxyConfig = osConfig.getProxy();
     if (proxyConfig != null && proxyConfig.isEnabled()) {
       setupProxy(httpAsyncClientBuilder, proxyConfig);
-      setupProxyAuthentication(credentialsProvider, proxyConfig);
+      addPreemptiveProxyAuthInterceptor(httpAsyncClientBuilder, proxyConfig);
     }
-
-    httpAsyncClientBuilder.setDefaultCredentialsProvider(credentialsProvider);
 
     return httpAsyncClientBuilder;
   }
@@ -304,8 +307,8 @@ public class OpenSearchConnector {
         proxyConfig.getPort());
   }
 
-  private void setupProxyAuthentication(
-      final BasicCredentialsProvider credentialsProvider, final ProxyProperties proxyConfig) {
+  private void addPreemptiveProxyAuthInterceptor(
+      final HttpAsyncClientBuilder httpAsyncClientBuilder, final ProxyProperties proxyConfig) {
     final String username = proxyConfig.getUsername();
     final String password = proxyConfig.getPassword();
 
@@ -313,15 +316,20 @@ public class OpenSearchConnector {
       return;
     }
 
-    final HttpHost proxyHost =
-        new HttpHost(
-            proxyConfig.isSslEnabled() ? "https" : "http",
-            proxyConfig.getHost(),
-            proxyConfig.getPort());
-    credentialsProvider.setCredentials(
-        new AuthScope(proxyHost),
-        new UsernamePasswordCredentials(
-            proxyConfig.getUsername(), proxyConfig.getPassword().toCharArray()));
+    final String credentials = username + ":" + password;
+    final String encodedCredentials =
+        Base64.getEncoder().encodeToString(credentials.getBytes(StandardCharsets.UTF_8));
+    final String proxyAuthHeaderValue = "Basic " + encodedCredentials;
+
+    httpAsyncClientBuilder.addRequestInterceptorFirst(
+        (HttpRequestInterceptor)
+            (request, entity, context) -> {
+              if (!request.containsHeader("Proxy-Authorization")) {
+                request.addHeader("Proxy-Authorization", proxyAuthHeaderValue);
+              }
+            });
+
+    LOGGER.debug("Preemptive proxy authentication enabled for proxy");
   }
 
   private RequestConfig.Builder setTimeouts(

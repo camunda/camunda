@@ -27,6 +27,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -34,6 +35,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
+import java.util.Base64;
 import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLContext;
 import org.apache.http.Header;
@@ -135,9 +137,7 @@ public class ElasticsearchConnector {
       final HttpAsyncClientBuilder httpAsyncClientBuilder,
       final ElasticsearchProperties elsConfig,
       final HttpRequestInterceptor... interceptors) {
-    final CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
-
-    setupAuthentication(credentialsProvider, elsConfig);
+    setupAuthentication(httpAsyncClientBuilder, elsConfig);
 
     LOGGER.trace("Attempt to load interceptor plugins");
     for (final HttpRequestInterceptor interceptor : interceptors) {
@@ -151,10 +151,8 @@ public class ElasticsearchConnector {
     final ProxyProperties proxyConfig = elsConfig.getProxy();
     if (proxyConfig != null && proxyConfig.isEnabled()) {
       setupProxy(httpAsyncClientBuilder, proxyConfig);
-      setupProxyAuthentication(credentialsProvider, proxyConfig);
+      addPreemptiveProxyAuthInterceptor(httpAsyncClientBuilder, proxyConfig);
     }
-
-    httpAsyncClientBuilder.setDefaultCredentialsProvider(credentialsProvider);
 
     return httpAsyncClientBuilder;
   }
@@ -282,7 +280,7 @@ public class ElasticsearchConnector {
   }
 
   private void setupAuthentication(
-      final CredentialsProvider credentialsProvider, final ElasticsearchProperties elsConfig) {
+      final HttpAsyncClientBuilder builder, final ElasticsearchProperties elsConfig) {
     final String username = elsConfig.getUsername();
     final String password = elsConfig.getPassword();
 
@@ -291,21 +289,35 @@ public class ElasticsearchConnector {
           "Username and/or password for are empty. Basic authentication for elasticsearch is not used.");
       return;
     }
+    final CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
     credentialsProvider.setCredentials(
         AuthScope.ANY, new UsernamePasswordCredentials(username, password));
+    builder.setDefaultCredentialsProvider(credentialsProvider);
   }
 
-  private void setupProxyAuthentication(
-      final CredentialsProvider credentialsProvider, final ProxyProperties proxyConfig) {
+  private void addPreemptiveProxyAuthInterceptor(
+      final HttpAsyncClientBuilder httpAsyncClientBuilder, final ProxyProperties proxyConfig) {
     final String username = proxyConfig.getUsername();
     final String password = proxyConfig.getPassword();
 
     if (username == null || password == null || username.isEmpty() || password.isEmpty()) {
       return;
     }
-    credentialsProvider.setCredentials(
-        new AuthScope(proxyConfig.getHost(), proxyConfig.getPort()),
-        new UsernamePasswordCredentials(username, password));
+
+    final String credentials = username + ":" + password;
+    final String encodedCredentials =
+        Base64.getEncoder().encodeToString(credentials.getBytes(StandardCharsets.UTF_8));
+    final String proxyAuthHeaderValue = "Basic " + encodedCredentials;
+
+    httpAsyncClientBuilder.addInterceptorFirst(
+        (HttpRequestInterceptor)
+            (request, context) -> {
+              if (!request.containsHeader("Proxy-Authorization")) {
+                request.addHeader("Proxy-Authorization", proxyAuthHeaderValue);
+              }
+            });
+
+    LOGGER.debug("Preemptive proxy authentication enabled for proxy");
   }
 
   @VisibleForTesting

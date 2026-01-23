@@ -19,12 +19,13 @@ import io.camunda.search.connect.configuration.SecurityConfiguration;
 import io.camunda.search.connect.jackson.JacksonConfiguration;
 import io.camunda.search.connect.plugin.PluginRepository;
 import io.camunda.search.connect.util.SecurityUtil;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import org.apache.http.Header;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpRequestInterceptor;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
-import org.apache.http.client.CredentialsProvider;
 import org.apache.http.client.config.RequestConfig.Builder;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.impl.client.BasicCredentialsProvider;
@@ -124,10 +125,7 @@ public final class ElasticsearchConnector {
       final HttpAsyncClientBuilder httpAsyncClientBuilder,
       final ConnectConfiguration configuration,
       final HttpRequestInterceptor... interceptors) {
-    final CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
-
-    setupAuthentication(credentialsProvider, configuration);
-
+    setupAuthentication(httpAsyncClientBuilder, configuration);
     final var security = configuration.getSecurity();
     if (security != null && security.isEnabled()) {
       setupSSLContext(httpAsyncClientBuilder, security);
@@ -140,10 +138,9 @@ public final class ElasticsearchConnector {
     final var proxyConfig = configuration.getProxy();
     if (proxyConfig != null && proxyConfig.isEnabled()) {
       setupProxy(httpAsyncClientBuilder, proxyConfig);
-      setupProxyAuthentication(credentialsProvider, proxyConfig);
+      addPreemptiveProxyAuthInterceptor(httpAsyncClientBuilder, proxyConfig);
     }
 
-    httpAsyncClientBuilder.setDefaultCredentialsProvider(credentialsProvider);
     return httpAsyncClientBuilder;
   }
 
@@ -197,7 +194,7 @@ public final class ElasticsearchConnector {
   }
 
   private void setupAuthentication(
-      final CredentialsProvider credentialsProvider, final ConnectConfiguration configuration) {
+      final HttpAsyncClientBuilder builder, final ConnectConfiguration configuration) {
     final var username = configuration.getUsername();
     final var password = configuration.getPassword();
 
@@ -207,8 +204,10 @@ public final class ElasticsearchConnector {
       return;
     }
 
+    final var credentialsProvider = new BasicCredentialsProvider();
     credentialsProvider.setCredentials(
         AuthScope.ANY, new UsernamePasswordCredentials(username, password));
+    builder.setDefaultCredentialsProvider(credentialsProvider);
   }
 
   private void setupProxy(
@@ -220,15 +219,28 @@ public final class ElasticsearchConnector {
             proxyConfig.isSslEnabled() ? "https" : "http"));
   }
 
-  private void setupProxyAuthentication(
-      final CredentialsProvider credentialsProvider, final ProxyConfiguration proxyConfig) {
+  private void addPreemptiveProxyAuthInterceptor(
+      final HttpAsyncClientBuilder httpAsyncClientBuilder, final ProxyConfiguration proxyConfig) {
     final String username = proxyConfig.getUsername();
     final String password = proxyConfig.getPassword();
+
     if (username == null || password == null || username.isEmpty() || password.isEmpty()) {
       return;
     }
-    credentialsProvider.setCredentials(
-        new AuthScope(proxyConfig.getHost(), proxyConfig.getPort()),
-        new UsernamePasswordCredentials(username, password));
+
+    final String credentials = username + ":" + password;
+    final String encodedCredentials =
+        Base64.getEncoder().encodeToString(credentials.getBytes(StandardCharsets.UTF_8));
+    final String proxyAuthHeaderValue = "Basic " + encodedCredentials;
+
+    httpAsyncClientBuilder.addInterceptorFirst(
+        (HttpRequestInterceptor)
+            (request, context) -> {
+              if (!request.containsHeader("Proxy-Authorization")) {
+                request.addHeader("Proxy-Authorization", proxyAuthHeaderValue);
+              }
+            });
+
+    LOGGER.debug("Preemptive proxy authentication enabled for proxy");
   }
 }
