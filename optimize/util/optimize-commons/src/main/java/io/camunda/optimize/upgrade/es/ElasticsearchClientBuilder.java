@@ -29,7 +29,6 @@ import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import javax.net.ssl.SSLContext;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpHost;
@@ -121,8 +120,8 @@ public class ElasticsearchClientBuilder {
       final SSLContext sslContext,
       final HttpRequestInterceptor... requestInterceptors) {
     return httpClientBuilder -> {
-      buildCredentialsProviderIfConfigured(configurationService)
-          .ifPresent(httpClientBuilder::setDefaultCredentialsProvider);
+      final CredentialsProvider credentialsProvider =
+          buildCredentialsProvider(configurationService);
 
       for (final HttpRequestInterceptor interceptor : requestInterceptors) {
         httpClientBuilder.addInterceptorLast(interceptor);
@@ -138,6 +137,7 @@ public class ElasticsearchClientBuilder {
                 proxyConfig.getHost(),
                 proxyConfig.getPort(),
                 proxyConfig.isSslEnabled() ? HTTPS : HTTP));
+        setupProxyAuthentication(credentialsProvider, proxyConfig);
       }
 
       if (configurationService.getElasticSearchConfiguration().getSkipHostnameVerification()) {
@@ -145,8 +145,22 @@ public class ElasticsearchClientBuilder {
         httpClientBuilder.setSSLHostnameVerifier((s, sslSession) -> true);
       }
 
+      httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider);
+
       return httpClientBuilder;
     };
+  }
+
+  private static void setupProxyAuthentication(
+      final CredentialsProvider credentialsProvider, final ProxyConfiguration proxyConfig) {
+    final String username = proxyConfig.getUsername();
+    final String password = proxyConfig.getPassword();
+    if (username == null || password == null || username.isEmpty() || password.isEmpty()) {
+      return;
+    }
+    credentialsProvider.setCredentials(
+        new AuthScope(proxyConfig.getHost(), proxyConfig.getPort()),
+        new UsernamePasswordCredentials(username, password));
   }
 
   private static RestClientBuilder buildDefaultRestClient(
@@ -182,12 +196,11 @@ public class ElasticsearchClientBuilder {
         .toArray(HttpHost[]::new);
   }
 
-  private static Optional<CredentialsProvider> buildCredentialsProviderIfConfigured(
+  private static CredentialsProvider buildCredentialsProvider(
       final ConfigurationService configurationService) {
-    CredentialsProvider credentialsProvider = null;
+    final CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
     if (configurationService.getElasticSearchConfiguration().getSecurityUsername() != null
         && configurationService.getElasticSearchConfiguration().getSecurityPassword() != null) {
-      credentialsProvider = new BasicCredentialsProvider();
       credentialsProvider.setCredentials(
           AuthScope.ANY,
           new UsernamePasswordCredentials(
@@ -197,7 +210,7 @@ public class ElasticsearchClientBuilder {
       LOGGER.debug(
           "Elasticsearch username and password not provided, skipping connection credential setup.");
     }
-    return Optional.ofNullable(credentialsProvider);
+    return credentialsProvider;
   }
 
   private static KeyStore loadCustomTrustStore(final ConfigurationService configurationService) {
