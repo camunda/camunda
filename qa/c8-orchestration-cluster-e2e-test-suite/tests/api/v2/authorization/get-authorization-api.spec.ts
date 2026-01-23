@@ -156,7 +156,7 @@ test.describe.parallel('Get Authorization API', () => {
     });
   });
 
-  test('Get existing Authorization - forbidden', async ({request}) => {
+  test('Get existing Authorization - 403 Forbidden', async ({request}) => {
     let userWithResourcesAuthorizationToSendRequest: {
       username: string;
       name: string;
