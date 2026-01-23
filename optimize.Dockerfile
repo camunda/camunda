@@ -7,9 +7,11 @@ ARG JATTACH_CHECKSUM_ARM64="288ae5ed87ee7fe0e608c06db5a23a096a6217c9878ede53c4e3
 ARG WAITFORIT_CHECKSUM="b7a04f38de1e51e7455ecf63151c8c7e405bd2d45a2d4e16f6419db737a125d6"
 
 # If you don't have access to Minimus hardened base images, you can use public
-# base images like this instead on your own risk:
-#ARG BASE_IMAGE="eclipse-temurin:21-jre-noble"
-#ARG BASE_DIGEST="sha256:20e7f7288e1c18eebe8f06a442c9f7183342d9b022d3b9a9677cae2b558ddddd"
+# base images like this instead on your own risk.
+# Simply pass `--build-arg BASE=public` in order to build with the Temurin JDK.
+ARG BASE_IMAGE_PUBLIC="alpine:3.23.0"
+ARG BASE_DIGEST_PUBLIC="sha256:51183f2cfa6320055da30872f211093f9ff1d3cf06f39a0bdb212314c5dc7375"
+ARG BASE="hardened"
 
 ### Download jattach ###
 # hadolint ignore=DL3006,DL3007
@@ -41,7 +43,15 @@ RUN --mount=type=cache,target=/root/.tools,rw \
     echo "${WAITFORIT_CHECKSUM} /wait-for-it.sh" | sha256sum -c && \
     chmod +x /wait-for-it.sh
 
-FROM ${BASE_IMAGE}@${BASE_DIGEST} AS base
+### Base Application Image ###
+# hadolint ignore=DL3006
+FROM ${BASE_IMAGE}@${BASE_DIGEST} AS base-hardened
+
+### Base Public Application Image ###
+# hadolint ignore=DL3006
+FROM ${BASE_IMAGE_PUBLIC}@${BASE_DIGEST_PUBLIC} AS base-public
+
+FROM base-${BASE} AS base
 WORKDIR /
 
 ARG VERSION=""
