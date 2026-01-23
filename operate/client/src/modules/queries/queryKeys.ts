@@ -20,7 +20,11 @@ import type {
   QueryProcessInstancesRequestBody,
   Variable,
 } from '@camunda/camunda-api-zod-schemas/8.8';
-import type {QueryAuditLogsRequestBody} from '@camunda/camunda-api-zod-schemas/8.9';
+import type {
+  QueryAuditLogsRequestBody,
+  GetIncidentProcessInstanceStatisticsByErrorRequestBody,
+  GetIncidentProcessInstanceStatisticsByDefinitionRequestBody,
+} from '@camunda/camunda-api-zod-schemas/8.9';
 
 const queryKeys = {
   variables: {
@@ -191,6 +195,17 @@ const queryKeys = {
       'auditLogsSearch',
       payload,
     ],
+  },
+  incidentProcessInstanceStatisticsByError: {
+    get: (payload?: GetIncidentProcessInstanceStatisticsByErrorRequestBody) => [
+      'incidentProcessInstanceStatisticsByError',
+      payload,
+    ],
+  },
+  incidentProcessInstanceStatisticsByDefinition: {
+    get: (
+      payload?: GetIncidentProcessInstanceStatisticsByDefinitionRequestBody,
+    ) => ['incidentProcessInstanceStatisticsByDefinition', payload],
   },
 };
 
