@@ -10,6 +10,7 @@ package io.camunda.zeebe.backup.testkit;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.backup.api.Backup;
+import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStore;
@@ -127,10 +128,9 @@ public interface ListingBackups {
         .forEach(CompletableFuture::join);
 
     // when
-    final var wildCard =
-        new BackupIdentifierWildcardImpl(
-            Optional.empty(), Optional.empty(), CheckpointPattern.ofTimeRange(from, to, generator));
-    final var result = getStore().list(wildCard);
+    final var wildcard =
+        BackupIdentifierWildcard.ofPattern(CheckpointPattern.ofTimeRange(from, to, generator));
+    final var result = getStore().list(wildcard);
 
     // then - only backups strictly within the range (after from and before to)
     assertThat(result).succeedsWithin(Duration.ofSeconds(20));
@@ -166,8 +166,7 @@ public interface ListingBackups {
 
     // when
     final var wildCard =
-        new BackupIdentifierWildcardImpl(
-            Optional.empty(), Optional.empty(), CheckpointPattern.ofTimeRange(from, to, generator));
+        BackupIdentifierWildcard.ofPattern(CheckpointPattern.ofTimeRange(from, to, generator));
     final var result = getStore().list(wildCard);
 
     // then
@@ -205,8 +204,7 @@ public interface ListingBackups {
 
     // when
     final var wildCard =
-        new BackupIdentifierWildcardImpl(
-            Optional.empty(), Optional.empty(), CheckpointPattern.ofTimeRange(from, to, generator));
+        BackupIdentifierWildcard.ofPattern(CheckpointPattern.ofTimeRange(from, to, generator));
     final var result = getStore().list(wildCard);
 
     // then
