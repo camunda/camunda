@@ -76,7 +76,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 import org.springframework.web.util.UriComponentsBuilder;
 
 @Configuration
@@ -139,8 +139,9 @@ public class CCSaaSSecurityConfigurerAdapter extends AbstractSecurityConfigurerA
         http.securityMatchers(
             securityMatchers ->
                 securityMatchers.requestMatchers(
-                    new AntPathRequestMatcher(PUBLIC_API_PATH),
-                    new AntPathRequestMatcher(createApiPath(INGESTION_PATH, VARIABLE_SUB_PATH))));
+                    PathPatternRequestMatcher.withDefaults().matcher(PUBLIC_API_PATH),
+                    PathPatternRequestMatcher.withDefaults()
+                        .matcher(createApiPath(INGESTION_PATH, VARIABLE_SUB_PATH))));
     return applyPublicApiOptions(httpSecurityBuilder);
   }
 
@@ -154,31 +155,42 @@ public class CCSaaSSecurityConfigurerAdapter extends AbstractSecurityConfigurerA
               httpRequests ->
                   httpRequests
                       // ready endpoint is public for infra
-                      .requestMatchers(new AntPathRequestMatcher(createApiPath(READYZ_PATH)))
+                      .requestMatchers(
+                          PathPatternRequestMatcher.withDefaults()
+                              .matcher(createApiPath(READYZ_PATH)))
                       .permitAll()
                       // public share resources
                       .requestMatchers(
-                          new AntPathRequestMatcher(EXTERNAL_SUB_PATH + "/"),
-                          new AntPathRequestMatcher("/index*"),
-                          new AntPathRequestMatcher(EXTERNAL_SUB_PATH + "/index*"),
-                          new AntPathRequestMatcher(STATIC_RESOURCE_PATH + "/**"),
-                          new AntPathRequestMatcher(
-                              EXTERNAL_SUB_PATH + STATIC_RESOURCE_PATH + "/**"),
-                          new AntPathRequestMatcher(EXTERNAL_SUB_PATH + "/*.js"),
-                          new AntPathRequestMatcher(EXTERNAL_SUB_PATH + "/*.ico"))
+                          PathPatternRequestMatcher.withDefaults().matcher(EXTERNAL_SUB_PATH + "/"),
+                          PathPatternRequestMatcher.withDefaults().matcher("/index*"),
+                          PathPatternRequestMatcher.withDefaults()
+                              .matcher(EXTERNAL_SUB_PATH + "/index*"),
+                          PathPatternRequestMatcher.withDefaults()
+                              .matcher(STATIC_RESOURCE_PATH + "/**"),
+                          PathPatternRequestMatcher.withDefaults()
+                              .matcher(EXTERNAL_SUB_PATH + STATIC_RESOURCE_PATH + "/**"),
+                          PathPatternRequestMatcher.withDefaults()
+                              .matcher(EXTERNAL_SUB_PATH + "/*.js"),
+                          PathPatternRequestMatcher.withDefaults()
+                              .matcher(EXTERNAL_SUB_PATH + "/*.ico"))
                       .permitAll()
                       // public share related resources (API)
                       .requestMatchers(
-                          new AntPathRequestMatcher(
-                              createApiPath(EXTERNAL_SUB_PATH + DEEP_SUB_PATH_ANY)),
-                          new AntPathRequestMatcher(EXTERNAL_SUB_PATH + REST_API_PATH + "/**"))
+                          PathPatternRequestMatcher.withDefaults()
+                              .matcher(createApiPath(EXTERNAL_SUB_PATH + DEEP_SUB_PATH_ANY)),
+                          PathPatternRequestMatcher.withDefaults()
+                              .matcher(EXTERNAL_SUB_PATH + REST_API_PATH + "/**"))
                       .permitAll()
                       // common public api resources
                       .requestMatchers(
-                          new AntPathRequestMatcher(createApiPath(UI_CONFIGURATION_PATH)),
-                          new AntPathRequestMatcher(createApiPath(LOCALIZATION_PATH)))
+                          PathPatternRequestMatcher.withDefaults()
+                              .matcher(createApiPath(UI_CONFIGURATION_PATH)),
+                          PathPatternRequestMatcher.withDefaults()
+                              .matcher(createApiPath(LOCALIZATION_PATH)))
                       .permitAll()
-                      .requestMatchers(new AntPathRequestMatcher(ACTUATOR_ENDPOINT + "/**"))
+                      .requestMatchers(
+                          PathPatternRequestMatcher.withDefaults()
+                              .matcher(ACTUATOR_ENDPOINT + "/**"))
                       .permitAll()
                       // everything else requires authentication
                       .anyRequest()
@@ -205,11 +217,11 @@ public class CCSaaSSecurityConfigurerAdapter extends AbstractSecurityConfigurerA
                   exceptionHandling
                       .defaultAuthenticationEntryPointFor(
                           new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED),
-                          new AntPathRequestMatcher(REST_API_PATH + "/**"))
+                          PathPatternRequestMatcher.withDefaults().matcher(REST_API_PATH + "/**"))
                       .defaultAuthenticationEntryPointFor(
                           new AddClusterIdSubPathToRedirectAuthenticationEntryPoint(
                               OAUTH_AUTH_ENDPOINT + "/auth0"),
-                          new AntPathRequestMatcher("/**")))
+                          PathPatternRequestMatcher.withDefaults().matcher("/**")))
           .oauth2ResourceServer(
               oauth2resourceServer ->
                   oauth2resourceServer.jwt(jwtConfigurer -> jwtConfigurer.decoder(jwtDecoder())))
