@@ -59,14 +59,11 @@ const PartiallyExpandableDataTable: React.FC<Props> = ({
             <TableHead>
               <TableRow>
                 <TableExpandHeader {...getExpandHeaderProps()} />
-                {headers.map((header) => {
-                  const {key, ...headerProps} = getHeaderProps({header});
-                  return (
-                    <TableHeader key={header.key} {...headerProps}>
-                      {header.header}
-                    </TableHeader>
-                  );
-                })}
+                {headers.map((header) => (
+                  <TableHeader {...getHeaderProps({header})}>
+                    {header.header}
+                  </TableHeader>
+                ))}
               </TableRow>
             </TableHead>
             <TableBody>
