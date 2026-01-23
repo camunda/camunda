@@ -33,7 +33,7 @@ const Grid = styled(CarbonGrid)`
 `;
 
 const ColumnRightPadding = styled(Column)`
-  padding-right: var(--cds-spacing-05);
+  margin-right: var(--cds-spacing-05);
 `;
 
 const Title = styled.h3`
@@ -41,4 +41,18 @@ const Title = styled.h3`
   padding-bottom: ${spacing05};
 `;
 
-export { OperationLogName, SuccessIcon, ErrorIcon, Grid, ColumnRightPadding, Title };
+const CenteredRow = styled.div`
+  display: flex;
+  justify-content: center;
+  width: 100%;
+`;
+
+export {
+  OperationLogName,
+  SuccessIcon,
+  ErrorIcon,
+  Grid,
+  ColumnRightPadding,
+  Title,
+  CenteredRow,
+};

@@ -21,8 +21,19 @@ import {
   Grid,
   Title,
   ColumnRightPadding,
+  CenteredRow,
 } from "./components/styled";
-import { Column, Dropdown, MultiSelect, Stack, TextInput } from "@carbon/react";
+import {
+  Button,
+  Column,
+  DatePicker,
+  DatePickerInput,
+  Dropdown,
+  FormLabel,
+  MultiSelect,
+  Stack,
+  TextInput,
+} from "@carbon/react";
 import {
   AuditLogEntityType,
   auditLogEntityTypeSchema,
@@ -34,6 +45,11 @@ import {
 import useDebounce from "react-debounced";
 
 type AuditLogSort = { field: string; order: "asc" | "desc" };
+
+type DateRange = {
+  from?: string;
+  to?: string;
+};
 
 const DEFAULT_SORT: AuditLogSort[] = [{ field: "timestamp", order: "desc" }];
 
@@ -52,10 +68,11 @@ const List: FC = () => {
   const [entityType, setEntityType] = useState<
     Array<AuditLogEntityType> | undefined
   >([]);
-  const [result, setResult] = useState<AuditLogResult | undefined>();
+  const [result, setResult] = useState<AuditLogResult | "all">("all");
   const debounce = useDebounce();
-  const [actor, setActor] = useState<string | undefined>();
+  const [actor, setActor] = useState<string>("");
   const [debouncedActor, setDebouncedActor] = useState<string | undefined>();
+  const [timestampRange, setTimestampRange] = useState<DateRange>({});
 
   const {
     pageParams,
@@ -86,10 +103,17 @@ const List: FC = () => {
       category: {
         $eq: "ADMIN",
       },
-      result: result,
+      result: result !== "all" ? result : undefined,
       operationType: operationType ? { $in: operationType } : undefined,
       entityType: entityType ? { $in: entityType } : undefined,
       actorId: debouncedActor,
+      timestamp:
+        timestampRange.from && timestampRange.to
+          ? {
+              $gte: timestampRange.from,
+              $lte: timestampRange.to,
+            }
+          : undefined,
     },
     page: {
       from: pageParams.page.from,
@@ -120,6 +144,7 @@ const List: FC = () => {
               items={auditLogOperationTypeSchema.options}
               titleText="Operation type"
               label="Choose option(s)"
+              selectedItems={operationType ? operationType : []}
               itemToString={(selectedItem) => spaceAndCapitalize(selectedItem)}
               onChange={({ selectedItems }) => {
                 setOperationType(selectedItems ? selectedItems : undefined);
@@ -131,6 +156,7 @@ const List: FC = () => {
               items={auditLogEntityTypeSchema.options}
               titleText="Entity type"
               label="Choose option(s)"
+              selectedItems={entityType ? entityType : []}
               itemToString={(selectedItem) => spaceAndCapitalize(selectedItem)}
               onChange={({ selectedItems }) => {
                 setEntityType(selectedItems ? selectedItems : undefined);
@@ -142,13 +168,13 @@ const List: FC = () => {
               aria-label="Choose option"
               titleText="Operations status"
               id="result-field"
-              onChange={({ selectedItem }) =>
+              onChange={({ selectedItem }) => {
                 setResult(
-                  selectedItem === "all"
-                    ? undefined
+                  !selectedItem || selectedItem === "all"
+                    ? "all"
                     : auditLogResultSchema.parse(selectedItem),
-                )
-              }
+                );
+              }}
               items={["all", ...auditLogResultSchema.options]}
               itemToString={(item) =>
                 item === "all" ? "All" : item ? spaceAndCapitalize(item) : ""
@@ -163,11 +189,58 @@ const List: FC = () => {
               value={actor}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                 const value = e.target.value.trim();
-                setActor(value ? value : undefined);
+                setActor(value);
                 debounce(() => setDebouncedActor(value ? value : undefined));
               }}
               size="sm"
             />
+            <FormLabel>Timestamp</FormLabel>
+            <DatePicker
+              datePickerType="range"
+              dateFormat="Y-m-d"
+              value={[timestampRange.from ?? "", timestampRange.to ?? ""]}
+              onChange={(dates) => {
+                const [from, to] = dates;
+                setTimestampRange({
+                  from: from ? from.toISOString() : undefined,
+                  to: to ? to.toISOString() : undefined,
+                });
+              }}
+              short
+            >
+              <DatePickerInput
+                id="date-picker1"
+                labelText="From"
+                placeholder="YYYY-MM-DD"
+                hideLabel
+                size="sm"
+              />
+              <DatePickerInput
+                id="date-picker2"
+                labelText="To"
+                placeholder="YYYY-MM-DD"
+                hideLabel
+                size="sm"
+              />
+            </DatePicker>
+            <CenteredRow>
+              <Button
+                kind="ghost"
+                size="sm"
+                disabled={!operationType && !entityType && !result && !actor}
+                type="reset"
+                onClick={() => {
+                  setOperationType(undefined);
+                  setEntityType(undefined);
+                  setResult("all");
+                  setActor("");
+                  setDebouncedActor(undefined);
+                  setTimestampRange({});
+                }}
+              >
+                Reset filters
+              </Button>
+            </CenteredRow>
           </Stack>
         </ColumnRightPadding>
         <Column sm={4} md={5} lg={12} xlg={13}>
