@@ -4,25 +4,21 @@ ARG BASE_DIGEST="sha256:c7016f60b7ff48500db655d2c6a5f19e7c2faef1a8c12112d77337b4
 ARG WAITFORIT_CHECKSUM="b7a04f38de1e51e7455ecf63151c8c7e405bd2d45a2d4e16f6419db737a125d6"
 
 # If you don't have access to Minimus hardened base images, you can use public
-# base images like this instead on your own risk:
-#ARG BASE_IMAGE="eclipse-temurin:21-jre-noble"
-#ARG BASE_DIGEST="sha256:20e7f7288e1c18eebe8f06a442c9f7183342d9b022d3b9a9677cae2b558ddddd"
+# base images like this instead on your own risk.
+# Simply pass `--build-arg BASE=public` in order to build with the Temurin JDK.
+ARG BASE_IMAGE_PUBLIC="alpine:3.23.0"
+ARG BASE_DIGEST_PUBLIC="sha256:51183f2cfa6320055da30872f211093f9ff1d3cf06f39a0bdb212314c5dc7375"
+ARG BASE="hardened"
 
-### Download wait-for-it.sh ###
-# hadolint ignore=DL3006,DL3007
-FROM alpine AS tools
-ARG TARGETARCH
-ARG WAITFORIT_CHECKSUM
+### Base Application Image ###
+# hadolint ignore=DL3006
+FROM ${BASE_IMAGE}@${BASE_DIGEST} AS base-hardened
 
-# hadolint ignore=DL4006,DL3018
-RUN --mount=type=cache,target=/root/.tools,rw \
-    apk add -q --no-cache curl 2>/dev/null && \
-    # Download wait-for-it.sh \
-    curl -sL "https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh" -o /wait-for-it.sh && \
-    echo "${WAITFORIT_CHECKSUM} /wait-for-it.sh" | sha256sum -c && \
-    chmod +x /wait-for-it.sh
+### Base Public Application Image ###
+# hadolint ignore=DL3006
+FROM ${BASE_IMAGE_PUBLIC}@${BASE_DIGEST_PUBLIC} AS base-public
 
-FROM ${BASE_IMAGE}@${BASE_DIGEST} AS base
+FROM base-${BASE} AS base
 WORKDIR /
 
 ARG VERSION=""
