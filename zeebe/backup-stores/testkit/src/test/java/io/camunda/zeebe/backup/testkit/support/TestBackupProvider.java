@@ -16,9 +16,11 @@ import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupImpl;
 import io.camunda.zeebe.backup.common.NamedFileSetImpl;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
+import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.VersionUtil;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Map;
@@ -26,7 +28,27 @@ import java.util.stream.Stream;
 import org.apache.commons.lang3.RandomUtils;
 import org.junit.jupiter.params.provider.Arguments;
 
-public final class TestBackupProvider {
+public class TestBackupProvider {
+
+  private static final Path TEMP_DIR;
+
+  static {
+    try {
+      TEMP_DIR = Files.createTempDirectory(TestBackupProvider.class.getSimpleName());
+      Runtime.getRuntime()
+          .addShutdownHook(
+              new Thread(
+                  () -> {
+                    try {
+                      FileUtil.deleteFolderIfExists(TEMP_DIR);
+                    } catch (final IOException e) {
+                      System.err.println("Failed to delete temp dir: " + TEMP_DIR);
+                    }
+                  }));
+    } catch (final IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
 
   public static Stream<? extends Arguments> provideArguments() throws Exception {
     return Stream.of(
@@ -35,10 +57,14 @@ public final class TestBackupProvider {
   }
 
   public static Backup backupWithoutSnapshot() throws IOException {
-    final var tempDir = Files.createTempDirectory("backup");
-    Files.createDirectory(tempDir.resolve("segments/"));
-    final var seg1 = Files.createFile(tempDir.resolve("segments/segment-file-1"));
-    final var seg2 = Files.createFile(tempDir.resolve("segments/segment-file-2"));
+    return backupWithoutSnapshot(VersionUtil.getVersion());
+  }
+
+  public static Backup backupWithoutSnapshot(final String version) throws IOException {
+    final var backupDir = Files.createTempDirectory(TEMP_DIR, "backup");
+    Files.createDirectory(backupDir.resolve("segments/"));
+    final var seg1 = Files.createFile(backupDir.resolve("segments/segment-file-1"));
+    final var seg2 = Files.createFile(backupDir.resolve("segments/segment-file-2"));
     Files.write(seg1, RandomUtils.nextBytes(1024));
     Files.write(seg2, RandomUtils.nextBytes(1024));
 
@@ -47,7 +73,7 @@ public final class TestBackupProvider {
         new BackupDescriptorImpl(
             4,
             5,
-            VersionUtil.getVersion(),
+            version,
             Instant.now().truncatedTo(ChronoUnit.MILLIS),
             CheckpointType.MANUAL_BACKUP),
         new NamedFileSetImpl(Map.of()),
@@ -58,17 +84,26 @@ public final class TestBackupProvider {
     return simpleBackupWithId(new BackupIdentifierImpl(1, 2, 3));
   }
 
+  public static Backup simpleBackup(final String version) throws IOException {
+    return simpleBackupWithId(new BackupIdentifierImpl(1, 2, 3), version);
+  }
+
   public static Backup simpleBackupWithId(final BackupIdentifierImpl id) throws IOException {
-    final var tempDir = Files.createTempDirectory("backup");
-    Files.createDirectory(tempDir.resolve("segments/"));
-    final var seg1 = Files.createFile(tempDir.resolve("segments/segment-file-1"));
-    final var seg2 = Files.createFile(tempDir.resolve("segments/segment-file-2"));
+    return simpleBackupWithId(id, VersionUtil.getVersion());
+  }
+
+  public static Backup simpleBackupWithId(final BackupIdentifierImpl id, final String version)
+      throws IOException {
+    final var backupDir = Files.createTempDirectory(TEMP_DIR, "backup");
+    Files.createDirectory(backupDir.resolve("segments/"));
+    final var seg1 = Files.createFile(backupDir.resolve("segments/segment-file-1"));
+    final var seg2 = Files.createFile(backupDir.resolve("segments/segment-file-2"));
     Files.write(seg1, RandomUtils.nextBytes(1024));
     Files.write(seg2, RandomUtils.nextBytes(1024));
 
-    Files.createDirectory(tempDir.resolve("snapshot/"));
-    final var s1 = Files.createFile(tempDir.resolve("snapshot/snapshot-file-1"));
-    final var s2 = Files.createFile(tempDir.resolve("snapshot/snapshot-file-2"));
+    Files.createDirectory(backupDir.resolve("snapshot/"));
+    final var s1 = Files.createFile(backupDir.resolve("snapshot/snapshot-file-1"));
+    final var s2 = Files.createFile(backupDir.resolve("snapshot/snapshot-file-2"));
     Files.write(s1, RandomUtils.nextBytes(1024));
     Files.write(s2, RandomUtils.nextBytes(1024));
 
@@ -78,7 +113,7 @@ public final class TestBackupProvider {
             "test-snapshot-id",
             4,
             5,
-            VersionUtil.getVersion(),
+            version,
             Instant.now().truncatedTo(ChronoUnit.MILLIS),
             CheckpointType.MANUAL_BACKUP),
         new NamedFileSetImpl(Map.of("snapshot-file-1", s1, "snapshot-file-2", s2)),
@@ -86,9 +121,14 @@ public final class TestBackupProvider {
   }
 
   public static Backup minimalBackupWithId(final BackupIdentifierImpl id) throws IOException {
-    final var tempDir = Files.createTempDirectory("backup");
-    Files.createDirectory(tempDir.resolve("segments/"));
-    final var seg1 = Files.createFile(tempDir.resolve("segments/segment-file-1"));
+    return minimalBackupWithId(id, VersionUtil.getVersion());
+  }
+
+  public static Backup minimalBackupWithId(final BackupIdentifierImpl id, final String version)
+      throws IOException {
+    final var backupDir = Files.createTempDirectory(TEMP_DIR, "backup");
+    Files.createDirectory(backupDir.resolve("segments/"));
+    final var seg1 = Files.createFile(backupDir.resolve("segments/segment-file-1"));
     Files.write(seg1, RandomUtils.nextBytes(1));
 
     return new BackupImpl(
@@ -96,7 +136,7 @@ public final class TestBackupProvider {
         new BackupDescriptorImpl(
             4,
             5,
-            VersionUtil.getVersion(),
+            version,
             Instant.now().truncatedTo(ChronoUnit.MILLIS),
             CheckpointType.MANUAL_BACKUP),
         new NamedFileSetImpl(Map.of()),
