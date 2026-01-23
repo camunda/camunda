@@ -11,6 +11,7 @@ import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.JobState.DeadlineIndex;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
+import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.api.scheduling.Task;
 import io.camunda.zeebe.stream.api.scheduling.TaskResult;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
@@ -20,7 +21,7 @@ import org.agrona.collections.MutableInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-final class JobTimeoutCheckScheduler implements Task {
+final class JobTimeoutCheckScheduler implements Task, StreamProcessorLifecycleAware {
   private static final Logger LOG = LoggerFactory.getLogger(JobTimeoutCheckScheduler.class);
 
   private boolean shouldReschedule = false;
@@ -92,11 +93,46 @@ final class JobTimeoutCheckScheduler implements Task {
     return taskResultBuilder.build();
   }
 
-  public void setProcessingContext(final ReadonlyStreamProcessorContext processingContext) {
+  @Override
+  public void onRecovered(final ReadonlyStreamProcessorContext processingContext) {
+    this.processingContext = processingContext;
+    shouldReschedule = true;
+    schedule(pollingInterval);
+  }
+
+  @Override
+  public void onClose() {
+    cancelTimer();
+  }
+
+  @Override
+  public void onFailed() {
+    cancelTimer();
+  }
+
+  @Override
+  public void onPaused() {
+    cancelTimer();
+  }
+
+  @Override
+  public void onResumed() {
+    shouldReschedule = true;
+    schedule(pollingInterval);
+  }
+
+  private void cancelTimer() {
+    shouldReschedule = false;
+    LOG.trace("Job timeout checker canceled!");
+  }
+
+  // Package-private setters for tests
+
+  void setProcessingContext(final ReadonlyStreamProcessorContext processingContext) {
     this.processingContext = processingContext;
   }
 
-  public void setShouldReschedule(final boolean shouldReschedule) {
+  void setShouldReschedule(final boolean shouldReschedule) {
     this.shouldReschedule = shouldReschedule;
   }
 }

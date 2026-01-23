@@ -10,9 +10,17 @@ package io.camunda.zeebe.engine.processing.message;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.state.immutable.PendingMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.message.MessageSubscription;
+import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
+import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
+import java.time.Duration;
 import java.time.InstantSource;
 
-public final class PendingMessageSubscriptionCheckScheduler implements Runnable {
+public final class PendingMessageSubscriptionCheckScheduler
+    implements Runnable, StreamProcessorLifecycleAware {
+
+  public static final Duration SUBSCRIPTION_TIMEOUT = Duration.ofSeconds(10);
+  public static final Duration SUBSCRIPTION_CHECK_INTERVAL = Duration.ofSeconds(30);
+
   private final SubscriptionCommandSender commandSender;
   private final PendingMessageSubscriptionState state;
 
@@ -23,17 +31,13 @@ public final class PendingMessageSubscriptionCheckScheduler implements Runnable 
    */
   private final long subscriptionTimeout;
 
-  private final InstantSource clock;
+  private InstantSource clock;
 
   public PendingMessageSubscriptionCheckScheduler(
-      final SubscriptionCommandSender commandSender,
-      final PendingMessageSubscriptionState state,
-      final long subscriptionTimeout,
-      final InstantSource clock) {
+      final SubscriptionCommandSender commandSender, final PendingMessageSubscriptionState state) {
     this.commandSender = commandSender;
     this.state = state;
-    this.subscriptionTimeout = subscriptionTimeout;
-    this.clock = clock;
+    subscriptionTimeout = SUBSCRIPTION_TIMEOUT.toMillis();
   }
 
   @Override
@@ -60,5 +64,11 @@ public final class PendingMessageSubscriptionCheckScheduler implements Runnable 
     state.onSent(record, sentTime);
 
     return true; // to continue visiting
+  }
+
+  @Override
+  public void onRecovered(final ReadonlyStreamProcessorContext context) {
+    clock = context.getClock();
+    context.getScheduleService().runAtFixedRate(SUBSCRIPTION_CHECK_INTERVAL, this);
   }
 }
