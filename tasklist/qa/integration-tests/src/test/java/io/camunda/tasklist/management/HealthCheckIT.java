@@ -25,16 +25,18 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.health.contributor.Health;
-import org.springframework.boot.test.autoconfigure.actuate.observability.AutoConfigureObservability;
+import org.springframework.boot.micrometer.metrics.test.autoconfigure.AutoConfigureMetrics;
+import org.springframework.boot.resttestclient.TestRestTemplate;
+import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRestTemplate;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalManagementPort;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-@AutoConfigureObservability(tracing = false)
+@AutoConfigureMetrics
+@AutoConfigureTestRestTemplate
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(
     classes = {
@@ -60,13 +62,13 @@ public class HealthCheckIT {
 
   @Test
   public void testReady() throws Exception {
-    given(probes.getHealth(anyBoolean())).willReturn(Health.up().build());
+    given(probes.health(anyBoolean())).willReturn(Health.up().build());
     final var response =
         testRestTemplate.getForEntity(
             "http://localhost:" + managementPort + "/actuator/health/readiness", Map.class);
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     assertThat(response.getBody()).containsEntry("status", "UP");
-    verify(probes, times(1)).getHealth(anyBoolean());
+    verify(probes, times(1)).health(anyBoolean());
   }
 
   @Test
@@ -81,7 +83,7 @@ public class HealthCheckIT {
 
   @Test
   public void testReadyStateIsNotOK() throws Exception {
-    given(probes.getHealth(anyBoolean())).willReturn(Health.down().build());
+    given(probes.health(anyBoolean())).willReturn(Health.down().build());
     final var livenessResponse =
         testRestTemplate.getForEntity(
             "http://localhost:" + managementPort + "/actuator/health/liveness", Map.class);
@@ -92,7 +94,7 @@ public class HealthCheckIT {
         testRestTemplate.getForEntity(
             "http://localhost:" + managementPort + "/actuator/health/readiness", Map.class);
     assertThat(readinessResponse.getStatusCode()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE);
-    verify(probes, times(2)).getHealth(anyBoolean());
+    verify(probes, times(2)).health(anyBoolean());
   }
 
   @Test
