@@ -661,7 +661,7 @@ public class MigrateUserTaskTest {
         .hasCandidateUsersList("oof", "rab")
         .hasDueDate("2023-03-02T16:35+02:00")
         .hasFollowUpDate("2023-03-02T15:35+02:00")
-        .hasAssignee("\"userA\"")
+        .hasAssignee("userA")
         .hasPriority(50); // default priority
   }
 
@@ -772,7 +772,7 @@ public class MigrateUserTaskTest {
         .hasFormKey(form.getFormKey())
         .hasCandidateGroupsList("foo", "bar")
         .hasCandidateUsersList("oof", "rab")
-        .hasAssignee("\"userA\"")
+        .hasAssignee("userA")
         .hasDueDate("2023-03-02T16:35+02:00")
         .hasFollowUpDate("2023-03-02T15:35+02:00")
         .hasPriority(80);
@@ -886,7 +886,7 @@ public class MigrateUserTaskTest {
         .hasFormKey(-1L)
         .hasCandidateGroupsList("foo", "bar")
         .hasCandidateUsersList("oof", "rab")
-        .hasAssignee("\"userA\"")
+        .hasAssignee("userA")
         .hasDueDate("2023-03-02T16:35+02:00")
         .hasFollowUpDate("2023-03-02T15:35+02:00")
         .hasPriority(80); // target priority
@@ -996,7 +996,7 @@ public class MigrateUserTaskTest {
         .hasCandidateGroupsList("foo", "bar")
         .hasCandidateUsersList("oof", "rab")
         .hasDueDate("2023-03-02T16:35+02:00")
-        .hasAssignee("\"userA\"")
+        .hasAssignee("userA")
         .hasFollowUpDate("2023-03-02T15:35+02:00")
         .hasPriority(50); // default priority
 
@@ -1102,7 +1102,7 @@ public class MigrateUserTaskTest {
         .hasExternalFormReference("test-form-1-key")
         .hasCandidateGroupsList("foo", "bar")
         .hasCandidateUsersList("oof", "rab")
-        .hasAssignee("\"userA\"")
+        .hasAssignee("userA")
         .hasDueDate("2023-03-02T16:35+02:00")
         .hasFollowUpDate("2023-03-02T15:35+02:00")
         .hasPriority(50); // default priority
