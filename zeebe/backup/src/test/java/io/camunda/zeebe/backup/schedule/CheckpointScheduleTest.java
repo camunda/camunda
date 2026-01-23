@@ -20,6 +20,7 @@ import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -36,7 +37,6 @@ import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import java.lang.reflect.Field;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -64,15 +64,13 @@ public class CheckpointScheduleTest {
   void setup() {
     meterRegistry.clear();
     brokerClient = mock(BrokerClient.class);
-    backupRequestHandler = new BackupRequestHandler(brokerClient);
     final var topologyManager = mock(BrokerTopologyManager.class);
     final var clusterState = mock(BrokerClusterState.class);
     lenient().when(brokerClient.getTopologyManager()).thenReturn(topologyManager);
     lenient().when(topologyManager.getTopology()).thenReturn(clusterState);
     lenient().when(clusterState.getPartitionsCount()).thenReturn(1);
     lenient().when(clusterState.getPartitions()).thenReturn(List.of(1));
-
-    when(backupRequestHandler.checkpoint(any())).thenCallRealMethod();
+    backupRequestHandler = spy(new BackupRequestHandler(brokerClient));
 
     doAnswer(
             (ctx) -> {
@@ -422,20 +420,8 @@ public class CheckpointScheduleTest {
 
   private CheckpointScheduler createScheduler(
       final Schedule checkpointSchedule, final Schedule backupSchedule) {
-    try {
-      final var scheduler =
-          new CheckpointScheduler(
-              checkpointSchedule, backupSchedule, backupRequestHandler, meterRegistry);
-      final Field checkpointCreatorField =
-          CheckpointScheduler.class.getDeclaredField("backupRequestHandler");
-      checkpointCreatorField.setAccessible(true);
-      // inject mocked backup request handler
-      checkpointCreatorField.set(scheduler, backupRequestHandler);
-
-      return scheduler;
-    } catch (final NoSuchFieldException | IllegalAccessException e) {
-      throw new RuntimeException(e);
-    }
+    return new CheckpointScheduler(
+        checkpointSchedule, backupSchedule, backupRequestHandler, meterRegistry);
   }
 
   private Gauge getGauge(final String gaugeName, final CheckpointType type) {
