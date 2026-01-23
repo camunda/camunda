@@ -12,6 +12,7 @@ import static io.camunda.client.api.search.enums.PermissionType.READ_PROCESS_INS
 import static io.camunda.client.api.search.enums.PermissionType.READ_USER_TASK;
 import static io.camunda.client.api.search.enums.ResourceType.AUDIT_LOG;
 import static io.camunda.client.api.search.enums.ResourceType.PROCESS_DEFINITION;
+import static io.camunda.client.api.search.enums.ResourceType.USER_TASK;
 import static io.camunda.it.auditlog.AuditLogUtils.PROCESS_A_ID;
 import static io.camunda.it.auditlog.AuditLogUtils.PROCESS_B_ID;
 import static io.camunda.it.auditlog.AuditLogUtils.PROCESS_C_ID;
@@ -62,8 +63,10 @@ public class AuditLogAuthorizationsIT {
   private static final String USER_D_USERNAME = "userD";
   private static final String USER_E_USERNAME = "userE";
   private static final String USER_F_USERNAME = "userF";
+  private static final String USER_G_USERNAME = "userG";
+  private static final String USER_GG_USERNAME = "userGG";
   private static final String PASSWORD = "password";
-  private static final List WILDCARD = List.of(AuthorizationScope.WILDCARD.getResourceId());
+  private static final List<String> WILDCARD = List.of(AuthorizationScope.WILDCARD.getResourceId());
 
   @UserDefinition
   private static final TestUser USER_UNAUTHORIZED =
@@ -144,11 +147,27 @@ public class AuditLogAuthorizationsIT {
               new Permissions(AUDIT_LOG, READ, List.of(AuditLogCategoryEnum.ADMIN.name())),
               new Permissions(PROCESS_DEFINITION, READ_USER_TASK, List.of(PROCESS_B_ID))));
 
+  // Users with candidateUsers USER_TASK READ property permissions
+  @UserDefinition
+  private static final TestUser USER_G =
+      new TestUser(
+          USER_G_USERNAME,
+          PASSWORD,
+          List.of(Permissions.withPropertyName(USER_TASK, READ, "candidateUsers")));
+
+  @UserDefinition
+  private static final TestUser USER_GG =
+      new TestUser(
+          USER_GG_USERNAME,
+          PASSWORD,
+          List.of(Permissions.withPropertyName(USER_TASK, READ, "candidateUsers")));
+
   // At test execution time, we already have 100+ audit log entries.
   // Custom page limit ensures all entries are retrieved for test assertions.
   private static final Consumer<SearchRequestPage> PAGE_CONFIG = p -> p.limit(200);
 
   private static CamundaClient adminClient;
+  private static long userTaskWithCandidateUserKey;
 
   @BeforeAll
   static void setUp() {
@@ -166,6 +185,22 @@ public class AuditLogAuthorizationsIT {
     utils.assignUserToTenant(USER_D_USERNAME, TENANT_A);
     utils.assignUserToTenant(USER_E_USERNAME, TENANT_A);
     utils.assignUserToTenant(USER_F_USERNAME, TENANT_A);
+    utils.assignUserToTenant(USER_G_USERNAME, TENANT_A);
+    utils.assignUserToTenant(USER_GG_USERNAME, TENANT_A);
+
+    userTaskWithCandidateUserKey =
+        utils.getUserTasks().stream()
+            .filter(task -> PROCESS_B_ID.equals(task.getBpmnProcessId()))
+            .findFirst()
+            .orElseThrow()
+            .getUserTaskKey();
+
+    adminClient
+        .newUpdateUserTaskCommand(userTaskWithCandidateUserKey)
+        .candidateUsers(USER_G_USERNAME)
+        .send()
+        .join();
+
     utils.await();
   }
 
@@ -476,6 +511,42 @@ public class AuditLogAuthorizationsIT {
                             && PROCESS_B_ID.equals(log.getProcessDefinitionId())))
         .isTrue();
     assertGetByKeyAccess(client, logs.items().getFirst());
+  }
+
+  @Test
+  void shouldAuthorizeUserTaskAuditLogSearchForCandidateUserPermission(
+      @Authenticated(USER_G_USERNAME) final CamundaClient client) {
+    // when
+    final var logs =
+        client.newUserTaskAuditLogSearchRequest(userTaskWithCandidateUserKey).send().join();
+
+    // then
+    assertThat(logs.items()).isNotEmpty();
+    assertThat(
+            logs.items().stream()
+                .allMatch(
+                    log ->
+                        String.valueOf(userTaskWithCandidateUserKey).equals(log.getUserTaskKey())))
+        .isTrue();
+    assertThat(
+            logs.items().stream()
+                .allMatch(log -> PROCESS_B_ID.equals(log.getProcessDefinitionId())))
+        .isTrue();
+  }
+
+  @Test
+  void shouldRejectUserTaskAuditLogSearchForNonCandidateUser(
+      @Authenticated(USER_GG_USERNAME) final CamundaClient client) {
+    // when
+    assertThatThrownBy(
+            () ->
+                client.newUserTaskAuditLogSearchRequest(userTaskWithCandidateUserKey).send().join())
+        .isInstanceOf(io.camunda.client.api.command.ProblemException.class)
+        .satisfies(
+            e -> {
+              final var problemException = (io.camunda.client.api.command.ProblemException) e;
+              assertThat(problemException.code()).isEqualTo(403);
+            });
   }
 
   private void assertGetByKeyAccess(final CamundaClient client, final AuditLogResult log) {
