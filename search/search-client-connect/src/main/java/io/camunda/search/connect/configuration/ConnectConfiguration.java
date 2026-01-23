@@ -153,9 +153,6 @@ public class ConnectConfiguration {
   }
 
   public ProxyConfiguration getProxy() {
-    if (proxy != null) {
-      proxy.validate();
-    }
     return proxy;
   }
 

@@ -7,7 +7,6 @@
  */
 package io.camunda.tasklist.property;
 
-import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import java.util.Objects;
 
 public class ProxyProperties {
@@ -18,18 +17,6 @@ public class ProxyProperties {
   private boolean sslEnabled;
   private String username;
   private String password;
-
-  public void validate() {
-    if (enabled) {
-      if (host == null || host.isEmpty()) {
-        throw new TasklistRuntimeException(
-            "Proxy host must be set and not empty if proxy is enabled");
-      }
-      if (port == null) {
-        throw new TasklistRuntimeException("Proxy port must be set if proxy is enabled");
-      }
-    }
-  }
 
   public boolean isEnabled() {
     return enabled;
