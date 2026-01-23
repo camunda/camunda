@@ -7,6 +7,8 @@
  */
 package io.camunda.gateway.mcp.model;
 
+import static io.camunda.gateway.mcp.tool.ToolDescriptions.VARIABLE_FILTER_FORMAT_NOTE;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.gateway.protocol.model.simple.VariableFilter;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -18,9 +20,6 @@ import org.springframework.lang.Nullable;
  */
 public class McpVariableFilter extends VariableFilter {
 
-  private static final String SIMPLE_JSON_EXAMPLE_VALUE = "\\\"myValue\\\"";
-  private static final String NESTED_JSON_EXAMPLE_VALUE = "\"{\\\"myVar\\\":\\\"myValue\\\"}\"";
-
   @JsonIgnore
   @Override
   public String getTenantId() {
@@ -29,11 +28,7 @@ public class McpVariableFilter extends VariableFilter {
 
   @Schema(
       name = "value",
-      description =
-          "The value of the variable in serialized JSON format. Example string value: "
-              + SIMPLE_JSON_EXAMPLE_VALUE
-              + ". Example nested JSON value: "
-              + NESTED_JSON_EXAMPLE_VALUE,
+      description = VARIABLE_FILTER_FORMAT_NOTE,
       requiredMode = Schema.RequiredMode.NOT_REQUIRED)
   @Override
   public @Nullable String getValue() {

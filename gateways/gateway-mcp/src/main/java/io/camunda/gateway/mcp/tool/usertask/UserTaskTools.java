@@ -11,9 +11,10 @@ import static io.camunda.gateway.mcp.tool.ToolDescriptions.EVENTUAL_CONSISTENCY_
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.FILTER_DESCRIPTION;
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.PAGE_DESCRIPTION;
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.SORT_DESCRIPTION;
+import static io.camunda.gateway.mcp.tool.ToolDescriptions.TRUNCATE_VARIABLES_DESCRIPTION;
+import static io.camunda.gateway.mcp.tool.ToolDescriptions.USER_TASK_KEY_DESCRIPTION;
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.USER_TASK_KEY_POSITIVE_MESSAGE;
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.VARIABLE_FILTER_FORMAT_NOTE;
-import static io.camunda.gateway.mcp.tool.ToolDescriptions.VARIABLE_FORMAT_DESCRIPTION;
 
 import io.camunda.gateway.mapping.http.RequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
@@ -57,10 +58,7 @@ public class UserTaskTools {
 
   @McpTool(
       description =
-          "Search for user tasks. "
-              + EVENTUAL_CONSISTENCY_NOTE
-              + " "
-              + VARIABLE_FILTER_FORMAT_NOTE,
+          "Search for user tasks. " + VARIABLE_FILTER_FORMAT_NOTE + " " + EVENTUAL_CONSISTENCY_NOTE,
       annotations = @McpAnnotations(readOnlyHint = true))
   public CallToolResult searchUserTasks(
       @McpToolParam(description = FILTER_DESCRIPTION, required = false)
@@ -90,7 +88,7 @@ public class UserTaskTools {
       description = "Get user task by key. " + EVENTUAL_CONSISTENCY_NOTE,
       annotations = @McpAnnotations(readOnlyHint = true))
   public CallToolResult getUserTask(
-      @McpToolParam(description = "The user task key.")
+      @McpToolParam(description = USER_TASK_KEY_DESCRIPTION)
           @Positive(message = USER_TASK_KEY_POSITIVE_MESSAGE)
           final Long userTaskKey) {
     try {
@@ -104,9 +102,11 @@ public class UserTaskTools {
     }
   }
 
-  @McpTool(description = "Assign or unassign a user task. Provide an assignee to assign the task, or omit/provide null to unassign it.")
+  @McpTool(
+      description =
+          "Assign or unassign a user task. Provide an assignee to assign the task, or omit/provide null to unassign it.")
   public CallToolResult assignUserTask(
-      @McpToolParam(description = "The key of the user task to assign or unassign.")
+      @McpToolParam(description = USER_TASK_KEY_DESCRIPTION)
           @Positive(message = USER_TASK_KEY_POSITIVE_MESSAGE)
           final Long userTaskKey,
       @McpToolParam(
@@ -180,13 +180,10 @@ public class UserTaskTools {
 
   @McpTool(
       description =
-          "Search user task variables based on given criteria. "
-              + VARIABLE_FORMAT_DESCRIPTION
-              + " The value may be truncated depending on the truncateValues parameter. "
-              + EVENTUAL_CONSISTENCY_NOTE,
+          "Search user task variables based on given criteria. " + EVENTUAL_CONSISTENCY_NOTE,
       annotations = @McpAnnotations(readOnlyHint = true))
   public CallToolResult searchUserTaskVariables(
-      @McpToolParam(description = "The key of the user task.")
+      @McpToolParam(description = USER_TASK_KEY_DESCRIPTION)
           @Positive(message = USER_TASK_KEY_POSITIVE_MESSAGE)
           final Long userTaskKey,
       @McpToolParam(description = FILTER_DESCRIPTION, required = false)
@@ -195,10 +192,7 @@ public class UserTaskTools {
           final List<VariableSearchQuerySortRequest> sort,
       @McpToolParam(description = PAGE_DESCRIPTION, required = false)
           final McpSearchQueryPageRequest page,
-      @McpToolParam(
-              description =
-                  "When true (default), long variable values in the response are truncated. When false, full variable values are returned.",
-              required = false)
+      @McpToolParam(description = TRUNCATE_VARIABLES_DESCRIPTION, required = false)
           final Boolean truncateValues) {
     try {
       final var variableSearchQuery = SearchQueryRequestMapper.toVariableQuery(filter, page, sort);
