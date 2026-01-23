@@ -377,6 +377,19 @@ public class SimpleSearchQueryMapper {
     return filterModel;
   }
 
+  private static List<VariableValueFilterProperty> convertVariableValueFilterProperties(
+      final List<io.camunda.gateway.protocol.model.simple.VariableValueFilterProperty> simple) {
+    if (simple == null) {
+      return null;
+    }
+    return simple.stream()
+        .map(
+            simpleVar ->
+                new VariableValueFilterProperty(
+                    simpleVar.getName(), getStringFilter(simpleVar.getValue())))
+        .toList();
+  }
+
   private static StringFilterProperty getStringFilter(final String value) {
     return new AdvancedStringFilter().$eq(value);
   }
@@ -406,17 +419,5 @@ public class SimpleSearchQueryMapper {
       filterModel.$lt(value.to());
     }
     return filterModel;
-  }
-
-  private static List<VariableValueFilterProperty> convertVariableValueFilterProperties(
-      final List<io.camunda.gateway.protocol.model.simple.VariableValueFilterProperty> simple) {
-    if (simple == null) {
-      return null;
-    }
-    return simple.stream()
-        .map(
-            simpleVar ->
-                new VariableValueFilterProperty(simpleVar.getName(), getStringFilter(simpleVar.getValue())))
-        .toList();
   }
 }
