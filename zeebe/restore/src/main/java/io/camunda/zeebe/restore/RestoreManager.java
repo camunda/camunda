@@ -11,6 +11,8 @@ import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
+import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
+import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern;
 import io.camunda.zeebe.backup.api.BackupRange;
 import io.camunda.zeebe.backup.api.BackupRanges;
 import io.camunda.zeebe.backup.api.BackupStatus;
@@ -88,9 +90,12 @@ public class RestoreManager {
 
     verifyDataFolderIsEmpty(dataDirectory, ignoreFilesInTarget);
 
+    final var wildCard =
+        BackupIdentifierWildcard.ofPattern(
+            CheckpointPattern.ofTimeRange(from, to, checkpointIdGenerator));
     final var backups =
         backupStore
-            .listWithinRange(from, to, checkpointIdGenerator)
+            .list(wildCard)
             .thenApply(
                 b ->
                     b.stream().filter(bs -> bs.statusCode() == BackupStatusCode.COMPLETED).toList())
