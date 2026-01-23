@@ -7,13 +7,8 @@
  */
 package io.camunda.zeebe.backup.api;
 
-import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern;
-import io.camunda.zeebe.backup.common.BackupIdentifierWildcardImpl;
-import io.camunda.zeebe.backup.common.CheckpointIdGenerator;
 import java.nio.file.Path;
-import java.time.Instant;
 import java.util.Collection;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 /** A store where the backup is stored * */
@@ -27,16 +22,6 @@ public interface BackupStore {
 
   /** Uses the given wildcard to list all backups matching this wildcard. */
   CompletableFuture<Collection<BackupStatus>> list(BackupIdentifierWildcard wildcard);
-
-  default CompletableFuture<Collection<BackupStatus>> inTimeRange(
-      final Instant from, final Instant to, final CheckpointIdGenerator generator) {
-    final var checkpointPattern =
-        CheckpointPattern.ofTimeRange(from.toEpochMilli(), to.toEpochMilli(), generator);
-    final var wildcard =
-        new BackupIdentifierWildcardImpl(Optional.empty(), Optional.empty(), checkpointPattern);
-    return list(wildcard)
-        .thenApply(list -> list.stream().filter(bs -> bs.createdInRange(from, to)).toList());
-  }
 
   /**
    * Delete all state related to the backup from the storage. Backups with status{@link

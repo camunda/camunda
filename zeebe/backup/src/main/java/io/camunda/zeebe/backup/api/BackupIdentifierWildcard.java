@@ -10,6 +10,10 @@ package io.camunda.zeebe.backup.api;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern.Any;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern.Exact;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern.Prefix;
+import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern.TimeRange;
+import io.camunda.zeebe.backup.common.BackupIdentifierWildcardImpl;
+import io.camunda.zeebe.backup.common.CheckpointIdGenerator;
+import java.time.Instant;
 import java.util.Optional;
 
 /**
@@ -40,6 +44,31 @@ public interface BackupIdentifierWildcard {
   boolean matches(BackupIdentifier id);
 
   /**
+   * Creates a BackupIdentifierWildcard that matches all backups with the specified checkpoint
+   * pattern, regardless of partition or node ID.
+   *
+   * @param pattern the checkpoint pattern to match against
+   * @return a BackupIdentifierWildcard with no partition or node ID specified
+   */
+  static BackupIdentifierWildcardImpl ofPattern(final CheckpointPattern pattern) {
+    return BackupIdentifierWildcard.forPartition(null, pattern);
+  }
+
+  /**
+   * Creates a BackupIdentifierWildcard that matches backups with the specified partition and
+   * checkpoint pattern, regardless of node ID.
+   *
+   * @param partition the partition ID to match, or null to match all partitions
+   * @param pattern the checkpoint pattern to match against
+   * @return a BackupIdentifierWildcard with the specified partition and pattern, but no node ID
+   */
+  static BackupIdentifierWildcardImpl forPartition(
+      final Integer partition, final CheckpointPattern pattern) {
+    return new BackupIdentifierWildcardImpl(
+        Optional.empty(), Optional.ofNullable(partition), pattern);
+  }
+
+  /**
    * Tries to build the longest possible prefix based on the given wildcard. The prefix is
    * constructed as follows: {@code ${partitionId}/${checkpointId}/${nodeId}}. If a field is not
    * present or is a non-exact match, all following fields are omitted. For example, if the
@@ -66,6 +95,13 @@ public interface BackupIdentifierWildcard {
       }
       // Checkpoint pattern is not exact so our prefix ends here, we can't include the node id
       case Prefix(final var cpPrefix) -> prefix.append(cpPrefix);
+      case final TimeRange timeRange -> {
+        switch (timeRange.pattern()) {
+          case Prefix(final var cpPrefix) -> prefix.append(cpPrefix);
+          case Any() -> {} // TimeRange with Any pattern, no prefix to append
+          default -> {} // Other patterns, no specific prefix handling
+        }
+      }
       case Any() -> {}
     }
     return prefix.toString();
@@ -100,59 +136,83 @@ public interface BackupIdentifierWildcard {
       }
     }
 
-    /**
-     * Creates a CheckpointPattern that matches checkpoint IDs within a timestamp range. Uses a
-     * CheckpointIdGenerator to convert raw timestamps to checkpoint IDs (applying the configured
-     * offset), then computes the common prefix to create a Prefix pattern.
-     *
-     * @param fromTimestamp the start of the range (inclusive), in epoch milliseconds
-     * @param toTimestamp the end of the range (inclusive), in epoch milliseconds
-     * @param generator the CheckpointIdGenerator used to convert timestamps to checkpoint IDs
-     * @return a CheckpointPattern (Prefix or Any) that matches checkpoints in the given range
-     */
-    static CheckpointPattern ofTimeRange(
-        final long fromTimestamp,
-        final long toTimestamp,
-        final io.camunda.zeebe.backup.common.CheckpointIdGenerator generator) {
-      if (fromTimestamp < 0) {
-        throw new IllegalArgumentException(
-            "Expected fromTimestamp to be non-negative, but got %d".formatted(fromTimestamp));
+    static CheckpointPattern longestCommonPrefix(final String... ids) {
+      if (ids == null || ids.length == 0) {
+        return new Any();
       }
-      if (toTimestamp < 0) {
-        throw new IllegalArgumentException(
-            "Expected toTimestamp to be non-negative, but got %d".formatted(toTimestamp));
-      }
-      if (fromTimestamp > toTimestamp) {
-        throw new IllegalArgumentException(
-            "Expected fromTimestamp to be <= toTimestamp, but got fromTimestamp=%d and toTimestamp=%d"
-                .formatted(fromTimestamp, toTimestamp));
+      if (ids.length == 1) {
+        return new Prefix(ids[0]);
       }
 
-      // Convert timestamps to checkpoint IDs using the generator
-      final long fromCheckpointId = generator.fromTimestamp(fromTimestamp);
-      final long toCheckpointId = generator.fromTimestamp(toTimestamp);
+      // Find the minimum length among all strings
+      int minLength = ids[0].length();
+      for (int i = 1; i < ids.length; i++) {
+        minLength = Math.min(minLength, ids[i].length());
+      }
 
-      // Find the common prefix between checkpoint IDs
-      final String fromStr = String.valueOf(fromCheckpointId);
-      final String toStr = String.valueOf(toCheckpointId);
-
+      // Find the common prefix
       int commonPrefixLength = 0;
-      final int minLength = Math.min(fromStr.length(), toStr.length());
       for (int i = 0; i < minLength; i++) {
-        if (fromStr.charAt(i) == toStr.charAt(i)) {
+        final char currentChar = ids[0].charAt(i);
+        boolean allMatch = true;
+        for (int j = 1; j < ids.length; j++) {
+          if (ids[j].charAt(i) != currentChar) {
+            allMatch = false;
+            break;
+          }
+        }
+        if (allMatch) {
           commonPrefixLength++;
         } else {
           break;
         }
       }
 
-      // Use the common prefix to create a Prefix pattern
       if (commonPrefixLength > 0) {
-        return new Prefix(fromStr.substring(0, commonPrefixLength));
+        return new Prefix(ids[0].substring(0, commonPrefixLength));
       } else {
-        // No common prefix, match any
         return new Any();
       }
+    }
+
+    /**
+     * Creates a CheckpointPattern that matches checkpoint IDs within a timestamp range. Uses a
+     * CheckpointIdGenerator to convert raw timestamps to checkpoint IDs (applying the configured
+     * offset), then computes the common prefix to create a Prefix pattern.
+     *
+     * @param from the start of the range (inclusive), in epoch milliseconds
+     * @param to the end of the range (inclusive), in epoch milliseconds
+     * @param generator the CheckpointIdGenerator used to convert timestamps to checkpoint IDs
+     * @return a CheckpointPattern (Prefix or Any) that matches checkpoints in the given range
+     */
+    static CheckpointPattern.TimeRange ofTimeRange(
+        final Instant from, final Instant to, final CheckpointIdGenerator generator) {
+
+      if (from.toEpochMilli() < 0) {
+        throw new IllegalArgumentException(
+            "Expected 'from' to be non-negative, but got %s".formatted(from));
+      }
+      if (to.toEpochMilli() < 0) {
+        throw new IllegalArgumentException(
+            "Expected 'to' to be non-negative, but got %s".formatted(to));
+      }
+      if (from.isAfter(to)) {
+        throw new IllegalArgumentException(
+            "Expected 'from' to be <= 'to', but got from=%s and to=%s".formatted(from, to));
+      }
+
+      // Convert timestamps to checkpoint IDs using the generator
+      final long fromCheckpointId = generator.fromTimestamp(from.toEpochMilli());
+      final long toCheckpointId = generator.fromTimestamp(to.toEpochMilli());
+
+      // Find the common prefix between checkpoint IDs
+      final String fromStr = String.valueOf(fromCheckpointId);
+      final String toStr = String.valueOf(toCheckpointId);
+
+      final CheckpointPattern commonPrefixPattern = longestCommonPrefix(fromStr, toStr);
+
+      // Use the common prefix to create a TimeRange pattern
+      return new TimeRange(commonPrefixPattern, fromCheckpointId, toCheckpointId);
     }
 
     record Any() implements CheckpointPattern {
@@ -190,6 +250,20 @@ public interface BackupIdentifierWildcard {
       @Override
       public String asRegex() {
         return prefix + "\\d*";
+      }
+    }
+
+    record TimeRange(CheckpointPattern pattern, long checkpointStart, long checkpointEnd)
+        implements CheckpointPattern {
+
+      @Override
+      public boolean matches(final long checkpointId) {
+        return checkpointId >= checkpointStart && checkpointId <= checkpointEnd;
+      }
+
+      @Override
+      public String asRegex() {
+        return pattern.asRegex();
       }
     }
 

@@ -127,7 +127,10 @@ public interface ListingBackups {
         .forEach(CompletableFuture::join);
 
     // when
-    final var result = getStore().inTimeRange(from, to, generator);
+    final var wildCard =
+        new BackupIdentifierWildcardImpl(
+            Optional.empty(), Optional.empty(), CheckpointPattern.ofTimeRange(from, to, generator));
+    final var result = getStore().list(wildCard);
 
     // then - only backups strictly within the range (after from and before to)
     assertThat(result).succeedsWithin(Duration.ofSeconds(20));
@@ -162,7 +165,10 @@ public interface ListingBackups {
         .forEach(CompletableFuture::join);
 
     // when
-    final var result = getStore().inTimeRange(from, to, generator);
+    final var wildCard =
+        new BackupIdentifierWildcardImpl(
+            Optional.empty(), Optional.empty(), CheckpointPattern.ofTimeRange(from, to, generator));
+    final var result = getStore().list(wildCard);
 
     // then
     assertThat(result).succeedsWithin(Duration.ofSeconds(20));
@@ -198,7 +204,10 @@ public interface ListingBackups {
         .forEach(CompletableFuture::join);
 
     // when
-    final var result = getStore().inTimeRange(from, to, generator);
+    final var wildCard =
+        new BackupIdentifierWildcardImpl(
+            Optional.empty(), Optional.empty(), CheckpointPattern.ofTimeRange(from, to, generator));
+    final var result = getStore().list(wildCard);
 
     // then
     assertThat(result).succeedsWithin(Duration.ofSeconds(20));

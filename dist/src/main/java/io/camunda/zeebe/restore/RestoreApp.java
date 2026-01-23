@@ -130,7 +130,10 @@ public class RestoreApp implements ApplicationRunner {
           to,
           restoreConfiguration);
       restoreManager.restore(
-          from, to, restoreConfiguration.validateConfig(), restoreConfiguration.ignoreFilesInTarget());
+          from,
+          to,
+          restoreConfiguration.validateConfig(),
+          restoreConfiguration.ignoreFilesInTarget());
       LOG.info("Successfully restored broker from backups in time range [{}, {}]", from, to);
     }
   }
