@@ -22,6 +22,7 @@ import io.camunda.tasklist.CommonUtils;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.ElasticsearchProperties;
+import io.camunda.tasklist.property.ProxyProperties;
 import io.camunda.tasklist.property.SslProperties;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.RetryOperation;
@@ -134,7 +135,9 @@ public class ElasticsearchConnector {
       final HttpAsyncClientBuilder httpAsyncClientBuilder,
       final ElasticsearchProperties elsConfig,
       final HttpRequestInterceptor... interceptors) {
-    setupAuthentication(httpAsyncClientBuilder, elsConfig);
+    final CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+
+    setupAuthentication(credentialsProvider, elsConfig);
 
     LOGGER.trace("Attempt to load interceptor plugins");
     for (final var interceptor : interceptors) {
@@ -144,7 +147,29 @@ public class ElasticsearchConnector {
     if (elsConfig.getSsl() != null) {
       setupSSLContext(httpAsyncClientBuilder, elsConfig.getSsl());
     }
+
+    final ProxyProperties proxyConfig = elsConfig.getProxy();
+    if (proxyConfig != null && proxyConfig.isEnabled()) {
+      setupProxy(httpAsyncClientBuilder, proxyConfig);
+      setupProxyAuthentication(credentialsProvider, proxyConfig);
+    }
+
+    httpAsyncClientBuilder.setDefaultCredentialsProvider(credentialsProvider);
+
     return httpAsyncClientBuilder;
+  }
+
+  private void setupProxy(
+      final HttpAsyncClientBuilder httpAsyncClientBuilder, final ProxyProperties proxyConfig) {
+    httpAsyncClientBuilder.setProxy(
+        new HttpHost(
+            proxyConfig.getHost(),
+            proxyConfig.getPort(),
+            proxyConfig.isSslEnabled() ? "https" : "http"));
+    LOGGER.debug(
+        "Using proxy {}:{} for Elasticsearch connection",
+        proxyConfig.getHost(),
+        proxyConfig.getPort());
   }
 
   private void setupSSLContext(
@@ -298,21 +323,31 @@ public class ElasticsearchConnector {
     return new HttpHost[] {getHttpHost(elsConfig)};
   }
 
-  private HttpAsyncClientBuilder setupAuthentication(
-      final HttpAsyncClientBuilder builder, final ElasticsearchProperties elsConfig) {
-    if (!StringUtils.hasText(elsConfig.getUsername())
-        || !StringUtils.hasText(elsConfig.getPassword())) {
+  private void setupAuthentication(
+      final CredentialsProvider credentialsProvider, final ElasticsearchProperties elsConfig) {
+    final String username = elsConfig.getUsername();
+    final String password = elsConfig.getPassword();
+
+    if (!StringUtils.hasText(username) || !StringUtils.hasText(password)) {
       LOGGER.warn(
           "Username and/or password for are empty. Basic authentication for elasticsearch is not used.");
-      return builder;
+      return;
     }
-    final CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
     credentialsProvider.setCredentials(
-        AuthScope.ANY,
-        new UsernamePasswordCredentials(elsConfig.getUsername(), elsConfig.getPassword()));
+        AuthScope.ANY, new UsernamePasswordCredentials(username, password));
+  }
 
-    builder.setDefaultCredentialsProvider(credentialsProvider);
-    return builder;
+  private void setupProxyAuthentication(
+      final CredentialsProvider credentialsProvider, final ProxyProperties proxyConfig) {
+    final String username = proxyConfig.getUsername();
+    final String password = proxyConfig.getPassword();
+
+    if (!StringUtils.hasText(username) || !StringUtils.hasText(password)) {
+      return;
+    }
+    credentialsProvider.setCredentials(
+        new AuthScope(proxyConfig.getHost(), proxyConfig.getPort()),
+        new UsernamePasswordCredentials(username, password));
   }
 
   public static class CustomOffsetDateTimeSerializer extends JsonSerializer<OffsetDateTime> {

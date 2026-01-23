@@ -12,6 +12,7 @@ import io.camunda.search.connect.plugin.PluginRepository;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.OpenSearchProperties;
+import io.camunda.tasklist.property.ProxyProperties;
 import io.camunda.tasklist.property.SslProperties;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.zeebe.util.VisibleForTesting;
@@ -104,7 +105,7 @@ public class OpenSearchConnector {
     return openSearchClient;
   }
 
-  protected OpenSearchClient createOsClient(
+  public OpenSearchClient createOsClient(
       final OpenSearchProperties osConfig, final PluginRepository pluginRepository) {
     LOGGER.debug("Creating OpenSearch connection...");
     if (hasAwsCredentials()) {
@@ -168,22 +169,18 @@ public class OpenSearchConnector {
     }
   }
 
-  private HttpAsyncClientBuilder setupAuthentication(
-      final HttpAsyncClientBuilder builder, final OpenSearchProperties osConfig) {
+  private void setupAuthentication(
+      final BasicCredentialsProvider credentialsProvider, final OpenSearchProperties osConfig) {
     if (!useBasicAuthentication(osConfig)) {
       LOGGER.warn(
           "Username and/or password for are empty. Basic authentication for OpenSearch is not used.");
-      return builder;
+      return;
     }
 
-    final BasicCredentialsProvider credentialsProvider = new BasicCredentialsProvider();
     credentialsProvider.setCredentials(
         new AuthScope(null, -1),
         new UsernamePasswordCredentials(
             osConfig.getUsername(), osConfig.getPassword().toCharArray()));
-
-    builder.setDefaultCredentialsProvider(credentialsProvider);
-    return builder;
   }
 
   private void setupSSLContext(
@@ -270,7 +267,9 @@ public class OpenSearchConnector {
       final HttpAsyncClientBuilder httpAsyncClientBuilder,
       final OpenSearchProperties osConfig,
       final org.apache.hc.core5.http.HttpRequestInterceptor... httpRequestInterceptors) {
-    setupAuthentication(httpAsyncClientBuilder, osConfig);
+    final BasicCredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+
+    setupAuthentication(credentialsProvider, osConfig);
 
     LOGGER.trace("Attempt to load interceptor plugins");
     for (final var interceptor : httpRequestInterceptors) {
@@ -280,7 +279,49 @@ public class OpenSearchConnector {
     if (osConfig.getSsl() != null) {
       setupSSLContext(httpAsyncClientBuilder, osConfig.getSsl());
     }
+
+    final ProxyProperties proxyConfig = osConfig.getProxy();
+    if (proxyConfig != null && proxyConfig.isEnabled()) {
+      setupProxy(httpAsyncClientBuilder, proxyConfig);
+      setupProxyAuthentication(credentialsProvider, proxyConfig);
+    }
+
+    httpAsyncClientBuilder.setDefaultCredentialsProvider(credentialsProvider);
+
     return httpAsyncClientBuilder;
+  }
+
+  private void setupProxy(
+      final HttpAsyncClientBuilder httpAsyncClientBuilder, final ProxyProperties proxyConfig) {
+    httpAsyncClientBuilder.setProxy(
+        new HttpHost(
+            proxyConfig.isSslEnabled() ? "https" : "http",
+            proxyConfig.getHost(),
+            proxyConfig.getPort()));
+    LOGGER.debug(
+        "Using proxy {}:{} for OpenSearch connection",
+        proxyConfig.getHost(),
+        proxyConfig.getPort());
+  }
+
+  private void setupProxyAuthentication(
+      final BasicCredentialsProvider credentialsProvider, final ProxyProperties proxyConfig) {
+    final String username = proxyConfig.getUsername();
+    final String password = proxyConfig.getPassword();
+
+    if (!StringUtils.hasText(username) || !StringUtils.hasText(password)) {
+      return;
+    }
+
+    final HttpHost proxyHost =
+        new HttpHost(
+            proxyConfig.isSslEnabled() ? "https" : "http",
+            proxyConfig.getHost(),
+            proxyConfig.getPort());
+    credentialsProvider.setCredentials(
+        new AuthScope(proxyHost),
+        new UsernamePasswordCredentials(
+            proxyConfig.getUsername(), proxyConfig.getPassword().toCharArray()));
   }
 
   private RequestConfig.Builder setTimeouts(
@@ -303,7 +344,8 @@ public class OpenSearchConnector {
     }
   }
 
-  boolean isHealthy(final OpenSearchClient osClient) {
+  @VisibleForTesting
+  public boolean isHealthy(final OpenSearchClient osClient) {
     final OpenSearchProperties osConfig = tasklistProperties.getOpenSearch();
     if (!osConfig.isHealthCheckEnabled()) {
       LOGGER.debug("Opensearch health check is disabled");
