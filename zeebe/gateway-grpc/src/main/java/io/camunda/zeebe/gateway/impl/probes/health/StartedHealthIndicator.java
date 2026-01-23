@@ -14,8 +14,8 @@ import io.camunda.zeebe.gateway.health.Status;
 import java.util.Optional;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
-import org.springframework.boot.actuate.health.Health;
-import org.springframework.boot.actuate.health.HealthIndicator;
+import org.springframework.boot.health.contributor.Health;
+import org.springframework.boot.health.contributor.HealthIndicator;
 
 /**
  * Health indicator that signals whether the gateway is starting {@code DOWN }, running {@code UP}
