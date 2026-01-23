@@ -139,4 +139,11 @@ public class ProcessInstanceWriter implements RdbmsWriter {
   public int deleteByKeys(final List<Long> processInstanceKeys) {
     return mapper.deleteByKeys(processInstanceKeys);
   }
+
+  public int deleteChildrenByRootProcessInstances(
+      final int partitionId, final List<Long> rootProcessInstanceKeys, final int limit) {
+    return mapper.deleteChildrenByRootProcessInstances(
+        new ProcessInstanceMapper.DeleteChildrenByRootProcessInstancesDto(
+            partitionId, rootProcessInstanceKeys, limit));
+  }
 }

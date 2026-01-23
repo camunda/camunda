@@ -45,6 +45,11 @@ public interface ProcessInstanceMapper {
 
   int updateHistoryCleanupDate(UpdateHistoryCleanupDateDto dto);
 
+  int deleteChildrenByRootProcessInstances(DeleteChildrenByRootProcessInstancesDto dto);
+
+  record DeleteChildrenByRootProcessInstancesDto(
+      int partitionId, List<Long> rootProcessInstanceKeys, int limit) {}
+
   record UpdateHistoryCleanupDateDto(
       List<Long> processInstanceKeys, OffsetDateTime historyCleanupDate)
       implements Copyable<UpdateHistoryCleanupDateDto> {
