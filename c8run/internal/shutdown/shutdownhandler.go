@@ -137,12 +137,12 @@ func shouldDeleteDataDir(settings types.C8RunSettings, processes types.Processes
 
 	// Highest precedence: explicit env override.
 	if url, ok := os.LookupEnv("CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_URL"); ok {
-		return strings.HasPrefix(strings.ToLower(strings.TrimSpace(url)), "jdbc:h2:")
+		return isInMemoryH2(url)
 	}
 
 	baseDir := filepath.Dir(processes.Camunda.PidPath)
 	for _, cfg := range resolveConfigPaths(baseDir, settings.Config) {
-		if url, err := detectRdbmsURL(cfg); err == nil && strings.HasPrefix(strings.ToLower(url), "jdbc:h2:") {
+		if url, err := detectRdbmsURL(cfg); err == nil && isInMemoryH2(url) {
 			return true
 		}
 	}
@@ -174,6 +174,11 @@ func deleteDataDir(processes types.Processes) {
 	}
 
 	log.Info().Str("dataDir", dataDir).Msg("Deleted data directory to keep H2 in-memory state consistent across restarts")
+}
+
+func isInMemoryH2(url string) bool {
+	u := strings.ToLower(strings.TrimSpace(url))
+	return strings.HasPrefix(u, "jdbc:h2:mem")
 }
 
 func resolveConfigPaths(baseDir string, userConfig string) []string {
