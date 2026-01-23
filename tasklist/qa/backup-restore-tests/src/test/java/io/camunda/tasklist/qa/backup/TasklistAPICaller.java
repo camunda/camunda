@@ -19,8 +19,6 @@ import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.qa.util.TestContext;
 import io.camunda.tasklist.qa.util.rest.StatefulRestTemplate;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.SaveVariablesRequest;
-import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskCompleteRequest;
-import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskResponse;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskSearchRequest;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskSearchResponse;
 import io.camunda.tasklist.webapp.dto.VariableInputDTO;
@@ -46,15 +44,14 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
-import org.springframework.retry.annotation.Backoff;
-import org.springframework.retry.annotation.EnableRetry;
-import org.springframework.retry.annotation.Retryable;
+import org.springframework.resilience.annotation.EnableResilientMethods;
+import org.springframework.resilience.annotation.Retryable;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
 
 @Component
 @Configuration
-@EnableRetry
+@EnableResilientMethods
 public class TasklistAPICaller {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TasklistAPICaller.class);
@@ -136,10 +133,11 @@ public class TasklistAPICaller {
         mgmtRestTemplate.getURL("actuator/backups/" + backupId), GetBackupStateResponseDto.class);
   }
 
-  @Retryable(
-      retryFor = {TasklistRuntimeException.class},
-      maxAttempts = 10,
-      backoff = @Backoff(delay = 2000))
+  /**
+   * Checks if Elasticsearch indices are deleted with retry logic using Spring Framework 7's native
+   * resilience support.
+   */
+  @Retryable(maxRetries = 10, delay = 2000, includes = TasklistRuntimeException.class)
   public void checkIndicesAreDeleted(final RestHighLevelClient esClient) throws IOException {
     final int count =
         esClient
@@ -153,10 +151,11 @@ public class TasklistAPICaller {
     }
   }
 
-  @Retryable(
-      retryFor = {TasklistRuntimeException.class},
-      maxAttempts = 10,
-      backoff = @Backoff(delay = 2000))
+  /**
+   * Checks if OpenSearch indices are deleted with retry logic using Spring Framework 7's native
+   * resilience support.
+   */
+  @Retryable(maxRetries = 10, delay = 2000, includes = TasklistRuntimeException.class)
   public void checkIndicesAreDeleted(final OpenSearchClient osClient) throws IOException {
     final int count = osClient.indices().get(gir -> gir.index(INDEX_PREFIX + "*")).result().size();
     if (count > 0) {
@@ -177,10 +176,14 @@ public class TasklistAPICaller {
         .build();
   }
 
+  /**
+   * Asserts backup state with retry logic using Spring Framework 7's native resilience support.
+   * Uses short delay to verify that INCOMPLETE state is not returned.
+   */
   @Retryable(
-      retryFor = {AssertionError.class, HttpClientErrorException.NotFound.class},
-      maxAttempts = 100,
-      backoff = @Backoff(delay = 10)) // short delay to verify that INCOMPLETE state is not returned
+      maxRetries = 100,
+      delay = 10,
+      includes = {AssertionError.class, HttpClientErrorException.NotFound.class})
   public void assertBackupState() {
     try {
       final var backupState = getBackupState(BACKUP_ID).getState();
