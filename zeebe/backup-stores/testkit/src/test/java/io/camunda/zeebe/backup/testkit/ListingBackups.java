@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.backup.testkit;
 
+import static io.camunda.zeebe.backup.testkit.support.TestBackupProvider.createBackupWithTimestamp;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.backup.api.Backup;
@@ -14,28 +15,19 @@ import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStore;
-import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierWildcardImpl;
-import io.camunda.zeebe.backup.common.BackupImpl;
 import io.camunda.zeebe.backup.common.CheckpointIdGenerator;
-import io.camunda.zeebe.backup.common.NamedFileSetImpl;
 import io.camunda.zeebe.backup.testkit.support.TestBackupProvider;
 import io.camunda.zeebe.backup.testkit.support.WildcardBackupProvider;
 import io.camunda.zeebe.backup.testkit.support.WildcardBackupProvider.WildcardTestParameter;
-import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
-import io.camunda.zeebe.util.VersionUtil;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.file.Files;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
-import org.apache.commons.lang3.RandomUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
@@ -134,7 +126,7 @@ public interface ListingBackups {
         BackupIdentifierWildcard.ofPattern(CheckpointPattern.ofTimeRange(from, to, generator));
     final var result = getStore().list(wildcard);
 
-    // then - only backups strictly within the range (after from and before to)
+    // then - only backups within the range (including extremes)
     assertThat(result).succeedsWithin(Duration.ofSeconds(20));
     assertThat(result.join())
         .map(BackupStatus::id)
@@ -214,24 +206,5 @@ public interface ListingBackups {
     assertThat(result.join())
         .map(BackupStatus::id)
         .containsExactlyInAnyOrder(backup1.id(), backup2.id(), backup3.id());
-  }
-
-  default Backup createBackupWithTimestamp(final BackupIdentifierImpl id, final Instant timestamp)
-      throws IOException {
-    final var tempDir = Files.createTempDirectory("backup");
-    Files.createDirectory(tempDir.resolve("segments/"));
-    final var seg1 = Files.createFile(tempDir.resolve("segments/segment-file-1"));
-    Files.write(seg1, RandomUtils.nextBytes(1));
-
-    return new BackupImpl(
-        id,
-        new BackupDescriptorImpl(
-            4,
-            5,
-            VersionUtil.getVersion(),
-            timestamp.truncatedTo(ChronoUnit.MILLIS),
-            CheckpointType.MANUAL_BACKUP),
-        new NamedFileSetImpl(Map.of()),
-        new NamedFileSetImpl(Map.of("segment-file-1", seg1)));
   }
 }
