@@ -111,6 +111,7 @@ public class SearchEngineConnectPropertiesOverride {
       override.setConnectTimeout(Math.toIntExact(connectionTimeout.toMillis()));
     }
     override.setIndexPrefix(database.getIndexPrefix());
+    override.setProxy(database.getProxy());
   }
 
   private void populateFromSecurity(final SearchEngineConnectProperties override) {
