@@ -30,19 +30,19 @@ import org.junit.jupiter.params.provider.Arguments;
 
 public class TestBackupProvider {
 
-  private static final Path tempDir;
+  private static final Path TEMP_DIR;
 
   static {
     try {
-      tempDir = Files.createTempDirectory(TestBackupProvider.class.getSimpleName());
+      TEMP_DIR = Files.createTempDirectory(TestBackupProvider.class.getSimpleName());
       Runtime.getRuntime()
           .addShutdownHook(
               new Thread(
                   () -> {
                     try {
-                      FileUtil.deleteFolderIfExists(tempDir);
+                      FileUtil.deleteFolderIfExists(TEMP_DIR);
                     } catch (final IOException e) {
-                      System.err.println("Failed to delete temp dir: " + tempDir);
+                      System.err.println("Failed to delete temp dir: " + TEMP_DIR);
                     }
                   }));
     } catch (final IOException e) {
@@ -61,7 +61,7 @@ public class TestBackupProvider {
   }
 
   public static Backup backupWithoutSnapshot(final String version) throws IOException {
-    final var backupDir = Files.createTempDirectory(tempDir, "backup");
+    final var backupDir = Files.createTempDirectory(TEMP_DIR, "backup");
     Files.createDirectory(backupDir.resolve("segments/"));
     final var seg1 = Files.createFile(backupDir.resolve("segments/segment-file-1"));
     final var seg2 = Files.createFile(backupDir.resolve("segments/segment-file-2"));
@@ -94,7 +94,7 @@ public class TestBackupProvider {
 
   public static Backup simpleBackupWithId(final BackupIdentifierImpl id, final String version)
       throws IOException {
-    final var backupDir = Files.createTempDirectory(tempDir, "backup");
+    final var backupDir = Files.createTempDirectory(TEMP_DIR, "backup");
     Files.createDirectory(backupDir.resolve("segments/"));
     final var seg1 = Files.createFile(backupDir.resolve("segments/segment-file-1"));
     final var seg2 = Files.createFile(backupDir.resolve("segments/segment-file-2"));
@@ -126,7 +126,7 @@ public class TestBackupProvider {
 
   public static Backup minimalBackupWithId(final BackupIdentifierImpl id, final String version)
       throws IOException {
-    final var backupDir = Files.createTempDirectory(tempDir, "backup");
+    final var backupDir = Files.createTempDirectory(TEMP_DIR, "backup");
     Files.createDirectory(backupDir.resolve("segments/"));
     final var seg1 = Files.createFile(backupDir.resolve("segments/segment-file-1"));
     Files.write(seg1, RandomUtils.nextBytes(1));
