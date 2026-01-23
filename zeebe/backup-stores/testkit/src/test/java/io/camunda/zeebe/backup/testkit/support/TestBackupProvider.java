@@ -28,7 +28,7 @@ import java.util.stream.Stream;
 import org.apache.commons.lang3.RandomUtils;
 import org.junit.jupiter.params.provider.Arguments;
 
-public final class TestBackupProvider {
+public class TestBackupProvider {
 
   private static final Path tempDir;
 
@@ -57,6 +57,10 @@ public final class TestBackupProvider {
   }
 
   public static Backup backupWithoutSnapshot() throws IOException {
+    return backupWithoutSnapshot(VersionUtil.getVersion());
+  }
+
+  public static Backup backupWithoutSnapshot(final String version) throws IOException {
     final var backupDir = Files.createTempDirectory(tempDir, "backup");
     Files.createDirectory(backupDir.resolve("segments/"));
     final var seg1 = Files.createFile(backupDir.resolve("segments/segment-file-1"));
@@ -69,7 +73,7 @@ public final class TestBackupProvider {
         new BackupDescriptorImpl(
             4,
             5,
-            VersionUtil.getVersion(),
+            version,
             Instant.now().truncatedTo(ChronoUnit.MILLIS),
             CheckpointType.MANUAL_BACKUP),
         new NamedFileSetImpl(Map.of()),
@@ -80,7 +84,16 @@ public final class TestBackupProvider {
     return simpleBackupWithId(new BackupIdentifierImpl(1, 2, 3));
   }
 
+  public static Backup simpleBackup(final String version) throws IOException {
+    return simpleBackupWithId(new BackupIdentifierImpl(1, 2, 3), version);
+  }
+
   public static Backup simpleBackupWithId(final BackupIdentifierImpl id) throws IOException {
+    return simpleBackupWithId(id, VersionUtil.getVersion());
+  }
+
+  public static Backup simpleBackupWithId(final BackupIdentifierImpl id, final String version)
+      throws IOException {
     final var backupDir = Files.createTempDirectory(tempDir, "backup");
     Files.createDirectory(backupDir.resolve("segments/"));
     final var seg1 = Files.createFile(backupDir.resolve("segments/segment-file-1"));
@@ -100,7 +113,7 @@ public final class TestBackupProvider {
             "test-snapshot-id",
             4,
             5,
-            VersionUtil.getVersion(),
+            version,
             Instant.now().truncatedTo(ChronoUnit.MILLIS),
             CheckpointType.MANUAL_BACKUP),
         new NamedFileSetImpl(Map.of("snapshot-file-1", s1, "snapshot-file-2", s2)),
@@ -108,6 +121,11 @@ public final class TestBackupProvider {
   }
 
   public static Backup minimalBackupWithId(final BackupIdentifierImpl id) throws IOException {
+    return minimalBackupWithId(id, VersionUtil.getVersion());
+  }
+
+  public static Backup minimalBackupWithId(final BackupIdentifierImpl id, final String version)
+      throws IOException {
     final var backupDir = Files.createTempDirectory(tempDir, "backup");
     Files.createDirectory(backupDir.resolve("segments/"));
     final var seg1 = Files.createFile(backupDir.resolve("segments/segment-file-1"));
@@ -118,7 +136,7 @@ public final class TestBackupProvider {
         new BackupDescriptorImpl(
             4,
             5,
-            VersionUtil.getVersion(),
+            version,
             Instant.now().truncatedTo(ChronoUnit.MILLIS),
             CheckpointType.MANUAL_BACKUP),
         new NamedFileSetImpl(Map.of()),

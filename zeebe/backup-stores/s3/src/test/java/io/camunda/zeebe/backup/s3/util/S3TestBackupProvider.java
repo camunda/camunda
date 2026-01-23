@@ -7,26 +7,23 @@
  */
 package io.camunda.zeebe.backup.s3.util;
 
+import static io.camunda.zeebe.backup.testkit.support.TestBackupProvider.simpleBackup;
 import static org.junit.jupiter.api.Named.named;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 import io.camunda.zeebe.backup.api.Backup;
-import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
-import io.camunda.zeebe.backup.common.BackupImpl;
-import io.camunda.zeebe.backup.common.NamedFileSetImpl;
-import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
+import io.camunda.zeebe.backup.testkit.support.TestBackupProvider;
 import io.camunda.zeebe.util.VersionUtil;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.util.Map;
 import java.util.stream.Stream;
-import org.apache.commons.lang3.RandomUtils;
 import org.junit.jupiter.params.provider.Arguments;
 
-public class S3TestBackupProvider {
+public class S3TestBackupProvider extends TestBackupProvider {
+
+  static String version(final boolean legacy) {
+    return legacy ? VersionUtil.getPreviousVersion() : VersionUtil.getVersion();
+  }
 
   public static Stream<? extends Arguments> provideArguments() throws Exception {
     return Stream.of(
@@ -36,55 +33,16 @@ public class S3TestBackupProvider {
         arguments(named("stub without snapshot legacy", backupWithoutSnapshot(true))));
   }
 
-  public static Backup backupWithoutSnapshot(final boolean legacy) throws IOException {
-    final var tempDir = Files.createTempDirectory("backup");
-    Files.createDirectory(tempDir.resolve("segments/"));
-    final var seg1 = Files.createFile(tempDir.resolve("segments/segment-file-1"));
-    final var seg2 = Files.createFile(tempDir.resolve("segments/segment-file-2"));
-    Files.write(seg1, RandomUtils.nextBytes(1024));
-    Files.write(seg2, RandomUtils.nextBytes(1024));
-
-    return new BackupImpl(
-        new BackupIdentifierImpl(1, 2, 3),
-        new BackupDescriptorImpl(
-            4,
-            5,
-            legacy ? VersionUtil.getPreviousVersion() : VersionUtil.getVersion(),
-            Instant.now().truncatedTo(ChronoUnit.MILLIS),
-            CheckpointType.MANUAL_BACKUP),
-        new NamedFileSetImpl(Map.of()),
-        new NamedFileSetImpl(Map.of("segment-file-1", seg1, "segment-file-2", seg2)));
-  }
-
   public static Backup simpleBackup(final boolean legacy) throws IOException {
-    return simpleBackupWithId(new BackupIdentifierImpl(1, 2, 3), legacy);
+    return simpleBackup(version(legacy));
   }
 
   public static Backup simpleBackupWithId(final BackupIdentifierImpl id, final boolean legacy)
       throws IOException {
-    final var tempDir = Files.createTempDirectory("backup");
-    Files.createDirectory(tempDir.resolve("segments/"));
-    final var seg1 = Files.createFile(tempDir.resolve("segments/segment-file-1"));
-    final var seg2 = Files.createFile(tempDir.resolve("segments/segment-file-2"));
-    Files.write(seg1, RandomUtils.nextBytes(1024));
-    Files.write(seg2, RandomUtils.nextBytes(1024));
+    return simpleBackupWithId(id, version(legacy));
+  }
 
-    Files.createDirectory(tempDir.resolve("snapshot/"));
-    final var s1 = Files.createFile(tempDir.resolve("snapshot/snapshot-file-1"));
-    final var s2 = Files.createFile(tempDir.resolve("snapshot/snapshot-file-2"));
-    Files.write(s1, RandomUtils.nextBytes(1024));
-    Files.write(s2, RandomUtils.nextBytes(1024));
-
-    return new BackupImpl(
-        id,
-        new BackupDescriptorImpl(
-            "test-snapshot-id",
-            4,
-            5,
-            legacy ? VersionUtil.getPreviousVersion() : VersionUtil.getVersion(),
-            Instant.now().truncatedTo(ChronoUnit.MILLIS),
-            CheckpointType.MANUAL_BACKUP),
-        new NamedFileSetImpl(Map.of("snapshot-file-1", s1, "snapshot-file-2", s2)),
-        new NamedFileSetImpl(Map.of("segment-file-1", seg1, "segment-file-2", seg2)));
+  public static Backup backupWithoutSnapshot(final boolean legacy) throws IOException {
+    return backupWithoutSnapshot(version(legacy));
   }
 }
