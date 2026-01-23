@@ -39,7 +39,6 @@ import io.camunda.search.query.VariableQuery;
 import io.camunda.search.sort.SortOption.FieldSorting;
 import io.camunda.search.sort.SortOrder;
 import io.camunda.service.UserTaskServices;
-import io.camunda.service.VariableServices;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
@@ -123,7 +122,6 @@ class UserTaskToolsTest extends ToolsTest {
           .build();
 
   @MockitoBean private UserTaskServices userTaskServices;
-  @MockitoBean private VariableServices variableServices;
 
   @Autowired private ObjectMapper objectMapper;
   @Captor private ArgumentCaptor<UserTaskQuery> userTaskQueryCaptor;
@@ -132,7 +130,6 @@ class UserTaskToolsTest extends ToolsTest {
   @BeforeEach
   void mockApiServices() {
     mockApiServiceAuthentication(userTaskServices);
-    mockApiServiceAuthentication(variableServices);
   }
 
   private void assertExampleUserTask(final UserTaskResult userTask) {
