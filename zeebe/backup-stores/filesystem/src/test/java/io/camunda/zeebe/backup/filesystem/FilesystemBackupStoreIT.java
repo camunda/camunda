@@ -16,9 +16,11 @@ import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
+import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupStoreException.UnexpectedManifestState;
 import io.camunda.zeebe.backup.common.Manifest;
 import io.camunda.zeebe.backup.testkit.BackupStoreTestKit;
+import io.camunda.zeebe.backup.testkit.support.TestBackupProvider;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -28,6 +30,7 @@ import java.nio.file.StandardOpenOption;
 import java.time.Duration;
 import java.util.concurrent.Executors;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -120,6 +123,47 @@ public class FilesystemBackupStoreIT implements BackupStoreTestKit {
                 Expected to restore from completed backup with id \
                 'BackupId{node=1, partition=2, checkpoint=3}', \
                 but was in state 'IN_PROGRESS'""");
+  }
+
+  @ParameterizedTest
+  @MethodSource("provideBackups")
+  void parentDirectoriesAreDeletedAfterDeletion(final Backup backup) {
+    // given
+    getStore().save(backup).join();
+
+    // when
+    getStore().delete(backup.id()).join();
+
+    // then
+    final var partitionContentsDir =
+        backupDir.resolve("contents").resolve(String.valueOf(backup.id().partitionId()));
+    final var partitionManifestsDir =
+        backupDir.resolve("manifests").resolve(String.valueOf(backup.id().partitionId()));
+    assertThat(partitionContentsDir).isEmptyDirectory();
+    assertThat(partitionManifestsDir).isEmptyDirectory();
+  }
+
+  @Test
+  void parentDirectoriesShouldNotBeDeletedIfNotEmpty() throws IOException {
+    // given
+    final var node1BackupId = new BackupIdentifierImpl(1, 2, 3);
+    final var node2BackupId = new BackupIdentifierImpl(2, 2, 3);
+    final var node1Backup = TestBackupProvider.simpleBackupWithId(node1BackupId);
+    final var node2Backup = TestBackupProvider.simpleBackupWithId(node2BackupId);
+
+    getStore().save(node1Backup).join();
+    getStore().save(node2Backup).join();
+
+    // when
+    getStore().delete(node1Backup.id()).join();
+
+    // then
+    final var partitionContentsDir =
+        backupDir.resolve("contents").resolve(String.valueOf(node2Backup.id().partitionId()));
+    final var partitionManifestsDir =
+        backupDir.resolve("manifests").resolve(String.valueOf(node2Backup.id().partitionId()));
+    assertThat(partitionContentsDir).isNotEmptyDirectory();
+    assertThat(partitionManifestsDir).isNotEmptyDirectory();
   }
 
   void uploadInProgressManifest(final Backup backup) {
