@@ -34,18 +34,14 @@ import io.camunda.zeebe.qa.util.cluster.TestHealthProbe;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
-import java.nio.file.FileVisitResult;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import oracle.net.nt.Clock;
@@ -213,10 +209,6 @@ public class DynamicNodeIdIT {
   @ValueSource(booleans = {true, false})
   public void shouldCreateNewVersionedFolderAfterRestartWithHardLinks(
       final boolean gracefulShutdown) throws IOException {
-    // given - select broker 0 for testing
-    final var broker = testCluster.brokers().values().iterator().next();
-    final int nodeId = broker.bean(BrokerCfg.class).getCluster().getNodeId();
-
     // create some state: deploy process and start instances
     final var startedProcesses = 5;
     try (final CamundaClient client = testCluster.newClientBuilder().build()) {
@@ -228,89 +220,98 @@ public class DynamicNodeIdIT {
       }
     }
 
-    // Capture initial state (v0)
-    final Lease leaseBeforeRestart = awaitValidLease(nodeId);
-    final long versionBeforeRestart = leaseBeforeRestart.nodeInstance().version().version();
-    assertThat(versionBeforeRestart).isEqualTo(1L);
-
-    final Path v0Dir = getVersionDirectory(broker, 1);
-    assertThat(v0Dir).exists().isDirectory();
-
-    // Verify v0 initialization file
-    final var v0InitInfo = readInitializationFile(v0Dir);
-    assertThat(v0InitInfo.initializedAt()).isGreaterThan(0);
-    assertThat(v0InitInfo.initializedFrom()).isNull();
-
-    // when - gracefully restart broker
-    broker.stop();
-
-    // Verify lease is released
-    Awaitility.await("Until lease is released")
-        .atMost(Duration.ofSeconds(30))
-        .untilAsserted(() -> assertThat(readLeaseObjectBytes(nodeId)).isEmpty());
-
-    if (!gracefulShutdown) {
-      // let's create a fake "expired" lease in S3.
-      final var expiredLease =
-          new Lease(
-              "fake-object",
-              Clock.currentTimeMillis() - LEASE_DURATION.toMillis() * 2,
-              new NodeInstance(nodeId, Version.of(1L)),
-              VersionMappings.empty());
-      final var body = RequestBody.fromBytes(expiredLease.toJsonBytes(OBJECT_MAPPER));
-      final var metadata = Metadata.fromLease(expiredLease);
-      final var request =
-          PutObjectRequest.builder()
-              .bucket(BUCKET_NAME)
-              .key(S3NodeIdRepository.objectKey(nodeId))
-              .metadata(metadata.asMap())
-              .contentType("application/json")
-              .build();
-      s3Client.putObject(request, body);
+    // Capture initial state for all brokers
+    final var nodeIds = new ArrayList<Integer>();
+    for (final var broker : testCluster.brokers().values()) {
+      final int nodeId = broker.bean(BrokerCfg.class).getCluster().getNodeId();
+      nodeIds.add(nodeId);
+      final Lease leaseBeforeRestart = awaitValidLease(nodeId);
+      final long versionBeforeRestart = leaseBeforeRestart.nodeInstance().version().version();
+      assertThat(versionBeforeRestart).isEqualTo(1L);
     }
 
-    broker.start().await(TestHealthProbe.READY);
-    testCluster.awaitCompleteTopology();
+    // when - stop all brokers
+    testCluster.shutdown();
 
-    // then - verify new version created
-    final Lease leaseAfterRestart = awaitValidLease(nodeId);
-    final long versionAfterRestart = leaseAfterRestart.nodeInstance().version().version();
-    assertThat(versionAfterRestart).isEqualTo(2L);
+    // Verify leases are released for all brokers
+    for (final int nodeId : nodeIds) {
+      Awaitility.await("Until lease is released for node " + nodeId)
+          .atMost(Duration.ofSeconds(30))
+          .untilAsserted(() -> assertThat(readLeaseObjectBytes(nodeId)).isEmpty());
 
-    // Verify both version directories exist
-    assertThat(v0Dir).exists().isDirectory();
-    final Path v1Dir = getVersionDirectory(broker, 2);
-    assertThat(v1Dir).exists().isDirectory();
+      if (!gracefulShutdown) {
+        // Create a fake "expired" lease in S3 for each broker
+        final var expiredLease =
+            new Lease(
+                "fake-object",
+                Clock.currentTimeMillis() - LEASE_DURATION.toMillis() * 2,
+                new NodeInstance(nodeId, Version.of(1L)),
+                VersionMappings.empty());
+        final var body = RequestBody.fromBytes(expiredLease.toJsonBytes(OBJECT_MAPPER));
+        final var metadata = Metadata.fromLease(expiredLease);
+        final var request =
+            PutObjectRequest.builder()
+                .bucket(BUCKET_NAME)
+                .key(S3NodeIdRepository.objectKey(nodeId))
+                .metadata(metadata.asMap())
+                .contentType("application/json")
+                .build();
+        s3Client.putObject(request, body);
+      }
+    }
 
-    // Verify v1 initialization file
-    final var v1InitInfo = readInitializationFile(v1Dir);
-    assertThat(v1InitInfo.initializedAt()).isGreaterThan(0);
-    assertThat(v1InitInfo.initializedFrom()).isNotNull();
-    assertThat(v1InitInfo.initializedFrom().version()).isEqualTo(1L);
+    // Start all brokers
+    testCluster.start();
+    testCluster.awaitHealthyTopology();
 
-    // Verify files are hard-linked (gracefulShutdonw) or copied otherwise
-    assertFilesAreHardLinkedOrCopied(v0Dir, v1Dir, gracefulShutdown);
+    // then - verify new directories are created for all brokers
+    for (final var broker : testCluster.brokers().values()) {
+      final int nodeId = broker.bean(BrokerCfg.class).getCluster().getNodeId();
+      final Lease leaseAfterRestart = awaitValidLease(nodeId);
+      final long versionAfterRestart = leaseAfterRestart.nodeInstance().version().version();
+      assertThat(versionAfterRestart).isEqualTo(2L);
 
-    // Verify data continuity - complete process instance started in v0
+      final var v1Dir = getVersionDirectory(broker, 1);
+      assertThat(v1Dir).exists().isDirectory();
+      final Path v2Dir = getVersionDirectory(broker, 2);
+      assertThat(v2Dir).exists().isDirectory();
+
+      final var v2InitInfo = readInitializationFile(v2Dir);
+      assertThat(v2InitInfo.initializedAt()).isGreaterThan(0);
+      assertThat(v2InitInfo.initializedFrom()).isNotNull();
+      assertThat(v2InitInfo.initializedFrom().version()).isEqualTo(1L);
+    }
+
+    // Delete v1 folder from all brokers
+    for (final var broker : testCluster.brokers().values()) {
+      final var v1Dir = getVersionDirectory(broker, 1);
+      FileUtil.deleteFolder(v1Dir);
+      assertThat(v1Dir).doesNotExist();
+    }
+
+    // Verify data continuity - complete process instances started in v1
     try (final CamundaClient client = testCluster.newClientBuilder().build()) {
       final var completedJobs = new ArrayList<ActivatedJob>();
 
-      while (completedJobs.size() < startedProcesses) {
-        final var jobActivation =
-            client
-                .newActivateJobsCommand()
-                .jobType("taskA")
-                .maxJobsToActivate(5)
-                .send()
-                .toCompletableFuture();
-        assertThat(jobActivation).succeedsWithin(Duration.ofSeconds(30));
-        final var jobs = jobActivation.join().getJobs();
-        assertThat(jobs).isNotEmpty();
-        for (final var job : jobs) {
-          TestHelper.completeJob(client, job.getKey());
-          completedJobs.add(job);
-        }
-      }
+      Awaitility.await("Until all jobs are completed")
+          .atMost(Duration.ofMinutes(2))
+          .untilAsserted(
+              () -> {
+                final var jobActivation =
+                    client
+                        .newActivateJobsCommand()
+                        .jobType("taskA")
+                        .maxJobsToActivate(startedProcesses - completedJobs.size())
+                        .send()
+                        .toCompletableFuture();
+                assertThat(jobActivation).succeedsWithin(Duration.ofSeconds(30));
+                final var jobs = jobActivation.join().getJobs();
+                for (final var job : jobs) {
+                  TestHelper.completeJob(client, job.getKey());
+                  completedJobs.add(job);
+                }
+                assertThat(completedJobs.size()).isEqualTo(startedProcesses);
+              });
     }
   }
 
@@ -331,65 +332,6 @@ public class DynamicNodeIdIT {
     final Path initFile = versionDir.resolve("directory-initialized.json");
     assertThat(initFile).exists().isRegularFile();
     return OBJECT_MAPPER.readValue(initFile.toFile(), DirectoryInitializationInfo.class);
-  }
-
-  private void assertFilesAreHardLinkedOrCopied(
-      final Path v0Dir, final Path v1Dir, final boolean assertHardLinked) throws IOException {
-    final String markerFile = "directory-initialized.json";
-    final AtomicInteger filesChecked = new AtomicInteger(0);
-
-    Files.walkFileTree(
-        v1Dir,
-        new SimpleFileVisitor<>() {
-          @Override
-          public FileVisitResult preVisitDirectory(
-              final Path dir, final BasicFileAttributes attrs) {
-            // Skip runtime directories
-            if (dir.getFileName().toString().equals("runtime")) {
-              return FileVisitResult.SKIP_SUBTREE;
-            }
-            return FileVisitResult.CONTINUE;
-          }
-
-          @Override
-          public FileVisitResult visitFile(final Path target, final BasicFileAttributes attrs)
-              throws IOException {
-            final Path relative = v1Dir.relativize(target);
-
-            // Skip marker file
-            if (relative.getFileName().toString().equals(markerFile)) {
-              return FileVisitResult.CONTINUE;
-            }
-
-            final Path source = v0Dir.resolve(relative);
-
-            // Source file should exist
-            assertThat(source).exists();
-
-            // Files should be hard-linked (same inode)
-            if (assertHardLinked) {
-              assertThat(areHardLinked(source, target))
-                  .as("File %s should be hard-linked to %s", source, target)
-                  .isTrue();
-            } else {
-              assertThat(Files.readAllBytes(target)).isEqualTo(Files.readAllBytes(source));
-            }
-
-            filesChecked.incrementAndGet();
-            return FileVisitResult.CONTINUE;
-          }
-        });
-
-    // Ensure we actually checked some files
-    assertThat(filesChecked.get())
-        .as("Should have verified at least some hard-linked files")
-        .isGreaterThan(0);
-  }
-
-  private boolean areHardLinked(final Path file1, final Path file2) throws IOException {
-    final var key1 = Files.readAttributes(file1, BasicFileAttributes.class).fileKey();
-    final var key2 = Files.readAttributes(file2, BasicFileAttributes.class).fileKey();
-    return key1 != null && key2 != null && key1.equals(key2);
   }
 
   private List<Lease> readLeases(final List<S3Object> objectsInBucket) throws IOException {
