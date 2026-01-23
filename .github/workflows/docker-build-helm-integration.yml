@@ -446,7 +446,7 @@ jobs:
               --jq ".workflow_runs[] | select(.created_at > \"$TRIGGER_TIME\") | .id" | head -n1)
 
             if [[ -n "$RUN_ID" ]]; then
-              echo "downstream_run_url=https://github.com/$TARGET_REPO/actions/runs/$RUN_ID" >> $GITHUB_OUTPUT
+              echo "downstream_run_url=https://github.com/$TARGET_REPO/actions/runs/$RUN_ID" >> "$GITHUB_OUTPUT"
               STATUS=$(gh api /repos/$TARGET_REPO/actions/runs/"$RUN_ID" --jq .status)
               CONCLUSION=$(gh api /repos/$TARGET_REPO/actions/runs/"$RUN_ID" --jq .conclusion)
               echo "Workflow run $RUN_ID status: $STATUS ($CONCLUSION)"
@@ -469,11 +469,12 @@ jobs:
         if: always()
         run: |
           if [ -n "${{ steps.wait-downstream.outputs.downstream_run_url }}" ]; then
-            echo "### SaaS Downstream Workflow Run" >> "$GITHUB_STEP_SUMMARY"
-            echo "" >> "$GITHUB_STEP_SUMMARY"
-            echo "[Open the triggered SaaS E2E workflow run in camunda/c8-cross-component-e2e-tests](${{ steps.wait-downstream.outputs.downstream_run_url }})" >> "$GITHUB_STEP_SUMMARY"
+            {
+              echo "### SaaS Downstream Workflow Run"
+              echo ""
+              echo "[Open the triggered SaaS E2E workflow run in camunda/c8-cross-component-e2e-tests](${{ steps.wait-downstream.outputs.downstream_run_url }})"
+            } >> "$GITHUB_STEP_SUMMARY"
           else
             echo "No downstream workflow run URL found." >> "$GITHUB_STEP_SUMMARY"
           fi
-
 
