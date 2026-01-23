@@ -16,6 +16,7 @@ type C8Run interface {
 
 type C8RunSettings struct {
 	Config               string
+	ResolvedConfigPath   string
 	Detached             bool
 	Port                 int
 	Keystore             string
@@ -27,6 +28,7 @@ type C8RunSettings struct {
 	Password             string
 	Docker               bool
 	StartupUrl           string
+	OracleDriverPath     string
 }
 
 // HasKeyStore returns true when the keystore and password are set
