@@ -15,6 +15,7 @@ import static io.camunda.search.aggregation.IncidentProcessInstanceStatisticsByE
 import static io.camunda.search.aggregation.IncidentProcessInstanceStatisticsByErrorAggregation.AGGREGATION_NAME_TOTAL_ESTIMATE;
 import static io.camunda.search.aggregation.IncidentProcessInstanceStatisticsByErrorAggregation.AGGREGATION_SCRIPT_LANG;
 import static io.camunda.search.aggregation.IncidentProcessInstanceStatisticsByErrorAggregation.AGGREGATION_TOTAL_ESTIMATE_SCRIPT;
+import static io.camunda.search.aggregation.ProcessDefinitionLatestVersionAggregation.AGGREGATION_TERMS_SIZE;
 import static io.camunda.search.clients.aggregator.SearchAggregatorBuilders.bucketSort;
 import static io.camunda.search.clients.aggregator.SearchAggregatorBuilders.cardinality;
 import static io.camunda.search.clients.aggregator.SearchAggregatorBuilders.terms;
@@ -24,9 +25,11 @@ import static io.camunda.webapps.schema.descriptors.template.IncidentTemplate.PR
 import io.camunda.search.aggregation.IncidentProcessInstanceStatisticsByErrorAggregation;
 import io.camunda.search.clients.aggregator.SearchAggregator;
 import io.camunda.search.clients.transformers.ServiceTransformers;
+import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.sort.SortOption.FieldSorting;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.util.List;
+import java.util.Optional;
 
 public class IncidentProcessInstanceStatisticsByErrorAggregationTransformer
     implements AggregationTransformer<IncidentProcessInstanceStatisticsByErrorAggregation> {
@@ -41,6 +44,10 @@ public class IncidentProcessInstanceStatisticsByErrorAggregationTransformer
     final var byErrorAgg =
         terms()
             .name(AGGREGATION_NAME_BY_ERROR)
+            .size(
+                Optional.ofNullable(aggregation.page())
+                    .map(SearchQueryPage::size)
+                    .orElse(AGGREGATION_TERMS_SIZE))
             .script(AGGREGATION_ERROR_MESSAGE_SCRIPT)
             .lang(AGGREGATION_SCRIPT_LANG)
             .aggregations(

@@ -16,6 +16,7 @@ public record IncidentProcessInstanceStatisticsByErrorAggregation(
     IncidentFilter filter, IncidentProcessInstanceStatisticsByErrorSort sort, SearchQueryPage page)
     implements AggregationBase, AggregationPaginated {
 
+  public static final int AGGREGATION_TERMS_SIZE = 10_000;
   public static final String AGGREGATION_NAME_BY_ERROR = "by_error";
   public static final String AGGREGATION_NAME_AFFECTED_INSTANCES = "affected_instances";
   public static final String AGGREGATION_NAME_SORT_AND_PAGE = "sort_and_page";
