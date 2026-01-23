@@ -29,7 +29,6 @@ import io.camunda.gateway.protocol.model.UserTaskSearchQuerySortRequest;
 import io.camunda.gateway.protocol.model.VariableSearchQuerySortRequest;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.UserTaskServices;
-import io.camunda.service.VariableServices;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import jakarta.validation.constraints.Positive;
 import java.util.List;
@@ -44,15 +43,12 @@ import org.springframework.validation.annotation.Validated;
 public class UserTaskTools {
 
   private final UserTaskServices userTaskServices;
-  private final VariableServices variableServices;
   private final CamundaAuthenticationProvider authenticationProvider;
 
   public UserTaskTools(
       final UserTaskServices userTaskServices,
-      final VariableServices variableServices,
       final CamundaAuthenticationProvider authenticationProvider) {
     this.userTaskServices = userTaskServices;
-    this.variableServices = variableServices;
     this.authenticationProvider = authenticationProvider;
   }
 
