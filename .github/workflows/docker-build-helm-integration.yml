@@ -428,6 +428,7 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
       - name: Wait for downstream workflow to finish
+        id: wait-downstream
         env:
           GH_TOKEN: ${{ steps.github-token.outputs.token }}
           TRIGGER_TIME: ${{ steps.trigger-time.outputs.trigger_time }}
@@ -445,6 +446,7 @@ jobs:
               --jq ".workflow_runs[] | select(.created_at > \"$TRIGGER_TIME\") | .id" | head -n1)
 
             if [[ -n "$RUN_ID" ]]; then
+              echo "downstream_run_url=https://github.com/$TARGET_REPO/actions/runs/$RUN_ID" >> "$GITHUB_OUTPUT"
               STATUS=$(gh api /repos/$TARGET_REPO/actions/runs/"$RUN_ID" --jq .status)
               CONCLUSION=$(gh api /repos/$TARGET_REPO/actions/runs/"$RUN_ID" --jq .conclusion)
               echo "Workflow run $RUN_ID status: $STATUS ($CONCLUSION)"
@@ -463,4 +465,16 @@ jobs:
           echo "Timed out waiting for downstream workflow to complete."
           exit 1
 
+      - name: Add SaaS downstream workflow link to Job Summary
+        if: always()
+        run: |
+          if [ -n "${{ steps.wait-downstream.outputs.downstream_run_url }}" ]; then
+            {
+              echo "### SaaS Downstream Workflow Run"
+              echo ""
+              echo "[Open the triggered SaaS E2E workflow run in camunda/c8-cross-component-e2e-tests](${{ steps.wait-downstream.outputs.downstream_run_url }})"
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "No downstream workflow run URL found." >> "$GITHUB_STEP_SUMMARY"
+          fi
 
