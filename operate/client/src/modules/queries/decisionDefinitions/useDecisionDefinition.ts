@@ -7,7 +7,7 @@
  */
 
 import {skipToken, useQuery} from '@tanstack/react-query';
-import {fetchDecisionDefinition} from 'modules/api/v2/decisionDefinitions/fetchDecisionDefinition.ts';
+import {fetchDecisionDefinition} from 'modules/api/v2/decisionDefinitions/fetchDecisionDefinition';
 import {queryKeys} from 'modules/queries/queryKeys';
 
 const useDecisionDefinition = (

@@ -11,7 +11,7 @@ import {
   useQueryClient,
   type UseMutationOptions,
 } from '@tanstack/react-query';
-import {migrateProcessInstancesBatchOperation} from 'modules/api/v2/processes/migrateProcessInstancesBatchOperation.ts';
+import {migrateProcessInstancesBatchOperation} from 'modules/api/v2/processes/migrateProcessInstancesBatchOperation';
 import type {
   CreateMigrationBatchOperationRequestBody,
   CreateMigrationBatchOperationResponseBody,

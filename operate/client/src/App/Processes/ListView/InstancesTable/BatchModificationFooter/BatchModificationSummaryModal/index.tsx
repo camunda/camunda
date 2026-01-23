@@ -15,7 +15,7 @@ import {getProcessInstanceFilters} from 'modules/utils/filter';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {Title, DataTable} from './styled';
 import {tracking} from 'modules/tracking';
-import {useInstancesCountV2} from 'modules/queries/processInstancesStatistics/useInstancesCountV2';
+import {useInstancesCount} from 'modules/queries/processInstancesStatistics/useInstancesCount.ts';
 import {useListViewXml} from 'modules/queries/processDefinitions/useListViewXml';
 import {getFlowNodeName} from 'modules/utils/flowNodes';
 import {handleOperationError} from 'modules/utils/notifications';
@@ -52,7 +52,7 @@ const BatchModificationSummaryModal: React.FC<StateProps> = observer(
       flowNodeId: selectedTargetElementId ?? undefined,
     });
 
-    const {data: instancesCount} = useInstancesCountV2(
+    const {data: instancesCount} = useInstancesCount(
       {},
       process?.processDefinitionKey,
       sourceElementId,
