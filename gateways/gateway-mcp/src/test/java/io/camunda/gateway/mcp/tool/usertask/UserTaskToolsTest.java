@@ -533,11 +533,7 @@ class UserTaskToolsTest extends ToolsTest {
               CallToolRequest.builder()
                   .name("assignUserTask")
                   .arguments(
-                      Map.of(
-                          "userTaskKey",
-                          5L,
-                          "assignmentOptions",
-                          Map.of("action", "unassign")))
+                      Map.of("userTaskKey", 5L, "assignmentOptions", Map.of("action", "unassign")))
                   .build());
 
       // then
