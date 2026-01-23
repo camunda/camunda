@@ -22,8 +22,9 @@ import java.util.Map;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.resttestclient.TestRestTemplate;
+import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRestTemplate;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalManagementPort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -32,6 +33,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit4.SpringRunner;
 
 @RunWith(SpringRunner.class)
+@AutoConfigureTestRestTemplate
 @SpringBootTest(
     classes = {
       TestApplication.class,
@@ -72,7 +74,7 @@ public class UsageMetricIT {
             UsageMetricDTO.class,
             parameters);
 
-    assertThat(response.getStatusCodeValue()).isEqualTo(200);
+    assertThat(response.getStatusCode().value()).isEqualTo(200);
     assertThat(response.getBody().getTotal()).isEqualTo(3L);
   }
 
@@ -89,7 +91,7 @@ public class UsageMetricIT {
             UsageMetricDTO.class,
             parameters);
 
-    assertThat(response.getStatusCodeValue()).isEqualTo(200);
+    assertThat(response.getStatusCode().value()).isEqualTo(200);
     assertThat(response.getBody().getTotal()).isEqualTo(4L);
   }
 }

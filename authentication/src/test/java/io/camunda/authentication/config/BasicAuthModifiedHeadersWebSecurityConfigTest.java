@@ -21,12 +21,10 @@ import static com.google.common.net.HttpHeaders.STRICT_TRANSPORT_SECURITY;
 import static com.google.common.net.HttpHeaders.X_CONTENT_TYPE_OPTIONS;
 import static com.google.common.net.HttpHeaders.X_FRAME_OPTIONS;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.entry;
 
 import io.camunda.authentication.config.controllers.WebSecurityConfigTestContext;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
-import java.util.List;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -70,17 +68,14 @@ public class BasicAuthModifiedHeadersWebSecurityConfigTest extends AbstractWebSe
     assertThat(testResult).hasStatusOk();
     assertThat(testResult)
         .headers()
-        .contains(
-            entry(CONTENT_SECURITY_POLICY_REPORT_ONLY, List.of("self; camunda.com")),
-            entry(REFERRER_POLICY, List.of("no-referrer")),
-            entry(PERMISSIONS_POLICY, List.of("camera=*")),
-            entry(CROSS_ORIGIN_OPENER_POLICY, List.of("unsafe-none")),
-            entry(CROSS_ORIGIN_EMBEDDER_POLICY, List.of("unsafe-none")),
-            entry(CROSS_ORIGIN_RESOURCE_POLICY, List.of("cross-origin")),
-            entry(
-                STRICT_TRANSPORT_SECURITY,
-                List.of("max-age=5000000 ; includeSubDomains ; preload")))
-        .doesNotContainKeys(
+        .hasValue(CONTENT_SECURITY_POLICY_REPORT_ONLY, "self; camunda.com")
+        .hasValue(REFERRER_POLICY, "no-referrer")
+        .hasValue(PERMISSIONS_POLICY, "camera=*")
+        .hasValue(CROSS_ORIGIN_OPENER_POLICY, "unsafe-none")
+        .hasValue(CROSS_ORIGIN_EMBEDDER_POLICY, "unsafe-none")
+        .hasValue(CROSS_ORIGIN_RESOURCE_POLICY, "cross-origin")
+        .hasValue(STRICT_TRANSPORT_SECURITY, "max-age=5000000 ; includeSubDomains ; preload")
+        .doesNotContainHeaders(
             X_CONTENT_TYPE_OPTIONS,
             CACHE_CONTROL,
             PRAGMA,

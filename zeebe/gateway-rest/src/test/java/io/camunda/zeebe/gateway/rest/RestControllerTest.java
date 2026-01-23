@@ -36,7 +36,7 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 
 @TestPropertySource(
     properties = {
-      "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration"
+      "spring.autoconfigure.exclude=org.springframework.boot.security.autoconfigure.SecurityAutoConfiguration"
     })
 @Import({JacksonConfig.class, RestControllerTest.WebMvcTestConfig.class})
 public abstract class RestControllerTest {

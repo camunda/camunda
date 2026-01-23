@@ -31,7 +31,11 @@ public class TasklistIndexController {
     return "tasklist/index";
   }
 
-  @RequestMapping(value = {"/tasklist/{regex:[\\w-]+}", "/tasklist/**/{regex:[\\w-]+}"})
+  /**
+   * Forwards all sub-paths under /tasklist to the Tasklist frontend. Uses {*path} syntax which is
+   * compatible with PathPatternParser (Spring Framework 6+).
+   */
+  @RequestMapping("/tasklist/{*path}")
   public String forwardToTasklist(final HttpServletRequest request) {
     return webappsRequestForwardManager.forward(request, "tasklist");
   }
@@ -39,8 +43,11 @@ public class TasklistIndexController {
   /**
    * Redirects the old frontend routes to the /tasklist sub-path. This can be removed after the
    * creation of the auto-discovery service.
+   *
+   * <p>Note: /new/{segment} requires at least one path segment (e.g., /new/process_id), while /new
+   * alone will return 404. This matches the legacy behavior.
    */
-  @GetMapping({"/{regex:[\\d]+}", "/processes/*/start", "/new/*"})
+  @GetMapping({"/{taskId:[\\d]+}", "/processes/{segment}/start", "/new/{segment}"})
   public String redirectOldRoutes(final HttpServletRequest request) {
     return "redirect:/tasklist" + getRequestedUrl(request);
   }

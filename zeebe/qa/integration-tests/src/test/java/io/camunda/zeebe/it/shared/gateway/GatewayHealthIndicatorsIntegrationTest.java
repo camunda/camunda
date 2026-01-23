@@ -27,7 +27,7 @@ import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.actuate.health.Health;
+import org.springframework.boot.health.contributor.Health;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.test.context.ContextConfiguration;
@@ -75,9 +75,9 @@ public class GatewayHealthIndicatorsIntegrationTest {
 
     // then
     assertThat(actualHealthBeforeRegisteringStatusSupplier.getStatus())
-        .isSameAs(org.springframework.boot.actuate.health.Status.UNKNOWN);
+        .isSameAs(org.springframework.boot.health.contributor.Status.UNKNOWN);
     assertThat(actualHealthAfterRegisteringStatusSupplier.getStatus())
-        .isSameAs(org.springframework.boot.actuate.health.Status.OUT_OF_SERVICE);
+        .isSameAs(org.springframework.boot.health.contributor.Status.OUT_OF_SERVICE);
   }
 
   @Test
@@ -103,9 +103,9 @@ public class GatewayHealthIndicatorsIntegrationTest {
 
     // then
     assertThat(actualHealthBeforeRegisteringStatusSupplier.getStatus())
-        .isSameAs(org.springframework.boot.actuate.health.Status.DOWN);
+        .isSameAs(org.springframework.boot.health.contributor.Status.DOWN);
     assertThat(actualHealthAfterRegisteringStatusSupplier.getStatus())
-        .isSameAs(org.springframework.boot.actuate.health.Status.UP);
+        .isSameAs(org.springframework.boot.health.contributor.Status.UP);
   }
 
   @Test
@@ -132,9 +132,9 @@ public class GatewayHealthIndicatorsIntegrationTest {
 
     // then
     assertThat(actualHealthBeforeRegisteringStatusSupplier.getStatus())
-        .isSameAs(org.springframework.boot.actuate.health.Status.DOWN);
+        .isSameAs(org.springframework.boot.health.contributor.Status.DOWN);
     assertThat(actualHealthAfterRegisteringStatusSupplier.getStatus())
-        .isSameAs(org.springframework.boot.actuate.health.Status.UP);
+        .isSameAs(org.springframework.boot.health.contributor.Status.UP);
   }
 
   @Configuration

@@ -62,8 +62,8 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointRequest;
 import org.springframework.boot.actuate.logging.LoggersEndpoint;
+import org.springframework.boot.security.autoconfigure.actuate.web.servlet.EndpointRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -172,14 +172,13 @@ public class WebSecurityConfig {
           "/oauth2/authorization/**",
           // old Tasklist and Operate webapps routes
           "/processes",
-          "/processes/*",
-          "/{regex:[\\d]+}", // user task id
-          "/processes/*/start",
-          "/new/*",
+          "/processes/**",
+          "/{taskId:[\\d]+}", // user task id (numeric only)
+          "/new/**",
           "/decisions",
-          "/decisions/*",
+          "/decisions/**",
           "/instances",
-          "/instances/*",
+          "/instances/**",
           SPRING_DEFAULT_UI_CSS);
   private static final Logger LOG = LoggerFactory.getLogger(WebSecurityConfig.class);
   // Used for chains that grant unauthenticated access, always comes first.

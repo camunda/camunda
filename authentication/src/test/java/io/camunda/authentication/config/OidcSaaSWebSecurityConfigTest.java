@@ -9,13 +9,11 @@ package io.camunda.authentication.config;
 
 import static com.google.common.net.HttpHeaders.CONTENT_SECURITY_POLICY;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.entry;
 
 import io.camunda.authentication.config.controllers.OidcMockMvcTestHelper;
 import io.camunda.authentication.config.controllers.WebSecurityConfigTestContext;
 import io.camunda.authentication.config.controllers.WebSecurityOidcTestContext;
 import io.camunda.security.configuration.headers.ContentSecurityPolicyConfig;
-import java.util.List;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -61,9 +59,7 @@ public class OidcSaaSWebSecurityConfigTest extends AbstractWebSecurityConfigTest
     assertThat(testResult).hasStatusOk();
     assertThat(testResult)
         .headers()
-        .contains(
-            entry(
-                CONTENT_SECURITY_POLICY,
-                List.of(ContentSecurityPolicyConfig.DEFAULT_SAAS_SECURITY_POLICY)));
+        .hasValue(
+            CONTENT_SECURITY_POLICY, ContentSecurityPolicyConfig.DEFAULT_SAAS_SECURITY_POLICY);
   }
 }
