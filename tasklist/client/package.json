@@ -8,7 +8,7 @@
     "@bpmn-io/form-js-carbon-styles": "1.18.0",
     "@bpmn-io/form-js-viewer": "1.18.0",
     "@camunda/camunda-api-zod-schemas": "0.0.34",
-    "@camunda/camunda-composite-components": "0.20.2",
+    "@camunda/camunda-composite-components": "0.21.4",
     "@carbon/elements": "11.78.0",
     "@carbon/react": "1.94.2",
     "@monaco-editor/react": "4.7.0",
@@ -36,7 +36,7 @@
     "react-router-dom": "7.7.1",
     "react-transition-group": "4.4.5",
     "sass": "1.89.2",
-    "styled-components": "6.1.19",
+    "styled-components": "6.3.8",
     "ts-pattern": "5.9.0",
     "zod": "4.0.5"
   },
