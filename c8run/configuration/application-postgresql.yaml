@@ -1,0 +1,8 @@
+camunda:
+  data:
+    secondary-storage:
+      type: rdbms
+      rdbms:
+        url: jdbc:postgresql://localhost:5432/camunda_secondary
+        username: camunda
+        password: camunda

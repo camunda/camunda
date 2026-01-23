@@ -1,0 +1,8 @@
+camunda:
+  data:
+    secondary-storage:
+      type: rdbms
+      rdbms:
+        url: jdbc:sqlserver://localhost:1433;databaseName=camunda_secondary;encrypt=false
+        username: camunda
+        password: Camunda123!
