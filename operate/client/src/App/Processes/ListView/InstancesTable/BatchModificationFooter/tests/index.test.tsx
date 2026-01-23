@@ -9,7 +9,7 @@
 import {useEffect} from 'react';
 import {observer} from 'mobx-react';
 import {render, screen} from 'modules/testing-library';
-import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelectionV2';
+import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {BatchModificationFooter} from '../index';
 import {MemoryRouter} from 'react-router-dom';

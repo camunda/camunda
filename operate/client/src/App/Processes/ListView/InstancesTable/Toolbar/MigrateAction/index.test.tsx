@@ -8,7 +8,7 @@
 
 import {act} from '@testing-library/react';
 import {render, screen, waitFor} from 'modules/testing-library';
-import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelectionV2';
+import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {MigrateAction} from '.';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 import {tracking} from 'modules/tracking';
