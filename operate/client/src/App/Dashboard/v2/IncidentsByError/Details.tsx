@@ -94,7 +94,7 @@ const Details: React.FC<Props> = ({
               tabIndex={tabIndex ?? 0}
               to={Locations.processes({
                 process: processDefinitionId,
-                version: 'all',
+                version: processDefinitionVersion.toString(),
                 errorMessage: truncateErrorMessage(errorMessage),
                 incidentErrorHashCode,
                 incidents: true,

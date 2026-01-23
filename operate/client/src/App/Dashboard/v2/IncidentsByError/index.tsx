@@ -9,6 +9,7 @@
 import React from 'react';
 import {PartiallyExpandableDataTable} from '../PartiallyExpandableDataTable';
 import {Locations} from 'modules/Routes';
+import {panelStatesStore} from 'modules/stores/panelStates';
 import {tracking} from 'modules/tracking';
 import {getAccordionTitle} from './utils/getAccordionTitle';
 import {InstancesBar} from 'modules/components/InstancesBar';
@@ -74,6 +75,7 @@ const IncidentsByError: React.FC = () => {
                 incidents: true,
               })}
               onClick={() => {
+                panelStatesStore.expandFiltersPanel();
                 tracking.track({
                   eventName: 'navigation',
                   link: 'dashboard-process-incidents-by-error-message-all-processes',
