@@ -369,7 +369,7 @@ jobs:
         run: >
           ./mvnw -B -T 2 --no-snapshot-updates
           -D forkCount=3
-          -D skipITs -D skipQaBuild=${SKIP_QA_BUILD} -D skipChecks -D surefire.rerunFailingTestsCount=3
+          -D skipITs -D "skipQaBuild=${SKIP_QA_BUILD}" -D skipChecks -D surefire.rerunFailingTestsCount=3
           -D junitThreadCount=16
           -D argLine="@{argLine} -Xmx4g"
           -P skip-random-tests,parallel-tests,extract-flaky-tests,skipFrontendBuild
@@ -1218,11 +1218,11 @@ jobs:
     name: flaky tests summary comment
     if: always() && github.event_name == 'pull_request' && !github.event.pull_request.head.repo.fork
     needs:
+      - acceptance-tests
       - archunit-tests
       - docker-checks
       - elasticsearch-integration-tests
       - integration-tests
-      - acceptance-tests
       - opensearch-integration-tests
       - rdbms-h2-integration-tests
       - rdbms-integration-tests
@@ -1244,12 +1244,19 @@ jobs:
         id: integration-matrix-read
         with:
           matrix-step-name: integration-tests
+      - name: Read Acceptance tests matrix outputs
+        uses: cloudposse/github-action-matrix-outputs-read@v1
+        id: acceptance-matrix-read
+        with:
+          matrix-step-name: acceptance-tests
       - name: Collect flaky test results
         id: collect-results
         uses: ./.github/actions/collect-flaky-tests
         with:
           unit-tests-result: ${{ needs.unit-tests.result }}
           unit-matrix-output-result: ${{ steps.unit-matrix-read.outputs.result }}
+          archunit-tests-result: ${{ needs.archunit-tests.result }}
+          archunit-tests-flaky: ${{ needs.archunit-tests.outputs.flakyTests }}
           elasticsearch-tests-result: ${{ needs.elasticsearch-integration-tests.result }}
           elasticsearch-tests-flaky: ${{ needs.elasticsearch-integration-tests.outputs.flakyTests }}
           opensearch-tests-result: ${{ needs.opensearch-integration-tests.result }}
@@ -1262,6 +1269,8 @@ jobs:
           docker-checks-flaky: ${{ needs.docker-checks.outputs.flakyTests }}
           integration-tests-result: ${{ needs.integration-tests.result }}
           integration-matrix-output-result: ${{ steps.integration-matrix-read.outputs.result }}
+          acceptance-tests-result: ${{ needs.acceptance-tests.result }}
+          acceptance-matrix-output-result: ${{ steps.acceptance-matrix-read.outputs.result }}
       - name: Update flaky tests comment
         uses: ./.github/actions/flaky-tests-summary-comment
         with:
