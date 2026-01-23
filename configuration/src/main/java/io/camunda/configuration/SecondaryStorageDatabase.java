@@ -20,10 +20,16 @@ import java.util.List;
  */
 public abstract class SecondaryStorageDatabase<T> {
 
-  /** Endpoint for the database configured as secondary storage. */
+  /**
+   * Endpoint for the database configured as secondary storage. Mutually exclusive with {@link
+   * #urls} - configure only one.
+   */
   private String url = "http://localhost:9200";
 
-  /** List of endpoints for the database configured as secondary storage. */
+  /**
+   * List of endpoints for the database configured as secondary storage. Use for multi-node cluster
+   * connectivity. Mutually exclusive with {@link #url} - configure only one.
+   */
   private List<String> urls = new ArrayList<>();
 
   /** Username for the database configured as secondary storage. */
