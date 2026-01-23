@@ -718,7 +718,6 @@ components:
           description: The description of the new role.
       required:
         - name
-        - description
 
     RoleUpdateResult:
       type: object

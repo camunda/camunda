@@ -642,7 +642,6 @@ components:
           description: The new description of the group.
       required:
         - name
-        - description
 
     GroupUpdateResult:
       type: object
