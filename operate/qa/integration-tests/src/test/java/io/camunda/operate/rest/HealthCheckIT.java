@@ -8,7 +8,6 @@
 package io.camunda.operate.rest;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -26,10 +25,11 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.health.contributor.Health;
-import org.springframework.boot.test.autoconfigure.actuate.observability.AutoConfigureObservability;
+import org.springframework.boot.micrometer.metrics.test.autoconfigure.AutoConfigureMetrics;
+import org.springframework.boot.resttestclient.TestRestTemplate;
+import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRestTemplate;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.util.TestPropertyValues;
-import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalManagementPort;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
@@ -37,7 +37,8 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit4.SpringRunner;
 
-@AutoConfigureObservability(tracing = false)
+@AutoConfigureMetrics
+@AutoConfigureTestRestTemplate
 @SpringBootTest(
     classes = {TestApplicationWithNoBeans.class, IndicesHealthIndicator.class},
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -53,14 +54,14 @@ public class HealthCheckIT {
 
   @Test
   public void testReady() throws Exception {
-    given(probes.getHealth(anyBoolean())).willReturn(Health.up().build());
+    given(probes.health()).willReturn(Health.up().build());
     final var response =
         testRestTemplate.getForEntity(
             "http://localhost:" + managementPort + "/actuator/health/readiness", Map.class);
 
-    assertThat(response.getStatusCodeValue()).isEqualTo(HttpStatus.SC_OK);
+    assertThat(response.getStatusCode().value()).isEqualTo(HttpStatus.SC_OK);
     assertThat(response.getBody()).containsEntry("status", "UP");
-    verify(probes, times(1)).getHealth(anyBoolean());
+    verify(probes, times(1)).health();
   }
 
   @Test
@@ -69,28 +70,29 @@ public class HealthCheckIT {
         testRestTemplate.getForEntity(
             "http://localhost:" + managementPort + "/actuator/health/liveness", Map.class);
 
-    assertThat(response.getStatusCodeValue()).isEqualTo(HttpStatus.SC_OK);
+    assertThat(response.getStatusCode().value()).isEqualTo(HttpStatus.SC_OK);
     assertThat(response.getBody()).containsEntry("status", "UP");
     verifyNoInteractions(probes);
   }
 
   @Test
   public void testReadyStateIsNotOK() throws Exception {
-    given(probes.getHealth(anyBoolean())).willReturn(Health.down().build());
+    given(probes.health()).willReturn(Health.down().build());
 
     final var livenessResponse =
         testRestTemplate.getForEntity(
             "http://localhost:" + managementPort + "/actuator/health/liveness", Map.class);
 
-    assertThat(livenessResponse.getStatusCodeValue()).isEqualTo(HttpStatus.SC_OK);
+    assertThat(livenessResponse.getStatusCode().value()).isEqualTo(HttpStatus.SC_OK);
     assertThat(livenessResponse.getBody()).containsEntry("status", "UP");
 
     final var readinessResponse =
         testRestTemplate.getForEntity(
             "http://localhost:" + managementPort + "/actuator/health/readiness", Map.class);
 
-    assertThat(readinessResponse.getStatusCodeValue()).isEqualTo(HttpStatus.SC_SERVICE_UNAVAILABLE);
-    verify(probes, times(2)).getHealth(anyBoolean());
+    assertThat(readinessResponse.getStatusCode().value())
+        .isEqualTo(HttpStatus.SC_SERVICE_UNAVAILABLE);
+    verify(probes, times(2)).health();
   }
 
   @Test
@@ -99,7 +101,7 @@ public class HealthCheckIT {
         testRestTemplate.getForEntity(
             "http://localhost:" + managementPort + "/actuator/prometheus", String.class);
 
-    assertThat(response.getStatusCodeValue()).isEqualTo(HttpStatus.SC_OK);
+    assertThat(response.getStatusCode().value()).isEqualTo(HttpStatus.SC_OK);
     assertThat(response.getBody())
         .contains(
             "# HELP jvm_memory_used_bytes The amount of used memory\n"
