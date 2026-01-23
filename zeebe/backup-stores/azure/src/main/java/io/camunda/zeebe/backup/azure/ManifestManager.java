@@ -39,6 +39,7 @@ import java.io.UncheckedIOException;
 import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 import java.util.Objects;
+import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -184,11 +185,12 @@ public final class ManifestManager {
     blobClient.delete();
   }
 
-  public Collection<String> manifestUrls(final Collection<BackupIdentifier> ids) {
+  public Map<BackupIdentifier, String> manifestUrls(final Collection<BackupIdentifier> ids) {
     return ids.stream()
-        .map(id -> blobContainerClient.getBlobClient(manifestIdPath(id)))
-        .map(BlobClient::getBlobUrl)
-        .collect(Collectors.toSet());
+        .collect(
+            Collectors.toMap(
+                id -> id,
+                id -> blobContainerClient.getBlobClient(manifestIdPath(id)).getBlobUrl()));
   }
 
   Manifest getManifest(final BackupIdentifier id) {

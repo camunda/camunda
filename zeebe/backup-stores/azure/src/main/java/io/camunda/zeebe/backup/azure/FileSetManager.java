@@ -25,6 +25,7 @@ import io.camunda.zeebe.backup.common.FileSet.NamedFile;
 import io.camunda.zeebe.backup.common.NamedFileSetImpl;
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -94,14 +95,11 @@ final class FileSetManager {
     return new NamedFileSetImpl(pathByName);
   }
 
-  public Collection<String> backupDataUrls(final Collection<BackupIdentifier> ids) {
+  public Map<BackupIdentifier, Collection<String>> backupDataUrls(
+      final Collection<BackupIdentifier> ids) {
     assureContainerCreated();
 
-    return ids.stream()
-        .parallel()
-        .map(this::listBackupObjects)
-        .flatMap(Collection::stream)
-        .toList();
+    return ids.stream().parallel().collect(Collectors.toMap(id -> id, this::listBackupObjects));
   }
 
   private Collection<String> listBackupObjects(final BackupIdentifier id) {
