@@ -477,4 +477,20 @@
     ${keysetPaging.limit}
   </select>
 
+  <sql id="deleteChildrenByRootProcessInstancesWhereClause">
+    AND ROOT_PROCESS_INSTANCE_KEY IN
+    <foreach collection="rootProcessInstanceKeys" item="key" open="(" separator=", " close=")">
+      #{key}
+    </foreach>
+    AND ROOT_PROCESS_INSTANCE_KEY != PROCESS_INSTANCE_KEY
+  </sql>
+
+  <delete id="deleteChildrenByRootProcessInstances">
+    <bind name="tableName" value="'PROCESS_INSTANCE'"/>
+    <bind name="primaryKeyColumn" value="'PROCESS_INSTANCE_KEY'"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.deleteByPartitionAndLimit">
+      <property name="extraWhereClauseId" value="deleteChildrenByRootProcessInstancesWhereClause"/>
+    </include>
+  </delete>
+
 </mapper>

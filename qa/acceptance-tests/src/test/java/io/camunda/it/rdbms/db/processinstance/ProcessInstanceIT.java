@@ -403,6 +403,70 @@ public class ProcessInstanceIT {
   }
 
   @TestTemplate
+  public void shouldDeleteChildrenByRootProcessInstances(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final ProcessInstanceDbReader processInstanceReader = rdbmsService.getProcessInstanceReader();
+
+    final var processDefinition =
+        ProcessDefinitionFixtures.createAndSaveProcessDefinition(rdbmsWriters, b -> b);
+
+    final long rootProcessInstanceKey = nextKey();
+    final var rootProcessInstance =
+        createAndSaveRandomProcessInstance(
+            rdbmsWriters,
+            b ->
+                b.processDefinitionKey(processDefinition.processDefinitionKey())
+                    .partitionId(PARTITION_ID)
+                    .processInstanceKey(rootProcessInstanceKey)
+                    .rootProcessInstanceKey(rootProcessInstanceKey));
+    final var pi1 =
+        createAndSaveRandomProcessInstance(
+            rdbmsWriters,
+            b ->
+                b.processDefinitionKey(processDefinition.processDefinitionKey())
+                    .rootProcessInstanceKey(rootProcessInstanceKey)
+                    .partitionId(PARTITION_ID));
+    final var pi2 =
+        createAndSaveRandomProcessInstance(
+            rdbmsWriters,
+            b ->
+                b.processDefinitionKey(processDefinition.processDefinitionKey())
+                    .rootProcessInstanceKey(rootProcessInstanceKey)
+                    .partitionId(PARTITION_ID));
+    final var pi3 =
+        createAndSaveRandomProcessInstance(
+            rdbmsWriters,
+            b ->
+                b.processDefinitionKey(processDefinition.processDefinitionKey())
+                    .partitionId(PARTITION_ID));
+
+    // when
+    final int deleted =
+        rdbmsWriters
+            .getProcessInstanceWriter()
+            .deleteChildrenByRootProcessInstances(
+                PARTITION_ID, List.of(rootProcessInstanceKey), 10);
+
+    // then
+    assertThat(deleted).isEqualTo(2);
+    final var searchResult =
+        processInstanceReader.search(
+            ProcessInstanceQuery.of(
+                b ->
+                    b.filter(f -> f.processDefinitionKeys(processDefinition.processDefinitionKey()))
+                        .sort(s -> s)
+                        .page(p -> p.from(0).size(20))));
+
+    assertThat(searchResult.total()).isEqualTo(2);
+    assertThat(searchResult.items()).hasSize(2);
+    assertThat(searchResult.items().stream().map(ProcessInstanceEntity::processInstanceKey))
+        .containsExactlyInAnyOrder(rootProcessInstanceKey, pi3.processInstanceKey());
+  }
+
+  @TestTemplate
   public void shouldSelectExpiredProcessInstances(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
