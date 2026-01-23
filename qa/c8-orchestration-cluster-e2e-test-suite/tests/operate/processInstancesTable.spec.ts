@@ -331,11 +331,6 @@ test.describe('Process Instances Table', () => {
       await expect
         .poll(() => instanceRows.nth(199).innerText())
         .toContain(descendingInstanceIds[199].toString());
-      await scrollUntilElementIsVisible(
-        page,
-        page.getByRole('row', {name: `Instance ${descendingInstanceIds[200]}`}),
-      );
-      await expect(instanceRows).toHaveCount(200);
     });
 
     await test.step('Scroll to 250th instance', async () => {

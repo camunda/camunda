@@ -28,6 +28,7 @@ export class OperateFiltersPanelPage {
   readonly finishedInstancesCheckbox: Locator;
   readonly processNameFilter: Locator;
   readonly processVersionFilter: Locator;
+  readonly processNameClearButton: Locator;
   readonly processInstanceKeysFilter: Locator;
   readonly processInstanceKeysFilterOption: Locator;
   readonly parentProcessInstanceKey: Locator;
@@ -79,6 +80,11 @@ export class OperateFiltersPanelPage {
     this.processVersionFilter = this.page.getByRole('combobox', {
       name: 'Version',
     });
+    this.processNameClearButton = this.processNameFilter
+      .locator('..')
+      .getByRole('button', {
+        name: 'Clear selected item',
+      });
     this.processInstanceKeysFilterOption = this.page.getByRole('menuitem', {
       name: 'Process Instance Key(s)',
     });
@@ -174,12 +180,16 @@ export class OperateFiltersPanelPage {
   }
 
   async selectProcess(option: string) {
+    if (await this.processNameClearButton.isVisible()) {
+      await this.processNameClearButton.click();
+    }
     await this.processNameFilter.click();
     await this.getOptionByName(option).click({timeout: 30000});
   }
 
   async selectVersion(option: string) {
     await expect(this.processNameFilter).toBeVisible();
+    await expect(this.processVersionFilter).toBeEnabled();
     await this.processVersionFilter.click();
     await expect(this.getOptionByName(option)).toBeVisible();
     await this.getOptionByName(option).click({timeout: 30000});
