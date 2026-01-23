@@ -92,10 +92,12 @@ public class MigrationDatabaseChecks extends ElasticOpenSearchSetupHelper {
     final var response = httpClient.send(request, BodyHandlers.ofString());
 
     if (response.statusCode() != 200) {
+      LOGGER.info("Received non-200 response: {}", response.statusCode());
       return false;
     }
     final JsonNode jsonResponse = OBJECT_MAPPER.readTree(response.body());
     final int totalDocs = jsonResponse.at("/hits/total/value").asInt();
+    LOGGER.info("Found {} import position documents for {}", totalDocs, component);
     return totalDocs > 0;
   }
 
