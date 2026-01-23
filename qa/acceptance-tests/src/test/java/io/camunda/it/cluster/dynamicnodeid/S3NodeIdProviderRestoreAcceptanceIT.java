@@ -23,17 +23,16 @@ import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg.BackupStore
 import io.camunda.zeebe.broker.system.configuration.backup.FilesystemBackupStoreConfig;
 import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator;
-import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
-import io.camunda.zeebe.qa.util.cluster.TestHealthProbe;
 import io.camunda.zeebe.qa.util.cluster.TestRestoreApp;
 import io.camunda.zeebe.qa.util.cluster.TestSpringApplication;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.zeebe.util.FileUtil;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import org.awaitility.Awaitility;
@@ -65,7 +64,7 @@ public final class S3NodeIdProviderRestoreAcceptanceIT {
   private static final int CLUSTER_SIZE = 3;
   private static final int PARTITIONS_COUNT = 3;
   private static final int REPLICATION_FACTOR = 1;
-  private static final Duration LEASE_DURATION = Duration.ofSeconds(10);
+  private static final Duration LEASE_DURATION = Duration.ofSeconds(20);
   private static @TempDir Path tempDir;
 
   private static @TempDir Path workingDirectory;
@@ -113,7 +112,7 @@ public final class S3NodeIdProviderRestoreAcceptanceIT {
   }
 
   @Test
-  void shouldBackupAndRestoreWithS3NodeIdProvider() {
+  void shouldBackupAndRestoreWithS3NodeIdProvider() throws IOException {
     final var backupId = 42L;
     final var processInstancesCount = 3;
 
@@ -136,7 +135,13 @@ public final class S3NodeIdProviderRestoreAcceptanceIT {
     restoreBackup(backupId);
 
     // restart cluster
-    testCluster.brokers().values().forEach(broker -> broker.start().await(TestHealthProbe.READY));
+    testCluster
+        .brokers()
+        .values()
+        .forEach(
+            broker -> {
+              Thread.ofVirtual().start(broker::start);
+            });
     testCluster.awaitCompleteTopology();
 
     // then - verify process instances can be completed
@@ -169,13 +174,6 @@ public final class S3NodeIdProviderRestoreAcceptanceIT {
   private void takeBackup(final long backupId) {
     final var broker = testCluster.brokers().values().iterator().next();
     final var actuator = BackupActuator.of(broker);
-    final var partitions = PartitionsActuator.of(broker);
-
-    partitions.takeSnapshot();
-
-    Awaitility.await("Snapshot is taken")
-        .atMost(Duration.ofSeconds(60))
-        .until(() -> partitions.query().get(1).snapshotId(), Objects::nonNull);
 
     assertThatNoException().isThrownBy(() -> actuator.take(backupId));
 
@@ -191,12 +189,16 @@ public final class S3NodeIdProviderRestoreAcceptanceIT {
             });
   }
 
-  private void restoreBackup(final long backupId) {
+  private void restoreBackup(final long backupId) throws IOException {
     final var restoreTasks = new ArrayList<CompletableFuture<Void>>();
 
+    FileUtil.deleteFolder(workingDirectory);
+
     for (int nodeId = 0; nodeId < CLUSTER_SIZE; nodeId++) {
-      final var task =
-          CompletableFuture.runAsync(
+      final var task = new CompletableFuture<Void>();
+
+      Thread.ofVirtual()
+          .start(
               () -> {
                 final var restore =
                     new TestRestoreApp()
@@ -212,6 +214,7 @@ public final class S3NodeIdProviderRestoreAcceptanceIT {
                         .withBackupId(backupId)
                         .start();
                 restore.close();
+                task.complete(null);
               });
       restoreTasks.add(task);
     }
