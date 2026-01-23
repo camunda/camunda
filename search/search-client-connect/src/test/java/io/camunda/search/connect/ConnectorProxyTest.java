@@ -12,7 +12,6 @@ import static com.github.tomakehurst.wiremock.client.WireMock.any;
 import static com.github.tomakehurst.wiremock.client.WireMock.anyRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.anyUrl;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
-import static com.github.tomakehurst.wiremock.stubbing.Scenario.STARTED;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -34,19 +33,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 
-/**
- * Integration tests for proxy support in Elasticsearch and OpenSearch connectors.
- *
- * <p>These tests verify that both connectors correctly configure HTTP proxy settings, including
- * proxy authentication. Uses WireMock to simulate a proxy endpoint and verify that requests arrive
- * with the expected proxy-related headers.
- *
- * <p>Note: These tests verify the connector's proxy configuration, not actual proxy forwarding
- * behavior. The tests confirm that when proxy settings are configured, the HTTP client sends
- * requests to the proxy host with appropriate authentication headers.
- *
- * <p>Tests are executed sequentially to avoid port conflicts.
- */
 @Execution(ExecutionMode.SAME_THREAD)
 class ConnectorProxyTest {
 
@@ -54,9 +40,6 @@ class ConnectorProxyTest {
   private static final String PROXY_PASSWORD = "proxypass";
   private static final String OS_ADMIN_USER = "admin";
   private static final String OS_ADMIN_PASSWORD = "admin";
-
-  private static final String AUTH_SCENARIO = "proxy-auth";
-  private static final String AUTH_CHALLENGED = "challenged";
 
   // Simulated ES/OS cluster info response
   private static final String CLUSTER_INFO_RESPONSE =
@@ -116,11 +99,10 @@ class ConnectorProxyTest {
   @EnumSource(
       value = DatabaseType.class,
       names = {"ELASTICSEARCH", "OPENSEARCH"})
-  void shouldSendProxyAuthorizationHeaderAfter407Challenge(final DatabaseType databaseType)
+  void shouldSendProxyAuthorizationHeaderPreemptively(final DatabaseType databaseType)
       throws Exception {
-    // given - proxy that requires authentication (407 challenge-response flow)
-    // First request gets 407, second request with credentials succeeds
-    stubProxyAuthChallenge();
+    // given
+    stubSuccessResponse();
 
     final var proxy = createProxyConfig(true);
 
@@ -133,7 +115,7 @@ class ConnectorProxyTest {
     // when
     pingDatabase(databaseType, proxy);
 
-    // then - verify that the retry request arrived with Proxy-Authorization header
+    // then - verify that the request arrived with Proxy-Authorization header (preemptively)
     proxyServer.verify(
         anyRequestedFor(anyUrl()).withHeader("Proxy-Authorization", equalTo(expectedAuthValue)));
   }
@@ -173,39 +155,6 @@ class ConnectorProxyTest {
     // X-Elastic-Product header is required by the ES client to verify it's talking to Elasticsearch
     proxyServer.stubFor(
         any(anyUrl())
-            .willReturn(
-                aResponse()
-                    .withStatus(200)
-                    .withHeader("Content-Type", "application/json")
-                    .withHeader("X-Elastic-Product", "Elasticsearch")
-                    .withBody(CLUSTER_INFO_RESPONSE)));
-  }
-
-  /**
-   * Stub that simulates proxy authentication using 407 challenge-response flow.
-   *
-   * <p>Apache HttpClient doesn't send Proxy-Authorization preemptively. Instead, it waits for a 407
-   * response with Proxy-Authenticate header, then retries with credentials. This stub uses
-   * WireMock's scenario feature to return 407 on the first request, then 200 on subsequent
-   * requests.
-   */
-  private void stubProxyAuthChallenge() {
-    // First request: return 407 Proxy Authentication Required
-    proxyServer.stubFor(
-        any(anyUrl())
-            .inScenario(AUTH_SCENARIO)
-            .whenScenarioStateIs(STARTED)
-            .willReturn(
-                aResponse()
-                    .withStatus(407)
-                    .withHeader("Proxy-Authenticate", "Basic realm=\"proxy\""))
-            .willSetStateTo(AUTH_CHALLENGED));
-
-    // Subsequent requests: return success
-    proxyServer.stubFor(
-        any(anyUrl())
-            .inScenario(AUTH_SCENARIO)
-            .whenScenarioStateIs(AUTH_CHALLENGED)
             .willReturn(
                 aResponse()
                     .withStatus(200)
