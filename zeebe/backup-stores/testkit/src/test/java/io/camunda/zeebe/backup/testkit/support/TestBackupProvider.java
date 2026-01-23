@@ -42,7 +42,7 @@ public final class TestBackupProvider {
                     try {
                       FileUtil.deleteFolderIfExists(tempDir);
                     } catch (final IOException e) {
-                      throw new RuntimeException(e);
+                      System.err.println("Failed to delete temp dir: " + tempDir);
                     }
                   }));
     } catch (final IOException e) {
