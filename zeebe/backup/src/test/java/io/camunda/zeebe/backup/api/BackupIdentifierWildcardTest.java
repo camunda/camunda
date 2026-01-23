@@ -322,7 +322,7 @@ class BackupIdentifierWildcardTest {
     assertThat(pattern)
         .isEqualTo(
             new TimeRange(
-                new Prefix("1700000000000"),
+                new Exact(1700000000000L),
                 generator.fromTimestamp(timestamp.toEpochMilli()),
                 generator.fromTimestamp(timestamp.toEpochMilli())));
     assertThat(pattern.matches(1700000000000L)).isTrue();
@@ -352,9 +352,9 @@ class BackupIdentifierWildcardTest {
         // Multiple strings with no common prefix
         Arguments.of(new String[] {"100", "200", "300"}, new Any()),
         // All identical strings
-        Arguments.of(new String[] {"12345", "12345", "12345"}, new Prefix("12345")),
+        Arguments.of(new String[] {"12345", "12345", "12345"}, new Exact(12345)),
         // Single string
-        Arguments.of(new String[] {"12345"}, new Prefix("12345")),
+        Arguments.of(new String[] {"12345"}, new Exact(12345)),
         // Empty array
         Arguments.of(new String[] {}, new Any()),
         // null

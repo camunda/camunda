@@ -14,6 +14,7 @@ import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern.Ti
 import io.camunda.zeebe.backup.common.BackupIdentifierWildcardImpl;
 import io.camunda.zeebe.backup.common.CheckpointIdGenerator;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Optional;
 
 /**
@@ -83,26 +84,14 @@ public interface BackupIdentifierWildcard {
     }
     prefix.append(wildcard.partitionId().get());
     prefix.append("/");
+    prefix.append(wildcard.checkpointPattern().prefix());
 
-    switch (wildcard.checkpointPattern()) {
-      case Exact(final var checkpointId) -> {
-        prefix.append(checkpointId);
-        prefix.append("/");
-        // Checkpoint pattern is exact so we can include node id if present
-        if (wildcard.nodeId().isPresent()) {
-          prefix.append(wildcard.nodeId().get());
-        }
+    if (wildcard.checkpointPattern() instanceof Exact) {
+      prefix.append("/");
+      // Checkpoint pattern is exact so we can include node id if present
+      if (wildcard.nodeId().isPresent()) {
+        prefix.append(wildcard.nodeId().get());
       }
-      // Checkpoint pattern is not exact so our prefix ends here, we can't include the node id
-      case Prefix(final var cpPrefix) -> prefix.append(cpPrefix);
-      case final TimeRange timeRange -> {
-        switch (timeRange.pattern()) {
-          case Prefix(final var cpPrefix) -> prefix.append(cpPrefix);
-          case Any() -> {} // TimeRange with Any pattern, no prefix to append
-          default -> {} // Other patterns, no specific prefix handling
-        }
-      }
-      case Any() -> {}
     }
     return prefix.toString();
   }
@@ -112,6 +101,8 @@ public interface BackupIdentifierWildcard {
     boolean matches(final long checkpointId);
 
     String asRegex();
+
+    String prefix();
 
     static CheckpointPattern any() {
       return new Any();
@@ -141,14 +132,16 @@ public interface BackupIdentifierWildcard {
         return new Any();
       }
       if (ids.length == 1) {
-        return new Prefix(ids[0]);
+        try {
+          return new Exact(Long.parseLong(ids[0]));
+        } catch (final NumberFormatException e) {
+          return new Prefix(ids[0]);
+        }
       }
 
       // Find the minimum length among all strings
-      int minLength = ids[0].length();
-      for (int i = 1; i < ids.length; i++) {
-        minLength = Math.min(minLength, ids[i].length());
-      }
+      final int minLength = Arrays.stream(ids).mapToInt(String::length).min().orElse(0);
+      final int maxLength = Arrays.stream(ids).mapToInt(String::length).max().orElse(0);
 
       // Find the common prefix
       int commonPrefixLength = 0;
@@ -168,7 +161,9 @@ public interface BackupIdentifierWildcard {
         }
       }
 
-      if (commonPrefixLength > 0) {
+      if (commonPrefixLength == maxLength) {
+        return new Exact(Long.parseLong(ids[0]));
+      } else if (commonPrefixLength > 0) {
         return new Prefix(ids[0].substring(0, commonPrefixLength));
       } else {
         return new Any();
@@ -206,10 +201,10 @@ public interface BackupIdentifierWildcard {
       final long toCheckpointId = generator.fromTimestamp(to.toEpochMilli());
 
       // Find the common prefix between checkpoint IDs
-      final String fromStr = String.valueOf(fromCheckpointId);
-      final String toStr = String.valueOf(toCheckpointId);
+      final var fromStr = String.valueOf(fromCheckpointId);
+      final var toStr = String.valueOf(toCheckpointId);
 
-      final CheckpointPattern commonPrefixPattern = longestCommonPrefix(fromStr, toStr);
+      final var commonPrefixPattern = longestCommonPrefix(fromStr, toStr);
 
       // Use the common prefix to create a TimeRange pattern
       return new TimeRange(commonPrefixPattern, fromCheckpointId, toCheckpointId);
@@ -225,6 +220,11 @@ public interface BackupIdentifierWildcard {
       @Override
       public String asRegex() {
         return "\\d+";
+      }
+
+      @Override
+      public String prefix() {
+        return "";
       }
     }
 
@@ -265,6 +265,11 @@ public interface BackupIdentifierWildcard {
       public String asRegex() {
         return pattern.asRegex();
       }
+
+      @Override
+      public String prefix() {
+        return pattern.prefix();
+      }
     }
 
     record Exact(long checkpointId) implements CheckpointPattern {
@@ -283,6 +288,11 @@ public interface BackupIdentifierWildcard {
       @Override
       public String asRegex() {
         return Long.toString(checkpointId);
+      }
+
+      @Override
+      public String prefix() {
+        return String.valueOf(checkpointId);
       }
     }
   }
