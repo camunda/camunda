@@ -611,8 +611,6 @@ test.describe.serial('Process Instance Migration', () => {
     });
 
     await test.step('Verify remaining instances still at source version', async () => {
-      await operateFiltersPanelPage.clickResetFilters();
-
       await operateFiltersPanelPage.selectProcess(sourceBpmnProcessId);
       await operateFiltersPanelPage.selectVersion(sourceVersion);
       await expect(page.getByText(/3 results/i)).toBeVisible({
