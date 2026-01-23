@@ -136,7 +136,6 @@ final class BackupRangeResolverTest {
     void shouldValidateGlobalCheckpointReachabilityWhenAllPartitionsCanReach() {
       // given - global checkpoint 105, all partitions can reach it, 3 nodes expected
       final long globalCheckpoint = 105L;
-      final int expectedNodeCount = 3;
       final var safeStartByPartition = Map.of(1, 100L, 2, 100L, 3, 100L);
 
       final var completeBackupList =
@@ -144,15 +143,8 @@ final class BackupRangeResolverTest {
 
       // All nodes have backups for their partitions
       // needed due to lack of covariance
-      final Map<BackupRangeResolver.NodePartitionId, Collection<BackupStatus>>
-          backupsByNodePartition =
-              Map.of(
-                  new BackupRangeResolver.NodePartitionId(0, 1),
-                  completeBackupList,
-                  new BackupRangeResolver.NodePartitionId(1, 2),
-                  completeBackupList,
-                  new BackupRangeResolver.NodePartitionId(2, 3),
-                  completeBackupList);
+      final Map<Integer, Collection<BackupStatus>> backupsByNodePartition =
+          Map.of(1, completeBackupList, 2, completeBackupList, 3, completeBackupList);
 
       final Map<Integer, BackupRange> rangesByPartition =
           Map.of(
@@ -163,30 +155,24 @@ final class BackupRangeResolverTest {
       // when
       final var result =
           BackupRangeResolver.validateGlobalCheckpointReachability(
-              globalCheckpoint,
-              expectedNodeCount,
-              safeStartByPartition,
-              backupsByNodePartition,
-              rangesByPartition);
+              globalCheckpoint, safeStartByPartition, backupsByNodePartition, rangesByPartition);
 
       // then
-      assertThat(result.isValid()).isTrue();
+      assertThat(result.isRight()).isTrue();
     }
 
     @Test
     void shouldFailWhenPartitionSafeStartBeyondGlobalCheckpoint() {
       // given - partition 3's safe start (110) is beyond global checkpoint (105)
       final long globalCheckpoint = 105L;
-      final int expectedNodeCount = 3;
       final var safeStartByPartition = Map.of(1, 100L, 2, 100L, 3, 110L); // partition 3 lags
 
       // needed due to lack of covariance
-      final Map<BackupRangeResolver.NodePartitionId, Collection<BackupStatus>>
-          backupsByNodePartition =
-              Map.of(
-                  new BackupRangeResolver.NodePartitionId(0, 1), List.of(),
-                  new BackupRangeResolver.NodePartitionId(1, 2), List.of(),
-                  new BackupRangeResolver.NodePartitionId(2, 3), List.of());
+      final Map<Integer, Collection<BackupStatus>> backupsByPartition =
+          Map.of(
+              1, List.of(),
+              2, List.of(),
+              3, List.of());
 
       final Map<Integer, BackupRange> rangesByPartition =
           Map.of(
@@ -197,15 +183,11 @@ final class BackupRangeResolverTest {
       // when
       final var result =
           BackupRangeResolver.validateGlobalCheckpointReachability(
-              globalCheckpoint,
-              expectedNodeCount,
-              safeStartByPartition,
-              backupsByNodePartition,
-              rangesByPartition);
+              globalCheckpoint, safeStartByPartition, backupsByPartition, rangesByPartition);
 
       // then
-      assertThat(result.isValid()).isFalse();
-      assertThat(result.getErrorMessage())
+      assertThat(result.isLeft()).isTrue();
+      assertThat(result.getLeft())
           .contains("Partition 3")
           .contains("safe start checkpoint 110 is beyond global checkpoint 105");
     }
@@ -214,16 +196,14 @@ final class BackupRangeResolverTest {
     void shouldFailWhenPartitionHasIncompleteRange() {
       // given - partition 2 has incomplete range with deletions
       final long globalCheckpoint = 105L;
-      final int expectedNodeCount = 3;
       final var safeStartByPartition = Map.of(1, 100L, 2, 100L, 3, 100L);
 
       // needed due to lack of covariance
-      final Map<BackupRangeResolver.NodePartitionId, Collection<BackupStatus>>
-          backupsByNodePartition =
-              Map.of(
-                  new BackupRangeResolver.NodePartitionId(0, 1), List.of(),
-                  new BackupRangeResolver.NodePartitionId(1, 2), List.of(),
-                  new BackupRangeResolver.NodePartitionId(2, 3), List.of());
+      final Map<Integer, Collection<BackupStatus>> backupsByNodePartition =
+          Map.of(
+              1, List.of(),
+              2, List.of(),
+              3, List.of());
 
       final Map<Integer, BackupRange> rangesByPartition =
           Map.of(
@@ -234,15 +214,11 @@ final class BackupRangeResolverTest {
       // when
       final var result =
           BackupRangeResolver.validateGlobalCheckpointReachability(
-              globalCheckpoint,
-              expectedNodeCount,
-              safeStartByPartition,
-              backupsByNodePartition,
-              rangesByPartition);
+              globalCheckpoint, safeStartByPartition, backupsByNodePartition, rangesByPartition);
 
       // then
-      assertThat(result.isValid()).isFalse();
-      assertThat(result.getErrorMessage())
+      assertThat(result.isLeft()).isTrue();
+      assertThat(result.getLeft())
           .contains("Partition 2")
           .contains("has deletions")
           .contains("[103]");
@@ -252,7 +228,6 @@ final class BackupRangeResolverTest {
     void shouldFailWhenNodePartitionHasLogPositionGap() {
       // given - Node0P1 and Node1P2 both have gaps in log positions
       final long globalCheckpoint = 105L;
-      final int expectedNodeCount = 2;
       final var safeStartByPartition = Map.of(1, 100L, 2, 100L);
 
       // Node0P1 has a gap of 30 positions before backup 103
@@ -272,11 +247,10 @@ final class BackupRangeResolverTest {
               new CheckpointSpec(100, 2000),
               new CheckpointSpec(105, 2050));
 
-      final Map<BackupRangeResolver.NodePartitionId, Collection<BackupStatus>>
-          backupsByNodePartition =
-              Map.of(
-                  new BackupRangeResolver.NodePartitionId(0, 1), node0Backups,
-                  new BackupRangeResolver.NodePartitionId(1, 2), node1Backups);
+      final Map<Integer, Collection<BackupStatus>> backupsByNodePartition =
+          Map.of(
+              1, node0Backups,
+              2, node1Backups);
 
       final Map<Integer, BackupRange> rangesByPartition =
           Map.of(
@@ -286,67 +260,22 @@ final class BackupRangeResolverTest {
       // when
       final var result =
           BackupRangeResolver.validateGlobalCheckpointReachability(
-              globalCheckpoint,
-              expectedNodeCount,
-              safeStartByPartition,
-              backupsByNodePartition,
-              rangesByPartition);
+              globalCheckpoint, safeStartByPartition, backupsByNodePartition, rangesByPartition);
 
       // then
-      assertThat(result.isValid()).isFalse();
-      assertThat(result.getErrorMessage())
+      assertThat(result.isLeft()).isTrue();
+      assertThat(result.getLeft())
           .contains("Cannot restore to global checkpoint 10")
           .contains(
-              "Partition 1: Node0P1 has gap in log positions - backup 100 ends at position 1000, but backup 103 starts at position 1031 (expected 1001)")
+              "Partition 1: has gap in log positions - backup 100 ends at position 1000, but backup 103 starts at position 1031 (expected 1001)")
           .contains(
-              "Partition 2: Node1P2 has gap in log positions - backup 100 ends at position 2000, but backup 105 starts at position 2100 (expected 2001)");
-    }
-
-    @Test
-    void shouldFailWhenMissingNodesInBackupData() {
-      // given - expect 3 nodes but only have data from 2 nodes
-      final long globalCheckpoint = 105L;
-      final int expectedNodeCount = 3;
-      final var safeStartByPartition = Map.of(1, 100L, 2, 100L);
-
-      // Only nodes 0 and 1 have backup data - node 2 is missing!
-      // needed due to lack of covariance
-      final Map<BackupRangeResolver.NodePartitionId, Collection<BackupStatus>>
-          backupsByNodePartition =
-              Map.of(
-                  new BackupRangeResolver.NodePartitionId(0, 1),
-                      createContiguousBackups(
-                          new CheckpointSpec(100, 1000), new CheckpointSpec(105, 1050)),
-                  new BackupRangeResolver.NodePartitionId(1, 2),
-                      createContiguousBackups(
-                          new CheckpointSpec(100, 2000), new CheckpointSpec(105, 2050)));
-
-      final Map<Integer, BackupRange> rangesByPartition =
-          Map.of(
-              1, new BackupRange.Complete(100, 105),
-              2, new BackupRange.Complete(100, 105));
-
-      // when
-      final var result =
-          BackupRangeResolver.validateGlobalCheckpointReachability(
-              globalCheckpoint,
-              expectedNodeCount,
-              safeStartByPartition,
-              backupsByNodePartition,
-              rangesByPartition);
-
-      // then
-      assertThat(result.isValid()).isFalse();
-      assertThat(result.getErrorMessage())
-          .contains("Expected 3 nodes but found 2")
-          .contains("Missing nodes: [2]");
+              "Partition 2: has gap in log positions - backup 100 ends at position 2000, but backup 105 starts at position 2100 (expected 2001)");
     }
 
     @Test
     void shouldFailWhenFirstBackupIsAfterSafeStart() {
       // given - first backup is at 1950, but safeStart is 1900
       final long globalCheckpoint = 2100L;
-      final int expectedNodeCount = 1;
       final var safeStartByPartition = Map.of(1, 1900L);
 
       // Backups start at 1950, missing coverage from 1900
@@ -356,8 +285,7 @@ final class BackupRangeResolverTest {
               new CheckpointSpec(2000, 3000),
               new CheckpointSpec(2100, 3500));
 
-      final Map<BackupRangeResolver.NodePartitionId, Collection<BackupStatus>>
-          backupsByNodePartition = Map.of(new BackupRangeResolver.NodePartitionId(0, 1), backups);
+      final Map<Integer, Collection<BackupStatus>> backupsByNodePartition = Map.of(1, backups);
 
       final Map<Integer, BackupRange> rangesByPartition =
           Map.of(1, new BackupRange.Complete(1950, 2100));
@@ -365,24 +293,21 @@ final class BackupRangeResolverTest {
       // when
       final var result =
           BackupRangeResolver.validateGlobalCheckpointReachability(
-              globalCheckpoint,
-              expectedNodeCount,
-              safeStartByPartition,
-              backupsByNodePartition,
-              rangesByPartition);
+              globalCheckpoint, safeStartByPartition, backupsByNodePartition, rangesByPartition);
 
       // then - should fail because first backup doesn't cover safeStart
-      assertThat(result.isValid()).isFalse();
-      assertThat(result.getErrorMessage())
-          .contains("Partition 1")
-          .contains("Node0P1 first backup at checkpoint 1950 is after safe start 1900");
+      assertThat(result.isLeft()).isTrue();
+      assertThat(result.getLeft())
+          .contains("Cannot restore to global checkpoint 2100")
+          .contains(
+              "Partition 1: backup range [1950, 2100] does not cover required range [1900, 2100]")
+          .contains("Partition 1s first backup at checkpoint 1950 is after safe start 1900");
     }
 
     @Test
     void shouldFailWhenLastBackupIsBeforeGlobalCheckpoint() {
       // given - last backup is at 2050, but globalCheckpoint is 2100
       final long globalCheckpoint = 2100L;
-      final int expectedNodeCount = 1;
       final var safeStartByPartition = Map.of(1, 1900L);
 
       // Backups end at 2050, missing coverage to 2100
@@ -392,8 +317,7 @@ final class BackupRangeResolverTest {
               new CheckpointSpec(2000, 3000),
               new CheckpointSpec(2050, 3500));
 
-      final Map<BackupRangeResolver.NodePartitionId, Collection<BackupStatus>>
-          backupsByNodePartition = Map.of(new BackupRangeResolver.NodePartitionId(0, 1), backups);
+      final Map<Integer, Collection<BackupStatus>> backupsByNodePartition = Map.of(1, backups);
 
       final Map<Integer, BackupRange> rangesByPartition =
           Map.of(1, new BackupRange.Complete(1900, 2050));
@@ -401,24 +325,19 @@ final class BackupRangeResolverTest {
       // when
       final var result =
           BackupRangeResolver.validateGlobalCheckpointReachability(
-              globalCheckpoint,
-              expectedNodeCount,
-              safeStartByPartition,
-              backupsByNodePartition,
-              rangesByPartition);
+              globalCheckpoint, safeStartByPartition, backupsByNodePartition, rangesByPartition);
 
       // then - should fail because last backup doesn't reach globalCheckpoint
-      assertThat(result.isValid()).isFalse();
-      assertThat(result.getErrorMessage())
+      assertThat(result.isLeft()).isTrue();
+      assertThat(result.getLeft())
           .contains("Partition 1")
-          .contains("Node0P1 last backup at checkpoint 2050 is before global checkpoint 2100");
+          .contains("last backup at checkpoint 2050 is before global checkpoint 2100");
     }
 
     @Test
     void shouldPassWhenBackupsExactlyCoverRequiredRange() {
       // given - backups exactly cover [safeStart, globalCheckpoint]
       final long globalCheckpoint = 2100L;
-      final int expectedNodeCount = 1;
       final var safeStartByPartition = Map.of(1, 1900L);
 
       // Backups exactly cover [1900, 2100]
@@ -428,8 +347,7 @@ final class BackupRangeResolverTest {
               new CheckpointSpec(2000, 3000),
               new CheckpointSpec(2100, 3500));
 
-      final Map<BackupRangeResolver.NodePartitionId, Collection<BackupStatus>>
-          backupsByNodePartition = Map.of(new BackupRangeResolver.NodePartitionId(0, 1), backups);
+      final Map<Integer, Collection<BackupStatus>> backupsByNodePartition = Map.of(1, backups);
 
       final Map<Integer, BackupRange> rangesByPartition =
           Map.of(1, new BackupRange.Complete(1900, 2100));
@@ -437,21 +355,18 @@ final class BackupRangeResolverTest {
       // when
       final var result =
           BackupRangeResolver.validateGlobalCheckpointReachability(
-              globalCheckpoint,
-              expectedNodeCount,
-              safeStartByPartition,
-              backupsByNodePartition,
-              rangesByPartition);
+              globalCheckpoint, safeStartByPartition, backupsByNodePartition, rangesByPartition);
 
       // then - should pass
-      assertThat(result.isValid()).as(result.getErrorMessage()).isTrue();
+      assertThat(result.isRight())
+          .as("Error: %s", result.isLeft() ? result.getLeft() : "")
+          .isTrue();
     }
 
     @Test
     void shouldPassWhenBackupsExceedRequiredRange() {
       // given - backups cover more than [safeStart, globalCheckpoint]
       final long globalCheckpoint = 2100L;
-      final int expectedNodeCount = 1;
       final var safeStartByPartition = Map.of(1, 1900L);
 
       // Backups cover [1800, 2200] which includes [1900, 2100]
@@ -463,8 +378,7 @@ final class BackupRangeResolverTest {
               new CheckpointSpec(2100, 3500),
               new CheckpointSpec(2200, 4000));
 
-      final Map<BackupRangeResolver.NodePartitionId, Collection<BackupStatus>>
-          backupsByNodePartition = Map.of(new BackupRangeResolver.NodePartitionId(0, 1), backups);
+      final Map<Integer, Collection<BackupStatus>> backupsByNodePartition = Map.of(1, backups);
 
       final Map<Integer, BackupRange> rangesByPartition =
           Map.of(1, new BackupRange.Complete(1800, 2200));
@@ -472,21 +386,18 @@ final class BackupRangeResolverTest {
       // when
       final var result =
           BackupRangeResolver.validateGlobalCheckpointReachability(
-              globalCheckpoint,
-              expectedNodeCount,
-              safeStartByPartition,
-              backupsByNodePartition,
-              rangesByPartition);
+              globalCheckpoint, safeStartByPartition, backupsByNodePartition, rangesByPartition);
 
       // then - should pass because range is fully covered
-      assertThat(result.isValid()).as(result.getErrorMessage()).isTrue();
+      assertThat(result.isRight())
+          .as("Error: %s", result.isLeft() ? result.getLeft() : "")
+          .isTrue();
     }
 
     @Test
     void shouldFailWhenDifferentNodesHaveDifferentBackupsForSamePartition() {
       // given - Node0 and Node1 both have partition 1, but different backup sets
       final long globalCheckpoint = 2100L;
-      final int expectedNodeCount = 2;
       final var safeStartByPartition = Map.of(1, 1900L);
 
       // Node0 has backups [1900, 2000, 2100]
@@ -503,11 +414,10 @@ final class BackupRangeResolverTest {
               new CheckpointSpec(2050, 3200),
               new CheckpointSpec(2100, 3700));
 
-      final Map<BackupRangeResolver.NodePartitionId, Collection<BackupStatus>>
-          backupsByNodePartition =
-              Map.of(
-                  new BackupRangeResolver.NodePartitionId(0, 1), node0Backups,
-                  new BackupRangeResolver.NodePartitionId(1, 1), node1Backups);
+      final Map<Integer, Collection<BackupStatus>> backupsByNodePartition =
+          Map.of(
+              1, node0Backups,
+              2, node1Backups);
 
       final Map<Integer, BackupRange> rangesByPartition =
           Map.of(1, new BackupRange.Complete(1900, 2100));
@@ -515,80 +425,26 @@ final class BackupRangeResolverTest {
       // when
       final var result =
           BackupRangeResolver.validateGlobalCheckpointReachability(
-              globalCheckpoint,
-              expectedNodeCount,
-              safeStartByPartition,
-              backupsByNodePartition,
-              rangesByPartition);
+              globalCheckpoint, safeStartByPartition, backupsByNodePartition, rangesByPartition);
 
       // then - should pass as both nodes cover the required range, just with different
       // intermediate backups
-      assertThat(result.isValid()).as(result.getErrorMessage()).isTrue();
-    }
-
-    @Test
-    void shouldFailWhenOneNodeHasGapWhileAnotherDoesNot() {
-      // given - Node0P1 is fine, but Node1P1 has a gap
-      final long globalCheckpoint = 2100L;
-      final int expectedNodeCount = 2;
-      final var safeStartByPartition = Map.of(1, 1900L);
-
-      // Node0 has contiguous backups
-      final var node0Backups =
-          createContiguousBackups(
-              new CheckpointSpec(1900, 2500),
-              new CheckpointSpec(2000, 3000),
-              new CheckpointSpec(2100, 3500));
-
-      // Node1 has a gap (199 positions) before the last backup
-      final var node1Backups =
-          createBackupsWithGap(
-              1,
-              199, // Gap of 199 positions before index 1 (backup 2100)
-              new CheckpointSpec(1900, 2500),
-              new CheckpointSpec(2100, 3500));
-
-      final Map<BackupRangeResolver.NodePartitionId, Collection<BackupStatus>>
-          backupsByNodePartition =
-              Map.of(
-                  new BackupRangeResolver.NodePartitionId(0, 1), node0Backups,
-                  new BackupRangeResolver.NodePartitionId(1, 1), node1Backups);
-
-      final Map<Integer, BackupRange> rangesByPartition =
-          Map.of(1, new BackupRange.Complete(1900, 2100));
-
-      // when
-      final var result =
-          BackupRangeResolver.validateGlobalCheckpointReachability(
-              globalCheckpoint,
-              expectedNodeCount,
-              safeStartByPartition,
-              backupsByNodePartition,
-              rangesByPartition);
-
-      // then - should fail because Node1 has a gap
-      assertThat(result.isValid()).isFalse();
-      assertThat(result.getErrorMessage())
-          .contains("Partition 1")
-          .contains("Node1P1 has gap in log positions")
-          .contains("backup 1900 ends at position 2500")
-          .contains("but backup 2100 starts at position 2700")
-          .contains("expected 2501");
+      assertThat(result.isRight())
+          .as("Error: %s", result.isLeft() ? result.getLeft() : "")
+          .isTrue();
     }
 
     @Test
     void shouldFailWhenSafeStartEqualsGlobalCheckpointButBackupMissing() {
       // given - single checkpoint restore, but that checkpoint is missing
       final long globalCheckpoint = 2000L;
-      final int expectedNodeCount = 1;
       final var safeStartByPartition = Map.of(1, 2000L); // Single checkpoint
 
       // Only have backups before and after, not the exact one
       final var backups =
           createContiguousBackups(new CheckpointSpec(1900, 2500), new CheckpointSpec(2100, 3500));
 
-      final Map<BackupRangeResolver.NodePartitionId, Collection<BackupStatus>>
-          backupsByNodePartition = Map.of(new BackupRangeResolver.NodePartitionId(0, 1), backups);
+      final Map<Integer, Collection<BackupStatus>> backupsByNodePartition = Map.of(1, backups);
 
       final Map<Integer, BackupRange> rangesByPartition =
           Map.of(1, new BackupRange.Complete(1900, 2100));
@@ -596,30 +452,24 @@ final class BackupRangeResolverTest {
       // when
       final var result =
           BackupRangeResolver.validateGlobalCheckpointReachability(
-              globalCheckpoint,
-              expectedNodeCount,
-              safeStartByPartition,
-              backupsByNodePartition,
-              rangesByPartition);
+              globalCheckpoint, safeStartByPartition, backupsByNodePartition, rangesByPartition);
 
       // then - should fail because we don't have backup at checkpoint 2000
-      assertThat(result.isValid()).isFalse();
-      assertThat(result.getErrorMessage())
+      assertThat(result.isLeft()).isTrue();
+      assertThat(result.getLeft())
           .contains("Cannot restore to global checkpoint 2000.")
-          .containsAnyOf("Partition 1: Node0P1 has no backups in range [2000, 2000]");
+          .containsAnyOf("Partition 1 has no backups in range [2000, 2000]");
     }
 
     @Test
     void shouldPassWhenSafeStartEqualsGlobalCheckpointWithSingleBackup() {
       // given - single checkpoint restore with exactly that backup
       final long globalCheckpoint = 2000L;
-      final int expectedNodeCount = 1;
       final var safeStartByPartition = Map.of(1, 2000L);
 
       final var backups = createContiguousBackups(new CheckpointSpec(2000, 3000));
 
-      final Map<BackupRangeResolver.NodePartitionId, Collection<BackupStatus>>
-          backupsByNodePartition = Map.of(new BackupRangeResolver.NodePartitionId(0, 1), backups);
+      final Map<Integer, Collection<BackupStatus>> backupsByNodePartition = Map.of(1, backups);
 
       final Map<Integer, BackupRange> rangesByPartition =
           Map.of(1, new BackupRange.Complete(2000, 2000));
@@ -627,21 +477,18 @@ final class BackupRangeResolverTest {
       // when
       final var result =
           BackupRangeResolver.validateGlobalCheckpointReachability(
-              globalCheckpoint,
-              expectedNodeCount,
-              safeStartByPartition,
-              backupsByNodePartition,
-              rangesByPartition);
+              globalCheckpoint, safeStartByPartition, backupsByNodePartition, rangesByPartition);
 
       // then - should pass
-      assertThat(result.isValid()).as(result.getErrorMessage()).isTrue();
+      assertThat(result.isRight())
+          .as("Error: %s", result.isLeft() ? result.getLeft() : "")
+          .isTrue();
     }
 
     @Test
     void shouldFailWhenMixedValidityAcrossPartitions() {
       // given - P1 valid, P2 has gap, P3 valid - should fail overall
       final long globalCheckpoint = 2100L;
-      final int expectedNodeCount = 1;
       final var safeStartByPartition = Map.of(1, 1900L, 2, 1900L, 3, 1900L);
 
       // P1: Valid contiguous backups
@@ -666,12 +513,11 @@ final class BackupRangeResolverTest {
               new CheckpointSpec(2000, 3000),
               new CheckpointSpec(2100, 3500));
 
-      final Map<BackupRangeResolver.NodePartitionId, Collection<BackupStatus>>
-          backupsByNodePartition =
-              Map.of(
-                  new BackupRangeResolver.NodePartitionId(0, 1), p1Backups,
-                  new BackupRangeResolver.NodePartitionId(0, 2), p2Backups,
-                  new BackupRangeResolver.NodePartitionId(0, 3), p3Backups);
+      final Map<Integer, Collection<BackupStatus>> backupsByPartition =
+          Map.of(
+              1, p1Backups,
+              2, p2Backups,
+              3, p3Backups);
 
       final Map<Integer, BackupRange> rangesByPartition =
           Map.of(
@@ -682,17 +528,14 @@ final class BackupRangeResolverTest {
       // when
       final var result =
           BackupRangeResolver.validateGlobalCheckpointReachability(
-              globalCheckpoint,
-              expectedNodeCount,
-              safeStartByPartition,
-              backupsByNodePartition,
-              rangesByPartition);
+              globalCheckpoint, safeStartByPartition, backupsByPartition, rangesByPartition);
 
       // then - should fail because P2 has a gap
-      assertThat(result.isValid()).isFalse();
-      assertThat(result.getErrorMessage())
-          .contains("Partition 2")
-          .contains("Node0P2 has gap in log positions");
+      assertThat(result.isLeft()).isTrue();
+      assertThat(result.getLeft())
+          .contains("Cannot restore to global checkpoint 2100.")
+          .contains(
+              "Partition 2: has gap in log positions - backup 1900 ends at position 2500, but backup 2100 starts at position 2700 (expected 2501)");
     }
 
     @Test
@@ -705,7 +548,6 @@ final class BackupRangeResolverTest {
       //                           P3=[100,500,900,2000,2500,3000,4500]
 
       final long globalCheckpoint = 2100L; // Checkpoint ID 1500 + 6*100 = 2100
-      final int expectedNodeCount = 3;
 
       // Exported positions per partition - safe start at checkpoint 2000
       final var safeStartByPartition = Map.of(1, 2000L, 2, 2000L, 3, 2000L);
@@ -744,18 +586,11 @@ final class BackupRangeResolverTest {
               new CheckpointSpec(2100, 4500));
 
       // Each node backs up each partition (full replication)
-      final Map<BackupRangeResolver.NodePartitionId, Collection<BackupStatus>>
-          backupsByNodePartition =
-              Map.of(
-                  new BackupRangeResolver.NodePartitionId(0, 1), p1Backups,
-                  new BackupRangeResolver.NodePartitionId(0, 2), p2Backups,
-                  new BackupRangeResolver.NodePartitionId(0, 3), p3Backups,
-                  new BackupRangeResolver.NodePartitionId(1, 1), p1Backups,
-                  new BackupRangeResolver.NodePartitionId(1, 2), p2Backups,
-                  new BackupRangeResolver.NodePartitionId(1, 3), p3Backups,
-                  new BackupRangeResolver.NodePartitionId(2, 1), p1Backups,
-                  new BackupRangeResolver.NodePartitionId(2, 2), p2Backups,
-                  new BackupRangeResolver.NodePartitionId(2, 3), p3Backups);
+      final Map<Integer, Collection<BackupStatus>> backupsByPartition =
+          Map.of(
+              1, p1Backups,
+              2, p2Backups,
+              3, p3Backups);
 
       final Map<Integer, BackupRange> rangesByPartition =
           Map.of(
@@ -766,14 +601,12 @@ final class BackupRangeResolverTest {
       // when
       final var result =
           BackupRangeResolver.validateGlobalCheckpointReachability(
-              globalCheckpoint,
-              expectedNodeCount,
-              safeStartByPartition,
-              backupsByNodePartition,
-              rangesByPartition);
+              globalCheckpoint, safeStartByPartition, backupsByPartition, rangesByPartition);
 
       // then - validation should succeed
-      assertThat(result.isValid()).as(result.getErrorMessage()).isTrue();
+      assertThat(result.isRight())
+          .as("Error: %s", result.isLeft() ? result.getLeft() : "")
+          .isTrue();
     }
   }
 
