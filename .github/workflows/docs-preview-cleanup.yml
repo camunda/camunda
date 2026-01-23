@@ -1,0 +1,104 @@
+# description: Weekly cleanup of orphaned documentation preview deployments
+# type: maintenance
+# owner: @camunda/monorepo-devops-team
+---
+name: Docs Preview Cleanup
+
+on:
+  schedule:
+    # Run weekly on Sundays at 03:00 UTC for low-traffic cleanup window
+    - cron: '0 3 * * 0'
+  workflow_dispatch: {}
+
+# Prevent concurrent cleanup operations to avoid git conflicts and ensure consistent state
+concurrency:
+  group: docs-preview-cleanup
+  cancel-in-progress: false
+
+defaults:
+  run:
+    # use bash shell by default to ensure pipefail behavior is the default
+    # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
+    shell: bash
+
+jobs:
+  cleanup-orphaned-previews:
+    name: Cleanup Orphaned Documentation Previews
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - name: Cleanup orphaned documentation previews
+        run: |
+          # Fetch gh-pages branch
+          git fetch origin gh-pages:gh-pages 2>/dev/null || {
+            echo "ℹ️ No gh-pages branch found, nothing to clean up"
+            exit 0
+          }
+          git checkout gh-pages
+          
+          # Check if pr-preview directory exists
+          [[ ! -d "pr-preview" ]] && { echo "ℹ️ No pr-preview directory found"; exit 0; }
+          
+          echo "📁 Current pr-preview contents:"
+          ls -la pr-preview/
+          echo ""
+
+          # Get open PRs and extract preview directories
+          open_prs=$(gh pr list --state open --json number --jq '.[].number' | sort -n)
+          cleaned_count=0
+          
+          echo "Open PRs: $(echo "$open_prs" | tr '\n' ' ')"
+          
+          # Process each preview directory
+          for dir in pr-preview/pr-*/; do
+            [[ ! -d "$dir" ]] && continue
+            
+            pr_num=$(basename "$dir" | sed 's/pr-//')
+            echo "Checking preview directory for PR #$pr_num"
+            
+            # Check if this PR number exists in the open PRs list
+            if echo "$open_prs" | grep -Fxq "$pr_num"; then
+              echo "✅ PR #$pr_num is open, keeping preview"
+            else
+              echo "🗑️ PR #$pr_num not found in open PRs, removing preview"
+              echo "   Directory contents:"
+              ls -la "$dir" || echo "   Cannot list directory contents"
+              echo "   Attempting to remove: $dir"
+              if rm -rf "$dir"; then
+                echo "   ✅ Successfully removed $dir"
+                cleaned_count=$((cleaned_count + 1))
+              else
+                exit_code=$?
+                echo "   ❌ Failed to remove $dir"
+                echo "   Error code: $exit_code"
+              fi
+            fi
+          done
+          
+          echo "Summary: Purged $cleaned_count orphaned preview(s)"
+
+      - name: Commit cleanup changes
+        uses: stefanzweifel/git-auto-commit-action@8621497c8c39c72f3e2a999a26b4ca1b5058a842 # v5.0.1
+        with:
+          commit_message: "docs: cleanup orphaned documentation previews"
+          branch: gh-pages
+          file_pattern: "pr-preview/"
+          commit_user_name: "github-actions[bot]"
+          commit_user_email: "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}

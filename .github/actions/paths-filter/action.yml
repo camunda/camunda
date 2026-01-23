@@ -356,7 +356,8 @@ runs:
       filters: |
         docs-change:
           - 'docs/monorepo-docs/**'
-          - 'monorepo-docs-site/**'
+          - 'monorepo-docs-site/!(node_modules)/**'
+          - 'monorepo-docs-site/*'
           - '.github/workflows/docs-build-deploy.yml'
           - '.github/workflows/docs-preview.yml'
 
