@@ -108,8 +108,9 @@ public interface BackupRetention {
                     .getValue()
                     .forEach(marker -> getStore().storeRangeMarker(entry.getKey(), marker).join()));
 
-    IntStream.range(1, PARTITION_COUNT)
-        .forEach(partitionId -> assertThat(getStore().rangeMarkers(1).join()).isNotEmpty());
+    IntStream.rangeClosed(1, PARTITION_COUNT)
+        .forEach(
+            partitionId -> assertThat(getStore().rangeMarkers(partitionId).join()).isNotEmpty());
 
     // when
     markers.entrySet().parallelStream()
