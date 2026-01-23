@@ -7,7 +7,7 @@ ARG JATTACH_CHECKSUM_ARM64="288ae5ed87ee7fe0e608c06db5a23a096a6217c9878ede53c4e3
 
 # If you don't have access to Minimus hardened base images, you can use public
 # base images like this instead on your own risk.
-# Simply pass `--build-arg BASE=public` in order to build with the Temurin JDK.
+# Simply pass `--build-arg BASE=public` in order to build with Alpine.
 ARG BASE_IMAGE_PUBLIC="alpine:3.23.0"
 ARG BASE_DIGEST_PUBLIC="sha256:51183f2cfa6320055da30872f211093f9ff1d3cf06f39a0bdb212314c5dc7375"
 ARG BASE="hardened"
