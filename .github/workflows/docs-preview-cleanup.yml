@@ -85,7 +85,7 @@ jobs:
           echo "Summary: Purged $cleaned_count orphaned preview(s)"
 
       - name: Commit cleanup changes
-        uses: stefanzweifel/git-auto-commit-action@8621497c8c39c72f3e2a999a26b4ca1b5058a842 # v5.0.1
+        uses: stefanzweifel/git-auto-commit-action@b863ae1933cb653a53c021fe36dbb774e1fb9403 # v5.2.0
         with:
           commit_message: "docs: cleanup orphaned documentation previews"
           branch: gh-pages
