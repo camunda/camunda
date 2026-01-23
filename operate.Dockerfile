@@ -6,9 +6,19 @@ ARG JATTACH_CHECKSUM_AMD64="acd9e17f15749306be843df392063893e97bfecc5260eef73ee9
 ARG JATTACH_CHECKSUM_ARM64="288ae5ed87ee7fe0e608c06db5a23a096a6217c9878ede53c4e33710bdcaab51"
 
 # If you don't have access to Minimus hardened base images, you can use public
-# base images like this instead on your own risk:
-#ARG BASE_IMAGE="eclipse-temurin:21-jre-noble"
-#ARG BASE_DIGEST="sha256:20e7f7288e1c18eebe8f06a442c9f7183342d9b022d3b9a9677cae2b558ddddd"
+# base images like this instead on your own risk.
+# Simply pass `--build-arg BASE=public` in order to build with the Temurin JDK.
+ARG BASE_IMAGE_PUBLIC="alpine:3.23.0"
+ARG BASE_DIGEST_PUBLIC="sha256:51183f2cfa6320055da30872f211093f9ff1d3cf06f39a0bdb212314c5dc7375"
+ARG BASE="hardened"
+
+### Base Application Image ###
+# hadolint ignore=DL3006
+FROM ${BASE_IMAGE}@${BASE_DIGEST} AS base-hardened
+
+### Base Public Application Image ###
+# hadolint ignore=DL3006
+FROM ${BASE_IMAGE_PUBLIC}@${BASE_DIGEST_PUBLIC} AS base-public
 
 ### Download jattach ###
 # hadolint ignore=DL3006,DL3007
@@ -36,7 +46,7 @@ RUN --mount=type=cache,target=/root/.tools,rw \
     mv jattach /jattach
 
 # Prepare Operate Distribution
-FROM ${BASE_IMAGE}@${BASE_DIGEST} AS prepare
+FROM base-${BASE} AS prepare
 ARG DISTBALL="dist/target/camunda-zeebe-*.tar.gz"
 WORKDIR /tmp/operate
 
@@ -51,8 +61,7 @@ RUN sed -i '/^exec /i cat /usr/local/operate/notice.txt' bin/operate
 # TARGETARCH is provided by buildkit
 # https://docs.docker.com/engine/reference/builder/#automatic-platform-args-in-the-global-scope
 # hadolint ignore=DL3006
-
-FROM ${BASE_IMAGE}@${BASE_DIGEST} AS app
+FROM base-${BASE} AS app
 # leave unset to use the default value at the top of the file
 ARG BASE_IMAGE
 ARG BASE_DIGEST
