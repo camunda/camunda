@@ -233,7 +233,7 @@ public class CorrelatedMessageSubscriptionIT {
   }
 
   @TestTemplate
-  public void shouldDeleteProcessInstanceRelatedData(
+  public void shouldDeleteRootProcessInstanceRelatedData(
       final CamundaRdbmsTestApplication testApplication) {
     // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -258,7 +258,7 @@ public class CorrelatedMessageSubscriptionIT {
         rdbmsWriters
             .getCorrelatedMessageSubscriptionWriter()
             .deleteRootProcessInstanceRelatedData(
-                PARTITION_ID, List.of(item2.processInstanceKey()), 10);
+                PARTITION_ID, List.of(item2.rootProcessInstanceKey()), 10);
 
     // then
     assertThat(deleted).isEqualTo(1);

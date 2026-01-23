@@ -303,14 +303,12 @@ public class VariableIT {
   }
 
   @TestTemplate
-  public void shouldDeleteProcessInstanceRelatedData(
+  public void shouldDeleteRootProcessInstanceRelatedData(
       final CamundaRdbmsTestApplication testApplication) {
     // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final VariableDbReader reader = rdbmsService.getVariableReader();
-
-    final var cleanupDate = NOW.minusDays(1);
 
     final var tenantId = nextStringId();
     final var item1 = createAndSaveVariable(rdbmsService, b -> b.tenantId(tenantId));
@@ -322,7 +320,7 @@ public class VariableIT {
         rdbmsWriters
             .getVariableWriter()
             .deleteRootProcessInstanceRelatedData(
-                PARTITION_ID, List.of(item2.processInstanceKey()), 10);
+                PARTITION_ID, List.of(item2.rootProcessInstanceKey()), 10);
 
     // then
     assertThat(deleted).isEqualTo(1);

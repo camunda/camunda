@@ -239,7 +239,7 @@
   </sql>
 
   <sql id="rootProcessInstanceHistoryDeletionWhereClause">
-    AND PROCESS_INSTANCE_KEY IN
+    AND ROOT_PROCESS_INSTANCE_KEY IN
     <foreach collection="rootProcessInstanceKeys" item="key" open="(" separator=", " close=")">
       #{key}
     </foreach>
