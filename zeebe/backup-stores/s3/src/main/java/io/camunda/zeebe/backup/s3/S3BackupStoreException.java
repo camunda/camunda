@@ -26,6 +26,14 @@ public abstract sealed class S3BackupStoreException extends RuntimeException {
     }
   }
 
+  /** Thrown when a {@link Manifest} object is not found for a respective backup. */
+  public static final class ManifestNotFound extends S3BackupStoreException {
+
+    public ManifestNotFound(final String message) {
+      super(message, null);
+    }
+  }
+
   /**
    * Thrown when reading some parts of the backup from S3 failed. This might be a transient error
    * and does not necessarily indicate a failed or corrupted backup.

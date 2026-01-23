@@ -27,6 +27,7 @@ import io.camunda.zeebe.backup.common.BackupImpl;
 import io.camunda.zeebe.backup.s3.S3BackupStoreException.BackupDeletionIncomplete;
 import io.camunda.zeebe.backup.s3.S3BackupStoreException.BackupInInvalidStateException;
 import io.camunda.zeebe.backup.s3.S3BackupStoreException.BackupReadException;
+import io.camunda.zeebe.backup.s3.S3BackupStoreException.ManifestNotFound;
 import io.camunda.zeebe.backup.s3.S3BackupStoreException.ManifestParseException;
 import io.camunda.zeebe.backup.s3.manifest.FileSet;
 import io.camunda.zeebe.backup.s3.manifest.Manifest;
@@ -35,16 +36,17 @@ import io.camunda.zeebe.backup.s3.manifest.ValidBackupManifest;
 import io.camunda.zeebe.backup.s3.util.AsyncAggregatingSubscriber;
 import io.camunda.zeebe.util.SemanticVersion;
 import io.camunda.zeebe.util.VisibleForTesting;
+import io.camunda.zeebe.util.collection.Tuple;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.StreamSupport;
@@ -269,24 +271,35 @@ public final class S3BackupStore implements BackupStore {
                 return manifest;
               }
             })
-        .thenComposeAsync(manifest -> collectBackupObjects(manifest.id()))
-        .thenComposeAsync(this::deleteBackupObjects);
+        .thenCompose(manifest -> collectBackupObjects(manifest.id()))
+        .thenCompose(
+            backup ->
+                deleteIdentifierBatch(backup.getRight())
+                    .thenCompose(ignored -> deleteBackupObjects(List.of(backup.getLeft()))))
+        .exceptionally(
+            throwable -> {
+              if (throwable.getCause() instanceof ManifestNotFound) {
+                return null;
+              }
+              throw new CompletionException(throwable.getCause());
+            });
   }
 
   @Override
   public CompletableFuture<Void> delete(final Collection<BackupIdentifier> ids) {
-    final var futures = ids.stream().map(this::collectBackupObjects).toList();
+    final var deletionFutures =
+        ids.stream()
+            .map(
+                id ->
+                    collectBackupObjects(id)
+                        .thenCompose(
+                            backup ->
+                                deleteIdentifierBatch(backup.getRight())
+                                    .thenCompose(
+                                        ignored -> deleteBackupObjects(List.of(backup.getLeft())))))
+            .toArray(CompletableFuture[]::new);
 
-    return CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new))
-        .thenApply(
-            ignored ->
-                futures.stream()
-                    .map(CompletableFuture::join)
-                    .flatMap(HashSet::stream)
-                    // Push manifests to the end to avoid leaving orphaned content objects
-                    .sorted(Comparator.comparing(id -> id.key().endsWith(MANIFEST_OBJECT_KEY)))
-                    .toList())
-        .thenCompose(this::deleteIdentifierBatch);
+    return CompletableFuture.allOf(deletionFutures);
   }
 
   @Override
@@ -370,7 +383,7 @@ public final class S3BackupStore implements BackupStore {
   private CompletableFuture<Void> deleteIdentifierBatch(final List<ObjectIdentifier> identifiers) {
     final var futures =
         StreamSupport.stream(
-                Iterables.partition(identifiers, MAX_DELETE_BATCH_SIZE).spliterator(), false)
+                Iterables.partition(identifiers, MAX_DELETE_BATCH_SIZE).spliterator(), true)
             .map(this::deleteBackupObjects)
             .toArray(CompletableFuture[]::new);
     return CompletableFuture.allOf(futures);
@@ -422,7 +435,16 @@ public final class S3BackupStore implements BackupStore {
                     .toList());
   }
 
-  private CompletableFuture<HashSet<ObjectIdentifier>> collectBackupObjects(
+  /**
+   * Returns a {@link Tuple} of the manifest object identifier with all content object identifiers
+   * associated with the given backup id.
+   *
+   * @param id the backup id
+   * @return a future with a {@link Tuple} with the manifest object identifier as left and the list
+   *     of related content objects as right.
+   * @throws BackupInInvalidStateException if no manifest object was found for the given backup id
+   */
+  private CompletableFuture<Tuple<ObjectIdentifier, List<ObjectIdentifier>>> collectBackupObjects(
       final BackupIdentifier id) {
     return readManifestObject(id)
         .thenCompose(
@@ -431,9 +453,15 @@ public final class S3BackupStore implements BackupStore {
                     .thenCombine(
                         listObjects(manifest, Directory.CONTENTS),
                         (manifestObjects, contentObjects) -> {
-                          final var allObjects = new HashSet<>(manifestObjects);
-                          allObjects.addAll(contentObjects);
-                          return allObjects;
+                          if (manifestObjects.isEmpty()) {
+                            throw new ManifestNotFound(
+                                "No manifest found for backup %s".formatted(id));
+                          }
+                          // there should only be one manifest object per backup
+                          if (manifestObjects.size() > 1) {
+                            LOG.debug("Found more than 1 manifest for backup id {}", id);
+                          }
+                          return Tuple.of(manifestObjects.getFirst(), contentObjects);
                         }));
   }
 
