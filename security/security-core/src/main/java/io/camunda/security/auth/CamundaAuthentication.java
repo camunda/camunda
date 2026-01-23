@@ -12,7 +12,6 @@ import static java.util.Collections.unmodifiableList;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.camunda.zeebe.auth.Authorization;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -26,12 +25,14 @@ import java.util.function.Function;
  * associated claims.
  *
  * <p>Either {@code authenticatedUsername} or {@code authenticatedClientId} must be set, but not
- * both, unless the authentication represents an anonymous user in which case both can be null.
+ * both, unless the authentication represents an anonymous user {@code anonymousUser} in which case
+ * both can be null.
  */
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 public record CamundaAuthentication(
     @JsonProperty("authenticated_username") String authenticatedUsername,
     @JsonProperty("authenticated_client_id") String authenticatedClientId,
+    @JsonProperty("anonymous_user") boolean anonymousUser,
     @JsonProperty("authenticated_group_ids") List<String> authenticatedGroupIds,
     @JsonProperty("authenticated_role_ids") List<String> authenticatedRoleIds,
     @JsonProperty("authenticated_tenant_ids") List<String> authenticatedTenantIds,
@@ -40,21 +41,14 @@ public record CamundaAuthentication(
     implements Serializable {
 
   public CamundaAuthentication {
-    if (!isAnonymous(claims) && (authenticatedUsername != null && authenticatedClientId != null)) {
+    if (!anonymousUser && (authenticatedUsername != null && authenticatedClientId != null)) {
       throw new IllegalArgumentException("Either username or clientId must be set, not both.");
     }
   }
 
   @JsonIgnore
   public boolean isAnonymous() {
-    return isAnonymous(claims);
-  }
-
-  private boolean isAnonymous(final Map<String, Object> claims) {
-    if (claims != null && claims.containsKey(Authorization.AUTHORIZED_ANONYMOUS_USER)) {
-      return ((boolean) claims.get(Authorization.AUTHORIZED_ANONYMOUS_USER));
-    }
-    return false;
+    return anonymousUser;
   }
 
   public static CamundaAuthentication none() {
@@ -62,7 +56,7 @@ public record CamundaAuthentication(
   }
 
   public static CamundaAuthentication anonymous() {
-    return of(b -> b.claims(Map.of(Authorization.AUTHORIZED_ANONYMOUS_USER, true)));
+    return of(b -> b.anonymous(true));
   }
 
   public static CamundaAuthentication of(final Function<Builder, Builder> builderFunction) {
@@ -73,6 +67,7 @@ public record CamundaAuthentication(
 
     private String username;
     private String clientId;
+    private boolean anonymous;
     private final List<String> groupIds = new ArrayList<>();
     private final List<String> roleIds = new ArrayList<>();
     private final List<String> tenants = new ArrayList<>();
@@ -86,6 +81,11 @@ public record CamundaAuthentication(
 
     public Builder clientId(final String value) {
       clientId = value;
+      return this;
+    }
+
+    public Builder anonymous(final boolean value) {
+      anonymous = value;
       return this;
     }
 
@@ -142,6 +142,7 @@ public record CamundaAuthentication(
       return new CamundaAuthentication(
           username,
           clientId,
+          anonymous,
           unmodifiableList(groupIds),
           unmodifiableList(roleIds),
           unmodifiableList(tenants),

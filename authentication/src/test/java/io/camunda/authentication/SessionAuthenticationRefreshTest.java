@@ -161,6 +161,7 @@ public class SessionAuthenticationRefreshTest {
       return new CamundaAuthentication(
           TestUserDetailsService.DEMO_USERNAME,
           null,
+          false,
           Collections.emptyList(),
           Collections.emptyList(),
           Collections.emptyList(),

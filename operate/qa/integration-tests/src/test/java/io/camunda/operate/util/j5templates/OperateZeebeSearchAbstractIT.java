@@ -95,6 +95,7 @@ public class OperateZeebeSearchAbstractIT {
             new CamundaAuthentication(
                 DEFAULT_USER,
                 null,
+                false,
                 Collections.emptyList(),
                 Collections.emptyList(),
                 Collections.emptyList(),
@@ -137,6 +138,7 @@ public class OperateZeebeSearchAbstractIT {
             new CamundaAuthentication(
                 DEFAULT_USER,
                 null,
+                false,
                 Collections.emptyList(),
                 Collections.emptyList(),
                 Collections.emptyList(),
