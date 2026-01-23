@@ -332,7 +332,7 @@ test.describe('Create Authorization for role - Forbidden', () => {
   };
 
   test.beforeAll(
-    'Setup - Create test user with Resource Authorization and user for granting Authorization',
+    'Setup - Create test user with Resource Authorization',
     async ({request}) => {
       userWithResourcesAuthorizationToSendRequest = await createUser(request);
       await grantUserResourceAuthorization(
