@@ -11,6 +11,7 @@ import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.JobState.DeadlineIndex;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
+import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.api.scheduling.Task;
 import io.camunda.zeebe.stream.api.scheduling.TaskResult;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
@@ -20,7 +21,7 @@ import org.agrona.collections.MutableInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-final class JobTimeoutCheckScheduler implements Task {
+final class JobTimeoutCheckScheduler implements Task, StreamProcessorLifecycleAware {
   private static final Logger LOG = LoggerFactory.getLogger(JobTimeoutCheckScheduler.class);
 
   private boolean shouldReschedule = false;
@@ -98,5 +99,38 @@ final class JobTimeoutCheckScheduler implements Task {
 
   public void setShouldReschedule(final boolean shouldReschedule) {
     this.shouldReschedule = shouldReschedule;
+  }
+
+  @Override
+  public void onRecovered(final ReadonlyStreamProcessorContext processingContext) {
+    this.setProcessingContext(processingContext);
+    this.setShouldReschedule(true);
+    this.schedule(pollingInterval);
+  }
+
+  @Override
+  public void onClose() {
+    cancelTimer();
+  }
+
+  @Override
+  public void onFailed() {
+    cancelTimer();
+  }
+
+  @Override
+  public void onPaused() {
+    cancelTimer();
+  }
+
+  @Override
+  public void onResumed() {
+    this.setShouldReschedule(true);
+    this.schedule(pollingInterval);
+  }
+
+  private void cancelTimer() {
+    this.setShouldReschedule(false);
+    LOG.trace("Job timeout checker canceled!");
   }
 }

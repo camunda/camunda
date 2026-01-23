@@ -12,6 +12,7 @@ import static java.util.Optional.ofNullable;
 import io.camunda.zeebe.protocol.impl.record.value.jobmetrics.JobMetricsBatchRecord;
 import io.camunda.zeebe.protocol.record.intent.JobMetricsBatchIntent;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
+import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.api.scheduling.SimpleProcessingScheduleService.ScheduledTask;
 import io.camunda.zeebe.stream.api.scheduling.Task;
 import io.camunda.zeebe.stream.api.scheduling.TaskResult;
@@ -26,7 +27,7 @@ import org.slf4j.LoggerFactory;
  * Task that periodically sends a JOB_METRICS_BATCH EXPORT command to trigger the export of job
  * worker metrics.
  */
-public class JobMetricsCheckScheduler implements Task {
+public class JobMetricsCheckScheduler implements Task, StreamProcessorLifecycleAware {
 
   private static final Logger LOG = LoggerFactory.getLogger(JobMetricsCheckScheduler.class);
 
@@ -39,6 +40,10 @@ public class JobMetricsCheckScheduler implements Task {
   public JobMetricsCheckScheduler(final Duration exportInterval, final InstantSource clock) {
     this.exportInterval = exportInterval;
     this.clock = clock;
+  }
+
+  public JobMetricsCheckScheduler(final EngineConfiguration engineConfiguration, final InstantSource clock) {
+    this(engineConfiguration.getJobMetricsExportInterval(), clock);
   }
 
   public void schedule(final boolean immediately) {
@@ -77,5 +82,33 @@ public class JobMetricsCheckScheduler implements Task {
 
   public void setShouldReschedule(final boolean shouldReschedule) {
     this.shouldReschedule = shouldReschedule;
+  }
+
+  @Override
+  public void onRecovered(final ReadonlyStreamProcessorContext processingContext) {
+    this.setProcessingContext(processingContext);
+    this.setShouldReschedule(true);
+    this.schedule(true);
+  }
+
+  @Override
+  public void onClose() {
+    this.setShouldReschedule(false);
+  }
+
+  @Override
+  public void onFailed() {
+    this.setShouldReschedule(false);
+  }
+
+  @Override
+  public void onPaused() {
+    this.setShouldReschedule(false);
+  }
+
+  @Override
+  public void onResumed() {
+    this.setShouldReschedule(true);
+    this.schedule(true);
   }
 }

@@ -339,9 +339,9 @@ public final class MessageCorrelationMultiplePartitionsTest {
     }
 
     // increase the time to retry the inter-partition correlation several times
-    engine.increaseTime(MessageObserver.SUBSCRIPTION_CHECK_INTERVAL);
-    engine.increaseTime(MessageObserver.SUBSCRIPTION_CHECK_INTERVAL);
-    engine.increaseTime(MessageObserver.SUBSCRIPTION_CHECK_INTERVAL);
+    engine.increaseTime(PendingMessageSubscriptionCheckScheduler.SUBSCRIPTION_CHECK_INTERVAL);
+    engine.increaseTime(PendingMessageSubscriptionCheckScheduler.SUBSCRIPTION_CHECK_INTERVAL);
+    engine.increaseTime(PendingMessageSubscriptionCheckScheduler.SUBSCRIPTION_CHECK_INTERVAL);
     engine.resumeProcessing(2);
 
     // await for all 10 messages to be correlated

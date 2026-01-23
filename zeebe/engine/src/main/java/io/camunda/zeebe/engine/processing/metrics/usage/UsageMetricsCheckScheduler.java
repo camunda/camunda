@@ -9,10 +9,12 @@ package io.camunda.zeebe.engine.processing.metrics.usage;
 
 import static java.util.Optional.ofNullable;
 
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.protocol.impl.record.value.metrics.UsageMetricRecord;
 import io.camunda.zeebe.protocol.record.intent.UsageMetricIntent;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.EventType;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
+import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.api.scheduling.SimpleProcessingScheduleService.ScheduledTask;
 import io.camunda.zeebe.stream.api.scheduling.Task;
 import io.camunda.zeebe.stream.api.scheduling.TaskResult;
@@ -23,7 +25,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class UsageMetricsCheckScheduler implements Task {
+public class UsageMetricsCheckScheduler implements Task, StreamProcessorLifecycleAware {
 
   private static final Logger LOG = LoggerFactory.getLogger(UsageMetricsCheckScheduler.class);
 
@@ -36,6 +38,10 @@ public class UsageMetricsCheckScheduler implements Task {
   public UsageMetricsCheckScheduler(final Duration exportInterval, final InstantSource clock) {
     this.exportInterval = exportInterval;
     this.clock = clock;
+  }
+
+  public UsageMetricsCheckScheduler(final EngineConfiguration engineConfiguration, final InstantSource clock) {
+    this(engineConfiguration.getUsageMetricsExportInterval(), clock);
   }
 
   public void schedule(final boolean immediately) {
@@ -73,5 +79,33 @@ public class UsageMetricsCheckScheduler implements Task {
 
   public void setShouldReschedule(final boolean shouldReschedule) {
     this.shouldReschedule = shouldReschedule;
+  }
+
+  @Override
+  public void onRecovered(final ReadonlyStreamProcessorContext processingContext) {
+    setProcessingContext(processingContext);
+    setShouldReschedule(true);
+    schedule(true);
+  }
+
+  @Override
+  public void onClose() {
+    setShouldReschedule(false);
+  }
+
+  @Override
+  public void onFailed() {
+    setShouldReschedule(false);
+  }
+
+  @Override
+  public void onPaused() {
+    setShouldReschedule(false);
+  }
+
+  @Override
+  public void onResumed() {
+    setShouldReschedule(true);
+    schedule(true);
   }
 }
