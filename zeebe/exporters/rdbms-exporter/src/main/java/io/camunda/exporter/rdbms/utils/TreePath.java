@@ -7,6 +7,10 @@
  */
 package io.camunda.exporter.rdbms.utils;
 
+import io.camunda.zeebe.exporter.common.utils.TreePathTruncator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * Class represents call tree path to store sequence of calls in case of call activities.
  *
@@ -20,9 +24,28 @@ package io.camunda.exporter.rdbms.utils;
  */
 public class TreePath {
 
+  /**
+   * Number of leaf segments to preserve when truncating. This ensures that prefix queries for
+   * incident propagation and hierarchy traversal still work correctly for the most recent call
+   * hierarchy levels.
+   */
+  private static final int LEAF_SEGMENTS_TO_PRESERVE = 9; // 3 levels (PI/FN/FNI per level)
+
+  private static final Logger LOG = LoggerFactory.getLogger(TreePath.class);
+
+  private final int maxLength;
   private StringBuffer treePath;
 
-  public TreePath() {
+  /**
+   * Creates a TreePath with the specified maximum length.
+   *
+   * <p>The maximum length should be based on the vendor-specific column size limit (e.g.,
+   * errorMessage.size property from VendorDatabaseProperties).
+   *
+   * @param columnSize the column size limit from vendor properties (e.g., errorMessage.size)
+   */
+  public TreePath(final int columnSize) {
+    maxLength = columnSize;
     treePath = new StringBuffer();
   }
 
@@ -68,6 +91,10 @@ public class TreePath {
   @Override
   public String toString() {
     return treePath.toString();
+  }
+
+  public String toTruncatedString() {
+    return TreePathTruncator.truncateTreePath(treePath.toString(), maxLength);
   }
 
   public enum TreePathEntryType {

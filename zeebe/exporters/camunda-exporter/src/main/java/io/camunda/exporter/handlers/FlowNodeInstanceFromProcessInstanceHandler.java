@@ -22,6 +22,7 @@ import io.camunda.webapps.schema.entities.flownode.FlowNodeType;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.camunda.zeebe.exporter.common.utils.ProcessCacheUtil;
+import io.camunda.zeebe.exporter.common.utils.TreePathTruncator;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -45,6 +46,14 @@ public class FlowNodeInstanceFromProcessInstanceHandler
   private static final Set<Intent> AI_START_STATES = Set.of(ELEMENT_ACTIVATING);
   private static final Set<BpmnElementType> UNHANDLED_TYPES =
       Set.of(BpmnElementType.PROCESS, BpmnElementType.SEQUENCE_FLOW);
+
+  /**
+   * Maximum tree path length for Elasticsearch/OpenSearch. This limit ensures compatibility with
+   * ES/OS while preventing import issues with extremely long paths. ES/OS can handle much larger
+   * strings than RDBMS (practical limit ~32KB). This value is set conservatively below the 32KB
+   * limit to account for encoding overhead and ensure safe indexing.
+   */
+  private static final int MAX_TREE_PATH_LENGTH = 30000;
 
   private final String indexName;
   private final ExporterEntityCache<Long, CachedProcessEntity> processCache;
@@ -194,7 +203,14 @@ public class FlowNodeInstanceFromProcessInstanceHandler
 
       final List<String> treePathEntries =
           recordValue.getElementInstancePath().getLast().stream().map(String::valueOf).toList();
-      entity.setTreePath(String.join("/", treePathEntries));
+      final String treePath = String.join("/", treePathEntries);
+
+      // Apply truncation for extremely deep nesting scenarios
+      if (treePath.length() > MAX_TREE_PATH_LENGTH) {
+        entity.setTreePath(TreePathTruncator.truncateTreePath(treePath, MAX_TREE_PATH_LENGTH));
+      } else {
+        entity.setTreePath(treePath);
+      }
       entity.setLevel(treePathEntries.size() - 1);
     } else {
       LOGGER.warn(

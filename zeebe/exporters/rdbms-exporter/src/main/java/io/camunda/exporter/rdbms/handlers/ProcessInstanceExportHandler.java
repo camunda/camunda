@@ -37,14 +37,17 @@ public class ProcessInstanceExportHandler
   private final ProcessInstanceWriter processInstanceWriter;
   private final HistoryCleanupService historyCleanupService;
   private final ExporterEntityCache<Long, CachedProcessEntity> processCache;
+  private final int maxTreePathSize;
 
   public ProcessInstanceExportHandler(
       final ProcessInstanceWriter processInstanceWriter,
       final HistoryCleanupService historyCleanupService,
-      final ExporterEntityCache<Long, CachedProcessEntity> processCache) {
+      final ExporterEntityCache<Long, CachedProcessEntity> processCache,
+      final int maxTreePathSize) {
     this.processInstanceWriter = processInstanceWriter;
     this.historyCleanupService = historyCleanupService;
     this.processCache = processCache;
+    this.maxTreePathSize = maxTreePathSize;
   }
 
   @Override
@@ -101,7 +104,7 @@ public class ProcessInstanceExportHandler
         .parentElementInstanceKey(parentElementInstanceKey)
         .version(value.getVersion())
         .partitionId(record.getPartitionId())
-        .treePath(createTreePath(record).toString())
+        .treePath(createTreePath(record).toTruncatedString())
         .tags(value.getTags())
         .build();
   }
@@ -113,13 +116,13 @@ public class ProcessInstanceExportHandler
     final var callingElementPath = value.getCallingElementPath();
     final Long processInstanceKey = value.getProcessInstanceKey();
     if (elementInstancePath == null || elementInstancePath.isEmpty()) {
-      return new TreePath().startTreePath(processInstanceKey);
+      return new TreePath(maxTreePathSize).startTreePath(processInstanceKey);
     }
 
     final var callActivities =
         ProcessCacheUtil.getCallActivityIds(processCache, processDefinitionPath);
 
-    final TreePath treePath = new TreePath();
+    final TreePath treePath = new TreePath(maxTreePathSize);
     for (int i = 0; i < elementInstancePath.size(); i++) {
       final List<Long> keysWithinOnePI = elementInstancePath.get(i);
       treePath.appendProcessInstance(keysWithinOnePI.getFirst());

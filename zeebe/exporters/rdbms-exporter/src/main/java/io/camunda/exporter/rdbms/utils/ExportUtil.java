@@ -29,11 +29,26 @@ public class ExportUtil {
    * hierarchies.
    */
   public static String buildTreePath(
-      final Long key, final Long processInstanceKey, final List<List<Long>> elementInstancePath) {
+      final Long key,
+      final Long processInstanceKey,
+      final List<List<Long>> elementInstancePath,
+      final int columnSize) {
     if (elementInstancePath != null && !elementInstancePath.isEmpty()) {
       final List<String> treePathEntries =
           elementInstancePath.getLast().stream().map(String::valueOf).toList();
-      return String.join("/", treePathEntries);
+      final String treePath = String.join("/", treePathEntries);
+
+      // Apply truncation for extremely deep nesting scenarios
+      final TreePath treePathObj = new TreePath(columnSize);
+      final int maxLength = columnSize - 100; // apply safety margin
+      if (treePath.length() > maxLength) {
+        treePathObj.startTreePath(treePathEntries.get(0));
+        for (int i = 1; i < treePathEntries.size(); i++) {
+          treePathObj.appendFlowNodeInstance(treePathEntries.get(i));
+        }
+        return treePathObj.toTruncatedString();
+      }
+      return treePath;
     } else {
       LOG.warn(
           "No elementInstancePath is provided for flow node instance id: {}. TreePath will be set to default value.",
