@@ -7,11 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.message;
 
-import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.engine.state.immutable.MessageState.Index;
-import io.camunda.zeebe.engine.state.immutable.PendingMessageSubscriptionState;
-import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageBatchRecord;
 import io.camunda.zeebe.protocol.record.intent.MessageBatchIntent;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
@@ -22,7 +19,6 @@ import io.camunda.zeebe.stream.api.scheduling.TaskResult;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
 import java.time.Duration;
 import java.time.InstantSource;
-import java.util.function.Supplier;
 import org.agrona.collections.MutableInteger;
 
 /**
@@ -39,9 +35,6 @@ import org.agrona.collections.MutableInteger;
  */
 public final class MessageTimeToLiveCheckScheduler implements Task, StreamProcessorLifecycleAware {
 
-  public static final Duration SUBSCRIPTION_TIMEOUT = Duration.ofSeconds(10);
-  public static final Duration SUBSCRIPTION_CHECK_INTERVAL = Duration.ofSeconds(30);
-
   /** This determines the duration that the TTL checker is idle after it completes an execution. */
   private final Duration executionInterval;
 
@@ -51,7 +44,7 @@ public final class MessageTimeToLiveCheckScheduler implements Task, StreamProces
   /** This determines whether to run this checker async or not. */
   private final boolean enableMessageTtlCheckerAsync;
 
-  private final ProcessingScheduleService scheduleService;
+  private ProcessingScheduleService scheduleService;
   private final MessageState messageState;
 
   /** Keeps track of the timestamp to compare the message deadlines against. */
@@ -60,33 +53,18 @@ public final class MessageTimeToLiveCheckScheduler implements Task, StreamProces
   /** Keeps track of where to continue between iterations. */
   private MessageState.Index lastIndex;
 
-  private final InstantSource clock;
+  private InstantSource clock;
 
   public MessageTimeToLiveCheckScheduler(
       final Duration executionInterval,
       final int batchLimit,
       final boolean enableMessageTtlCheckerAsync,
-      final ProcessingScheduleService scheduleService,
-      final MessageState messageState,
-      final InstantSource clock) {
+      final MessageState messageState) {
     this.executionInterval = executionInterval;
     this.batchLimit = batchLimit;
     this.enableMessageTtlCheckerAsync = enableMessageTtlCheckerAsync;
     this.messageState = messageState;
-    this.scheduleService = scheduleService;
-    this.clock = clock;
     lastIndex = null;
-  }
-
-  public MessageTimeToLiveCheckScheduler(
-      final Supplier<ScheduledTaskState> scheduledTaskStateFactory,
-      final PendingMessageSubscriptionState pendingState,
-      final SubscriptionCommandSender subscriptionCommandSender,
-      final Duration messagesTtlCheckerInterval,
-      final int messagesTtlCheckerBatchLimit,
-      final boolean enableMessageTtlCheckerAsync,
-      final InstantSource clock) {
-    this(messagesTtlCheckerInterval, messagesTtlCheckerBatchLimit, enableMessageTtlCheckerAsync, null, scheduledTaskStateFactory.get().getMessageState(), clock);
   }
 
   @Override
@@ -141,39 +119,13 @@ public final class MessageTimeToLiveCheckScheduler implements Task, StreamProces
 
   @Override
   public void onRecovered(final ReadonlyStreamProcessorContext context) {
-    scheduleMessageTtlChecker(context);
-    schedulePendingMessageSubscriptionChecker(context);
-  }
-
-  private void scheduleMessageTtlChecker(final ReadonlyStreamProcessorContext context) {
-    final var scheduleService = context.getScheduleService();
+    scheduleService = context.getScheduleService();
+    clock = context.getClock();
     final var timestamp = clock.millis() + executionInterval.toMillis();
-    final var timeToLiveChecker =
-        new MessageTimeToLiveCheckScheduler(
-            executionInterval,
-            batchLimit,
-            enableMessageTtlCheckerAsync,
-            scheduleService,
-            messageState,
-            context.getClock());
     if (enableMessageTtlCheckerAsync) {
-      scheduleService.runAtAsync(timestamp, timeToLiveChecker);
+      scheduleService.runAtAsync(timestamp, this);
     } else {
-      scheduleService.runAt(timestamp, timeToLiveChecker);
+      scheduleService.runAt(timestamp, this);
     }
-  }
-
-  private void schedulePendingMessageSubscriptionChecker(
-      final ReadonlyStreamProcessorContext context) {
-    /* NOT APPLICABLE HERE
-    final var scheduleService = context.getScheduleService();
-    final var pendingSubscriptionChecker =
-        new PendingMessageSubscriptionCheckScheduler(
-            subscriptionCommandSender,
-            pendingState,
-            SUBSCRIPTION_TIMEOUT.toMillis(),
-            context.getClock());
-    scheduleService.runAtFixedRate(SUBSCRIPTION_CHECK_INTERVAL, pendingSubscriptionChecker);
-    */
   }
 }

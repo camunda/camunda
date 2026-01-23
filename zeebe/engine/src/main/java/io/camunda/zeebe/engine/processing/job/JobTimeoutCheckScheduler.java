@@ -93,19 +93,11 @@ final class JobTimeoutCheckScheduler implements Task, StreamProcessorLifecycleAw
     return taskResultBuilder.build();
   }
 
-  public void setProcessingContext(final ReadonlyStreamProcessorContext processingContext) {
-    this.processingContext = processingContext;
-  }
-
-  public void setShouldReschedule(final boolean shouldReschedule) {
-    this.shouldReschedule = shouldReschedule;
-  }
-
   @Override
   public void onRecovered(final ReadonlyStreamProcessorContext processingContext) {
-    this.setProcessingContext(processingContext);
-    this.setShouldReschedule(true);
-    this.schedule(pollingInterval);
+    this.processingContext = processingContext;
+    shouldReschedule = true;
+    schedule(pollingInterval);
   }
 
   @Override
@@ -125,12 +117,22 @@ final class JobTimeoutCheckScheduler implements Task, StreamProcessorLifecycleAw
 
   @Override
   public void onResumed() {
-    this.setShouldReschedule(true);
-    this.schedule(pollingInterval);
+    shouldReschedule = true;
+    schedule(pollingInterval);
   }
 
   private void cancelTimer() {
-    this.setShouldReschedule(false);
+    shouldReschedule = false;
     LOG.trace("Job timeout checker canceled!");
+  }
+
+  // Package-private setters for tests
+
+  void setProcessingContext(final ReadonlyStreamProcessorContext processingContext) {
+    this.processingContext = processingContext;
+  }
+
+  void setShouldReschedule(final boolean shouldReschedule) {
+    this.shouldReschedule = shouldReschedule;
   }
 }
