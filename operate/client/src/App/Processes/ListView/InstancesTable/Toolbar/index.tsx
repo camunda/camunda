@@ -21,7 +21,7 @@ import {tracking} from 'modules/tracking';
 import {handleOperationError} from 'modules/utils/notifications';
 import {useBatchOperationMutationRequestBody} from 'modules/hooks/useBatchOperationMutationRequestBody';
 import {useBatchOperationSuccessNotification} from 'modules/hooks/useBatchOperationSuccessNotification';
-import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelectionV2';
+import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 
 type Props = {
   selectedInstancesCount: number;

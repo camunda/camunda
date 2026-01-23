@@ -17,7 +17,7 @@ import {
   searchResult,
   createProcessInstance,
 } from 'modules/testUtils';
-import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelectionV2';
+import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {processesStore} from 'modules/stores/processes/processes.list';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {AppHeader} from 'App/Layout/AppHeader';
@@ -127,6 +127,9 @@ describe('Instances', () => {
   });
 
   it('should render title and document title', async () => {
+    mockSearchProcessInstances().withSuccess(mockProcessInstances);
+    mockSearchProcessInstances().withSuccess(mockProcessInstances);
+
     render(<ListView />, {
       wrapper: getWrapper(`${Paths.processes()}?incidents=true&active=true`),
     });
@@ -144,6 +147,9 @@ describe('Instances', () => {
   });
 
   it('should render page components', async () => {
+    mockSearchProcessInstances().withSuccess(mockProcessInstances);
+    mockSearchProcessInstances().withSuccess(mockProcessInstances);
+
     render(<ListView />, {
       wrapper: getWrapper(`${Paths.processes()}?active=true&incidents=true`),
     });
@@ -176,6 +182,7 @@ describe('Instances', () => {
 
   it('should reset selected instances when filters change', async () => {
     mockSearchProcessInstances().withSuccess(mockProcessInstances);
+    mockSearchProcessInstances().withSuccess(mockProcessInstances);
 
     const {user} = render(<ListView />, {
       wrapper: getWrapper(`${Paths.processes()}?active=true&incidents=true`),
@@ -197,6 +204,8 @@ describe('Instances', () => {
     await user.click(checkbox);
     expect(checkbox).toBeChecked();
 
+    // Add mocks for navigation and periodic refetch
+    mockSearchProcessInstances().withSuccess(mockProcessInstances);
     mockSearchProcessInstances().withSuccess(mockProcessInstances);
     await user.click(screen.getByText(/go to active/i));
 
@@ -210,6 +219,9 @@ describe('Instances', () => {
   });
 
   it('should not reset selected instances when table is sorted', async () => {
+    mockSearchProcessInstances().withSuccess(mockProcessInstances);
+    mockSearchProcessInstances().withSuccess(mockProcessInstances);
+
     const {user} = render(<ListView />, {
       wrapper: getWrapper(`${Paths.processes()}?active=true&incidents=true`),
     });
@@ -236,6 +248,7 @@ describe('Instances', () => {
     ).toBeChecked();
 
     mockSearchProcessInstances().withDelay(mockProcessInstances);
+    mockSearchProcessInstances().withSuccess(mockProcessInstances);
     await user.click(screen.getByRole('button', {name: 'Sort by Name'}));
 
     await waitFor(() => {
@@ -251,6 +264,9 @@ describe('Instances', () => {
   });
 
   it('should refetch data when navigated from header', async () => {
+    mockSearchProcessInstances().withSuccess(mockProcessInstances);
+    mockSearchProcessInstances().withSuccess(mockProcessInstances);
+
     const {user} = render(
       <>
         <AppHeader />
@@ -271,6 +287,7 @@ describe('Instances', () => {
 
     mockSearchProcessInstances().withDelay(mockProcessInstances);
     mockSearchProcessDefinitions().withDelay(mockProcessDefinitions);
+    mockSearchProcessInstances().withSuccess(mockProcessInstances);
 
     await user.click(
       await within(

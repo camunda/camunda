@@ -10,7 +10,7 @@ import {useEffect} from 'react';
 import {observer} from 'mobx-react';
 import {render, screen, waitFor} from 'modules/testing-library';
 import {batchModificationStore} from 'modules/stores/batchModification';
-import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelectionV2';
+import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {BatchModificationSummaryModal} from './index';
 import {MemoryRouter} from 'react-router-dom';
 import {Paths} from 'modules/Routes';
@@ -23,7 +23,6 @@ import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/v2/processI
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
-import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
 import {mockModifyProcessInstancesBatchOperation} from 'modules/mocks/api/v2/processes/mockModifyProcessInstancesBatchOperation';
 import {mockQueryBatchOperations} from 'modules/mocks/api/v2/batchOperations/queryBatchOperations';
 import {tracking} from 'modules/tracking';
@@ -88,10 +87,6 @@ describe('BatchModificationSummaryModal', () => {
 
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatisticsV2);
-    mockFetchProcessInstances().withSuccess({
-      processInstances: [],
-      totalCount: 0,
-    });
 
     mockModifyProcessInstancesBatchOperation().withSuccess({
       batchOperationKey: 'mock-modify-123',
@@ -181,10 +176,6 @@ describe('BatchModificationSummaryModal', () => {
 
   it('should handle batch operation error', async () => {
     mockModifyProcessInstancesBatchOperation().withServerError(403);
-    mockFetchProcessInstances().withSuccess({
-      processInstances: [],
-      totalCount: 0,
-    });
 
     const {user} = render(
       <BatchModificationSummaryModal setOpen={() => {}} open={true} />,

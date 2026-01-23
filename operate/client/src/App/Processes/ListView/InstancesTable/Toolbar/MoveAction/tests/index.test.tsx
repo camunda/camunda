@@ -19,7 +19,7 @@ import {
   getProcessInstance,
   createWrapper,
 } from '../../tests/mocks';
-import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelectionV2';
+import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {batchModificationStore} from 'modules/stores/batchModification';
 
 const PROCESS_ID = 'MoveModificationProcess';

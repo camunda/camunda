@@ -7,90 +7,24 @@
  */
 
 import {processInstancesSelectionStore} from './processInstancesSelection';
-import {processInstancesStore} from 'modules/stores/processInstances';
 
 describe('ProcessInstancesSelection - checkedProcessInstanceIds', () => {
   beforeEach(() => {
     processInstancesSelectionStore.reset();
-    processInstancesStore.setProcessInstances({
-      filteredProcessInstancesCount: 4,
-      processInstances: [
-        {
-          id: '1',
-          state: 'ACTIVE',
-          processId: '',
-          processName: '',
-          processVersion: 0,
-          startDate: '',
-          endDate: null,
-          bpmnProcessId: '',
-          hasActiveOperation: false,
-          operations: [],
-          sortValues: [],
-          parentInstanceId: null,
-          rootInstanceId: null,
-          callHierarchy: [],
-          tenantId: '',
-        },
-        {
-          id: '2',
-          state: 'COMPLETED',
-          processId: '',
-          processName: '',
-          processVersion: 0,
-          startDate: '',
-          endDate: null,
-          bpmnProcessId: '',
-          hasActiveOperation: false,
-          operations: [],
-          sortValues: [],
-          parentInstanceId: null,
-          rootInstanceId: null,
-          callHierarchy: [],
-          tenantId: '',
-        },
-        {
-          id: '3',
-          state: 'ACTIVE',
-          processId: '',
-          processName: '',
-          processVersion: 0,
-          startDate: '',
-          endDate: null,
-          bpmnProcessId: '',
-          hasActiveOperation: false,
-          operations: [],
-          sortValues: [],
-          parentInstanceId: null,
-          rootInstanceId: null,
-          callHierarchy: [],
-          tenantId: '',
-        },
-        {
-          id: '4',
-          state: 'INCIDENT',
-          processId: '',
-          processName: '',
-          processVersion: 0,
-          startDate: '',
-          endDate: null,
-          bpmnProcessId: '',
-          hasActiveOperation: false,
-          operations: [],
-          sortValues: [],
-          parentInstanceId: null,
-          rootInstanceId: null,
-          callHierarchy: [],
-          tenantId: '',
-        },
-      ],
+    processInstancesSelectionStore.setRuntime({
+      totalProcessInstancesCount: 4,
+      visibleIds: ['1', '2', '3', '4'],
+      visibleRunningIds: ['1', '3', '4'],
     });
+  });
+
+  afterEach(() => {
+    processInstancesSelectionStore.reset();
   });
 
   it('should return selectedProcessInstanceIds when selectionMode is INCLUDE', () => {
     processInstancesSelectionStore.state = {
       selectedProcessInstanceIds: ['1', '3'],
-      isAllChecked: false,
       selectionMode: 'INCLUDE',
     };
 
@@ -101,7 +35,6 @@ describe('ProcessInstancesSelection - checkedProcessInstanceIds', () => {
   it('should return all process instance IDs minus selectedProcessInstanceIds when selectionMode is EXCLUDE', () => {
     processInstancesSelectionStore.state = {
       selectedProcessInstanceIds: ['1', '3'],
-      isAllChecked: false,
       selectionMode: 'EXCLUDE',
     };
 
@@ -112,7 +45,6 @@ describe('ProcessInstancesSelection - checkedProcessInstanceIds', () => {
   it('should return all process instance IDs when selectionMode is ALL', () => {
     processInstancesSelectionStore.state = {
       selectedProcessInstanceIds: [],
-      isAllChecked: true,
       selectionMode: 'ALL',
     };
 
@@ -121,14 +53,14 @@ describe('ProcessInstancesSelection - checkedProcessInstanceIds', () => {
   });
 
   it('should handle an empty processInstances array', () => {
-    processInstancesStore.setProcessInstances({
-      filteredProcessInstancesCount: 0,
-      processInstances: [],
+    processInstancesSelectionStore.setRuntime({
+      totalProcessInstancesCount: 0,
+      visibleIds: [],
+      visibleRunningIds: [],
     });
 
     processInstancesSelectionStore.state = {
       selectedProcessInstanceIds: ['1', '3'],
-      isAllChecked: false,
       selectionMode: 'EXCLUDE',
     };
 
@@ -139,7 +71,6 @@ describe('ProcessInstancesSelection - checkedProcessInstanceIds', () => {
   it('should handle an empty selectedProcessInstanceIds array', () => {
     processInstancesSelectionStore.state = {
       selectedProcessInstanceIds: [],
-      isAllChecked: false,
       selectionMode: 'EXCLUDE',
     };
 
@@ -150,7 +81,6 @@ describe('ProcessInstancesSelection - checkedProcessInstanceIds', () => {
   it('should handle when selectionMode is INCLUDE and selectedProcessInstanceIds is empty', () => {
     processInstancesSelectionStore.state = {
       selectedProcessInstanceIds: [],
-      isAllChecked: false,
       selectionMode: 'INCLUDE',
     };
 
