@@ -16,6 +16,7 @@ import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.operate.conditions.DatabaseType;
 import io.camunda.operate.property.BackupProperties;
 import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.property.ProxyProperties;
 import io.camunda.operate.property.SslProperties;
 import io.camunda.search.connect.plugin.PluginConfiguration;
 import java.util.List;
@@ -88,6 +89,9 @@ public class OperatePropertiesOverride {
     override.getElasticsearch().setClusterName(database.getElasticsearch().getClusterName());
     override.getElasticsearch().setIndexPrefix(database.getElasticsearch().getIndexPrefix());
     override.getElasticsearch().setDateFormat(database.getElasticsearch().getDateFormat());
+    final var esProxy = new ProxyProperties();
+    BeanUtils.copyProperties(database.getElasticsearch().getProxy(), esProxy);
+    override.getElasticsearch().setProxy(esProxy);
     final var socketTimeout = database.getElasticsearch().getSocketTimeout();
     if (socketTimeout != null) {
       override.getElasticsearch().setSocketTimeout(Math.toIntExact(socketTimeout.toMillis()));
@@ -119,6 +123,9 @@ public class OperatePropertiesOverride {
     override.getOpensearch().setClusterName(database.getOpensearch().getClusterName());
     override.getOpensearch().setIndexPrefix(database.getOpensearch().getIndexPrefix());
     override.getOpensearch().setDateFormat(database.getOpensearch().getDateFormat());
+    final var osProxy = new ProxyProperties();
+    BeanUtils.copyProperties(database.getOpensearch().getProxy(), osProxy);
+    override.getOpensearch().setProxy(osProxy);
     final var socketTimeout = database.getOpensearch().getSocketTimeout();
     if (socketTimeout != null) {
       override.getOpensearch().setSocketTimeout(Math.toIntExact(socketTimeout.toMillis()));

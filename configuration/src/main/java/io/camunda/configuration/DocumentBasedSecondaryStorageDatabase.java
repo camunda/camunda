@@ -8,6 +8,7 @@
 package io.camunda.configuration;
 
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
+import io.camunda.search.connect.configuration.ProxyConfiguration;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -94,6 +95,8 @@ public abstract class DocumentBasedSecondaryStorageDatabase
   @NestedConfigurationProperty
   private DocumentBasedSecondaryStorageBackup backup =
       new DocumentBasedSecondaryStorageBackup(databaseName());
+
+  @NestedConfigurationProperty private ProxyConfiguration proxy = new ProxyConfiguration();
 
   @Override
   public String getUrl() {
@@ -424,6 +427,14 @@ public abstract class DocumentBasedSecondaryStorageDatabase
 
   public void setBackup(final DocumentBasedSecondaryStorageBackup backup) {
     this.backup = backup;
+  }
+
+  public ProxyConfiguration getProxy() {
+    return proxy;
+  }
+
+  public void setProxy(final ProxyConfiguration proxy) {
+    this.proxy = proxy;
   }
 
   private String prefix() {
