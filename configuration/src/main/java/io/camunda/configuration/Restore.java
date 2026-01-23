@@ -21,7 +21,7 @@ public class Restore {
       Set.of("zeebe.restore.ignoreFilesInTarget");
 
   private boolean validateConfig = true;
-  private List<String> ignoreFilesInTarget = List.of("lost+found");
+  private List<String> ignoreFilesInTarget = List.of("lost+found", "directory-initialized.json");
 
   public boolean isValidateConfig() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(

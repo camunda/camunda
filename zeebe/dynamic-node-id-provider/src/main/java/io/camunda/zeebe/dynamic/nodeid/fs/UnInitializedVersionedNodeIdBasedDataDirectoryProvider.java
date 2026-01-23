@@ -1,5 +1,6 @@
 package io.camunda.zeebe.dynamic.nodeid.fs;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.dynamic.nodeid.NodeInstance;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -21,9 +22,12 @@ public class UnInitializedVersionedNodeIdBasedDataDirectoryProvider
   private static final String NODE_DIRECTORY_PREFIX = "node-";
 
   private final NodeInstance nodeInstance;
+  private final ObjectMapper objectMapper;
 
-  public UnInitializedVersionedNodeIdBasedDataDirectoryProvider(final NodeInstance nodeInstance) {
+  public UnInitializedVersionedNodeIdBasedDataDirectoryProvider(
+      final NodeInstance nodeInstance, final ObjectMapper objectMapper) {
     this.nodeInstance = nodeInstance;
+    this.objectMapper = objectMapper;
   }
 
   @Override
@@ -38,16 +42,22 @@ public class UnInitializedVersionedNodeIdBasedDataDirectoryProvider
       final var nodeVersion = nodeInstance.version().version();
 
       final var nodeDirectory = rootDataDirectory.resolve(NODE_DIRECTORY_PREFIX + nodeId);
-      final var dataDirectory = nodeDirectory.resolve(String.valueOf(nodeVersion));
+      final var layout = new VersionedDirectoryLayout(nodeDirectory, objectMapper);
+      final var dataDirectory = layout.resolveVersionDirectory(nodeVersion);
 
-      if (Files.exists(dataDirectory)) {
-        LOG.info("Data directory {} already exists", dataDirectory);
-        return CompletableFuture.completedFuture(dataDirectory);
+      if (!Files.exists(dataDirectory)) {
+        LOG.info(
+            "Creating versioned data directory {} for node {} version {}",
+            dataDirectory,
+            nodeId,
+            nodeVersion);
       }
-
-      LOG.info(
-          "Creating data directory {} for node {} version {}", dataDirectory, nodeId, nodeVersion);
       Files.createDirectories(dataDirectory);
+
+      if (!layout.isDirectoryInitialized(nodeInstance.version())) {
+        // TODO: May be initialize after restore
+        layout.initializeDirectory(nodeInstance.version(), null);
+      }
 
       return CompletableFuture.completedFuture(dataDirectory);
     } catch (final Exception e) {

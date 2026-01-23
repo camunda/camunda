@@ -23,7 +23,9 @@ import io.camunda.zeebe.dynamic.nodeid.fs.NodeIdBasedDataDirectoryProvider;
 import io.camunda.zeebe.dynamic.nodeid.fs.UnInitializedVersionedNodeIdBasedDataDirectoryProvider;
 import io.camunda.zeebe.dynamic.nodeid.repository.NodeIdRepository;
 import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository;
+import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository.Config;
 import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository.S3ClientConfig;
+import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository.S3ClientConfig.Credentials;
 import io.camunda.zeebe.restore.RestoreApp.PostRestoreAction;
 import io.camunda.zeebe.restore.RestoreApp.PreRestoreAction;
 import java.net.URI;
@@ -51,6 +53,7 @@ public class NodeIdProviderConfiguration {
   @Autowired private ApplicationContext appContext;
   private final Cluster cluster;
   private final boolean disableVersionedDirectory;
+  private final ObjectMapper objectMapper;
 
   @Autowired
   public NodeIdProviderConfiguration(
@@ -58,6 +61,7 @@ public class NodeIdProviderConfiguration {
     cluster = configuration.getCamunda().getCluster();
     final var primaryStorage = configuration.getCamunda().getData().getPrimaryStorage();
     disableVersionedDirectory = primaryStorage.disableVersionedDirectory();
+    this.objectMapper = objectMapper;
   }
 
   @Bean
@@ -69,7 +73,7 @@ public class NodeIdProviderConfiguration {
         final var clientConfig = makeS3ClientConfig(cluster.getNodeIdProvider().s3());
         final var s3Config = cluster.getNodeIdProvider().s3();
         final var config =
-            new S3NodeIdRepository.Config(
+            new Config(
                 s3Config.getBucketName(),
                 s3Config.getLeaseDuration(),
                 s3Config.getReadinessCheckTimeout());
@@ -105,7 +109,6 @@ public class NodeIdProviderConfiguration {
         final var restoreStatusManager = new RestoreStatusManager(nodeIdRepository.get());
         yield ((backupId, nodeId) -> {
           restoreStatusManager.markNodeRestored(nodeId);
-
           restoreStatusManager.waitForAllNodesRestored(cluster.getSize(), Duration.ofSeconds(10));
         });
       }
@@ -152,8 +155,7 @@ public class NodeIdProviderConfiguration {
         s3.getAccessKey()
             .flatMap(
                 accessKey ->
-                    s3.getSecretKey()
-                        .map(secretKey -> new S3ClientConfig.Credentials(accessKey, secretKey)));
+                    s3.getSecretKey().map(secretKey -> new Credentials(accessKey, secretKey)));
     return new S3ClientConfig(
         credentials,
         s3.getRegion().map(Region::of),
@@ -179,7 +181,8 @@ public class NodeIdProviderConfiguration {
             final var nodeInstance = nodeIdProvider.currentNodeInstance();
             yield disableVersionedDirectory
                 ? new NodeIdBasedDataDirectoryProvider(nodeInstance)
-                : new UnInitializedVersionedNodeIdBasedDataDirectoryProvider(nodeInstance);
+                : new UnInitializedVersionedNodeIdBasedDataDirectoryProvider(
+                    nodeInstance, objectMapper);
           }
         };
 
