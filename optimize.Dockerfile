@@ -4,9 +4,9 @@ ARG BASE_DIGEST="sha256:8a3a3df9e3db35af08f854c2837c68294abbbf2720a26da670a96c6a
 
 # If you don't have access to Minimus hardened base images, you can use public
 # base images like this instead on your own risk.
-# Simply pass `--build-arg BASE=public` in order to build with Alpine.
-ARG BASE_IMAGE_PUBLIC="alpine:3.23.2"
-ARG BASE_DIGEST_PUBLIC="sha256:865b95f46d98cf867a156fe4a135ad3fe50d2056aa3f25ed31662dff6da4eb62"
+# Simply pass `--build-arg BASE=public` in order to build with the Temurin JDK.
+ARG BASE_IMAGE_PUBLIC="eclipse-temurin:21.0.9_10-jre-noble"
+ARG BASE_DIGEST_PUBLIC="sha256:d3eb69add1874bc785382d6282db53a67841f602a1139dee6c4a1221d8c56568"
 ARG BASE="hardened"
 
 ### Base Application Image ###
