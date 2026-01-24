@@ -38,7 +38,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Testcontainers
 public class GcsBackupStoreBatchDeletionTest {
   @Container private static final GcsContainer GCS = new GcsContainer();
-  private final String BUCKET_NAME = RandomStringUtils.randomAlphabetic(10).toLowerCase();
+  private static final String BUCKET_NAME = RandomStringUtils.randomAlphabetic(10).toLowerCase();
 
   private static Stream<Arguments> basePathProvider() {
     return Stream.of(
