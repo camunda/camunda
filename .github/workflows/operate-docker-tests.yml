@@ -53,7 +53,7 @@ jobs:
           - 5000:5000
     steps:
       - name: Check out repository code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - uses: hadolint/hadolint-action@v3.3.0
         with:
           ignore: DL3018 # redundant when pinning the base image

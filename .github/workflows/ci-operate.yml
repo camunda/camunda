@@ -71,7 +71,7 @@ jobs:
       TEST_TYPE: Build
     steps:
       - name: Checkout repository
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - uses: ./.github/actions/setup-build
@@ -123,7 +123,7 @@ jobs:
       run:
         working-directory: operate/client
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - uses: actions/setup-node@v4
@@ -167,7 +167,7 @@ jobs:
       run:
         working-directory: operate/client
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - uses: actions/setup-node@v4
@@ -207,7 +207,7 @@ jobs:
       run:
         working-directory: operate/client
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - uses: actions/setup-node@v4
@@ -242,7 +242,7 @@ jobs:
       run:
         working-directory: operate/client
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - uses: actions/setup-node@v4
@@ -281,7 +281,7 @@ jobs:
         working-directory: operate/client
     steps:
       - name: Check out repository code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - name: Setup NodeJS
@@ -330,7 +330,7 @@ jobs:
         working-directory: operate/client
     steps:
       - name: Check out repository code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - name: Setup NodeJS
@@ -378,7 +378,7 @@ jobs:
       run:
         working-directory: operate/client
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - uses: actions/setup-node@v4
@@ -426,7 +426,7 @@ jobs:
         ports:
           - 5000:5000
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - name: Create build output log file

@@ -21,7 +21,7 @@ jobs:
         ports:
           - 5000:5000
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: hadolint/hadolint-action@v3.3.0
         with:
           ignore: DL3018 # redundant when pinning the base image

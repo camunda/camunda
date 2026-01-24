@@ -39,7 +39,7 @@ jobs:
       c8run_version: ${{ steps.resolve.outputs.c8run_version }}
       modeler_version: ${{ steps.resolve.outputs.modeler_version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Resolve c8run and modeler versions
         id: resolve
@@ -129,7 +129,7 @@ jobs:
       MODELER_VERSION: ${{ needs.resolve-versions.outputs.modeler_version }}
       BUNDLE_NAME: camunda8-getting-started-bundle-${{ needs.resolve-versions.outputs.c8run_version }}-${{ matrix.platform.platform_id }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Print build info
         run: |
@@ -428,7 +428,7 @@ jobs:
       C8RUN_VERSION: ${{ needs.resolve-versions.outputs.c8run_version }}
       BUNDLE_NAME: camunda8-getting-started-bundle-${{ needs.resolve-versions.outputs.c8run_version }}-${{ matrix.platform.platform_id }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Download bundle artifact
         uses: actions/download-artifact@v4
@@ -709,7 +709,7 @@ jobs:
     env:
       C8RUN_VERSION: ${{ needs.resolve-versions.outputs.c8run_version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Download all bundle artifacts
         uses: actions/download-artifact@v4
@@ -763,7 +763,7 @@ jobs:
       C8RUN_VERSION: ${{ needs.resolve-versions.outputs.c8run_version }}
       MODELER_VERSION: ${{ needs.resolve-versions.outputs.modeler_version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Send Slack notification
         env:
@@ -919,7 +919,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Generate summary
         env:

@@ -58,7 +58,7 @@ jobs:
     outputs:
       flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-build
         with:
           maven-cache-key-modifier: it-database-${{inputs.database-type}}

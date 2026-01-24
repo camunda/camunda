@@ -139,7 +139,7 @@ jobs:
     outputs:
       image-tag: ${{ inputs.reuse-tag != '' && inputs.reuse-tag || steps.image-tag.outputs.image-tag }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: ${{ inputs.ref }}
       - name: Get image tag
@@ -208,7 +208,7 @@ jobs:
       contents: 'read'
       id-token: 'write'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: ${{ inputs.ref }}
       - uses: ./.github/actions/setup-build
@@ -282,7 +282,7 @@ jobs:
       contents: 'read'
       id-token: 'write'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: ${{ inputs.ref }}
       - name: Authenticate to Google Cloud
@@ -338,7 +338,7 @@ jobs:
       contents: 'read'
       id-token: 'write'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: ${{ inputs.ref }}
       - uses: google-github-actions/auth@v2

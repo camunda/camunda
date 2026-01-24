@@ -37,7 +37,7 @@ jobs:
         PAYLOAD_CONTEXT: ${{ toJson(github.event.client_payload) }}
       run: echo "$PAYLOAD_CONTEXT"
 
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
 
     - name: Run CI problems analysis script
       id: analyze

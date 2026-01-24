@@ -125,11 +125,11 @@ jobs:
         include: ${{ fromJson(needs.validate-inputs.outputs.components-matrix) }}
     steps:
       - name: Checkout workflow repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
           
       - name: Checkout and resolve ref
         id: resolve
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           token: ${{ github.token }}
           ref: ${{ needs.validate-inputs.outputs.commit || needs.validate-inputs.outputs.branch }}
@@ -240,7 +240,7 @@ jobs:
     if: always()
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         
       - name: Generate summary
         run: |

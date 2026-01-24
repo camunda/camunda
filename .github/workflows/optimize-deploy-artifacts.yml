@@ -15,7 +15,7 @@ jobs:
       DOCKER_IMAGE_TEAM: registry.camunda.cloud/team-optimize/optimize
       DOCKER_IMAGE_DOCKER_HUB: camunda/optimize
     steps:
-    - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+    - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
     - name: Install common tooling (buildx)  # required on self-hosted runners
       uses: camunda/infra-global-github-actions/common-tooling@main
       with:

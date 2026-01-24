@@ -56,7 +56,7 @@ jobs:
             runner: "aws-arm-core-4-longrunning"
             arch: arm64
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - uses: ./.github/actions/setup-build
@@ -129,7 +129,7 @@ jobs:
       TEST_OWNER: Core Features
       TEST_TYPE: Unit
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - uses: ./.github/actions/setup-build
@@ -188,7 +188,7 @@ jobs:
       TEST_OWNER: Core Features
       TEST_TYPE: Performance
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - uses: ./.github/actions/setup-build
@@ -258,7 +258,7 @@ jobs:
       TEST_OWNER: Core Features
       TEST_TYPE: Unit
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - name: Install and allow strace tests
@@ -328,7 +328,7 @@ jobs:
       TEST_OWNER: Core Features
       TEST_TYPE: Build
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - uses: hadolint/hadolint-action@v3.3.0
@@ -402,7 +402,7 @@ jobs:
       - docker-checks
       - strace-tests
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - run: |
           EXIT_CODE=${{ ((contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure')) && 1) || 0 }}
           exit $EXIT_CODE
@@ -427,7 +427,7 @@ jobs:
       group:  ${{ needs.utils-get-snapshot-docker-tag-and-concurrency-group.outputs.concurrency_group_name }}
       cancel-in-progress: false
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-build
         with:
           dockerhub: true
@@ -471,7 +471,7 @@ jobs:
       contents: 'read'
       id-token: 'write'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: google-github-actions/auth@v2
         id: auth
         with:
@@ -544,7 +544,7 @@ jobs:
     env:
       GITHUB_TOKEN: ${{ secrets.AUTOMERGE_TOKEN }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - id: approve-and-merge-backport-renovate
         name: Approve and merge backport PR
         run: |

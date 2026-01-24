@@ -25,7 +25,7 @@ jobs:
       second-last-version: ${{ env.SECOND_LAST_VERSION }}
       third-last-version: ${{ env.THIRD_LAST_VERSION }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - run: git fetch --tags
       - run: |
           mapfile -t versions < <(git tag | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sed -E -e 's/\.[0-9]+$//' | sort -Vr | uniq)
@@ -68,7 +68,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Weekly E2E
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Trigger Weekly E2E on ${{ matrix.branch }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

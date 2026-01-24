@@ -35,7 +35,7 @@ jobs:
     timeout-minutes: 60
     steps:
       - name: Checkout code
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
       - name: Import secrets
         id: secrets
         uses: hashicorp/vault-action@79632e33d6953d190b940ffa440bf97821cabd80

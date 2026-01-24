@@ -51,7 +51,7 @@ jobs:
             -Dquickly=true
             -DskipQaBuild=true
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
 
     # Import FOSSA_API_KEY secret from Vault
     - name: Import Secrets
@@ -161,7 +161,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Check for aborted jobs
         continue-on-error: true
         uses: ./.github/actions/observe-aborted-jobs

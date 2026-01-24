@@ -61,7 +61,7 @@ jobs:
           - 9300:9300
     steps:
       - name: Check out repository code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Setup Maven
         uses: ./.github/actions/setup-build
         with:

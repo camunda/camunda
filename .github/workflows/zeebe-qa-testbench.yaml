@@ -68,7 +68,7 @@ jobs:
     needs: [ qa ]
     if: failure()
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - id: slack-notify
         uses: slackapi/slack-github-action@v2.1.1
         with:

@@ -71,7 +71,7 @@ jobs:
       run:
         working-directory: tasklist/client
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - uses: actions/setup-node@v4
@@ -105,7 +105,7 @@ jobs:
       run:
         working-directory: tasklist/client
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - uses: actions/setup-node@v4
@@ -139,7 +139,7 @@ jobs:
       run:
         working-directory: tasklist/client
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - uses: actions/setup-node@v4
@@ -173,7 +173,7 @@ jobs:
       run:
         working-directory: tasklist/client
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - uses: actions/setup-node@v4
@@ -211,7 +211,7 @@ jobs:
         working-directory: tasklist/client
     steps:
       - name: Check out repository code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - name: Setup NodeJS
@@ -260,7 +260,7 @@ jobs:
         working-directory: tasklist/client
     steps:
       - name: Check out repository code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - name: Setup NodeJS
@@ -312,7 +312,7 @@ jobs:
         ports:
           - 5000:5000
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - name: Create build output log file
@@ -382,7 +382,7 @@ jobs:
         ports:
           - 5000:5000
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - uses: hadolint/hadolint-action@v3.3.0

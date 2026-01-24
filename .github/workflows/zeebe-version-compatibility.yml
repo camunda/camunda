@@ -24,7 +24,7 @@ jobs:
       matrix:
         shards: [ 1, 2, 3] # Values are not used, we just need an array of the right length
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Generate cache key with current hour
         id: cache-key
         run: echo "hour=$(date -u +%Y%m%d%H)" >> "$GITHUB_OUTPUT"
@@ -86,7 +86,7 @@ jobs:
     runs-on: ubuntu-latest
     if: always()
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Generate cache key with current hour
         id: cache-key
         run: echo "hour=$(date -u +%Y%m%d%H)" >> "$GITHUB_OUTPUT"
@@ -129,7 +129,7 @@ jobs:
     needs: released-versions
     if: always()
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Download all reports
         uses: actions/download-artifact@v4
         with:
@@ -151,7 +151,7 @@ jobs:
     needs: [released-versions, current-snapshot]
     if: failure()
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - id: slack-notify
         uses: slackapi/slack-github-action@v2.1.1
         with:
