@@ -4,11 +4,17 @@ description: 'Collects and aggregates flaky test results from multiple CI jobs'
 # owner: @camunda/monorepo-devops-team
 
 inputs:
-    general-unit-tests-result:
-        description: 'Result of the general unit tests job'
+    unit-tests-result:
+        description: 'Result of the unit tests job'
         required: true
-    general-unit-tests-flaky:
-        description: 'Flaky tests from the general unit tests job'
+    unit-matrix-output-result:
+        description: 'Matrix output for unit tests'
+        required: true
+    archunit-tests-result:
+        description: 'Result of the ArchUnit tests job'
+        required: true
+    archunit-tests-flaky:
+        description: 'Flaky tests from the ArchUnit tests job'
         required: true
     elasticsearch-tests-result:
         description: 'Result of the Elasticsearch integration tests job'
@@ -40,17 +46,17 @@ inputs:
     docker-checks-flaky:
         description: 'Flaky tests from the Docker checks job'
         required: true
-    zeebe-tests-result:
-        description: 'Result of the Zeebe unit tests job'
-        required: true
-    zeebe-matrix-output-result:
-        description: 'Matrix output for Zeebe unit tests'
-        required: true
     integration-tests-result:
         description: 'Result of the integration tests job'
         required: true
     integration-matrix-output-result:
         description: 'Matrix output for integration tests'
+        required: true
+    acceptance-tests-result:
+        description: 'Result of the acceptance tests job'
+        required: true
+    acceptance-matrix-output-result:
+        description: 'Matrix output for acceptance tests'
         required: true
 
 
@@ -75,7 +81,7 @@ runs:
         flaky_data='[]'
 
         # Collect from single jobs
-        collect_from_single_job "general-unit-tests" "${{ inputs.general-unit-tests-result }}" "${{ inputs.general-unit-tests-flaky }}"
+        collect_from_single_job "archunit-tests" "${{ inputs.archunit-tests-result }}" "${{ inputs.archunit-tests-flaky }}"
         collect_from_single_job "elasticsearch-integration-tests" "${{ inputs.elasticsearch-tests-result }}" "${{ inputs.elasticsearch-tests-flaky }}"
         collect_from_single_job "opensearch-integration-tests" "${{ inputs.opensearch-tests-result }}" "${{ inputs.opensearch-tests-flaky }}"
         collect_from_single_job "rdbms-h2-integration-tests" "${{ inputs.rdbms-h2-tests-result }}" "${{ inputs.rdbms-h2-tests-flaky }}"
@@ -83,8 +89,9 @@ runs:
         collect_from_single_job "docker-checks" "${{ inputs.docker-checks-result }}" "${{ inputs.docker-checks-flaky }}"
 
         # Collect from matrix jobs
-        collect_from_matrix_job "zeebe-unit-tests" "${{ inputs.zeebe-tests-result }}" '${{ inputs.zeebe-matrix-output-result }}'
+        collect_from_matrix_job "unit-tests" "${{ inputs.unit-tests-result }}" '${{ inputs.unit-matrix-output-result }}'
         collect_from_matrix_job "integration-tests" "${{ inputs.integration-tests-result }}" '${{ inputs.integration-matrix-output-result }}'
+        collect_from_matrix_job "acceptance-tests" "${{ inputs.acceptance-tests-result }}" '${{ inputs.acceptance-matrix-output-result }}'
 
         # Output the collected data
         {
