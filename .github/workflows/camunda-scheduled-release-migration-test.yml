@@ -33,7 +33,7 @@ jobs:
     # We need to run always and check for dependency outcome
     if: always() && (contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') )
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - id: slack-notify
         uses: slackapi/slack-github-action@v2.1.1
         with:
@@ -65,7 +65,7 @@ jobs:
     needs: [ migration-test ]
     if: success()
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - id: slack-notify
         uses: slackapi/slack-github-action@v2.1.1
         with:

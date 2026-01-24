@@ -54,7 +54,7 @@ jobs:
     timeout-minutes: 20
     steps:
     - name: Checkout
-      uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
     - uses: ./.github/actions/setup-build
       with:
@@ -188,7 +188,7 @@ jobs:
     # Setup: checkout code. This is required because we are using
     # composite actions and deployment manifests.
     - name: Checkout
-      uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
     #########################################################################
     # Determine the argocd arguments that need to be passed to the create app command
@@ -259,7 +259,7 @@ jobs:
         pull-request-id: ${{ github.event.pull_request.number }}
 
     - name: Checkout
-      uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
     - name: Observe build status
       if: always()
@@ -299,7 +299,7 @@ jobs:
     - uses: camunda/infra-global-github-actions/preview-env/comment@main
 
     - name: Checkout
-      uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
     - name: Observe build status
       if: always()

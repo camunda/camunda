@@ -122,7 +122,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - uses: ./.github/actions/build-frontend
         with:
           directory: ./operate/client
@@ -151,7 +151,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - uses: ./.github/actions/build-frontend
         with:
           directory: ./tasklist/client
@@ -180,7 +180,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - uses: ./.github/actions/build-frontend
         with:
           directory: ./identity/client
@@ -213,7 +213,7 @@ jobs:
       image-tag: ${{ steps.set-image-tag.outputs.tag }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup build environment
         uses: ./.github/actions/setup-build
@@ -374,7 +374,7 @@ jobs:
     permissions: { }
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Generate GitHub App Token (for dispatch)
         id: github-token
         uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main

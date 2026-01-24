@@ -36,7 +36,7 @@ jobs:
             exit 1
           fi
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Detect base branch
         id: detect-base
@@ -87,7 +87,7 @@ jobs:
           echo "Release version: ${{ needs.validate-release.outputs.release_version }}"
           echo "Base branch: ${{ needs.validate-release.outputs.base }}"
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: ${{ needs.validate-release.outputs.base }}
 
@@ -313,7 +313,7 @@ jobs:
           echo "Base branch: ${{ needs.validate-release.outputs.base }}"
           echo "Tasklist mode: ${{ matrix.tasklist_mode }}"
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: ${{ needs.validate-release.outputs.base }}
 

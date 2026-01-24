@@ -36,7 +36,7 @@ jobs:
         with:
           app-id: ${{ steps.vault-secrets.outputs.ISSUE_FIELD_INHERITANCE_GH_APP_ID }}
           private-key: ${{ steps.vault-secrets.outputs.ISSUE_FIELD_INHERITANCE_GH_APP_KEY }}
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Inherit fields from parent sub-issue if parent is in project 173(PVT_kwDOACVKPs4A1Kno)
         uses: actions/github-script@v7
         with:

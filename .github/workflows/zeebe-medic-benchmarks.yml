@@ -22,7 +22,7 @@ jobs:
       test: ${{ steps.data.outputs.test }}
       operate: ${{ steps.data.outputs.operate }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Collect test data
         id: data
         run: |
@@ -96,7 +96,7 @@ jobs:
     needs: [ setup-typical-load-test, setup-realistic-test, setup-latency-test ]
     if: failure()
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - id: slack-notify
         uses: slackapi/slack-github-action@v2.1.1
         with:

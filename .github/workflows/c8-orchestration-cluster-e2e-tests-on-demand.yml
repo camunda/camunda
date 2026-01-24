@@ -34,7 +34,7 @@ jobs:
           fi
           echo "Branch '$branch_name' exists."
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Detect base branch
         id: detect-base
@@ -63,7 +63,7 @@ jobs:
           echo "Input branch: ${{ github.event.inputs.branch }}"
           echo "Base branch: ${{ needs.validate-branch.outputs.base }}"
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: ${{ github.event.inputs.branch }}
 
@@ -251,7 +251,7 @@ jobs:
           echo "Base branch: ${{ needs.validate-branch.outputs.base }}"
           echo "Tasklist mode: ${{ matrix.tasklist_mode }}"
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: ${{ github.event.inputs.branch }}
 

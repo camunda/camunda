@@ -48,7 +48,7 @@ jobs:
           - 'qa/http/c8run-tests/application-h2.yaml'
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: ${{ inputs.branch }}
           fetch-depth: 0

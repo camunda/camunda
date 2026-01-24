@@ -110,7 +110,7 @@ jobs:
           vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID}}
           vault-url: ${{ secrets.VAULT_ADDR }}
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: ${{ env.RELEASE_BRANCH }}
           # Overriding the default GITHUB_TOKEN with a GitHub App token in order to workaround
@@ -341,7 +341,7 @@ jobs:
       LOCAL_DOCKER_IMAGE: localhost:5000/camunda/zeebe
       DOCKER_IMAGE: camunda/zeebe
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: ${{ env.RELEASE_BRANCH }}
       - name: Import Secrets
@@ -446,7 +446,7 @@ jobs:
       LOCAL_DOCKER_IMAGE: localhost:5000/camunda/operate
       DOCKER_IMAGE: camunda/operate
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: ${{ env.RELEASE_BRANCH }}
       - name: Import Secrets
@@ -554,7 +554,7 @@ jobs:
       LOCAL_DOCKER_IMAGE: localhost:5000/camunda/tasklist
       DOCKER_IMAGE: camunda/tasklist
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: ${{ env.RELEASE_BRANCH }}
       - name: Import Secrets
@@ -663,7 +663,7 @@ jobs:
       LOCAL_DOCKER_IMAGE: localhost:5000/camunda/optimize
       DOCKER_IMAGE: camunda/optimize
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: ${{ env.RELEASE_BRANCH }}
       - name: Import Secrets
@@ -771,7 +771,7 @@ jobs:
       LOCAL_DOCKER_IMAGE: localhost:5000/camunda/camunda
       DOCKER_IMAGE: camunda/camunda
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: ${{ env.RELEASE_BRANCH }}
       - name: Import Secrets
@@ -909,7 +909,7 @@ jobs:
       (needs.optimize-docker.result == 'success' || needs.optimize-docker.result == 'skipped') &&
       needs.camunda-docker.result == 'success' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: ${{ env.RELEASE_BRANCH }}
           fetch-depth: 0 # To fetch tags as well - necessary for the changelog generation
@@ -1041,7 +1041,7 @@ jobs:
       (needs.optimize-docker.result == 'success' || needs.optimize-docker.result == 'skipped') &&
       needs.camunda-docker.result == 'success' }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           ref: ${{ env.RELEASE_BRANCH }}
       - name: Import Secrets

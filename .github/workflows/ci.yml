@@ -63,7 +63,7 @@ jobs:
     permissions:
       pull-requests: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       # Detect changes against the base branch
       - name: Detect changes
         uses: ./.github/actions/paths-filter
@@ -82,7 +82,7 @@ jobs:
       # renovate: datasource=github-tags depName=open-policy-agent/conftest
       CONFTEST_VERSION: '0.66.0'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: camunda/infra-global-github-actions/actionlint@main
         with:
           version: ${{ env.ACTIONLINT_VERSION }}
@@ -117,7 +117,7 @@ jobs:
         id: depth
         run: |
           echo "depth=$((${{ github.event.pull_request.commits }} + 1))" >> "$GITHUB_OUTPUT"
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: ${{ steps.depth.outputs.depth }}
@@ -146,7 +146,7 @@ jobs:
     timeout-minutes: 5
     permissions: { }  # GITHUB_TOKEN unused in this job
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-build
         with:
           maven-cache-key-modifier: maven-spotless-linter
@@ -172,7 +172,7 @@ jobs:
     permissions: { }  # GITHUB_TOKEN unused in this job
     runs-on: gcp-perf-core-8-default
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-build
         with:
           maven-cache-key-modifier: java-checks
@@ -198,7 +198,7 @@ jobs:
     timeout-minutes: 15
     permissions: { }  # GITHUB_TOKEN unused in this job
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: ./.github/actions/build-frontend
         id: build-operate-fe
         with:
@@ -329,7 +329,7 @@ jobs:
     outputs:
       flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-build
         with:
           maven-cache-key-modifier: ut-general-unit-tests
@@ -423,7 +423,7 @@ jobs:
             suite: CamundaEx
             maven-modules: ${{ needs.setup-tests.outputs.ZEEBE_CLIENT_MODULES }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Print metadata
         uses: ./.github/actions/print-metadata
         with:
@@ -573,7 +573,7 @@ jobs:
       flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
     permissions: { }  # no GITHUB_TOKEN is needed
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-build
         with:
           dockerhub-readonly: true
@@ -760,7 +760,7 @@ jobs:
         ports:
           - 5000:5000
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Generate cache key with current hour
         if: matrix.group == 'qa-update'
         id: cache-key
@@ -886,7 +886,7 @@ jobs:
     outputs:
       flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - uses: ./.github/actions/setup-build
@@ -960,7 +960,7 @@ jobs:
       TEST_ELASTICSEARCH_IMAGE: docker.elastic.co/elasticsearch/elasticsearch:8.16.4
       DOCKER_PLATFORMS: "linux/arm64,linux/amd64" # build AMD64 last so it gets picked up by the test
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: hadolint/hadolint-action@v3.3.0
         with:
           config: ./.hadolint.yaml
@@ -1078,7 +1078,7 @@ jobs:
       pull-requests: write
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Read Zeebe unit tests matrix outputs
         uses: cloudposse/github-action-matrix-outputs-read@v1
         id: zeebe-matrix-read
@@ -1133,7 +1133,7 @@ jobs:
       run:
         working-directory: identity/client
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
@@ -1228,7 +1228,7 @@ jobs:
       BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before }}
     if: needs.detect-changes.outputs.protobuf-changes == 'true'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - id: pr-body
         name: Fetch latest PR body
         if: github.event_name == 'pull_request'
@@ -1276,7 +1276,7 @@ jobs:
       # renovate: datasource=github-releases depName=daveshanley/vacuum
       VACUUM_VERSION: 'v0.23.4'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Install vacuum
         run: |
           STRIPPED_VACUUM_VERSION="${VACUUM_VERSION#v}"
@@ -1309,7 +1309,7 @@ jobs:
     timeout-minutes: 5
     permissions: {}  # GITHUB_TOKEN unused in this job
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: actions/setup-node@v4
         with:
           node-version: 24
@@ -1364,7 +1364,7 @@ jobs:
       - zeebe-ci
       - zeebe-unit-tests
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Check for aborted jobs
         continue-on-error: true
         uses: ./.github/actions/observe-aborted-jobs
@@ -1403,7 +1403,7 @@ jobs:
       group: ${{ needs.utils-get-concurrency-group-for-maven-snapshot.outputs.concurrency_group_name }}
       cancel-in-progress: false
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-build
         with:
           maven-cache-key-modifier: snapshots
@@ -1462,7 +1462,7 @@ jobs:
       group: ${{ needs.utils-get-snapshot-docker-tag-and-concurrency-group.outputs.concurrency_group_name }}
       cancel-in-progress: false
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-build
         with:
           dockerhub: true

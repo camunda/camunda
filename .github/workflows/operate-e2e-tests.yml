@@ -57,7 +57,7 @@ jobs:
           - 9300:9300
     steps:
       - name: Check out repository code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Import Secrets
         id: secrets
         uses: hashicorp/vault-action@v3.4.0
