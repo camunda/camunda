@@ -48,9 +48,9 @@ public class ProcessStoreElasticSearch implements ProcessStore {
   @Autowired private ProcessIndex processIndex;
   @Autowired private SecurityConfiguration securityConfiguration;
 
-  @Qualifier("tasklistEs8Client")
+  @Qualifier("tasklistEsClient")
   @Autowired
-  private ElasticsearchClient es8Client;
+  private ElasticsearchClient esClient;
 
   @Autowired private ElasticsearchTenantHelper tenantHelper;
 
@@ -64,7 +64,7 @@ public class ProcessStoreElasticSearch implements ProcessStore {
     final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
 
     final var request =
-        new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+        new SearchRequest.Builder()
             .index(processIndex.getAlias())
             .query(tenantAwareQuery)
             .collapse(c -> c.field(ProcessIndex.KEY))
@@ -73,7 +73,7 @@ public class ProcessStoreElasticSearch implements ProcessStore {
             .build();
 
     try {
-      final var response = es8Client.search(request, ProcessEntity.class);
+      final var response = esClient.search(request, ProcessEntity.class);
       if (response.hits().total().value() > 0) {
         return response.hits().hits().get(0).source();
       } else {
@@ -117,7 +117,7 @@ public class ProcessStoreElasticSearch implements ProcessStore {
             .build();
 
     try {
-      final var response = es8Client.search(request, ProcessEntity.class);
+      final var response = esClient.search(request, ProcessEntity.class);
       if (response.hits().total().value() > 0) {
         return response.hits().hits().get(0).source();
       } else {
@@ -140,7 +140,7 @@ public class ProcessStoreElasticSearch implements ProcessStore {
         new SearchRequest.Builder().index(processIndex.getAlias()).query(tenantAwareQuery).build();
 
     try {
-      final var response = es8Client.search(request, ProcessEntity.class);
+      final var response = esClient.search(request, ProcessEntity.class);
       if (response.hits().total().value() == 1) {
         return response.hits().hits().get(0).source();
       } else if (response.hits().total().value() > 1) {
@@ -183,7 +183,7 @@ public class ProcessStoreElasticSearch implements ProcessStore {
     }
 
     final Query finalQuery = enhanceQueryByTenantIdCheck(query, tenantId);
-    return getProcessEntityUniqueByProcessDefinitionIdAndTenantIdEs8(finalQuery, isStartedByForm);
+    return getProcessEntityUniqueByProcessDefinitionIdAndTenantIdEs(finalQuery, isStartedByForm);
   }
 
   @Override
@@ -241,7 +241,7 @@ public class ProcessStoreElasticSearch implements ProcessStore {
       }
     }
     final Query finalQuery = enhanceQueryByTenantIdCheck(query, tenantId);
-    return getProcessEntityUniqueByProcessDefinitionIdAndTenantIdEs8(finalQuery, isStartedByForm);
+    return getProcessEntityUniqueByProcessDefinitionIdAndTenantIdEs(finalQuery, isStartedByForm);
   }
 
   @Override
@@ -251,7 +251,7 @@ public class ProcessStoreElasticSearch implements ProcessStore {
         ElasticsearchUtil.mustNotQuery(
             ElasticsearchUtil.termsQuery(ProcessIndex.BPMN_PROCESS_ID, ""));
     final Query query = ElasticsearchUtil.joinWithAnd(existsQuery, notEmptyQuery);
-    return getProcessEntityUniqueByProcessDefinitionIdAndTenantIdEs8(query, true);
+    return getProcessEntityUniqueByProcessDefinitionIdAndTenantIdEs(query, true);
   }
 
   private Query enhanceQueryByTenantIdCheck(final Query query, final String tenantId) {
@@ -264,9 +264,7 @@ public class ProcessStoreElasticSearch implements ProcessStore {
     return query;
   }
 
-  // ES8 helper methods
-
-  private Aggregation buildStartedByFormFilterAggEs8(
+  private Aggregation buildStartedByFormFilterAgg(
       final boolean isStartedByForm, final Aggregation topHitsAgg) {
     if (isStartedByForm) {
       return Aggregation.of(
@@ -293,7 +291,7 @@ public class ProcessStoreElasticSearch implements ProcessStore {
     }
   }
 
-  private List<ProcessEntity> getAggregateSearchHitsEs8(final Aggregate aggregate) {
+  private List<ProcessEntity> getAggregateSearchHits(final Aggregate aggregate) {
     return aggregate.sterms().buckets().array().stream()
         .flatMap(
             bpmnProcessIdBucket -> {
@@ -317,7 +315,7 @@ public class ProcessStoreElasticSearch implements ProcessStore {
         .toList();
   }
 
-  private List<ProcessEntity> getFilteredAggregateSearchHitsEs8(final Aggregate aggregate) {
+  private List<ProcessEntity> getFilteredAggregateSearchHits(final Aggregate aggregate) {
     return aggregate.sterms().buckets().array().stream()
         .flatMap(
             bpmnProcessIdBucket -> {
@@ -345,7 +343,7 @@ public class ProcessStoreElasticSearch implements ProcessStore {
         .toList();
   }
 
-  public List<ProcessEntity> getProcessEntityUniqueByProcessDefinitionIdAndTenantIdEs8(
+  public List<ProcessEntity> getProcessEntityUniqueByProcessDefinitionIdAndTenantIdEs(
       final Query query, final Boolean isStartedByForm) {
 
     // Build aggregations from innermost to outermost
@@ -372,7 +370,7 @@ public class ProcessStoreElasticSearch implements ProcessStore {
     final Aggregation tenantIdAgg;
     if (isStartedByForm != null) {
       // Add filter aggregation between version terms and topHits
-      final Aggregation filterAgg = buildStartedByFormFilterAggEs8(isStartedByForm, topHitsAgg);
+      final Aggregation filterAgg = buildStartedByFormFilterAgg(isStartedByForm, topHitsAgg);
       final Aggregation maxVersionWithFilter =
           Aggregation.of(
               a ->
@@ -429,14 +427,14 @@ public class ProcessStoreElasticSearch implements ProcessStore {
             .build();
 
     try {
-      final var response = es8Client.search(request, ProcessEntity.class);
+      final var response = esClient.search(request, ProcessEntity.class);
       final Aggregate bpmnProcessIdBuckets =
           response.aggregations().get(BPMN_PROCESS_ID_TENANT_ID_AGG_NAME);
 
       if (isStartedByForm != null) {
-        return getFilteredAggregateSearchHitsEs8(bpmnProcessIdBuckets);
+        return getFilteredAggregateSearchHits(bpmnProcessIdBuckets);
       } else {
-        return getAggregateSearchHitsEs8(bpmnProcessIdBuckets);
+        return getAggregateSearchHits(bpmnProcessIdBuckets);
       }
 
     } catch (final IOException e) {

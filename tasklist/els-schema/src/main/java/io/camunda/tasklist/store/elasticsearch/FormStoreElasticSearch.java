@@ -57,8 +57,8 @@ public class FormStoreElasticSearch implements FormStore {
   private ObjectMapper objectMapper;
 
   @Autowired
-  @Qualifier("tasklistEs8Client")
-  private ElasticsearchClient es8Client;
+  @Qualifier("tasklistEsClient")
+  private ElasticsearchClient esClient;
 
   @Override
   public FormEntity getForm(final String id, final String processDefinitionId, final Long version) {
@@ -95,7 +95,7 @@ public class FormStoreElasticSearch implements FormStore {
 
     try {
       return ElasticsearchUtil.scrollAllStream(
-              es8Client, searchRequestBuilder, ElasticsearchUtil.MAP_CLASS)
+              esClient, searchRequestBuilder, ElasticsearchUtil.MAP_CLASS)
           .flatMap(response -> response.hits().hits().stream())
           .map(Hit::id)
           .filter(Objects::nonNull)
@@ -111,7 +111,7 @@ public class FormStoreElasticSearch implements FormStore {
         GetRequest.of(b -> b.index(formIndex.getFullQualifiedName()).id(formKey));
 
     try {
-      final var response = es8Client.get(getRequest, ElasticsearchUtil.MAP_CLASS);
+      final var response = esClient.get(getRequest, ElasticsearchUtil.MAP_CLASS);
       if (response.found()) {
         final var sourceAsMap = response.source();
         return Optional.of(
@@ -142,7 +142,7 @@ public class FormStoreElasticSearch implements FormStore {
             .build();
 
     try {
-      final var response = es8Client.search(searchRequest, FormEntity.class);
+      final var response = esClient.search(searchRequest, FormEntity.class);
       if (response.hits().total().value() == 1) {
         return response.hits().hits().get(0).source();
       }
@@ -182,7 +182,7 @@ public class FormStoreElasticSearch implements FormStore {
       }
 
       final var response =
-          es8Client.search(searchRequestBuilder.build(), ElasticsearchUtil.MAP_CLASS);
+          esClient.search(searchRequestBuilder.build(), ElasticsearchUtil.MAP_CLASS);
 
       if (!response.hits().hits().isEmpty()) {
         final var sourceAsMap = response.hits().hits().get(0).source();
@@ -233,7 +233,7 @@ public class FormStoreElasticSearch implements FormStore {
               .query(tenantAwareQuery)
               .build();
 
-      final var response = es8Client.count(countRequest);
+      final var response = esClient.count(countRequest);
       return response.count() > 0;
     } catch (final IOException e) {
       final var formIdNotFoundMessage =
@@ -258,7 +258,7 @@ public class FormStoreElasticSearch implements FormStore {
               .query(tenantAwareQuery)
               .build();
 
-      final var response = es8Client.count(countRequest);
+      final var response = esClient.count(countRequest);
       return response.count() > 0;
     } catch (final IOException e) {
       final var formIdNotFoundMessage =

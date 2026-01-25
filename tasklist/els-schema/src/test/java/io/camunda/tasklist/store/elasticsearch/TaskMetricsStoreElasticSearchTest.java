@@ -23,6 +23,7 @@ import static org.mockito.Mockito.when;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.ExpandWildcard;
+import co.elastic.clients.elasticsearch._types.Result;
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
 import co.elastic.clients.elasticsearch._types.aggregations.Buckets;
@@ -31,6 +32,8 @@ import co.elastic.clients.elasticsearch._types.aggregations.LongTermsBucket;
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
+import co.elastic.clients.elasticsearch.core.IndexRequest;
+import co.elastic.clients.elasticsearch.core.IndexResponse;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
@@ -56,7 +59,7 @@ public class TaskMetricsStoreElasticSearchTest {
 
   private static final String METRIC_INDEX_NAME = "usage_metric_tu_x.0.0";
   @Mock private UsageMetricTUTemplate template;
-  @Mock private ElasticsearchClient es8Client;
+  @Mock private ElasticsearchClient esClient;
 
   @InjectMocks private TaskMetricsStoreElasticSearch instance;
 
@@ -80,22 +83,21 @@ public class TaskMetricsStoreElasticSearchTest {
             .setEndTime(now)
             .setTenantId("<default>")
             .setPartitionId(0);
-    final var indexRes = mock(co.elastic.clients.elasticsearch.core.IndexResponse.class);
+    final var indexRes = mock(IndexResponse.class);
     final var expectedReq =
-        co.elastic.clients.elasticsearch.core.IndexRequest.of(
+        IndexRequest.of(
             b ->
                 b.index(template.getFullQualifiedName())
                     .id(expectedEntry.getId())
                     .document(expectedEntry));
-    when(es8Client.index(any(co.elastic.clients.elasticsearch.core.IndexRequest.class)))
-        .thenReturn(indexRes);
-    when(indexRes.result()).thenReturn(co.elastic.clients.elasticsearch._types.Result.Created);
+    when(esClient.index(any(IndexRequest.class))).thenReturn(indexRes);
+    when(indexRes.result()).thenReturn(Result.Created);
 
     // When
     instance.registerTaskAssigned(task);
 
     // Then
-    verify(es8Client).index(refEq(expectedReq));
+    verify(esClient).index(refEq(expectedReq));
   }
 
   @Test
@@ -104,7 +106,7 @@ public class TaskMetricsStoreElasticSearchTest {
     final OffsetDateTime now = OffsetDateTime.now();
     final OffsetDateTime oneHourBefore = OffsetDateTime.now().withHour(1);
 
-    when(es8Client.search(any(SearchRequest.class), eq(Void.class)))
+    when(esClient.search(any(SearchRequest.class), eq(Void.class)))
         .thenThrow(new IOException("IO exception raised"));
 
     // When - Then
@@ -120,7 +122,7 @@ public class TaskMetricsStoreElasticSearchTest {
     final OffsetDateTime now = OffsetDateTime.now();
     final OffsetDateTime oneHourBefore = OffsetDateTime.now().withHour(1);
 
-    when(es8Client.search(any(SearchRequest.class), eq(Void.class)))
+    when(esClient.search(any(SearchRequest.class), eq(Void.class)))
         .thenThrow(new IOException("IO exception occurred"));
 
     // When - Then
@@ -138,7 +140,7 @@ public class TaskMetricsStoreElasticSearchTest {
     final OffsetDateTime oneHourBefore = OffsetDateTime.now().withHour(1);
 
     final SearchResponse<Void> searchResponse = mock(SearchResponse.class);
-    when(es8Client.search(any(SearchRequest.class), eq(Void.class))).thenReturn(searchResponse);
+    when(esClient.search(any(SearchRequest.class), eq(Void.class))).thenReturn(searchResponse);
 
     final LongTermsAggregate longTermsAggregate = mock(LongTermsAggregate.class);
     final Aggregate aggregate = mock(Aggregate.class);
@@ -155,7 +157,7 @@ public class TaskMetricsStoreElasticSearchTest {
     // Then
     assertThat(result).isEmpty();
     final ArgumentCaptor<SearchRequest> captor = ArgumentCaptor.forClass(SearchRequest.class);
-    verify(es8Client).search(captor.capture(), eq(Void.class));
+    verify(esClient).search(captor.capture(), eq(Void.class));
     final SearchRequest capturedRequest = captor.getValue();
     assertThat(capturedRequest.index()).containsExactly(METRIC_INDEX_NAME);
     assertThat(capturedRequest.aggregations()).containsKey(ASSIGNEE);
@@ -193,7 +195,7 @@ public class TaskMetricsStoreElasticSearchTest {
     final OffsetDateTime oneHourBefore = OffsetDateTime.now().withHour(1);
 
     final SearchResponse<Void> searchResponse = mock(SearchResponse.class);
-    when(es8Client.search(any(SearchRequest.class), eq(Void.class))).thenReturn(searchResponse);
+    when(esClient.search(any(SearchRequest.class), eq(Void.class))).thenReturn(searchResponse);
 
     final LongTermsAggregate longTermsAggregate = mock(LongTermsAggregate.class);
     final Aggregate aggregate = mock(Aggregate.class);
@@ -213,7 +215,7 @@ public class TaskMetricsStoreElasticSearchTest {
     // Then
     assertThat(result).containsExactly(1234567L);
     final ArgumentCaptor<SearchRequest> captor = ArgumentCaptor.forClass(SearchRequest.class);
-    verify(es8Client).search(captor.capture(), eq(Void.class));
+    verify(esClient).search(captor.capture(), eq(Void.class));
     final SearchRequest capturedRequest = captor.getValue();
     assertThat(capturedRequest.index()).containsExactly(METRIC_INDEX_NAME);
     assertThat(capturedRequest.aggregations()).containsKey(ASSIGNEE);

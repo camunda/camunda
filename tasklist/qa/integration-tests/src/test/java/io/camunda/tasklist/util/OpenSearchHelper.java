@@ -28,7 +28,6 @@ import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
-import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.indices.GetIndexResponse;
 import org.slf4j.Logger;
@@ -175,35 +174,6 @@ public class OpenSearchHelper implements NoSqlHelper {
       final String message =
           String.format("Exception occurred, while obtaining variables: %s", e.getMessage());
       throw new TasklistRuntimeException(message, e);
-    }
-  }
-
-  @Override
-  public List<String> getIdsFromIndex(
-      final String idFieldName, final String index, final List<String> ids) {
-    final Query q =
-        new Query.Builder()
-            .terms(
-                terms ->
-                    terms
-                        .field(idFieldName)
-                        .terms(
-                            t ->
-                                t.value(
-                                    ids.stream()
-                                        .map(m -> FieldValue.of(m))
-                                        .collect(Collectors.toList()))))
-            .build();
-
-    final SearchRequest.Builder request =
-        new SearchRequest.Builder().index(List.of(index)).query(q).size(100);
-
-    try {
-      final List<String> idsFromEls =
-          OpenSearchUtil.scrollFieldToList(request, idFieldName, osClient);
-      return idsFromEls;
-    } catch (final IOException e) {
-      throw new TasklistRuntimeException(e);
     }
   }
 

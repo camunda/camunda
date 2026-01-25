@@ -7,22 +7,22 @@
  */
 package io.camunda.tasklist.qa.backup;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import io.camunda.tasklist.qa.util.TestContext;
 import io.camunda.tasklist.qa.util.rest.StatefulRestTemplate;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
 
 public class BackupRestoreTestContext extends TestContext<BackupRestoreTestContext> {
 
-  private RestHighLevelClient esClient;
+  private ElasticsearchClient esClient;
   private OpenSearchClient osClient;
   private StatefulRestTemplate tasklistRestClient;
 
-  public RestHighLevelClient getEsClient() {
+  public ElasticsearchClient getEsClient() {
     return esClient;
   }
 
-  public BackupRestoreTestContext setEsClient(final RestHighLevelClient esClient) {
+  public BackupRestoreTestContext setEsClient(final ElasticsearchClient esClient) {
     this.esClient = esClient;
     return this;
   }

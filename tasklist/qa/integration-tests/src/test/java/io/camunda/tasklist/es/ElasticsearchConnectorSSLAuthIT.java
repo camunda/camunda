@@ -69,8 +69,8 @@ public class ElasticsearchConnectorSSLAuthIT extends TasklistIntegrationTest {
               Wait.forHttps("/").allowInsecure().withBasicCredentials("elastic", "elastic"));
 
   @Autowired
-  @Qualifier("tasklistEs8Client")
-  ElasticsearchClient es8Client;
+  @Qualifier("tasklistEsClient")
+  ElasticsearchClient esClient;
 
   @BeforeAll
   static void beforeAll() {
@@ -79,7 +79,7 @@ public class ElasticsearchConnectorSSLAuthIT extends TasklistIntegrationTest {
 
   @Test
   public void canConnect() {
-    assertThat(es8Client).isNotNull();
+    assertThat(esClient).isNotNull();
   }
 
   static class ElasticsearchStarter
