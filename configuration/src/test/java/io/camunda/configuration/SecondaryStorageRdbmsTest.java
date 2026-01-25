@@ -21,6 +21,7 @@ import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -212,6 +213,33 @@ public class SecondaryStorageRdbmsTest {
       assertThat(args.get("flushInterval")).isEqualTo(Duration.ofMillis(500));
       assertThat(args.get("exportBatchOperationItemsOnCreation")).isEqualTo(true);
       assertThat(args.get("batchOperationItemInsertBlockSize")).isEqualTo(10000);
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.data.secondary-storage.type=rdbms",
+        "camunda.data.secondary-storage.rdbms.urls=jdbc:postgresql://node1:5432/camunda,jdbc:postgresql://node2:5432/camunda",
+        "camunda.data.secondary-storage.rdbms.username=" + USERNAME,
+        "camunda.data.secondary-storage.rdbms.password=" + PASSWORD,
+      })
+  class WithUrlsConfigured {
+    private static final List<String> EXPECTED_URLS =
+        List.of("jdbc:postgresql://node1:5432/camunda", "jdbc:postgresql://node2:5432/camunda");
+
+    final SearchEngineConnectProperties searchEngineConnectProperties;
+
+    WithUrlsConfigured(
+        @Autowired final SearchEngineConnectProperties searchEngineConnectProperties) {
+      this.searchEngineConnectProperties = searchEngineConnectProperties;
+    }
+
+    @Test
+    void testUrlsPropagatedToSearchEngineConnectProperties() {
+      assertThat(searchEngineConnectProperties.getUrls()).isEqualTo(EXPECTED_URLS);
+      assertThat(searchEngineConnectProperties.getUsername()).isEqualTo(USERNAME);
+      assertThat(searchEngineConnectProperties.getPassword()).isEqualTo(PASSWORD);
     }
   }
 }

@@ -22,6 +22,7 @@ import io.camunda.tasklist.CommonUtils;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.ElasticsearchProperties;
+import io.camunda.tasklist.property.ProxyProperties;
 import io.camunda.tasklist.property.SslProperties;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.RetryOperation;
@@ -31,6 +32,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -43,6 +45,7 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.Base64;
 import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLContext;
 import net.jodah.failsafe.Failsafe;
@@ -109,7 +112,7 @@ public class ElasticsearchConnector {
       final ElasticsearchProperties elsConfig, final PluginRepository pluginRepository) {
     LOGGER.debug("Creating Elasticsearch connection...");
     final RestClientBuilder restClientBuilder =
-        RestClient.builder(getHttpHost(elsConfig))
+        RestClient.builder(getHttpHosts(elsConfig))
             .setHttpClientConfigCallback(
                 httpClientBuilder ->
                     configureHttpClient(
@@ -141,7 +144,7 @@ public class ElasticsearchConnector {
     LOGGER.debug("Creating Elasticsearch connection...");
 
     final RestClientBuilder restClientBuilder =
-        RestClient.builder(getHttpHost(elsConfig))
+        RestClient.builder(getHttpHosts(elsConfig))
             .setHttpClientConfigCallback(
                 httpClientBuilder ->
                     configureHttpClient(
@@ -183,7 +186,27 @@ public class ElasticsearchConnector {
     if (elsConfig.getSsl() != null) {
       setupSSLContext(httpAsyncClientBuilder, elsConfig.getSsl());
     }
+
+    final ProxyProperties proxyConfig = elsConfig.getProxy();
+    if (proxyConfig != null && proxyConfig.isEnabled()) {
+      setupProxy(httpAsyncClientBuilder, proxyConfig);
+      addPreemptiveProxyAuthInterceptor(httpAsyncClientBuilder, proxyConfig);
+    }
+
     return httpAsyncClientBuilder;
+  }
+
+  private void setupProxy(
+      final HttpAsyncClientBuilder httpAsyncClientBuilder, final ProxyProperties proxyConfig) {
+    httpAsyncClientBuilder.setProxy(
+        new HttpHost(
+            proxyConfig.getHost(),
+            proxyConfig.getPort(),
+            proxyConfig.isSslEnabled() ? "https" : "http"));
+    LOGGER.debug(
+        "Using proxy {}:{} for Elasticsearch connection",
+        proxyConfig.getHost(),
+        proxyConfig.getPort());
   }
 
   private void setupSSLContext(
@@ -353,6 +376,24 @@ public class ElasticsearchConnector {
     }
   }
 
+  private HttpHost[] getHttpHosts(final ElasticsearchProperties elsConfig) {
+    final var urls = elsConfig.getUrls();
+    if (urls != null && !urls.isEmpty()) {
+      return urls.stream()
+          .map(
+              url -> {
+                try {
+                  final URI uri = new URI(url);
+                  return new HttpHost(uri.getHost(), uri.getPort(), uri.getScheme());
+                } catch (final URISyntaxException e) {
+                  throw new TasklistRuntimeException("Error in url: " + url, e);
+                }
+              })
+          .toArray(HttpHost[]::new);
+    }
+    return new HttpHost[] {getHttpHost(elsConfig)};
+  }
+
   private HttpAsyncClientBuilder setupAuthentication(
       final HttpAsyncClientBuilder builder, final ElasticsearchProperties elsConfig) {
     if (!StringUtils.hasText(elsConfig.getUsername())
@@ -368,6 +409,31 @@ public class ElasticsearchConnector {
 
     builder.setDefaultCredentialsProvider(credentialsProvider);
     return builder;
+  }
+
+  private void addPreemptiveProxyAuthInterceptor(
+      final HttpAsyncClientBuilder httpAsyncClientBuilder, final ProxyProperties proxyConfig) {
+    final String username = proxyConfig.getUsername();
+    final String password = proxyConfig.getPassword();
+
+    if (!StringUtils.hasText(username) || !StringUtils.hasText(password)) {
+      return;
+    }
+
+    final String credentials = username + ":" + password;
+    final String encodedCredentials =
+        Base64.getEncoder().encodeToString(credentials.getBytes(StandardCharsets.UTF_8));
+    final String proxyAuthHeaderValue = "Basic " + encodedCredentials;
+
+    httpAsyncClientBuilder.addInterceptorFirst(
+        (HttpRequestInterceptor)
+            (request, context) -> {
+              if (!request.containsHeader("Proxy-Authorization")) {
+                request.addHeader("Proxy-Authorization", proxyAuthHeaderValue);
+              }
+            });
+
+    LOGGER.debug("Preemptive proxy authentication enabled for proxy");
   }
 
   public static class CustomOffsetDateTimeSerializer extends JsonSerializer<OffsetDateTime> {

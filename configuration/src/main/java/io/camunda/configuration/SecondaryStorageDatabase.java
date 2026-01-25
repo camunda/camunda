@@ -7,6 +7,9 @@
  */
 package io.camunda.configuration;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Base class for configuration of databases used as secondary storage.
  *
@@ -20,6 +23,9 @@ public abstract class SecondaryStorageDatabase<T> {
   /** Endpoint for the database configured as secondary storage. */
   private String url = "http://localhost:9200";
 
+  /** List of endpoints for the database configured as secondary storage. */
+  private List<String> urls = new ArrayList<>();
+
   /** Username for the database configured as secondary storage. */
   private String username = "";
 
@@ -32,6 +38,14 @@ public abstract class SecondaryStorageDatabase<T> {
 
   public void setUrl(final String url) {
     this.url = url;
+  }
+
+  public List<String> getUrls() {
+    return urls;
+  }
+
+  public void setUrls(final List<String> urls) {
+    this.urls = urls;
   }
 
   public String getUsername() {

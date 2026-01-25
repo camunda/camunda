@@ -59,6 +59,7 @@ public final class CamundaExporterConfigurationApplier {
     }
 
     target.setUrl(source.getUrl());
+    target.setUrls(source.getUrls());
     target.setClusterName(source.getClusterName());
     target.setDateFormat(source.getDateFormat());
     target.setSocketTimeout(
@@ -72,6 +73,7 @@ public final class CamundaExporterConfigurationApplier {
     target.setUsername(source.getUsername());
     target.setPassword(source.getPassword());
     target.setIndexPrefix(source.getIndexPrefix());
+    target.setProxy(source.getProxy());
 
     // Add security configuration mapping
     if (source.getSecurity() != null) {

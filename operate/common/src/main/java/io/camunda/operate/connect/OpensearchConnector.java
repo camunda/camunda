@@ -13,6 +13,7 @@ import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.opensearch.ExtendedOpenSearchClient;
 import io.camunda.operate.property.OpensearchProperties;
 import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.property.ProxyProperties;
 import io.camunda.operate.property.SslProperties;
 import io.camunda.search.connect.plugin.PluginRepository;
 import java.io.BufferedInputStream;
@@ -20,6 +21,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -28,6 +30,7 @@ import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.time.Duration;
+import java.util.Base64;
 import javax.net.ssl.SSLContext;
 import net.jodah.failsafe.Failsafe;
 import net.jodah.failsafe.RetryPolicy;
@@ -129,9 +132,9 @@ public class OpensearchConnector {
     if (hasAwsCredentials()) {
       return getAwsClient(osConfig);
     }
-    final HttpHost host = getHttpHost(osConfig);
+    final HttpHost[] hosts = getHttpHosts(osConfig);
     final ApacheHttpClient5TransportBuilder builder =
-        ApacheHttpClient5TransportBuilder.builder(host);
+        ApacheHttpClient5TransportBuilder.builder(hosts);
 
     builder.setHttpClientConfigCallback(
         httpClientBuilder -> {
@@ -176,7 +179,7 @@ public class OpensearchConnector {
     final AwsSdk2Transport transport =
         new AwsSdk2Transport(
             httpClient,
-            osConfig.getHost(),
+            getHttpHosts(osConfig)[0].getHostName(),
             region,
             AwsSdk2TransportOptions.builder()
                 .setMapper(new JacksonJsonpMapper(objectMapper))
@@ -191,6 +194,24 @@ public class OpensearchConnector {
     } catch (final URISyntaxException e) {
       throw new OperateRuntimeException("Error in url: " + osConfig.getUrl(), e);
     }
+  }
+
+  private HttpHost[] getHttpHosts(final OpensearchProperties osConfig) {
+    final var urls = osConfig.getUrls();
+    if (urls != null && !urls.isEmpty()) {
+      return urls.stream()
+          .map(
+              url -> {
+                try {
+                  final URI uri = new URI(url);
+                  return new HttpHost(uri.getScheme(), uri.getHost(), uri.getPort());
+                } catch (final URISyntaxException e) {
+                  throw new OperateRuntimeException("Error in url: " + url, e);
+                }
+              })
+          .toArray(HttpHost[]::new);
+    }
+    return new HttpHost[] {getHttpHost(osConfig)};
   }
 
   private HttpAsyncClientBuilder setupAuthentication(
@@ -210,6 +231,30 @@ public class OpensearchConnector {
 
     builder.setDefaultCredentialsProvider(credentialsProvider);
     return builder;
+  }
+
+  private void addPreemptiveProxyAuthInterceptor(
+      final HttpAsyncClientBuilder httpAsyncClientBuilder, final ProxyProperties proxyConfig) {
+    final String username = proxyConfig.getUsername();
+    final String password = proxyConfig.getPassword();
+
+    if (username == null || password == null || username.isEmpty() || password.isEmpty()) {
+      return;
+    }
+
+    final String credentials = username + ":" + password;
+    final String encodedCredentials =
+        Base64.getEncoder().encodeToString(credentials.getBytes(StandardCharsets.UTF_8));
+    final String proxyAuthHeaderValue = "Basic " + encodedCredentials;
+
+    httpAsyncClientBuilder.addRequestInterceptorFirst(
+        (request, entity, context) -> {
+          if (!request.containsHeader("Proxy-Authorization")) {
+            request.addHeader("Proxy-Authorization", proxyAuthHeaderValue);
+          }
+        });
+
+    LOGGER.debug("Preemptive proxy authentication enabled for proxy");
   }
 
   private void setupSSLContext(
@@ -306,7 +351,27 @@ public class OpensearchConnector {
     if (osConfig.getSsl() != null) {
       setupSSLContext(httpAsyncClientBuilder, osConfig.getSsl());
     }
+
+    final ProxyProperties proxyConfig = osConfig.getProxy();
+    if (proxyConfig != null && proxyConfig.isEnabled()) {
+      setupProxy(httpAsyncClientBuilder, proxyConfig);
+      addPreemptiveProxyAuthInterceptor(httpAsyncClientBuilder, proxyConfig);
+    }
+
     return httpAsyncClientBuilder;
+  }
+
+  private void setupProxy(
+      final HttpAsyncClientBuilder httpAsyncClientBuilder, final ProxyProperties proxyConfig) {
+    httpAsyncClientBuilder.setProxy(
+        new HttpHost(
+            proxyConfig.isSslEnabled() ? "https" : "http",
+            proxyConfig.getHost(),
+            proxyConfig.getPort()));
+    LOGGER.debug(
+        "Using proxy {}:{} for OpenSearch connection",
+        proxyConfig.getHost(),
+        proxyConfig.getPort());
   }
 
   private RequestConfig.Builder setTimeouts(

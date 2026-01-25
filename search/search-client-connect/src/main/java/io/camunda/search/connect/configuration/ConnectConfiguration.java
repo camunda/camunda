@@ -25,12 +25,14 @@ public class ConnectConfiguration {
   private Integer socketTimeout;
   private Integer connectTimeout;
   private String url = URL_DEFAULT;
+  private List<String> urls = new ArrayList<>();
   private String username;
   private String password;
   private SecurityConfiguration security = new SecurityConfiguration();
   private String indexPrefix = "";
   private List<PluginConfiguration> interceptorPlugins = new ArrayList<>();
   private boolean isAwsEnabled = false;
+  private ProxyConfiguration proxy;
 
   /** Use {@link ConnectConfiguration#getTypeEnum()} */
   @Deprecated
@@ -102,6 +104,14 @@ public class ConnectConfiguration {
     this.url = url;
   }
 
+  public List<String> getUrls() {
+    return urls;
+  }
+
+  public void setUrls(final List<String> urls) {
+    this.urls = urls;
+  }
+
   public String getUsername() {
     return username;
   }
@@ -140,5 +150,13 @@ public class ConnectConfiguration {
 
   public void setInterceptorPlugins(final List<PluginConfiguration> interceptorPlugins) {
     this.interceptorPlugins = interceptorPlugins;
+  }
+
+  public ProxyConfiguration getProxy() {
+    return proxy;
+  }
+
+  public void setProxy(final ProxyConfiguration proxy) {
+    this.proxy = proxy;
   }
 }

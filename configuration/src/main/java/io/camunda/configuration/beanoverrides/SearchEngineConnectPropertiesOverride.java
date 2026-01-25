@@ -86,6 +86,7 @@ public class SearchEngineConnectPropertiesOverride {
 
     override.setType(secondaryStorage.getType().name());
     override.setUrl(database.getUrl());
+    override.setUrls(database.getUrls());
 
     populateFromSecurity(override);
     populateFromInterceptorPlugins(override);
@@ -110,6 +111,7 @@ public class SearchEngineConnectPropertiesOverride {
       override.setConnectTimeout(Math.toIntExact(connectionTimeout.toMillis()));
     }
     override.setIndexPrefix(database.getIndexPrefix());
+    override.setProxy(database.getProxy());
   }
 
   private void populateFromSecurity(final SearchEngineConnectProperties override) {

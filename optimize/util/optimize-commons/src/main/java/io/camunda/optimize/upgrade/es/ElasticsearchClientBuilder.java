@@ -23,10 +23,12 @@ import io.camunda.search.connect.plugin.PluginRepository;
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.security.KeyStore;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -138,6 +140,7 @@ public class ElasticsearchClientBuilder {
                 proxyConfig.getHost(),
                 proxyConfig.getPort(),
                 proxyConfig.isSslEnabled() ? HTTPS : HTTP));
+        addPreemptiveProxyAuthInterceptor(httpClientBuilder, proxyConfig);
       }
 
       if (configurationService.getElasticSearchConfiguration().getSkipHostnameVerification()) {
@@ -147,6 +150,32 @@ public class ElasticsearchClientBuilder {
 
       return httpClientBuilder;
     };
+  }
+
+  private static void addPreemptiveProxyAuthInterceptor(
+      final org.apache.http.impl.nio.client.HttpAsyncClientBuilder httpAsyncClientBuilder,
+      final ProxyConfiguration proxyConfig) {
+    final String username = proxyConfig.getUsername();
+    final String password = proxyConfig.getPassword();
+
+    if (username == null || password == null || username.isEmpty() || password.isEmpty()) {
+      return;
+    }
+
+    final String credentials = username + ":" + password;
+    final String encodedCredentials =
+        Base64.getEncoder().encodeToString(credentials.getBytes(StandardCharsets.UTF_8));
+    final String proxyAuthHeaderValue = "Basic " + encodedCredentials;
+
+    httpAsyncClientBuilder.addInterceptorFirst(
+        (HttpRequestInterceptor)
+            (request, context) -> {
+              if (!request.containsHeader("Proxy-Authorization")) {
+                request.addHeader("Proxy-Authorization", proxyAuthHeaderValue);
+              }
+            });
+
+    LOGGER.debug("Preemptive proxy authentication enabled for proxy");
   }
 
   private static RestClientBuilder buildDefaultRestClient(

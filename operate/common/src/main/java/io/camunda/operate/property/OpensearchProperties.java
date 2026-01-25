@@ -43,6 +43,7 @@ public class OpensearchProperties {
   private boolean healthCheckEnabled = true;
 
   private String url;
+  private List<String> urls;
   private String username;
   private String password;
 
@@ -51,6 +52,8 @@ public class OpensearchProperties {
   private boolean awsEnabled = false;
 
   @NestedConfigurationProperty private SslProperties ssl;
+
+  @NestedConfigurationProperty private ProxyProperties proxy;
 
   private List<PluginConfiguration> interceptorPlugins;
 
@@ -160,6 +163,14 @@ public class OpensearchProperties {
     this.url = url;
   }
 
+  public List<String> getUrls() {
+    return urls;
+  }
+
+  public void setUrls(final List<String> urls) {
+    this.urls = urls;
+  }
+
   public Integer getSocketTimeout() {
     return socketTimeout;
   }
@@ -191,6 +202,14 @@ public class OpensearchProperties {
 
   public void setSsl(final SslProperties ssl) {
     this.ssl = ssl;
+  }
+
+  public ProxyProperties getProxy() {
+    return proxy;
+  }
+
+  public void setProxy(final ProxyProperties proxy) {
+    this.proxy = proxy;
   }
 
   public long getBulkRequestMaxSizeInBytes() {
