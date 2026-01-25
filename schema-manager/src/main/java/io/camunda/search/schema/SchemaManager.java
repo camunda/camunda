@@ -22,7 +22,6 @@ import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.index.MetadataIndex;
 import io.camunda.webapps.schema.descriptors.index.TasklistImportPositionIndex;
 import io.camunda.zeebe.util.CloseableSilently;
-import io.camunda.zeebe.util.SemanticVersion;
 import io.camunda.zeebe.util.VersionUtil;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.migration.VersionCompatibilityCheck;
@@ -154,7 +153,7 @@ public class SchemaManager implements CloseableSilently {
     final var checkResult = checkVersionCompatibility(previousSchemaVersion, currentVersion);
     switch (checkResult) {
       case final Compatible.SameVersion ignored:
-        upgradeSchema = "SNAPSHOT".equals(SemanticVersion.parse(currentVersion).get().preRelease());
+        upgradeSchema = config.schemaManager().isRunSchemaUpdatesOnSameVersion();
         break;
       case final Incompatible.PatchDowngrade ignored:
         return; // no upgrade, no settings update
@@ -175,8 +174,10 @@ public class SchemaManager implements CloseableSilently {
         LOG.info("Update index schema. '{}' indices need to be updated", newIndexProperties.size());
         updateSchemaMappings(newIndexProperties);
       }
-      // Store the current version as schema version after successful initialization
-      schemaMetadataStore.storeSchemaVersion(currentVersion);
+      if (!(checkResult instanceof Compatible.SameVersion)) {
+        // Store the current version as schema version after successful initialization
+        schemaMetadataStore.storeSchemaVersion(currentVersion);
+      }
     }
     updateSchemaSettings();
     createLifecyclePolicies();
