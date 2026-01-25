@@ -10,15 +10,19 @@ package io.camunda.application;
 import static io.camunda.webapps.schema.SupportedVersions.SUPPORTED_ELASTICSEARCH_VERSION;
 import static org.assertj.core.api.Assertions.fail;
 
+import com.github.dockerjava.api.DockerClient;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.TestInstance;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.containers.Network;
@@ -29,6 +33,7 @@ import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.oracle.OracleContainer;
 import org.testcontainers.utility.DockerImageName;
 
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public abstract class AbstractCamundaDockerIT {
 
   protected static final int SERVER_PORT = 8080;
@@ -48,8 +53,10 @@ public abstract class AbstractCamundaDockerIT {
           "camunda.docker.test.elasticsearch.image",
           "docker.elastic.co/elasticsearch/elasticsearch:" + SUPPORTED_ELASTICSEARCH_VERSION);
   private static final Logger LOGGER = LoggerFactory.getLogger(AbstractCamundaDockerIT.class);
+  private static final DockerClient DOCKER_CLIENT = DockerClientFactory.lazyClient();
   protected Network network;
   private final List<GenericContainer<?>> createdContainers = new ArrayList<>();
+  private final List<String> imagesToRemove = new ArrayList<>();
 
   @BeforeEach
   public void beforeEach() {
@@ -61,6 +68,13 @@ public abstract class AbstractCamundaDockerIT {
     createdContainers.forEach(GenericContainer::stop);
     network.close();
     network = null;
+  }
+
+  @AfterAll
+  public void removeImages() {
+    imagesToRemove.stream()
+        .distinct()
+        .forEach(image -> DOCKER_CLIENT.removeImageCmd(image).withForce(true).exec());
   }
 
   protected void startContainer(final GenericContainer<?> container) {
@@ -89,24 +103,33 @@ public abstract class AbstractCamundaDockerIT {
   }
 
   protected PostgreSQLContainer<?> createPostgresContainer() {
-    return TestSearchContainers.createDefaultPostgresContainer()
-        .withNetwork(network)
-        .withNetworkAliases(POSTGRES_NETWORK_ALIAS)
-        .withExposedPorts(PostgreSQLContainer.POSTGRESQL_PORT);
+    final var container =
+        TestSearchContainers.createDefaultPostgresContainer()
+            .withNetwork(network)
+            .withNetworkAliases(POSTGRES_NETWORK_ALIAS)
+            .withExposedPorts(PostgreSQLContainer.POSTGRESQL_PORT);
+    imagesToRemove.add(container.getDockerImageName());
+    return container;
   }
 
   protected OracleContainer createOracleContainer() {
-    return TestSearchContainers.createDefaultOracleContainer()
-        .withNetwork(network)
-        .withNetworkAliases(ORACLE_NETWORK_ALIAS)
-        .withExposedPorts(1521);
+    final var container =
+        TestSearchContainers.createDefaultOracleContainer()
+            .withNetwork(network)
+            .withNetworkAliases(ORACLE_NETWORK_ALIAS)
+            .withExposedPorts(1521);
+    imagesToRemove.add(container.getDockerImageName());
+    return container;
   }
 
   protected MySQLContainer<?> createMysqlContainer() {
-    return TestSearchContainers.createDefaultMySQLContainer()
-        .withNetwork(network)
-        .withNetworkAliases(MYSQL_NETWORK_ALIAS)
-        .withExposedPorts(3306);
+    final var container =
+        TestSearchContainers.createDefaultMySQLContainer()
+            .withNetwork(network)
+            .withNetworkAliases(MYSQL_NETWORK_ALIAS)
+            .withExposedPorts(3306);
+    imagesToRemove.add(container.getDockerImageName());
+    return container;
   }
 
   protected GenericContainer<?> createUnauthenticatedUnifiedConfigCamundaContainer() {
