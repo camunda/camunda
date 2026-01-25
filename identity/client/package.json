@@ -21,7 +21,7 @@
     "@camunda/camunda-api-zod-schemas": "0.0.32",
     "@camunda/camunda-composite-components": "0.21.4",
     "@carbon/elements": "^11.57.0",
-    "@carbon/react": "1.78.2",
+    "@carbon/react": "1.99.0",
     "@monaco-editor/react": "4.7.0",
     "fuse.js": "7.1.0",
     "i18next": "25.7.3",
