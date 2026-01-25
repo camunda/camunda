@@ -52,7 +52,11 @@ public class ListViewFlowNodeFromIncidentHandler
 
   @Override
   public boolean handlesRecord(final Record<IncidentRecordValue> record) {
-    return SUPPORTED_INTENTS.contains((IncidentIntent) record.getIntent());
+    if (!SUPPORTED_INTENTS.contains((IncidentIntent) record.getIntent())) {
+      return false;
+    }
+    final var recordValue = record.getValue();
+    return isNotProcessLevelIncident(recordValue);
   }
 
   @Override
@@ -115,5 +119,11 @@ public class ListViewFlowNodeFromIncidentHandler
 
   public String trimWhitespace(final String str) {
     return (str == null) ? null : str.strip();
+  }
+
+  private boolean isNotProcessLevelIncident(final IncidentRecordValue recordValue) {
+    // most incidents are related to a specific flow node/element, but it is possible
+    // to have errors on the process instance level too, but we don't want to handle those here
+    return recordValue.getProcessInstanceKey() != recordValue.getElementInstanceKey();
   }
 }
