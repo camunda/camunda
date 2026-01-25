@@ -81,7 +81,7 @@ public class ProcessDefinitionReaderOS implements ProcessDefinitionReader {
                 new TermsAggregation.Builder()
                     .field(ProcessDefinitionIndex.PROCESS_DEFINITION_KEY)
                     .build()
-                    ._toAggregation())
+                    .toAggregation())
             .source(new SourceConfig.Builder().fetch(false).build());
 
     final String errorMessage = "Was not able to fetch non-onboarded process definition keys.";

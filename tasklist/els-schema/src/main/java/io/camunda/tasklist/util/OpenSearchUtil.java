@@ -81,7 +81,7 @@ public abstract class OpenSearchUtil {
       final var query = queryBuilder.build();
 
       if (query instanceof final QueryVariant qv) {
-        boolQ.must(qv._toQuery());
+        boolQ.must(qv.toQuery());
       } else if (query instanceof final Query q) {
         boolQ.must(q);
       } else {
@@ -96,7 +96,7 @@ public abstract class OpenSearchUtil {
         new BoolQuery.Builder()
             .must(must -> must.matchNone(none -> none.queryName("matchNone")))
             .build();
-    return boolQuery._toQuery();
+    return boolQuery.toQuery();
   }
 
   public static Query joinWithAnd(final Query... queries) {
@@ -109,7 +109,7 @@ public abstract class OpenSearchUtil {
       final var query = queryBuilder;
 
       if (query instanceof final QueryVariant qv) {
-        boolQ.must(qv._toQuery());
+        boolQ.must(qv.toQuery());
       } else {
         boolQ.must(query);
       }
@@ -360,7 +360,7 @@ public abstract class OpenSearchUtil {
   /**
    * Helper method to scroll in chunks. This is useful when you have a large number of ids and want
    * to avoid sending them all at once to OpenSearch to not hit the max allowed terms limit {@link
-   * #DEFAULT_MAX_TERMS_COUNT}
+   * io.camunda.tasklist.property.OpenSearchProperties#DEFAULT_MAX_TERMS_COUNT}
    */
   public static <T, ID> List<T> scrollInChunks(
       final List<ID> ids,

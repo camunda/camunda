@@ -154,7 +154,7 @@ public class ProcessDistributedByVariableInterpreterOS
                 variableSubAggregation.get().getKey(),
                 variableSubAggregation.get().getValue(),
                 FILTERED_INSTANCE_COUNT_AGGREGATION,
-                new ReverseNestedAggregation.Builder().build()._toAggregation()));
+                new ReverseNestedAggregation.Builder().build().toAggregation()));
     final Aggregation nestedVariableAggregation =
         withSubaggregations(
             new Builder().path(VARIABLES).build(),

@@ -55,7 +55,7 @@ public class OpenSearchTenantCheckApplierTest {
     assertThat(sr.query().bool().must()).hasSize(2);
     assertThat(sr.query().bool().must().get(0).terms().field()).isEqualTo("tenantId");
     assertThat(sr.query().bool().must().get(0).terms().terms().value())
-        .map(FieldValue::stringValue)
+        .map(FieldValue::_toJsonString)
         .containsExactly("TenantA", "TenantB");
     assertThat(sr.query().bool().must().get(1).term().value().stringValue()).isEqualTo("value");
     assertThat(sr.query().bool().must().get(1).term().field()).isEqualTo("field");
@@ -112,7 +112,7 @@ public class OpenSearchTenantCheckApplierTest {
     assertThat(sr.query().bool().must()).hasSize(2);
     assertThat(sr.query().bool().must().get(0).terms().field()).isEqualTo("tenantId");
     assertThat(sr.query().bool().must().get(0).terms().terms().value())
-        .map(FieldValue::stringValue)
+        .map(FieldValue::_toJsonString)
         .containsExactly("TenantA");
     assertThat(sr.query().bool().must().get(1).term().value().stringValue()).isEqualTo("value");
     assertThat(sr.query().bool().must().get(1).term().field()).isEqualTo("field");

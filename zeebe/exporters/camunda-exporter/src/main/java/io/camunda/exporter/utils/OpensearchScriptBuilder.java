@@ -12,10 +12,13 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import org.opensearch.client.json.JsonData;
+import org.opensearch.client.opensearch._types.BuiltinScriptLanguage;
 import org.opensearch.client.opensearch._types.Script;
+import org.opensearch.client.opensearch._types.ScriptLanguage;
 
 public class OpensearchScriptBuilder {
-  public static final String DEFAULT_SCRIPT_LANG = "painless";
+  public static final ScriptLanguage DEFAULT_SCRIPT_LANG =
+      ScriptLanguage.builder().builtin(BuiltinScriptLanguage.Painless).build();
 
   public Script getScriptWithParameters(final String script, final Map<String, Object> parameters) {
     Objects.requireNonNull(parameters, "Script Parameters must not be null");

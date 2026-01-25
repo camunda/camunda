@@ -15,9 +15,11 @@ import io.camunda.webapps.backup.repository.BackupRepositoryPropsRecord;
 import io.camunda.webapps.backup.repository.SnapshotNameProvider;
 import io.camunda.webapps.backup.repository.opensearch.OpensearchBackupRepository;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.Collection;
 import java.util.List;
-import org.apache.http.HttpHost;
+import org.apache.hc.core5.http.HttpHost;
+import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch.cat.indices.IndicesRecord;
@@ -25,19 +27,25 @@ import org.opensearch.client.opensearch.core.BulkRequest;
 import org.opensearch.client.opensearch.core.IndexRequest;
 import org.opensearch.client.opensearch.indices.DeleteIndexRequest;
 import org.opensearch.client.opensearch.indices.RefreshRequest;
+import org.opensearch.client.opensearch.snapshot.Repository;
+import org.opensearch.client.opensearch.snapshot.RestoreSnapshotRequest;
 import org.opensearch.client.transport.OpenSearchTransport;
+import org.opensearch.client.transport.httpclient5.ApacheHttpClient5TransportBuilder;
 
 public class OSClient implements DocumentClient {
-  private final org.opensearch.client.RestClient osRestClient;
   private final OpenSearchClient opensearchClient;
   private final OpenSearchTransport transport;
 
   public OSClient(final String url) {
-    osRestClient = org.opensearch.client.RestClient.builder(HttpHost.create(url)).build();
-    transport =
-        new org.opensearch.client.transport.rest_client.RestClientTransport(
-            osRestClient, new org.opensearch.client.json.jackson.JacksonJsonpMapper());
-    opensearchClient = new OpenSearchClient(transport);
+    try {
+      transport =
+          ApacheHttpClient5TransportBuilder.builder(HttpHost.create(url))
+              .setMapper(new JacksonJsonpMapper())
+              .build();
+      opensearchClient = new OpenSearchClient(transport);
+    } catch (final URISyntaxException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   @Override
@@ -45,7 +53,7 @@ public class OSClient implements DocumentClient {
       throws IOException {
     for (final var snapshot : snapshots) {
       final var request =
-          org.opensearch.client.opensearch.snapshot.RestoreRequest.of(
+          RestoreSnapshotRequest.of(
               rb ->
                   rb.repository(repositoryName)
                       .snapshot(snapshot)
@@ -60,8 +68,7 @@ public class OSClient implements DocumentClient {
   @Override
   public void createRepository(final String repositoryName) throws IOException {
     final var repository =
-        org.opensearch.client.opensearch.snapshot.Repository.of(
-            r -> r.type("fs").settings(s -> s.location(repositoryName)));
+        Repository.of(r -> r.type("fs").settings(s -> s.location(repositoryName)));
     final var response =
         opensearchClient
             .snapshot()
@@ -117,7 +124,7 @@ public class OSClient implements DocumentClient {
     final var response = opensearchClient.indices().refresh(refreshRequest);
 
     // Check if refresh was successful
-    if (response.shards() != null && response.shards().failed().intValue() > 0) {
+    if (response.shards() != null && response.shards().failed() > 0) {
       throw new IOException(
           "Refresh failed for index: "
               + indexName
@@ -153,6 +160,6 @@ public class OSClient implements DocumentClient {
 
   @Override
   public void close() throws Exception {
-    osRestClient.close();
+    transport.close();
   }
 }

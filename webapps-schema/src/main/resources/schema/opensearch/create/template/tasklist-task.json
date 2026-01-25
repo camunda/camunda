@@ -4,6 +4,7 @@
     "properties": {
       "join": {
         "type": "join",
+        "eager_global_ordinals": true,
         "relations": {
           "task": [
             "localVariable"

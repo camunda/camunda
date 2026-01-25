@@ -14,17 +14,16 @@ import java.util.stream.Stream;
 import org.opensearch.client.opensearch._types.FieldValue;
 
 public class AggregationCursorTransformer
-    implements SearchTransfomer<Object[], Map<String, String>> {
+    implements SearchTransfomer<Object[], Map<String, FieldValue>> {
 
   @Override
-  public Map<String, String> apply(final Object[] value) {
+  public Map<String, FieldValue> apply(final Object[] value) {
     return Stream.of(value)
         .filter(item -> item instanceof Map<?, ?>)
         .flatMap(item -> ((Map<?, ?>) item).entrySet().stream())
         .collect(
             Collectors.toMap(
-                entry -> entry.getKey().toString(),
-                entry -> toFieldValue(entry.getValue()).stringValue()));
+                entry -> entry.getKey().toString(), entry -> toFieldValue(entry.getValue())));
   }
 
   public static FieldValue toFieldValue(final Object value) {

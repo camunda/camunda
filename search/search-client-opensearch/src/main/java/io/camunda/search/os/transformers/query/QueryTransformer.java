@@ -32,7 +32,7 @@ public final class QueryTransformer extends OpensearchTransformer<SearchQuery, Q
     final var queryOptionCls = queryOption.getClass();
     final var transformer = getQueryOptionTransformer(queryOptionCls);
     final var transformedQueryOption = transformer.apply(queryOption);
-    final var query = transformedQueryOption._toQuery();
+    final var query = transformedQueryOption.toQuery();
 
     return query;
   }

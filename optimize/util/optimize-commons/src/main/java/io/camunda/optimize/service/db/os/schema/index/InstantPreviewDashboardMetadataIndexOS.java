@@ -20,7 +20,7 @@ public class InstantPreviewDashboardMetadataIndexOS
   public IndexSettings.Builder addStaticSetting(
       final String key, final int value, final IndexSettings.Builder contentBuilder) {
     if (NUMBER_OF_SHARDS_SETTING.equalsIgnoreCase(key)) {
-      return contentBuilder.numberOfShards(Integer.toString(value));
+      return contentBuilder.numberOfShards(value);
     } else {
       throw new NotSupportedException(
           "Cannot set property "

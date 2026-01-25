@@ -11,10 +11,13 @@ import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
-import org.apache.http.HttpHost;
+import org.apache.hc.core5.http.HttpHost;
 import org.junit.jupiter.api.AutoClose;
+import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.transport.OpenSearchTransport;
+import org.opensearch.client.transport.httpclient5.ApacheHttpClient5TransportBuilder;
 import org.opensearch.testcontainers.OpenSearchContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,9 +31,7 @@ final class OpensearchIncidentUpdateRepositoryIT extends IncidentUpdateRepositor
   private static final OpenSearchContainer<?> CONTAINER =
       TestSearchContainers.createDefaultOpensearchContainer();
 
-  @AutoClose
-  private final org.opensearch.client.transport.rest_client.RestClientTransport transport =
-      createTransport();
+  @AutoClose private final OpenSearchTransport transport = createTransport();
 
   private final OpenSearchAsyncClient client = new OpenSearchAsyncClient(transport);
 
@@ -71,11 +72,14 @@ final class OpensearchIncidentUpdateRepositoryIT extends IncidentUpdateRepositor
         .toList();
   }
 
-  private org.opensearch.client.transport.rest_client.RestClientTransport createTransport() {
-    final var restClient =
-        org.opensearch.client.RestClient.builder(HttpHost.create(CONTAINER.getHttpHostAddress()))
-            .build();
-    return new org.opensearch.client.transport.rest_client.RestClientTransport(
-        restClient, new org.opensearch.client.json.jackson.JacksonJsonpMapper());
+  private OpenSearchTransport createTransport() {
+    try {
+      return ApacheHttpClient5TransportBuilder.builder(
+              HttpHost.create(CONTAINER.getHttpHostAddress()))
+          .setMapper(new JacksonJsonpMapper())
+          .build();
+    } catch (final Exception e) {
+      throw new RuntimeException(e);
+    }
   }
 }

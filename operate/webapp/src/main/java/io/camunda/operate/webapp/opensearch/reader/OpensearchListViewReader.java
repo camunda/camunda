@@ -220,7 +220,7 @@ public class OpensearchListViewReader implements ListViewReader {
     }
     searchRequest.size(request.getPageSize());
     if (querySearchAfter != null) {
-      searchRequest.searchAfter(CollectionUtil.toSafeListOfStrings(querySearchAfter));
+      searchRequest.searchAfter(CollectionUtil.toSafeListOfOSFieldValues(querySearchAfter));
     }
   }
 }

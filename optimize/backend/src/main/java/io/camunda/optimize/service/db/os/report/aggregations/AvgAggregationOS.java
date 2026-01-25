@@ -40,6 +40,6 @@ public class AvgAggregationOS extends AggregationStrategyOS {
     final AverageAggregation.Builder builder = new AverageAggregation.Builder().script(script);
     AggregationResultMappingUtil.firstField(fields).ifPresent(builder::field);
     return Pair.of(
-        createAggregationName(customIdentifier, AVG_AGGREGATION), builder.build()._toAggregation());
+        createAggregationName(customIdentifier, AVG_AGGREGATION), builder.build().toAggregation());
   }
 }

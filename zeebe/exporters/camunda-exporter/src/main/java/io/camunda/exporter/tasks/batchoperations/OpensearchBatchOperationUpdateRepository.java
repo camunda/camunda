@@ -29,8 +29,10 @@ import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
+import org.opensearch.client.opensearch._types.BuiltinScriptLanguage;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.Script;
+import org.opensearch.client.opensearch._types.ScriptLanguage;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
 import org.opensearch.client.opensearch._types.aggregations.MultiBucketBase;
 import org.opensearch.client.opensearch._types.aggregations.StringTermsBucket;
@@ -177,7 +179,7 @@ public class OpensearchBatchOperationUpdateRepository extends OpensearchReposito
                             + "ctx._source.operationsFinishedCount = params.operationsFinishedCount;"
                             + "ctx._source.operationsCompletedCount = params.operationsCompletedCount;"
                             + "ctx._source.operationsFailedCount = params.operationsFailedCount;")
-                    .lang("painless")
+                    .lang(ScriptLanguage.builder().builtin(BuiltinScriptLanguage.Painless).build())
                     .params(parameters))
         .build();
   }

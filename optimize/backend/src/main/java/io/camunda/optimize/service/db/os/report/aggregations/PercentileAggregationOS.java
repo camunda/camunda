@@ -58,7 +58,7 @@ public class PercentileAggregationOS extends AggregationStrategyOS {
     return Pair.of(
         createAggregationName(
             customIdentifier, String.valueOf(percentileValue), PERCENTILE_AGGREGATION),
-        builder.build()._toAggregation());
+        builder.build().toAggregation());
   }
 
   private Double mapToDoubleOrNull(
@@ -66,7 +66,7 @@ public class PercentileAggregationOS extends AggregationStrategyOS {
     final Double percentile =
         Optional.ofNullable(aggregation.values())
             .filter(h -> h.keyed().get(Double.toString(percentileValue)) != null)
-            .map(h -> Double.parseDouble(h.keyed().get(Double.toString(percentileValue))))
+            .map(h -> h.keyed().get(Double.toString(percentileValue)).to(Double.class))
             .orElse(null);
     return percentile == null || Double.isNaN(percentile) || Double.isInfinite(percentile)
         ? null

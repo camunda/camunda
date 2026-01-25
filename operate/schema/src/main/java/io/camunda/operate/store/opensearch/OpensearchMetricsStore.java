@@ -84,7 +84,7 @@ public class OpensearchMetricsStore implements MetricsStore {
     final var searchRequestBuilder =
         searchRequestBuilder(metricTemplate.getFullQualifiedName())
             .query(query)
-            .aggregations(PROCESS_INSTANCES_AGG_NAME, sumAggregation(EVENT_VALUE)._toAggregation());
+            .aggregations(PROCESS_INSTANCES_AGG_NAME, sumAggregation(EVENT_VALUE).toAggregation());
 
     return searchWithSumAggregation(searchRequestBuilder, PROCESS_INSTANCES_AGG_NAME);
   }
@@ -100,8 +100,7 @@ public class OpensearchMetricsStore implements MetricsStore {
     final var searchRequestBuilder =
         searchRequestBuilder(metricTemplate.getFullQualifiedName())
             .query(query)
-            .aggregations(
-                DECISION_INSTANCES_AGG_NAME, sumAggregation(EVENT_VALUE)._toAggregation());
+            .aggregations(DECISION_INSTANCES_AGG_NAME, sumAggregation(EVENT_VALUE).toAggregation());
 
     return searchWithSumAggregation(searchRequestBuilder, DECISION_INSTANCES_AGG_NAME);
   }

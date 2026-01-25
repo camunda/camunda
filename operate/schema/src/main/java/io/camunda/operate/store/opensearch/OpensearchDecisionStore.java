@@ -40,14 +40,14 @@ public class OpensearchDecisionStore implements DecisionStore {
   @Autowired private BeanFactory beanFactory;
 
   @Override
-  public Optional<Long> getDistinctCountFor(String fieldName) {
+  public Optional<Long> getDistinctCountFor(final String fieldName) {
     final var indexAlias = decisionIndex.getAlias();
     final var searchRequestBuilder =
         searchRequestBuilder(indexAlias)
             .query(matchAll())
             .size(0)
             .aggregations(
-                DISTINCT_FIELD_COUNTS, cardinalityAggregation(fieldName, 1_000)._toAggregation());
+                DISTINCT_FIELD_COUNTS, cardinalityAggregation(fieldName, 1_000).toAggregation());
 
     try {
       final var searchResponse =
@@ -55,7 +55,7 @@ public class OpensearchDecisionStore implements DecisionStore {
 
       return Optional.of(
           searchResponse.aggregations().get(DISTINCT_FIELD_COUNTS).cardinality().value());
-    } catch (Exception e) {
+    } catch (final Exception e) {
       LOGGER.error(
           String.format(
               "Error in distinct count for field %s in index alias %s.", fieldName, indexAlias),
@@ -70,7 +70,8 @@ public class OpensearchDecisionStore implements DecisionStore {
   }
 
   @Override
-  public long deleteDocuments(String indexName, String idField, String id) throws IOException {
+  public long deleteDocuments(final String indexName, final String idField, final String id)
+      throws IOException {
     return withIOException(
         () -> richOpenSearchClient.doc().delete(indexName, idField, id).deleted());
   }

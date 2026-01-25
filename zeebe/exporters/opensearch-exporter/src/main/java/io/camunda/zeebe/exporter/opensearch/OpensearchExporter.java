@@ -147,8 +147,8 @@ public class OpensearchExporter implements Exporter {
   /**
    * Determine whether a record should be exported or not. For Camunda 8.8 we require Optimize
    * records to be exported, or if the configuration explicitly enables the export of all records
-   * {@link OpensearchExporterConfiguration#includeEnabledRecords}. For past versions, we continue
-   * to export all records.
+   * {@link OpensearchExporterConfiguration#getIsIncludeEnabledRecords()}. For past versions, we
+   * continue to export all records.
    *
    * @param record The record to check
    * @return Whether the record should be exported or not

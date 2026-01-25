@@ -72,13 +72,13 @@ public class SearchEngineClientUtils {
           (Map<String, Object>) settingsBlock.computeIfAbsent("index", k -> new HashMap<>());
     }
 
-    public SchemaSettingsAppender withNumberOfShards(final int numberOfShards) {
-      indexBlock.put("number_of_shards", String.valueOf(numberOfShards));
+    public SchemaSettingsAppender withNumberOfShards(final Object numberOfShards) {
+      indexBlock.put("number_of_shards", numberOfShards);
       return this;
     }
 
-    public SchemaSettingsAppender withNumberOfReplicas(final int numberOfReplicas) {
-      indexBlock.put("number_of_replicas", String.valueOf(numberOfReplicas));
+    public SchemaSettingsAppender withNumberOfReplicas(final Object numberOfReplicas) {
+      indexBlock.put("number_of_replicas", numberOfReplicas);
       return this;
     }
 

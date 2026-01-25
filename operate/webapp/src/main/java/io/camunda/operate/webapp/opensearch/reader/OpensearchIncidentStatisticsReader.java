@@ -60,7 +60,7 @@ public class OpensearchIncidentStatisticsReader implements IncidentStatisticsRea
   private static final String GROUP_BY_PROCESS_KEYS = "group_by_processDefinitionKeys";
   private static final String UNIQ_PROCESS_INSTANCES = "uniq_processInstances";
   private static final Aggregation COUNT_PROCESS_KEYS =
-      termAggregation(PROCESS_KEY, TERMS_AGG_SIZE)._toAggregation();
+      termAggregation(PROCESS_KEY, TERMS_AGG_SIZE).toAggregation();
   private static final Query INCIDENTS_QUERY =
       and(
           term(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION),
@@ -115,13 +115,13 @@ public class OpensearchIncidentStatisticsReader implements IncidentStatisticsRea
                 withSubaggregations(
                     groupByErrorMessageHash,
                     Map.of(
-                        ERROR_MESSAGE, errorMessage._toAggregation(),
+                        ERROR_MESSAGE, errorMessage.toAggregation(),
                         GROUP_BY_PROCESS_KEYS,
                             withSubaggregations(
                                 groupByProcessKeys,
                                 Map.of(
                                     UNIQ_PROCESS_INSTANCES,
-                                    uniqueProcessInstances._toAggregation())))));
+                                    uniqueProcessInstances.toAggregation())))));
 
     richOpenSearchClient
         .doc()
@@ -156,8 +156,10 @@ public class OpensearchIncidentStatisticsReader implements IncidentStatisticsRea
         .stream()
         .collect(
             Collectors.toMap(
-                bucket -> Long.valueOf(bucket.key()),
-                bucket -> new IncidentByProcessStatisticsDto(bucket.key(), bucket.docCount(), 0)));
+                bucket -> bucket.key().signed(),
+                bucket ->
+                    new IncidentByProcessStatisticsDto(
+                        bucket.keyAsString(), bucket.docCount(), 0)));
   }
 
   private Map<Long, IncidentByProcessStatisticsDto> updateActiveInstances(
@@ -174,14 +176,15 @@ public class OpensearchIncidentStatisticsReader implements IncidentStatisticsRea
     searchAggBuckets(query)
         .forEach(
             bucket -> {
-              final Long processDefinitionKey = Long.valueOf(bucket.key());
+              final Long processDefinitionKey = bucket.key().signed();
               final long runningCount = bucket.docCount();
               IncidentByProcessStatisticsDto statistic = results.get(processDefinitionKey);
               if (statistic != null) {
                 statistic.setActiveInstancesCount(
                     runningCount - statistic.getInstancesWithActiveIncidentsCount());
               } else {
-                statistic = new IncidentByProcessStatisticsDto(bucket.key(), 0, runningCount);
+                statistic =
+                    new IncidentByProcessStatisticsDto(bucket.keyAsString(), 0, runningCount);
               }
               results.put(processDefinitionKey, statistic);
             });
@@ -278,7 +281,7 @@ public class OpensearchIncidentStatisticsReader implements IncidentStatisticsRea
         .array()
         .forEach(
             bucket -> {
-              final Long processDefinitionKey = Long.valueOf(bucket.key());
+              final Long processDefinitionKey = bucket.key().signed();
               final long incidentsCount =
                   bucket.aggregations().get(UNIQ_PROCESS_INSTANCES).cardinality().value();
 

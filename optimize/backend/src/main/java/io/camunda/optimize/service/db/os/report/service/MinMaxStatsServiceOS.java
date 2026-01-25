@@ -148,7 +148,7 @@ public class MinMaxStatsServiceOS extends AbstractMinMaxStatsService {
     final Pair<String, Aggregation> basicAggregation =
         Pair.of(
             STATS_AGGREGATION_FIRST_FIELD,
-            new StatsAggregation.Builder().script(script).build()._toAggregation());
+            new StatsAggregation.Builder().script(script).build().toAggregation());
 
     final Pair<String, Aggregation> aggregation =
         filterQuery == null
@@ -312,7 +312,7 @@ public class MinMaxStatsServiceOS extends AbstractMinMaxStatsService {
     if (format != null) {
       builder.format(format);
     }
-    return builder.build()._toAggregation();
+    return builder.build().toAggregation();
   }
 
   private MinMaxStatDto mapCrossFieldStatAggregationsToStatDto(final SearchResponse<?> response) {

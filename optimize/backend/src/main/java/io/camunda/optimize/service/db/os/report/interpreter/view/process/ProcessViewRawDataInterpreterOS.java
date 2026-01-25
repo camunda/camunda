@@ -224,7 +224,7 @@ public class ProcessViewRawDataInterpreterOS extends AbstractProcessViewRawDataI
           if (sorting.isPresent()
               && sorting.get().getBy().isPresent()
               && ProcessInstanceIndex.DURATION.equals(sorting.get().getBy().get())) {
-            processInstance.setDuration(Math.round(Double.parseDouble(hit.sort().get(0))));
+            processInstance.setDuration(Math.round(hit.sort().getFirst().doubleValue()));
           } else {
             final long currentTime = this.<Long>getField(hit, CURRENT_TIME);
             processInstance.setDuration(

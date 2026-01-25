@@ -385,7 +385,7 @@ public class ReportWriterOS implements ReportWriter {
 
     final UpdateResponse<ReportDefinitionUpdateDto> updateResponse =
         osClient.update(request, errorMessage);
-    if (updateResponse.shards().failed().intValue() > 0) {
+    if (updateResponse.shards().failed() > 0) {
       LOG.error(
           "Was not able to update report with id [{}] and name [{}].",
           updatedReport.getId(),

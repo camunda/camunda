@@ -10,6 +10,7 @@ package io.camunda.webapps.backup.repository.opensearch;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch.snapshot.SnapshotInfo;
 import org.opensearch.client.opensearch.snapshot.SnapshotShardFailure;
@@ -97,14 +98,8 @@ public class OpenSearchSnapshotInfo {
         .setSnapshot(snapshotInfo.snapshot())
         .setUuid(snapshotInfo.uuid())
         .setState(SnapshotState.valueOf(snapshotInfo.state()))
-        .setStartTimeInMillis(
-            snapshotInfo.startTimeInMillis() != null
-                ? Long.parseLong(snapshotInfo.startTimeInMillis())
-                : 0L)
-        .setEndTimeInMillis(
-            snapshotInfo.endTimeInMillis() != null
-                ? Long.parseLong(snapshotInfo.endTimeInMillis())
-                : 0)
+        .setStartTimeInMillis(Optional.ofNullable(snapshotInfo.startTimeInMillis()).orElse(0L))
+        .setEndTimeInMillis(Optional.ofNullable(snapshotInfo.endTimeInMillis()).orElse(0L))
         .setMetadata(snapshotInfo.metadata())
         .setFailures(snapshotInfo.failures());
   }

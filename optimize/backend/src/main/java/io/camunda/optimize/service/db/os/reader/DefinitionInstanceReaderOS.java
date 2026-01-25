@@ -59,7 +59,7 @@ public class DefinitionInstanceReaderOS extends DefinitionInstanceReader {
     final String defKeyAggName = "definitionKeyAggregation";
     final Aggregation definitionKeyAgg =
         termAggregation(resolveDefinitionKeyFieldForType(type), MAX_RESPONSE_SIZE_LIMIT)
-            ._toAggregation();
+            .toAggregation();
     final SearchRequest.Builder requestBuilder =
         new SearchRequest.Builder()
             .index(

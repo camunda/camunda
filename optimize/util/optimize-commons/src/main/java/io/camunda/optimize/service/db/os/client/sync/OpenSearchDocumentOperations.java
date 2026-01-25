@@ -34,6 +34,7 @@ import java.util.function.Function;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.ErrorCause;
 import org.opensearch.client.opensearch._types.OpenSearchException;
+import org.opensearch.client.opensearch._types.Refresh;
 import org.opensearch.client.opensearch._types.Script;
 import org.opensearch.client.opensearch._types.ShardFailure;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
@@ -376,10 +377,11 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
 
   public long deleteByQuery(final Query query, final boolean refresh, final String... indexes) {
     final List<String> listIndexes = List.of(indexes);
+    final Refresh refreshPolicy = refresh ? Refresh.True : Refresh.False;
     final DeleteByQueryRequest request =
         applyIndexPrefix(deleteByQueryRequestBuilder(listIndexes))
             .query(query)
-            .refresh(refresh)
+            .refresh(refreshPolicy)
             .build();
     final DeleteByQueryResponse response;
     Long status;
@@ -407,7 +409,7 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
     final UpdateByQueryRequest request =
         applyIndexPrefix(updateByQueryRequestBuilder(List.of(index)))
             .query(query)
-            .refresh(true)
+            .refresh(Refresh.True)
             .script(script)
             .build();
     final UpdateByQueryResponse response;

@@ -48,6 +48,9 @@ import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.Conflicts;
 import org.opensearch.client.opensearch._types.HealthStatus;
 import org.opensearch.client.opensearch._types.OpenSearchException;
+import org.opensearch.client.opensearch._types.Refresh;
+import org.opensearch.client.opensearch._types.Slices;
+import org.opensearch.client.opensearch._types.SlicesCalculation;
 import org.opensearch.client.opensearch._types.mapping.TypeMapping;
 import org.opensearch.client.opensearch.cluster.HealthResponse;
 import org.opensearch.client.opensearch.core.DeleteByQueryRequest;
@@ -60,10 +63,10 @@ import org.opensearch.client.opensearch.generic.Request;
 import org.opensearch.client.opensearch.generic.Requests;
 import org.opensearch.client.opensearch.indices.CreateIndexRequest;
 import org.opensearch.client.opensearch.indices.DeleteIndexRequest;
+import org.opensearch.client.opensearch.indices.IndexTemplate;
 import org.opensearch.client.opensearch.indices.PutIndexTemplateRequest;
 import org.opensearch.client.opensearch.indices.PutIndicesSettingsRequest;
 import org.opensearch.client.opensearch.indices.PutMappingRequest;
-import org.opensearch.client.opensearch.indices.get_index_template.IndexTemplate;
 import org.opensearch.client.opensearch.indices.get_index_template.IndexTemplateItem;
 import org.opensearch.client.opensearch.indices.put_index_template.IndexTemplateMapping;
 import org.slf4j.LoggerFactory;
@@ -74,7 +77,8 @@ public class OpensearchEngineClient implements SearchEngineClient {
       new SuppressLogger(LoggerFactory.getLogger(OpensearchEngineClient.class));
   private static final String OPERATE_DELETE_ARCHIVED_POLICY =
       "/schema/opensearch/create/policy/operate_delete_archived_indices.json";
-  private static final long AUTO_SLICES = 0; // see OS docs; 0 means auto
+  private static final Slices AUTO_SLICES =
+      Slices.builder().calculation(SlicesCalculation.Auto).build();
   private final ObjectReader objectReader;
   private final ObjectWriter objectWriter;
   private final OpenSearchClient client;
@@ -308,7 +312,7 @@ public class OpensearchEngineClient implements SearchEngineClient {
             .conflicts(Conflicts.Proceed)
             .index(indexName)
             .query(q -> q.matchAll(m -> m))
-            .refresh(true)
+            .refresh(Refresh.True)
             .build();
     try {
       client.indices().refresh(r -> r.index(indexName));

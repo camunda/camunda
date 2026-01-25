@@ -11,16 +11,12 @@ import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.store.opensearch.client.OpenSearchFailedShardsException;
 import java.io.IOException;
 import java.time.Duration;
-import java.util.List;
-import java.util.Map;
 import java.util.function.Predicate;
 import net.jodah.failsafe.Failsafe;
 import net.jodah.failsafe.RetryPolicy;
 import net.jodah.failsafe.function.CheckedSupplier;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.OpenSearchException;
-import org.opensearch.client.opensearch.tasks.GetTasksResponse;
-import org.opensearch.client.opensearch.tasks.Info;
 import org.slf4j.Logger;
 
 public abstract class OpenSearchRetryOperation extends OpenSearchSyncOperation {
@@ -94,13 +90,5 @@ public abstract class OpenSearchRetryOperation extends OpenSearchSyncOperation {
               + " seconds waiting.",
           e);
     }
-  }
-
-  protected GetTasksResponse task(final String id) throws IOException {
-    return openSearchClient.tasks().get(t -> t.taskId(id));
-  }
-
-  protected Map<String, Info> tasksWithActions(final List<String> actions) throws IOException {
-    return openSearchClient.tasks().list(l -> l.actions(actions)).tasks();
   }
 }
