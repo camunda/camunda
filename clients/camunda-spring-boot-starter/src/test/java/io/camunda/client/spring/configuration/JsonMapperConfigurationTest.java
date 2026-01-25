@@ -41,9 +41,10 @@ public class JsonMapperConfigurationTest {
   @Nested
   @SpringBootTest(
       classes = {
-        JsonMapperConfiguration.class,
         JacksonAutoConfiguration.class,
-        Jackson2AutoConfiguration.class
+        Jackson2AutoConfiguration.class,
+        JsonMapperConfiguration.class,
+        Jackson3JsonMapperConfiguration.class
       })
   class BothJacksonVersionsSpringBoot {
     @Autowired JsonMapper jsonMapper;
@@ -63,7 +64,12 @@ public class JsonMapperConfigurationTest {
   }
 
   @Nested
-  @SpringBootTest(classes = {JsonMapperConfiguration.class, JacksonAutoConfiguration.class})
+  @SpringBootTest(
+      classes = {
+        JacksonAutoConfiguration.class,
+        JsonMapperConfiguration.class,
+        Jackson3JsonMapperConfiguration.class
+      })
   class JacksonSpringBoot {
     @Autowired JsonMapper jsonMapper;
     @Autowired tools.jackson.databind.ObjectMapper objectMapper;
@@ -80,7 +86,7 @@ public class JsonMapperConfigurationTest {
   }
 
   @Nested
-  @SpringBootTest(classes = {JsonMapperConfiguration.class, Jackson2AutoConfiguration.class})
+  @SpringBootTest(classes = {Jackson2AutoConfiguration.class, JsonMapperConfiguration.class})
   class Jackson2SpringBoot {
     @Autowired com.fasterxml.jackson.databind.ObjectMapper objectMapper;
     @Autowired JsonMapper jsonMapper;
@@ -89,6 +95,17 @@ public class JsonMapperConfigurationTest {
     void shouldUseAutoConfiguredObjectMapper() {
       assertThat(objectMapper).isNotNull();
     }
+
+    @Test
+    void shouldUseCamundaJackson2ObjectMapper() {
+      assertThat(jsonMapper).isInstanceOf(CamundaObjectMapper.class);
+    }
+  }
+
+  @Nested
+  @SpringBootTest(classes = {DefaultJsonMapperConfiguration.class})
+  class DefaultSpringBoot {
+    @Autowired JsonMapper jsonMapper;
 
     @Test
     void shouldUseCamundaJackson2ObjectMapper() {

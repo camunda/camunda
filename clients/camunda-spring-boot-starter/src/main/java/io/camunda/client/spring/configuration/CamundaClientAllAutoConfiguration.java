@@ -48,6 +48,8 @@ import org.springframework.context.annotation.Import;
 @Import({
   AnnotationProcessorConfiguration.class,
   JsonMapperConfiguration.class,
+  Jackson3JsonMapperConfiguration.class,
+  DefaultJsonMapperConfiguration.class,
   CamundaBeanPostProcessorConfiguration.class
 })
 @EnableConfigurationProperties({CamundaClientProperties.class})

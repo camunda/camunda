@@ -50,6 +50,8 @@ import org.springframework.context.annotation.Bean;
   ExecutorServiceConfiguration.class,
   CamundaActuatorConfiguration.class,
   JsonMapperConfiguration.class,
+  Jackson3JsonMapperConfiguration.class,
+  DefaultJsonMapperConfiguration.class,
   CredentialsProviderConfiguration.class
 })
 @AutoConfigureBefore(CamundaClientAllAutoConfiguration.class)
