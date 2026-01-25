@@ -78,3 +78,29 @@ func TestCamundaCmdDifferentPort(t *testing.T) {
 	assert.Contains(t, javaOptsEnvVar, "-Dserver.port=8087")
 
 }
+
+func TestValidatePort(t *testing.T) {
+	tests := []struct {
+		name    string
+		port    int
+		wantErr bool
+	}{
+		{name: "valid lower bound", port: 1},
+		{name: "valid upper bound", port: 65535},
+		{name: "zero", port: 0, wantErr: true},
+		{name: "negative", port: -1, wantErr: true},
+		{name: "too large", port: 70000, wantErr: true},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			err := validatePort(tt.port)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
