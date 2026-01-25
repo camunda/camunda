@@ -12,6 +12,7 @@ import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.value.LongValue;
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
@@ -56,6 +57,12 @@ public class PersistedBatchOperationChunk extends UnpackedObject implements DbVa
 
   public List<Long> getItemKeys() {
     return itemKeysProp.stream().map(LongValue::getValue).toList();
+  }
+
+  public PersistedBatchOperationChunk setItemKeys(final Collection<Long> itemKeys) {
+    itemKeysProp.reset();
+    itemKeys.forEach(key -> itemKeysProp.add().setValue(key));
+    return this;
   }
 
   public PersistedBatchOperationChunk appendItemKey(final Long itemKey) {

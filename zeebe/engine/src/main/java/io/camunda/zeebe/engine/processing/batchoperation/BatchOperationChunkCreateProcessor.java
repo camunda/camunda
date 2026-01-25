@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationChunkRecord;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,9 +27,12 @@ public final class BatchOperationChunkCreateProcessor
       LoggerFactory.getLogger(BatchOperationChunkCreateProcessor.class);
 
   private final StateWriter stateWriter;
+  private final KeyGenerator keyGenerator;
 
-  public BatchOperationChunkCreateProcessor(final Writers writers) {
+  public BatchOperationChunkCreateProcessor(
+      final Writers writers, final KeyGenerator keyGenerator) {
     stateWriter = writers.state();
+    this.keyGenerator = keyGenerator;
   }
 
   @Override
@@ -40,6 +44,6 @@ public final class BatchOperationChunkCreateProcessor
         recordValue.getBatchOperationKey());
 
     stateWriter.appendFollowUpEvent(
-        command.getKey(), BatchOperationChunkIntent.CREATED, recordValue);
+        keyGenerator.nextKey(), BatchOperationChunkIntent.CREATED, recordValue);
   }
 }

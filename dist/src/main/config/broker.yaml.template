@@ -1380,12 +1380,6 @@
           # PS: Default value is 100 as reasonable tradeoff between number of records and exporter performance.
           # chunkSize: 100
 
-          # The items of a batch operation are stored in a separate column family in the RocksDB database.
-          # To keep the single records/values of the RocksDb to a reasonable size, the items are split into multiple chunks.
-          # Setting this value to a higher value will result in larger chunks, which can lead to a more inefficient RocksDB cache.
-          # The default value 3500 means that each chunk record will be smaller than the default rocksdb block size of 32KB.
-          # dbChunkSize: 3500
-
           # To initialize a batch operation, the engine will query the secondaryDb for relevant items using the given filter object.
           # Since the secondaryDb uses paginated queries, this setting allows to configure the maximum number of items that can be returned in a single query.
           # The higher the value, the more items can be returned in a single query, which can lead to better performance but also to memory issues when the pages are too large.
