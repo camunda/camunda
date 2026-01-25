@@ -15,6 +15,7 @@ import io.camunda.management.backups.BackupInfo;
 import io.camunda.management.backups.PartitionBackupInfo;
 import io.camunda.management.backups.StateCode;
 import io.camunda.management.backups.TakeBackupRuntimeResponse;
+import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse.PartitionBackupRange;
 import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse.PartitionCheckpointState;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator;
@@ -125,6 +126,10 @@ public interface BackupAcceptance {
                     .asInstanceOf(InstanceOfAssertFactories.type(FeignException.class))
                     .extracting(FeignException::status)
                     .isEqualTo(404));
+
+    Awaitility.await("Backup range reflects deletion")
+        .timeout(Duration.ofSeconds(30))
+        .untilAsserted(() -> assertThat(actuator.state().getRanges()).isEmpty());
   }
 
   @Test
@@ -160,6 +165,27 @@ public interface BackupAcceptance {
                         PartitionCheckpointState::checkpointId,
                         PartitionCheckpointState::checkpointType)
                     .containsExactly(backupId, CheckpointType.MANUAL_BACKUP));
+
+    Awaitility.await("until backup range is created")
+        .atMost(Duration.ofSeconds(30))
+        .untilAsserted(
+            () -> {
+              final var ranges = actuator.state().getRanges();
+              assertThat(ranges)
+                  .describedAs("Backup ranges should be unique per partition")
+                  .extracting(PartitionBackupRange::partitionId)
+                  .doesNotHaveDuplicates();
+              assertThat(ranges)
+                  .describedAs("All backup ranges should start and end with the same backup")
+                  .allSatisfy(
+                      range -> {
+                        assertThat(range.first().checkpointId()).isEqualTo(backupId);
+                        assertThat(range.first().checkpointType())
+                            .isEqualTo(CheckpointType.MANUAL_BACKUP);
+                        assertThat(range.first()).isEqualTo(range.last());
+                        assertThat(range.missingCheckpoints()).isEmpty();
+                      });
+            });
   }
 
   @Test

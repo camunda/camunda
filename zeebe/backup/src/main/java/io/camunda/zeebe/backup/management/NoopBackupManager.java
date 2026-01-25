@@ -9,6 +9,7 @@ package io.camunda.zeebe.backup.management;
 
 import io.camunda.zeebe.backup.api.BackupDescriptor;
 import io.camunda.zeebe.backup.api.BackupManager;
+import io.camunda.zeebe.backup.api.BackupRangeStatus;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.processing.state.CheckpointState;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -75,6 +76,12 @@ public class NoopBackupManager implements BackupManager {
       final BackupDescriptor backupDescriptor,
       final String failureReason) {
     LOG.warn("Attempted to create failed backup, but cannot do it. {}", errorMessage);
+  }
+
+  @Override
+  public ActorFuture<Collection<BackupRangeStatus>> getBackupRangeStatus() {
+    return CompletableActorFuture.completedExceptionally(
+        new UnsupportedOperationException(errorMessage));
   }
 
   @Override
