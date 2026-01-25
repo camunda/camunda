@@ -240,7 +240,7 @@ jobs:
         id: wait_checks
         if: steps.get_required_checks.outputs.checks_pattern != ''
         # Using lewagon/wait-on-check-action - approved in https://github.com/camunda/github-actions-recipes
-        uses: lewagon/wait-on-check-action@v1.4.1
+        uses: lewagon/wait-on-check-action@v1.5.0
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           repo-token: ${{ secrets.GITHUB_TOKEN }}
