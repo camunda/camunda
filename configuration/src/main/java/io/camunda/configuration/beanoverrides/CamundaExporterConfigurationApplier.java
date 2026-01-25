@@ -116,6 +116,7 @@ public final class CamundaExporterConfigurationApplier {
     final IndexConfiguration target = exporterConfiguration.getIndex();
     target.setNumberOfShards(source.getNumberOfShards());
     target.setNumberOfReplicas(source.getNumberOfReplicas());
+    target.setRefreshInterval(source.getRefreshInterval());
     target.setVariableSizeThreshold(source.getVariableSizeThreshold());
     if (source.getTemplatePriority() != null) {
       target.setTemplatePriority(source.getTemplatePriority());
@@ -125,6 +126,9 @@ public final class CamundaExporterConfigurationApplier {
     }
     if (!source.getNumberOfShardsPerIndex().isEmpty()) {
       target.setShardsByIndexName(source.getNumberOfShardsPerIndex());
+    }
+    if (!source.getRefreshIntervalByIndexName().isEmpty()) {
+      target.setRefreshIntervalByIndexName(source.getRefreshIntervalByIndexName());
     }
   }
 

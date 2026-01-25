@@ -41,6 +41,9 @@ public abstract class DocumentBasedSecondaryStorageDatabase
   /** How many replicas Elasticsearch uses for all indices. */
   private int numberOfReplicas = 0;
 
+  /** What default refresh interval we will use for all indices */
+  private String refreshInterval;
+
   /** Variable size threshold for the database configured as secondary storage. */
   private int variableSizeThreshold = 8191;
 
@@ -49,6 +52,9 @@ public abstract class DocumentBasedSecondaryStorageDatabase
 
   /** Per-index shard overrides. */
   private Map<String, Integer> numberOfShardsPerIndex = new HashMap<>();
+
+  /** Per-index refresh interval overrides. */
+  private Map<String, String> refreshIntervalByIndexName = new HashMap<>();
 
   /** Template priority for index templates. */
   private Integer templatePriority;
@@ -317,6 +323,14 @@ public abstract class DocumentBasedSecondaryStorageDatabase
     this.numberOfReplicas = numberOfReplicas;
   }
 
+  public String getRefreshInterval() {
+    return refreshInterval;
+  }
+
+  public void setRefreshInterval(final String refreshInterval) {
+    this.refreshInterval = refreshInterval;
+  }
+
   public int getVariableSizeThreshold() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
         prefix() + ".variable-size-threshold",
@@ -354,6 +368,14 @@ public abstract class DocumentBasedSecondaryStorageDatabase
 
   public void setNumberOfShardsPerIndex(final Map<String, Integer> numberOfShardsPerIndex) {
     this.numberOfShardsPerIndex = numberOfShardsPerIndex;
+  }
+
+  public Map<String, String> getRefreshIntervalByIndexName() {
+    return refreshIntervalByIndexName;
+  }
+
+  public void setRefreshIntervalByIndexName(final Map<String, String> refreshIntervalByIndexName) {
+    this.refreshIntervalByIndexName = refreshIntervalByIndexName;
   }
 
   public Integer getTemplatePriority() {

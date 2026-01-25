@@ -58,6 +58,7 @@ public class SearchEngineIndexPropertiesOverride {
     override.setNumberOfShards(database.getNumberOfShards());
     override.setNumberOfReplicas(database.getNumberOfReplicas());
     override.setVariableSizeThreshold(database.getVariableSizeThreshold());
+    override.setRefreshInterval(database.getRefreshInterval());
 
     override.setTemplatePriority(database.getTemplatePriority());
     if (!database.getNumberOfReplicasPerIndex().isEmpty()) {
@@ -66,6 +67,10 @@ public class SearchEngineIndexPropertiesOverride {
     if (!database.getNumberOfShardsPerIndex().isEmpty()) {
       override.setShardsByIndexName(database.getNumberOfShardsPerIndex());
     }
+    if (!database.getRefreshIntervalByIndexName().isEmpty()) {
+      override.setRefreshIntervalByIndexName(database.getRefreshIntervalByIndexName());
+    }
+
     return override;
   }
 }

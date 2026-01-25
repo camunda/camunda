@@ -9,6 +9,7 @@ package io.camunda.qa.util.multidb;
 
 import static io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineSchemaManagerProperties.CREATE_SCHEMA_PROPERTY;
 
+import io.camunda.configuration.DocumentBasedSecondaryStorageDatabase;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.exporter.CamundaExporter;
 import io.camunda.zeebe.exporter.ElasticsearchExporter;
@@ -78,6 +79,7 @@ public class MultiDbConfigurator {
                   .getElasticsearch()
                   .getHistory()
                   .setPolicyName(indexPrefix + "-ilm");
+              overrideRefreshInterval(cfg.getData().getSecondaryStorage().getElasticsearch());
             });
     testApplication.withExporter(
         CamundaExporter.class.getSimpleName().toLowerCase(),
@@ -194,6 +196,7 @@ public class MultiDbConfigurator {
                   .setPolicyName(indexPrefix + "-ilm");
               cfg.getData().getSecondaryStorage().getOpensearch().setUsername(userName);
               cfg.getData().getSecondaryStorage().getOpensearch().setPassword(userPassword);
+              overrideRefreshInterval(cfg.getData().getSecondaryStorage().getOpensearch());
             });
 
     testApplication.withExporter(
@@ -327,5 +330,10 @@ public class MultiDbConfigurator {
       sb.append(chars.charAt(random.nextInt(chars.length())));
     }
     return sb.toString();
+  }
+
+  private static void overrideRefreshInterval(final DocumentBasedSecondaryStorageDatabase db) {
+    // make refresh interval lower so tests can run a bit faster
+    db.setRefreshIntervalByIndexName(Map.of("list-view", "1s"));
   }
 }
