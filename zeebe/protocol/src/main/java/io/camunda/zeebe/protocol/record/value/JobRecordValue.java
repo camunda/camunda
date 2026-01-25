@@ -136,6 +136,11 @@ public interface JobRecordValue
    */
   Set<String> getTags();
 
+  /**
+   * @return true if the job is part of a user task migration
+   */
+  boolean isJobToUserTaskMigration();
+
   @Value.Immutable
   @ImmutableProtocol(builder = ImmutableJobResultValue.Builder.class)
   interface JobResultValue {
