@@ -7,7 +7,7 @@
  */
 
 import {test} from 'fixtures';
-import {expect} from '@playwright/test';
+import {expect, Locator, Page} from '@playwright/test';
 import {deploy, createInstances, createSingleInstance} from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToApp} from '@pages/UtilitiesPage';
@@ -21,6 +21,12 @@ let processA: ProcessInstance;
 let processB_v_1: ProcessInstance;
 let processB_v_2: ProcessInstance;
 let scrollingInstances: ProcessInstance[];
+
+async function scrollUntilElementIsVisible(page: Page, locator: Locator) {
+  while (!(await locator.isVisible())) {
+    await page.mouse.wheel(0, 600);
+  }
+}
 
 test.beforeAll(async () => {
   await deploy([
@@ -293,24 +299,27 @@ test.describe('Process Instances Table', () => {
     });
 
     await test.step('Scroll to 100th instance', async () => {
-      await page
-        .getByRole('row', {name: `Instance ${descendingInstanceIds[49]}`})
-        .scrollIntoViewIfNeeded();
+      await scrollUntilElementIsVisible(
+        page,
+        page.getByRole('row', {name: `Instance ${descendingInstanceIds[50]}`}),
+      );
 
       await expect(instanceRows).toHaveCount(100);
     });
 
     await test.step('Scroll to 150th instance', async () => {
-      await page
-        .getByRole('row', {name: `Instance ${descendingInstanceIds[99]}`})
-        .scrollIntoViewIfNeeded();
+      await scrollUntilElementIsVisible(
+        page,
+        page.getByRole('row', {name: `Instance ${descendingInstanceIds[100]}`}),
+      );
       await expect(instanceRows).toHaveCount(150);
     });
 
     await test.step('Scroll to 200th instance', async () => {
-      await page
-        .getByRole('row', {name: `Instance ${descendingInstanceIds[149]}`})
-        .scrollIntoViewIfNeeded();
+      await scrollUntilElementIsVisible(
+        page,
+        page.getByRole('row', {name: `Instance ${descendingInstanceIds[150]}`}),
+      );
       await sleep(500);
       await expect(instanceRows).toHaveCount(200);
       await expect
@@ -319,9 +328,10 @@ test.describe('Process Instances Table', () => {
       await expect
         .poll(() => instanceRows.nth(199).innerText())
         .toContain(descendingInstanceIds[199].toString());
-      await page
-        .getByRole('row', {name: `Instance ${descendingInstanceIds[199]}`})
-        .scrollIntoViewIfNeeded();
+      await scrollUntilElementIsVisible(
+        page,
+        page.getByRole('row', {name: `Instance ${descendingInstanceIds[200]}`}),
+      );
       await expect(instanceRows).toHaveCount(200);
     });
 
