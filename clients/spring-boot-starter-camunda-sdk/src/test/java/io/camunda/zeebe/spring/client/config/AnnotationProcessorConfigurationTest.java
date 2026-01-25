@@ -27,12 +27,12 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @SpringBootTest(classes = AnnotationProcessorConfiguration.class)
 public class AnnotationProcessorConfigurationTest {
   // required to auto-wire with the job worker annotation processor configuration
-  @MockBean JobWorkerManager jobWorkerManager;
+  @MockitoBean JobWorkerManager jobWorkerManager;
 
   @Autowired ZeebeAnnotationProcessorRegistry registry;
 
