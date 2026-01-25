@@ -50,9 +50,9 @@ public class JsonMapperConfiguration {
     if (objectMapper == null && jackson3ObjectMapper == null) {
       return new CamundaObjectMapper();
     }
-    if (jackson3ObjectMapper != null) {
-      return new CamundaJackson3ObjectMapper(jackson3ObjectMapper);
+    if (objectMapper != null) {
+      return new CamundaObjectMapper(objectMapper.copy());
     }
-    return new CamundaObjectMapper(objectMapper.copy());
+    return new CamundaJackson3ObjectMapper(jackson3ObjectMapper);
   }
 }

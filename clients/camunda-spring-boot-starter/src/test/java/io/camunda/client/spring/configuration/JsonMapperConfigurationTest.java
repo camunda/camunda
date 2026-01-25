@@ -39,6 +39,30 @@ import org.springframework.context.annotation.Configuration;
 public class JsonMapperConfigurationTest {
 
   @Nested
+  @SpringBootTest(
+      classes = {
+        JsonMapperConfiguration.class,
+        JacksonAutoConfiguration.class,
+        Jackson2AutoConfiguration.class
+      })
+  class BothJacksonVersionsSpringBoot {
+    @Autowired JsonMapper jsonMapper;
+    @Autowired tools.jackson.databind.ObjectMapper objectMapper;
+    @Autowired com.fasterxml.jackson.databind.ObjectMapper jackson2ObjectMapper;
+
+    @Test
+    void shouldUseAutoConfiguredObjectMapper() {
+      assertThat(objectMapper).isNotNull();
+      assertThat(jackson2ObjectMapper).isNotNull();
+    }
+
+    @Test
+    void shouldUseCamundaObjectMapper() {
+      assertThat(jsonMapper).isInstanceOf(CamundaObjectMapper.class);
+    }
+  }
+
+  @Nested
   @SpringBootTest(classes = {JsonMapperConfiguration.class, JacksonAutoConfiguration.class})
   class JacksonSpringBoot {
     @Autowired JsonMapper jsonMapper;
