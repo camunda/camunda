@@ -11,6 +11,8 @@ import {
   CheckmarkFilled as BaseCheckmarkFilled,
   ErrorFilled as BaseErrorFilled,
 } from "@carbon/react/icons";
+import { Column, Grid as CarbonGrid } from "@carbon/react";
+import { heading01, spacing05 } from "@carbon/elements";
 
 const OperationLogName = styled.div`
   display: flex;
@@ -26,4 +28,31 @@ const ErrorIcon = styled(BaseErrorFilled)`
   fill: var(--cds-support-error);
 `;
 
-export { OperationLogName, SuccessIcon, ErrorIcon };
+const Grid = styled(CarbonGrid)`
+  padding: 0;
+`;
+
+const ColumnRightPadding = styled(Column)`
+  margin-right: var(--cds-spacing-05);
+`;
+
+const Title = styled.h3`
+  ${heading01};
+  padding-bottom: ${spacing05};
+`;
+
+const CenteredRow = styled.div`
+  display: flex;
+  justify-content: center;
+  width: 100%;
+`;
+
+export {
+  OperationLogName,
+  SuccessIcon,
+  ErrorIcon,
+  Grid,
+  ColumnRightPadding,
+  Title,
+  CenteredRow,
+};
