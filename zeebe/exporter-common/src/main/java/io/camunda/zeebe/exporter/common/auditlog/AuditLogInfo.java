@@ -48,65 +48,8 @@ public record AuditLogInfo(
     AuditLogActor actor,
     Optional<AuditLogTenant> tenant) {
 
-  // Static map for ValueType to AuditLogOperationCategory mappings
-  private static final Map<ValueType, AuditLogOperationCategory> OPERATION_CATEGORY_MAP =
-      Map.ofEntries(
-          Map.entry(
-              ValueType.BATCH_OPERATION_CREATION, AuditLogOperationCategory.DEPLOYED_RESOURCES),
-          Map.entry(
-              ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
-              AuditLogOperationCategory.DEPLOYED_RESOURCES),
-          Map.entry(ValueType.DECISION_EVALUATION, AuditLogOperationCategory.DEPLOYED_RESOURCES),
-          Map.entry(ValueType.DECISION_REQUIREMENTS, AuditLogOperationCategory.DEPLOYED_RESOURCES),
-          Map.entry(ValueType.DECISION, AuditLogOperationCategory.DEPLOYED_RESOURCES),
-          Map.entry(ValueType.FORM, AuditLogOperationCategory.DEPLOYED_RESOURCES),
-          Map.entry(ValueType.INCIDENT, AuditLogOperationCategory.DEPLOYED_RESOURCES),
-          Map.entry(
-              ValueType.PROCESS_INSTANCE_CREATION, AuditLogOperationCategory.DEPLOYED_RESOURCES),
-          Map.entry(
-              ValueType.PROCESS_INSTANCE_MIGRATION, AuditLogOperationCategory.DEPLOYED_RESOURCES),
-          Map.entry(
-              ValueType.PROCESS_INSTANCE_MODIFICATION,
-              AuditLogOperationCategory.DEPLOYED_RESOURCES),
-          Map.entry(ValueType.PROCESS, AuditLogOperationCategory.DEPLOYED_RESOURCES),
-          Map.entry(ValueType.PROCESS_INSTANCE, AuditLogOperationCategory.DEPLOYED_RESOURCES),
-          Map.entry(ValueType.RESOURCE, AuditLogOperationCategory.DEPLOYED_RESOURCES),
-          Map.entry(ValueType.VARIABLE, AuditLogOperationCategory.DEPLOYED_RESOURCES),
-          Map.entry(ValueType.AUTHORIZATION, AuditLogOperationCategory.ADMIN),
-          Map.entry(ValueType.GROUP, AuditLogOperationCategory.ADMIN),
-          Map.entry(ValueType.MAPPING_RULE, AuditLogOperationCategory.ADMIN),
-          Map.entry(ValueType.ROLE, AuditLogOperationCategory.ADMIN),
-          Map.entry(ValueType.TENANT, AuditLogOperationCategory.ADMIN),
-          Map.entry(ValueType.USER, AuditLogOperationCategory.ADMIN),
-          Map.entry(ValueType.USER_TASK, AuditLogOperationCategory.USER_TASKS));
-
-  // Static map for ValueType to AuditLogEntityType mappings
-  private static final Map<ValueType, AuditLogEntityType> ENTITY_TYPE_MAP =
-      Map.ofEntries(
-          Map.entry(ValueType.AUTHORIZATION, AuditLogEntityType.AUTHORIZATION),
-          Map.entry(ValueType.PROCESS_INSTANCE, AuditLogEntityType.PROCESS_INSTANCE),
-          Map.entry(ValueType.PROCESS_INSTANCE_CREATION, AuditLogEntityType.PROCESS_INSTANCE),
-          Map.entry(ValueType.PROCESS_INSTANCE_MODIFICATION, AuditLogEntityType.PROCESS_INSTANCE),
-          Map.entry(ValueType.PROCESS_INSTANCE_MIGRATION, AuditLogEntityType.PROCESS_INSTANCE),
-          Map.entry(ValueType.INCIDENT, AuditLogEntityType.INCIDENT),
-          Map.entry(ValueType.VARIABLE, AuditLogEntityType.VARIABLE),
-          Map.entry(ValueType.DECISION, AuditLogEntityType.DECISION),
-          Map.entry(ValueType.DECISION_EVALUATION, AuditLogEntityType.DECISION),
-          Map.entry(ValueType.DECISION_REQUIREMENTS, AuditLogEntityType.RESOURCE),
-          Map.entry(ValueType.BATCH_OPERATION_CREATION, AuditLogEntityType.BATCH),
-          Map.entry(ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT, AuditLogEntityType.BATCH),
-          Map.entry(ValueType.USER, AuditLogEntityType.USER),
-          Map.entry(ValueType.MAPPING_RULE, AuditLogEntityType.MAPPING_RULE),
-          Map.entry(ValueType.GROUP, AuditLogEntityType.GROUP),
-          Map.entry(ValueType.ROLE, AuditLogEntityType.ROLE),
-          Map.entry(ValueType.TENANT, AuditLogEntityType.TENANT),
-          Map.entry(ValueType.FORM, AuditLogEntityType.RESOURCE),
-          Map.entry(ValueType.PROCESS, AuditLogEntityType.RESOURCE),
-          Map.entry(ValueType.RESOURCE, AuditLogEntityType.RESOURCE),
-          Map.entry(ValueType.USER_TASK, AuditLogEntityType.USER_TASK));
-
   // Static map for Intent to AuditLogOperationType mappings
-  private static final Map<Intent, AuditLogOperationType> OPERATION_TYPE_MAP =
+  static final Map<Intent, AuditLogOperationType> OPERATION_TYPE_MAP =
       Map.ofEntries(
           // Authorization
           Map.entry(AuthorizationIntent.CREATED, AuditLogOperationType.CREATE),
@@ -206,6 +149,61 @@ public record AuditLogInfo(
           // Variable
           Map.entry(VariableIntent.CREATED, AuditLogOperationType.CREATE),
           Map.entry(VariableIntent.UPDATED, AuditLogOperationType.UPDATE));
+  // Static map for ValueType to AuditLogOperationCategory mappings
+  private static final Map<ValueType, AuditLogOperationCategory> OPERATION_CATEGORY_MAP =
+      Map.ofEntries(
+          Map.entry(
+              ValueType.BATCH_OPERATION_CREATION, AuditLogOperationCategory.DEPLOYED_RESOURCES),
+          Map.entry(
+              ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
+              AuditLogOperationCategory.DEPLOYED_RESOURCES),
+          Map.entry(ValueType.DECISION_EVALUATION, AuditLogOperationCategory.DEPLOYED_RESOURCES),
+          Map.entry(ValueType.DECISION_REQUIREMENTS, AuditLogOperationCategory.DEPLOYED_RESOURCES),
+          Map.entry(ValueType.DECISION, AuditLogOperationCategory.DEPLOYED_RESOURCES),
+          Map.entry(ValueType.FORM, AuditLogOperationCategory.DEPLOYED_RESOURCES),
+          Map.entry(ValueType.INCIDENT, AuditLogOperationCategory.DEPLOYED_RESOURCES),
+          Map.entry(
+              ValueType.PROCESS_INSTANCE_CREATION, AuditLogOperationCategory.DEPLOYED_RESOURCES),
+          Map.entry(
+              ValueType.PROCESS_INSTANCE_MIGRATION, AuditLogOperationCategory.DEPLOYED_RESOURCES),
+          Map.entry(
+              ValueType.PROCESS_INSTANCE_MODIFICATION,
+              AuditLogOperationCategory.DEPLOYED_RESOURCES),
+          Map.entry(ValueType.PROCESS, AuditLogOperationCategory.DEPLOYED_RESOURCES),
+          Map.entry(ValueType.PROCESS_INSTANCE, AuditLogOperationCategory.DEPLOYED_RESOURCES),
+          Map.entry(ValueType.RESOURCE, AuditLogOperationCategory.DEPLOYED_RESOURCES),
+          Map.entry(ValueType.VARIABLE, AuditLogOperationCategory.DEPLOYED_RESOURCES),
+          Map.entry(ValueType.AUTHORIZATION, AuditLogOperationCategory.ADMIN),
+          Map.entry(ValueType.GROUP, AuditLogOperationCategory.ADMIN),
+          Map.entry(ValueType.MAPPING_RULE, AuditLogOperationCategory.ADMIN),
+          Map.entry(ValueType.ROLE, AuditLogOperationCategory.ADMIN),
+          Map.entry(ValueType.TENANT, AuditLogOperationCategory.ADMIN),
+          Map.entry(ValueType.USER, AuditLogOperationCategory.ADMIN),
+          Map.entry(ValueType.USER_TASK, AuditLogOperationCategory.USER_TASKS));
+  // Static map for ValueType to AuditLogEntityType mappings
+  private static final Map<ValueType, AuditLogEntityType> ENTITY_TYPE_MAP =
+      Map.ofEntries(
+          Map.entry(ValueType.AUTHORIZATION, AuditLogEntityType.AUTHORIZATION),
+          Map.entry(ValueType.PROCESS_INSTANCE, AuditLogEntityType.PROCESS_INSTANCE),
+          Map.entry(ValueType.PROCESS_INSTANCE_CREATION, AuditLogEntityType.PROCESS_INSTANCE),
+          Map.entry(ValueType.PROCESS_INSTANCE_MODIFICATION, AuditLogEntityType.PROCESS_INSTANCE),
+          Map.entry(ValueType.PROCESS_INSTANCE_MIGRATION, AuditLogEntityType.PROCESS_INSTANCE),
+          Map.entry(ValueType.INCIDENT, AuditLogEntityType.INCIDENT),
+          Map.entry(ValueType.VARIABLE, AuditLogEntityType.VARIABLE),
+          Map.entry(ValueType.DECISION, AuditLogEntityType.DECISION),
+          Map.entry(ValueType.DECISION_EVALUATION, AuditLogEntityType.DECISION),
+          Map.entry(ValueType.DECISION_REQUIREMENTS, AuditLogEntityType.RESOURCE),
+          Map.entry(ValueType.BATCH_OPERATION_CREATION, AuditLogEntityType.BATCH),
+          Map.entry(ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT, AuditLogEntityType.BATCH),
+          Map.entry(ValueType.USER, AuditLogEntityType.USER),
+          Map.entry(ValueType.MAPPING_RULE, AuditLogEntityType.MAPPING_RULE),
+          Map.entry(ValueType.GROUP, AuditLogEntityType.GROUP),
+          Map.entry(ValueType.ROLE, AuditLogEntityType.ROLE),
+          Map.entry(ValueType.TENANT, AuditLogEntityType.TENANT),
+          Map.entry(ValueType.FORM, AuditLogEntityType.RESOURCE),
+          Map.entry(ValueType.PROCESS, AuditLogEntityType.RESOURCE),
+          Map.entry(ValueType.RESOURCE, AuditLogEntityType.RESOURCE),
+          Map.entry(ValueType.USER_TASK, AuditLogEntityType.USER_TASK));
 
   public static AuditLogInfo of(final Record<?> record) {
     return new AuditLogInfo(

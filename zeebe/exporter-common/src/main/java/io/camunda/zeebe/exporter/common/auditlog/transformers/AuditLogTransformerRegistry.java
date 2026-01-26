@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.exporter.common.auditlog.transformers;
 
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -40,7 +41,7 @@ public final class AuditLogTransformerRegistry {
    * @return list of new transformer instances for partition 1
    */
   public static List<AuditLogTransformer<?>> createPartitionSpecificTransformers() {
-    return getPartitionSpecificTransformerSuppliers().stream()
+    return getSourcePartitionTransformerSuppliers().stream()
         .map(Supplier::get)
         .collect(Collectors.toList());
   }
@@ -63,6 +64,7 @@ public final class AuditLogTransformerRegistry {
    *
    * @return list of all new transformer instances
    */
+  @VisibleForTesting
   public static List<AuditLogTransformer<?>> createAllTransformers() {
     return getAllTransformerSuppliers().stream().map(Supplier::get).collect(Collectors.toList());
   }
@@ -73,7 +75,7 @@ public final class AuditLogTransformerRegistry {
    *
    * @return list of transformer suppliers for partition 1
    */
-  public static List<Supplier<AuditLogTransformer<?>>> getPartitionSpecificTransformerSuppliers() {
+  public static List<Supplier<AuditLogTransformer<?>>> getSourcePartitionTransformerSuppliers() {
     return List.of(
         AuthorizationAuditLogTransformer::new,
         BatchOperationCreationAuditLogTransformer::new,
@@ -117,9 +119,9 @@ public final class AuditLogTransformerRegistry {
    *
    * @return list of all transformer suppliers
    */
-  public static List<Supplier<AuditLogTransformer<?>>> getAllTransformerSuppliers() {
+  private static List<Supplier<AuditLogTransformer<?>>> getAllTransformerSuppliers() {
     final List<Supplier<AuditLogTransformer<?>>> allSuppliers = new ArrayList<>();
-    allSuppliers.addAll(getPartitionSpecificTransformerSuppliers());
+    allSuppliers.addAll(getSourcePartitionTransformerSuppliers());
     allSuppliers.addAll(getAllPartitionTransformerSuppliers());
     return Collections.unmodifiableList(allSuppliers);
   }
