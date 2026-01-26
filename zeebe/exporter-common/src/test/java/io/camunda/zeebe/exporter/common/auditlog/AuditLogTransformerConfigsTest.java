@@ -5,12 +5,14 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.exporter.common.auditlog.transformers;
+package io.camunda.zeebe.exporter.common.auditlog;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.exporter.common.auditlog.AuditLogInfo;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformer.TransformerConfig;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformerConfigs;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformerRegistry;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import java.lang.reflect.Field;
@@ -55,7 +57,7 @@ class AuditLogTransformerConfigsTest {
     // Remove intents with special handling
     allConfiguredIntents.removeAll(INTENTS_WITH_SPECIAL_HANDLING);
 
-    final Map<Intent, ?> operationTypeMap = getOperationTypeMap();
+    final Map<Intent, ?> operationTypeMap = AuditLogInfo.OPERATION_TYPE_MAP;
 
     for (final Intent intent : allConfiguredIntents) {
       assertThat(operationTypeMap)
@@ -125,13 +127,6 @@ class AuditLogTransformerConfigsTest {
         .map(config -> Arguments.of(Named.of(getConfigName(config), config)));
   }
 
-  private static Stream<Arguments> allTransformers() {
-    return getAllTransformers().stream()
-        .map(
-            transformer ->
-                Arguments.of(Named.of(transformer.getClass().getSimpleName(), transformer)));
-  }
-
   private static List<TransformerConfig> getAllTransformerConfigs() {
     final List<TransformerConfig> configs = new ArrayList<>();
 
@@ -154,17 +149,6 @@ class AuditLogTransformerConfigsTest {
 
   private static List<AuditLogTransformer<?>> getAllTransformers() {
     return AuditLogTransformerRegistry.createAllTransformers();
-  }
-
-  @SuppressWarnings("unchecked")
-  private static Map<Intent, ?> getOperationTypeMap() {
-    try {
-      final Field field = AuditLogInfo.class.getDeclaredField("OPERATION_TYPE_MAP");
-      field.setAccessible(true);
-      return (Map<Intent, ?>) field.get(null);
-    } catch (final NoSuchFieldException | IllegalAccessException e) {
-      throw new RuntimeException("Failed to access OPERATION_TYPE_MAP in AuditLogInfo", e);
-    }
   }
 
   private static String getConfigName(final TransformerConfig config) {
