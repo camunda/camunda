@@ -21,24 +21,20 @@ test.beforeAll(async ({request}) => {
       .poll(
         async () => {
           const response = await request.post(
-            `${config.endpoint}/api/process-instances`,
+            `${config.endpoint}/v2/process-instances/search`,
             {
               data: {
-                query: {
-                  active: true,
-                  running: true,
-                  incidents: true,
-                  completed: true,
-                  finished: true,
-                  canceled: true,
-                  ids: instanceIds,
+                filter: {
+                  processInstanceKey: {$in: instanceIds},
                 },
-                pageSize: 50,
+                page: {
+                  limit: 50,
+                },
               },
             },
           );
           const instances = await response.json();
-          return instances.totalCount;
+          return instances.page.totalItems;
         },
         {timeout: SETUP_WAITING_TIME},
       )

@@ -38,26 +38,21 @@ test.describe('variables and incidents', () => {
         ],
         batchOperations: {items: [], page: {totalItems: 0}},
         processInstances: {
-          processInstances: [
+          items: [
             {
-              id: '2251799813725328',
-              processId: '2251799813688192',
-              processName: 'order-process',
-              processVersion: 2,
+              processInstanceKey: '2251799813725328',
+              processDefinitionKey: '2251799813688192',
+              processDefinitionName: 'order-process',
+              processDefinitionVersion: 2,
               startDate: '2023-09-29T07:16:22.701+0000',
-              endDate: null,
-              state: 'INCIDENT',
-              bpmnProcessId: 'order-process',
-              hasActiveOperation: false,
-              operations: [],
-              parentInstanceId: null,
-              rootInstanceId: null,
-              callHierarchy: [],
-              sortValues: [],
+              endDate: undefined,
+              state: 'ACTIVE',
+              processDefinitionId: 'order-process',
               tenantId: '<default>',
+              hasIncident: true,
             },
           ],
-          totalCount: 1,
+          page: {totalItems: 1},
         },
         statisticsV2: {
           items: [

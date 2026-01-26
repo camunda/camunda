@@ -13,7 +13,7 @@ import {
   waitForElementToBeRemoved,
 } from 'modules/testing-library';
 import {
-  mockProcessStatisticsV2 as mockProcessStatistics,
+  mockProcessStatistics as mockProcessStatistics,
   mockMultipleStatesStatistics,
   mockProcessXML,
   mockProcessInstancesV2,
