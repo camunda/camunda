@@ -8,7 +8,7 @@
 
 import {getAuditLog, queryAuditLogs} from './audit-log';
 import {queryUserTaskAuditLogs} from './user-task';
-import {deleteProcessInstance} from './process-instance';
+import {deleteProcessInstance, modifyProcessInstance} from './process-instance';
 import {createDeployment, deleteResource, getResource, getResourceContent} from './resource';
 import {
 	getIncidentProcessInstanceStatisticsByError,
@@ -20,6 +20,7 @@ const endpoints = {
 	getAuditLog,
 	queryUserTaskAuditLogs,
 	deleteProcessInstance,
+	modifyProcessInstance,
 	createDeployment,
 	deleteResource,
 	getResource,
@@ -64,7 +65,12 @@ export {
 	type QueryUserTaskAuditLogsResponseBody,
 } from './user-task';
 
-export {deleteProcessInstanceRequestBodySchema, type DeleteProcessInstanceRequestBody} from './process-instance';
+export {
+	deleteProcessInstanceRequestBodySchema,
+	modifyProcessInstanceRequestBodySchema,
+	type DeleteProcessInstanceRequestBody,
+	type ModifyProcessInstanceRequestBody,
+} from './process-instance';
 
 export {
 	createDeploymentResponseBodySchema,

@@ -22,5 +22,59 @@ const deleteProcessInstance: Endpoint<Pick<ProcessInstance, 'processInstanceKey'
 	getUrl: ({processInstanceKey}) => `/${API_VERSION}/process-instances/${processInstanceKey}/deletion`,
 };
 
-export {deleteProcessInstanceRequestBodySchema, deleteProcessInstance};
-export type {DeleteProcessInstanceRequestBody};
+const variableInstructionSchema = z.object({
+	variables: z.record(z.string(), z.unknown()),
+	scopeId: z.string().optional(),
+});
+const activateInstructionSchema = z.object({
+	elementId: z.string(),
+	variableInstructions: z.array(variableInstructionSchema).optional(),
+	ancestorElementInstanceKey: z.string().optional(),
+});
+const moveInstructionSchema = z.object({
+	sourceElementInstruction: z.discriminatedUnion('sourceType', [
+		z.object({sourceType: z.literal('byId'), sourceElementId: z.string()}),
+		z.object({sourceType: z.literal('byKey'), sourceElementInstanceKey: z.string()}),
+	]),
+	targetElementId: z.string(),
+	ancestorScopeInstruction: z
+		.discriminatedUnion('ancestorScopeType', [
+			z.object({ancestorScopeType: z.literal('direct'), ancestorElementInstanceKey: z.string()}),
+			z.object({ancestorScopeType: z.literal('inferred')}),
+			z.object({ancestorScopeType: z.literal('sourceParent')}),
+		])
+		.optional(),
+	variableInstructions: z.array(variableInstructionSchema).optional(),
+});
+const terminateInstructionSchema = z.union([
+	z.object({elementId: z.string()}),
+	z.object({elementInstanceKey: z.string()}),
+]);
+
+const modifyProcessInstanceRequestBodySchema = z
+	.object({
+		operationReference: z.number().optional(),
+		activateInstructions: z.array(activateInstructionSchema).optional(),
+		moveInstructions: z.array(moveInstructionSchema).optional(),
+		terminateInstructions: z.array(terminateInstructionSchema).optional(),
+	})
+	.refine(
+		({activateInstructions, moveInstructions, terminateInstructions}) =>
+			(activateInstructions !== undefined && activateInstructions.length > 0) ||
+			(moveInstructions !== undefined && moveInstructions.length > 0) ||
+			(terminateInstructions !== undefined && terminateInstructions.length > 0),
+	);
+type ModifyProcessInstanceRequestBody = z.infer<typeof modifyProcessInstanceRequestBodySchema>;
+
+const modifyProcessInstance: Endpoint<Pick<ProcessInstance, 'processInstanceKey'>> = {
+	method: 'POST',
+	getUrl: ({processInstanceKey}) => `/${API_VERSION}/process-instances/${processInstanceKey}/modification`,
+};
+
+export {
+	deleteProcessInstanceRequestBodySchema,
+	deleteProcessInstance,
+	modifyProcessInstanceRequestBodySchema,
+	modifyProcessInstance,
+};
+export type {DeleteProcessInstanceRequestBody, ModifyProcessInstanceRequestBody};
