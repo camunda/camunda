@@ -779,7 +779,6 @@ components:
           description: The new description of the tenant.
       required:
         - name
-        - description
 
     TenantUpdateResult:
       type: object
