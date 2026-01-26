@@ -24,7 +24,7 @@
 		"@chromatic-com/storybook": "^5.0.0",
 		"@storybook/addon-docs": "9.1.13",
 		"@storybook/addon-links": "9.1.13",
-		"@storybook/addon-styling-webpack": "^2.0.0",
+		"@storybook/addon-styling-webpack": "^3.0.0",
 		"@storybook/addon-webpack5-compiler-swc": "^4.0.1",
 		"@storybook/react-webpack5": "9.1.13",
 		"@types/react": "^18.0.0",
