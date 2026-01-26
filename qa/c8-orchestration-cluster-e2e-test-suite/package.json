@@ -10,7 +10,7 @@
     "responses:regenerate": "assert-json-body extract"
   },
   "devDependencies": {
-    "@inquirer/prompts": "^7.3.2",
+    "@inquirer/prompts": "^8.0.0",
     "@playwright/test": "^1.51.0",
     "@types/axios": "^0.14.4",
     "@types/node": "^22.13.9",
