@@ -650,7 +650,9 @@ class OperateProcessInstancePage {
   }
 
   async clickIncidentsBanner(): Promise<void> {
-    await this.incidentsBanner.click();
+    await this.incidentsBanner.waitFor({state: 'visible', timeout: 10000});
+    await this.incidentsBanner.click({force: true});
+    await this.page.waitForTimeout(500);
   }
 
   async getIncidentCount(): Promise<number> {

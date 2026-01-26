@@ -11,7 +11,6 @@ import {expect} from '@playwright/test';
 import {deploy, createInstances} from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToApp} from '@pages/UtilitiesPage';
-import {waitForAssertion} from 'utils/waitForAssertion';
 
 test.beforeAll(async () => {
   await deploy([
@@ -76,8 +75,14 @@ test.describe('Process Instance Incident', () => {
       await operateProcessInstancePage.verifyIncidentCount(4);
 
       // Check if panel is visible before closing
-      await operateProcessInstancePage.incidentsViewHeader.isVisible();
+      await expect(
+        operateProcessInstancePage.incidentsViewHeader,
+      ).toBeVisible();
       await operateProcessInstancePage.clickIncidentsBanner();
+      // Verify the panel is now closed
+      await expect(operateProcessInstancePage.incidentsViewHeader).toBeHidden({
+        timeout: 5000,
+      });
     });
     await test.step('Click IO mapping Error and verify Error Type', async () => {
       await operateProcessInstancePage.clickOnElementInDiagram(
