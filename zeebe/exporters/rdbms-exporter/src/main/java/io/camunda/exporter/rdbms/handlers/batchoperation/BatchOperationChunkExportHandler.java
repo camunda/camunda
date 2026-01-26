@@ -54,6 +54,7 @@ public class BatchOperationChunkExportHandler
         Long.toString(batchOperationKey),
         value.getItemKey(),
         value.getProcessInstanceKey(),
+        -1L, // TODO root process instance key is not currently available in chunk record
         BatchOperationItemState.ACTIVE,
         null,
         null);

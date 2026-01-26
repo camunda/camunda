@@ -152,6 +152,7 @@ class BatchOperationItemControllerTest extends RestControllerTest {
         BatchOperationType.CANCEL_PROCESS_INSTANCE,
         11L,
         12L,
+        13L,
         BatchOperationItemState.FAILED,
         OffsetDateTime.parse("2025-03-18T10:57:44+01:00"),
         "error");
