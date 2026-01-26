@@ -33,7 +33,7 @@ test.describe('dashboard page', () => {
     await page.route(
       URL_API_PATTERN,
       mockResponses({
-        incidentsByError: [],
+        incidentsByError: {items: [], page: {totalItems: 0}},
         processDefinitionStatistics: {items: [], page: {totalItems: 0}},
       }),
     );

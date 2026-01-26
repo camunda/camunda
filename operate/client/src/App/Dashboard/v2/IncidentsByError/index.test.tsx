@@ -173,7 +173,7 @@ describe('IncidentsByError', () => {
     ).toHaveTextContent('52');
     expect(firstProcess).toHaveAttribute(
       'href',
-      `${Paths.processes()}?process=call-level-2-process&version=all&errorMessage=JSON+path+%27%24.paid%27+has+no+result.&incidentErrorHashCode=234254&incidents=true`,
+      `${Paths.processes()}?process=call-level-2-process&version=1&errorMessage=JSON+path+%27%24.paid%27+has+no+result.&incidentErrorHashCode=234254&incidents=true`,
     );
   }, 10000);
 
@@ -203,7 +203,7 @@ describe('IncidentsByError', () => {
 
     expect(tenantProcess).toHaveAttribute(
       'href',
-      `${Paths.processes()}?process=process-elements-incidents&version=all&errorMessage=JSON+path+%27%24.paid%27+has+no+result.&incidentErrorHashCode=234254&incidents=true&tenant=tenant-a`,
+      `${Paths.processes()}?process=process-elements-incidents&version=1&errorMessage=JSON+path+%27%24.paid%27+has+no+result.&incidentErrorHashCode=234254&incidents=true&tenant=tenant-a`,
     );
 
     window.clientConfig = originalClientConfig;
@@ -247,7 +247,7 @@ describe('IncidentsByError', () => {
 
     const detailSearch = new URLSearchParams({
       process: 'call-level-2-process',
-      version: 'all',
+      version: '1',
       errorMessage: truncated,
       incidentErrorHashCode: '234254',
       incidents: 'true',
