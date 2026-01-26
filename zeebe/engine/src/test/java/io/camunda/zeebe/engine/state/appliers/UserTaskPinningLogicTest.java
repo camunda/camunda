@@ -57,7 +57,7 @@ public class UserTaskPinningLogicTest {
     // given a global listeners configuration stored in state and a user task
     final var expectedConfig = newGlobalListeners();
     final var expectedConfigKey = expectedConfig.getGlobalListenerBatchKey();
-    globalListenersState.updateCurrentConfiguration(expectedConfig);
+    updateCurrentConfiguration(expectedConfig);
 
     final var userTaskRecord = newUserTaskRecord();
     final var userTaskKey = userTaskRecord.getUserTaskKey();
@@ -88,7 +88,7 @@ public class UserTaskPinningLogicTest {
     // given a global listeners configuration stored in state and pinned by a user task
     final var firstConfig = newGlobalListeners();
     final var firstConfigKey = firstConfig.getGlobalListenerBatchKey();
-    globalListenersState.updateCurrentConfiguration(firstConfig);
+    updateCurrentConfiguration(firstConfig);
 
     final var userTaskRecord = newUserTaskRecord();
     final var userTaskKey = userTaskRecord.getUserTaskKey();
@@ -103,7 +103,7 @@ public class UserTaskPinningLogicTest {
 
     // when the global configuration is updated
     final GlobalListenerBatchRecord newConfig = newGlobalListeners();
-    globalListenersState.updateCurrentConfiguration(newConfig);
+    updateCurrentConfiguration(newConfig);
 
     // then the old configuration should still be pinned
     final var pinnedConfig = globalListenersState.getVersionedConfig(firstConfigKey);
@@ -123,7 +123,7 @@ public class UserTaskPinningLogicTest {
     // given a global listeners configuration stored in state and pinned by two user tasks
     final var expectedConfig = newGlobalListeners();
     final var firstConfigKey = expectedConfig.getGlobalListenerBatchKey();
-    globalListenersState.updateCurrentConfiguration(expectedConfig);
+    updateCurrentConfiguration(expectedConfig);
 
     final var userTask1 = newUserTaskRecord();
     final var userTaskKey1 = userTask1.getUserTaskKey();
@@ -162,7 +162,7 @@ public class UserTaskPinningLogicTest {
     // given a global listeners configuration stored in state and pinned by two user tasks
     final var expectedConfig = newGlobalListeners();
     final var expectedConfigKey = expectedConfig.getGlobalListenerBatchKey();
-    globalListenersState.updateCurrentConfiguration(expectedConfig);
+    updateCurrentConfiguration(expectedConfig);
 
     final var userTask1 = newUserTaskRecord();
     final var userTaskKey1 = userTask1.getUserTaskKey();
@@ -190,6 +190,19 @@ public class UserTaskPinningLogicTest {
     assertThat(globalListenersState.isConfigurationVersionPinned(expectedConfigKey))
         .as("Configuration is pinned")
         .isFalse();
+  }
+
+  private void updateCurrentConfiguration(final GlobalListenerBatchRecord newConfig) {
+    final var oldConfig = globalListenersState.getCurrentConfig();
+    if (oldConfig != null) {
+      oldConfig
+          .getTaskListeners()
+          .forEach(listener -> globalListenersState.delete((GlobalListenerRecord) listener));
+    }
+    newConfig
+        .getTaskListeners()
+        .forEach(listener -> globalListenersState.create((GlobalListenerRecord) listener));
+    globalListenersState.updateConfigKey(newConfig.getGlobalListenerBatchKey());
   }
 
   private UserTaskRecord newUserTaskRecord() {

@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.client.CamundaClient;
 import io.camunda.zeebe.broker.system.configuration.engine.GlobalListenerCfg;
 import io.camunda.zeebe.broker.system.configuration.engine.GlobalListenersCfg;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ClockIntent;
 import io.camunda.zeebe.protocol.record.intent.GlobalListenerBatchIntent;
@@ -70,16 +71,17 @@ final class GlobalListenersInitializerIT {
     // Note: we send a clock reset command so we have a record we can limit our RecordingExporter on
     client.newResetClockCommand().send();
 
-    // Then a configuration command is created for each partition with the new data
+    // Then a configuration command with the new data is created on the deployment partition only
     assertThat(
             RecordingExporter.records()
                 .limit(r -> r.getIntent().equals(ClockIntent.RESET))
                 .globalListenerBatchRecords()
                 .withIntent(GlobalListenerBatchIntent.CONFIGURE))
-        .hasSize(PARTITIONS_COUNT)
-        .allMatch(record -> containsTypes(record, "global1", "global2"))
+        .hasSize(1)
+        .first()
+        .matches(record -> containsTypes(record, "global1", "global2"))
         .extracting(Record::getPartitionId)
-        .containsAll(PARTITION_IDS);
+        .isEqualTo(Protocol.DEPLOYMENT_PARTITION);
   }
 
   @Test
@@ -95,16 +97,17 @@ final class GlobalListenersInitializerIT {
     // Note: we send a clock reset command so we have a record we can limit our RecordingExporter on
     client.newResetClockCommand().send();
 
-    // Then a configuration command is created for each partition with the new data
+    // Then a configuration command with the new data is created on the deployment partition only
     assertThat(
             RecordingExporter.records()
                 .limit(r -> r.getIntent().equals(ClockIntent.RESET))
                 .globalListenerBatchRecords()
                 .withIntent(GlobalListenerBatchIntent.CONFIGURE))
-        .hasSize(PARTITIONS_COUNT)
-        .allMatch(record -> record.getValue().getTaskListeners().isEmpty())
+        .hasSize(1)
+        .first()
+        .matches(record -> record.getValue().getTaskListeners().isEmpty())
         .extracting(Record::getPartitionId)
-        .containsAll(PARTITION_IDS);
+        .isEqualTo(Protocol.DEPLOYMENT_PARTITION);
   }
 
   @Test
