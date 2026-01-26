@@ -47,8 +47,8 @@ const moveInstructionSchema = z.object({
 	variableInstructions: z.array(variableInstructionSchema).optional(),
 });
 const terminateInstructionSchema = z.union([
-	z.object({elementId: z.string()}),
-	z.object({elementInstanceKey: z.string()}),
+	z.object({elementId: z.string()}).strict(),
+	z.object({elementInstanceKey: z.string()}).strict(),
 ]);
 
 const modifyProcessInstanceRequestBodySchema = z
