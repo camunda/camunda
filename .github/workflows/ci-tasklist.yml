@@ -74,7 +74,7 @@ jobs:
       - uses: actions/checkout@v6
       - name: Print metadata
         uses: ./.github/actions/print-metadata
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: "22"
       - run: npm ci
@@ -108,7 +108,7 @@ jobs:
       - uses: actions/checkout@v6
       - name: Print metadata
         uses: ./.github/actions/print-metadata
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: "22"
       - run: npm ci
@@ -142,7 +142,7 @@ jobs:
       - uses: actions/checkout@v6
       - name: Print metadata
         uses: ./.github/actions/print-metadata
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: "22"
       - run: npm ci
@@ -176,7 +176,7 @@ jobs:
       - uses: actions/checkout@v6
       - name: Print metadata
         uses: ./.github/actions/print-metadata
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: "22"
       - run: npm ci
@@ -215,7 +215,7 @@ jobs:
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - name: Setup NodeJS
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: "22"
       - name: Install node dependencies
@@ -264,7 +264,7 @@ jobs:
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - name: Setup NodeJS
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: "22"
       - name: Install node dependencies

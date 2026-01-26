@@ -23,7 +23,7 @@ jobs:
       - name: Enable Corepack
         run: corepack enable
       - name: Setup Node
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6
         with:
           node-version: ${{ steps.pom_info.outputs.x_version_node }}
       - uses: camunda/infra-global-github-actions/setup-yarn-cache@main

@@ -1134,7 +1134,7 @@ jobs:
         working-directory: identity/client
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: "22"
           cache: 'npm'
@@ -1310,7 +1310,7 @@ jobs:
     permissions: {}  # GITHUB_TOKEN unused in this job
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: 24
       - run: |
