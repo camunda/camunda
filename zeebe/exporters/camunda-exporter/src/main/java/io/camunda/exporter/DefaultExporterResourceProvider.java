@@ -124,30 +124,7 @@ import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
 import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogConfiguration;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.AuthorizationAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.BatchOperationCreationAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.BatchOperationLifecycleManagementAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.DecisionAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.DecisionEvaluationAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.DecisionRequirementsRecordAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.FormAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.GroupAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.GroupEntityAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.IncidentResolutionAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.MappingRuleAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.ProcessAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.ProcessInstanceCancelAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.ProcessInstanceCreationAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.ProcessInstanceMigrationAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.ProcessInstanceModificationAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.ResourceAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.RoleAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.RoleEntityAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.TenantAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.TenantEntityAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.UserAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.UserTaskAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.VariableAddUpdateAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformerRegistry;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCacheImpl;
 import io.camunda.zeebe.exporter.common.cache.batchoperation.CachedBatchOperationEntity;
 import io.camunda.zeebe.exporter.common.cache.decisionRequirements.CachedDecisionRequirementsEntity;
@@ -498,35 +475,13 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
     final var auditLogBuilder = AuditLogHandler.builder(indexName, auditLog);
 
     if (partitionId == PROCESS_DEFINITION_PARTITION) {
-      auditLogBuilder
-          .addHandler(new AuthorizationAuditLogTransformer())
-          .addHandler(new BatchOperationCreationAuditLogTransformer())
-          .addHandler(new DecisionRequirementsRecordAuditLogTransformer())
-          .addHandler(new DecisionAuditLogTransformer())
-          .addHandler(new FormAuditLogTransformer())
-          .addHandler(new GroupAuditLogTransformer())
-          .addHandler(new GroupEntityAuditLogTransformer())
-          .addHandler(new MappingRuleAuditLogTransformer())
-          .addHandler(new ProcessAuditLogTransformer())
-          .addHandler(new ResourceAuditLogTransformer())
-          .addHandler(new RoleAuditLogTransformer())
-          .addHandler(new RoleEntityAuditLogTransformer())
-          .addHandler(new TenantAuditLogTransformer())
-          .addHandler(new TenantEntityAuditLogTransformer())
-          .addHandler(new UserAuditLogTransformer());
+      AuditLogTransformerRegistry.createPartitionSpecificTransformers()
+          .forEach(auditLogBuilder::addHandler);
     }
 
-    auditLogBuilder
-        .addHandler(new BatchOperationLifecycleManagementAuditLogTransformer())
-        .addHandler(new DecisionEvaluationAuditLogTransformer())
-        .addHandler(new IncidentResolutionAuditLogTransformer())
-        .addHandler(new ProcessInstanceCancelAuditLogTransformer())
-        .addHandler(new ProcessInstanceCreationAuditLogTransformer())
-        .addHandler(new ProcessInstanceMigrationAuditLogTransformer())
-        .addHandler(new ProcessInstanceModificationAuditLogTransformer())
-        .addHandler(new UserTaskAuditLogTransformer())
-        .addHandler(new VariableAddUpdateAuditLogTransformer())
-        .build()
-        .forEach(exportHandlers::add);
+    AuditLogTransformerRegistry.createAllPartitionTransformers()
+        .forEach(auditLogBuilder::addHandler);
+
+    exportHandlers.addAll(auditLogBuilder.build());
   }
 }
