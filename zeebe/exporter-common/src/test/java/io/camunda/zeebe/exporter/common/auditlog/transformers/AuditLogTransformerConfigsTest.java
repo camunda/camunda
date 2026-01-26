@@ -153,32 +153,7 @@ class AuditLogTransformerConfigsTest {
   }
 
   private static List<AuditLogTransformer<?>> getAllTransformers() {
-    final List<AuditLogTransformer<?>> transformers = new ArrayList<>();
-    transformers.add(new AuthorizationAuditLogTransformer());
-    transformers.add(new BatchOperationCreationAuditLogTransformer());
-    transformers.add(new BatchOperationLifecycleManagementAuditLogTransformer());
-    transformers.add(new DecisionAuditLogTransformer());
-    transformers.add(new DecisionEvaluationAuditLogTransformer());
-    transformers.add(new DecisionRequirementsRecordAuditLogTransformer());
-    transformers.add(new FormAuditLogTransformer());
-    transformers.add(new GroupAuditLogTransformer());
-    transformers.add(new GroupEntityAuditLogTransformer());
-    transformers.add(new IncidentResolutionAuditLogTransformer());
-    transformers.add(new MappingRuleAuditLogTransformer());
-    transformers.add(new ProcessAuditLogTransformer());
-    transformers.add(new ProcessInstanceCancelAuditLogTransformer());
-    transformers.add(new ProcessInstanceCreationAuditLogTransformer());
-    transformers.add(new ProcessInstanceMigrationAuditLogTransformer());
-    transformers.add(new ProcessInstanceModificationAuditLogTransformer());
-    transformers.add(new ResourceAuditLogTransformer());
-    transformers.add(new RoleAuditLogTransformer());
-    transformers.add(new RoleEntityAuditLogTransformer());
-    transformers.add(new TenantAuditLogTransformer());
-    transformers.add(new TenantEntityAuditLogTransformer());
-    transformers.add(new UserAuditLogTransformer());
-    transformers.add(new UserTaskAuditLogTransformer());
-    transformers.add(new VariableAddUpdateAuditLogTransformer());
-    return transformers;
+    return AuditLogTransformerRegistry.createAllTransformers();
   }
 
   @SuppressWarnings("unchecked")
