@@ -21,7 +21,7 @@
 		"@babel/preset-typescript": "^7.24.1",
 		"@carbon/icons-react": "^11.41.0",
 		"@carbon/react": "^1.91.0",
-		"@chromatic-com/storybook": "^4.1.1",
+		"@chromatic-com/storybook": "^5.0.0",
 		"@storybook/addon-docs": "9.1.13",
 		"@storybook/addon-links": "9.1.13",
 		"@storybook/addon-styling-webpack": "^2.0.0",
