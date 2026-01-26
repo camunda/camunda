@@ -184,6 +184,7 @@ describe('useBatchOperationMutationRequestBody', () => {
     expect(result.current).toEqual({
       filter: {
         state: {$eq: 'ACTIVE'},
+        hasIncident: false,
         variables: [
           {
             name: 'status',
@@ -236,6 +237,7 @@ describe('useBatchOperationMutationRequestBody', () => {
       filter: {
         tenantId: {$eq: '<default>'},
         state: {$eq: 'ACTIVE'},
+        hasIncident: false,
       },
     });
   });
@@ -253,6 +255,7 @@ describe('useBatchOperationMutationRequestBody', () => {
     expect(result.current).toEqual({
       filter: {
         state: {$in: ['ACTIVE', 'COMPLETED', 'TERMINATED']},
+        hasIncident: false,
       },
     });
   });
@@ -269,6 +272,7 @@ describe('useBatchOperationMutationRequestBody', () => {
       filter: {
         parentProcessInstanceKey: {$eq: '12345'},
         state: {$eq: 'ACTIVE'},
+        hasIncident: false,
       },
     });
   });
@@ -284,6 +288,7 @@ describe('useBatchOperationMutationRequestBody', () => {
 
     expect(result.current).toEqual({
       filter: {
+        hasIncident: false,
         processDefinitionId: {$eq: 'order-process'},
         processDefinitionVersion: 2,
         state: {$eq: 'ACTIVE'},
@@ -302,6 +307,7 @@ describe('useBatchOperationMutationRequestBody', () => {
 
     expect(result.current).toEqual({
       filter: {
+        hasIncident: false,
         processDefinitionId: {$eq: 'order-process'},
         state: {$eq: 'ACTIVE'},
       },
@@ -320,6 +326,7 @@ describe('useBatchOperationMutationRequestBody', () => {
       filter: {
         elementId: {$eq: 'task-1'},
         state: {$eq: 'ACTIVE'},
+        hasIncident: false,
       },
     });
   });
@@ -336,6 +343,7 @@ describe('useBatchOperationMutationRequestBody', () => {
       filter: {
         batchOperationId: {$eq: 'op-123'},
         state: {$eq: 'ACTIVE'},
+        hasIncident: false,
       },
     });
   });
