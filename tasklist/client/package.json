@@ -15,7 +15,7 @@
     "@tanstack/eslint-plugin-query": "5.91.2",
     "@tanstack/react-query": "5.83.0",
     "@uidotdev/usehooks": "2.4.1",
-    "bpmn-js": "18.6.2",
+    "bpmn-js": "18.10.1",
     "classnames": "2.5.1",
     "date-fns": "4.1.0",
     "event-source-polyfill": "1.0.31",
