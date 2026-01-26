@@ -13,7 +13,7 @@ import {
 } from 'modules/testing-library';
 import {
   mockProcessDefinitions,
-  mockProcessStatisticsV2,
+  mockProcessStatistics,
   mockProcessWithInputOutputMappingsXML,
   mockProcessXML,
 } from 'modules/testUtils';
@@ -174,7 +174,7 @@ describe('Target Diagram', () => {
   it('should render flow node overlays', async () => {
     mockSearchProcessDefinitions().withSuccess(mockProcessDefinitions);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
-    mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatisticsV2);
+    mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
     processInstanceMigrationStore.setSourceProcessDefinitionKey('1');
     processInstanceMigrationStore.setBatchOperationQuery({
       ids: ['1'],

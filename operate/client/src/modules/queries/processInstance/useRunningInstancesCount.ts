@@ -23,7 +23,7 @@ const useRunningInstancesCount = ({
     queryKey:
       queryKeys.processInstances.runningInstancesCount(processDefinitionKey),
     queryFn: async () => {
-      const {response} = await searchProcessInstances({
+      const {response, error} = await searchProcessInstances({
         filter: {
           processDefinitionKey: {$eq: processDefinitionKey},
           $or: [{state: {$eq: 'ACTIVE'}}, {hasIncident: true}],
@@ -31,7 +31,11 @@ const useRunningInstancesCount = ({
         page: {from: 0, limit: 0},
       });
 
-      return response?.page.totalItems ?? -1;
+      if (response !== null) {
+        return response.page.totalItems;
+      }
+
+      throw error;
     },
     enabled,
     refetchOnWindowFocus: true,

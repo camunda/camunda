@@ -16,7 +16,7 @@ import {MemoryRouter} from 'react-router-dom';
 import {Paths} from 'modules/Routes';
 import {
   createProcessDefinition,
-  mockProcessStatisticsV2,
+  mockProcessStatistics,
   mockProcessXML,
 } from 'modules/testUtils';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/v2/processInstances/fetchProcessInstancesStatistics';
@@ -86,7 +86,7 @@ describe('BatchModificationSummaryModal', () => {
     vi.clearAllMocks();
 
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
-    mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatisticsV2);
+    mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
 
     mockModifyProcessInstancesBatchOperation().withSuccess({
       batchOperationKey: 'mock-modify-123',
@@ -100,7 +100,7 @@ describe('BatchModificationSummaryModal', () => {
   });
 
   it('should render batch modification summary', async () => {
-    mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatisticsV2);
+    mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
 
     const {user} = render(
       <BatchModificationSummaryModal setOpen={() => {}} open={true} />,
@@ -126,7 +126,7 @@ describe('BatchModificationSummaryModal', () => {
   });
 
   it('should apply batch operation', async () => {
-    mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatisticsV2);
+    mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
 
     const {user} = render(
       <BatchModificationSummaryModal setOpen={() => {}} open={true} />,

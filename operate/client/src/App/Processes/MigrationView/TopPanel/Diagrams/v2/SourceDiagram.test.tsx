@@ -7,7 +7,7 @@
  */
 
 import {render, screen} from 'modules/testing-library';
-import {mockProcessStatisticsV2, mockProcessXML} from 'modules/testUtils';
+import {mockProcessStatistics, mockProcessXML} from 'modules/testUtils';
 import {SourceDiagram} from './SourceDiagram';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/v2/processInstances/fetchProcessInstancesStatistics';
 import {QueryClientProvider} from '@tanstack/react-query';
@@ -127,7 +127,7 @@ describe('Source Diagram', () => {
       ids: ['processInstance1'],
     });
     processInstanceMigrationStore.setSelectedInstancesCount(1);
-    mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatisticsV2);
+    mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
 
     const {user} = render(<SourceDiagram />, {wrapper: Wrapper});
 

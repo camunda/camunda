@@ -407,16 +407,16 @@ test.describe('process instance migration', () => {
           page: {totalItems: 1},
         },
         processInstances: {
-          totalCount: 3,
-          processInstances: mockAhspProcessInstances.processInstances.map(
-            (instance) => ({
-              ...instance,
-              processId: '2251799813685250',
-              processVersion: 2,
-              bpmnProcessId: 'migration-ahsp-process_v2',
-              processName: 'Ad Hoc Subprocess Target',
-            }),
-          ),
+          page: {
+            totalItems: 3,
+          },
+          items: mockAhspProcessInstances.items.map((instance) => ({
+            ...instance,
+            processId: '2251799813685250',
+            processVersion: 2,
+            bpmnProcessId: 'migration-ahsp-process_v2',
+            processName: 'Ad Hoc Subprocess Target',
+          })),
         },
         statisticsV2: {
           items: [

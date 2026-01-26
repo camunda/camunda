@@ -350,7 +350,7 @@ const createDiagramNode = (options = {}) => {
   };
 };
 
-const mockProcessStatisticsV2 = {
+const mockProcessStatistics = {
   items: [
     {
       elementId: 'ServiceTask_0kt6c5i',
@@ -1074,7 +1074,7 @@ export {
   createIncidentByError,
   createIncidentsByError,
   createDiagramNode,
-  mockProcessStatisticsV2,
+  mockProcessStatistics,
   mockMultipleStatesStatistics,
   mockProcessXML,
   mockProcessWithInputOutputMappingsXML,
