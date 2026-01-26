@@ -26,14 +26,14 @@ import org.junit.jupiter.api.Test;
 class AuthorizationConfigurerTest {
 
   private static final ConfiguredAuthorization INVALID_OWNER_TYPE =
-      new ConfiguredAuthorization(
+      ConfiguredAuthorization.idBased(
           null,
           "foo",
           AuthorizationResourceType.RESOURCE,
           WILDCARD_CHAR,
           Set.of(PermissionType.READ));
   private static final ConfiguredAuthorization VALID_AUTH =
-      new ConfiguredAuthorization(
+      ConfiguredAuthorization.idBased(
           AuthorizationOwnerType.USER,
           "foo",
           AuthorizationResourceType.RESOURCE,

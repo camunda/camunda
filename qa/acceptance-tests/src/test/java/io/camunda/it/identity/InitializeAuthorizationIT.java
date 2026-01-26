@@ -43,7 +43,7 @@ class InitializeAuthorizationIT {
   private static final String DEFAULT_PASSWORD = "password";
 
   private static final ConfiguredAuthorization CONFIGURED_AUTH_1 =
-      new ConfiguredAuthorization(
+      ConfiguredAuthorization.idBased(
           AuthorizationOwnerType.USER,
           RESTRICTED,
           AuthorizationResourceType.PROCESS_DEFINITION,
