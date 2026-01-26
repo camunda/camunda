@@ -9,6 +9,7 @@
 import {expect} from '@playwright/test';
 import {test} from '../visual-fixtures';
 import {
+  mockIncidentsByDefinition,
   mockIncidentsByError,
   mockProcessDefinitionStatistics,
   mockResponses,
@@ -55,6 +56,7 @@ test.describe('dashboard', () => {
       URL_API_PATTERN,
       mockResponses({
         incidentsByError: mockIncidentsByError,
+        incidentsByDefinition: mockIncidentsByDefinition,
         processDefinitionStatistics: mockProcessDefinitionStatistics,
       }),
     );
