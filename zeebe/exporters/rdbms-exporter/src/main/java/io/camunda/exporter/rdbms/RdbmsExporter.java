@@ -399,6 +399,10 @@ public final class RdbmsExporter {
       currentHistoryDeletionTask =
           controller.scheduleCancellableTask(newDuration, this::deleteHistory);
     } catch (final Exception e) {
+      LOG.warn(
+          "[RDBMS Exporter P{}] Failed to delete history, retrying ... {}",
+          partitionId,
+          e.getMessage());
       currentHistoryDeletionTask =
           controller.scheduleCancellableTask(
               historyDeletionService.getCurrentDelayBetweenRuns(), this::deleteHistory);

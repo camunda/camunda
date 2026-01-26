@@ -351,7 +351,7 @@ public class HistoryCleanupService {
   }
 
   public Duration getCurrentCleanupInterval(final int partitionId) {
-    return lastCleanupInterval.get(partitionId);
+    return lastCleanupInterval.getOrDefault(partitionId, minCleanupInterval);
   }
 
   public Duration getUsageMetricsHistoryCleanupInterval() {
