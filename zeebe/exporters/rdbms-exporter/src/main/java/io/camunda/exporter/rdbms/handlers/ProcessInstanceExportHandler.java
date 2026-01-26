@@ -119,9 +119,9 @@ public class ProcessInstanceExportHandler
       return new TreePath(maxTreePathSize).startTreePath(processInstanceKey);
     }
 
-    final var callActivities =
-        ProcessCacheUtil.getCallActivityIds(processCache, processDefinitionPath);
-
+    // In recursive processes, the same process definition can appear multiple times in the path.
+    // So, for each level, we must look up the call activity IDs for the process definition at that
+    // level.
     final TreePath treePath = new TreePath(maxTreePathSize);
     for (int i = 0; i < elementInstancePath.size(); i++) {
       final List<Long> keysWithinOnePI = elementInstancePath.get(i);
@@ -130,19 +130,24 @@ public class ProcessInstanceExportHandler
         // we reached the leaf of the tree path, when we reached current processInstanceKey
         break;
       }
-      final var callActivity = callActivities.get(i);
-      if (callActivity != null && !callActivity.isEmpty()) {
-        treePath.appendFlowNode(callActivity.get(callingElementPath.get(i)));
+      // Get the process definition key for this level
+      final Long processDefinitionKey = processDefinitionPath.get(i);
+      // Get the call activity IDs for this process definition
+      final var callActivitiesForLevel =
+          ProcessCacheUtil.getCallActivityIds(processCache, List.of(processDefinitionKey));
+      final var callActivityIds =
+          !callActivitiesForLevel.isEmpty() ? callActivitiesForLevel.getFirst() : null;
+      final int callActivityIndex = callingElementPath.get(i);
+      if (callActivityIds != null && callActivityIndex < callActivityIds.size()) {
+        treePath.appendFlowNode(String.valueOf(callActivityIds.get(callActivityIndex)));
       } else {
-        final var index = callingElementPath.get(i);
         LOGGER.warn(
-            "Expected to find process in cache. TreePath won't contain proper callActivityId, will use the lexicographic index instead {}. [processInstanceKey: {}, processDefinitionKey: {}, incidentKey: {}]",
+            "Expected to find process in cache for processDefinitionKey {}. TreePath won't contain proper callActivityId, will use the lexicographic index instead {}. [processInstanceKey: {}, incidentKey: {}]",
+            processDefinitionKey,
+            callActivityIndex,
             processInstanceKey,
-            processDefinitionPath.get(i),
-            record.getKey(),
-            index);
-
-        treePath.appendFlowNode(String.valueOf(callingElementPath.get(i)));
+            record.getKey());
+        treePath.appendFlowNode(String.valueOf(callActivityIndex));
       }
       treePath.appendFlowNodeInstance(String.valueOf(keysWithinOnePI.getLast()));
     }
