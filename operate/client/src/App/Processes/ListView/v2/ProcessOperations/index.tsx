@@ -38,7 +38,7 @@ const ProcessOperations: React.FC<Props> = observer(
 
     const deleteResourceMutation = useDeleteResource(
       processDefinitionKey,
-      {operationReference: Date.now(), deleteHistory: true},
+      {deleteHistory: true},
       {
         onSuccess: () => {
           notificationsStore.displayNotification({
