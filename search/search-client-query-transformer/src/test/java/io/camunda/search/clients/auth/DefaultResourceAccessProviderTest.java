@@ -339,8 +339,12 @@ class DefaultResourceAccessProviderTest {
         CamundaAuthentication.of(a -> a.user("trevor").groupIds(List.of("managers")));
     final var authorization =
         Authorization.of(
-            (Authorization.Builder<UserTaskEntity> a) ->
-                a.userTask().readUserTask().authorizedByAssignee().authorizedByCandidateGroups());
+            a ->
+                a.userTask()
+                    .readUserTask()
+                    .authorizedByAssignee()
+                    .or()
+                    .authorizedByCandidateGroups());
 
     final var userTask = createUserTask("trevor");
 
@@ -370,9 +374,7 @@ class DefaultResourceAccessProviderTest {
     // given
     final var authentication = CamundaAuthentication.of(a -> a.user("jimmy").groupIds(List.of()));
     final var authorization =
-        Authorization.of(
-            (Authorization.Builder<UserTaskEntity> a) ->
-                a.userTask().readUserTask().authorizedByAssignee());
+        Authorization.of(a -> a.userTask().readUserTask().authorizedByAssignee());
 
     final var userTask = createUserTask("jimmy");
 
@@ -397,9 +399,7 @@ class DefaultResourceAccessProviderTest {
     final var authentication =
         CamundaAuthentication.of(a -> a.user("franklin").groupIds(List.of()));
     final var authorization =
-        Authorization.of(
-            (Authorization.Builder<UserTaskEntity> a) ->
-                a.userTask().readUserTask().authorizedByAssignee());
+        Authorization.of(a -> a.userTask().readUserTask().authorizedByAssignee());
 
     // User task is assigned to someone else
     final var userTask = createUserTask("michael");
@@ -426,10 +426,11 @@ class DefaultResourceAccessProviderTest {
     final var authentication = CamundaAuthentication.of(a -> a.user("martin"));
     final var authorization =
         Authorization.of(
-            (Authorization.Builder<TestResource> a) ->
+            a ->
                 a.processDefinition()
                     .readProcessDefinition()
                     .authorizedByProperty("anotherValue")
+                    .or()
                     .authorizedByProperty("unknownProperty"));
 
     final var resource = new TestResource("id123", "value456");

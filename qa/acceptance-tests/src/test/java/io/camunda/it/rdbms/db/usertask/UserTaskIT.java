@@ -387,7 +387,9 @@ public class UserTaskIT {
                                 b.userTask()
                                     .read()
                                     .authorizedByAssignee()
+                                    .or()
                                     .authorizedByCandidateUsers()
+                                    .or()
                                     .authorizedByCandidateGroups())),
                     TenantCheck.disabled(),
                     CamundaAuthentication.of(

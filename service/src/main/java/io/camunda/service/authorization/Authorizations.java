@@ -104,7 +104,9 @@ public abstract class Authorizations {
               a.userTask()
                   .read()
                   .authorizedByAssignee()
+                  .or()
                   .authorizedByCandidateUsers()
+                  .or()
                   .authorizedByCandidateGroups());
 
   public static final Authorization<VariableEntity> VARIABLE_READ_AUTHORIZATION =
