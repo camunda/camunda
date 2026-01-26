@@ -451,13 +451,73 @@ class RdbmsExporterTest {
         .flush(true);
 
     // when + then
-    assertThatThrownBy(() -> exporter.flushAndReschedule())
-        .isInstanceOf(RuntimeException.class)
-        .hasMessage("Simulated flush failure");
+    exporter.flushAndReschedule();
 
     // then - a new task should still be scheduled (thanks to the finally block)
     verify(controller, times(initialScheduleCount + 1))
         .scheduleCancellableTask(any(Duration.class), any());
+  }
+
+  @Test
+  void shouldCatchExceptionAndRescheduleCleanupHistory() {
+    // given
+    createExporter(b -> b);
+    final var initialScheduleCount = 4; // flush + 3 cleanup tasks
+
+    // Mock the historyCleanupService to throw an exception
+    when(historyCleanupService.cleanupHistory(anyInt(), any()))
+        .thenThrow(new RuntimeException("Simulated cleanup failure"));
+    when(historyCleanupService.getCurrentCleanupInterval(anyInt()))
+        .thenReturn(Duration.ofSeconds(1));
+
+    // when - should not throw exception
+    exporter.cleanupHistory();
+
+    // then - a new task should be scheduled
+    verify(controller, times(initialScheduleCount + 1))
+        .scheduleCancellableTask(any(Duration.class), any());
+    verify(historyCleanupService).getCurrentCleanupInterval(anyInt());
+  }
+
+  @Test
+  void shouldCatchExceptionAndRescheduleCleanupUsageMetricsHistory() {
+    // given
+    createExporter(b -> b);
+    final var initialScheduleCount = 4; // flush + 3 cleanup tasks
+
+    // Mock the historyCleanupService to throw an exception
+    when(historyCleanupService.cleanupUsageMetricsHistory(anyInt(), any()))
+        .thenThrow(new RuntimeException("Simulated usage metrics cleanup failure"));
+    when(historyCleanupService.getUsageMetricsHistoryCleanupInterval())
+        .thenReturn(Duration.ofSeconds(1));
+
+    // when - should not throw exception
+    exporter.cleanupUsageMetricsHistory();
+
+    // then - a new task should be scheduled
+    verify(controller, times(initialScheduleCount + 1))
+        .scheduleCancellableTask(any(Duration.class), any());
+    verify(historyCleanupService).getUsageMetricsHistoryCleanupInterval();
+  }
+
+  @Test
+  void shouldCatchExceptionAndRescheduleDeleteHistory() {
+    // given
+    createExporter(b -> b);
+    final var initialScheduleCount = 4; // flush + 3 cleanup tasks
+
+    // Mock the historyDeletionService to throw an exception
+    when(historyDeletionService.deleteHistory(anyInt()))
+        .thenThrow(new RuntimeException("Simulated deletion failure"));
+    when(historyDeletionService.getCurrentDelayBetweenRuns()).thenReturn(Duration.ofSeconds(1));
+
+    // when - should not throw exception
+    exporter.deleteHistory();
+
+    // then - a new task should be scheduled
+    verify(controller, times(initialScheduleCount + 1))
+        .scheduleCancellableTask(any(Duration.class), any());
+    verify(historyDeletionService).getCurrentDelayBetweenRuns();
   }
 
   // ------------------------------------------------

@@ -349,4 +349,12 @@ public class HistoryCleanupService {
   public Duration getHistoryCleanupInterval() {
     return defaultHistoryTTL;
   }
+
+  public Duration getCurrentCleanupInterval(final int partitionId) {
+    return lastCleanupInterval.get(partitionId);
+  }
+
+  public Duration getUsageMetricsHistoryCleanupInterval() {
+    return usageMetricsCleanup;
+  }
 }

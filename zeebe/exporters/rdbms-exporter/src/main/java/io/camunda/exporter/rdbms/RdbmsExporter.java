@@ -352,29 +352,57 @@ public final class RdbmsExporter {
           partitionId,
           lastFlushedPosition + 1,
           lastPosition);
-      throw e;
     } finally {
       currentFlushTask =
           controller.scheduleCancellableTask(flushInterval, this::flushAndReschedule);
     }
   }
 
-  private void cleanupHistory() {
-    final var newDuration = historyCleanupService.cleanupHistory(partitionId, OffsetDateTime.now());
-    currentCleanupTask = controller.scheduleCancellableTask(newDuration, this::cleanupHistory);
+  @VisibleForTesting
+  void cleanupHistory() {
+    try {
+      final var newDuration =
+          historyCleanupService.cleanupHistory(partitionId, OffsetDateTime.now());
+      currentCleanupTask = controller.scheduleCancellableTask(newDuration, this::cleanupHistory);
+    } catch (final Exception e) {
+      LOG.warn(
+          "[RDBMS Exporter P{}] Failed to cleanup history, retrying ... {}",
+          partitionId,
+          e.getMessage());
+      currentCleanupTask =
+          controller.scheduleCancellableTask(
+              historyCleanupService.getCurrentCleanupInterval(partitionId), this::cleanupHistory);
+    }
   }
 
-  private void cleanupUsageMetricsHistory() {
-    final var newDuration =
-        historyCleanupService.cleanupUsageMetricsHistory(partitionId, OffsetDateTime.now());
+  @VisibleForTesting
+  void cleanupUsageMetricsHistory() {
+
+    try {
+      historyCleanupService.cleanupUsageMetricsHistory(partitionId, OffsetDateTime.now());
+    } catch (final Exception e) {
+      LOG.warn(
+          "[RDBMS Exporter P{}] Failed to cleanup usage metrics history, retrying ... {}",
+          partitionId,
+          e.getMessage());
+    }
     currentUsageMetricsCleanupTask =
-        controller.scheduleCancellableTask(newDuration, this::cleanupUsageMetricsHistory);
+        controller.scheduleCancellableTask(
+            historyCleanupService.getUsageMetricsHistoryCleanupInterval(),
+            this::cleanupUsageMetricsHistory);
   }
 
-  private void deleteHistory() {
-    final var newDuration = historyDeletionService.deleteHistory(partitionId);
-    currentHistoryDeletionTask =
-        controller.scheduleCancellableTask(newDuration, this::deleteHistory);
+  @VisibleForTesting
+  void deleteHistory() {
+    try {
+      final var newDuration = historyDeletionService.deleteHistory(partitionId);
+      currentHistoryDeletionTask =
+          controller.scheduleCancellableTask(newDuration, this::deleteHistory);
+    } catch (final Exception e) {
+      currentHistoryDeletionTask =
+          controller.scheduleCancellableTask(
+              historyDeletionService.getCurrentDelayBetweenRuns(), this::deleteHistory);
+    }
   }
 
   @VisibleForTesting(

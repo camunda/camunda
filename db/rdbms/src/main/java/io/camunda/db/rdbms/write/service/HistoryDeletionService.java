@@ -177,4 +177,8 @@ public class HistoryDeletionService {
     }
     return currentDelayBetweenRuns;
   }
+
+  public Duration getCurrentDelayBetweenRuns() {
+    return currentDelayBetweenRuns;
+  }
 }
