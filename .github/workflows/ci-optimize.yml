@@ -82,7 +82,7 @@ jobs:
         uses: YunaBraska/java-info-action@main
         with:
           work-dir: ./optimize
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: ${{ steps.pom_info.outputs.x_version_node }}
       - uses: camunda/infra-global-github-actions/setup-yarn-cache@main

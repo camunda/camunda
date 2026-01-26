@@ -22,7 +22,7 @@ jobs:
         working-directory: client-components
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: "24.6.0"
       - name: Install dependencies
