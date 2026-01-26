@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.identity.initialize;
 
-import static io.camunda.zeebe.protocol.record.value.AuthorizationScope.WILDCARD_CHAR;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.security.configuration.ConfiguredAuthorization;
@@ -26,18 +25,13 @@ import org.junit.jupiter.api.Test;
 class AuthorizationConfigurerTest {
 
   private static final ConfiguredAuthorization INVALID_OWNER_TYPE =
-      ConfiguredAuthorization.idBased(
-          null,
-          "foo",
-          AuthorizationResourceType.RESOURCE,
-          WILDCARD_CHAR,
-          Set.of(PermissionType.READ));
+      ConfiguredAuthorization.wildcard(
+          null, "foo", AuthorizationResourceType.RESOURCE, Set.of(PermissionType.READ));
   private static final ConfiguredAuthorization VALID_AUTH =
-      ConfiguredAuthorization.idBased(
+      ConfiguredAuthorization.wildcard(
           AuthorizationOwnerType.USER,
           "foo",
           AuthorizationResourceType.RESOURCE,
-          WILDCARD_CHAR,
           Set.of(PermissionType.READ));
   private static final AuthorizationValidator VALIDATOR =
       new AuthorizationValidator(
