@@ -24,11 +24,10 @@ import org.springframework.beans.factory.BeanCreationException;
 public class InitializeInvalidAuthorizationIT {
 
   private static final ConfiguredAuthorization INVALID_AUTH =
-      ConfiguredAuthorization.idBased(
+      ConfiguredAuthorization.wildcard(
           AuthorizationOwnerType.USER,
           "john.doe",
           null,
-          "*",
           Set.of(PermissionType.READ_PROCESS_INSTANCE, PermissionType.CREATE_PROCESS_INSTANCE));
 
   @Test

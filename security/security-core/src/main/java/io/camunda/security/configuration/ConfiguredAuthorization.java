@@ -9,6 +9,7 @@ package io.camunda.security.configuration;
 
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.Set;
 
@@ -28,6 +29,14 @@ public record ConfiguredAuthorization(
       final Set<PermissionType> permissions) {
     return new ConfiguredAuthorization(
         ownerType, ownerId, resourceType, resourceId, null, permissions);
+  }
+
+  public static ConfiguredAuthorization wildcard(
+      final AuthorizationOwnerType ownerType,
+      final String ownerId,
+      final AuthorizationResourceType resourceType,
+      final Set<PermissionType> permissions) {
+    return idBased(ownerType, ownerId, resourceType, AuthorizationScope.WILDCARD_CHAR, permissions);
   }
 
   public static ConfiguredAuthorization propertyBased(
