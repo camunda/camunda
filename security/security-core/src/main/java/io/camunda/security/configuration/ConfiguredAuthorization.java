@@ -17,4 +17,34 @@ public record ConfiguredAuthorization(
     String ownerId,
     AuthorizationResourceType resourceType,
     String resourceId,
-    Set<PermissionType> permissions) {}
+    String resourcePropertyName,
+    Set<PermissionType> permissions) {
+
+  public static ConfiguredAuthorization idBased(
+      final AuthorizationOwnerType ownerType,
+      final String ownerId,
+      final AuthorizationResourceType resourceType,
+      final String resourceId,
+      final Set<PermissionType> permissions) {
+    return new ConfiguredAuthorization(
+        ownerType, ownerId, resourceType, resourceId, null, permissions);
+  }
+
+  public static ConfiguredAuthorization propertyBased(
+      final AuthorizationOwnerType ownerType,
+      final String ownerId,
+      final AuthorizationResourceType resourceType,
+      final String resourcePropertyName,
+      final Set<PermissionType> permissions) {
+    return new ConfiguredAuthorization(
+        ownerType, ownerId, resourceType, null, resourcePropertyName, permissions);
+  }
+
+  public boolean isIdBased() {
+    return resourceId != null && !resourceId.isBlank();
+  }
+
+  public boolean isPropertyBased() {
+    return resourcePropertyName != null && !resourcePropertyName.isBlank();
+  }
+}

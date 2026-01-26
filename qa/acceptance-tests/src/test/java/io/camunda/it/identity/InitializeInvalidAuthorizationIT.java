@@ -24,7 +24,7 @@ import org.springframework.beans.factory.BeanCreationException;
 public class InitializeInvalidAuthorizationIT {
 
   private static final ConfiguredAuthorization INVALID_AUTH =
-      new ConfiguredAuthorization(
+      ConfiguredAuthorization.idBased(
           AuthorizationOwnerType.USER,
           "john.doe",
           null,
