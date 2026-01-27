@@ -130,7 +130,7 @@ public class ClusterVariableUpdatedHandlerTest {
   }
 
   @Test
-  void shouldUpsertEntityOnFlush() {
+  void shouldUpdateEntityOnFlush() {
     // given
     final ClusterVariableEntity inputEntity =
         new ClusterVariableEntity()
@@ -146,7 +146,7 @@ public class ClusterVariableUpdatedHandlerTest {
     underTest.flush(inputEntity, mockRequest);
 
     // then
-    verify(mockRequest, times(1)).upsert(indexName, inputEntity.getId(), inputEntity, null);
+    verify(mockRequest, times(1)).update(indexName, inputEntity.getId(), inputEntity);
   }
 
   @Test
