@@ -50,8 +50,8 @@ class ConfiguredAuthorizationPropertiesTest {
     assertThat(auth.permissions())
         .containsExactlyInAnyOrder(
             PermissionType.READ_PROCESS_INSTANCE, PermissionType.CREATE_PROCESS_INSTANCE);
-    assertThat(auth.isIdBased()).isTrue();
-    assertThat(auth.isPropertyBased()).isFalse();
+    assertThat(auth.hasResourceId()).isTrue();
+    assertThat(auth.hasResourcePropertyName()).isFalse();
   }
 
   @Test
@@ -66,8 +66,8 @@ class ConfiguredAuthorizationPropertiesTest {
     assertThat(auth.resourceId()).isEqualTo("order-process");
     assertThat(auth.resourcePropertyName()).isNull();
     assertThat(auth.permissions()).containsExactly(PermissionType.UPDATE_PROCESS_INSTANCE);
-    assertThat(auth.isIdBased()).isTrue();
-    assertThat(auth.isPropertyBased()).isFalse();
+    assertThat(auth.hasResourceId()).isTrue();
+    assertThat(auth.hasResourcePropertyName()).isFalse();
   }
 
   @Test
@@ -83,8 +83,8 @@ class ConfiguredAuthorizationPropertiesTest {
     assertThat(auth.resourcePropertyName()).isEqualTo("assignee");
     assertThat(auth.permissions())
         .containsExactlyInAnyOrder(PermissionType.UPDATE, PermissionType.READ);
-    assertThat(auth.isIdBased()).isFalse();
-    assertThat(auth.isPropertyBased()).isTrue();
+    assertThat(auth.hasResourceId()).isFalse();
+    assertThat(auth.hasResourcePropertyName()).isTrue();
   }
 
   @Test
@@ -105,8 +105,8 @@ class ConfiguredAuthorizationPropertiesTest {
     assertThat(auth.resourcePropertyName()).isEqualTo("assignee");
     assertThat(auth.permissions()).containsExactly(PermissionType.READ);
     // Both helper methods return true, indicating the invalid state
-    assertThat(auth.isIdBased()).isTrue();
-    assertThat(auth.isPropertyBased()).isTrue();
+    assertThat(auth.hasResourceId()).isTrue();
+    assertThat(auth.hasResourcePropertyName()).isTrue();
   }
 
   @Test
@@ -127,8 +127,8 @@ class ConfiguredAuthorizationPropertiesTest {
     assertThat(auth.resourcePropertyName()).isNull();
     assertThat(auth.permissions()).containsExactly(PermissionType.CREATE_PROCESS_INSTANCE);
     // Both helper methods return false, indicating the invalid state
-    assertThat(auth.isIdBased()).isFalse();
-    assertThat(auth.isPropertyBased()).isFalse();
+    assertThat(auth.hasResourceId()).isFalse();
+    assertThat(auth.hasResourcePropertyName()).isFalse();
   }
 
   @Configuration

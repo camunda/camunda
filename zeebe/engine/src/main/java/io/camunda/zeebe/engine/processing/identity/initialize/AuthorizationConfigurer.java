@@ -31,8 +31,8 @@ public class AuthorizationConfigurer
 
   @Override
   public Either<List<String>, AuthorizationRecord> configure(final ConfiguredAuthorization auth) {
-    final boolean hasResourceId = auth.isIdBased();
-    final boolean hasPropertyName = auth.isPropertyBased();
+    final boolean hasResourceId = auth.hasResourceId();
+    final boolean hasPropertyName = auth.hasResourcePropertyName();
 
     if (hasResourceId && hasPropertyName) {
       return Either.left(List.of(ERROR_MUTUALLY_EXCLUSIVE_IDENTIFIERS));
@@ -72,7 +72,7 @@ public class AuthorizationConfigurer
             .setResourceType(auth.resourceType())
             .setPermissionTypes(auth.permissions());
 
-    if (auth.isIdBased()) {
+    if (auth.hasResourceId()) {
       record
           .setResourceMatcher(AuthorizationScope.of(auth.resourceId()).getMatcher())
           .setResourceId(auth.resourceId());

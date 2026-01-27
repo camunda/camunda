@@ -49,11 +49,11 @@ public record ConfiguredAuthorization(
         ownerType, ownerId, resourceType, null, resourcePropertyName, permissions);
   }
 
-  public boolean isIdBased() {
+  public boolean hasResourceId() {
     return resourceId != null && !resourceId.isBlank();
   }
 
-  public boolean isPropertyBased() {
+  public boolean hasResourcePropertyName() {
     return resourcePropertyName != null && !resourcePropertyName.isBlank();
   }
 }
