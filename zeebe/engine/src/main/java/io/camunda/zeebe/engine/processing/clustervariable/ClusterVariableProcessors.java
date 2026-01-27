@@ -31,6 +31,11 @@ public class ClusterVariableProcessors {
             keyGenerator, writers, authCheckBehavior, distributionBehavior, clusterVariableState));
     typedRecordProcessors.onCommand(
         ValueType.CLUSTER_VARIABLE,
+        ClusterVariableIntent.UPDATE,
+        new ClusterVariableUpdateProcessor(
+            keyGenerator, writers, authCheckBehavior, distributionBehavior, clusterVariableState));
+    typedRecordProcessors.onCommand(
+        ValueType.CLUSTER_VARIABLE,
         ClusterVariableIntent.DELETE,
         new ClusterVariableDeleteProcessor(
             keyGenerator, writers, authCheckBehavior, distributionBehavior, clusterVariableState));

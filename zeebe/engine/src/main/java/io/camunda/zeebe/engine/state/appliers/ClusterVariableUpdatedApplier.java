@@ -30,4 +30,3 @@ public class ClusterVariableUpdatedApplier
     } // if ever no scope is given, it is better not to do anything for safety
   }
 }
-

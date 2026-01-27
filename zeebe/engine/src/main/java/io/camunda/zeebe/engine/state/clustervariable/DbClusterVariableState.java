@@ -70,6 +70,24 @@ public class DbClusterVariableState implements MutableClusterVariableState {
   }
 
   @Override
+  public void updateTenantScopedClusterVariable(final ClusterVariableRecord clusterVariableRecord) {
+    clusterVariableName.wrapBuffer(clusterVariableRecord.getNameBuffer());
+    clusterVariableScope.setValue(ClusterVariableScope.TENANT);
+    clusterVariableTenantId.wrapString(clusterVariableRecord.getTenantId());
+    clusterVariableInstance.setRecord(clusterVariableRecord);
+    clusterVariablesColumnFamily.update(clusterVariableKey, clusterVariableInstance);
+  }
+
+  @Override
+  public void updateGloballyScopedClusterVariable(
+      final ClusterVariableRecord clusterVariableRecord) {
+    clusterVariableName.wrapBuffer(clusterVariableRecord.getNameBuffer());
+    clusterVariableScope.setValue(ClusterVariableScope.GLOBAL);
+    clusterVariableInstance.setRecord(clusterVariableRecord);
+    clusterVariablesColumnFamily.update(clusterVariableKey, clusterVariableInstance);
+  }
+
+  @Override
   public void deleteTenantScopedClusterVariable(
       final DirectBuffer variableNameBuffer, final String tenantId) {
     clusterVariableName.wrapBuffer(variableNameBuffer);
