@@ -21,6 +21,7 @@ import io.camunda.exporter.handlers.AuthorizationCreatedUpdatedHandler;
 import io.camunda.exporter.handlers.AuthorizationDeletedHandler;
 import io.camunda.exporter.handlers.ClusterVariableCreatedHandler;
 import io.camunda.exporter.handlers.ClusterVariableDeletedHandler;
+import io.camunda.exporter.handlers.ClusterVariableUpdatedHandler;
 import io.camunda.exporter.handlers.CorrelatedMessageSubscriptionFromMessageStartEventSubscriptionHandler;
 import io.camunda.exporter.handlers.CorrelatedMessageSubscriptionFromProcessMessageSubscriptionHandler;
 import io.camunda.exporter.handlers.DecisionEvaluationHandler;
@@ -244,6 +245,9 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new ListViewVariableFromVariableHandler(
                 indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName()),
             new ClusterVariableCreatedHandler(
+                indexDescriptors.get(ClusterVariableIndex.class).getFullQualifiedName(),
+                configuration.getIndex().getVariableSizeThreshold()),
+            new ClusterVariableUpdatedHandler(
                 indexDescriptors.get(ClusterVariableIndex.class).getFullQualifiedName(),
                 configuration.getIndex().getVariableSizeThreshold()),
             new ClusterVariableDeletedHandler(
