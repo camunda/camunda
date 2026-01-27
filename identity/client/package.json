@@ -66,6 +66,7 @@
     "jsdom": "26.1.0",
     "license-checker": "25.0.1",
     "monaco-editor": "0.52.2",
+    "msw": "2.12.2",
     "playwright": "1.55.1",
     "prettier": "3.6.2",
     "rollup": "4.45.0",

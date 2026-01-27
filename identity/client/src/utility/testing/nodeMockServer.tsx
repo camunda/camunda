@@ -6,18 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { nodeMockServer } from "src/utility/testing/nodeMockServer.tsx";
+import {setupServer} from 'msw/node';
 
-beforeAll(() => {
-  nodeMockServer.listen({
-    onUnhandledRequest: "error",
-  });
-});
+const nodeMockServer = setupServer();
 
-afterEach(() => {
-  nodeMockServer.resetHandlers();
-});
-
-afterAll(() => {
-  nodeMockServer.close();
-});
+export {nodeMockServer};
