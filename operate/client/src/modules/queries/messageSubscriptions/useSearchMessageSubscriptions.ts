@@ -7,14 +7,24 @@
  */
 
 import {useQuery} from '@tanstack/react-query';
-import {type QueryMessageSubscriptionsRequestBody} from '@camunda/camunda-api-zod-schemas/8.8';
+import {
+  type QueryMessageSubscriptionsRequestBody,
+  type QueryMessageSubscriptionsResponseBody,
+} from '@camunda/camunda-api-zod-schemas/8.8';
 import {searchMessageSubscriptions} from 'modules/api/v2/messageSubscriptions/searchMessageSubscriptions';
 
-const useSearchMessageSubscriptions = (
+type QueryOptions<T> = {
+  select?: (result: QueryMessageSubscriptionsResponseBody) => T;
+  enabled?: boolean;
+};
+
+const useSearchMessageSubscriptions = <
+  T = QueryMessageSubscriptionsResponseBody,
+>(
   payload: QueryMessageSubscriptionsRequestBody,
-  options?: {enabled?: boolean},
+  options?: QueryOptions<T>,
 ) => {
-  const {enabled = true} = options ?? {};
+  const {enabled = true, select} = options ?? {};
 
   return useQuery({
     queryKey: ['incidentsSearch', payload],
@@ -26,6 +36,7 @@ const useSearchMessageSubscriptions = (
       throw error;
     },
     enabled,
+    select,
   });
 };
 

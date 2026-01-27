@@ -49,7 +49,7 @@ export function createMetadataJson(
   } | null,
   job?: Job,
   calledProcessInstance?: ProcessInstance,
-  messageSubscription?: MessageSubscription,
+  messageSubscriptions?: MessageSubscription[],
   calledDecisionDefinition?: DecisionDefinition,
   calledDecisionInstance?: DecisionInstance,
   userTask?: Partial<UserTaskSubset> | null,
@@ -70,7 +70,16 @@ export function createMetadataJson(
     externalFormReference,
   } = userTask ?? {};
 
-  const {messageName, correlationKey} = messageSubscription ?? {};
+  const transformedMessageSubscriptions =
+    messageSubscriptions && messageSubscriptions.length > 0
+      ? messageSubscriptions.map((subscription) => ({
+          messageName: subscription.messageName,
+          correlationKey: subscription.correlationKey,
+          subscriptionState: subscription.messageSubscriptionState,
+          lastUpdated: subscription.lastUpdatedDate,
+          elementId: subscription.elementId,
+        }))
+      : undefined;
 
   return JSON.stringify({
     calledProcessDefinitionName:
@@ -116,7 +125,6 @@ export function createMetadataJson(
     candidateGroups,
     candidateUsers,
     externalFormReference,
-    messageName,
-    correlationKey,
+    messageSubscriptions: transformedMessageSubscriptions,
   });
 }
