@@ -132,7 +132,6 @@ final class CorrelatedMessageSubscriptionFromMessageStartEventSubscriptionHandle
         .isEqualTo(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(timestamp)));
     assertThat(entity.flowNodeId()).isEqualTo(elementId);
     assertThat(entity.flowNodeInstanceKey()).isNull();
-    assertThat(entity.historyCleanupDate()).isNull();
     assertThat(entity.messageKey()).isEqualTo(messageKey);
     assertThat(entity.messageName()).isEqualTo(messageName);
     assertThat(entity.partitionId()).isEqualTo(partitionId);

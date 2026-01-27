@@ -8,7 +8,6 @@
 package io.camunda.db.rdbms.write.domain;
 
 import io.camunda.util.ObjectBuilder;
-import java.time.OffsetDateTime;
 import java.util.Objects;
 import java.util.function.Function;
 
@@ -22,7 +21,6 @@ public final class SequenceFlowDbModel implements DbModel<SequenceFlowDbModel> {
   private String processDefinitionId;
   private String tenantId;
   private int partitionId;
-  private OffsetDateTime historyCleanupDate;
 
   public String sequenceFlowId() {
     return ID_PATTERN.formatted(processInstanceKey, flowNodeId);
@@ -58,14 +56,6 @@ public final class SequenceFlowDbModel implements DbModel<SequenceFlowDbModel> {
 
   public void partitionId(final int partitionId) {
     this.partitionId = partitionId;
-  }
-
-  public OffsetDateTime historyCleanupDate() {
-    return historyCleanupDate;
-  }
-
-  public void historyCleanupDate(final OffsetDateTime historyCleanupDate) {
-    this.historyCleanupDate = historyCleanupDate;
   }
 
   @Override
@@ -157,7 +147,6 @@ public final class SequenceFlowDbModel implements DbModel<SequenceFlowDbModel> {
     private String processDefinitionId;
     private String tenantId;
     private int partitionId;
-    private OffsetDateTime historyCleanupDate;
 
     public Builder flowNodeId(final String flowNodeId) {
       this.flowNodeId = flowNodeId;
@@ -194,11 +183,6 @@ public final class SequenceFlowDbModel implements DbModel<SequenceFlowDbModel> {
       return this;
     }
 
-    public Builder historyCleanupDate(final OffsetDateTime historyCleanupDate) {
-      this.historyCleanupDate = historyCleanupDate;
-      return this;
-    }
-
     @Override
     public SequenceFlowDbModel build() {
       final var dbModel = new SequenceFlowDbModel();
@@ -209,7 +193,6 @@ public final class SequenceFlowDbModel implements DbModel<SequenceFlowDbModel> {
       dbModel.processDefinitionId(processDefinitionId);
       dbModel.tenantId(tenantId);
       dbModel.partitionId(partitionId);
-      dbModel.historyCleanupDate(historyCleanupDate);
       return dbModel;
     }
   }

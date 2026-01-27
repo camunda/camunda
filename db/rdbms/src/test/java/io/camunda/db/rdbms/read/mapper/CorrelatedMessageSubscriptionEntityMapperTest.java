@@ -23,7 +23,6 @@ public class CorrelatedMessageSubscriptionEntityMapperTest {
         new CorrelatedMessageSubscriptionDbModel.Builder()
             .correlationKey("testCorrelationKey")
             .correlationTime(OffsetDateTime.now().plusDays(1))
-            .historyCleanupDate(OffsetDateTime.now().plusDays(3))
             .messageKey(123L)
             .messageName("testMessageName")
             .flowNodeId("testFlowNodeId")

@@ -42,7 +42,6 @@ public class UserTaskDbModel implements Copyable<UserTaskDbModel> {
   private Integer priority;
   private Set<String> tags;
   private int partitionId;
-  private OffsetDateTime historyCleanupDate;
 
   public UserTaskDbModel(final Long userTaskKey) {
     this.userTaskKey = userTaskKey;
@@ -70,8 +69,7 @@ public class UserTaskDbModel implements Copyable<UserTaskDbModel> {
       final Map<String, String> customHeaders,
       final Integer priority,
       final Set<String> tags,
-      final int partitionId,
-      final OffsetDateTime historyCleanupDate) {
+      final int partitionId) {
     this.userTaskKey = userTaskKey;
     this.elementId = elementId;
     this.name = name;
@@ -95,7 +93,6 @@ public class UserTaskDbModel implements Copyable<UserTaskDbModel> {
     this.priority = priority;
     this.tags = tags;
     this.partitionId = partitionId;
-    this.historyCleanupDate = historyCleanupDate;
   }
 
   @Override
@@ -303,14 +300,6 @@ public class UserTaskDbModel implements Copyable<UserTaskDbModel> {
     return partitionId;
   }
 
-  public OffsetDateTime historyCleanupDate() {
-    return historyCleanupDate;
-  }
-
-  public void historyCleanupDate(final OffsetDateTime historyCleanupDate) {
-    this.historyCleanupDate = historyCleanupDate;
-  }
-
   public Builder toBuilder() {
     return new Builder()
         .userTaskKey(userTaskKey)
@@ -336,8 +325,7 @@ public class UserTaskDbModel implements Copyable<UserTaskDbModel> {
         .customHeaders(customHeaders)
         .priority(priority)
         .tags(tags)
-        .partitionId(partitionId)
-        .historyCleanupDate(historyCleanupDate);
+        .partitionId(partitionId);
   }
 
   public static class Builder implements ObjectBuilder<UserTaskDbModel> {
@@ -366,7 +354,6 @@ public class UserTaskDbModel implements Copyable<UserTaskDbModel> {
     private Integer priority;
     private Set<String> tags;
     private int partitionId;
-    private OffsetDateTime historyCleanupDate;
 
     // Public constructor to initialize the builder
     public Builder() {}
@@ -497,11 +484,6 @@ public class UserTaskDbModel implements Copyable<UserTaskDbModel> {
       return this;
     }
 
-    public Builder historyCleanupDate(final OffsetDateTime value) {
-      historyCleanupDate = value;
-      return this;
-    }
-
     // Build method to create the record
     @Override
     public UserTaskDbModel build() {
@@ -528,8 +510,7 @@ public class UserTaskDbModel implements Copyable<UserTaskDbModel> {
               customHeaders,
               priority,
               tags,
-              partitionId,
-              historyCleanupDate);
+              partitionId);
 
       model.candidateUsers(candidateUsers);
       model.candidateGroups(candidateGroups);

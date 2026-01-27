@@ -188,12 +188,10 @@
                           JOB_KEY,
                           TENANT_ID,
                           PARTITION_ID,
-                          TREE_PATH,
-                          HISTORY_CLEANUP_DATE)
+                          TREE_PATH)
     VALUES (#{incidentKey}, #{flowNodeInstanceKey}, #{flowNodeId}, #{processInstanceKey}, #{rootProcessInstanceKey},
             #{processDefinitionId}, #{processDefinitionKey}, #{errorMessage}, #{errorMessageHash}, #{errorType},
-            #{state}, #{creationDate, jdbcType=TIMESTAMP}, #{jobKey}, #{tenantId}, #{partitionId}, #{treePath},
-            #{historyCleanupDate, jdbcType=TIMESTAMP})
+            #{state}, #{creationDate, jdbcType=TIMESTAMP}, #{jobKey}, #{tenantId}, #{partitionId}, #{treePath})
   </insert>
 
   <update id="update" parameterType="io.camunda.db.rdbms.write.domain.IncidentDbModel">
@@ -210,8 +208,7 @@
         CREATION_DATE          = #{creationDate, jdbcType=TIMESTAMP},
         JOB_KEY                = #{jobKey},
         TENANT_ID              = #{tenantId},
-        TREE_PATH              = #{treePath},
-        HISTORY_CLEANUP_DATE   = #{historyCleanupDate, jdbcType=TIMESTAMP}
+        TREE_PATH              = #{treePath}
     WHERE INCIDENT_KEY = #{incidentKey}
   </update>
 
