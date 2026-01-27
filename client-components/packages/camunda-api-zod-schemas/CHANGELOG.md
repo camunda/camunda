@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.0.35
+
+### 🚀 Enhancements
+
+- add process-instance modification request to 8.9 API schema ([#44723](https://github.com/camunda/camunda/pull/44723))
+
+### ❤️ Contributors
+
+- Christoph Fricke ([@christoph-fricke](https://github.com/christoph-fricke))
+
 ## v0.0.34
 
 ### 🚀 Enhancements
