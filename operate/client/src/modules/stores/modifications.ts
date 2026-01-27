@@ -36,6 +36,9 @@ type VariableInstruction = NonNullable<
   ActivateInstruction['variableInstructions']
 >[number];
 
+/** Maps internal scopeId to elementIds. */
+type ScopeMap = {[internalScopeId: string]: string};
+
 type FlowNodeModificationPayload =
   | {
       operation: 'ADD_TOKEN';
@@ -443,22 +446,34 @@ class Modifications {
     );
   }
 
+  #getScopeMap(
+    scopeIds: string[],
+    targetElementId: string,
+    parentScopeIds: {
+      [elementId: string]: string;
+    },
+  ): ScopeMap {
+    let scopeMap: ScopeMap = {};
+    for (const [elementId, parentScopeId] of Object.entries(parentScopeIds)) {
+      scopeMap[parentScopeId] = elementId;
+    }
+    for (const scopeId of scopeIds) {
+      scopeMap[scopeId] = targetElementId;
+    }
+
+    return scopeMap;
+  }
+
   /** @param scopeMap Map of API scopeIds to local scopeIds (generated in the client). */
-  #getVariableInstructionsForScopeIds(
-    scopeMap: Record<string, string | undefined>,
+  #getVariableInstructionsForScopeMap(
+    scopeMap: ScopeMap,
   ): VariableInstruction[] {
     let instructions: VariableInstruction[] = [];
-    for (const [apiScopeId, scopeId] of Object.entries(scopeMap)) {
-      if (scopeId === undefined) {
-        continue;
-      }
-
+    for (const [scopeId, elementId] of Object.entries(scopeMap)) {
       const variables = this.#getVariablesForScope(scopeId);
-      if (!variables) {
-        continue;
+      if (variables !== undefined) {
+        instructions.push({variables, scopeId: elementId});
       }
-
-      instructions.push({variables, scopeId: apiScopeId});
     }
     return instructions;
   }
@@ -611,27 +626,29 @@ class Modifications {
           break;
         }
         case 'ADD_TOKEN': {
-          const scopeMap = {
-            ...modification.parentScopeIds,
-            [modification.flowNode.id]: modification.scopeId,
-          };
+          const scopeMap = this.#getScopeMap(
+            [modification.scopeId],
+            modification.flowNode.id,
+            modification.parentScopeIds,
+          );
 
           const instruction: ActivateInstruction = {
             elementId: modification.flowNode.id,
             ancestorElementInstanceKey:
               modification.ancestorElement?.instanceKey,
             variableInstructions:
-              this.#getVariableInstructionsForScopeIds(scopeMap),
+              this.#getVariableInstructionsForScopeMap(scopeMap),
           };
 
           activateInstructions.push(instruction);
           break;
         }
         case 'MOVE_TOKEN': {
-          const scopeMap = modification.scopeIds.reduce((map, scopeId) => {
-            map[modification.targetFlowNode.id] = scopeId;
-            return map;
-          }, modification.parentScopeIds);
+          const scopeMap = this.#getScopeMap(
+            modification.scopeIds,
+            modification.targetFlowNode.id,
+            modification.parentScopeIds,
+          );
 
           const instruction: MoveInstruction = {
             sourceElementInstruction: modification.flowNodeInstanceKey
@@ -652,7 +669,7 @@ class Modifications {
                 }
               : undefined,
             variableInstructions:
-              this.#getVariableInstructionsForScopeIds(scopeMap),
+              this.#getVariableInstructionsForScopeMap(scopeMap),
           };
 
           moveInstructions.push(instruction);
