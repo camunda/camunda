@@ -95,10 +95,8 @@ public class ClusterVariableController {
   public CompletableFuture<ResponseEntity<Object>> updateGlobalClusterVariable(
       @PathVariable("name") final String name,
       @RequestBody final UpdateClusterVariableRequest updateClusterVariableRequest) {
-    return RequestMapper.toGlobalClusterVariableUpdateRequest(
-            name,
-            updateClusterVariableRequest,
-            securityConfiguration.getCompiledIdValidationPattern())
+    return clusterVariableMapper
+        .toGlobalClusterVariableUpdateRequest(name, updateClusterVariableRequest)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::updateGlobalClusterVariable);
   }
 
@@ -107,11 +105,8 @@ public class ClusterVariableController {
       @PathVariable("tenantId") final String tenantId,
       @PathVariable("name") final String name,
       @RequestBody final UpdateClusterVariableRequest updateClusterVariableRequest) {
-    return RequestMapper.toTenantClusterVariableUpdateRequest(
-            name,
-            tenantId,
-            updateClusterVariableRequest,
-            securityConfiguration.getCompiledIdValidationPattern())
+    return clusterVariableMapper
+        .toTenantClusterVariableUpdateRequest(name, updateClusterVariableRequest, tenantId)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::updateTenantClusterVariable);
   }
 
