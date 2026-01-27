@@ -29,7 +29,8 @@ public enum AuthorizationResourceType {
       PermissionType.READ,
       PermissionType.UPDATE),
   COMPONENT(PermissionType.ACCESS),
-  CLUSTER_VARIABLE(PermissionType.CREATE, PermissionType.DELETE, PermissionType.READ),
+  CLUSTER_VARIABLE(
+      PermissionType.CREATE, PermissionType.DELETE, PermissionType.UPDATE, PermissionType.READ),
   DECISION_DEFINITION(
       PermissionType.CREATE_DECISION_INSTANCE,
       PermissionType.READ_DECISION_DEFINITION,
