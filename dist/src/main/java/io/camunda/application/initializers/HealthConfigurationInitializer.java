@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.DefaultPropertiesPropertySource;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
@@ -41,6 +42,9 @@ public class HealthConfigurationInitializer
   private static final String SPRING_READINESS_GROUP_PROPERTY =
       "management.endpoint.health.group.readiness.include";
 
+  @Value("camunda.mode")
+  private String camundaMode;
+  
   @Override
   public void initialize(final ConfigurableApplicationContext context) {
     final var environment = context.getEnvironment();
