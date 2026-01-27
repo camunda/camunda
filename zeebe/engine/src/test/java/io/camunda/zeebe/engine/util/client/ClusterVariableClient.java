@@ -130,4 +130,27 @@ public final class ClusterVariableClient {
             clusterVariableRecord);
     return expectation.apply(position);
   }
+
+  public Record<ClusterVariableRecordValue> update() {
+    final long position =
+        writer.writeCommand(
+            DEFAULT_KEY,
+            requestStreamId,
+            requestId,
+            ClusterVariableIntent.UPDATE,
+            clusterVariableRecord);
+    return expectation.apply(position);
+  }
+
+  public Record<ClusterVariableRecordValue> update(final String username) {
+    final long position =
+        writer.writeCommand(
+            DEFAULT_KEY,
+            requestStreamId,
+            requestId,
+            ClusterVariableIntent.UPDATE,
+            username,
+            clusterVariableRecord);
+    return expectation.apply(position);
+  }
 }
