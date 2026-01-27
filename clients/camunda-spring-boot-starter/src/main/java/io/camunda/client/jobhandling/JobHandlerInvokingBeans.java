@@ -109,6 +109,13 @@ public class JobHandlerInvokingBeans implements JobHandler {
     final CompleteJobCommandStep1 completeCommand = jobClient.newCompleteCommand(job.getKey());
     if (result instanceof final UserTaskResultFunction resultFunction) {
       return completeCommand.withResult(r -> resultFunction.apply(r.forUserTask()));
+    } else if (result instanceof final AdHocSubProcessResultFunction resultFunction) {
+      final CompleteJobCommandStep1 step1 =
+          completeCommand.withResult(r -> resultFunction.apply(r.forAdHocSubProcess()));
+      if (resultFunction.getVariables() != null) {
+        JobHandlingUtil.applyVariables(resultFunction.getVariables(), completeCommand);
+      }
+      return step1;
     } else {
       return JobHandlingUtil.applyVariables(result, completeCommand);
     }
