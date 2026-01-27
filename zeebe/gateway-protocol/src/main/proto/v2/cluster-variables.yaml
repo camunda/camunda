@@ -134,6 +134,49 @@ paths:
                 $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+    patch:
+      operationId: updateGlobalClusterVariable
+      x-eventually-consistent: false
+      tags:
+        - Cluster Variable
+      summary: Update a global-scoped cluster variable
+      description: |
+        Updates the value of an existing global cluster variable.
+        The variable must exist, otherwise a 404 error is returned.
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The name of the cluster variable
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateClusterVariableRequest'
+      responses:
+        '200':
+          description: Cluster variable updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClusterVariableResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: Cluster variable not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
     delete:
       operationId: deleteGlobalClusterVariable
       x-eventually-consistent: false
@@ -187,6 +230,55 @@ paths:
       responses:
         '200':
           description: Cluster variable found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClusterVariableResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: Cluster variable not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+    patch:
+      operationId: updateTenantClusterVariable
+      x-eventually-consistent: false
+      tags:
+        - Cluster Variable
+      summary: Update a tenant-scoped cluster variable
+      description: |
+        Updates the value of an existing tenant-scoped cluster variable.
+        The variable must exist, otherwise a 404 error is returned.
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            $ref: 'identifiers.yaml#/components/schemas/TenantId'
+          description: The tenant ID
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The name of the cluster variable
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateClusterVariableRequest'
+      responses:
+        '200':
+          description: Cluster variable updated successfully
           content:
             application/json:
               schema:
@@ -260,6 +352,14 @@ components:
         value:
           type: object
           description: The value of the cluster variable. Can be any JSON object or primitive value. Will be serialized as a JSON string in responses.
+    UpdateClusterVariableRequest:
+      type: object
+      required:
+        - value
+      properties:
+        value:
+          type: object
+          description: The new value of the cluster variable. Can be any JSON object or primitive value. Will be serialized as a JSON string in responses.
     ClusterVariableResult:
       type: object
       allOf:
