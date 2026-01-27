@@ -10,12 +10,18 @@ package io.camunda.zeebe.engine.processing.identity.initialize;
 import io.camunda.security.configuration.ConfiguredAuthorization;
 import io.camunda.security.validation.AuthorizationValidator;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
 
 public class AuthorizationConfigurer
     implements EntityInitializationConfigurer<ConfiguredAuthorization, AuthorizationRecord> {
+
+  private static final String ERROR_MUTUALLY_EXCLUSIVE_IDENTIFIERS =
+      "resourceId and resourcePropertyName are mutually exclusive. Provide only one of them.";
+  private static final String ERROR_MISSING_IDENTIFIER =
+      "Either resourceId or resourcePropertyName must be provided.";
 
   private final AuthorizationValidator validator;
 
@@ -25,13 +31,31 @@ public class AuthorizationConfigurer
 
   @Override
   public Either<List<String>, AuthorizationRecord> configure(final ConfiguredAuthorization auth) {
-    final List<String> violations =
-        validator.validateIdBased(
-            auth.ownerId(),
-            auth.ownerType(),
-            auth.resourceType(),
-            auth.resourceId(),
-            auth.permissions());
+    final boolean hasResourceId = auth.isIdBased();
+    final boolean hasPropertyName = auth.isPropertyBased();
+
+    if (hasResourceId && hasPropertyName) {
+      return Either.left(List.of(ERROR_MUTUALLY_EXCLUSIVE_IDENTIFIERS));
+    }
+
+    if (!hasResourceId && !hasPropertyName) {
+      return Either.left(List.of(ERROR_MISSING_IDENTIFIER));
+    }
+
+    final var violations =
+        hasResourceId
+            ? validator.validateIdBased(
+                auth.ownerId(),
+                auth.ownerType(),
+                auth.resourceType(),
+                auth.resourceId(),
+                auth.permissions())
+            : validator.validatePropertyBased(
+                auth.ownerId(),
+                auth.ownerType(),
+                auth.resourceType(),
+                auth.resourcePropertyName(),
+                auth.permissions());
 
     if (!violations.isEmpty()) {
       return Either.left(violations);
@@ -41,12 +65,23 @@ public class AuthorizationConfigurer
   }
 
   private AuthorizationRecord mapToRecord(final ConfiguredAuthorization auth) {
-    return new AuthorizationRecord()
-        .setOwnerType(auth.ownerType())
-        .setOwnerId(auth.ownerId())
-        .setResourceType(auth.resourceType())
-        .setResourceMatcher(AuthorizationScope.of(auth.resourceId()).getMatcher())
-        .setResourceId(auth.resourceId())
-        .setPermissionTypes(auth.permissions());
+    final AuthorizationRecord record =
+        new AuthorizationRecord()
+            .setOwnerType(auth.ownerType())
+            .setOwnerId(auth.ownerId())
+            .setResourceType(auth.resourceType())
+            .setPermissionTypes(auth.permissions());
+
+    if (auth.isIdBased()) {
+      record
+          .setResourceMatcher(AuthorizationScope.of(auth.resourceId()).getMatcher())
+          .setResourceId(auth.resourceId());
+    } else {
+      record
+          .setResourceMatcher(AuthorizationResourceMatcher.PROPERTY)
+          .setResourcePropertyName(auth.resourcePropertyName());
+    }
+
+    return record;
   }
 }
