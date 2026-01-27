@@ -44,7 +44,7 @@ public class HealthConfigurationInitializer
 
   @Value("camunda.mode")
   private String camundaMode;
-  
+
   @Override
   public void initialize(final ConfigurableApplicationContext context) {
     final var environment = context.getEnvironment();
