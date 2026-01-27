@@ -17,7 +17,9 @@ import io.camunda.security.validation.AuthorizationValidator;
 import io.camunda.security.validation.IdentifierValidator;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
@@ -124,20 +126,45 @@ class AuthorizationConfigurerTest {
 
   @ParameterizedTest(name = "[{index}]: {0}")
   @MethodSource("validAuthorizations")
-  void shouldSuccessfullyConfigure(final ConfiguredAuthorization authorization) {
+  void shouldSuccessfullyConfigure(
+      final ConfiguredAuthorization authorization, final AuthorizationRecord expected) {
     // when:
-    final Either<List<String>, AuthorizationRecord> result =
-        new AuthorizationConfigurer(VALIDATOR).configure(authorization);
+    final var result = new AuthorizationConfigurer(VALIDATOR).configure(authorization);
 
     // then:
     assertThat(result.isRight()).isTrue();
+    assertThat(result.get()).isEqualTo(expected);
   }
 
   private static Stream<Arguments> validAuthorizations() {
     return Stream.of(
-        arguments(named("Valid wildcard authorization", VALID_WILDCARD_AUTH)),
-        arguments(named("Valid ID-based authorization", VALID_ID_BASED_AUTH)),
-        arguments(named("Valid PROPERTY-based authorization", VALID_PROPERTY_BASED_AUTH)));
+        arguments(
+            named("Valid wildcard authorization", VALID_WILDCARD_AUTH),
+            new AuthorizationRecord()
+                .setOwnerType(VALID_WILDCARD_AUTH.ownerType())
+                .setOwnerId(VALID_WILDCARD_AUTH.ownerId())
+                .setResourceType(VALID_WILDCARD_AUTH.resourceType())
+                .setResourceMatcher(AuthorizationScope.WILDCARD.getMatcher())
+                .setResourceId(VALID_WILDCARD_AUTH.resourceId())
+                .setPermissionTypes(VALID_WILDCARD_AUTH.permissions())),
+        arguments(
+            named("Valid ID-based authorization", VALID_ID_BASED_AUTH),
+            new AuthorizationRecord()
+                .setOwnerType(VALID_ID_BASED_AUTH.ownerType())
+                .setOwnerId(VALID_ID_BASED_AUTH.ownerId())
+                .setResourceType(VALID_ID_BASED_AUTH.resourceType())
+                .setResourceMatcher(AuthorizationResourceMatcher.ID)
+                .setResourceId(VALID_ID_BASED_AUTH.resourceId())
+                .setPermissionTypes(VALID_ID_BASED_AUTH.permissions())),
+        arguments(
+            named("Valid PROPERTY-based authorization", VALID_PROPERTY_BASED_AUTH),
+            new AuthorizationRecord()
+                .setOwnerType(VALID_PROPERTY_BASED_AUTH.ownerType())
+                .setOwnerId(VALID_PROPERTY_BASED_AUTH.ownerId())
+                .setResourceType(VALID_PROPERTY_BASED_AUTH.resourceType())
+                .setResourceMatcher(AuthorizationResourceMatcher.PROPERTY)
+                .setResourcePropertyName(VALID_PROPERTY_BASED_AUTH.resourcePropertyName())
+                .setPermissionTypes(VALID_PROPERTY_BASED_AUTH.permissions())));
   }
 
   @Test
@@ -150,8 +177,7 @@ class AuthorizationConfigurerTest {
             INVALID_WILDCARD_AUTH_MISSING_OWNER_TYPE);
 
     // when:
-    final Either<List<String>, List<AuthorizationRecord>> result =
-        new AuthorizationConfigurer(VALIDATOR).configureEntities(auths);
+    final var result = new AuthorizationConfigurer(VALIDATOR).configureEntities(auths);
 
     // then:
     assertThat(result.isLeft()).isTrue();
