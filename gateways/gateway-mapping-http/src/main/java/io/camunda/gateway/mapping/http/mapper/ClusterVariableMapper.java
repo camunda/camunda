@@ -10,6 +10,7 @@ package io.camunda.gateway.mapping.http.mapper;
 import io.camunda.gateway.mapping.http.RequestMapper;
 import io.camunda.gateway.mapping.http.validator.ClusterVariableRequestValidator;
 import io.camunda.gateway.protocol.model.CreateClusterVariableRequest;
+import io.camunda.gateway.protocol.model.UpdateClusterVariableRequest;
 import io.camunda.service.ClusterVariableServices.ClusterVariableRequest;
 import io.camunda.zeebe.util.Either;
 import org.springframework.http.ProblemDetail;
@@ -29,6 +30,21 @@ public class ClusterVariableMapper {
         clusterVariableRequestValidator.validateTenantClusterVariableCreateRequest(
             request, tenantId),
         () -> new ClusterVariableRequest(request.getName(), request.getValue(), tenantId));
+  }
+
+  public Either<ProblemDetail, ClusterVariableRequest> toGlobalClusterVariableUpdateRequest(
+      final String name, final UpdateClusterVariableRequest request) {
+    return RequestMapper.getResult(
+        clusterVariableRequestValidator.validateGlobalClusterVariableUpdateRequest(name, request),
+        () -> new ClusterVariableRequest(name, request.getValue(), null));
+  }
+
+  public Either<ProblemDetail, ClusterVariableRequest> toTenantClusterVariableUpdateRequest(
+      final String name, final UpdateClusterVariableRequest request, final String tenantId) {
+    return RequestMapper.getResult(
+        clusterVariableRequestValidator.validateTenantClusterVariableUpdateRequest(
+            name, request, tenantId),
+        () -> new ClusterVariableRequest(name, request.getValue(), tenantId));
   }
 
   public Either<ProblemDetail, ClusterVariableRequest> toTenantClusterVariableRequest(
