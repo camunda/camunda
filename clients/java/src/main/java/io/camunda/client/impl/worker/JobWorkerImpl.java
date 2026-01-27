@@ -72,6 +72,7 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
   private final long initialPollInterval;
   private final JobStreamer jobStreamer;
   private final BackoffSupplier backoffSupplier;
+  private final BackoffSupplier streamBackoffSupplier;
   private final JobWorkerMetrics metrics;
 
   // state synchronization
@@ -90,6 +91,7 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
       final JobPoller jobPoller,
       final JobStreamer jobStreamer,
       final BackoffSupplier backoffSupplier,
+      final BackoffSupplier streamBackoffSupplier,
       final JobWorkerMetrics metrics,
       final Executor jobExecutor) {
     this.maxJobsActive = maxJobsActive;
@@ -102,6 +104,7 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
     this.jobStreamer = jobStreamer;
     initialPollInterval = pollInterval.toMillis();
     this.backoffSupplier = backoffSupplier;
+    this.streamBackoffSupplier = streamBackoffSupplier;
     this.metrics = metrics;
 
     claimableJobPoller = new AtomicReference<>(jobPoller);
@@ -206,7 +209,7 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
     if (jobStreamer.isOpen() && activatedJobs == 0) {
       // to keep polling requests to a minimum, if streaming is enabled, and the response is empty,
       // we back off on poll success responses.
-      backoff(jobPoller);
+      backoff(jobPoller, streamBackoffSupplier);
       LOG.trace("No jobs to activate via polling, will backoff and poll in {}", pollInterval);
     } else {
       pollInterval = initialPollInterval;
@@ -218,20 +221,20 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
   }
 
   private void onPollError(final JobPoller jobPoller, final Throwable error) {
-    backoff(jobPoller);
+    backoff(jobPoller, backoffSupplier);
     LOG.debug(
         "Failed to activate jobs due to {}, delay retry for {} ms",
         error.getMessage(),
         pollInterval);
   }
 
-  private void backoff(final JobPoller jobPoller) {
-    getPollInterval();
+  private void backoff(final JobPoller jobPoller, final BackoffSupplier backoffSupplier) {
+    getPollInterval(backoffSupplier);
     releaseJobPoller(jobPoller);
     schedulePoll();
   }
 
-  private void getPollInterval() {
+  private void getPollInterval(final BackoffSupplier backoffSupplier) {
     final long prevInterval = pollInterval;
     try {
       pollInterval = backoffSupplier.supplyRetryDelay(prevInterval);
