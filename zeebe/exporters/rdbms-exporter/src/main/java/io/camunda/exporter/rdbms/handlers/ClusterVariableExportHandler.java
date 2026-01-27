@@ -31,6 +31,7 @@ public class ClusterVariableExportHandler
   public boolean canExport(final Record<ClusterVariableRecordValue> record) {
     return record.getValueType() == ValueType.CLUSTER_VARIABLE
         && (record.getIntent() == ClusterVariableIntent.CREATED
+            || record.getIntent() == ClusterVariableIntent.UPDATED
             || record.getIntent() == ClusterVariableIntent.DELETED);
   }
 
@@ -38,6 +39,8 @@ public class ClusterVariableExportHandler
   public void export(final Record<ClusterVariableRecordValue> record) {
     if (record.getIntent() == ClusterVariableIntent.CREATED) {
       clusterVariableWriter.create(map(record));
+    } else if (record.getIntent() == ClusterVariableIntent.UPDATED) {
+      clusterVariableWriter.update(map(record));
     } else if (record.getIntent() == ClusterVariableIntent.DELETED) {
       clusterVariableWriter.delete(map(record));
     }

@@ -72,6 +72,17 @@
     WHERE CLUSTER_VARIABLE_ID = #{id}
   </delete>
 
+  <update id="update" parameterType="io.camunda.db.rdbms.write.domain.ClusterVariableDbModel">
+    UPDATE ${prefix}CLUSTER_VARIABLE
+    SET TYPE = #{type},
+        DOUBLE_VALUE = #{doubleValue, jdbcType=DOUBLE},
+        LONG_VALUE = #{longValue, jdbcType=NUMERIC},
+        VAR_VALUE = #{value},
+        VAR_FULL_VALUE = #{fullValue},
+        IS_PREVIEW = #{isPreview}
+    WHERE CLUSTER_VARIABLE_ID = #{id}
+  </update>
+
   <sql id="searchFilter">
     <where>
       <!-- authorization filters -->
