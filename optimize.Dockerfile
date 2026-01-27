@@ -103,8 +103,6 @@ EXPOSE 8090 8091
 
 VOLUME /tmp
 
-WORKDIR /optimize
-
 USER root
 RUN addgroup -S -g 1001 camunda && \
     adduser -S -g 1001 -u 1001 camunda && \
@@ -113,8 +111,11 @@ RUN addgroup -S -g 1001 camunda && \
 
 COPY --from=tools --chown=1001:0 /jattach /usr/bin/jattach
 COPY --from=tools --chown=1001:0 /wait-for-it.sh /usr/local/bin/wait-for-it.sh
-COPY --chown=1001:1001 --from=base /tmp/build .
 
+WORKDIR /optimize
 USER 1001:1001
 
-ENTRYPOINT ["tini", "--", "./optimize.sh"]
+ENTRYPOINT ["tini", "--"]
+CMD ["./optimize.sh"]
+
+COPY --chown=1001:1001 --from=base /tmp/build .
