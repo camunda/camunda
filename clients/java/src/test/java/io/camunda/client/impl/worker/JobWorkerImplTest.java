@@ -143,12 +143,12 @@ public final class JobWorkerImplTest {
     // given a gateway that responds with some jobs
     gateway.respondWith(TestData.jobs(0));
 
-    // and a client with stream enabled and retry delay supplier that is slowing down polling
+    // and a client with stream enabled and stream backoff supplier that is slowing down polling
     client
         .newWorker()
         .jobType("test")
         .handler(NOOP_JOB_HANDLER)
-        .backoffSupplier(prev -> SLOW_POLL_DELAY_IN_MS)
+        .streamBackoffSupplier(prev -> SLOW_POLL_DELAY_IN_MS)
         .streamEnabled(true)
         .open();
 
