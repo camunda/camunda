@@ -18,6 +18,38 @@ import org.apache.ibatis.type.JdbcType;
 import org.apache.ibatis.type.MappedJdbcTypes;
 import org.apache.ibatis.type.MappedTypes;
 
+/**
+ * MyBatis type handler that maps between a Java {@link java.util.List} of {@link java.lang.Long}
+ * values and a PostgreSQL {@code BIGINT[]} column.
+ *
+ * <p>Conversion rules:
+ *
+ * <ul>
+ *   <li>When writing parameters, the handler creates a JDBC {@link java.sql.Array} of type {@code
+ *       "bigint"} from the provided {@code List&lt;Long&gt;} and binds it to the prepared
+ *       statement.
+ *   <li>When reading results, the handler converts the JDBC {@link java.sql.Array} back into an
+ *       immutable {@code List&lt;Long&gt;} instance. If the underlying SQL value is {@code NULL},
+ *       this method returns {@code null}.
+ * </ul>
+ *
+ * <p>Typical MyBatis usage:
+ *
+ * <pre>{@code
+ * <!-- Parameter mapping -->
+ * <insert id="insertExample" parameterType="map">
+ *   INSERT INTO example_table (id_list)
+ *   VALUES (#{ids, typeHandler=io.camunda.db.rdbms.sql.typehandler.PostgresLongListToArrayTypeHandler})
+ * </insert>
+ *
+ * <!-- Result mapping -->
+ * <resultMap id="exampleResultMap" type="Example">
+ *   <result property="ids"
+ *           column="id_list"
+ *           typeHandler="io.camunda.db.rdbms.sql.typehandler.PostgresLongListToArrayTypeHandler"/>
+ * </resultMap>
+ * }</pre>
+ */
 @MappedTypes(List.class)
 @MappedJdbcTypes(JdbcType.ARRAY)
 public class PostgresLongListToArrayTypeHandler extends BaseTypeHandler<List<Long>> {
@@ -27,7 +59,15 @@ public class PostgresLongListToArrayTypeHandler extends BaseTypeHandler<List<Lon
       final PreparedStatement ps, final int i, final List<Long> parameter, final JdbcType jdbcType)
       throws SQLException {
     final Array array = ps.getConnection().createArrayOf("bigint", parameter.toArray());
-    ps.setArray(i, array);
+    try {
+      ps.setArray(i, array);
+    } finally {
+      try {
+        array.free();
+      } catch (final SQLException ignored) {
+        // ignore exception on free to avoid masking earlier exceptions
+      }
+    }
   }
 
   @Override
@@ -52,6 +92,14 @@ public class PostgresLongListToArrayTypeHandler extends BaseTypeHandler<List<Lon
     if (array == null) {
       return null;
     }
-    return List.of((Long[]) array.getArray());
+    try {
+      return List.of((Long[]) array.getArray());
+    } finally {
+      try {
+        array.free();
+      } catch (final SQLException ignored) {
+        // ignore exception on free to avoid masking earlier exceptions
+      }
+    }
   }
 }

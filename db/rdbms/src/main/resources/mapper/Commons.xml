@@ -246,7 +246,7 @@
   </sql>
 
   <!--
-    Special handling for PostgreSQL to delete using ctid or or a specified primary key column.
+    Special handling for PostgreSQL to delete using ctid or a specified primary key column.
     This avoids issues with large IN clauses by using ANY with an array parameter.
     -->
   <sql id="processInstanceHistoryDeletion" databaseId="postgresql">

@@ -41,6 +41,24 @@ class PostgresLongListToArrayTypeHandlerTest {
 
     verify(conn).createArrayOf(eq("bigint"), eq(new Long[] {1L, 2L, 3L}));
     verify(ps).setArray(1, array);
+    verify(array).free();
+  }
+
+  @Test
+  void shouldConvertEmptyListToArray() throws Exception {
+    final PreparedStatement ps = mock(PreparedStatement.class);
+    final Connection conn = mock(Connection.class);
+    final Array array = mock(Array.class);
+
+    when(ps.getConnection()).thenReturn(conn);
+    when(conn.createArrayOf(eq("bigint"), any())).thenReturn(array);
+
+    final List<Long> input = List.of();
+    handler.setNonNullParameter(ps, 1, input, null);
+
+    verify(conn).createArrayOf(eq("bigint"), eq(new Long[] {}));
+    verify(ps).setArray(1, array);
+    verify(array).free();
   }
 
   @Test
@@ -54,6 +72,7 @@ class PostgresLongListToArrayTypeHandlerTest {
     final List<Long> result = handler.getNullableResult(rs, "col");
 
     assertThat(result).containsExactly(10L, 20L, 30L);
+    verify(array).free();
   }
 
   @Test
