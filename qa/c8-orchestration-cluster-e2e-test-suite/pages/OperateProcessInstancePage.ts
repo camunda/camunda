@@ -78,10 +78,7 @@ class OperateProcessInstancePage {
   readonly incidentSection: Locator;
   readonly incidentErrorType: Locator;
   readonly viewParentInstanceLink: Locator;
-  readonly incidentErrorIndicators: Locator;
   readonly incidentErrorMessage: Locator;
-  readonly RootCauseProcessLink: Locator;
-  readonly RootCauseProcessInstance!: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -200,21 +197,12 @@ class OperateProcessInstancePage {
     this.viewParentInstanceLink = page.getByRole('link', {
       name: /view parent instance/i,
     });
-    this.incidentErrorIndicators = page.locator(
-      '[data-testid="incident-error-indicator"]',
-    );
     this.metadataPopover = page.getByTestId('popover');
-    this.incidentErrorType = page
+    this.incidentErrorType = this.metadataPopover
       .getByText('Type')
       .locator('xpath=following-sibling::*[1]');
     this.incidentErrorMessage = this.metadataPopover.locator('text=/error/i');
     this.incidentSection = page.getByText('IncidentView');
-    this.RootCauseProcessInstance = this.page.getByText(
-      'Root Cause Process Instancecall-level-1-process -',
-    );
-    this.RootCauseProcessLink = this.page.getByRole('link', {
-      name: 'call-level-1-process -',
-    });
   }
 
   async connectorResultVariableName(name: string): Promise<Locator> {
@@ -606,7 +594,7 @@ class OperateProcessInstancePage {
   }
 
   async getDiagramElementBadge(elementId: string) {
-    return this.page.$(`[data-element-id="${elementId}"] .badge`);
+    return this.page.locator(`[data-element-id="${elementId}"] .badge`);
   }
 
   async verifyExecutionCountBadgesNotVisible(
@@ -641,9 +629,6 @@ class OperateProcessInstancePage {
     await this.viewParentInstanceLink.click();
   }
   // Methods for interacting with diagram elements for incident tests
-  async countIncidentErrorIndicators(): Promise<number> {
-    return await this.incidentErrorIndicators.count();
-  }
 
   async clickOnElementInDiagram(elementId: string): Promise<void> {
     await this.clickDiagramElement(elementId);
@@ -673,18 +658,37 @@ class OperateProcessInstancePage {
     return this.page.getByRole('link', {name: processName});
   }
 
-  async clickViewRootCauseProcessLink(): Promise<void> {
-    await this.RootCauseProcessInstance.scrollIntoViewIfNeeded();
-    await this.RootCauseProcessLink.waitFor({
+  async clickViewRootCauseProcessLink(processName: string): Promise<void> {
+    const rootCauseProcessInstance = this.page.getByText(
+      new RegExp(`Root Cause Process Instance${processName}\\s+-\\s+\\d+`),
+    );
+    const rootCauseProcessLink = this.page.getByRole('link', {
+      name: new RegExp(`^${processName}\\s+-\\s+\\d+$`),
+    });
+
+    await rootCauseProcessInstance.scrollIntoViewIfNeeded();
+    await rootCauseProcessLink.waitFor({
       state: 'visible',
       timeout: 30000,
     });
-    await this.RootCauseProcessLink.click();
+    await rootCauseProcessLink.click();
   }
 
   async clickCalledProcessLink(processName: string): Promise<void> {
     await this.getCalledProcessLink(processName).click();
   }
+  getRootCauseProcessInstance(processName: string): Locator {
+    return this.page.getByText(
+      new RegExp(`Root Cause Process Instance${processName}\\s+-\\s+\\d+`),
+    );
+  }
+
+  getRootCauseProcessLink(processName: string): Locator {
+    return this.page.getByRole('link', {
+      name: new RegExp(`^${processName}\\s+-\\s+\\d+$`),
+    });
+  }
+
   getIncidentErrorMessageByText(errorText: string): Locator {
     return this.metadataPopover.getByText(errorText);
   }

@@ -148,10 +148,14 @@ test.describe('Process Instance Incident', () => {
       ).toBeVisible();
 
       await expect(
-        operateProcessInstancePage.RootCauseProcessLink,
+        operateProcessInstancePage.getRootCauseProcessLink(
+          'call-level-1-process',
+        ),
       ).toBeVisible();
 
-      await operateProcessInstancePage.clickViewRootCauseProcessLink();
+      await operateProcessInstancePage.clickViewRootCauseProcessLink(
+        'call-level-1-process',
+      );
       await operateProcessInstancePage.viewParentInstanceLink.click({
         timeout: 10000,
       });
