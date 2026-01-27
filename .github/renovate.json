@@ -201,6 +201,19 @@
       "additionalBranchPrefix": "fe-"
     },
     {
+      "description": "Exclude bpmn-js usage in CPT testing that is not covered by CI to prevent breaking auto updates.",
+      "matchManagers": [
+        "npm"
+      ],
+      "matchFileNames": [
+        "testing/camunda-process-test-coverage-frontend/package.json"
+      ],
+      "matchPackageNames": [
+        "/bpmn-js/"
+      ],
+      "enabled": false
+    },
+    {
       "description": "Exclude frontend deps until Optimize migrates to react-router v6 & remove enzyme",
       "matchManagers": [
         "npm",
