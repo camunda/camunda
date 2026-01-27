@@ -63,6 +63,10 @@ const modifyProcessInstanceRequestBodySchema = z
 			(activateInstructions !== undefined && activateInstructions.length > 0) ||
 			(moveInstructions !== undefined && moveInstructions.length > 0) ||
 			(terminateInstructions !== undefined && terminateInstructions.length > 0),
+		{
+			message:
+				'At least one instruction (activateInstructions, moveInstructions, or terminateInstructions) must be provided with at least one element',
+		},
 	);
 type ModifyProcessInstanceRequestBody = z.infer<typeof modifyProcessInstanceRequestBodySchema>;
 
