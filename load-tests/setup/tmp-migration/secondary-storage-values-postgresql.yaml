@@ -1,0 +1,50 @@
+global:
+  postgresql:
+    auth:
+      database: camunda
+      username: camunda
+      password: camunda
+      postgresPassword: camunda
+
+postgresqlSharedPreloadLibraries: pg_stat_statements
+
+primary:
+  resources:
+    requests:
+      memory: 4Gi
+      cpu: 3000m
+    limits:
+      memory: 6Gi
+      cpu: 6000m
+
+  persistence:
+    size: 128Gi
+
+  extendedConfiguration: |-
+    # WAL Performance Tuning
+    wal_buffers = 64MB
+    max_wal_size = 4GB
+    min_wal_size = 1GB
+    checkpoint_timeout = 20min
+    checkpoint_completion_target = 0.9
+    wal_writer_delay = 200ms
+    wal_writer_flush_after = 1MB
+
+    # Memory Settings
+    shared_buffers = 2GB
+    effective_cache_size = 4500MB
+    work_mem = 32MB
+    maintenance_work_mem = 512MB
+
+    # Autovacuum - Aggressive for high UPDATE/DELETE volume
+    autovacuum_max_workers = 4
+    autovacuum_naptime = 30s
+    autovacuum_vacuum_scale_factor = 0.05
+    autovacuum_analyze_scale_factor = 0.02
+    autovacuum_vacuum_cost_limit = 1000
+
+    # Monitoring
+    pg_stat_statements.track = all
+    pg_stat_statements.max = 10000
+    track_io_timing = on
+    track_functions = all

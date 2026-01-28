@@ -23,7 +23,7 @@ metadata:
 data:
   # Elasticsearch connection URL
   # For AWS OpenSearch or cloud providers, use the full endpoint URL
-  elasticsearch.url: "http://elasticsearch:9200"
+  elasticsearch.url: "http://tmp-migration-elasticsearch:9200"
 
   # Elasticsearch credentials (optional - leave empty if ES has no auth)
   elasticsearch.username: ""
@@ -36,7 +36,7 @@ data:
   #   MariaDB:    jdbc:mariadb://mariadb:3306/camunda
   #   Oracle:     jdbc:oracle:thin:@//oracle:1521/camunda
   #   MS SQL:     jdbc:sqlserver://mssql:1433;databaseName=camunda
-  rdbms.url: "jdbc:postgresql://postgres:5432/camunda"
+  rdbms.url: "jdbc:postgresql://postgres-postgresql:5432/camunda"
 
   # RDBMS credentials
   rdbms.username: "camunda"

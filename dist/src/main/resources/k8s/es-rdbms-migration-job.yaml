@@ -50,11 +50,11 @@ spec:
       containers:
         - name: migrator
           # Use the same image as Camunda
-          image: camunda/camunda:latest
+          image: gcr.io/zeebe-io/zeebe:tmp-migrator
           imagePullPolicy: IfNotPresent
           # Override command to run the migration tool
           command:
-            - /camunda/bin/es-rdbms-migrate
+            - /usr/local/camunda/bin/es-rdbms-migrate
           args:
             - --spring.profiles.active=migrator
           env:
