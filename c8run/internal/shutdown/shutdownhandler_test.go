@@ -49,7 +49,7 @@ camunda:
   data:
     secondary-storage:
       rdbms:
-        url: jdbc:h2:file:./foo
+        url: jdbc:h2:mem:foo
 `)
 
 	settings := types.C8RunSettings{
@@ -66,11 +66,11 @@ camunda:
 
 	url, err := detectRdbmsURL(configPath)
 	require.NoError(t, err)
-	require.Equal(t, "jdbc:h2:file:./foo", url)
+	require.Equal(t, "jdbc:h2:mem:foo", url)
 	require.True(t, shouldDeleteDataDir(settings, processes))
 }
 
-func TestShouldDeleteDataDirUsesDefaultConfig(t *testing.T) {
+func TestShouldDeleteDataDirSkipsForDefaultFileBasedConfig(t *testing.T) {
 	unsetEnv(t, "CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_URL")
 	baseDir := t.TempDir()
 	defaultConfig := filepath.Join(baseDir, "configuration", "application.yaml")
@@ -79,7 +79,7 @@ camunda:
   data:
     secondary-storage:
       rdbms:
-        url: jdbc:h2:./foo
+        url: jdbc:h2:file:./foo
 `)
 
 	settings := types.C8RunSettings{SecondaryStorageType: "rdbms"}
@@ -92,8 +92,8 @@ camunda:
 
 	url, err := detectRdbmsURL(defaultConfig)
 	require.NoError(t, err)
-	require.Equal(t, "jdbc:h2:./foo", url)
-	require.True(t, shouldDeleteDataDir(settings, processes))
+	require.Equal(t, "jdbc:h2:file:./foo", url)
+	require.False(t, shouldDeleteDataDir(settings, processes))
 }
 
 func TestShouldDeleteDataDirHandlesMissingOrMalformedConfig(t *testing.T) {
