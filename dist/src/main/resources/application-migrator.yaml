@@ -1,0 +1,20 @@
+camunda:
+  data:
+    secondary-storage:
+      type: rdbms
+      rdbms:
+        url: jdbc:postgresql:camunda
+        username: camunda
+        password: camunda
+        flushInterval: PT0.5S
+        queueSize: 1000
+        history:
+          defaultHistoryTTL: PT1M
+          defaultBatchOperationHistoryTTL: PT168H
+          batchOperationCancelProcessInstanceHistoryTTL: PT24H
+          batchOperationMigrateProcessInstanceHistoryTTL: PT240H
+          batchOperationModifyProcessInstanceHistoryTTL: PT168H
+          batchOperationResolveIncidentHistoryTTL: PT120H
+          minHistoryCleanupInterval: PT1S
+          maxHistoryCleanupInterval: PT1H
+          historyCleanupBatchSize: 1000

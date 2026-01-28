@@ -67,6 +67,7 @@ public class StandaloneMigrator implements CommandLineRunner {
         .sources(Configuration.class, StandaloneMigrator.class, RdbmsConfiguration.class)
         .addCommandLineProperties(true)
         .properties("camunda.data.secondary-storage.type=rdbms")
+        .profiles("migrator")
         .listeners(new ApplicationErrorListener())
         .run(args);
 
@@ -86,6 +87,7 @@ public class StandaloneMigrator implements CommandLineRunner {
           rdbmsWriterFactory.createWriter(new RdbmsWriterConfig.Builder().build());
       ProcessDefReader.readProcessDefinitions(client).stream()
           .forEach(rdbmsWriter.getProcessDefinitionWriter()::create);
+      rdbmsWriter.flush(true);
     } catch (final Exception e) {
       LOG.error("Failed to migrate from ES to RDBMS", e);
       throw e;
