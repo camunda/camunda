@@ -146,11 +146,27 @@ export function useChat({
       // Call LLM directly with available tools
       let response = await callLLM(llmConfig, conversationHistory, availableTools);
 
-      // Handle tool calls if the LLM wants to use tools
-      let toolCalls: ToolCall[] | undefined;
-      if (response.toolCalls && response.toolCalls.length > 0) {
+      // Collect all tool calls across multiple rounds
+      let allToolCalls: ToolCall[] = [];
+
+      // Track all tool calls and results for building proper OpenAI message history
+      // Each entry contains the assistant's tool_calls and the corresponding results
+      let toolCallHistory: Array<{
+        assistantToolCalls: typeof response.toolCalls;
+        toolResults: Array<{toolCallId: string; name: string; result: unknown}>;
+      }> = [];
+
+      // Maximum iterations to prevent infinite loops
+      const MAX_TOOL_ITERATIONS = 10;
+      let iteration = 0;
+
+      // Handle tool calls in a loop - LLM might need multiple rounds
+      while (response.toolCalls && response.toolCalls.length > 0 && iteration < MAX_TOOL_ITERATIONS) {
+        iteration++;
+        console.log(`[useChat] Tool call iteration ${iteration}, executing ${response.toolCalls.length} tool(s)`);
+
         // Execute all tool calls via MCP gateway
-        toolCalls = await Promise.all(
+        const currentToolCalls = await Promise.all(
           response.toolCalls.map(async (tc) => {
             const result = await executeMcpTool(mcpConfig, tc.name, tc.arguments);
             return {
@@ -163,29 +179,52 @@ export function useChat({
           })
         );
 
-        // If there were tool calls, send results back to LLM for final response
+        // Add to collected tool calls
+        allToolCalls = [...allToolCalls, ...currentToolCalls];
+
+        // If there were tool calls, send results back to LLM
         if (response.finishReason === 'tool_calls') {
-          const toolResults = toolCalls.map((tc) => ({
+          const toolResults = currentToolCalls.map((tc) => ({
             toolCallId: tc.id || tc.name,
             name: tc.name,
             result: tc.result,
           }));
 
+          // Add to tool call history for proper message building
+          toolCallHistory.push({
+            assistantToolCalls: response.toolCalls,
+            toolResults,
+          });
+
+          // Get next response from LLM with tool results
+          // Pass the original conversation history plus all accumulated tool calls/results
           response = await continueWithToolResults(
             llmConfig,
             conversationHistory,
-            response.toolCalls, // Pass original tool calls for OpenAI message format
-            toolResults,
+            toolCallHistory, // Pass all tool call history for proper message building
             availableTools
           );
+
+
+          // Check if LLM wants more tool calls
+          if (response.toolCalls && response.toolCalls.length > 0) {
+            console.log(`[useChat] LLM requested ${response.toolCalls.length} more tool(s)`);
+          }
+        } else {
+          // LLM didn't finish with tool_calls, break the loop
+          break;
         }
+      }
+
+      if (iteration >= MAX_TOOL_ITERATIONS) {
+        console.warn('[useChat] Reached maximum tool call iterations');
       }
 
       const assistantMessage: Message = {
         id: generateId(),
         role: 'assistant',
         content: response.content,
-        toolCalls,
+        toolCalls: allToolCalls.length > 0 ? allToolCalls : undefined,
         createdAt: new Date(),
       };
 

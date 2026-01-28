@@ -31,7 +31,7 @@ export type LLMConfig = {
 };
 
 export type ChatMessage = {
-  role: 'user' | 'assistant' | 'system';
+  role: 'user' | 'assistant' | 'system' | 'tool';
   content: string;
 };
 
@@ -361,20 +361,23 @@ export async function callLLM(
  * Continue a conversation after tool calls
  * This sends the tool results back to the LLM for final response
  *
- * @param assistantToolCalls - The original tool_calls from the assistant response (required for OpenAI)
+ * @param toolCallHistory - Array of all tool calls and their results, in order
  */
 export async function continueWithToolResults(
   config: LLMConfig,
   messages: ChatMessage[],
-  assistantToolCalls: ToolCallResponse[],
-  toolResults: Array<{toolCallId: string; name: string; result: unknown}>,
+  toolCallHistory: Array<{
+    assistantToolCalls: ToolCallResponse[] | undefined;
+    toolResults: Array<{toolCallId: string; name: string; result: unknown}>;
+  }>,
   tools?: McpTool[]
 ): Promise<LLMResponse> {
-  console.log('[LLM] Continuing with tool results:', toolResults.length, 'results');
+  console.log('[LLM] Continuing with tool results:', toolCallHistory.length, 'rounds of tool calls');
 
   if (config.provider === 'anthropic') {
-    // Anthropic format for tool results
-    const toolResultMessages = toolResults.map((tr) => ({
+    // Anthropic format for tool results - flatten all tool results
+    const allToolResults = toolCallHistory.flatMap((h) => h.toolResults);
+    const toolResultMessages = allToolResults.map((tr) => ({
       role: 'user' as const,
       content: [{
         type: 'tool_result',
@@ -420,28 +423,37 @@ export async function continueWithToolResults(
     return {content, finishReason: 'stop'};
   } else {
     // OpenAI/Custom format for tool results
-    // OpenAI requires: user message -> assistant message with tool_calls -> tool results
+    // OpenAI requires proper sequence: user -> assistant (with tool_calls) -> tool results -> assistant (with tool_calls) -> tool results -> ...
 
-    // Build the assistant message with tool_calls
-    const assistantMessage = {
-      role: 'assistant' as const,
-      content: null as string | null,
-      tool_calls: assistantToolCalls.map((tc) => ({
-        id: tc.id,
-        type: 'function' as const,
-        function: {
-          name: tc.name,
-          arguments: JSON.stringify(tc.arguments),
-        },
-      })),
-    };
+    // Build all the tool call/result messages in proper sequence
+    const toolMessages: Array<Record<string, unknown>> = [];
 
-    // Build the tool result messages
-    const toolMessages = toolResults.map((tr) => ({
-      role: 'tool' as const,
-      tool_call_id: tr.toolCallId,
-      content: typeof tr.result === 'string' ? tr.result : JSON.stringify(tr.result),
-    }));
+    for (const historyEntry of toolCallHistory) {
+      if (historyEntry.assistantToolCalls && historyEntry.assistantToolCalls.length > 0) {
+        // Add assistant message with tool_calls
+        toolMessages.push({
+          role: 'assistant',
+          content: null,
+          tool_calls: historyEntry.assistantToolCalls.map((tc) => ({
+            id: tc.id,
+            type: 'function',
+            function: {
+              name: tc.name,
+              arguments: JSON.stringify(tc.arguments),
+            },
+          })),
+        });
+
+        // Add corresponding tool result messages
+        for (const tr of historyEntry.toolResults) {
+          toolMessages.push({
+            role: 'tool',
+            tool_call_id: tr.toolCallId,
+            content: typeof tr.result === 'string' ? tr.result : JSON.stringify(tr.result),
+          });
+        }
+      }
+    }
 
     let baseUrl: string;
     let model: string;
@@ -462,10 +474,11 @@ export async function continueWithToolResults(
       messages: [
         {role: 'system', content: SYSTEM_PROMPT},
         ...messages.map((m) => ({role: m.role, content: m.content})),
-        assistantMessage,
         ...toolMessages,
       ],
       max_tokens: config.maxTokens || 4096,
+      tools: tools ? mcpToolsToOpenAIFunctions(tools) : undefined,
+      tool_choice: tools && tools.length > 0 ? 'auto' : undefined,
     };
 
     console.log('[LLM] Sending tool results to LLM, message count:', requestBody.messages.length);
@@ -486,10 +499,36 @@ export async function continueWithToolResults(
     }
 
     const data = await response.json();
+    const choice = data.choices?.[0];
+
+    if (!choice) {
+      throw new Error('No response from LLM');
+    }
+
+    // Parse tool calls if present (LLM might want to call more tools)
+    const newToolCalls: ToolCallResponse[] | undefined = choice.message.tool_calls?.map(
+      (tc: {id: string; function: {name: string; arguments: string}}) => {
+        console.log('[LLM] Additional tool call requested:', tc.function.name);
+        return {
+          id: tc.id,
+          name: tc.function.name,
+          arguments: JSON.parse(tc.function.arguments),
+        };
+      }
+    );
+
+    const finishReason = choice.finish_reason === 'tool_calls' ? 'tool_calls' : 'stop';
+    console.log('[LLM] Response after tool results:', {
+      finish_reason: finishReason,
+      has_more_tool_calls: !!newToolCalls,
+      tool_calls_count: newToolCalls?.length || 0,
+    });
+
     return {
-      content: data.choices?.[0]?.message?.content || '',
-      finishReason: 'stop',
-      citations: data.citations, // Include Perplexity citations if present
+      content: choice.message.content || '',
+      toolCalls: newToolCalls,
+      finishReason,
+      citations: data.citations,
     };
   }
 }
