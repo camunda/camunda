@@ -89,7 +89,8 @@ public class SpringCamundaClientConfigurationTest {
   @Test
   void shouldPrintToString() {
     final SpringCamundaClientConfiguration camundaClientConfiguration =
-        new SpringCamundaClientConfiguration(properties(), null, null, null, null, null, null);
+        new SpringCamundaClientConfiguration(
+            properties(), null, null, null, null, null, null, null);
     final String toStringOutput = camundaClientConfiguration.toString();
     assertThat(toStringOutput).matches("SpringCamundaClientConfiguration\\{.*}");
   }
