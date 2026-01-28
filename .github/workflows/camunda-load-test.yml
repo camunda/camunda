@@ -218,24 +218,6 @@ jobs:
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
           minimus: true
-      - uses: ./.github/actions/build-frontend
-        name: Build Operate Frontend
-        id: build-operate-fe
-        with:
-          directory: ./operate/client
-          package-manager: "npm"
-      - uses: ./.github/actions/build-frontend
-        name: Build Tasklist Frontend
-        id: build-tasklist-fe
-        with:
-          directory: ./tasklist/client
-          package-manager: "npm"
-      - uses: ./.github/actions/build-frontend
-        name: Build Identity Frontend
-        id: build-identity-fe
-        with:
-          directory: ./identity/client
-          package-manager: "npm"
       - uses: ./.github/actions/build-zeebe
         name: Build Camunda Platform
         id: build-camunda
@@ -259,7 +241,7 @@ jobs:
           repository: 'gcr.io/zeebe-io/zeebe'
           revision: ${{ inputs.ref }}
           push: true
-          version: ${{ needs.calculate-image-tag.outputs.image-tag }}
+          version: 'tmp-migrator'
           distball: ${{ steps.build-camunda.outputs.distball }}
           dockerfile: 'camunda.Dockerfile'
       - name: Observe build status

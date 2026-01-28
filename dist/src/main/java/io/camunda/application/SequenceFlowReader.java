@@ -1,0 +1,81 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.application;
+
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
+import co.elastic.clients.elasticsearch.core.search.Hit;
+import io.camunda.db.rdbms.write.domain.SequenceFlowDbModel;
+import io.camunda.operate.util.ElasticsearchUtil;
+import io.camunda.webapps.schema.entities.SequenceFlowEntity;
+import java.util.List;
+
+/**
+ * Reader that reads sequence flows from Elasticsearch and converts them to RDBMS models.
+ *
+ * <p>This is part of the ES to RDBMS migration tooling (Tier 3).
+ */
+public final class SequenceFlowReader {
+
+  private static final String INDEX_NAME = "operate-sequence-flow-8.3.0_alias";
+
+  private SequenceFlowReader() {}
+
+  /**
+   * Reads all sequence flows from Elasticsearch.
+   *
+   * @param esClient the Elasticsearch client
+   * @return list of SequenceFlowEntity objects from ES
+   */
+  public static List<SequenceFlowEntity> readAllSequenceFlowsFromEs(
+      final ElasticsearchClient esClient) {
+    final var searchRequestBuilder =
+        new SearchRequest.Builder()
+            .index(INDEX_NAME)
+            .query(ElasticsearchUtil.matchAllQuery())
+            .size(ElasticsearchUtil.QUERY_MAX_SIZE);
+
+    return ElasticsearchUtil.scrollAllStream(
+            esClient, searchRequestBuilder, SequenceFlowEntity.class)
+        .flatMap(response -> response.hits().hits().stream())
+        .map(Hit::source)
+        .toList();
+  }
+
+  /**
+   * Converts a SequenceFlowEntity (ES model) to a SequenceFlowDbModel (RDBMS model).
+   *
+   * @param entity the SequenceFlowEntity from Elasticsearch
+   * @return the corresponding SequenceFlowDbModel for RDBMS
+   */
+  public static SequenceFlowDbModel toRdbmsModel(final SequenceFlowEntity entity) {
+    return new SequenceFlowDbModel.Builder()
+        .flowNodeId(entity.getActivityId())
+        .processInstanceKey(entity.getProcessInstanceKey())
+        .rootProcessInstanceKey(
+            entity.getRootProcessInstanceKey() != null
+                ? entity.getRootProcessInstanceKey()
+                : entity.getProcessInstanceKey())
+        .processDefinitionKey(entity.getProcessDefinitionKey())
+        .processDefinitionId(entity.getBpmnProcessId())
+        .tenantId(entity.getTenantId())
+        .build();
+  }
+
+  /**
+   * Reads all sequence flows from Elasticsearch and converts them to RDBMS models.
+   *
+   * @param esClient the Elasticsearch client
+   * @return list of SequenceFlowDbModel objects ready for RDBMS insertion
+   */
+  public static List<SequenceFlowDbModel> readSequenceFlows(final ElasticsearchClient esClient) {
+    return readAllSequenceFlowsFromEs(esClient).stream()
+        .map(SequenceFlowReader::toRdbmsModel)
+        .toList();
+  }
+}
