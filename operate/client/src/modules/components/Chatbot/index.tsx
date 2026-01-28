@@ -9,7 +9,7 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {Button, IconButton, Layer, TextArea} from '@carbon/react';
-import {ChatBot as ChatBotIcon, Close, Renew, Send} from '@carbon/react/icons';
+import {ChatBot as ChatBotIcon, Close, Renew, Send, Attachment} from '@carbon/react/icons';
 import {
   ChatbotContainer,
   ChatbotToggle,
@@ -21,7 +21,7 @@ import {
   ResizeHandle,
   TypingIndicator,
 } from './styled';
-import {type Message, type ToolCall, useChat} from './useChat';
+import {type Message, type ToolCall, type FileAttachment, useChat} from './useChat';
 import type {LLMConfig} from './llmClient';
 import type {McpClientConfig} from './mcpClient';
 import {chatbotStore} from 'modules/stores/chatbot';
@@ -54,6 +54,8 @@ const Chatbot: React.FC<ChatbotProps> = observer(({
   const resizeStartRef = useRef({x: 0, y: 0, width: DEFAULT_WIDTH, height: DEFAULT_HEIGHT});
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [attachedFiles, setAttachedFiles] = useState<FileAttachment[]>([]);
 
   // Get showToolResults from store
   const showToolResults = chatbotStore.showToolResults;
@@ -71,6 +73,65 @@ const Chatbot: React.FC<ChatbotProps> = observer(({
     mcpConfig,
     navigate,
   });
+
+  // File conversion helper
+  const convertFileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64 = reader.result as string;
+        // Remove data URL prefix (e.g., "data:application/xml;base64,")
+        const base64Content = base64.split(',')[1];
+        resolve(base64Content);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
+  // File upload handler
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    try {
+      const attachments: FileAttachment[] = [];
+
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+
+        // Validate file extension
+        const validExtensions = ['.bpmn', '.dmn', '.form', '.rpa'];
+        const extension = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+
+        if (!validExtensions.includes(extension)) {
+          console.warn(`Invalid file type: ${file.name}. Only .bpmn, .dmn, .form, and .rpa files are supported.`);
+          continue;
+        }
+
+        const content = await convertFileToBase64(file);
+        attachments.push({
+          name: file.name,
+          content,
+          size: file.size,
+          type: file.type,
+        });
+      }
+
+      setAttachedFiles(prev => [...prev, ...attachments]);
+    } catch (err) {
+      console.error('Failed to read file(s):', err);
+    }
+
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleRemoveFile = (index: number) => {
+    setAttachedFiles(prev => prev.filter((_, i) => i !== index));
+  };
 
   // Scroll to bottom when new messages arrive
   useEffect(() => {
@@ -131,8 +192,9 @@ const Chatbot: React.FC<ChatbotProps> = observer(({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (input.trim() && !isLoading) {
-      sendMessage(input);
+    if ((input.trim() || attachedFiles.length > 0) && !isLoading) {
+      sendMessage(input, attachedFiles.length > 0 ? attachedFiles : undefined);
+      setAttachedFiles([]); // Clear attachments after sending
     }
   };
 
@@ -222,6 +284,18 @@ const Chatbot: React.FC<ChatbotProps> = observer(({
                   <div className="message-content">
                     {message.content}
                   </div>
+                  {message.attachments && message.attachments.length > 0 && (
+                    <div className="message-attachments">
+                      <strong>📎 Attached files:</strong>
+                      <ul>
+                        {message.attachments.map((file, idx) => (
+                          <li key={idx}>
+                            {file.name} ({(file.size / 1024).toFixed(1)} KB)
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                   {message.visualization && (
                     <ChartRenderer visualization={message.visualization} />
                   )}
@@ -280,6 +354,40 @@ const Chatbot: React.FC<ChatbotProps> = observer(({
                 iconDescription="Send message"
                 hasIconOnly
               />
+              <div className="file-upload">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  id="file-upload"
+                  accept=".bpmn,.dmn,.form,.rpa"
+                  onChange={handleFileSelect}
+                  style={{display: 'none'}}
+                />
+                <Button
+                  kind="secondary"
+                  size="sm"
+                  onClick={() => fileInputRef.current?.click()}
+                  renderIcon={Attachment}
+                  iconDescription="Attach file"
+                >
+                  Attach file
+                </Button>
+                <div className="attached-files">
+                  {attachedFiles.map((file, index) => (
+                    <div key={index} className="attached-file">
+                      <span className="file-name">{file.name}</span>
+                      <Button
+                        kind="ghost"
+                        size="sm"
+                        onClick={() => handleRemoveFile(index)}
+                        renderIcon={Close}
+                        iconDescription="Remove file"
+                        hasIconOnly
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
             </ChatInputArea>
           </ChatWindow>
         </Layer>

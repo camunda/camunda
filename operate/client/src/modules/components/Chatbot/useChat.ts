@@ -19,6 +19,13 @@ import {
   stripNavigationCommands
 } from './navigation';
 
+export type FileAttachment = {
+  name: string;
+  content: string; // Base64-encoded content
+  size: number;
+  type: string;
+};
+
 export type ToolCall = {
   id?: string;
   name: string;
@@ -33,6 +40,7 @@ export type Message = {
   content: string;
   toolCalls?: ToolCall[];
   visualization?: VisualizationData;
+  attachments?: FileAttachment[];
   createdAt: Date;
 };
 
@@ -57,7 +65,7 @@ type UseChatReturn = {
   setInput: (input: string) => void;
   isLoading: boolean;
   error: string | null;
-  sendMessage: (content: string) => Promise<void>;
+  sendMessage: (content: string, attachments?: FileAttachment[]) => Promise<void>;
   clearMessages: () => void;
   appendMessage: (message: Message) => void;
   availableTools: McpTool[];
@@ -131,14 +139,15 @@ export function useChat({
   /**
    * Sends a message directly to the LLM and handles tool calls.
    */
-  const sendMessage = useCallback(async (content: string) => {
-    if (!content.trim()) return;
+  const sendMessage = useCallback(async (content: string, attachments?: FileAttachment[]) => {
+    if (!content.trim() && (!attachments || attachments.length === 0)) return;
 
     const userMessage: Message = {
       id: generateId(),
       role: 'user',
       content: content.trim(),
       createdAt: new Date(),
+      attachments,
     };
 
     setMessages((prev) => [...prev, userMessage]);
@@ -147,13 +156,40 @@ export function useChat({
     setError(null);
 
     try {
+      // Enhance content with file context if attachments are present
+      let enhancedContent = content;
+      let toolContext: Record<string, any> | undefined;
+
+      if (attachments && attachments.length > 0) {
+        const fileList = attachments.map(f => f.name).join(', ');
+        const resourcesMap = attachments.reduce((acc, file) => {
+          acc[file.name] = file.content;
+          return acc;
+        }, {} as Record<string, string>);
+
+        // Store resources map for tool context
+        toolContext = { uploadedResources: resourcesMap };
+
+        // Create concise instruction without the full base64 (to save tokens)
+        enhancedContent = `${content}
+
+[SYSTEM: User uploaded ${attachments.length} file(s): ${fileList}. Call deployResources tool immediately with the uploaded files. Do not ask for confirmation.]`;
+      }
+
       // Build conversation history for LLM
-      const conversationHistory = [...messages, userMessage].map((msg) => ({
+      const conversationHistory = [...messages, {
+        ...userMessage,
+        content: enhancedContent,
+      }].map((msg) => ({
         role: msg.role,
         content: msg.content,
       }));
 
       console.log('[useChat] Sending message with', availableTools.length, 'available tools');
+      if (attachments && attachments.length > 0) {
+        console.log('[useChat] Attached files:', attachments.map(f => `${f.name} (${f.size} bytes)`));
+        console.log('[useChat] Resources map keys:', Object.keys(toolContext?.uploadedResources || {}));
+      }
 
       // Call LLM directly with available tools
       let response = await callLLM(llmConfig, conversationHistory, availableTools);
@@ -181,11 +217,21 @@ export function useChat({
         // Execute all tool calls via MCP gateway
         const currentToolCalls = await Promise.all(
           response.toolCalls.map(async (tc) => {
-            const result = await executeMcpTool(mcpConfig, tc.name, tc.arguments);
+            // If this is deployResources and we have uploaded resources, inject them
+            let toolArguments = tc.arguments;
+            if (tc.name === 'deployResources' && toolContext?.uploadedResources) {
+              toolArguments = {
+                ...tc.arguments,
+                resources: toolContext.uploadedResources,
+              };
+              console.log('[useChat] Injecting uploaded resources into deployResources call');
+            }
+
+            const result = await executeMcpTool(mcpConfig, tc.name, toolArguments);
             return {
               id: tc.id,
               name: tc.name,
-              arguments: tc.arguments,
+              arguments: toolArguments,
               result: result.result,
               isError: result.isError,
             };

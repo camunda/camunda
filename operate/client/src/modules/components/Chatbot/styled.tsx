@@ -204,6 +204,36 @@ const MessageBubble = styled.div<{$role: 'user' | 'assistant' | 'system'; $hasCh
       }
     }
   }
+
+  .message-attachments {
+    margin-top: var(--cds-spacing-03);
+    padding-top: var(--cds-spacing-03);
+    border-top: 1px solid var(--cds-border-subtle);
+    font-size: var(--cds-body-compact-01-font-size);
+
+    strong {
+      display: block;
+      margin-bottom: var(--cds-spacing-02);
+      color: var(--cds-text-secondary);
+    }
+
+    ul {
+      margin: 0;
+      padding-left: var(--cds-spacing-05);
+      list-style-type: none;
+
+      li {
+        padding: var(--cds-spacing-02) 0;
+        font-family: var(--cds-code-01-font-family);
+        font-size: var(--cds-code-01-font-size);
+
+        &:before {
+          content: '📄 ';
+          margin-right: var(--cds-spacing-02);
+        }
+      }
+    }
+  }
 `;
 
 const bounce = keyframes`
@@ -248,6 +278,7 @@ const TypingIndicator = styled.div`
 
 const ChatInputArea = styled.form`
   display: flex;
+  flex-direction: column;
   gap: var(--cds-spacing-03);
   padding: var(--cds-spacing-04);
   border-top: 1px solid var(--cds-border-subtle);
@@ -265,6 +296,42 @@ const ChatInputArea = styled.form`
 
   button {
     align-self: flex-end;
+  }
+
+  .file-upload {
+    display: flex;
+    flex-direction: column;
+    gap: var(--cds-spacing-02);
+
+    .attached-files {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--cds-spacing-02);
+
+      .attached-file {
+        display: flex;
+        align-items: center;
+        gap: var(--cds-spacing-02);
+        padding: var(--cds-spacing-02) var(--cds-spacing-03);
+        background: var(--cds-layer-accent);
+        border-radius: 16px;
+        border: 1px solid var(--cds-border-subtle);
+        font-size: var(--cds-body-compact-01-font-size);
+
+        .file-name {
+          color: var(--cds-text-primary);
+          font-weight: 500;
+          max-width: 200px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        button {
+          align-self: center;
+        }
+      }
+    }
   }
 `;
 
