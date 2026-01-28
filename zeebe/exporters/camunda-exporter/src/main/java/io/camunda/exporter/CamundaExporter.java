@@ -68,6 +68,8 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import org.agrona.CloseHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -87,6 +89,7 @@ public class CamundaExporter implements Exporter {
   private SearchEngineClient searchEngineClient;
   private int partitionId;
   private Context context;
+  private final ScheduledExecutorService flushExecutorService;
 
   public CamundaExporter() {
     // the metadata will be initialized on open
@@ -102,6 +105,8 @@ public class CamundaExporter implements Exporter {
   public CamundaExporter(final ExporterResourceProvider provider, final ExporterMetadata metadata) {
     this.provider = provider;
     this.metadata = metadata;
+
+    flushExecutorService = Executors.newScheduledThreadPool(1);
   }
 
   @Override
@@ -324,16 +329,24 @@ public class CamundaExporter implements Exporter {
       return;
     }
 
-    try (final var ignored = metrics.measureFlushDuration()) {
-      metrics.recordBulkSize(writer.getBatchSize());
-      final BatchRequest batchRequest = clientAdapter.createBatchRequest().withMetrics(metrics);
-      writer.flush(batchRequest);
-      metrics.recordFlushOccurrence(Instant.now());
-      metrics.stopFlushLatencyMeasurement();
-    } catch (final PersistenceException ex) {
-      metrics.recordFailedFlush();
-      throw new ExporterException(ex.getMessage(), ex);
-    }
+    final var currentWriter = writer;
+
+    flushExecutorService.submit(
+        () -> {
+          try (final var ignored = metrics.measureFlushDuration()) {
+            metrics.recordBulkSize(currentWriter.getBatchSize());
+            final BatchRequest batchRequest =
+                clientAdapter.createBatchRequest().withMetrics(metrics);
+            currentWriter.flush(batchRequest);
+            metrics.recordFlushOccurrence(Instant.now());
+            metrics.stopFlushLatencyMeasurement();
+          } catch (final PersistenceException ex) {
+            metrics.recordFailedFlush();
+            throw new ExporterException(ex.getMessage(), ex);
+          }
+        });
+
+    writer = createBatchWriter();
 
     // Update the record counters only after the flush was successful. If the synchronous flush
     // fails then the exporter will be invoked with the same record again.
