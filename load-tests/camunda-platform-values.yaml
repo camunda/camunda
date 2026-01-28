@@ -73,7 +73,7 @@ orchestration:
     extraPorts:
       - port: 26500
         protocol: TCP
-        name: "grpc"
+        name: "realgrpc"
   # Resources of the orchestration cluster
   resources:
     requests:
