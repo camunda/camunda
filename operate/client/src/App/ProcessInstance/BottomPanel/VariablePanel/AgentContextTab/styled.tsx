@@ -7,10 +7,10 @@
  */
 
 import styled from 'styled-components';
-import {spacing05, spacing06} from '@carbon/elements';
+import {spacing05} from '@carbon/elements';
 
 const Container = styled.div`
-  padding: ${spacing06};
+  padding: ${spacing05};
   height: 100%;
   overflow: auto;
 `;

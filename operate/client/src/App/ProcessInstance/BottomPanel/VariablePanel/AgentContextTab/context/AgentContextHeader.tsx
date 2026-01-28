@@ -62,6 +62,7 @@ const AgentContextHeader: React.FC<Props> = ({agentContext}) => {
           </AccordionItem>
         )}
       </Accordion>
+      <br></br>
     </>
   );
 };

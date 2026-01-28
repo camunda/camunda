@@ -14,6 +14,7 @@ import {
   UnorderedList,
   ListItem,
 } from '@carbon/react';
+import {useState} from 'react';
 import type {
   AgentTimelineItem,
   AgentContextContentPart,
@@ -90,15 +91,39 @@ const TimelineItem: React.FC<Props> = ({
   isFirst = false,
   isLast = false,
 }) => {
+  const [isOpen, setIsOpen] = useState(false);
+
   const railVariant = isHeader
     ? 'header'
     : item.type === 'STATUS'
       ? 'status'
       : 'default';
 
+  const toolHeaderBadges =
+    !isOpen && item.type === 'TOOL_CALL'
+      ? item.toolCalls.map((t) => (
+          <Tag key={t.id} type="blue" size="sm">
+            {t.name}
+          </Tag>
+        ))
+      : null;
+
   const label = (
     <ItemHeader>
-      <div>{item.title}</div>
+      <div>
+        {item.type === 'TOOL_CALL' ? 'Tool call' : item.title}
+        {toolHeaderBadges && toolHeaderBadges.length > 0 ? (
+          <span
+            style={{
+              marginLeft: '0.5rem',
+              display: 'inline-flex',
+              gap: '0.25rem',
+            }}
+          >
+            {toolHeaderBadges}
+          </span>
+        ) : null}
+      </div>
     </ItemHeader>
   );
 
@@ -108,7 +133,10 @@ const TimelineItem: React.FC<Props> = ({
         <TimelineDot $variant={railVariant} />
       </TimelineRail>
       <RowContent>
-        <AccordionItem title={label}>
+        <AccordionItem
+          title={label}
+          onHeadingClick={() => setIsOpen((v) => !v)}
+        >
           {item.type === 'AGENT_STATE' && (
             <ItemBody>
               <Tag type="green">{item.state ?? 'Unknown'}</Tag>

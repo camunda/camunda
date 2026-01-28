@@ -8,7 +8,6 @@
 
 import styled, {css} from 'styled-components';
 import {
-  spacing03,
   spacing05,
   spacing06,
   borderSubtle01,
@@ -22,11 +21,9 @@ import {
 const Container = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${spacing06};
 `;
 
 const SectionTitle = styled.h4`
-  margin-top: 20px;
   margin-bottom: 20px;
 `;
 
@@ -113,9 +110,8 @@ const RowContent = styled.div`
 
 const ItemHeader = styled.div`
   display: flex;
-  flex-direction: column;
-  gap: ${spacing03};
-  padding-top: ${spacing03};
+  align-items: center;
+  min-height: 2.5rem;
 `;
 
 const ItemMeta = styled.div`
