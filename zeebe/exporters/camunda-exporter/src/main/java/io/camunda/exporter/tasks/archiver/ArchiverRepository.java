@@ -56,9 +56,10 @@ public interface ArchiverRepository extends AutoCloseable {
       final String destinationIndexName,
       final Map<String, List<String>> keysByField,
       final Executor executor) {
+
     return reindexDocuments(sourceIndexName, destinationIndexName, keysByField)
-        .thenComposeAsync(ok -> setIndexLifeCycle(destinationIndexName), executor)
-        .thenComposeAsync(ok -> deleteDocuments(sourceIndexName, keysByField), executor);
+        .thenComposeAsync(ok -> setIndexLifeCycle(destinationIndexName), executor);
+    // .thenComposeAsync(ok -> deleteDocuments(sourceIndexName, keysByField), executor);
   }
 
   CompletableFuture<Integer> getCountOfProcessInstancesAwaitingArchival();
@@ -76,5 +77,22 @@ public interface ArchiverRepository extends AutoCloseable {
             indexTemplate.getIndexPattern(),
             indexTemplate.getFullQualifiedName(),
             indexTemplate.getAlias());
+  }
+
+  default CompletableFuture<List<String>> archivableKeys(
+      final String processInstanceKey,
+      final String sourceIndexName,
+      final String piKeyField,
+      final int batchSize) {
+    return null;
+  }
+
+  default CompletableFuture<Void> moveDocumentsInBatch(
+      final List<String> keys,
+      final String fieldName,
+      final String destinationIndexName,
+      final String sourceIndexName,
+      final int batchSize) {
+    return null;
   }
 }

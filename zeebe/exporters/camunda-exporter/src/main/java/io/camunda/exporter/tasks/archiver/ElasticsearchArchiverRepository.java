@@ -23,10 +23,9 @@ import co.elastic.clients.elasticsearch._types.query_dsl.TermsQuery;
 import co.elastic.clients.elasticsearch.core.CountRequest;
 import co.elastic.clients.elasticsearch.core.DeleteByQueryRequest;
 import co.elastic.clients.elasticsearch.core.DeleteByQueryResponse;
-import co.elastic.clients.elasticsearch.core.ReindexRequest;
+import co.elastic.clients.elasticsearch.core.ReindexResponse;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
-import co.elastic.clients.elasticsearch.core.reindex.Source;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.elasticsearch.indices.PutIndicesSettingsRequest;
 import co.elastic.clients.elasticsearch.indices.PutIndicesSettingsResponse;
@@ -295,26 +294,37 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
       final String sourceIndexName,
       final String destinationIndexName,
       final Map<String, List<String>> keysByField) {
-    final var builder = new Builder();
-    for (final var entry : keysByField.entrySet()) {
-      builder.should(s -> s.terms(buildIdTermsQuery(entry.getKey(), entry.getValue())));
-    }
-    final var combinedQ = builder.build();
-
-    final var source =
-        new Source.Builder().index(sourceIndexName).query(q -> q.bool(combinedQ)).build();
-    final var request =
-        new ReindexRequest.Builder()
-            .source(source)
-            .dest(dest -> dest.index(destinationIndexName))
-            .conflicts(Conflicts.Proceed)
-            .scroll(REINDEX_SCROLL_TIMEOUT)
-            .slices(AUTO_SLICES)
-            .build();
 
     final var timer = Timer.start();
-    return client
-        .reindex(request)
+
+    final var futures =
+        keysByField.entrySet().stream()
+            .map(
+                entry ->
+                    moveDocumentsInBatch(
+                            entry.getValue(),
+                            entry.getKey(),
+                            destinationIndexName,
+                            sourceIndexName,
+                            config.getRolloverBatchSize())
+                        .whenCompleteAsync(
+                            (ignore, error) -> {
+                              if (error != null) {
+                                logger.error(
+                                    "Error reindexing documents for field '{}' from index '{}' to index '{}'",
+                                    entry.getKey(),
+                                    sourceIndexName,
+                                    destinationIndexName,
+                                    error);
+                              }
+                            },
+                            executor))
+            .toList()
+            .toArray(new CompletableFuture[0]);
+
+    /*return client
+    .reindex(request)*/
+    return CompletableFuture.allOf(futures)
         .whenCompleteAsync((ignored, error) -> metrics.measureArchiverReindex(timer), executor)
         .thenApplyAsync(ignored -> null, executor);
   }
@@ -330,6 +340,125 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
                             config.getArchivingTimePoint(), partitionId)));
 
     return client.count(countRequest).thenApplyAsync(res -> Math.toIntExact(res.count()));
+  }
+
+  @Override
+  public CompletableFuture<List<String>> archivableKeys(
+      final String processInstanceKey,
+      final String sourceIndexName,
+      final String piKeyField,
+      final int batchSize) {
+    return client
+        .search(
+            s ->
+                s.index(sourceIndexName)
+                    .query(
+                        q ->
+                            q.bool(
+                                b ->
+                                    b.must(
+                                            m ->
+                                                m.term(
+                                                    t ->
+                                                        t.field(piKeyField)
+                                                            .value(processInstanceKey)))
+                                        .mustNot(
+                                            mn -> mn.ids(ids -> ids.values(processInstanceKey)))))
+                    .source(src -> src.fetch(false))
+                    .size(batchSize),
+            String.class)
+        .thenApplyAsync(searchRes -> searchRes.hits().hits().stream().map(Hit::id).toList());
+  }
+
+  @Override
+  public CompletableFuture<Void> moveDocumentsInBatch(
+      final List<String> keys,
+      final String fieldName,
+      final String destinationIndexName,
+      final String sourceIndexName,
+      final int batchSize) {
+
+    return CompletableFuture.allOf(
+        keys.stream()
+            .map(
+                key ->
+                    archivableKeys(key, sourceIndexName, fieldName, batchSize)
+                        .thenApplyAsync(
+                            resKeys -> {
+                              if (resKeys.isEmpty()) {
+                                return reindexDocuments(
+                                        destinationIndexName, sourceIndexName, List.of(key))
+                                    .thenAcceptAsync(
+                                        ignore -> deleteDocuments(sourceIndexName, List.of(key)),
+                                        executor);
+                              }
+                              return reindexDocuments(
+                                      destinationIndexName, sourceIndexName, resKeys)
+                                  .whenCompleteAsync(
+                                      (res, error) -> {
+                                        if (res != null
+                                            && res.timedOut() != null
+                                            && res.timedOut()) {
+                                          // Need to halve the batch size and retry
+                                          throw new SlicingException();
+                                        }
+                                      })
+                                  .thenApplyAsync(
+                                      ignore -> deleteDocuments(sourceIndexName, resKeys), executor)
+                                  .thenApplyAsync(
+                                      ignore ->
+                                          moveDocumentsInBatch(
+                                              keys,
+                                              fieldName,
+                                              destinationIndexName,
+                                              sourceIndexName,
+                                              config.getRolloverBatchSize()),
+                                      executor);
+                            },
+                            executor)
+                        .exceptionally(
+                            err -> {
+                              if (err instanceof SlicingException) {
+                                return moveDocumentsInBatch(
+                                    keys,
+                                    fieldName,
+                                    destinationIndexName,
+                                    sourceIndexName,
+                                    batchSize / 2);
+                              }
+                              return moveDocumentsInBatch(
+                                  keys,
+                                  fieldName,
+                                  destinationIndexName,
+                                  sourceIndexName,
+                                  batchSize);
+                            }))
+            .toArray(CompletableFuture[]::new));
+  }
+
+  private CompletableFuture<DeleteByQueryResponse> deleteDocuments(
+      final String sourceIndexName, final List<String> documentIds) {
+    return client.deleteByQuery(
+        d ->
+            d.index(sourceIndexName)
+                .query(q -> q.ids(ids -> ids.values(documentIds)))
+                .conflicts(Conflicts.Proceed));
+  }
+
+  private CompletableFuture<ReindexResponse> reindexDocuments(
+      final String destinationIndexName,
+      final String sourceIndexName,
+      final List<String> documentIds) {
+    return client.reindex(
+        r ->
+            r.source(
+                    src ->
+                        src.index(sourceIndexName)
+                            .query(q -> q.ids(ids -> ids.values(documentIds))))
+                .dest(dst -> dst.index(destinationIndexName))
+                .conflicts(Conflicts.Proceed)
+                .scroll(REINDEX_SCROLL_TIMEOUT)
+                .slices(AUTO_SLICES));
   }
 
   private Query finishedProcessInstancesQuery(
@@ -627,4 +756,6 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
         .size(config.getRolloverBatchSize())
         .build();
   }
+
+  private class SlicingException extends RuntimeException {}
 }
