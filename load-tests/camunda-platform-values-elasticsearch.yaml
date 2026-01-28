@@ -74,10 +74,10 @@ elasticsearch:
       accessModes: ["ReadWriteOnce"]
     resources:
       requests:
-        cpu: 3
+        cpu: 5
         memory: 3Gi
       limits:
-        cpu: 3
+        cpu: 5
         memory: 6Gi
   extraConfig:
     logger.org.elasticsearch.deprecation: "OFF"
