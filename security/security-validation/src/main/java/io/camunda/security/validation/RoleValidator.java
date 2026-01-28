@@ -8,6 +8,7 @@
 package io.camunda.security.validation;
 
 import static io.camunda.security.validation.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
+import static java.util.Collections.emptyList;
 
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.ArrayList;
@@ -28,18 +29,21 @@ public final class RoleValidator {
     return violations;
   }
 
-  public List<String> validateMemberRequest(
+  public List<String> validateMembers(final List<String> memberIds, final EntityType memberType) {
+    if (memberIds == null) {
+      return emptyList();
+    }
+    final List<String> violations = new ArrayList<>();
+    memberIds.forEach(
+        memberId -> identifierValidator.validateMemberId(memberId, memberType, violations));
+    return violations;
+  }
+
+  public List<String> validateMember(
       final String roleId, final String memberId, final EntityType memberType) {
     final List<String> violations = new ArrayList<>();
     validateRoleId(roleId, violations);
     identifierValidator.validateMemberId(memberId, memberType, violations);
-    return violations;
-  }
-
-  public List<String> validateGroupMemberRequest(final String roleId, final String groupId) {
-    final List<String> violations = new ArrayList<>();
-    validateRoleId(roleId, violations);
-    identifierValidator.validateGroupId(groupId, violations);
     return violations;
   }
 

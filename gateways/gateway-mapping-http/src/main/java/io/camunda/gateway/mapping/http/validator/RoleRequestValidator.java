@@ -35,11 +35,6 @@ public final class RoleRequestValidator {
 
   public Optional<ProblemDetail> validateMemberRequest(
       final String roleId, final String memberId, final EntityType memberType) {
-    return validate(() -> roleValidator.validateMemberRequest(roleId, memberId, memberType));
-  }
-
-  public Optional<ProblemDetail> validateGroupMemberRequest(
-      final String roleId, final String groupId) {
-    return validate(() -> roleValidator.validateGroupMemberRequest(roleId, groupId));
+    return validate(() -> roleValidator.validateMember(roleId, memberId, memberType));
   }
 }

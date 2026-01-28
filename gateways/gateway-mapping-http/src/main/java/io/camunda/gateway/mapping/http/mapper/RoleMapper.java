@@ -52,14 +52,4 @@ public class RoleMapper {
         roleRequestValidator.validateMemberRequest(roleId, memberId, entityType),
         () -> new RoleMemberRequest(roleId, memberId, entityType));
   }
-
-  /**
-   * Assigning role to a group differs, because bring-your-own-Groups requires different validation.
-   */
-  public Either<ProblemDetail, RoleMemberRequest> toRoleGroupMemberRequest(
-      final String roleId, final String memberId, final EntityType entityType) {
-    return RequestMapper.getResult(
-        roleRequestValidator.validateGroupMemberRequest(roleId, memberId),
-        () -> new RoleMemberRequest(roleId, memberId, entityType));
-  }
 }
