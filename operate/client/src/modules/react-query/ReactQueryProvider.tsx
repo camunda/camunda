@@ -18,7 +18,7 @@ const ReactQueryProvider: React.FC<Props> = ({children}) => {
   return (
     <QueryClientProvider client={reactQueryClient}>
       {children}
-      <ReactQueryDevtools buttonPosition="bottom-right" />
+      <ReactQueryDevtools buttonPosition="bottom-left" />
     </QueryClientProvider>
   );
 };
