@@ -7,6 +7,8 @@
  */
 package io.camunda.application;
 
+import static org.springframework.core.env.AbstractEnvironment.ACTIVE_PROFILES_PROPERTY_NAME;
+
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -24,6 +26,7 @@ public class ModesAndProfilesProcessor implements SpringApplicationRunListener {
 
   private static final Set<String> VALID_MODES = Set.of("all-in-one", "broker", "gateway");
 
+  private static final String SPRING_PROFILES_ACTIVE_PROPERTY = ACTIVE_PROFILES_PROPERTY_NAME;
   private static final Set<String> DEFAULT_PROFILES =
       Set.of(
           Profile.OPERATE.getId(),
@@ -94,8 +97,15 @@ public class ModesAndProfilesProcessor implements SpringApplicationRunListener {
   }
 
   private void configureWithProfiles() {
-    if (environment.getActiveProfiles().length == 0) {
-      environment.setActiveProfiles(DEFAULT_PROFILES.toArray(new String[0]));
+    if (!environment.containsProperty(ACTIVE_PROFILES_PROPERTY_NAME)) {
+      environment
+          .getPropertySources()
+          .addLast(
+              new MapPropertySource(
+                  "camundaDefaultProfiles",
+                  Map.of(
+                      ACTIVE_PROFILES_PROPERTY_NAME,
+                      DEFAULT_PROFILES)));
     }
   }
 
