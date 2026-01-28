@@ -9,6 +9,8 @@ package io.camunda.zeebe.dynamic.config.api;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -66,6 +68,21 @@ public sealed interface ClusterConfigurationManagementRequest {
 
   record ForceRemoveBrokersRequest(Set<MemberId> membersToRemove, boolean dryRun)
       implements ClusterConfigurationManagementRequest {}
+
+  /**
+   * Request to set the desired cluster configuration by specifying the brokers and their assigned
+   * partitions. The system will compute and execute the necessary operations to transition from the
+   * current configuration to the desired one.
+   *
+   * @param brokers a map from broker ID to list of partition assignments (partition ID to priority)
+   * @param dryRun if true, changes are planned but not applied
+   */
+  record SetClusterConfigurationRequest(
+      Map<MemberId, List<PartitionAssignmentRequest>> brokers, boolean dryRun)
+      implements ClusterConfigurationManagementRequest {}
+
+  /** Represents a partition assignment for a broker with partition ID and priority. */
+  record PartitionAssignmentRequest(int partitionId, int priority) {}
 
   record ExporterDisableRequest(String exporterId, boolean dryRun)
       implements ClusterConfigurationManagementRequest {}

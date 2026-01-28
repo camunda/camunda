@@ -22,6 +22,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ReassignPartitionsRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.SetClusterConfigurationRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateRoutingStateRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator;
@@ -167,6 +168,14 @@ public final class ClusterConfigurationManagementRequestsHandler
     return handleRequest(
         updateRoutingStateRequest.dryRun(),
         new UpdateRoutingStateTransformer(updateRoutingStateRequest.routingState()));
+  }
+
+  @Override
+  public ActorFuture<ClusterConfigurationChangeResponse> setClusterConfiguration(
+      final SetClusterConfigurationRequest setClusterConfigurationRequest) {
+    return handleRequest(
+        setClusterConfigurationRequest.dryRun(),
+        new SetClusterConfigurationRequestTransformer(setClusterConfigurationRequest.brokers()));
   }
 
   @Override

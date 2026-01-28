@@ -89,6 +89,21 @@ message CancelTopologyChangeRequest {
   int64 changeId = 1;
 }
 
+message SetClusterConfigurationRequest {
+  repeated BrokerPartitionAssignment brokers = 1;
+  bool dryRun = 2;
+}
+
+message BrokerPartitionAssignment {
+  string brokerId = 1;
+  repeated PartitionAssignment partitions = 2;
+}
+
+message PartitionAssignment {
+  int32 partitionId = 1;
+  int32 priority = 2;
+}
+
 message TopologyChangeResponse {
   int64 changeId = 1;
   map<string, topology_protocol.MemberState> currentTopology = 2;

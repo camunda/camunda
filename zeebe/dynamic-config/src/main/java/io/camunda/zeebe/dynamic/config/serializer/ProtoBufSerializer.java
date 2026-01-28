@@ -22,9 +22,11 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceRemoveBrokersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PartitionAssignmentRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ReassignPartitionsRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.SetClusterConfigurationRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateRoutingStateRequest;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossipState;
@@ -936,6 +938,36 @@ public class ProtoBufSerializer
   }
 
   @Override
+  public byte[] encodeSetClusterConfigurationRequest(
+      final SetClusterConfigurationRequest setClusterConfigurationRequest) {
+    final var builder =
+        Requests.SetClusterConfigurationRequest.newBuilder()
+            .setDryRun(setClusterConfigurationRequest.dryRun());
+
+    setClusterConfigurationRequest
+        .brokers()
+        .forEach(
+            (memberId, partitions) -> {
+              final var brokerAssignment =
+                  Requests.BrokerPartitionAssignment.newBuilder()
+                      .setBrokerId(memberId.id())
+                      .addAllPartitions(
+                          partitions.stream()
+                              .map(
+                                  p ->
+                                      Requests.PartitionAssignment.newBuilder()
+                                          .setPartitionId(p.partitionId())
+                                          .setPriority(p.priority())
+                                          .build())
+                              .toList())
+                      .build();
+              builder.addBrokers(brokerAssignment);
+            });
+
+    return builder.build().toByteArray();
+  }
+
+  @Override
   public AddMembersRequest decodeAddMembersRequest(final byte[] encodedState) {
     try {
       final var addMemberRequest = Requests.AddMembersRequest.parseFrom(encodedState);
@@ -1223,6 +1255,28 @@ public class ProtoBufSerializer
     }
     final var routingState = decodeRoutingState(proto.getRoutingState());
     return new UpdateRoutingStateRequest(routingState, proto.getDryRun());
+  }
+
+  @Override
+  public SetClusterConfigurationRequest decodeSetClusterConfigurationRequest(final byte[] bytes) {
+    try {
+      final var proto = Requests.SetClusterConfigurationRequest.parseFrom(bytes);
+      final Map<MemberId, List<PartitionAssignmentRequest>> brokers =
+          proto.getBrokersList().stream()
+              .collect(
+                  Collectors.toMap(
+                      brokerAssignment -> MemberId.from(brokerAssignment.getBrokerId()),
+                      brokerAssignment ->
+                          brokerAssignment.getPartitionsList().stream()
+                              .map(
+                                  p ->
+                                      new PartitionAssignmentRequest(
+                                          p.getPartitionId(), p.getPriority()))
+                              .toList()));
+      return new SetClusterConfigurationRequest(brokers, proto.getDryRun());
+    } catch (final InvalidProtocolBufferException e) {
+      throw new DecodingFailed(e);
+    }
   }
 
   public Builder encodeTopologyChangeResponse(

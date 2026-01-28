@@ -52,6 +52,7 @@ public final class ClusterConfigurationRequestServer implements AutoCloseable {
     registerUpdateRoutingStateHandler();
     registerForceRemoveBrokersRequestHandler();
     registerPurgeRequestHandler();
+    registerSetClusterConfigurationHandler();
   }
 
   @Override
@@ -188,6 +189,14 @@ public final class ClusterConfigurationRequestServer implements AutoCloseable {
         ClusterConfigurationRequestTopics.PURGE.topic(),
         serializer::decodePurgeRequest,
         request -> mapResponse(clusterConfigurationManagementApi.purge(request)),
+        this::encodeResponse);
+  }
+
+  private void registerSetClusterConfigurationHandler() {
+    communicationService.replyTo(
+        ClusterConfigurationRequestTopics.SET_CLUSTER_CONFIGURATION.topic(),
+        serializer::decodeSetClusterConfigurationRequest,
+        request -> mapResponse(clusterConfigurationManagementApi.setClusterConfiguration(request)),
         this::encodeResponse);
   }
 

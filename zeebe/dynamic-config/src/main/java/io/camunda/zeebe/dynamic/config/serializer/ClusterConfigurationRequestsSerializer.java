@@ -11,6 +11,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.BrokerScaleRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.SetClusterConfigurationRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateRoutingStateRequest;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
@@ -56,6 +57,9 @@ public interface ClusterConfigurationRequestsSerializer {
       ClusterConfigurationManagementRequest.ForceRemoveBrokersRequest forceRemoveBrokersRequest);
 
   byte[] encodeUpdateRoutingStateRequest(UpdateRoutingStateRequest updateRoutingStateRequest);
+
+  byte[] encodeSetClusterConfigurationRequest(
+      SetClusterConfigurationRequest setClusterConfigurationRequest);
 
   ClusterConfigurationManagementRequest.AddMembersRequest decodeAddMembersRequest(
       byte[] encodedState);
@@ -109,4 +113,6 @@ public interface ClusterConfigurationRequestsSerializer {
   Either<ErrorResponse, ClusterConfiguration> decodeClusterTopologyResponse(byte[] encodedResponse);
 
   UpdateRoutingStateRequest decodeUpdateRoutingStateRequest(byte[] bytes);
+
+  SetClusterConfigurationRequest decodeSetClusterConfigurationRequest(byte[] bytes);
 }

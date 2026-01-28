@@ -35,6 +35,58 @@ responses:
           "$ref": "components.yaml#/schemas/Error"
 
 schemas:
+  DesiredClusterConfiguration:
+    type: object
+    description: The desired cluster configuration specifying brokers and their partition assignments.
+    required:
+      - brokers
+    properties:
+      brokers:
+        type: array
+        description: List of brokers and their partition assignments.
+        items:
+          $ref: '#/schemas/BrokerPartitionAssignment'
+
+  BrokerPartitionAssignment:
+    type: object
+    description: A broker and its assigned partitions.
+    required:
+      - brokerId
+      - partitions
+    properties:
+      brokerId:
+        $ref: '#/schemas/BrokerId'
+      partitions:
+        type: array
+        description: List of partitions assigned to this broker.
+        items:
+          $ref: '#/schemas/PartitionAssignment'
+
+  PartitionAssignment:
+    type: object
+    description: A partition assignment for a broker.
+    required:
+      - partitionId
+      - priority
+    properties:
+      partitionId:
+        type: integer
+        format: int32
+        description: The partition ID.
+        minimum: 1
+      priority:
+        type: integer
+        format: int32
+        description: The priority of this broker for this partition. Higher priority means the broker is preferred as leader.
+        minimum: 1
+      state:
+        type: string
+        description: The desired state of the partition on this broker.
+        enum:
+          - ACTIVE
+          - BOOTSTRAPPING
+        default: ACTIVE
+
   Error:
     title: Error response
     description: Generic response for all errors

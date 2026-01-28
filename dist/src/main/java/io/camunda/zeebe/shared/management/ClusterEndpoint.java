@@ -16,8 +16,10 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceRemoveBrokersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PartitionAssignmentRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.SetClusterConfigurationRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateRoutingStateRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation;
@@ -28,6 +30,7 @@ import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.AllPar
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequest;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequestBrokers;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequestPartitions;
+import io.camunda.zeebe.management.cluster.DesiredClusterConfiguration;
 import io.camunda.zeebe.management.cluster.Error;
 import io.camunda.zeebe.management.cluster.MessageCorrelationHashMod;
 import io.camunda.zeebe.management.cluster.RequestHandlingActivePartitions;
@@ -35,6 +38,7 @@ import io.camunda.zeebe.management.cluster.RequestHandlingAllPartitions;
 import io.camunda.zeebe.management.cluster.RoutingState;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -49,6 +53,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
@@ -220,6 +225,45 @@ public class ClusterEndpoint {
         return patchCluster(dryRun, request, brokers, newPartitionCount, newReplicationFactor);
       }
 
+    } catch (final Exception error) {
+      return ClusterApiUtils.mapError(error);
+    }
+  }
+
+  /**
+   * Set the desired cluster configuration by specifying the brokers and their assigned partitions.
+   * The system will compute and execute the necessary operations to transition from the current
+   * configuration to the desired one. This includes adding/removing brokers and reassigning
+   * partitions. All specified brokers must be running to complete the operation unless force is set
+   * to true.
+   */
+  @PutMapping(path = "/configuration", consumes = "application/json", produces = "application/json")
+  public ResponseEntity<?> setClusterConfiguration(
+      @RequestParam(defaultValue = "false") final boolean dryRun,
+      @RequestParam(defaultValue = "false") final boolean force,
+      @RequestBody final DesiredClusterConfiguration request) {
+    try {
+      if (force) {
+        return invalidRequest("Force mode is not yet supported for setting cluster configuration");
+      }
+
+      // Convert the API request to the internal request type
+      final Map<MemberId, List<PartitionAssignmentRequest>> brokerAssignments =
+          request.getBrokers().stream()
+              .collect(
+                  Collectors.toMap(
+                      broker -> MemberId.from(String.valueOf(broker.getBrokerId())),
+                      broker ->
+                          broker.getPartitions().stream()
+                              .map(
+                                  partition ->
+                                      new PartitionAssignmentRequest(
+                                          partition.getPartitionId(), partition.getPriority()))
+                              .toList()));
+
+      final var setConfigRequest = new SetClusterConfigurationRequest(brokerAssignments, dryRun);
+      return ClusterApiUtils.mapOperationResponse(
+          requestSender.setClusterConfiguration(setConfigRequest).join());
     } catch (final Exception error) {
       return ClusterApiUtils.mapError(error);
     }

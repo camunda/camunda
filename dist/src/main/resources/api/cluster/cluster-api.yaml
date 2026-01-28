@@ -16,6 +16,37 @@ servers:
         default: http
         description: Management server schema
 paths:
+  /configuration:
+    put:
+      summary: Set the desired cluster configuration
+      description: |
+        Set the desired cluster configuration by specifying the brokers and their assigned partitions.
+        The system will compute and execute the necessary operations to transition from the current
+        configuration to the desired one. This includes adding/removing brokers and reassigning partitions.
+        All specified brokers must be running to complete the operation unless force is set to true.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "components.yaml#/schemas/DesiredClusterConfiguration"
+      parameters:
+        - $ref: '#/components/parameters/DryRunParameter'
+        - $ref: '#/components/parameters/ForceParameter'
+      responses:
+        '202':
+          $ref: "#/components/responses/SetConfigurationResponse"
+        '400':
+          $ref: 'components.yaml#/responses/InvalidRequest'
+        '409':
+          $ref: 'components.yaml#/responses/ConcurrentChangeError'
+        '500':
+          $ref: 'components.yaml#/responses/InternalError'
+        '502':
+          $ref: 'components.yaml#/responses/GatewayError'
+        '504':
+          $ref: 'components.yaml#/responses/TimeoutError'
+
   /brokers/{brokerId}:
     post:
       summary: Add a broker to the cluster
@@ -263,3 +294,9 @@ components:
         application/json:
           schema:
             $ref: "components.yaml#/schemas/GetTopologyResponse"
+    SetConfigurationResponse:
+      description: Request to set cluster configuration is accepted.
+      content:
+        application/json:
+          schema:
+            $ref: "components.yaml#/schemas/PlannedOperationsResponse"
