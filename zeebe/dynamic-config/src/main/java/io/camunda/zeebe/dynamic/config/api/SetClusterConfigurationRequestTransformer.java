@@ -215,7 +215,7 @@ public final class SetClusterConfigurationRequestTransformer implements Configur
         if (!desiredPartitionAssignments.containsKey(memberId)) {
           // Member should leave this partition
           final var currentPriority = currentPartitionAssignments.get(memberId);
-          operations.add(new PartitionLeaveOperation(memberId, partitionId, currentPriority));
+          operations.add(new PartitionLeaveOperation(memberId, partitionId, 1));
         }
       }
     }
