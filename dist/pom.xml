@@ -855,6 +855,10 @@
               <id>cdbg</id>
               <mainClass>io.camunda.debug.cli.Main</mainClass>
             </program>
+            <program>
+              <id>es-rdbms-migrate</id>
+              <mainClass>io.camunda.application.StandaloneMigrator</mainClass>
+            </program>
           </programs>
           <repositoryLayout>flat</repositoryLayout>
           <repositoryName>lib</repositoryName>
