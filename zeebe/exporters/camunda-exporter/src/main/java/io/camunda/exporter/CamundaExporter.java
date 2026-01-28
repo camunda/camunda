@@ -70,6 +70,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.Semaphore;
 import org.agrona.CloseHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -77,10 +78,14 @@ import org.slf4j.LoggerFactory;
 public class CamundaExporter implements Exporter {
   private static final Logger LOG = LoggerFactory.getLogger(CamundaExporter.class);
 
+  private final int WRITERS_NUMBER = 3;
+
+  private ExporterBatchWriter writer;
+  private final Flusher flusher;
+
   private Controller controller;
   private ExporterConfiguration configuration;
   private ClientAdapter clientAdapter;
-  private ExporterBatchWriter writer;
   private long lastPosition = -1;
   private final ExporterResourceProvider provider;
   private CamundaExporterMetrics metrics;
@@ -89,7 +94,6 @@ public class CamundaExporter implements Exporter {
   private SearchEngineClient searchEngineClient;
   private int partitionId;
   private Context context;
-  private final ScheduledExecutorService flushExecutorService;
 
   public CamundaExporter() {
     // the metadata will be initialized on open
@@ -106,7 +110,7 @@ public class CamundaExporter implements Exporter {
     this.provider = provider;
     this.metadata = metadata;
 
-    flushExecutorService = Executors.newScheduledThreadPool(1);
+    flusher = new Flusher();
   }
 
   @Override
@@ -329,24 +333,7 @@ public class CamundaExporter implements Exporter {
       return;
     }
 
-    final var currentWriter = writer;
-
-    flushExecutorService.submit(
-        () -> {
-          try (final var ignored = metrics.measureFlushDuration()) {
-            metrics.recordBulkSize(currentWriter.getBatchSize());
-            final BatchRequest batchRequest =
-                clientAdapter.createBatchRequest().withMetrics(metrics);
-            currentWriter.flush(batchRequest);
-            metrics.recordFlushOccurrence(Instant.now());
-            metrics.stopFlushLatencyMeasurement();
-          } catch (final PersistenceException ex) {
-            metrics.recordFailedFlush();
-            throw new ExporterException(ex.getMessage(), ex);
-          }
-        });
-
-    writer = createBatchWriter();
+    flusher.flush();
 
     // Update the record counters only after the flush was successful. If the synchronous flush
     // fails then the exporter will be invoked with the same record again.
@@ -401,6 +388,42 @@ public class CamundaExporter implements Exporter {
     @Override
     public boolean acceptValue(final ValueType valueType) {
       return VALUE_TYPES_2_EXPORT.contains(valueType);
+    }
+  }
+
+  class Flusher {
+    final Semaphore semaphore = new Semaphore(WRITERS_NUMBER);
+    private final ScheduledExecutorService flushExecutorService;
+
+    Flusher() {
+      flushExecutorService = Executors.newSingleThreadScheduledExecutor();
+    }
+
+    void flush() {
+      try {
+        semaphore.acquire();
+      } catch (final InterruptedException e) {
+        throw new RuntimeException(e);
+      }
+
+      final var currentWriter = writer;
+      flushExecutorService.submit(
+          () -> {
+            try (final var ignored = metrics.measureFlushDuration()) {
+              metrics.recordBulkSize(currentWriter.getBatchSize());
+              final BatchRequest batchRequest =
+                  clientAdapter.createBatchRequest().withMetrics(metrics);
+              currentWriter.flush(batchRequest);
+              metrics.recordFlushOccurrence(Instant.now());
+              metrics.stopFlushLatencyMeasurement();
+            } catch (final PersistenceException ex) {
+              metrics.recordFailedFlush();
+              throw new ExporterException(ex.getMessage(), ex);
+            } finally {
+              semaphore.release();
+            }
+          });
+      writer = createBatchWriter();
     }
   }
 }
