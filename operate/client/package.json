@@ -116,7 +116,7 @@
     "vite-tsconfig-paths": "5.1.4",
     "vitest": "4.0.15",
     "vitest-browser-react": "2.0.2",
-    "zod": "4.0.5"
+    "zod": "4.3.6"
   },
   "browserslist": [
     ">0.2%",
