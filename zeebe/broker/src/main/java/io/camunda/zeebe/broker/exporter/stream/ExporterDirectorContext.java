@@ -29,6 +29,7 @@ public final class ExporterDirectorContext {
   private ZeebeDb zeebeDb;
   private PartitionMessagingService partitionMessagingService;
   private ExporterMode exporterMode = ExporterMode.ACTIVE; // per default we export records
+  private boolean uncommittedReader = true;
   private Duration distributionInterval = DEFAULT_DISTRIBUTION_INTERVAL;
   private EventFilter positionsToSkipFilter;
   private MeterRegistry meterRegistry;
@@ -60,6 +61,10 @@ public final class ExporterDirectorContext {
 
   public ExporterMode getExporterMode() {
     return exporterMode;
+  }
+
+  public boolean isUncommittedReader() {
+    return uncommittedReader;
   }
 
   public Duration getDistributionInterval() {
@@ -117,6 +122,11 @@ public final class ExporterDirectorContext {
 
   public ExporterDirectorContext exporterMode(final ExporterMode exporterMode) {
     this.exporterMode = exporterMode;
+    return this;
+  }
+
+  public ExporterDirectorContext uncommittedReader(final boolean uncommittedReader) {
+    this.uncommittedReader = uncommittedReader;
     return this;
   }
 

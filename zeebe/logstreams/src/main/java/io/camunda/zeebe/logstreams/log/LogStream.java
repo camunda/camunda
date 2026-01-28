@@ -47,6 +47,14 @@ public interface LogStream extends AutoCloseable {
   LogStreamReader newLogStreamReader();
 
   /**
+   * @param uncommitted whether the reader should read uncommitted data
+   * @return a future, when successfully completed it returns a newly created log stream reader
+   */
+  default LogStreamReader newLogStreamReader(final boolean uncommitted) {
+    return newLogStreamReader();
+  }
+
+  /**
    * @return a future, when successfully completed it returns a newly created log stream record
    *     writer
    */

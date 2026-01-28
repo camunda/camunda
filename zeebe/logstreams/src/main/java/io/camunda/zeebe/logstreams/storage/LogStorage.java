@@ -33,6 +33,15 @@ public interface LogStorage {
   LogStorageReader newReader();
 
   /**
+   * Creates a new reader initialized at the given address, which can read uncommitted data.
+   *
+   * @return a new stateful storage reader
+   */
+  default LogStorageReader newUncommittedReader() {
+    return newReader();
+  }
+
+  /**
    * Writes a block containing one or multiple log entries in the storage and returns the address at
    * which the block has been written.
    *
@@ -93,6 +102,20 @@ public interface LogStorage {
   void removeCommitListener(CommitListener listener);
 
   /**
+   * Register a write listener
+   *
+   * @param listener the listener which will be notified when a new record is written.
+   */
+  void addWriteListener(WriteListener listener);
+
+  /**
+   * Remove a write listener
+   *
+   * @param listener the listener to remove
+   */
+  void removeWriteListener(WriteListener listener);
+
+  /**
    * An append listener can be added to an append call to be notified of different events that can
    * occur during the append operation.
    */
@@ -126,5 +149,13 @@ public interface LogStorage {
 
     /** Called when a new record is committed in the storage */
     void onCommit();
+  }
+
+  /**
+   * Consumers of LogStorage can use this listener to get notified when new records are written.
+   */
+  interface WriteListener {
+    /** Called when a new record is written in the storage */
+    void onWrite();
   }
 }
