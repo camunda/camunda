@@ -24,6 +24,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration.ProcessInstanceRetentionMode;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.exporter.tasks.archiver.ArchiveBatch.ProcessInstanceArchiveBatch;
 import io.camunda.exporter.tasks.utils.TestExporterResourceProvider;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.configuration.DatabaseType;
@@ -417,6 +418,73 @@ final class ElasticsearchArchiverRepositoryIT {
     final var batch = result.join();
     assertThat(batch.processInstanceKeys()).containsExactly(1L);
     assertThat(batch.finishDate()).isEqualTo(dateFormatter.format(now.minus(Duration.ofHours(2))));
+  }
+
+  @Test
+  void shouldGetProcessInstanceBatchSizes() throws IOException {
+    // given - 4 documents, where 2 is on a different partition, 3 is the wrong join relation type,
+    // and 4 was finished too recently: we then expect only 1 to be returned
+    final var now = Instant.now();
+    final var twoHoursAgo = now.minus(Duration.ofHours(2)).toString();
+    final var repository = createRepository();
+    final var documents =
+        List.of(
+            new TestProcessInstance(
+                "1", twoHoursAgo, ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION, 1, null, null),
+            new TestProcessInstance(
+                "2", twoHoursAgo, ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION, 2, null, null),
+            new TestProcessInstance(
+                "3", twoHoursAgo, ListViewTemplate.ACTIVITIES_JOIN_RELATION, 1, null, null),
+            new TestProcessInstance(
+                "4",
+                now.toString(),
+                ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION,
+                1,
+                null,
+                null));
+
+    // create the index template first to ensure ID is a keyword, otherwise the surrounding
+    // aggregation will fail
+    createProcessInstanceIndex();
+    documents.forEach(doc -> index(processInstanceIndex, doc));
+
+    final var decisions =
+        List.of(
+            new TestStandaloneDecision("1", twoHoursAgo, 1, 1),
+            new TestStandaloneDecision("2", twoHoursAgo, 1, 1),
+            new TestStandaloneDecision("3", twoHoursAgo, 2, 2),
+            new TestStandaloneDecision("4", twoHoursAgo, 1, -1),
+            new TestStandaloneDecision("5", now.toString(), 1, 4),
+            new TestStandaloneDecision("6", twoHoursAgo, 1, 1));
+
+    // create the index template first to ensure ID is a keyword, otherwise the surrounding
+    // aggregation will fail
+    final var standaloneDecisionIndex =
+        resourceProvider
+            .getIndexTemplateDescriptor(DecisionInstanceTemplate.class)
+            .getFullQualifiedName();
+    createStandaloneDecisionIndex(standaloneDecisionIndex);
+    decisions.forEach(doc -> index(standaloneDecisionIndex, doc));
+
+    testClient.indices().refresh(r -> r.index(processInstanceIndex, standaloneDecisionIndex));
+
+    config.setRolloverBatchSize(3);
+
+    // when
+    final var batch =
+        new ProcessInstanceArchiveBatch("2024-01-01", List.of(1L, 2L, 3L, 4L), List.of());
+
+    final var sizes =
+        repository
+            .getProcessInstancesBatchSizes(
+                batch,
+                List.of(
+                    resourceProvider.getIndexTemplateDescriptor(DecisionInstanceTemplate.class)))
+            .join();
+
+    System.out.println(sizes);
+    // assertThat(batch.processInstanceKeys()).containsExactly(1L);
+    // assertThat(batch.finishDate()).isEqualTo(dateFormatter.format(now.minus(Duration.ofHours(2))));
   }
 
   @Test

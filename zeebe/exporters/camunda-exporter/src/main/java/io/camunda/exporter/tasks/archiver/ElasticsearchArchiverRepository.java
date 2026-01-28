@@ -16,6 +16,9 @@ import co.elastic.clients.elasticsearch._types.Slices;
 import co.elastic.clients.elasticsearch._types.SlicesCalculation;
 import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.Time;
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
+import co.elastic.clients.elasticsearch._types.aggregations.AggregationBuilders;
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery.Builder;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
@@ -33,16 +36,20 @@ import co.elastic.clients.elasticsearch.indices.PutIndicesSettingsResponse;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.Expiry;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import io.camunda.exporter.ExporterResourceProvider;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration.ProcessInstanceRetentionMode;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.BasicArchiveBatch;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.ProcessInstanceArchiveBatch;
+import io.camunda.exporter.tasks.archiver.ArchiveBatch.ProcessInstanceBatchSizes;
 import io.camunda.exporter.tasks.util.DateOfArchivedDocumentsUtil;
 import io.camunda.exporter.tasks.util.ElasticsearchRepository;
 import io.camunda.search.schema.config.RetentionConfiguration;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import io.camunda.webapps.schema.descriptors.ProcessInstanceDependant;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
@@ -53,11 +60,14 @@ import io.micrometer.core.instrument.Timer;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
+import java.util.stream.Collectors;
 import javax.annotation.WillCloseWhenClosed;
 import org.slf4j.Logger;
 
@@ -138,6 +148,77 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
             (response) ->
                 createProcessInstanceBatch(
                     response, ListViewTemplate.END_DATE, listViewTemplateDescriptor),
+            executor);
+  }
+
+  @Override
+  public CompletableFuture<ProcessInstanceBatchSizes> getProcessInstancesBatchSizes(
+      final ProcessInstanceArchiveBatch batch,
+      final List<ProcessInstanceDependant> dependentIndexes) {
+
+    final var indexTemplates =
+        ImmutableList.<IndexTemplateDescriptor>builder()
+            .add(listViewTemplateDescriptor)
+            .addAll(dependentIndexes)
+            .build();
+
+    final var indexes =
+        indexTemplates.stream().map(IndexTemplateDescriptor::getFullQualifiedName).toList();
+
+    final Set<String> processInstanceIdFields =
+        ImmutableSet.<String>builder()
+            .add(ListViewTemplate.PROCESS_INSTANCE_KEY)
+            .addAll(
+                dependentIndexes.stream()
+                    .map(ProcessInstanceDependant::getProcessInstanceDependantField)
+                    .toList())
+            .build();
+
+    System.out.println("processInstanceIdFields: " + processInstanceIdFields);
+
+    final List<Query> processInstanceTerms =
+        terms(processInstanceIdFields, batch.processInstanceKeys());
+    final Query query = QueryBuilders.bool(b -> b.should(processInstanceTerms));
+
+    final Map<String, Query> buckets =
+        batch.processInstanceKeys().stream()
+            .collect(
+                Collectors.toMap(
+                    String::valueOf,
+                    key -> QueryBuilders.bool(b -> b.should(term(processInstanceIdFields, key)))));
+
+    System.out.println(buckets);
+
+    final Aggregation processInstancesAggregate =
+        AggregationBuilders.filters(f -> f.filters(b -> b.keyed(buckets)));
+
+    final SearchRequest searchRequest =
+        new SearchRequest.Builder()
+            .index(indexes)
+            .size(0)
+            .query(query)
+            .aggregations("processInstances", processInstancesAggregate)
+            .build();
+
+    System.out.println("searchRequest: " + searchRequest);
+
+    return client
+        .search(searchRequest, Map.class)
+        .thenApplyAsync(
+            res -> {
+              final Aggregate agg = res.aggregations().get("processInstances");
+              final Map<Long, Long> sizesByProcessInstanceKey = new HashMap<>();
+              agg.filters()
+                  .buckets()
+                  .keyed()
+                  .forEach(
+                      (key, value) -> {
+                        final var processInstanceKey = Long.parseLong(key);
+                        final var docCount = value.docCount();
+                        sizesByProcessInstanceKey.put(processInstanceKey, docCount);
+                      });
+              return new ProcessInstanceBatchSizes(sizesByProcessInstanceKey, Map.of());
+            },
             executor);
   }
 
@@ -330,6 +411,25 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
                             config.getArchivingTimePoint(), partitionId)));
 
     return client.count(countRequest).thenApplyAsync(res -> Math.toIntExact(res.count()));
+  }
+
+  private List<Query> terms(final Collection<String> fields, final List<Long> values) {
+    return fields.stream().map(field -> terms(field, values)).toList();
+  }
+
+  private Query terms(final String field, final List<Long> values) {
+    return QueryBuilders.terms(
+        t ->
+            t.field(field)
+                .terms(terms -> terms.value(values.stream().map(FieldValue::of).toList())));
+  }
+
+  private List<Query> term(final Collection<String> fields, final Long value) {
+    return fields.stream().map(field -> term(field, value)).toList();
+  }
+
+  private Query term(final String field, final Long value) {
+    return QueryBuilders.term(t -> t.field(field).value(value));
   }
 
   private Query finishedProcessInstancesQuery(
