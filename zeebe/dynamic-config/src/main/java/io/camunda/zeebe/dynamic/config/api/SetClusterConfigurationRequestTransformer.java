@@ -15,6 +15,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberRemoveOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionBootstrapOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
@@ -192,14 +193,23 @@ public final class SetClusterConfigurationRequestTransformer implements Configur
       final var desiredPartitionAssignments =
           desiredAssignments.getOrDefault(partitionId, Map.of());
 
+      // Check if this is a new partition (doesn't exist in current configuration)
+      boolean isNewPartition = currentPartitionAssignments.isEmpty();
+
       // Members to add to this partition
       for (final var entry : desiredPartitionAssignments.entrySet()) {
         final var memberId = entry.getKey();
         final var desiredPriority = entry.getValue();
 
         if (!currentPartitionAssignments.containsKey(memberId)) {
-          // New member for this partition - join
-          operations.add(new PartitionJoinOperation(memberId, partitionId, desiredPriority));
+          if (isNewPartition) {
+            operations.add(
+                new PartitionBootstrapOperation(memberId, partitionId, desiredPriority, true));
+            isNewPartition = false;
+          } else {
+            // New member for this partition - join
+            operations.add(new PartitionJoinOperation(memberId, partitionId, desiredPriority));
+          }
         } else {
           // Member exists - check if priority needs to change
           final var currentPriority = currentPartitionAssignments.get(memberId);
