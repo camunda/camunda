@@ -114,9 +114,6 @@ public class CamundaExporter implements Exporter {
     this.metadata = metadata;
 
     flusher = new Flusher();
-    for (int i = 0; i < WRITERS_NUMBER; i++) {
-      writersPool.add(createBatchWriter());
-    }
   }
 
   @Override
@@ -145,6 +142,10 @@ public class CamundaExporter implements Exporter {
         }
       }
 
+      writersPool.clear();
+      for (int i = 0; i < WRITERS_NUMBER; i++) {
+        writersPool.add(createBatchWriter());
+      }
       nextWriter();
       controller.readMetadata().ifPresent(metadata::deserialize);
       taskManager.start();
