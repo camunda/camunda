@@ -21,16 +21,10 @@ public class McpVariableFilter extends VariableFilter {
   private static final String SIMPLE_JSON_EXAMPLE_VALUE = "\\\"myValue\\\"";
   private static final String NESTED_JSON_EXAMPLE_VALUE = "\"{\\\"myVar\\\":\\\"myValue\\\"}\"";
 
-  @JsonIgnore
-  @Override
-  public String getTenantId() {
-    return super.getTenantId();
-  }
-
   @Schema(
       name = "value",
       description =
-          "The value of the variable in serialized JSON format. Example string value: "
+          "The value of the variable in serialized JSON format. Thus bare string values have to be double-quoted. Example string value: "
               + SIMPLE_JSON_EXAMPLE_VALUE
               + ". Example nested JSON value: "
               + NESTED_JSON_EXAMPLE_VALUE,
@@ -38,5 +32,11 @@ public class McpVariableFilter extends VariableFilter {
   @Override
   public @Nullable String getValue() {
     return super.getValue();
+  }
+
+  @JsonIgnore
+  @Override
+  public String getTenantId() {
+    return super.getTenantId();
   }
 }

@@ -8,9 +8,13 @@
 package io.camunda.gateway.mcp.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.gateway.protocol.model.ElementInstanceStateEnum;
 import io.camunda.gateway.protocol.model.simple.ProcessInstanceFilter;
 import io.camunda.gateway.protocol.model.simple.ProcessInstanceFilterFields;
+import io.camunda.gateway.protocol.model.simple.VariableValueFilterProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.Valid;
 import java.util.List;
 
 /**
@@ -23,6 +27,17 @@ public class McpProcessInstanceFilter extends ProcessInstanceFilter {
   @Override
   public String getTenantId() {
     return super.getTenantId();
+  }
+
+  @Override
+  @Valid
+  @Schema(
+      name = "variables",
+      description = "The process instance variables. The value of the variable in serialized JSON format. Thus bare string values have to be double-quoted.",
+      requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @JsonProperty("variables")
+  public List<@Valid VariableValueFilterProperty> getVariables() {
+    return super.getVariables();
   }
 
   @JsonIgnore
