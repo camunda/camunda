@@ -65,6 +65,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
@@ -82,6 +83,8 @@ public class CamundaExporter implements Exporter {
 
   private ExporterBatchWriter writer;
   private final Flusher flusher;
+  private final List<ExporterBatchWriter> writersPool = new ArrayList<>(WRITERS_NUMBER);
+  private int currentWriterIndex = 0;
 
   private Controller controller;
   private ExporterConfiguration configuration;
@@ -111,6 +114,9 @@ public class CamundaExporter implements Exporter {
     this.metadata = metadata;
 
     flusher = new Flusher();
+    for (int i = 0; i < WRITERS_NUMBER; i++) {
+      writersPool.add(createBatchWriter());
+    }
   }
 
   @Override
@@ -139,7 +145,7 @@ public class CamundaExporter implements Exporter {
         }
       }
 
-      writer = createBatchWriter();
+      nextWriter();
       controller.readMetadata().ifPresent(metadata::deserialize);
       taskManager.start();
       scheduleDelayedFlush();
@@ -238,6 +244,11 @@ public class CamundaExporter implements Exporter {
     } finally {
       close();
     }
+  }
+
+  private void nextWriter() {
+    currentWriterIndex = (currentWriterIndex + 1) % WRITERS_NUMBER;
+    writer = writersPool.get(currentWriterIndex);
   }
 
   private void verifySetupOfResources() {
@@ -430,7 +441,7 @@ public class CamundaExporter implements Exporter {
             // fails then the exporter will be invoked with the same record again.
             updateLastExportedPosition(currentLastPosition);
           });
-      writer = createBatchWriter();
+      nextWriter();
     }
   }
 }
