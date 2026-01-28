@@ -101,10 +101,7 @@ public class ModesAndProfilesProcessor implements SpringApplicationRunListener {
         .getPropertySources()
         .addLast(
             new MapPropertySource(
-                "camundaDefaultProfiles",
-                Map.of(
-                    ACTIVE_PROFILES_PROPERTY_NAME,
-                    profiles)));
+                "camundaDefaultProfiles", Map.of(ACTIVE_PROFILES_PROPERTY_NAME, profiles)));
   }
 
   private void configureWithProfiles() {
