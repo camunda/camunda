@@ -9,19 +9,14 @@
 import {useQuery} from '@tanstack/react-query';
 import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.8';
 import {fetchCallHierarchy} from 'modules/api/v2/processInstances/fetchCallHierarchy';
-
-const CALL_HIERARCHY_QUERY_KEY = 'callHierarchy';
-
-function getQueryKey(processInstanceKey?: string) {
-  return [CALL_HIERARCHY_QUERY_KEY, processInstanceKey];
-}
+import {queryKeys} from '../queryKeys';
 
 const useCallHierarchy = (
   {processInstanceKey}: Pick<ProcessInstance, 'processInstanceKey'>,
   {enabled}: {enabled: boolean},
 ) => {
   return useQuery({
-    queryKey: getQueryKey(processInstanceKey),
+    queryKey: queryKeys.callHierarchy.get(processInstanceKey),
     queryFn: async () => {
       const {response, error} = await fetchCallHierarchy(processInstanceKey);
 

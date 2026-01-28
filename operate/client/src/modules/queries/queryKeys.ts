@@ -16,6 +16,8 @@ import type {
   QueryDecisionInstancesRequestBody,
   QueryElementInstanceIncidentsRequestBody,
   QueryElementInstancesRequestBody,
+  QueryJobsRequestBody,
+  QueryMessageSubscriptionsRequestBody,
   QueryProcessInstanceIncidentsRequestBody,
   QueryProcessInstancesRequestBody,
   Variable,
@@ -161,6 +163,10 @@ const queryKeys = {
   },
   processInstances: {
     base: () => ['processInstances'],
+    search: (payload: QueryProcessInstancesRequestBody) => [
+      'processInstancesSearch',
+      payload,
+    ],
     searchPaginated: (payload: QueryProcessInstancesRequestBody) => [
       'processInstances',
       'search',
@@ -206,6 +212,51 @@ const queryKeys = {
     get: (
       payload?: GetIncidentProcessInstanceStatisticsByDefinitionRequestBody,
     ) => ['incidentProcessInstanceStatisticsByDefinition', payload],
+  },
+  messageSubscriptions: {
+    search: (payload: QueryMessageSubscriptionsRequestBody) => [
+      'messageSubscriptionsSearch',
+      payload,
+    ],
+  },
+  currentUser: {
+    get: () => ['currentUser'],
+  },
+  userTasks: {
+    getByElementInstance: (elementInstanceKey: string) => [
+      'userTasksByElementInstance',
+      elementInstanceKey,
+    ],
+  },
+  variable: {
+    get: (variableKey: string) => ['variable', variableKey],
+  },
+  elementInstance: {
+    get: (elementInstanceKey: string) => [
+      'elementInstance',
+      elementInstanceKey,
+    ],
+  },
+  flowNodeInstancesStatistics: {
+    get: (processInstanceKey: string) => [
+      'flowNodeInstancesStatistics',
+      processInstanceKey,
+    ],
+  },
+  callHierarchy: {
+    get: (processInstanceKey: string) => ['callHierarchy', processInstanceKey],
+  },
+  sequenceFlows: {
+    get: (processInstanceKey: string) => ['sequenceFlows', processInstanceKey],
+  },
+  jobs: {
+    search: (payload: QueryJobsRequestBody) => ['jobsSearch', payload],
+  },
+  processInstance: {
+    get: (processInstanceKey: string) => [
+      'processInstance',
+      processInstanceKey,
+    ],
   },
 };
 

@@ -14,12 +14,7 @@ import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstan
 import isEmpty from 'lodash/isEmpty';
 import {useBusinessObjects} from '../processDefinitions/useBusinessObjects';
 import {useIsProcessInstanceRunning} from '../processInstance/useIsProcessInstanceRunning';
-
-const FLOWNODE_INSTANCES_STATISTICS_QUERY_KEY = 'flownodeInstancesStatistics';
-
-function getQueryKey(processInstanceKey?: string) {
-  return [FLOWNODE_INSTANCES_STATISTICS_QUERY_KEY, processInstanceKey];
-}
+import {queryKeys} from '../queryKeys';
 
 const useFlownodeInstancesStatistics = <
   T = GetProcessInstanceStatisticsResponseBody,
@@ -32,7 +27,9 @@ const useFlownodeInstancesStatistics = <
   const {data: isProcessInstanceRunning} = useIsProcessInstanceRunning();
 
   return useQuery({
-    queryKey: getQueryKey(processInstanceId),
+    queryKey: queryKeys.flowNodeInstancesStatistics.get(
+      processInstanceId ?? '',
+    ),
     queryFn:
       enabled && !!processInstanceId && !isEmpty(businessObjects)
         ? async () => {

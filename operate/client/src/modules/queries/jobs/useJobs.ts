@@ -16,20 +16,16 @@ import {
 } from '@camunda/camunda-api-zod-schemas/8.8';
 import type {RequestError} from 'modules/request';
 import {searchJobs} from 'modules/api/v2/jobs/searchJobs';
+import {queryKeys} from '../queryKeys';
 
 const MAX_JOBS_PER_REQUEST = 50;
-const JOBS_SEARCH_QUERY_KEY = 'jobsSearch';
-
-function getQueryKey(payload: QueryJobsRequestBody) {
-  return [JOBS_SEARCH_QUERY_KEY, ...Object.values(payload)];
-}
 
 function useJobs<T = QueryJobsResponseBody>(options: {
   payload: QueryJobsRequestBody;
   select?: (data: {pages: QueryJobsResponseBody[]; pageParams: unknown[]}) => T;
-  disabled?: boolean;
+  enabled?: boolean;
 }): UseInfiniteQueryResult<T, RequestError> {
-  const {payload, select, disabled} = options;
+  const {payload, select, enabled} = options;
   return useInfiniteQuery<
     QueryJobsResponseBody,
     RequestError,
@@ -37,7 +33,7 @@ function useJobs<T = QueryJobsResponseBody>(options: {
     (string | unknown)[],
     number
   >({
-    queryKey: getQueryKey(payload),
+    queryKey: queryKeys.jobs.search(payload),
     queryFn: async ({pageParam}) => {
       const {response, error} = await searchJobs({
         ...payload,
@@ -76,7 +72,7 @@ function useJobs<T = QueryJobsResponseBody>(options: {
       return previousPage;
     },
     select,
-    enabled: !disabled,
+    enabled: enabled,
   });
 }
 

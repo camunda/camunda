@@ -9,8 +9,7 @@
 import {skipToken, useQuery} from '@tanstack/react-query';
 import {fetchElementInstance} from '../../api/v2/elementInstances/fetchElementInstance';
 import type {ElementInstance} from '@camunda/camunda-api-zod-schemas/8.8';
-
-const ELEMENT_INSTANCE_QUERY_KEY = 'elementInstance';
+import {queryKeys} from '../queryKeys';
 
 const useElementInstance = <T = ElementInstance>(
   elementInstanceKey: string,
@@ -20,7 +19,7 @@ const useElementInstance = <T = ElementInstance>(
   },
 ) => {
   return useQuery({
-    queryKey: [ELEMENT_INSTANCE_QUERY_KEY, elementInstanceKey],
+    queryKey: queryKeys.elementInstance.get(elementInstanceKey),
     queryFn: elementInstanceKey
       ? async () => {
           const {response, error} = await fetchElementInstance({

@@ -50,7 +50,7 @@ const Details: React.FC<Props> = ({elementInstance, businessObject}) => {
         listenerEventType: 'UNSPECIFIED',
       },
     },
-    disabled: !elementInstanceKey,
+    enabled: !!elementInstanceKey,
     select: (data) => data.pages?.flatMap((page) => page.items),
   });
 

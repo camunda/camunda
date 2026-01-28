@@ -13,7 +13,7 @@ import {
 } from '@tanstack/react-query';
 import {cancelProcessInstance} from 'modules/api/v2/processInstances/cancelProcessInstance';
 import {fetchProcessInstance} from 'modules/api/v2/processInstances/fetchProcessInstance';
-import {getProcessInstanceQueryKey} from 'modules/queries/processInstance/useProcessInstance';
+import {queryKeys} from 'modules/queries/queryKeys';
 
 function useCancelProcessInstance(
   processInstanceKey: string,
@@ -36,7 +36,7 @@ function useCancelProcessInstance(
       }
 
       await queryClient.fetchQuery({
-        queryKey: getProcessInstanceQueryKey(processInstanceKey),
+        queryKey: queryKeys.processInstance.get(processInstanceKey),
         queryFn: async () => {
           const {response: processInstance, error} =
             await fetchProcessInstance(processInstanceKey);

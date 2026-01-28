@@ -13,7 +13,7 @@ import {
 } from '@tanstack/react-query';
 import {deleteProcessInstance} from 'modules/api/v2/processInstances/deleteProcessInstance';
 import {fetchProcessInstance} from 'modules/api/v2/processInstances/fetchProcessInstance';
-import {getProcessInstanceQueryKey} from 'modules/queries/processInstance/useProcessInstance';
+import {queryKeys} from 'modules/queries/queryKeys';
 
 function useDeleteProcessInstance(
   processInstanceKey: string,
@@ -39,11 +39,11 @@ function useDeleteProcessInstance(
       }
 
       queryClient.removeQueries({
-        queryKey: getProcessInstanceQueryKey(processInstanceKey),
+        queryKey: queryKeys.processInstance.get(processInstanceKey),
       });
 
       await queryClient.fetchQuery({
-        queryKey: getProcessInstanceQueryKey(processInstanceKey),
+        queryKey: queryKeys.processInstance.get(processInstanceKey),
         queryFn: async () => {
           const {response: processInstance, error} =
             await fetchProcessInstance(processInstanceKey);

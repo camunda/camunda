@@ -9,16 +9,14 @@
 import {useQuery} from '@tanstack/react-query';
 import {searchUserTasks} from 'modules/api/v2/userTasks/searchUserTasks';
 import type {QueryUserTasksRequestBody} from '@camunda/camunda-api-zod-schemas/8.8';
-
-const USER_TASKS_BY_ELEMENT_INSTANCE_QUERY_KEY =
-  'useGetUserTaskByElementInstance';
+import {queryKeys} from '../queryKeys';
 
 const useGetUserTaskByElementInstance = (
   elementInstanceKey: string,
   options: {enabled: boolean} = {enabled: true},
 ) => {
   return useQuery({
-    queryKey: [USER_TASKS_BY_ELEMENT_INSTANCE_QUERY_KEY, elementInstanceKey],
+    queryKey: queryKeys.userTasks.getByElementInstance(elementInstanceKey),
     queryFn: async () => {
       const payload: QueryUserTasksRequestBody = {
         filter: {elementInstanceKey},
