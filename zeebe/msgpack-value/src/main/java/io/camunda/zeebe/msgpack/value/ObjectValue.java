@@ -136,9 +136,11 @@ public class ObjectValue extends BaseValue {
 
   @Override
   public int getEncodedLength() {
-    final int size = declaredProperties.size() + undeclaredProperties.size();
+    final long size =
+        declaredProperties.stream().filter(BaseProperty::hasMeaningfulValue).count()
+            + undeclaredProperties.stream().filter(BaseProperty::hasMeaningfulValue).count();
 
-    int length = MsgPackWriter.getEncodedMapHeaderLenght(size);
+    int length = MsgPackWriter.getEncodedMapHeaderLenght((int) size);
     length += getEncodedLength(declaredProperties);
     length += getEncodedLength(undeclaredProperties);
 
@@ -224,7 +226,9 @@ public class ObjectValue extends BaseValue {
     int length = 0;
     for (int i = 0; i < properties.size(); ++i) {
       final T prop = properties.get(i);
-      length += prop.getEncodedLength();
+      if (prop.hasMeaningfulValue()) {
+        length += prop.getEncodedLength();
+      }
     }
     return length;
   }
