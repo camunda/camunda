@@ -124,6 +124,7 @@ public final class FlowNodeInstanceReader {
       case SCRIPT_TASK -> FlowNodeType.SCRIPT_TASK;
       case SEND_TASK -> FlowNodeType.SEND_TASK;
       case UNKNOWN -> FlowNodeType.UNKNOWN;
+      default -> FlowNodeType.UNKNOWN;
     };
   }
 
