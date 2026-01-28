@@ -1,0 +1,13 @@
+{
+  "problemMatcher": [
+    {
+      "owner": "maven-goal-failure",
+      "pattern": [
+        {
+          "regexp": "^\\s*\\[ERROR\\]\\s+Failed to execute goal\\s+(?<message>.+)$",
+          "message": 1
+        }
+      ]
+    }
+  ]
+}
