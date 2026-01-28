@@ -85,9 +85,66 @@ public class StandaloneMigrator implements CommandLineRunner {
       final ElasticsearchClient client = new ElasticsearchConnector(elasticsearch).createClient();
       final var rdbmsWriter =
           rdbmsWriterFactory.createWriter(new RdbmsWriterConfig.Builder().build());
+
+      LOG.info("Migrating process definitions...");
       ProcessDefReader.readProcessDefinitions(client).stream()
           .forEach(rdbmsWriter.getProcessDefinitionWriter()::create);
       rdbmsWriter.flush(true);
+      LOG.info("Process definitions migrated successfully.");
+
+      LOG.info("Migrating process instances...");
+      ProcessInstanceReader.readProcessInstances(client).stream()
+          .forEach(rdbmsWriter.getProcessInstanceWriter()::create);
+      rdbmsWriter.flush(true);
+      LOG.info("Process instances migrated successfully.");
+
+      LOG.info("Migrating flow node instances...");
+      FlowNodeInstanceReader.readFlowNodeInstances(client).stream()
+          .forEach(rdbmsWriter.getFlowNodeInstanceWriter()::create);
+      rdbmsWriter.flush(true);
+      LOG.info("Flow node instances migrated successfully.");
+
+      LOG.info("Migrating variables...");
+      VariableReader.readVariables(client).stream()
+          .forEach(rdbmsWriter.getVariableWriter()::create);
+      rdbmsWriter.flush(true);
+      LOG.info("Variables migrated successfully.");
+
+      LOG.info("Migrating jobs...");
+      JobReader.readJobs(client).stream().forEach(rdbmsWriter.getJobWriter()::create);
+      rdbmsWriter.flush(true);
+      LOG.info("Jobs migrated successfully.");
+
+      LOG.info("Migrating sequence flows...");
+      SequenceFlowReader.readSequenceFlows(client).stream()
+          .forEach(rdbmsWriter.getSequenceFlowWriter()::create);
+      rdbmsWriter.flush(true);
+      LOG.info("Sequence flows migrated successfully.");
+
+      LOG.info("Migrating message subscriptions...");
+      MessageSubscriptionReader.readMessageSubscriptions(client).stream()
+          .forEach(rdbmsWriter.getMessageSubscriptionWriter()::create);
+      rdbmsWriter.flush(true);
+      LOG.info("Message subscriptions migrated successfully.");
+
+      LOG.info("Migrating user tasks...");
+      UserTaskReader.readUserTasks(client).stream()
+          .forEach(rdbmsWriter.getUserTaskWriter()::create);
+      rdbmsWriter.flush(true);
+      LOG.info("User tasks migrated successfully.");
+
+      LOG.info("Migrating decision instances...");
+      DecisionInstanceReader.readDecisionInstances(client).stream()
+          .forEach(rdbmsWriter.getDecisionInstanceWriter()::create);
+      rdbmsWriter.flush(true);
+      LOG.info("Decision instances migrated successfully.");
+
+      LOG.info("Migrating incidents...");
+      IncidentReader.readIncidents(client).stream()
+          .forEach(rdbmsWriter.getIncidentWriter()::create);
+      rdbmsWriter.flush(true);
+      LOG.info("Incidents migrated successfully.");
+
     } catch (final Exception e) {
       LOG.error("Failed to migrate from ES to RDBMS", e);
       throw e;
