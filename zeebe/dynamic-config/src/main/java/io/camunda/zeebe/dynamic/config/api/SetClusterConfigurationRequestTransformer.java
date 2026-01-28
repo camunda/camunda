@@ -19,6 +19,9 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation.AwaitRedistributionCompletion;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation.AwaitRelocationCompletion;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation.StartPartitionScaleUp;
 import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -26,6 +29,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 /**
@@ -54,6 +58,25 @@ public final class SetClusterConfigurationRequestTransformer implements Configur
     final var currentMembers = clusterConfiguration.members().keySet();
     final var desiredMembers = desiredBrokerAssignments.keySet();
 
+    // Determine new partitions
+    final var currentPartitionIds = getCurrentPartitionIds(clusterConfiguration);
+    final var desiredPartitionIds = getAllPartitionIds();
+    final var newPartitionIds =
+        desiredPartitionIds.stream()
+            .filter(id -> !currentPartitionIds.contains(id))
+            .collect(Collectors.toSet());
+    final boolean hasNewPartitions = !newPartitionIds.isEmpty();
+
+    final var coordinator =
+        ClusterConfigurationCoordinatorSupplier.of(() -> clusterConfiguration)
+            .getDefaultCoordinator();
+
+    // If there are new partitions, add StartPartitionScaleUp at the beginning
+    if (hasNewPartitions) {
+      final int newPartitionCount = desiredPartitionIds.stream().max(Integer::compareTo).orElse(0);
+      operations.add(new StartPartitionScaleUp(coordinator, newPartitionCount));
+    }
+
     // Add new members first
     final var membersToAdd =
         desiredMembers.stream()
@@ -71,14 +94,31 @@ public final class SetClusterConfigurationRequestTransformer implements Configur
         currentMembers.stream()
             .filter(m -> !desiredMembers.contains(m))
             .collect(Collectors.toSet());
-    final var coordinator =
-        ClusterConfigurationCoordinatorSupplier.of(() -> clusterConfiguration)
-            .getDefaultCoordinator();
     for (final var member : membersToRemove) {
       operations.add(new MemberRemoveOperation(coordinator, member));
     }
 
+    // If there are new partitions, add AwaitRedistributionCompletion and AwaitRelocationCompletion
+    // at the end
+    if (hasNewPartitions) {
+      final int newPartitionCount = desiredPartitionIds.stream().max(Integer::compareTo).orElse(0);
+      operations.add(
+          new AwaitRedistributionCompletion(
+              coordinator, newPartitionCount, new TreeSet<>(newPartitionIds)));
+      operations.add(
+          new AwaitRelocationCompletion(
+              coordinator, newPartitionCount, new TreeSet<>(newPartitionIds)));
+    }
+
     return Either.right(operations);
+  }
+
+  private Set<Integer> getCurrentPartitionIds(final ClusterConfiguration clusterConfiguration) {
+    final Set<Integer> partitionIds = new HashSet<>();
+    for (final var memberState : clusterConfiguration.members().values()) {
+      partitionIds.addAll(memberState.partitions().keySet());
+    }
+    return partitionIds;
   }
 
   private Either<Exception, List<ClusterConfigurationChangeOperation>> validateRequest(
