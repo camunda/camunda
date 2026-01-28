@@ -6,29 +6,39 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import isEqual from 'lodash/isEqual';
 import {
   makeAutoObservable,
   autorun,
+  action,
   type IReactionDisposer,
   type Lambda,
 } from 'mobx';
-import {processInstancesStore} from 'modules/stores/processInstances';
+
+type SelectionRuntime = {
+  totalProcessInstancesCount: number;
+  visibleIds: string[];
+  visibleRunningIds: string[];
+};
 
 type Mode = 'INCLUDE' | 'EXCLUDE' | 'ALL';
 type State = {
   selectedProcessInstanceIds: string[];
-  isAllChecked: boolean;
   selectionMode: Mode;
 };
 
 const DEFAULT_STATE: State = {
   selectedProcessInstanceIds: [],
-  isAllChecked: false,
   selectionMode: 'INCLUDE',
 };
 
 class ProcessInstancesSelection {
   state: State = {...DEFAULT_STATE};
+  runtime: SelectionRuntime = {
+    totalProcessInstancesCount: 0,
+    visibleIds: [],
+    visibleRunningIds: [],
+  };
   autorunDisposer: null | IReactionDisposer = null;
   observeDisposer: null | Lambda = null;
 
@@ -37,45 +47,54 @@ class ProcessInstancesSelection {
   }
 
   init() {
-    const {selectionMode, selectedProcessInstanceIds} = this.state;
-    const {filteredProcessInstancesCount} = processInstancesStore.state;
-
     this.autorunDisposer = autorun(() => {
+      const {selectionMode, selectedProcessInstanceIds} = this.state;
+      const {totalProcessInstancesCount} = this.runtime;
+
       if (
         (selectionMode === 'EXCLUDE' &&
           selectedProcessInstanceIds.length === 0) ||
         (selectionMode === 'INCLUDE' &&
-          selectedProcessInstanceIds.length === filteredProcessInstancesCount &&
-          filteredProcessInstancesCount !== 0)
+          selectedProcessInstanceIds.length === totalProcessInstancesCount &&
+          totalProcessInstancesCount !== 0)
       ) {
-        this.setMode('ALL');
-        this.setAllChecked(true);
-        this.setselectedProcessInstanceIds([]);
+        this.#setMode('ALL');
+        this.#setSelectedProcessInstanceIds([]);
       }
     });
   }
 
-  setMode(mode: Mode) {
+  setRuntime(next: SelectionRuntime) {
+    const prev = this.runtime;
+
+    if (
+      prev.totalProcessInstancesCount === next.totalProcessInstancesCount &&
+      isEqual(prev.visibleIds, next.visibleIds) &&
+      isEqual(prev.visibleRunningIds, next.visibleRunningIds)
+    ) {
+      return;
+    }
+
+    this.runtime = next;
+  }
+
+  #setMode = action((mode: Mode) => {
     this.state.selectionMode = mode;
-  }
+  });
 
-  setAllChecked(isAllChecked: boolean) {
-    this.state.isAllChecked = isAllChecked;
-  }
-
-  setselectedProcessInstanceIds(ids: string[]) {
+  #setSelectedProcessInstanceIds = action((ids: string[]) => {
     this.state.selectedProcessInstanceIds = ids;
-  }
+  });
 
-  addToselectedProcessInstanceIds = (id: string) => {
-    this.setselectedProcessInstanceIds([
+  #addToSelectedProcessInstanceIds = (id: string) => {
+    this.#setSelectedProcessInstanceIds([
       ...this.state.selectedProcessInstanceIds,
       id,
     ]);
   };
 
-  removeFromselectedProcessInstanceIds = (id: string) => {
-    this.setselectedProcessInstanceIds(
+  #removeFromSelectedProcessInstanceIds = (id: string) => {
+    this.#setSelectedProcessInstanceIds(
       this.state.selectedProcessInstanceIds.filter((prevId) => prevId !== id),
     );
   };
@@ -98,12 +117,10 @@ class ProcessInstancesSelection {
       this.state.selectionMode === 'INCLUDE' &&
       this.selectedProcessInstanceCount === 0
     ) {
-      this.setMode('ALL');
-      this.setAllChecked(true);
+      this.#setMode('ALL');
     } else {
-      this.setMode('INCLUDE');
-      this.setAllChecked(false);
-      this.setselectedProcessInstanceIds([]);
+      this.#setMode('INCLUDE');
+      this.#setSelectedProcessInstanceIds([]);
     }
   };
 
@@ -111,103 +128,88 @@ class ProcessInstancesSelection {
     const {selectionMode, selectedProcessInstanceIds} = this.state;
 
     if (selectionMode === 'ALL') {
-      this.setMode('EXCLUDE');
-      this.setAllChecked(false);
+      this.#setMode('EXCLUDE');
     }
 
     if (selectedProcessInstanceIds.indexOf(id) >= 0) {
-      this.removeFromselectedProcessInstanceIds(id);
+      this.#removeFromSelectedProcessInstanceIds(id);
 
       if (
         selectionMode === 'EXCLUDE' &&
         this.state.selectedProcessInstanceIds.length === 0
       ) {
-        this.setMode('ALL');
-        this.setAllChecked(true);
+        this.#setMode('ALL');
       }
     } else {
-      this.addToselectedProcessInstanceIds(id);
+      this.#addToSelectedProcessInstanceIds(id);
     }
   };
 
   get selectedProcessInstanceCount() {
     const {selectionMode, selectedProcessInstanceIds} = this.state;
-    const {filteredProcessInstancesCount} = processInstancesStore.state;
+    const {totalProcessInstancesCount} = this.runtime;
 
     switch (selectionMode) {
       case 'INCLUDE':
         return selectedProcessInstanceIds.length;
       case 'EXCLUDE':
         return (
-          (filteredProcessInstancesCount ?? 0) -
-          selectedProcessInstanceIds.length
+          (totalProcessInstancesCount ?? 0) - selectedProcessInstanceIds.length
         );
       default:
-        return filteredProcessInstancesCount;
+        return totalProcessInstancesCount;
     }
-  }
-
-  get hasSelectedRunningInstances() {
-    const {
-      selectedProcessInstanceIds,
-      state: {isAllChecked, selectionMode},
-    } = this;
-
-    return (
-      isAllChecked ||
-      selectionMode === 'EXCLUDE' ||
-      processInstancesStore.state.processInstances.some((processInstance) => {
-        return (
-          selectedProcessInstanceIds.includes(processInstance.id) &&
-          ['ACTIVE', 'INCIDENT'].includes(processInstance.state)
-        );
-      })
-    );
-  }
-
-  get checkedRunningProcessInstanceIds() {
-    const {selectionMode, selectedProcessInstanceIds} = this.state;
-    const runningInstances =
-      processInstancesStore.state.processInstances.filter((instance) =>
-        ['ACTIVE', 'INCIDENT'].includes(instance.state),
-      );
-
-    if (selectionMode === 'INCLUDE') {
-      return selectedProcessInstanceIds.filter((id) =>
-        runningInstances.some((instance) => instance.id === id),
-      );
-    }
-
-    const allRunningInstanceIds = runningInstances.map(
-      (instance) => instance.id,
-    );
-
-    return allRunningInstanceIds.filter(
-      (id) => !selectedProcessInstanceIds.includes(id),
-    );
-  }
-
-  get checkedProcessInstanceIds() {
-    const {selectionMode, selectedProcessInstanceIds} = this.state;
-
-    if (selectionMode === 'INCLUDE') {
-      return selectedProcessInstanceIds;
-    }
-
-    const allProcessInstanceIds =
-      processInstancesStore.state.processInstances.map(
-        (processInstance) => processInstance.id,
-      );
-
-    return allProcessInstanceIds.filter(
-      (id) => !selectedProcessInstanceIds.includes(id),
-    );
   }
 
   get selectedProcessInstanceIds() {
     const {selectionMode, selectedProcessInstanceIds} = this.state;
 
     return selectionMode === 'INCLUDE' ? selectedProcessInstanceIds : [];
+  }
+
+  get isAllChecked(): boolean {
+    return this.state.selectionMode === 'ALL';
+  }
+
+  get hasSelectedRunningInstances() {
+    const {
+      selectedProcessInstanceIds,
+      isAllChecked,
+      state: {selectionMode},
+    } = this;
+    const {visibleRunningIds} = this.runtime;
+
+    return (
+      isAllChecked ||
+      selectionMode === 'EXCLUDE' ||
+      visibleRunningIds.some((id) => selectedProcessInstanceIds.includes(id))
+    );
+  }
+
+  get checkedRunningProcessInstanceIds() {
+    const {selectionMode, selectedProcessInstanceIds} = this.state;
+    const {visibleRunningIds} = this.runtime;
+
+    if (selectionMode === 'INCLUDE') {
+      return selectedProcessInstanceIds.filter((id) =>
+        visibleRunningIds.includes(id),
+      );
+    }
+
+    return visibleRunningIds.filter(
+      (id) => !selectedProcessInstanceIds.includes(id),
+    );
+  }
+
+  get checkedProcessInstanceIds() {
+    const {selectionMode, selectedProcessInstanceIds} = this.state;
+    const {visibleIds} = this.runtime;
+
+    if (selectionMode === 'INCLUDE') {
+      return selectedProcessInstanceIds;
+    }
+
+    return visibleIds.filter((id) => !selectedProcessInstanceIds.includes(id));
   }
 
   get excludedProcessInstanceIds() {
@@ -217,11 +219,17 @@ class ProcessInstancesSelection {
   }
 
   resetState = () => {
-    this.state = {...DEFAULT_STATE};
+    this.state.selectedProcessInstanceIds = [];
+    this.state.selectionMode = 'INCLUDE';
   };
 
   reset = () => {
     this.resetState();
+    this.runtime = {
+      totalProcessInstancesCount: 0,
+      visibleIds: [],
+      visibleRunningIds: [],
+    };
     this.autorunDisposer?.();
     this.observeDisposer?.();
   };

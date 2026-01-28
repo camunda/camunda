@@ -10,6 +10,7 @@ import {expect} from '@playwright/test';
 import {test} from '../visual-fixtures';
 import {
   mockBatchOperations,
+  mockBatchOperationItemsWithError,
   mockProcessDefinitions,
   mockProcessInstances,
   mockProcessInstancesWithOperationError,
@@ -48,13 +49,14 @@ test.describe('processes page', () => {
       mockResponses({
         batchOperations: {items: [], page: {totalItems: 0}},
         processDefinitions: mockProcessDefinitions,
+        batchOperationItems: {items: [], page: {totalItems: 0}},
         statisticsV2: {
           items: [],
         },
         processXml: '',
         processInstances: {
-          processInstances: [],
-          totalCount: 0,
+          items: [],
+          page: {totalItems: 0},
         },
       }),
     );
@@ -84,6 +86,7 @@ test.describe('processes page', () => {
       URL_API_PATTERN,
       mockResponses({
         processDefinitions: mockProcessDefinitions,
+        batchOperationItems: {items: [], page: {totalItems: 0}},
       }),
     );
 
@@ -111,6 +114,7 @@ test.describe('processes page', () => {
         processDefinitions: mockProcessDefinitions,
         batchOperations: mockBatchOperations,
         processInstances: mockProcessInstances,
+        batchOperationItems: {items: [], page: {totalItems: 0}},
         statisticsV2: mockStatisticsV2,
         processXml: mockProcessXml,
       }),
@@ -151,6 +155,7 @@ test.describe('processes page', () => {
         processDefinitions: mockProcessDefinitions,
         batchOperations: mockBatchOperations,
         processInstances: mockProcessInstances,
+        batchOperationItems: {items: [], page: {totalItems: 0}},
         statisticsV2: mockStatisticsV2,
         processXml: mockProcessXml,
       }),
@@ -190,6 +195,7 @@ test.describe('processes page', () => {
         processDefinitions: mockProcessDefinitions,
         batchOperations: mockBatchOperations,
         processInstances: mockProcessInstances,
+        batchOperationItems: {items: [], page: {totalItems: 0}},
         statisticsV2: mockStatisticsV2,
         processXml: mockProcessXml,
       }),
@@ -232,6 +238,7 @@ test.describe('processes page', () => {
         processDefinitions: mockProcessDefinitions,
         batchOperations: mockBatchOperations,
         processInstances: mockProcessInstances,
+        batchOperationItems: {items: [], page: {totalItems: 0}},
         statisticsV2: mockStatisticsV2,
         processXml: mockProcessXml,
       }),
@@ -259,6 +266,7 @@ test.describe('processes page', () => {
         processDefinitions: mockProcessDefinitions,
         batchOperations: mockBatchOperations,
         processInstances: mockProcessInstances,
+        batchOperationItems: {items: [], page: {totalItems: 0}},
         statisticsV2: mockStatisticsV2,
         processXml: mockProcessXml,
       }),
@@ -287,6 +295,7 @@ test.describe('processes page', () => {
         processDefinitions: mockProcessDefinitions,
         batchOperations: mockBatchOperations,
         processInstances: mockProcessInstancesWithOperationError,
+        batchOperationItems: mockBatchOperationItemsWithError,
         statisticsV2: mockStatisticsV2,
         processXml: mockProcessXml,
       }),
@@ -321,6 +330,7 @@ test.describe('processes page', () => {
         processDefinitions: mockProcessDefinitions,
         batchOperations: mockBatchOperations,
         processInstances: mockProcessInstancesWithOperationError,
+        batchOperationItems: mockBatchOperationItemsWithError,
         statisticsV2: mockStatisticsV2,
         processXml: mockProcessXml,
       }),

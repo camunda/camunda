@@ -115,6 +115,7 @@ const parseProcessInstancesSearchFilter = (
     }
   } else if (states.length > 0) {
     apiFilter.state = states.length === 1 ? {$eq: states[0]} : {$in: states};
+    apiFilter.hasIncident = false;
   }
 
   if (filter.flowNodeId) {

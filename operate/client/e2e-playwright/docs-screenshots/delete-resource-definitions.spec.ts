@@ -40,8 +40,8 @@ test.describe.skip('delete resource definitions', () => {
         processDefinitions: mockProcessDefinitions,
         batchOperations: {items: [], page: {totalItems: 0}},
         processInstances: {
-          totalCount: 0,
-          processInstances: [],
+          items: [],
+          page: {totalItems: 0},
         },
         statisticsV2: {
           items: [],

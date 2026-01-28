@@ -7,6 +7,7 @@
  */
 
 import type {Page, Locator} from '@playwright/test';
+import {expect} from '@playwright/test';
 import {convertToQueryString} from '../../utils/convertToQueryString';
 import {DeleteResourceModal} from '../components/DeleteResourceModal';
 import MigrationModal from '../components/MigrationModal';
@@ -26,6 +27,9 @@ export class Processes {
   readonly migrateButton: Locator;
   readonly moveButton: Locator;
   readonly processInstancesTable: Locator;
+  readonly operationStateColumn: Locator;
+  readonly operationStateHeader: Locator;
+  readonly activeOperationSpinners: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -52,6 +56,12 @@ export class Processes {
     this.moveButton = this.processInstancesTable.getByRole('button', {
       name: /^move$/i,
     });
+
+    this.operationStateColumn = page.getByRole('columnheader', {
+      name: /operation state/i,
+    });
+    this.operationStateHeader = page.getByText('Operation State');
+    this.activeOperationSpinners = page.getByTestId('operation-spinner');
   }
 
   async gotoProcessesPage({

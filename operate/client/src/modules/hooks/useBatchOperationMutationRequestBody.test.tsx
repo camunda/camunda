@@ -59,13 +59,12 @@ describe('useBatchOperationMutationRequestBody', () => {
   });
 
   it('should not include process instance keys when checkedRunningProcessInstanceIds is empty', () => {
-    processInstancesSelectionStore.setMode('INCLUDE');
-    processInstancesSelectionStore.setAllChecked(false);
-    processInstancesSelectionStore.setselectedProcessInstanceIds([
+    processInstancesSelectionStore.state.selectionMode = 'INCLUDE';
+    processInstancesSelectionStore.state.selectedProcessInstanceIds = [
       '123',
       '456',
       '789',
-    ]);
+    ];
 
     const {result} = renderHook(() => useBatchOperationMutationRequestBody(), {
       wrapper: getWrapper(),
@@ -77,9 +76,8 @@ describe('useBatchOperationMutationRequestBody', () => {
   });
 
   it('should not include process instance keys when selectedProcessInstanceIds is empty', () => {
-    processInstancesSelectionStore.setMode('INCLUDE');
-    processInstancesSelectionStore.setAllChecked(false);
-    processInstancesSelectionStore.setselectedProcessInstanceIds([]);
+    processInstancesSelectionStore.state.selectionMode = 'INCLUDE';
+    processInstancesSelectionStore.state.selectedProcessInstanceIds = [];
 
     const {result} = renderHook(() => useBatchOperationMutationRequestBody(), {
       wrapper: getWrapper(),
@@ -91,12 +89,11 @@ describe('useBatchOperationMutationRequestBody', () => {
   });
 
   it('should include excluded process instance keys when in EXCLUDE mode', () => {
-    processInstancesSelectionStore.setMode('EXCLUDE');
-    processInstancesSelectionStore.setAllChecked(false);
-    processInstancesSelectionStore.setselectedProcessInstanceIds([
+    processInstancesSelectionStore.state.selectionMode = 'EXCLUDE';
+    processInstancesSelectionStore.state.selectedProcessInstanceIds = [
       '111',
       '222',
-    ]);
+    ];
 
     const {result} = renderHook(() => useBatchOperationMutationRequestBody(), {
       wrapper: getWrapper(),
@@ -110,9 +107,8 @@ describe('useBatchOperationMutationRequestBody', () => {
   });
 
   it('should not include excludeIds when in ALL mode', () => {
-    processInstancesSelectionStore.setMode('ALL');
-    processInstancesSelectionStore.setAllChecked(true);
-    processInstancesSelectionStore.setselectedProcessInstanceIds([]);
+    processInstancesSelectionStore.state.selectionMode = 'ALL';
+    processInstancesSelectionStore.state.selectedProcessInstanceIds = [];
 
     const {result} = renderHook(() => useBatchOperationMutationRequestBody(), {
       wrapper: getWrapper(),
@@ -168,12 +164,11 @@ describe('useBatchOperationMutationRequestBody', () => {
   });
 
   it('should combine search params, selected keys, and variable filter', () => {
-    processInstancesSelectionStore.setMode('INCLUDE');
-    processInstancesSelectionStore.setAllChecked(false);
-    processInstancesSelectionStore.setselectedProcessInstanceIds([
+    processInstancesSelectionStore.state.selectionMode = 'INCLUDE';
+    processInstancesSelectionStore.state.selectedProcessInstanceIds = [
       '123',
       '456',
-    ]);
+    ];
 
     variableFilterStore.setVariable({
       name: 'status',
@@ -189,6 +184,7 @@ describe('useBatchOperationMutationRequestBody', () => {
     expect(result.current).toEqual({
       filter: {
         state: {$eq: 'ACTIVE'},
+        hasIncident: false,
         variables: [
           {
             name: 'status',
@@ -241,6 +237,7 @@ describe('useBatchOperationMutationRequestBody', () => {
       filter: {
         tenantId: {$eq: '<default>'},
         state: {$eq: 'ACTIVE'},
+        hasIncident: false,
       },
     });
   });
@@ -258,6 +255,7 @@ describe('useBatchOperationMutationRequestBody', () => {
     expect(result.current).toEqual({
       filter: {
         state: {$in: ['ACTIVE', 'COMPLETED', 'TERMINATED']},
+        hasIncident: false,
       },
     });
   });
@@ -274,6 +272,7 @@ describe('useBatchOperationMutationRequestBody', () => {
       filter: {
         parentProcessInstanceKey: {$eq: '12345'},
         state: {$eq: 'ACTIVE'},
+        hasIncident: false,
       },
     });
   });
@@ -289,6 +288,7 @@ describe('useBatchOperationMutationRequestBody', () => {
 
     expect(result.current).toEqual({
       filter: {
+        hasIncident: false,
         processDefinitionId: {$eq: 'order-process'},
         processDefinitionVersion: 2,
         state: {$eq: 'ACTIVE'},
@@ -307,6 +307,7 @@ describe('useBatchOperationMutationRequestBody', () => {
 
     expect(result.current).toEqual({
       filter: {
+        hasIncident: false,
         processDefinitionId: {$eq: 'order-process'},
         state: {$eq: 'ACTIVE'},
       },
@@ -325,6 +326,7 @@ describe('useBatchOperationMutationRequestBody', () => {
       filter: {
         elementId: {$eq: 'task-1'},
         state: {$eq: 'ACTIVE'},
+        hasIncident: false,
       },
     });
   });
@@ -341,6 +343,7 @@ describe('useBatchOperationMutationRequestBody', () => {
       filter: {
         batchOperationId: {$eq: 'op-123'},
         state: {$eq: 'ACTIVE'},
+        hasIncident: false,
       },
     });
   });

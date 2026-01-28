@@ -12,9 +12,12 @@ import {Stack} from '@carbon/react';
 import {Error} from '@carbon/react/icons';
 import {Form} from 'react-final-form';
 import isEqual from 'lodash/isEqual';
-import {type ProcessInstanceFilters} from 'modules/utils/filter/shared';
+import {
+  parseProcessInstancesFilter,
+  updateProcessInstancesFilterSearchString,
+  type ProcessInstancesFilter,
+} from 'modules/utils/filter/v2/processInstancesSearch';
 import {AutoSubmit} from 'modules/components/AutoSubmit';
-import {useFilters} from 'modules/hooks/useFilters';
 import {ProcessField} from './ProcessField';
 import {ProcessVersionField} from './ProcessVersionField';
 import {FlowNodeField} from './FlowNodeField';
@@ -37,21 +40,29 @@ import {
 import {TenantField} from 'modules/components/TenantField';
 import {processesStore} from 'modules/stores/processes/processes.list';
 import {batchModificationStore} from 'modules/stores/batchModification';
+import {variableFilterStore} from 'modules/stores/variableFilter';
+import {useNavigate, useSearchParams} from 'react-router-dom';
 import {
   getDefinitionIdentifier,
   splitDefinitionIdentifier,
 } from 'modules/hooks/processDefinitions';
 
-const initialValues: ProcessInstanceFilters = {
+const initialValues: ProcessInstancesFilter = {
   active: true,
   incidents: true,
 };
 
 const Filters: React.FC = observer(() => {
   const isBatchModificationEnabled = batchModificationStore.state.isEnabled;
-  const filters = useFilters();
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [visibleFilters, setVisibleFilters] = useState<OptionalFilter[]>([]);
-  const filterValues = filters.getFilters();
+  const filterValues = parseProcessInstancesFilter(searchParams);
+  const variable = variableFilterStore.variable;
+  if (variable) {
+    filterValues.variableName = variable.name;
+    filterValues.variableValues = variable.values;
+  }
   if (filterValues.process && filterValues.tenant !== 'all') {
     filterValues.process = getDefinitionIdentifier(
       filterValues.process,
@@ -64,11 +75,25 @@ const Filters: React.FC = observer(() => {
   }
 
   return (
-    <Form<ProcessInstanceFilters>
+    <Form<ProcessInstancesFilter>
       onSubmit={(values) => {
-        filters.setFilters({
-          ...values,
-          process: splitDefinitionIdentifier(values.process).definitionId,
+        if (
+          values.variableName !== undefined &&
+          values.variableValues !== undefined
+        ) {
+          variableFilterStore.setVariable({
+            name: values.variableName,
+            values: values.variableValues,
+          });
+        } else {
+          variableFilterStore.setVariable(undefined);
+        }
+
+        navigate({
+          search: updateProcessInstancesFilterSearchString(searchParams, {
+            ...values,
+            process: splitDefinitionIdentifier(values.process).definitionId,
+          }),
         });
       }}
       initialValues={filterValues}
@@ -83,8 +108,14 @@ const Filters: React.FC = observer(() => {
             }
             onResetClick={() => {
               form.reset();
-              filters.setFilters(initialValues);
+              navigate({
+                search: updateProcessInstancesFilterSearchString(
+                  searchParams,
+                  initialValues,
+                ),
+              });
               setVisibleFilters([]);
+              variableFilterStore.setVariable(undefined);
             }}
           >
             <Container>

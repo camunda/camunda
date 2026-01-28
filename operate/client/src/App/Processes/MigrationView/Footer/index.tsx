@@ -9,18 +9,18 @@
 import {Button, Modal} from '@carbon/react';
 import {observer} from 'mobx-react';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
-import {Container} from './styled.tsx';
+import {Container} from './styled';
 import {ModalStateManager} from 'modules/components/ModalStateManager';
 import {processesStore} from 'modules/stores/processes/processes.migration';
 import {useNavigate, useSearchParams} from 'react-router-dom';
 import {Locations} from 'modules/Routes';
 import {tracking} from 'modules/tracking';
-import {MigrationConfirmationModal} from '../MigrationConfirmationModal/index.tsx';
+import {MigrationConfirmationModal} from '../MigrationConfirmationModal';
 import {useMigrateProcessInstancesBatchOperation} from 'modules/mutations/processes/useMigrateProcessInstancesBatchOperation';
 import {handleOperationError} from 'modules/utils/notifications';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
-import {buildMutationRequestBody} from 'modules/utils/buildMutationRequestBody.ts';
-import {useBatchOperationSuccessNotification} from 'modules/hooks/useBatchOperationSuccessNotification.ts';
+import {buildMutationRequestBody} from 'modules/utils/buildMutationRequestBody';
+import {useBatchOperationSuccessNotification} from 'modules/hooks/useBatchOperationSuccessNotification';
 
 const Footer: React.FC = observer(() => {
   const [searchParams] = useSearchParams();

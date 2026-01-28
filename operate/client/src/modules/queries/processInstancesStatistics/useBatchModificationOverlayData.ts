@@ -9,15 +9,13 @@
 import {MODIFICATIONS} from 'modules/bpmn-js/badgePositions';
 import {useProcessInstancesStatisticsOptions} from './useProcessInstancesStatistics';
 import type {OverlayData} from 'modules/bpmn-js/BpmnJS';
-import {
-  getInstancesCount,
-  getProcessInstanceKey,
-} from 'modules/utils/statistics/processInstances';
+import {getInstancesCount} from 'modules/utils/statistics/processInstances';
 import {useQuery} from '@tanstack/react-query';
 import type {
   GetProcessDefinitionStatisticsRequestBody,
   GetProcessDefinitionStatisticsResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.8';
+import {getSelectedProcessInstancesFilter} from './filters';
 
 function batchModificationOverlayParser(params: {
   sourceFlowNodeId?: string;
@@ -60,7 +58,7 @@ function useBatchModificationOverlayData(
   processDefinitionKey?: string,
   enabled: boolean = true,
 ) {
-  const processInstanceKey = getProcessInstanceKey();
+  const processInstanceKey = getSelectedProcessInstancesFilter();
   const parsedPayload = {
     ...payload,
     filter: {

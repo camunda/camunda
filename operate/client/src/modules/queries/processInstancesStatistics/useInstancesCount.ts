@@ -8,10 +8,8 @@
 
 import {useProcessInstancesStatisticsOptions} from './useProcessInstancesStatistics';
 import {useQuery} from '@tanstack/react-query';
-import {
-  getInstancesCount,
-  getProcessInstanceKey,
-} from 'modules/utils/statistics/processInstances';
+import {getInstancesCount} from 'modules/utils/statistics/processInstances';
+import {getSelectedProcessInstancesFilter} from './filters';
 import type {
   GetProcessDefinitionStatisticsRequestBody,
   GetProcessDefinitionStatisticsResponseBody,
@@ -30,7 +28,7 @@ function useInstancesCount(
   processDefinitionKey?: string,
   flowNodeId?: string,
 ) {
-  const processInstanceKey = getProcessInstanceKey();
+  const processInstanceKey = getSelectedProcessInstancesFilter();
   const parsedPayload = {
     ...payload,
     filter: {

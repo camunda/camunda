@@ -11,7 +11,6 @@ import {TableBatchActions} from './styled';
 import pluralSuffix from 'modules/utils/pluralSuffix';
 import {useState} from 'react';
 import {RetryFailed, Error} from '@carbon/react/icons';
-import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {MigrateAction} from './MigrateAction';
 import {MoveAction} from './MoveAction';
 import {batchModificationStore} from 'modules/stores/batchModification';
@@ -19,11 +18,10 @@ import {observer} from 'mobx-react';
 import {useCancelProcessInstancesBatchOperation} from 'modules/mutations/processes/useCancelProcessInstancesBatchOperation';
 import {useResolveProcessInstancesIncidentsBatchOperation} from 'modules/mutations/processes/useResolveProcessInstancesIncidentsBatchOperation';
 import {tracking} from 'modules/tracking';
-import {getProcessInstancesRequestFilters} from 'modules/utils/filter';
-import {processInstancesStore} from 'modules/stores/processInstances';
-import {buildMutationRequestBody} from './buildMutationRequestBody';
 import {handleOperationError} from 'modules/utils/notifications';
+import {useBatchOperationMutationRequestBody} from 'modules/hooks/useBatchOperationMutationRequestBody';
 import {useBatchOperationSuccessNotification} from 'modules/hooks/useBatchOperationSuccessNotification';
+import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 
 type Props = {
   selectedInstancesCount: number;
@@ -44,6 +42,9 @@ const Toolbar: React.FC<Props> = observer(({selectedInstancesCount}) => {
   const closeModal = () => {
     setModalMode(null);
   };
+
+  const batchOperationMutationRequestBody =
+    useBatchOperationMutationRequestBody();
 
   const cancelMutation = useCancelProcessInstancesBatchOperation({
     onSuccess: ({batchOperationKey, batchOperationType}) => {
@@ -78,57 +79,10 @@ const Toolbar: React.FC<Props> = observer(({selectedInstancesCount}) => {
       return;
     }
 
-    const baseFilter = getProcessInstancesRequestFilters();
-    const {
-      selectedProcessInstanceIds,
-      excludedProcessInstanceIds,
-      checkedRunningProcessInstanceIds,
-    } = processInstancesSelectionStore;
-
-    const includeIds =
-      selectedProcessInstanceIds.length > 0
-        ? checkedRunningProcessInstanceIds
-        : (baseFilter.ids ?? []);
-
-    const requestBody = buildMutationRequestBody({
-      baseFilter,
-      includeIds,
-      excludeIds: excludedProcessInstanceIds,
-    });
-
-    if (selectedProcessInstanceIds.length > 0) {
-      processInstancesStore.markProcessInstancesWithActiveOperations({
-        ids: includeIds,
-        operationType: modalMode,
-      });
-    } else {
-      processInstancesStore.markProcessInstancesWithActiveOperations({
-        ids: excludedProcessInstanceIds,
-        operationType: modalMode,
-        shouldPollAllVisibleIds: true,
-      });
-    }
-
     if (modalMode === 'CANCEL_PROCESS_INSTANCE') {
-      cancelMutation.mutate(requestBody, {
-        onError: () => {
-          processInstancesStore.unmarkProcessInstancesWithActiveOperations({
-            instanceIds: includeIds,
-            operationType: modalMode,
-            shouldPollAllVisibleIds: selectedProcessInstanceIds.length === 0,
-          });
-        },
-      });
+      cancelMutation.mutate(batchOperationMutationRequestBody);
     } else {
-      resolveMutation.mutate(requestBody, {
-        onError: () => {
-          processInstancesStore.unmarkProcessInstancesWithActiveOperations({
-            instanceIds: includeIds,
-            operationType: modalMode,
-            shouldPollAllVisibleIds: selectedProcessInstanceIds.length === 0,
-          });
-        },
-      });
+      resolveMutation.mutate(batchOperationMutationRequestBody);
     }
 
     closeModal();
@@ -187,7 +141,7 @@ const Toolbar: React.FC<Props> = observer(({selectedInstancesCount}) => {
               case 'carbon.table.batch.item.selected':
                 return `${selectedInstancesCount} item selected`;
               case 'carbon.table.batch.selectAll':
-                return 'All items selected';
+                return 'Select all items';
             }
           }}
         >

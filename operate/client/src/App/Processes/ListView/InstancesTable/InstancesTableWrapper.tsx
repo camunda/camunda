@@ -21,7 +21,7 @@ import {
 } from 'modules/hooks/processInstancesSearch';
 import {useSearchParams} from 'react-router-dom';
 import {variableFilterStore} from 'modules/stores/variableFilter';
-import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelectionV2';
+import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {useEffect, useMemo} from 'react';
 
 const ROW_HEIGHT = 34;

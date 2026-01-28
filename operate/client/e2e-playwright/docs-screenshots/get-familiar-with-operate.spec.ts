@@ -86,7 +86,7 @@ test.describe('get familiar with operate', () => {
 
     const firstRow = page.getByRole('row', {
       name: new RegExp(
-        `view instance ${mockOrderProcessInstances.processInstances[0]?.id}`,
+        `view instance ${mockOrderProcessInstances.items[0]?.processInstanceKey}`,
         'i',
       ),
     });

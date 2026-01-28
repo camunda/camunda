@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {mockPostRequest} from '../../mockRequest.ts';
+import {mockPostRequest} from '../../mockRequest';
 import {
   endpoints,
   type CreateCancellationBatchOperationResponseBody,
