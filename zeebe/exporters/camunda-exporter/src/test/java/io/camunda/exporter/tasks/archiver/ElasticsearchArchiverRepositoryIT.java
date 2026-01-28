@@ -24,6 +24,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration.ProcessInstanceRetentionMode;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.exporter.tasks.archiver.ArchiveBatch.ProcessInstanceArchiveBatch;
+import io.camunda.exporter.tasks.archiver.ArchiveBatch.ProcessInstanceBatchSizes;
 import io.camunda.exporter.tasks.utils.TestExporterResourceProvider;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.configuration.DatabaseType;
@@ -420,6 +422,73 @@ final class ElasticsearchArchiverRepositoryIT {
   }
 
   @Test
+  void shouldGetProcessInstanceBatchSizes() throws IOException {
+    // given - 4 documents, where 2 is on a different partition, 3 is the wrong join relation type,
+    // and 4 was finished too recently: we then expect only 1 to be returned
+    final var now = Instant.now();
+    final var twoHoursAgo = now.minus(Duration.ofHours(2)).toString();
+    final var repository = createRepository();
+    final var documents =
+        List.of(
+            new TestProcessInstance(
+                "1", twoHoursAgo, ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION, 1, null, null),
+            new TestProcessInstance(
+                "2", twoHoursAgo, ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION, 2, null, null),
+            new TestProcessInstance(
+                "3", twoHoursAgo, ListViewTemplate.ACTIVITIES_JOIN_RELATION, 1, 3L, null),
+            new TestProcessInstance(
+                "4", now.toString(), ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION, 1, 3L, null));
+
+    // create the index template first to ensure ID is a keyword, otherwise the surrounding
+    // aggregation will fail
+    createProcessInstanceIndex();
+    documents.forEach(doc -> index(processInstanceIndex, doc));
+
+    final var decisions =
+        List.of(
+            new TestStandaloneDecision("1", twoHoursAgo, 1, 1, null),
+            new TestStandaloneDecision("2", twoHoursAgo, 1, 1, null),
+            new TestStandaloneDecision("3", twoHoursAgo, 2, 2, null),
+            new TestStandaloneDecision("4", twoHoursAgo, 1, 4, 3L),
+            new TestStandaloneDecision("5", twoHoursAgo, 1, 4, null),
+            new TestStandaloneDecision("6", twoHoursAgo, 1, 1, null),
+            new TestStandaloneDecision("7", twoHoursAgo, 1, 3, 3L));
+
+    // create the index template first to ensure ID is a keyword, otherwise the surrounding
+    // aggregation will fail
+    final var standaloneDecisionIndex =
+        resourceProvider
+            .getIndexTemplateDescriptor(DecisionInstanceTemplate.class)
+            .getFullQualifiedName();
+    createStandaloneDecisionIndex(standaloneDecisionIndex);
+    decisions.forEach(doc -> index(standaloneDecisionIndex, doc));
+
+    testClient.indices().refresh(r -> r.index(processInstanceIndex, standaloneDecisionIndex));
+
+    config.setRolloverBatchSize(3);
+
+    // when
+    final var batch = new ProcessInstanceArchiveBatch("2024-01-01", List.of(1L, 2L), List.of(3L));
+
+    final var sizes =
+        repository
+            .getProcessInstancesBatchSizes(
+                batch,
+                List.of(
+                    resourceProvider.getIndexTemplateDescriptor(DecisionInstanceTemplate.class)))
+            .join();
+
+    System.out.println(sizes);
+    assertThat(sizes)
+        .isEqualTo(
+            new ProcessInstanceBatchSizes(
+                Map.ofEntries(Map.entry(1L, 3L), Map.entry(2L, 1L)),
+                Map.ofEntries(Map.entry(3L, 4L))));
+    // assertThat(batch.processInstanceKeys()).containsExactly(1L);
+    // assertThat(batch.finishDate()).isEqualTo(dateFormatter.format(now.minus(Duration.ofHours(2))));
+  }
+
+  @Test
   void shouldHandlePIMode() throws Exception {
     // given
     config.setProcessInstanceRetentionMode(ProcessInstanceRetentionMode.PI);
@@ -637,11 +706,11 @@ final class ElasticsearchArchiverRepositoryIT {
     final var repository = createRepository();
     final var documents =
         List.of(
-            new TestStandaloneDecision("1", twoHoursAgo, 1, -1),
-            new TestStandaloneDecision("2", twoHoursAgo, 1, -1),
-            new TestStandaloneDecision("3", twoHoursAgo, 2, -1),
-            new TestStandaloneDecision("4", twoHoursAgo, 1, 12345),
-            new TestStandaloneDecision("5", now.toString(), 1, -1));
+            new TestStandaloneDecision("1", twoHoursAgo, 1, -1, null),
+            new TestStandaloneDecision("2", twoHoursAgo, 1, -1, null),
+            new TestStandaloneDecision("3", twoHoursAgo, 2, -1, null),
+            new TestStandaloneDecision("4", twoHoursAgo, 1, 12345, null),
+            new TestStandaloneDecision("5", now.toString(), 1, -1, null));
 
     // create the index template first to ensure ID is a keyword, otherwise the surrounding
     // aggregation will fail
@@ -1248,7 +1317,11 @@ final class ElasticsearchArchiverRepositoryIT {
       implements TDocument {}
 
   private record TestStandaloneDecision(
-      String id, String evaluationDate, int partitionId, int processInstanceKey)
+      String id,
+      String evaluationDate,
+      int partitionId,
+      int processInstanceKey,
+      Long rootProcessInstanceKey)
       implements TDocument {}
 
   private interface TDocument {

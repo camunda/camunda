@@ -9,6 +9,8 @@ package io.camunda.exporter.tasks.archiver;
 
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.BasicArchiveBatch;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.ProcessInstanceArchiveBatch;
+import io.camunda.exporter.tasks.archiver.ArchiveBatch.ProcessInstanceBatchSizes;
+import io.camunda.webapps.schema.descriptors.ProcessInstanceDependant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -26,6 +28,13 @@ final class TestRepository extends NoopArchiverRepository {
   @Override
   public CompletableFuture<ProcessInstanceArchiveBatch> getProcessInstancesNextBatch() {
     return CompletableFuture.completedFuture((ProcessInstanceArchiveBatch) batch);
+  }
+
+  @Override
+  public CompletableFuture<ProcessInstanceBatchSizes> getProcessInstancesBatchSizes(
+      final ProcessInstanceArchiveBatch batch,
+      final List<ProcessInstanceDependant> dependentIndexes) {
+    return CompletableFuture.completedFuture(new ProcessInstanceBatchSizes(Map.of(), Map.of()));
   }
 
   @Override

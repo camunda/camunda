@@ -19,10 +19,12 @@ import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration.Pro
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.BasicArchiveBatch;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.ProcessInstanceArchiveBatch;
+import io.camunda.exporter.tasks.archiver.ArchiveBatch.ProcessInstanceBatchSizes;
 import io.camunda.exporter.tasks.util.DateOfArchivedDocumentsUtil;
 import io.camunda.exporter.tasks.util.OpensearchRepository;
 import io.camunda.search.schema.config.RetentionConfiguration;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import io.camunda.webapps.schema.descriptors.ProcessInstanceDependant;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
@@ -143,6 +145,13 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
                 createProcessInstanceBatch(
                     response, ListViewTemplate.END_DATE, listViewTemplateDescriptor),
             executor);
+  }
+
+  @Override
+  public CompletableFuture<ProcessInstanceBatchSizes> getProcessInstancesBatchSizes(
+      final ProcessInstanceArchiveBatch batch,
+      final List<ProcessInstanceDependant> dependentIndexes) {
+    return null;
   }
 
   @Override

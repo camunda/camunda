@@ -59,7 +59,27 @@ public class ProcessInstanceArchiverJob extends ArchiverJob<ProcessInstanceArchi
 
   @Override
   CompletableFuture<ProcessInstanceArchiveBatch> getNextBatch() {
-    return getArchiverRepository().getProcessInstancesNextBatch();
+    return getArchiverRepository()
+        .getProcessInstancesNextBatch()
+        .thenComposeAsync(
+            batch -> {
+              // TODO skip if batch size is one (or something lower threshold)
+              if (batch.isEmpty()) {
+                return CompletableFuture.completedFuture(batch);
+              }
+              return getArchiverRepository()
+                  .getProcessInstancesBatchSizes(batch, processInstanceDependants)
+                  .thenApplyAsync(
+                      sizes -> {
+                        // TODO support returning multiple smaller batches instead of just picking
+                        // first one
+                        final var splitBatches =
+                            sizes.splitBatch(batch, 5); // TODO make configurable
+                        return splitBatches.getFirst();
+                      },
+                      getExecutor());
+            },
+            getExecutor());
   }
 
   @Override
