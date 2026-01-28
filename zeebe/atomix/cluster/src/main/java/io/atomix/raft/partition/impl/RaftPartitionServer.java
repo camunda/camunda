@@ -188,6 +188,10 @@ public class RaftPartitionServer implements HealthMonitorable {
     return server.getContext().getLog().openCommittedReader();
   }
 
+  public RaftLogReader openUncommittedReader() {
+    return server.getContext().getLog().openUncommittedReader();
+  }
+
   public void addRoleChangeListener(final RaftRoleChangeListener listener) {
     server.addRoleChangeListener(listener);
   }
