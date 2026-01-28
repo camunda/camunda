@@ -12,7 +12,7 @@ import {MetricPanel} from './v2/MetricPanel';
 import {PAGE_TITLE} from 'modules/constants';
 import {Grid, ScrollableContent, Tile, TileTitle} from './styled';
 import {InstancesByProcessDefinition} from './v2/InstancesByProcessDefinition';
-import {IncidentsByError} from './IncidentsByError';
+import {IncidentsByError} from './v2/IncidentsByError';
 import {useProcessDefinitionStatistics} from 'modules/queries/processDefinitionStatistics/useProcessDefinitionStatistics';
 import {NoInstancesEmptyState} from './NoInstancesEmptyState';
 
