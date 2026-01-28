@@ -24,7 +24,7 @@
     "husky": "^9.1.7",
     "lint-staged": "^16.0.0",
     "playwright-slack-report": "^1.1.89",
-    "prettier": "3.6.2",
+    "prettier": "3.8.1",
     "typescript": "5.8.2",
     "valibot": "1.2.0",
     "zeebe-node": "^8.3.2"
