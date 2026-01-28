@@ -24,7 +24,7 @@ import java.util.Collection;
 import java.util.concurrent.CopyOnWriteArrayList;
 import org.slf4j.Logger;
 
-public final class LogStreamImpl implements LogStream, CommitListener {
+public final class LogStreamImpl implements LogStream, CommitListener, LogStorage.WriteListener {
 
   private static final Logger LOG = Loggers.LOGSTREAMS_LOGGER;
 
@@ -62,6 +62,7 @@ public final class LogStreamImpl implements LogStream, CommitListener {
             new SequencerMetrics(meterRegistry),
             flowControl);
     logStorage.addCommitListener(this);
+    logStorage.addWriteListener(this);
   }
 
   @Override
@@ -70,6 +71,7 @@ public final class LogStreamImpl implements LogStream, CommitListener {
     LOG.debug("Closing {} with {} readers", logName, readers.size());
     readers.forEach(LogStreamReader::close);
     logStorage.removeCommitListener(this);
+    logStorage.removeWriteListener(this);
   }
 
   @Override
@@ -84,8 +86,13 @@ public final class LogStreamImpl implements LogStream, CommitListener {
 
   @Override
   public LogStreamReader newLogStreamReader() {
+    return newLogStreamReader(false);
+  }
+
+  @Override
+  public LogStreamReader newLogStreamReader(final boolean uncommitted) {
     ensureOpen();
-    return createLogStreamReader();
+    return createLogStreamReader(uncommitted);
   }
 
   @Override
@@ -122,14 +129,24 @@ public final class LogStreamImpl implements LogStream, CommitListener {
     recordAwaiters.forEach(LogRecordAwaiter::onRecordAvailable);
   }
 
+  @Override
+  public void onWrite() {
+    if (closed) {
+      return;
+    }
+    recordAwaiters.forEach(LogRecordAwaiter::onRecordAvailable);
+  }
+
   private void ensureOpen() {
     if (closed) {
       throw new IllegalStateException("%s is closed".formatted(logName));
     }
   }
 
-  private LogStreamReader createLogStreamReader() {
-    final var newReader = new LogStreamReaderImpl(logStorage.newReader());
+  private LogStreamReader createLogStreamReader(final boolean uncommitted) {
+    final var storageReader =
+        uncommitted ? logStorage.newUncommittedReader() : logStorage.newReader();
+    final var newReader = new LogStreamReaderImpl(storageReader);
     readers.add(newReader);
     return newReader;
   }

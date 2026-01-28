@@ -87,6 +87,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   private final PartitionMessagingService partitionMessagingService;
   private final String exporterPositionsTopic;
   private final ExporterMode exporterMode;
+  private final boolean uncommittedReader;
   private final Duration distributionInterval;
   private ExporterStateDistributionService exporterDistributionService;
   private ScheduledTimer exporterDistributionTimer;
@@ -134,6 +135,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     partitionMessagingService = context.getPartitionMessagingService();
     exporterPositionsTopic = String.format(EXPORTER_STATE_TOPIC_FORMAT, partitionId);
     exporterMode = context.getExporterMode();
+    uncommittedReader = context.isUncommittedReader();
     distributionInterval = context.getDistributionInterval();
     positionsToSkipFilter = context.getPositionsToSkipFilter();
 
@@ -370,7 +372,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   @Override
   protected void onActorStarting() {
     if (exporterMode == ExporterMode.ACTIVE) {
-      logStreamReader = logStream.newLogStreamReader();
+      logStreamReader = logStream.newLogStreamReader(uncommittedReader);
     }
   }
 
@@ -589,7 +591,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   }
 
   private void restartActiveExportingMode() {
-    logStreamReader = logStream.newLogStreamReader();
+    logStreamReader = logStream.newLogStreamReader(uncommittedReader);
     startActiveExportingFrom(-1);
   }
 

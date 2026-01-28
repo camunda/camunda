@@ -31,6 +31,7 @@ public class ListLogStorage implements LogStorage {
   private final ConcurrentSkipListMap<Integer, Entry> entries;
   private LongConsumer positionListener;
   private final Set<CommitListener> commitListeners = new HashSet<>();
+  private final Set<WriteListener> writeListeners = new HashSet<>();
   private final List<ListLogStorageReader> listLogStorageReaders;
   private final AtomicInteger currentIndex = new AtomicInteger(0);
 
@@ -73,6 +74,7 @@ public class ListLogStorage implements LogStorage {
     entries.put(index, entry);
     positionIndexMapping.put(lowestPosition, index);
     listener.onWrite(index, highestPosition);
+    writeListeners.forEach(WriteListener::onWrite);
 
     if (positionListener != null) {
       positionListener.accept(highestPosition);
@@ -89,6 +91,16 @@ public class ListLogStorage implements LogStorage {
   @Override
   public void removeCommitListener(final CommitListener listener) {
     commitListeners.remove(listener);
+  }
+
+  @Override
+  public void addWriteListener(final WriteListener listener) {
+    writeListeners.add(listener);
+  }
+
+  @Override
+  public void removeWriteListener(final WriteListener listener) {
+    writeListeners.remove(listener);
   }
 
   public void reset() {
