@@ -155,6 +155,9 @@ runs:
     with:
       distribution: ${{ inputs.java-distribution }}
       java-version: ${{ inputs.java-version }}
+  - name: Register Maven problem matcher
+    shell: bash
+    run: echo "::add-matcher::.github/maven-matcher.json"
   - name: Setup Maven
     if: inputs.maven-version != ''
     uses: ./.github/actions/setup-maven-dist

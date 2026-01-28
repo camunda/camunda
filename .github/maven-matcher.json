@@ -1,0 +1,22 @@
+{
+  "problemMatcher": [
+    {
+      "owner": "maven-goal-failure",
+      "pattern": [
+        {
+          "regexp": "^\\s*\\[ERROR\\]\\s+(?<message>Failed to execute goal\\s+.+)$",
+          "message": 1
+        }
+      ]
+    },
+    {
+      "owner": "maven-surefire-test",
+      "pattern": [
+        {
+          "regexp": "^\\s*\\[ERROR\\]\\s+(?<message>[A-Za-z0-9_$.]+\\s+--\\s+Time elapsed:.*)$",
+          "message": 1
+        }
+      ]
+    }
+  ]
+}
