@@ -44,6 +44,7 @@ const commonApi = {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        Accept: 'application/json, text/plain',
       },
     }),
   getCurrentUser: () =>

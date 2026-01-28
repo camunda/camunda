@@ -26,6 +26,8 @@ const {getClientConfig: actualGetClientConfig} = await vi.importActual<
 >('common/config/getClientConfig');
 const mockGetClientConfig = vi.mocked(getClientConfig);
 
+const unchangedHref = window.location.href;
+
 describe('authentication store', () => {
   beforeEach(() => {
     authenticationStore.reset();
@@ -99,6 +101,7 @@ describe('authentication store', () => {
     expect(authenticationStore.status).toBe('logged-out');
 
     expect(mockReload).toHaveBeenCalledTimes(0);
+    expect(window.location.href).toBe(unchangedHref);
     expect(getStateLocally('wasReloaded')).toBe(false);
   });
 
@@ -140,6 +143,7 @@ describe('authentication store', () => {
 
     expect(authenticationStore.status).toBe('logged-in');
 
+    expect(window.location.href).toBe(unchangedHref);
     expect(mockReload).toHaveBeenCalledTimes(0);
     expect(getStateLocally('wasReloaded')).toBe(false);
   });
@@ -177,6 +181,7 @@ describe('authentication store', () => {
 
       expect(authenticationStore.status).toBe('logged-in');
 
+      expect(window.location.href).toBe(unchangedHref);
       expect(mockReload).toHaveBeenCalledTimes(1);
       expect(getStateLocally('wasReloaded')).toBe(false);
     },
@@ -207,7 +212,9 @@ describe('authentication store', () => {
           () => HttpResponse.json(currentUser),
           {once: true},
         ),
-        http.post('/logout', () => new HttpResponse(''), {once: true}),
+        http.post('/logout', () => new HttpResponse('', {status: 204}), {
+          once: true,
+        }),
         http.post('/login', () => new HttpResponse(''), {once: true}),
         http.get(
           '/v2/authentication/me',
@@ -231,8 +238,51 @@ describe('authentication store', () => {
 
       expect(authenticationStore.status).toBe('logged-in');
 
+      expect(window.location.href).toBe(unchangedHref);
       expect(mockReload).toHaveBeenCalledTimes(1);
       expect(getStateLocally('wasReloaded')).toBe(false);
     },
   );
+
+  it('should redirect to logoutUrl returned by backend during logout', async () => {
+    const mockReload = vi.fn();
+    vi.spyOn(window, 'location', 'get').mockReturnValue({
+      ...window.location,
+      reload: mockReload,
+    });
+
+    mockGetClientConfig.mockReturnValue({
+      ...actualGetClientConfig(),
+      canLogout: true,
+      isLoginDelegated: true,
+    });
+
+    const mockIdpLogoutUrl = 'http://example.com/idpLogout';
+
+    nodeMockServer.use(
+      http.post('/login', () => new HttpResponse(''), {once: true}),
+      http.get('/v2/authentication/me', () => HttpResponse.json(currentUser), {
+        once: true,
+      }),
+      http.post(
+        '/logout',
+        () => new HttpResponse(`{"url": "${mockIdpLogoutUrl}"}`),
+        {
+          once: true,
+        },
+      ),
+    );
+
+    await authenticationStore.handleLogin('demo', 'demo');
+
+    expect(authenticationStore.status).toBe('logged-in');
+
+    await authenticationStore.handleLogout();
+
+    expect(authenticationStore.status).toBe('invalid-third-party-session');
+
+    expect(window.location.href).toBe(mockIdpLogoutUrl);
+    expect(mockReload).toHaveBeenCalledTimes(0);
+    expect(getStateLocally('wasReloaded')).toBe(true);
+  });
 });
