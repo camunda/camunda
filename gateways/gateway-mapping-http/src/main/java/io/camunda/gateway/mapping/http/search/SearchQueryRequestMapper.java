@@ -721,6 +721,20 @@ public final class SearchQueryRequestMapper {
   public static Either<
           ProblemDetail, io.camunda.search.query.ProcessDefinitionInstanceStatisticsQuery>
       toProcessDefinitionInstanceStatisticsQuery(
+          final io.camunda.gateway.protocol.model.simple.SearchQueryPageRequest page,
+          final List<ProcessDefinitionInstanceStatisticsQuerySortRequest> sort) {
+    return toProcessDefinitionInstanceStatisticsQuery(
+        new ProcessDefinitionInstanceStatisticsQuery()
+            .page(
+                page == null
+                    ? null
+                    : new OffsetPagination().from(page.getFrom()).limit(page.getLimit()))
+            .sort(sort == null ? List.of() : sort));
+  }
+
+  public static Either<
+          ProblemDetail, io.camunda.search.query.ProcessDefinitionInstanceStatisticsQuery>
+      toProcessDefinitionInstanceStatisticsQuery(
           final ProcessDefinitionInstanceStatisticsQuery request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.processDefinitionInstanceStatisticsQuery().build());
