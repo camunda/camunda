@@ -32,13 +32,15 @@ const ChatbotToggle = styled.div`
   }
 `;
 
-const ChatWindow = styled.div`
+const ChatWindow = styled.div<{$width?: number; $height?: number}>`
   position: absolute;
   bottom: 64px;
   right: 0;
-  width: 400px;
+  width: ${({$width}) => ($width ? `${$width}px` : '400px')};
+  min-width: 300px;
   max-width: calc(100vw - var(--cds-spacing-10));
-  height: 500px;
+  height: ${({$height}) => ($height ? `${$height}px` : '500px')};
+  min-height: 300px;
   max-height: calc(100vh - 120px);
   background: var(--cds-layer);
   border: 1px solid var(--cds-border-subtle);
@@ -47,6 +49,46 @@ const ChatWindow = styled.div`
   display: flex;
   flex-direction: column;
   overflow: hidden;
+`;
+
+const ResizeHandle = styled.div<{$position: 'top' | 'left' | 'top-left'}>`
+  position: absolute;
+  background: transparent;
+  z-index: 10;
+
+  ${({$position}) => {
+    switch ($position) {
+      case 'top':
+        return css`
+          top: 0;
+          left: 20px;
+          right: 20px;
+          height: 6px;
+          cursor: ns-resize;
+        `;
+      case 'left':
+        return css`
+          top: 20px;
+          left: 0;
+          bottom: 20px;
+          width: 6px;
+          cursor: ew-resize;
+        `;
+      case 'top-left':
+        return css`
+          top: 0;
+          left: 0;
+          width: 16px;
+          height: 16px;
+          cursor: nwse-resize;
+        `;
+    }
+  }}
+
+  &:hover {
+    background: var(--cds-border-interactive);
+    opacity: 0.5;
+  }
 `;
 
 const ChatHeader = styled.div`
@@ -235,4 +277,5 @@ export {
   MessageBubble,
   TypingIndicator,
   ChatInputArea,
+  ResizeHandle,
 };

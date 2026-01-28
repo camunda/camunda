@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useEffect, useRef, useState} from 'react';
+import {useCallback, useEffect, useRef, useState} from 'react';
 import {Button, IconButton, Layer, TextArea} from '@carbon/react';
 import {ChatBot as ChatBotIcon, Close, Renew, Send} from '@carbon/react/icons';
 import {
@@ -17,6 +17,7 @@ import {
   ChatMessages,
   ChatWindow,
   MessageBubble,
+  ResizeHandle,
   TypingIndicator,
 } from './styled';
 import {type Message, type ToolCall, useChat} from './useChat';
@@ -34,12 +35,20 @@ type ChatbotProps = {
   placeholder?: string;
 };
 
+const DEFAULT_WIDTH = 400;
+const DEFAULT_HEIGHT = 500;
+const MIN_WIDTH = 300;
+const MIN_HEIGHT = 300;
+
 const Chatbot: React.FC<ChatbotProps> = observer(({
   llmConfig,
   mcpConfig,
   placeholder = 'Ask about your processes...',
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [windowSize, setWindowSize] = useState({width: DEFAULT_WIDTH, height: DEFAULT_HEIGHT});
+  const [isResizing, setIsResizing] = useState<'top' | 'left' | 'top-left' | null>(null);
+  const resizeStartRef = useRef({x: 0, y: 0, width: DEFAULT_WIDTH, height: DEFAULT_HEIGHT});
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -71,6 +80,51 @@ const Chatbot: React.FC<ChatbotProps> = observer(({
     }
   }, [isOpen]);
 
+  // Handle resize mouse events
+  const handleResizeStart = useCallback((e: React.MouseEvent, direction: 'top' | 'left' | 'top-left') => {
+    e.preventDefault();
+    setIsResizing(direction);
+    resizeStartRef.current = {
+      x: e.clientX,
+      y: e.clientY,
+      width: windowSize.width,
+      height: windowSize.height,
+    };
+  }, [windowSize]);
+
+  useEffect(() => {
+    if (!isResizing) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const deltaX = resizeStartRef.current.x - e.clientX;
+      const deltaY = resizeStartRef.current.y - e.clientY;
+
+      let newWidth = resizeStartRef.current.width;
+      let newHeight = resizeStartRef.current.height;
+
+      if (isResizing === 'left' || isResizing === 'top-left') {
+        newWidth = Math.max(MIN_WIDTH, resizeStartRef.current.width + deltaX);
+      }
+      if (isResizing === 'top' || isResizing === 'top-left') {
+        newHeight = Math.max(MIN_HEIGHT, resizeStartRef.current.height + deltaY);
+      }
+
+      setWindowSize({width: newWidth, height: newHeight});
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(null);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isResizing]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (input.trim() && !isLoading) {
@@ -97,7 +151,24 @@ const Chatbot: React.FC<ChatbotProps> = observer(({
             role="dialog"
             aria-label="Chatbot"
             aria-modal="true"
+            $width={windowSize.width}
+            $height={windowSize.height}
           >
+            <ResizeHandle
+              $position="top"
+              onMouseDown={(e) => handleResizeStart(e, 'top')}
+              title="Drag to resize height"
+            />
+            <ResizeHandle
+              $position="left"
+              onMouseDown={(e) => handleResizeStart(e, 'left')}
+              title="Drag to resize width"
+            />
+            <ResizeHandle
+              $position="top-left"
+              onMouseDown={(e) => handleResizeStart(e, 'top-left')}
+              title="Drag to resize"
+            />
             <ChatHeader>
               <div className="header-content">
                 <ChatBotIcon size={20} />
