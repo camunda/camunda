@@ -234,6 +234,7 @@ public class ObjectValue extends BaseValue {
   }
 
   public boolean isEmpty() {
-    return declaredProperties.isEmpty() && undeclaredProperties.isEmpty();
+    return declaredProperties.stream().noneMatch(BaseProperty::hasMeaningfulValue)
+        && undeclaredProperties.stream().noneMatch(BaseProperty::hasMeaningfulValue);
   }
 }

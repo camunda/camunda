@@ -25,6 +25,6 @@ public final class ObjectProperty<T extends ObjectValue> extends BaseProperty<T>
 
   @Override
   public boolean hasMeaningfulValue() {
-    return true;
+    return !getValue().isEmpty();
   }
 }
