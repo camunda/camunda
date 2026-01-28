@@ -74,6 +74,10 @@ public interface Exporter {
    */
   void export(Record<?> record);
 
+  default void export(final Record<?> record, final int length) {
+    export(record);
+  }
+
   /**
    * Hook to perform a data purge.
    *
