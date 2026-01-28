@@ -59,6 +59,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessEventIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntrospectIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceResultIntent;
@@ -103,6 +104,7 @@ public final class EventAppliers implements EventApplier {
     register(ProcessInstanceResultIntent.COMPLETED, NOOP_EVENT_APPLIER);
     register(ProcessInstanceBatchIntent.ACTIVATED, NOOP_EVENT_APPLIER);
     register(ProcessInstanceBatchIntent.TERMINATED, NOOP_EVENT_APPLIER);
+    register(ProcessInstanceIntrospectIntent.INTROSPECTED, NOOP_EVENT_APPLIER);
 
     registerProcessAppliers(state);
     register(ErrorIntent.CREATED, new ErrorCreatedApplier(state.getBannedInstanceState()));

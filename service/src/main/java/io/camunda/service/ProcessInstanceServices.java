@@ -40,6 +40,7 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerCancelProcessInstanceR
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateBatchOperationRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceWithResultRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerIntrospectProcessInstanceRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerMigrateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerModifyProcessInstanceRequest;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
@@ -48,6 +49,7 @@ import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperation
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRuntimeInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationStartInstruction;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceIntrospectRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationActivateInstruction;
@@ -419,6 +421,13 @@ public final class ProcessInstanceServices
                                 .build())
                         .page(query.page())
                         .sort(query.sort())));
+  }
+
+  public CompletableFuture<ProcessInstanceIntrospectRecord> introspectProcessInstance(
+      final Long processInstanceKey) {
+    final var brokerRequest =
+        new BrokerIntrospectProcessInstanceRequest().setProcessInstanceKey(processInstanceKey);
+    return sendBrokerRequest(brokerRequest);
   }
 
   public record ProcessInstanceCreateRequest(

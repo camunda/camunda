@@ -99,6 +99,7 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageCorrelationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceIntrospectRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceResultRecord;
 import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
@@ -794,6 +795,13 @@ public final class ResponseMapper {
           brokerInfo.addPartitionsItem(partitionDto);
         });
   }
+
+  public static ProcessInstanceIntrospectResult toIntrospectProcessInstanceResponse(
+      final ProcessInstanceIntrospectRecord brokerResponse) {
+    return new ProcessInstanceIntrospectResult(brokerResponse.getProcessInstanceKey());
+  }
+
+  public record ProcessInstanceIntrospectResult(long processInstanceKey) {}
 
   static class RestJobActivationResult
       implements JobActivationResult<io.camunda.gateway.protocol.model.JobActivationResult> {
