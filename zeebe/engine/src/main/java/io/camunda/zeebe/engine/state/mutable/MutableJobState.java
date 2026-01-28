@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.state.mutable;
 
 import io.camunda.zeebe.engine.state.immutable.JobState;
+import io.camunda.zeebe.engine.state.instance.JobTypeHeartbeatValue;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 
 public interface MutableJobState extends JobState {
@@ -47,4 +48,8 @@ public interface MutableJobState extends JobState {
   void migrate(long key, JobRecord record);
 
   void restoreBackoff();
+
+  void updateJobTypeHeartbeat(String jobType, String tenantId, String worker, long timestamp);
+
+  JobTypeHeartbeatValue getJobTypeHeartbeat(String jobType, String tenantId);
 }

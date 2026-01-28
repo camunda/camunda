@@ -72,6 +72,14 @@ public final class DbJobState implements JobState, MutableJobState {
       backoffColumnFamily;
   private long nextBackOffDueDate;
 
+  // [[type, tenant_id]] => heartbeat
+  private final DbString heartbeatJobTypeKey;
+  private final DbString heartbeatTenantIdKey;
+  private final DbTenantAwareKey<DbString> tenantAwareHeartbeatKey;
+  private final JobTypeHeartbeatValue heartbeatValue = new JobTypeHeartbeatValue();
+  private final ColumnFamily<DbTenantAwareKey<DbString>, JobTypeHeartbeatValue>
+      heartbeatColumnFamily;
+
   public DbJobState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
 
@@ -107,6 +115,17 @@ public final class DbJobState implements JobState, MutableJobState {
     backoffColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.JOB_BACKOFF, transactionContext, backoffJobKey, DbNil.INSTANCE);
+
+    heartbeatJobTypeKey = new DbString();
+    heartbeatTenantIdKey = new DbString();
+    tenantAwareHeartbeatKey =
+        new DbTenantAwareKey<>(heartbeatTenantIdKey, heartbeatJobTypeKey, PlacementType.SUFFIX);
+    heartbeatColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.JOB_TYPE_HEARTBEAT,
+            transactionContext,
+            tenantAwareHeartbeatKey,
+            heartbeatValue);
   }
 
   @Override
@@ -549,5 +568,22 @@ public final class DbJobState implements JobState, MutableJobState {
       backoffKey.wrapLong(backoff);
       backoffColumnFamily.deleteIfExists(backoffJobKey);
     }
+  }
+
+  @Override
+  public void updateJobTypeHeartbeat(
+      final String jobType, final String tenantId, final String worker, final long timestamp) {
+    heartbeatJobTypeKey.wrapString(jobType);
+    heartbeatTenantIdKey.wrapString(tenantId);
+    heartbeatValue.setWorker(worker);
+    heartbeatValue.setLastSeenAt(timestamp);
+    heartbeatColumnFamily.upsert(tenantAwareHeartbeatKey, heartbeatValue);
+  }
+
+  @Override
+  public JobTypeHeartbeatValue getJobTypeHeartbeat(final String jobType, final String tenantId) {
+    heartbeatJobTypeKey.wrapString(jobType);
+    heartbeatTenantIdKey.wrapString(tenantId);
+    return heartbeatColumnFamily.get(tenantAwareHeartbeatKey);
   }
 }

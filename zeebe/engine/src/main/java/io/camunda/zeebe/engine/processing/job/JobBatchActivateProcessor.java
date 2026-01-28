@@ -53,6 +53,8 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
   private final ElementInstanceState elementInstanceState;
   private final ProcessState processState;
   private final AuthorizationCheckBehavior authorizationCheckBehavior;
+  private final InstantSource clock;
+  private final ProcessingState state;
 
   public JobBatchActivateProcessor(
       final Writers writers,
@@ -73,6 +75,8 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
     this.jobMetrics = jobMetrics;
     elementInstanceState = state.getElementInstanceState();
     processState = state.getProcessState();
+    this.clock = clock;
+    this.state = state;
   }
 
   @Override
@@ -123,6 +127,12 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
   private void activateJobs(final TypedRecord<JobBatchRecord> record) {
     final JobBatchRecord value = record.getValue();
     final long jobBatchKey = keyGenerator.nextKey();
+
+    // Update heartbeat before collecting jobs
+    state
+        .getJobState()
+        .updateJobTypeHeartbeat(
+            value.getType(), value.getTenantId(), value.getWorker(), clock.millis());
 
     final Either<TooLargeJob, Map<JobKind, Integer>> result = jobBatchCollector.collectJobs(record);
     final var activatedJobCountPerJobKind = result.getOrElse(Collections.emptyMap());
