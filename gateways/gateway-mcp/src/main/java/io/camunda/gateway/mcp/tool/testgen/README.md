@@ -4,6 +4,18 @@
 
 The Test Case Generator Agent is an MCP (Model Context Protocol) tool that automates the generation of test cases from GitHub Epics in the [camunda/product-hub](https://github.com/camunda/product-hub/) repository and creates them in TestRail using the [TestRail MCP server](https://github.com/bun913/mcp-testrail).
 
+## 🚀 Quick Start
+
+**New to this agent?** Check out the comprehensive [**USAGE_GUIDE.md**](./USAGE_GUIDE.md) for:
+- Step-by-step setup instructions
+- Configuration examples
+- Real-world usage scenarios
+- Troubleshooting tips
+
+**Quick setup script:** Run `./scripts/setup-testgen-agent.sh` from the repository root
+
+**Test your setup:** Run `./scripts/test-testgen-agent.sh` to verify everything works
+
 ## Features
 
 - **Fetch Product Hub Epics**: Retrieve Epics from the camunda/product-hub GitHub repository
