@@ -484,7 +484,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
       if (processingStateMachine != null) {
         message.append(processingStateMachine.describeCurrentState());
       } else if (replayStateMachine != null) {
-        message.append(replayStateMachine.describeCurrentState());
+        message.append(replayStateMachine.describeCurrentState().get());
       } else {
         message.append("in phase ").append(streamProcessorContext.getStreamProcessorPhase());
       }
