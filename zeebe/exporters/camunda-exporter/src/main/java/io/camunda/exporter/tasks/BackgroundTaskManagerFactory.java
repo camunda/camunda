@@ -7,8 +7,6 @@
  */
 package io.camunda.exporter.tasks;
 
-import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
-
 import co.elastic.clients.elasticsearch.ElasticsearchAsyncClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.ExporterMetadata;
@@ -240,22 +238,23 @@ public final class BackgroundTaskManagerFactory {
     final List<RunnableTask> tasks = new ArrayList<>();
 
     tasks.add(buildIncidentMarkerTask());
-    if (config.getHistory().isProcessInstanceEnabled()) {
-      tasks.add(buildProcessInstanceArchiverJob());
-      if (config.getHistory().isTrackArchivalMetricsForProcessInstance()) {
-        tasks.add(buildProcessInstanceToBeArchivedCountJob());
-      }
-    }
-    tasks.add(buildUsageMetricsArchiverJob());
-    tasks.add(buildUsageMetricsTUArchiverJob());
-    tasks.add(buildStandaloneDecisionArchiverJob());
-    if (partitionId == START_PARTITION_ID) {
-      tasks.add(buildBatchOperationArchiverJob());
-      tasks.add(buildBatchOperationUpdateTask());
-      if (config.getHistory().getRetention().isEnabled()) {
-        tasks.add(buildRolloverPeriodJob());
-      }
-    }
+
+    //    if (config.getHistory().isProcessInstanceEnabled()) {
+    //      tasks.add(buildProcessInstanceArchiverJob());
+    //      if (config.getHistory().isTrackArchivalMetricsForProcessInstance()) {
+    //        tasks.add(buildProcessInstanceToBeArchivedCountJob());
+    //      }
+    //    }
+    //    tasks.add(buildUsageMetricsArchiverJob());
+    //    tasks.add(buildUsageMetricsTUArchiverJob());
+    //    tasks.add(buildStandaloneDecisionArchiverJob());
+    //    if (partitionId == START_PARTITION_ID) {
+    //      tasks.add(buildBatchOperationArchiverJob());
+    //      tasks.add(buildBatchOperationUpdateTask());
+    //      if (config.getHistory().getRetention().isEnabled()) {
+    //        tasks.add(buildRolloverPeriodJob());
+    //      }
+    //    }
 
     tasks.add(buildHistoryDeletionJob());
 
