@@ -72,11 +72,12 @@ public final class DbJobState implements JobState, MutableJobState {
       backoffColumnFamily;
   private long nextBackOffDueDate;
 
-  // [[type, tenant_id]] => heartbeat
+  // [[tenant_id, type]] => heartbeat
   private final DbString heartbeatJobTypeKey;
   private final DbString heartbeatTenantIdKey;
   private final DbTenantAwareKey<DbString> tenantAwareHeartbeatKey;
   private final JobTypeHeartbeatValue heartbeatValue = new JobTypeHeartbeatValue();
+  private final JobTypeHeartbeatValue heartbeatValueToRead = new JobTypeHeartbeatValue();
   private final ColumnFamily<DbTenantAwareKey<DbString>, JobTypeHeartbeatValue>
       heartbeatColumnFamily;
 
@@ -125,7 +126,7 @@ public final class DbJobState implements JobState, MutableJobState {
             ZbColumnFamilies.JOB_TYPE_HEARTBEAT,
             transactionContext,
             tenantAwareHeartbeatKey,
-            heartbeatValue);
+            heartbeatValueToRead);
   }
 
   @Override
