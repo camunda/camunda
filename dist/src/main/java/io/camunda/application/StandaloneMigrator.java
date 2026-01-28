@@ -14,6 +14,7 @@ import io.camunda.configuration.Camunda;
 import io.camunda.configuration.Rdbms;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.RdbmsWriterFactory;
+import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -32,6 +33,7 @@ import org.springframework.context.annotation.Bean;
 public class StandaloneMigrator implements CommandLineRunner {
 
   private static final Logger LOG = LoggerFactory.getLogger(StandaloneMigrator.class);
+  private static final int BATCH_SIZE = 100000;
   private final ConnectConfiguration elasticsearch;
   private final Rdbms rdbms;
   private final RdbmsWriterFactory rdbmsWriterFactory;
@@ -87,68 +89,98 @@ public class StandaloneMigrator implements CommandLineRunner {
           rdbmsWriterFactory.createWriter(new RdbmsWriterConfig.Builder().build());
 
       LOG.info("Migrating process definitions...");
-      ProcessDefReader.readProcessDefinitions(client).stream()
-          .forEach(rdbmsWriter.getProcessDefinitionWriter()::create);
-      rdbmsWriter.flush(true);
+      migrateEntitiesWithBatchFlush(
+          ProcessDefReader.readProcessDefinitions(client),
+          rdbmsWriter.getProcessDefinitionWriter()::create,
+          rdbmsWriter);
       LOG.info("Process definitions migrated successfully.");
 
       LOG.info("Migrating process instances...");
-      ProcessInstanceReader.readProcessInstances(client).stream()
-          .forEach(rdbmsWriter.getProcessInstanceWriter()::create);
-      rdbmsWriter.flush(true);
+      migrateEntitiesWithBatchFlush(
+          ProcessInstanceReader.readProcessInstances(client),
+          rdbmsWriter.getProcessInstanceWriter()::create,
+          rdbmsWriter);
       LOG.info("Process instances migrated successfully.");
 
       LOG.info("Migrating flow node instances...");
-      FlowNodeInstanceReader.readFlowNodeInstances(client).stream()
-          .forEach(rdbmsWriter.getFlowNodeInstanceWriter()::create);
-      rdbmsWriter.flush(true);
+      migrateEntitiesWithBatchFlush(
+          FlowNodeInstanceReader.readFlowNodeInstances(client),
+          rdbmsWriter.getFlowNodeInstanceWriter()::create,
+          rdbmsWriter);
       LOG.info("Flow node instances migrated successfully.");
 
       LOG.info("Migrating variables...");
-      VariableReader.readVariables(client).stream()
-          .forEach(rdbmsWriter.getVariableWriter()::create);
+      // migrateEntitiesWithBatchFlush(
+      //    VariableReader.readVariables(client),
+      //    rdbmsWriter.getVariableWriter()::create,
+      //    rdbmsWriter);
       rdbmsWriter.flush(true);
       LOG.info("Variables migrated successfully.");
 
       LOG.info("Migrating jobs...");
-      JobReader.readJobs(client).stream().forEach(rdbmsWriter.getJobWriter()::create);
-      rdbmsWriter.flush(true);
+      migrateEntitiesWithBatchFlush(
+          JobReader.readJobs(client), rdbmsWriter.getJobWriter()::create, rdbmsWriter);
       LOG.info("Jobs migrated successfully.");
 
       LOG.info("Migrating sequence flows...");
-      SequenceFlowReader.readSequenceFlows(client).stream()
-          .forEach(rdbmsWriter.getSequenceFlowWriter()::create);
-      rdbmsWriter.flush(true);
+      migrateEntitiesWithBatchFlush(
+          SequenceFlowReader.readSequenceFlows(client),
+          rdbmsWriter.getSequenceFlowWriter()::create,
+          rdbmsWriter);
       LOG.info("Sequence flows migrated successfully.");
 
       LOG.info("Migrating message subscriptions...");
-      MessageSubscriptionReader.readMessageSubscriptions(client).stream()
-          .forEach(rdbmsWriter.getMessageSubscriptionWriter()::create);
-      rdbmsWriter.flush(true);
+      migrateEntitiesWithBatchFlush(
+          MessageSubscriptionReader.readMessageSubscriptions(client),
+          rdbmsWriter.getMessageSubscriptionWriter()::create,
+          rdbmsWriter);
       LOG.info("Message subscriptions migrated successfully.");
 
       LOG.info("Migrating user tasks...");
-      UserTaskReader.readUserTasks(client).stream()
-          .forEach(rdbmsWriter.getUserTaskWriter()::create);
-      rdbmsWriter.flush(true);
+      migrateEntitiesWithBatchFlush(
+          UserTaskReader.readUserTasks(client),
+          rdbmsWriter.getUserTaskWriter()::create,
+          rdbmsWriter);
       LOG.info("User tasks migrated successfully.");
 
       LOG.info("Migrating decision instances...");
-      DecisionInstanceReader.readDecisionInstances(client).stream()
-          .forEach(rdbmsWriter.getDecisionInstanceWriter()::create);
-      rdbmsWriter.flush(true);
+      migrateEntitiesWithBatchFlush(
+          DecisionInstanceReader.readDecisionInstances(client),
+          rdbmsWriter.getDecisionInstanceWriter()::create,
+          rdbmsWriter);
       LOG.info("Decision instances migrated successfully.");
 
       LOG.info("Migrating incidents...");
-      IncidentReader.readIncidents(client).stream()
-          .forEach(rdbmsWriter.getIncidentWriter()::create);
-      rdbmsWriter.flush(true);
+      migrateEntitiesWithBatchFlush(
+          IncidentReader.readIncidents(client),
+          rdbmsWriter.getIncidentWriter()::create,
+          rdbmsWriter);
       LOG.info("Incidents migrated successfully.");
 
     } catch (final Exception e) {
       LOG.error("Failed to migrate from ES to RDBMS", e);
       throw e;
     }
+  }
+
+  private <T> void migrateEntitiesWithBatchFlush(
+      final java.util.List<T> entities,
+      final java.util.function.Consumer<T> writer,
+      final RdbmsWriters rdbmsWriter) {
+    int count = 0;
+    for (final T entity : entities) {
+      writer.accept(entity);
+      count++;
+      if (count % BATCH_SIZE == 0) {
+        rdbmsWriter.flush(true);
+        LOG.info("Flushed {} entities", count);
+      }
+    }
+    // Final flush for remaining entities
+    if (count % BATCH_SIZE != 0) {
+      rdbmsWriter.flush(true);
+    }
+    LOG.info("Total {} entities migrated", count);
   }
 
   @EnableConfigurationProperties({ElasticsearchProperties.class, RdbmsProperties.class})
