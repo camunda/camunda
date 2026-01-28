@@ -5,49 +5,62 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.gateway.rest.websocket;
+package io.camunda.zeebe.gateway.rest.websocket.subscription;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.ProcessInstanceServices;
+import io.camunda.zeebe.gateway.rest.websocket.message.CompletedMessage;
+import io.camunda.zeebe.gateway.rest.websocket.message.ErrorMessage;
+import io.camunda.zeebe.gateway.rest.websocket.message.UpdateMessage;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.ScheduledFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.TaskScheduler;
-import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 
-class SubscriptionState {
+class ProcessInstanceSubscription {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(SubscriptionState.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ProcessInstanceSubscription.class);
 
-  private final WebSocketSession session;
+  private final String subscriptionId;
   private final Long processInstanceKey;
+  private final WebSocketSession session;
   private final ProcessInstanceServices processInstanceServices;
   private final ObjectMapper objectMapper;
+  private final CamundaAuthenticationProvider authenticationProvider;
   private volatile ProcessInstanceEntity lastKnownState;
   private volatile ScheduledFuture<?> pollingTask;
-  private final CamundaAuthenticationProvider authenticationProvider;
 
-  SubscriptionState(
-      final WebSocketSession session,
+  ProcessInstanceSubscription(
+      final String subscriptionId,
       final Long processInstanceKey,
+      final WebSocketSession session,
       final ProcessInstanceServices processInstanceServices,
       final ObjectMapper objectMapper,
       final CamundaAuthenticationProvider authenticationProvider) {
-    this.session = session;
+    this.subscriptionId = subscriptionId;
     this.processInstanceKey = processInstanceKey;
+    this.session = session;
     this.processInstanceServices = processInstanceServices;
     this.objectMapper = objectMapper;
     this.authenticationProvider = authenticationProvider;
   }
 
+  String getSubscriptionId() {
+    return subscriptionId;
+  }
+
   void startPolling(final TaskScheduler taskScheduler, final long pollIntervalMs) {
+    // Send initial state immediately
+    pollForUpdates();
+
+    // Then schedule periodic polling
     pollingTask =
         taskScheduler.scheduleAtFixedRate(
             this::pollForUpdates,
@@ -60,15 +73,6 @@ class SubscriptionState {
       pollingTask.cancel(false);
       pollingTask = null;
     }
-  }
-
-  void handleClientMessage(final String payload) {
-    LOGGER.debug(
-        "Received client message for process instance {}: {}", processInstanceKey, payload);
-  }
-
-  Long getProcessInstanceKey() {
-    return processInstanceKey;
   }
 
   private void pollForUpdates() {
@@ -85,26 +89,31 @@ class SubscriptionState {
 
       if (currentState == null) {
         LOGGER.warn("Process instance {} not found", processInstanceKey);
-        sendErrorMessage("Process instance not found");
-        closeSession(CloseStatus.BAD_DATA.withReason("Process instance not found"));
+        sendErrorMessage("Process instance not found", "RESOURCE_NOT_FOUND");
+        stopPolling(); // Stop polling if not found
         return;
       }
 
+      // Send update if changed OR if first poll (initial state)
       if (lastKnownState == null || hasChanged(lastKnownState, currentState)) {
-        lastKnownState = currentState;
         sendUpdate(currentState);
-      }
 
-      if (isTerminalState(currentState)) {
-        LOGGER.debug(
-            "Process instance {} reached terminal state, closing connection", processInstanceKey);
-        sendCompletedMessage(currentState);
-        closeSession(CloseStatus.NORMAL.withReason("Process instance completed"));
+        // Send COMPLETED only on transition TO terminal state (not every poll)
+        if (isTerminalState(currentState)
+            && (lastKnownState == null || !isTerminalState(lastKnownState))) {
+          LOGGER.debug(
+              "Process instance {} reached terminal state, sending COMPLETED message",
+              processInstanceKey);
+          sendCompletedMessage(currentState);
+          // Keep polling - client decides when to unsubscribe
+        }
+
+        lastKnownState = currentState;
       }
 
     } catch (final Exception e) {
       LOGGER.error("Error polling process instance {}", processInstanceKey, e);
-      sendErrorMessage("Internal error: " + e.getMessage());
+      sendErrorMessage("Internal error: " + e.getMessage(), "INTERNAL_ERROR");
     }
   }
 
@@ -130,7 +139,7 @@ class SubscriptionState {
   private void sendUpdate(final ProcessInstanceEntity entity) {
     try {
       final var result = SearchQueryResponseMapper.toProcessInstance(entity);
-      final var message = new ProcessInstanceUpdateMessage("UPDATE", Instant.now(), result);
+      final var message = new UpdateMessage("UPDATE", Instant.now(), subscriptionId, result);
       final String json = objectMapper.writeValueAsString(message);
       session.sendMessage(new TextMessage(json));
     } catch (final Exception e) {
@@ -141,7 +150,7 @@ class SubscriptionState {
   private void sendCompletedMessage(final ProcessInstanceEntity entity) {
     try {
       final var result = SearchQueryResponseMapper.toProcessInstance(entity);
-      final var message = new ProcessInstanceUpdateMessage("COMPLETED", Instant.now(), result);
+      final var message = new CompletedMessage("COMPLETED", Instant.now(), subscriptionId, result);
       final String json = objectMapper.writeValueAsString(message);
       session.sendMessage(new TextMessage(json));
     } catch (final Exception e) {
@@ -150,23 +159,13 @@ class SubscriptionState {
     }
   }
 
-  private void sendErrorMessage(final String error) {
+  private void sendErrorMessage(final String error, final String code) {
     try {
-      final var message =
-          new ProcessInstanceErrorMessage("ERROR", Instant.now(), error, processInstanceKey);
+      final var message = new ErrorMessage("ERROR", Instant.now(), subscriptionId, error, code);
       final String json = objectMapper.writeValueAsString(message);
       session.sendMessage(new TextMessage(json));
     } catch (final Exception e) {
       LOGGER.error("Failed to send error message for process instance {}", processInstanceKey, e);
-    }
-  }
-
-  private void closeSession(final CloseStatus status) {
-    stopPolling();
-    try {
-      session.close(status);
-    } catch (final Exception e) {
-      LOGGER.error("Error closing session for process instance {}", processInstanceKey, e);
     }
   }
 }

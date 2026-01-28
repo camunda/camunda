@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.config;
 
-import io.camunda.zeebe.gateway.rest.websocket.ProcessInstanceUpdateWebSocketHandler;
+import io.camunda.zeebe.gateway.rest.websocket.GenericWebSocketHandler;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.socket.config.annotation.EnableWebSocket;
@@ -18,17 +18,15 @@ import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry
 @EnableWebSocket
 public class WebSocketConfig implements WebSocketConfigurer {
 
-  private final ProcessInstanceUpdateWebSocketHandler processInstanceUpdateHandler;
+  private final GenericWebSocketHandler genericWebSocketHandler;
 
   @Autowired
-  public WebSocketConfig(final ProcessInstanceUpdateWebSocketHandler processInstanceUpdateHandler) {
-    this.processInstanceUpdateHandler = processInstanceUpdateHandler;
+  public WebSocketConfig(final GenericWebSocketHandler genericWebSocketHandler) {
+    this.genericWebSocketHandler = genericWebSocketHandler;
   }
 
   @Override
   public void registerWebSocketHandlers(final WebSocketHandlerRegistry registry) {
-    registry
-        .addHandler(processInstanceUpdateHandler, "/v2/process-instances/ws/{processInstanceKey}")
-        .setAllowedOrigins("*");
+    registry.addHandler(genericWebSocketHandler, "/v2/ws").setAllowedOrigins("*");
   }
 }

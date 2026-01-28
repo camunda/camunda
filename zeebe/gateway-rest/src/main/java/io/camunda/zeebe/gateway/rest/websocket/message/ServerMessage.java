@@ -5,9 +5,12 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.gateway.rest.websocket;
+package io.camunda.zeebe.gateway.rest.websocket.message;
 
 import java.time.Instant;
 
-public record ProcessInstanceErrorMessage(
-    String type, Instant timestamp, String error, Long processInstanceKey) {}
+public interface ServerMessage {
+  String type();
+
+  Instant timestamp();
+}

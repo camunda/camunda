@@ -5,10 +5,9 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.gateway.rest.websocket;
+package io.camunda.zeebe.gateway.rest.websocket.message;
 
-import io.camunda.gateway.protocol.model.ProcessInstanceResult;
 import java.time.Instant;
 
-public record ProcessInstanceUpdateMessage(
-    String type, Instant timestamp, ProcessInstanceResult data) {}
+public record UpdateMessage(String type, Instant timestamp, String subscriptionId, Object data)
+    implements ServerMessage {}
