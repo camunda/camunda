@@ -65,6 +65,7 @@ jobs:
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          minimus: ${{ matrix.os != 'macos' && matrix.os != 'windows' }}
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
         with:
@@ -349,6 +350,7 @@ jobs:
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          minimus: true
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
         with:
@@ -363,6 +365,8 @@ jobs:
           # push is needed for multi-arch images as buildkit does not support loading them locally
           push: true
       - name: Verify Docker image
+        # Skip verification on fork PRs as there public base images are used that don't match our golden labels
+        if: github.event_name != 'pull_request' || !github.event.pull_request.head.repo.fork
         uses: ./.github/actions/verify-platform-docker
         with:
           imageName: ${{ env.LOCAL_DOCKER_IMAGE }}
@@ -429,6 +433,7 @@ jobs:
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          minimus: true
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
         with:
@@ -484,6 +489,7 @@ jobs:
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          minimus: true
       - run: ./mvnw -B -D skipTests -D skipChecks -pl zeebe/benchmarks/project -am install
       - name: Build Starter Image
         run: ./mvnw -pl zeebe/benchmarks/project jib:build -P starter
