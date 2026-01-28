@@ -97,6 +97,7 @@ public class CamundaExporter implements Exporter {
   private SearchEngineClient searchEngineClient;
   private int partitionId;
   private Context context;
+  private long lastFlushTimestamp = 0L;
 
   public CamundaExporter() {
     // the metadata will be initialized on open
@@ -149,7 +150,7 @@ public class CamundaExporter implements Exporter {
       nextWriter();
       controller.readMetadata().ifPresent(metadata::deserialize);
       taskManager.start();
-      scheduleDelayedFlush();
+      scheduleDelayedFlush(System.currentTimeMillis());
 
       LOG.info("Exporter opened");
     } catch (final Exception e) {
@@ -330,19 +331,29 @@ public class CamundaExporter implements Exporter {
     return builder.build();
   }
 
-  private void scheduleDelayedFlush() {
-    controller.scheduleCancellableTask(
-        Duration.ofSeconds(configuration.getBulk().getDelay()), this::flushAndReschedule);
+  private void scheduleDelayedFlush(final long now) {
+    long delta = configuration.getBulk().getDelay();
+    if (lastFlushTimestamp > 0) {
+      delta =
+          Math.min(
+              configuration.getBulk().getDelay() * 1000L - (now - lastFlushTimestamp),
+              configuration.getBulk().getDelay() * 1000L);
+    }
+
+    controller.scheduleCancellableTask(Duration.ofMillis(delta), this::flushAndReschedule);
   }
 
   private void flushAndReschedule() {
+    final var now = System.currentTimeMillis();
     try {
-      flush();
-      updateLastExportedPosition(lastPosition);
+      if (now - lastFlushTimestamp >= configuration.getBulk().getDelay() * 1000L) {
+        flush();
+        updateLastExportedPosition(lastPosition);
+      }
     } catch (final Exception e) {
       LOG.warn("Unexpected exception occurred on periodically flushing bulk, will retry later.", e);
     }
-    scheduleDelayedFlush();
+    scheduleDelayedFlush(now);
   }
 
   private void flush() {
@@ -351,6 +362,7 @@ public class CamundaExporter implements Exporter {
     }
 
     flusher.flush();
+    lastFlushTimestamp = System.currentTimeMillis();
   }
 
   private void updateLastExportedPosition(final long lastPosition) {
