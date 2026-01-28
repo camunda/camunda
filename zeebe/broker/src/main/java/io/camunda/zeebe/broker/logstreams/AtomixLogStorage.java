@@ -29,14 +29,18 @@ public class AtomixLogStorage implements LogStorage, RaftCommitListener {
   private final Set<CommitListener> commitListeners = new CopyOnWriteArraySet<>();
 
   public AtomixLogStorage(
-      final AtomixReaderFactory readerFactory, final AtomixReaderFactory uncommittedReaderFactory, final ZeebeLogAppender logAppender) {
+      final AtomixReaderFactory readerFactory,
+      final AtomixReaderFactory uncommittedReaderFactory,
+      final ZeebeLogAppender logAppender) {
     this.readerFactory = readerFactory;
     this.uncommittedReaderFactory = uncommittedReaderFactory;
     this.logAppender = logAppender;
   }
 
   public static AtomixLogStorage ofPartition(
-      final AtomixReaderFactory readerFactory,final AtomixReaderFactory uncommittedReaderFactory, final ZeebeLogAppender appender) {
+      final AtomixReaderFactory readerFactory,
+      final AtomixReaderFactory uncommittedReaderFactory,
+      final ZeebeLogAppender appender) {
     return new AtomixLogStorage(readerFactory, uncommittedReaderFactory, appender);
   }
 

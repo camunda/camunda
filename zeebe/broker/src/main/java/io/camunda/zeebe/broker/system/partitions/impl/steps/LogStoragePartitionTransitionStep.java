@@ -91,7 +91,8 @@ public final class LogStoragePartitionTransitionStep implements PartitionTransit
 
     return right(
         new AtomixLogStorage(
-            server::openReader,server::openUncommittedReader ,
+            server::openReader,
+            server::openUncommittedReader,
             // Prevent followers from writing new events
             new LogAppenderForReadOnlyStorage()));
   }
@@ -123,7 +124,9 @@ public final class LogStoragePartitionTransitionStep implements PartitionTransit
           new NotLeaderException(
               String.format(WRONG_TERM_ERROR_MSG, targetTerm, raftTerm, context.getPartitionId())));
     } else {
-      final var logStorage = AtomixLogStorage.ofPartition(server::openReader,server::openUncommittedReader, logAppender);
+      final var logStorage =
+          AtomixLogStorage.ofPartition(
+              server::openReader, server::openUncommittedReader, logAppender);
       return right(logStorage);
     }
   }
