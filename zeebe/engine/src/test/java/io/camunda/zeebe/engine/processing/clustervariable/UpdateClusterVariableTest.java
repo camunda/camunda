@@ -113,7 +113,7 @@ public final class UpdateClusterVariableTest {
     ENGINE_RULE
         .clusterVariables()
         .withName("KEY_TO_UPDATE_2")
-        .setTenantScope()
+        .setGlobalScope()
         .withTenantId("tenant_1")
         .withValue("\"VALUE\"")
         .create();

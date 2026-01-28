@@ -26,6 +26,7 @@ import io.camunda.zeebe.engine.processing.clock.ClockPinProcessor;
 import io.camunda.zeebe.engine.processing.clock.ClockResetProcessor;
 import io.camunda.zeebe.engine.processing.clustervariable.ClusterVariableCreateProcessor;
 import io.camunda.zeebe.engine.processing.clustervariable.ClusterVariableDeleteProcessor;
+import io.camunda.zeebe.engine.processing.clustervariable.ClusterVariableUpdateProcessor;
 import io.camunda.zeebe.engine.processing.deployment.DeploymentCreateProcessor;
 import io.camunda.zeebe.engine.processing.globallistener.GlobalListenerBatchConfigureProcessor;
 import io.camunda.zeebe.engine.processing.globallistener.GlobalListenerCreateProcessor;
@@ -712,6 +713,20 @@ public class CommandDistributionIdempotencyTest {
                         .withValue("\"VALUE\"")
                         .create()),
             ClusterVariableCreateProcessor.class
+          },
+          {
+            "ClusterVariable.UPDATE is idempotent",
+            new Scenario(
+                ValueType.CLUSTER_VARIABLE,
+                ClusterVariableIntent.UPDATE,
+                () ->
+                    ENGINE
+                        .clusterVariables()
+                        .withName("KEY_1")
+                        .setGlobalScope()
+                        .withValue("\"VALUE\"")
+                        .update()),
+            ClusterVariableUpdateProcessor.class
           },
           {
             "ClusterVariable.DELETE is idempotent",
