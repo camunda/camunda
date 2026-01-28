@@ -27,7 +27,7 @@
 		"@storybook/addon-styling-webpack": "^3.0.0",
 		"@storybook/addon-webpack5-compiler-swc": "^4.0.1",
 		"@storybook/react-webpack5": "9.1.13",
-		"@types/react": "^18.0.0",
+		"@types/react": "^19.0.0",
 		"classnames": "^2.3.2",
 		"css-loader": "^7.1.2",
 		"prop-types": "^15.8.1",
