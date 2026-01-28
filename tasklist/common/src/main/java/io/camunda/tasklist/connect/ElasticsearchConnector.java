@@ -109,7 +109,7 @@ public class ElasticsearchConnector {
       final ElasticsearchProperties elsConfig, final PluginRepository pluginRepository) {
     LOGGER.debug("Creating Elasticsearch connection...");
     final RestClientBuilder restClientBuilder =
-        RestClient.builder(getHttpHost(elsConfig))
+        RestClient.builder(getHttpHosts(elsConfig))
             .setHttpClientConfigCallback(
                 httpClientBuilder ->
                     configureHttpClient(
@@ -141,7 +141,7 @@ public class ElasticsearchConnector {
     LOGGER.debug("Creating Elasticsearch connection...");
 
     final RestClientBuilder restClientBuilder =
-        RestClient.builder(getHttpHost(elsConfig))
+        RestClient.builder(getHttpHosts(elsConfig))
             .setHttpClientConfigCallback(
                 httpClientBuilder ->
                     configureHttpClient(
@@ -351,6 +351,24 @@ public class ElasticsearchConnector {
     } catch (final URISyntaxException e) {
       throw new TasklistRuntimeException("Error in url: " + elsConfig.getUrl(), e);
     }
+  }
+
+  private HttpHost[] getHttpHosts(final ElasticsearchProperties elsConfig) {
+    final var urls = elsConfig.getUrls();
+    if (urls != null && !urls.isEmpty()) {
+      return urls.stream()
+          .map(
+              url -> {
+                try {
+                  final URI uri = new URI(url);
+                  return new HttpHost(uri.getHost(), uri.getPort(), uri.getScheme());
+                } catch (final URISyntaxException e) {
+                  throw new TasklistRuntimeException("Error in url: " + url, e);
+                }
+              })
+          .toArray(HttpHost[]::new);
+    }
+    return new HttpHost[] {getHttpHost(elsConfig)};
   }
 
   private HttpAsyncClientBuilder setupAuthentication(

@@ -129,9 +129,9 @@ public class OpensearchConnector {
     if (hasAwsCredentials()) {
       return getAwsClient(osConfig);
     }
-    final HttpHost host = getHttpHost(osConfig);
+    final HttpHost[] hosts = getHttpHosts(osConfig);
     final ApacheHttpClient5TransportBuilder builder =
-        ApacheHttpClient5TransportBuilder.builder(host);
+        ApacheHttpClient5TransportBuilder.builder(hosts);
 
     builder.setHttpClientConfigCallback(
         httpClientBuilder -> {
@@ -176,7 +176,7 @@ public class OpensearchConnector {
     final AwsSdk2Transport transport =
         new AwsSdk2Transport(
             httpClient,
-            osConfig.getHost(),
+            getHttpHosts(osConfig)[0].getHostName(),
             region,
             AwsSdk2TransportOptions.builder()
                 .setMapper(new JacksonJsonpMapper(objectMapper))
@@ -191,6 +191,24 @@ public class OpensearchConnector {
     } catch (final URISyntaxException e) {
       throw new OperateRuntimeException("Error in url: " + osConfig.getUrl(), e);
     }
+  }
+
+  private HttpHost[] getHttpHosts(final OpensearchProperties osConfig) {
+    final var urls = osConfig.getUrls();
+    if (urls != null && !urls.isEmpty()) {
+      return urls.stream()
+          .map(
+              url -> {
+                try {
+                  final URI uri = new URI(url);
+                  return new HttpHost(uri.getScheme(), uri.getHost(), uri.getPort());
+                } catch (final URISyntaxException e) {
+                  throw new OperateRuntimeException("Error in url: " + url, e);
+                }
+              })
+          .toArray(HttpHost[]::new);
+    }
+    return new HttpHost[] {getHttpHost(osConfig)};
   }
 
   private HttpAsyncClientBuilder setupAuthentication(

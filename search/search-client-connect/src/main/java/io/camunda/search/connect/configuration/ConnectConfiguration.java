@@ -25,6 +25,7 @@ public class ConnectConfiguration {
   private Integer socketTimeout;
   private Integer connectTimeout;
   private String url = URL_DEFAULT;
+  private List<String> urls = new ArrayList<>();
   private String username;
   private String password;
   private SecurityConfiguration security = new SecurityConfiguration();
@@ -100,6 +101,14 @@ public class ConnectConfiguration {
 
   public void setUrl(final String url) {
     this.url = url;
+  }
+
+  public List<String> getUrls() {
+    return urls;
+  }
+
+  public void setUrls(final List<String> urls) {
+    this.urls = urls;
   }
 
   public String getUsername() {

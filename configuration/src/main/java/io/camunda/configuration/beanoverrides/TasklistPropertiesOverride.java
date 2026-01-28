@@ -77,6 +77,7 @@ public class TasklistPropertiesOverride {
       final TasklistProperties override, final SecondaryStorage database) {
     override.setDatabase("elasticsearch");
     override.getElasticsearch().setUrl(database.getElasticsearch().getUrl());
+    override.getElasticsearch().setUrls(database.getElasticsearch().getUrls());
     override.getElasticsearch().setUsername(database.getElasticsearch().getUsername());
     override.getElasticsearch().setPassword(database.getElasticsearch().getPassword());
     override.getElasticsearch().setClusterName(database.getElasticsearch().getClusterName());
@@ -107,6 +108,7 @@ public class TasklistPropertiesOverride {
       final TasklistProperties override, final SecondaryStorage database) {
     override.setDatabase("opensearch");
     override.getOpenSearch().setUrl(database.getOpensearch().getUrl());
+    override.getOpenSearch().setUrls(database.getOpensearch().getUrls());
     override.getOpenSearch().setUsername(database.getOpensearch().getUsername());
     override.getOpenSearch().setPassword(database.getOpensearch().getPassword());
     override.getOpenSearch().setClusterName(database.getOpensearch().getClusterName());

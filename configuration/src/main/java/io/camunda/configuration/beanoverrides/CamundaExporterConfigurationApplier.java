@@ -59,6 +59,7 @@ public final class CamundaExporterConfigurationApplier {
     }
 
     target.setUrl(source.getUrl());
+    target.setUrls(source.getUrls());
     target.setClusterName(source.getClusterName());
     target.setDateFormat(source.getDateFormat());
     target.setSocketTimeout(

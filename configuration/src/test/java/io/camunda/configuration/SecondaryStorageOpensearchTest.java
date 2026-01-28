@@ -25,6 +25,7 @@ import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.tasklist.property.TasklistOpenSearchProperties;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -745,6 +746,70 @@ public class SecondaryStorageOpensearchTest {
       assertThat(searchEngineConnectProperties)
           .returns(null, SearchEngineConnectProperties::getSocketTimeout)
           .returns(null, SearchEngineConnectProperties::getConnectTimeout);
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.data.secondary-storage.type=opensearch",
+        "camunda.data.secondary-storage.opensearch.urls=http://node1:9200,http://node2:9200,http://node3:9200",
+        "camunda.data.secondary-storage.opensearch.username=" + EXPECTED_USERNAME,
+        "camunda.data.secondary-storage.opensearch.password=" + EXPECTED_PASSWORD,
+      })
+  class WithUrlsConfigured {
+    private static final List<String> EXPECTED_URLS =
+        List.of("http://node1:9200", "http://node2:9200", "http://node3:9200");
+
+    final OperateProperties operateProperties;
+    final TasklistProperties tasklistProperties;
+    final BrokerBasedProperties brokerBasedProperties;
+    final SearchEngineConnectProperties searchEngineConnectProperties;
+
+    WithUrlsConfigured(
+        @Autowired final OperateProperties operateProperties,
+        @Autowired final TasklistProperties tasklistProperties,
+        @Autowired final BrokerBasedProperties brokerBasedProperties,
+        @Autowired final SearchEngineConnectProperties searchEngineConnectProperties) {
+      this.operateProperties = operateProperties;
+      this.tasklistProperties = tasklistProperties;
+      this.brokerBasedProperties = brokerBasedProperties;
+      this.searchEngineConnectProperties = searchEngineConnectProperties;
+    }
+
+    @Test
+    void testUrlsPropagatedToOperateProperties() {
+      assertThat(operateProperties.getOpensearch().getUrls()).isEqualTo(EXPECTED_URLS);
+      assertThat(operateProperties.getOpensearch().getUsername()).isEqualTo(EXPECTED_USERNAME);
+      assertThat(operateProperties.getOpensearch().getPassword()).isEqualTo(EXPECTED_PASSWORD);
+    }
+
+    @Test
+    void testUrlsPropagatedToTasklistProperties() {
+      assertThat(tasklistProperties.getOpenSearch().getUrls()).isEqualTo(EXPECTED_URLS);
+      assertThat(tasklistProperties.getOpenSearch().getUsername()).isEqualTo(EXPECTED_USERNAME);
+      assertThat(tasklistProperties.getOpenSearch().getPassword()).isEqualTo(EXPECTED_PASSWORD);
+    }
+
+    @Test
+    void testUrlsPropagatedToCamundaExporterProperties() {
+      final ExporterCfg camundaExporter = brokerBasedProperties.getCamundaExporter();
+      assertThat(camundaExporter).isNotNull();
+      final Map<String, Object> args = camundaExporter.getArgs();
+      assertThat(args).isNotNull();
+
+      final ExporterConfiguration exporterConfiguration =
+          UnifiedConfigurationHelper.argsToCamundaExporterConfiguration(args);
+      assertThat(exporterConfiguration.getConnect().getUrls()).isEqualTo(EXPECTED_URLS);
+      assertThat(exporterConfiguration.getConnect().getUsername()).isEqualTo(EXPECTED_USERNAME);
+      assertThat(exporterConfiguration.getConnect().getPassword()).isEqualTo(EXPECTED_PASSWORD);
+    }
+
+    @Test
+    void testUrlsPropagatedToSearchEngineConnectProperties() {
+      assertThat(searchEngineConnectProperties.getUrls()).isEqualTo(EXPECTED_URLS);
+      assertThat(searchEngineConnectProperties.getUsername()).isEqualTo(EXPECTED_USERNAME);
+      assertThat(searchEngineConnectProperties.getPassword()).isEqualTo(EXPECTED_PASSWORD);
     }
   }
 }
