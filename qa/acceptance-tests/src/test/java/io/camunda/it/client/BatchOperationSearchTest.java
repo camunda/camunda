@@ -383,6 +383,7 @@ public class BatchOperationSearchTest {
 
   private static void assertCancelBatchOperation(final BatchOperation batch) {
     assertThat(batch).isNotNull();
+    assertThat(batch.getStartDate()).isNotNull();
     assertThat(batch.getBatchOperationKey()).isEqualTo(batchOperationKey1);
     assertThat(batch.getType()).isEqualTo(BatchOperationType.CANCEL_PROCESS_INSTANCE);
     assertThat(batch.getStatus()).isEqualTo(BatchOperationState.COMPLETED);
@@ -393,6 +394,7 @@ public class BatchOperationSearchTest {
 
   private static void assertMigrateBatchOperation(final BatchOperation batch) {
     assertThat(batch).isNotNull();
+    assertThat(batch.getStartDate()).isNotNull();
     assertThat(batch.getBatchOperationKey()).isEqualTo(batchOperationKey2);
     assertThat(batch.getType()).isEqualTo(BatchOperationType.MIGRATE_PROCESS_INSTANCE);
     assertThat(batch.getStatus()).isEqualTo(BatchOperationState.COMPLETED);
