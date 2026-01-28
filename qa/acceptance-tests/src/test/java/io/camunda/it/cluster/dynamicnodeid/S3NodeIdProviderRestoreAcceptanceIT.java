@@ -20,7 +20,6 @@ import io.camunda.management.backups.BackupInfo;
 import io.camunda.management.backups.StateCode;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg.BackupStoreType;
-import io.camunda.zeebe.broker.system.configuration.backup.FilesystemBackupStoreConfig;
 import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
@@ -60,7 +59,8 @@ public final class S3NodeIdProviderRestoreAcceptanceIT {
           .withEnv("LS_LOG", "trace");
 
   @AutoClose private static S3Client s3Client;
-  private static final String BUCKET_NAME = UUID.randomUUID().toString();
+  private static final String BUCKET_NAME = "node-id" + UUID.randomUUID().toString();
+  private static final String BACKUP_BUCKET_NAME = "backup" + UUID.randomUUID().toString();
   private static final int CLUSTER_SIZE = 3;
   private static final int PARTITIONS_COUNT = 3;
   private static final int REPLICATION_FACTOR = 1;
@@ -102,6 +102,7 @@ public final class S3NodeIdProviderRestoreAcceptanceIT {
                 java.util.Optional.of(S3.getEndpoint())));
 
     s3Client.createBucket(b -> b.bucket(BUCKET_NAME));
+    s3Client.createBucket(b -> b.bucket(BACKUP_BUCKET_NAME));
   }
 
   @AfterEach
@@ -237,22 +238,29 @@ public final class S3NodeIdProviderRestoreAcceptanceIT {
     s3.setSecretKey(S3.getSecretKey());
   }
 
-  private void configureBackupStore(final Camunda cfg) {
-    final var backup = cfg.getData().getPrimaryStorage().getBackup();
-    backup.setStore(PrimaryStorageBackup.BackupStoreType.FILESYSTEM);
+  public void configureBackupStore(final BrokerCfg cfg) {
+    final var backup = cfg.getData().getBackup();
+    backup.setStore(BackupStoreType.S3);
 
-    final var config = backup.getFilesystem();
-    config.setBasePath(backupBasePath.toAbsolutePath().toString());
-    backup.setFilesystem(config);
+    final var s3 = backup.getS3();
+    s3.setRegion(S3.getRegion());
+    s3.setSecretKey(S3.getSecretKey());
+    s3.setBucketName(BACKUP_BUCKET_NAME);
+    s3.setEndpoint(S3.getEndpoint().toString());
+    s3.setAccessKey(S3.getAccessKey());
+    s3.setForcePathStyleAccess(true);
   }
 
-  @SuppressWarnings("unused")
-  private void configureBackupStore(final BrokerCfg cfg) {
-    final var backup = cfg.getData().getBackup();
-    backup.setStore(BackupStoreType.FILESYSTEM);
+  public void configureBackupStore(final Camunda cfg) {
+    final var backup = cfg.getData().getPrimaryStorage().getBackup();
+    backup.setStore(PrimaryStorageBackup.BackupStoreType.S3);
 
-    final var config = new FilesystemBackupStoreConfig();
-    config.setBasePath(backupBasePath.toAbsolutePath().toString());
-    backup.setFilesystem(config);
+    final var s3 = backup.getS3();
+    s3.setRegion(S3.getRegion());
+    s3.setSecretKey(S3.getSecretKey());
+    s3.setBucketName(BACKUP_BUCKET_NAME);
+    s3.setEndpoint(S3.getEndpoint().toString());
+    s3.setAccessKey(S3.getAccessKey());
+    s3.setForcePathStyleAccess(true);
   }
 }

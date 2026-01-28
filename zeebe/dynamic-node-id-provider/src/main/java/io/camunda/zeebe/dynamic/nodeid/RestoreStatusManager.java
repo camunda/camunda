@@ -35,23 +35,33 @@ public class RestoreStatusManager {
    * @param backupId the backup ID to restore from
    */
   public void initializeRestore(final long backupId) {
-    try {
-      final var existingStatus = repository.getRestoreStatus();
-      if (existingStatus != null) {
-        LOG.debug("Restore restoreStatus already exists, skipping initialization");
-        return;
+    while (true) {
+      try {
+        final var existingStatus = repository.getRestoreStatus();
+        if (existingStatus != null) {
+          LOG.debug("Restore restoreStatus already exists, skipping initialization");
+          return;
+        }
+      } catch (final Exception e) {
+        LOG.debug(
+            "Error checking existing restore restoreStatus, proceeding with initialization", e);
       }
-    } catch (final Exception e) {
-      LOG.debug("Error checking existing restore restoreStatus, proceeding with initialization", e);
-    }
 
-    final var initialStatus = new RestoreStatus(backupId, RestoreStatus.Status.RESTORING, Set.of());
-    try {
-      repository.markRestored(initialStatus, null);
-      LOG.info("Initialized restore for backup ID {}", backupId);
-    } catch (final Exception e) {
-      LOG.warn("Failed to initialize restore for backup ID {}", backupId, e);
-      throw e;
+      final var initialStatus =
+          new RestoreStatus(backupId, RestoreStatus.Status.RESTORING, Set.of());
+      try {
+        repository.markRestored(initialStatus, null);
+        LOG.info("Initialized restore for backup ID {}", backupId);
+        return;
+      } catch (final Exception e) {
+        LOG.warn("Failed to initialize restore for backup ID {}", backupId, e);
+        // retry
+        try {
+          Thread.sleep(1000);
+        } catch (final InterruptedException ex) {
+          throw new RuntimeException(ex);
+        }
+      }
     }
   }
 
