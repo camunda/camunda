@@ -196,7 +196,7 @@ public class ScaleUpTest {
     final var getStatusCommand =
         RecordToWrite.command().scale(ScaleIntent.STATUS, new ScaleRecord().status());
     // when
-    final var key = engine.writeRecords(scaleUpCommand, getStatusCommand);
+    final var highestPositionAppended = engine.writeRecords(scaleUpCommand, getStatusCommand);
 
     // then
     final var record =
@@ -205,8 +205,9 @@ public class ScaleUpTest {
             .getLast();
     assertThat(record.getValue().getDesiredPartitionCount()).isEqualTo(4);
     assertThat(record.getValue().getRedistributedPartitions()).containsExactly(1, 2);
-    // SCALE_UP command is the first command
-    assertThat(record.getValue().getScalingPosition()).isEqualTo(4);
+    // SCALE_UP command is the first command we manually appended, meaning it is positioned 1 before
+    // the status command
+    assertThat(record.getValue().getScalingPosition()).isEqualTo(highestPositionAppended - 1);
     assertThat(record.getValue().getMessageCorrelationPartitions()).isEqualTo(2);
 
     // when the partitions are marked as bootstrapped
