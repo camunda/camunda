@@ -38,6 +38,7 @@ declare module '@carbon/react' {
       | 'top'
       | 'top-right';
     description: string;
+    children?: React.ReactNode;
   }
 
   declare class TooltipComponent extends React.Component<TooltipProps> {}
@@ -280,6 +281,57 @@ declare module '@carbon/react' {
       React.RefAttributes<HTMLHeadingElement>
   >;
 
+  // Re-export all Carbon components
+  export {
+    Breadcrumb,
+    BreadcrumbItem,
+    Button,
+    InlineNotification,
+    SkeletonText,
+    OverflowMenuItem,
+    Tile,
+    DataTable,
+    TableBody,
+    TableContainer,
+    TableExpandHeader,
+    TableHeader,
+    TableRow,
+    TableCell,
+    Table,
+    TableExpandRow,
+    DataTableSkeleton,
+    TableExpandedRow,
+    TableHead,
+    InlineLoading,
+    Pagination,
+    Dropdown,
+    Link,
+    ListItem,
+    Loading,
+    Column,
+    Grid,
+    PasswordInput,
+    TextInput,
+    MultiSelect,
+    Modal,
+    TextArea,
+    Toggle,
+    TableToolbar,
+    TableBatchAction,
+    OrderedList,
+    TableBatchActions,
+    SelectItem,
+    Tag,
+    Select,
+    SkeletonIcon,
+    ComboBox,
+    DataTableRow,
+    DatePickerInput,
+    DatePicker,
+  } from 'carbon-components-react';
+
+  export type {LoadingProps} from 'carbon-components-react';
+
   export * from 'carbon-components-react';
 }
 
@@ -309,7 +361,9 @@ declare module '@carbon/react/icons' {
       className?: string;
       alt?: string;
       'aria-label'?: string;
+      'aria-hidden'?: 'true' | 'false' | boolean;
       size?: 16 | 20 | 24 | 32;
+      focusable?: string | boolean;
     } & React.HTMLAttributes<HTMLOrSVGElement>
   >;
 
@@ -351,4 +405,14 @@ declare module '@carbon/react/icons' {
   export const ClassicBatch: Icon;
   export const BatchJob: Icon;
   export const BatchJobStep: Icon;
+  export const Pause: Icon;
+  export const Play: Icon;
+  export const CircleDash: Icon;
+  export const ErrorOutline: Icon;
+  export const Pending: Icon;
+  export const Incomplete: Icon;
+  export const InProgress: Icon;
+  export const MisuseOutline: Icon;
+  export const PauseOutlineFilled: Icon;
+  export const UnknownFilled: Icon;
 }
