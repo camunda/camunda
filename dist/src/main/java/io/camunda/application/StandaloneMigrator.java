@@ -10,11 +10,14 @@ package io.camunda.application;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import io.camunda.application.commons.rdbms.RdbmsConfiguration;
 import io.camunda.application.listeners.ApplicationErrorListener;
+import io.camunda.configuration.Camunda;
 import io.camunda.configuration.Rdbms;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.RdbmsWriterFactory;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.es.ElasticsearchConnector;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,6 +26,7 @@ import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.annotation.Bean;
 
 @SpringBootConfiguration(proxyBeanMethods = false)
 public class StandaloneMigrator implements CommandLineRunner {
@@ -89,7 +93,17 @@ public class StandaloneMigrator implements CommandLineRunner {
   }
 
   @EnableConfigurationProperties({ElasticsearchProperties.class, RdbmsProperties.class})
-  public static class Configuration {}
+  public static class Configuration {
+    @Bean
+    public MeterRegistry meterRegistry() {
+      return new SimpleMeterRegistry();
+    }
+
+    @Bean
+    public Camunda camunda() {
+      return new Camunda();
+    }
+  }
 
   @ConfigurationProperties("camunda.migration.es")
   public static class ElasticsearchProperties extends ConnectConfiguration {}
