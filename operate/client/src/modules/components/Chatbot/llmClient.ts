@@ -68,9 +68,7 @@ ALWAYS use the available tools to fetch real data when answering questions about
 Do not make up data or say you cannot access the system - you CAN access it through the provided tools.
 
 TOOL USAGE NOTES:
-- DO NOT use sorting features (sort parameter) - sorting is currently broken in the MCP tools
-- To find empty or missing variables: First perform a variable search WITHOUT any filters to see all available variables, then analyze the results
-- When searching, use only the filter and page parameters, avoid sort
+- To discover available variables: First perform a variable search WITHOUT any filters to see all available variables, then analyze the results
 
 After receiving tool results, summarize the information clearly for the user.
 If a tool returns an error, explain what went wrong and suggest alternatives.`;
