@@ -40,7 +40,7 @@
             <configuration>
               <skip>${skip.fe.build}</skip>
               <nodeVersion>${version.node}</nodeVersion>
-              <npmVersion>11.4.2</npmVersion>
+              <npmVersion>${version.npm}</npmVersion>
             </configuration>
           </execution>
 
