@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
 import io.camunda.zeebe.el.ExpressionLanguageFactory;
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.ProcessInstanceStateTransitionGuard;
 import io.camunda.zeebe.engine.processing.bpmn.clock.ZeebeFeelEngineClock;
@@ -63,11 +64,13 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
       final DueDateTimerChecker timerChecker,
       final JobStreamer jobStreamer,
       final InstantSource clock,
-      final TransientPendingSubscriptionState transientProcessMessageSubscriptionState) {
+      final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
+      final EngineConfiguration config) {
     expressionBehavior =
         new ExpressionProcessor(
             ExpressionLanguageFactory.createExpressionLanguage(new ZeebeFeelEngineClock(clock)),
-            new VariableStateEvaluationContextLookup(processingState.getVariableState()));
+            new VariableStateEvaluationContextLookup(processingState.getVariableState()),
+            config.getExpressionEvaluationTimeout());
 
     variableBehavior =
         new VariableBehavior(
