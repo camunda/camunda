@@ -242,6 +242,29 @@ Open browser DevTools console to see:
 - `[LLM] Tool call requested: toolName` - LLM wants to call a tool
 - `[MCP] Calling tool: toolName` - Tool being executed
 - `[MCP] Tool result: {...}` - Result from tool execution
+- `[Navigation] Navigating to: /path` - Navigation command executed
+
+## Navigation
+
+The chatbot can navigate to different pages within Operate. When the user asks to "show", "open", or "go to" something, the LLM will include a navigation command in its response.
+
+### Supported Navigation Commands
+
+| Command | Description | Example User Request |
+|---------|-------------|---------------------|
+| `[NAVIGATE:processInstance:KEY]` | Opens process instance detail page | "Show me instance 123" |
+| `[NAVIGATE:processDefinition:KEY]` | Opens process definition view | "Open the order process" |
+| `[NAVIGATE:incidents]` | Opens the incidents page | "Show me all incidents" |
+| `[NAVIGATE:processes]` | Opens the processes list | "Go to processes" |
+| `[NAVIGATE:dashboard]` | Opens the dashboard | "Take me to the dashboard" |
+
+### How It Works
+
+1. User asks to see something (e.g., "show me instance 2251799813685319")
+2. LLM queries the MCP tools to verify the instance exists
+3. LLM includes a navigation command in its response: `[NAVIGATE:processInstance:2251799813685319]`
+4. The chatbot parses the command and navigates to `/processes/2251799813685319`
+5. The navigation command is stripped from the displayed message
 
 ## Available MCP Tools
 

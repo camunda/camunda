@@ -12,6 +12,12 @@ import {executeMcpTool, fetchMcpTools, type McpClientConfig} from './mcpClient';
 import type {McpTool} from './types';
 import type {VisualizationData} from './visualizations/types';
 import {analyzeToolResponse} from './visualizations/dataTransform';
+import {
+  type NavigateFunction,
+  navigateTo,
+  parseNavigationCommand,
+  stripNavigationCommands
+} from './navigation';
 
 export type ToolCall = {
   id?: string;
@@ -35,6 +41,8 @@ type UseChatOptions = {
   llmConfig: LLMConfig;
   /** MCP gateway configuration */
   mcpConfig: McpClientConfig;
+  /** Navigate function from React Router for client-side navigation */
+  navigate: NavigateFunction;
   /** Initial messages */
   initialMessages?: Message[];
   /** Callback when a message is received */
@@ -82,6 +90,7 @@ type UseChatReturn = {
 export function useChat({
   llmConfig,
   mcpConfig,
+  navigate,
   initialMessages = [],
   onMessage,
   onError,
@@ -238,14 +247,27 @@ export function useChat({
         console.warn('[useChat] Reached maximum tool call iterations');
       }
 
+      // Check for navigation commands in the response
+      const navigationTarget = parseNavigationCommand(response.content);
+      const displayContent = stripNavigationCommands(response.content);
+
       const assistantMessage: Message = {
         id: generateId(),
         role: 'assistant',
-        content: response.content,
+        content: displayContent,
         toolCalls: allToolCalls.length > 0 ? allToolCalls : undefined,
         visualization,
         createdAt: new Date(),
       };
+
+      // If there's a navigation command, execute it after displaying the message
+      if (navigationTarget) {
+        console.log('[useChat] Navigation command detected:', navigationTarget);
+        // Small delay to let the message appear before navigating
+        setTimeout(() => {
+          navigateTo(navigationTarget, navigate);
+        }, 500);
+      }
 
       appendMessage(assistantMessage);
     } catch (err) {

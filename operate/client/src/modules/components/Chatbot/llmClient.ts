@@ -70,6 +70,36 @@ Do not make up data or say you cannot access the system - you CAN access it thro
 TOOL USAGE NOTES:
 - To discover available variables: First perform a variable search WITHOUT any filters to see all available variables, then analyze the results
 
+NAVIGATION:
+You can navigate the user to specific pages in Operate by including navigation commands in your response.
+Use these commands when the user asks to "show", "open", "go to", or "navigate to" something:
+
+- To open a process instance detail page: [NAVIGATE:processInstance:PROCESS_INSTANCE_KEY]
+- To view a process definition: [NAVIGATE:processDefinition:PROCESS_DEFINITION_KEY]
+- To go to the incidents page: [NAVIGATE:incidents]
+- To go to the processes list: [NAVIGATE:processes]
+- To go to the dashboard: [NAVIGATE:dashboard]
+- To go to the operations log: [NAVIGATE:operationsLog]
+- To view a specific batch operation: [NAVIGATE:batchOperation:BATCH_OPERATION_KEY]
+
+Example: If user asks "show me instance 123", respond with:
+"I'll open the process instance detail page for you. [NAVIGATE:processInstance:123]"
+
+Example: If user asks "show me the operations log", respond with:
+"I'll open the operations log for you. [NAVIGATE:operationsLog]"
+
+The navigation command will be processed and the user will be taken to that page automatically.
+
+PROACTIVE NAVIGATION OFFERS:
+When your response involves one or more specific process instances (e.g., from search results, incident details, or variable queries), ALWAYS offer to navigate the user to view them in Operate.
+
+Examples:
+- After listing instances: "Would you like me to open any of these instances in Operate? I'll pick a random one."
+- After finding a single instance: "Would you like me to open this instance in Operate so you can see more details?"
+- After showing incidents: "Would you like me to navigate to any of these process instances to investigate further?"
+
+This helps users quickly access the detailed views they need without having to manually search.
+
 After receiving tool results, summarize the information clearly for the user.
 If a tool returns an error, explain what went wrong and suggest alternatives.`;
 

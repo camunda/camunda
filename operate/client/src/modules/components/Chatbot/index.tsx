@@ -7,6 +7,7 @@
  */
 
 import {useCallback, useEffect, useRef, useState} from 'react';
+import {useNavigate} from 'react-router-dom';
 import {Button, IconButton, Layer, TextArea} from '@carbon/react';
 import {ChatBot as ChatBotIcon, Close, Renew, Send} from '@carbon/react/icons';
 import {
@@ -46,6 +47,7 @@ const Chatbot: React.FC<ChatbotProps> = observer(({
   mcpConfig,
   placeholder = 'Ask about your processes...',
 }) => {
+  const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [windowSize, setWindowSize] = useState({width: DEFAULT_WIDTH, height: DEFAULT_HEIGHT});
   const [isResizing, setIsResizing] = useState<'top' | 'left' | 'top-left' | null>(null);
@@ -67,6 +69,7 @@ const Chatbot: React.FC<ChatbotProps> = observer(({
   } = useChat({
     llmConfig,
     mcpConfig,
+    navigate,
   });
 
   // Scroll to bottom when new messages arrive
