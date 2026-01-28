@@ -9,7 +9,6 @@ package io.camunda.exporter.utils;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Output;
-import io.camunda.webapps.schema.entities.ExporterEntity;
 import org.apache.commons.io.output.CountingOutputStream;
 import org.apache.commons.io.output.NullOutputStream;
 
@@ -24,7 +23,7 @@ public class EntitySizeEstimator {
             return kryo;
           });
 
-  public static long estimateEntitySize(final ExporterEntity<?> entity) {
+  public static long estimateEntitySize(final Object entity) {
     final Kryo kryo = THREAD_LOCAL_KRYO.get();
 
     try (final CountingOutputStream countingStream =
