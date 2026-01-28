@@ -7,6 +7,8 @@
  */
 package io.camunda.search.schema.config;
 
+import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
+
 import io.camunda.zeebe.util.retry.RetryConfiguration;
 import java.time.Duration;
 
@@ -15,6 +17,7 @@ public class SchemaManagerConfiguration {
   private boolean isCreateSchema = true;
   private SchemaManagerRetryConfiguration retry = new SchemaManagerRetryConfiguration();
   private boolean versionCheckRestrictionEnabled = true;
+  private int partitionId = START_PARTITION_ID;
 
   public boolean isCreateSchema() {
     return isCreateSchema;
@@ -38,6 +41,14 @@ public class SchemaManagerConfiguration {
 
   public void setVersionCheckRestrictionEnabled(final boolean versionCheckRestrictionEnabled) {
     this.versionCheckRestrictionEnabled = versionCheckRestrictionEnabled;
+  }
+
+  public int getPartitionId() {
+    return partitionId;
+  }
+
+  public void setPartitionId(final int partitionId) {
+    this.partitionId = partitionId;
   }
 
   public static class SchemaManagerRetryConfiguration extends RetryConfiguration {

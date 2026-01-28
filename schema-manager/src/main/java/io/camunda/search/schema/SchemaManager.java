@@ -144,7 +144,8 @@ public class SchemaManager implements CloseableSilently {
   private void initializeSchema() {
     LOG.info("Schema creation is enabled. Start Schema management.");
     final boolean upgradeSchema;
-    final var previousSchemaVersion = schemaMetadataStore.getSchemaVersion();
+    final var previousSchemaVersion =
+        schemaMetadataStore.getSchemaVersion(config.schemaManager().getPartitionId());
     final var checkResult = checkVersionCompatibility(previousSchemaVersion, currentVersion);
     switch (checkResult) {
       case final Compatible.SameVersion ignored:
@@ -170,7 +171,8 @@ public class SchemaManager implements CloseableSilently {
         updateSchemaMappings(newIndexProperties);
       }
       // Store the current version as schema version after successful initialization
-      schemaMetadataStore.storeSchemaVersion(currentVersion);
+      schemaMetadataStore.storeSchemaVersion(
+          currentVersion, config.schemaManager().getPartitionId());
     }
     updateSchemaSettings();
     createLifecyclePolicies();
@@ -295,9 +297,14 @@ public class SchemaManager implements CloseableSilently {
                     // run creation of indices async as virtual thread
                     CompletableFuture.runAsync(
                         () -> {
-                          LOG.debug("Create missing index '{}'", descriptor.getFullQualifiedName());
+                          LOG.debug(
+                              "Create missing index '{}'",
+                              descriptor.getShardedFullQualifiedName(
+                                  config.schemaManager().getPartitionId()));
                           searchEngineClient.createIndex(
-                              descriptor, getIndexSettingsFromConfig(descriptor.getIndexName()));
+                              config.schemaManager().getPartitionId(),
+                              descriptor,
+                              getIndexSettingsFromConfig(descriptor.getIndexName()));
                         },
                         virtualThreadExecutor))
             .toArray(CompletableFuture[]::new);
@@ -314,8 +321,13 @@ public class SchemaManager implements CloseableSilently {
     }
     final var existingIndexNames = existingIndexNames(indexDescriptors);
 
+    // here check all partition variations are created
     return indexDescriptors.stream()
-        .filter(descriptor -> !existingIndexNames.contains(descriptor.getFullQualifiedName()))
+        .filter(
+            descriptor ->
+                !existingIndexNames.contains(
+                    descriptor.getShardedFullQualifiedName(
+                        config.schemaManager().getPartitionId())))
         .toList();
   }
 
@@ -411,7 +423,8 @@ public class SchemaManager implements CloseableSilently {
             descriptor.getAlias(),
             newProperties);
       }
-      searchEngineClient.putMapping(descriptor, newProperties);
+      searchEngineClient.putMapping(
+          config.schemaManager().getPartitionId(), descriptor, newProperties);
     }
   }
 

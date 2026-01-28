@@ -78,7 +78,7 @@ public class ElasticsearchEngineClientIT {
     newProperties.add(new IndexMappingProperty("email", Map.of("type", "keyword")));
 
     // when
-    elsEngineClient.putMapping(descriptor, newProperties);
+    elsEngineClient.putMapping(1, descriptor, newProperties);
 
     // then
     final var index = elsClient.indices().get(req -> req.index(indexName)).get(indexName);

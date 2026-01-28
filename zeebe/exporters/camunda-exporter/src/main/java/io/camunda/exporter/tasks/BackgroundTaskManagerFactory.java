@@ -255,8 +255,8 @@ public final class BackgroundTaskManagerFactory {
     //        tasks.add(buildRolloverPeriodJob());
     //      }
     //    }
-
-    tasks.add(buildHistoryDeletionJob());
+    //
+    //    tasks.add(buildHistoryDeletionJob());
 
     executor.setCorePoolSize(tasks.size());
     return tasks;

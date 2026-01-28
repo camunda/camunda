@@ -33,15 +33,15 @@ class SchemaMetadataStore {
    * Retrieves the schema version from metadata storage. Returns null if no version is stored
    * (indicating a fresh installation).
    */
-  String getSchemaVersion() {
+  String getSchemaVersion(final int partitionId) {
     // Check if metadata index exists
-    if (!searchEngineClient.indexExists(metadataIndex.getFullQualifiedName())) {
+    if (!searchEngineClient.indexExists(metadataIndex.getShardedFullQualifiedName(partitionId))) {
       logger.info("Metadata index does not exist, assuming a fresh installation");
       return null;
     }
     final var schemaVersionDoc =
         searchEngineClient.getDocument(
-            metadataIndex.getFullQualifiedName(), SCHEMA_VERSION_METADATA_ID);
+            metadataIndex.getShardedFullQualifiedName(partitionId), SCHEMA_VERSION_METADATA_ID);
 
     if (schemaVersionDoc != null) {
       return (String) schemaVersionDoc.get(MetadataIndex.VALUE);
@@ -55,7 +55,7 @@ class SchemaMetadataStore {
    * Stores the current application version as the schema version in metadata storage. This should
    * be called after a successful schema upgrade.
    */
-  void storeSchemaVersion(final String version) {
+  void storeSchemaVersion(final String version, final int partitionId) {
     try {
       final var versionDoc =
           Map.<String, Object>of(
@@ -63,7 +63,9 @@ class SchemaMetadataStore {
               MetadataIndex.VALUE, version);
 
       searchEngineClient.upsertDocument(
-          metadataIndex.getFullQualifiedName(), SCHEMA_VERSION_METADATA_ID, versionDoc);
+          metadataIndex.getShardedFullQualifiedName(partitionId),
+          SCHEMA_VERSION_METADATA_ID,
+          versionDoc);
 
       logger.info("Stored schema version metadata: {}", version);
     } catch (final Exception e) {

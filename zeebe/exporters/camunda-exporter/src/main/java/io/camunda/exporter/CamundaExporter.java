@@ -126,6 +126,7 @@ public class CamundaExporter implements Exporter {
 
       try (final var schemaManager = createSchemaManager()) {
         if (!schemaManager.isSchemaReadyForUse()) {
+          schemaManager.startup();
           throw new ExporterException("Schema is not ready for use");
         }
       }
@@ -272,6 +273,8 @@ public class CamundaExporter implements Exporter {
   private SchemaManager createSchemaManager() {
     final var schemaManagerConfiguration = new SchemaManagerConfiguration();
     schemaManagerConfiguration.setCreateSchema(configuration.isCreateSchema());
+    schemaManagerConfiguration.setPartitionId(context.getPartitionId());
+
     return new SchemaManager(
         searchEngineClient,
         provider.getIndexDescriptors(),
