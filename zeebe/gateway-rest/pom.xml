@@ -36,6 +36,11 @@
       </exclusions>
     </dependency>
 
+      <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-aop</artifactId>
+      </dependency>
+
     <!-- required to guarantee the protocol is processed earlier during the build -->
     <dependency>
       <groupId>io.camunda</groupId>
