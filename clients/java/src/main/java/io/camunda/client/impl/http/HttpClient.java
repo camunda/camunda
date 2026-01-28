@@ -18,6 +18,13 @@ package io.camunda.client.impl.http;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CredentialsProvider;
 import io.camunda.client.api.command.ClientException;
+import io.camunda.client.impl.util.VersionUtil;
+import io.opentelemetry.api.GlobalOpenTelemetry;
+import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.context.Context;
+import io.opentelemetry.context.Scope;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -60,6 +67,7 @@ public final class HttpClient implements AutoCloseable {
   private final int maxMessageSize;
   private final TimeValue shutdownTimeout;
   private final CredentialsProvider credentialsProvider;
+  private final Tracer tracer;
 
   public HttpClient(
       final CloseableHttpAsyncClient client,
@@ -68,7 +76,8 @@ public final class HttpClient implements AutoCloseable {
       final RequestConfig defaultRequestConfig,
       final int maxMessageSize,
       final TimeValue shutdownTimeout,
-      final CredentialsProvider credentialsProvider) {
+      final CredentialsProvider credentialsProvider,
+      final OpenTelemetry opentelemetry) {
     this.client = client;
     this.jsonMapper = jsonMapper;
     this.address = address;
@@ -76,6 +85,7 @@ public final class HttpClient implements AutoCloseable {
     this.maxMessageSize = maxMessageSize;
     this.shutdownTimeout = shutdownTimeout;
     this.credentialsProvider = credentialsProvider;
+    tracer = opentelemetry.getTracer("io.camunda.camunda-client-java", VersionUtil.getVersion());
   }
 
   public void start() {
@@ -382,52 +392,64 @@ public final class HttpClient implements AutoCloseable {
       final JsonResponseAndStatusCodeTransformer<HttpT, RespT> transformer,
       final HttpCamundaFuture<RespT> result,
       final ApiCallback<HttpT, RespT> callback) {
-    final AtomicReference<ApiCallback<HttpT, RespT>> apiCallback = new AtomicReference<>(callback);
-    // Create retry action to re-execute the same request
-    final Runnable retryAction =
-        () -> {
-          if (result.isCancelled()) {
-            return;
-          }
-          sendRequest(
-              httpMethod,
-              path,
-              queryParams,
-              body,
-              requestConfig,
-              maxRetries,
-              responseType,
-              successPredicate,
-              transformer,
-              result,
-              apiCallback.get());
-        };
+    final Span span =
+        tracer
+            .spanBuilder(httpMethod.name() + " " + path)
+            .setParent(Context.current().with(Span.current()))
+            .startSpan();
 
-    final SimpleHttpRequest request =
-        buildRequest(httpMethod, queryParams, body, result, buildRequestURI(path));
-    if (request == null) {
-      return;
+    try (final Scope scope = span.makeCurrent()) {
+      final AtomicReference<ApiCallback<HttpT, RespT>> apiCallback =
+          new AtomicReference<>(callback);
+      // Create retry action to re-execute the same request
+      final Runnable retryAction =
+          () -> {
+            if (result.isCancelled()) {
+              return;
+            }
+            sendRequest(
+                httpMethod,
+                path,
+                queryParams,
+                body,
+                requestConfig,
+                maxRetries,
+                responseType,
+                successPredicate,
+                transformer,
+                result,
+                apiCallback.get());
+          };
+
+      final SimpleHttpRequest request =
+          buildRequest(httpMethod, queryParams, body, result, buildRequestURI(path), span);
+      if (request == null) {
+        return;
+      }
+      request.setConfig(requestConfig);
+
+      final AsyncEntityConsumer<ApiEntity<HttpT>> entityConsumer =
+          createEntityConsumer(responseType);
+
+      if (apiCallback.get() == null) {
+        apiCallback.set(
+            new ApiCallback<>(
+                result,
+                transformer,
+                successPredicate,
+                credentialsProvider::shouldRetryRequest,
+                retryAction,
+                maxRetries));
+      }
+
+      result.transportFuture(
+          client.execute(
+              SimpleRequestProducer.create(request),
+              new ApiResponseConsumer<>(entityConsumer),
+              apiCallback.get()));
+    } finally {
+      result.whenComplete((resp, throwable) -> span.end());
     }
-    request.setConfig(requestConfig);
-
-    final AsyncEntityConsumer<ApiEntity<HttpT>> entityConsumer = createEntityConsumer(responseType);
-
-    if (apiCallback.get() == null) {
-      apiCallback.set(
-          new ApiCallback<>(
-              result,
-              transformer,
-              successPredicate,
-              credentialsProvider::shouldRetryRequest,
-              retryAction,
-              maxRetries));
-    }
-
-    result.transportFuture(
-        client.execute(
-            SimpleRequestProducer.create(request),
-            new ApiResponseConsumer<>(entityConsumer),
-            apiCallback.get()));
   }
 
   private <HttpT> AsyncEntityConsumer<ApiEntity<HttpT>> createEntityConsumer(
@@ -444,7 +466,8 @@ public final class HttpClient implements AutoCloseable {
       final Map<String, String> queryParams,
       final Object body,
       final HttpCamundaFuture<RespT> result,
-      final URI target) {
+      final URI target,
+      final Span span) {
 
     final SimpleRequestBuilder requestBuilder =
         SimpleRequestBuilder.create(httpMethod).setUri(target);
@@ -458,6 +481,13 @@ public final class HttpClient implements AutoCloseable {
     if (!applyCredentials(requestBuilder, result)) {
       return null;
     }
+
+    GlobalOpenTelemetry.getPropagators()
+        .getTextMapPropagator()
+        .inject(
+            Context.current().with(span),
+            requestBuilder,
+            (carrier, key, value) -> carrier.addHeader(key, value));
 
     return requestBuilder.build();
   }

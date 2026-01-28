@@ -24,18 +24,16 @@ import io.camunda.client.jobhandling.JobExceptionHandlerSupplier;
 import io.camunda.client.jobhandling.JobExceptionHandlerSupplier.JobExceptionHandlerSupplierContext;
 import io.camunda.client.spring.properties.CamundaClientProperties;
 import io.grpc.ClientInterceptor;
+import io.opentelemetry.api.OpenTelemetry;
 import java.net.URI;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import org.apache.hc.client5.http.async.AsyncExecChainHandler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class SpringCamundaClientConfiguration implements CamundaClientConfiguration {
 
-  private static final Logger LOG = LoggerFactory.getLogger(SpringCamundaClientConfiguration.class);
   private final CamundaClientProperties camundaClientProperties;
   private final JsonMapper jsonMapper;
   private final List<ClientInterceptor> interceptors;
@@ -43,6 +41,7 @@ public class SpringCamundaClientConfiguration implements CamundaClientConfigurat
   private final CamundaClientExecutorService zeebeClientExecutorService;
   private final CredentialsProvider credentialsProvider;
   private final JobExceptionHandlerSupplier jobExceptionHandlerSupplier;
+  private final OpenTelemetry openTelemetry;
 
   public SpringCamundaClientConfiguration(
       final CamundaClientProperties camundaClientProperties,
@@ -51,7 +50,8 @@ public class SpringCamundaClientConfiguration implements CamundaClientConfigurat
       final List<AsyncExecChainHandler> chainHandlers,
       final CamundaClientExecutorService zeebeClientExecutorService,
       final CredentialsProvider credentialsProvider,
-      final JobExceptionHandlerSupplier jobExceptionHandlerSupplier) {
+      final JobExceptionHandlerSupplier jobExceptionHandlerSupplier,
+      final OpenTelemetry openTelemetry) {
     this.camundaClientProperties = camundaClientProperties;
     this.jsonMapper = jsonMapper;
     this.interceptors = interceptors;
@@ -59,6 +59,7 @@ public class SpringCamundaClientConfiguration implements CamundaClientConfigurat
     this.zeebeClientExecutorService = zeebeClientExecutorService;
     this.credentialsProvider = credentialsProvider;
     this.jobExceptionHandlerSupplier = jobExceptionHandlerSupplier;
+    this.openTelemetry = openTelemetry;
   }
 
   @Override
@@ -222,6 +223,11 @@ public class SpringCamundaClientConfiguration implements CamundaClientConfigurat
   @Override
   public int getMaxHttpConnections() {
     return camundaClientProperties.getMaxHttpConnections();
+  }
+
+  @Override
+  public OpenTelemetry getOpenTelemetry() {
+    return openTelemetry;
   }
 
   @Override

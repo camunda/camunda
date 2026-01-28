@@ -21,6 +21,7 @@ import io.camunda.client.api.worker.JobExceptionHandler;
 import io.camunda.client.api.worker.JobHandler;
 import io.camunda.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep3;
 import io.grpc.ClientInterceptor;
+import io.opentelemetry.api.OpenTelemetry;
 import java.net.URI;
 import java.time.Duration;
 import java.util.List;
@@ -302,6 +303,8 @@ public interface CamundaClientBuilder {
    * @return this builder for chaining
    */
   CamundaClientBuilder defaultJobWorkerExceptionHandler(JobExceptionHandler jobExceptionHandler);
+
+  CamundaClientBuilder openTelemetry(OpenTelemetry openTelemetry);
 
   /**
    * @return a new {@link CamundaClient} with the provided configuration options.

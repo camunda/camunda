@@ -18,6 +18,7 @@ package io.camunda.client;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.worker.JobExceptionHandler;
 import io.grpc.ClientInterceptor;
+import io.opentelemetry.api.OpenTelemetry;
 import java.net.URI;
 import java.time.Duration;
 import java.util.List;
@@ -191,4 +192,6 @@ public interface CamundaClientConfiguration {
    * @see CamundaClientBuilder#maxHttpConnections(int)
    */
   int getMaxHttpConnections();
+
+  OpenTelemetry getOpenTelemetry();
 }

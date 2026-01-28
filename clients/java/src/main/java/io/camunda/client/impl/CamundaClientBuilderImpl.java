@@ -66,6 +66,8 @@ import io.camunda.client.impl.util.AddressUtil;
 import io.camunda.client.impl.util.DataSizeUtil;
 import io.camunda.client.impl.util.Environment;
 import io.grpc.ClientInterceptor;
+import io.opentelemetry.api.GlobalOpenTelemetry;
+import io.opentelemetry.api.OpenTelemetry;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Duration;
@@ -136,6 +138,7 @@ public final class CamundaClientBuilderImpl
   private boolean useDefaultRetryPolicy;
   private int maxHttpConnections = DEFAULT_MAX_HTTP_CONNECTIONS;
   private JobExceptionHandler jobExceptionHandler = DEFAULT_JOB_EXCEPTION_HANDLER;
+  private OpenTelemetry openTelemetry;
 
   @Override
   public URI getRestAddress() {
@@ -295,6 +298,11 @@ public final class CamundaClientBuilderImpl
   @Override
   public int getMaxHttpConnections() {
     return maxHttpConnections;
+  }
+
+  @Override
+  public OpenTelemetry getOpenTelemetry() {
+    return openTelemetry;
   }
 
   private void gatewayAddress(final String gatewayAddress) {
@@ -635,6 +643,12 @@ public final class CamundaClientBuilderImpl
   }
 
   @Override
+  public CamundaClientBuilder openTelemetry(final OpenTelemetry openTelemetry) {
+    this.openTelemetry = openTelemetry;
+    return this;
+  }
+
+  @Override
   public CamundaClientBuilder defaultJobWorkerExceptionHandler(
       final JobExceptionHandler jobExceptionHandler) {
     this.jobExceptionHandler = jobExceptionHandler;
@@ -651,6 +665,9 @@ public final class CamundaClientBuilderImpl
   public CamundaClient build() {
     if (applyEnvironmentVariableOverrides) {
       applyOverrides();
+    }
+    if (openTelemetry == null) {
+      openTelemetry = GlobalOpenTelemetry.get();
     }
     return new CamundaClientImpl(this);
   }

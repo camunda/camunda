@@ -399,18 +399,6 @@ public final class CamundaClientImpl implements CamundaClient {
   public CamundaClientImpl(
       final CamundaClientConfiguration configuration,
       final ManagedChannel channel,
-      final HttpClient httpClient) {
-    this(
-        configuration,
-        channel,
-        buildGatewayStub(channel, configuration),
-        buildExecutorService(configuration),
-        httpClient);
-  }
-
-  public CamundaClientImpl(
-      final CamundaClientConfiguration configuration,
-      final ManagedChannel channel,
       final GatewayStub gatewayStub) {
     this(configuration, channel, gatewayStub, buildExecutorService(configuration));
   }
@@ -461,6 +449,8 @@ public final class CamundaClientImpl implements CamundaClient {
     channelBuilder.userAgent("camunda-client-java/" + VersionUtil.getVersion());
     channelBuilder.maxInboundMessageSize(config.getMaxMessageSize());
     channelBuilder.maxInboundMetadataSize(config.getMaxMetadataSize());
+
+    channelBuilder.intercept(new OpenTelemetryInterceptor(config.getOpenTelemetry()));
 
     if (config.useDefaultRetryPolicy()) {
       final Map<String, Object> serviceConfig = defaultServiceConfig();
