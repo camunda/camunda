@@ -33,6 +33,7 @@ public final class ExporterDirectorContext {
   private EventFilter positionsToSkipFilter;
   private MeterRegistry meterRegistry;
   private InstantSource clock;
+  private boolean uncommittedReader;
 
   public int getId() {
     return id;
@@ -48,6 +49,10 @@ public final class ExporterDirectorContext {
 
   public Map<ExporterDescriptor, ExporterInitializationInfo> getDescriptors() {
     return descriptors;
+  }
+
+  public boolean isUncommittedReader() {
+    return uncommittedReader;
   }
 
   public ZeebeDb getZeebeDb() {
@@ -117,6 +122,11 @@ public final class ExporterDirectorContext {
 
   public ExporterDirectorContext exporterMode(final ExporterMode exporterMode) {
     this.exporterMode = exporterMode;
+    return this;
+  }
+
+  public ExporterDirectorContext uncommittedReader(final boolean uncommittedReader) {
+    this.uncommittedReader = uncommittedReader;
     return this;
   }
 

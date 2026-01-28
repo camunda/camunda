@@ -33,6 +33,14 @@ public interface LogStorage {
   LogStorageReader newReader();
 
   /**
+   * Creates a new reader initialized at the given address, which can read uncommitted data.
+   *
+   * @return a new stateful storage reader
+   */
+   LogStorageReader newUncommittedReader();
+
+
+  /**
    * Writes a block containing one or multiple log entries in the storage and returns the address at
    * which the block has been written.
    *
