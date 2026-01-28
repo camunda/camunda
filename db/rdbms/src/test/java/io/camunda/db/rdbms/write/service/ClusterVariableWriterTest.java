@@ -69,4 +69,27 @@ class ClusterVariableWriterTest {
                     "io.camunda.db.rdbms.sql.ClusterVariableMapper.delete",
                     model)));
   }
+
+  @Test
+  void shouldUpdateClusterVariable() {
+    when(vendorDatabaseProperties.variableValuePreviewSize()).thenReturn(1000);
+    when(vendorDatabaseProperties.charColumnMaxBytes()).thenReturn(4000);
+
+    final var model = mock(ClusterVariableDbModel.class);
+    final var truncatedModel = mock(ClusterVariableDbModel.class);
+    when(model.truncateValue(anyInt(), anyInt())).thenReturn(truncatedModel);
+    when(model.id()).thenReturn("var1");
+
+    writer.update(model);
+
+    verify(executionQueue)
+        .executeInQueue(
+            eq(
+                new QueueItem(
+                    ContextType.CLUSTER_VARIABLE,
+                    WriteStatementType.UPDATE,
+                    "var1",
+                    "io.camunda.db.rdbms.sql.ClusterVariableMapper.update",
+                    truncatedModel)));
+  }
 }

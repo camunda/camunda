@@ -10,6 +10,7 @@ package io.camunda.gateway.mapping.http.validator;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validate;
 
 import io.camunda.gateway.protocol.model.CreateClusterVariableRequest;
+import io.camunda.gateway.protocol.model.UpdateClusterVariableRequest;
 import io.camunda.security.validation.ClusterVariableValidator;
 import java.util.Optional;
 import org.springframework.http.ProblemDetail;
@@ -46,5 +47,21 @@ public class ClusterVariableRequestValidator {
 
   public Optional<ProblemDetail> validateGlobalClusterVariableRequest(final String name) {
     return validate(() -> clusterVariableValidator.validateGlobalClusterVariableRequest(name));
+  }
+
+  public Optional<ProblemDetail> validateGlobalClusterVariableUpdateRequest(
+      final String name, final UpdateClusterVariableRequest request) {
+    return validate(
+        () ->
+            clusterVariableValidator.validateGlobalClusterVariableCreateRequest(
+                name, request.getValue()));
+  }
+
+  public Optional<ProblemDetail> validateTenantClusterVariableUpdateRequest(
+      final String name, final UpdateClusterVariableRequest request, final String tenantId) {
+    return validate(
+        () ->
+            clusterVariableValidator.validateTenantClusterVariableCreateRequest(
+                name, request.getValue(), tenantId));
   }
 }

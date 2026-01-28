@@ -729,7 +729,7 @@ public final class ResponseMapper {
         .toList();
   }
 
-  public static ClusterVariableResult toClusterVariableCreateResponse(
+  public static ClusterVariableResult toClusterVariableResponse(
       final ClusterVariableRecord clusterVariableRecord) {
     final var response =
         new ClusterVariableResult()
