@@ -19,6 +19,7 @@ primary:
 
   persistence:
     size: 128Gi
+    storageClass: "ssd"
 
   extendedConfiguration: |-
     # WAL Performance Tuning
@@ -37,11 +38,11 @@ primary:
     maintenance_work_mem = 512MB
 
     # Autovacuum - Aggressive for high UPDATE/DELETE volume
-    autovacuum_max_workers = 4
-    autovacuum_naptime = 30s
-    autovacuum_vacuum_scale_factor = 0.05
+    autovacuum_max_workers = 6
+    autovacuum_naptime = 15s
+    autovacuum_vacuum_scale_factor = 0.03
     autovacuum_analyze_scale_factor = 0.02
-    autovacuum_vacuum_cost_limit = 1000
+    autovacuum_vacuum_cost_limit = 5000
 
     # Monitoring
     pg_stat_statements.track = all
