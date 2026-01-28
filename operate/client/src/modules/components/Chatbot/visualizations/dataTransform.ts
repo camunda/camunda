@@ -142,6 +142,8 @@ function analyzeProcessInstances(result: unknown): VisualizationData | null {
         },
       },
       height: '250px',
+      width: '100%',
+      resizable: true,
       curve: 'curveMonotoneX',
       points: {
         enabled: true,
@@ -258,6 +260,8 @@ function analyzeIncidents(result: unknown): VisualizationData | null {
         },
       },
       height: '250px',
+      width: '100%',
+      resizable: true,
       curve: 'curveMonotoneX',
       points: {
         enabled: true,

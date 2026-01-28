@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {useEffect, useRef} from 'react';
 import {LineChart} from '@carbon/charts-react';
 import '@carbon/charts-react/styles.css';
 import type {VisualizationData} from './types';
@@ -16,15 +17,38 @@ type ChartRendererProps = {
 };
 
 const ChartRenderer: React.FC<ChartRendererProps> = ({visualization}) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const chartRef = useRef<any>(null);
+
+  // Force chart resize when container size changes
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    const resizeObserver = new ResizeObserver(() => {
+      // Trigger chart resize/redraw
+      if (chartRef.current?.chart) {
+        chartRef.current.chart.services.domUtils.setSVGMaxHeight();
+        chartRef.current.chart.services.domUtils.setSVGMaxWidth();
+      }
+    });
+
+    resizeObserver.observe(containerRef.current);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, []);
+
   if (visualization.type === 'none' || !visualization.data || visualization.data.length === 0) {
     return null;
   }
 
   if (visualization.type === 'timeline') {
     return (
-      <ChartContainer>
+      <ChartContainer ref={containerRef}>
         {visualization.title && <h4>{visualization.title}</h4>}
         <LineChart
+          ref={chartRef}
           data={visualization.data}
           options={{
             theme: 'g100',
