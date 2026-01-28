@@ -15,12 +15,6 @@ on:
     paths:
       - .github/workflows/copilot-setup-steps.yml
 
-defaults:
-  run:
-    # use bash shell by default to ensure pipefail behavior is the default
-    # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
-    shell: bash
-
 jobs:
   copilot-setup-steps:
     runs-on: ubuntu-latest
@@ -30,8 +24,7 @@ jobs:
     
     steps:
       - uses: actions/checkout@v6
-      - uses: ./.github/actions/setup-build
+      - uses: actions/setup-java@v5
         with:
-          vault-address: ${{ secrets.VAULT_ADDR }}
-          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          distribution: 'temurin'
+          java-version: '21'
