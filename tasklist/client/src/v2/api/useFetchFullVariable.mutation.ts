@@ -12,7 +12,7 @@ import {request} from 'common/api/request';
 import type {
   Variable,
   QueryVariablesByUserTaskResponseBody,
-} from '@camunda/camunda-api-zod-schemas/8.8';
+} from '@camunda/camunda-api-zod-schemas/8.9';
 import {getAllVariablesQueryKey} from './useQueryAllVariables.query';
 
 function useFetchFullVariable() {

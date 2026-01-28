@@ -15,7 +15,7 @@ import {usePrefersReducedMotion} from './usePrefersReducedMotion';
 import styles from './styles.module.scss';
 import '@bpmn-io/form-js-viewer/dist/assets/form-js-base.css';
 import '@bpmn-io/form-js-carbon-styles/src/carbon-styles.scss';
-import type {DocumentReference} from '@camunda/camunda-api-zod-schemas/8.8';
+import type {DocumentReference} from '@camunda/camunda-api-zod-schemas/8.9';
 import set from 'lodash/set';
 import {FormLevelErrorMessage} from './FormLevelErrorMessage';
 import {Stack} from '@carbon/react';

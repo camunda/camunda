@@ -25,7 +25,7 @@ import {getQueryTasksResponseMock} from 'v2/mocks/tasks';
 import {
   endpoints,
   type QueryUserTasksRequestBody,
-} from '@camunda/camunda-api-zod-schemas/8.8';
+} from '@camunda/camunda-api-zod-schemas/8.9';
 
 vi.mock('modules/stores/autoSelectFirstTask', () => ({
   autoSelectNextTaskStore: {
@@ -89,8 +89,10 @@ describe('<Tasks />', () => {
         endpoints.queryUserTasks.getUrl(),
         async ({request}) => {
           const {page} = await request.json();
+          const fromParam =
+            page !== undefined && 'from' in page ? page.from : undefined;
 
-          switch (page?.from) {
+          switch (fromParam) {
             case 0:
               return HttpResponse.json(
                 getQueryTasksResponseMock(FIRST_PAGE, 100),

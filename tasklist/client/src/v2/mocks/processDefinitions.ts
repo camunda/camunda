@@ -9,7 +9,7 @@
 import type {
   ProcessDefinition,
   QueryProcessDefinitionsResponseBody,
-} from '@camunda/camunda-api-zod-schemas/8.8';
+} from '@camunda/camunda-api-zod-schemas/8.9';
 import {DEFAULT_TENANT_ID} from 'common/multitenancy/constants';
 import {uniqueId} from './utils';
 

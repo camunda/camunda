@@ -9,7 +9,7 @@
 import {Section} from '@carbon/react';
 import {Outlet, useMatch, useNavigate, useSearchParams} from 'react-router-dom';
 import type {Process, Task} from 'v1/api/types';
-import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.8';
+import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.9';
 import {useCurrentUser} from 'common/api/useCurrentUser.query';
 import {useTask} from 'v1/api/useTask.query';
 import {useProcessDefinition} from 'v1/api/useProcessDefinition.query';

@@ -9,7 +9,7 @@
 import {useQuery} from '@tanstack/react-query';
 import {commonApi} from 'common/api';
 import {request, type RequestError} from 'common/api/request';
-import type {License} from '@camunda/camunda-api-zod-schemas/8.8';
+import type {License} from '@camunda/camunda-api-zod-schemas/8.9';
 
 function useLicense() {
   return useQuery<License, RequestError | Error>({

@@ -34,7 +34,6 @@ components:
         - tenants
         - groups
         - roles
-        - salesPlanType
         - c8Links
         - canLogout
       properties:

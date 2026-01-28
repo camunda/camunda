@@ -12,7 +12,7 @@ import {request} from 'common/api/request';
 import type {
   CreateProcessInstanceRequestBody,
   CreateProcessInstanceResponseBody,
-} from '@camunda/camunda-api-zod-schemas/8.8';
+} from '@camunda/camunda-api-zod-schemas/8.9';
 
 function useCreateProcessInstance({
   onSuccess,
