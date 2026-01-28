@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React, {useState} from 'react';
+import React, {useState, useMemo, useEffect} from 'react';
 import {observer} from 'mobx-react';
 
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
@@ -22,6 +22,9 @@ import {useIsRootNodeSelected} from 'modules/hooks/flowNodeSelection';
 import {useElementSelectionInstanceKey} from 'modules/hooks/useElementSelectionInstanceKey';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 import {IS_ELEMENT_SELECTION_V2} from 'modules/feature-flags';
+import {useHasAgentContext} from 'modules/queries/agentContext/useHasAgentContext';
+import {isRunning} from 'modules/utils/instance';
+import {AgentContextTab} from './AgentContextTab';
 
 const tabIds = {
   variables: 'variables',
@@ -29,6 +32,7 @@ const tabIds = {
   outputMappings: 'output-mappings',
   listeners: 'listeners',
   operationsLog: 'operations-log',
+  agentContext: 'agent-context',
 } as const;
 
 type TabId = (typeof tabIds)[keyof typeof tabIds];
@@ -41,7 +45,12 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
   setListenerTabVisibility,
 }) {
   const {processInstanceId = ''} = useProcessInstancePageParams();
-  let {hasSelection, selectedElementId} = useProcessInstanceElementSelection();
+  let {
+    hasSelection,
+    selectedElementId,
+    selectedElementInstanceKey,
+    resolvedElementInstance,
+  } = useProcessInstanceElementSelection();
   let resolvedElementInstanceKey = useElementSelectionInstanceKey();
 
   // TODO: Remove these assignments to remove the feature flag from the component
@@ -58,7 +67,107 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
 
   const [listenerTypeFilter, setListenerTypeFilter] =
     useState<ListenerTypeFilter>();
-  const [selectedTab, setSelectedTab] = useState<TabId>('variables');
+
+  const selectedScopeKey =
+    resolvedElementInstance?.elementInstanceKey ??
+    selectedElementInstanceKey ??
+    resolvedElementInstanceKey ??
+    null;
+
+  const isAdHocSelectionByType =
+    resolvedElementInstance?.type === 'AD_HOC_SUB_PROCESS' ||
+    resolvedElementInstance?.type === 'AD_HOC_SUB_PROCESS_INNER_INSTANCE';
+
+  // Fallback: if the instance isn't resolved yet, still allow the AI Agent tab for known ad-hoc ids.
+  // NOTE: adjust this mapping once the final BPMN element ids are confirmed.
+  const isAdHocSelectionByElementId =
+    selectedElementId === 'AI_Agent' || selectedElementId === 'AI Agent';
+
+  const isAdHocSelection =
+    isAdHocSelectionByType || isAdHocSelectionByElementId;
+
+  const isSelectedScopeRunning = resolvedElementInstance
+    ? isRunning(resolvedElementInstance)
+    : false;
+
+  // If we don't have a scopeKey yet (e.g. element instance resolution still pending),
+  // fall back to checking for agentContext on the whole process instance.
+  const shouldUseProcessWideGate = selectedScopeKey === null;
+
+  const {data: agentContextGate} = useHasAgentContext({
+    processInstanceKey: processInstanceId,
+    scopeKey: shouldUseProcessWideGate ? null : selectedScopeKey,
+    enabled: Boolean(isAdHocSelection),
+  });
+
+  const hasAgentContext = Boolean(agentContextGate?.hasAgentContext);
+
+  const shouldShowAgentTab = Boolean(isAdHocSelection && hasAgentContext);
+
+  // Debugging: this is intentionally verbose to help validate when/why the tab appears.
+  console.info('[AI Agent tab] render', {
+    processInstanceKey: processInstanceId,
+    selectedScopeKey,
+    selectedElementId,
+    selectedElementInstanceKey,
+    resolvedElementInstanceKey,
+    elementType: resolvedElementInstance?.type,
+    elementState: resolvedElementInstance?.state,
+    isAdHocSelection,
+    isAdHocSelectionByType,
+    isAdHocSelectionByElementId,
+    shouldUseProcessWideGate,
+    hasAgentContext,
+    shouldShowAgentTab,
+  });
+
+  useEffect(() => {
+    console.info('[AI Agent tab] show condition', {
+      processInstanceKey: processInstanceId,
+      selectedScopeKey,
+      elementType: resolvedElementInstance?.type,
+      elementState: resolvedElementInstance?.state,
+      isAdHocSelection,
+      hasAgentContext,
+      isSelectedScopeRunning,
+      shouldShowAgentTab,
+    });
+  }, [
+    processInstanceId,
+    selectedScopeKey,
+    resolvedElementInstance?.type,
+    resolvedElementInstance?.state,
+    isAdHocSelection,
+    hasAgentContext,
+    isSelectedScopeRunning,
+    shouldShowAgentTab,
+  ]);
+
+  const initialSelectedTab = useMemo<TabId>(() => {
+    return shouldShowAgentTab ? tabIds.agentContext : tabIds.variables;
+  }, [shouldShowAgentTab]);
+
+  const [selectedTab, setSelectedTab] = useState<TabId>(initialSelectedTab);
+
+  useEffect(() => {
+    if (shouldShowAgentTab) {
+      console.info('[AI Agent tab] auto-selecting agent tab for selection', {
+        selectedElementId,
+        resolvedElementInstanceKey,
+        selectedScopeKey,
+      });
+      setSelectedTab(tabIds.agentContext);
+      return;
+    }
+
+    setSelectedTab(tabIds.variables);
+  }, [
+    shouldShowAgentTab,
+    selectedElementId,
+    resolvedElementInstanceKey,
+    selectedScopeKey,
+    setSelectedTab,
+  ]);
 
   const shouldFetchListeners = resolvedElementInstanceKey || selectedElementId;
   const {
@@ -87,6 +196,26 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
       key={`tabview-${selectedElementId}-${resolvedElementInstanceKey}`}
       onTabChange={(tabId) => setSelectedTab(tabId)}
       tabs={[
+        ...(shouldShowAgentTab
+          ? [
+              {
+                id: tabIds.agentContext,
+                label: 'AI Agent',
+                content: (
+                  <AgentContextTab
+                    isVisible={selectedTab === tabIds.agentContext}
+                    processInstanceKey={processInstanceId}
+                    scopeKey={selectedScopeKey}
+                    isRunning={isSelectedScopeRunning}
+                  />
+                ),
+                removePadding: true,
+                onClick: () => {
+                  setListenerTabVisibility(false);
+                },
+              },
+            ]
+          : []),
         {
           id: tabIds.variables,
           label: 'Variables',
