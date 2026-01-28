@@ -45,10 +45,6 @@ public final class ExporterBatchWriter {
     this.metrics = metrics;
   }
 
-  public void addRecord(final Record<?> record) {
-    addRecord(record, 0);
-  }
-
   public void addRecord(final Record<?> record, final int length) {
     final ValueType valueType = record.getValueType();
 
