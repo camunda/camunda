@@ -1,0 +1,114 @@
+# Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+# one or more contributor license agreements. See the NOTICE file distributed
+# with this work for additional information regarding copyright ownership.
+# Licensed under the Camunda License 1.0. You may not use this file
+# except in compliance with the Camunda License 1.0.
+#
+# ES to RDBMS Migration Job
+#
+# This Kubernetes Job migrates data from Elasticsearch to RDBMS.
+# It requires:
+#   - Network access to Elasticsearch cluster
+#   - Network access to RDBMS (PostgreSQL/MySQL/etc.)
+#   - Network access to Camunda actuator endpoint (for soft pause/resume)
+#
+# Prerequisites:
+#   1. Camunda must be running with the actuator endpoint accessible
+#   2. RDBMS schema must be initialized (Camunda creates it on startup)
+#   3. Create the configmap before applying this job:
+#      kubectl apply -f es-rdbms-migration-configmap.yaml
+#
+# Usage:
+#   kubectl apply -f es-rdbms-migration-job.yaml
+#   kubectl logs -f job/es-rdbms-migration
+#
+# After migration completes:
+#   1. Stop Camunda
+#   2. Update config: camunda.data.secondary-storage.type=rdbms
+#   3. Restart Camunda
+#   4. (Optional) Disable Camunda exporter via actuator
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: es-rdbms-migration
+  labels:
+    app: camunda
+    component: es-rdbms-migration
+spec:
+  # Do not retry on failure - manual intervention required
+  backoffLimit: 0
+  # Keep job for 1 hour after completion for log inspection
+  ttlSecondsAfterFinished: 3600
+  template:
+    metadata:
+      labels:
+        app: camunda
+        component: es-rdbms-migration
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: migrator
+          # Use the same image as Camunda
+          image: camunda/camunda:latest
+          imagePullPolicy: IfNotPresent
+          # Override command to run the migration tool
+          command:
+            - /camunda/bin/es-rdbms-migrate
+          args:
+            - --spring.profiles.active=migrator
+          env:
+            # Elasticsearch configuration
+            - name: CAMUNDA_MIGRATION_ES_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: es-rdbms-migration-config
+                  key: elasticsearch.url
+            - name: CAMUNDA_MIGRATION_ES_USERNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: es-rdbms-migration-config
+                  key: elasticsearch.username
+                  optional: true
+            - name: CAMUNDA_MIGRATION_ES_PASSWORD
+              valueFrom:
+                configMapKeyRef:
+                  name: es-rdbms-migration-config
+                  key: elasticsearch.password
+                  optional: true
+            # RDBMS configuration
+            - name: CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: es-rdbms-migration-config
+                  key: rdbms.url
+            - name: CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_USERNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: es-rdbms-migration-config
+                  key: rdbms.username
+            - name: CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_PASSWORD
+              valueFrom:
+                configMapKeyRef:
+                  name: es-rdbms-migration-config
+                  key: rdbms.password
+            # Actuator configuration (for soft pause/resume)
+            - name: CAMUNDA_MIGRATION_ACTUATOR_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: es-rdbms-migration-config
+                  key: actuator.url
+            - name: CAMUNDA_MIGRATION_ACTUATOR_TIMEOUTSECONDS
+              value: "60"
+            # JVM options for large migrations
+            - name: JAVA_OPTS
+              value: "-Xms512m -Xmx2g -XX:+UseG1GC"
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "500m"
+            limits:
+              memory: "4Gi"
+              cpu: "2000m"
+          # Health check - migration should complete within timeout
+          # No liveness probe needed for a Job

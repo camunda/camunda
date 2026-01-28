@@ -1,0 +1,48 @@
+# Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+# one or more contributor license agreements. See the NOTICE file distributed
+# with this work for additional information regarding copyright ownership.
+# Licensed under the Camunda License 1.0. You may not use this file
+# except in compliance with the Camunda License 1.0.
+#
+# ConfigMap for ES to RDBMS Migration
+#
+# Customize the values below for your environment.
+# This should be applied before the migration job.
+#
+# Usage:
+#   # Edit values below, then:
+#   kubectl apply -f es-rdbms-migration-configmap.yaml
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: es-rdbms-migration-config
+  labels:
+    app: camunda
+    component: es-rdbms-migration
+data:
+  # Elasticsearch connection URL
+  # For AWS OpenSearch or cloud providers, use the full endpoint URL
+  elasticsearch.url: "http://elasticsearch:9200"
+
+  # Elasticsearch credentials (optional - leave empty if ES has no auth)
+  elasticsearch.username: ""
+  elasticsearch.password: ""
+
+  # RDBMS JDBC connection URL
+  # Examples:
+  #   PostgreSQL: jdbc:postgresql://postgres:5432/camunda
+  #   MySQL:      jdbc:mysql://mysql:3306/camunda
+  #   MariaDB:    jdbc:mariadb://mariadb:3306/camunda
+  #   Oracle:     jdbc:oracle:thin:@//oracle:1521/camunda
+  #   MS SQL:     jdbc:sqlserver://mssql:1433;databaseName=camunda
+  rdbms.url: "jdbc:postgresql://postgres:5432/camunda"
+
+  # RDBMS credentials
+  rdbms.username: "camunda"
+  rdbms.password: "camunda"
+
+  # Camunda actuator URL (management endpoint)
+  # This is used to soft-pause exporting during migration
+  # Typically: http://<camunda-service>:9600
+  actuator.url: "http://camunda:9600"
