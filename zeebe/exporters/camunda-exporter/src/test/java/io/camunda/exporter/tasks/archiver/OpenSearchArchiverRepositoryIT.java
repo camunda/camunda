@@ -921,6 +921,48 @@ final class OpenSearchArchiverRepositoryIT {
     }
   }
 
+  @Test
+  void shouldMaintainSeparateArchiverDatesForDifferentTemplates() throws IOException {
+    // given
+    final var repository = createRepository();
+    config.setRolloverInterval("1d");
+
+    final var piEndDate = "2025-05-02T12:00:00.000+0000";
+    final var pi =
+        new TestProcessInstance(
+            UUID.randomUUID().toString(),
+            piEndDate,
+            ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION,
+            1);
+
+    final var batchOperationEndDate = "2025-01-02T12:00:00.000+0000";
+    final var batchOperation =
+        new TestBatchOperation(UUID.randomUUID().toString(), batchOperationEndDate);
+
+    createProcessInstanceIndex();
+    createBatchOperationIndex();
+
+    // Create historical indices
+    testClient.indices().create(i -> i.index(processInstanceIndex + "_2025-04-30"));
+    testClient.indices().create(i -> i.index(batchOperationIndex + "_2024-12-30"));
+
+    index(processInstanceIndex, pi);
+    index(batchOperationIndex, batchOperation);
+    testClient.indices().refresh(r -> r.index(processInstanceIndex, batchOperationIndex));
+
+    // when
+    // ensure PI batch is processed first to assert that both dates are maintained separately
+    final var piBatch = repository.getProcessInstancesNextBatch().join();
+    final var batchOperationBatch = repository.getBatchOperationsNextBatch().join();
+
+    // then
+    assertThat(piBatch.ids()).isNotEmpty();
+    assertThat(batchOperationBatch.ids()).isNotEmpty();
+
+    assertThat(piBatch.finishDate()).isEqualTo("2025-05-02");
+    assertThat(batchOperationBatch.finishDate()).isEqualTo("2025-01-02");
+  }
+
   private void startupSchema() {
     final var searchEngineClient = new OpensearchEngineClient(testClient, objectMapper);
     final var connectConfig = new ConnectConfiguration();
