@@ -50,6 +50,7 @@ export default defineConfig(({mode}) => ({
       '/api': 'http://localhost:8080',
       '/v1': 'http://localhost:8080',
       '/v2': 'http://localhost:8080',
+      '/mcp': 'http://localhost:8080',
       '/login': {
         target: 'http://localhost:8080',
         bypass: (req) => (req.method !== 'POST' ? '/' : undefined),
