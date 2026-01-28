@@ -22,7 +22,7 @@ import org.junit.Test;
 
 public final class DocumentPropertyTest {
   @Test
-  public void shouldSerializeWithDefaultValue() {
+  public void shouldNotSerializeWithDefaultValue() {
     // given
     final Document document = new Document();
     final int writeLength = document.getLength();
@@ -33,8 +33,8 @@ public final class DocumentPropertyTest {
 
     // then
     final Map<String, Object> msgPackMap = MsgPackUtil.asMap(resultBuffer);
-    assertThat(msgPackMap).hasSize(1);
-    assertThat(msgPackMap).containsExactly(entry("documentProp", MsgPackHelper.EMTPY_OBJECT));
+    assertThat(msgPackMap).hasSize(0);
+    //    assertThat(msgPackMap).containsExactly(entry("documentProp", MsgPackHelper.EMTPY_OBJECT));
   }
 
   @Test
@@ -80,7 +80,7 @@ public final class DocumentPropertyTest {
   }
 
   @Test
-  public void shouldSerializeEmptyEvenIfNilIsSetAsValue() {
+  public void shouldNotSerializeEmptyEvenIfNilIsSetAsValue() {
     // given
     final Document document = new Document();
     final UnsafeBuffer documentBytes = new UnsafeBuffer(MsgPackHelper.NIL);
@@ -93,12 +93,11 @@ public final class DocumentPropertyTest {
 
     // then
     final Map<String, Object> msgPackMap = MsgPackUtil.asMap(resultBuffer);
-    assertThat(msgPackMap).hasSize(1);
-    assertThat(msgPackMap).containsExactly(entry("documentProp", MsgPackHelper.EMTPY_OBJECT));
+    assertThat(msgPackMap).hasSize(0);
   }
 
   @Test
-  public void shouldSerializeEmptyEvenIfZeroArraysIsSetAsValue() {
+  public void shouldNotSerializeEmptyEvenIfZeroArraysIsSetAsValue() {
     // given
     final Document document = new Document();
     final UnsafeBuffer documentBytes = new UnsafeBuffer(new byte[0]);
@@ -111,8 +110,7 @@ public final class DocumentPropertyTest {
 
     // then
     final Map<String, Object> msgPackMap = MsgPackUtil.asMap(resultBuffer);
-    assertThat(msgPackMap).hasSize(1);
-    assertThat(msgPackMap).containsExactly(entry("documentProp", MsgPackHelper.EMTPY_OBJECT));
+    assertThat(msgPackMap).hasSize(0);
   }
 
   @Test

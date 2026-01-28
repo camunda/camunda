@@ -86,7 +86,10 @@ public class ObjectValue extends BaseValue {
    */
   @Override
   public void write(final MsgPackWriter writer) {
-    final int size = declaredProperties.size() + undeclaredProperties.size();
+    final int size =
+        (int)
+            (declaredProperties.stream().filter(BaseProperty::hasMeaningfulValue).count()
+                + undeclaredProperties.stream().filter(BaseProperty::hasMeaningfulValue).count());
 
     writer.writeMapHeader(size);
     write(writer, declaredProperties);
@@ -182,7 +185,9 @@ public class ObjectValue extends BaseValue {
       final MsgPackWriter writer, final List<T> properties) {
     for (int i = 0; i < properties.size(); ++i) {
       final BaseProperty<? extends BaseValue> prop = properties.get(i);
-      prop.write(writer);
+      if (prop.hasMeaningfulValue()) {
+        prop.write(writer);
+      }
     }
   }
 

@@ -60,6 +60,10 @@ public abstract class BaseProperty<T extends BaseValue> implements Recyclable {
     return isSet || defaultValue != null;
   }
 
+  public boolean hasMeaningfulValue() {
+    return defaultValue == null || (!Objects.equals(resolveValue(), defaultValue));
+  }
+
   public StringValue getKey() {
     return key;
   }

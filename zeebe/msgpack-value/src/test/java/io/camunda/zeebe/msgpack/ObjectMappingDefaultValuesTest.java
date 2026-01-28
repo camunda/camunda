@@ -97,7 +97,7 @@ public final class ObjectMappingDefaultValuesTest {
    * in version 2, where a new property should be included.
    */
   @Test
-  public void shouldWriteDefaultValue() {
+  public void shouldNotWriteDefaultValue() {
     // given
     final long defaultValue = -1L;
     final DefaultValuesPOJO pojo = new DefaultValuesPOJO(defaultValue);
@@ -113,9 +113,8 @@ public final class ObjectMappingDefaultValuesTest {
     reader.wrap(buf, 0, buf.capacity());
     final Map<String, Object> msgPackMap = MsgPackUtil.asMap(buf, 0, buf.capacity());
 
-    assertThat(msgPackMap).hasSize(2);
-    assertThat(msgPackMap)
-        .contains(entry("noDefaultValueProp", 123123L), entry("defaultValueProp", defaultValue));
+    assertThat(msgPackMap).hasSize(1);
+    assertThat(msgPackMap).contains(entry("noDefaultValueProp", 123123L));
   }
 
   @Test

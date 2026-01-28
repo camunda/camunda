@@ -22,4 +22,9 @@ public final class ObjectProperty<T extends ObjectValue> extends BaseProperty<T>
   public T getValue() {
     return resolveValue();
   }
+
+  @Override
+  public boolean hasMeaningfulValue() {
+    return true;
+  }
 }
