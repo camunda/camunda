@@ -11,11 +11,9 @@ import {observer} from 'mobx-react';
 import {useProcessInstancePageParams} from '../useProcessInstancePageParams';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {diagramOverlaysStore} from 'modules/stores/diagramOverlays';
-import {IncidentsBanner} from './IncidentsBanner';
 import {tracking} from 'modules/tracking';
 import {modificationsStore} from 'modules/stores/modifications';
 import {Container, DiagramPanel} from './styled';
-import {IncidentsWrapper} from '../IncidentsWrapper';
 import {
   CANCELED_BADGE,
   MODIFICATIONS,
@@ -29,8 +27,6 @@ import {DiagramShell} from 'modules/components/DiagramShell';
 import {computed} from 'mobx';
 import {type OverlayPosition} from 'bpmn-js/lib/NavigatedViewer';
 import {Diagram} from 'modules/components/Diagram';
-import {MetadataPopover} from './MetadataPopover';
-import {MetadataPopover as MetadataPopoverV2} from './MetadataPopover/indexV2';
 import {ModificationBadgeOverlay} from './ModificationBadgeOverlay';
 import {ModificationInfoBanner} from './ModificationInfoBanner';
 import {ModificationDropdown as ModificationDropdownV1} from './ModificationDropdown/indexV1';
@@ -72,8 +68,6 @@ import {
 import type {FlowNodeState} from 'modules/types/operate';
 import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
 import {isRequestError} from 'modules/request';
-import {useProcessInstanceIncidentsCount} from 'modules/queries/incidents/useProcessInstanceIncidentsCount';
-import {incidentsPanelStore} from 'modules/stores/incidentsPanel';
 import {isInstanceRunning} from 'modules/utils/instance';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 import {IS_ELEMENT_SELECTION_V2} from 'modules/feature-flags';
@@ -109,7 +103,6 @@ const TopPanel: React.FC = observer(() => {
     sourceFlowNodeIdForMoveOperation,
     sourceFlowNodeInstanceKeyForMoveOperation,
   } = modificationsStore.state;
-  const [isInTransition, setIsInTransition] = useState(false);
   const {data: flowNodeInstancesStatistics} = useFlownodeInstancesStatistics();
   const {data: statistics} = useFlownodeStatistics();
   const {data: selectableFlowNodes} = useSelectableFlowNodes();
@@ -285,14 +278,6 @@ const TopPanel: React.FC = observer(() => {
 
   const modifiableFlowNodes = useModifiableFlowNodes();
 
-  const incidentsCount = useProcessInstanceIncidentsCount(processInstanceId, {
-    enabled:
-      processInstance &&
-      isInstanceRunning(processInstance) &&
-      !!processInstance.hasIncident,
-  });
-  const isIncidentBarOpen = incidentsPanelStore.state.isPanelVisible;
-
   const {isModificationModeEnabled} = modificationsStore;
 
   useEffect(() => {
@@ -331,26 +316,6 @@ const TopPanel: React.FC = observer(() => {
 
   return (
     <Container>
-      {incidentsCount > 0 && (
-        <IncidentsBanner
-          processInstanceKey={processInstanceId}
-          incidentsCount={incidentsCount}
-          onClick={() => {
-            if (isInTransition) {
-              return;
-            }
-
-            tracking.track({
-              eventName: isIncidentBarOpen
-                ? 'incidents-panel-closed'
-                : 'incidents-panel-opened',
-            });
-            incidentsPanelStore.setPanelOpen(!isIncidentBarOpen);
-          }}
-          isOpen={isIncidentBarOpen}
-        />
-      )}
-
       {modificationsStore.state.status === 'requires-ancestor-selection' && (
         <ModificationInfoBanner text="Target flow node has multiple parent scopes. Please select parent node from Instance History to move." />
       )}
@@ -475,14 +440,7 @@ const TopPanel: React.FC = observer(() => {
                     ) : (
                       <ModificationDropdownV1 />
                     )
-                  ) : (
-                    !isIncidentBarOpen &&
-                    (IS_ELEMENT_SELECTION_V2 ? (
-                      <MetadataPopoverV2 />
-                    ) : (
-                      <MetadataPopover />
-                    ))
-                  )
+                  ) : false
                 }
                 highlightedSequenceFlows={highlightedSequenceFlows}
                 highlightedFlowNodeIds={highlightedSequenceFlowIds}
@@ -539,12 +497,6 @@ const TopPanel: React.FC = observer(() => {
               </Diagram>
             )}
         </DiagramShell>
-        {processInstance?.hasIncident && (
-          <IncidentsWrapper
-            setIsInTransition={setIsInTransition}
-            processInstance={processInstance}
-          />
-        )}
       </DiagramPanel>
     </Container>
   );

@@ -7,7 +7,7 @@
  */
 
 import {Stack} from '@carbon/react';
-import {useState, useMemo} from 'react';
+import {useMemo} from 'react';
 import isNil from 'lodash/isNil';
 import {Link} from 'modules/components/Link';
 import {Paths} from 'modules/Routes';
@@ -15,8 +15,8 @@ import {tracking} from 'modules/tracking';
 import {Header} from '../Header';
 import {SummaryDataKey, SummaryDataValue} from '../styled';
 import {getExecutionDuration} from './getExecutionDuration';
+import {formatDate} from 'modules/utils/date';
 import type {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
-import {DetailsModal} from './DetailsModal';
 import type {ElementInstance} from '@camunda/camunda-api-zod-schemas/8.8';
 import {useProcessInstancesSearch} from 'modules/queries/processInstance/useProcessInstancesSearch';
 import {useJobs} from 'modules/queries/jobs/useJobs';
@@ -28,8 +28,6 @@ type Props = {
 };
 
 const Details: React.FC<Props> = ({elementInstance, businessObject}) => {
-  const [isModalVisible, setIsModalVisible] = useState(false);
-
   const {startDate, endDate, type, elementInstanceKey} = elementInstance;
 
   const {data: calledProcessInstancesSearchResult} = useProcessInstancesSearch(
@@ -94,16 +92,6 @@ const Details: React.FC<Props> = ({elementInstance, businessObject}) => {
               }
             : undefined
         }
-        button={{
-          title: 'Show more metadata',
-          label: 'View',
-          onClick: () => {
-            setIsModalVisible(true);
-            tracking.track({
-              eventName: 'flow-node-instance-details-opened',
-            });
-          },
-        }}
       />
       <Stack gap={5}>
         <Stack gap={3} as="dl">
@@ -123,6 +111,41 @@ const Details: React.FC<Props> = ({elementInstance, businessObject}) => {
             <SummaryDataValue data-testid="retries-left-count">
               {job.retries}
             </SummaryDataValue>
+          </Stack>
+        )}
+
+        {job?.worker && (
+          <Stack gap={3} as="dl">
+            <SummaryDataKey>Job Worker</SummaryDataKey>
+            <SummaryDataValue>{job.worker}</SummaryDataValue>
+          </Stack>
+        )}
+
+        {job?.type && (
+          <Stack gap={3} as="dl">
+            <SummaryDataKey>Job Type</SummaryDataKey>
+            <SummaryDataValue>{job.type}</SummaryDataValue>
+          </Stack>
+        )}
+
+        {job?.jobKey && (
+          <Stack gap={3} as="dl">
+            <SummaryDataKey>Job Key</SummaryDataKey>
+            <SummaryDataValue>{job.jobKey}</SummaryDataValue>
+          </Stack>
+        )}
+
+        {startDate && (
+          <Stack gap={3} as="dl">
+            <SummaryDataKey>Start Date</SummaryDataKey>
+            <SummaryDataValue>{formatDate(startDate)}</SummaryDataValue>
+          </Stack>
+        )}
+
+        {endDate && (
+          <Stack gap={3} as="dl">
+            <SummaryDataKey>End Date</SummaryDataKey>
+            <SummaryDataValue>{formatDate(endDate)}</SummaryDataValue>
           </Stack>
         )}
 
@@ -169,16 +192,6 @@ const Details: React.FC<Props> = ({elementInstance, businessObject}) => {
           </Stack>
         )}
       </Stack>
-      {elementInstanceKey !== null && (
-        <DetailsModal
-          elementInstance={elementInstance}
-          job={job}
-          calledProcessInstance={calledProcessInstance}
-          calledDecisionInstance={calledDecisionInstance}
-          isVisible={isModalVisible}
-          onClose={() => setIsModalVisible(false)}
-        />
-      )}
     </>
   );
 };

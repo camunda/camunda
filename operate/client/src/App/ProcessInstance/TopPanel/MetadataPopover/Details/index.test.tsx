@@ -116,23 +116,6 @@ describe('MetadataPopover <Details />', () => {
     expect(screen.queryByText('Retries Left')).not.toBeInTheDocument();
   });
 
-  it('should show metadata dialog when "Show more metadata" is clicked', async () => {
-    mockSearchJobs().withSuccess({items: [mockJob], page: {totalItems: 1}});
-
-    const {user} = render(
-      <Details
-        elementInstance={mockElementInstance}
-        businessObject={mockBusinessObject}
-      />,
-      {wrapper: TestWrapper},
-    );
-
-    await user.click(screen.getByRole('button', {name: 'Show more metadata'}));
-    expect(
-      screen.getByText(/Element "Service Task" 123456789 Metadata/),
-    ).toBeInTheDocument();
-  });
-
   it('should handle null instance metadata gracefully', () => {
     const minimalElementInstance: ElementInstance = {
       elementInstanceKey: '999',
@@ -238,354 +221,83 @@ describe('MetadataPopover <Details />', () => {
     expect(screen.getByText(calculatedExecutionDuration)).toBeInTheDocument();
   });
 
-  it('should display user task metadata in modal when available', async () => {
-    const userTaskInstance: ElementInstance = {
-      ...mockElementInstance,
-      type: 'USER_TASK',
-    };
-
-    const userTask: UserTask = {
-      userTaskKey: 'ut-123456',
-      processInstanceKey: '111222333',
-      processDefinitionKey: '444555666',
-      processDefinitionId: 'process-def-1',
-      elementId: 'Task_1',
-      elementInstanceKey: '123456789',
-      assignee: 'john.doe',
-      state: 'CREATED',
-      creationDate: '2023-12-01T09:00:00.000Z',
-      completionDate: '2023-12-31T18:00:00.000Z',
-      dueDate: '2023-12-31T23:59:59.000Z',
-      followUpDate: '2023-12-30T12:00:00.000Z',
-      tenantId: '<default>',
-      formKey: 'user-form-key',
-      candidateGroups: ['managers', 'admins'],
-      candidateUsers: ['user1', 'user2'],
-      externalFormReference: 'external-form-ref-123',
-      customHeaders: {custom1: 'value1', custom2: 2},
-      priority: 10,
-      processDefinitionVersion: 1,
-    };
-
-    mockSearchUserTasks().withSuccess({
-      items: [userTask],
-      page: {totalItems: 1},
-    });
-
-    const {user} = render(
-      <Details
-        elementInstance={userTaskInstance}
-        businessObject={mockBusinessObject}
-      />,
-      {wrapper: TestWrapper},
-    );
-
-    await user.click(screen.getByRole('button', {name: 'Show more metadata'}));
-
-    expect(
-      screen.getByText(/Element "Service Task" 123456789 Metadata/),
-    ).toBeInTheDocument();
-
-    expect(
-      await screen.findByText(/"assignee": "john.doe"/),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(/"dueDate": "2023-12-31T23:59:59.000Z"/),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(/"followUpDate": "2023-12-30T12:00:00.000Z"/),
-    ).toBeInTheDocument();
-    expect(screen.getByText(/"formKey": "user-form-key"/)).toBeInTheDocument();
-    expect(screen.getByText(/"userTaskKey": "ut-123456"/)).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        (content) =>
-          content.includes('"candidateGroups":') &&
-          content.includes('"managers"') &&
-          content.includes('"admins"'),
-      ),
-    ).toBeInTheDocument();
-
-    expect(
-      screen.getByText(
-        (content) =>
-          content.includes('"candidateUsers":') &&
-          content.includes('"user1"') &&
-          content.includes('"user2"'),
-      ),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(/"externalFormReference": "external-form-ref-123"/),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(/"creationDate": "2023-12-01T09:00:00.000Z"/),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(/"completionDate": "2023-12-31T18:00:00.000Z"/),
-    ).toBeInTheDocument();
-    expect(screen.getByText(/"priority": 10/)).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        (content) =>
-          content.includes('"customHeaders":') &&
-          content.includes('"custom1": "value1"') &&
-          content.includes('"custom2": 2'),
-      ),
-    ).toBeInTheDocument();
-  });
-
-  it('should display partial user task metadata when some fields are missing', async () => {
-    const userTaskInstance: ElementInstance = {
-      ...mockElementInstance,
-      type: 'USER_TASK',
-    };
-
-    const partialUserTask: UserTask = {
-      userTaskKey: 'ut-789',
-      processInstanceKey: '111222333',
-      processDefinitionKey: '444555666',
-      processDefinitionId: 'process-def-1',
-      elementId: 'Task_1',
-      elementInstanceKey: '123456789',
-      assignee: 'jane.smith',
-      state: 'CREATED',
-      creationDate: '2023-12-01T09:00:00.000Z',
-      tenantId: '<default>',
-      formKey: 'simple-form',
-      processDefinitionVersion: 1,
-      candidateGroups: [],
-      candidateUsers: [],
-      priority: 0,
-    };
-
-    mockSearchUserTasks().withSuccess({
-      items: [partialUserTask],
-      page: {totalItems: 1},
-    });
-
-    const {user} = render(
-      <Details
-        elementInstance={userTaskInstance}
-        businessObject={mockBusinessObject}
-      />,
-      {wrapper: TestWrapper},
-    );
-
-    await user.click(screen.getByRole('button', {name: 'Show more metadata'}));
-
-    expect(
-      await screen.findByText(/"assignee": "jane.smith"/),
-    ).toBeInTheDocument();
-    expect(screen.getByText(/"formKey": "simple-form"/)).toBeInTheDocument();
-    expect(screen.getByText(/"userTaskKey": "ut-789"/)).toBeInTheDocument();
-  });
-
-  it('should not display user task fields for non-user task types', async () => {
+  it('should display job worker when available', async () => {
     mockSearchJobs().withSuccess({items: [mockJob], page: {totalItems: 1}});
 
-    const {user} = render(
+    render(
       <Details
         elementInstance={mockElementInstance}
         businessObject={mockBusinessObject}
       />,
-      {wrapper: TestWrapper},
+      {
+        wrapper: TestWrapper,
+      },
     );
 
-    await user.click(screen.getByRole('button', {name: 'Show more metadata'}));
-
-    expect(screen.queryByText(/"assignee"/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/"dueDate"/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/"followUpDate"/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/"formKey"/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/"userTaskKey"/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/"candidateGroups"/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/"candidateUsers"/)).not.toBeInTheDocument();
-    expect(
-      screen.queryByText(/"externalFormReference"/),
-    ).not.toBeInTheDocument();
+    expect(await screen.findByText('Job Worker')).toBeInTheDocument();
+    expect(screen.getByText('worker-1')).toBeInTheDocument();
   });
 
-  it('should display incident fields for when incident has occurred', async () => {
-    const incidentElementInstance: ElementInstance = {
-      ...mockElementInstance,
-      hasIncident: true,
-    };
-
-    mockSearchIncidentsByElementInstance('123456789').withSuccess({
-      items: [mockSingleIncident],
-      page: {totalItems: 1},
-    });
-
-    const {user} = render(
-      <Details
-        elementInstance={incidentElementInstance}
-        businessObject={mockBusinessObject}
-      />,
-      {wrapper: TestWrapper},
-    );
-
-    await user.click(screen.getByRole('button', {name: 'Show more metadata'}));
-
-    expect(
-      await screen.findByText(/"incidentErrorType": "Extract value error."/),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        /"incidentErrorMessage": "Expected result of the expression 'approverGroups' to be 'ARRAY', but was 'NULL'."/,
-      ),
-    ).toBeInTheDocument();
-  });
-
-  it('should display called process fields for called instances', async () => {
-    const callActivityBusinessObject: BusinessObject = {
-      ...mockBusinessObject,
-      $type: 'bpmn:CallActivity',
-    };
-
-    mockSearchProcessInstances().withSuccess({
-      items: [mockCalledProcessInstance],
-      page: {totalItems: 1},
-    });
-
-    const {user} = render(
-      <Details
-        elementInstance={mockElementInstance}
-        businessObject={callActivityBusinessObject}
-      />,
-      {wrapper: TestWrapper},
-    );
-
-    await user.click(screen.getByRole('button', {name: 'Show more metadata'}));
-
-    expect(screen.getByText(/"calledProcessInstanceKey"/)).toBeInTheDocument();
-    expect(
-      screen.getByText(/"calledProcessDefinitionName"/),
-    ).toBeInTheDocument();
-  });
-
-  it('should display job data fields', async () => {
+  it('should display job type when available', async () => {
     mockSearchJobs().withSuccess({items: [mockJob], page: {totalItems: 1}});
 
-    const {user} = render(
+    render(
       <Details
         elementInstance={mockElementInstance}
         businessObject={mockBusinessObject}
       />,
-      {wrapper: TestWrapper},
+      {
+        wrapper: TestWrapper,
+      },
     );
 
-    await user.click(screen.getByRole('button', {name: 'Show more metadata'}));
-
-    expect(screen.getByText(/"jobKey"/)).toBeInTheDocument();
-    expect(screen.getByText(/"jobCustomHeaders"/)).toBeInTheDocument();
-    expect(screen.getByText(/"jobDeadline"/)).toBeInTheDocument();
-    expect(screen.getByText(/"jobType"/)).toBeInTheDocument();
-    expect(screen.getByText(/"jobWorker"/)).toBeInTheDocument();
+    expect(await screen.findByText('Job Type')).toBeInTheDocument();
+    expect(screen.getByText('httpService')).toBeInTheDocument();
   });
 
-  it('should display message name and correlation key for service task with message subscription data', async () => {
-    const messageSubscription: MessageSubscription = {
-      messageSubscriptionKey: 'msg-sub-123',
-      messageName: 'orderReceived',
-      correlationKey: 'order-123',
-      processInstanceKey: '111222333',
-      processDefinitionKey: '444555666',
-      processDefinitionId: 'process-def-1',
-      elementId: 'Task_1',
-      elementInstanceKey: '123456789',
-      messageSubscriptionState: 'CREATED',
-      lastUpdatedDate: '2023-01-15T10:00:00.000Z',
-      tenantId: '<default>',
-    };
-
-    mockSearchMessageSubscriptions().withSuccess({
-      items: [messageSubscription],
-      page: {totalItems: 1},
-    });
-
-    const {user} = render(
-      <Details
-        elementInstance={mockElementInstance}
-        businessObject={mockBusinessObject}
-      />,
-      {wrapper: TestWrapper},
-    );
-
-    await user.click(screen.getByRole('button', {name: 'Show more metadata'}));
-
-    expect(
-      screen.getByText(/Element "Service Task" 123456789 Metadata/),
-    ).toBeInTheDocument();
-
-    expect(
-      await screen.findByText(/"messageName": "orderReceived"/),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(/"correlationKey": "order-123"/),
-    ).toBeInTheDocument();
-  });
-
-  it('should not display message fields when message name and correlation key are absent', async () => {
+  it('should display job key when available', async () => {
     mockSearchJobs().withSuccess({items: [mockJob], page: {totalItems: 1}});
 
-    const {user} = render(
+    render(
       <Details
         elementInstance={mockElementInstance}
         businessObject={mockBusinessObject}
       />,
-      {wrapper: TestWrapper},
+      {
+        wrapper: TestWrapper,
+      },
     );
 
-    await user.click(screen.getByRole('button', {name: 'Show more metadata'}));
-
-    expect(screen.queryByText(/"messageName"/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/"correlationKey"/)).not.toBeInTheDocument();
+    expect(await screen.findByText('Job Key')).toBeInTheDocument();
+    expect(screen.getByText('555666777')).toBeInTheDocument();
   });
 
-  it('should display message subscription data for message events', async () => {
-    const eventElementInstance: ElementInstance = {
-      ...mockElementInstance,
-      type: 'INTERMEDIATE_CATCH_EVENT',
-    };
-
-    const messageSubscription: MessageSubscription = {
-      messageSubscriptionKey: 'msg-sub-456',
-      messageName: 'clientMessage',
-      correlationKey: 'client-456',
-      processInstanceKey: '111222333',
-      processDefinitionKey: '444555666',
-      processDefinitionId: 'process-def-1',
-      elementId: 'Task_1',
-      elementInstanceKey: '123456789',
-      messageSubscriptionState: 'CREATED',
-      lastUpdatedDate: '2023-01-15T10:00:00.000Z',
-      tenantId: '<default>',
-    };
-
-    mockSearchMessageSubscriptions().withSuccess({
-      items: [messageSubscription],
-      page: {totalItems: 1},
-    });
-
-    const {user} = render(
+  it('should display start date when available', () => {
+    render(
       <Details
-        elementInstance={eventElementInstance}
+        elementInstance={mockElementInstance}
         businessObject={mockBusinessObject}
       />,
-      {wrapper: TestWrapper},
+      {
+        wrapper: TestWrapper,
+      },
     );
 
-    await user.click(screen.getByRole('button', {name: 'Show more metadata'}));
-
-    expect(
-      screen.getByText(/Element "Service Task" 123456789 Metadata/),
-    ).toBeInTheDocument();
-
-    expect(
-      await screen.findByText(/"messageName": "clientMessage"/),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(/"correlationKey": "client-456"/),
-    ).toBeInTheDocument();
+    expect(screen.getByText('Start Date')).toBeInTheDocument();
   });
+
+  it('should display end date when available', () => {
+    render(
+      <Details
+        elementInstance={mockElementInstance}
+        businessObject={mockBusinessObject}
+      />,
+      {
+        wrapper: TestWrapper,
+      },
+    );
+
+    expect(screen.getByText('End Date')).toBeInTheDocument();
+  });
+
 });

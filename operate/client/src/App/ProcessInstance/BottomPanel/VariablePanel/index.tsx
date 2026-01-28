@@ -14,16 +14,24 @@ import {TabView} from 'modules/components/TabView';
 import {useProcessInstancePageParams} from '../../useProcessInstancePageParams';
 import {InputOutputMappings} from './InputOutputMappings';
 import {VariablesContent} from './VariablesContent';
+import {DetailsContent} from './DetailsContent';
+import {IncidentsContent} from './IncidentsContent';
 import {Listeners, type ListenerTypeFilter} from './Listeners';
 import {OperationsLog} from './OperationsLog';
 import {WarningFilled} from './styled';
 import {useJobs} from 'modules/queries/jobs/useJobs';
 import {useIsRootNodeSelected} from 'modules/hooks/flowNodeSelection';
+import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
+import {useProcessInstanceIncidentsCount} from 'modules/queries/incidents/useProcessInstanceIncidentsCount';
+import {useGetIncidentsByElementInstance} from 'modules/queries/incidents/useGetIncidentsByElementInstance';
+import {useFlownodeInstancesStatistics} from 'modules/queries/flownodeInstancesStatistics/useFlownodeInstancesStatistics';
 import {useElementSelectionInstanceKey} from 'modules/hooks/useElementSelectionInstanceKey';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 import {IS_ELEMENT_SELECTION_V2} from 'modules/feature-flags';
 
 const tabIds = {
+  incidents: 'incidents',
+  details: 'details',
   variables: 'variables',
   inputMappings: 'input-mappings',
   outputMappings: 'output-mappings',
@@ -41,6 +49,8 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
   setListenerTabVisibility,
 }) {
   const {processInstanceId = ''} = useProcessInstancePageParams();
+  const isRootNodeSelected = useIsRootNodeSelected();
+  const {data: processInstance} = useProcessInstance();
   let {hasSelection, selectedElementId} = useProcessInstanceElementSelection();
   let resolvedElementInstanceKey = useElementSelectionInstanceKey();
 
@@ -59,6 +69,45 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
   const [listenerTypeFilter, setListenerTypeFilter] =
     useState<ListenerTypeFilter>();
   const [selectedTab, setSelectedTab] = useState<TabId>('variables');
+
+  const {data: statistics} = useFlownodeInstancesStatistics();
+
+  // Get incident counts
+  const processIncidentsCount = useProcessInstanceIncidentsCount(
+    processInstanceId,
+    {
+      enabled: isRootNodeSelected && !!processInstance?.hasIncident,
+    },
+  );
+
+  const {data: elementIncidentsData} = useGetIncidentsByElementInstance(
+    resolvedElementInstanceKey ?? '',
+    {
+      enabled: !isRootNodeSelected && !!resolvedElementInstanceKey,
+      select: (data) => data.page.totalItems,
+    },
+  );
+
+  const elementIncidentsCount = elementIncidentsData ?? 0;
+
+  // Get flow node incidents count from statistics
+  const flowNodeIncidentsFromStats =
+    !isRootNodeSelected && selectedElementId
+      ? statistics?.items.find((item) => item.elementId === selectedElementId)?.incidents ?? 0
+      : 0;
+
+  // Use element incidents count if available, otherwise use statistics
+  const elementIncidentsCountFinal =
+    elementIncidentsCount > 0 ? elementIncidentsCount : flowNodeIncidentsFromStats;
+
+  // Check if we should show incidents tab
+  const shouldShowIncidentsTab =
+    (isRootNodeSelected && processIncidentsCount > 0) ||
+    (!isRootNodeSelected && elementIncidentsCountFinal > 0);
+
+  const incidentsTabLabel = shouldShowIncidentsTab
+    ? `Incidents (${isRootNodeSelected ? processIncidentsCount : elementIncidentsCountFinal})`
+    : 'Incidents';
 
   const shouldFetchListeners = resolvedElementInstanceKey || selectedElementId;
   const {
@@ -87,6 +136,32 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
       key={`tabview-${selectedElementId}-${resolvedElementInstanceKey}`}
       onTabChange={(tabId) => setSelectedTab(tabId)}
       tabs={[
+        ...(shouldShowIncidentsTab
+          ? [
+              {
+                id: tabIds.incidents,
+                label: incidentsTabLabel,
+                content: <IncidentsContent />,
+                removePadding: true,
+                onClick: () => {
+                  setListenerTabVisibility(false);
+                },
+              },
+            ]
+          : []),
+        ...(isRootNodeSelected
+          ? []
+          : [
+              {
+                id: tabIds.details,
+                label: 'Details',
+                content: <DetailsContent />,
+                removePadding: true,
+                onClick: () => {
+                  setListenerTabVisibility(false);
+                },
+              },
+            ]),
         {
           id: tabIds.variables,
           label: 'Variables',
