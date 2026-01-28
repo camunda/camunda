@@ -630,6 +630,22 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, AuditLogQuery> toAuditLogQuery(
+      final io.camunda.gateway.protocol.model.simple.AuditLogFilter filter,
+      final io.camunda.gateway.protocol.model.simple.SearchQueryPageRequest page,
+      final List<AuditLogSearchQuerySortRequest> sort) {
+    return toAuditLogQuery(
+        new AuditLogSearchQueryRequest()
+            .filter(
+                filter == null
+                    ? null
+                    : new AuditLogFilter()
+                        .timestamp(
+                            SimpleSearchQueryMapper.getDateTimeFilter(filter.getTimestamp())))
+            .page(SimpleSearchQueryMapper.toPageRequest(page))
+            .sort(sort == null ? List.of() : sort));
+  }
+
+  public static Either<ProblemDetail, AuditLogQuery> toAuditLogQuery(
       final AuditLogSearchQueryRequest request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.auditLogSearchQuery().build());
