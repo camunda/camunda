@@ -7,9 +7,14 @@
  */
 package io.camunda.application;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import io.camunda.application.commons.rdbms.RdbmsConfiguration;
 import io.camunda.application.listeners.ApplicationErrorListener;
-import io.camunda.configuration.Elasticsearch;
 import io.camunda.configuration.Rdbms;
+import io.camunda.db.rdbms.write.RdbmsWriterConfig;
+import io.camunda.db.rdbms.write.RdbmsWriterFactory;
+import io.camunda.search.connect.configuration.ConnectConfiguration;
+import io.camunda.search.connect.es.ElasticsearchConnector;
 import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,12 +28,17 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 public class StandaloneMigrator implements CommandLineRunner {
 
   private static final Logger LOG = LoggerFactory.getLogger(StandaloneMigrator.class);
-  private final Elasticsearch elasticsearch;
+  private final ConnectConfiguration elasticsearch;
   private final Rdbms rdbms;
+  private final RdbmsWriterFactory rdbmsWriterFactory;
 
-  public StandaloneMigrator(final Elasticsearch elasticsearch, final Rdbms rdbms) {
+  public StandaloneMigrator(
+      final ConnectConfiguration elasticsearch,
+      final Rdbms rdbms,
+      final RdbmsWriterFactory rdbmsWriterFactory) {
     this.elasticsearch = elasticsearch;
     this.rdbms = rdbms;
+    this.rdbmsWriterFactory = rdbmsWriterFactory;
   }
 
   public static void main(final String[] args) throws IOException {
@@ -50,8 +60,9 @@ public class StandaloneMigrator implements CommandLineRunner {
     MainSupport.createDefaultApplicationBuilder()
         .web(WebApplicationType.NONE)
         .logStartupInfo(true)
-        .sources(Configuration.class)
+        .sources(Configuration.class, StandaloneMigrator.class, RdbmsConfiguration.class)
         .addCommandLineProperties(true)
+        .properties("camunda.data.secondary-storage.type=rdbms")
         .listeners(new ApplicationErrorListener())
         .run(args);
 
@@ -66,6 +77,11 @@ public class StandaloneMigrator implements CommandLineRunner {
   public void run(final String... args) throws Exception {
     try {
       LOG.info("Starting migration from ES to RDBMS ...");
+      final ElasticsearchClient client = new ElasticsearchConnector(elasticsearch).createClient();
+      final var rdbmsWriter =
+          rdbmsWriterFactory.createWriter(new RdbmsWriterConfig.Builder().build());
+      ProcessDefReader.readProcessDefinitions(client).stream()
+          .forEach(rdbmsWriter.getProcessDefinitionWriter()::create);
     } catch (final Exception e) {
       LOG.error("Failed to migrate from ES to RDBMS", e);
       throw e;
@@ -76,7 +92,7 @@ public class StandaloneMigrator implements CommandLineRunner {
   public static class Configuration {}
 
   @ConfigurationProperties("camunda.migration.es")
-  public static class ElasticsearchProperties extends Elasticsearch {}
+  public static class ElasticsearchProperties extends ConnectConfiguration {}
 
   @ConfigurationProperties("camunda.migration.rdbms")
   public static class RdbmsProperties extends Rdbms {}
