@@ -469,7 +469,7 @@ public final class SystemContext {
   // Validation is done here, only to be able to stop the application on error.
   private void validateInitializationConfig() {
     final IdentifierValidator identifierValidator =
-        new IdentifierValidator(securityConfiguration.getCompiledIdValidationPattern());
+        new IdentifierValidator(securityConfiguration.getCompiledIdValidationPattern(), securityConfiguration.getCompiledGroupIdValidationPattern());
     final AuthorizationConfigurer authorizationConfigurer =
         new AuthorizationConfigurer(new AuthorizationValidator(identifierValidator));
     final TenantConfigurer tenantConfigurer =

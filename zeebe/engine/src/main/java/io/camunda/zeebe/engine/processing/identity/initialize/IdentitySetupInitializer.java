@@ -46,16 +46,19 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
   private final AuthorizationConfigurer authorizationConfigurer;
   private final TenantConfigurer tenantConfigurer;
   private final PasswordEncoder passwordEncoder;
+  private final RoleConfigurer roleConfigurer;
 
   public IdentitySetupInitializer(
       final SecurityConfiguration securityConfig,
       final boolean enableIdentitySetup,
       final AuthorizationConfigurer authorizationConfigurer,
-      final TenantConfigurer tenantConfigurer) {
+      final TenantConfigurer tenantConfigurer,
+      final RoleConfigurer roleConfigurer) {
     this.securityConfig = securityConfig;
     this.enableIdentitySetup = enableIdentitySetup;
     this.authorizationConfigurer = authorizationConfigurer;
     this.tenantConfigurer = tenantConfigurer;
+    this.roleConfigurer = roleConfigurer;
     passwordEncoder = PasswordEncoderFactories.createDelegatingPasswordEncoder();
   }
 
@@ -100,6 +103,8 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
         authorizationConfigurer.configureEntities(initialization.getAuthorizations());
     final Either<List<String>, List<TenantRecord>> configuredTenants =
         tenantConfigurer.configureEntities(initialization.getTenants());
+    final Either<List<String>, List<RoleRecord>> configuredRoles =
+        roleConfigurer.configureEntities(initialization.getRoles());
 
     configuredAuthorizations.ifLeft(
         (violations) -> {
@@ -113,13 +118,24 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
               "Found invalid tenants. Aborting identity initialization! %n- %s"
                   .formatted(String.join(System.lineSeparator() + "- ", violations)));
         });
+    configuredRoles.ifLeft(
+        (violations) -> {
+          throw new IdentityInitializationException(
+              "Found invalid roles. Aborting identity initialization! %n- %s"
+                  .formatted(String.join(System.lineSeparator() + "- ", violations)));
+        });
     configuredAuthorizations.ifRight(auths -> auths.forEach(setupRecord::addAuthorization));
     configuredTenants.ifRight(tenants -> tenants.forEach(setupRecord::addTenant));
+    configuredRoles.ifRight(roles -> roles.forEach(setupRecord::addRole));
     initialization
         .getTenants()
         .forEach(
             tenant ->
                 tenantConfigurer.configureMembers(tenant).forEach(setupRecord::addTenantMember));
+
+    initialization
+        .getRoles()
+        .forEach(role -> roleConfigurer.configureMembers(role).forEach(setupRecord::addRoleMember));
 
     initialization
         .getUsers()

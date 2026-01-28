@@ -16,8 +16,6 @@ import java.util.List;
 
 public class TenantValidator {
 
-  public static final String DEFAULT_TENANT_ID = "<default>";
-
   private final IdentifierValidator identifierValidator;
 
   public TenantValidator(final IdentifierValidator identifierValidator) {
@@ -43,7 +41,7 @@ public class TenantValidator {
   }
 
   private void validateTenantId(final String id, final List<String> violations) {
-    identifierValidator.validateTenantId(id, violations, DEFAULT_TENANT_ID::equals);
+    identifierValidator.validateTenantId(id, violations);
   }
 
   private static void validateTenantName(final String name, final List<String> violations) {
