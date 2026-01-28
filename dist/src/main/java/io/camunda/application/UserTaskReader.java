@@ -8,6 +8,8 @@
 package io.camunda.application;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.FieldValue;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import io.camunda.db.rdbms.write.domain.UserTaskDbModel;
@@ -25,7 +27,7 @@ import java.util.List;
  */
 public final class UserTaskReader {
 
-  private static final String INDEX_NAME = "tasklist-task-8.3.0_alias";
+  private static final String INDEX_NAME = "tasklist-task-8.8.0_alias";
 
   private UserTaskReader() {}
 
@@ -36,10 +38,13 @@ public final class UserTaskReader {
    * @return list of TaskEntity objects from ES
    */
   public static List<TaskEntity> readAllUserTasksFromEs(final ElasticsearchClient esClient) {
+    final var query =
+        Query.of(q -> q.term(t -> t.field("join.name").value(FieldValue.of("task"))));
+
     final var searchRequestBuilder =
         new SearchRequest.Builder()
             .index(INDEX_NAME)
-            .query(ElasticsearchUtil.matchAllQuery())
+            .query(query)
             .size(ElasticsearchUtil.QUERY_MAX_SIZE);
 
     return ElasticsearchUtil.scrollAllStream(esClient, searchRequestBuilder, TaskEntity.class)
