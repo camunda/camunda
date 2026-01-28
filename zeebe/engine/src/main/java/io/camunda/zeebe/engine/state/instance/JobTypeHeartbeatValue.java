@@ -11,6 +11,7 @@ import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 
 public final class JobTypeHeartbeatValue extends UnpackedObject implements DbValue {
   private final StringProperty workerProp = new StringProperty("worker");
@@ -26,7 +27,7 @@ public final class JobTypeHeartbeatValue extends UnpackedObject implements DbVal
   }
 
   public String getWorker() {
-    return workerProp.getValue();
+    return BufferUtil.bufferAsString(workerProp.getValue());
   }
 
   public void setLastSeenAt(final long timestamp) {

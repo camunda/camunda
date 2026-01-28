@@ -10,7 +10,7 @@ package io.camunda.zeebe.engine.state.mutable;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.instance.JobTypeHeartbeatValue;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
-import javax.annotation.Nullable;
+import org.springframework.lang.Nullable;
 
 public interface MutableJobState extends JobState {
 

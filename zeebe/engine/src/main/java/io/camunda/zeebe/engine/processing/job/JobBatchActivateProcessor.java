@@ -128,12 +128,6 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
     final JobBatchRecord value = record.getValue();
     final long jobBatchKey = keyGenerator.nextKey();
 
-    // Update heartbeat before collecting jobs
-    state
-        .getJobState()
-        .updateJobTypeHeartbeat(
-            value.getType(), value.getTenantId(), value.getWorker(), clock.millis());
-
     final Either<TooLargeJob, Map<JobKind, Integer>> result = jobBatchCollector.collectJobs(record);
     final var activatedJobCountPerJobKind = result.getOrElse(Collections.emptyMap());
     result.ifLeft(
