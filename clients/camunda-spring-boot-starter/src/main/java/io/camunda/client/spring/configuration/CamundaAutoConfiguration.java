@@ -35,6 +35,8 @@ import org.springframework.context.annotation.Bean;
   CamundaActuatorConfiguration.class,
   MetricsDefaultConfiguration.class,
   JsonMapperConfiguration.class,
+  Jackson3JsonMapperConfiguration.class,
+  DefaultJsonMapperConfiguration.class,
   ZeebeClientProdAutoConfiguration.class
 })
 public class CamundaAutoConfiguration {
