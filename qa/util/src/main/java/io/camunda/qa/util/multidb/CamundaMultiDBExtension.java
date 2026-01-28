@@ -433,8 +433,20 @@ public class CamundaMultiDBExtension
     }
 
     // we need to close the test application before cleaning up
-    closeables.add(() -> setupHelper.cleanup(testPrefix));
-    closeables.add(setupHelper);
+    /*closeables.add(() -> setupHelper.cleanup(testPrefix));
+    closeables.add(setupHelper);*/
+    closeables.add(
+        () ->
+            Thread.ofVirtual()
+                .start(
+                    () -> {
+                      try {
+                        setupHelper.cleanup(testPrefix);
+                        setupHelper.close();
+                      } catch (final Exception e) {
+                        LOGGER.warn("Could not clean up multi database setup", e);
+                      }
+                    }));
 
     Awaitility.await("Await secondary storage connection")
         .timeout(TIMEOUT_DATABASE_READINESS)
