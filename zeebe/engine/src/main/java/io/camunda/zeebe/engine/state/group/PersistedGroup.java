@@ -16,10 +16,10 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 
 public class PersistedGroup extends UnpackedObject implements DbValue {
 
-  private final LongProperty groupKeyProp = new LongProperty("groupKey");
-  private final StringProperty groupIdProp = new StringProperty("groupId");
-  private final StringProperty descriptionProp = new StringProperty("description");
-  private final StringProperty nameProp = new StringProperty("name");
+  private final LongProperty groupKeyProp = new LongProperty("groupKey", -1L);
+  private final StringProperty groupIdProp = new StringProperty("groupId", "");
+  private final StringProperty descriptionProp = new StringProperty("description", "");
+  private final StringProperty nameProp = new StringProperty("name", "");
 
   public PersistedGroup() {
     super(4);
