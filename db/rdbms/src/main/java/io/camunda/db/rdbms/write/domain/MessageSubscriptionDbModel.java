@@ -26,7 +26,6 @@ public class MessageSubscriptionDbModel implements Copyable<MessageSubscriptionD
   private String correlationKey;
   private String tenantId;
   private int partitionId;
-  private OffsetDateTime historyCleanupDate;
 
   public MessageSubscriptionDbModel(final Long messageSubscriptionKey) {
     this.messageSubscriptionKey = messageSubscriptionKey;
@@ -45,8 +44,7 @@ public class MessageSubscriptionDbModel implements Copyable<MessageSubscriptionD
       final String messageName,
       final String correlationKey,
       final String tenantId,
-      final int partitionId,
-      final OffsetDateTime historyCleanupDate) {
+      final int partitionId) {
     this.messageSubscriptionKey = messageSubscriptionKey;
     this.processDefinitionId = processDefinitionId;
     this.processDefinitionKey = processDefinitionKey;
@@ -60,7 +58,6 @@ public class MessageSubscriptionDbModel implements Copyable<MessageSubscriptionD
     this.correlationKey = correlationKey;
     this.tenantId = tenantId;
     this.partitionId = partitionId;
-    this.historyCleanupDate = historyCleanupDate;
   }
 
   public Long messageSubscriptionKey() {
@@ -168,15 +165,6 @@ public class MessageSubscriptionDbModel implements Copyable<MessageSubscriptionD
     return this;
   }
 
-  public OffsetDateTime historyCleanupDate() {
-    return historyCleanupDate;
-  }
-
-  public MessageSubscriptionDbModel historyCleanupDate(final OffsetDateTime historyCleanupDate) {
-    this.historyCleanupDate = historyCleanupDate;
-    return this;
-  }
-
   @Override
   public MessageSubscriptionDbModel copy(
       final Function<
@@ -199,8 +187,7 @@ public class MessageSubscriptionDbModel implements Copyable<MessageSubscriptionD
         .messageName(messageName)
         .correlationKey(correlationKey)
         .tenantId(tenantId)
-        .partitionId(partitionId)
-        .historyCleanupDate(historyCleanupDate);
+        .partitionId(partitionId);
   }
 
   public static class Builder implements ObjectBuilder<MessageSubscriptionDbModel> {
@@ -217,7 +204,6 @@ public class MessageSubscriptionDbModel implements Copyable<MessageSubscriptionD
     private String correlationKey;
     private String tenantId;
     private int partitionId;
-    private OffsetDateTime historyCleanupDate;
 
     public Builder messageSubscriptionKey(final Long messageSubscriptionKey) {
       this.messageSubscriptionKey = messageSubscriptionKey;
@@ -285,11 +271,6 @@ public class MessageSubscriptionDbModel implements Copyable<MessageSubscriptionD
       return this;
     }
 
-    public Builder historyCleanupDate(final OffsetDateTime historyCleanupDate) {
-      this.historyCleanupDate = historyCleanupDate;
-      return this;
-    }
-
     @Override
     public MessageSubscriptionDbModel build() {
       return new MessageSubscriptionDbModel(
@@ -305,8 +286,7 @@ public class MessageSubscriptionDbModel implements Copyable<MessageSubscriptionD
           messageName,
           correlationKey,
           tenantId,
-          partitionId,
-          historyCleanupDate);
+          partitionId);
     }
   }
 }

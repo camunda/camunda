@@ -56,16 +56,14 @@
                                         PROCESS_DEFINITION_KEY,
                                         PROCESS_DEFINITION_ID,
                                         TENANT_ID,
-                                        PARTITION_ID,
-                                        HISTORY_CLEANUP_DATE)
+                                        PARTITION_ID)
     VALUES (#{flowNodeId},
             #{processInstanceKey},
             #{rootProcessInstanceKey},
             #{processDefinitionKey},
             #{processDefinitionId},
             #{tenantId},
-            #{partitionId},
-            #{historyCleanupDate, jdbcType=TIMESTAMP})
+            #{partitionId})
   </insert>
 
   <insert id="createIfNotExists"
@@ -76,16 +74,14 @@
                                         PROCESS_DEFINITION_KEY,
                                         PROCESS_DEFINITION_ID,
                                         TENANT_ID,
-                                        PARTITION_ID,
-                                        HISTORY_CLEANUP_DATE)
+                                        PARTITION_ID)
     VALUES (#{flowNodeId},
             #{processInstanceKey},
             #{rootProcessInstanceKey},
             #{processDefinitionKey},
             #{processDefinitionId},
             #{tenantId},
-            #{partitionId},
-            #{historyCleanupDate, jdbcType=TIMESTAMP})
+            #{partitionId})
     ON CONFLICT DO NOTHING
   </insert>
 
@@ -97,16 +93,14 @@
                                         PROCESS_DEFINITION_KEY,
                                         PROCESS_DEFINITION_ID,
                                         TENANT_ID,
-                                        PARTITION_ID,
-                                        HISTORY_CLEANUP_DATE)
+                                        PARTITION_ID)
     VALUES (#{flowNodeId},
             #{processInstanceKey},
             #{rootProcessInstanceKey},
             #{processDefinitionKey},
             #{processDefinitionId},
             #{tenantId},
-            #{partitionId},
-            #{historyCleanupDate, jdbcType=TIMESTAMP})
+            #{partitionId})
     ON DUPLICATE KEY UPDATE FLOW_NODE_ID = FLOW_NODE_ID -- this will not trigger an update
   </insert>
 
@@ -118,16 +112,14 @@
                                         PROCESS_DEFINITION_KEY,
                                         PROCESS_DEFINITION_ID,
                                         TENANT_ID,
-                                        PARTITION_ID,
-                                        HISTORY_CLEANUP_DATE)
+                                        PARTITION_ID)
     VALUES (#{flowNodeId},
             #{processInstanceKey},
             #{rootProcessInstanceKey},
             #{processDefinitionKey},
             #{processDefinitionId},
             #{tenantId},
-            #{partitionId},
-            #{historyCleanupDate, jdbcType=TIMESTAMP})
+            #{partitionId})
     ON DUPLICATE KEY UPDATE FLOW_NODE_ID = FLOW_NODE_ID -- this will not trigger an update
   </insert>
 
@@ -143,16 +135,14 @@
             PROCESS_DEFINITION_KEY,
             PROCESS_DEFINITION_ID,
             TENANT_ID,
-            PARTITION_ID,
-            HISTORY_CLEANUP_DATE)
+            PARTITION_ID)
     VALUES (#{flowNodeId},
             #{processInstanceKey},
             #{rootProcessInstanceKey},
             #{processDefinitionKey},
             #{processDefinitionId},
             #{tenantId},
-            #{partitionId},
-            #{historyCleanupDate, jdbcType=TIMESTAMP})
+            #{partitionId})
   </insert>
 
   <insert id="createIfNotExists"
@@ -167,16 +157,14 @@
             PROCESS_DEFINITION_KEY,
             PROCESS_DEFINITION_ID,
             TENANT_ID,
-            PARTITION_ID,
-            HISTORY_CLEANUP_DATE)
+            PARTITION_ID)
     VALUES (#{flowNodeId},
             #{processInstanceKey},
             #{rootProcessInstanceKey},
             #{processDefinitionKey},
             #{processDefinitionId},
             #{tenantId},
-            #{partitionId},
-            #{historyCleanupDate, jdbcType=TIMESTAMP})
+            #{partitionId})
   </insert>
 
   <insert id="createIfNotExists"
@@ -191,16 +179,14 @@
               PROCESS_DEFINITION_KEY,
               PROCESS_DEFINITION_ID,
               TENANT_ID,
-              PARTITION_ID,
-              HISTORY_CLEANUP_DATE)
+              PARTITION_ID)
       VALUES (#{flowNodeId},
               #{processInstanceKey},
               #{rootProcessInstanceKey},
               #{processDefinitionKey},
               #{processDefinitionId},
               #{tenantId},
-              #{partitionId},
-              #{historyCleanupDate, jdbcType=TIMESTAMP});
+              #{partitionId});
   </insert>
 
   <delete id="deleteProcessInstanceRelatedData">

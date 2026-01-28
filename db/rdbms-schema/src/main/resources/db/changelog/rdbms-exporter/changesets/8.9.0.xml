@@ -121,7 +121,6 @@
       <column name="TENANT_ID" type="VARCHAR(${userCharColumnSize})"/>
       <column name="IS_PREVIEW" type="BOOLEAN"/>
       <column name="PARTITION_ID" type="NUMBER"/>
-      <column name="HISTORY_CLEANUP_DATE" type="TIMESTAMP WITH TIME ZONE(3)"/>
     </createTable>
 
     <createIndex tableName="${prefix}VARIABLE" indexName="${prefix}IDX_VARIABLE_PROCESS_INSTANCE_KEY">
@@ -133,19 +132,7 @@
     <createIndex tableName="${prefix}VARIABLE" indexName="${prefix}IDX_VARIABLE_TENANT_ID">
       <column name="TENANT_ID"/>
     </createIndex>
-    <createIndex tableName="${prefix}VARIABLE" indexName="${prefix}IDX_VARIABLE_HIST">
-      <column name="PARTITION_ID" />
-      <column name="HISTORY_CLEANUP_DATE" />
-    </createIndex>
 
-
-    <modifySql dbms="mariadb,mysql">
-      <!-- MariaDB doesn't support TIMESTAMP WITH TIME ZONE, but its TIMESTAMP type has already a time zone -->
-      <replace replace="TIMESTAMP WITH TIME ZONE" with="TIMESTAMP"/>
-    </modifySql>
-    <modifySql dbms="mssql">
-      <replace replace="datetime2" with="DATETIMEOFFSET"/>
-    </modifySql>
     <modifySql dbms="oracle">
       <!-- Oracle only supports a size 4000 characters in varchar2 -->
       <replace replace="VARCHAR2(8192)" with="VARCHAR2(4000)"/>
@@ -174,7 +161,6 @@
       <column name="INCIDENT_KEY" type="BIGINT"/>
       <column name="NUM_SUBPROCESS_INCIDENTS" type="SMALLINT"/>
       <column name="PARTITION_ID" type="NUMBER"/>
-      <column name="HISTORY_CLEANUP_DATE" type="TIMESTAMP WITH TIME ZONE(3)"/>
     </createTable>
 
     <createIndex tableName="${prefix}FLOW_NODE_INSTANCE" indexName="${prefix}IDX_FLOW_NODE_INSTANCE_PI_KEY">
@@ -183,11 +169,6 @@
 
     <createIndex tableName="${prefix}FLOW_NODE_INSTANCE" indexName="${prefix}IDX_FLOW_NODE_INSTANCE_RPI_KEY">
       <column name="ROOT_PROCESS_INSTANCE_KEY"/>
-    </createIndex>
-
-    <createIndex tableName="${prefix}FLOW_NODE_INSTANCE" indexName="${prefix}IDX_FLOW_NODE_INSTANCE_HIST">
-      <column name="PARTITION_ID" />
-      <column name="HISTORY_CLEANUP_DATE" />
     </createIndex>
 
     <modifySql dbms="mariadb,mysql">
@@ -224,7 +205,6 @@
       <column name="CUSTOM_HEADERS" type="CLOB"/>
       <column name="PRIORITY" type="INT"/>
       <column name="PARTITION_ID" type="NUMBER"/>
-      <column name="HISTORY_CLEANUP_DATE" type="TIMESTAMP WITH TIME ZONE(3)"/>
     </createTable>
 
     <createIndex tableName="${prefix}USER_TASK" indexName="${prefix}IDX_USER_TASK_PI_KEY">
@@ -277,11 +257,6 @@
       <column name="USER_TASK_KEY"/>
     </createIndex>
 
-    <createIndex tableName="${prefix}USER_TASK" indexName="${prefix}IDX_USER_TASK_HIST">
-      <column name="PARTITION_ID" />
-      <column name="HISTORY_CLEANUP_DATE" />
-    </createIndex>
-
     <modifySql dbms="mariadb,mysql">
       <!-- MariaDB doesn't support TIMESTAMP WITH TIME ZONE, but its TIMESTAMP type has already a time zone -->
       <replace replace="TIMESTAMP WITH TIME ZONE" with="TIMESTAMP"/>
@@ -313,7 +288,6 @@
       <column name="JOB_KEY" type="BIGINT"/>
       <column name="SCOPE_KEY" type="BIGINT"/>
       <column name="PARTITION_ID" type="NUMBER"/>
-      <column name="HISTORY_CLEANUP_DATE" type="TIMESTAMP WITH TIME ZONE(3)"/>
     </createTable>
 
     <createIndex tableName="${prefix}INCIDENT" indexName="${prefix}IDX_INCIDENT_PI_KEY">
@@ -322,11 +296,6 @@
 
     <createIndex tableName="${prefix}INCIDENT" indexName="${prefix}IDX_INCIDENT_RPI_KEY">
       <column name="ROOT_PROCESS_INSTANCE_KEY"/>
-    </createIndex>
-
-    <createIndex tableName="${prefix}INCIDENT" indexName="${prefix}IDX_INCIDENT_HIST">
-      <column name="PARTITION_ID" />
-      <column name="HISTORY_CLEANUP_DATE" />
     </createIndex>
 
     <modifySql dbms="mariadb,mysql">
@@ -717,7 +686,6 @@
       <column name="IS_DENIED" type="BOOLEAN"/>
       <column name="DENIED_REASON" type="VARCHAR(${userCharColumnSize})"/>
       <column name="PARTITION_ID" type="NUMBER"/>
-      <column name="HISTORY_CLEANUP_DATE" type="TIMESTAMP WITH TIME ZONE(3)"/>
     </createTable>
 
     <createIndex tableName="${prefix}JOB" indexName="${prefix}IDX_JOB_PI_KEY">
@@ -730,11 +698,6 @@
 
     <createIndex tableName="${prefix}JOB" indexName="${prefix}IDX_JOB_FNI_KEY">
       <column name="ELEMENT_INSTANCE_KEY"/>
-    </createIndex>
-
-    <createIndex tableName="${prefix}JOB" indexName="${prefix}IDX_JOB_HIST">
-      <column name="PARTITION_ID" />
-      <column name="HISTORY_CLEANUP_DATE" />
     </createIndex>
 
     <modifySql dbms="mariadb,mysql">
@@ -759,7 +722,6 @@
       <column name="PROCESS_DEFINITION_ID" type="VARCHAR(${userCharColumnSize})"/>
       <column name="TENANT_ID" type="VARCHAR(${userCharColumnSize})"/>
       <column name="PARTITION_ID" type="NUMBER"/>
-      <column name="HISTORY_CLEANUP_DATE" type="TIMESTAMP WITH TIME ZONE(3)"/>
     </createTable>
 
     <createIndex tableName="${prefix}SEQUENCE_FLOW" indexName="${prefix}IDX_SEQUENCE_FLOW_PROCESS_INSTANCE_KEY">
@@ -769,19 +731,6 @@
     <createIndex tableName="${prefix}SEQUENCE_FLOW" indexName="${prefix}IDX_SEQUENCE_FLOW_ROOT_PROCESS_INSTANCE_KEY">
       <column name="ROOT_PROCESS_INSTANCE_KEY"/>
     </createIndex>
-
-    <createIndex tableName="${prefix}SEQUENCE_FLOW" indexName="${prefix}IDX_SEQUENCE_FLOW_HIST">
-      <column name="PARTITION_ID" />
-      <column name="HISTORY_CLEANUP_DATE" />
-    </createIndex>
-
-    <modifySql dbms="mariadb,mysql">
-      <!-- MariaDB doesn't support TIMESTAMP WITH TIME ZONE, but its TIMESTAMP type has already a time zone -->
-      <replace replace="TIMESTAMP WITH TIME ZONE" with="TIMESTAMP"/>
-    </modifySql>
-    <modifySql dbms="mssql">
-      <replace replace="datetime2" with="DATETIMEOFFSET"/>
-    </modifySql>
   </changeSet>
 
   <changeSet id="create_usage_metric_tables" author="camunda">
@@ -866,7 +815,6 @@
       <column name="CORRELATION_KEY" type="VARCHAR(${userCharColumnSize})"/>
       <column name="TENANT_ID" type="VARCHAR(${userCharColumnSize})"/>
       <column name="PARTITION_ID" type="NUMBER"/>
-      <column name="HISTORY_CLEANUP_DATE" type="TIMESTAMP WITH TIME ZONE(3)"/>
     </createTable>
 
     <createIndex tableName="${prefix}MESSAGE_SUBSCRIPTION" indexName="${prefix}IDX_MESSAGE_SUBSCRIPTION_PI_KEY">
@@ -879,11 +827,6 @@
 
     <createIndex tableName="${prefix}MESSAGE_SUBSCRIPTION" indexName="${prefix}IDX_MESSAGE_SUBSCRIPTION_FNI_KEY">
       <column name="FLOW_NODE_INSTANCE_KEY"/>
-    </createIndex>
-
-    <createIndex tableName="${prefix}MESSAGE_SUBSCRIPTION" indexName="${prefix}IDX_MESSAGE_SUBSCRIPTION_HIST">
-      <column name="PARTITION_ID" />
-      <column name="HISTORY_CLEANUP_DATE" />
     </createIndex>
 
     <modifySql dbms="mariadb,mysql">
@@ -901,7 +844,6 @@
       <column name="CORRELATION_TIME" type="TIMESTAMP WITH TIME ZONE(3)"/>
       <column name="FLOW_NODE_ID" type="VARCHAR(${userCharColumnSize})"/>
       <column name="FLOW_NODE_INSTANCE_KEY" type="BIGINT"/>
-      <column name="HISTORY_CLEANUP_DATE" type="TIMESTAMP WITH TIME ZONE(3)"/>
       <column name="MESSAGE_KEY" type="BIGINT">
         <constraints primaryKey="true"/>
       </column>
@@ -917,11 +859,6 @@
       <column name="SUBSCRIPTION_TYPE" type="VARCHAR(255)"/>
       <column name="TENANT_ID" type="VARCHAR(${userCharColumnSize})"/>
     </createTable>
-
-    <createIndex tableName="${prefix}CORRELATED_MESSAGE_SUBSCRIPTION" indexName="${prefix}IDX_CORRELATED_MESSAGE_SUBSCRIPTION_HIST">
-      <column name="PARTITION_ID" />
-      <column name="HISTORY_CLEANUP_DATE" />
-    </createIndex>
 
     <createIndex tableName="${prefix}CORRELATED_MESSAGE_SUBSCRIPTION" indexName="${prefix}IDX_CORRELATED_MESSAGE_SUBSCRIPTION_PI_KEY">
       <column name="PROCESS_INSTANCE_KEY"/>

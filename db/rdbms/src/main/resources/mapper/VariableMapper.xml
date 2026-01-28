@@ -141,11 +141,11 @@
   <insert id="insert" parameterType="io.camunda.db.rdbms.sql.VariableMapper$BatchInsertVariablesDto">
     INSERT INTO ${prefix}VARIABLE (VAR_KEY, PROCESS_INSTANCE_KEY, ROOT_PROCESS_INSTANCE_KEY, PROCESS_DEFINITION_ID, SCOPE_KEY, TYPE, VAR_NAME, DOUBLE_VALUE,
                                    LONG_VALUE, VAR_VALUE, VAR_FULL_VALUE, TENANT_ID, IS_PREVIEW,
-                                   PARTITION_ID, HISTORY_CLEANUP_DATE)
+                                   PARTITION_ID)
     VALUES
     <foreach collection="variables" item="variable" separator=",">
       (#{variable.variableKey}, #{variable.processInstanceKey}, #{variable.rootProcessInstanceKey}, #{variable.processDefinitionId}, #{variable.scopeKey}, #{variable.type}, #{variable.name}, #{variable.doubleValue, jdbcType=DOUBLE},
-       #{variable.longValue, jdbcType=NUMERIC}, #{variable.value}, #{variable.fullValue}, #{variable.tenantId}, #{variable.isPreview}, #{variable.partitionId}, #{variable.historyCleanupDate, jdbcType=TIMESTAMP})
+       #{variable.longValue, jdbcType=NUMERIC}, #{variable.value}, #{variable.fullValue}, #{variable.tenantId}, #{variable.isPreview}, #{variable.partitionId})
     </foreach>
   </insert>
 
@@ -156,8 +156,7 @@
           LONG_VALUE   = #{longValue, jdbcType=NUMERIC},
           VAR_VALUE  = #{value},
           VAR_FULL_VALUE = #{fullValue},
-          IS_PREVIEW     = #{isPreview},
-          HISTORY_CLEANUP_DATE = #{historyCleanupDate, jdbcType=TIMESTAMP}
+          IS_PREVIEW     = #{isPreview}
       WHERE VAR_KEY = #{variableKey}
   </update>
 

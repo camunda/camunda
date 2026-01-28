@@ -43,7 +43,6 @@ public class FlowNodeInstanceEntityMapperTest {
             .hasIncident(true)
             .tenantId("tenantId")
             .partitionId(7)
-            .historyCleanupDate(OffsetDateTime.now().plusDays(1))
             .build();
 
     // When
@@ -87,7 +86,6 @@ public class FlowNodeInstanceEntityMapperTest {
             .hasIncident(true)
             .tenantId(null)
             .partitionId(0)
-            .historyCleanupDate(null)
             .build();
 
     // When
