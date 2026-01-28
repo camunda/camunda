@@ -10,6 +10,8 @@ import {useCallback, useEffect, useState} from 'react';
 import {callLLM, continueWithToolResults, type LLMConfig} from './llmClient';
 import {executeMcpTool, fetchMcpTools, type McpClientConfig} from './mcpClient';
 import type {McpTool} from './types';
+import type {VisualizationData} from './visualizations/types';
+import {analyzeToolResponse} from './visualizations/dataTransform';
 
 export type ToolCall = {
   id?: string;
@@ -24,6 +26,7 @@ export type Message = {
   role: 'user' | 'assistant' | 'system';
   content: string;
   toolCalls?: ToolCall[];
+  visualization?: VisualizationData;
   createdAt: Date;
 };
 
@@ -148,6 +151,7 @@ export function useChat({
 
       // Collect all tool calls across multiple rounds
       let allToolCalls: ToolCall[] = [];
+      let visualization: VisualizationData | undefined;
 
       // Track all tool calls and results for building proper OpenAI message history
       // Each entry contains the assistant's tool_calls and the corresponding results
@@ -181,6 +185,20 @@ export function useChat({
 
         // Add to collected tool calls
         allToolCalls = [...allToolCalls, ...currentToolCalls];
+
+        // Analyze tool results for visualization opportunities (use first visualization found)
+        if (!visualization) {
+          for (const toolCall of currentToolCalls) {
+            if (!toolCall.isError && toolCall.result) {
+              const viz = analyzeToolResponse(toolCall.name, toolCall.result);
+              if (viz) {
+                visualization = viz;
+                console.log('[useChat] Generated visualization:', viz.type, 'for tool:', toolCall.name);
+                break; // Use first visualizable result
+              }
+            }
+          }
+        }
 
         // If there were tool calls, send results back to LLM
         if (response.finishReason === 'tool_calls') {
@@ -225,6 +243,7 @@ export function useChat({
         role: 'assistant',
         content: response.content,
         toolCalls: allToolCalls.length > 0 ? allToolCalls : undefined,
+        visualization,
         createdAt: new Date(),
       };
 

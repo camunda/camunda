@@ -150,8 +150,8 @@ const ChatMessages = styled.div`
   }
 `;
 
-const MessageBubble = styled.div<{$role: 'user' | 'assistant' | 'system'}>`
-  max-width: 85%;
+const MessageBubble = styled.div<{$role: 'user' | 'assistant' | 'system'; $hasChart?: boolean}>`
+  max-width: ${({$hasChart}) => ($hasChart ? '95%' : '85%')};
   padding: var(--cds-spacing-04);
   border-radius: 12px;
   word-wrap: break-word;

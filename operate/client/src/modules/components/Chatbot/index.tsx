@@ -25,6 +25,7 @@ import type {LLMConfig} from './llmClient';
 import type {McpClientConfig} from './mcpClient';
 import {chatbotStore} from 'modules/stores/chatbot';
 import {observer} from 'mobx-react';
+import {ChartRenderer} from './visualizations/ChartRenderer';
 
 type ChatbotProps = {
   /** LLM provider configuration */
@@ -213,10 +214,14 @@ const Chatbot: React.FC<ChatbotProps> = observer(({
                 <MessageBubble
                   key={message.id}
                   $role={message.role}
+                  $hasChart={!!message.visualization}
                 >
                   <div className="message-content">
                     {message.content}
                   </div>
+                  {message.visualization && (
+                    <ChartRenderer visualization={message.visualization} />
+                  )}
                   {showToolResults && message.toolCalls && message.toolCalls.length > 0 && (
                     <div className="tool-calls">
                       {message.toolCalls.map((tool: ToolCall, idx: number) => (
