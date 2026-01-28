@@ -24,7 +24,10 @@ import {
   useIsRootNodeSelected,
 } from 'modules/hooks/flowNodeSelection';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
-import {IS_ELEMENT_SELECTION_V2} from 'modules/feature-flags';
+import {
+  IS_ELEMENT_SELECTION_V2,
+  IS_INSTANCE_MODIFICATION_V2,
+} from 'modules/feature-flags';
 
 const VariablesForm: React.FC<FormRenderProps<VariableFormValues>> = observer(
   ({handleSubmit, form, values}) => {
@@ -51,6 +54,10 @@ const VariablesForm: React.FC<FormRenderProps<VariableFormValues>> = observer(
         return false;
       }
 
+      if (IS_INSTANCE_MODIFICATION_V2) {
+        return isPlaceholderSelected;
+      }
+
       if (isRootNodeSelected) {
         return !willAllFlowNodesBeCanceled;
       }
@@ -68,6 +75,10 @@ const VariablesForm: React.FC<FormRenderProps<VariableFormValues>> = observer(
         flowNodeSelectionStore.state.selection === null
       ) {
         return false;
+      }
+
+      if (IS_INSTANCE_MODIFICATION_V2) {
+        return isPlaceholderSelected;
       }
 
       if (isRootNodeSelected) {
