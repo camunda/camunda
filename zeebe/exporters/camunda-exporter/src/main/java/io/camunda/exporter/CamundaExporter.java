@@ -53,6 +53,7 @@ import io.camunda.search.schema.SchemaManager;
 import io.camunda.search.schema.SearchEngineClient;
 import io.camunda.search.schema.config.SchemaManagerConfiguration;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
+import io.camunda.search.schema.exceptions.IncompatibleVersionException;
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.ExporterException;
@@ -63,6 +64,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.util.VisibleForTesting;
+import io.camunda.zeebe.util.retry.RetryDecorator;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
@@ -127,8 +129,18 @@ public class CamundaExporter implements Exporter {
       try (final var schemaManager = createSchemaManager()) {
         if (!schemaManager.isSchemaReadyForUse()) {
           schemaManager.startup();
-          throw new ExporterException("Schema is not ready for use");
         }
+
+        new RetryDecorator()
+            .withRetryOnException(e -> !(e instanceof IncompatibleVersionException))
+            .decorate(
+                "Check if schema ready for use",
+                () -> {
+                  if (!schemaManager.isSchemaReadyForUse()) {
+                    throw new ExporterException(
+                        "The Schema for partition:" + partitionId + " is not ready for use");
+                  }
+                });
       }
 
       writer = createBatchWriter();
