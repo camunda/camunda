@@ -60,7 +60,7 @@
     "rollup-plugin-license": "^3.5.3",
     "rollup-plugin-sbom": "3.0.0",
     "sass": "1.89.2",
-    "typescript": "5.8.2",
+    "typescript": "5.9.3",
     "vite": "7.0.8",
     "vite-plugin-svgr": "^4.3.0"
   },
