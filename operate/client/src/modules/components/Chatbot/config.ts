@@ -54,6 +54,9 @@ export function initializeChatbot() {
     baseUrl: '/mcp', // Camunda MCP Gateway - same origin as Operate
   });
 
+  // Hide tool results in chat UI by default (set to true for debugging)
+  chatbotStore.setShowToolResults(false);
+
   console.log('[Chatbot] Initialization complete. isEnabled:', chatbotStore.isEnabled, 'isConfigured:', chatbotStore.isConfigured);
 }
 

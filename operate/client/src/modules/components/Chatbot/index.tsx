@@ -22,6 +22,8 @@ import {
 import {type Message, type ToolCall, useChat} from './useChat';
 import type {LLMConfig} from './llmClient';
 import type {McpClientConfig} from './mcpClient';
+import {chatbotStore} from 'modules/stores/chatbot';
+import {observer} from 'mobx-react';
 
 type ChatbotProps = {
   /** LLM provider configuration */
@@ -32,7 +34,7 @@ type ChatbotProps = {
   placeholder?: string;
 };
 
-const Chatbot: React.FC<ChatbotProps> = ({
+const Chatbot: React.FC<ChatbotProps> = observer(({
   llmConfig,
   mcpConfig,
   placeholder = 'Ask about your processes...',
@@ -40,6 +42,9 @@ const Chatbot: React.FC<ChatbotProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  // Get showToolResults from store
+  const showToolResults = chatbotStore.showToolResults;
 
   const {
     messages,
@@ -141,7 +146,7 @@ const Chatbot: React.FC<ChatbotProps> = ({
                   <div className="message-content">
                     {message.content}
                   </div>
-                  {message.toolCalls && message.toolCalls.length > 0 && (
+                  {showToolResults && message.toolCalls && message.toolCalls.length > 0 && (
                     <div className="tool-calls">
                       {message.toolCalls.map((tool: ToolCall, idx: number) => (
                         <div key={idx} className="tool-call">
@@ -215,6 +220,6 @@ const Chatbot: React.FC<ChatbotProps> = ({
       </ChatbotToggle>
     </ChatbotContainer>
   );
-};
+});
 
 export {Chatbot};

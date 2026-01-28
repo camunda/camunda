@@ -17,6 +17,8 @@ type ChatbotConfig = {
   llmConfig: LLMConfig;
   /** MCP gateway configuration */
   mcpConfig: McpClientConfig;
+  /** Whether to show tool call results in the chat UI (for debugging) */
+  showToolResults: boolean;
 };
 
 const DEFAULT_CONFIG: ChatbotConfig = {
@@ -29,6 +31,7 @@ const DEFAULT_CONFIG: ChatbotConfig = {
   mcpConfig: {
     baseUrl: '/mcp',
   },
+  showToolResults: false, // Hidden by default, enable for debugging
 };
 
 class ChatbotStore {
@@ -135,6 +138,15 @@ class ChatbotStore {
 
   get mcpConfig() {
     return this.config.mcpConfig;
+  }
+
+  get showToolResults() {
+    return this.config.showToolResults;
+  }
+
+  setShowToolResults(show: boolean) {
+    this.config.showToolResults = show;
+    this.saveToStorage();
   }
 }
 
