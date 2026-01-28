@@ -159,7 +159,7 @@ class RecordBatchTest {
     assertThat(either.isLeft()).isTrue();
     assertThat(either.getLeft())
         .hasMessageContaining("Can't append entry")
-        .hasMessageContaining("[ currentBatchEntryCount: 1, currentBatchSize: 448]");
+        .hasMessageContaining("[ currentBatchEntryCount: 1, currentBatchSize: 206]");
   }
 
   @Test
@@ -195,7 +195,7 @@ class RecordBatchTest {
     recordBatch.appendRecord(1, RECORD_METADATA, -1, processInstanceRecord);
 
     // when
-    final var canAppend = recordBatch.canAppendRecordOfLength(recordBatch.getBatchSize());
+    final var canAppend = recordBatch.canAppendRecordOfLength(500);
 
     // then
     assertThat(canAppend).isFalse();
