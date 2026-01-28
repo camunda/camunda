@@ -17,15 +17,15 @@ import io.camunda.webapps.schema.entities.ProcessEntity;
 import java.util.List;
 
 /**
- * Migrator that reads process definitions from Elasticsearch and converts them to RDBMS models.
+ * Reader that reads process definitions from Elasticsearch and converts them to RDBMS models.
  *
  * <p>This is part of the ES to RDBMS migration tooling.
  */
-public final class ProcessDefMigrator {
+public final class ProcessDefReader {
 
   private static final String INDEX_NAME = "operate-process-8.3.0_alias";
 
-  private ProcessDefMigrator() {}
+  private ProcessDefReader() {}
 
   /**
    * Reads all process definitions from Elasticsearch.
@@ -70,10 +70,10 @@ public final class ProcessDefMigrator {
    * @param esClient the Elasticsearch client
    * @return list of ProcessDefinitionDbModel objects ready for RDBMS insertion
    */
-  public static List<ProcessDefinitionDbModel> migrateProcessDefinitions(
+  public static List<ProcessDefinitionDbModel> readProcessDefinitions(
       final ElasticsearchClient esClient) {
     return readAllProcessEntitiesFromEs(esClient).stream()
-        .map(ProcessDefMigrator::toRdbmsModel)
+        .map(ProcessDefReader::toRdbmsModel)
         .toList();
   }
 }
