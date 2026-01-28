@@ -140,7 +140,7 @@ public final class LogStreamImpl implements LogStream, CommitListener {
     return newReader;
   }
 
-  private LogStreamReader createNonCommitedLogStreamReader(){
+  private LogStreamReader createNonCommitedLogStreamReader() {
     final var newReader = new LogStreamReaderImpl(logStorage.newUncommittedReader());
     readers.add(newReader);
     return newReader;

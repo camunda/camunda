@@ -309,8 +309,11 @@ final class SequencerTest {
     }
 
     @Override
-    public void append(final long lowestPosition, final long highestPosition,
-        final ByteBuffer blockBuffer, final AppendListener listener) {
+    public void append(
+        final long lowestPosition,
+        final long highestPosition,
+        final ByteBuffer blockBuffer,
+        final AppendListener listener) {
       LogStorage.super.append(lowestPosition, highestPosition, blockBuffer, listener);
     }
 

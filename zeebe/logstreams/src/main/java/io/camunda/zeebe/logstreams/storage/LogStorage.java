@@ -37,8 +37,7 @@ public interface LogStorage {
    *
    * @return a new stateful storage reader
    */
-   LogStorageReader newUncommittedReader();
-
+  LogStorageReader newUncommittedReader();
 
   /**
    * Writes a block containing one or multiple log entries in the storage and returns the address at
