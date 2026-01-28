@@ -337,10 +337,6 @@ public class CamundaExporter implements Exporter {
     }
 
     flusher.flush();
-
-    // Update the record counters only after the flush was successful. If the synchronous flush
-    // fails then the exporter will be invoked with the same record again.
-    updateLastExportedPosition(lastPosition);
   }
 
   private void updateLastExportedPosition(final long lastPosition) {
@@ -412,6 +408,7 @@ public class CamundaExporter implements Exporter {
       }
 
       final var currentWriter = writer;
+      final var currentLastPosition = lastPosition;
       flushExecutorService.submit(
           () -> {
             try (final var ignored = metrics.measureFlushDuration()) {
@@ -427,6 +424,11 @@ public class CamundaExporter implements Exporter {
             } finally {
               semaphore.release();
             }
+
+            // Update the record counters only after the flush was successful. If the synchronous
+            // flush
+            // fails then the exporter will be invoked with the same record again.
+            updateLastExportedPosition(currentLastPosition);
           });
       writer = createBatchWriter();
     }
