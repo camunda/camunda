@@ -38,6 +38,7 @@ import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.telemetry.OpenTelemetryGatewayInterceptor;
 import io.camunda.zeebe.transport.stream.api.ClientStreamer;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.TlsConfigUtil;
@@ -410,6 +411,7 @@ public final class Gateway implements CloseableSilently {
     // chain
     Collections.reverse(interceptors);
     interceptors.add(new ContextInjectingInterceptor(queryApi));
+    interceptors.add(new OpenTelemetryGatewayInterceptor());
 
     if (securityConfiguration.isApiProtected()) {
       final var authMethod = securityConfiguration.getAuthentication().getMethod();
