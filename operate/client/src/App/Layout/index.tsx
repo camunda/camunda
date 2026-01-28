@@ -11,6 +11,13 @@ import {AppHeader} from './AppHeader';
 import {PageContent} from './styled';
 import {observer} from 'mobx-react';
 import {C3Provider} from './C3Provider';
+import {Chatbot} from 'modules/components/Chatbot';
+import {chatbotStore} from 'modules/stores/chatbot';
+import {initializeChatbot} from 'modules/components/Chatbot/config';
+
+// Initialize chatbot with Perplexity AI Pro configuration
+// To activate: chatbotStore.setApiKey('pplx-your-api-key') in browser console
+initializeChatbot();
 
 const Layout: React.FC = observer(() => {
   return (
@@ -19,6 +26,12 @@ const Layout: React.FC = observer(() => {
       <PageContent id="main-content">
         <Outlet />
       </PageContent>
+      {chatbotStore.isEnabled && (
+        <Chatbot
+          llmConfig={chatbotStore.llmConfig}
+          mcpConfig={chatbotStore.mcpConfig}
+        />
+      )}
     </C3Provider>
   );
 });

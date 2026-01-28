@@ -87,7 +87,8 @@
     <profile>
       <id>skipFrontendBuild</id>
       <properties>
-        <skip.fe.build>true</skip.fe.build>
+        <!-- we always want ot build the operate fronend but not the others -->
+        <skip.fe.build>false</skip.fe.build>
       </properties>
     </profile>
   </profiles>
