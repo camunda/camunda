@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.protocol.record;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import java.util.Map;
 import org.immutables.value.Value;
@@ -160,4 +161,7 @@ public interface Record<T extends RecordValue> extends JsonSerializable {
         "Failed to create a deep copy of this record; this implementation does not support this out"
             + " of the box");
   }
+
+  @JsonIgnore
+  int getSerializedLength();
 }

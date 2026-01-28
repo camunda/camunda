@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.stream.impl.records;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
@@ -103,6 +104,12 @@ public class UnwrittenRecord implements TypedRecord {
   @Override
   public long getBatchOperationReference() {
     return metadata.getBatchOperationReference();
+  }
+
+  @JsonIgnore
+  @Override
+  public int getSerializedLength() {
+    return metadata.getSerializedLength();
   }
 
   @Override
