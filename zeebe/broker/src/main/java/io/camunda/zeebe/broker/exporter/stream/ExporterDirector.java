@@ -69,7 +69,6 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   // Use concrete type because it must be modifiable
   private final ArrayList<ExporterContainer> containers;
   private final LogStream logStream;
-  private final boolean uncommittedReader;
   private final RecordExporter recordExporter;
   private final ZeebeDb zeebeDb;
   private final ExporterMetrics metrics;
@@ -114,7 +113,6 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     partitionId = logStream.getPartitionId();
     meterRegistry = context.getMeterRegistry();
     clock = context.getClock();
-    uncommittedReader = context.isUncommittedReader();
     containers =
         context.getDescriptors().entrySet().stream()
             .map(
@@ -591,7 +589,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   }
 
   private void restartActiveExportingMode() {
-    logStreamReader = logStream.newLogStreamReader();
+    logStreamReader = logStream.newUncommitedLogsStreamReader();
     startActiveExportingFrom(-1);
   }
 
