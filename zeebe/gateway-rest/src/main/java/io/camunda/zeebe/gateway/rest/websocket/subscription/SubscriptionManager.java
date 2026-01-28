@@ -25,6 +25,8 @@ public class SubscriptionManager {
   private final Map<String, ProcessInstanceSubscription> subscriptions = new ConcurrentHashMap<>();
   private final Map<String, SequenceFlowsSubscription> sequenceFlowsSubscriptions =
       new ConcurrentHashMap<>();
+  private final Map<String, ElementInstanceStatisticsSubscription> elementStatisticsSubscriptions =
+      new ConcurrentHashMap<>();
   private final WebSocketSession session;
   private final ProcessInstanceServices processInstanceServices;
   private final TaskScheduler taskScheduler;
@@ -48,6 +50,7 @@ public class SubscriptionManager {
     return switch (topic) {
       case "process-instance" -> subscribeToProcessInstance(parameters);
       case "sequence-flows" -> subscribeToSequenceFlows(parameters);
+      case "element-instance-statistics" -> subscribeToElementStatistics(parameters);
       default -> throw new IllegalArgumentException("Unsupported topic: " + topic);
     };
   }
@@ -104,6 +107,33 @@ public class SubscriptionManager {
     return subscriptionId;
   }
 
+  private String subscribeToElementStatistics(final Map<String, Object> parameters) {
+    final Long processInstanceKey = extractProcessInstanceKey(parameters);
+
+    // Generate subscription ID
+    final String subscriptionId = UUID.randomUUID().toString();
+
+    // Create and start subscription
+    final ElementInstanceStatisticsSubscription subscription =
+        new ElementInstanceStatisticsSubscription(
+            subscriptionId,
+            processInstanceKey,
+            session,
+            processInstanceServices,
+            objectMapper,
+            authenticationProvider);
+
+    elementStatisticsSubscriptions.put(subscriptionId, subscription);
+    subscription.startPolling(taskScheduler, 200L); // 200ms poll interval (0.2s)
+
+    LOGGER.debug(
+        "Created subscription {} for element statistics of process instance {}",
+        subscriptionId,
+        processInstanceKey);
+
+    return subscriptionId;
+  }
+
   private Long extractProcessInstanceKey(final Map<String, Object> parameters) {
     final Object keyObj = parameters.get("processInstanceKey");
     if (keyObj == null) {
@@ -138,11 +168,23 @@ public class SubscriptionManager {
     if (sfSubscription != null) {
       sfSubscription.stopPolling();
       LOGGER.debug("Removed sequence flows subscription {}", subscriptionId);
+      return;
+    }
+
+    // Try element statistics subscriptions
+    final ElementInstanceStatisticsSubscription esSubscription =
+        elementStatisticsSubscriptions.remove(subscriptionId);
+    if (esSubscription != null) {
+      esSubscription.stopPolling();
+      LOGGER.debug("Removed element statistics subscription {}", subscriptionId);
     }
   }
 
   public void stopAll() {
-    final int totalCount = subscriptions.size() + sequenceFlowsSubscriptions.size();
+    final int totalCount =
+        subscriptions.size()
+            + sequenceFlowsSubscriptions.size()
+            + elementStatisticsSubscriptions.size();
     LOGGER.debug("Stopping all {} subscriptions", totalCount);
 
     subscriptions.values().forEach(ProcessInstanceSubscription::stopPolling);
@@ -150,10 +192,16 @@ public class SubscriptionManager {
 
     sequenceFlowsSubscriptions.values().forEach(SequenceFlowsSubscription::stopPolling);
     sequenceFlowsSubscriptions.clear();
+
+    elementStatisticsSubscriptions
+        .values()
+        .forEach(ElementInstanceStatisticsSubscription::stopPolling);
+    elementStatisticsSubscriptions.clear();
   }
 
   public boolean hasSubscription(final String subscriptionId) {
     return subscriptions.containsKey(subscriptionId)
-        || sequenceFlowsSubscriptions.containsKey(subscriptionId);
+        || sequenceFlowsSubscriptions.containsKey(subscriptionId)
+        || elementStatisticsSubscriptions.containsKey(subscriptionId);
   }
 }
