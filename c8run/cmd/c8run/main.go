@@ -607,7 +607,11 @@ func copyFile(src, dst string) error {
 	if err != nil {
 		return err
 	}
-	defer srcFile.Close()
+	defer func() {
+		if cerr := srcFile.Close(); cerr != nil {
+			log.Err(cerr).Str("path", src).Msg("Failed to close source file")
+		}
+	}()
 
 	destFile, err := os.Create(dst)
 	if err != nil {
