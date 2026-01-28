@@ -119,7 +119,9 @@ import org.springframework.security.web.header.writers.CrossOriginEmbedderPolicy
 import org.springframework.security.web.header.writers.CrossOriginOpenerPolicyHeaderWriter.CrossOriginOpenerPolicy;
 import org.springframework.security.web.header.writers.CrossOriginResourcePolicyHeaderWriter.CrossOriginResourcePolicy;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy;
+import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 import org.springframework.security.web.savedrequest.NullRequestCache;
+import org.springframework.security.web.savedrequest.RequestCache;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -867,9 +869,12 @@ public class WebSecurityConfig {
         final OAuth2AuthorizedClientManager authorizedClientManager,
         final OidcTokenEndpointCustomizer tokenEndpointCustomizer)
         throws Exception {
+
+      final RequestCache requestCache = new HttpSessionRequestCache();
       final var filterChainBuilder =
           httpSecurity
               .securityMatcher(WEBAPP_PATHS.toArray(new String[0]))
+              .requestCache(c -> c.requestCache(requestCache))
               .authorizeHttpRequests(
                   (authorizeHttpRequests) ->
                       authorizeHttpRequests
@@ -899,6 +904,9 @@ public class WebSecurityConfig {
               .oauth2Login(
                   oauthLoginConfigurer -> {
                     oauthLoginConfigurer
+                        .successHandler(
+                            new ExternalClientRedirectLoginSuccessHandler(
+                                requestCache, authorizedClientRepository))
                         .clientRegistrationRepository(clientRegistrationRepository)
                         .authorizedClientRepository(authorizedClientRepository)
                         .redirectionEndpoint(
