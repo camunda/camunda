@@ -8,29 +8,24 @@
 package io.camunda.db.rdbms.write.service;
 
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
-import io.camunda.db.rdbms.sql.HistoryCleanupMapper.CleanupHistoryDto;
 import io.camunda.db.rdbms.sql.JobMapper;
-import io.camunda.db.rdbms.sql.ProcessBasedHistoryCleanupMapper;
 import io.camunda.db.rdbms.write.domain.JobDbModel;
 import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
-import io.camunda.db.rdbms.write.queue.UpdateHistoryCleanupDateMerger;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
-import java.time.OffsetDateTime;
 
-public class JobWriter {
+public class JobWriter extends ProcessInstanceDependant implements RdbmsWriter {
 
   private final ExecutionQueue executionQueue;
-  private final JobMapper mapper;
   private final VendorDatabaseProperties vendorDatabaseProperties;
 
   public JobWriter(
       final ExecutionQueue executionQueue,
       final JobMapper mapper,
       final VendorDatabaseProperties vendorDatabaseProperties) {
+    super(mapper);
     this.executionQueue = executionQueue;
-    this.mapper = mapper;
     this.vendorDatabaseProperties = vendorDatabaseProperties;
   }
 
@@ -54,36 +49,5 @@ public class JobWriter {
             job.jobKey(),
             "io.camunda.db.rdbms.sql.JobMapper.update",
             job));
-  }
-
-  public void scheduleForHistoryCleanup(
-      final Long processInstanceKey, final OffsetDateTime historyCleanupDate) {
-    final var wasMerged =
-        executionQueue.tryMergeWithExistingQueueItem(
-            new UpdateHistoryCleanupDateMerger(
-                ContextType.JOB, processInstanceKey, historyCleanupDate));
-
-    if (!wasMerged) {
-      executionQueue.executeInQueue(
-          new QueueItem(
-              ContextType.JOB,
-              WriteStatementType.UPDATE,
-              processInstanceKey,
-              "io.camunda.db.rdbms.sql.JobMapper.updateHistoryCleanupDate",
-              new ProcessBasedHistoryCleanupMapper.UpdateHistoryCleanupDateDto.Builder()
-                  .processInstanceKey(processInstanceKey)
-                  .historyCleanupDate(historyCleanupDate)
-                  .build()));
-    }
-  }
-
-  public int cleanupHistory(
-      final int partitionId, final OffsetDateTime cleanupDate, final int rowsToRemove) {
-    return mapper.cleanupHistory(
-        new CleanupHistoryDto.Builder()
-            .partitionId(partitionId)
-            .cleanupDate(cleanupDate)
-            .limit(rowsToRemove)
-            .build());
   }
 }

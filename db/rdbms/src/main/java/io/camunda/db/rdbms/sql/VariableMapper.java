@@ -9,13 +9,16 @@ package io.camunda.db.rdbms.sql;
 
 import io.camunda.db.rdbms.read.domain.VariableDbQuery;
 import io.camunda.db.rdbms.write.domain.VariableDbModel;
+import io.camunda.db.rdbms.write.queue.BatchInsertDto;
 import io.camunda.search.entities.VariableEntity;
 import io.camunda.util.ObjectBuilder;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 
-public interface VariableMapper extends ProcessBasedHistoryCleanupMapper {
+public interface VariableMapper extends ProcessInstanceDependantMapper {
 
-  void insert(VariableDbModel variable);
+  void insert(BatchInsertVariablesDto dto);
 
   void update(VariableDbModel variable);
 
@@ -45,6 +48,43 @@ public interface VariableMapper extends ProcessBasedHistoryCleanupMapper {
       @Override
       public MigrateToProcessDto build() {
         return new MigrateToProcessDto(variableKey, processDefinitionId);
+      }
+    }
+  }
+
+  record BatchInsertVariablesDto(List<VariableDbModel> variables)
+      implements BatchInsertDto<BatchInsertVariablesDto, VariableDbModel> {
+
+    @Override
+    public BatchInsertVariablesDto withAdditionalDbModel(final VariableDbModel variable) {
+      return new Builder().variables(new ArrayList<>(variables)).variable(variable).build();
+    }
+
+    @Override
+    public BatchInsertVariablesDto copy(
+        final Function<
+                ObjectBuilder<BatchInsertVariablesDto>, ObjectBuilder<BatchInsertVariablesDto>>
+            copyFunction) {
+      return copyFunction.apply(new Builder().variables(new ArrayList<>(variables))).build();
+    }
+
+    public static class Builder implements ObjectBuilder<BatchInsertVariablesDto> {
+
+      private List<VariableDbModel> variables = new ArrayList<>();
+
+      public Builder variable(final VariableDbModel variable) {
+        variables.add(variable);
+        return this;
+      }
+
+      public Builder variables(final List<VariableDbModel> variables) {
+        this.variables = variables;
+        return this;
+      }
+
+      @Override
+      public BatchInsertVariablesDto build() {
+        return new BatchInsertVariablesDto(variables);
       }
     }
   }

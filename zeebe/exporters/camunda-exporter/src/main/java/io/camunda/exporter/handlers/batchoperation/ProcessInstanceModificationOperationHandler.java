@@ -40,6 +40,11 @@ public class ProcessInstanceModificationOperationHandler
   }
 
   @Override
+  long getRootProcessInstanceKey(final Record<ProcessInstanceModificationRecordValue> record) {
+    return record.getValue().getRootProcessInstanceKey();
+  }
+
+  @Override
   long getItemKey(final Record<ProcessInstanceModificationRecordValue> record) {
     return record.getValue().getProcessInstanceKey();
   }

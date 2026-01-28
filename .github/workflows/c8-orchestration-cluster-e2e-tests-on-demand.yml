@@ -34,7 +34,7 @@ jobs:
           fi
           echo "Branch '$branch_name' exists."
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Detect base branch
         id: detect-base
@@ -63,7 +63,7 @@ jobs:
           echo "Input branch: ${{ github.event.inputs.branch }}"
           echo "Base branch: ${{ needs.validate-branch.outputs.base }}"
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: ${{ github.event.inputs.branch }}
 
@@ -141,7 +141,7 @@ jobs:
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: npm
@@ -156,7 +156,7 @@ jobs:
 
       - name: Import Secrets
         id: secrets
-        uses: hashicorp/vault-action@2c5827061f1ad91ca97897d6257ebe638e033699
+        uses: hashicorp/vault-action@79632e33d6953d190b940ffa440bf97821cabd80
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -173,7 +173,7 @@ jobs:
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
       - name: Python setup
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.x"
 
@@ -251,7 +251,7 @@ jobs:
           echo "Base branch: ${{ needs.validate-branch.outputs.base }}"
           echo "Tasklist mode: ${{ matrix.tasklist_mode }}"
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: ${{ github.event.inputs.branch }}
 
@@ -335,7 +335,7 @@ jobs:
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: npm
@@ -350,7 +350,7 @@ jobs:
 
       - name: Import Secrets
         id: secrets
-        uses: hashicorp/vault-action@2c5827061f1ad91ca97897d6257ebe638e033699
+        uses: hashicorp/vault-action@79632e33d6953d190b940ffa440bf97821cabd80
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -367,7 +367,7 @@ jobs:
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
       - name: Python setup
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.x"
 

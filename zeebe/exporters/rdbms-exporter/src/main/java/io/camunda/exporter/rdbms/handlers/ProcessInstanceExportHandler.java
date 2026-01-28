@@ -91,6 +91,7 @@ public class ProcessInstanceExportHandler
 
     return new ProcessInstanceDbModelBuilder()
         .processInstanceKey(value.getProcessInstanceKey())
+        .rootProcessInstanceKey(value.getRootProcessInstanceKey())
         .processDefinitionId(value.getBpmnProcessId())
         .processDefinitionKey(value.getProcessDefinitionKey())
         .state(ProcessInstanceState.ACTIVE)

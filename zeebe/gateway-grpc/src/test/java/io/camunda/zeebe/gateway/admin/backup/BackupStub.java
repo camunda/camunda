@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.gateway.admin.backup;
 
+import io.camunda.zeebe.backup.client.api.BackupResponse;
+import io.camunda.zeebe.backup.client.api.BrokerBackupRequest;
 import io.camunda.zeebe.broker.client.api.dto.BrokerError;
 import io.camunda.zeebe.broker.client.api.dto.BrokerErrorResponse;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;

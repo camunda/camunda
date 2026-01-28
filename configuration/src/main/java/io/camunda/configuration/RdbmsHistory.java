@@ -7,9 +7,8 @@
  */
 package io.camunda.configuration;
 
-import static io.camunda.exporter.rdbms.ExporterConfiguration.DEFAULT_CLEANUP_BATCH_SIZE;
-
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
+import io.camunda.db.rdbms.write.RdbmsWriterConfig.HistoryConfig;
 import java.time.Duration;
 
 public class RdbmsHistory {
@@ -73,7 +72,11 @@ public class RdbmsHistory {
       RdbmsWriterConfig.HistoryConfig.DEFAULT_MAX_HISTORY_CLEANUP_INTERVAL;
 
   /** The number of history records to delete in one batch. */
-  private Integer historyCleanupBatchSize = DEFAULT_CLEANUP_BATCH_SIZE;
+  private Integer historyCleanupBatchSize = HistoryConfig.DEFAULT_HISTORY_CLEANUP_BATCH_SIZE;
+
+  /** The number of historic process instances to delete in one batch. */
+  private Integer historyCleanupProcessInstanceBatchSize =
+      RdbmsWriterConfig.HistoryConfig.DEFAULT_HISTORY_CLEANUP_PROCESS_INSTANCE_BATCH_SIZE;
 
   /** Interval how often usage metrics cleanup is performed. Specified in Java Duration format. */
   private Duration usageMetricsCleanup =
@@ -183,5 +186,14 @@ public class RdbmsHistory {
 
   public void setUsageMetricsTTL(final Duration usageMetricsTTL) {
     this.usageMetricsTTL = usageMetricsTTL;
+  }
+
+  public Integer getHistoryCleanupProcessInstanceBatchSize() {
+    return historyCleanupProcessInstanceBatchSize;
+  }
+
+  public void setHistoryCleanupProcessInstanceBatchSize(
+      final Integer historyCleanupProcessInstanceBatchSize) {
+    this.historyCleanupProcessInstanceBatchSize = historyCleanupProcessInstanceBatchSize;
   }
 }

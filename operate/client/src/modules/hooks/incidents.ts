@@ -17,6 +17,8 @@ import {useProcessInstancesSearch} from 'modules/queries/processInstance/useProc
 import {useSearchParams} from 'react-router-dom';
 import {parseSortParamsV2} from 'modules/utils/filter';
 import {useMemo} from 'react';
+import {useProcessInstanceElementSelection} from './useProcessInstanceElementSelection';
+import {IS_ELEMENT_SELECTION_V2} from 'modules/feature-flags';
 
 type EnhancedIncident = Incident & {
   processDefinitionName: string;
@@ -29,6 +31,7 @@ const useEnhancedIncidents = (incidents: Incident[]): EnhancedIncident[] => {
   const instancesWithIncident = Array.from(
     new Set(incidents.map((incident) => incident.processInstanceKey)),
   );
+  const {isSelected} = useProcessInstanceElementSelection();
 
   const {data: processDefinitionNames} = useProcessInstancesSearch(
     {
@@ -52,11 +55,17 @@ const useEnhancedIncidents = (incidents: Incident[]): EnhancedIncident[] => {
         businessObjects,
         flowNodeId: incident.elementId,
       }),
-      isSelected: flowNodeSelectionStore.isSelected({
-        flowNodeId: incident.elementId,
-        flowNodeInstanceId: incident.elementInstanceKey,
-        isMultiInstance: false,
-      }),
+      isSelected: IS_ELEMENT_SELECTION_V2
+        ? isSelected({
+            elementId: incident.elementId,
+            elementInstanceKey: incident.elementInstanceKey,
+            isMultiInstanceBody: false,
+          })
+        : flowNodeSelectionStore.isSelected({
+            flowNodeId: incident.elementId,
+            flowNodeInstanceId: incident.elementInstanceKey,
+            isMultiInstance: false,
+          }),
       processDefinitionName:
         processDefinitionNames?.[incident.processInstanceKey] ?? '',
     };

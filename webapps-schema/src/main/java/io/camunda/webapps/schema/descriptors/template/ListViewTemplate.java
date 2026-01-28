@@ -57,6 +57,7 @@ public class ListViewTemplate extends AbstractTemplateDescriptor implements Prio
       "activity"; // now we call it flow node instance
   public static final String VARIABLES_JOIN_RELATION = "variable";
   public static final String TAGS = "tags";
+  public static final String ROOT_PROCESS_INSTANCE_KEY = "rootProcessInstanceKey";
 
   public ListViewTemplate(final String indexPrefix, final boolean isElasticsearch) {
     super(indexPrefix, isElasticsearch);

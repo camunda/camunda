@@ -29,27 +29,38 @@ public final class ProcessInstanceModificationMoveInstruction extends ObjectValu
     implements ProcessInstanceModificationMoveInstructionValue {
 
   private final StringProperty sourceElementIdProperty = new StringProperty("sourceElementId", "");
+  private final LongProperty sourceElementInstanceKeyProperty =
+      new LongProperty("sourceElementInstanceKey", -1);
   private final StringProperty targetElementIdProperty = new StringProperty("targetElementId", "");
   private final ArrayProperty<ProcessInstanceModificationVariableInstruction>
       variableInstructionsProperty =
           new ArrayProperty<>(
               "variableInstructions", ProcessInstanceModificationVariableInstruction::new);
   private final LongProperty ancestorScopeKeyProperty = new LongProperty("ancestorScopeKey", -1);
-  private final BooleanProperty useSourceParentKeyAsAncestorScopeProperty =
-      new BooleanProperty("useSourceParentKeyAsAncestorScope", false);
+  private final BooleanProperty inferAncestorScopeFromSourceHierarchy =
+      new BooleanProperty("inferAncestorScopeFromSourceHierarchy", false);
+  private final BooleanProperty useSourceParentKeyAsAncestorScopeKey =
+      new BooleanProperty("useSourceParentKeyAsAncestorScopeKey", false);
 
   public ProcessInstanceModificationMoveInstruction() {
-    super(5);
+    super(7);
     declareProperty(sourceElementIdProperty)
+        .declareProperty(sourceElementInstanceKeyProperty)
         .declareProperty(targetElementIdProperty)
         .declareProperty(variableInstructionsProperty)
         .declareProperty(ancestorScopeKeyProperty)
-        .declareProperty(useSourceParentKeyAsAncestorScopeProperty);
+        .declareProperty(inferAncestorScopeFromSourceHierarchy)
+        .declareProperty(useSourceParentKeyAsAncestorScopeKey);
   }
 
   @Override
   public String getSourceElementId() {
     return BufferUtil.bufferAsString(getSourceElementIdBuffer());
+  }
+
+  @Override
+  public long getSourceElementInstanceKey() {
+    return sourceElementInstanceKeyProperty.getValue();
   }
 
   @Override
@@ -87,19 +98,36 @@ public final class ProcessInstanceModificationMoveInstruction extends ObjectValu
   }
 
   @Override
-  public boolean isUseSourceParentKeyAsAncestorScope() {
-    return useSourceParentKeyAsAncestorScopeProperty.getValue();
+  public boolean isInferAncestorScopeFromSourceHierarchy() {
+    return inferAncestorScopeFromSourceHierarchy.getValue();
   }
 
-  public ProcessInstanceModificationMoveInstruction setUseSourceParentKeyAsAncestorScope(
-      final boolean useSourceParentKeyAsAncestorScope) {
-    useSourceParentKeyAsAncestorScopeProperty.setValue(useSourceParentKeyAsAncestorScope);
+  public ProcessInstanceModificationMoveInstruction setInferAncestorScopeFromSourceHierarchy(
+      final boolean inferAncestorScopeFromSource) {
+    inferAncestorScopeFromSourceHierarchy.setValue(inferAncestorScopeFromSource);
+    return this;
+  }
+
+  @Override
+  public boolean isUseSourceParentKeyAsAncestorScopeKey() {
+    return useSourceParentKeyAsAncestorScopeKey.getValue();
+  }
+
+  public ProcessInstanceModificationMoveInstruction setUseSourceParentKeyAsAncestorScopeKey(
+      final boolean useSourceParentKey) {
+    useSourceParentKeyAsAncestorScopeKey.setValue(useSourceParentKey);
     return this;
   }
 
   public ProcessInstanceModificationMoveInstruction setTargetElementId(
       final String targetElementId) {
     targetElementIdProperty.setValue(targetElementId);
+    return this;
+  }
+
+  public ProcessInstanceModificationMoveInstruction setSourceElementInstanceKey(
+      final long sourceElementInstanceKey) {
+    sourceElementInstanceKeyProperty.setValue(sourceElementInstanceKey);
     return this;
   }
 
@@ -134,12 +162,14 @@ public final class ProcessInstanceModificationMoveInstruction extends ObjectValu
   public ProcessInstanceModificationMoveInstruction copy(
       final ProcessInstanceModificationMoveInstructionValue object) {
     setSourceElementId(object.getSourceElementId());
+    setSourceElementInstanceKey(object.getSourceElementInstanceKey());
     setTargetElementId(object.getTargetElementId());
     object.getVariableInstructions().stream()
         .map(ProcessInstanceModificationVariableInstruction.class::cast)
         .forEach(this::addVariableInstruction);
     setAncestorScopeKey(object.getAncestorScopeKey());
-    setUseSourceParentKeyAsAncestorScope(object.isUseSourceParentKeyAsAncestorScope());
+    setInferAncestorScopeFromSourceHierarchy(object.isInferAncestorScopeFromSourceHierarchy());
+    setUseSourceParentKeyAsAncestorScopeKey(object.isUseSourceParentKeyAsAncestorScopeKey());
     return this;
   }
 

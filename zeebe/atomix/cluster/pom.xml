@@ -73,7 +73,12 @@
 
     <dependency>
       <groupId>io.netty</groupId>
-      <artifactId>netty-codec</artifactId>
+      <artifactId>netty-codec-base</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.netty</groupId>
+      <artifactId>netty-codec-compression</artifactId>
     </dependency>
 
     <dependency>
@@ -175,6 +180,12 @@
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-junit-jupiter</artifactId>
       <scope>test</scope>
     </dependency>
 

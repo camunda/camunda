@@ -158,5 +158,8 @@ public class UserTaskProcessInstanceHandlerTest {
     assertThat(processInstanceEntity.getJoin()).isNotNull();
     assertThat(processInstanceEntity.getJoin().getName())
         .isEqualTo(TaskJoinRelationshipType.PROCESS.getType());
+    assertThat(processInstanceEntity.getRootProcessInstanceKey())
+        .isPositive()
+        .isEqualTo(processInstanceRecord.getValue().getRootProcessInstanceKey());
   }
 }

@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.authorization;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationScope.WILDCARD;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.engine.processing.identity.authorization.property.UserTaskAuthorizationProperties;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.EngineRule.ResetRecordingExporterMode;
 import io.camunda.zeebe.engine.util.EngineRule.ResetRecordingExporterTestWatcherMode;
@@ -90,6 +91,7 @@ public class IdentitySetupInitializeDefaultsTest {
                     .hasOnlyPermissionTypes(
                         PermissionType.READ,
                         PermissionType.READ_USAGE_METRIC,
+                        PermissionType.READ_JOB_METRIC,
                         PermissionType.UPDATE),
             auth ->
                 Assertions.assertThat(auth)
@@ -198,7 +200,15 @@ public class IdentitySetupInitializeDefaultsTest {
             auth ->
                 Assertions.assertThat(auth)
                     .hasResourceType(AuthorizationResourceType.AUDIT_LOG)
-                    .hasOnlyPermissionTypes(PermissionType.READ));
+                    .hasOnlyPermissionTypes(PermissionType.READ),
+            auth ->
+                Assertions.assertThat(auth)
+                    .hasResourceType(AuthorizationResourceType.GLOBAL_LISTENER)
+                    .hasOnlyPermissionTypes(
+                        PermissionType.CREATE_TASK_LISTENER,
+                        PermissionType.READ_TASK_LISTENER,
+                        PermissionType.UPDATE_TASK_LISTENER,
+                        PermissionType.DELETE_TASK_LISTENER));
   }
 
   @Test
@@ -246,7 +256,10 @@ public class IdentitySetupInitializeDefaultsTest {
             auth ->
                 Assertions.assertThat(auth)
                     .hasResourceType(AuthorizationResourceType.SYSTEM)
-                    .hasOnlyPermissionTypes(PermissionType.READ, PermissionType.READ_USAGE_METRIC),
+                    .hasOnlyPermissionTypes(
+                        PermissionType.READ,
+                        PermissionType.READ_USAGE_METRIC,
+                        PermissionType.READ_JOB_METRIC),
             auth ->
                 Assertions.assertThat(auth)
                     .hasResourceType(AuthorizationResourceType.TENANT)
@@ -299,7 +312,11 @@ public class IdentitySetupInitializeDefaultsTest {
             auth ->
                 Assertions.assertThat(auth)
                     .hasResourceType(AuthorizationResourceType.AUDIT_LOG)
-                    .hasOnlyPermissionTypes(PermissionType.READ));
+                    .hasOnlyPermissionTypes(PermissionType.READ),
+            auth ->
+                Assertions.assertThat(auth)
+                    .hasResourceType(AuthorizationResourceType.GLOBAL_LISTENER)
+                    .hasOnlyPermissionTypes(PermissionType.READ_TASK_LISTENER));
   }
 
   @Test
@@ -409,5 +426,45 @@ public class IdentitySetupInitializeDefaultsTest {
                 Assertions.assertThat(auth)
                     .hasResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
                     .hasOnlyPermissionTypes(PermissionType.UPDATE_PROCESS_INSTANCE));
+  }
+
+  @Test
+  public void shouldCreateTaskWorkerRoleByDefault() {
+    // then
+    assertThat(
+            RecordingExporter.records()
+                .limit(r -> r.getIntent() == IdentitySetupIntent.INITIALIZED)
+                .authorizationRecords()
+                .withOwnerId(DefaultRole.TASK_WORKER.getId()))
+        .extracting(Record::getValue)
+        .describedAs(
+            "Expect all task-worker role authorizations to be owned by the task-worker role")
+        .allSatisfy(
+            auth ->
+                Assertions.assertThat(auth)
+                    .hasOwnerId(DefaultRole.TASK_WORKER.getId())
+                    .hasOwnerType(AuthorizationOwnerType.ROLE))
+        .describedAs("Expect all task-worker role authorizations to be for USER_TASK resource type")
+        .allSatisfy(
+            auth ->
+                Assertions.assertThat(auth).hasResourceType(AuthorizationResourceType.USER_TASK))
+        .describedAs(
+            "Expect the task-worker role authorizations to have property-based permissions")
+        .satisfiesExactlyInAnyOrder(
+            auth ->
+                Assertions.assertThat(auth)
+                    .hasResourcePropertyName(UserTaskAuthorizationProperties.PROP_ASSIGNEE)
+                    .hasOnlyPermissionTypes(
+                        PermissionType.READ, PermissionType.CLAIM, PermissionType.COMPLETE),
+            auth ->
+                Assertions.assertThat(auth)
+                    .hasResourcePropertyName(UserTaskAuthorizationProperties.PROP_CANDIDATE_USERS)
+                    .hasOnlyPermissionTypes(
+                        PermissionType.READ, PermissionType.CLAIM, PermissionType.COMPLETE),
+            auth ->
+                Assertions.assertThat(auth)
+                    .hasResourcePropertyName(UserTaskAuthorizationProperties.PROP_CANDIDATE_GROUPS)
+                    .hasOnlyPermissionTypes(
+                        PermissionType.READ, PermissionType.CLAIM, PermissionType.COMPLETE));
   }
 }

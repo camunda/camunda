@@ -15,6 +15,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionBootstrapOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.UpdateIncarnationNumberOperation;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.util.Either;
@@ -64,6 +65,7 @@ public final class PurgeRequestTransformer implements ConfigurationChangeRequest
     }
 
     operations.add(new DeleteHistoryOperation(firstMember.get()));
+    operations.add(new UpdateIncarnationNumberOperation(firstMember.get()));
 
     primaries.forEach(
         (partitionId, bootstrapOperation) -> {

@@ -99,7 +99,8 @@ public interface NodeIdRepository extends AutoCloseable {
       if (isStillValid(clock.millis())) {
         return Optional.empty();
       } else {
-        return Optional.of(Lease.from(taskId, clock.millis() + leaseDuration.toMillis(), node()));
+        return Optional.of(
+            Lease.nextLease(taskId, clock.millis() + leaseDuration.toMillis(), node()));
       }
     }
 

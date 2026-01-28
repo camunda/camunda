@@ -73,7 +73,7 @@ public interface ModifyProcessInstanceCommandStep1
    * <p>The elements will be created within an existing element instance of the flow scope. When
    * activating elements inside a multi-instance element, the element instance key of the ancestor
    * must be defined. For this, use {@link #moveElements(String, String, long)} or {@link
-   * #moveElementsWithSourceParentAsAncestor(String, String)}.
+   * #moveElementsWithInferredAncestor(String, String)}.
    *
    * @param sourceElementId the id of the elements to move
    * @param targetElementId the id of target element to move to
@@ -108,8 +108,28 @@ public interface ModifyProcessInstanceCommandStep1
    * target element id. For multi-instance elements, only the body element will activate a new
    * element instance.
    *
-   * <p>The elements will be created within the scope of each source element's parent. This scope
-   * must be an ancestor of the elements that are getting activated.
+   * <p>This instructs the engine to derive the ancestor scope keys from the source element's
+   * hierarchy. The engine traverses the source element's ancestry to find an instance that matches
+   * one of the target element's flow scopes, ensuring the target is activated in the correct scope.
+   *
+   * @param sourceElementId the id of the elements to move
+   * @param targetElementId the id of target element to move to
+   * @return the builder for this command
+   */
+  ModifyProcessInstanceCommandStep3 moveElementsWithInferredAncestor(
+      final String sourceElementId, final String targetElementId);
+
+  /**
+   * Create a move instruction for the given element ids. The element instances will be determined
+   * at runtime. All source element instances will be terminated and will activate a new one at the
+   * target element id. For multi-instance elements, only the body element will activate a new
+   * element instance.
+   *
+   * <p>This instructs the engine to use the source's direct parent key as the ancestor scope key
+   * for the target element. This is a simpler alternative to {@link
+   * #moveElementsWithInferredAncestor(String, String)} that skips hierarchy traversal and directly
+   * uses the source's parent key. This is useful when source and target elements are siblings
+   * within the same flow scope.
    *
    * @param sourceElementId the id of the elements to move
    * @param targetElementId the id of target element to move to
@@ -117,6 +137,76 @@ public interface ModifyProcessInstanceCommandStep1
    */
   ModifyProcessInstanceCommandStep3 moveElementsWithSourceParentAsAncestor(
       final String sourceElementId, final String targetElementId);
+
+  /**
+   * Create a move instruction for the given element instance. This source element instance will be
+   * terminated and will activate a new one at the target element id. For multi-instance elements,
+   * only the body element will activate a new element instance.
+   *
+   * <p>The target element will be created within an existing element instance of the flow scope.
+   * When activating elements inside a multi-instance element, the element instance key of the
+   * ancestor must be defined. For this, use {@link #moveElement(long, String, long)} or {@link
+   * #moveElementWithInferredAncestor(long, String)}.
+   *
+   * @param sourceElementInstanceKey the key of the element to move
+   * @param targetElementId the id of target element to move to
+   * @return the builder for this command
+   */
+  ModifyProcessInstanceCommandStep3 moveElement(
+      final long sourceElementInstanceKey, final String targetElementId);
+
+  /**
+   * Create a move instruction for the given element instance. the source element instance with
+   * given key will be terminated and will activate a new one at the target element id. For
+   * multi-instance elements, only the body element will activate a new element instance.
+   *
+   * <p>The target element will be created within the scope that is passed. This scope must be an
+   * ancestor of the elements that are getting activated.
+   *
+   * @param sourceElementInstanceKey the key of the element to move
+   * @param targetElementId the id of target element to move to
+   * @param ancestorElementInstanceKey the element instance key in which the elements will be
+   *     created
+   * @return the builder for this command
+   */
+  ModifyProcessInstanceCommandStep3 moveElement(
+      final long sourceElementInstanceKey,
+      final String targetElementId,
+      final long ancestorElementInstanceKey);
+
+  /**
+   * Create a move instruction for the given element instance. The source element instance with *
+   * given key will be terminated and will activate a new one at the target element id. For
+   * multi-instance elements, only the body element will activate a new element instance.
+   *
+   * <p>This instructs the engine to derive the ancestor scope key from the source element's
+   * hierarchy. The engine traverses the source element's ancestry to find an instance that matches
+   * one of the target element's flow scopes, ensuring the target is activated in the correct scope.
+   *
+   * @param sourceElementInstanceKey the key of the element to move
+   * @param targetElementId the id of target element to move to
+   * @return the builder for this command
+   */
+  ModifyProcessInstanceCommandStep3 moveElementWithInferredAncestor(
+      final long sourceElementInstanceKey, final String targetElementId);
+
+  /**
+   * Create a move instruction for the given element instance. The source element instance with
+   * given key will be terminated and will activate a new one at the target element id. For
+   * multi-instance elements, only the body element will activate a new element instance.
+   *
+   * <p>This instructs the engine to use the source's direct parent key as the ancestor scope key
+   * for the target element. This is a simpler alternative to {@link
+   * #moveElementWithInferredAncestor(long, String)} that skips hierarchy traversal and directly
+   * uses the source's parent key. This is useful when source and target elements are siblings
+   * within the same flow scope.
+   *
+   * @param sourceElementInstanceKey the key of the element to move
+   * @param targetElementId the id of target element to move to
+   * @return the builder for this command
+   */
+  ModifyProcessInstanceCommandStep3 moveElementWithSourceParentAsAncestor(
+      final long sourceElementInstanceKey, final String targetElementId);
 
   interface ModifyProcessInstanceCommandStep2
       extends CommandWithOperationReferenceStep<ModifyProcessInstanceCommandStep2>,

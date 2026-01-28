@@ -306,6 +306,7 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
         targetAdHocSubProcess.getKey(),
         targetAdHocSubProcessInstanceValue.getProcessDefinitionKey(),
         targetAdHocSubProcessInstanceValue.getProcessInstanceKey(),
+        targetAdHocSubProcessInstanceValue.getRootProcessInstanceKey(),
         targetAdHocSubProcessInstanceValue.getBpmnProcessIdBuffer(),
         targetAdHocSubProcessInstanceValue.getTenantId(),
         completingJobRecord.getVariablesBuffer());

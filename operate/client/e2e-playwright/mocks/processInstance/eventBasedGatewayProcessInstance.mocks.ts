@@ -25,7 +25,6 @@ const eventBasedGatewayProcessInstance: InstanceMock = {
     callHierarchy: [],
     tenantId: '<default>',
     sortValues: [''],
-    permissions: [],
   },
   detailV2: {
     processInstanceKey: '2251799813888430',

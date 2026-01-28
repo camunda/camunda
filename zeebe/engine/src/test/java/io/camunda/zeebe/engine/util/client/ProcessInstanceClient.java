@@ -456,13 +456,22 @@ public final class ProcessInstanceClient {
               .setTargetElementId(targetElementId));
     }
 
-    public MoveInstructionBuilder moveElementsWithSourceParent(
+    public MoveInstructionBuilder moveElementsWithInferredScope(
         final String sourceElementId, final String targetElementId) {
       return moveElements(
           new ProcessInstanceModificationMoveInstruction()
               .setSourceElementId(sourceElementId)
               .setTargetElementId(targetElementId)
-              .setUseSourceParentKeyAsAncestorScope(true));
+              .setInferAncestorScopeFromSourceHierarchy(true));
+    }
+
+    public MoveInstructionBuilder moveElementsWithSourceParentScope(
+        final String sourceElementId, final String targetElementId) {
+      return moveElements(
+          new ProcessInstanceModificationMoveInstruction()
+              .setSourceElementId(sourceElementId)
+              .setTargetElementId(targetElementId)
+              .setUseSourceParentKeyAsAncestorScopeKey(true));
     }
 
     public MoveInstructionBuilder moveElements(
@@ -470,6 +479,75 @@ public final class ProcessInstanceClient {
       return moveElements(
           new ProcessInstanceModificationMoveInstruction()
               .setSourceElementId(sourceElementId)
+              .setTargetElementId(targetElementId)
+              .setAncestorScopeKey(ancestorElementKey));
+    }
+
+    /**
+     * Add a move element instance instruction by source element instance key.
+     *
+     * @param sourceElementInstanceKey the key of the element instance to move
+     * @param targetElementId the id of the target element to activate
+     * @return this MoveInstruction builder for chaining
+     */
+    public MoveInstructionBuilder moveElementInstance(
+        final long sourceElementInstanceKey, final String targetElementId) {
+      return moveElements(
+          new ProcessInstanceModificationMoveInstruction()
+              .setSourceElementInstanceKey(sourceElementInstanceKey)
+              .setTargetElementId(targetElementId));
+    }
+
+    /**
+     * Add a move element instance instruction by source element instance key, inferring the
+     * ancestor scope from the source hierarchy.
+     *
+     * @param sourceElementInstanceKey the key of the element instance to move
+     * @param targetElementId the id of the target element to activate
+     * @return this MoveInstruction builder for chaining
+     */
+    public MoveInstructionBuilder moveElementInstanceWithInferredScope(
+        final long sourceElementInstanceKey, final String targetElementId) {
+      return moveElements(
+          new ProcessInstanceModificationMoveInstruction()
+              .setSourceElementInstanceKey(sourceElementInstanceKey)
+              .setTargetElementId(targetElementId)
+              .setInferAncestorScopeFromSourceHierarchy(true));
+    }
+
+    /**
+     * Add a move element instance instruction by source element instance key, using the source's
+     * direct parent key as ancestor scope.
+     *
+     * @param sourceElementInstanceKey the key of the element instance to move
+     * @param targetElementId the id of the target element to activate
+     * @return this MoveInstruction builder for chaining
+     */
+    public MoveInstructionBuilder moveElementInstanceWithSourceParentScope(
+        final long sourceElementInstanceKey, final String targetElementId) {
+      return moveElements(
+          new ProcessInstanceModificationMoveInstruction()
+              .setSourceElementInstanceKey(sourceElementInstanceKey)
+              .setTargetElementId(targetElementId)
+              .setUseSourceParentKeyAsAncestorScopeKey(true));
+    }
+
+    /**
+     * Add a move element instance instruction by source element instance key with ancestor
+     * selection.
+     *
+     * @param sourceElementInstanceKey the key of the element instance to move
+     * @param targetElementId the id of the target element to activate
+     * @param ancestorElementKey the key of the ancestor scope
+     * @return this MoveInstruction builder for chaining
+     */
+    public MoveInstructionBuilder moveElementInstance(
+        final long sourceElementInstanceKey,
+        final String targetElementId,
+        final long ancestorElementKey) {
+      return moveElements(
+          new ProcessInstanceModificationMoveInstruction()
+              .setSourceElementInstanceKey(sourceElementInstanceKey)
               .setTargetElementId(targetElementId)
               .setAncestorScopeKey(ancestorElementKey));
     }

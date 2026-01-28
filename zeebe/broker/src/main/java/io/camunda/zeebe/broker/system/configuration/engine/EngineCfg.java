@@ -19,20 +19,24 @@ public final class EngineCfg implements ConfigurationEntry {
   private ValidatorsCfg validators = new ValidatorsCfg();
   private BatchOperationCfg batchOperations = new BatchOperationCfg();
   private UsageMetricsCfg usageMetrics = new UsageMetricsCfg();
+  private JobMetricsCfg jobMetrics = new JobMetricsCfg();
   private DistributionCfg distribution = new DistributionCfg();
   private int maxProcessDepth = EngineConfiguration.DEFAULT_MAX_PROCESS_DEPTH;
   private GlobalListenersCfg globalListeners = new GlobalListenersCfg();
+  private ExpressionCfg expression = new ExpressionCfg();
 
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
     messages.init(globalConfig, brokerBase);
     caches.init(globalConfig, brokerBase);
     jobs.init(globalConfig, brokerBase);
+    jobMetrics.init(globalConfig, brokerBase);
     batchOperations.init(globalConfig, brokerBase);
     validators.init(globalConfig, brokerBase);
     distribution.init(globalConfig, brokerBase);
     usageMetrics.init(globalConfig, brokerBase);
     globalListeners.init(globalConfig, brokerBase);
+    expression.init(globalConfig, brokerBase);
   }
 
   public MessagesCfg getMessages() {
@@ -107,10 +111,28 @@ public final class EngineCfg implements ConfigurationEntry {
     this.globalListeners = globalListeners;
   }
 
+  public JobMetricsCfg getJobMetrics() {
+    return jobMetrics;
+  }
+
+  public void setJobMetrics(final JobMetricsCfg jobMetrics) {
+    this.jobMetrics = jobMetrics;
+  }
+
+  public ExpressionCfg getExpression() {
+    return expression;
+  }
+
+  public void setExpression(final ExpressionCfg expression) {
+    this.expression = expression;
+  }
+
   @Override
   public String toString() {
     return "EngineCfg{"
-        + "messages="
+        + "jobMetrics="
+        + jobMetrics
+        + ", messages="
         + messages
         + ", caches="
         + caches
@@ -118,6 +140,8 @@ public final class EngineCfg implements ConfigurationEntry {
         + jobs
         + ", validators="
         + validators
+        + ", jobMetrics="
+        + jobMetrics
         + ", batchOperations="
         + batchOperations
         + ", usageMetrics="
@@ -126,6 +150,8 @@ public final class EngineCfg implements ConfigurationEntry {
         + distribution
         + ", maxProcessDepth="
         + maxProcessDepth
+        + ", expression="
+        + expression
         + '}';
   }
 
@@ -138,6 +164,7 @@ public final class EngineCfg implements ConfigurationEntry {
         .setResourceCacheCapacity(caches.getResourceCacheCapacity())
         .setProcessCacheCapacity(caches.getProcessCacheCapacity())
         .setAuthorizationsCacheCapacity(caches.getAuthorizationsCacheCapacity())
+        .setAuthorizationsCacheTtl(caches.getAuthorizationsCacheTtl())
         .setJobsTimeoutCheckerPollingInterval(jobs.getTimeoutCheckerPollingInterval())
         .setJobsTimeoutCheckerBatchLimit(jobs.getTimeoutCheckerBatchLimit())
         .setValidatorsResultsOutputMaxSize(validators.getResultsOutputMaxSize())
@@ -151,10 +178,12 @@ public final class EngineCfg implements ConfigurationEntry {
         .setBatchOperationQueryRetryMaxDelay(batchOperations.getQueryRetryMaxDelay())
         .setBatchOperationQueryRetryBackoffFactor(batchOperations.getQueryRetryBackoffFactor())
         .setUsageMetricsExportInterval(usageMetrics.getExportInterval())
+        .setJobMetricsExportInterval(jobMetrics.getExportInterval())
         .setCommandDistributionPaused(distribution.isPauseCommandDistribution())
         .setCommandRedistributionInterval(distribution.getRedistributionInterval())
         .setCommandRedistributionMaxBackoff(distribution.getMaxBackoffDuration())
         .setMaxProcessDepth(getMaxProcessDepth())
-        .setGlobalListeners(globalListeners.createGlobalListenersConfiguration());
+        .setGlobalListeners(globalListeners.createGlobalListenersConfiguration())
+        .setExpressionEvaluationTimeout(expression.getTimeout());
   }
 }

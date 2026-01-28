@@ -12,10 +12,14 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.exporter.tasks.archiver.ArchiveBatch.BasicArchiveBatch;
 import io.camunda.exporter.tasks.archiver.TestRepository.DocumentMove;
+import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
@@ -34,7 +38,11 @@ final class ArchiverJobTest {
 
   private final TestRepository repository = new TestRepository();
   private final CamundaExporterMetrics metrics = mock(CamundaExporterMetrics.class);
+
+  @SuppressWarnings("unchecked")
   private final Consumer<Integer> recordArchiving = mock(Consumer.class);
+
+  @SuppressWarnings("unchecked")
   private final Consumer<Integer> recordArchived = mock(Consumer.class);
 
   private final IdxTemplateArchiver job =
@@ -62,7 +70,7 @@ final class ArchiverJobTest {
   @Test
   void shouldReturnZeroIfNoBatchIdsGiven() {
     // given
-    repository.batch = new ArchiveBatch("2024-01-01", List.of());
+    repository.batch = new ArchiveBatch.BasicArchiveBatch("2024-01-01", List.of());
 
     // when
     final int count = job.execute().toCompletableFuture().join();
@@ -80,7 +88,7 @@ final class ArchiverJobTest {
   @Test
   void shouldMoveInstancesById() {
     // given
-    repository.batch = new ArchiveBatch("2024-01-01", List.of("1", "2", "3"));
+    repository.batch = new ArchiveBatch.BasicArchiveBatch("2024-01-01", List.of("1", "2", "3"));
 
     // when
     final int count = job.execute().toCompletableFuture().join();
@@ -92,8 +100,7 @@ final class ArchiverJobTest {
             new DocumentMove(
                 SOURCE_INDEX_NAME,
                 SOURCE_INDEX_NAME + "2024-01-01",
-                ID_FIELD_NAME,
-                List.of("1", "2", "3"),
+                Map.of(ID_FIELD_NAME, List.of("1", "2", "3")),
                 executor));
 
     // then verify recording metrics
@@ -102,7 +109,9 @@ final class ArchiverJobTest {
     verify(metrics).measureArchivingDuration(any());
   }
 
-  static class IdxTemplateArchiver extends ArchiverJob {
+  static class IdxTemplateArchiver extends ArchiverJob<ArchiveBatch.BasicArchiveBatch> {
+
+    private final IndexTemplateDescriptor indexTemplateDescriptor;
 
     public IdxTemplateArchiver(
         final ArchiverRepository archiverRepository,
@@ -118,6 +127,9 @@ final class ArchiverJobTest {
           executor,
           recordArchivingMetric,
           recordArchivedMetric);
+      indexTemplateDescriptor = mock(IndexTemplateDescriptor.class);
+      when(indexTemplateDescriptor.getIdField()).thenReturn(ID_FIELD_NAME);
+      when(indexTemplateDescriptor.getFullQualifiedName()).thenReturn(SOURCE_INDEX_NAME);
     }
 
     @Override
@@ -126,18 +138,19 @@ final class ArchiverJobTest {
     }
 
     @Override
-    CompletableFuture<ArchiveBatch> getNextBatch() {
+    CompletableFuture<ArchiveBatch.BasicArchiveBatch> getNextBatch() {
       return ((TestRepository) getArchiverRepository()).getNextBatch();
     }
 
     @Override
-    String getSourceIndexName() {
-      return SOURCE_INDEX_NAME;
+    IndexTemplateDescriptor getTemplateDescriptor() {
+      return indexTemplateDescriptor;
     }
 
     @Override
-    String getIdFieldName() {
-      return ID_FIELD_NAME;
+    protected Map<String, List<String>> createIdsByFieldMap(
+        final IndexTemplateDescriptor indexTemplateDescriptor, final BasicArchiveBatch batch) {
+      return Map.of(indexTemplateDescriptor.getIdField(), batch.ids());
     }
   }
 }

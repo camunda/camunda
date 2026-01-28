@@ -36,6 +36,7 @@ public class AuditLogEntityTransformer
         value.getProcessDefinitionId(),
         value.getProcessDefinitionKey(),
         value.getProcessInstanceKey(),
+        value.getRootProcessInstanceKey(),
         value.getElementInstanceKey(),
         value.getJobKey(),
         value.getUserTaskKey(),

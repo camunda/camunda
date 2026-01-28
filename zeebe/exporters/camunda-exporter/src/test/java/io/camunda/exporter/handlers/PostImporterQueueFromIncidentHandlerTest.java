@@ -167,6 +167,31 @@ public class PostImporterQueueFromIncidentHandlerTest {
     assertThat(postImporterQueueEntity.getPosition()).isEqualTo(incidentRecord.getPosition());
     assertThat(postImporterQueueEntity.getProcessInstanceKey())
         .isEqualTo(incidentRecordValue.getProcessInstanceKey());
+    assertThat(postImporterQueueEntity.getRootProcessInstanceKey())
+        .isPositive()
+        .isEqualTo(incidentRecordValue.getRootProcessInstanceKey());
+  }
+
+  @Test
+  void shouldNotSetRootProcessInstanceKeyWhenDefault() {
+    // given
+    final IncidentRecordValue incidentRecordValue =
+        ImmutableIncidentRecordValue.builder()
+            .from(factory.generateObject(IncidentRecordValue.class))
+            .withRootProcessInstanceKey(-1L)
+            .build();
+
+    final Record<IncidentRecordValue> incidentRecord =
+        factory.generateRecord(
+            ValueType.INCIDENT,
+            r -> r.withIntent(IncidentIntent.CREATED).withValue(incidentRecordValue));
+
+    // when
+    final PostImporterQueueEntity postImporterQueueEntity = new PostImporterQueueEntity();
+    underTest.updateEntity(incidentRecord, postImporterQueueEntity);
+
+    // then
+    assertThat(postImporterQueueEntity.getRootProcessInstanceKey()).isNull();
   }
 
   @Test

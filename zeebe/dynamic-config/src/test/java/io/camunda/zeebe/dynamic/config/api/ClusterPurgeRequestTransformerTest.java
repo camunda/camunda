@@ -16,6 +16,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionBootstrapOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.UpdateIncarnationNumberOperation;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
 import io.camunda.zeebe.dynamic.config.state.ExporterState.State;
@@ -56,7 +57,6 @@ final class ClusterPurgeRequestTransformerTest {
         .right()
         .satisfies(
             operations -> {
-              assertThat(operations).hasSize(9);
               assertThat(operations)
                   .containsExactly(
                       new PartitionLeaveOperation(id0, 0, 0),
@@ -64,6 +64,7 @@ final class ClusterPurgeRequestTransformerTest {
                       new PartitionLeaveOperation(id1, 0, 0),
                       new PartitionLeaveOperation(id1, 1, 0),
                       new DeleteHistoryOperation(id0),
+                      new UpdateIncarnationNumberOperation(id0),
                       new PartitionBootstrapOperation(
                           id0, 0, 2, Optional.of(partitionConfig), false),
                       new PartitionBootstrapOperation(
@@ -98,7 +99,6 @@ final class ClusterPurgeRequestTransformerTest {
         .right()
         .satisfies(
             operations -> {
-              assertThat(operations).hasSize(13);
               assertThat(operations)
                   .containsExactly(
                       new PartitionLeaveOperation(id0, 0, 0),
@@ -108,6 +108,7 @@ final class ClusterPurgeRequestTransformerTest {
                       new PartitionLeaveOperation(id1, 1, 0),
                       new PartitionLeaveOperation(id1, 2, 0),
                       new DeleteHistoryOperation(id0),
+                      new UpdateIncarnationNumberOperation(id0),
                       new PartitionBootstrapOperation(
                           id0, 0, 2, Optional.of(partitionConfig), false),
                       new PartitionBootstrapOperation(

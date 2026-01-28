@@ -8,6 +8,7 @@
 package io.camunda.zeebe.backup.s3.manifest;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
+import io.camunda.zeebe.backup.api.BackupDescriptor;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
@@ -51,5 +52,10 @@ public record CompletedBackupManifest(
         segmentFiles,
         createdAt,
         Instant.now());
+  }
+
+  @Override
+  public Optional<BackupDescriptor> backupDescriptor() {
+    return Optional.of(descriptor);
   }
 }

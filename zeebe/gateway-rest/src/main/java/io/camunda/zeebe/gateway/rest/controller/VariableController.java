@@ -9,16 +9,16 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToResponse;
 
+import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
+import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
+import io.camunda.gateway.protocol.model.VariableSearchQuery;
 import io.camunda.search.query.VariableQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.VariableServices;
-import io.camunda.zeebe.gateway.protocol.rest.VariableSearchQuery;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
-import io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryRequestMapper;
-import io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryResponseMapper;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;

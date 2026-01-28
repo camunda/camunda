@@ -45,4 +45,12 @@ public interface DecisionDefinitionFilter extends SearchRequestFilter {
 
   /** Filter by tenant id. */
   DecisionDefinitionFilter tenantId(final String value);
+
+  /**
+   * Filters decision definitions to only include the latest version of each decision definition.
+   *
+   * @param latestVersion whether to only return latest versions
+   * @return the updated filter
+   */
+  DecisionDefinitionFilter isLatestVersion(boolean latestVersion);
 }

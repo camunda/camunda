@@ -44,6 +44,7 @@
         DECISION_DEFINITION_ID,
         PROCESS_DEFINITION_KEY,
         PROCESS_INSTANCE_KEY,
+        ROOT_PROCESS_INSTANCE_KEY,
         ELEMENT_INSTANCE_KEY,
         JOB_KEY,
         USER_TASK_KEY,
@@ -52,7 +53,9 @@
         DECISION_EVALUATION_KEY,
         DEPLOYMENT_KEY,
         FORM_KEY,
-        RESOURCE_KEY
+        RESOURCE_KEY,
+        PARTITION_ID,
+        HISTORY_CLEANUP_DATE
       FROM ${prefix}AUDIT_LOG
       <include refid="io.camunda.db.rdbms.sql.AuditLogMapper.searchFilter" />
     ) t
@@ -63,12 +66,57 @@
 
   <sql id="searchFilter">
     <where>
-      <!-- authorization filters -->
+      <!-- tenant authorization filter -->
       <if test="authorizedTenantIds != null and !authorizedTenantIds.isEmpty()">
-        AND TENANT_ID IN
+        AND (TENANT_SCOPE = 'GLOBAL' OR TENANT_ID IN
         <foreach collection="authorizedTenantIds" item="tenantId" open="(" separator="," close=")">
           #{tenantId}
-        </foreach>
+        </foreach>)
+      </if>
+      <!-- Deny all access when no authorizations are configured -->
+      <if test="authorizationFilter.authorizedCategories.isEmpty() and authorizationFilter.authorizedProcessDefinitionIdsForProcessInstance.isEmpty() and authorizationFilter.authorizedProcessDefinitionIdsForUserTask.isEmpty()">
+        AND 1 = 0
+      </if>
+      <!-- composite authorization filter (OR of all authorization checks) -->
+      <!-- Only apply this filter if there are any authorizations configured -->
+      <if test="!authorizationFilter.authorizedCategories.isEmpty() or !authorizationFilter.authorizedProcessDefinitionIdsForProcessInstance.isEmpty() or !authorizationFilter.authorizedProcessDefinitionIdsForUserTask.isEmpty()">
+        AND (
+          <trim prefixOverrides="OR">
+             <!-- AUDIT_LOG resource type: wildcard access to all categories -->
+            <if test="authorizationFilter.hasCategoryWildcard()">
+              OR CATEGORY IS NOT NULL
+            </if>
+            <!-- AUDIT_LOG resource type: specific authorized categories -->
+            <if test="!authorizationFilter.authorizedCategories.isEmpty() and !authorizationFilter.hasCategoryWildcard()">
+              OR CATEGORY IN
+              <foreach collection="authorizationFilter.authorizedCategories" item="category" open="(" separator="," close=")">
+                #{category}
+              </foreach>
+            </if>
+            <!-- PROCESS_DEFINITION + READ_PROCESS_INSTANCE: wildcard access -->
+            <if test="authorizationFilter.hasProcessInstanceWildcard()">
+              OR PROCESS_DEFINITION_ID IS NOT NULL
+            </if>
+            <!-- PROCESS_DEFINITION + READ_PROCESS_INSTANCE: specific process definition IDs -->
+            <if test="!authorizationFilter.authorizedProcessDefinitionIdsForProcessInstance.isEmpty() and !authorizationFilter.hasProcessInstanceWildcard()">
+              OR PROCESS_DEFINITION_ID IN
+              <foreach collection="authorizationFilter.authorizedProcessDefinitionIdsForProcessInstance" item="processDefId" open="(" separator="," close=")">
+                #{processDefId}
+              </foreach>
+            </if>
+            <!-- PROCESS_DEFINITION + READ_USER_TASK: wildcard access -->
+            <if test="authorizationFilter.hasUserTaskWildcard()">
+              OR CATEGORY = 'USER_TASKS'
+            </if>
+            <!-- PROCESS_DEFINITION + READ_USER_TASK: specific process definition IDs -->
+            <if test="!authorizationFilter.authorizedProcessDefinitionIdsForUserTask.isEmpty() and !authorizationFilter.hasUserTaskWildcard()">
+              OR (CATEGORY = 'USER_TASKS' AND PROCESS_DEFINITION_ID IN
+              <foreach collection="authorizationFilter.authorizedProcessDefinitionIdsForUserTask" item="processDefId" open="(" separator="," close=")">
+                #{processDefId}
+              </foreach>)
+            </if>
+          </trim>
+        )
       </if>
       <!-- basic filters -->
       <if test="filter.auditLogKeyOperations != null and !filter.auditLogKeyOperations.isEmpty()">
@@ -206,7 +254,7 @@
     </where>
   </sql>
 
-  <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.AuditLogDbModel">
+  <insert id="insert" parameterType="io.camunda.db.rdbms.sql.AuditLogMapper$BatchInsertAuditLogsDto">
     INSERT INTO ${prefix}AUDIT_LOG (
       AUDIT_LOG_KEY,
       ENTITY_KEY,
@@ -230,6 +278,7 @@
       DECISION_DEFINITION_ID,
       PROCESS_DEFINITION_KEY,
       PROCESS_INSTANCE_KEY,
+      ROOT_PROCESS_INSTANCE_KEY,
       ELEMENT_INSTANCE_KEY,
       JOB_KEY,
       USER_TASK_KEY,
@@ -238,42 +287,96 @@
       DECISION_EVALUATION_KEY,
       DEPLOYMENT_KEY,
       FORM_KEY,
-      RESOURCE_KEY
+      RESOURCE_KEY,
+      PARTITION_ID,
+      HISTORY_CLEANUP_DATE
     )
-    VALUES (
-      #{auditLogKey},
-      #{entityKey},
-      #{entityType},
-      #{operationType},
-      #{entityVersion},
-      #{entityValueType},
-      #{entityOperationIntent},
-      #{batchOperationKey},
-      #{batchOperationType},
-      #{timestamp},
-      #{actorType},
-      #{actorId},
-      #{tenantId},
-      #{tenantScope},
-      #{result},
-      #{annotation},
-      #{category},
-      #{processDefinitionId},
-      #{decisionRequirementsId},
-      #{decisionDefinitionId},
-      #{processDefinitionKey},
-      #{processInstanceKey},
-      #{elementInstanceKey},
-      #{jobKey},
-      #{userTaskKey},
-      #{decisionRequirementsKey},
-      #{decisionDefinitionKey},
-      #{decisionEvaluationKey},
-      #{deploymentKey},
-      #{formKey},
-      #{resourceKey}
-    )
+    VALUES
+    <foreach collection="auditLogs" item="auditLog" separator=",">
+      (
+        #{auditLog.auditLogKey},
+        #{auditLog.entityKey},
+        #{auditLog.entityType},
+        #{auditLog.operationType},
+        #{auditLog.entityVersion},
+        #{auditLog.entityValueType},
+        #{auditLog.entityOperationIntent},
+        #{auditLog.batchOperationKey},
+        #{auditLog.batchOperationType},
+        #{auditLog.timestamp, jdbcType=TIMESTAMP},
+        #{auditLog.actorType},
+        #{auditLog.actorId},
+        #{auditLog.tenantId},
+        #{auditLog.tenantScope},
+        #{auditLog.result},
+        #{auditLog.annotation},
+        #{auditLog.category},
+        #{auditLog.processDefinitionId},
+        #{auditLog.decisionRequirementsId},
+        #{auditLog.decisionDefinitionId},
+        #{auditLog.processDefinitionKey},
+        #{auditLog.processInstanceKey},
+        #{auditLog.rootProcessInstanceKey},
+        #{auditLog.elementInstanceKey},
+        #{auditLog.jobKey},
+        #{auditLog.userTaskKey},
+        #{auditLog.decisionRequirementsKey},
+        #{auditLog.decisionDefinitionKey},
+        #{auditLog.decisionEvaluationKey},
+        #{auditLog.deploymentKey},
+        #{auditLog.formKey},
+        #{auditLog.resourceKey},
+        #{auditLog.partitionId},
+        #{auditLog.historyCleanupDate, jdbcType=TIMESTAMP}
+      )
+    </foreach>
   </insert>
+
+  <delete id="deleteProcessInstanceRelatedData">
+    <bind name="tableName" value="'AUDIT_LOG'"/>
+    <bind name="primaryKeyColumn" value="'AUDIT_LOG_KEY'"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.processInstanceHistoryDeletion"/>
+  </delete>
+
+  <delete id="deleteProcessDefinitionRelatedData">
+    DELETE
+    FROM ${prefix}AUDIT_LOG
+    WHERE PROCESS_DEFINITION_KEY IN
+    <foreach collection="processDefinitionKeys" item="key" open="(" separator=", " close=")">
+      #{key}
+    </foreach>
+    LIMIT #{limit}
+  </delete>
+  <delete id="deleteProcessDefinitionRelatedData" databaseId="mssql">
+    DELETE TOP (#{limit})
+    FROM ${prefix}AUDIT_LOG
+    WHERE PROCESS_DEFINITION_KEY IN
+    <foreach collection="processDefinitionKeys" item="key" open="(" separator=", " close=")">
+      #{key}
+    </foreach>
+  </delete>
+  <delete id="deleteProcessDefinitionRelatedData" databaseId="oracle">
+    DELETE
+    FROM ${prefix}AUDIT_LOG
+    WHERE rowid IN (SELECT rowid
+    FROM ${prefix}AUDIT_LOG
+    WHERE PROCESS_DEFINITION_KEY IN
+    <foreach collection="processDefinitionKeys" item="key" open="(" separator=", " close=")">
+      #{key}
+    </foreach>
+    AND ROWNUM &lt;= #{limit})
+  </delete>
+  <delete id="deleteProcessDefinitionRelatedData" databaseId="postgresql">
+    DELETE
+    FROM ${prefix}AUDIT_LOG
+    WHERE ctid IN (SELECT ctid
+    FROM ${prefix}AUDIT_LOG
+    WHERE PROCESS_DEFINITION_KEY IN
+    <foreach collection="processDefinitionKeys" item="key" open="(" separator=", " close=")">
+      #{key}
+    </foreach>
+    LIMIT #{limit})
+  </delete>
 
 </mapper>
 

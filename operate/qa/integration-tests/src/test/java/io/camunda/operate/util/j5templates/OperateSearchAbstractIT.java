@@ -80,6 +80,7 @@ public class OperateSearchAbstractIT {
             new CamundaAuthentication(
                 DEFAULT_USER,
                 null,
+                false,
                 Collections.emptyList(),
                 Collections.emptyList(),
                 Collections.emptyList(),
@@ -106,6 +107,7 @@ public class OperateSearchAbstractIT {
             new CamundaAuthentication(
                 DEFAULT_USER,
                 null,
+                false,
                 Collections.emptyList(),
                 Collections.emptyList(),
                 Collections.emptyList(),

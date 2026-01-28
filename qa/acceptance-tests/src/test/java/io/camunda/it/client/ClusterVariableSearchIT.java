@@ -13,6 +13,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.enums.ClusterVariableScope;
 import io.camunda.client.api.search.response.ClusterVariable;
 import io.camunda.it.util.TestHelper;
+import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import java.util.Comparator;
 import java.util.Map;
@@ -21,6 +22,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 @MultiDbTest
+@CompatibilityTest
 public class ClusterVariableSearchIT {
 
   private static final String VALUE_RESULT = "\"%s\"";

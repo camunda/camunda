@@ -53,21 +53,6 @@ public final class OAuthCredentialsProviderBuilderTest {
   }
 
   @Test
-  void shouldFailWithNoClientSecret() {
-    // given
-    final OAuthCredentialsProviderBuilder builder = new OAuthCredentialsProviderBuilder();
-
-    // when
-    builder.audience("a").clientId("b").authorizationServerUrl("http://some.url");
-
-    // then
-    assertThatCode(builder::build)
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageEndingWith(
-            String.format(OAuthCredentialsProviderBuilder.INVALID_ARGUMENT_MSG, "client secret"));
-  }
-
-  @Test
   void shouldFailWithMalformedServerUrl() {
     // given
     final OAuthCredentialsProviderBuilder builder = new OAuthCredentialsProviderBuilder();

@@ -17,7 +17,7 @@ import {
   TableExpandRow,
   TableExpandHeader,
   TableExpandedRow,
-  type DenormalizedRow,
+  type DataTableRow,
 } from '@carbon/react';
 
 type Props = {
@@ -34,7 +34,7 @@ type Props = {
 };
 
 const TableCells: React.FC<{
-  row: DenormalizedRow;
+  row: DataTableRow<React.ReactNode[]>;
   columnsWithNoContentPadding?: string[];
 }> = ({row, columnsWithNoContentPadding}) => {
   return (
@@ -57,7 +57,7 @@ const DataTable = React.forwardRef<HTMLDivElement, Props>(
   (
     {
       size = 'sm',
-      headers,
+      headers: rawHeaders,
       rows,
       className,
       columnsWithNoContentPadding,
@@ -73,7 +73,7 @@ const DataTable = React.forwardRef<HTMLDivElement, Props>(
       <Container className={className} ref={ref}>
         <CarbonDataTable
           size={size}
-          headers={headers}
+          headers={rawHeaders}
           rows={rows}
           render={({
             rows,
@@ -87,11 +87,11 @@ const DataTable = React.forwardRef<HTMLDivElement, Props>(
                 <TableHead>
                   <TableRow>
                     {isExpandable && <TableExpandHeader />}
-                    {headers.map((header) => (
+                    {headers.map((header, index) => (
                       <TableHeader
                         id={header.key}
                         key={header.key}
-                        $width={header.width}
+                        $width={rawHeaders[index].width}
                       >
                         {header.header}
                       </TableHeader>

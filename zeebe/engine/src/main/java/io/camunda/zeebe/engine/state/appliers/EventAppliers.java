@@ -37,8 +37,10 @@ import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
 import io.camunda.zeebe.protocol.record.intent.EscalationIntent;
+import io.camunda.zeebe.protocol.record.intent.ExpressionIntent;
 import io.camunda.zeebe.protocol.record.intent.FormIntent;
 import io.camunda.zeebe.protocol.record.intent.GlobalListenerBatchIntent;
+import io.camunda.zeebe.protocol.record.intent.GlobalListenerIntent;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.HistoryDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.IdentitySetupIntent;
@@ -46,6 +48,7 @@ import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.JobMetricsBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageCorrelationIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
@@ -155,8 +158,18 @@ public final class EventAppliers implements EventApplier {
     registerHistoryDeletionAppliers();
     registerConditionalSubscriptionAppliers(state);
     registerConditionalEvaluationAppliers();
+    registerExpressionEvaluationEventAppliers();
     registerGlobalListenersEventAppliers(state);
+    registerJobMetricsBatchEventAppliers(state);
     return this;
+  }
+
+  private void registerJobMetricsBatchEventAppliers(final MutableProcessingState state) {
+    register(JobMetricsBatchIntent.EXPORTED, new JobMetricsBatchExportedApplier(state));
+  }
+
+  private void registerExpressionEvaluationEventAppliers() {
+    register(ExpressionIntent.EVALUATED, NOOP_EVENT_APPLIER);
   }
 
   private void registerConditionalSubscriptionAppliers(final MutableProcessingState state) {
@@ -169,10 +182,16 @@ public final class EventAppliers implements EventApplier {
     register(
         ConditionalSubscriptionIntent.DELETED,
         new ConditionalSubscriptionDeletedApplier(state.getConditionalSubscriptionState()));
+    register(
+        ConditionalSubscriptionIntent.MIGRATED,
+        new ConditionalSubscriptionMigratedApplier(state.getConditionalSubscriptionState()));
   }
 
   private void registerGlobalListenersEventAppliers(final MutableProcessingState state) {
     register(GlobalListenerBatchIntent.CONFIGURED, new GlobalListenerBatchConfiguredApplier(state));
+    register(GlobalListenerIntent.CREATED, NOOP_EVENT_APPLIER);
+    register(GlobalListenerIntent.UPDATED, NOOP_EVENT_APPLIER);
+    register(GlobalListenerIntent.DELETED, NOOP_EVENT_APPLIER);
   }
 
   private void registerClusterVariableEventAppliers(final MutableProcessingState state) {
@@ -341,15 +360,21 @@ public final class EventAppliers implements EventApplier {
   }
 
   private void registerJobIntentEventAppliers(final MutableProcessingState state) {
-    register(JobIntent.CANCELED, new JobCanceledApplier(state));
+    register(JobIntent.CANCELED, 1, new JobCanceledV1Applier(state));
+    register(JobIntent.CANCELED, 2, new JobCanceledV2Applier(state));
     register(JobIntent.COMPLETED, 1, new JobCompletedV1Applier(state));
-    register(JobIntent.COMPLETED, 2, new JobCompletedApplierV2(state));
-    register(JobIntent.CREATED, new JobCreatedApplier(state));
-    register(JobIntent.ERROR_THROWN, new JobErrorThrownApplier(state));
-    register(JobIntent.FAILED, new JobFailedApplier(state));
+    register(JobIntent.COMPLETED, 2, new JobCompletedV2Applier(state));
+    register(JobIntent.COMPLETED, 3, new JobCompletedV3Applier(state));
+    register(JobIntent.CREATED, 1, new JobCreatedV1Applier(state));
+    register(JobIntent.CREATED, 2, new JobCreatedV2Applier(state));
+    register(JobIntent.ERROR_THROWN, 1, new JobErrorThrownV1Applier(state));
+    register(JobIntent.ERROR_THROWN, 2, new JobErrorThrownV2Applier(state));
+    register(JobIntent.FAILED, 1, new JobFailedV1Applier(state));
+    register(JobIntent.FAILED, 2, new JobFailedV2Applier(state));
     register(JobIntent.YIELDED, new JobYieldedApplier(state));
     register(JobIntent.RETRIES_UPDATED, new JobRetriesUpdatedApplier(state));
-    register(JobIntent.TIMED_OUT, new JobTimedOutApplier(state));
+    register(JobIntent.TIMED_OUT, 1, new JobTimedOutV1Applier(state));
+    register(JobIntent.TIMED_OUT, 2, new JobTimedOutV2Applier(state));
     register(JobIntent.RECURRED_AFTER_BACKOFF, new JobRecurredApplier(state));
     register(JobIntent.TIMEOUT_UPDATED, new JobTimeoutUpdatedApplier(state));
     register(JobIntent.UPDATED, 1, new JobUpdatedApplier(state));

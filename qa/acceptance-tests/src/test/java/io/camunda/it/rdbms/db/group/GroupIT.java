@@ -16,7 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.GroupDbReader;
 import io.camunda.db.rdbms.read.service.UserDbReader;
-import io.camunda.db.rdbms.write.RdbmsWriter;
+import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.GroupDbModel;
 import io.camunda.db.rdbms.write.domain.GroupMemberDbModel;
 import io.camunda.it.rdbms.db.fixtures.GroupFixtures;
@@ -46,11 +46,11 @@ public class GroupIT {
   @TestTemplate
   public void shouldSaveAndFindByKey(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final GroupDbReader groupReader = rdbmsService.getGroupReader();
 
     final var group = GroupFixtures.createRandomized(b -> b);
-    createAndSaveGroup(rdbmsWriter, group);
+    createAndSaveGroup(rdbmsWriters, group);
 
     final var instance = groupReader.findOne(group.groupId()).orElse(null);
 
@@ -60,11 +60,11 @@ public class GroupIT {
   @TestTemplate
   public void shouldSaveAndFindById(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final GroupDbReader groupReader = rdbmsService.getGroupReader();
 
     final var group = GroupFixtures.createRandomized(b -> b);
-    createAndSaveGroup(rdbmsWriter, group);
+    createAndSaveGroup(rdbmsWriters, group);
 
     final var instance = groupReader.findOne(group.groupId()).orElse(null);
 
@@ -74,16 +74,16 @@ public class GroupIT {
   @TestTemplate
   public void shouldSaveAndUpdate(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final GroupDbReader groupReader = rdbmsService.getGroupReader();
 
     final var group = GroupFixtures.createRandomized(b -> b);
-    createAndSaveGroup(rdbmsWriter, group);
+    createAndSaveGroup(rdbmsWriters, group);
 
     final var groupUpdate =
         GroupFixtures.createRandomized(b -> b.groupId(group.groupId()).groupKey(group.groupKey()));
-    rdbmsWriter.getGroupWriter().update(groupUpdate);
-    rdbmsWriter.flush();
+    rdbmsWriters.getGroupWriter().update(groupUpdate);
+    rdbmsWriters.flush();
 
     final var instance = groupReader.findOne(group.groupId()).orElse(null);
 
@@ -93,16 +93,16 @@ public class GroupIT {
   @TestTemplate
   public void shouldSaveAndDelete(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final GroupDbReader groupReader = rdbmsService.getGroupReader();
 
     final var group = GroupFixtures.createRandomized(b -> b);
-    createAndSaveGroup(rdbmsWriter, group);
+    createAndSaveGroup(rdbmsWriters, group);
     final var instance = groupReader.findOne(group.groupId()).orElse(null);
     compareGroups(instance, group);
 
-    rdbmsWriter.getGroupWriter().delete(group.groupId());
-    rdbmsWriter.flush();
+    rdbmsWriters.getGroupWriter().delete(group.groupId());
+    rdbmsWriters.flush();
 
     final var deletedInstance = groupReader.findOne(group.groupId()).orElse(null);
     assertThat(deletedInstance).isNull();
@@ -111,11 +111,11 @@ public class GroupIT {
   @TestTemplate
   public void shouldFindByName(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final GroupDbReader groupReader = rdbmsService.getGroupReader();
 
     final var group = GroupFixtures.createRandomized(b -> b);
-    createAndSaveGroup(rdbmsWriter, group);
+    createAndSaveGroup(rdbmsWriters, group);
 
     final var searchResult =
         groupReader.search(
@@ -138,13 +138,13 @@ public class GroupIT {
   @TestTemplate
   public void shouldFindByGroupIds(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final GroupDbReader groupReader = rdbmsService.getGroupReader();
 
     final var group1 = GroupFixtures.createRandomized(b -> b);
     final var group2 = GroupFixtures.createRandomized(b -> b);
-    createAndSaveGroup(rdbmsWriter, group1);
-    createAndSaveGroup(rdbmsWriter, group2);
+    createAndSaveGroup(rdbmsWriters, group1);
+    createAndSaveGroup(rdbmsWriters, group2);
 
     final var searchResult =
         groupReader.search(
@@ -163,10 +163,10 @@ public class GroupIT {
   @TestTemplate
   public void shouldFindAllPaged(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final GroupDbReader groupReader = rdbmsService.getGroupReader();
 
-    createAndSaveRandomGroupsWithMembers(rdbmsWriter, b -> b.name("John Doe"));
+    createAndSaveRandomGroupsWithMembers(rdbmsWriters, b -> b.name("John Doe"));
 
     final var searchResult =
         groupReader.search(
@@ -183,12 +183,12 @@ public class GroupIT {
   @TestTemplate
   public void shouldFindWithFullFilter(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final GroupDbReader groupReader = rdbmsService.getGroupReader();
 
     final var group = GroupFixtures.createRandomized(b -> b);
-    createAndSaveRandomGroups(rdbmsWriter);
-    createAndSaveGroup(rdbmsWriter, group);
+    createAndSaveRandomGroups(rdbmsWriters);
+    createAndSaveGroup(rdbmsWriters, group);
 
     final var searchResult =
         groupReader.search(
@@ -205,10 +205,10 @@ public class GroupIT {
   @TestTemplate
   public void shouldFindWithSearchAfter(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final GroupDbReader groupReader = rdbmsService.getGroupReader();
 
-    createAndSaveRandomGroups(rdbmsWriter, b -> b.name("Alice Doe"));
+    createAndSaveRandomGroups(rdbmsWriters, b -> b.name("Alice Doe"));
     final var sort = GroupSort.of(s -> s.name().asc().groupId().asc());
     final var searchResult =
         groupReader.search(
@@ -237,18 +237,18 @@ public class GroupIT {
   public void shouldAddMemberToGroup(final CamundaRdbmsTestApplication testApplication) {
     // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final UserDbReader userReader = rdbmsService.getUserReader();
     final var group = GroupFixtures.createRandomized(b -> b);
-    createAndSaveGroup(rdbmsWriter, group);
+    createAndSaveGroup(rdbmsWriters, group);
     final var user = UserFixtures.createRandomized(b -> b);
-    createAndSaveUser(rdbmsWriter, user);
+    createAndSaveUser(rdbmsWriters, user);
 
     // when
-    rdbmsWriter
+    rdbmsWriters
         .getGroupWriter()
         .addMember(new GroupMemberDbModel(group.groupId(), user.username(), "USER"));
-    rdbmsWriter.flush();
+    rdbmsWriters.flush();
 
     final var users =
         userReader.search(
@@ -263,21 +263,21 @@ public class GroupIT {
   public void shouldRemoveMemberFromGroup(final CamundaRdbmsTestApplication testApplication) {
     // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final UserDbReader userReader = rdbmsService.getUserReader();
     final var group = GroupFixtures.createRandomized(b -> b);
-    createAndSaveGroup(rdbmsWriter, group);
+    createAndSaveGroup(rdbmsWriters, group);
     final var user = UserFixtures.createRandomized(b -> b);
-    createAndSaveUser(rdbmsWriter, user);
-    rdbmsWriter
+    createAndSaveUser(rdbmsWriters, user);
+    rdbmsWriters
         .getGroupWriter()
         .addMember(new GroupMemberDbModel(group.groupId(), user.username(), "USER"));
 
     // when
-    rdbmsWriter
+    rdbmsWriters
         .getGroupWriter()
         .removeMember(new GroupMemberDbModel(group.groupId(), user.username(), "USER"));
-    rdbmsWriter.flush();
+    rdbmsWriters.flush();
 
     final var users =
         userReader.search(

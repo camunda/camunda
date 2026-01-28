@@ -39,8 +39,7 @@ public class ProcessDefinitionInstanceVersionStatisticsFilterImpl
 
   @Override
   public ProcessDefinitionInstanceVersionStatisticsFilter tenantId(final Consumer<String> fn) {
-    final String value = provideSearchRequestProperty(fn);
-    filter.setTenantId(value);
+    fn.accept(filter.getTenantId());
     return this;
   }
 

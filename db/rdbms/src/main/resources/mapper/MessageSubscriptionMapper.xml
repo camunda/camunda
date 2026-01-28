@@ -28,6 +28,7 @@
     PROCESS_DEFINITION_ID,
     PROCESS_DEFINITION_KEY,
     PROCESS_INSTANCE_KEY,
+    ROOT_PROCESS_INSTANCE_KEY,
     FLOW_NODE_ID,
     FLOW_NODE_INSTANCE_KEY,
     MESSAGE_SUBSCRIPTION_STATE,
@@ -35,8 +36,7 @@
     MESSAGE_NAME,
     CORRELATION_KEY,
     TENANT_ID,
-    PARTITION_ID,
-    HISTORY_CLEANUP_DATE
+    PARTITION_ID
     FROM ${prefix}MESSAGE_SUBSCRIPTION
 
     <include refid="io.camunda.db.rdbms.sql.MessageSubscriptionMapper.searchAndAuthFilter" />
@@ -143,6 +143,7 @@
     <result column="PROCESS_DEFINITION_ID" property="processDefinitionId" javaType="java.lang.String" />
     <result column="PROCESS_DEFINITION_KEY" property="processDefinitionKey" javaType="java.lang.Long" />
     <result column="PROCESS_INSTANCE_KEY" property="processInstanceKey" javaType="java.lang.Long" />
+    <result column="ROOT_PROCESS_INSTANCE_KEY" property="rootProcessInstanceKey" javaType="java.lang.Long" />
     <result column="FLOW_NODE_ID" property="flowNodeId" javaType="java.lang.String" />
     <result column="FLOW_NODE_INSTANCE_KEY" property="flowNodeInstanceKey" javaType="java.lang.Long" />
     <result column="MESSAGE_SUBSCRIPTION_STATE" property="messageSubscriptionState" javaType="io.camunda.search.entities.MessageSubscriptionEntity$MessageSubscriptionState" />
@@ -151,7 +152,6 @@
     <result column="CORRELATION_KEY" property="correlationKey" javaType="java.lang.String" />
     <result column="TENANT_ID" property="tenantId" javaType="java.lang.String" />
     <result column="PARTITION_ID" property="partitionId" javaType="java.lang.Integer" />
-    <result column="HISTORY_CLEANUP_DATE" property="historyCleanupDate" javaType="java.time.OffsetDateTime" />
   </resultMap>
 
 
@@ -161,6 +161,7 @@
                                                PROCESS_DEFINITION_ID,
                                                PROCESS_DEFINITION_KEY,
                                                PROCESS_INSTANCE_KEY,
+                                               ROOT_PROCESS_INSTANCE_KEY,
                                                FLOW_NODE_ID,
                                                FLOW_NODE_INSTANCE_KEY,
                                                MESSAGE_SUBSCRIPTION_STATE,
@@ -168,14 +169,14 @@
                                                MESSAGE_NAME,
                                                CORRELATION_KEY,
                                                TENANT_ID,
-                                               PARTITION_ID,
-                                               HISTORY_CLEANUP_DATE
+                                               PARTITION_ID
     )
     VALUES (
             #{messageSubscriptionKey},
             #{processDefinitionId},
             #{processDefinitionKey},
             #{processInstanceKey},
+            #{rootProcessInstanceKey},
             #{flowNodeId},
             #{flowNodeInstanceKey},
             #{messageSubscriptionState},
@@ -183,8 +184,7 @@
             #{messageName},
             #{correlationKey},
             #{tenantId},
-            #{partitionId},
-            #{historyCleanupDate, jdbcType=TIMESTAMP}
+            #{partitionId}
     )
   </insert>
 
@@ -199,23 +199,14 @@
         DATE_TIME = #{dateTime, jdbcType=TIMESTAMP},
         MESSAGE_NAME = #{messageName},
         CORRELATION_KEY = #{correlationKey},
-        TENANT_ID = #{tenantId},
-        HISTORY_CLEANUP_DATE = #{historyCleanupDate, jdbcType=TIMESTAMP}
+        TENANT_ID = #{tenantId}
     WHERE MESSAGE_SUBSCRIPTION_KEY = #{messageSubscriptionKey}
   </update>
 
-  <update id="updateHistoryCleanupDate">
-    UPDATE ${prefix}MESSAGE_SUBSCRIPTION SET
-      HISTORY_CLEANUP_DATE = #{historyCleanupDate, jdbcType=TIMESTAMP}
-    WHERE PROCESS_INSTANCE_KEY IN
-    <foreach collection="processInstanceKeys" item="key" open="(" separator="," close=")">
-      #{key}
-    </foreach>
-  </update>
-
-  <delete id="cleanupHistory">
+  <delete id="deleteProcessInstanceRelatedData">
     <bind name="tableName" value="'MESSAGE_SUBSCRIPTION'"/>
-    <include refid="io.camunda.db.rdbms.sql.Commons.historyCleanup"/>
+    <bind name="primaryKeyColumn" value="'MESSAGE_SUBSCRIPTION_KEY'"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.processInstanceHistoryDeletion"/>
   </delete>
 
   <!-- Message Subscription Process Definition Statistics Aggregation -->

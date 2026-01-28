@@ -24,11 +24,16 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.HistoryDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.HistoryDeletionRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableIncidentRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceMigrationRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceModificationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceMigrationRecordValue;
@@ -39,8 +44,12 @@ import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 
 class BatchOperationStatusHandlerTest {
@@ -240,6 +249,31 @@ class BatchOperationStatusHandlerTest {
           .containsExactly(batchOperationKey + "_" + handler.getItemKey(record));
     }
 
+    @ParameterizedTest
+    @MethodSource("recordProviderStream")
+    void shouldUpdateEntitySetRootProcessInstanceKey(
+        final Function<AbstractOperationStatusHandlerTest<T>, Record<T>> recordProvider) {
+      final var record = recordProvider.apply(this);
+      final var entity = new OperationEntity();
+
+      handler.updateEntity(record, entity);
+
+      if (shouldHandleRootProcessInstanceKey()) {
+        assertThat(entity.getRootProcessInstanceKey())
+            .isPositive()
+            .isEqualTo(getRootProcessInstanceKey(record));
+      } else {
+        assertThat(entity.getRootProcessInstanceKey()).isNull();
+      }
+    }
+
+    static <T extends RecordValue>
+        Stream<Function<AbstractOperationStatusHandlerTest<T>, Record<T>>> recordProviderStream() {
+      return Stream.of(
+          AbstractOperationStatusHandlerTest::createSuccessRecord,
+          AbstractOperationStatusHandlerTest::createFailureRecord);
+    }
+
     @Test
     abstract void shouldExtractCorrectItemKey();
 
@@ -249,6 +283,14 @@ class BatchOperationStatusHandlerTest {
     abstract Record<T> createSuccessRecord();
 
     abstract Record<T> createFailureRecord();
+
+    long getRootProcessInstanceKey(final Record<T> record) {
+      return handler.getRootProcessInstanceKey(record);
+    }
+
+    boolean shouldHandleRootProcessInstanceKey() {
+      return true;
+    }
   }
 
   @Nested
@@ -293,6 +335,32 @@ class BatchOperationStatusHandlerTest {
                   .withIntent(ProcessInstanceModificationIntent.MODIFY)
                   .withBatchOperationReference(batchOperationKey));
     }
+
+    @Test
+    void shouldNotSetRootProcessInstanceKeyWhenDefault() {
+      // given
+      final Record<ProcessInstanceModificationRecordValue> record =
+          factory.generateRecord(
+              ValueType.PROCESS_INSTANCE_MODIFICATION,
+              b ->
+                  b.withRejectionType(RejectionType.PROCESSING_ERROR)
+                      .withIntent(ProcessInstanceModificationIntent.MODIFY)
+                      .withValue(
+                          ImmutableProcessInstanceModificationRecordValue.builder()
+                              .from(
+                                  factory.generateObject(
+                                      ProcessInstanceModificationRecordValue.class))
+                              .withRootProcessInstanceKey(-1L)
+                              .build())
+                      .withBatchOperationReference(batchOperationKey));
+
+      // when
+      final var entity = new OperationEntity();
+      handler.updateEntity(record, entity);
+
+      // then
+      assertThat(entity.getRootProcessInstanceKey()).isNull();
+    }
   }
 
   @Nested
@@ -336,6 +404,31 @@ class BatchOperationStatusHandlerTest {
               b.withRejectionType(RejectionType.PROCESSING_ERROR)
                   .withIntent(ProcessInstanceMigrationIntent.MIGRATE)
                   .withBatchOperationReference(batchOperationKey));
+    }
+
+    @Test
+    void shouldNotSetRootProcessInstanceKeyWhenDefault() {
+      // given
+      final Record<ProcessInstanceMigrationRecordValue> record =
+          factory.generateRecord(
+              ValueType.PROCESS_INSTANCE_MIGRATION,
+              b ->
+                  b.withRejectionType(RejectionType.PROCESSING_ERROR)
+                      .withIntent(ProcessInstanceMigrationIntent.MIGRATE)
+                      .withValue(
+                          ImmutableProcessInstanceMigrationRecordValue.builder()
+                              .from(
+                                  factory.generateObject(ProcessInstanceMigrationRecordValue.class))
+                              .withRootProcessInstanceKey(-1L)
+                              .build())
+                      .withBatchOperationReference(batchOperationKey));
+
+      // when
+      final var entity = new OperationEntity();
+      handler.updateEntity(record, entity);
+
+      // then
+      assertThat(entity.getRootProcessInstanceKey()).isNull();
     }
   }
 
@@ -410,6 +503,28 @@ class BatchOperationStatusHandlerTest {
                   .withIntent(ProcessInstanceIntent.CANCEL)
                   .withBatchOperationReference(batchOperationKey));
     }
+
+    @Test
+    void shouldNotSetRootProcessInstanceKeyWhenDefault() {
+      // given
+      final Record<ProcessInstanceRecordValue> record =
+          factory.generateRecord(
+              ValueType.PROCESS_INSTANCE,
+              b ->
+                  b.withValue(
+                          ImmutableProcessInstanceRecordValue.builder()
+                              .from(factory.generateObject(ProcessInstanceRecordValue.class))
+                              .withRootProcessInstanceKey(-1L)
+                              .build())
+                      .withBatchOperationReference(batchOperationKey));
+
+      // when
+      final var entity = new OperationEntity();
+      handler.updateEntity(record, entity);
+
+      // then
+      assertThat(entity.getRootProcessInstanceKey()).isNull();
+    }
   }
 
   @Nested
@@ -452,6 +567,126 @@ class BatchOperationStatusHandlerTest {
               b.withRejectionType(RejectionType.PROCESSING_ERROR)
                   .withIntent(IncidentIntent.RESOLVE)
                   .withBatchOperationReference(batchOperationKey));
+    }
+
+    @Test
+    void shouldNotSetRootProcessInstanceKeyWhenDefault() {
+      // given
+      final Record<IncidentRecordValue> record =
+          factory.generateRecord(
+              ValueType.INCIDENT,
+              b ->
+                  b.withValue(
+                          ImmutableIncidentRecordValue.builder()
+                              .from(factory.generateObject(IncidentRecordValue.class))
+                              .withRootProcessInstanceKey(-1L)
+                              .build())
+                      .withBatchOperationReference(batchOperationKey));
+
+      // when
+      final var entity = new OperationEntity();
+      handler.updateEntity(record, entity);
+
+      // then
+      assertThat(entity.getRootProcessInstanceKey()).isNull();
+    }
+  }
+
+  @Nested
+  class ProcessInstanceHistoryDeletionOperationHandlerTest
+      extends AbstractOperationStatusHandlerTest<HistoryDeletionRecordValue> {
+
+    ProcessInstanceHistoryDeletionOperationHandlerTest() {
+      super(new ProcessDefinitionHistoryDeletionOperationHandler(indexName, batchOperationCache));
+    }
+
+    @Override
+    void shouldExtractCorrectItemKey() {
+      final var record = createSuccessRecord();
+      final var itemKey = handler.getItemKey(record);
+
+      assertThat(itemKey).isEqualTo(record.getValue().getResourceKey());
+    }
+
+    @Override
+    void shouldExtractCorrectProcessInstanceKey() {
+      final var record = createSuccessRecord();
+      final var processInstanceKey = handler.getProcessInstanceKey(record);
+
+      assertThat(processInstanceKey).isEqualTo(record.getValue().getResourceKey());
+    }
+
+    @Override
+    Record<HistoryDeletionRecordValue> createSuccessRecord() {
+      return factory.generateRecord(
+          ValueType.HISTORY_DELETION,
+          b ->
+              b.withIntent(HistoryDeletionIntent.DELETED)
+                  .withBatchOperationReference(batchOperationKey));
+    }
+
+    @Override
+    Record<HistoryDeletionRecordValue> createFailureRecord() {
+      return factory.generateRecord(
+          ValueType.HISTORY_DELETION,
+          b ->
+              b.withRejectionType(RejectionType.PROCESSING_ERROR)
+                  .withIntent(HistoryDeletionIntent.DELETE)
+                  .withBatchOperationReference(batchOperationKey));
+    }
+
+    @Override
+    boolean shouldHandleRootProcessInstanceKey() {
+      return false;
+    }
+  }
+
+  @Nested
+  class ProcessDefinitionHistoryDeletionOperationHandlerTest
+      extends AbstractOperationStatusHandlerTest<HistoryDeletionRecordValue> {
+
+    ProcessDefinitionHistoryDeletionOperationHandlerTest() {
+      super(new ProcessDefinitionHistoryDeletionOperationHandler(indexName, batchOperationCache));
+    }
+
+    @Override
+    void shouldExtractCorrectItemKey() {
+      final var record = createSuccessRecord();
+      final var itemKey = handler.getItemKey(record);
+
+      assertThat(itemKey).isEqualTo(record.getValue().getResourceKey());
+    }
+
+    @Override
+    void shouldExtractCorrectProcessInstanceKey() {
+      final var record = createSuccessRecord();
+      final var processInstanceKey = handler.getProcessInstanceKey(record);
+
+      assertThat(processInstanceKey).isEqualTo(-1);
+    }
+
+    @Override
+    Record<HistoryDeletionRecordValue> createSuccessRecord() {
+      return factory.generateRecord(
+          ValueType.HISTORY_DELETION,
+          b ->
+              b.withIntent(HistoryDeletionIntent.DELETED)
+                  .withBatchOperationReference(batchOperationKey));
+    }
+
+    @Override
+    Record<HistoryDeletionRecordValue> createFailureRecord() {
+      return factory.generateRecord(
+          ValueType.HISTORY_DELETION,
+          b ->
+              b.withRejectionType(RejectionType.PROCESSING_ERROR)
+                  .withIntent(HistoryDeletionIntent.DELETE)
+                  .withBatchOperationReference(batchOperationKey));
+    }
+
+    @Override
+    boolean shouldHandleRootProcessInstanceKey() {
+      return false;
     }
   }
 }

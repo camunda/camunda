@@ -53,7 +53,7 @@ public class DeleteDecisionDefinitionHandler extends AbstractOperationHandler
         String.format(
             "Operation [%s]: Sending Zeebe delete command for decisionRequirementsKey [%s]...",
             operation.getId(), decisionRequirementsKey));
-    operationServicesAdapter.deleteResource(decisionRequirementsKey, operation.getId());
+    operationServicesAdapter.deleteResource(decisionRequirementsKey, operation.getId(), false);
     markAsSent(operation);
     LOGGER.info(
         String.format(

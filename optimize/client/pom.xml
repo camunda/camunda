@@ -41,7 +41,7 @@
             </goals>
             <configuration>
               <skip>${skip.fe.build}</skip>
-              <arguments>install --mutex file:/tmp/.yarn-mutex</arguments>
+              <arguments>install</arguments>
             </configuration>
           </execution>
 

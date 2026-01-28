@@ -17,6 +17,7 @@ package io.camunda.process.test.impl.dsl;
 
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -24,12 +25,15 @@ import static org.mockito.Mockito.when;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ClientException;
 import io.camunda.process.test.api.CamundaProcessTestContext;
+import io.camunda.process.test.api.dsl.ImmutableProcessDefinitionSelector;
+import io.camunda.process.test.api.dsl.ImmutableProcessInstanceSelector;
 import io.camunda.process.test.api.dsl.ImmutableTestCase;
 import io.camunda.process.test.api.dsl.TestCase;
 import io.camunda.process.test.api.dsl.TestCaseInstruction;
-import io.camunda.process.test.api.dsl.TestCaseInstructionType;
 import io.camunda.process.test.api.dsl.TestScenarioRunner;
+import io.camunda.process.test.api.dsl.instructions.ImmutableAssertProcessInstanceInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableCreateProcessInstanceInstruction;
+import io.camunda.process.test.api.dsl.instructions.assertProcessInstance.ProcessInstanceState;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
@@ -44,6 +48,8 @@ public class TestScenarioRunnerTest {
   @Mock(answer = Answers.RETURNS_MOCKS)
   private CamundaClient camundaClient;
 
+  @Mock private AssertionFacade assertionFacade;
+
   @Test
   void shouldExecuteInstruction() {
     // given
@@ -53,7 +59,10 @@ public class TestScenarioRunnerTest {
     final TestCase testCase =
         createTestCase(
             ImmutableCreateProcessInstanceInstruction.builder()
-                .type(TestCaseInstructionType.CREATE_PROCESS_INSTANCE)
+                .processDefinitionSelector(
+                    ImmutableProcessDefinitionSelector.builder()
+                        .processDefinitionId("process")
+                        .build())
                 .build());
 
     // when
@@ -100,7 +109,8 @@ public class TestScenarioRunnerTest {
 
     final TestCaseInstruction instruction =
         ImmutableCreateProcessInstanceInstruction.builder()
-            .type(TestCaseInstructionType.CREATE_PROCESS_INSTANCE)
+            .processDefinitionSelector(
+                ImmutableProcessDefinitionSelector.builder().processDefinitionId("process").build())
             .build();
     final TestCase testCase = createTestCase(instruction);
 
@@ -110,6 +120,29 @@ public class TestScenarioRunnerTest {
         .hasMessageContaining(
             "Failed to execute instruction '%s': %s", instruction.getType(), instruction.toString())
         .hasCause(clientException);
+  }
+
+  @Test
+  void shouldThrowAssertionError() {
+    // given
+    final TestScenarioRunner runner =
+        new CamundaTestScenarioRunner(processTestContext, assertionFacade);
+
+    final AssertionError assertionError = new AssertionError("expected");
+    when(assertionFacade.assertThatProcessInstance(any())).thenThrow(assertionError);
+
+    final TestCaseInstruction instruction =
+        ImmutableAssertProcessInstanceInstruction.builder()
+            .processInstanceSelector(
+                ImmutableProcessInstanceSelector.builder().processDefinitionId("process").build())
+            .state(ProcessInstanceState.IS_CREATED)
+            .build();
+    final TestCase testCase = createTestCase(instruction);
+
+    // when/then
+    assertThatThrownBy(() -> runner.run(testCase))
+        .isInstanceOf(AssertionError.class)
+        .isEqualTo(assertionError);
   }
 
   private static TestCase createTestCase(final TestCaseInstruction instruction) {

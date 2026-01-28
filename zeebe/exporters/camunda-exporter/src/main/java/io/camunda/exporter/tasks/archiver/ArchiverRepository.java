@@ -7,6 +7,8 @@
  */
 package io.camunda.exporter.tasks.archiver;
 
+import io.camunda.exporter.tasks.archiver.ArchiveBatch.BasicArchiveBatch;
+import io.camunda.exporter.tasks.archiver.ArchiveBatch.ProcessInstanceArchiveBatch;
 import io.camunda.search.schema.config.RetentionConfiguration;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
@@ -27,40 +29,36 @@ public interface ArchiverRepository extends AutoCloseable {
           UsageMetricTemplate.INDEX_NAME, RetentionConfiguration::getUsageMetricsPolicyName,
           UsageMetricTUTemplate.INDEX_NAME, RetentionConfiguration::getUsageMetricsPolicyName);
 
-  CompletableFuture<ArchiveBatch> getProcessInstancesNextBatch();
+  CompletableFuture<ProcessInstanceArchiveBatch> getProcessInstancesNextBatch();
 
-  CompletableFuture<ArchiveBatch> getBatchOperationsNextBatch();
+  CompletableFuture<BasicArchiveBatch> getBatchOperationsNextBatch();
 
-  CompletableFuture<ArchiveBatch> getUsageMetricTUNextBatch();
+  CompletableFuture<BasicArchiveBatch> getUsageMetricTUNextBatch();
 
-  CompletableFuture<ArchiveBatch> getUsageMetricNextBatch();
+  CompletableFuture<BasicArchiveBatch> getUsageMetricNextBatch();
 
-  CompletableFuture<ArchiveBatch> getStandaloneDecisionNextBatch();
+  CompletableFuture<BasicArchiveBatch> getStandaloneDecisionNextBatch();
 
   CompletableFuture<Void> setIndexLifeCycle(final String destinationIndexName);
 
   CompletableFuture<Void> setLifeCycleToAllIndexes();
 
   CompletableFuture<Void> deleteDocuments(
-      final String sourceIndexName,
-      final String idFieldName,
-      final List<String> processInstanceKeys);
+      final String sourceIndexName, final Map<String, List<String>> keysByField);
 
   CompletableFuture<Void> reindexDocuments(
       final String sourceIndexName,
       final String destinationIndexName,
-      final String idFieldName,
-      final List<String> processInstanceKeys);
+      final Map<String, List<String>> keysByField);
 
   default CompletableFuture<Void> moveDocuments(
       final String sourceIndexName,
       final String destinationIndexName,
-      final String idFieldName,
-      final List<String> ids,
+      final Map<String, List<String>> keysByField,
       final Executor executor) {
-    return reindexDocuments(sourceIndexName, destinationIndexName, idFieldName, ids)
+    return reindexDocuments(sourceIndexName, destinationIndexName, keysByField)
         .thenComposeAsync(ok -> setIndexLifeCycle(destinationIndexName), executor)
-        .thenComposeAsync(ok -> deleteDocuments(sourceIndexName, idFieldName, ids), executor);
+        .thenComposeAsync(ok -> deleteDocuments(sourceIndexName, keysByField), executor);
   }
 
   CompletableFuture<Integer> getCountOfProcessInstancesAwaitingArchival();
@@ -78,68 +76,5 @@ public interface ArchiverRepository extends AutoCloseable {
             indexTemplate.getIndexPattern(),
             indexTemplate.getFullQualifiedName(),
             indexTemplate.getAlias());
-  }
-
-  class NoopArchiverRepository implements ArchiverRepository {
-
-    @Override
-    public CompletableFuture<ArchiveBatch> getProcessInstancesNextBatch() {
-      return CompletableFuture.completedFuture(new ArchiveBatch("2024-01-01", List.of()));
-    }
-
-    @Override
-    public CompletableFuture<ArchiveBatch> getBatchOperationsNextBatch() {
-      return CompletableFuture.completedFuture(new ArchiveBatch("2024-01-01", List.of()));
-    }
-
-    @Override
-    public CompletableFuture<ArchiveBatch> getUsageMetricTUNextBatch() {
-      return CompletableFuture.completedFuture(new ArchiveBatch("2024-01-01", List.of()));
-    }
-
-    @Override
-    public CompletableFuture<ArchiveBatch> getUsageMetricNextBatch() {
-      return CompletableFuture.completedFuture(new ArchiveBatch("2024-01-01", List.of()));
-    }
-
-    @Override
-    public CompletableFuture<ArchiveBatch> getStandaloneDecisionNextBatch() {
-      return CompletableFuture.completedFuture(new ArchiveBatch("2024-01-01", List.of()));
-    }
-
-    @Override
-    public CompletableFuture<Void> setIndexLifeCycle(final String destinationIndexName) {
-      return CompletableFuture.completedFuture(null);
-    }
-
-    @Override
-    public CompletableFuture<Void> setLifeCycleToAllIndexes() {
-      return CompletableFuture.completedFuture(null);
-    }
-
-    @Override
-    public CompletableFuture<Void> deleteDocuments(
-        final String sourceIndexName,
-        final String idFieldName,
-        final List<String> processInstanceKeys) {
-      return CompletableFuture.completedFuture(null);
-    }
-
-    @Override
-    public CompletableFuture<Void> reindexDocuments(
-        final String sourceIndexName,
-        final String destinationIndexName,
-        final String idFieldName,
-        final List<String> processInstanceKeys) {
-      return CompletableFuture.completedFuture(null);
-    }
-
-    @Override
-    public CompletableFuture<Integer> getCountOfProcessInstancesAwaitingArchival() {
-      return CompletableFuture.completedFuture(0);
-    }
-
-    @Override
-    public void close() throws Exception {}
   }
 }

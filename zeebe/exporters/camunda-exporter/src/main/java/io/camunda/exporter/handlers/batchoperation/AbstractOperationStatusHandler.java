@@ -87,6 +87,10 @@ public abstract class AbstractOperationStatusHandler<R extends RecordValue>
         .setType(getRelevantOperationType())
         .setItemKey(getItemKey(record))
         .setProcessInstanceKey(getProcessInstanceKey(record));
+    final var rootProcessInstanceKey = getRootProcessInstanceKey(record);
+    if (rootProcessInstanceKey > 0) {
+      entity.setRootProcessInstanceKey(rootProcessInstanceKey);
+    }
 
     if (isCompleted(record)) {
       entity.setState(OperationState.COMPLETED);
@@ -117,6 +121,8 @@ public abstract class AbstractOperationStatusHandler<R extends RecordValue>
     batchRequest.upsert(indexName, entity.getId(), entity, updateFields);
     LOGGER.trace("Updated operation {} with fields {}", entity.getId(), updateFields);
   }
+
+  abstract long getRootProcessInstanceKey(final Record<R> record);
 
   /**
    * Extract the operation itemKey from the record.

@@ -14,6 +14,7 @@ import io.camunda.configuration.beanoverrides.SearchEngineRetentionPropertiesOve
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.beans.SearchEngineRetentionProperties;
 import io.camunda.exporter.config.ExporterConfiguration;
+import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration.ProcessInstanceRetentionMode;
 import io.camunda.search.schema.config.RetentionConfiguration;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import java.util.Map;
@@ -35,6 +36,7 @@ public class HistoryElasticsearchTest {
 
   private static final boolean EXPECTED_HISTORY_PROCESS_INSTANCE_ENABLED = false;
   private static final String EXPECTED_HISTORY_POLICY_NAME = "policy-name-foo";
+  private static final String EXPECTED_HISTORY_PROCESS_INSTANCE_RETENTION_MODE = "PI";
 
   private ExporterConfiguration getExporterConfiguration(
       final BrokerBasedProperties brokerBasedProperties) {
@@ -55,7 +57,9 @@ public class HistoryElasticsearchTest {
         "camunda.data.secondary-storage.elasticsearch.history.process-instance-enabled="
             + EXPECTED_HISTORY_PROCESS_INSTANCE_ENABLED,
         "camunda.data.secondary-storage.elasticsearch.history.policy-name="
-            + EXPECTED_HISTORY_POLICY_NAME
+            + EXPECTED_HISTORY_POLICY_NAME,
+        "camunda.data.secondary-storage.elasticsearch.history.process-instance-retention-mode="
+            + EXPECTED_HISTORY_PROCESS_INSTANCE_RETENTION_MODE
       })
   class WithOnlyUnifiedConfigSet {
     final SearchEngineRetentionProperties searchEngineRetentionProperties;
@@ -83,6 +87,8 @@ public class HistoryElasticsearchTest {
           .isEqualTo(EXPECTED_HISTORY_PROCESS_INSTANCE_ENABLED);
       assertThat(exporterConfiguration.getHistory().getRetention())
           .returns(EXPECTED_HISTORY_POLICY_NAME, RetentionConfiguration::getPolicyName);
+      assertThat(exporterConfiguration.getHistory().getProcessInstanceRetentionMode())
+          .isEqualTo(ProcessInstanceRetentionMode.PI);
     }
   }
 
@@ -93,7 +99,12 @@ public class HistoryElasticsearchTest {
         // policy name
         "camunda.data.secondary-storage.elasticsearch.history.policy-name="
             + EXPECTED_HISTORY_POLICY_NAME,
-        "camunda.database.retention.policyName=" + EXPECTED_HISTORY_POLICY_NAME
+        "camunda.database.retention.policyName=" + EXPECTED_HISTORY_POLICY_NAME,
+        // process instance retention mode
+        "camunda.data.secondary-storage.elasticsearch.history.process-instance-retention-mode="
+            + EXPECTED_HISTORY_PROCESS_INSTANCE_RETENTION_MODE,
+        "zeebe.broker.exporters.camundaexporter.args.history.processInstanceRetentionMode="
+            + EXPECTED_HISTORY_PROCESS_INSTANCE_RETENTION_MODE
       })
   class WithNewAndLegacySet {
     final SearchEngineRetentionProperties searchEngineRetentionProperties;
@@ -119,6 +130,8 @@ public class HistoryElasticsearchTest {
 
       assertThat(exporterConfiguration.getHistory().getRetention().getPolicyName())
           .isEqualTo(EXPECTED_HISTORY_POLICY_NAME);
+      assertThat(exporterConfiguration.getHistory().getProcessInstanceRetentionMode())
+          .isEqualTo(ProcessInstanceRetentionMode.PI);
     }
   }
 }

@@ -32,6 +32,8 @@ public final class VariableRecord extends UnifiedRecordValue implements Variable
       new StringValue("processDefinitionKey");
   private static final StringValue BPMN_PROCESS_ID_KEY = new StringValue("bpmnProcessId");
   private static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
+  private static final StringValue ROOT_PROCESS_INSTANCE_KEY_KEY =
+      new StringValue("rootProcessInstanceKey");
 
   private final StringProperty nameProp = new StringProperty(NAME_KEY);
   private final BinaryProperty valueProp = new BinaryProperty(VALUE_KEY);
@@ -42,16 +44,19 @@ public final class VariableRecord extends UnifiedRecordValue implements Variable
   private final StringProperty bpmnProcessIdProp = new StringProperty(BPMN_PROCESS_ID_KEY, "");
   private final StringProperty tenantIdProp =
       new StringProperty(TENANT_ID_KEY, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  private final LongProperty rootProcessInstanceKeyProp =
+      new LongProperty(ROOT_PROCESS_INSTANCE_KEY_KEY, -1L);
 
   public VariableRecord() {
-    super(7);
+    super(8);
     declareProperty(nameProp)
         .declareProperty(valueProp)
         .declareProperty(scopeKeyProp)
         .declareProperty(processInstanceKeyProp)
         .declareProperty(processDefinitionKeyProp)
         .declareProperty(bpmnProcessIdProp)
-        .declareProperty(tenantIdProp);
+        .declareProperty(tenantIdProp)
+        .declareProperty(rootProcessInstanceKeyProp);
   }
 
   @Override
@@ -96,6 +101,16 @@ public final class VariableRecord extends UnifiedRecordValue implements Variable
 
   public VariableRecord setBpmnProcessId(final DirectBuffer bpmnProcessId) {
     bpmnProcessIdProp.setValue(bpmnProcessId);
+    return this;
+  }
+
+  @Override
+  public long getRootProcessInstanceKey() {
+    return rootProcessInstanceKeyProp.getValue();
+  }
+
+  public VariableRecord setRootProcessInstanceKey(final long rootProcessInstanceKey) {
+    rootProcessInstanceKeyProp.setValue(rootProcessInstanceKey);
     return this;
   }
 

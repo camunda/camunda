@@ -127,5 +127,8 @@ public interface MutableProcessingState extends ProcessingState {
   @Override
   MutableGlobalListenersState getGlobalListenersState();
 
+  @Override
+  MutableJobMetricsState getJobMetricsState();
+
   KeyGenerator getKeyGenerator();
 }

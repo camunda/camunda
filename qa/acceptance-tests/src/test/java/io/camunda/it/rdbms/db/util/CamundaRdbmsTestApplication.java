@@ -15,6 +15,7 @@ import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
 import io.camunda.zeebe.qa.util.cluster.TestSpringApplication;
+import java.util.Map;
 import java.util.function.Consumer;
 import org.awaitility.Awaitility;
 import org.slf4j.Logger;
@@ -73,6 +74,14 @@ public final class CamundaRdbmsTestApplication
         rdbms.setUrl(jdbcDatabaseContainer.getJdbcUrl());
         rdbms.setUsername(jdbcDatabaseContainer.getUsername());
         rdbms.setPassword(jdbcDatabaseContainer.getPassword());
+        // In order to ensure that a test runs against the intended database, we also need to set
+        // Spring’s datasource properties. Otherwise, Spring might default to an embedded database
+        // (H2). See also property substitution in dist/application.properties for further details.
+        withAdditionalProperties(
+            Map.of(
+                "spring.datasource.url", rdbms.getUrl(),
+                "spring.datasource.username", rdbms.getUsername(),
+                "spring.datasource.password", rdbms.getPassword()));
       }
     }
 

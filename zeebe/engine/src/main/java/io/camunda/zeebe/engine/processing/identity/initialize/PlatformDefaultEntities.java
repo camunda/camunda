@@ -7,6 +7,9 @@
  */
 package io.camunda.zeebe.engine.processing.identity.initialize;
 
+import static io.camunda.zeebe.engine.processing.identity.authorization.property.UserTaskAuthorizationProperties.PROP_ASSIGNEE;
+import static io.camunda.zeebe.engine.processing.identity.authorization.property.UserTaskAuthorizationProperties.PROP_CANDIDATE_GROUPS;
+import static io.camunda.zeebe.engine.processing.identity.authorization.property.UserTaskAuthorizationProperties.PROP_CANDIDATE_USERS;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationScope.WILDCARD;
 
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
@@ -14,6 +17,7 @@ import io.camunda.zeebe.protocol.impl.record.value.authorization.IdentitySetupRe
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.DefaultRole;
 import io.camunda.zeebe.protocol.record.value.EntityType;
@@ -21,6 +25,7 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class PlatformDefaultEntities {
 
@@ -38,6 +43,7 @@ public class PlatformDefaultEntities {
     setupRpaRole(setupRecord);
     setupConnectorsRole(setupRecord);
     setupAppIntegrationsRole(setupRecord);
+    setupTaskWorkerRole(setupRecord);
   }
 
   private static void setupReadOnlyAdminRole(final IdentitySetupRecord setupRecord) {
@@ -207,5 +213,30 @@ public class PlatformDefaultEntities {
                 .setTenantId(DEFAULT_TENANT_ID)
                 .setEntityType(EntityType.ROLE)
                 .setEntityId(rpaRoleId));
+  }
+
+  private static void setupTaskWorkerRole(final IdentitySetupRecord setupRecord) {
+    final var taskWorkerRoleId = DefaultRole.TASK_WORKER.getId();
+    setupRecord.addRole(new RoleRecord().setRoleId(taskWorkerRoleId).setName("Task Worker"));
+    Stream.of(PROP_ASSIGNEE, PROP_CANDIDATE_USERS, PROP_CANDIDATE_GROUPS)
+        .forEach(
+            propertyName ->
+                setupRecord.addAuthorization(
+                    new AuthorizationRecord()
+                        .setOwnerId(taskWorkerRoleId)
+                        .setOwnerType(AuthorizationOwnerType.ROLE)
+                        .setResourceType(AuthorizationResourceType.USER_TASK)
+                        .setResourceMatcher(AuthorizationResourceMatcher.PROPERTY)
+                        .setResourcePropertyName(propertyName)
+                        .setPermissionTypes(
+                            Set.of(
+                                PermissionType.READ,
+                                PermissionType.CLAIM,
+                                PermissionType.COMPLETE))));
+    setupRecord.addTenantMember(
+        new TenantRecord()
+            .setTenantId(DEFAULT_TENANT_ID)
+            .setEntityType(EntityType.ROLE)
+            .setEntityId(taskWorkerRoleId));
   }
 }

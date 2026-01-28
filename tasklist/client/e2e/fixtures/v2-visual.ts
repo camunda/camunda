@@ -18,6 +18,11 @@ import {
 } from '@camunda/camunda-api-zod-schemas/8.8';
 import {unassignedTask} from '@/mocks/v2/task';
 import {bpmnXml} from '@/mocks/v2/bpmnXml';
+import {
+  type AuditLogItem,
+  auditLogs as defaultAuditLogs,
+  getQueryUserTaskAuditLogsResponseMock,
+} from '@/mocks/v2/auditLogs';
 
 function getCollectionResponse<Item>(items: Item[]) {
   return {
@@ -62,6 +67,15 @@ type PlaywrightFixtures = {
     processDefinitions?: ProcessDefinition[],
   ) => void;
   mockHasConsentedToStartProcess: () => void;
+  mockQueryUserTaskAuditLogsRequest: (params: {
+    userTaskKey: string;
+    auditLogs?: AuditLogItem[];
+    status?: number;
+  }) => void;
+  mockGetAuditLogRequest: (params: {
+    auditLogKey: string;
+    auditLog?: AuditLogItem;
+  }) => void;
 };
 
 const test = base.extend<PlaywrightFixtures>({
@@ -230,6 +244,38 @@ const test = base.extend<PlaywrightFixtures>({
       await page.addInitScript(`(() => {
         window.localStorage.setItem('hasConsentedToStartProcess', 'true');
       })()`);
+    });
+  },
+  mockQueryUserTaskAuditLogsRequest: async ({page}, use) => {
+    await use(
+      async ({userTaskKey, auditLogs = defaultAuditLogs, status = 200}) => {
+        await page.route(
+          `**/v2/user-tasks/${userTaskKey}/audit-logs/search`,
+          (route) =>
+            route.fulfill({
+              status,
+              body: JSON.stringify(
+                getQueryUserTaskAuditLogsResponseMock(auditLogs),
+              ),
+              headers: {
+                'content-type': 'application/json',
+              },
+            }),
+        );
+      },
+    );
+  },
+  mockGetAuditLogRequest: async ({page}, use) => {
+    await use(async ({auditLogKey, auditLog}) => {
+      await page.route(`**/v2/audit-logs/${auditLogKey}`, (route) =>
+        route.fulfill({
+          status: 200,
+          body: JSON.stringify(auditLog),
+          headers: {
+            'content-type': 'application/json',
+          },
+        }),
+      );
     });
   },
 });

@@ -139,6 +139,10 @@ public class JobHandler implements ExportHandler<JobEntity, JobRecordValue> {
         entity.setJobFailedWithRetriesLeft(false);
       }
     }
+    final long rootProcessInstanceKey = recordValue.getRootProcessInstanceKey();
+    if (rootProcessInstanceKey > 0) {
+      entity.setRootProcessInstanceKey(rootProcessInstanceKey);
+    }
   }
 
   @Override

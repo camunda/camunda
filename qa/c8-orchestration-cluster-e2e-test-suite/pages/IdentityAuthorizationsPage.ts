@@ -93,9 +93,11 @@ export class IdentityAuthorizationsPage {
         name: ownerId.toLowerCase().replace(/ /g, ''),
       });
     this.resourceTypeOption = (resourceType) =>
-      this.page.getByRole('option', {name: resourceType});
+      this.page.getByRole('option', {
+        name: new RegExp(`^${resourceType}$`, 'i'),
+      });
     this.resourceTypeTab = (resourceType) =>
-      this.page.getByRole('tab', {name: resourceType});
+      this.page.getByRole('tab', {name: new RegExp(`^${resourceType}$`, 'i')});
   }
 
   async navigateToAuthorizations() {
@@ -128,6 +130,9 @@ export class IdentityAuthorizationsPage {
   async fillResourceId(resourceId: string) {
     await expect(this.createAuthorizationResourceIdField).toBeVisible();
     await this.createAuthorizationResourceIdField.fill(resourceId);
+    await expect(this.createAuthorizationResourceIdField).toHaveValue(
+      resourceId,
+    );
   }
 
   async checkAccessPermissions(permission: string[]) {
@@ -261,8 +266,12 @@ export class IdentityAuthorizationsPage {
     ownerId: string,
     ownerType: string,
     accessPermissions?: string[],
+    authorizationTab?: string,
   ) {
-    const exists = await this.findAuthorizationInPaginatedList(ownerId);
+    const exists = await this.findAuthorizationInPaginatedList(
+      ownerId,
+      authorizationTab,
+    );
 
     if (!exists) {
       throw new Error(

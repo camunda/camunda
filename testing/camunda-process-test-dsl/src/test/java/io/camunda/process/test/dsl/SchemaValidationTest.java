@@ -45,7 +45,12 @@ public class SchemaValidationTest {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {"/empty-test-scenario.json", "/example-test-scenario.json"})
+  @ValueSource(
+      strings = {
+        "/empty-test-scenario.json",
+        "/example-test-scenario.json",
+        "/full-test-scenario.json"
+      })
   void shouldValidateScenario(final String filePath) throws IOException {
     // given
     final JsonNode jsonNode = objectMapper.readTree(getClass().getResourceAsStream(filePath));

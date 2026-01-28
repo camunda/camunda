@@ -47,6 +47,40 @@ To learn more about what we're currently working on, check the [GitHub issues](h
 * [User Forum](https://forum.camunda.io)
 * [Contribution Guidelines](/CONTRIBUTING.md)
 
+## Documentation
+
+This repository includes comprehensive documentation in the [`docs/`](docs/) directory. The content is served via a Docusaurus site located in [`monorepo-docs-site/`](monorepo-docs-site/).
+
+### Running the Documentation Site
+
+```bash
+cd monorepo-docs-site
+npm install
+npm start
+```
+
+The documentation site will be available at `http://localhost:3000/camunda/`.
+
+### Adding Documentation
+
+1. Add new markdown files to the [`docs/`](docs/) directory
+2. Update the sidebar configuration in [`monorepo-docs-site/sidebars.js`](monorepo-docs-site/sidebars.js) to include your new documentation file in the appropriate array position.
+   For example:
+
+```js
+// in monorepo-docs-site/sidebars.js
+module.exports = {
+  docs: [
+    'introduction',
+    'getting-started',
+    // add your new doc ID here
+    'your-doc-id',
+  ],
+};
+```
+
+For more details, see the [documentation site README](monorepo-docs-site/README.md).
+
 ## Recommended Docs Entries for New Users
 
 * [What is Camunda Platform 8?](https://docs.camunda.io/docs/components/)

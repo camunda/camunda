@@ -23,8 +23,6 @@ import {Value} from './NewVariableModification/Value';
 import {Operation} from './NewVariableModification/Operation';
 import {ViewFullVariableButton} from './ViewFullVariableButton';
 import {useIsProcessInstanceRunning} from 'modules/queries/processInstance/useIsProcessInstanceRunning';
-import {usePermissions} from 'modules/queries/permissions/usePermissions';
-import {Restricted} from 'modules/components/Restricted';
 import {useVariables} from 'modules/queries/variables/useVariables';
 
 type Props = {
@@ -37,7 +35,6 @@ const VariablesTable: React.FC<Props> = ({
   isVariableModificationAllowed,
 }) => {
   const {data: isProcessInstanceRunning} = useIsProcessInstanceRunning();
-  const {data: permissions} = usePermissions();
   const {initialValues} = useFormState();
   const form = useForm<VariableFormValues>();
   const variableNameRef = useRef<HTMLDivElement>(null);
@@ -110,37 +107,22 @@ const VariablesTable: React.FC<Props> = ({
                   }
 
                   return (
-                    <Restricted
-                      resourceBasedRestrictions={{
-                        scopes: ['UPDATE_PROCESS_INSTANCE'],
-                        permissions,
-                      }}
-                      fallback={
-                        isTruncated ? (
-                          <ViewFullVariableButton
-                            variableName={name}
-                            variableKey={variableKey}
-                          />
-                        ) : null
+                    <Button
+                      kind="ghost"
+                      size="sm"
+                      tooltipPosition="left"
+                      iconDescription={`Edit variable ${name}`}
+                      aria-label={`Edit variable ${name}`}
+                      disabled={
+                        isFetchingNextPage || form.getState().submitting
                       }
-                    >
-                      <Button
-                        kind="ghost"
-                        size="sm"
-                        tooltipPosition="left"
-                        iconDescription={`Edit variable ${name}`}
-                        aria-label={`Edit variable ${name}`}
-                        disabled={
-                          isFetchingNextPage || form.getState().submitting
-                        }
-                        onClick={async () => {
-                          form.reset({name, value});
-                          form.change('value', value);
-                        }}
-                        hasIconOnly
-                        renderIcon={Edit}
-                      />
-                    </Restricted>
+                      onClick={async () => {
+                        form.reset({name, value});
+                        form.change('value', value);
+                      }}
+                      hasIconOnly
+                      renderIcon={Edit}
+                    />
                   );
                 })()}
               </Operations>

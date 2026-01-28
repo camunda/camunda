@@ -15,7 +15,6 @@ import io.camunda.db.rdbms.write.util.TruncateUtil;
 import io.camunda.search.entities.ValueTypeEnum;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.util.ValueTypeUtil;
-import java.time.OffsetDateTime;
 import java.util.function.Function;
 
 public record VariableDbModel(
@@ -29,10 +28,10 @@ public record VariableDbModel(
     boolean isPreview,
     Long scopeKey,
     Long processInstanceKey,
+    Long rootProcessInstanceKey,
     String processDefinitionId,
     String tenantId,
-    int partitionId,
-    OffsetDateTime historyCleanupDate)
+    int partitionId)
     implements Copyable<VariableDbModel> {
 
   @Override
@@ -47,10 +46,10 @@ public record VariableDbModel(
                 .name(name)
                 .scopeKey(scopeKey)
                 .processInstanceKey(processInstanceKey)
+                .rootProcessInstanceKey(rootProcessInstanceKey)
                 .processDefinitionId(processDefinitionId)
                 .tenantId(tenantId)
-                .partitionId(partitionId)
-                .historyCleanupDate(historyCleanupDate))
+                .partitionId(partitionId))
         .build();
   }
 
@@ -88,10 +87,10 @@ public record VariableDbModel(
         isPreview,
         scopeKey,
         processInstanceKey,
+        rootProcessInstanceKey,
         processDefinitionId,
         tenantId,
-        partitionId,
-        historyCleanupDate);
+        partitionId);
   }
 
   public static class VariableDbModelBuilder implements ObjectBuilder<VariableDbModel> {
@@ -101,10 +100,10 @@ public record VariableDbModel(
     private String value;
     private Long scopeKey;
     private Long processInstanceKey;
+    private Long rootProcessInstanceKey;
     private String processDefinitionId;
     private String tenantId;
     private int partitionId;
-    private OffsetDateTime historyCleanupDate;
 
     public VariableDbModelBuilder() {}
 
@@ -133,6 +132,11 @@ public record VariableDbModel(
       return this;
     }
 
+    public VariableDbModelBuilder rootProcessInstanceKey(final Long rootProcessInstanceKey) {
+      this.rootProcessInstanceKey = rootProcessInstanceKey;
+      return this;
+    }
+
     public VariableDbModelBuilder processDefinitionId(final String processDefinitionId) {
       this.processDefinitionId = processDefinitionId;
       return this;
@@ -145,11 +149,6 @@ public record VariableDbModel(
 
     public VariableDbModelBuilder partitionId(final int partitionId) {
       this.partitionId = partitionId;
-      return this;
-    }
-
-    public VariableDbModelBuilder historyCleanupDate(final OffsetDateTime value) {
-      historyCleanupDate = value;
       return this;
     }
 
@@ -177,10 +176,10 @@ public record VariableDbModel(
           false,
           scopeKey,
           processInstanceKey,
+          rootProcessInstanceKey,
           processDefinitionId,
           tenantId,
-          partitionId,
-          historyCleanupDate);
+          partitionId);
     }
 
     private VariableDbModel getLongModel() {
@@ -195,10 +194,10 @@ public record VariableDbModel(
           false,
           scopeKey,
           processInstanceKey,
+          rootProcessInstanceKey,
           processDefinitionId,
           tenantId,
-          partitionId,
-          historyCleanupDate);
+          partitionId);
     }
 
     private VariableDbModel getDoubleModel() {
@@ -213,10 +212,10 @@ public record VariableDbModel(
           false,
           scopeKey,
           processInstanceKey,
+          rootProcessInstanceKey,
           processDefinitionId,
           tenantId,
-          partitionId,
-          historyCleanupDate);
+          partitionId);
     }
   }
 }

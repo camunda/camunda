@@ -7,14 +7,10 @@
  */
 
 import {observer} from 'mobx-react';
-import {useLocation} from 'react-router-dom';
 import {Link, OrderedList, Stack, TableBatchAction} from '@carbon/react';
 import {MigrateAlt} from '@carbon/react/icons';
-import {Restricted} from 'modules/components/Restricted';
-import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
-import {getProcessInstanceFilters} from 'modules/utils/filter/getProcessInstanceFilters';
+import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelectionV2';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
-import {processesStore} from 'modules/stores/processes/processes.list';
 import {ModalStateManager} from 'modules/components/ModalStateManager';
 import {getProcessInstancesRequestFilters} from 'modules/utils/filter';
 import {ListItem} from './styled';
@@ -22,14 +18,12 @@ import {tracking} from 'modules/tracking';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {HelperModal} from 'modules/components/HelperModal';
 import {getStateLocally} from 'modules/utils/localStorage';
-import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {useListViewXml} from 'modules/queries/processDefinitions/useListViewXml';
+import {useSelectedProcessDefinitionContext} from '../../../../selectedProcessDefinitionContext';
 
 const localStorageKey = 'hideMigrationHelperModal';
 
 const MigrateAction: React.FC = observer(() => {
-  const location = useLocation();
-  const {version, process, tenant} = getProcessInstanceFilters(location.search);
   const {
     selectedProcessInstanceIds,
     hasSelectedRunningInstances,
@@ -37,20 +31,20 @@ const MigrateAction: React.FC = observer(() => {
     state: {selectionMode},
   } = processInstancesSelectionStore;
 
-  const isVersionSelected = version !== undefined && version !== 'all';
-
-  const processDefinitionKey = useProcessDefinitionKeyContext();
-  const processDefinition = useListViewXml({processDefinitionKey});
-  const hasXmlError = processDefinition?.isError;
+  const selectedProcessDefinition = useSelectedProcessDefinitionContext();
+  const processDefinitionXml = useListViewXml({
+    processDefinitionKey: selectedProcessDefinition?.processDefinitionKey,
+  });
+  const hasXmlError = processDefinitionXml?.isError;
 
   const isDisabled =
     batchModificationStore.state.isEnabled ||
-    !isVersionSelected ||
+    !selectedProcessDefinition ||
     !hasSelectedRunningInstances ||
     hasXmlError;
 
   const getTooltipText = () => {
-    if (!isVersionSelected) {
+    if (!selectedProcessDefinition) {
       return 'To start the migration process, choose a process and version first.';
     }
 
@@ -65,11 +59,7 @@ const MigrateAction: React.FC = observer(() => {
 
   const handleSubmit = () => {
     processInstanceMigrationStore.setSourceProcessDefinitionKey(
-      processesStore.getProcessId({
-        process,
-        tenant,
-        version,
-      }),
+      selectedProcessDefinition?.processDefinitionKey,
     );
 
     const requestFilterParameters = {
@@ -92,75 +82,69 @@ const MigrateAction: React.FC = observer(() => {
   };
 
   return (
-    <Restricted
-      resourceBasedRestrictions={{
-        scopes: ['UPDATE_PROCESS_INSTANCE'],
-        permissions: processesStore.getPermissions(process, tenant),
-      }}
-    >
-      <ModalStateManager
-        renderLauncher={({setOpen}) => (
-          <TableBatchAction
-            renderIcon={MigrateAlt}
-            onClick={() => {
-              if (getStateLocally()?.[localStorageKey]) {
-                handleSubmit();
-              } else {
-                setOpen(true);
-              }
-              tracking.track({
-                eventName: 'process-instance-migration-button-clicked',
-              });
-            }}
-            disabled={isDisabled}
-            title={
-              batchModificationStore.state.isEnabled
-                ? 'Not available in batch modification mode'
-                : getTooltipText()
+    <ModalStateManager
+      renderLauncher={({setOpen}) => (
+        <TableBatchAction
+          renderIcon={MigrateAlt}
+          onClick={() => {
+            if (getStateLocally()?.[localStorageKey]) {
+              handleSubmit();
+            } else {
+              setOpen(true);
             }
-          >
-            Migrate
-          </TableBatchAction>
-        )}
-      >
-        {({open, setOpen}) => (
-          <HelperModal
-            title="Migrate process instance versions"
-            open={open}
-            onClose={() => setOpen(false)}
-            localStorageKey={localStorageKey}
-            onSubmit={handleSubmit}
-          >
-            <Stack as={OrderedList} nested gap={5}>
-              <ListItem>
-                Migrate is used to migrate running process instances to a
-                different process definition.
-              </ListItem>
-              <ListItem>
-                When the migration steps are executed, all selected process
-                instances will be affected. This can lead to interruptions,
-                delays or changes.
-              </ListItem>
-              <ListItem>
-                To minimize interruptions or delays, plan the migration at times
-                when the system load is low.
-              </ListItem>
-            </Stack>
-            <p>
-              Questions or concerns? Check our{' '}
-              <Link
-                href="https://docs.camunda.io/docs/components/operate/userguide/process-instance-migration/"
-                target="_blank"
-                inline
-              >
-                migration documentation
-              </Link>{' '}
-              for guidance and best practices.
-            </p>
-          </HelperModal>
-        )}
-      </ModalStateManager>
-    </Restricted>
+            tracking.track({
+              eventName: 'process-instance-migration-button-clicked',
+            });
+          }}
+          disabled={isDisabled}
+          title={
+            batchModificationStore.state.isEnabled
+              ? 'Not available in batch modification mode'
+              : getTooltipText()
+          }
+        >
+          Migrate
+        </TableBatchAction>
+      )}
+    >
+      {({open, setOpen}) => (
+        <HelperModal
+          title="Migrate process instance versions"
+          open={open}
+          onClose={() => setOpen(false)}
+          localStorageKey={localStorageKey}
+          onSubmit={handleSubmit}
+        >
+          {/* @ts-expect-error - Carbon types are wrong */}
+          <Stack as={OrderedList} nested gap={5}>
+            <ListItem>
+              Migrate is used to migrate running process instances to a
+              different process definition.
+            </ListItem>
+            <ListItem>
+              When the migration steps are executed, all selected process
+              instances will be affected. This can lead to interruptions, delays
+              or changes.
+            </ListItem>
+            <ListItem>
+              To minimize interruptions or delays, plan the migration at times
+              when the system load is low.
+            </ListItem>
+          </Stack>
+          <p>
+            Questions or concerns? Check our{' '}
+            <Link
+              href="https://docs.camunda.io/docs/components/operate/userguide/process-instance-migration/"
+              target="_blank"
+              inline
+            >
+              migration documentation
+            </Link>{' '}
+            for guidance and best practices.
+          </p>
+        </HelperModal>
+      )}
+    </ModalStateManager>
   );
 });
 

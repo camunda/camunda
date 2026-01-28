@@ -52,6 +52,7 @@ public class ProcessExportHandler implements RdbmsExportHandler<Process> {
     processDefinitionWriter.create(map(value));
     final String resourceName = value.getResourceName();
     final var versionTag = value.getVersionTag();
+    final var version = value.getVersion();
     final var processModelReader =
         ProcessModelReader.of(value.getResource(), value.getBpmnProcessId());
     processModelReader.ifPresent(
@@ -60,7 +61,7 @@ public class ProcessExportHandler implements RdbmsExportHandler<Process> {
               ProcessCacheUtil.sortedCallActivityIds(reader.extractCallActivities());
           final var flowNodesMap = ProcessCacheUtil.getFlowNodesMap(reader.extractFlowNodes());
           final var cachedProcessEntity =
-              new CachedProcessEntity(resourceName, versionTag, activities, flowNodesMap);
+              new CachedProcessEntity(resourceName, version, versionTag, activities, flowNodesMap);
           processCache.put(value.getProcessDefinitionKey(), cachedProcessEntity);
         });
   }

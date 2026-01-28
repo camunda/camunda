@@ -1,0 +1,93 @@
+# description: Build and deploy Docusaurus documentation site to GitHub Pages
+# type: ci
+# owner: @camunda/monorepo-devops-team
+---
+name: Docs Build and Deploy
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: {}
+
+# Limit workflow to 1 concurrent run per ref (branch): new commit -> old runs are canceled to save costs
+concurrency:
+  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.ref }}
+
+defaults:
+  run:
+    # use bash shell by default to ensure pipefail behavior is the default
+    # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
+    shell: bash
+
+env:
+  # renovate: datasource=node-version depName=node
+  NODE_VERSION: '24.6.0'
+
+jobs:
+  # Detect changes to avoid unnecessary builds
+  detect-changes:
+    outputs:
+      docs-changes: ${{ steps.filter.outputs.docs-changes }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      # Detect changes against the base branch
+      - name: Detect changes
+        uses: ./.github/actions/paths-filter
+        id: filter
+
+  build-and-deploy:
+    if: needs.detect-changes.outputs.docs-changes == 'true' || github.event_name == 'workflow_dispatch'
+    name: Build and Deploy Documentation
+    needs: detect-changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    environment:
+      name: github-pages
+      url: https://camunda.github.io/camunda/
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: monorepo-docs-site/package-lock.json
+
+      - name: Install dependencies
+        working-directory: monorepo-docs-site
+        run: npm ci
+
+      - name: Build documentation
+        working-directory: monorepo-docs-site
+        run: npm run build
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@4f9cc6602d3f66b9c108549d475ec49e8ef4d45e # v4.0.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./monorepo-docs-site/build
+          keep_files: true
+          enable_jekyll: false
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}

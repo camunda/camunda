@@ -22,6 +22,7 @@ import io.camunda.zeebe.protocol.record.intent.IdentitySetupIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
+import io.camunda.zeebe.protocol.record.value.DefaultRole;
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
@@ -83,9 +84,13 @@ final class IdentitySetupInitializerIT {
     final var passwordMatches = passwordEncoder.matches(password, createdUser.getPassword());
     assertThat(passwordMatches).isTrue();
 
-    assertThat(RecordingExporter.roleRecords(RoleIntent.CREATED).limit(4))
+    assertThat(
+            RecordingExporter.roleRecords(RoleIntent.CREATED)
+                // all default roles from DefaultRole enum + "Readonly Admin"
+                .limit(DefaultRole.values().length + 1))
         .extracting(record -> record.getValue().getName())
-        .containsExactlyInAnyOrder("Readonly Admin", "Admin", "RPA", "Connectors");
+        .containsExactlyInAnyOrder(
+            "Readonly Admin", "Admin", "RPA", "Connectors", "App Integrations", "Task Worker");
 
     final var createdTenant =
         RecordingExporter.tenantRecords(TenantIntent.CREATED).getFirst().getValue();

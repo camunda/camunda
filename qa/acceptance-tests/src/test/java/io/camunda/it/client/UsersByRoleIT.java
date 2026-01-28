@@ -15,6 +15,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.CreateUserResponse;
 import io.camunda.client.api.search.response.RoleUser;
+import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.test.util.Strings;
 import java.util.List;
@@ -22,6 +23,7 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 
 @MultiDbTest
+@CompatibilityTest
 public class UsersByRoleIT {
 
   private static CamundaClient camundaClient;

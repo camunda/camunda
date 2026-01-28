@@ -12,11 +12,14 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeleteResourceResponse;
 import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.msgpack.value.ValueArray;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionRecord;
+import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.JobListenerEventType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
@@ -27,6 +30,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -243,6 +247,53 @@ class ResponseMapperTest {
       public String toString() {
         return name;
       }
+    }
+  }
+
+  @Nested
+  class DeleteResourceResponseMappingTest {
+
+    @Test
+    void shouldMapDeleteResourceResponseWithResourceKeyAndNoBatchOperation() {
+      // given
+      final long resourceKey = 12345L;
+      final ResourceDeletionRecord brokerResponse = mock(ResourceDeletionRecord.class);
+      when(brokerResponse.getResourceKey()).thenReturn(resourceKey);
+      when(brokerResponse.isDeleteHistory()).thenReturn(false);
+
+      // when
+      final DeleteResourceResponse result =
+          ResponseMapper.toDeleteResourceResponse(1L, brokerResponse);
+
+      // then
+      assertThat(result.getResourceKey()).isEqualTo(String.valueOf(resourceKey));
+      assertThat(result.hasBatchOperation()).isFalse();
+    }
+
+    @Test
+    void shouldMapDeleteResourceResponseWithBatchOperationWhenDeleteHistoryIsTrue() {
+      // given
+      final long resourceKey = 12345L;
+      final long batchOperationKey = 67890L;
+      final BatchOperationType batchOperationType = BatchOperationType.DELETE_PROCESS_INSTANCE;
+      final ResourceDeletionRecord brokerResponse = mock(ResourceDeletionRecord.class);
+      when(brokerResponse.getResourceKey()).thenReturn(resourceKey);
+      when(brokerResponse.isDeleteHistory()).thenReturn(true);
+      when(brokerResponse.getBatchOperationKey()).thenReturn(batchOperationKey);
+      when(brokerResponse.getBatchOperationType()).thenReturn(batchOperationType);
+
+      // when
+      final DeleteResourceResponse result =
+          ResponseMapper.toDeleteResourceResponse(1L, brokerResponse);
+
+      // then
+      assertThat(result.getResourceKey()).isEqualTo(String.valueOf(resourceKey));
+      assertThat(result.hasBatchOperation()).isTrue();
+      assertThat(result.getBatchOperation().getBatchOperationKey())
+          .isEqualTo(String.valueOf(batchOperationKey));
+      assertThat(result.getBatchOperation().getBatchOperationType()).isNotNull();
+      assertThat(result.getBatchOperation().getBatchOperationType().name())
+          .isEqualTo(batchOperationType.name());
     }
   }
 }

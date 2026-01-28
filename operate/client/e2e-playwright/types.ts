@@ -30,7 +30,6 @@ type ProcessDto = {
   bpmnProcessId: string;
   name: string | null;
   processes: ProcessVersionDto[];
-  permissions?: ResourceBasedPermissionDto[] | null;
   tenantId: string;
 };
 
@@ -76,12 +75,6 @@ interface InstanceOperationEntity {
   completedDate: null | string;
 }
 
-type ResourceBasedPermissionDto =
-  | 'READ'
-  | 'DELETE'
-  | 'UPDATE_PROCESS_INSTANCE'
-  | 'DELETE_PROCESS_INSTANCE';
-
 interface ProcessInstanceEntity {
   id: string;
   processId: string;
@@ -100,7 +93,6 @@ interface ProcessInstanceEntity {
     instanceId: string;
     processDefinitionName: string;
   }>;
-  permissions?: ResourceBasedPermissionDto[] | null;
   tenantId: string;
 }
 
@@ -239,21 +231,6 @@ type IncidentByErrorDto = {
   processes: ProcessStatisticsDto[];
 };
 
-type ProcessInstanceByNameDto = {
-  bpmnProcessId: string;
-  tenantId: string;
-  processName: null | string;
-  instancesWithActiveIncidentsCount: number;
-  activeInstancesCount: number;
-  processes: ProcessStatisticsDto[];
-};
-
-type CoreStatisticsDto = {
-  running: number;
-  active: number;
-  withIncidents: number;
-};
-
 type DecisionInstanceEntityState = 'EVALUATED' | 'FAILED';
 
 interface DecisionInstanceEntity {
@@ -280,7 +257,6 @@ type DecisionDto = {
     version: number;
     decisionId: string;
   }[];
-  permissions?: ResourceBasedPermissionDto[] | null;
   tenantId: string;
 };
 
@@ -305,8 +281,6 @@ export type {
   SequenceFlowDto,
   SequenceFlowsDto,
   IncidentByErrorDto,
-  ProcessInstanceByNameDto,
-  CoreStatisticsDto,
   DecisionInstancesDto,
   DecisionDto,
 };

@@ -455,6 +455,12 @@ components:
           type: string
           readOnly: true
           example: 238632143-55-690906332-690905294
+        firstLogPosition:
+          description: The first log position included in this backup.
+          type: integer
+          format: int64
+          readOnly: true
+          example: 5
         checkpointPosition:
           description: The position of the checkpoint for this backup.
           type: integer

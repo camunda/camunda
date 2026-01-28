@@ -22,6 +22,7 @@ import io.camunda.client.api.response.Process;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.enums.BatchOperationItemState;
 import io.camunda.client.api.search.response.BatchOperationItems.BatchOperationItem;
+import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -36,6 +37,7 @@ import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
+@CompatibilityTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 public class BatchOperationCancelProcessInstanceIT {
 

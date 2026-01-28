@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.CorrelatedMessageSubscriptionDbReader;
-import io.camunda.db.rdbms.write.RdbmsWriter;
+import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.CorrelatedMessageSubscriptionDbModel;
 import io.camunda.it.rdbms.db.fixtures.CorrelatedMessageSubscriptionFixtures;
 import io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures;
@@ -24,6 +24,7 @@ import io.camunda.search.sort.CorrelatedMessageSubscriptionSort;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import org.assertj.core.data.TemporalUnitWithinOffset;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
@@ -40,12 +41,12 @@ public class CorrelatedMessageSubscriptionIT {
   public void shouldSaveAndFindCorrelatedMessageSubscriptionByCompositeKey(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final CorrelatedMessageSubscriptionDbReader correlatedMessageSubscriptionReader =
         rdbmsService.getCorrelatedMessageSubscriptionReader();
 
     final var original = CorrelatedMessageSubscriptionFixtures.createRandomized(b -> b);
-    createAndSaveCorrelatedMessageSubscription(rdbmsWriter, original);
+    createAndSaveCorrelatedMessageSubscription(rdbmsWriters, original);
 
     final var instance =
         correlatedMessageSubscriptionReader
@@ -59,12 +60,12 @@ public class CorrelatedMessageSubscriptionIT {
   public void shouldFindCorrelatedMessageSubscriptionByProcessDefinitionId(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final CorrelatedMessageSubscriptionDbReader correlatedMessageSubscriptionReader =
         rdbmsService.getCorrelatedMessageSubscriptionReader();
 
     final var original = CorrelatedMessageSubscriptionFixtures.createRandomized(b -> b);
-    createAndSaveCorrelatedMessageSubscription(rdbmsWriter, original);
+    createAndSaveCorrelatedMessageSubscription(rdbmsWriters, original);
 
     final var searchResult =
         correlatedMessageSubscriptionReader.search(
@@ -83,13 +84,13 @@ public class CorrelatedMessageSubscriptionIT {
   public void shouldFindCorrelatedMessageSubscriptionByAuthorizedResourceId(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final CorrelatedMessageSubscriptionDbReader reader =
         rdbmsService.getCorrelatedMessageSubscriptionReader();
 
     final var original = CorrelatedMessageSubscriptionFixtures.createRandomized(b -> b);
-    createAndSaveCorrelatedMessageSubscription(rdbmsWriter, original);
-    createAndSaveRandomCorrelatedMessageSubscriptions(rdbmsWriter);
+    createAndSaveCorrelatedMessageSubscription(rdbmsWriters, original);
+    createAndSaveRandomCorrelatedMessageSubscriptions(rdbmsWriters);
 
     final var searchResult =
         reader.search(
@@ -107,13 +108,13 @@ public class CorrelatedMessageSubscriptionIT {
   public void shouldFindCorrelatedMessageSubscriptionByAuthorizedTenantId(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final CorrelatedMessageSubscriptionDbReader reader =
         rdbmsService.getCorrelatedMessageSubscriptionReader();
 
     final var original = CorrelatedMessageSubscriptionFixtures.createRandomized(b -> b);
-    createAndSaveCorrelatedMessageSubscription(rdbmsWriter, original);
-    createAndSaveRandomCorrelatedMessageSubscriptions(rdbmsWriter);
+    createAndSaveCorrelatedMessageSubscription(rdbmsWriters, original);
+    createAndSaveRandomCorrelatedMessageSubscriptions(rdbmsWriters);
 
     final var searchResult =
         reader.search(
@@ -130,13 +131,13 @@ public class CorrelatedMessageSubscriptionIT {
   public void shouldFindAllCorrelatedMessageSubscriptionsPaged(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final CorrelatedMessageSubscriptionDbReader reader =
         rdbmsService.getCorrelatedMessageSubscriptionReader();
 
     final String processDefinitionId = CorrelatedMessageSubscriptionFixtures.nextStringId();
     createAndSaveRandomCorrelatedMessageSubscriptions(
-        rdbmsWriter, b -> b.processDefinitionId(processDefinitionId));
+        rdbmsWriters, b -> b.processDefinitionId(processDefinitionId));
 
     final var searchResult =
         reader.search(
@@ -155,13 +156,13 @@ public class CorrelatedMessageSubscriptionIT {
   public void shouldFindCorrelatedMessageSubscriptionWithFullFilter(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final CorrelatedMessageSubscriptionDbReader reader =
         rdbmsService.getCorrelatedMessageSubscriptionReader();
 
     final var original = CorrelatedMessageSubscriptionFixtures.createRandomized(b -> b);
-    createAndSaveCorrelatedMessageSubscription(rdbmsWriter, original);
-    createAndSaveRandomCorrelatedMessageSubscriptions(rdbmsWriter);
+    createAndSaveCorrelatedMessageSubscription(rdbmsWriters, original);
+    createAndSaveRandomCorrelatedMessageSubscriptions(rdbmsWriters);
 
     final var searchResult =
         reader.search(
@@ -194,13 +195,13 @@ public class CorrelatedMessageSubscriptionIT {
   public void shouldFindCorrelatedMessageSubscriptionWithSearchAfter(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final CorrelatedMessageSubscriptionDbReader reader =
         rdbmsService.getCorrelatedMessageSubscriptionReader();
 
     final var processDefinitionKey = nextKey();
     createAndSaveRandomCorrelatedMessageSubscriptions(
-        rdbmsWriter, b -> b.processDefinitionKey(processDefinitionKey));
+        rdbmsWriters, b -> b.processDefinitionKey(processDefinitionKey));
     final var sort = CorrelatedMessageSubscriptionSort.of(s -> s.flowNodeId().asc());
     final var searchResult =
         reader.search(
@@ -232,40 +233,35 @@ public class CorrelatedMessageSubscriptionIT {
   }
 
   @TestTemplate
-  public void shouldCleanup(final CamundaRdbmsTestApplication testApplication) {
+  public void shouldDeleteProcessInstanceRelatedData(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final CorrelatedMessageSubscriptionDbReader reader =
         rdbmsService.getCorrelatedMessageSubscriptionReader();
 
-    final var cleanupDate = NOW.minusDays(1);
-
     final var definition =
-        ProcessDefinitionFixtures.createAndSaveProcessDefinition(rdbmsWriter, b -> b);
+        ProcessDefinitionFixtures.createAndSaveProcessDefinition(rdbmsWriters, b -> b);
     final var item1 =
         CorrelatedMessageSubscriptionFixtures.createAndSaveCorrelatedMessageSubscription(
-            rdbmsWriter, b -> b.processDefinitionKey(definition.processDefinitionKey()));
+            rdbmsWriters, b -> b.processDefinitionKey(definition.processDefinitionKey()));
     final var item2 =
         CorrelatedMessageSubscriptionFixtures.createAndSaveCorrelatedMessageSubscription(
-            rdbmsWriter, b -> b.processDefinitionKey(definition.processDefinitionKey()));
+            rdbmsWriters, b -> b.processDefinitionKey(definition.processDefinitionKey()));
     final var item3 =
         CorrelatedMessageSubscriptionFixtures.createAndSaveCorrelatedMessageSubscription(
-            rdbmsWriter, b -> b.processDefinitionKey(definition.processDefinitionKey()));
+            rdbmsWriters, b -> b.processDefinitionKey(definition.processDefinitionKey()));
 
-    // set cleanup dates
-    rdbmsWriter
-        .getCorrelatedMessageSubscriptionWriter()
-        .scheduleForHistoryCleanup(item1.processInstanceKey(), NOW);
-    rdbmsWriter
-        .getCorrelatedMessageSubscriptionWriter()
-        .scheduleForHistoryCleanup(item2.processInstanceKey(), NOW.minusDays(2));
-    rdbmsWriter.flush();
+    // when
+    final int deleted =
+        rdbmsWriters
+            .getCorrelatedMessageSubscriptionWriter()
+            .deleteProcessInstanceRelatedData(
+                PARTITION_ID, List.of(item2.processInstanceKey()), 10);
 
-    // cleanup
-    rdbmsWriter
-        .getCorrelatedMessageSubscriptionWriter()
-        .cleanupHistory(PARTITION_ID, cleanupDate, 10);
-
+    // then
+    assertThat(deleted).isEqualTo(1);
     final var searchResult =
         reader.search(
             CorrelatedMessageSubscriptionQuery.of(
@@ -295,6 +291,7 @@ public class CorrelatedMessageSubscriptionIT {
     assertThat(actual.processDefinitionId()).isEqualTo(expected.processDefinitionId());
     assertThat(actual.processDefinitionKey()).isEqualTo(expected.processDefinitionKey());
     assertThat(actual.processInstanceKey()).isEqualTo(expected.processInstanceKey());
+    assertThat(actual.rootProcessInstanceKey()).isEqualTo(expected.rootProcessInstanceKey());
     assertThat(actual.subscriptionKey()).isEqualTo(expected.subscriptionKey());
     assertThat(actual.tenantId()).isEqualTo(expected.tenantId());
   }

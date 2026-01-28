@@ -101,6 +101,11 @@
       <artifactId>elasticsearch</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>co.elastic.clients</groupId>
+      <artifactId>elasticsearch-java</artifactId>
+    </dependency>
+
     <!-- Opensearch -->
     <dependency>
       <groupId>org.apache.httpcomponents.core5</groupId>
@@ -210,12 +215,6 @@
     </dependency>
 
     <!-- TEST -->
-    <dependency>
-      <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter-engine</artifactId>
-      <scope>test</scope>
-    </dependency>
-
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>

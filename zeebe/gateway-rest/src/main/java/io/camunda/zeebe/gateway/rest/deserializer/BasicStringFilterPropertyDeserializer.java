@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.gateway.rest.deserializer;
 
-import io.camunda.zeebe.gateway.protocol.rest.BasicStringFilter;
-import io.camunda.zeebe.gateway.protocol.rest.BasicStringFilterProperty;
+import io.camunda.gateway.protocol.model.BasicStringFilter;
+import io.camunda.gateway.protocol.model.BasicStringFilterProperty;
 
 public class BasicStringFilterPropertyDeserializer
     extends FilterDeserializer<BasicStringFilterProperty, String> {

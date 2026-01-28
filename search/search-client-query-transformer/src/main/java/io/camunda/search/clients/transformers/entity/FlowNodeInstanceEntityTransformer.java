@@ -54,6 +54,7 @@ public class FlowNodeInstanceEntityTransformer
     return new FlowNodeInstanceEntity(
         value.getKey(),
         value.getProcessInstanceKey(),
+        value.getRootProcessInstanceKey(),
         value.getProcessDefinitionKey(),
         value.getStartDate(),
         value.getEndDate(),

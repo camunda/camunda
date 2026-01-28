@@ -43,6 +43,7 @@ const mockPostRequest = function <Type extends DefaultBodyType>(url: string) {
       options?: {
         expectPolling?: boolean;
         mockResolverFn?: MockedFunction<() => void>;
+        statusCode?: number;
       },
     ) => {
       mockServer.use(
@@ -54,7 +55,10 @@ const mockPostRequest = function <Type extends DefaultBodyType>(url: string) {
               req: request,
               expectPolling: options?.expectPolling,
             });
-            return HttpResponse.json(responseData);
+            return HttpResponse.json(
+              responseData,
+              options?.statusCode ? {status: options.statusCode} : {},
+            );
           },
           {once: true},
         ),

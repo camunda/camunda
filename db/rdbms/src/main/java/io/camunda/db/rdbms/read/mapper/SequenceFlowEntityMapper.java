@@ -17,6 +17,7 @@ public class SequenceFlowEntityMapper {
         dbModel.sequenceFlowId(),
         dbModel.flowNodeId(),
         dbModel.processInstanceKey(),
+        dbModel.rootProcessInstanceKey(),
         dbModel.processDefinitionKey(),
         dbModel.processDefinitionId(),
         dbModel.tenantId());

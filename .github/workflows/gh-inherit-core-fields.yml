@@ -21,7 +21,7 @@ jobs:
     steps:
       - name: Import Secrets
         id: vault-secrets
-        uses: hashicorp/vault-action@v3.0.0
+        uses: hashicorp/vault-action@v3.4.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -32,13 +32,13 @@ jobs:
             secret/data/github.com/organizations/camunda ISSUE_FIELD_INHERITANCE_GH_APP_KEY;
       - name: Generate a GitHub token
         id: app-token
-        uses: actions/create-github-app-token@v1
+        uses: actions/create-github-app-token@v2
         with:
           app-id: ${{ steps.vault-secrets.outputs.ISSUE_FIELD_INHERITANCE_GH_APP_ID }}
           private-key: ${{ steps.vault-secrets.outputs.ISSUE_FIELD_INHERITANCE_GH_APP_KEY }}
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Inherit fields from parent sub-issue if parent is in project 173(PVT_kwDOACVKPs4A1Kno)
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           github-token: ${{ steps.app-token.outputs.token }}
           script: |

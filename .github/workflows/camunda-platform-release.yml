@@ -110,7 +110,7 @@ jobs:
           vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID}}
           vault-url: ${{ secrets.VAULT_ADDR }}
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: ${{ env.RELEASE_BRANCH }}
           # Overriding the default GITHUB_TOKEN with a GitHub App token in order to workaround
@@ -250,6 +250,9 @@ jobs:
           echo "Optimize project.version:"
           ./mvnw -f optimize/pom.xml help:evaluate -Dexpression=project.version -q -DforceStdout || echo "Failed to get Optimize version"
           echo ""
+          echo "Zeebe parent version:"
+          ./mvnw -f optimize/pom.xml help:evaluate -Dexpression=project.parent.version -q -DforceStdout || echo "Failed to get Zeebe parent version"
+          echo ""
           echo "Zeebe version:"
           ./mvnw -f optimize/pom.xml help:evaluate -Dexpression=zeebe.version -q -DforceStdout || echo "Failed to get Zeebe version"
           echo ""
@@ -338,7 +341,7 @@ jobs:
       LOCAL_DOCKER_IMAGE: localhost:5000/camunda/zeebe
       DOCKER_IMAGE: camunda/zeebe
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: ${{ env.RELEASE_BRANCH }}
       - name: Import Secrets
@@ -443,7 +446,7 @@ jobs:
       LOCAL_DOCKER_IMAGE: localhost:5000/camunda/operate
       DOCKER_IMAGE: camunda/operate
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: ${{ env.RELEASE_BRANCH }}
       - name: Import Secrets
@@ -551,7 +554,7 @@ jobs:
       LOCAL_DOCKER_IMAGE: localhost:5000/camunda/tasklist
       DOCKER_IMAGE: camunda/tasklist
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: ${{ env.RELEASE_BRANCH }}
       - name: Import Secrets
@@ -660,7 +663,7 @@ jobs:
       LOCAL_DOCKER_IMAGE: localhost:5000/camunda/optimize
       DOCKER_IMAGE: camunda/optimize
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: ${{ env.RELEASE_BRANCH }}
       - name: Import Secrets
@@ -768,7 +771,7 @@ jobs:
       LOCAL_DOCKER_IMAGE: localhost:5000/camunda/camunda
       DOCKER_IMAGE: camunda/camunda
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: ${{ env.RELEASE_BRANCH }}
       - name: Import Secrets
@@ -898,8 +901,15 @@ jobs:
     runs-on: ubuntu-latest
     # Minor releases take more time since a lot of issues are included in the changelog
     timeout-minutes: 30
+    if: ${{ always() && !cancelled() && 
+      needs.release.result == 'success' &&
+      needs.zeebe-docker.result == 'success' &&
+      needs.operate-docker.result == 'success' &&
+      needs.tasklist-docker.result == 'success' &&
+      (needs.optimize-docker.result == 'success' || needs.optimize-docker.result == 'skipped') &&
+      needs.camunda-docker.result == 'success' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: ${{ env.RELEASE_BRANCH }}
           fetch-depth: 0 # To fetch tags as well - necessary for the changelog generation
@@ -1022,8 +1032,16 @@ jobs:
     name: Create FOSSA releases and generate attribution/SBOM reports
     runs-on: ubuntu-latest
     needs: [release, github, zeebe-docker, operate-docker, tasklist-docker, optimize-docker, camunda-docker]
+    if: ${{ always() && !cancelled() && 
+      needs.release.result == 'success' &&
+      needs.github.result == 'success' &&
+      needs.zeebe-docker.result == 'success' &&
+      needs.operate-docker.result == 'success' &&
+      needs.tasklist-docker.result == 'success' &&
+      (needs.optimize-docker.result == 'success' || needs.optimize-docker.result == 'skipped') &&
+      needs.camunda-docker.result == 'success' }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           ref: ${{ env.RELEASE_BRANCH }}
       - name: Import Secrets
@@ -1039,9 +1057,9 @@ jobs:
             secret/data/products/camunda/ci/camunda FOSSA_API_KEY;
       - name: Get FOSSA context
         id: fossa-context
-        uses: camunda/infra-global-github-actions/fossa/info@003e8939059d3374598f904f327151d70abe8d92
+        uses: camunda/infra-global-github-actions/fossa/info@8a60c6ac7a1a041dec275e1ef3635dd6bf2b072c
       - name: Wait for FOSSA scan completion
-        uses: camunda/infra-global-github-actions/fossa/wait-for-scan@003e8939059d3374598f904f327151d70abe8d92
+        uses: camunda/infra-global-github-actions/fossa/wait-for-scan@8a60c6ac7a1a041dec275e1ef3635dd6bf2b072c
         with:
           api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
           branch: ${{ steps.fossa-context.outputs.head-ref }}
@@ -1049,7 +1067,7 @@ jobs:
           revision-id: ${{ steps.fossa-context.outputs.head-revision }}
           dry-run: ${{ inputs.dryRun || inputs.releaseProcessDryRun }}
       - name: Create FOSSA releases and generate reports
-        uses: camunda/infra-global-github-actions/fossa/release@003e8939059d3374598f904f327151d70abe8d92
+        uses: camunda/infra-global-github-actions/fossa/release@8a60c6ac7a1a041dec275e1ef3635dd6bf2b072c
         with:
           api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
           branch: ${{ steps.fossa-context.outputs.head-ref }}

@@ -42,7 +42,7 @@ public class AuditLogEntity extends AbstractExporterEntity<AuditLogEntity> {
   @SinceVersion(value = "8.9.0", requireDefault = false)
   private OffsetDateTime timestamp;
 
-  // the category of the operation (ADMIN, OPERATOR, USER_TASK)
+  // the category of the operation (ADMIN, DEPLOYED_RESOURCES, USER_TASKS)
   @SinceVersion(value = "8.9.0", requireDefault = false)
   private AuditLogOperationCategory category;
 
@@ -119,6 +119,9 @@ public class AuditLogEntity extends AbstractExporterEntity<AuditLogEntity> {
 
   @SinceVersion(value = "8.9.0", requireDefault = false)
   private Long resourceKey;
+
+  @SinceVersion(value = "8.9.0", requireDefault = false)
+  private Long rootProcessInstanceKey;
 
   public String getEntityKey() {
     return entityKey;
@@ -385,7 +388,17 @@ public class AuditLogEntity extends AbstractExporterEntity<AuditLogEntity> {
     return decisionEvaluationKey;
   }
 
-  public void setDecisionEvaluationKey(final Long decisionEvaluationKey) {
+  public AuditLogEntity setDecisionEvaluationKey(final Long decisionEvaluationKey) {
     this.decisionEvaluationKey = decisionEvaluationKey;
+    return this;
+  }
+
+  public Long getRootProcessInstanceKey() {
+    return rootProcessInstanceKey;
+  }
+
+  public AuditLogEntity setRootProcessInstanceKey(final Long rootProcessInstanceKey) {
+    this.rootProcessInstanceKey = rootProcessInstanceKey;
+    return this;
   }
 }

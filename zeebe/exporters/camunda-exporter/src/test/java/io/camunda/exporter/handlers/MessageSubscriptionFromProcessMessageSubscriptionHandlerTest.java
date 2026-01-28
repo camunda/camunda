@@ -211,6 +211,7 @@ final class MessageSubscriptionFromProcessMessageSubscriptionHandlerTest {
     final int processInstanceKey = 123;
     final int elementInstanceKey = 456;
     final int processDefinitionKey = 555;
+    final long rootProcessInstanceKey = 321;
     final String elementId = "elementId";
     final String bpmnProcessId = "bpmnProcessId";
     final String tenantId = "tenantId";
@@ -222,6 +223,7 @@ final class MessageSubscriptionFromProcessMessageSubscriptionHandlerTest {
             .withProcessInstanceKey(processInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withProcessDefinitionKey(processDefinitionKey)
+            .withRootProcessInstanceKey(rootProcessInstanceKey)
             .withElementId(elementId)
             .withBpmnProcessId(bpmnProcessId)
             .withTenantId(tenantId)
@@ -259,6 +261,28 @@ final class MessageSubscriptionFromProcessMessageSubscriptionHandlerTest {
     assertThat(entity.getPositionProcessMessageSubscription()).isEqualTo(position);
     assertThat(entity.getMetadata().getMessageName()).isEqualTo(messageName);
     assertThat(entity.getMetadata().getCorrelationKey()).isEqualTo(correlationKey);
+    assertThat(entity.getRootProcessInstanceKey()).isEqualTo(rootProcessInstanceKey);
+  }
+
+  @Test
+  void shouldNotSetRootProcessInstanceKeyWhenDefault() {
+    // given
+    final var recordValue =
+        ImmutableProcessMessageSubscriptionRecordValue.builder()
+            .withRootProcessInstanceKey(-1L)
+            .build();
+    final Record<ProcessMessageSubscriptionRecordValue> record =
+        factory.generateRecord(
+            ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
+            r -> r.withIntent(ProcessMessageSubscriptionIntent.CREATED).withValue(recordValue));
+
+    final var entity = new MessageSubscriptionEntity();
+
+    // when
+    underTest.updateEntity(record, entity);
+
+    // then
+    assertThat(entity.getRootProcessInstanceKey()).isNull();
   }
 
   @Test

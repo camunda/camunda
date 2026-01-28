@@ -150,5 +150,8 @@ public class SequenceFlowDeletedHandlerTest {
         .isEqualTo(processInstanceRecordValue.getElementId());
     assertThat(sequenceFlowEntity.getTenantId())
         .isEqualTo(processInstanceRecordValue.getTenantId());
+    assertThat(sequenceFlowEntity.getRootProcessInstanceKey())
+        .isPositive()
+        .isEqualTo(processInstanceRecordValue.getRootProcessInstanceKey());
   }
 }

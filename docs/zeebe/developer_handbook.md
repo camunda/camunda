@@ -33,8 +33,7 @@ Please have a look at [Message Versioning](https://github.com/real-logic/simple-
 
 2. Create an enum implementing [`Intent`](/zeebe/protocol/src/main/java/io/camunda/zeebe/protocol/record/intent/Intent.java) to reflect the possible commands and events:
 
-   - It should also be added to the `INTENT_CLASSES` defined in Intent
-   - Make sure to add the new intent as a case to `Intent.fromProtocolValue`
+   - It should also be added to the `computeValueTypeToIntentMap` method defined in Intent, mapping it from the new `ValueType`
 3. Create an interface for the record value itself.
    - It should extend the [`RecordValue`](/zeebe/protocol/src/main/java/io/camunda/zeebe/protocol/record/RecordValue.java) interface
    - Add methods for each of the properties that you want to expose

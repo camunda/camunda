@@ -55,7 +55,8 @@ public final class ConfigurationUtil {
         Optional.empty(),
         Optional.empty(),
         routingState,
-        Optional.ofNullable(clusterId));
+        Optional.ofNullable(clusterId),
+        ClusterConfiguration.INITIAL_INCARNATION_NUMBER);
   }
 
   public static Set<PartitionMetadata> getPartitionDistributionFrom(

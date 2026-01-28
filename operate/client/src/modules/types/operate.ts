@@ -50,17 +50,12 @@ interface InstanceOperationEntity {
   completedDate: null | string;
 }
 
-type ResourceBasedPermissionDto =
-  | 'READ'
-  | 'DELETE'
-  | 'UPDATE_PROCESS_INSTANCE'
-  | 'DELETE_PROCESS_INSTANCE';
-
 interface ProcessInstanceEntity {
   id: string;
   processId: string;
   processName: string;
   processVersion: number;
+  processVersionTag?: string | null;
   startDate: string;
   endDate: null | string;
   state: InstanceEntityState;
@@ -74,7 +69,6 @@ interface ProcessInstanceEntity {
     instanceId: string;
     processDefinitionName: string;
   }>;
-  permissions?: ResourceBasedPermissionDto[] | null;
   tenantId: string;
 }
 
@@ -99,7 +93,6 @@ export type {
   InstanceEntityState,
   OperationEntity,
   InstanceOperationEntity,
-  ResourceBasedPermissionDto,
   ProcessInstanceEntity,
   SortOrder,
   FlowNodeInstance,

@@ -99,4 +99,6 @@ public interface ProcessingState extends StreamProcessorLifecycleAware {
   ConditionalSubscriptionState getConditionalSubscriptionState();
 
   GlobalListenersState getGlobalListenersState();
+
+  JobMetricsState getJobMetricsState();
 }

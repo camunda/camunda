@@ -9,7 +9,7 @@ package io.camunda.db.rdbms.write.queue;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.db.rdbms.sql.ProcessBasedHistoryCleanupMapper.UpdateHistoryCleanupDateDto;
+import io.camunda.db.rdbms.sql.ProcessInstanceMapper.UpdateHistoryCleanupDateDto;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;

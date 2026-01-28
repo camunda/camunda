@@ -12,7 +12,8 @@
 
   <select id="count" parameterType="io.camunda.db.rdbms.read.domain.DecisionDefinitionDbQuery">
     SELECT COUNT(*)
-    FROM ${prefix}DECISION_DEFINITION
+    FROM ${prefix}DECISION_DEFINITION t
+    <include refid="io.camunda.db.rdbms.sql.DecisionDefinitionMapper.maxVersionFilter"/>
     <include refid="io.camunda.db.rdbms.sql.DecisionDefinitionMapper.searchFilter"/>
   </select>
 
@@ -31,6 +32,7 @@
     FROM ${prefix}DECISION_DEFINITION
     <include refid="io.camunda.db.rdbms.sql.DecisionDefinitionMapper.searchFilter"/>
     ) t
+    <include refid="io.camunda.db.rdbms.sql.DecisionDefinitionMapper.maxVersionFilter"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
@@ -136,4 +138,18 @@
     VALUES (#{decisionDefinitionKey}, #{decisionDefinitionId}, #{name},
             #{tenantId}, #{version}, #{decisionRequirementsId}, #{decisionRequirementsKey}, #{decisionRequirementsName}, #{decisionRequirementsVersion})
   </insert>
+
+  <sql id="maxVersionFilter">
+    <if test="filter.isLatestVersion != null and filter.isLatestVersion == true">
+      JOIN (
+        SELECT dd.DECISION_DEFINITION_ID AS dd_id, dd.TENANT_ID AS t_id, MAX(VERSION) AS max_version
+        FROM ${prefix}DECISION_DEFINITION dd
+        <include refid="io.camunda.db.rdbms.sql.DecisionDefinitionMapper.searchFilter"/>
+        GROUP BY dd.TENANT_ID, dd.DECISION_DEFINITION_ID
+      ) lv
+      ON t.DECISION_DEFINITION_ID = lv.dd_id
+      AND t.VERSION = lv.max_version
+      AND (t.TENANT_ID = lv.t_id OR (t.TENANT_ID IS NULL AND lv.t_id IS NULL))
+    </if>
+  </sql>
 </mapper>

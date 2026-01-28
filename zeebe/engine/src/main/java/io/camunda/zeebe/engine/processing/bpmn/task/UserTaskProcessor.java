@@ -124,23 +124,28 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
   protected TransitionOutcome onTerminateInternal(
       final ExecutableUserTask element, final BpmnElementContext context) {
 
-    if (element.hasExecutionListeners() || element.hasTaskListeners()) {
+    final var elementInstance = stateBehavior.getElementInstance(context);
+    final var taskListeners =
+        userTaskBehavior.getTaskListeners(element, elementInstance.getUserTaskKey());
+
+    if (element.hasExecutionListeners() || !taskListeners.isEmpty()) {
       jobBehavior.cancelJob(context);
     }
 
     eventSubscriptionBehavior.unsubscribeFromEvents(context);
     incidentBehavior.resolveIncidents(context);
-
-    final var elementInstance = stateBehavior.getElementInstance(context);
     final Optional<UserTaskRecord> cancelingUserTask =
         userTaskBehavior.userTaskCanceling(elementInstance);
     if (cancelingUserTask.isPresent()) {
-      final var cancelingListeners = element.getTaskListeners(ZeebeTaskListenerEventType.canceling);
-      if (!cancelingListeners.isEmpty()) {
+      final var firstCancelingListener =
+          taskListeners.stream()
+              .filter(l -> l.getEventType() == ZeebeTaskListenerEventType.canceling)
+              .findFirst();
+      if (firstCancelingListener.isPresent()) {
         jobBehavior.createNewTaskListenerJob(
             context,
             cancelingUserTask.get(),
-            cancelingListeners.getFirst(),
+            firstCancelingListener.get(),
             Collections.emptyList());
         return TransitionOutcome.AWAIT;
       } else {
@@ -188,10 +193,15 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
         userTaskBehavior.createNewUserTask(context, element, userTaskProperties);
 
     final LifecycleState lifecycleState;
-    final var creatingListeners = element.getTaskListeners(ZeebeTaskListenerEventType.creating);
-    if (!creatingListeners.isEmpty()) {
+    final var firstCreatingListener =
+        userTaskBehavior
+            .getTaskListeners(
+                element, userTaskRecord.getUserTaskKey(), ZeebeTaskListenerEventType.creating)
+            .stream()
+            .findFirst();
+    if (firstCreatingListener.isPresent()) {
       jobBehavior.createNewTaskListenerJob(
-          context, userTaskRecord, creatingListeners.getFirst(), Collections.emptyList());
+          context, userTaskRecord, firstCreatingListener.get(), Collections.emptyList());
       lifecycleState = LifecycleState.CREATING;
     } else {
       userTaskRecord.unsetAssignee();
@@ -208,7 +218,10 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
       final UserTaskRecord userTaskRecord,
       final String assignee) {
     userTaskBehavior.userTaskAssigning(userTaskRecord, assignee);
-    element.getTaskListeners(ZeebeTaskListenerEventType.assigning).stream()
+    userTaskBehavior
+        .getTaskListeners(
+            element, userTaskRecord.getUserTaskKey(), ZeebeTaskListenerEventType.assigning)
+        .stream()
         .findFirst()
         .ifPresentOrElse(
             listener ->

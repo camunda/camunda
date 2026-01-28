@@ -82,8 +82,7 @@ public class ElasticsearchTestExtension
   public void beforeEach(final ExtensionContext extensionContext) {
     indexPrefix = tasklistProperties.getElasticsearch().getIndexPrefix();
     if (indexPrefix == null || indexPrefix.isBlank()) {
-      indexPrefix =
-          Optional.ofNullable(indexPrefixHolder.createNewIndexPrefix()).orElse(indexPrefix);
+      indexPrefix = indexPrefixHolder.createNewIndexPrefix();
       tasklistProperties.getElasticsearch().setIndexPrefix(indexPrefix);
       searchEngineConfiguration.connect().setIndexPrefix(indexPrefix);
     }
@@ -100,8 +99,8 @@ public class ElasticsearchTestExtension
   @Override
   public void afterEach(final ExtensionContext extensionContext) {
     if (!failed) {
-      final String indexPrefix = tasklistProperties.getElasticsearch().getIndexPrefix();
-      TestUtil.removeAllIndices(esClient, indexPrefix);
+      indexPrefixHolder.cleanupIndicesIfNeeded(
+          prefix -> TestUtil.removeAllIndices(esClient, prefix));
     }
     tasklistProperties
         .getElasticsearch()

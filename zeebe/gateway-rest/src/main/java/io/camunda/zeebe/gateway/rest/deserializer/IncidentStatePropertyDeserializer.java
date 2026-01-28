@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.gateway.rest.deserializer;
 
-import io.camunda.zeebe.gateway.protocol.rest.AdvancedIncidentStateFilter;
-import io.camunda.zeebe.gateway.protocol.rest.IncidentStateEnum;
-import io.camunda.zeebe.gateway.protocol.rest.IncidentStateFilterProperty;
+import io.camunda.gateway.protocol.model.AdvancedIncidentStateFilter;
+import io.camunda.gateway.protocol.model.IncidentStateEnum;
+import io.camunda.gateway.protocol.model.IncidentStateFilterProperty;
 
 public class IncidentStatePropertyDeserializer
     extends FilterDeserializer<IncidentStateFilterProperty, IncidentStateEnum> {

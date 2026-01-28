@@ -9,6 +9,7 @@ package io.camunda.webapps.schema.entities.operation;
 
 import io.camunda.webapps.schema.entities.AbstractExporterEntity;
 import io.camunda.webapps.schema.entities.BeforeVersion880;
+import io.camunda.webapps.schema.entities.SinceVersion;
 import java.time.OffsetDateTime;
 import java.util.Objects;
 import java.util.UUID;
@@ -47,6 +48,10 @@ public class OperationEntity extends AbstractExporterEntity<OperationEntity> {
   @BeforeVersion880 private String migrationPlan;
 
   @BeforeVersion880 private OffsetDateTime completedDate;
+
+  /** Attention! This field will be filled in only for data imported after v. 8.9.0. */
+  @SinceVersion(value = "8.9.0", requireDefault = false)
+  private Long rootProcessInstanceKey;
 
   public Long getItemKey() {
     return itemKey;
@@ -228,6 +233,15 @@ public class OperationEntity extends AbstractExporterEntity<OperationEntity> {
     return this;
   }
 
+  public Long getRootProcessInstanceKey() {
+    return rootProcessInstanceKey;
+  }
+
+  public OperationEntity setRootProcessInstanceKey(final Long rootProcessInstanceKey) {
+    this.rootProcessInstanceKey = rootProcessInstanceKey;
+    return this;
+  }
+
   public OperationEntity withGeneratedId() {
     // Operation reference has to be positive and `UUID.randomUUID().getMostSignificantBits()` can
     // generate negative values
@@ -291,7 +305,8 @@ public class OperationEntity extends AbstractExporterEntity<OperationEntity> {
         && Objects.equals(zeebeCommandKey, that.zeebeCommandKey)
         && Objects.equals(username, that.username)
         && Objects.equals(modifyInstructions, that.modifyInstructions)
-        && Objects.equals(migrationPlan, that.migrationPlan);
+        && Objects.equals(migrationPlan, that.migrationPlan)
+        && Objects.equals(rootProcessInstanceKey, that.rootProcessInstanceKey);
   }
 
   @Override
@@ -344,6 +359,8 @@ public class OperationEntity extends AbstractExporterEntity<OperationEntity> {
         + ", migrationPlan='"
         + migrationPlan
         + '\''
+        + ", rootProcessInstanceKey="
+        + rootProcessInstanceKey
         + '}';
   }
 }

@@ -23,6 +23,7 @@ public class MessageSubscriptionEntityTransformer
         value.getBpmnProcessId(),
         value.getProcessDefinitionKey(),
         value.getProcessInstanceKey(),
+        value.getRootProcessInstanceKey(),
         value.getFlowNodeId(),
         value.getFlowNodeInstanceKey(),
         toMessageSubscriptionState(value.getEventType()),

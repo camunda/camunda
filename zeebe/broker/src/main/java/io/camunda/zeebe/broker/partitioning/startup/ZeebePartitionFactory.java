@@ -84,8 +84,8 @@ import java.util.function.ToLongFunction;
 
 public final class ZeebePartitionFactory {
 
+  public static final String DEFAULT_RUNTIME_DIRECTORY = "runtime";
   private static final List<StartupStep<PartitionStartupContext>> STARTUP_STEPS = List.of();
-
   private final ActorSchedulingService actorSchedulingService;
   private final BrokerCfg brokerCfg;
   private final BrokerInfo localBroker;
@@ -241,7 +241,7 @@ public final class ZeebePartitionFactory {
       }
       runtimeDirectory = rootRuntimeDirectory.resolve(String.valueOf(partitionId));
     } else {
-      runtimeDirectory = raftPartition.dataDirectory().toPath().resolve("runtime");
+      runtimeDirectory = raftPartition.dataDirectory().toPath().resolve(DEFAULT_RUNTIME_DIRECTORY);
     }
 
     return new StateControllerImpl(

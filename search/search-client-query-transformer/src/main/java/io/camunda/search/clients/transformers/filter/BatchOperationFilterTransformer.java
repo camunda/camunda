@@ -33,6 +33,8 @@ public final class BatchOperationFilterTransformer
     return and(
         stringOperations(ID, filter.batchOperationKeyOperations()),
         stringOperations(STATE, filter.stateOperations()),
-        stringOperations(TYPE, filter.operationTypeOperations()));
+        stringOperations(TYPE, filter.operationTypeOperations()),
+        stringOperations(ACTOR_TYPE, filter.actorTypeOperations()),
+        stringOperations(ACTOR_ID, filter.actorIdOperations()));
   }
 }

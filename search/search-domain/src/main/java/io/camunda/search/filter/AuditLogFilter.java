@@ -22,6 +22,7 @@ public record AuditLogFilter(
     List<Operation<String>> entityKeyOperations,
     List<Operation<String>> entityTypeOperations,
     List<Operation<String>> operationTypeOperations,
+    List<Operation<String>> batchOperationTypeOperations,
     List<Operation<OffsetDateTime>> timestampOperations,
     List<Operation<String>> actorTypeOperations,
     List<Operation<String>> actorIdOperations,
@@ -32,6 +33,9 @@ public record AuditLogFilter(
     List<Operation<Long>> processDefinitionKeyOperations,
     List<Operation<String>> processDefinitionIdOperations,
     List<Operation<Long>> userTaskKeyOperations,
+    List<Operation<String>> decisionRequirementsIdOperations,
+    List<Operation<Long>> decisionRequirementsKeyOperations,
+    List<Operation<String>> decisionDefinitionIdOperations,
     List<Operation<Long>> decisionDefinitionKeyOperations,
     List<Operation<Long>> decisionEvaluationKeyOperations,
     List<Operation<Long>> elementInstanceKeyOperations,
@@ -53,6 +57,7 @@ public record AuditLogFilter(
         .entityKeyOperations(entityKeyOperations)
         .entityTypeOperations(entityTypeOperations)
         .operationTypeOperations(operationTypeOperations)
+        .batchOperationTypeOperations(batchOperationTypeOperations)
         .timestampOperations(timestampOperations)
         .actorTypeOperations(actorTypeOperations)
         .actorIdOperations(actorIdOperations)
@@ -63,6 +68,9 @@ public record AuditLogFilter(
         .processDefinitionKeyOperations(processDefinitionKeyOperations)
         .processDefinitionIdOperations(processDefinitionIdOperations)
         .userTaskKeyOperations(userTaskKeyOperations)
+        .decisionRequirementsIdOperations(decisionRequirementsIdOperations)
+        .decisionRequirementsKeyOperations(decisionRequirementsKeyOperations)
+        .decisionDefinitionIdOperations(decisionDefinitionIdOperations)
         .decisionDefinitionKeyOperations(decisionDefinitionKeyOperations)
         .decisionEvaluationKeyOperations(decisionEvaluationKeyOperations)
         .elementInstanceKeyOperations(elementInstanceKeyOperations)
@@ -78,6 +86,7 @@ public record AuditLogFilter(
     private List<Operation<String>> entityKeyOperations;
     private List<Operation<String>> entityTypeOperations;
     private List<Operation<String>> operationTypeOperations;
+    private List<Operation<String>> batchOperationTypeOperations;
     private List<Operation<OffsetDateTime>> timestampOperations;
     private List<Operation<String>> actorTypeOperations;
     private List<Operation<String>> actorIdOperations;
@@ -88,6 +97,9 @@ public record AuditLogFilter(
     private List<Operation<Long>> processDefinitionKeyOperations;
     private List<Operation<String>> processDefinitionIdOperations;
     private List<Operation<Long>> userTaskKeyOperations;
+    private List<Operation<String>> decisionRequirementsIdOperations;
+    private List<Operation<Long>> decisionRequirementsKeyOperations;
+    private List<Operation<String>> decisionDefinitionIdOperations;
     private List<Operation<Long>> decisionDefinitionKeyOperations;
     private List<Operation<Long>> decisionEvaluationKeyOperations;
     private List<Operation<Long>> elementInstanceKeyOperations;
@@ -145,6 +157,17 @@ public record AuditLogFilter(
 
     public Builder operationTypes(final String value, final String... values) {
       return operationTypeOperations(List.of(FilterUtil.mapDefaultToOperation(value, values)));
+    }
+
+    public Builder batchOperationTypeOperations(final List<Operation<String>> operations) {
+      if (operations != null) {
+        batchOperationTypeOperations = addValuesToList(batchOperationTypeOperations, operations);
+      }
+      return this;
+    }
+
+    public Builder batchOperationTypes(final String value, final String... values) {
+      return batchOperationTypeOperations(List.of(FilterUtil.mapDefaultToOperation(value, values)));
     }
 
     public Builder timestampOperations(final List<Operation<OffsetDateTime>> operations) {
@@ -260,6 +283,45 @@ public record AuditLogFilter(
       return userTaskKeyOperations(List.of(FilterUtil.mapDefaultToOperation(value, values)));
     }
 
+    public Builder decisionRequirementsIdOperations(final List<Operation<String>> operations) {
+      if (operations != null) {
+        decisionRequirementsIdOperations =
+            addValuesToList(decisionRequirementsIdOperations, operations);
+      }
+      return this;
+    }
+
+    public Builder decisionRequirementsIds(final String value, final String... values) {
+      return decisionRequirementsIdOperations(
+          List.of(FilterUtil.mapDefaultToOperation(value, values)));
+    }
+
+    public Builder decisionRequirementsKeyOperations(final List<Operation<Long>> operations) {
+      if (operations != null) {
+        decisionRequirementsKeyOperations =
+            addValuesToList(decisionRequirementsKeyOperations, operations);
+      }
+      return this;
+    }
+
+    public Builder decisionRequirementsKeys(final Long value, final Long... values) {
+      return decisionRequirementsKeyOperations(
+          List.of(FilterUtil.mapDefaultToOperation(value, values)));
+    }
+
+    public Builder decisionDefinitionIdOperations(final List<Operation<String>> operations) {
+      if (operations != null) {
+        decisionDefinitionIdOperations =
+            addValuesToList(decisionDefinitionIdOperations, operations);
+      }
+      return this;
+    }
+
+    public Builder decisionDefinitionIds(final String value, final String... values) {
+      return decisionDefinitionIdOperations(
+          List.of(FilterUtil.mapDefaultToOperation(value, values)));
+    }
+
     public Builder decisionDefinitionKeyOperations(final List<Operation<Long>> operations) {
       if (operations != null) {
         decisionDefinitionKeyOperations =
@@ -359,6 +421,7 @@ public record AuditLogFilter(
           Objects.requireNonNullElse(entityKeyOperations, List.of()),
           Objects.requireNonNullElse(entityTypeOperations, List.of()),
           Objects.requireNonNullElse(operationTypeOperations, List.of()),
+          Objects.requireNonNullElse(batchOperationTypeOperations, List.of()),
           Objects.requireNonNullElse(timestampOperations, List.of()),
           Objects.requireNonNullElse(actorTypeOperations, List.of()),
           Objects.requireNonNullElse(actorIdOperations, List.of()),
@@ -369,6 +432,9 @@ public record AuditLogFilter(
           Objects.requireNonNullElse(processDefinitionKeyOperations, List.of()),
           Objects.requireNonNullElse(processDefinitionIdOperations, List.of()),
           Objects.requireNonNullElse(userTaskKeyOperations, List.of()),
+          Objects.requireNonNullElse(decisionRequirementsIdOperations, List.of()),
+          Objects.requireNonNullElse(decisionRequirementsKeyOperations, List.of()),
+          Objects.requireNonNullElse(decisionDefinitionIdOperations, List.of()),
           Objects.requireNonNullElse(decisionDefinitionKeyOperations, List.of()),
           Objects.requireNonNullElse(decisionEvaluationKeyOperations, List.of()),
           Objects.requireNonNullElse(elementInstanceKeyOperations, List.of()),

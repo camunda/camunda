@@ -19,6 +19,7 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.db.impl.DbTenantAwareKey;
 import io.camunda.zeebe.db.impl.DbTenantAwareKey.PlacementType;
+import io.camunda.zeebe.el.ExpressionLanguageMetrics;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.state.deployment.DbDecisionState;
 import io.camunda.zeebe.engine.state.deployment.DbProcessState;
@@ -93,7 +94,11 @@ public class MultiTenancyMigrationTest {
       legacyState = new LegacyProcessState(zeebeDb, transactionContext, InstantSource.system());
       processState =
           new DbProcessState(
-              zeebeDb, transactionContext, new EngineConfiguration(), InstantSource.system());
+              zeebeDb,
+              transactionContext,
+              new EngineConfiguration(),
+              InstantSource.system(),
+              ExpressionLanguageMetrics.noop());
     }
 
     @Test

@@ -8,6 +8,7 @@
 package io.camunda.zeebe.qa.util.junit;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.configuration.NodeIdProvider.Type;
 import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.cluster.TestApplication;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
@@ -249,11 +250,21 @@ final class ZeebeIntegrationExtension
     if (broker.getWorkingDirectory() != null) {
       return;
     }
-    final Path workingDirectory = directory.resolve("broker-" + id.id());
-    try {
-      Files.createDirectory(workingDirectory);
-    } catch (final IOException e) {
-      throw new UncheckedIOException(e);
+
+    // When using dynamic node IDs (e.g., S3), brokers share a common working directory
+    // because the node ID is determined at runtime and stored in versioned subdirectories.
+    // With fixed node IDs, each broker gets its own unique directory.
+    final Path workingDirectory;
+    if (broker.unifiedConfig().getCluster().getNodeIdProvider().getType() == Type.FIXED) {
+      workingDirectory = directory.resolve("broker-" + id.id());
+      try {
+        Files.createDirectory(workingDirectory);
+      } catch (final IOException e) {
+        throw new UncheckedIOException(e);
+      }
+    } else {
+      // Use the shared directory directly for dynamic node IDs
+      workingDirectory = directory;
     }
 
     broker.withWorkingDirectory(workingDirectory);

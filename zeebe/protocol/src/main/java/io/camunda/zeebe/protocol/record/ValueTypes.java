@@ -58,7 +58,8 @@ public final class ValueTypes {
           ValueType.USAGE_METRIC,
           ValueType.HISTORY_DELETION,
           ValueType.CONDITIONAL_SUBSCRIPTION,
-          ValueType.CONDITIONAL_EVALUATION);
+          ValueType.CONDITIONAL_EVALUATION,
+          ValueType.EXPRESSION);
 
   private ValueTypes() {}
 

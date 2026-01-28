@@ -20,4 +20,14 @@ import io.camunda.client.api.response.DeleteResourceResponse;
 public interface DeleteResourceCommandStep1
     extends CommandWithOperationReferenceStep<DeleteResourceCommandStep1>,
         CommandWithCommunicationApiStep<DeleteResourceCommandStep1>,
-        FinalCommandStep<DeleteResourceResponse> {}
+        FinalCommandStep<DeleteResourceResponse> {
+
+  /**
+   * When set to true, asynchronously deletes all history records for instances. History records are
+   * retained by default (false). Currently supported for process definitions only.
+   *
+   * @param deleteHistory whether to delete history records
+   * @return this builder
+   */
+  DeleteResourceCommandStep1 deleteHistory(final boolean deleteHistory);
+}

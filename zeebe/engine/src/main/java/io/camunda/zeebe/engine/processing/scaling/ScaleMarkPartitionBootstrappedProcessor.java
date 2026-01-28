@@ -61,7 +61,7 @@ public class ScaleMarkPartitionBootstrappedProcessor
         new StartEventSubscriptionManager(processingState, keyGenerator, stateWriter);
     startEventSubscriptions =
         new StartEventSubscriptions(
-            bpmnBehaviors.expressionBehavior(),
+            bpmnBehaviors.expressionProcessor(),
             bpmnBehaviors.catchEventBehavior(),
             startEventSubscriptionManager);
   }

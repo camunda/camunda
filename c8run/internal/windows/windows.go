@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 	"runtime/debug"
 	"syscall"
+
+	"github.com/camunda/camunda/c8run/internal/connectors"
 )
 
 func (w *WindowsC8Run) OpenBrowser(ctx context.Context, url string) error {
@@ -51,8 +53,12 @@ func (w *WindowsC8Run) ElasticsearchCmd(ctx context.Context, elasticsearchVersio
 	return elasticsearchCmd
 }
 
-func (w *WindowsC8Run) ConnectorsCmd(ctx context.Context, javaBinary string, parentDir string, camundaVersion string, camundaPort int) *exec.Cmd {
-	connectorsCmd := exec.CommandContext(ctx, javaBinary, "-classpath", parentDir+"\\*;"+parentDir+"\\custom_connectors\\*", "io.camunda.connector.runtime.app.ConnectorRuntimeApplication", "--spring.config.additional-location="+parentDir+"\\connectors-application.properties")
+func (w *WindowsC8Run) ConnectorsCmd(ctx context.Context, javaBinary string, parentDir string, connectorsVersion string, camundaPort int) *exec.Cmd {
+	mainClass := "io.camunda.connector.runtime.app.ConnectorRuntimeApplication"
+	if connectors.UsePropertiesLauncher(connectorsVersion) {
+		mainClass = "org.springframework.boot.loader.launch.PropertiesLauncher"
+	}
+	connectorsCmd := exec.CommandContext(ctx, javaBinary, "-classpath", parentDir+"\\*;"+parentDir+"\\custom_connectors\\*", mainClass, "--spring.config.additional-location="+parentDir+"\\connectors-application.properties")
 	connectorsCmd.SysProcAttr = &syscall.SysProcAttr{
 		CreationFlags: 0x08000000 | 0x00000200, // CREATE_NO_WINDOW, CREATE_NEW_PROCESS_GROUP : https://learn.microsoft.com/en-us/windows/win32/procthread/process-creation-flags
 		// CreationFlags: 0x00000008 | 0x00000200, // DETACHED_PROCESS, CREATE_NEW_PROCESS_GROUP : https://learn.microsoft.com/en-us/windows/win32/procthread/process-creation-flags

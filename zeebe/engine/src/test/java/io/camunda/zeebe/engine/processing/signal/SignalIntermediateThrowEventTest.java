@@ -74,6 +74,7 @@ public class SignalIntermediateThrowEventTest {
         .hasBpmnProcessId(PROCESS)
         .hasVersion(processInstance.getValue().getVersion())
         .hasProcessInstanceKey(processInstance.getKey())
+        .hasRootProcessInstanceKey(processInstance.getKey())
         .hasBpmnEventType(BpmnEventType.SIGNAL)
         .hasElementId("signal_throw_event")
         .hasFlowScopeKey(processInstance.getKey());

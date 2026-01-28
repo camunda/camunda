@@ -20,6 +20,8 @@ import static java.util.Optional.ofNullable;
 
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.response.SearchResponsePage;
+import io.camunda.client.api.statistics.response.IncidentProcessInstanceStatisticsByDefinition;
+import io.camunda.client.api.statistics.response.IncidentProcessInstanceStatisticsByError;
 import io.camunda.client.api.statistics.response.ProcessDefinitionInstanceStatistics;
 import io.camunda.client.api.statistics.response.ProcessDefinitionInstanceVersionStatistics;
 import io.camunda.client.api.statistics.response.ProcessDefinitionMessageSubscriptionStatistics;
@@ -28,6 +30,7 @@ import io.camunda.client.api.statistics.response.ProcessElementStatistics;
 import io.camunda.client.api.statistics.response.UsageMetricsStatistics;
 import io.camunda.client.api.statistics.response.UsageMetricsStatisticsItem;
 import io.camunda.client.impl.search.response.SearchResponseImpl;
+import io.camunda.client.protocol.rest.IncidentProcessInstanceStatisticsByErrorQueryResult;
 import io.camunda.client.protocol.rest.ProcessDefinitionElementStatisticsQueryResult;
 import io.camunda.client.protocol.rest.ProcessDefinitionInstanceStatisticsQueryResult;
 import io.camunda.client.protocol.rest.ProcessDefinitionInstanceVersionStatisticsQueryResult;
@@ -121,6 +124,29 @@ public class StatisticsResponseMapper {
     final List<ProcessDefinitionInstanceVersionStatistics> items =
         toSearchResponseInstances(
             response.getItems(), ProcessDefinitionInstanceVersionStatisticsImpl::new);
+
+    return new SearchResponseImpl<>(items, page);
+  }
+
+  public static SearchResponse<IncidentProcessInstanceStatisticsByError>
+      toIncidentProcessInstanceStatisticsByErrorResponse(
+          final IncidentProcessInstanceStatisticsByErrorQueryResult response) {
+    final SearchResponsePage page = toSearchResponsePage(response.getPage());
+    final List<IncidentProcessInstanceStatisticsByError> items =
+        toSearchResponseInstances(
+            response.getItems(), IncidentProcessInstanceStatisticsByErrorImpl::new);
+    return new SearchResponseImpl<>(items, page);
+  }
+
+  public static SearchResponse<IncidentProcessInstanceStatisticsByDefinition>
+      toIncidentProcessInstanceStatisticsByDefinitionResponse(
+          final io.camunda.client.protocol.rest
+                  .IncidentProcessInstanceStatisticsByDefinitionQueryResult
+              response) {
+    final SearchResponsePage page = toSearchResponsePage(response.getPage());
+    final List<IncidentProcessInstanceStatisticsByDefinition> items =
+        toSearchResponseInstances(
+            response.getItems(), IncidentProcessInstanceStatisticsByDefinitionImpl::new);
 
     return new SearchResponseImpl<>(items, page);
   }

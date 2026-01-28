@@ -35,6 +35,11 @@ public class ProcessInstanceMigrationOperationHandler
   }
 
   @Override
+  long getRootProcessInstanceKey(final Record<ProcessInstanceMigrationRecordValue> record) {
+    return record.getValue().getRootProcessInstanceKey();
+  }
+
+  @Override
   long getItemKey(final Record<ProcessInstanceMigrationRecordValue> record) {
     return record.getValue().getProcessInstanceKey();
   }

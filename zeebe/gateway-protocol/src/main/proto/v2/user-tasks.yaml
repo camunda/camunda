@@ -126,7 +126,7 @@ paths:
               schema:
                 $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
         "500":
-            $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
 
     patch:
       x-eventually-consistent: false
@@ -211,7 +211,7 @@ paths:
               schema:
                 $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
         "500":
-            $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
 
   /user-tasks/{userTaskKey}/assignee:
     delete:
@@ -316,6 +316,39 @@ paths:
             application/json:
               schema:
                 $ref: 'variables.yaml#/components/schemas/VariableSearchQueryResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+
+  /user-tasks/{userTaskKey}/audit-logs/search:
+    post:
+      x-eventually-consistent: true
+      tags:
+        - User task
+      operationId: searchUserTaskAuditLogs
+      summary: Search user task audit logs
+      description: Search for user task audit logs based on given criteria.
+      parameters:
+        - name: userTaskKey
+          in: path
+          required: true
+          description: The key of the user task.
+          schema:
+            $ref: 'keys.yaml#/components/schemas/UserTaskKey'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserTaskAuditLogSearchQueryRequest'
+      responses:
+        "200":
+          description: The user task audit log search result.
+          content:
+            application/json:
+              schema:
+                $ref: 'audit-logs.yaml#/components/schemas/AuditLogSearchQueryResult'
         "400":
           $ref: 'common-responses.yaml#/components/responses/InvalidData'
         "500":
@@ -687,6 +720,21 @@ components:
             - $ref: '#/components/schemas/UserTaskVariableFilter'
           description: The user task variable search filters.
 
+    UserTaskAuditLogSearchQueryRequest:
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryRequest'
+      description: User task search query request.
+      additionalProperties: false
+      type: object
+      properties:
+        sort:
+          description: Sort field criteria.
+          type: array
+          items:
+            $ref: 'audit-logs.yaml#/components/schemas/AuditLogSearchQuerySortRequest'
+        filter:
+          $ref: '#/components/schemas/UserTaskAuditLogFilter'
+
     ## Enums
 
     UserTaskStateEnum:
@@ -748,3 +796,28 @@ components:
             $ref: "#/components/schemas/UserTaskStateEnum"
         $like:
           $ref: "filters.yaml#/components/schemas/LikeFilter"
+
+    UserTaskAuditLogFilter:
+      description: The user task audit log search filters.
+      type: object
+      properties:
+        operationType:
+          allOf:
+            - $ref: 'audit-logs.yaml#/components/schemas/OperationTypeFilterProperty'
+          description: The audit log operation type search filter.
+        result:
+          allOf:
+            - $ref: 'audit-logs.yaml#/components/schemas/AuditLogResultFilterProperty'
+          description: The audit log result search filter.
+        timestamp:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/DateTimeFilterProperty'
+          description: The audit log timestamp filter.
+        actorType:
+          allOf:
+            - $ref: 'audit-logs.yaml#/components/schemas/AuditLogActorTypeFilterProperty'
+          description: The actor type search filter.
+        actorId:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+          description: The actor ID search filter.

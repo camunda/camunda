@@ -34,6 +34,24 @@ public class PrimaryStorage {
    */
   private String runtimeDirectory;
 
+  /**
+   * Disable using a versioned directory pattern when an S3-based node ID provider is used.
+   *
+   * <p>Intended for testing and temporary troubleshooting only.
+   *
+   * <p>TODO: Remove this flag and its usages once S3-based garbage collection disk usage has been
+   * validated and is acceptable for release, and versioned directories are enabled by default for
+   * the node ID provider.
+   */
+  private boolean disableVersionedDirectory = false;
+
+  /**
+   * The number of versioned data directories to retain when garbage collection runs. This only
+   * applies when using the S3-based node ID provider with versioned directories enabled. Older
+   * versions beyond this count will be deleted after the current version is validated.
+   */
+  private int versionedDirectoryRetentionCount = 2;
+
   @NestedConfigurationProperty private Disk disk = new Disk();
   @NestedConfigurationProperty private LogStream logStream = new LogStream();
   @NestedConfigurationProperty private RocksDb rocksDb = new RocksDb();
@@ -95,5 +113,21 @@ public class PrimaryStorage {
 
   public void setBackup(final PrimaryStorageBackup primaryStorageBackup) {
     backup = primaryStorageBackup;
+  }
+
+  public boolean disableVersionedDirectory() {
+    return disableVersionedDirectory;
+  }
+
+  public void setDisableVersionedDirectory(final boolean disableVersionedDirectory) {
+    this.disableVersionedDirectory = disableVersionedDirectory;
+  }
+
+  public int getVersionedDirectoryRetentionCount() {
+    return versionedDirectoryRetentionCount;
+  }
+
+  public void setVersionedDirectoryRetentionCount(final int versionedDirectoryRetentionCount) {
+    this.versionedDirectoryRetentionCount = versionedDirectoryRetentionCount;
   }
 }

@@ -477,11 +477,14 @@ class VariableServiceTest {
     // given
     final String taskId = "taskId_557";
     final var flowNodeInstanceId = 456L;
+    final var processInstanceKey = 123L;
+    final var rootProcessInstanceKey = 789L;
     final TaskEntity task =
         new TaskEntity()
             .setId(taskId)
             .setFlowNodeInstanceId(String.valueOf(flowNodeInstanceId))
-            .setProcessInstanceId("123")
+            .setProcessInstanceId(String.valueOf(processInstanceKey))
+            .setRootProcessInstanceKey(rootProcessInstanceKey)
             .setTenantId("tenant_b");
     when(taskStore.getTask(taskId)).thenReturn(task);
     final ImportProperties importProperties = mock(ImportProperties.class);
@@ -492,9 +495,21 @@ class VariableServiceTest {
     mockReturnOriginalVariables(
         List.of(
             createVariableEntity(
-                flowNodeInstanceId, "varA", "\"originalA\"", variableSizeThreshold, "tenant_b"),
+                flowNodeInstanceId,
+                "varA",
+                "\"originalA\"",
+                variableSizeThreshold,
+                "tenant_b",
+                processInstanceKey,
+                rootProcessInstanceKey),
             createVariableEntity(
-                flowNodeInstanceId, "varB", "\"originalB\"", variableSizeThreshold, "tenant_b")));
+                flowNodeInstanceId,
+                "varB",
+                "\"originalB\"",
+                variableSizeThreshold,
+                "tenant_b",
+                processInstanceKey,
+                rootProcessInstanceKey)));
 
     // when
     instance.persistTaskVariables(
@@ -510,11 +525,35 @@ class VariableServiceTest {
     verify(variableStore).persistTaskVariables(taskVariableCaptor.capture());
     final var variablesToPersist = taskVariableCaptor.getValue();
     assertThat(variablesToPersist)
-        .extracting("name", "value", "fullValue", "tenantId")
+        .extracting(
+            "name",
+            "value",
+            "fullValue",
+            "tenantId",
+            "processInstanceKey",
+            "rootProcessInstanceKey")
         .containsExactlyInAnyOrder(
-            tuple("varA", "\"originalA\"", "\"originalA\"", "tenant_b"),
-            tuple("varB", "\"changedB\"", "\"changedB\"", "tenant_b"),
-            tuple("varC", "\"changedC\"", "\"changedC\"", "tenant_b"));
+            tuple(
+                "varA",
+                "\"originalA\"",
+                "\"originalA\"",
+                "tenant_b",
+                processInstanceKey,
+                rootProcessInstanceKey),
+            tuple(
+                "varB",
+                "\"changedB\"",
+                "\"changedB\"",
+                "tenant_b",
+                processInstanceKey,
+                rootProcessInstanceKey),
+            tuple(
+                "varC",
+                "\"changedC\"",
+                "\"changedC\"",
+                "tenant_b",
+                processInstanceKey,
+                rootProcessInstanceKey));
   }
 
   @Test
@@ -522,11 +561,14 @@ class VariableServiceTest {
     // given
     final String taskId = "taskId_557";
     final var flowNodeInstanceId = 456L;
+    final var processInstanceKey = 123L;
+    final var rootProcessInstanceKey = 789L;
     final TaskEntity task =
         new TaskEntity()
             .setId(taskId)
             .setFlowNodeInstanceId(String.valueOf(flowNodeInstanceId))
-            .setProcessInstanceId("123")
+            .setProcessInstanceId(String.valueOf(processInstanceKey))
+            .setRootProcessInstanceKey(rootProcessInstanceKey)
             .setTenantId("tenant_c");
     when(taskStore.getTask(taskId)).thenReturn(task);
     final ImportProperties importProperties = mock(ImportProperties.class);
@@ -537,9 +579,21 @@ class VariableServiceTest {
     mockReturnOriginalVariables(
         List.of(
             createVariableEntity(
-                flowNodeInstanceId, "varA", "\"originalA\"", variableSizeThreshold, "tenant_c"),
+                flowNodeInstanceId,
+                "varA",
+                "\"originalA\"",
+                variableSizeThreshold,
+                "tenant_c",
+                processInstanceKey,
+                rootProcessInstanceKey),
             createVariableEntity(
-                flowNodeInstanceId, "varB", "\"originalB\"", variableSizeThreshold, "tenant_c")));
+                flowNodeInstanceId,
+                "varB",
+                "\"originalB\"",
+                variableSizeThreshold,
+                "tenant_c",
+                processInstanceKey,
+                rootProcessInstanceKey)));
 
     when(draftVariableStore.getVariablesByTaskIdAndVariableNames(taskId, emptyList()))
         .thenReturn(
@@ -575,17 +629,49 @@ class VariableServiceTest {
     verify(variableStore).persistTaskVariables(taskVariableCaptor.capture());
     final var variablesToPersist = taskVariableCaptor.getValue();
     assertThat(variablesToPersist)
-        .extracting("name", "value", "fullValue", "tenantId")
+        .extracting(
+            "name",
+            "value",
+            "fullValue",
+            "tenantId",
+            "processInstanceKey",
+            "rootProcessInstanceKey")
         .containsExactlyInAnyOrder(
-            tuple("varA", "\"originalA\"", "\"originalA\"", "tenant_c"),
-            tuple("varB", "\"draftB\"", "\"draftB\"", "tenant_c"),
-            tuple("varC", "\"draftC\"", "\"draftC\"", "tenant_c"),
+            tuple(
+                "varA",
+                "\"originalA\"",
+                "\"originalA\"",
+                "tenant_c",
+                processInstanceKey,
+                rootProcessInstanceKey),
+            tuple(
+                "varB",
+                "\"draftB\"",
+                "\"draftB\"",
+                "tenant_c",
+                processInstanceKey,
+                rootProcessInstanceKey),
+            tuple(
+                "varC",
+                "\"draftC\"",
+                "\"draftC\"",
+                "tenant_c",
+                processInstanceKey,
+                rootProcessInstanceKey),
             tuple(
                 "varD",
                 "\"changedD_longValueThatExceedL",
                 "\"changedD_longValueThatExceedLimit\"",
-                "tenant_c"),
-            tuple("varE", "\"changedE\"", "\"changedE\"", "tenant_c"));
+                "tenant_c",
+                processInstanceKey,
+                rootProcessInstanceKey),
+            tuple(
+                "varE",
+                "\"changedE\"",
+                "\"changedE\"",
+                "tenant_c",
+                processInstanceKey,
+                rootProcessInstanceKey));
   }
 
   @Test
@@ -600,7 +686,9 @@ class VariableServiceTest {
       final String name,
       final String value,
       final int variableSizeThreshold,
-      final String tenantId) {
+      final String tenantId,
+      final Long processInstanceKey,
+      final Long rootProcessInstanceKey) {
     final VariableEntity entity =
         new VariableEntity()
             .setId(String.format("%s-%s", flowNodeInstanceId, name))
@@ -618,6 +706,8 @@ class VariableServiceTest {
       entity.setIsPreview(false);
     }
     entity.setTenantId(tenantId);
+    entity.setProcessInstanceKey(processInstanceKey);
+    entity.setRootProcessInstanceKey(rootProcessInstanceKey);
     return entity;
   }
 
@@ -627,6 +717,12 @@ class VariableServiceTest {
       final String value,
       final int variableSizeThreshold) {
     return createVariableEntity(
-        flowNodeInstanceId, name, value, variableSizeThreshold, DEFAULT_TENANT_IDENTIFIER);
+        flowNodeInstanceId,
+        name,
+        value,
+        variableSizeThreshold,
+        DEFAULT_TENANT_IDENTIFIER,
+        123L,
+        123L);
   }
 }

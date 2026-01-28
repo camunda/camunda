@@ -29,17 +29,13 @@ import java.util.stream.Collectors;
  * @param entriesOnlyOnRight properties which only exist in the right mapping
  * @param entriesInCommon properties which exist in both mappings
  * @param entriesDiffering properties which exist in both mappings but with different exact values
- * @param isLeftDynamic true if the left mapping is dynamic
- * @param isRightDynamic true if the right mapping is dynamic
  */
 public record IndexMappingDifference(
     boolean equal,
     Set<IndexMappingProperty> entriesOnlyOnLeft,
     Set<IndexMappingProperty> entriesOnlyOnRight,
     Set<IndexMappingProperty> entriesInCommon,
-    Set<PropertyDifference> entriesDiffering,
-    boolean isLeftDynamic,
-    boolean isRightDynamic) {
+    Set<PropertyDifference> entriesDiffering) {
 
   public static IndexMappingDifference of(final IndexMapping left, final IndexMapping right) {
     final Map<String, Object> leftMap = left == null ? Map.of() : left.toMap();
@@ -70,9 +66,7 @@ public record IndexMappingDifference(
                             .name(entry.getKey())
                             .typeDefinition(entry.getValue().rightValue())
                             .build()))
-            .collect(Collectors.toSet()),
-        left == null ? false : left.isDynamic(),
-        right == null ? false : right.isDynamic());
+            .collect(Collectors.toSet()));
   }
 
   public IndexMappingDifference filterEntriesDiffering(final Predicate<PropertyDifference> filter) {
@@ -81,9 +75,7 @@ public record IndexMappingDifference(
         entriesOnlyOnLeft,
         entriesOnlyOnRight,
         entriesInCommon,
-        entriesDiffering.stream().filter(filter).collect(Collectors.toSet()),
-        isLeftDynamic,
-        isRightDynamic);
+        entriesDiffering.stream().filter(filter).collect(Collectors.toSet()));
   }
 
   public IndexMappingDifference filterEntriesInCommon(
@@ -93,9 +85,7 @@ public record IndexMappingDifference(
         entriesOnlyOnLeft,
         entriesOnlyOnRight,
         entriesInCommon.stream().filter(filter).collect(Collectors.toSet()),
-        entriesDiffering,
-        isLeftDynamic,
-        isRightDynamic);
+        entriesDiffering);
   }
 
   /**

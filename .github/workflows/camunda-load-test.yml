@@ -27,27 +27,43 @@ on:
         type: string
         default: ""
         required: false
-      cluster:
-        description: 'Specifies which cluster to deploy the load test on'
-        default: 'zeebe-cluster'
+      use-official-docker-images:
+        description: 'Use official Camunda Docker images from Docker Hub instead of building from source'
+        type: boolean
         required: false
-      cluster-region:
-        description: 'Specifies the cluster region. Needed to retrieve cluster credentials'
-        default: europe-west1-b
+        default: false
+      scenario:
+        description: 'Choose the variant of workload to use for the load test. When not set to "custom", this will override the load-test-load input.'
         required: false
+        type: choice
+        options:
+          - custom
+          - latency
+          - realistic
+          - typical
+          - max
+        default: custom
       load-test-load:
-        description: 'Specifies which load test components to deploy. For example, `starter` can be assigned with the rate at which they start instances. Allows arbitrary helm arguments, like --set starter.rate=100'
+        description: 'Specifies which load test components to deploy. For example, `starter` can be assigned with the rate at which they start instances. Allows arbitrary helm arguments, like --set starter.rate=100. This is ignored when scenario is not "custom".'
+        required: false
+      platform-helm-values:
+        description: 'Allows to specify additional values/configurations for the Camunda platform Helm chart, which will be deployed. For example, the Orchestration cluster `resources` can be modified. Allows arbitrary helm arguments, like --set orchestration.resources.limits.memory=2Gi'
+        type: string
+        default: ""
         required: false
       stable-vms:
         description: 'Deploy to non-spot VMs'
         type: boolean
         required: false
         default: false
-      realistic:
-        description: 'Should run a realistic load test, with real-world process and load'
-        type: boolean
-        required: false
-        default: false
+      secondary-storage-type:
+        description: 'Specifies the type of the secondary database used by Camunda Platform, can be "elasticsearch", "opensearch" or "postgresql"'
+        type: choice
+        options:
+        - elasticsearch
+        - opensearch
+        - postgresql
+        default: elasticsearch
   workflow_call:
     inputs:
       ref:
@@ -69,19 +85,24 @@ on:
         type: string
         default: ""
         required: false
-      cluster:
-        description: 'Specifies which cluster to deploy the load test on'
-        default: 'zeebe-cluster'
+      use-official-docker-images:
+        description: 'Use official Camunda Docker images from Docker Hub instead of building from source'
+        type: boolean
+        required: false
+        default: false
+      scenario:
+        description: 'Choose the variant of workload to use for the load test. Options: custom, latency, realistic, typical, max. If specified, this will override the load-test-load input when not set to "custom".'
         type: string
         required: false
-      cluster-region:
-        description: 'Specifies the cluster region. Needed to retrieve cluster credentials'
-        default: europe-west1-b
-        type: string
-        required: false
+        default: custom
       load-test-load:
-        description: 'Specifies which load test components to deploy. For example, `starter` can be assigned with the rate at which they start instances. Allows arbitrary helm arguments, like --set starter.rate=100'
+        description: 'Specifies which load test components to deploy. For example, `starter` can be assigned with the rate at which they start instances. Allows arbitrary helm arguments, like --set starter.rate=100. This is ignored when scenario is not "custom".'
         type: string
+        required: false
+      platform-helm-values:
+        description: 'Allows to specify additional values/configurations for the Camunda platform Helm chart, which will be deployed. For example, the Orchestration cluster `resources` can be modified. Allows arbitrary helm arguments, like --set orchestration.resources.limits.memory=2Gi'
+        type: string
+        default: ""
         required: false
       publish:
         description: 'Where to publish the results, can be "slack" or "comment"'
@@ -93,11 +114,12 @@ on:
         type: boolean
         required: false
         default: false
-      realistic:
-        description: 'Should run a realistic load test, with real-world process and load'
-        type: boolean
+      secondary-storage-type:
+        description: 'Specifies the type of the secondary database used by Camunda Platform, can be "elasticsearch", "opensearch" or "postgresql"'
+        # type choice is invalid here
+        type: string
         required: false
-        default: false
+        default: elasticsearch
 
 env:
   HELM_CHART: camunda-platform-8.9
@@ -117,13 +139,64 @@ jobs:
     outputs:
       image-tag: ${{ inputs.reuse-tag != '' && inputs.reuse-tag || steps.image-tag.outputs.image-tag }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: ${{ inputs.ref }}
       - name: Get image tag
         id: image-tag
         run: |
           echo "image-tag=${{ inputs.name }}-$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+
+  calculate-scenario-config:
+    name: Calculate Scenario Configuration
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: { }
+    outputs:
+      load-test-load: ${{ steps.config.outputs.load-test-load }}
+    steps:
+      - name: Calculate configuration based on scenario
+        id: config
+        run: |
+          scenario="${{ inputs.scenario }}"
+
+          # Default to custom scenario if not provided
+          if [[ -z "$scenario" ]]; then
+            scenario="custom"
+          fi
+
+          case "$scenario" in
+            latency)
+              echo "load-test-load=--set starter.rate=1 --set workers.worker.replicas=1" >> "$GITHUB_OUTPUT"
+              ;;
+            realistic)
+              echo "load-test-load=-f https://raw.githubusercontent.com/camunda/camunda-load-tests-helm/refs/heads/main/charts/camunda-load-tests/values-realistic-benchmark.yaml" >> "$GITHUB_OUTPUT"
+              ;;
+            typical)
+              # Output typical configuration directly to avoid quote escaping issues
+              echo "load-test-load=--set starter.rate=50 --set workers.worker.replicas=6 --set starter.bpmnXmlPath=bpmn/typical_process.bpmn" >> "$GITHUB_OUTPUT"
+              ;;
+            max)
+              echo "load-test-load=--set starter.rate=300" >> "$GITHUB_OUTPUT"
+              ;;
+            custom)
+              # Use the provided load-test-load inputs
+              echo "load-test-load=${{ inputs.load-test-load }}" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "Error: Unknown scenario '$scenario'"
+              exit 1
+              ;;
+          esac
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   build-camunda-image:
     name: Build Camunda
@@ -135,7 +208,7 @@ jobs:
       contents: 'read'
       id-token: 'write'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: ${{ inputs.ref }}
       - uses: ./.github/actions/setup-build
@@ -201,7 +274,7 @@ jobs:
 
   build-load-test-images:
     name: Build Starter and Worker
-    if: ${{ inputs.reuse-tag == '' }}
+    if: ${{ inputs.reuse-tag == '' || inputs.use-official-docker-images == true }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     needs: calculate-image-tag
@@ -209,7 +282,7 @@ jobs:
       contents: 'read'
       id-token: 'write'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: ${{ inputs.ref }}
       - name: Authenticate to Google Cloud
@@ -250,6 +323,7 @@ jobs:
     name: Deploy cluster under test
     needs:
       - calculate-image-tag
+      - calculate-scenario-config
       - build-camunda-image
       - build-load-test-images
     # To have the possibility to re-deploy the tests without rebuilding the images,
@@ -264,98 +338,7 @@ jobs:
       contents: 'read'
       id-token: 'write'
     steps:
-      - uses: actions/checkout@v4
-        with:
-          repository: 'camunda/camunda-platform-helm'
-          ref: 'main'
-      - uses: google-github-actions/auth@v2
-        with:
-          workload_identity_provider: 'projects/628707732411/locations/global/workloadIdentityPools/zeebe-gh-actions/providers/gha-provider'
-          service_account: 'zeebe-gh-actions@zeebe-io.iam.gserviceaccount.com'
-      - uses: google-github-actions/get-gke-credentials@v2.3.4
-        with:
-          cluster_name: ${{ inputs.cluster }}
-          location: ${{ inputs.cluster-region }}
-      - name: Create namespace if not exists
-        run: |
-          if ! kubectl get namespace ${{ inputs.name }} >/dev/null 2>&1; then
-            kubectl create namespace ${{ inputs.name }}
-          else
-            echo "Namespace '${{ inputs.name }}' already exists"
-          fi
-      - name: Label namespace with creator
-        run: >
-          kubectl label namespace ${{ inputs.name }} created-by=${{ github.actor }} --overwrite
-      - name: Label namespace with deadline
-        run: |
-          # Calculate deadline date with the TTL days from now
-          # Use basic ISO date format (YYYY-MM-DD), as it is compatible with kubectl label values
-          # Must use minus (-) instead of / to be compatible with kubectl label value restrictions
-          deadlineDate=$(date -d "+${{ inputs.ttl }} days" +%Y-%m-%d)
-          kubectl label namespace ${{ inputs.name }} deadline-date="$deadlineDate" --overwrite
-      - name: Add Camunda Helm repo
-        run: |
-          helm repo add camunda https://helm.camunda.io/
-          helm repo update
-      - name: Find previous Helm chart release version
-        id: find-chart-release
-        run: |
-          echo "chart-release=$(helm get metadata -o json --namespace ${{ inputs.name }} ${{ inputs.name }} | jq --raw-output .version)" >> "$GITHUB_OUTPUT"
-      - name: Build dependencies of Camunda Platform
-        run: helm dependency build charts/${{ env.HELM_CHART }}/
-      - name: Install latest Camunda Platform
-        run: >
-          helm upgrade --install ${{ inputs.name }} charts/${{ env.HELM_CHART }}/ --wait --timeout 35m0s
-          --namespace ${{ inputs.name }}
-          --reset-then-reuse-values
-          --render-subchart-notes
-          --set global.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
-          --set orchestration.image.registry=gcr.io
-          --set orchestration.image.repository=zeebe-io/zeebe
-          --set orchestration.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
-          -f https://raw.githubusercontent.com/camunda/camunda/${{ github.ref }}/load-tests/camunda-platform-values.yaml
-          ${{ steps.find-chart-release.outputs.chart-release != '' && format('--version {0}', steps.find-chart-release.outputs.chart-release) || '' }}
-          ${{ inputs.stable-vms && format('-f https://raw.githubusercontent.com/camunda/camunda/{0}/load-tests/setup/default/values-stable.yaml', github.ref) || '' }}
-      - name: Summarize deployment
-        if: success()
-        run: |
-          cat >> "$GITHUB_STEP_SUMMARY" <<EOF
-            ## Camunda platform \`${{ inputs.name }}\` values
-            \`\`\`yaml
-            $(helm get values ${{ inputs.name }} -n ${{ inputs.name }})
-            \`\`\`
-          EOF
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          build_status: ${{ job.status }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-
-  deploy-load-test:
-    name: Deploy load test
-    needs:
-      # We need to depend on calculate-image-tag, so that we can use the output in the job
-      - calculate-image-tag
-      - deploy-cluster-under-test
-      - build-camunda-image
-      - build-load-test-images
-      # To have the possibility to re-deploy the tests without rebuilding the images,
-      # the deploy will be run, when build is skipped or successful.
-    if: |
-      always() &&
-      (needs.build-camunda-image.result == 'success' || needs.build-camunda-image.result == 'skipped') &&
-      (needs.build-load-test-images.result == 'success' || needs.build-load-test-images.result == 'skipped')
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    permissions:
-      contents: 'read'
-      id-token: 'write'
-    steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: ${{ inputs.ref }}
       - uses: google-github-actions/auth@v2
@@ -364,39 +347,41 @@ jobs:
           service_account: 'zeebe-gh-actions@zeebe-io.iam.gserviceaccount.com'
       - uses: google-github-actions/get-gke-credentials@v2.3.5
         with:
-          cluster_name: ${{ inputs.cluster }}
-          location: ${{ inputs.cluster-region }}
-      - name: Add Load test Helm repo
+          cluster_name: zeebe-cluster
+          location: europe-west1-b
+      - name: Create namespace if not exists
         run: |
-          helm repo add camunda-load-tests https://camunda.github.io/camunda-load-tests-helm/
-          helm repo update
-      - name: Find previous Helm chart release version
-        id: find-chart-release
+          cd load-tests/setup
+          # The namespace label created-by will not be able resolve the actual user which triggered
+          # the GitHub action by default. We need to correctly configure the git user here to make it work
+          git config user.name ${{ github.actor }}
+          # Create the namespace for the load test
+          ./newLoadTest.sh ${{ inputs.name }} ${{ inputs.secondary-storage-type }} ${{ inputs.ttl }}
+      - name: Install latest Camunda Platform
         run: |
-          echo "chart-release=$(helm get metadata -o json --namespace ${{ inputs.name }} ${{ inputs.name }}-test | jq --raw-output .version)" >> "$GITHUB_OUTPUT"
-      - name: Install load test
-        run: >
-          helm upgrade --install ${{ inputs.name }}-test camunda-load-tests/camunda-load-tests
-          --wait --timeout 35m0s
-          --namespace ${{ inputs.name }}
-          --reuse-values
-          --render-subchart-notes
-          --set global.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
-          ${{ steps.find-chart-release.outputs.chart-release != '' && format('--version {0}', steps.find-chart-release.outputs.chart-release) || '' }}
-          ${{ inputs.realistic && '-f https://raw.githubusercontent.com/camunda/camunda-load-tests-helm/refs/heads/main/charts/camunda-load-tests/values-realistic-benchmark.yaml' || '' }}
-          ${{ inputs.load-test-load }}
-      - name: Setup leader balancing
-        run: |
-          if ! kubectl get cronjob leader-balancer --namespace ${{ inputs.name }} &>/dev/null; then
-            kubectl create cronjob leader-balancer \
-              --namespace ${{ inputs.name }} \
-              --image=curlimages/curl:7.87.0 \
-              --schedule="*/10 * * * *" \
-              -- curl -L -v -X POST http://camunda:9600/actuator/rebalance
-          else
-            echo "Leader balancer cronjob already exists"
+          cd load-tests/setup/${{ inputs.name }}
+
+          # Build additional load test configuration
+          load_test_config="--set global.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}"
+          # Append load-test-load configuration if not empty
+          if [[ -n "${{ needs.calculate-scenario-config.outputs.load-test-load }}" ]]; then
+            load_test_config="$load_test_config ${{ needs.calculate-scenario-config.outputs.load-test-load }}"
           fi
-      - name: Summarize deployment
+
+          make ${{ inputs.stable-vms && 'install-stable' || 'install' }} \
+            secondary_storage=${{ inputs.secondary-storage-type }} \
+            additional_platform_configuration="--set global.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }} --set orchestration.image.registry=${{ inputs.use-official-docker-images && 'docker.io' || 'gcr.io' }} --set orchestration.image.repository=${{ inputs.use-official-docker-images && 'camunda/camunda' || 'zeebe-io/zeebe' }} --set orchestration.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }} ${{ inputs.platform-helm-values }}" \
+            additional_load_test_configuration="$load_test_config"
+      - name: Summarize platform deployment
+        if: success()
+        run: |
+          cat >> "$GITHUB_STEP_SUMMARY" <<EOF
+            ## Camunda platform \`${{ inputs.name }}\` values
+            \`\`\`yaml
+            $(helm get values ${{ inputs.name }} -n ${{ inputs.name }})
+            \`\`\`
+          EOF
+      - name: Summarize load test deployment
         if: success()
         run: |
           cat >> "$GITHUB_STEP_SUMMARY" <<EOF

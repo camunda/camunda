@@ -21,16 +21,63 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.networknt.schema.JsonSchema;
 import com.networknt.schema.JsonSchemaFactory;
 import com.networknt.schema.SpecVersion;
 import com.networknt.schema.ValidationMessage;
+import io.camunda.process.test.api.dsl.ImmutableDecisionDefinitionSelector;
+import io.camunda.process.test.api.dsl.ImmutableDecisionSelector;
+import io.camunda.process.test.api.dsl.ImmutableElementSelector;
+import io.camunda.process.test.api.dsl.ImmutableIncidentSelector;
+import io.camunda.process.test.api.dsl.ImmutableJobSelector;
+import io.camunda.process.test.api.dsl.ImmutableMessageSelector;
+import io.camunda.process.test.api.dsl.ImmutableProcessDefinitionSelector;
+import io.camunda.process.test.api.dsl.ImmutableProcessInstanceSelector;
 import io.camunda.process.test.api.dsl.ImmutableTestCase;
 import io.camunda.process.test.api.dsl.ImmutableTestScenario;
-import io.camunda.process.test.api.dsl.TestCaseInstructionType;
+import io.camunda.process.test.api.dsl.ImmutableUserTaskSelector;
+import io.camunda.process.test.api.dsl.TestCaseInstruction;
 import io.camunda.process.test.api.dsl.TestScenario;
+import io.camunda.process.test.api.dsl.instructions.ImmutableActivateElement;
+import io.camunda.process.test.api.dsl.instructions.ImmutableAssertDecisionInstruction;
+import io.camunda.process.test.api.dsl.instructions.ImmutableAssertElementInstanceInstruction;
+import io.camunda.process.test.api.dsl.instructions.ImmutableAssertElementInstancesInstruction;
+import io.camunda.process.test.api.dsl.instructions.ImmutableAssertProcessInstanceInstruction;
+import io.camunda.process.test.api.dsl.instructions.ImmutableAssertProcessInstanceMessageSubscriptionInstruction;
+import io.camunda.process.test.api.dsl.instructions.ImmutableAssertUserTaskInstruction;
+import io.camunda.process.test.api.dsl.instructions.ImmutableAssertVariablesInstruction;
+import io.camunda.process.test.api.dsl.instructions.ImmutableBroadcastSignalInstruction;
+import io.camunda.process.test.api.dsl.instructions.ImmutableCompleteJobAdHocSubProcessInstruction;
+import io.camunda.process.test.api.dsl.instructions.ImmutableCompleteJobInstruction;
+import io.camunda.process.test.api.dsl.instructions.ImmutableCompleteJobUserTaskListenerInstruction;
+import io.camunda.process.test.api.dsl.instructions.ImmutableCompleteUserTaskInstruction;
+import io.camunda.process.test.api.dsl.instructions.ImmutableCorrections;
 import io.camunda.process.test.api.dsl.instructions.ImmutableCreateProcessInstanceInstruction;
+import io.camunda.process.test.api.dsl.instructions.ImmutableEvaluateConditionalStartEventInstruction;
+import io.camunda.process.test.api.dsl.instructions.ImmutableEvaluateDecisionInstruction;
+import io.camunda.process.test.api.dsl.instructions.ImmutableIncreaseTimeInstruction;
+import io.camunda.process.test.api.dsl.instructions.ImmutableMockChildProcessInstruction;
+import io.camunda.process.test.api.dsl.instructions.ImmutableMockDmnDecisionInstruction;
+import io.camunda.process.test.api.dsl.instructions.ImmutableMockJobWorkerCompleteJobInstruction;
+import io.camunda.process.test.api.dsl.instructions.ImmutableMockJobWorkerThrowBpmnErrorInstruction;
+import io.camunda.process.test.api.dsl.instructions.ImmutablePublishMessageInstruction;
+import io.camunda.process.test.api.dsl.instructions.ImmutableResolveIncidentInstruction;
+import io.camunda.process.test.api.dsl.instructions.ImmutableSetTimeInstruction;
+import io.camunda.process.test.api.dsl.instructions.ImmutableThrowBpmnErrorFromJobInstruction;
+import io.camunda.process.test.api.dsl.instructions.ImmutableUpdateVariablesInstruction;
+import io.camunda.process.test.api.dsl.instructions.assertElementInstance.ElementInstanceState;
+import io.camunda.process.test.api.dsl.instructions.assertElementInstances.ElementInstancesState;
+import io.camunda.process.test.api.dsl.instructions.assertProcessInstance.ProcessInstanceState;
+import io.camunda.process.test.api.dsl.instructions.assertProcessInstanceMessageSubscription.MessageSubscriptionState;
+import io.camunda.process.test.api.dsl.instructions.assertUserTask.UserTaskState;
+import io.camunda.process.test.api.dsl.instructions.createProcessInstance.ImmutableCreateProcessInstanceStartInstruction;
+import io.camunda.process.test.api.dsl.instructions.createProcessInstance.ImmutableCreateProcessInstanceTerminateRuntimeInstruction;
 import java.io.IOException;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
@@ -47,7 +94,7 @@ public class PojoCompatibilityTest {
   private final ObjectMapper objectMapper =
       new ObjectMapper()
           .setSerializationInclusion(JsonInclude.Include.NON_ABSENT)
-          .registerModule(new Jdk8Module());
+          .registerModules(new Jdk8Module(), new JavaTimeModule());
 
   @BeforeAll
   static void setup() {
@@ -103,30 +150,578 @@ public class PojoCompatibilityTest {
                         .description("My first test case")
                         .build())
                 .build()),
+        // ===== CREATE_PROCESS_INSTANCE =====
         Arguments.of(
             "create process instance: minimal",
-            ImmutableTestScenario.builder()
-                .addTestCases(
-                    ImmutableTestCase.builder()
-                        .name("test case 1")
-                        .addInstructions(
-                            ImmutableCreateProcessInstanceInstruction.builder()
-                                .type(TestCaseInstructionType.CREATE_PROCESS_INSTANCE)
-                                .build())
-                        .build())
-                .build()),
+            singleTestCase(
+                ImmutableCreateProcessInstanceInstruction.builder()
+                    .processDefinitionSelector(
+                        ImmutableProcessDefinitionSelector.builder()
+                            .processDefinitionId("my-process")
+                            .build())
+                    .build())),
         Arguments.of(
             "create process instance: full",
-            ImmutableTestScenario.builder()
-                .addTestCases(
-                    ImmutableTestCase.builder()
-                        .name("test case 1")
-                        .addInstructions(
-                            ImmutableCreateProcessInstanceInstruction.builder()
-                                .type(TestCaseInstructionType.CREATE_PROCESS_INSTANCE)
-                                .putVariables("orderId", 12345)
-                                .build())
-                        .build())
-                .build()));
+            singleTestCase(
+                ImmutableCreateProcessInstanceInstruction.builder()
+                    .processDefinitionSelector(
+                        ImmutableProcessDefinitionSelector.builder()
+                            .processDefinitionId("my-process")
+                            .build())
+                    .putVariables("orderId", 12345)
+                    .addStartInstructions(
+                        ImmutableCreateProcessInstanceStartInstruction.builder()
+                            .elementId("task1")
+                            .build())
+                    .addRuntimeInstructions(
+                        ImmutableCreateProcessInstanceTerminateRuntimeInstruction.builder()
+                            .afterElementId("task2")
+                            .build())
+                    .build())),
+        // ===== ASSERT_PROCESS_INSTANCE =====
+        Arguments.of(
+            "assert process instance: minimal",
+            singleTestCase(
+                ImmutableAssertProcessInstanceInstruction.builder()
+                    .processInstanceSelector(
+                        ImmutableProcessInstanceSelector.builder()
+                            .processDefinitionId("my-process")
+                            .build())
+                    .build())),
+        Arguments.of(
+            "assert process instance: full",
+            singleTestCase(
+                ImmutableAssertProcessInstanceInstruction.builder()
+                    .processInstanceSelector(
+                        ImmutableProcessInstanceSelector.builder()
+                            .processDefinitionId("my-process")
+                            .build())
+                    .state(ProcessInstanceState.IS_COMPLETED)
+                    .hasActiveIncidents(false)
+                    .build())),
+        // ===== ASSERT_ELEMENT_INSTANCE =====
+        Arguments.of(
+            "assert element instance: minimal with elementId",
+            singleTestCase(
+                ImmutableAssertElementInstanceInstruction.builder()
+                    .processInstanceSelector(
+                        ImmutableProcessInstanceSelector.builder()
+                            .processDefinitionId("my-process")
+                            .build())
+                    .elementSelector(ImmutableElementSelector.builder().elementId("task1").build())
+                    .state(ElementInstanceState.IS_ACTIVE)
+                    .build())),
+        Arguments.of(
+            "assert element instance: minimal with elementName",
+            singleTestCase(
+                ImmutableAssertElementInstanceInstruction.builder()
+                    .processInstanceSelector(
+                        ImmutableProcessInstanceSelector.builder()
+                            .processDefinitionId("my-process")
+                            .build())
+                    .elementSelector(
+                        ImmutableElementSelector.builder().elementName("Task A").build())
+                    .state(ElementInstanceState.IS_COMPLETED)
+                    .build())),
+        Arguments.of(
+            "assert element instance: full",
+            singleTestCase(
+                ImmutableAssertElementInstanceInstruction.builder()
+                    .processInstanceSelector(
+                        ImmutableProcessInstanceSelector.builder()
+                            .processDefinitionId("my-process")
+                            .build())
+                    .elementSelector(ImmutableElementSelector.builder().elementId("task1").build())
+                    .state(ElementInstanceState.IS_TERMINATED)
+                    .amount(3)
+                    .build())),
+        // ===== ASSERT_USER_TASK =====
+        Arguments.of(
+            "assert user task: minimal",
+            singleTestCase(
+                ImmutableAssertUserTaskInstruction.builder()
+                    .userTaskSelector(
+                        ImmutableUserTaskSelector.builder().elementId("task1").build())
+                    .build())),
+        Arguments.of(
+            "assert user task: full",
+            singleTestCase(
+                ImmutableAssertUserTaskInstruction.builder()
+                    .userTaskSelector(
+                        ImmutableUserTaskSelector.builder()
+                            .processDefinitionId("my-process")
+                            .elementId("task1")
+                            .build())
+                    .state(UserTaskState.IS_CREATED)
+                    .assignee("me")
+                    .candidateGroups(Arrays.asList("manager"))
+                    .priority(100)
+                    .elementId("task1")
+                    .name("Review")
+                    .dueDate("2025-10-31T10:00:00Z")
+                    .followUpDate("2025-10-20T10:00:00Z")
+                    .build())),
+        // ===== ASSERT_DECISION =====
+        Arguments.of(
+            "assert decision: minimal with id",
+            singleTestCase(
+                ImmutableAssertDecisionInstruction.builder()
+                    .decisionSelector(
+                        ImmutableDecisionSelector.builder()
+                            .decisionDefinitionId("my-decision")
+                            .build())
+                    .build())),
+        Arguments.of(
+            "assert decision: minimal with name",
+            singleTestCase(
+                ImmutableAssertDecisionInstruction.builder()
+                    .decisionSelector(
+                        ImmutableDecisionSelector.builder()
+                            .decisionDefinitionName("My Decision")
+                            .build())
+                    .build())),
+        Arguments.of(
+            "assert decision: with string output",
+            singleTestCase(
+                ImmutableAssertDecisionInstruction.builder()
+                    .decisionSelector(
+                        ImmutableDecisionSelector.builder()
+                            .decisionDefinitionId("my-decision")
+                            .build())
+                    .output("valid")
+                    .build())),
+        Arguments.of(
+            "assert decision: with integer output",
+            singleTestCase(
+                ImmutableAssertDecisionInstruction.builder()
+                    .decisionSelector(
+                        ImmutableDecisionSelector.builder()
+                            .decisionDefinitionId("my-decision")
+                            .build())
+                    .output(42)
+                    .build())),
+        Arguments.of(
+            "assert decision: with list output",
+            singleTestCase(
+                ImmutableAssertDecisionInstruction.builder()
+                    .decisionSelector(
+                        ImmutableDecisionSelector.builder()
+                            .decisionDefinitionId("my-decision")
+                            .build())
+                    .output(Arrays.asList("value1", "value2"))
+                    .build())),
+        Arguments.of(
+            "assert decision: with map output",
+            singleTestCase(
+                ImmutableAssertDecisionInstruction.builder()
+                    .decisionSelector(
+                        ImmutableDecisionSelector.builder()
+                            .decisionDefinitionId("my-decision")
+                            .build())
+                    .output(Collections.singletonMap("status", "approved"))
+                    .build())),
+        Arguments.of(
+            "assert decision: full",
+            singleTestCase(
+                ImmutableAssertDecisionInstruction.builder()
+                    .decisionSelector(
+                        ImmutableDecisionSelector.builder()
+                            .decisionDefinitionId("my-decision")
+                            .build())
+                    .output("valid")
+                    .matchedRules(Arrays.asList(1, 3))
+                    .notMatchedRules(Arrays.asList(2, 4))
+                    .noMatchedRules(false)
+                    .build())),
+        // ===== ASSERT_ELEMENT_INSTANCES =====
+        Arguments.of(
+            "assert element instances: IS_ACTIVE",
+            singleTestCase(
+                ImmutableAssertElementInstancesInstruction.builder()
+                    .processInstanceSelector(
+                        ImmutableProcessInstanceSelector.builder()
+                            .processDefinitionId("my-process")
+                            .build())
+                    .addElementSelectors(
+                        ImmutableElementSelector.builder().elementId("task1").build())
+                    .addElementSelectors(
+                        ImmutableElementSelector.builder().elementName("Task B").build())
+                    .state(ElementInstancesState.IS_ACTIVE)
+                    .build())),
+        Arguments.of(
+            "assert element instances: IS_COMPLETED_IN_ORDER",
+            singleTestCase(
+                ImmutableAssertElementInstancesInstruction.builder()
+                    .processInstanceSelector(
+                        ImmutableProcessInstanceSelector.builder()
+                            .processDefinitionId("my-process")
+                            .build())
+                    .addElementSelectors(
+                        ImmutableElementSelector.builder().elementId("task1").build())
+                    .addElementSelectors(
+                        ImmutableElementSelector.builder().elementId("task2").build())
+                    .state(ElementInstancesState.IS_COMPLETED_IN_ORDER)
+                    .build())),
+        // ===== COMPLETE_USER_TASK =====
+        Arguments.of(
+            "complete user task: minimal",
+            singleTestCase(
+                ImmutableCompleteUserTaskInstruction.builder()
+                    .userTaskSelector(
+                        ImmutableUserTaskSelector.builder().elementId("task1").build())
+                    .build())),
+        Arguments.of(
+            "complete user task: with variables",
+            singleTestCase(
+                ImmutableCompleteUserTaskInstruction.builder()
+                    .userTaskSelector(
+                        ImmutableUserTaskSelector.builder().taskName("Approve Request").build())
+                    .putVariables("approved", true)
+                    .putVariables("comment", "Looks good")
+                    .build())),
+        Arguments.of(
+            "complete user task: with example data",
+            singleTestCase(
+                ImmutableCompleteUserTaskInstruction.builder()
+                    .userTaskSelector(
+                        ImmutableUserTaskSelector.builder()
+                            .processDefinitionId("my-process")
+                            .elementId("task1")
+                            .build())
+                    .useExampleData(true)
+                    .build())),
+        // ===== PUBLISH_MESSAGE =====
+        Arguments.of(
+            "publish message: minimal",
+            singleTestCase(ImmutablePublishMessageInstruction.builder().name("message1").build())),
+        Arguments.of(
+            "publish message: full",
+            singleTestCase(
+                ImmutablePublishMessageInstruction.builder()
+                    .name("message1")
+                    .correlationKey("order-12345")
+                    .putVariables("orderId", 12345)
+                    .timeToLive(60000L)
+                    .messageId("msg-123")
+                    .build())),
+        // ===== RESOLVE_INCIDENT =====
+        Arguments.of(
+            "resolve incident: by processDefinitionId",
+            singleTestCase(
+                ImmutableResolveIncidentInstruction.builder()
+                    .incidentSelector(
+                        ImmutableIncidentSelector.builder()
+                            .processDefinitionId("my-process")
+                            .build())
+                    .build())),
+        Arguments.of(
+            "resolve incident: combined selector",
+            singleTestCase(
+                ImmutableResolveIncidentInstruction.builder()
+                    .incidentSelector(
+                        ImmutableIncidentSelector.builder()
+                            .processDefinitionId("my-process")
+                            .elementId("task1")
+                            .build())
+                    .build())),
+        // ===== THROW_BPMN_ERROR_FROM_JOB =====
+        Arguments.of(
+            "throw bpmn error from job: minimal",
+            singleTestCase(
+                ImmutableThrowBpmnErrorFromJobInstruction.builder()
+                    .jobSelector(ImmutableJobSelector.builder().jobType("validate-order").build())
+                    .errorCode("invalid")
+                    .build())),
+        Arguments.of(
+            "throw bpmn error from job: full",
+            singleTestCase(
+                ImmutableThrowBpmnErrorFromJobInstruction.builder()
+                    .jobSelector(
+                        ImmutableJobSelector.builder()
+                            .jobType("validate-order")
+                            .elementId("task-1")
+                            .build())
+                    .errorCode("invalid")
+                    .errorMessage("Nope.")
+                    .putVariables("x", 1)
+                    .build())),
+        // ===== MOCK_CHILD_PROCESS =====
+        Arguments.of(
+            "mock child process: minimal",
+            singleTestCase(
+                ImmutableMockChildProcessInstruction.builder()
+                    .processDefinitionId("child-process")
+                    .build())),
+        Arguments.of(
+            "mock child process: with variables",
+            singleTestCase(
+                ImmutableMockChildProcessInstruction.builder()
+                    .processDefinitionId("payment-process")
+                    .putVariables("amount", 100.0)
+                    .putVariables("currency", "USD")
+                    .build())),
+        // ===== MOCK_JOB_WORKER_COMPLETE_JOB =====
+        Arguments.of(
+            "mock job worker complete job: minimal",
+            singleTestCase(
+                ImmutableMockJobWorkerCompleteJobInstruction.builder()
+                    .jobType("send-email")
+                    .build())),
+        Arguments.of(
+            "mock job worker complete job: with variables",
+            singleTestCase(
+                ImmutableMockJobWorkerCompleteJobInstruction.builder()
+                    .jobType("send-email")
+                    .putVariables("status", "sent")
+                    .build())),
+        Arguments.of(
+            "mock job worker complete job: with example data",
+            singleTestCase(
+                ImmutableMockJobWorkerCompleteJobInstruction.builder()
+                    .jobType("fetch-weather-data")
+                    .useExampleData(true)
+                    .build())),
+        // ===== MOCK_DMN_DECISION =====
+        Arguments.of(
+            "mock dmn decision: minimal",
+            singleTestCase(
+                ImmutableMockDmnDecisionInstruction.builder()
+                    .decisionDefinitionId("credit-check-decision")
+                    .build())),
+        Arguments.of(
+            "mock dmn decision: with variables",
+            singleTestCase(
+                ImmutableMockDmnDecisionInstruction.builder()
+                    .decisionDefinitionId("credit-check-decision")
+                    .putVariables("approved", true)
+                    .putVariables("score", 750)
+                    .build())),
+        // ===== ASSERT_VARIABLES =====
+        Arguments.of(
+            "assert variables: minimal",
+            singleTestCase(
+                ImmutableAssertVariablesInstruction.builder()
+                    .processInstanceSelector(
+                        ImmutableProcessInstanceSelector.builder()
+                            .processDefinitionId("my-process")
+                            .build())
+                    .build())),
+        Arguments.of(
+            "assert variables: complete",
+            singleTestCase(
+                ImmutableAssertVariablesInstruction.builder()
+                    .processInstanceSelector(
+                        ImmutableProcessInstanceSelector.builder()
+                            .processDefinitionId("my-process")
+                            .build())
+                    .elementSelector(ImmutableElementSelector.builder().elementId("task_A").build())
+                    .addVariableNames("var1", "var2")
+                    .putVariables("x", 3)
+                    .putVariables("y", "okay")
+                    .build())),
+        // ===== ASSERT_PROCESS_INSTANCE_MESSAGE_SUBSCRIPTION =====
+        Arguments.of(
+            "assert process instance message subscription: minimal",
+            singleTestCase(
+                ImmutableAssertProcessInstanceMessageSubscriptionInstruction.builder()
+                    .processInstanceSelector(
+                        ImmutableProcessInstanceSelector.builder()
+                            .processDefinitionId("my-process")
+                            .build())
+                    .messageSelector(
+                        ImmutableMessageSelector.builder().messageName("update").build())
+                    .state(MessageSubscriptionState.IS_WAITING)
+                    .build())),
+        Arguments.of(
+            "assert process instance message subscription: complete",
+            singleTestCase(
+                ImmutableAssertProcessInstanceMessageSubscriptionInstruction.builder()
+                    .processInstanceSelector(
+                        ImmutableProcessInstanceSelector.builder()
+                            .processDefinitionId("my-process")
+                            .build())
+                    .messageSelector(
+                        ImmutableMessageSelector.builder()
+                            .messageName("update")
+                            .correlationKey("key-1")
+                            .build())
+                    .state(MessageSubscriptionState.IS_CORRELATED)
+                    .build())),
+        // ===== COMPLETE_JOB =====
+        Arguments.of(
+            "complete job: minimal with jobType",
+            singleTestCase(
+                ImmutableCompleteJobInstruction.builder()
+                    .jobSelector(
+                        ImmutableJobSelector.builder().jobType("send-notification").build())
+                    .build())),
+        Arguments.of(
+            "complete job: with variables and elementId",
+            singleTestCase(
+                ImmutableCompleteJobInstruction.builder()
+                    .jobSelector(ImmutableJobSelector.builder().elementId("task1").build())
+                    .putVariables("x", 1)
+                    .build())),
+        Arguments.of(
+            "complete job: with example data and processDefinitionId",
+            singleTestCase(
+                ImmutableCompleteJobInstruction.builder()
+                    .jobSelector(
+                        ImmutableJobSelector.builder().processDefinitionId("my-process").build())
+                    .useExampleData(true)
+                    .build())),
+        // ===== COMPLETE_JOB_AD_HOC_SUB_PROCESS =====
+        Arguments.of(
+            "complete job ad-hoc sub-process: minimal",
+            singleTestCase(
+                ImmutableCompleteJobAdHocSubProcessInstruction.builder()
+                    .jobSelector(ImmutableJobSelector.builder().elementId("ad-hoc-sp").build())
+                    .build())),
+        Arguments.of(
+            "complete job ad-hoc sub-process: full",
+            singleTestCase(
+                ImmutableCompleteJobAdHocSubProcessInstruction.builder()
+                    .jobSelector(ImmutableJobSelector.builder().jobType("ad-hoc-task").build())
+                    .putVariables("result", "completed")
+                    .addActivateElements(
+                        ImmutableActivateElement.builder()
+                            .elementId("task1")
+                            .putVariables("x", 1)
+                            .build())
+                    .cancelRemainingInstances(true)
+                    .completionConditionFulfilled(false)
+                    .build())),
+        // ===== COMPLETE_JOB_USER_TASK_LISTENER =====
+        Arguments.of(
+            "complete job user task listener: minimal",
+            singleTestCase(
+                ImmutableCompleteJobUserTaskListenerInstruction.builder()
+                    .jobSelector(ImmutableJobSelector.builder().jobType("assign-user").build())
+                    .build())),
+        Arguments.of(
+            "complete job user task listener: denied",
+            singleTestCase(
+                ImmutableCompleteJobUserTaskListenerInstruction.builder()
+                    .jobSelector(ImmutableJobSelector.builder().elementId("task1").build())
+                    .denied(true)
+                    .deniedReason("Task not ready")
+                    .build())),
+        Arguments.of(
+            "complete job user task listener: with corrections",
+            singleTestCase(
+                ImmutableCompleteJobUserTaskListenerInstruction.builder()
+                    .jobSelector(ImmutableJobSelector.builder().jobType("assign-user").build())
+                    .corrections(
+                        ImmutableCorrections.builder()
+                            .assignee("me")
+                            .dueDate("2024-12-31T23:59:59Z")
+                            .followUpDate("2024-12-01T00:00:00Z")
+                            .addCandidateUsers("user1", "user2")
+                            .addCandidateGroups("group1")
+                            .priority(100)
+                            .build())
+                    .build())),
+        // ===== EVALUATE_CONDITIONAL_START_EVENT =====
+        Arguments.of(
+            "evaluate conditional start event",
+            singleTestCase(
+                ImmutableEvaluateConditionalStartEventInstruction.builder()
+                    .putVariables("x", 1)
+                    .putVariables("status", "active")
+                    .build())),
+        // ===== MOCK_JOB_WORKER_THROW_BPMN_ERROR =====
+        Arguments.of(
+            "mock job worker throw BPMN error: minimal",
+            singleTestCase(
+                ImmutableMockJobWorkerThrowBpmnErrorInstruction.builder()
+                    .jobType("validate-order")
+                    .errorCode("invalid")
+                    .build())),
+        Arguments.of(
+            "mock job worker throw BPMN error: full",
+            singleTestCase(
+                ImmutableMockJobWorkerThrowBpmnErrorInstruction.builder()
+                    .jobType("validate-order")
+                    .errorCode("invalid")
+                    .errorMessage("Order validation failed")
+                    .putVariables("reason", "Missing required field")
+                    .putVariables("field", "email")
+                    .build())),
+        // ===== BROADCAST_SIGNAL =====
+        Arguments.of(
+            "broadcast signal: minimal",
+            singleTestCase(
+                ImmutableBroadcastSignalInstruction.builder().signalName("signal1").build())),
+        Arguments.of(
+            "broadcast signal: full",
+            singleTestCase(
+                ImmutableBroadcastSignalInstruction.builder()
+                    .signalName("signal1")
+                    .putVariables("key1", "value1")
+                    .putVariables("key2", 123)
+                    .build())),
+        // ===== EVALUATE_DECISION =====
+        Arguments.of(
+            "evaluate decision: minimal",
+            singleTestCase(
+                ImmutableEvaluateDecisionInstruction.builder()
+                    .decisionDefinitionSelector(
+                        ImmutableDecisionDefinitionSelector.builder()
+                            .decisionDefinitionId("my-decision")
+                            .build())
+                    .build())),
+        Arguments.of(
+            "evaluate decision: full",
+            singleTestCase(
+                ImmutableEvaluateDecisionInstruction.builder()
+                    .decisionDefinitionSelector(
+                        ImmutableDecisionDefinitionSelector.builder()
+                            .decisionDefinitionId("my-decision")
+                            .build())
+                    .putVariables("input", 100)
+                    .putVariables("region", "US")
+                    .build())),
+        // ===== INCREASE_TIME =====
+        Arguments.of(
+            "increase time",
+            singleTestCase(
+                ImmutableIncreaseTimeInstruction.builder().duration(Duration.ofDays(2)).build())),
+        // ===== UPDATE_VARIABLES =====
+        Arguments.of(
+            "update variables: global",
+            singleTestCase(
+                ImmutableUpdateVariablesInstruction.builder()
+                    .processInstanceSelector(
+                        ImmutableProcessInstanceSelector.builder()
+                            .processDefinitionId("my-process")
+                            .build())
+                    .putVariables("status", "ready")
+                    .build())),
+        Arguments.of(
+            "update variables: local",
+            singleTestCase(
+                ImmutableUpdateVariablesInstruction.builder()
+                    .processInstanceSelector(
+                        ImmutableProcessInstanceSelector.builder()
+                            .processDefinitionId("my-process")
+                            .build())
+                    .elementSelector(ImmutableElementSelector.builder().elementId("task1").build())
+                    .putVariables("localVar", "localValue")
+                    .build())),
+        // ===== SET_TIME =====
+        Arguments.of(
+            "set time",
+            singleTestCase(
+                ImmutableSetTimeInstruction.builder()
+                    .time(Instant.parse("2025-12-01T10:00:00Z"))
+                    .build()))
+        // add new instructions here
+        );
+  }
+
+  private static TestScenario singleTestCase(final TestCaseInstruction instruction) {
+    return ImmutableTestScenario.builder()
+        .addTestCases(ImmutableTestCase.builder().name("test").addInstructions(instruction).build())
+        .build();
   }
 }

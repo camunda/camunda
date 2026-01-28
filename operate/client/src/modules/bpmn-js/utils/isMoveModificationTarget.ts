@@ -14,8 +14,11 @@ import {hasType} from './hasType';
 const isMoveModificationTarget = (
   businessObject: BusinessObject | null | undefined,
 ) => {
+  if (isNil(businessObject)) {
+    return false;
+  }
+
   return (
-    !isNil(businessObject) &&
     !isAttachedToAnEventBasedGateway(businessObject) &&
     !hasType({businessObject, types: ['bpmn:StartEvent', 'bpmn:BoundaryEvent']})
   );

@@ -9,37 +9,29 @@ package io.camunda.it.rdbms.exporter;
 
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextKey;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.NO_PARENT_EXISTS_KEY;
-import static io.camunda.it.rdbms.exporter.RecordFixtures.getAuthorizationRecord;
-import static io.camunda.it.rdbms.exporter.RecordFixtures.getDecisionDefinitionCreatedRecord;
-import static io.camunda.it.rdbms.exporter.RecordFixtures.getDecisionRequirementsCreatedRecord;
-import static io.camunda.it.rdbms.exporter.RecordFixtures.getElementActivatingRecord;
-import static io.camunda.it.rdbms.exporter.RecordFixtures.getElementCompletedRecord;
-import static io.camunda.it.rdbms.exporter.RecordFixtures.getFormCreatedRecord;
-import static io.camunda.it.rdbms.exporter.RecordFixtures.getGlobalClusterVariableRecord;
-import static io.camunda.it.rdbms.exporter.RecordFixtures.getGroupRecord;
-import static io.camunda.it.rdbms.exporter.RecordFixtures.getIncidentRecord;
-import static io.camunda.it.rdbms.exporter.RecordFixtures.getMappingRuleRecord;
-import static io.camunda.it.rdbms.exporter.RecordFixtures.getProcessDefinitionCreatedRecord;
-import static io.camunda.it.rdbms.exporter.RecordFixtures.getProcessInstanceCompletedRecord;
-import static io.camunda.it.rdbms.exporter.RecordFixtures.getProcessInstanceStartedRecord;
-import static io.camunda.it.rdbms.exporter.RecordFixtures.getRoleRecord;
-import static io.camunda.it.rdbms.exporter.RecordFixtures.getTenantClusterVariableRecord;
-import static io.camunda.it.rdbms.exporter.RecordFixtures.getTenantRecord;
-import static io.camunda.it.rdbms.exporter.RecordFixtures.getUserRecord;
-import static io.camunda.it.rdbms.exporter.RecordFixtures.getUserTaskCreatingRecord;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.LiquibaseSchemaManager;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.exporter.rdbms.RdbmsExporterWrapper;
+import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
+import io.camunda.search.entities.AuditLogEntity.AuditLogOperationCategory;
+import io.camunda.search.entities.AuditLogEntity.AuditLogOperationResult;
+import io.camunda.search.entities.AuditLogEntity.AuditLogOperationType;
+import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
+import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
 import io.camunda.search.entities.IncidentEntity.IncidentState;
 import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionState;
 import io.camunda.search.entities.ProcessDefinitionEntity;
+import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
+import io.camunda.search.entities.SequenceFlowEntity;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.filter.UserFilter.Builder;
+import io.camunda.search.query.AuditLogQuery;
+import io.camunda.search.query.SequenceFlowQuery;
 import io.camunda.search.query.UserQuery;
 import io.camunda.security.reader.AuthorizationCheck;
 import io.camunda.security.reader.ResourceAccessChecks;
@@ -49,13 +41,17 @@ import io.camunda.zeebe.broker.exporter.context.ExporterContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
 import io.camunda.zeebe.protocol.record.ImmutableRecord;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.ClusterVariableIntent;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
@@ -65,9 +61,14 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.ClusterVariableRecordValue;
+import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
 import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableEvaluatedDecisionValue;
+import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.MappingRuleRecordValue;
+import io.camunda.zeebe.protocol.record.value.MessageStartEventSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
@@ -103,6 +104,7 @@ import org.springframework.test.context.TestPropertySource;
     })
 class RdbmsExporterIT {
 
+  private static final RecordFixtures FIXTURES = new RecordFixtures();
   private final ExporterTestController controller = new ExporterTestController();
   private final VendorDatabaseProperties vendorDatabaseProperties =
       new VendorDatabaseProperties(
@@ -114,10 +116,8 @@ class RdbmsExporterIT {
               setProperty("disableFkBeforeTruncate", "true");
             }
           });
-
   @Autowired private LiquibaseSchemaManager liquibaseSchemaManager;
   @Autowired private RdbmsService rdbmsService;
-
   private RdbmsExporterWrapper exporter;
 
   @BeforeEach
@@ -137,7 +137,7 @@ class RdbmsExporterIT {
   @Test
   public void shouldExportProcessInstance() {
     // given
-    final var processInstanceRecord = getProcessInstanceStartedRecord(1L);
+    final var processInstanceRecord = FIXTURES.getProcessInstanceStartedRecord();
 
     // when
     exporter.export(processInstanceRecord);
@@ -147,9 +147,10 @@ class RdbmsExporterIT {
         ((ProcessInstanceRecordValue) processInstanceRecord.getValue()).getProcessInstanceKey();
     final var processInstance = rdbmsService.getProcessInstanceReader().findOne(key);
     assertThat(processInstance).isNotEmpty();
+    verifyRootProcessInstanceKey(processInstance.get(), processInstanceRecord);
 
     // given
-    final var processInstanceCompletedRecord = getProcessInstanceCompletedRecord(1L, key);
+    final var processInstanceCompletedRecord = FIXTURES.getProcessInstanceCompletedRecord(key);
 
     // when
     exporter.export(processInstanceCompletedRecord);
@@ -158,12 +159,14 @@ class RdbmsExporterIT {
     final var completedProcessInstance = rdbmsService.getProcessInstanceReader().findOne(key);
     assertThat(completedProcessInstance).isNotEmpty();
     assertThat(completedProcessInstance.get().state()).isEqualTo(ProcessInstanceState.COMPLETED);
+    verifyRootProcessInstanceKey(completedProcessInstance.get(), processInstanceRecord);
   }
 
   @Test
   public void shouldExportRootProcessInstance() {
     // given
-    final var rootProcessInstanceRecord = getProcessInstanceStartedRecord(1L, NO_PARENT_EXISTS_KEY);
+    final var rootProcessInstanceRecord =
+        FIXTURES.getProcessInstanceStartedRecord(NO_PARENT_EXISTS_KEY);
 
     // when
     exporter.export(rootProcessInstanceRecord);
@@ -173,10 +176,11 @@ class RdbmsExporterIT {
         ((ProcessInstanceRecordValue) rootProcessInstanceRecord.getValue()).getProcessInstanceKey();
     final var processInstance = rdbmsService.getProcessInstanceReader().findOne(key);
     assertThat(processInstance).isNotEmpty();
+    verifyRootProcessInstanceKey(processInstance.get(), rootProcessInstanceRecord);
 
     // given
     final var rootProcessInstanceCompletedRecord =
-        getProcessInstanceCompletedRecord(1L, key, NO_PARENT_EXISTS_KEY);
+        FIXTURES.getProcessInstanceCompletedRecord(key, NO_PARENT_EXISTS_KEY);
 
     // when
     exporter.export(rootProcessInstanceCompletedRecord);
@@ -188,12 +192,13 @@ class RdbmsExporterIT {
         .isEqualTo(ProcessInstanceState.COMPLETED);
     assertThat(rootCompletedProcessInstance.get().parentProcessInstanceKey()).isNull();
     assertThat(rootCompletedProcessInstance.get().parentFlowNodeInstanceKey()).isNull();
+    verifyRootProcessInstanceKey(rootCompletedProcessInstance.get(), rootProcessInstanceRecord);
   }
 
   @Test
   public void shouldExportProcessDefinition() {
     // given
-    final var processDefinitionRecord = getProcessDefinitionCreatedRecord(1L);
+    final var processDefinitionRecord = FIXTURES.getProcessDefinitionCreatedRecord();
 
     // when
     exporter.export(processDefinitionRecord);
@@ -226,13 +231,17 @@ class RdbmsExporterIT {
         (VariableRecordValue) variableCreatedRecord.getValue();
     assertThat(variable).isNotNull();
     assertThat(variable.value()).isEqualTo(variableRecordValue.getValue());
+    assertThat(variable.processInstanceKey())
+        .isEqualTo(variableRecordValue.getProcessInstanceKey());
+    assertThat(variable.rootProcessInstanceKey())
+        .isEqualTo(variableRecordValue.getRootProcessInstanceKey());
   }
 
   @Test
   public void shouldExportGlobalClusterVariables() {
     // given
     final Record<RecordValue> clusterVariableCreatedRecord =
-        getGlobalClusterVariableRecord(ClusterVariableIntent.CREATED);
+        FIXTURES.getGlobalClusterVariableRecord(ClusterVariableIntent.CREATED);
 
     // when
     exporter.export(clusterVariableCreatedRecord);
@@ -259,7 +268,7 @@ class RdbmsExporterIT {
   public void shouldExportTenantClusterVariables() {
     // given
     final Record<RecordValue> clusterVariableCreatedRecord =
-        getTenantClusterVariableRecord("tenant-1", ClusterVariableIntent.CREATED);
+        FIXTURES.getTenantClusterVariableRecord("tenant-1", ClusterVariableIntent.CREATED);
 
     // when
     exporter.export(clusterVariableCreatedRecord);
@@ -287,7 +296,7 @@ class RdbmsExporterIT {
   @Test
   public void shouldExportAll() {
     // given
-    final var processInstanceRecord = getProcessInstanceStartedRecord(1L);
+    final var processInstanceRecord = FIXTURES.getProcessInstanceStartedRecord();
 
     final Record<RecordValue> variableCreated =
         ImmutableRecord.builder()
@@ -306,6 +315,7 @@ class RdbmsExporterIT {
         ((ProcessInstanceRecordValue) processInstanceRecord.getValue()).getProcessInstanceKey();
     final var processInstance = rdbmsService.getProcessInstanceReader().findOne(key);
     assertThat(processInstance).isNotEmpty();
+    verifyRootProcessInstanceKey(processInstance.get(), processInstanceRecord);
 
     final var variable = rdbmsService.getVariableReader().findOne(variableCreated.getKey());
     final VariableRecordValue variableRecordValue =
@@ -317,7 +327,7 @@ class RdbmsExporterIT {
   @Test
   public void shouldExportElement() {
     // given
-    final var elementRecord = getElementActivatingRecord(1L);
+    final var elementRecord = FIXTURES.getElementActivatingRecord();
 
     // when
     exporter.export(elementRecord);
@@ -326,9 +336,10 @@ class RdbmsExporterIT {
     final var key = elementRecord.getKey();
     final var element = rdbmsService.getFlowNodeInstanceReader().findOne(key);
     assertThat(element).isNotEmpty();
+    verifyRootProcessInstanceKey(element.get(), elementRecord);
 
     // given
-    final var elementCompleteRecord = getElementCompletedRecord(1L, key);
+    final var elementCompleteRecord = FIXTURES.getElementCompletedRecord(key);
 
     // when
     exporter.export(elementCompleteRecord);
@@ -339,26 +350,61 @@ class RdbmsExporterIT {
     assertThat(completedElement.get().state()).isEqualTo(FlowNodeState.COMPLETED);
     // Default tree path
     assertThat(completedElement.get().treePath()).isEqualTo("1/2");
+    verifyRootProcessInstanceKey(completedElement.get(), elementRecord);
+  }
+
+  @Test
+  public void shouldExportSequenceFlow() {
+    // given
+    final var flowTakenRecord = FIXTURES.getSequenceFlowTakenRecord();
+
+    // when
+    exporter.export(flowTakenRecord);
+
+    // then
+    final var key = flowTakenRecord.getKey();
+    final var sequenceFlowQuery =
+        SequenceFlowQuery.of(b -> b.filter(f -> f.processInstanceKey(key)));
+    final var sequenceFlows = rdbmsService.getSequenceFlowReader().search(sequenceFlowQuery);
+    assertThat(sequenceFlows.total()).isEqualTo(1L);
+    final var sequenceFlow = sequenceFlows.items().getFirst();
+    verifyRootProcessInstanceKey(sequenceFlow, flowTakenRecord);
+
+    // given
+    final var flowDeletedRecord =
+        FIXTURES.getSequenceFlowDeletedRecord(key, flowTakenRecord.getValue());
+
+    // when
+    exporter.export(flowDeletedRecord);
+
+    // then
+    final var deletedSequenceFlows = rdbmsService.getSequenceFlowReader().search(sequenceFlowQuery);
+    assertThat(deletedSequenceFlows.total()).isEqualTo(0L);
+    assertThat(deletedSequenceFlows.items()).isEmpty();
   }
 
   @Test
   public void shouldExportUserTask() {
     // given
-    final var userTaskRecord = getUserTaskCreatingRecord(1L);
+    final var userTaskRecord = FIXTURES.getUserTaskCreatingRecord();
 
     // when
     exporter.export(userTaskRecord);
 
     // then
-    final var key = ((UserTaskRecordValue) userTaskRecord.getValue()).getUserTaskKey();
+    final UserTaskRecordValue recordValue = (UserTaskRecordValue) userTaskRecord.getValue();
+    final var key = recordValue.getUserTaskKey();
     final var userTask = rdbmsService.getUserTaskReader().findOne(key);
     assertThat(userTask).isNotEmpty();
+    assertThat(userTask.get().processInstanceKey()).isEqualTo(recordValue.getProcessInstanceKey());
+    assertThat(userTask.get().rootProcessInstanceKey())
+        .isEqualTo(recordValue.getRootProcessInstanceKey());
   }
 
   @Test
   public void shouldExportDecisionRequirements() {
     // given
-    final var record = getDecisionRequirementsCreatedRecord(1L);
+    final var record = FIXTURES.getDecisionRequirementsCreatedRecord();
 
     // when
     exporter.export(record);
@@ -373,7 +419,7 @@ class RdbmsExporterIT {
   @Test
   public void shouldExportDecisionDefinition() {
     // given
-    final var decisionDefinitionRecord = getDecisionDefinitionCreatedRecord(1L);
+    final var decisionDefinitionRecord = FIXTURES.getDecisionDefinitionCreatedRecord();
 
     // when
     exporter.export(decisionDefinitionRecord);
@@ -385,9 +431,36 @@ class RdbmsExporterIT {
   }
 
   @Test
+  public void shouldExportDecisionEvaluation() {
+    // given
+    final ImmutableEvaluatedDecisionValue evaluatedDecisionValue =
+        ImmutableEvaluatedDecisionValue.builder()
+            .withDecisionEvaluationInstanceKey("1234")
+            .withDecisionId("decision-id")
+            .withDecisionKey(123L)
+            .withDecisionType(DecisionDefinitionType.DECISION_TABLE.toString())
+            .build();
+    final var decisionEvaluationRecord =
+        FIXTURES.getDecisionEvaluationEvaluatedRecord(List.of(evaluatedDecisionValue));
+
+    // when
+    exporter.export(decisionEvaluationRecord);
+
+    // then
+    final var key = evaluatedDecisionValue.getDecisionEvaluationInstanceKey();
+    final var decisionInstance = rdbmsService.getDecisionInstanceReader().findOne(key);
+    assertThat(decisionInstance).isNotEmpty();
+    final var recordValue = (DecisionEvaluationRecordValue) decisionEvaluationRecord.getValue();
+    assertThat(decisionInstance.get().processInstanceKey())
+        .isEqualTo(recordValue.getProcessInstanceKey());
+    assertThat(decisionInstance.get().rootProcessInstanceKey())
+        .isEqualTo(recordValue.getRootProcessInstanceKey());
+  }
+
+  @Test
   public void shouldExportUpdateAndDeleteUser() {
     // given
-    final var userRecord = getUserRecord(42L, "test", UserIntent.CREATED);
+    final var userRecord = FIXTURES.getUserRecord(42L, "test", UserIntent.CREATED);
     final var userRecordValue = ((UserRecordValue) userRecord.getValue());
 
     // when
@@ -403,7 +476,7 @@ class RdbmsExporterIT {
     assertThat(user.get().password()).isEqualTo(userRecordValue.getPassword());
 
     // given
-    final var updateUserRecord = getUserRecord(42L, "test", UserIntent.UPDATED);
+    final var updateUserRecord = FIXTURES.getUserRecord(42L, "test", UserIntent.UPDATED);
     final var updateUserRecordValue = ((UserRecordValue) updateUserRecord.getValue());
 
     // when
@@ -419,7 +492,7 @@ class RdbmsExporterIT {
     assertThat(updatedUser.get().password()).isEqualTo(updateUserRecordValue.getPassword());
 
     // when
-    exporter.export(getUserRecord(42L, "test", UserIntent.DELETED));
+    exporter.export(FIXTURES.getUserRecord(42L, "test", UserIntent.DELETED));
 
     // then
     final var deletedUser = rdbmsService.getUserReader().findOne(userRecord.getKey());
@@ -430,7 +503,7 @@ class RdbmsExporterIT {
   public void shouldExportAndUpdateTenant() {
     final var tenantId = "tenant=" + nextKey();
     // given
-    final var tenantRecord = getTenantRecord(42L, tenantId, TenantIntent.CREATED);
+    final var tenantRecord = FIXTURES.getTenantRecord(42L, tenantId, TenantIntent.CREATED);
     final var tenantRecordValue = ((TenantRecordValue) tenantRecord.getValue());
 
     // when
@@ -448,7 +521,7 @@ class RdbmsExporterIT {
     assertThat(tenant.get().name()).isEqualTo(tenantRecordValue.getName());
 
     // given
-    final var updateTenantRecord = getTenantRecord(42L, tenantId, TenantIntent.UPDATED);
+    final var updateTenantRecord = FIXTURES.getTenantRecord(42L, tenantId, TenantIntent.UPDATED);
     final var updateTenantRecordValue = ((TenantRecordValue) updateTenantRecord.getValue());
 
     // when
@@ -469,7 +542,7 @@ class RdbmsExporterIT {
   public void shouldExportUpdateAndDeleteRole() {
     // given
     final var roleId = "roleId";
-    final var roleRecord = getRoleRecord(roleId, RoleIntent.CREATED);
+    final var roleRecord = FIXTURES.getRoleRecord(roleId, RoleIntent.CREATED);
     final var recordValue = (RoleRecordValue) roleRecord.getValue();
 
     // when
@@ -484,7 +557,7 @@ class RdbmsExporterIT {
     assertThat(role.get().description()).isEqualTo(recordValue.getDescription());
 
     // given
-    final var updateRoleRecord = getRoleRecord(roleId, RoleIntent.UPDATED);
+    final var updateRoleRecord = FIXTURES.getRoleRecord(roleId, RoleIntent.UPDATED);
     final var updateRoleRecordValue = ((RoleRecordValue) updateRoleRecord.getValue());
 
     // when
@@ -499,7 +572,7 @@ class RdbmsExporterIT {
     assertThat(updatedRole.get().description()).isEqualTo(updateRoleRecordValue.getDescription());
 
     // when
-    exporter.export(getRoleRecord(roleId, RoleIntent.DELETED));
+    exporter.export(FIXTURES.getRoleRecord(roleId, RoleIntent.DELETED));
 
     // then
     final var deletedRole = rdbmsService.getRoleReader().findOne(recordValue.getRoleId());
@@ -510,10 +583,10 @@ class RdbmsExporterIT {
   public void shouldExportRoleAndAddAndDeleteMember() {
     // given
     final var roleId = "roleId";
-    final var roleRecord = getRoleRecord(roleId, RoleIntent.CREATED);
+    final var roleRecord = FIXTURES.getRoleRecord(roleId, RoleIntent.CREATED);
     final var recordValue = (RoleRecordValue) roleRecord.getValue();
     final var username = "username";
-    final var userRecord = getUserRecord(1L, username, UserIntent.CREATED);
+    final var userRecord = FIXTURES.getUserRecord(1L, username, UserIntent.CREATED);
     exporter.export(userRecord);
 
     // when
@@ -528,7 +601,7 @@ class RdbmsExporterIT {
     assertThat(role.get().description()).isEqualTo(recordValue.getDescription());
 
     // when
-    exporter.export(getRoleRecord(roleId, RoleIntent.ENTITY_ADDED, username));
+    exporter.export(FIXTURES.getRoleRecord(roleId, RoleIntent.ENTITY_ADDED, username));
 
     // then
     assertThat(rdbmsService.getRoleReader().findOne(recordValue.getRoleId())).isPresent();
@@ -541,7 +614,7 @@ class RdbmsExporterIT {
     assertThat(usersWithRole).extracting(UserEntity::username).containsExactly(username);
 
     // when
-    exporter.export(getRoleRecord(roleId, RoleIntent.ENTITY_REMOVED, username));
+    exporter.export(FIXTURES.getRoleRecord(roleId, RoleIntent.ENTITY_REMOVED, username));
 
     // then
     assertThat(rdbmsService.getRoleReader().findOne(recordValue.getRoleId())).isPresent();
@@ -558,7 +631,7 @@ class RdbmsExporterIT {
   public void shouldExportUpdateAndDeleteGroup() {
     // given
     final var groupId = Strings.newRandomValidIdentityId();
-    final var groupRecord = getGroupRecord(groupId, GroupIntent.CREATED);
+    final var groupRecord = FIXTURES.getGroupRecord(groupId, GroupIntent.CREATED);
     final var groupRecordValue = ((GroupRecordValue) groupRecord.getValue());
 
     // when
@@ -576,7 +649,7 @@ class RdbmsExporterIT {
     assertThat(group.get().description()).isEqualTo(groupRecordValue.getDescription());
 
     // given
-    final var updateGroupRecord = getGroupRecord(groupId, GroupIntent.UPDATED);
+    final var updateGroupRecord = FIXTURES.getGroupRecord(groupId, GroupIntent.UPDATED);
     final var updateGroupRecordValue = ((GroupRecordValue) updateGroupRecord.getValue());
 
     // when
@@ -594,7 +667,7 @@ class RdbmsExporterIT {
     assertThat(updatedGroup.get().description()).isEqualTo(updateGroupRecordValue.getDescription());
 
     // when
-    exporter.export(getGroupRecord(groupId, GroupIntent.DELETED));
+    exporter.export(FIXTURES.getGroupRecord(groupId, GroupIntent.DELETED));
 
     // then
     final var deletedGroup =
@@ -607,19 +680,25 @@ class RdbmsExporterIT {
   @Test
   public void shouldExportIncident() {
     // given
-    final var processInstanceRecord = getProcessInstanceStartedRecord(1L);
+    final var processInstanceRecord = FIXTURES.getProcessInstanceStartedRecord();
     final var processInstanceKey =
         ((ProcessInstanceRecordValue) processInstanceRecord.getValue()).getProcessInstanceKey();
+    final var rootProcessInstanceKey =
+        getProcessInstanceRootProcessInstanceKey(processInstanceRecord);
     exporter.export(processInstanceRecord);
-    final var elementRecord = getElementActivatingRecord(1L, processInstanceKey);
+    final var elementRecord = FIXTURES.getElementActivatingRecord(processInstanceKey);
     final var elementInstanceKey = elementRecord.getKey();
     exporter.export(elementRecord);
 
     // when
     final var incidentKey = 42L;
     final var incidentRecord =
-        getIncidentRecord(
-            IncidentIntent.CREATED, incidentKey, processInstanceKey, elementInstanceKey);
+        FIXTURES.getIncidentRecord(
+            IncidentIntent.CREATED,
+            incidentKey,
+            processInstanceKey,
+            rootProcessInstanceKey,
+            elementInstanceKey);
     exporter.export(incidentRecord);
 
     // then
@@ -627,18 +706,26 @@ class RdbmsExporterIT {
     assertThat(element).isNotEmpty();
     assertThat(element.get().incidentKey()).isEqualTo(incidentKey);
     assertThat(element.get().hasIncident()).isTrue();
+
     final var processInstance = rdbmsService.getProcessInstanceReader().findOne(processInstanceKey);
     assertThat(processInstance).isNotEmpty();
     assertThat(processInstance.get().hasIncident()).isTrue();
+
     final var incident = rdbmsService.getIncidentReader().findOne(incidentKey);
     assertThat(incident).isNotEmpty();
     assertThat(incident.get().incidentKey()).isEqualTo(incidentKey);
     assertThat(incident.get().state()).isEqualTo(IncidentState.ACTIVE);
+    assertThat(incident.get().processInstanceKey()).isEqualTo(processInstanceKey);
+    assertThat(incident.get().rootProcessInstanceKey()).isEqualTo(rootProcessInstanceKey);
 
     // given
     final var incidentResolvedRecord =
-        getIncidentRecord(
-            IncidentIntent.RESOLVED, incidentKey, processInstanceKey, elementInstanceKey);
+        FIXTURES.getIncidentRecord(
+            IncidentIntent.RESOLVED,
+            incidentKey,
+            processInstanceKey,
+            rootProcessInstanceKey,
+            elementInstanceKey);
 
     // when
     exporter.export(incidentResolvedRecord);
@@ -648,18 +735,22 @@ class RdbmsExporterIT {
     assertThat(element2).isNotEmpty();
     assertThat(element2.get().incidentKey()).isNull();
     assertThat(element2.get().hasIncident()).isFalse();
+
     final var processInstance2 =
         rdbmsService.getProcessInstanceReader().findOne(processInstanceKey);
     assertThat(processInstance2).isNotEmpty();
     assertThat(processInstance2.get().hasIncident()).isFalse();
+
     final var incident2 = rdbmsService.getIncidentReader().findOne(incidentKey).orElseThrow();
     assertThat(incident2.state()).isEqualTo(IncidentState.RESOLVED);
+    assertThat(incident2.processInstanceKey()).isEqualTo(processInstanceKey);
+    assertThat(incident2.rootProcessInstanceKey()).isEqualTo(rootProcessInstanceKey);
   }
 
   @Test
   public void shouldExportForm() {
     // given
-    final var formCreatedRecord = getFormCreatedRecord(1L);
+    final var formCreatedRecord = FIXTURES.getFormCreatedRecord();
 
     // when
     exporter.export(formCreatedRecord);
@@ -674,7 +765,7 @@ class RdbmsExporterIT {
   public void shouldExportMessageSubscription() {
     // given
     final var messageSubscriptionRecord =
-        ImmutableRecord.builder()
+        ImmutableRecord.<ProcessMessageSubscriptionRecordValue>builder()
             .from(RecordFixtures.FACTORY.generateRecord(ValueType.PROCESS_MESSAGE_SUBSCRIPTION))
             .withIntent(ProcessMessageSubscriptionIntent.CREATED)
             .withPosition(2L)
@@ -688,6 +779,11 @@ class RdbmsExporterIT {
     final var messageSubscription =
         rdbmsService.getMessageSubscriptionReader().findOne(messageSubscriptionRecord.getKey());
     assertThat(messageSubscription).isNotEmpty();
+    final var recordValue = messageSubscriptionRecord.getValue();
+    assertThat(messageSubscription.get().processInstanceKey())
+        .isEqualTo(recordValue.getProcessInstanceKey());
+    assertThat(messageSubscription.get().rootProcessInstanceKey())
+        .isEqualTo(recordValue.getRootProcessInstanceKey());
   }
 
   @Test
@@ -735,19 +831,50 @@ class RdbmsExporterIT {
     exporter.export(correlatedMessageSubscriptionRecord);
 
     // then
+    final var recordValue = correlatedMessageSubscriptionRecord.getValue();
     final var correlatedMessageSubscription =
         rdbmsService
             .getCorrelatedMessageSubscriptionReader()
-            .findOne(
-                correlatedMessageSubscriptionRecord.getValue().getMessageKey(),
-                correlatedMessageSubscriptionRecord.getKey());
+            .findOne(recordValue.getMessageKey(), correlatedMessageSubscriptionRecord.getKey());
     assertThat(correlatedMessageSubscription).isNotEmpty();
+    assertThat(correlatedMessageSubscription.get().processInstanceKey())
+        .isEqualTo(recordValue.getProcessInstanceKey());
+    assertThat(correlatedMessageSubscription.get().rootProcessInstanceKey())
+        .isEqualTo(recordValue.getRootProcessInstanceKey());
+  }
+
+  @Test
+  public void shouldExportCorrelatedMessageSubscriptionFromStartEvent() {
+    // given
+    final Record<MessageStartEventSubscriptionRecordValue> messageStartEventSubRecord =
+        ImmutableRecord.<MessageStartEventSubscriptionRecordValue>builder()
+            .from(RecordFixtures.FACTORY.generateRecord(ValueType.MESSAGE_START_EVENT_SUBSCRIPTION))
+            .withIntent(MessageStartEventSubscriptionIntent.CORRELATED)
+            .withPosition(2L)
+            .withTimestamp(System.currentTimeMillis())
+            .build();
+
+    // when
+    exporter.export(messageStartEventSubRecord);
+
+    // then
+    final var recordValue = messageStartEventSubRecord.getValue();
+    final var correlatedMessageSubscription =
+        rdbmsService
+            .getCorrelatedMessageSubscriptionReader()
+            .findOne(recordValue.getMessageKey(), messageStartEventSubRecord.getKey());
+    assertThat(correlatedMessageSubscription).isNotEmpty();
+    final var processInstanceKey = recordValue.getProcessInstanceKey();
+    assertThat(correlatedMessageSubscription.get().processInstanceKey())
+        .isEqualTo(processInstanceKey);
+    assertThat(correlatedMessageSubscription.get().rootProcessInstanceKey())
+        .isEqualTo(processInstanceKey);
   }
 
   @Test
   public void shouldExportCreatedAndDeletedMapping() {
     // given
-    final var mappingRuleCreatedRecord = getMappingRuleRecord(1L, MappingRuleIntent.CREATED);
+    final var mappingRuleCreatedRecord = FIXTURES.getMappingRuleRecord(MappingRuleIntent.CREATED);
 
     // when
     exporter.export(mappingRuleCreatedRecord);
@@ -759,7 +886,10 @@ class RdbmsExporterIT {
     assertThat(mappingRule).isNotEmpty();
 
     // given
-    final var mappingDeletedRecord = mappingRuleCreatedRecord.withIntent(MappingRuleIntent.DELETED);
+    final var mappingDeletedRecord =
+        mappingRuleCreatedRecord
+            .withIntent(MappingRuleIntent.DELETED)
+            .withPosition(FIXTURES.nextPosition());
 
     // when
     exporter.export(mappingDeletedRecord);
@@ -773,7 +903,7 @@ class RdbmsExporterIT {
   public void shouldExportAndUpdateAuthorization() {
     // given
     final var authorizationRecord =
-        getAuthorizationRecord(
+        FIXTURES.getAuthorizationRecord(
             AuthorizationIntent.CREATED,
             1337L,
             "foo",
@@ -799,7 +929,7 @@ class RdbmsExporterIT {
 
     // given
     final var authorizationUpdatedRecord =
-        getAuthorizationRecord(
+        FIXTURES.getAuthorizationRecord(
             AuthorizationIntent.UPDATED,
             1337L,
             "foo",
@@ -831,7 +961,7 @@ class RdbmsExporterIT {
   public void shouldExportAndDeleteAuthorization() {
     // given
     final var authorizationRecord =
-        getAuthorizationRecord(
+        FIXTURES.getAuthorizationRecord(
             AuthorizationIntent.CREATED,
             1337L,
             "foo",
@@ -857,7 +987,7 @@ class RdbmsExporterIT {
 
     // given
     final var authorizationDeletedRecord =
-        getAuthorizationRecord(
+        FIXTURES.getAuthorizationRecord(
             AuthorizationIntent.DELETED,
             recordValue.getAuthorizationKey(),
             recordValue.getOwnerId(),
@@ -879,5 +1009,88 @@ class RdbmsExporterIT {
                 recordValue.getResourceType().name())
             .orElse(null);
     assertThat(deletedAuthorization).isNull();
+  }
+
+  @Test
+  public void shouldExportJob() {
+    // given
+    final Record<RecordValue> jobCreatedRecord =
+        ImmutableRecord.builder()
+            .from(RecordFixtures.FACTORY.generateRecord(ValueType.JOB))
+            .withIntent(JobIntent.CREATED)
+            .withPosition(2L)
+            .withTimestamp(System.currentTimeMillis())
+            .build();
+
+    // when
+    exporter.export(jobCreatedRecord);
+
+    // then
+    final var job = rdbmsService.getJobReader().findOne(jobCreatedRecord.getKey());
+    assertThat(job).isNotNull();
+    assertThat(job.get().rootProcessInstanceKey())
+        .isEqualTo(((JobRecordValue) jobCreatedRecord.getValue()).getRootProcessInstanceKey());
+  }
+
+  @Test
+  public void shouldWriteToAuditLog() {
+    // given
+    final var processInstanceCreationRecord =
+        ImmutableRecord.<ProcessInstanceCreationRecordValue>builder()
+            .from(RecordFixtures.FACTORY.generateRecord(ValueType.PROCESS_INSTANCE_CREATION))
+            .withRecordType(RecordType.EVENT)
+            .withIntent(ProcessInstanceCreationIntent.CREATED)
+            .withPosition(1L)
+            .withPartitionId(1)
+            .withTimestamp(System.currentTimeMillis())
+            .build();
+
+    // when
+    exporter.export(processInstanceCreationRecord);
+
+    // then
+    final var recordValue = processInstanceCreationRecord.getValue();
+    final var results =
+        rdbmsService
+            .getAuditLogReader()
+            .search(
+                AuditLogQuery.of(
+                    b ->
+                        b.filter(f -> f.processInstanceKeys(recordValue.getProcessInstanceKey()))));
+    final var items = results.items();
+    assertThat(items).hasSize(1);
+    final var auditLog = items.getFirst();
+    assertThat(auditLog.processInstanceKey()).isEqualTo(recordValue.getProcessInstanceKey());
+    assertThat(auditLog.rootProcessInstanceKey())
+        .isEqualTo(recordValue.getRootProcessInstanceKey());
+    assertThat(auditLog.entityType()).isEqualTo(AuditLogEntityType.PROCESS_INSTANCE);
+    assertThat(auditLog.operationType()).isEqualTo(AuditLogOperationType.CREATE);
+    assertThat(auditLog.result()).isEqualTo(AuditLogOperationResult.SUCCESS);
+    assertThat(auditLog.category()).isEqualTo(AuditLogOperationCategory.DEPLOYED_RESOURCES);
+  }
+
+  private static void verifyRootProcessInstanceKey(
+      final ProcessInstanceEntity processInstance,
+      final ImmutableRecord<RecordValue> processInstanceRecord) {
+    assertThat(processInstance.rootProcessInstanceKey())
+        .isEqualTo(getProcessInstanceRootProcessInstanceKey(processInstanceRecord));
+  }
+
+  private static void verifyRootProcessInstanceKey(
+      final FlowNodeInstanceEntity flowNodeInstance,
+      final ImmutableRecord<RecordValue> processInstanceRecord) {
+    assertThat(flowNodeInstance.rootProcessInstanceKey())
+        .isEqualTo(getProcessInstanceRootProcessInstanceKey(processInstanceRecord));
+  }
+
+  private void verifyRootProcessInstanceKey(
+      final SequenceFlowEntity sequenceFlow,
+      final ImmutableRecord<RecordValue> processInstanceRecord) {
+    assertThat(sequenceFlow.rootProcessInstanceKey())
+        .isEqualTo(getProcessInstanceRootProcessInstanceKey(processInstanceRecord));
+  }
+
+  private static long getProcessInstanceRootProcessInstanceKey(final Record<RecordValue> record) {
+    return ((ProcessInstanceRecordValue) record.getValue()).getRootProcessInstanceKey();
   }
 }

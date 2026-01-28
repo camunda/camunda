@@ -15,7 +15,7 @@ import {
   Tabs as CarbonTabs,
 } from "@carbon/react";
 import useTranslate from "src/utility/localization";
-import { useNavigate } from "react-router";
+import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
 
 export type TabsProps<

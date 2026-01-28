@@ -12,8 +12,10 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
+import io.camunda.zeebe.backup.api.BackupDescriptor;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import java.time.Instant;
+import java.util.Optional;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonTypeInfo(use = Id.NAME, property = "statusCode")
@@ -27,6 +29,8 @@ public sealed interface ValidBackupManifest extends Manifest
 
   @Override
   BackupIdentifier id();
+
+  Optional<BackupDescriptor> backupDescriptor();
 
   Instant createdAt();
 

@@ -7,53 +7,68 @@
  */
 package io.camunda.zeebe.dynamic.nodeid;
 
+import io.atomix.cluster.Member;
+import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.dynamic.nodeid.Lease.VersionMappings;
 import io.camunda.zeebe.dynamic.nodeid.repository.NodeIdRepository;
 import io.camunda.zeebe.dynamic.nodeid.repository.NodeIdRepository.StoredLease;
 import io.camunda.zeebe.dynamic.nodeid.repository.NodeIdRepository.StoredLease.Initialized;
-import io.camunda.zeebe.util.ExponentialBackoff;
+import io.camunda.zeebe.util.ExponentialBackoffRetryDelay;
 import java.time.Duration;
 import java.time.InstantSource;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
 
   private static final Logger LOG = LoggerFactory.getLogger(RepositoryNodeIdProvider.class);
+
   private final NodeIdRepository nodeIdRepository;
   private final InstantSource clock;
   private volatile StoredLease.Initialized currentLease;
   private final Duration leaseDuration;
+  private final Duration readinessCheckTimeout;
   private final String taskId;
   private final Runnable onLeaseFailure;
   private final ScheduledExecutorService executor;
-  private final ExponentialBackoff backoff;
-  private long currentDelay;
+  private final ExponentialBackoffRetryDelay backoff;
   private final Duration renewalDelay;
   private ScheduledFuture<?> renewalTask;
   private final AtomicBoolean shutdownInitiated = new AtomicBoolean(false);
+  private VersionMappings knownVersionMappings = VersionMappings.empty();
+  private final CompletableFuture<Boolean> previousNodeGracefullyShutdown =
+      new CompletableFuture<>();
+  private final CompletableFuture<Boolean> readinessFuture = new CompletableFuture<>();
 
   public RepositoryNodeIdProvider(
       final NodeIdRepository nodeIdRepository,
       final InstantSource clock,
       final Duration expiryDuration,
+      final Duration leaseAcquireMaxDelay,
+      final Duration readinessCheckTimeout,
       final String taskId,
       final Runnable onLeaseFailure) {
     this.nodeIdRepository =
         Objects.requireNonNull(nodeIdRepository, "nodeIdRepository cannot be null");
     this.clock = Objects.requireNonNull(clock, "clock cannot be null");
     leaseDuration = Objects.requireNonNull(expiryDuration, "expiryDuration cannot be null");
+    this.readinessCheckTimeout =
+        Objects.requireNonNull(readinessCheckTimeout, "readinessCheckTimeout cannot be null");
     this.taskId = Objects.requireNonNull(taskId, "taskId cannot be null");
     this.onLeaseFailure = Objects.requireNonNull(onLeaseFailure, "onLeaseFailure cannot be null");
-    backoff = new ExponentialBackoff(Duration.ofSeconds(1), leaseDuration.dividedBy(2));
+    backoff = new ExponentialBackoffRetryDelay(leaseAcquireMaxDelay, Duration.ofSeconds(1));
     renewalDelay = leaseDuration.dividedBy(3);
-    currentDelay = 0L;
     executor = Executors.newSingleThreadScheduledExecutor(r -> new Thread(r, "NodeIdProvider"));
   }
 
@@ -61,7 +76,8 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
   public CompletableFuture<Void> initialize(final int clusterSize) {
     nodeIdRepository.initialize(clusterSize);
     return CompletableFuture.runAsync(() -> acquireInitialLease(clusterSize), executor)
-        .thenRun(this::startRenewalTimer);
+        .thenRun(this::startRenewalTimer)
+        .thenRun(() -> scheduleReadinessCheck(clusterSize));
   }
 
   @Override
@@ -91,6 +107,51 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
             });
   }
 
+  @Override
+  public CompletableFuture<Boolean> previousNodeGracefullyShutdown() {
+    return previousNodeGracefullyShutdown;
+  }
+
+  @Override
+  public void setMembers(final Set<Member> currentMembers) {
+    executor.execute(() -> updateVersionMappings(currentMembers));
+  }
+
+  @Override
+  public CompletableFuture<Boolean> awaitReadiness() {
+    return readinessFuture;
+  }
+
+  private void scheduleReadinessCheck(final int clusterSize) {
+    if (!previousNodeGracefullyShutdown.isDone()) {
+      throw new IllegalStateException(
+          "Readiness check cannot be scheduled until the lease is acquired");
+    }
+    if (previousNodeGracefullyShutdown.join()) {
+      // if the previous node shut down gracefully, we can consider ourselves ready immediately
+      readinessFuture.complete(true);
+      return;
+    }
+
+    new RepositoryNodeIdProviderReadinessChecker(
+            clusterSize,
+            currentLease.node(),
+            nodeIdRepository,
+            Duration.ofSeconds(5),
+            readinessCheckTimeout)
+        .waitUntilAllNodesAreUpToDate()
+        .exceptionally(
+            t -> {
+              // This should never happen as the checker should wait indefinitely until timeout
+              // until the nodes are up-to-date
+              LOG.warn(
+                  "Failed to verify that all nodes are up to date. Marking readiness as failed.",
+                  t);
+              return false;
+            })
+        .thenAccept(readinessFuture::complete);
+  }
+
   private void startRenewalTimer() {
     renewalTask =
         executor.scheduleAtFixedRate(
@@ -108,7 +169,8 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
           shutdownInitiated.get());
     }
     try {
-      final var newLease = currentLease.lease().renew(clock.millis(), leaseDuration);
+      final var newLease =
+          currentLease.lease().renew(clock.millis(), leaseDuration, knownVersionMappings);
       LOG.trace("Renewing lease with {}", newLease);
       currentLease = nodeIdRepository.acquire(newLease, currentLease.eTag());
     } catch (final Exception e) {
@@ -124,15 +186,20 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
    * the other operations (including health checks)
    */
   private void acquireInitialLease(final int clusterSize) {
+    if (currentLease != null) {
+      throw new IllegalStateException(
+          "Expected to acquire initial lease, but lease is already acquired: " + currentLease);
+    }
     var i = 0;
     var retryRound = 0;
+    NodeIdRepository.StoredLease storedLease = null;
     while (currentLease == null) {
       if (i % clusterSize == 0) {
         retryRound++;
         // wait a bit before retrying on all leases again.
         if (retryRound > 1) {
           try {
-            currentDelay = backoff.supplyRetryDelay(currentDelay);
+            final var currentDelay = backoff.nextDelay();
             LOG.debug(
                 "Attempt to acquire the lease failed for all nodeIds, sleeping {} and retrying again",
                 currentDelay);
@@ -143,12 +210,17 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
         }
       }
       final var nodeId = i++ % clusterSize;
-      final var storedLease = nodeIdRepository.getLease(nodeId);
+      storedLease = nodeIdRepository.getLease(nodeId);
       currentLease = tryAcquireInitialLease(storedLease);
     }
     if (currentLease != null) {
       LOG.info(
           "Acquired lease w/ nodeId={}.  {}", currentLease.lease().nodeInstance(), currentLease);
+      // storedLease should always be non-null as currentLease is not null.
+      if (storedLease != null) {
+        previousNodeGracefullyShutdown.complete(!storedLease.isInitialized());
+      }
+      backoff.reset();
     } else {
       throw new IllegalStateException("Failed to acquire a lease");
     }
@@ -161,6 +233,25 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
     } catch (final Exception e) {
       LOG.warn("Failed to acquire the lease {}", lease, e);
       return null;
+    }
+  }
+
+  private void updateVersionMappings(final Set<Member> currentMembers) {
+    final var nodeInstances =
+        currentMembers.stream()
+            .filter(m -> isBroker(m.id()))
+            .map(m -> Map.entry(Integer.parseInt(m.id().id()), Version.of(m.nodeVersion())))
+            .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+    knownVersionMappings = new VersionMappings(nodeInstances);
+  }
+
+  private boolean isBroker(final MemberId memberId) {
+    // TODO improve the way we identify brokers vs gateways
+    try {
+      final var id = Integer.parseInt(memberId.id());
+      return id >= 0;
+    } catch (final NumberFormatException e) {
+      return false;
     }
   }
 

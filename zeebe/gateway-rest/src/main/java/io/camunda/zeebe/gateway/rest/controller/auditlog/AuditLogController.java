@@ -7,19 +7,19 @@
  */
 package io.camunda.zeebe.gateway.rest.controller.auditlog;
 
+import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
+import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
+import io.camunda.gateway.protocol.model.AuditLogResult;
+import io.camunda.gateway.protocol.model.AuditLogSearchQueryRequest;
+import io.camunda.gateway.protocol.model.AuditLogSearchQueryResult;
 import io.camunda.search.query.AuditLogQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.AuditLogServices;
-import io.camunda.zeebe.gateway.protocol.rest.AuditLogResult;
-import io.camunda.zeebe.gateway.protocol.rest.AuditLogSearchQueryRequest;
-import io.camunda.zeebe.gateway.protocol.rest.AuditLogSearchQueryResult;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
-import io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryRequestMapper;
-import io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryResponseMapper;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;

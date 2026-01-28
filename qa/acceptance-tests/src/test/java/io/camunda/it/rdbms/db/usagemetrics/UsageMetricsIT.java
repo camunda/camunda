@@ -15,7 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.UsageMetricTUDbReader;
 import io.camunda.db.rdbms.read.service.UsageMetricsDbReader;
-import io.camunda.db.rdbms.write.RdbmsWriter;
+import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.UsageMetricDbModel;
 import io.camunda.db.rdbms.write.domain.UsageMetricDbModel.EventTypeDbModel;
 import io.camunda.db.rdbms.write.domain.UsageMetricTUDbModel;
@@ -60,7 +60,7 @@ public class UsageMetricsIT {
   private static final String TENANT2 = "tenant2";
 
   private CamundaRdbmsTestApplication testApplication;
-  private RdbmsWriter rdbmsWriter;
+  private RdbmsWriters rdbmsWriters;
   private UsageMetricsDbReader usageMetricReader;
   private UsageMetricTUDbReader usageMetricTUDbReader;
   private UsageMetricWriter usageMetricWriter;
@@ -103,11 +103,11 @@ public class UsageMetricsIT {
   @BeforeEach
   void setUp() {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     usageMetricReader = rdbmsService.getUsageMetricReader();
     usageMetricTUDbReader = rdbmsService.getUsageMetricTUReader();
-    usageMetricWriter = rdbmsWriter.getUsageMetricWriter();
-    usageMetricTUWriter = rdbmsWriter.getUsageMetricTUWriter();
+    usageMetricWriter = rdbmsWriters.getUsageMetricWriter();
+    usageMetricTUWriter = rdbmsWriters.getUsageMetricTUWriter();
   }
 
   @AfterEach
@@ -126,7 +126,7 @@ public class UsageMetricsIT {
     writeMetric(usageMetricWriter, EDI, NOW_MINUS_5M, TENANT2, 3L);
     writeMetric(usageMetricWriter, RPI, NOW_MINUS_10M, TENANT2, 3L);
     writeMetric(usageMetricWriter, EDI, NOW_MINUS_10M, TENANT2, 3L);
-    rdbmsWriter.flush();
+    rdbmsWriters.flush();
 
     // when
     final var actual =
@@ -156,7 +156,7 @@ public class UsageMetricsIT {
     writeTUMetric(usageMetricTUWriter, NOW_MINUS_5M, TENANT2, ASSIGNEE_HASH_2);
     writeTUMetric(usageMetricTUWriter, NOW_MINUS_10M, TENANT2, ASSIGNEE_HASH_3);
     writeTUMetric(usageMetricTUWriter, NOW_MINUS_10M, TENANT1, ASSIGNEE_HASH_3);
-    rdbmsWriter.flush();
+    rdbmsWriters.flush();
 
     // when
     final var actualTU =
@@ -183,7 +183,7 @@ public class UsageMetricsIT {
     writeMetric(usageMetricWriter, RPI, NOW_MINUS_5M, TENANT1, 2L);
     writeMetric(usageMetricWriter, RPI, NOW_MINUS_5M, TENANT2, 3L);
     writeMetric(usageMetricWriter, EDI, NOW_MINUS_5M, TENANT2, 3L);
-    rdbmsWriter.flush();
+    rdbmsWriters.flush();
 
     // when
     final var actual =
@@ -202,7 +202,7 @@ public class UsageMetricsIT {
     writeTUMetric(usageMetricTUWriter, NOW_MINUS_5M, TENANT2, ASSIGNEE_HASH_1);
     writeTUMetric(usageMetricTUWriter, NOW_MINUS_5M, TENANT2, ASSIGNEE_HASH_2);
     writeTUMetric(usageMetricTUWriter, NOW_MINUS_5M, TENANT2, ASSIGNEE_HASH_3);
-    rdbmsWriter.flush();
+    rdbmsWriters.flush();
 
     // when
     final var actualTU =
@@ -219,7 +219,7 @@ public class UsageMetricsIT {
     writeMetric(usageMetricWriter, RPI, NOW, TENANT1, 1L);
     writeMetric(usageMetricWriter, EDI, NOW_MINUS_5M, TENANT1, 1L);
     writeMetric(usageMetricWriter, EDI, NOW_MINUS_10M, TENANT2, 1L);
-    rdbmsWriter.flush();
+    rdbmsWriters.flush();
 
     // when
     final UsageMetricsFilter filter =
@@ -239,7 +239,7 @@ public class UsageMetricsIT {
     writeTUMetric(usageMetricTUWriter, NOW_MINUS_5M, TENANT1, ASSIGNEE_HASH_2);
     writeTUMetric(usageMetricTUWriter, NOW_MINUS_10M, TENANT1, ASSIGNEE_HASH_1);
     writeTUMetric(usageMetricTUWriter, NOW_MINUS_10M, TENANT1, ASSIGNEE_HASH_2);
-    rdbmsWriter.flush();
+    rdbmsWriters.flush();
 
     // when
     final UsageMetricsTUFilter filter =
@@ -262,7 +262,7 @@ public class UsageMetricsIT {
     writeMetric(usageMetricWriter, RPI, NOW, TENANT2, 1L);
     writeMetric(usageMetricWriter, EDI, NOW_MINUS_5M, TENANT2, 1L);
     writeMetric(usageMetricWriter, EDI, NOW_MINUS_10M, TENANT2, 1L);
-    rdbmsWriter.flush();
+    rdbmsWriters.flush();
 
     // when
     final UsageMetricsFilter filter =
@@ -292,7 +292,7 @@ public class UsageMetricsIT {
     // given
     writeTUMetric(usageMetricTUWriter, NOW_MINUS_5M, TENANT2, ASSIGNEE_HASH_1);
     writeTUMetric(usageMetricTUWriter, NOW_MINUS_10M, TENANT1, ASSIGNEE_HASH_2);
-    rdbmsWriter.flush();
+    rdbmsWriters.flush();
 
     // when
     final UsageMetricsTUFilter filter =
@@ -317,7 +317,7 @@ public class UsageMetricsIT {
     // given
     writeMetric(usageMetricWriter, RPI, NOW, TENANT1, 1L);
     writeMetric(usageMetricWriter, RPI, NOW, TENANT2, 1L);
-    rdbmsWriter.flush();
+    rdbmsWriters.flush();
 
     // when
     final UsageMetricsFilter filter = new Builder().tenantId(TENANT1).withTenants(true).build();
@@ -338,7 +338,7 @@ public class UsageMetricsIT {
     writeTUMetric(usageMetricTUWriter, NOW_MINUS_10M, TENANT1, ASSIGNEE_HASH_1);
     writeTUMetric(usageMetricTUWriter, NOW_MINUS_10M, TENANT1, ASSIGNEE_HASH_2);
     writeTUMetric(usageMetricTUWriter, NOW_MINUS_5M, TENANT2, ASSIGNEE_HASH_3);
-    rdbmsWriter.flush();
+    rdbmsWriters.flush();
 
     // when
     final UsageMetricsTUFilter filter =
@@ -361,7 +361,7 @@ public class UsageMetricsIT {
     writeMetric(usageMetricWriter, EDI, NOW, TENANT1, 11L);
     writeMetric(usageMetricWriter, RPI, NOW_MINUS_3Y, TENANT2, 3L);
     writeMetric(usageMetricWriter, EDI, NOW_MINUS_3Y, TENANT2, 3L);
-    rdbmsWriter.flush();
+    rdbmsWriters.flush();
 
     Awaitility.await("should find created usage metrics")
         .atMost(Duration.ofSeconds(4))
@@ -396,7 +396,7 @@ public class UsageMetricsIT {
     writeTUMetric(usageMetricTUWriter, NOW, TENANT1, ASSIGNEE_HASH_1);
     writeTUMetric(usageMetricTUWriter, NOW_MINUS_3Y, TENANT1, ASSIGNEE_HASH_2);
     writeTUMetric(usageMetricTUWriter, NOW_MINUS_3Y, TENANT1, ASSIGNEE_HASH_3);
-    rdbmsWriter.flush();
+    rdbmsWriters.flush();
 
     Awaitility.await("should find created usage metrics")
         .atMost(Duration.ofSeconds(4))

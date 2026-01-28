@@ -8,6 +8,7 @@
 package io.camunda.db.rdbms.write.queue;
 
 import io.camunda.db.rdbms.write.RdbmsWriterMetrics;
+import io.camunda.db.rdbms.write.RdbmsWriterMetrics.FlushTrigger;
 import io.camunda.zeebe.util.ObjectSizeEstimator;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -32,7 +33,7 @@ public class DefaultExecutionQueue implements ExecutionQueue {
   private static final long BYTES_PER_MB = 1024L * 1024L;
   private static final Set<Pattern> IGNORE_EMPTY_UPDATES =
       Set.of(
-          Pattern.compile(".*updateHistoryCleanupDate$"),
+          Pattern.compile(".*update.*HistoryCleanupDate$"),
           Pattern.compile("io.camunda.db.rdbms.sql.SequenceFlowMapper.createIfNotExists"));
 
   private final SqlSessionFactory sessionFactory;
@@ -60,7 +61,7 @@ public class DefaultExecutionQueue implements ExecutionQueue {
     this.partitionId = partitionId;
     this.queueFlushLimit = queueFlushLimit;
     // Convert MB to bytes for internal comparison
-    this.queueMemoryLimitBytes = (long) queueMemoryLimitMb * BYTES_PER_MB;
+    queueMemoryLimitBytes = (long) queueMemoryLimitMb * BYTES_PER_MB;
     this.metrics = metrics;
   }
 
@@ -184,6 +185,7 @@ public class DefaultExecutionQueue implements ExecutionQueue {
             partitionId,
             queueSize,
             queueFlushLimit);
+        metrics.recordQueueFlush(FlushTrigger.COUNT_LIMIT);
       }
       if (memoryLimitExceeded) {
         LOG.debug(
@@ -191,6 +193,7 @@ public class DefaultExecutionQueue implements ExecutionQueue {
             partitionId,
             queueMemory,
             queueMemoryLimitBytes);
+        metrics.recordQueueFlush(FlushTrigger.MEMORY_LIMIT);
       }
       flush();
       return true;
@@ -206,6 +209,12 @@ public class DefaultExecutionQueue implements ExecutionQueue {
         queue.size());
 
     final var startMillis = System.currentTimeMillis();
+
+    if (!preFlushListeners.isEmpty()) {
+      LOG.trace("[RDBMS ExecutionQueue, Partition {}] Call pre flush listeners", partitionId);
+      preFlushListeners.forEach(PreFlushListener::onPreFlush);
+    }
+
     final var session =
         sessionFactory.openSession(ExecutorType.BATCH, TransactionIsolationLevel.READ_UNCOMMITTED);
 
@@ -220,17 +229,12 @@ public class DefaultExecutionQueue implements ExecutionQueue {
         flushedElements++;
       }
 
-      if (!preFlushListeners.isEmpty()) {
-        LOG.trace("[RDBMS ExecutionQueue, Partition {}] Call pre flush listeners", partitionId);
-        preFlushListeners.forEach(PreFlushListener::onPreFlush);
-      }
-
       final var batchResult = session.flushStatements();
       for (final BatchResult singleBatchResult : batchResult) {
         if (Arrays.stream(singleBatchResult.getUpdateCounts()).anyMatch(i -> i == 0)
             && !shouldIgnoreWhenNoRowsAffected(singleBatchResult.getMappedStatement().getId())) {
-          LOG.error(
-              "[RDBMS ExecutionQueue, Partition {}] Some statements with ID {} were not executed successfully",
+          LOG.warn(
+              "[RDBMS ExecutionQueue, Partition {}] Some statements with ID {} have not affected any rows. Either add them to the ignore list or check why no rows were affected.",
               partitionId,
               singleBatchResult.getMappedStatement().getId());
         }

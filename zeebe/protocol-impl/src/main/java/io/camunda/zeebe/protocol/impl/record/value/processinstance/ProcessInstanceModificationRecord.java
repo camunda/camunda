@@ -35,8 +35,15 @@ public final class ProcessInstanceModificationRecord extends UnifiedRecordValue
   private static final StringValue MOVE_INSTRUCTIONS_KEY = new StringValue("moveInstructions");
   private static final StringValue ACTIVATED_ELEMENT_INSTANCE_KEYS_KEY =
       new StringValue("activatedElementInstanceKeys");
+  private static final StringValue ROOT_PROCESS_INSTANCE_KEY_KEY =
+      new StringValue("rootProcessInstanceKey");
+  private static final StringValue PROCESS_DEFINITION_KEY_KEY =
+      new StringValue("processDefinitionKey");
+
   private final LongProperty processInstanceKeyProperty =
       new LongProperty(PROCESS_INSTANCE_KEY_KEY);
+  private final LongProperty processDefinitionKeyProperty =
+      new LongProperty(PROCESS_DEFINITION_KEY_KEY, -1L);
   private final StringProperty tenantIdProp =
       new StringProperty(TENANT_ID_KEY, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
@@ -53,15 +60,19 @@ public final class ProcessInstanceModificationRecord extends UnifiedRecordValue
 
   private final ArrayProperty<LongValue> activatedElementInstanceKeys =
       new ArrayProperty<>(ACTIVATED_ELEMENT_INSTANCE_KEYS_KEY, LongValue::new);
+  private final LongProperty rootProcessInstanceKeyProperty =
+      new LongProperty(ROOT_PROCESS_INSTANCE_KEY_KEY, -1);
 
   public ProcessInstanceModificationRecord() {
-    super(6);
+    super(8);
     declareProperty(processInstanceKeyProperty)
         .declareProperty(terminateInstructionsProperty)
         .declareProperty(activateInstructionsProperty)
         .declareProperty(moveInstructionsProperty)
         .declareProperty(activatedElementInstanceKeys)
-        .declareProperty(tenantIdProp);
+        .declareProperty(tenantIdProp)
+        .declareProperty(rootProcessInstanceKeyProperty)
+        .declareProperty(processDefinitionKeyProperty);
   }
 
   /**
@@ -141,6 +152,16 @@ public final class ProcessInstanceModificationRecord extends UnifiedRecordValue
     return activatedElementInstanceKeys;
   }
 
+  @Override
+  public long getRootProcessInstanceKey() {
+    return rootProcessInstanceKeyProperty.getValue();
+  }
+
+  public ProcessInstanceModificationRecord setRootProcessInstanceKey(final long key) {
+    rootProcessInstanceKeyProperty.setValue(key);
+    return this;
+  }
+
   /** Returns true if this record has terminate instructions, otherwise false. */
   @JsonIgnore
   public boolean hasTerminateInstructions() {
@@ -184,6 +205,17 @@ public final class ProcessInstanceModificationRecord extends UnifiedRecordValue
 
   public ProcessInstanceModificationRecord setProcessInstanceKey(final long processInstanceKey) {
     processInstanceKeyProperty.setValue(processInstanceKey);
+    return this;
+  }
+
+  @Override
+  public long getProcessDefinitionKey() {
+    return processDefinitionKeyProperty.getValue();
+  }
+
+  public ProcessInstanceModificationRecord setProcessDefinitionKey(
+      final long processDefinitionKey) {
+    processDefinitionKeyProperty.setValue(processDefinitionKey);
     return this;
   }
 

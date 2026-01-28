@@ -29,7 +29,7 @@ jobs:
     outputs:
       benchmark: ${{ steps.data.outputs.benchmark }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Collect benchmark data
         id: data
         run: |
@@ -69,7 +69,7 @@ jobs:
     with:
       name: ${{ needs.benchmark-data.outputs.benchmark }}
       ttl: 1
-      load-test-load: "--set starter.rate=300"
+      scenario: max
 
   notify:
     name: Notify on failure
@@ -79,7 +79,7 @@ jobs:
     timeout-minutes: 5
     permissions: { }
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - id: slack-notify
         uses: slackapi/slack-github-action@v2.1.1
         with:

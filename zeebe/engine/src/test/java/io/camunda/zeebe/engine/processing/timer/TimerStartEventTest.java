@@ -592,7 +592,8 @@ public final class TimerStartEventTest {
     Assertions.assertThat(lastRecord)
         .hasVersion(2)
         .hasBpmnProcessId("process")
-        .hasProcessInstanceKey(processInstanceKey);
+        .hasProcessInstanceKey(processInstanceKey)
+        .hasRootProcessInstanceKey(processInstanceKey);
   }
 
   @Test

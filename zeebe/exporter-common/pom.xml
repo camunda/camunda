@@ -54,6 +54,16 @@
     <!-- testing -->
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>zeebe-protocol-impl</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-security-protocol</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-protocol-test-util</artifactId>
       <scope>test</scope>
     </dependency>

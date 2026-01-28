@@ -21,16 +21,15 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.BiConsumer;
 
 /** Caches exporter entities of different types and provide the method to flush them in a batch. */
 @SuppressWarnings({"rawtypes", "unchecked"})
 public final class ExporterBatchWriter {
-  private final Map<EntityIdAndEntityType, EntityAndHandlers> cachedEntities = new HashMap<>();
+  private final Map<EntityIdAndEntityType, ExporterEntity> cachedEntities = new HashMap<>();
+  private final List<EntityAndHandler> cachedEntitiesToFlush = new ArrayList<>();
   private final Map<EntityIdAndEntityType, Long> cachedEntitySizes = new HashMap<>();
   private final Map<Long, Long> cachedRecordTimestamps = new HashMap<>();
 
@@ -65,22 +64,20 @@ public final class ExporterBatchWriter {
       final Record<?> record, final ExportHandler handler, final String id) {
     final var cacheKey = new EntityIdAndEntityType(id, handler.getEntityType());
 
-    final EntityAndHandlers entityAndHandlers =
-        cachedEntities.computeIfAbsent(
-            cacheKey,
-            (k) -> {
-              final ExporterEntity entity = handler.createNewEntity(id);
-              return new EntityAndHandlers(entity, new LinkedHashSet<>());
-            });
+    final ExporterEntity entity =
+        cachedEntities.computeIfAbsent(cacheKey, (k) -> handler.createNewEntity(id));
 
-    final var entity = entityAndHandlers.entity;
     handler.updateEntity(record, entity);
     cachedRecordTimestamps.put(record.getPosition(), record.getTimestamp());
 
     cachedEntitySizes.put(cacheKey, ObjectSizeEstimator.estimateSize(entity));
 
-    // we store all handlers for an entity to make sure not to miss any flushes
-    entityAndHandlers.handlers.add(handler);
+    // we store all handlers for an entity to make sure not to miss any flushes.
+    // we flush them in the same order as they were originally run.
+    // in cases where we have bugs with writing to the same index + id, but with a different
+    // entity, this helps avoid race conditions that make that behavior non-deterministic.
+    // which would otherwise make spotting and fixing such bugs harder.
+    cachedEntitiesToFlush.add(new EntityAndHandler(entity, handler));
   }
 
   public void flush(final BatchRequest batchRequest) throws PersistenceException {
@@ -92,11 +89,8 @@ public final class ExporterBatchWriter {
       return;
     }
 
-    for (final var entityAndHandler : cachedEntities.values()) {
-      final ExporterEntity entity = entityAndHandler.entity();
-      for (final var handler : entityAndHandler.handlers()) {
-        handler.flush(entity, batchRequest);
-      }
+    for (final var toFlush : cachedEntitiesToFlush) {
+      toFlush.flush(batchRequest);
     }
 
     batchRequest.execute(customErrorHandler);
@@ -119,8 +113,14 @@ public final class ExporterBatchWriter {
     return cachedEntities.size();
   }
 
+  @VisibleForTesting
+  int getEntitiesToFlushSize() {
+    return cachedEntitiesToFlush.size();
+  }
+
   private void reset() {
     cachedEntities.clear();
+    cachedEntitiesToFlush.clear();
     cachedEntitySizes.clear();
   }
 
@@ -161,5 +161,9 @@ public final class ExporterBatchWriter {
 
   private record EntityIdAndEntityType(String entityId, Class<?> entityType) {}
 
-  private record EntityAndHandlers(ExporterEntity entity, Set<ExportHandler> handlers) {}
+  private record EntityAndHandler(ExporterEntity entity, ExportHandler handler) {
+    public void flush(final BatchRequest batchRequest) throws PersistenceException {
+      handler.flush(entity, batchRequest);
+    }
+  }
 }

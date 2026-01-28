@@ -6,8 +6,14 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Button, type ButtonSize, type Icon} from '@carbon/react';
-import {Error, Tools, RetryFailed, MigrateAlt} from '@carbon/react/icons';
+import {Button, type ButtonSize} from '@carbon/react';
+import {
+  Error,
+  Tools,
+  RetryFailed,
+  MigrateAlt,
+  type CarbonIconType,
+} from '@carbon/react/icons';
 
 type ItemProps = {
   type:
@@ -26,10 +32,10 @@ const TYPE_DETAILS: Readonly<
   Record<
     ItemProps['type'],
     {
+      icon?: CarbonIconType;
       testId: string;
-      label: string;
       isDangerous?: boolean;
-      icon?: typeof Icon;
+      label: string;
     }
   >
 > = {

@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.client.impl;
 
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
 import java.util.Collection;
@@ -34,6 +35,8 @@ public record BrokerClientTopologyImpl(
   public static final int UNINITIALIZED_CLUSTER_SIZE = -1;
   public static final long NO_COMPLETED_LAST_CHANGE_ID = -1;
   public static final String NO_CLUSTER_ID = "";
+  private static final long UNINITIALIZED_INCARNATION_NUMBER =
+      ClusterConfiguration.INITIAL_INCARNATION_NUMBER;
 
   public static BrokerClientTopologyImpl uninitialized() {
     return new BrokerClientTopologyImpl(
@@ -44,7 +47,8 @@ public record BrokerClientTopologyImpl(
             0,
             List.of(),
             NO_COMPLETED_LAST_CHANGE_ID,
-            NO_CLUSTER_ID));
+            NO_CLUSTER_ID,
+            UNINITIALIZED_INCARNATION_NUMBER));
   }
 
   @Override
@@ -144,7 +148,8 @@ public record BrokerClientTopologyImpl(
       int replicationFactor,
       List<Integer> partitionIds,
       long lastChangeId,
-      String clusterId) {}
+      String clusterId,
+      long incarnationNumber) {}
 
   static class LiveClusterState {
     private static final Long TERM_NONE = -1L;

@@ -55,12 +55,16 @@ final class Pkcs1SupportTest {
             .withEnv("SERVER_SSL_ENABLED", "true")
             .withEnv("SERVER_SSL_CERTIFICATE", containerCertPath)
             .withEnv("SERVER_SSL_CERTIFICATEPRIVATEKEY", containerKeyPath)
-            .withEnv("ZEEBE_BROKER_NETWORK_SECURITY_ENABLED", "true")
-            .withEnv("ZEEBE_BROKER_NETWORK_SECURITY_CERTIFICATECHAINPATH", containerCertPath)
-            .withEnv("ZEEBE_BROKER_NETWORK_SECURITY_PRIVATEKEYPATH", containerKeyPath)
-            .withEnv("ZEEBE_BROKER_GATEWAY_SECURITY_ENABLED", "true")
-            .withEnv("ZEEBE_BROKER_GATEWAY_SECURITY_CERTIFICATECHAINPATH", containerCertPath)
-            .withEnv("ZEEBE_BROKER_GATEWAY_SECURITY_PRIVATEKEYPATH", containerKeyPath)
+            .withEnv("CAMUNDA_SECURITY_TRANSPORTLAYERSECURITY_CLUSTER_ENABLED", "true")
+            .withEnv(
+                "CAMUNDA_SECURITY_TRANSPORTLAYERSECURITY_CLUSTER_CERTIFICATECHAINPATH",
+                containerCertPath)
+            .withEnv(
+                "CAMUNDA_SECURITY_TRANSPORTLAYERSECURITY_CLUSTER_CERTIFICATEPRIVATEKEYPATH",
+                containerKeyPath)
+            .withEnv("CAMUNDA_API_GRPC_SSL_ENABLED", "true")
+            .withEnv("CAMUNDA_API_GRPC_SSL_CERTIFICATE", containerCertPath)
+            .withEnv("CAMUNDA_API_GRPC_SSL_CERTIFICATEPRIVATEKEY", containerKeyPath)
             .withEnv(CREATE_SCHEMA_ENV_VAR, "false")
             .withoutTopologyCheck(); // avoid the missing TLS config by the client
 

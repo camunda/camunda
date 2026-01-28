@@ -291,12 +291,6 @@
       <version>3.3</version>
       <scope>test</scope>
     </dependency>
-    <dependency>
-      <groupId>io.zeebe</groupId>
-      <artifactId>zeebe-test-container</artifactId>
-      <version>${version.zeebe-test-container}</version>
-      <scope>test</scope>
-    </dependency>
 
     <dependency>
       <groupId>io.camunda</groupId>
@@ -308,7 +302,7 @@
     <dependency>
       <groupId>com.icegreen</groupId>
       <artifactId>greenmail</artifactId>
-      <version>2.1.7</version>
+      <version>2.1.8</version>
       <scope>test</scope>
       <exclusions>
         <exclusion>
@@ -325,7 +319,6 @@
     <dependency>
       <groupId>com.github.wnameless.json</groupId>
       <artifactId>json-flattener</artifactId>
-      <version>0.18.0</version>
     </dependency>
 
     <dependency>
@@ -398,6 +391,20 @@
       <artifactId>mockserver-core</artifactId>
       <version>${mockserver.version}</version>
       <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>io.swagger.core.v3</groupId>
+          <artifactId>swagger-core</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>io.swagger.core.v3</groupId>
+          <artifactId>swagger-models</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>io.swagger.core.v3</groupId>
+          <artifactId>swagger-annotations</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <dependency>
@@ -725,21 +732,21 @@
         <directory>src/it/webapp</directory>
       </testResource>
       <testResource>
-        <filtering>true</filtering>
         <directory>src/it/resources</directory>
+      </testResource>
+      <testResource>
+        <filtering>true</filtering>
+        <directory>src/test/resources</directory>
         <includes>
           <include>**/*.properties</include>
         </includes>
       </testResource>
       <testResource>
         <filtering>false</filtering>
-        <directory>src/it/resources</directory>
-        <includes>
-          <include>**/*</include>
-        </includes>
-      </testResource>
-      <testResource>
         <directory>src/test/resources</directory>
+        <excludes>
+          <exclude>**/*.properties</exclude>
+        </excludes>
       </testResource>
     </testResources>
 
@@ -753,25 +760,6 @@
           <meminitial>128m</meminitial>
           <maxmem>256m</maxmem>
         </configuration>
-      </plugin>
-
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>build-helper-maven-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>add-it-source</id>
-            <goals>
-              <goal>add-test-source</goal>
-            </goals>
-            <phase>generate-test-sources</phase>
-            <configuration>
-              <sources>
-                <source>src/it/java</source>
-              </sources>
-            </configuration>
-          </execution>
-        </executions>
       </plugin>
 
       <plugin>
@@ -828,6 +816,71 @@
   </build>
 
   <profiles>
+    <profile>
+      <id>optimize-zeebe-it-support</id>
+      <activation>
+        <property>
+          <name>skipQaBuild</name>
+          <value>!true</value>
+        </property>
+      </activation>
+      <dependencies>
+        <dependency>
+          <groupId>io.camunda</groupId>
+          <artifactId>zeebe-qa-util</artifactId>
+          <scope>test</scope>
+          <exclusions>
+            <exclusion>
+              <groupId>io.camunda</groupId>
+              <artifactId>camunda-gateway-mcp</artifactId>
+            </exclusion>
+            <exclusion>
+              <groupId>org.liquibase</groupId>
+              <artifactId>liquibase-core</artifactId>
+            </exclusion>
+          </exclusions>
+        </dependency>
+        <dependency>
+          <groupId>io.camunda</groupId>
+          <artifactId>configuration</artifactId>
+          <scope>test</scope>
+          <exclusions>
+            <exclusion>
+              <groupId>org.liquibase</groupId>
+              <artifactId>liquibase-core</artifactId>
+            </exclusion>
+          </exclusions>
+        </dependency>
+        <dependency>
+          <groupId>io.camunda</groupId>
+          <artifactId>zeebe-broker</artifactId>
+          <scope>test</scope>
+        </dependency>
+      </dependencies>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>build-helper-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>add-it-source</id>
+                <goals>
+                  <goal>add-test-source</goal>
+                </goals>
+                <phase>generate-test-sources</phase>
+                <configuration>
+                  <sources>
+                    <source>src/it/java</source>
+                  </sources>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
     <profile>
       <id>it</id>
       <build>
@@ -926,8 +979,60 @@
     <profile>
       <id>ccsm-it</id>
 
+      <dependencies>
+        <dependency>
+          <groupId>io.camunda</groupId>
+          <artifactId>zeebe-qa-util</artifactId>
+          <scope>test</scope>
+          <exclusions>
+            <exclusion>
+              <groupId>io.camunda</groupId>
+              <artifactId>camunda-gateway-mcp</artifactId>
+            </exclusion>
+            <exclusion>
+              <groupId>org.liquibase</groupId>
+              <artifactId>liquibase-core</artifactId>
+            </exclusion>
+          </exclusions>
+        </dependency>
+        <dependency>
+          <groupId>io.camunda</groupId>
+          <artifactId>configuration</artifactId>
+          <scope>test</scope>
+          <exclusions>
+            <exclusion>
+              <groupId>org.liquibase</groupId>
+              <artifactId>liquibase-core</artifactId>
+            </exclusion>
+          </exclusions>
+        </dependency>
+        <dependency>
+          <groupId>io.camunda</groupId>
+          <artifactId>zeebe-broker</artifactId>
+          <scope>test</scope>
+        </dependency>
+      </dependencies>
+
       <build>
         <plugins>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>build-helper-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>add-it-source</id>
+                <goals>
+                  <goal>add-test-source</goal>
+                </goals>
+                <phase>generate-test-sources</phase>
+                <configuration>
+                  <sources>
+                    <source>src/it/java</source>
+                  </sources>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-failsafe-plugin</artifactId>

@@ -36,7 +36,7 @@ describe('<ComboBox />', () => {
       />,
     );
 
-    expect(screen.getByLabelText('Name')).toBeDisabled();
+    expect(screen.getByRole('combobox', {name: 'Name'})).toBeDisabled();
   });
 
   it('should initially select item', () => {
@@ -50,7 +50,9 @@ describe('<ComboBox />', () => {
       />,
     );
 
-    expect(screen.getByLabelText('Name')).toHaveValue('Process Two');
+    expect(screen.getByRole('combobox', {name: 'Name'})).toHaveValue(
+      'Process Two',
+    );
   });
 
   it('should filter items', async () => {
@@ -64,7 +66,7 @@ describe('<ComboBox />', () => {
       />,
     );
 
-    await user.type(screen.getByLabelText('Name'), 'ONE');
+    await user.type(screen.getByRole('combobox', {name: 'Name'}), 'ONE');
     expect(screen.getAllByRole('option')).toHaveLength(1);
     expect(screen.getAllByRole('option')[0]?.textContent).toEqual(
       'Process One',
@@ -72,7 +74,7 @@ describe('<ComboBox />', () => {
 
     await user.click(screen.getByRole('button', {name: 'Clear selected item'}));
 
-    await user.type(screen.getByLabelText('Name'), 'process t');
+    await user.type(screen.getByRole('combobox', {name: 'Name'}), 'process t');
     expect(screen.getAllByRole('option')).toHaveLength(2);
     expect(screen.getAllByRole('option')[0]?.textContent).toEqual(
       'Process Two',
@@ -83,7 +85,7 @@ describe('<ComboBox />', () => {
 
     await user.click(screen.getByRole('button', {name: 'Clear selected item'}));
 
-    await user.type(screen.getByLabelText('Name'), 'unknown');
+    await user.type(screen.getByRole('combobox', {name: 'Name'}), 'unknown');
     expect(screen.queryByRole('option')).not.toBeInTheDocument();
   });
 });

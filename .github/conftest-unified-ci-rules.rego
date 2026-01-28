@@ -2,7 +2,7 @@ package main
 
 # This file contains rules checking GHA workflow files of the Unified CI to be
 # aligned with the inclusion criteria and best practices:
-# See https://github.com/camunda/camunda/wiki/CI-&-Automation#unified-ci
+# See https://camunda.github.io/camunda/ci/#unified-ci
 
 # The `input` variable is a data structure that contains a YAML file's contents
 # as objects and arrays. See https://www.openpolicyagent.org/docs/latest/philosophy/#how-does-opa-work
@@ -164,7 +164,7 @@ get_jobs_without_cihealth(jobInput) = jobs_without_cihealth {
         job_id != "get-concurrency-group-dynamically"
         job_id != "get-snapshot-docker-version-tag"
         job_id != "observe-aborted-jobs"
-        job_id != "setup-unit-tests"
+        job_id != "setup-tests"
         job_id != "utils-flaky-tests-summary"
 
         # not enforced on jobs that invoke other reusable workflows (instead enforced there)
@@ -249,7 +249,7 @@ get_jobs_without_printmetadata(jobInput) = jobs_without_printmetadata {
 
         # not enforced on Unified CI jobs that are part of change detection control flow structure
         job_id != "detect-changes"
-        job_id != "setup-unit-tests"
+        job_id != "setup-tests"
         job_id != "check-results"
 
         # not enforced on Unified CI jobs running after "check-results" job

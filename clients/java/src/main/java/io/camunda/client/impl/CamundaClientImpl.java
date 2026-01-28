@@ -58,13 +58,16 @@ import io.camunda.client.api.command.DeleteAuthorizationCommandStep1;
 import io.camunda.client.api.command.DeleteDocumentCommandStep1;
 import io.camunda.client.api.command.DeleteGroupCommandStep1;
 import io.camunda.client.api.command.DeleteMappingRuleCommandStep1;
+import io.camunda.client.api.command.DeleteProcessInstanceCommandStep1;
 import io.camunda.client.api.command.DeleteResourceCommandStep1;
 import io.camunda.client.api.command.DeleteRoleCommandStep1;
 import io.camunda.client.api.command.DeleteTenantCommandStep1;
 import io.camunda.client.api.command.DeleteUserCommandStep1;
 import io.camunda.client.api.command.DeployProcessCommandStep1;
 import io.camunda.client.api.command.DeployResourceCommandStep1;
+import io.camunda.client.api.command.EvaluateConditionalCommandStep1;
 import io.camunda.client.api.command.EvaluateDecisionCommandStep1;
+import io.camunda.client.api.command.EvaluateExpressionCommandStep1;
 import io.camunda.client.api.command.FailJobCommandStep1;
 import io.camunda.client.api.command.GloballyScopedClusterVariableCreationCommandStep1;
 import io.camunda.client.api.command.GloballyScopedClusterVariableDeletionCommandStep1;
@@ -167,6 +170,7 @@ import io.camunda.client.api.search.request.ProcessInstanceSequenceFlowsRequest;
 import io.camunda.client.api.search.request.RolesByGroupSearchRequest;
 import io.camunda.client.api.search.request.RolesByTenantSearchRequest;
 import io.camunda.client.api.search.request.TenantsSearchRequest;
+import io.camunda.client.api.search.request.UserTaskAuditLogSearchRequest;
 import io.camunda.client.api.search.request.UserTaskSearchRequest;
 import io.camunda.client.api.search.request.UserTaskVariableSearchRequest;
 import io.camunda.client.api.search.request.UsersByGroupSearchRequest;
@@ -174,6 +178,8 @@ import io.camunda.client.api.search.request.UsersByRoleSearchRequest;
 import io.camunda.client.api.search.request.UsersByTenantSearchRequest;
 import io.camunda.client.api.search.request.UsersSearchRequest;
 import io.camunda.client.api.search.request.VariableSearchRequest;
+import io.camunda.client.api.statistics.request.IncidentProcessInstanceStatisticsByDefinitionRequest;
+import io.camunda.client.api.statistics.request.IncidentProcessInstanceStatisticsByErrorRequest;
 import io.camunda.client.api.statistics.request.ProcessDefinitionElementStatisticsRequest;
 import io.camunda.client.api.statistics.request.ProcessDefinitionInstanceStatisticsRequest;
 import io.camunda.client.api.statistics.request.ProcessDefinitionInstanceVersionStatisticsRequest;
@@ -216,13 +222,16 @@ import io.camunda.client.impl.command.DeleteAuthorizationCommandImpl;
 import io.camunda.client.impl.command.DeleteDocumentCommandImpl;
 import io.camunda.client.impl.command.DeleteGroupCommandImpl;
 import io.camunda.client.impl.command.DeleteMappingRuleCommandImpl;
+import io.camunda.client.impl.command.DeleteProcessInstanceCommandImpl;
 import io.camunda.client.impl.command.DeleteResourceCommandImpl;
 import io.camunda.client.impl.command.DeleteRoleCommandImpl;
 import io.camunda.client.impl.command.DeleteTenantCommandImpl;
 import io.camunda.client.impl.command.DeleteUserCommandImpl;
 import io.camunda.client.impl.command.DeployProcessCommandImpl;
 import io.camunda.client.impl.command.DeployResourceCommandImpl;
+import io.camunda.client.impl.command.EvaluateConditionalCommandImpl;
 import io.camunda.client.impl.command.EvaluateDecisionCommandImpl;
+import io.camunda.client.impl.command.EvaluateExpressionCommandImpl;
 import io.camunda.client.impl.command.GloballyScopedCreateClusterVariableImpl;
 import io.camunda.client.impl.command.GloballyScopedDeleteClusterVariableImpl;
 import io.camunda.client.impl.command.JobUpdateRetriesCommandImpl;
@@ -323,6 +332,7 @@ import io.camunda.client.impl.search.request.RolesByGroupSearchRequestImpl;
 import io.camunda.client.impl.search.request.RolesByTenantSearchRequestImpl;
 import io.camunda.client.impl.search.request.RolesSearchRequestImpl;
 import io.camunda.client.impl.search.request.TenantsSearchRequestImpl;
+import io.camunda.client.impl.search.request.UserTaskAuditLogSearchRequestImpl;
 import io.camunda.client.impl.search.request.UserTaskSearchRequestImpl;
 import io.camunda.client.impl.search.request.UserTaskVariableSearchRequestImpl;
 import io.camunda.client.impl.search.request.UsersByGroupSearchRequestImpl;
@@ -330,6 +340,8 @@ import io.camunda.client.impl.search.request.UsersByRoleSearchRequestImpl;
 import io.camunda.client.impl.search.request.UsersByTenantSearchRequestImpl;
 import io.camunda.client.impl.search.request.UsersSearchRequestImpl;
 import io.camunda.client.impl.search.request.VariableSearchRequestImpl;
+import io.camunda.client.impl.statistics.request.IncidentProcessInstanceStatisticsByDefinitionRequestImpl;
+import io.camunda.client.impl.statistics.request.IncidentProcessInstanceStatisticsByErrorRequestImpl;
 import io.camunda.client.impl.statistics.request.ProcessDefinitionElementStatisticsRequestImpl;
 import io.camunda.client.impl.statistics.request.ProcessDefinitionInstanceStatisticsRequestImpl;
 import io.camunda.client.impl.statistics.request.ProcessDefinitionInstanceVersionStatisticsRequestImpl;
@@ -687,6 +699,11 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
+  public DeleteProcessInstanceCommandStep1 newDeleteInstanceCommand(final long processInstanceKey) {
+    return new DeleteProcessInstanceCommandImpl(processInstanceKey, config, httpClient, jsonMapper);
+  }
+
+  @Override
   public SetVariablesCommandStep1 newSetVariablesCommand(final long elementInstanceKey) {
     return new SetVariablesCommandImpl(
         asyncStub,
@@ -793,6 +810,7 @@ public final class CamundaClientImpl implements CamundaClient {
   public DeleteResourceCommandStep1 newDeleteResourceCommand(final long resourceKey) {
     return new DeleteResourceCommandImpl(
         resourceKey,
+        false,
         asyncStub,
         credentialsProvider::shouldRetryRequest,
         httpClient,
@@ -1523,6 +1541,11 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
+  public UserTaskAuditLogSearchRequest newUserTaskAuditLogSearchRequest(final long userTaskKey) {
+    return new UserTaskAuditLogSearchRequestImpl(httpClient, jsonMapper, userTaskKey);
+  }
+
+  @Override
   public ProcessDefinitionInstanceStatisticsRequest
       newProcessDefinitionInstanceStatisticsRequest() {
     return new ProcessDefinitionInstanceStatisticsRequestImpl(httpClient, jsonMapper);
@@ -1533,6 +1556,30 @@ public final class CamundaClientImpl implements CamundaClient {
       newProcessDefinitionInstanceVersionStatisticsRequest(final String processDefinitionId) {
     return new ProcessDefinitionInstanceVersionStatisticsRequestImpl(
         httpClient, jsonMapper, processDefinitionId);
+  }
+
+  @Override
+  public EvaluateConditionalCommandStep1 newEvaluateConditionalCommand() {
+    return new EvaluateConditionalCommandImpl(
+        asyncStub, config, jsonMapper, credentialsProvider::shouldRetryRequest, httpClient);
+  }
+
+  @Override
+  public IncidentProcessInstanceStatisticsByErrorRequest
+      newIncidentProcessInstanceStatisticsByErrorRequest() {
+    return new IncidentProcessInstanceStatisticsByErrorRequestImpl(httpClient, jsonMapper);
+  }
+
+  @Override
+  public EvaluateExpressionCommandStep1 newEvaluateExpressionCommand() {
+    return new EvaluateExpressionCommandImpl(config, httpClient, jsonMapper);
+  }
+
+  @Override
+  public IncidentProcessInstanceStatisticsByDefinitionRequest
+      newIncidentProcessInstanceStatisticsByDefinitionRequest(final int errorHashCode) {
+    return new IncidentProcessInstanceStatisticsByDefinitionRequestImpl(
+        httpClient, jsonMapper, errorHashCode);
   }
 
   private JobClient newJobClient() {

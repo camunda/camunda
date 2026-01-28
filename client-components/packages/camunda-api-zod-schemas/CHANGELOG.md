@@ -1,5 +1,83 @@
 # Changelog
 
+## v0.0.35
+
+### 🚀 Enhancements
+
+- add process-instance modification request to 8.9 API schema ([#44723](https://github.com/camunda/camunda/pull/44723))
+
+### ❤️ Contributors
+
+- Christoph Fricke ([@christoph-fricke](https://github.com/christoph-fricke))
+
+## v0.0.34
+
+### 🚀 Enhancements
+
+- add incident statistics API schemas for v8.9 ([#44463](https://github.com/camunda/camunda/pull/44463))
+
+### ❤️ Contributors
+
+- Eddie Tsedeke ([@tsedekey](https://github.com/tsedekey))
+
+## v0.0.33
+
+### 🚀 Enhancements
+
+- update resource deletion request and response schema ([#31690](https://github.com/camunda/camunda/issues/31690))
+
+## v0.0.32
+
+### 🚀 Enhancements
+
+- add `operationType` field to `batchOperationItem` schema ([#42145](https://github.com/camunda/camunda/pull/42145))
+
+### ❤️ Contributors
+
+- Yuliia Saienko ([@juliasaienko](https://github.com/juliasaienko))
+
+## v0.0.31
+
+### 🚀 Enhancements
+
+- add `isLatestVersion` filter for searching decision definitions ([#44093](https://github.com/camunda/camunda/pull/44093))
+
+### ❤️ Contributors
+
+- Christoph Fricke ([@christoph-fricke](https://github.com/christoph-fricke))
+
+## v0.0.30
+
+### 🚀 Enhancements
+
+- add optional `actorType` and `actorId` fields to batch operation schema ([#44029](https://github.com/camunda/camunda/pull/44029))
+- add `actorId` as a sortable field for batch operations query ([#44029](https://github.com/camunda/camunda/pull/44029))
+
+### 🩹 Fixes
+
+- update batch operation methods (`cancel`, `suspend`, `resume`) to use POST instead of PUT ([#44029](https://github.com/camunda/camunda/pull/44029))
+- remove `INCOMPLETED` from batch operation state enum ([#44029](https://github.com/camunda/camunda/pull/44029))
+
+### ❤️ Contributors
+
+- Omran Abazid ([@OmranAbazid](https://github.com/OmranAbazid))
+
+## v0.0.29
+
+### 🚀 Enhancements
+
+- add user task audit log query ([#43973](https://github.com/camunda/camunda/pull/43973))
+
+### ❤️ Contributors
+
+- Vinicius Goulart ([@vsgoulart](https://github.com/vsgoulart))
+
+## v0.0.28
+
+### 🚀 Enhancements
+
+- add process instance deletion v2 endpoint ([#43318](https://github.com/camunda/camunda/pull/43318))
+
 ## v0.0.27
 
 ### 🩹 Fixes

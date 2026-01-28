@@ -40,3 +40,7 @@ Only CI checks related to C8Run (those with "c8run" in the name) and CI runs mar
 ## Build C8run locally
 
 To build and run C8Run locally run `./package.sh` followed by `./start.sh`
+
+### Connectors launcher
+
+C8Run automatically starts the connectors runtime through Spring Boot's `PropertiesLauncher` for connector bundles versioned 8.9.0 or newer (including snapshots). Older bundles continue to run via the legacy `JarLauncher`, so you can switch versions in `.env` without extra configuration.

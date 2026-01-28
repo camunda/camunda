@@ -11,6 +11,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.gateway.protocol.model.BatchOperationItemStateEnum;
 import io.camunda.search.entities.BatchOperationEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemState;
@@ -21,7 +22,6 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.BatchOperationServices;
-import io.camunda.zeebe.gateway.protocol.rest.BatchOperationItemStateEnum;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.time.OffsetDateTime;
 import java.util.List;

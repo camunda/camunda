@@ -11,6 +11,7 @@ import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerEvaluateConditionalRequest;
 import io.camunda.zeebe.protocol.impl.record.value.conditional.ConditionalEvaluationRecord;
 import java.util.Map;
@@ -42,7 +43,7 @@ public class ConditionalServices extends ApiServices<ConditionalServices> {
         brokerRequestAuthorizationConverter);
   }
 
-  public CompletableFuture<ConditionalEvaluationRecord> evaluateConditional(
+  public CompletableFuture<BrokerResponse<ConditionalEvaluationRecord>> evaluateConditional(
       final EvaluateConditionalRequest request) {
     final var brokerRequest =
         new BrokerEvaluateConditionalRequest()
@@ -50,7 +51,7 @@ public class ConditionalServices extends ApiServices<ConditionalServices> {
             .setTenantId(request.tenantId())
             .setVariables(getDocumentOrEmpty(request.variables()));
 
-    return sendBrokerRequest(brokerRequest);
+    return sendBrokerRequestWithFullResponse(brokerRequest);
   }
 
   public record EvaluateConditionalRequest(

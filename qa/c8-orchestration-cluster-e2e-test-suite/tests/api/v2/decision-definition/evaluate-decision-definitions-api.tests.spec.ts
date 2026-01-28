@@ -449,8 +449,7 @@ test.describe.parallel('Evaluate Decision Definitions API Tests', () => {
     }).toPass(defaultAssertionOptions);
   });
 
-  // Skipped due to bug 39819:  https://github.com/camunda/camunda/issues/39819
-  test.skip('Evaluate Decision Definition Invalid Data', async ({request}) => {
+  test('Evaluate Decision Definition Invalid Data', async ({request}) => {
     await expect(async () => {
       const res = await request.post(
         buildUrl('/decision-definitions/evaluation'),
@@ -462,8 +461,8 @@ test.describe.parallel('Evaluate Decision Definitions API Tests', () => {
 
       await assertBadRequest(
         res,
-        'At least one of [decisionDefinitionId, decisionDefinitionKey] is required.',
-        'INVALID_ARGUMENT',
+        'At least one of [decisionDefinitionId, decisionDefinitionKey] is required',
+        'Bad Request',
       );
     }).toPass(defaultAssertionOptions);
   });

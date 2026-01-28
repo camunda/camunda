@@ -10,6 +10,8 @@ package io.camunda.exporter.config;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.schema.config.IndexConfiguration;
 import io.camunda.search.schema.config.RetentionConfiguration;
+import io.camunda.zeebe.exporter.common.auditlog.AuditLogConfiguration;
+import io.camunda.zeebe.exporter.common.historydeletion.HistoryDeletionConfiguration;
 
 public class ExporterConfiguration {
 
@@ -24,7 +26,25 @@ public class ExporterConfiguration {
   private PostExportConfiguration postExport = new PostExportConfiguration();
   private IncidentNotifierConfiguration notifier = new IncidentNotifierConfiguration();
   private BatchOperationConfiguration batchOperation = new BatchOperationConfiguration();
+  private AuditLogConfiguration auditLog = new AuditLogConfiguration();
+  private HistoryDeletionConfiguration historyDeletion = new HistoryDeletionConfiguration();
   private boolean createSchema = true;
+
+  public AuditLogConfiguration getAuditLog() {
+    return auditLog;
+  }
+
+  public void setAuditLog(final AuditLogConfiguration auditLog) {
+    this.auditLog = auditLog;
+  }
+
+  public HistoryDeletionConfiguration getHistoryDeletion() {
+    return historyDeletion;
+  }
+
+  public void setHistoryDeletion(final HistoryDeletionConfiguration historyDeletion) {
+    this.historyDeletion = historyDeletion;
+  }
 
   public ConnectConfiguration getConnect() {
     return connect;
@@ -147,6 +167,10 @@ public class ExporterConfiguration {
         + postExport
         + ", batchOperation="
         + batchOperation
+        + ", auditLog="
+        + auditLog
+        + ", historyDeletion="
+        + historyDeletion
         + '}';
   }
 
@@ -197,6 +221,9 @@ public class ExporterConfiguration {
 
   public static class HistoryConfiguration {
     private boolean processInstanceEnabled = true;
+    // TODO once all entities are set with rootProcessInstanceKey, set the default to PI_HIERARCHY
+    private ProcessInstanceRetentionMode processInstanceRetentionMode =
+        ProcessInstanceRetentionMode.PI;
     private String elsRolloverDateFormat = "date";
     private String rolloverInterval = "1d";
     private String usageMetricsRolloverInterval = "1M";
@@ -305,6 +332,8 @@ public class ExporterConfiguration {
           + retention
           + ", trackArchivalMetricsForProcessInstance="
           + trackArchivalMetricsForProcessInstance
+          + ", retentionMode="
+          + processInstanceRetentionMode
           + '}';
     }
 
@@ -315,6 +344,21 @@ public class ExporterConfiguration {
     public void setTrackArchivalMetricsForProcessInstance(
         final boolean trackArchivalMetricsForProcessInstance) {
       this.trackArchivalMetricsForProcessInstance = trackArchivalMetricsForProcessInstance;
+    }
+
+    public ProcessInstanceRetentionMode getProcessInstanceRetentionMode() {
+      return processInstanceRetentionMode;
+    }
+
+    public void setProcessInstanceRetentionMode(
+        final ProcessInstanceRetentionMode processInstanceRetentionMode) {
+      this.processInstanceRetentionMode = processInstanceRetentionMode;
+    }
+
+    public enum ProcessInstanceRetentionMode {
+      PI_HIERARCHY,
+      PI_HIERARCHY_IGNORE_LEGACY,
+      PI
     }
   }
 

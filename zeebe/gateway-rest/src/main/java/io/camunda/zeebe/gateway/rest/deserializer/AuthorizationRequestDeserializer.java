@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.gateway.rest.deserializer;
 
-import io.camunda.zeebe.gateway.protocol.rest.AuthorizationIdBasedRequest;
-import io.camunda.zeebe.gateway.protocol.rest.AuthorizationPropertyBasedRequest;
-import io.camunda.zeebe.gateway.protocol.rest.AuthorizationRequest;
+import io.camunda.gateway.protocol.model.AuthorizationIdBasedRequest;
+import io.camunda.gateway.protocol.model.AuthorizationPropertyBasedRequest;
+import io.camunda.gateway.protocol.model.AuthorizationRequest;
 import java.util.List;
 import java.util.Set;
 

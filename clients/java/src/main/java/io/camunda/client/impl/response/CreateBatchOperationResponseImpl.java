@@ -31,6 +31,14 @@ public class CreateBatchOperationResponseImpl implements CreateBatchOperationRes
         EnumUtil.convert(response.getBatchOperationType(), BatchOperationType.class);
   }
 
+  public CreateBatchOperationResponseImpl(
+      final io.camunda.zeebe.gateway.protocol.GatewayOuterClass.BatchOperationCreatedResult
+          grpcResponse) {
+    batchOperationKey = grpcResponse.getBatchOperationKey();
+    batchOperationType =
+        EnumUtil.convert(grpcResponse.getBatchOperationType(), BatchOperationType.class);
+  }
+
   @Override
   public String getBatchOperationKey() {
     return batchOperationKey;

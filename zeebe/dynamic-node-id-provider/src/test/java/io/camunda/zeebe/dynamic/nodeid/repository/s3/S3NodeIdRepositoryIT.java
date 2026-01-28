@@ -70,7 +70,7 @@ public class S3NodeIdRepositoryIT {
   public void setUp() {
     final var bucketName = UUID.randomUUID().toString();
     taskId = UUID.randomUUID().toString();
-    config = new Config(bucketName, EXPIRY_DURATION);
+    config = new Config(bucketName, EXPIRY_DURATION, Duration.ofMinutes(2));
     client.createBucket(b -> b.bucket(config.bucketName()));
   }
 

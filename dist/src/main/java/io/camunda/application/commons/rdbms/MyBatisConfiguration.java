@@ -24,10 +24,13 @@ import io.camunda.db.rdbms.sql.ExporterPositionMapper;
 import io.camunda.db.rdbms.sql.FlowNodeInstanceMapper;
 import io.camunda.db.rdbms.sql.FormMapper;
 import io.camunda.db.rdbms.sql.GroupMapper;
+import io.camunda.db.rdbms.sql.HistoryDeletionMapper;
 import io.camunda.db.rdbms.sql.IncidentMapper;
 import io.camunda.db.rdbms.sql.JobMapper;
+import io.camunda.db.rdbms.sql.JobMetricsBatchMapper;
 import io.camunda.db.rdbms.sql.MappingRuleMapper;
 import io.camunda.db.rdbms.sql.MessageSubscriptionMapper;
+import io.camunda.db.rdbms.sql.PersistentWebSessionMapper;
 import io.camunda.db.rdbms.sql.ProcessDefinitionMapper;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
 import io.camunda.db.rdbms.sql.PurgeMapper;
@@ -222,6 +225,12 @@ public class MyBatisConfiguration {
   }
 
   @Bean
+  public MapperFactoryBean<JobMetricsBatchMapper> jobMetricsBatchMapper(
+      final SqlSessionFactory sqlSessionFactory) {
+    return createMapperFactoryBean(sqlSessionFactory, JobMetricsBatchMapper.class);
+  }
+
+  @Bean
   public MapperFactoryBean<RoleMapper> roleMapper(final SqlSessionFactory sqlSessionFactory) {
     return createMapperFactoryBean(sqlSessionFactory, RoleMapper.class);
   }
@@ -304,6 +313,18 @@ public class MyBatisConfiguration {
   MapperFactoryBean<TableMetricsMapper> tableMetricsMapper(
       final SqlSessionFactory sqlSessionFactory) {
     return createMapperFactoryBean(sqlSessionFactory, TableMetricsMapper.class);
+  }
+
+  @Bean
+  MapperFactoryBean<HistoryDeletionMapper> historyDeletionMapper(
+      final SqlSessionFactory sqlSessionFactory) {
+    return createMapperFactoryBean(sqlSessionFactory, HistoryDeletionMapper.class);
+  }
+
+  @Bean
+  MapperFactoryBean<PersistentWebSessionMapper> persistentWebSessionMapper(
+      final SqlSessionFactory sqlSessionFactory) {
+    return createMapperFactoryBean(sqlSessionFactory, PersistentWebSessionMapper.class);
   }
 
   private <T> MapperFactoryBean<T> createMapperFactoryBean(

@@ -123,6 +123,7 @@ class ExporterBatchWriterTest {
 
     batchWriter.addRecord(record);
     assertThat(batchWriter.getBatchSize()).isEqualTo(1);
+    assertThat(batchWriter.getEntitiesToFlushSize()).isEqualTo(1);
 
     // When
     final BatchRequest batchRequest = mock(BatchRequest.class);
@@ -133,5 +134,6 @@ class ExporterBatchWriterTest {
     verify(handler).flush(entity, batchRequest);
     verify(batchRequest).execute(any());
     assertThat(batchWriter.getBatchSize()).isEqualTo(0);
+    assertThat(batchWriter.getEntitiesToFlushSize()).isEqualTo(0);
   }
 }

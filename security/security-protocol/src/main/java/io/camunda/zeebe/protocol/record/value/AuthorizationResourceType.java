@@ -38,6 +38,11 @@ public enum AuthorizationResourceType {
   DECISION_REQUIREMENTS_DEFINITION(PermissionType.READ),
   DOCUMENT(PermissionType.CREATE, PermissionType.READ, PermissionType.DELETE),
   EXPRESSION(PermissionType.EVALUATE),
+  GLOBAL_LISTENER(
+      PermissionType.CREATE_TASK_LISTENER,
+      PermissionType.READ_TASK_LISTENER,
+      PermissionType.UPDATE_TASK_LISTENER,
+      PermissionType.DELETE_TASK_LISTENER),
   GROUP(PermissionType.CREATE, PermissionType.READ, PermissionType.UPDATE, PermissionType.DELETE),
   MAPPING_RULE(
       PermissionType.CREATE, PermissionType.READ, PermissionType.UPDATE, PermissionType.DELETE),
@@ -60,7 +65,11 @@ public enum AuthorizationResourceType {
       PermissionType.DELETE_PROCESS,
       PermissionType.DELETE_RESOURCE),
   ROLE(PermissionType.CREATE, PermissionType.READ, PermissionType.UPDATE, PermissionType.DELETE),
-  SYSTEM(PermissionType.READ, PermissionType.READ_USAGE_METRIC, PermissionType.UPDATE),
+  SYSTEM(
+      PermissionType.READ,
+      PermissionType.READ_USAGE_METRIC,
+      PermissionType.READ_JOB_METRIC,
+      PermissionType.UPDATE),
   TENANT(PermissionType.CREATE, PermissionType.READ, PermissionType.UPDATE, PermissionType.DELETE),
   UNSPECIFIED(),
   USER(PermissionType.CREATE, PermissionType.READ, PermissionType.UPDATE, PermissionType.DELETE),

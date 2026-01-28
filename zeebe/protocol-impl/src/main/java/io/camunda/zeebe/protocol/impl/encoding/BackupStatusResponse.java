@@ -35,6 +35,7 @@ public class BackupStatusResponse implements BufferReader, BufferWriter {
 
   private long checkpointPosition = BackupStatusResponseEncoder.checkpointPositionNullValue();
   private int numberOfPartitions = BackupStatusResponseEncoder.numberOfPartitionsNullValue();
+  private long firstLogPosition = BackupStatusResponseEncoder.firstLogPositionNullValue();
   private String snapshotId = "";
   private byte[] encodedSnapshotId = EMPTY_BYTE_ARRAY;
   private String failureReason = "";
@@ -112,6 +113,19 @@ public class BackupStatusResponse implements BufferReader, BufferWriter {
     return numberOfPartitions != BackupStatusResponseEncoder.numberOfPartitionsNullValue();
   }
 
+  public long getFirstLogPosition() {
+    return firstLogPosition;
+  }
+
+  public BackupStatusResponse setFirstLogPosition(final long firstLogPosition) {
+    this.firstLogPosition = firstLogPosition;
+    return this;
+  }
+
+  public boolean hasFirstLogPosition() {
+    return firstLogPosition != BackupStatusResponseEncoder.firstLogPositionNullValue();
+  }
+
   public String getSnapshotId() {
     return snapshotId.isEmpty() ? null : snapshotId;
   }
@@ -177,6 +191,7 @@ public class BackupStatusResponse implements BufferReader, BufferWriter {
     brokerId = bodyDecoder.brokerId();
     checkpointPosition = bodyDecoder.checkpointPosition();
     numberOfPartitions = bodyDecoder.numberOfPartitions();
+    firstLogPosition = bodyDecoder.firstLogPosition();
 
     encodedSnapshotId = new byte[bodyDecoder.snapshotIdLength()];
     bodyDecoder.getSnapshotId(encodedSnapshotId, 0, encodedSnapshotId.length);
@@ -241,6 +256,7 @@ public class BackupStatusResponse implements BufferReader, BufferWriter {
         .partitionId(partitionId)
         .checkpointPosition(checkpointPosition)
         .numberOfPartitions(numberOfPartitions)
+        .firstLogPosition(firstLogPosition)
         .status(status)
         .putSnapshotId(encodedSnapshotId, 0, encodedSnapshotId.length)
         .putFailureReason(encodedFailureReason, 0, encodedFailureReason.length)

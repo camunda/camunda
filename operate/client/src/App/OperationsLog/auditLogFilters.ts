@@ -1,0 +1,48 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+type OperationsLogFilterField =
+  | 'process'
+  | 'version'
+  | 'processInstanceKey'
+  | 'operationType'
+  | 'entityType'
+  | 'actorId'
+  | 'result'
+  | 'timestampBefore'
+  | 'timestampAfter'
+  | 'tenant';
+
+type OperationsLogFilters = {
+  process?: string;
+  version?: string;
+  processInstanceKey?: string;
+  operationType?: string;
+  entityType?: string;
+  actorId?: string;
+  result?: string;
+  timestampBefore?: string;
+  timestampAfter?: string;
+  tenant?: string;
+};
+
+const AUDIT_LOG_FILTER_FIELDS: (keyof OperationsLogFilters)[] = [
+  'process',
+  'version',
+  'processInstanceKey',
+  'operationType',
+  'entityType',
+  'actorId',
+  'result',
+  'timestampBefore',
+  'timestampAfter',
+  'tenant',
+];
+
+export type {OperationsLogFilters, OperationsLogFilterField};
+export {AUDIT_LOG_FILTER_FIELDS};

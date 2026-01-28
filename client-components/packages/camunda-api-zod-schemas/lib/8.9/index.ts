@@ -7,10 +7,26 @@
  */
 
 import {getAuditLog, queryAuditLogs} from './audit-log';
+import {queryUserTaskAuditLogs} from './user-task';
+import {deleteProcessInstance, modifyProcessInstance} from './process-instance';
+import {createDeployment, deleteResource, getResource, getResourceContent} from './resource';
+import {
+	getIncidentProcessInstanceStatisticsByError,
+	getIncidentProcessInstanceStatisticsByDefinition,
+} from './incident';
 
 const endpoints = {
 	queryAuditLogs,
 	getAuditLog,
+	queryUserTaskAuditLogs,
+	deleteProcessInstance,
+	modifyProcessInstance,
+	createDeployment,
+	deleteResource,
+	getResource,
+	getResourceContent,
+	getIncidentProcessInstanceStatisticsByError,
+	getIncidentProcessInstanceStatisticsByDefinition,
 } as const;
 
 export {endpoints};
@@ -38,3 +54,60 @@ export {
 	type QueryAuditLogsResponseBody,
 	type GetAuditLogResponseBody,
 } from './audit-log';
+
+export {
+	userTaskAuditLogFilterSchema,
+	queryUserTaskAuditLogsRequestBodySchema,
+	queryUserTaskAuditLogsResponseBodySchema,
+	queryUserTaskAuditLogs,
+	type UserTaskAuditLogFilter,
+	type QueryUserTaskAuditLogsRequestBody,
+	type QueryUserTaskAuditLogsResponseBody,
+} from './user-task';
+
+export {
+	deleteProcessInstanceRequestBodySchema,
+	modifyProcessInstanceRequestBodySchema,
+	type DeleteProcessInstanceRequestBody,
+	type ModifyProcessInstanceRequestBody,
+} from './process-instance';
+
+export {
+	createDeploymentResponseBodySchema,
+	deleteResourceRequestBodySchema,
+	deleteResourceResponseBodySchema,
+	batchOperationCreatedResultSchema,
+	resourceSchema,
+	getResourceContentResponseBodySchema,
+	processDeploymentSchema,
+	decisionDeploymentSchema,
+	decisionRequirementsDeploymentSchema,
+	formDeploymentSchema,
+	resourceDeploymentSchema,
+	type CreateDeploymentResponseBody,
+	type DeleteResourceRequestBody,
+	type DeleteResourceResponseBody,
+	type BatchOperationCreatedResult,
+	type Resource,
+	type GetResourceContentResponseBody,
+	type ProcessDeployment,
+	type DecisionDeployment,
+	type DecisionRequirementsDeployment,
+	type FormDeployment,
+	type ResourceDeployment,
+} from './resource';
+
+export {
+	getIncidentProcessInstanceStatisticsByErrorRequestBodySchema,
+	getIncidentProcessInstanceStatisticsByErrorResponseBodySchema,
+	incidentProcessInstanceStatisticsByErrorSchema,
+	getIncidentProcessInstanceStatisticsByDefinitionRequestBodySchema,
+	getIncidentProcessInstanceStatisticsByDefinitionResponseBodySchema,
+	incidentProcessInstanceStatisticsByDefinitionSchema,
+	type IncidentProcessInstanceStatisticsByError,
+	type GetIncidentProcessInstanceStatisticsByErrorRequestBody,
+	type GetIncidentProcessInstanceStatisticsByErrorResponseBody,
+	type IncidentProcessInstanceStatisticsByDefinition,
+	type GetIncidentProcessInstanceStatisticsByDefinitionRequestBody,
+	type GetIncidentProcessInstanceStatisticsByDefinitionResponseBody,
+} from './incident';

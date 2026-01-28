@@ -47,6 +47,11 @@ public class ResourceDeletionClient {
     return this;
   }
 
+  public ResourceDeletionClient withDeleteHistory(final boolean deleteHistory) {
+    resourceDeletionRecord.setDeleteHistory(deleteHistory);
+    return this;
+  }
+
   public ResourceDeletionClient withAuthorizedTenantIds(final String... tenantIds) {
     authorizedTenantIds = List.of(tenantIds);
     return this;

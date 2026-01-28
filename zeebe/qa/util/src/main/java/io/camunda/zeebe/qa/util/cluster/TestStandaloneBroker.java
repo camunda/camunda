@@ -35,6 +35,7 @@ import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
 import io.camunda.zeebe.broker.NodeIdProviderConfiguration;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
+import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration.MemoryAllocationStrategy;
 import io.camunda.zeebe.qa.util.actuator.BrokerHealthActuator;
 import io.camunda.zeebe.qa.util.actuator.GatewayHealthActuator;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
@@ -62,6 +63,7 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
   private final Camunda unifiedConfig;
   private final CamundaSecurityProperties securityConfig;
   private boolean isGatewayEnabled = true;
+  private final Map<String, Consumer<Map<String, Object>>> exporterMutators = new HashMap<>();
 
   public TestStandaloneBroker() {
     super(
@@ -329,7 +331,13 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
                   .computeIfAbsent(id, ignored -> new io.camunda.configuration.Exporter());
           unifiedExporter.setClassName(tempExporterCfg.getClassName());
           unifiedExporter.setJarPath(tempExporterCfg.getJarPath());
-          unifiedExporter.setArgs(tempExporterCfg.getArgs());
+          if (exporterMutators.containsKey(id)) {
+            final Map<String, Object> args = new HashMap<>(tempExporterCfg.getArgs());
+            exporterMutators.get(id).accept(args);
+            unifiedExporter.setArgs(args);
+          } else {
+            unifiedExporter.setArgs(tempExporterCfg.getArgs());
+          }
         });
   }
 
@@ -429,6 +437,20 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
   }
 
   /**
+   * Registers a mutator function that will be applied to the exporter arguments for the exporter
+   * with the given ID after the exporter is set to the application
+   *
+   * @param id the ID of the exporter
+   * @param modifier a configuration function that accepts the exporter arguments map
+   * @return itself for chaining
+   */
+  public TestStandaloneBroker withExporterMutator(
+      final String id, final Consumer<Map<String, Object>> modifier) {
+    exporterMutators.put(id, modifier);
+    return this;
+  }
+
+  /**
    * Initialize unified configuration with test-friendly defaults that match the legacy
    * configuration behavior.
    */
@@ -442,9 +464,14 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
         .setCompressionAlgorithm(io.camunda.configuration.Cluster.CompressionAlgorithm.NONE);
 
     // Set membership defaults for fast test execution
-    unifiedConfig.getCluster().getMembership().setFailureTimeout(Duration.ofSeconds(5));
-    unifiedConfig.getCluster().getMembership().setProbeInterval(Duration.ofMillis(100));
-    unifiedConfig.getCluster().getMembership().setSyncInterval(Duration.ofMillis(500));
+    final var membership = unifiedConfig.getCluster().getMembership();
+    membership.setFailureTimeout(Duration.ofSeconds(5));
+    membership.setProbeInterval(Duration.ofMillis(100));
+    membership.setSyncInterval(Duration.ofMillis(500));
+
+    final var metadata = unifiedConfig.getCluster().getMetadata();
+    metadata.setSyncInitializerDelay(Duration.ofMillis(500));
+    metadata.setSyncDelay(Duration.ofMillis(500));
 
     // Set raft defaults - disable flushing for faster tests
     unifiedConfig.getCluster().getRaft().setFlushEnabled(false);
@@ -469,6 +496,13 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
         .getDisk()
         .getFreeSpace()
         .setReplication(DataSize.ofMegabytes(64));
+
+    // set default default size for rocks db
+    unifiedConfig
+        .getData()
+        .getPrimaryStorage()
+        .getRocksDb()
+        .setMemoryAllocationStrategy(MemoryAllocationStrategy.BROKER);
 
     // Set processing defaults - enable consistency checks
     unifiedConfig.getProcessing().setEnablePreconditionsCheck(true);

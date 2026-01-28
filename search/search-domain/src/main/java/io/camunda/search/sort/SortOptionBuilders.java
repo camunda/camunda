@@ -195,6 +195,20 @@ public final class SortOptionBuilders {
     return fn.apply(incident()).build();
   }
 
+  public static IncidentProcessInstanceStatisticsByErrorSort.Builder
+      incidentProcessInstanceStatisticsByError() {
+    return new IncidentProcessInstanceStatisticsByErrorSort.Builder();
+  }
+
+  public static IncidentProcessInstanceStatisticsByErrorSort
+      incidentProcessInstanceStatisticsByError(
+          final Function<
+                  IncidentProcessInstanceStatisticsByErrorSort.Builder,
+                  ObjectBuilder<IncidentProcessInstanceStatisticsByErrorSort>>
+              fn) {
+    return fn.apply(incidentProcessInstanceStatisticsByError()).build();
+  }
+
   public static BatchOperationSort.Builder batchOperation() {
     return new BatchOperationSort.Builder();
   }
@@ -295,5 +309,19 @@ public final class SortOptionBuilders {
                   ObjectBuilder<ProcessDefinitionInstanceVersionStatisticsSort>>
               fn) {
     return fn.apply(new ProcessDefinitionInstanceVersionStatisticsSort.Builder()).build();
+  }
+
+  public static IncidentProcessInstanceStatisticsByDefinitionSort.Builder
+      incidentProcessInstanceStatisticsByDefinition() {
+    return new IncidentProcessInstanceStatisticsByDefinitionSort.Builder();
+  }
+
+  public static IncidentProcessInstanceStatisticsByDefinitionSort
+      incidentProcessInstanceStatisticsByDefinition(
+          final Function<
+                  IncidentProcessInstanceStatisticsByDefinitionSort.Builder,
+                  ObjectBuilder<IncidentProcessInstanceStatisticsByDefinitionSort>>
+              fn) {
+    return fn.apply(new IncidentProcessInstanceStatisticsByDefinitionSort.Builder()).build();
   }
 }

@@ -10,7 +10,7 @@ import {createMemoryRouter, RouterProvider} from 'react-router-dom';
 import {render, screen, within} from 'modules/testing-library';
 import {Paths} from 'modules/Routes';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
-import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
+import {mockSearchProcessDefinitions} from 'modules/mocks/api/v2/processDefinitions/searchProcessDefinitions';
 
 import {AppHeader} from 'App/Layout/AppHeader';
 import {Processes} from '../';
@@ -19,7 +19,7 @@ import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {open} from 'modules/mocks/diagrams';
-import {createUser} from 'modules/testUtils';
+import {createUser, searchResult} from 'modules/testUtils';
 import {mockMe} from 'modules/mocks/api/v2/me';
 
 vi.mock('App/Processes/ListView', () => {
@@ -94,7 +94,7 @@ describe('MigrationView', () => {
         open('orderProcess.bpmn'),
       );
       processInstanceMigrationStore.setSourceProcessDefinitionKey('1');
-      mockFetchGroupedProcesses(contextPath).withSuccess([]);
+      mockSearchProcessDefinitions(contextPath).withSuccess(searchResult([]));
 
       const {user} = render(<Processes />, {
         wrapper: createWrapper({
@@ -162,7 +162,7 @@ describe('MigrationView', () => {
         open('orderProcess.bpmn'),
       );
       processInstanceMigrationStore.setSourceProcessDefinitionKey('1');
-      mockFetchGroupedProcesses(contextPath).withSuccess([]);
+      mockSearchProcessDefinitions(contextPath).withSuccess(searchResult([]));
 
       const {user} = render(<Processes />, {
         wrapper: createWrapper({

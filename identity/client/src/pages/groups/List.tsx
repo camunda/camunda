@@ -13,7 +13,7 @@ import { usePaginatedApi } from "src/utility/api";
 import Page, { PageHeader } from "src/components/layout/Page";
 import EntityList from "src/components/entityList";
 import { Group, searchGroups } from "src/utility/api/groups";
-import { useNavigate } from "react-router";
+import { useNavigate } from "react-router-dom";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
 import useModal, { useEntityModal } from "src/components/modal/useModal";
 import EditModal from "src/pages/groups/modals/EditModal";

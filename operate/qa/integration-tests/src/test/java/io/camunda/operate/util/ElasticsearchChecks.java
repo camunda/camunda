@@ -9,17 +9,24 @@ package io.camunda.operate.util;
 
 import static io.camunda.operate.qa.util.RestAPITestUtil.*;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
-import static io.camunda.operate.util.ElasticsearchUtil.scroll;
+import static io.camunda.operate.util.ElasticsearchUtil.scrollAllStream;
+import static io.camunda.operate.util.ElasticsearchUtil.sortOrder;
+import static io.camunda.operate.util.ElasticsearchUtil.whereToSearch;
 import static io.camunda.webapps.schema.descriptors.template.IncidentTemplate.*;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.elasticsearch.index.query.QueryBuilders.*;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.SortOrder;
+import co.elastic.clients.elasticsearch.core.CountRequest;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
+import co.elastic.clients.elasticsearch.core.search.Hit;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.store.NotFoundException;
+import io.camunda.operate.store.ScrollException;
 import io.camunda.operate.store.elasticsearch.ElasticsearchIncidentStore;
+import io.camunda.operate.util.ElasticsearchUtil.QueryType;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.reader.*;
 import io.camunda.operate.webapp.rest.dto.ListenerRequestDto;
@@ -50,13 +57,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.index.query.TermQueryBuilder;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.elasticsearch.search.sort.SortOrder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
@@ -73,13 +73,11 @@ import org.springframework.context.annotation.Configuration;
 public class ElasticsearchChecks {
 
   @Autowired UserTaskReader userTaskReader;
-  @Autowired private RestHighLevelClient esClient;
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired private ElasticsearchClient esClient;
 
   @Autowired private ProcessReader processReader;
   @Autowired private ProcessInstanceReader processInstanceReader;
-  @Autowired private FlowNodeInstanceReader flowNodeInstanceReader;
 
   @Autowired private ListenerReader listenerReader;
 
@@ -102,6 +100,23 @@ public class ElasticsearchChecks {
   @Autowired private IncidentReader incidentReader;
 
   @Autowired private VariableReader variableReader;
+
+  /**
+   * Helper method to get document count using ES client.
+   *
+   * @param indexAlias the index alias to count documents in
+   * @return the number of documents in the index
+   * @throws IOException if the count fails
+   */
+  private long getDocCount(final String indexAlias) throws IOException {
+    final var countRequest =
+        new CountRequest.Builder()
+            .index(indexAlias)
+            .query(ElasticsearchUtil.matchAllQuery())
+            .build();
+    final var response = esClient.count(countRequest);
+    return response.count();
+  }
 
   /**
    * Checks whether the process of given args[0] processDefinitionKey (Long) is deployed.
@@ -135,9 +150,7 @@ public class ElasticsearchChecks {
       assertThat(objects[0]).isInstanceOf(Integer.class);
       final int count = (Integer) objects[0];
       try {
-        final int docCount =
-            io.camunda.operate.qa.util.ElasticsearchUtil.getDocCount(
-                esClient, decisionIndex.getAlias());
+        final long docCount = getDocCount(decisionIndex.getAlias());
         return docCount == count;
       } catch (final IOException ex) {
         return false;
@@ -157,9 +170,7 @@ public class ElasticsearchChecks {
       assertThat(objects[0]).isInstanceOf(Integer.class);
       final int count = (Integer) objects[0];
       try {
-        final int docCount =
-            io.camunda.operate.qa.util.ElasticsearchUtil.getDocCount(
-                esClient, decisionInstanceTemplate.getAlias());
+        final long docCount = getDocCount(decisionInstanceTemplate.getAlias());
         return docCount == count;
       } catch (final IOException ex) {
         return false;
@@ -474,44 +485,59 @@ public class ElasticsearchChecks {
   }
 
   public List<FlowNodeInstanceEntity> getAllFlowNodeInstances(final Long processInstanceKey) {
-    final TermQueryBuilder processInstanceKeyQuery =
-        termQuery(FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY, processInstanceKey);
-    final SearchRequest searchRequest =
-        ElasticsearchUtil.createSearchRequest(flowNodeInstanceTemplate)
-            .source(
-                new SearchSourceBuilder()
-                    .query(constantScoreQuery(processInstanceKeyQuery))
-                    .sort(FlowNodeInstanceTemplate.POSITION, SortOrder.ASC));
+    final var query =
+        ElasticsearchUtil.constantScoreQuery(
+            ElasticsearchUtil.termsQuery(
+                FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY, processInstanceKey));
+    final var searchRequestBuilder =
+        new SearchRequest.Builder()
+            .index(whereToSearch(flowNodeInstanceTemplate, QueryType.ALL))
+            .query(query)
+            .sort(sortOrder(FlowNodeInstanceTemplate.POSITION, SortOrder.Asc));
     try {
-      return scroll(searchRequest, FlowNodeInstanceEntity.class, objectMapper, esClient);
-    } catch (final IOException e) {
+      return scrollAllStream(esClient, searchRequestBuilder, FlowNodeInstanceEntity.class)
+          .flatMap(res -> res.hits().hits().stream())
+          .map(Hit::source)
+          .toList();
+
+    } catch (final ScrollException e) {
       throw new RuntimeException(e);
     }
   }
 
   public List<MessageSubscriptionEntity> getAllMessageSubscriptions(final Long processInstanceKey) {
-    final TermQueryBuilder processInstanceKeyQuery =
-        termQuery(FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY, processInstanceKey);
-    final SearchRequest searchRequest =
-        ElasticsearchUtil.createSearchRequest(messageSubscriptionTemplate)
-            .source(new SearchSourceBuilder().query(constantScoreQuery(processInstanceKeyQuery)));
+    final var query =
+        ElasticsearchUtil.constantScoreQuery(
+            ElasticsearchUtil.termsQuery(
+                FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY, processInstanceKey));
+    final var searchRequestBuilder =
+        new SearchRequest.Builder()
+            .index(whereToSearch(messageSubscriptionTemplate, QueryType.ALL))
+            .query(query)
+            .sort(sortOrder(FlowNodeInstanceTemplate.POSITION, SortOrder.Asc));
     try {
-      return scroll(searchRequest, MessageSubscriptionEntity.class, objectMapper, esClient);
-    } catch (final IOException e) {
+      return scrollAllStream(esClient, searchRequestBuilder, MessageSubscriptionEntity.class)
+          .flatMap(res -> res.hits().hits().stream())
+          .map(Hit::source)
+          .toList();
+
+    } catch (final ScrollException e) {
       throw new RuntimeException(e);
     }
   }
 
   public List<FlowNodeInstanceEntity> getAllFlowNodeInstances() {
-    final SearchRequest searchRequest =
-        ElasticsearchUtil.createSearchRequest(flowNodeInstanceTemplate)
-            .source(
-                new SearchSourceBuilder()
-                    .query(matchAllQuery())
-                    .sort(FlowNodeInstanceTemplate.POSITION, SortOrder.ASC));
+    final var searchRequestBuilder =
+        new SearchRequest.Builder()
+            .index(whereToSearch(flowNodeInstanceTemplate, QueryType.ALL))
+            .query(q -> q.matchAll(m -> m))
+            .sort(sortOrder(FlowNodeInstanceTemplate.POSITION, SortOrder.Asc));
     try {
-      return scroll(searchRequest, FlowNodeInstanceEntity.class, objectMapper, esClient);
-    } catch (final IOException e) {
+      return scrollAllStream(esClient, searchRequestBuilder, FlowNodeInstanceEntity.class)
+          .flatMap(res -> res.hits().hits().stream())
+          .map(Hit::source)
+          .toList();
+    } catch (final ScrollException e) {
       throw new RuntimeException(e);
     }
   }
@@ -580,14 +606,21 @@ public class ElasticsearchChecks {
   }
 
   public List<VariableEntity> getAllVariables(final Long processInstanceKey) {
-    final TermQueryBuilder processInstanceKeyQuery =
-        termQuery(VariableTemplate.PROCESS_INSTANCE_KEY, processInstanceKey);
-    final SearchRequest searchRequest =
-        ElasticsearchUtil.createSearchRequest(variableTemplate)
-            .source(new SearchSourceBuilder().query(constantScoreQuery(processInstanceKeyQuery)));
+    final var query =
+        ElasticsearchUtil.constantScoreQuery(
+            ElasticsearchUtil.termsQuery(
+                VariableTemplate.PROCESS_INSTANCE_KEY, processInstanceKey));
+    final var searchRequestBuilder =
+        new SearchRequest.Builder()
+            .index(whereToSearch(variableTemplate, QueryType.ALL))
+            .query(query);
     try {
-      return scroll(searchRequest, VariableEntity.class, objectMapper, esClient);
-    } catch (final IOException e) {
+      return scrollAllStream(esClient, searchRequestBuilder, VariableEntity.class)
+          .flatMap(res -> res.hits().hits().stream())
+          .map(Hit::source)
+          .toList();
+
+    } catch (final ScrollException e) {
       throw new RuntimeException(e);
     }
   }
@@ -724,89 +757,97 @@ public class ElasticsearchChecks {
   }
 
   public long getActiveIncidentsCount() {
-    final SearchRequest searchRequest =
-        ElasticsearchUtil.createSearchRequest(incidentTemplate)
-            .source(
-                new SearchSourceBuilder().query(ElasticsearchIncidentStore.ACTIVE_INCIDENT_QUERY));
+    final var countRequest =
+        new CountRequest.Builder()
+            .index(whereToSearch(incidentTemplate, QueryType.ALL))
+            .query(ElasticsearchIncidentStore.ACTIVE_INCIDENT_QUERY)
+            .build();
     try {
-      final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
-      return response.getHits().getTotalHits().value;
+      final var response = esClient.count(countRequest);
+      return response.count();
     } catch (final IOException e) {
       throw new RuntimeException(e);
     }
   }
 
   public long getPendingIncidentsCount() {
-    final SearchRequest searchRequest =
-        ElasticsearchUtil.createSearchRequest(incidentTemplate)
-            .source(
-                new SearchSourceBuilder()
-                    .query(termQuery(IncidentTemplate.STATE, IncidentState.PENDING)));
+    final var query = ElasticsearchUtil.termsQuery(IncidentTemplate.STATE, IncidentState.PENDING);
+    final var countRequest =
+        new CountRequest.Builder()
+            .index(whereToSearch(incidentTemplate, QueryType.ALL))
+            .query(query)
+            .build();
     try {
-      final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
-      return response.getHits().getTotalHits().value;
+      final var response = esClient.count(countRequest);
+      return response.count();
     } catch (final IOException e) {
       throw new RuntimeException(e);
     }
   }
 
   public long getPostImporterQueueCount() {
-    final SearchRequest searchRequest =
-        ElasticsearchUtil.createSearchRequest(postImporterQueueTemplate)
-            .source(new SearchSourceBuilder().query(matchAllQuery()));
+    final var countRequest =
+        new CountRequest.Builder()
+            .index(whereToSearch(postImporterQueueTemplate, QueryType.ALL))
+            .query(ElasticsearchUtil.matchAllQuery())
+            .build();
     try {
-      final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
-      return response.getHits().getTotalHits().value;
+      final var response = esClient.count(countRequest);
+      return response.count();
     } catch (final IOException e) {
       throw new RuntimeException(e);
     }
   }
 
   public long getActiveIncidentsCount(final Long processInstanceKey) {
-    final SearchRequest searchRequest =
-        ElasticsearchUtil.createSearchRequest(incidentTemplate)
-            .source(
-                new SearchSourceBuilder()
-                    .query(
-                        joinWithAnd(
-                            ElasticsearchIncidentStore.ACTIVE_INCIDENT_QUERY,
-                            termQuery(PROCESS_INSTANCE_KEY, processInstanceKey))));
+    final var query =
+        joinWithAnd(
+            ElasticsearchIncidentStore.ACTIVE_INCIDENT_QUERY,
+            ElasticsearchUtil.termsQuery(PROCESS_INSTANCE_KEY, processInstanceKey));
+    final var countRequest =
+        new CountRequest.Builder()
+            .index(whereToSearch(incidentTemplate, QueryType.ALL))
+            .query(query)
+            .build();
     try {
-      final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
-      return response.getHits().getTotalHits().value;
+      final var response = esClient.count(countRequest);
+      return response.count();
     } catch (final IOException e) {
       throw new RuntimeException(e);
     }
   }
 
   public long getIncidentsCount(final Long processInstanceKey, final IncidentState state) {
-    final SearchRequest searchRequest =
-        ElasticsearchUtil.createSearchRequest(incidentTemplate)
-            .source(
-                new SearchSourceBuilder()
-                    .query(
-                        joinWithAnd(
-                            termQuery(STATE, state),
-                            termQuery(PROCESS_INSTANCE_KEY, processInstanceKey))));
+    final var query =
+        joinWithAnd(
+            ElasticsearchUtil.termsQuery(STATE, state),
+            ElasticsearchUtil.termsQuery(PROCESS_INSTANCE_KEY, processInstanceKey));
+    final var countRequest =
+        new CountRequest.Builder()
+            .index(whereToSearch(incidentTemplate, QueryType.ALL))
+            .query(query)
+            .build();
     try {
-      final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
-      return response.getHits().getTotalHits().value;
+      final var response = esClient.count(countRequest);
+      return response.count();
     } catch (final IOException e) {
       throw new RuntimeException(e);
     }
   }
 
   public long getIncidentsCount(final String bpmnProcessId, final IncidentState state) {
-    final SearchRequest searchRequest =
-        ElasticsearchUtil.createSearchRequest(incidentTemplate)
-            .source(
-                new SearchSourceBuilder()
-                    .query(
-                        joinWithAnd(
-                            termQuery(STATE, state), termQuery(BPMN_PROCESS_ID, bpmnProcessId))));
+    final var query =
+        joinWithAnd(
+            ElasticsearchUtil.termsQuery(STATE, state),
+            ElasticsearchUtil.termsQuery(BPMN_PROCESS_ID, bpmnProcessId));
+    final var countRequest =
+        new CountRequest.Builder()
+            .index(whereToSearch(incidentTemplate, QueryType.ALL))
+            .query(query)
+            .build();
     try {
-      final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
-      return response.getHits().getTotalHits().value;
+      final var response = esClient.count(countRequest);
+      return response.count();
     } catch (final IOException e) {
       throw new RuntimeException(e);
     }
@@ -819,14 +860,15 @@ public class ElasticsearchChecks {
    * @return
    */
   public long getIncidentsCount(final Long processInstanceKey) {
-    final SearchRequest searchRequest =
-        ElasticsearchUtil.createSearchRequest(incidentTemplate)
-            .source(
-                new SearchSourceBuilder()
-                    .query(termQuery(PROCESS_INSTANCE_KEY, processInstanceKey)));
+    final var query = ElasticsearchUtil.termsQuery(PROCESS_INSTANCE_KEY, processInstanceKey);
+    final var countRequest =
+        new CountRequest.Builder()
+            .index(whereToSearch(incidentTemplate, QueryType.ALL))
+            .query(query)
+            .build();
     try {
-      final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
-      return response.getHits().getTotalHits().value;
+      final var response = esClient.count(countRequest);
+      return response.count();
     } catch (final IOException e) {
       throw new RuntimeException(e);
     }
@@ -838,12 +880,14 @@ public class ElasticsearchChecks {
    * @return
    */
   public long getIncidentsCount() {
-    final SearchRequest searchRequest =
-        ElasticsearchUtil.createSearchRequest(incidentTemplate)
-            .source(new SearchSourceBuilder().query(matchAllQuery()));
+    final var countRequest =
+        new CountRequest.Builder()
+            .index(whereToSearch(incidentTemplate, QueryType.ALL))
+            .query(ElasticsearchUtil.matchAllQuery())
+            .build();
     try {
-      final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
-      return response.getHits().getTotalHits().value;
+      final var response = esClient.count(countRequest);
+      return response.count();
     } catch (final IOException e) {
       throw new RuntimeException(e);
     }

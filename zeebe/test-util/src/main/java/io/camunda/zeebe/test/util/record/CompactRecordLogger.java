@@ -21,7 +21,8 @@ import static io.camunda.zeebe.protocol.record.ValueType.DECISION_REQUIREMENTS;
 import static io.camunda.zeebe.protocol.record.ValueType.DEPLOYMENT;
 import static io.camunda.zeebe.protocol.record.ValueType.DEPLOYMENT_DISTRIBUTION;
 import static io.camunda.zeebe.protocol.record.ValueType.ESCALATION;
-import static io.camunda.zeebe.protocol.record.ValueType.GLOBAL_LISTENER_BATCH;
+import static io.camunda.zeebe.protocol.record.ValueType.EXPRESSION;
+import static io.camunda.zeebe.protocol.record.ValueType.GLOBAL_LISTENER;
 import static io.camunda.zeebe.protocol.record.ValueType.GROUP;
 import static io.camunda.zeebe.protocol.record.ValueType.IDENTITY_SETUP;
 import static io.camunda.zeebe.protocol.record.ValueType.MAPPING_RULE;
@@ -92,6 +93,7 @@ import io.camunda.zeebe.protocol.record.value.DeploymentDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.protocol.record.value.ErrorRecordValue;
 import io.camunda.zeebe.protocol.record.value.EscalationRecordValue;
+import io.camunda.zeebe.protocol.record.value.ExpressionRecordValue;
 import io.camunda.zeebe.protocol.record.value.GlobalListenerBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.GlobalListenerRecordValue;
 import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
@@ -100,6 +102,7 @@ import io.camunda.zeebe.protocol.record.value.IdentitySetupRecordValue;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobKind;
+import io.camunda.zeebe.protocol.record.value.JobMetricsBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.MappingRuleRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageBatchRecordValue;
@@ -220,9 +223,10 @@ public class CompactRecordLogger {
           entry(CLUSTER_VARIABLE.name(), "CLSTR_VAR"),
           entry(CONDITIONAL_SUBSCRIPTION.name(), "COND_SUB"),
           entry(CONDITIONAL_EVALUATION.name(), "COND_EVAL"),
+          entry(EXPRESSION.name(), "EXPR"),
           entry(IDENTITY_SETUP.name(), "ID"),
           entry(CHECKPOINT.name(), "CHK"),
-          entry(GLOBAL_LISTENER_BATCH.name(), "GL_BATCH"));
+          entry(GLOBAL_LISTENER.name(), "GL"));
 
   private static final Map<RecordType, Character> RECORD_TYPE_ABBREVIATIONS =
       ofEntries(
@@ -309,12 +313,15 @@ public class CompactRecordLogger {
     valueLoggers.put(CLUSTER_VARIABLE, this::summarizeClusterVariable);
     valueLoggers.put(ValueType.CONDITIONAL_SUBSCRIPTION, this::summarizeConditionalSubscription);
     valueLoggers.put(CONDITIONAL_EVALUATION, this::summarizeConditionalEvaluation);
+    valueLoggers.put(EXPRESSION, this::summarizeExpression);
     valueLoggers.put(ValueType.IDENTITY_SETUP, this::summarizeIdentitySetup);
     valueLoggers.put(ValueType.SCALE, this::summarizeScale);
     valueLoggers.put(ValueType.CHECKPOINT, this::summarizeCheckpoint);
     valueLoggers.put(ValueType.FORM, this::summarizeForm);
     valueLoggers.put(ValueType.HISTORY_DELETION, this::summarizeHistoryDeletion);
     valueLoggers.put(ValueType.GLOBAL_LISTENER_BATCH, this::summarizeGlobalListenerBatch);
+    valueLoggers.put(ValueType.JOB_METRICS_BATCH, this::summarizeJobMetricsBatch);
+    valueLoggers.put(ValueType.GLOBAL_LISTENER, this::summarizeGlobalListener);
   }
 
   public CompactRecordLogger(final Collection<Record<?>> records) {
@@ -1032,6 +1039,15 @@ public class CompactRecordLogger {
     }
 
     return result.toString();
+  }
+
+  private String summarizeExpression(final Record<?> record) {
+    final var value = (ExpressionRecordValue) record.getValue();
+    return "\""
+        + StringUtils.abbreviate(value.getExpression(), "..", 50)
+        + "\" = "
+        + formatVariableValue(value.getResultValue())
+        + formatTenant(value);
   }
 
   private StringBuilder summarizeRejection(final Record<?> record) {
@@ -1797,6 +1813,11 @@ public class CompactRecordLogger {
         + value.getResourceType();
   }
 
+  private String summarizeGlobalListener(final Record<?> record) {
+    final var value = (GlobalListenerRecordValue) record.getValue();
+    return summarizeGlobalListener(value);
+  }
+
   private String summarizeGlobalListener(final GlobalListenerRecordValue value) {
     return String.format(
         "%s<%s> x %s%s",
@@ -2072,5 +2093,13 @@ public class CompactRecordLogger {
     } catch (final NumberFormatException e) {
       return -1;
     }
+  }
+
+  private String summarizeJobMetricsBatch(final Record<?> record) {
+    final var value = (JobMetricsBatchRecordValue) record.getValue();
+    final var jobMetrics = value.getJobMetrics();
+    final var metricsCount = jobMetrics != null ? jobMetrics.size() : 0;
+
+    return "metrics: " + metricsCount + (value.getRecordSizeLimitExceeded() ? " (truncated)" : "");
   }
 }

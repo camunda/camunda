@@ -39,9 +39,11 @@ tags:
   - name: Decision requirements
   - name: Document
   - name: Element instance
+  - name: Expression
   - name: Group
   - name: Incident
   - name: Job
+  - name: Job metrics
   - name: License
   - name: Mapping rule
   - name: Message
@@ -167,6 +169,10 @@ paths:
   /element-instances/{elementInstanceKey}/variables:
     $ref: 'element-instances.yaml#/paths/~1element-instances~1{elementInstanceKey}~1variables'
 
+  # Expression endpoints
+  /expression/evaluation:
+    $ref: 'expression.yaml#/paths/~1expression~1evaluation'
+
   # Group endpoints
   /groups:
     $ref: 'groups.yaml#/paths/~1groups'
@@ -196,6 +202,10 @@ paths:
     $ref: 'incidents.yaml#/paths/~1incidents~1{incidentKey}'
   /incidents/{incidentKey}/resolution:
     $ref: 'incidents.yaml#/paths/~1incidents~1{incidentKey}~1resolution'
+  /incidents/statistics/process-instances-by-definition:
+    $ref: 'incidents.yaml#/paths/~1incidents~1statistics~1process-instances-by-definition'
+  /incidents/statistics/process-instances-by-error:
+    $ref: 'incidents.yaml#/paths/~1incidents~1statistics~1process-instances-by-error'
 
   # Job endpoints
   /jobs/activation:
@@ -210,6 +220,10 @@ paths:
     $ref: 'jobs.yaml#/paths/~1jobs~1{jobKey}~1error'
   /jobs/{jobKey}/failure:
     $ref: 'jobs.yaml#/paths/~1jobs~1{jobKey}~1failure'
+
+  # Job metrics endpoints
+  /jobs/statistics/global:
+    $ref: 'job-metrics.yaml#/paths/~1jobs~1statistics~1global'
 
   # License endpoints
   /license:
@@ -382,6 +396,8 @@ paths:
     $ref: 'user-tasks.yaml#/paths/~1user-tasks~1{userTaskKey}~1assignee'
   /user-tasks/{userTaskKey}/assignment:
     $ref: 'user-tasks.yaml#/paths/~1user-tasks~1{userTaskKey}~1assignment'
+  /user-tasks/{userTaskKey}/audit-logs/search:
+    $ref: 'user-tasks.yaml#/paths/~1user-tasks~1{userTaskKey}~1audit-logs~1search'
   /user-tasks/{userTaskKey}/completion:
     $ref: 'user-tasks.yaml#/paths/~1user-tasks~1{userTaskKey}~1completion'
   /user-tasks/{userTaskKey}/form:

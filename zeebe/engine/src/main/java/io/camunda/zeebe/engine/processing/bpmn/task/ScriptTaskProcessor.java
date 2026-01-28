@@ -51,7 +51,7 @@ public final class ScriptTaskProcessor
     variableMappingBehavior = bpmnBehaviors.variableMappingBehavior();
     stateBehavior = bpmnBehaviors.stateBehavior();
     jobBehavior = bpmnBehaviors.jobBehavior();
-    expressionProcessor = bpmnBehaviors.expressionBehavior();
+    expressionProcessor = bpmnBehaviors.expressionProcessor();
     eventTriggerBehavior = bpmnBehaviors.eventTriggerBehavior();
     compensationSubscriptionBehaviour = bpmnBehaviors.compensationSubscriptionBehaviour();
   }
@@ -181,7 +181,7 @@ public final class ScriptTaskProcessor
   private Either<Failure, DirectBuffer> evaluateScript(
       final ExecutableScriptTask element, final BpmnElementContext context) {
     final var resultOrFailure =
-        expressionProcessor.evaluateAnyExpression(
+        expressionProcessor.evaluateAnyExpressionToBuffer(
             element.getExpression(), context.getElementInstanceKey(), context.getTenantId());
 
     resultOrFailure.ifRight(

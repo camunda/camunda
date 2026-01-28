@@ -27,6 +27,8 @@ import {getScopeId} from 'modules/utils/variables';
 import type {Variable} from '@camunda/camunda-api-zod-schemas/8.8';
 import {useVariable} from 'modules/queries/variables/useVariable';
 import {notificationsStore} from 'modules/stores/notifications';
+import {useVariableScopeKey} from 'modules/hooks/variables';
+import {IS_ELEMENT_SELECTION_V2} from 'modules/feature-flags';
 
 type Props = {
   id?: string;
@@ -102,6 +104,9 @@ const ExistingVariableValue: React.FC<Props> = observer(
     } = useVariable(id!, {
       enabled: isPreview && id !== undefined,
     });
+    const variableScopeKey = IS_ELEMENT_SELECTION_V2
+      ? useVariableScopeKey()
+      : getScopeId();
 
     useEffect(() => {
       if (error) {
@@ -179,7 +184,7 @@ const ExistingVariableValue: React.FC<Props> = observer(
               }}
               onBlur={(event) => {
                 createModification({
-                  scopeId: getScopeId(),
+                  scopeId: variableScopeKey,
                   name: variableName,
                   oldValue: getInitialValue(variable),
                   newValue: input.value ?? '',
@@ -214,7 +219,7 @@ const ExistingVariableValue: React.FC<Props> = observer(
               });
 
               createModification({
-                scopeId: getScopeId(),
+                scopeId: variableScopeKey,
                 name: variableName,
                 oldValue: getInitialValue(variable),
                 newValue: value ?? '',

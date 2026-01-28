@@ -38,6 +38,7 @@ class OperateProcessesPage {
   readonly diagram: InstanceType<typeof OperateDiagramPage>;
   readonly processActiveCheckbox: Locator;
   readonly processCompletedCheckbox: Locator;
+  readonly processCanceledCheckbox: Locator;
   readonly processRunningInstancesCheckbox: Locator;
   readonly processIncidentsCheckbox: Locator;
   readonly processFinishedInstancesCheckbox: Locator;
@@ -45,24 +46,20 @@ class OperateProcessesPage {
   readonly continueButton: Locator;
   readonly processInstancesPanel: Locator;
   readonly migrateButton: Locator;
-  readonly operationsPanel: Locator;
-  readonly operationsList: Locator;
-  readonly latestOperationEntry: Locator;
-  readonly latestOperationLink: Locator;
-  readonly latestOperationMigrateHeading: Locator;
-  readonly latestOperationProgressBar: Locator;
-  readonly latestOperationEntryBeforeCompletion: Locator;
-  readonly operationSuccessMessage: Locator;
-  readonly collapsedOperationsPanel: Locator;
-  readonly expandOperationsButton: Locator;
-  readonly inProgressBar: Locator;
   readonly selectAllRowsCheckbox: Locator;
   readonly retryButton: Locator;
   readonly cancelButton: Locator;
   readonly applyButton: Locator;
   readonly resultsCount: Locator;
   readonly scheduledOperationsIcons: Locator;
-  processInstanceLinkByKey: (processInstanceKey: string) => Locator;
+  readonly viewParentInstanceLinkInList: Locator;
+  readonly processInstanceLinkByKey: (processInstanceKey: string) => Locator;
+  readonly parentInstanceCell: (parentInstanceKey: string) => Locator;
+  readonly versionCells: (version: string) => Locator;
+  readonly calledInstanceCell: (
+    rowIndex?: number,
+    cellIndex?: number,
+  ) => Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -134,6 +131,9 @@ class OperateProcessesPage {
     this.processCompletedCheckbox = page
       .locator('label')
       .filter({hasText: 'Completed'});
+    this.processCanceledCheckbox = page
+      .locator('label')
+      .filter({hasText: 'Canceled'});
     this.processRunningInstancesCheckbox = page
       .locator('label')
       .filter({hasText: 'Running Instances'});
@@ -151,33 +151,6 @@ class OperateProcessesPage {
     this.migrateButton = this.processInstancesPanel.getByRole('button', {
       name: /^migrate$/i,
     });
-    this.operationsPanel = page.getByRole('region', {
-      name: 'Operations',
-    });
-    this.operationsList = page.getByTestId('operations-list');
-    this.latestOperationEntry = this.operationsList
-      .getByRole('listitem')
-      .first();
-    this.latestOperationEntryBeforeCompletion = this.operationsList
-      .getByRole('listitem')
-      .last();
-    this.latestOperationLink = page.getByTestId('operation-id').first();
-    this.latestOperationMigrateHeading = this.latestOperationEntry.getByRole(
-      'heading',
-      {name: 'Migrate'},
-    );
-    this.latestOperationProgressBar =
-      this.latestOperationEntry.getByRole('progressbar');
-    this.operationSuccessMessage = page
-      .getByText(/\d+ operations? succeeded/)
-      .first();
-    this.collapsedOperationsPanel = page.getByTestId('collapsed-panel');
-    this.expandOperationsButton = page.getByRole('button', {
-      name: 'Expand Operations',
-    });
-    this.inProgressBar = this.operationsList.locator(
-      '[role="progressbar"][aria-busy="true"]',
-    );
     this.selectAllRowsCheckbox = page.getByRole('columnheader', {
       name: 'Select all rows',
     });
@@ -192,6 +165,19 @@ class OperateProcessesPage {
       page.getByRole('link', {
         name: processInstanceKey,
       });
+    this.parentInstanceCell = (parentInstanceKey: string) =>
+      this.dataList.getByRole('cell', {name: parentInstanceKey});
+    this.versionCells = (version: string) =>
+      this.dataList.getByRole('cell', {name: version, exact: true});
+    this.viewParentInstanceLinkInList = this.dataList.getByRole('link', {
+      name: /view parent instance/i,
+    });
+    this.calledInstanceCell = (rowIndex = 0, cellIndex = 2) =>
+      this.dataList
+        .getByRole('row')
+        .nth(rowIndex)
+        .getByRole('cell')
+        .nth(cellIndex);
   }
 
   async filterByProcessName(name: string): Promise<void> {
@@ -287,7 +273,7 @@ class OperateProcessesPage {
     const button = this.getRetryInstanceButton(processInstanceKey);
     try {
       await button.click({timeout: 30000});
-    } catch (error) {
+    } catch {
       await button.scrollIntoViewIfNeeded({timeout: 60000});
       await button.click({timeout: 60000});
     }
@@ -370,9 +356,10 @@ class OperateProcessesPage {
             .locator('label');
 
           // Wait for the element to be attached and stable
-          await checkbox.waitFor({state: 'attached', timeout: 5000});
+          await checkbox.waitFor({state: 'attached'});
+          await sleep(200);
           if (!(await checkbox.isChecked())) {
-            await checkbox.click({timeout: 10000});
+            await checkbox.click();
           }
           await sleep(100);
           break;
@@ -391,8 +378,9 @@ class OperateProcessesPage {
         }
       }
     }
+    const itemText = count === 1 ? 'item' : 'items';
     await expect(
-      this.page.getByText(`${count} items selected`).first(),
+      this.page.getByText(`${count} ${itemText} selected`).first(),
     ).toBeVisible();
   }
 
@@ -402,6 +390,10 @@ class OperateProcessesPage {
 
   async clickProcessCompletedCheckbox(): Promise<void> {
     await this.processCompletedCheckbox.click({timeout: 120000});
+  }
+
+  async clickProcessCanceledCheckbox(): Promise<void> {
+    await this.processCanceledCheckbox.click({timeout: 120000});
   }
 
   async clickProcessIncidentsCheckbox(): Promise<void> {
@@ -428,38 +420,16 @@ class OperateProcessesPage {
     await this.clickContinueButton();
   }
 
-  async clickLatestOperationLink(): Promise<void> {
-    await this.latestOperationLink.click({timeout: 60000});
+  async clickViewParentInstanceFromList(): Promise<void> {
+    await this.viewParentInstanceLinkInList.click();
   }
 
-  getVersionCells(version: string): Locator {
-    return this.dataList.getByRole('cell', {name: version, exact: true});
-  }
-
-  async expandOperationsPanel(): Promise<void> {
-    const isCollapsed = await this.collapsedOperationsPanel.isVisible();
-    if (isCollapsed) {
-      await this.expandOperationsButton.click();
-      await this.operationsList.waitFor({state: 'visible', timeout: 10000});
-    }
-  }
-
-  async waitForOperationToComplete(): Promise<void> {
-    try {
-      await expect(this.inProgressBar).toBeVisible({timeout: 5000});
-      await expect(this.inProgressBar).not.toBeVisible({timeout: 120000});
-    } catch {
-      console.log(
-        'Progress bar did not appear or disappeared too quickly - operation likely completed fast',
-      );
-    }
-  }
-
-  getMigrationOperationEntry(successCount: number): Locator {
+  getNthProcessInstanceCheckbox(index: number): Locator {
     return this.page
-      .locator('[data-testid="operations-entry"]')
-      .filter({hasText: 'Migrate'})
-      .filter({hasText: `${successCount} operations succeeded`});
+      .getByTestId('data-list')
+      .getByRole('row')
+      .nth(index + 1) // +1 to skip header row
+      .getByRole('checkbox');
   }
 }
 

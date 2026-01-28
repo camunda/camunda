@@ -11,7 +11,6 @@ import io.atomix.cluster.messaging.MessagingConfig.CompressionAlgorithm;
 import io.camunda.configuration.Azure;
 import io.camunda.configuration.CommandApi;
 import io.camunda.configuration.Data;
-import io.camunda.configuration.DocumentBasedSecondaryStorageDatabase;
 import io.camunda.configuration.Export;
 import io.camunda.configuration.Exporter;
 import io.camunda.configuration.Filesystem;
@@ -19,7 +18,6 @@ import io.camunda.configuration.Filter;
 import io.camunda.configuration.FixedPartition;
 import io.camunda.configuration.Gcs;
 import io.camunda.configuration.Interceptor;
-import io.camunda.configuration.InterceptorPlugin;
 import io.camunda.configuration.InternalApi;
 import io.camunda.configuration.KeyStore;
 import io.camunda.configuration.Limit;
@@ -42,6 +40,7 @@ import io.camunda.configuration.Write;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.beans.LegacyBrokerBasedProperties;
 import io.camunda.zeebe.backup.azure.SasTokenConfig;
+import io.camunda.zeebe.broker.exporter.context.ExporterConfiguration;
 import io.camunda.zeebe.broker.system.configuration.ConfigManagerCfg;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.broker.system.configuration.ExportingCfg;
@@ -94,7 +93,6 @@ public class BrokerBasedPropertiesOverride {
   private static final String CAMUNDA_EXPORTER_NAME = "camundaexporter";
   private static final String RDBMS_EXPORTER_CLASS_NAME = "io.camunda.exporter.rdbms.RdbmsExporter";
   private static final String RDBMS_EXPORTER_NAME = "rdbms";
-  private static final String CONNECT_INTERCEPTOR_PLUGINS_BREADCRUMB = "connect.interceptorPlugins";
 
   private final UnifiedConfiguration unifiedConfiguration;
   private final LegacyBrokerBasedProperties legacyBrokerBasedProperties;
@@ -112,22 +110,18 @@ public class BrokerBasedPropertiesOverride {
     final BrokerBasedProperties override = new BrokerBasedProperties();
     BeanUtils.copyProperties(legacyBrokerBasedProperties, override);
 
-    // from camunda.cluster.* sections
     populateFromCluster(override);
 
     populateFromLongPolling(override);
 
     populateFromRestFilters(override);
 
-    // from camunda.system.* sections in relation
-    // with zeebe.broker.*
     populateFromSystem(override);
 
     populateFromPrimaryStorage(override);
 
     populateFromGrpc(override);
 
-    // from camunda.data.* sections
     populateFromData(override);
 
     if (unifiedConfiguration.getCamunda().getData().getSecondaryStorage().getType()
@@ -141,13 +135,36 @@ public class BrokerBasedPropertiesOverride {
 
     populateFromMonitoring(override);
 
-    // TODO: Populate the rest of the bean using unifiedConfiguration
-    //  override.setSampleField(unifiedConfiguration.getSampleField());
     populateFromProcessing(override);
 
     populateFromFlowControl(override);
 
+    populateFromSecurity(override);
+
     return override;
+  }
+
+  private void populateFromSecurity(final BrokerBasedProperties override) {
+    final var tlsCluster =
+        unifiedConfiguration
+            .getCamunda()
+            .getSecurity()
+            .getTransportLayerSecurity()
+            .getCluster()
+            .withBrokerTlsClusterProperties();
+
+    final var networkSecurity = override.getNetwork().getSecurity();
+    networkSecurity.setEnabled(tlsCluster.isEnabled());
+    networkSecurity.setCertificateChainPath(tlsCluster.getCertificateChainPath());
+    networkSecurity.setPrivateKeyPath(tlsCluster.getCertificatePrivateKeyPath());
+    networkSecurity
+        .getKeyStore()
+        .setFilePath(
+            tlsCluster.getKeyStore().withBrokerTlsClusterKeyStoreProperties().getFilePath());
+    networkSecurity
+        .getKeyStore()
+        .setPassword(
+            tlsCluster.getKeyStore().withBrokerTlsClusterKeyStoreProperties().getPassword());
   }
 
   private void populateFromProcessing(final BrokerBasedProperties override) {
@@ -198,6 +215,8 @@ public class BrokerBasedPropertiesOverride {
 
   private void populateFromEngine(final BrokerBasedProperties override) {
     populateFromDistribution(override);
+    populateFromBatchOperations(override);
+    populateFromExpression(override);
   }
 
   private void populateFromDistribution(final BrokerBasedProperties override) {
@@ -207,6 +226,21 @@ public class BrokerBasedPropertiesOverride {
     final var distributionCfg = override.getExperimental().getEngine().getDistribution();
     distributionCfg.setMaxBackoffDuration(distribution.getMaxBackoffDuration());
     distributionCfg.setRedistributionInterval(distribution.getRedistributionInterval());
+  }
+
+  private void populateFromBatchOperations(final BrokerBasedProperties override) {
+    final var engineBatchOperation =
+        unifiedConfiguration.getCamunda().getProcessing().getEngine().getBatchOperations();
+    override
+        .getExperimental()
+        .getEngine()
+        .getBatchOperations()
+        .setSchedulerInterval(engineBatchOperation.getSchedulerInterval());
+  }
+
+  private void populateFromExpression(final BrokerBasedProperties override) {
+    final var expression = unifiedConfiguration.getCamunda().getExpression();
+    override.getExperimental().getEngine().getExpression().setTimeout(expression.getTimeout());
   }
 
   private void populateFromFlowControl(final BrokerBasedProperties override) {
@@ -369,6 +403,7 @@ public class BrokerBasedPropertiesOverride {
     override.getCluster().setReplicationFactor(cluster.getReplicationFactor());
     override.getCluster().setClusterSize(cluster.getSize());
     override.getCluster().setClusterName(cluster.getName());
+    override.getCluster().setClusterId(cluster.getClusterId());
 
     populateFromMembership(override);
     populateFromRaftProperties(override);
@@ -482,6 +517,10 @@ public class BrokerBasedPropertiesOverride {
         .getExperimental()
         .getRaft()
         .setPreallocateSegmentFiles(raft.isPreallocateSegmentFiles());
+    override
+        .getExperimental()
+        .getRaft()
+        .setSegmentPreallocationStrategy(raft.getSegmentPreallocationStrategy());
   }
 
   private void populateFromClusterMetadata(final BrokerBasedProperties override) {
@@ -489,8 +528,10 @@ public class BrokerBasedPropertiesOverride {
     final var syncDelay = metadata.getSyncDelay();
     final var syncTimeout = metadata.getSyncRequestTimeout();
     final var gossipFanout = metadata.getGossipFanout();
+    final var syncInitializerDelay = metadata.getSyncInitializerDelay();
     final var configManagerGossipConfig =
-        new ClusterConfigurationGossiperConfig(syncDelay, syncTimeout, gossipFanout);
+        new ClusterConfigurationGossiperConfig(
+            syncDelay, syncTimeout, gossipFanout, syncInitializerDelay);
     override.getCluster().setConfigManager(new ConfigManagerCfg(configManagerGossipConfig));
   }
 
@@ -748,30 +789,22 @@ public class BrokerBasedPropertiesOverride {
   }
 
   private void populateCamundaExporter(final BrokerBasedProperties override) {
-    final SecondaryStorage secondaryStorage =
-        unifiedConfiguration.getCamunda().getData().getSecondaryStorage();
+    final Data data = unifiedConfiguration.getCamunda().getData();
+    final SecondaryStorage secondaryStorage = data.getSecondaryStorage();
 
     if (!secondaryStorage.getAutoconfigureCamundaExporter()) {
       LOGGER.debug("Skipping autoconfiguration of the (default) exporter 'camundaexporter'");
       return;
     }
 
-    final DocumentBasedSecondaryStorageDatabase database;
-    switch (secondaryStorage.getType()) {
-      case elasticsearch ->
-          database =
-              unifiedConfiguration.getCamunda().getData().getSecondaryStorage().getElasticsearch();
-      case opensearch ->
-          database =
-              unifiedConfiguration.getCamunda().getData().getSecondaryStorage().getOpensearch();
-      default -> {
-        // RDBMS and NONE are not supported.
-        return;
-      }
+    if (secondaryStorage.getDocumentBasedDatabase() == null) {
+      LOGGER.debug(
+          "Skipping Camunda exporter configuration because database type {} is not document based",
+          secondaryStorage.getType());
+      return;
     }
 
     /* Load exporter config map */
-
     ExporterCfg exporter = override.getCamundaExporter();
     if (exporter == null) {
       exporter = new ExporterCfg();
@@ -779,8 +812,6 @@ public class BrokerBasedPropertiesOverride {
       exporter.setArgs(new LinkedHashMap<>());
       override.getExporters().put(CAMUNDA_EXPORTER_NAME, exporter);
     }
-
-    /* Override config map values */
 
     // https://github.com/camunda/camunda/issues/37880
     // it is possible to have an exporter with no args defined
@@ -790,111 +821,27 @@ public class BrokerBasedPropertiesOverride {
       exporter.setArgs(args);
     }
 
-    setArg(args, "history.retention.enabled", secondaryStorage.getRetention().isEnabled());
-    setArg(args, "history.retention.minimumAge", secondaryStorage.getRetention().getMinimumAge());
-
-    setArg(args, "connect.type", secondaryStorage.getType().name());
-    setArg(args, "connect.url", database.getUrl());
-    setArg(args, "connect.clusterName", database.getClusterName());
-    setArg(args, "connect.dateFormat", database.getDateFormat());
-    final var socketTimeout = database.getSocketTimeout();
-    setArg(args, "connect.socketTimeout", socketTimeout != null ? socketTimeout.toMillis() : null);
-    final var connectionTimeout = database.getConnectionTimeout();
-    setArg(
-        args,
-        "connect.connectTimeout",
-        connectionTimeout != null ? connectionTimeout.toMillis() : null);
-
-    // Add security configuration mapping
-    if (database.getSecurity() != null) {
-      setArg(args, "connect.security.enabled", database.getSecurity().isEnabled());
-      setArg(args, "connect.security.certificatePath", database.getSecurity().getCertificatePath());
-      setArg(args, "connect.security.verifyHostname", database.getSecurity().isVerifyHostname());
-      setArg(args, "connect.security.selfSigned", database.getSecurity().isSelfSigned());
-    }
-
-    populateInterceptorPlugins(database, args);
-
-    setArg(args, "connect.username", database.getUsername());
-    setArg(args, "connect.password", database.getPassword());
-
-    setArg(args, "connect.indexPrefix", database.getIndexPrefix());
-
-    setArg(args, "index.numberOfShards", database.getNumberOfShards());
-    setArg(args, "index.numberOfReplicas", database.getNumberOfReplicas());
-    setArg(args, "index.variableSizeThreshold", database.getVariableSizeThreshold());
-    if (database.getTemplatePriority() != null) {
-      setArg(args, "index.templatePriority", database.getTemplatePriority());
-    }
-    if (!database.getNumberOfReplicasPerIndex().isEmpty()) {
-      setArg(args, "index.replicasByIndexName", database.getNumberOfReplicasPerIndex());
-    }
-    if (!database.getNumberOfShardsPerIndex().isEmpty()) {
-      setArg(args, "index.shardsByIndexName", database.getNumberOfShardsPerIndex());
-    }
-
-    setArg(
-        args, "history.processInstanceEnabled", database.getHistory().isProcessInstanceEnabled());
-
-    setArg(args, "history.retention.policyName", database.getHistory().getPolicyName());
-    setArg(args, "history.elsRolloverDateFormat", database.getHistory().getElsRolloverDateFormat());
-    setArg(args, "history.rolloverInterval", database.getHistory().getRolloverInterval());
-    setArg(args, "history.rolloverBatchSize", database.getHistory().getRolloverBatchSize());
-    setArg(
-        args,
-        "history.waitPeriodBeforeArchiving",
-        database.getHistory().getWaitPeriodBeforeArchiving());
-    setArg(
-        args, "history.delayBetweenRuns", database.getHistory().getDelayBetweenRuns().toMillis());
-    setArg(
-        args,
-        "history.maxDelayBetweenRuns",
-        database.getHistory().getMaxDelayBetweenRuns().toMillis());
-
-    setArg(args, "createSchema", database.isCreateSchema());
-
-    if (database.getIncidentNotifier() != null) {
-      setArg(args, "notifier.webhook", database.getIncidentNotifier().getWebhook());
-      setArg(args, "notifier.auth0Domain", database.getIncidentNotifier().getAuth0Domain());
-      setArg(args, "notifier.auth0Protocol", database.getIncidentNotifier().getAuth0Protocol());
-      setArg(args, "notifier.m2mClientId", database.getIncidentNotifier().getM2mClientId());
-      setArg(args, "notifier.m2mClientSecret", database.getIncidentNotifier().getM2mClientSecret());
-      setArg(args, "notifier.m2mAudience", database.getIncidentNotifier().getM2mAudience());
-    }
-
-    setArg(
-        args, "batchOperationCache.maxCacheSize", database.getBatchOperationCache().getMaxSize());
-    setArg(args, "processCache.maxCacheSize", database.getProcessCache().getMaxSize());
-    setArg(
-        args,
-        "decisionRequirementsCache.maxCacheSize",
-        database.getDecisionRequirementsCache().getMaxSize());
-    setArg(args, "formCache.maxCacheSize", database.getFormCache().getMaxSize());
-
-    setArg(args, "postExport.batchSize", database.getPostExport().getBatchSize());
-    // Duration supports only seconds and nanos; other units need to be converted
-    setArg(
-        args,
-        "postExport.delayBetweenRuns",
-        database.getPostExport().getDelayBetweenRuns().getSeconds() * 1000);
-    setArg(
-        args,
-        "postExport.maxDelayBetweenRuns",
-        database.getPostExport().getMaxDelayBetweenRuns().getSeconds() * 1000);
-    setArg(args, "postExport.ignoreMissingData", database.getPostExport().isIgnoreMissingData());
-    setArg(
-        args,
-        "batchOperation.exportItemsOnCreation",
-        database.getBatchOperations().isExportItemsOnCreation());
-
-    setArg(args, "bulk.delay", database.getBulk().getDelay().getSeconds());
-    setArg(args, "bulk.size", database.getBulk().getSize());
-    setArg(args, "bulk.memoryLimit", database.getBulk().getMemoryLimit().toMegabytes());
+    exporter.setArgs(
+        ExporterConfiguration.of(io.camunda.exporter.config.ExporterConfiguration.class, args)
+            .apply(
+                config -> {
+                  CamundaExporterConfigurationApplier.applyRetention(config, unifiedConfiguration);
+                  CamundaExporterConfigurationApplier.applyConnect(config, unifiedConfiguration);
+                  CamundaExporterConfigurationApplier.applyIndex(config, unifiedConfiguration);
+                  CamundaExporterConfigurationApplier.applyHistory(config, unifiedConfiguration);
+                  CamundaExporterConfigurationApplier.applyPostExportConfiguration(
+                      config, unifiedConfiguration);
+                  CamundaExporterConfigurationApplier.applyBulk(config, unifiedConfiguration);
+                  CamundaExporterConfigurationApplier.applyIncidentNotifier(
+                      config, unifiedConfiguration);
+                  CamundaExporterConfigurationApplier.applyMisc(config, unifiedConfiguration);
+                })
+            .toArgs());
   }
 
   private void populateRdbmsExporter(final BrokerBasedProperties override) {
-    final SecondaryStorage secondaryStorage =
-        unifiedConfiguration.getCamunda().getData().getSecondaryStorage();
+    final Data data = unifiedConfiguration.getCamunda().getData();
+    final SecondaryStorage secondaryStorage = data.getSecondaryStorage();
 
     final Rdbms database = secondaryStorage.getRdbms();
 
@@ -914,61 +861,78 @@ public class BrokerBasedPropertiesOverride {
     // it is possible to have an exporter with no args defined
     final Map<String, Object> args =
         exporter.getArgs() == null ? new LinkedHashMap<>() : exporter.getArgs();
-    setArgIfNotNull(args, "queueSize", database.getQueueSize());
-    setArgIfNotNull(args, "queueMemoryLimit", database.getQueueMemoryLimit());
-    setArgIfNotNull(args, "flushInterval", database.getFlushInterval());
 
-    if (database.getHistory() != null) {
-      final var history = database.getHistory();
+    exporter.setArgs(
+        ExporterConfiguration.of(io.camunda.exporter.rdbms.ExporterConfiguration.class, args)
+            .apply(
+                config -> {
+                  config.setQueueSize(database.getQueueSize());
+                  config.setQueueMemoryLimit(database.getQueueMemoryLimit());
+                  config.setFlushInterval(database.getFlushInterval());
+                  config.setExportBatchOperationItemsOnCreation(
+                      database.isExportBatchOperationItemsOnCreation());
+                  config.setBatchOperationItemInsertBlockSize(
+                      database.getBatchOperationItemInsertBlockSize());
+                  config.setAuditLog(
+                      unifiedConfiguration.getCamunda().getData().getAuditLog().toConfiguration());
+                  config.setHistoryDeletion(
+                      unifiedConfiguration
+                          .getCamunda()
+                          .getData()
+                          .getHistoryDeletion()
+                          .toConfiguration());
 
-      setArgIfNotNull(args, "history.defaultHistoryTTL", history.getDefaultHistoryTTL());
-      setArgIfNotNull(
-          args,
-          "history.defaultBatchOperationHistoryTTL",
-          history.getDefaultBatchOperationHistoryTTL());
-      setArgIfNotNull(
-          args,
-          "history.batchOperationCancelProcessInstanceHistoryTTL",
-          history.getBatchOperationCancelProcessInstanceHistoryTTL());
-      setArgIfNotNull(
-          args,
-          "history.batchOperationMigrateProcessInstanceHistoryTTL",
-          history.getBatchOperationMigrateProcessInstanceHistoryTTL());
-      setArgIfNotNull(
-          args,
-          "history.batchOperationModifyProcessInstanceHistoryTTL",
-          history.getBatchOperationModifyProcessInstanceHistoryTTL());
-      setArgIfNotNull(
-          args,
-          "history.batchOperationResolveIncidentHistoryTTL",
-          history.getBatchOperationResolveIncidentHistoryTTL());
-      setArgIfNotNull(
-          args, "history.minHistoryCleanupInterval", history.getMinHistoryCleanupInterval());
-      setArgIfNotNull(
-          args, "history.maxHistoryCleanupInterval", history.getMaxHistoryCleanupInterval());
-      setArgIfNotNull(
-          args, "history.historyCleanupBatchSize", history.getHistoryCleanupBatchSize());
-      setArgIfNotNull(args, "history.usageMetricsCleanup", history.getUsageMetricsCleanup());
-      setArgIfNotNull(args, "history.usageMetricsTTL", history.getUsageMetricsTTL());
+                  applyRdbmsHistoryExporterConfiguration(config.getHistory(), database);
+
+                  if (database.getProcessCache() != null) {
+                    config.getProcessCache().setMaxSize(database.getProcessCache().getMaxSize());
+                  }
+
+                  if (database.getBatchOperationCache() != null) {
+                    config
+                        .getBatchOperationCache()
+                        .setMaxSize(database.getBatchOperationCache().getMaxSize());
+                  }
+
+                  if (database.getInsertBatching() != null) {
+                    config
+                        .getInsertBatching()
+                        .setMaxAuditLogInsertBatchSize(
+                            database.getInsertBatching().getMaxAuditLogInsertBatchSize());
+                    config
+                        .getInsertBatching()
+                        .setMaxVariableInsertBatchSize(
+                            database.getInsertBatching().getMaxVariableInsertBatchSize());
+                  }
+                })
+            .toArgs());
+  }
+
+  private void applyRdbmsHistoryExporterConfiguration(
+      final io.camunda.exporter.rdbms.ExporterConfiguration.HistoryConfiguration history,
+      final Rdbms database) {
+    if (database.getHistory() == null) {
+      return;
     }
 
-    if (database.getProcessCache() != null) {
-      setArgIfNotNull(args, "processCache.maxSize", database.getProcessCache().getMaxSize());
-    }
-
-    if (database.getBatchOperationCache() != null) {
-      setArgIfNotNull(
-          args, "batchOperationCache.maxSize", database.getBatchOperationCache().getMaxSize());
-    }
-
-    setArgIfNotNull(
-        args,
-        "exportBatchOperationItemsOnCreation",
-        database.isExportBatchOperationItemsOnCreation());
-    setArgIfNotNull(
-        args, "batchOperationItemInsertBlockSize", database.getBatchOperationItemInsertBlockSize());
-
-    exporter.setArgs(args);
+    history.setDefaultHistoryTTL(database.getHistory().getDefaultHistoryTTL());
+    history.setDefaultBatchOperationHistoryTTL(
+        database.getHistory().getDefaultBatchOperationHistoryTTL());
+    history.setBatchOperationCancelProcessInstanceHistoryTTL(
+        database.getHistory().getBatchOperationCancelProcessInstanceHistoryTTL());
+    history.setBatchOperationMigrateProcessInstanceHistoryTTL(
+        database.getHistory().getBatchOperationMigrateProcessInstanceHistoryTTL());
+    history.setBatchOperationModifyProcessInstanceHistoryTTL(
+        database.getHistory().getBatchOperationModifyProcessInstanceHistoryTTL());
+    history.setBatchOperationResolveIncidentHistoryTTL(
+        database.getHistory().getBatchOperationResolveIncidentHistoryTTL());
+    history.setMinHistoryCleanupInterval(database.getHistory().getMinHistoryCleanupInterval());
+    history.setMaxHistoryCleanupInterval(database.getHistory().getMaxHistoryCleanupInterval());
+    history.setHistoryCleanupBatchSize(database.getHistory().getHistoryCleanupBatchSize());
+    history.setHistoryCleanupProcessInstanceBatchSize(
+        database.getHistory().getHistoryCleanupProcessInstanceBatchSize());
+    history.setUsageMetricsCleanup(database.getHistory().getUsageMetricsCleanup());
+    history.setUsageMetricsTTL(database.getHistory().getUsageMetricsTTL());
   }
 
   private void populateFromMonitoring(final BrokerBasedProperties override) {
@@ -985,36 +949,6 @@ public class BrokerBasedPropertiesOverride {
       final Map<String, Object> args, final String breadcrumb, final Object value) {
     if (value != null) {
       setArg(args, breadcrumb, value);
-    }
-  }
-
-  private void populateInterceptorPlugins(
-      final DocumentBasedSecondaryStorageDatabase database, final Map<String, Object> args) {
-
-    final Map<Object, String> connectMap = (Map<Object, String>) args.get("connect");
-    if (connectMap != null && connectMap.containsKey("interceptorPlugins")) {
-      final String warningMessage =
-          String.format(
-              "The following legacy property is no longer supported and should be removed in favor of '%s': %s",
-              "camunda.data.secondary-storage." + database.databaseName() + ".interceptor-plugins",
-              "zeebe.broker.exporters.camundaexporter.args.connect.interceptorPlugins");
-      LOGGER.warn(warningMessage);
-    }
-
-    for (int i = 0; i < database.getInterceptorPlugins().size(); i++) {
-      final InterceptorPlugin interceptorPlugin = database.getInterceptorPlugins().get(i);
-      setArg(
-          args,
-          String.format(CONNECT_INTERCEPTOR_PLUGINS_BREADCRUMB + ".%s.id", i),
-          interceptorPlugin.getId());
-      setArg(
-          args,
-          String.format(CONNECT_INTERCEPTOR_PLUGINS_BREADCRUMB + ".%s.className", i),
-          interceptorPlugin.getClassName());
-      setArg(
-          args,
-          String.format(CONNECT_INTERCEPTOR_PLUGINS_BREADCRUMB + ".%s.jarPath", i),
-          interceptorPlugin.getJarPath());
     }
   }
 

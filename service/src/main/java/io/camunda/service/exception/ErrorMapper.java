@@ -65,6 +65,7 @@ public class ErrorMapper {
   public static ServiceException mapSearchError(final CamundaSearchException cse) {
     final String errorMessage = cse.getMessage();
     return switch (cse.getReason()) {
+      case INVALID_ARGUMENT -> new ServiceException(errorMessage, INVALID_ARGUMENT);
       case NOT_FOUND -> new ServiceException(errorMessage, NOT_FOUND);
       case NOT_UNIQUE -> new ServiceException(errorMessage, ALREADY_EXISTS);
       case FORBIDDEN -> new ServiceException(errorMessage, FORBIDDEN);

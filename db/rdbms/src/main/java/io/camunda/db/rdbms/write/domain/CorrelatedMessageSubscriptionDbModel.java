@@ -17,13 +17,13 @@ public record CorrelatedMessageSubscriptionDbModel(
     OffsetDateTime correlationTime,
     String flowNodeId,
     Long flowNodeInstanceKey,
-    OffsetDateTime historyCleanupDate,
     Long messageKey,
     String messageName,
     Integer partitionId,
     String processDefinitionId,
     Long processDefinitionKey,
     Long processInstanceKey,
+    Long rootProcessInstanceKey,
     Long subscriptionKey,
     MessageSubscriptionType subscriptionType,
     String tenantId)
@@ -42,13 +42,13 @@ public record CorrelatedMessageSubscriptionDbModel(
                 .correlationTime(correlationTime)
                 .flowNodeId(flowNodeId)
                 .flowNodeInstanceKey(flowNodeInstanceKey)
-                .historyCleanupDate(historyCleanupDate)
                 .messageKey(messageKey)
                 .messageName(messageName)
                 .partitionId(partitionId)
                 .processDefinitionId(processDefinitionId)
                 .processDefinitionKey(processDefinitionKey)
                 .processInstanceKey(processInstanceKey)
+                .rootProcessInstanceKey(rootProcessInstanceKey)
                 .subscriptionKey(subscriptionKey)
                 .subscriptionType(subscriptionType)
                 .tenantId(tenantId))
@@ -60,13 +60,13 @@ public record CorrelatedMessageSubscriptionDbModel(
     private OffsetDateTime correlationTime;
     private String flowNodeId;
     private Long flowNodeInstanceKey;
-    private OffsetDateTime historyCleanupDate;
     private Long messageKey;
     private String messageName;
     private Integer partitionId;
     private String processDefinitionId;
     private Long processDefinitionKey;
     private Long processInstanceKey;
+    private Long rootProcessInstanceKey;
     private Long subscriptionKey;
     private MessageSubscriptionType subscriptionType;
     private String tenantId;
@@ -90,11 +90,6 @@ public record CorrelatedMessageSubscriptionDbModel(
 
     public Builder flowNodeId(final String flowNodeId) {
       this.flowNodeId = flowNodeId;
-      return this;
-    }
-
-    public Builder historyCleanupDate(final OffsetDateTime historyCleanupDate) {
-      this.historyCleanupDate = historyCleanupDate;
       return this;
     }
 
@@ -128,6 +123,11 @@ public record CorrelatedMessageSubscriptionDbModel(
       return this;
     }
 
+    public Builder rootProcessInstanceKey(final Long rootProcessInstanceKey) {
+      this.rootProcessInstanceKey = rootProcessInstanceKey;
+      return this;
+    }
+
     public Builder subscriptionKey(final Long subscriptionKey) {
       this.subscriptionKey = subscriptionKey;
       return this;
@@ -150,13 +150,13 @@ public record CorrelatedMessageSubscriptionDbModel(
           correlationTime,
           flowNodeId,
           flowNodeInstanceKey,
-          historyCleanupDate,
           messageKey,
           messageName,
           partitionId,
           processDefinitionId,
           processDefinitionKey,
           processInstanceKey,
+          rootProcessInstanceKey,
           subscriptionKey,
           subscriptionType,
           tenantId);

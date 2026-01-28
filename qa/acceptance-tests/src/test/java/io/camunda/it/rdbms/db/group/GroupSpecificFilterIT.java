@@ -16,7 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.application.commons.rdbms.RdbmsConfiguration;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.GroupDbReader;
-import io.camunda.db.rdbms.write.RdbmsWriter;
+import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.TenantMemberDbModel;
 import io.camunda.it.rdbms.db.fixtures.GroupFixtures;
 import io.camunda.it.rdbms.db.fixtures.GroupMemberFixtures;
@@ -54,26 +54,26 @@ public class GroupSpecificFilterIT {
 
   @Autowired private GroupDbReader groupReader;
 
-  private RdbmsWriter rdbmsWriter;
+  private RdbmsWriters rdbmsWriters;
 
   @BeforeEach
   public void beforeAll() {
-    rdbmsWriter = rdbmsService.createWriter(0L);
+    rdbmsWriters = rdbmsService.createWriter(0L);
   }
 
   @Test
   public void shouldFilterGroupsForTenant() {
     final var tenant = TenantFixtures.createRandomized(b -> b);
     final var anotherTenant = TenantFixtures.createRandomized(b -> b);
-    createAndSaveTenant(rdbmsWriter, tenant);
-    createAndSaveTenant(rdbmsWriter, anotherTenant);
+    createAndSaveTenant(rdbmsWriters, tenant);
+    createAndSaveTenant(rdbmsWriters, anotherTenant);
 
     final var group1 = createRandomized(b -> b);
     final var group2 = createRandomized(b -> b);
     final var group3 = createRandomized(b -> b);
-    createAndSaveGroup(rdbmsWriter, group1);
-    createAndSaveGroup(rdbmsWriter, group2);
-    createAndSaveGroup(rdbmsWriter, group3);
+    createAndSaveGroup(rdbmsWriters, group1);
+    createAndSaveGroup(rdbmsWriters, group2);
+    createAndSaveGroup(rdbmsWriters, group3);
     addGroupToTenant(tenant.tenantId(), group1.groupId());
     addGroupToTenant(anotherTenant.tenantId(), group2.groupId());
     addGroupToTenant(anotherTenant.tenantId(), group3.groupId());
@@ -90,9 +90,9 @@ public class GroupSpecificFilterIT {
   @ParameterizedTest
   @MethodSource("shouldFindWithSpecificFilterParameters")
   public void shouldFindWithSpecificFilter(final GroupFilter filter) {
-    createAndSaveRandomGroups(rdbmsWriter);
+    createAndSaveRandomGroups(rdbmsWriters);
     createAndSaveGroup(
-        rdbmsWriter,
+        rdbmsWriters,
         GroupFixtures.createRandomized(
             b ->
                 b.groupId("groupId")
@@ -100,7 +100,7 @@ public class GroupSpecificFilterIT {
                     .name("Group 1337")
                     .description("This is group 1337")));
     GroupMemberFixtures.createAndSaveRandomGroupMember(
-        rdbmsWriter,
+        rdbmsWriters,
         b -> b.groupId("groupId").entityId("entityId").entityType(EntityType.USER.name()));
 
     final var searchResult =
@@ -116,16 +116,16 @@ public class GroupSpecificFilterIT {
   @ParameterizedTest
   @CsvSource({"USER, 1", "GROUP, 0"})
   public void shouldFindWithMemberType(final EntityType memberType, final int expectedCount) {
-    createAndSaveRandomGroups(rdbmsWriter);
+    createAndSaveRandomGroups(rdbmsWriters);
     createAndSaveGroup(
-        rdbmsWriter,
+        rdbmsWriters,
         GroupFixtures.createRandomized(
             b -> b.groupId("groupId1").groupKey(1337L).name("Group 1337")));
     GroupMemberFixtures.createAndSaveRandomGroupMember(
-        rdbmsWriter,
+        rdbmsWriters,
         b -> b.groupId("groupId1").entityId("entityId1").entityType(EntityType.USER.name()));
     GroupMemberFixtures.createAndSaveRandomGroupMember(
-        rdbmsWriter,
+        rdbmsWriters,
         b -> b.groupId("groupId1").entityId("entityId2").entityType(EntityType.USER.name()));
 
     final var searchResult =
@@ -152,7 +152,7 @@ public class GroupSpecificFilterIT {
   }
 
   private void addGroupToTenant(final String tenantId, final String entityId) {
-    rdbmsWriter.getTenantWriter().addMember(new TenantMemberDbModel(tenantId, entityId, "GROUP"));
-    rdbmsWriter.flush();
+    rdbmsWriters.getTenantWriter().addMember(new TenantMemberDbModel(tenantId, entityId, "GROUP"));
+    rdbmsWriters.flush();
   }
 }

@@ -23,6 +23,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker;
+import io.camunda.zeebe.engine.state.conditional.ConditionalSubscription;
 import io.camunda.zeebe.engine.state.immutable.ConditionalSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.ProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
@@ -165,15 +166,24 @@ public final class CatchEventBehavior {
 
   private void unsubscribeFromConditionalEvents(
       final long elementInstanceKey, final Predicate<DirectBuffer> elementIdFilter) {
+    unsubscribeFromConditionalEventsBySubscriptionFilter(
+        elementInstanceKey,
+        subscription -> elementIdFilter.test(subscription.getRecord().getCatchEventIdBuffer()));
+  }
+
+  public void unsubscribeFromConditionalEventsBySubscriptionFilter(
+      final long elementInstanceKey,
+      final Predicate<ConditionalSubscription> conditionalSubscriptionFilter) {
     conditionalSubscriptionState.visitByScopeKey(
         elementInstanceKey,
         subscription -> {
-          if (elementIdFilter.test(subscription.getRecord().getCatchEventIdBuffer())) {
+          if (conditionalSubscriptionFilter.test(subscription)) {
             stateWriter.appendFollowUpEvent(
                 subscription.getKey(),
                 ConditionalSubscriptionIntent.DELETED,
                 subscription.getRecord());
           }
+          return true;
         });
   }
 
@@ -336,6 +346,7 @@ public final class CatchEventBehavior {
     final var messageName = result.messageName;
 
     final long processInstanceKey = context.getProcessInstanceKey();
+    final long rootProcessInstanceKey = context.getRootProcessInstanceKey();
     final DirectBuffer bpmnProcessId = cloneBuffer(context.getBpmnProcessId());
     final long elementInstanceKey = context.getElementInstanceKey();
     final long processDefinitionKey = context.getProcessDefinitionKey();
@@ -352,6 +363,7 @@ public final class CatchEventBehavior {
     subscription.setElementId(event.getId());
     subscription.setInterrupting(event.isInterrupting());
     subscription.setTenantId(context.getTenantId());
+    subscription.setRootProcessInstanceKey(rootProcessInstanceKey);
 
     final var subscriptionKey = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(
@@ -482,6 +494,7 @@ public final class CatchEventBehavior {
         .setElementInstanceKey(context.getElementInstanceKey())
         .setProcessInstanceKey(context.getProcessInstanceKey())
         .setProcessDefinitionKey(context.getProcessDefinitionKey())
+        .setBpmnProcessId(context.getBpmnProcessId())
         .setCatchEventId(event.getId())
         .setInterrupting(event.isInterrupting())
         .setCondition(BufferUtil.wrapString(conditional.getCondition()))
@@ -538,7 +551,7 @@ public final class CatchEventBehavior {
         });
   }
 
-  public void unsubscribeFromSignalEvents(
+  private void unsubscribeFromSignalEvents(
       final long elementInstanceKey, final Predicate<DirectBuffer> elementIdFilter) {
     unsubscribeFromSignalEventsBySubscriptionFilter(
         elementInstanceKey,

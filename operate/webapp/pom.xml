@@ -43,10 +43,6 @@
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>camunda-authentication</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
       <artifactId>camunda-client-java</artifactId>
     </dependency>
 
@@ -161,32 +157,13 @@
     </dependency>
 
     <dependency>
-      <groupId>org.elasticsearch.client</groupId>
-      <artifactId>elasticsearch-rest-high-level-client</artifactId>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
     </dependency>
+
     <dependency>
-      <groupId>org.elasticsearch.client</groupId>
-      <artifactId>elasticsearch-rest-client</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.elasticsearch</groupId>
-      <artifactId>elasticsearch-x-content</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.lucene</groupId>
-      <artifactId>lucene-join</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.lucene</groupId>
-      <artifactId>lucene-core</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.elasticsearch</groupId>
-      <artifactId>elasticsearch</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.elasticsearch.plugin</groupId>
-      <artifactId>parent-join-client</artifactId>
+      <groupId>co.elastic.clients</groupId>
+      <artifactId>elasticsearch-java</artifactId>
     </dependency>
 
     <dependency>
@@ -194,14 +171,6 @@
       <artifactId>opensearch-java</artifactId>
     </dependency>
 
-    <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-core</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-slf4j2-impl</artifactId>
-    </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
@@ -268,12 +237,6 @@
     </dependency>
 
     <dependency>
-      <groupId>org.apache.httpcomponents</groupId>
-      <artifactId>httpcore</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
       <groupId>org.apache.tomcat.embed</groupId>
       <artifactId>tomcat-embed-core</artifactId>
       <exclusions>
@@ -303,11 +266,6 @@
 
     <dependency>
       <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter-engine</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-api</artifactId>
       <scope>test</scope>
     </dependency>
@@ -319,11 +277,6 @@
     <dependency>
       <groupId>org.junit.platform</groupId>
       <artifactId>junit-platform-suite-api</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.junit.platform</groupId>
-      <artifactId>junit-platform-suite</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -373,7 +326,7 @@
      classes on the classpath in order to resolve the AWS credentials -->
             <dependency>software.amazon.awssdk:sts</dependency>
           </usedDependencies>
-          <ignoredUnusedDeclaredDependencies>
+          <ignoredUnusedDeclaredDependencies combine.children="append">
             <dep>jakarta.servlet:jakarta.servlet-api</dep>
             <dep>jakarta.annotation:jakarta.annotation-api</dep>
             <dep>com.github.spotbugs:spotbugs-annotations</dep>

@@ -26,7 +26,7 @@ func (m *mockC8) ElasticsearchCmd(ctx context.Context, elasticsearchVersion stri
 	return nil
 }
 
-func (m *mockC8) ConnectorsCmd(ctx context.Context, javaBinary string, parentDir string, camundaVersion string, camundaPort int) *exec.Cmd {
+func (m *mockC8) ConnectorsCmd(ctx context.Context, javaBinary string, parentDir string, connectorsVersion string, camundaPort int) *exec.Cmd {
 	return nil
 }
 

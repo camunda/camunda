@@ -7,17 +7,8 @@
  */
 
 import type {Route} from '@playwright/test';
-import type {
-  IncidentByErrorDto,
-  ProcessInstanceByNameDto,
-  CoreStatisticsDto,
-} from '@/types';
-
-const mockStatistics = {
-  running: 891,
-  active: 277,
-  withIncidents: 614,
-};
+import type {IncidentByErrorDto} from '@/types';
+import type {GetProcessDefinitionInstanceStatisticsResponseBody} from '@camunda/camunda-api-zod-schemas/8.8';
 
 const mockIncidentsByError = [
   {
@@ -1417,14 +1408,133 @@ const mockIncidentsByProcess = [
   },
 ];
 
+const mockProcessDefinitionStatistics: GetProcessDefinitionInstanceStatisticsResponseBody =
+  {
+    items: [
+      {
+        processDefinitionId: 'orderProcess',
+        latestProcessDefinitionName: 'Order process',
+        activeInstancesWithIncidentCount: 141,
+        activeInstancesWithoutIncidentCount: 5,
+        hasMultipleVersions: true,
+        tenantId: '<default>',
+      },
+      {
+        processDefinitionId: 'call-activity-process',
+        latestProcessDefinitionName: 'Call Activity Process',
+        activeInstancesWithIncidentCount: 90,
+        activeInstancesWithoutIncidentCount: 15,
+        hasMultipleVersions: false,
+        tenantId: '<default>',
+      },
+      {
+        processDefinitionId: 'complexProcess',
+        latestProcessDefinitionName: '',
+        activeInstancesWithIncidentCount: 90,
+        activeInstancesWithoutIncidentCount: 13,
+        hasMultipleVersions: true,
+        tenantId: '<default>',
+      },
+      {
+        processDefinitionId: 'called-process',
+        latestProcessDefinitionName: '',
+        activeInstancesWithIncidentCount: 70,
+        activeInstancesWithoutIncidentCount: 0,
+        hasMultipleVersions: true,
+        tenantId: '<default>',
+      },
+      {
+        processDefinitionId: 'invoice',
+        latestProcessDefinitionName: 'DMN invoice',
+        activeInstancesWithIncidentCount: 33,
+        activeInstancesWithoutIncidentCount: 35,
+        hasMultipleVersions: false,
+        tenantId: '<default>',
+      },
+      {
+        processDefinitionId: 'eventBasedGatewayProcess',
+        latestProcessDefinitionName: 'Event based gateway with timer start',
+        activeInstancesWithIncidentCount: 26,
+        activeInstancesWithoutIncidentCount: 0,
+        hasMultipleVersions: true,
+        tenantId: '<default>',
+      },
+      {
+        processDefinitionId: 'flightRegistration',
+        latestProcessDefinitionName: 'Flight registration',
+        activeInstancesWithIncidentCount: 23,
+        activeInstancesWithoutIncidentCount: 4,
+        hasMultipleVersions: true,
+        tenantId: '<default>',
+      },
+    ],
+    page: {totalItems: 7},
+  };
+
+const mockProcessDefinitionVersionStatistics = {
+  orderProcess: {
+    items: [
+      {
+        processDefinitionId: '2251799813687188',
+        processDefinitionKey: '2251799813687188',
+        processDefinitionName: 'Order process',
+        processDefinitionVersion: 2,
+        activeInstancesWithIncidentCount: 131,
+        activeInstancesWithoutIncidentCount: 5,
+        tenantId: '<default>',
+      },
+      {
+        processDefinitionId: '2251799813686114',
+        processDefinitionKey: '2251799813686114',
+        processDefinitionName: 'Order process',
+        processDefinitionVersion: 1,
+        activeInstancesWithIncidentCount: 10,
+        activeInstancesWithoutIncidentCount: 0,
+        tenantId: '<default>',
+      },
+    ],
+    page: {totalItems: 2},
+  },
+  complexProcess: {
+    items: [
+      {
+        processDefinitionId: '2251799813687889',
+        processDefinitionKey: '2251799813687889',
+        processDefinitionName: null,
+        processDefinitionVersion: 3,
+        activeInstancesWithIncidentCount: 56,
+        activeInstancesWithoutIncidentCount: 0,
+        tenantId: '<default>',
+      },
+      {
+        processDefinitionId: '2251799813687201',
+        processDefinitionKey: '2251799813687201',
+        processDefinitionName: 'complexProcess',
+        processDefinitionVersion: 2,
+        activeInstancesWithIncidentCount: 20,
+        activeInstancesWithoutIncidentCount: 9,
+        tenantId: '<default>',
+      },
+      {
+        processDefinitionId: '2251799813686132',
+        processDefinitionKey: '2251799813686132',
+        processDefinitionName: 'complexProcess',
+        processDefinitionVersion: 1,
+        activeInstancesWithIncidentCount: 14,
+        activeInstancesWithoutIncidentCount: 4,
+        tenantId: '<default>',
+      },
+    ],
+    page: {totalItems: 3},
+  },
+};
+
 function mockResponses({
-  statistics,
   incidentsByError,
-  incidentsByProcess,
+  processDefinitionStatistics,
 }: {
-  statistics?: CoreStatisticsDto;
   incidentsByError?: IncidentByErrorDto[];
-  incidentsByProcess?: ProcessInstanceByNameDto[];
+  processDefinitionStatistics?: GetProcessDefinitionInstanceStatisticsResponseBody;
 }) {
   return (route: Route) => {
     if (route.request().url().includes('/v2/authentication/me')) {
@@ -1444,18 +1554,6 @@ function mockResponses({
       });
     }
 
-    if (
-      route.request().url().includes('/api/process-instances/core-statistics')
-    ) {
-      return route.fulfill({
-        status: statistics === undefined ? 400 : 200,
-        body: JSON.stringify(statistics),
-        headers: {
-          'content-type': 'application/json',
-        },
-      });
-    }
-
     if (route.request().url().includes('/api/incidents/byError')) {
       return route.fulfill({
         status: incidentsByError === undefined ? 400 : 200,
@@ -1466,10 +1564,36 @@ function mockResponses({
       });
     }
 
-    if (route.request().url().includes('/api/incidents/byProcess')) {
+    const url = route.request().url();
+    const method = route.request().method();
+
+    if (
+      url.includes(
+        '/v2/process-definitions/orderProcess/statistics/process-instances',
+      ) &&
+      method === 'POST'
+    ) {
+      route.fulfill({
+        status: 200,
+        body: JSON.stringify(
+          mockProcessDefinitionVersionStatistics.orderProcess,
+        ),
+        headers: {
+          'content-type': 'application/json',
+        },
+      });
+      return;
+    }
+
+    if (
+      route
+        .request()
+        .url()
+        .includes('/v2/process-definitions/statistics/process-instances')
+    ) {
       return route.fulfill({
-        status: incidentsByProcess === undefined ? 400 : 200,
-        body: JSON.stringify(incidentsByProcess),
+        status: processDefinitionStatistics === undefined ? 400 : 200,
+        body: JSON.stringify(processDefinitionStatistics),
         headers: {
           'content-type': 'application/json',
         },
@@ -1481,8 +1605,9 @@ function mockResponses({
 }
 
 export {
-  mockStatistics,
   mockIncidentsByError,
   mockIncidentsByProcess,
+  mockProcessDefinitionStatistics,
+  mockProcessDefinitionVersionStatistics,
   mockResponses,
 };

@@ -11,6 +11,9 @@ import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ALL;
 import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ONLY_RUNTIME;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithOr;
+import static io.camunda.operate.util.ElasticsearchUtil.scrollAllStream;
+import static io.camunda.operate.util.ElasticsearchUtil.sortOrder;
+import static io.camunda.operate.util.ElasticsearchUtil.whereToSearch;
 import static io.camunda.webapps.schema.descriptors.template.OperationTemplate.BATCH_OPERATION_ID;
 import static io.camunda.webapps.schema.descriptors.template.OperationTemplate.BATCH_OPERATION_ID_AGGREGATION;
 import static io.camunda.webapps.schema.descriptors.template.OperationTemplate.ID;
@@ -22,18 +25,17 @@ import static io.camunda.webapps.schema.descriptors.template.OperationTemplate.T
 import static io.camunda.webapps.schema.descriptors.template.OperationTemplate.VARIABLE_NAME;
 import static io.camunda.webapps.schema.entities.operation.OperationState.LOCKED;
 import static io.camunda.webapps.schema.entities.operation.OperationState.SCHEDULED;
-import static org.elasticsearch.client.Requests.searchRequest;
-import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
-import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
-import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
-import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
-import static org.elasticsearch.search.builder.SearchSourceBuilder.searchSource;
 
+import co.elastic.clients.elasticsearch._types.SortOrder;
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
+import co.elastic.clients.elasticsearch._types.aggregations.StringTermsAggregate;
+import co.elastic.clients.elasticsearch._types.query_dsl.DateRangeQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
+import co.elastic.clients.elasticsearch.core.search.Hit;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
-import io.camunda.operate.util.CollectionUtil;
+import io.camunda.operate.store.ScrollException;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.webapp.rest.dto.DtoCreator;
 import io.camunda.operate.webapp.rest.dto.OperationDto;
@@ -48,20 +50,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.index.query.ConstantScoreQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.index.query.RangeQueryBuilder;
-import org.elasticsearch.index.query.TermQueryBuilder;
-import org.elasticsearch.index.query.TermsQueryBuilder;
-import org.elasticsearch.search.aggregations.AggregationBuilder;
-import org.elasticsearch.search.aggregations.AggregationBuilders;
-import org.elasticsearch.search.aggregations.bucket.terms.Terms;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.elasticsearch.search.sort.SortOrder;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -93,37 +82,40 @@ public class OperationReader extends AbstractReader
   @Override
   public List<OperationEntity> acquireOperations(final int batchSize) {
     // filter for operations that are legacy (i.e. do not have the property ITEM_KEY)
-    final QueryBuilder legacyOperationsQuery =
-        QueryBuilders.boolQuery().mustNot(existsQuery(ITEM_KEY));
-    final TermQueryBuilder scheduledOperationsQuery =
-        termQuery(OperationTemplate.STATE, SCHEDULED_OPERATION);
-    final TermQueryBuilder lockedOperationsQuery =
-        termQuery(OperationTemplate.STATE, LOCKED_OPERATION);
-    final RangeQueryBuilder lockExpirationTimeQuery =
-        rangeQuery(OperationTemplate.LOCK_EXPIRATION_TIME);
-    lockExpirationTimeQuery.lte(dateTimeFormatter.format(OffsetDateTime.now()));
+    final var legacyOperationsQuery =
+        Query.of(q -> q.bool(b -> b.mustNot(ElasticsearchUtil.existsQuery(ITEM_KEY))));
+    final var scheduledOperationsQuery =
+        ElasticsearchUtil.termsQuery(OperationTemplate.STATE, SCHEDULED_OPERATION);
+    final var lockedOperationsQuery =
+        ElasticsearchUtil.termsQuery(OperationTemplate.STATE, LOCKED_OPERATION);
 
-    final QueryBuilder operationsQuery =
+    final var lockExpirationTimeBuilder = new DateRangeQuery.Builder();
+    lockExpirationTimeBuilder.field(OperationTemplate.LOCK_EXPIRATION_TIME);
+    lockExpirationTimeBuilder.lte(dateTimeFormatter.format(OffsetDateTime.now()));
+    final var lockExpirationTimeQuery =
+        lockExpirationTimeBuilder.build()._toRangeQuery()._toQuery();
+
+    final var operationsQuery =
         joinWithAnd(
             legacyOperationsQuery,
             joinWithOr(
                 scheduledOperationsQuery,
                 joinWithAnd(lockedOperationsQuery, lockExpirationTimeQuery)));
 
-    final ConstantScoreQueryBuilder constantScoreQuery = constantScoreQuery(operationsQuery);
+    final var constantScoreQuery = ElasticsearchUtil.constantScoreQuery(operationsQuery);
 
-    final SearchRequest searchRequest =
-        ElasticsearchUtil.createSearchRequest(operationTemplate, ONLY_RUNTIME)
-            .source(
-                new SearchSourceBuilder()
-                    .query(constantScoreQuery)
-                    .sort(BATCH_OPERATION_ID, SortOrder.ASC)
-                    .from(0)
-                    .size(batchSize));
+    final var searchRequest =
+        new SearchRequest.Builder()
+            .index(whereToSearch(operationTemplate, ONLY_RUNTIME))
+            .query(constantScoreQuery)
+            .sort(ElasticsearchUtil.sortOrder(BATCH_OPERATION_ID, SortOrder.Asc))
+            .from(0)
+            .size(batchSize)
+            .build();
+
     try {
-      final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
-      return ElasticsearchUtil.mapSearchHits(
-          searchResponse.getHits().getHits(), objectMapper, OperationEntity.class);
+      final var searchResponse = esClient.search(searchRequest, OperationEntity.class);
+      return searchResponse.hits().hits().stream().map(Hit::source).toList();
     } catch (final IOException e) {
       final String message =
           String.format(
@@ -141,37 +133,24 @@ public class OperationReader extends AbstractReader
       return result;
     }
 
-    final TermsQueryBuilder processInstanceKeysQ =
-        termsQuery(PROCESS_INSTANCE_KEY, processInstanceKeys);
-    final ConstantScoreQueryBuilder query = constantScoreQuery(processInstanceKeysQ);
+    final var query =
+        ElasticsearchUtil.constantScoreQuery(
+            ElasticsearchUtil.termsQuery(PROCESS_INSTANCE_KEY, processInstanceKeys));
 
-    final SearchRequest searchRequest =
-        ElasticsearchUtil.createSearchRequest(operationTemplate, ElasticsearchUtil.QueryType.ALL)
-            .source(
-                new SearchSourceBuilder()
-                    .query(query)
-                    .sort(PROCESS_INSTANCE_KEY, SortOrder.ASC)
-                    .sort(ID, SortOrder.ASC));
+    final var searchRequestBuilder =
+        new SearchRequest.Builder()
+            .index(whereToSearch(operationTemplate, ALL))
+            .query(query)
+            .sort(sortOrder(PROCESS_INSTANCE_KEY, SortOrder.Asc), sortOrder(ID, SortOrder.Asc));
 
     try {
-      ElasticsearchUtil.scroll(
-          searchRequest,
-          OperationEntity.class,
-          objectMapper,
-          esClient,
-          hits -> {
-            final List<OperationEntity> operationEntities =
-                ElasticsearchUtil.mapSearchHits(
-                    hits.getHits(), objectMapper, OperationEntity.class);
-            for (final OperationEntity operationEntity : operationEntities) {
-              CollectionUtil.addToMap(
-                  result, operationEntity.getProcessInstanceKey(), operationEntity);
-            }
-          },
-          null);
+      final var resStream = scrollAllStream(esClient, searchRequestBuilder, OperationEntity.class);
+      return resStream
+          .flatMap(res -> res.hits().hits().stream())
+          .map(Hit::source)
+          .collect(Collectors.groupingBy(OperationEntity::getProcessInstanceKey));
 
-      return result;
-    } catch (final IOException e) {
+    } catch (final ScrollException e) {
       final String message =
           String.format(
               "Exception occurred, while obtaining operations per process instance id: %s",
@@ -189,34 +168,24 @@ public class OperationReader extends AbstractReader
       return result;
     }
 
-    final TermQueryBuilder processInstanceKeysQ =
-        termQuery(PROCESS_INSTANCE_KEY, processInstanceId);
-    final ConstantScoreQueryBuilder query = constantScoreQuery(processInstanceKeysQ);
+    final var query =
+        ElasticsearchUtil.constantScoreQuery(
+            ElasticsearchUtil.termsQuery(PROCESS_INSTANCE_KEY, processInstanceId));
 
-    final SearchRequest searchRequest =
-        ElasticsearchUtil.createSearchRequest(operationTemplate, ONLY_RUNTIME)
-            .source(
-                new SearchSourceBuilder()
-                    .query(query)
-                    .sort(INCIDENT_KEY, SortOrder.ASC)
-                    .sort(ID, SortOrder.ASC));
+    final var searchRequestBuilder =
+        new SearchRequest.Builder()
+            .index(whereToSearch(operationTemplate, ONLY_RUNTIME))
+            .query(query)
+            .sort(sortOrder(INCIDENT_KEY, SortOrder.Asc), sortOrder(ID, SortOrder.Asc));
+
     try {
-      ElasticsearchUtil.scroll(
-          searchRequest,
-          OperationEntity.class,
-          objectMapper,
-          esClient,
-          hits -> {
-            final List<OperationEntity> operationEntities =
-                ElasticsearchUtil.mapSearchHits(
-                    hits.getHits(), objectMapper, OperationEntity.class);
-            for (final OperationEntity operationEntity : operationEntities) {
-              CollectionUtil.addToMap(result, operationEntity.getIncidentKey(), operationEntity);
-            }
-          },
-          null);
-      return result;
-    } catch (final IOException e) {
+      final var resStream = scrollAllStream(esClient, searchRequestBuilder, OperationEntity.class);
+      return resStream
+          .flatMap(res -> res.hits().hits().stream())
+          .map(Hit::source)
+          .collect(Collectors.groupingBy(OperationEntity::getIncidentKey));
+
+    } catch (final ScrollException e) {
       final String message =
           String.format(
               "Exception occurred, while obtaining operations per incident id: %s", e.getMessage());
@@ -233,33 +202,27 @@ public class OperationReader extends AbstractReader
       return result;
     }
 
-    final TermQueryBuilder processInstanceKeyQuery =
-        termQuery(PROCESS_INSTANCE_KEY, processInstanceKey);
-    final TermQueryBuilder scopeKeyQuery = termQuery(SCOPE_KEY, scopeKey);
-    final TermQueryBuilder operationTypeQ = termQuery(TYPE, OperationType.UPDATE_VARIABLE.name());
-    final ConstantScoreQueryBuilder query =
-        constantScoreQuery(joinWithAnd(processInstanceKeyQuery, scopeKeyQuery, operationTypeQ));
+    final var query =
+        ElasticsearchUtil.constantScoreQuery(
+            ElasticsearchUtil.joinWithAnd(
+                ElasticsearchUtil.termsQuery(PROCESS_INSTANCE_KEY, processInstanceKey),
+                ElasticsearchUtil.termsQuery(SCOPE_KEY, scopeKey),
+                ElasticsearchUtil.termsQuery(TYPE, OperationType.UPDATE_VARIABLE.name())));
 
-    final SearchRequest searchRequest =
-        ElasticsearchUtil.createSearchRequest(operationTemplate, ALL)
-            .source(new SearchSourceBuilder().query(query).sort(ID, SortOrder.ASC));
+    final var searchRequestBuilder =
+        new SearchRequest.Builder()
+            .index(whereToSearch(operationTemplate, ALL))
+            .query(query)
+            .sort(ElasticsearchUtil.sortOrder(ID, SortOrder.Asc));
+
     try {
-      ElasticsearchUtil.scroll(
-          searchRequest,
-          OperationEntity.class,
-          objectMapper,
-          esClient,
-          hits -> {
-            final List<OperationEntity> operationEntities =
-                ElasticsearchUtil.mapSearchHits(
-                    hits.getHits(), objectMapper, OperationEntity.class);
-            for (final OperationEntity operationEntity : operationEntities) {
-              CollectionUtil.addToMap(result, operationEntity.getVariableName(), operationEntity);
-            }
-          },
-          null);
-      return result;
-    } catch (final IOException e) {
+      final var resStream = scrollAllStream(esClient, searchRequestBuilder, OperationEntity.class);
+      return resStream
+          .flatMap(res -> res.hits().hits().stream())
+          .map(Hit::source)
+          .collect(Collectors.groupingBy(OperationEntity::getVariableName));
+
+    } catch (final ScrollException e) {
       final String message =
           String.format(
               "Exception occurred, while obtaining operations per variable name: %s",
@@ -274,17 +237,24 @@ public class OperationReader extends AbstractReader
     if (hasNoBatchOperationWildcardPermissions()) {
       return List.of();
     }
-    final QueryBuilder processInstanceQ =
+    final var processInstanceQ =
         processInstanceKey == null
-            ? matchAllQuery()
-            : termQuery(PROCESS_INSTANCE_KEY, processInstanceKey);
-    final QueryBuilder query = constantScoreQuery(processInstanceQ);
-    final SearchRequest searchRequest =
-        ElasticsearchUtil.createSearchRequest(operationTemplate, ALL)
-            .source(new SearchSourceBuilder().query(query).sort(ID, SortOrder.ASC));
+            ? Query.of(q -> q.matchAll(m -> m))
+            : ElasticsearchUtil.termsQuery(PROCESS_INSTANCE_KEY, processInstanceKey);
+    final var query = ElasticsearchUtil.constantScoreQuery(processInstanceQ);
+
+    final var searchRequestBuilder =
+        new SearchRequest.Builder()
+            .index(whereToSearch(operationTemplate, ALL))
+            .query(query)
+            .sort(ElasticsearchUtil.sortOrder(ID, SortOrder.Asc));
+
     try {
-      return ElasticsearchUtil.scroll(searchRequest, OperationEntity.class, objectMapper, esClient);
-    } catch (final IOException e) {
+      return scrollAllStream(esClient, searchRequestBuilder, OperationEntity.class)
+          .flatMap(res -> res.hits().hits().stream())
+          .map(Hit::source)
+          .toList();
+    } catch (final ScrollException e) {
       final String message =
           String.format("Exception occurred, while obtaining operations: %s", e.getMessage());
       LOGGER.error(message, e);
@@ -294,16 +264,22 @@ public class OperationReader extends AbstractReader
 
   @Override
   public List<OperationDto> getOperationsByBatchOperationId(final String batchOperationId) {
-    final QueryBuilder operationIdQ =
-        joinWithAnd(termQuery(BATCH_OPERATION_ID, batchOperationId), allowedOperationsQuery());
-    final SearchRequest searchRequest =
-        ElasticsearchUtil.createSearchRequest(operationTemplate, ALL)
-            .source(new SearchSourceBuilder().query(operationIdQ));
+    final var query =
+        ElasticsearchUtil.joinWithAnd(
+            ElasticsearchUtil.termsQuery(BATCH_OPERATION_ID, batchOperationId),
+            allowedOperationsQuery());
+
+    final var searchRequestBuilder =
+        new SearchRequest.Builder().index(whereToSearch(operationTemplate, ALL)).query(query);
+
     try {
-      final List<OperationEntity> operationEntities =
-          ElasticsearchUtil.scroll(searchRequest, OperationEntity.class, objectMapper, esClient);
+      final var operationEntities =
+          scrollAllStream(esClient, searchRequestBuilder, OperationEntity.class)
+              .flatMap(res -> res.hits().hits().stream())
+              .map(Hit::source)
+              .toList();
       return DtoCreator.create(operationEntities, OperationDto.class);
-    } catch (final IOException e) {
+    } catch (final ScrollException e) {
       final String message =
           String.format(
               "Exception occurred, while searching for operation with batchOperationId: %s",
@@ -319,22 +295,24 @@ public class OperationReader extends AbstractReader
       final String processInstanceId,
       final String scopeId,
       final String variableName) {
-    final TermQueryBuilder operationTypeQ = termQuery(TYPE, operationType);
-    final TermQueryBuilder processInstanceKeyQ = termQuery(PROCESS_INSTANCE_KEY, processInstanceId);
-    final TermQueryBuilder scopeKeyQ = termQuery(SCOPE_KEY, scopeId);
-    final TermQueryBuilder variableNameQ = termQuery(VARIABLE_NAME, variableName);
-    final SearchRequest searchRequest =
-        ElasticsearchUtil.createSearchRequest(operationTemplate, ALL)
-            .source(
-                new SearchSourceBuilder()
-                    .query(
-                        joinWithAnd(
-                            operationTypeQ, processInstanceKeyQ, scopeKeyQ, variableNameQ)));
+    final var query =
+        ElasticsearchUtil.joinWithAnd(
+            ElasticsearchUtil.termsQuery(TYPE, operationType),
+            ElasticsearchUtil.termsQuery(PROCESS_INSTANCE_KEY, processInstanceId),
+            ElasticsearchUtil.termsQuery(SCOPE_KEY, scopeId),
+            ElasticsearchUtil.termsQuery(VARIABLE_NAME, variableName));
+
+    final var searchRequestBuilder =
+        new SearchRequest.Builder().index(whereToSearch(operationTemplate, ALL)).query(query);
+
     try {
-      final List<OperationEntity> operationEntities =
-          ElasticsearchUtil.scroll(searchRequest, OperationEntity.class, objectMapper, esClient);
+      final var operationEntities =
+          scrollAllStream(esClient, searchRequestBuilder, OperationEntity.class)
+              .flatMap(res -> res.hits().hits().stream())
+              .map(Hit::source)
+              .toList();
       return DtoCreator.create(operationEntities, OperationDto.class);
-    } catch (final IOException e) {
+    } catch (final ScrollException e) {
       final String message =
           String.format(
               "Exception occurred, while searching for batch operation metadata: %s",
@@ -344,24 +322,31 @@ public class OperationReader extends AbstractReader
     }
   }
 
-  /* Returns Terms (Multi-Buckets Aggregation) with buckets aggregated by BATCH_OPERATION_ID (and provided sub-aggregations) */
-  public Terms getOperationsAggregatedByBatchOperationId(
-      final List<String> batchOperationIds, final AggregationBuilder subAggregations) {
-    final QueryBuilder idsQuery =
-        termsQuery(OperationTemplate.BATCH_OPERATION_ID, batchOperationIds);
+  /* Returns StringTermsAggregate with buckets aggregated by BATCH_OPERATION_ID (and provided sub-aggregations) */
+  public StringTermsAggregate getOperationsAggregatedByBatchOperationId(
+      final List<String> batchOperationIds, final Map<String, Aggregation> subAggregations) {
+    final var idsQuery =
+        ElasticsearchUtil.termsQuery(OperationTemplate.BATCH_OPERATION_ID, batchOperationIds);
 
-    final AggregationBuilder batchIdAggregation =
-        AggregationBuilders.terms(BATCH_OPERATION_ID_AGGREGATION)
-            .field(OperationTemplate.BATCH_OPERATION_ID)
-            .subAggregation(subAggregations);
+    final var batchIdAggregation =
+        Aggregation.of(
+            a ->
+                a.terms(t -> t.field(OperationTemplate.BATCH_OPERATION_ID))
+                    .aggregations(subAggregations));
 
-    final SearchSourceBuilder sourceBuilder =
-        searchSource().query(constantScoreQuery(idsQuery)).aggregation(batchIdAggregation);
-    final SearchRequest operationsRequest =
-        searchRequest(operationTemplate.getAlias()).source(sourceBuilder);
-    final SearchResponse searchResponse;
+    final var query = ElasticsearchUtil.constantScoreQuery(idsQuery);
+
+    final var searchRequest =
+        new SearchRequest.Builder()
+            .index(operationTemplate.getAlias())
+            .query(query)
+            .size(0)
+            .aggregations(BATCH_OPERATION_ID_AGGREGATION, batchIdAggregation)
+            .build();
+
     try {
-      searchResponse = esClient.search(operationsRequest, RequestOptions.DEFAULT);
+      final var searchResponse = esClient.search(searchRequest, OperationEntity.class);
+      return searchResponse.aggregations().get(BATCH_OPERATION_ID_AGGREGATION).sterms();
     } catch (final IOException e) {
       final String message =
           String.format(
@@ -370,14 +355,13 @@ public class OperationReader extends AbstractReader
       LOGGER.error(message, e);
       throw new OperateRuntimeException(message, e);
     }
-    return searchResponse.getAggregations().get(BATCH_OPERATION_ID_AGGREGATION);
   }
 
-  private QueryBuilder allowedOperationsQuery() {
+  private Query allowedOperationsQuery() {
     final var allowed = permissionsService.getBatchOperationsWithPermission(PermissionType.READ);
     return allowed.isAll()
-        ? QueryBuilders.matchAllQuery()
-        : termsQuery(BATCH_OPERATION_ID, allowed.getIds());
+        ? Query.of(q -> q.matchAll(m -> m))
+        : ElasticsearchUtil.termsQuery(BATCH_OPERATION_ID, allowed.getIds());
   }
 
   private boolean hasNoBatchOperationWildcardPermissions() {

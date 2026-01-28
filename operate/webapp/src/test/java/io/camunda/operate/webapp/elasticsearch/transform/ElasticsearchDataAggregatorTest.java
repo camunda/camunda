@@ -8,23 +8,23 @@
 package io.camunda.operate.webapp.elasticsearch.transform;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.Mockito.when;
 
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
+import co.elastic.clients.elasticsearch._types.aggregations.FiltersAggregate;
+import co.elastic.clients.elasticsearch._types.aggregations.FiltersBucket;
+import co.elastic.clients.elasticsearch._types.aggregations.StringTermsAggregate;
+import co.elastic.clients.elasticsearch._types.aggregations.StringTermsBucket;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.util.BatchOperationTestDataHelper;
-import io.camunda.operate.util.ElasticsearchMocks;
 import io.camunda.operate.webapp.elasticsearch.reader.OperationReader;
 import io.camunda.operate.webapp.rest.dto.operation.BatchOperationDto;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
-import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
-import io.camunda.webapps.schema.entities.operation.OperationType;
-import java.io.IOException;
 import java.util.List;
-import org.elasticsearch.search.aggregations.AggregationBuilder;
-import org.elasticsearch.search.aggregations.bucket.terms.Terms;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -35,26 +35,21 @@ import org.mockito.junit.jupiter.MockitoExtension;
 public class ElasticsearchDataAggregatorTest {
 
   @Mock OperationReader operationReader;
-  @Mock private OperationTemplate operationTemplate;
   @Mock private ObjectMapper objectMapper;
   @InjectMocks private ElasticsearchDataAggregator underTest;
 
   private List<BatchOperationEntity> testEntities;
 
   @Test
-  public void testEnrichBatchEntitiesWithMetadataSuccess()
-      throws IOException, NoSuchFieldException, IllegalAccessException {
+  public void testEnrichBatchEntitiesWithMetadataSuccess() {
 
     testEntities = BatchOperationTestDataHelper.create2TestBatchOperationDtos();
     final List<BatchOperationDto> expectedDtos =
         BatchOperationTestDataHelper.get2DtoBatchRequestExpected();
 
-    final Terms mockTerms =
-        ElasticsearchMocks.getMockTermsFromJSONResponse(
-            getTestMockJSONResponse(), OperationTemplate.BATCH_OPERATION_ID_AGGREGATION);
-    when(operationReader.getOperationsAggregatedByBatchOperationId(
-            anyList(), any(AggregationBuilder.class)))
-        .thenReturn(mockTerms);
+    final StringTermsAggregate mockTermsAggregate = createMockStringTermsAggregate();
+    when(operationReader.getOperationsAggregatedByBatchOperationId(anyList(), anyMap()))
+        .thenReturn(mockTermsAggregate);
 
     final List<BatchOperationDto> actualBatchOperationDtos =
         underTest.enrichBatchEntitiesWithMetadata(testEntities);
@@ -69,54 +64,43 @@ public class ElasticsearchDataAggregatorTest {
     assertThat(expectedDtos.get(1)).as("actual2 is not equal to expected DTO.").isEqualTo(actual2);
   }
 
-  private String getTestMockJSONResponse() {
-    final String mockESResponseHits =
-        ElasticsearchMocks.hitsFromTemplate(
-            new String[] {
-              // hits content doesn't matter, because entity info is taken from the initially passed
-              // entity
-              ElasticsearchMocks.instanceFromTemplate(
-                  "2",
-                  "2",
-                  OperationType.MODIFY_PROCESS_INSTANCE.name(),
-                  testEntities.get(0).getId(),
-                  BatchOperationTestDataHelper.TEST_USER),
-              ElasticsearchMocks.instanceFromTemplate(
-                  "20",
-                  "20",
-                  OperationType.MODIFY_PROCESS_INSTANCE.name(),
-                  testEntities.get(1).getId(),
-                  BatchOperationTestDataHelper.TEST_USER)
-            });
+  private StringTermsAggregate createMockStringTermsAggregate() {
+    // Create two buckets for two batch operations
+    final var bucket1 =
+        StringTermsBucket.of(
+            b ->
+                b.key(testEntities.get(0).getId())
+                    .docCount(5)
+                    .aggregations(createFilterAggregation(1, 4)));
+    final var bucket2 =
+        StringTermsBucket.of(
+            b ->
+                b.key(testEntities.get(1).getId())
+                    .docCount(3)
+                    .aggregations(createFilterAggregation(3, 0)));
 
-    final String filterAggregation1 =
-        ElasticsearchMocks.termsSubaggregationFilterFromTemplate(
-            5,
-            ElasticsearchMocks.twoBucketFilterAggregationFromTemplate(
-                OperationTemplate.METADATA_AGGREGATION,
-                BatchOperationTemplate.COMPLETED_OPERATIONS_COUNT,
-                1,
-                BatchOperationTemplate.FAILED_OPERATIONS_COUNT,
-                4),
-            testEntities.get(0).getId());
-    final String filterAggregation2 =
-        ElasticsearchMocks.termsSubaggregationFilterFromTemplate(
-            3,
-            ElasticsearchMocks.twoBucketFilterAggregationFromTemplate(
-                OperationTemplate.METADATA_AGGREGATION,
-                BatchOperationTemplate.COMPLETED_OPERATIONS_COUNT,
-                3,
-                BatchOperationTemplate.FAILED_OPERATIONS_COUNT,
-                0),
-            testEntities.get(1).getId());
+    return StringTermsAggregate.of(
+        a -> a.buckets(b -> b.array(List.of(bucket1, bucket2))).sumOtherDocCount(0L));
+  }
 
-    final String mockResponse =
-        ElasticsearchMocks.batchSearchResponseWithAggregationAsString(
-            8,
-            mockESResponseHits,
-            ElasticsearchMocks.termsAggregationFromTemplate(
-                OperationTemplate.BATCH_OPERATION_ID_AGGREGATION,
-                new String[] {filterAggregation1, filterAggregation2}));
-    return mockResponse;
+  private Map<String, Aggregate> createFilterAggregation(
+      final long completedCount, final long failedCount) {
+    final var completedBucket =
+        FiltersBucket.of(b -> b.docCount(completedCount).aggregations(Map.of()));
+    final var failedBucket = FiltersBucket.of(b -> b.docCount(failedCount).aggregations(Map.of()));
+
+    final var filtersAgg =
+        FiltersAggregate.of(
+            f ->
+                f.buckets(
+                    b ->
+                        b.keyed(
+                            Map.of(
+                                BatchOperationTemplate.COMPLETED_OPERATIONS_COUNT,
+                                completedBucket,
+                                BatchOperationTemplate.FAILED_OPERATIONS_COUNT,
+                                failedBucket))));
+
+    return Map.of("metadataAggregation", Aggregate.of(a -> a.filters(filtersAgg)));
   }
 }

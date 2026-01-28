@@ -34,13 +34,15 @@ public class ElasticsearchTenantCheckApplier implements TenantCheckApplier<Searc
   @Autowired private TenantService tenantService;
 
   @Override
-  public void apply(final SearchRequest searchRequest) {
+  public SearchRequest apply(final SearchRequest searchRequest) {
     final var tenantAccess = tenantService.getAuthenticatedTenants();
     applyTenantCheckOnQuery(searchRequest, tenantAccess, tenantAccess.tenantIds());
+    return searchRequest;
   }
 
   @Override
-  public void apply(final SearchRequest searchRequest, final Collection<String> tenantIds) {
+  public SearchRequest apply(
+      final SearchRequest searchRequest, final Collection<String> tenantIds) {
     final var tenantAccess = tenantService.getAuthenticatedTenants();
     final var authorizedTenantIds =
         Optional.ofNullable(tenantAccess.tenantIds()).map(Set::copyOf).orElseGet(HashSet::new);
@@ -48,6 +50,8 @@ public class ElasticsearchTenantCheckApplier implements TenantCheckApplier<Searc
         tenantIds.stream().filter(authorizedTenantIds::contains).collect(Collectors.toSet());
 
     applyTenantCheckOnQuery(searchRequest, tenantAccess, searchByTenantIds);
+
+    return searchRequest;
   }
 
   private static void applyTenantCheckOnQuery(

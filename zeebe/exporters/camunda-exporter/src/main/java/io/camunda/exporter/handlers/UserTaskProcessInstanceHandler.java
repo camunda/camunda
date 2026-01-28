@@ -64,6 +64,10 @@ public class UserTaskProcessInstanceHandler
     join.setName(TaskJoinRelationshipType.PROCESS.getType());
 
     entity.setJoin(join);
+    final long rootProcessInstanceKey = record.getValue().getRootProcessInstanceKey();
+    if (rootProcessInstanceKey > 0) {
+      entity.setRootProcessInstanceKey(rootProcessInstanceKey);
+    }
   }
 
   @Override

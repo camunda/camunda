@@ -13,7 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.UserDbReader;
-import io.camunda.db.rdbms.write.RdbmsWriter;
+import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.UserEntity;
@@ -79,11 +79,11 @@ public class UserSortIT {
       final RdbmsService rdbmsService,
       final Function<Builder, ObjectBuilder<UserSort>> sortBuilder,
       final Comparator<UserEntity> comparator) {
-    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final UserDbReader reader = rdbmsService.getUserReader();
 
     final var email = nextStringId();
-    createAndSaveRandomUsers(rdbmsWriter, b -> b.email(email));
+    createAndSaveRandomUsers(rdbmsWriters, b -> b.email(email));
 
     final var searchResult =
         reader

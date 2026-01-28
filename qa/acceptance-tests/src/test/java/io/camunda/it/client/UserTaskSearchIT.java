@@ -21,6 +21,7 @@ import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.enums.UserTaskState;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.client.api.search.response.Variable;
+import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import java.io.InputStream;
@@ -37,6 +38,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 @MultiDbTest
+@CompatibilityTest
 class UserTaskSearchIT {
   private static Long userTaskKeyTaskAssigned;
   private static Long userTaskSubprocessKey;

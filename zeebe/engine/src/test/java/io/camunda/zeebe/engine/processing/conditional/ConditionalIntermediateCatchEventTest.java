@@ -96,8 +96,87 @@ public final class ConditionalIntermediateCatchEventTest {
                 .withElementInstanceKey(catchEventKey)
                 .withProcessInstanceKey(processInstanceKey)
                 .withProcessDefinitionKey(processDefinitionKey)
+                .withBpmnProcessId(processId)
                 .withCatchEventId(catchEventId)
                 .withCondition("=x > y")
+                .withVariableNames("x", "y")
+                .withVariableEvents("create", "update")
+                .isInterrupting(true)
+                .withTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
+                .limit(3))
+        .extracting(Record::getIntent)
+        .containsExactly(
+            ConditionalSubscriptionIntent.CREATED,
+            ConditionalSubscriptionIntent.TRIGGER,
+            ConditionalSubscriptionIntent.TRIGGERED);
+  }
+
+  @Test
+  public void
+      shouldTriggerOnIntermediateCatchEventActivationWhenConditionIsTrueWithMultipleVariables() {
+    // given
+    final String processId = helper.getBpmnProcessId();
+    final String catchEventId = "catchEvent";
+    final var deployment =
+        engine
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .intermediateCatchEvent(catchEventId)
+                    .condition(
+                        c ->
+                            c.condition("= x + y > 10")
+                                .zeebeVariableNames("x, y")
+                                .zeebeVariableEvents("create, update"))
+                    .endEvent()
+                    .done())
+            .deploy();
+
+    final long processDefinitionKey =
+        deployment.getValue().getProcessesMetadata().getFirst().getProcessDefinitionKey();
+
+    // when
+    final long processInstanceKey =
+        engine
+            .processInstance()
+            .ofBpmnProcessId(processId)
+            .withVariables(Map.of("x", 6, "y", 5))
+            .create();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .containsSubsequence(
+            tuple(catchEventId, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(catchEventId, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(processId, ProcessInstanceIntent.ELEMENT_COMPLETED));
+
+    final long subscriptionKey =
+        RecordingExporter.conditionalSubscriptionRecords(ConditionalSubscriptionIntent.CREATED)
+            .getFirst()
+            .getKey();
+
+    final long catchEventKey =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId(catchEventId)
+            .getFirst()
+            .getKey();
+
+    assertThat(
+            RecordingExporter.conditionalSubscriptionRecords()
+                .withRecordKey(subscriptionKey)
+                .withScopeKey(catchEventKey)
+                .withElementInstanceKey(catchEventKey)
+                .withProcessInstanceKey(processInstanceKey)
+                .withProcessDefinitionKey(processDefinitionKey)
+                .withBpmnProcessId(processId)
+                .withCatchEventId(catchEventId)
+                .withCondition("= x + y > 10")
                 .withVariableNames("x", "y")
                 .withVariableEvents("create", "update")
                 .isInterrupting(true)
@@ -168,6 +247,7 @@ public final class ConditionalIntermediateCatchEventTest {
                 .withElementInstanceKey(catchEventKey)
                 .withProcessInstanceKey(processInstanceKey)
                 .withProcessDefinitionKey(processDefinitionKey)
+                .withBpmnProcessId(processId)
                 .withCatchEventId(catchEventId)
                 .withCondition("=x > y")
                 .withVariableNames(List.of())
@@ -247,6 +327,7 @@ public final class ConditionalIntermediateCatchEventTest {
                 .withElementInstanceKey(catchEventKey)
                 .withProcessInstanceKey(processInstanceKey)
                 .withProcessDefinitionKey(processDefinitionKey)
+                .withBpmnProcessId(processId)
                 .withCatchEventId(catchEventId)
                 .withCondition("=x > y")
                 .withVariableNames("x", "y")
@@ -330,6 +411,7 @@ public final class ConditionalIntermediateCatchEventTest {
             RecordingExporter.conditionalSubscriptionRecords()
                 .withProcessInstanceKey(processInstanceKey)
                 .withProcessDefinitionKey(processDefinitionKey)
+                .withBpmnProcessId(processId)
                 .withVariableNames("x", "y")
                 .withVariableEvents("create", "update")
                 .isInterrupting(true)
@@ -692,6 +774,7 @@ public final class ConditionalIntermediateCatchEventTest {
                 .withElementInstanceKey(catchEventKey)
                 .withProcessInstanceKey(processInstanceKey)
                 .withProcessDefinitionKey(processDefinitionKey)
+                .withBpmnProcessId(processId)
                 .withCatchEventId(catchEventId)
                 .withCondition("=x > y")
                 .withVariableNames("x", "y")

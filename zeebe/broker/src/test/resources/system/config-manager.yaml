@@ -7,3 +7,4 @@ zeebe:
           syncDelay: 10s
           syncRequestTimeout: 30s
           gossipFanout: 10
+          syncInitializerDelay: 1s

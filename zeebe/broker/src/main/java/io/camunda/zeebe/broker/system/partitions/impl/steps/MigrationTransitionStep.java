@@ -10,11 +10,13 @@ package io.camunda.zeebe.broker.system.partitions.impl.steps;
 import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
+import io.camunda.zeebe.el.ExpressionLanguageMetrics;
 import io.camunda.zeebe.engine.state.ProcessingDbState;
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
 import io.camunda.zeebe.engine.state.migration.DbMigratorImpl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.stream.impl.ClusterContextImpl;
 import java.time.InstantSource;
 
@@ -38,18 +40,18 @@ public class MigrationTransitionStep implements PartitionTransitionStep {
     final var transientProcessMessageSubscriptionState = new TransientPendingSubscriptionState();
     final var zeebeDb = context.getZeebeDb();
     final var zeebeDbContext = zeebeDb.createContext();
+
     final var processingState =
         new ProcessingDbState(
             context.getPartitionId(),
             zeebeDb,
             zeebeDbContext,
-            () -> {
-              throw new IllegalCallerException("New keys cannot be generated during migration");
-            },
+            KeyGenerator.immutable(context.getPartitionId()),
             transientMessageSubscriptionState,
             transientProcessMessageSubscriptionState,
             context.getBrokerCfg().getExperimental().getEngine().createEngineConfiguration(),
-            InstantSource.system());
+            InstantSource.system(),
+            ExpressionLanguageMetrics.noop());
 
     final var dbMigrator =
         new DbMigratorImpl(

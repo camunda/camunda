@@ -159,6 +159,8 @@ public final class MessageCorrelationCorrelateProcessor
         .ifPresent(
             subscription -> {
               messageCorrelationRecord.setProcessInstanceKey(subscription.getProcessInstanceKey());
+              messageCorrelationRecord.setProcessDefinitionKey(
+                  subscription.getProcessDefinitionKey());
 
               stateWriter.appendFollowUpEvent(
                   messageKey, MessageCorrelationIntent.CORRELATED, messageCorrelationRecord);

@@ -7,6 +7,7 @@
  */
 package io.camunda.search.clients.reader;
 
+import io.camunda.search.aggregation.result.DecisionDefinitionLatestVersionAggregationResult;
 import io.camunda.search.clients.SearchClientBasedQueryExecutor;
 import io.camunda.search.entities.DecisionDefinitionEntity;
 import io.camunda.search.query.DecisionDefinitionQuery;
@@ -35,10 +36,32 @@ public class DecisionDefinitionDocumentReader extends DocumentBasedReader
   @Override
   public SearchQueryResult<DecisionDefinitionEntity> search(
       final DecisionDefinitionQuery query, final ResourceAccessChecks resourceAccessChecks) {
+
+    if (query.filter().isLatestVersion()) {
+      return searchWithAggregation(query, resourceAccessChecks);
+    }
+
     return getSearchExecutor()
         .search(
             query,
             io.camunda.webapps.schema.entities.dmn.definition.DecisionDefinitionEntity.class,
             resourceAccessChecks);
+  }
+
+  protected SearchQueryResult<DecisionDefinitionEntity> searchWithAggregation(
+      final DecisionDefinitionQuery query, final ResourceAccessChecks resourceAccessChecks) {
+    final var aggResult =
+        getSearchExecutor()
+            .aggregate(
+                query,
+                DecisionDefinitionLatestVersionAggregationResult.class,
+                resourceAccessChecks);
+
+    return new SearchQueryResult<>(
+        aggResult.items().size(),
+        !aggResult.items().isEmpty(),
+        aggResult.items(),
+        null,
+        aggResult.endCursor());
   }
 }

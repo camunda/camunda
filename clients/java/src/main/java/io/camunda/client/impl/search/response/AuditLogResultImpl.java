@@ -79,10 +79,9 @@ public class AuditLogResultImpl implements AuditLogResult {
     decisionDefinitionId = item.getDecisionDefinitionId();
     decisionDefinitionKey = item.getDecisionDefinitionKey();
     decisionEvaluationKey = item.getDecisionEvaluationKey();
-    // TODO: Uncomment when https://github.com/camunda/camunda/issues/24084 is implemented
-    //    deploymentKey = item.getDeploymentKey();
-    //    formKey = item.getFormKey();
-    //    resourceKey = item.getResourceKey();
+    deploymentKey = item.getDeploymentKey();
+    formKey = item.getFormKey();
+    resourceKey = item.getResourceKey();
   }
 
   @Override

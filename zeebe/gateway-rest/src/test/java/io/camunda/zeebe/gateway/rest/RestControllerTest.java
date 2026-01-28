@@ -13,17 +13,22 @@ import static org.mockito.Mockito.when;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.Operator;
 import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.validation.IdentifierValidator;
 import io.camunda.zeebe.gateway.rest.config.JacksonConfig;
 import io.camunda.zeebe.gateway.rest.interceptor.SecondaryStorageInterceptor;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.provider.Arguments;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -33,7 +38,7 @@ import org.springframework.test.web.reactive.server.WebTestClient;
     properties = {
       "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration"
     })
-@Import(JacksonConfig.class)
+@Import({JacksonConfig.class, RestControllerTest.WebMvcTestConfig.class})
 public abstract class RestControllerTest {
   public static final List<List<Operation<Long>>> LONG_OPERATIONS =
       List.of(
@@ -77,14 +82,12 @@ public abstract class RestControllerTest {
               Operation.gte(OffsetDateTime.now().minusHours(1)),
               Operation.lte(OffsetDateTime.now())),
           List.of(Operation.in(OffsetDateTime.now(), OffsetDateTime.now().minusDays(1))));
-
   protected static final CamundaAuthentication AUTHENTICATION_WITH_DEFAULT_TENANT =
       CamundaAuthentication.of(a -> a.user("foo").group("groupId").tenant("<default>"));
   protected static final CamundaAuthentication AUTHENTICATION_WITH_NON_DEFAULT_TENANT =
       CamundaAuthentication.of(a -> a.user("foo").group("groupId").tenant("tenantId"));
-
+  private static final Pattern ID_PATTERN = Pattern.compile(SecurityConfiguration.DEFAULT_ID_REGEX);
   @Autowired protected WebTestClient webClient;
-
   @MockitoBean protected SecondaryStorageInterceptor secondaryStorageInterceptor;
 
   @BeforeEach
@@ -211,5 +214,13 @@ public abstract class RestControllerTest {
       return "{%s}".formatted(keyValueTpl).formatted(filterKey, filterValue);
     }
     return "{\"%s\": {%s}}".formatted(filterKey, filterValue);
+  }
+
+  @TestConfiguration
+  public static class WebMvcTestConfig {
+    @Bean
+    public IdentifierValidator identifierValidator() {
+      return new IdentifierValidator(ID_PATTERN, ID_PATTERN);
+    }
   }
 }

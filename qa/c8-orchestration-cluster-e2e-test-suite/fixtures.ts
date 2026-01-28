@@ -14,11 +14,13 @@ import {TaskPanelPageV1} from '@pages/v1/TaskPanelPage';
 import {LoginPage} from '@pages/LoginPage';
 import {OperateProcessesPage} from '@pages/OperateProcessesPage';
 import {OperateProcessInstancePage} from '@pages/OperateProcessInstancePage';
+import {OperateDecisionInstancePage} from '@pages/OperateDecisionInstancePage';
+import {OperateDecisionsPage} from '@pages/OperateDecisionsPage';
 import {OperateFiltersPanelPage} from '@pages/OperateFiltersPanelPage';
 import {OperateDashboardPage} from '@pages/OperateDashboardPage';
 import {OperateDiagramPage} from '@pages/OperateDiagramPage';
 import {OperateProcessMigrationModePage} from '@pages/OperateProcessMigrationModePage';
-import {OperateOperationPanelPage} from '@pages/OperateOperationPanelPage';
+import {OperateProcessModificationModePage} from '@pages/OperateProcessModificationModePage';
 import {TaskDetailsPage} from '@pages/TaskDetailsPage';
 import {TasklistHeader} from '@pages/TasklistHeader';
 import {TasklistProcessesPage} from '@pages/TasklistProcessesPage';
@@ -48,11 +50,13 @@ type PlaywrightFixtures = {
   tasklistProcessesPageV1: TasklistProcessesPageV1;
   operateProcessesPage: OperateProcessesPage;
   operateProcessInstancePage: OperateProcessInstancePage;
+  operateDecisionInstancePage: OperateDecisionInstancePage;
+  operateDecisionsPage: OperateDecisionsPage;
   operateFiltersPanelPage: OperateFiltersPanelPage;
   operateDashboardPage: OperateDashboardPage;
   operateDiagramPage: OperateDiagramPage;
   operateProcessMigrationModePage: OperateProcessMigrationModePage;
-  operateOperationPanelPage: OperateOperationPanelPage;
+  operateProcessModificationModePage: OperateProcessModificationModePage;
   taskDetailsPage: TaskDetailsPage;
   tasklistHeader: TasklistHeader;
   tasklistProcessesPage: TasklistProcessesPage;
@@ -93,6 +97,9 @@ const test = base.extend<PlaywrightFixtures>({
   operateProcessMigrationModePage: async ({page}, use) => {
     await use(new OperateProcessMigrationModePage(page));
   },
+  operateProcessModificationModePage: async ({page}, use) => {
+    await use(new OperateProcessModificationModePage(page));
+  },
   loginPage: async ({page}, use) => {
     await use(new LoginPage(page));
   },
@@ -105,8 +112,11 @@ const test = base.extend<PlaywrightFixtures>({
   operateProcessInstancePage: async ({page}, use) => {
     await use(new OperateProcessInstancePage(page));
   },
-  operateOperationPanelPage: async ({page}, use) => {
-    await use(new OperateOperationPanelPage(page));
+  operateDecisionInstancePage: async ({page}, use) => {
+    await use(new OperateDecisionInstancePage(page));
+  },
+  operateDecisionsPage: async ({page}, use) => {
+    await use(new OperateDecisionsPage(page));
   },
   operateFiltersPanelPage: async ({page}, use) => {
     await use(new OperateFiltersPanelPage(page));

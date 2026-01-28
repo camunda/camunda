@@ -10,13 +10,12 @@ import {Operations} from 'modules/components/Operations';
 import {notificationsStore} from 'modules/stores/notifications';
 import {handleOperationError} from 'modules/utils/notifications';
 import {processInstancesStore} from 'modules/stores/processInstances';
-import {tracking} from 'modules/tracking';
-import {operationsStore} from 'modules/stores/operations';
+import {useHandleOperationSuccess} from 'modules/utils/processInstance/handleOperationSuccess';
 import {useCancelProcessInstance} from 'modules/mutations/processInstance/useCancelProcessInstance';
+import {useDeleteProcessInstance} from 'modules/mutations/processInstance/useDeleteProcessInstance';
 import {useResolveProcessInstanceIncidents} from 'modules/mutations/processInstance/useResolveProcessInstanceIncidents';
 import type {OperationConfig} from 'modules/components/Operations/types';
 import type {OperationEntityType} from 'modules/types/operate';
-import {logger} from 'modules/logger';
 
 type Props = {
   processInstanceKey: string;
@@ -31,6 +30,8 @@ const InstanceOperations: React.FC<Props> = ({
   isInstanceActive,
   activeOperations,
 }) => {
+  const handleOperationSuccess = useHandleOperationSuccess();
+
   const {
     mutate: cancelProcessInstance,
     isPending: isCancelProcessInstancePending,
@@ -63,48 +64,36 @@ const InstanceOperations: React.FC<Props> = ({
       handleOperationError(error.status);
     },
     onSuccess: () => {
-      handleOperationSuccess('RESOLVE_INCIDENT');
+      handleOperationSuccess({
+        operationType: 'RESOLVE_INCIDENT',
+        source: 'instances-list',
+      });
     },
   });
 
-  const handleOperationSuccess = (operationType: OperationEntityType) => {
-    tracking.track({
-      eventName: 'single-operation',
-      operationType,
-      source: 'instances-list',
-    });
-  };
-
-  const handleDelete = async () => {
-    const operationType = 'DELETE_PROCESS_INSTANCE';
-    try {
-      processInstancesStore.markProcessInstancesWithActiveOperations({
-        ids: [processInstanceKey],
-        operationType,
-      });
-
-      await operationsStore.applyOperation({
-        instanceId: processInstanceKey,
-        payload: {
-          operationType,
-        },
-        onError: (error) => {
-          processInstancesStore.unmarkProcessInstancesWithActiveOperations({
-            instanceIds: [processInstanceKey],
-            operationType,
-          });
-          handleOperationError(error.statusCode);
-        },
-        onSuccess: () => handleOperationSuccess(operationType),
-      });
-    } catch (error) {
+  const {
+    mutate: deleteProcessInstance,
+    isPending: isDeleteProcessInstancePending,
+  } = useDeleteProcessInstance(processInstanceKey, {
+    onError: (error) => {
       processInstancesStore.unmarkProcessInstancesWithActiveOperations({
         instanceIds: [processInstanceKey],
-        operationType,
+        operationType: 'DELETE_PROCESS_INSTANCE',
       });
-      logger.error(error);
-    }
-  };
+      notificationsStore.displayNotification({
+        kind: 'error',
+        title: 'Failed to delete process instance',
+        subtitle: error.message,
+        isDismissable: true,
+      });
+    },
+    onSuccess: () => {
+      handleOperationSuccess({
+        operationType: 'DELETE_PROCESS_INSTANCE',
+        source: 'instances-list',
+      });
+    },
+  });
 
   const operations: OperationConfig[] = [];
 
@@ -143,8 +132,16 @@ const InstanceOperations: React.FC<Props> = ({
   if (!isInstanceActive) {
     operations.push({
       type: 'DELETE_PROCESS_INSTANCE',
-      onExecute: handleDelete,
-      disabled: activeOperations.includes('DELETE_PROCESS_INSTANCE'),
+      onExecute: () => {
+        processInstancesStore.markProcessInstancesWithActiveOperations({
+          ids: [processInstanceKey],
+          operationType: 'DELETE_PROCESS_INSTANCE',
+        });
+        deleteProcessInstance();
+      },
+      disabled:
+        isDeleteProcessInstancePending ||
+        activeOperations.includes('DELETE_PROCESS_INSTANCE'),
     });
   }
 
@@ -153,7 +150,8 @@ const InstanceOperations: React.FC<Props> = ({
       processInstanceKey,
     ) ||
     isCancelProcessInstancePending ||
-    isResolveIncidentsPending;
+    isResolveIncidentsPending ||
+    isDeleteProcessInstancePending;
 
   return (
     <Operations

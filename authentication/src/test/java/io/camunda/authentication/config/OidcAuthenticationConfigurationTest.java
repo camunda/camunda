@@ -50,6 +50,12 @@ public class OidcAuthenticationConfigurationTest {
             OidcAuthenticationConfiguration.builder().authorizationUri("auth-uri").build(),
             true),
         Arguments.of(
+            "endSessionEndpointUri is set",
+            OidcAuthenticationConfiguration.builder()
+                .endSessionEndpointUri("end-session-endpoint-uri")
+                .build(),
+            true),
+        Arguments.of(
             "clientId is set",
             OidcAuthenticationConfiguration.builder().clientId("cid").build(),
             true),
@@ -61,6 +67,14 @@ public class OidcAuthenticationConfigurationTest {
             "clientSecret is set",
             OidcAuthenticationConfiguration.builder().clientSecret("cs").build(),
             true),
+        Arguments.of(
+            "idTokenAlgorithm is set",
+            OidcAuthenticationConfiguration.builder().idTokenAlgorithm("PS256").build(),
+            true),
+        Arguments.of(
+            "default idTokenAlgorithm is set",
+            OidcAuthenticationConfiguration.builder().idTokenAlgorithm("RS256").build(),
+            false),
         Arguments.of(
             "authorizeRequestConfiguration is set to null",
             OidcAuthenticationConfiguration.builder().authorizeRequestConfiguration(null).build(),
@@ -108,6 +122,10 @@ public class OidcAuthenticationConfigurationTest {
             "preferUsernameClaim is not set",
             OidcAuthenticationConfiguration.builder().build(),
             false),
+        Arguments.of(
+            "idpLogoutEnabled is set",
+            OidcAuthenticationConfiguration.builder().idpLogoutEnabled(false).build(),
+            true),
         Arguments.of(
             "issuerUri is set",
             OidcAuthenticationConfiguration.builder().issuerUri("issuer").build(),
@@ -245,6 +263,10 @@ public class OidcAuthenticationConfigurationTest {
         Arguments.of(
             "default scope is set",
             OidcAuthenticationConfiguration.builder().scope(List.of("openid", "profile")).build(),
+            false),
+        Arguments.of(
+            "default for idpLogoutEnabled is set",
+            OidcAuthenticationConfiguration.builder().idpLogoutEnabled(true).build(),
             false),
         Arguments.of(
             "default clientAuthenticationMethod is set",

@@ -16,6 +16,7 @@ public class FlowNodeInstanceEntityMapper {
     return new FlowNodeInstanceEntity(
         dbModel.flowNodeInstanceKey(),
         dbModel.processInstanceKey(),
+        dbModel.rootProcessInstanceKey(),
         dbModel.processDefinitionKey(),
         dbModel.startDate(),
         dbModel.endDate(),

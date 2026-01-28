@@ -63,6 +63,14 @@ public sealed interface ClusterConfigurationChangeOperation {
   record UpdateRoutingState(MemberId memberId, Optional<RoutingState> routingState)
       implements ClusterConfigurationChangeOperation {}
 
+  /**
+   * Represents an operation to update the incarnation number in the cluster configuration.
+   *
+   * @param memberId the identifier of the member who will update the incarnation number
+   */
+  record UpdateIncarnationNumberOperation(MemberId memberId)
+      implements ClusterConfigurationChangeOperation {}
+
   sealed interface ScaleUpOperation extends ClusterConfigurationChangeOperation {
     /**
      * Operation to initiate partition scale up. This instructs the cluster to redistribute

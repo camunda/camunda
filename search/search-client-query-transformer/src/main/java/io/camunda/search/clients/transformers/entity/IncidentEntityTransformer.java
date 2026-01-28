@@ -45,6 +45,7 @@ public class IncidentEntityTransformer
         value.getProcessDefinitionKey(),
         value.getBpmnProcessId(),
         value.getProcessInstanceKey(),
+        value.getRootProcessInstanceKey(),
         toErrorType(value.getErrorType()),
         value.getErrorMessage(),
         value.getFlowNodeId(),

@@ -24,16 +24,14 @@ import io.camunda.zeebe.journal.Journal;
 import io.camunda.zeebe.journal.JournalMetaStore;
 import io.camunda.zeebe.journal.JournalReader;
 import io.camunda.zeebe.journal.JournalRecord;
+import io.camunda.zeebe.journal.SegmentInfo;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import io.micrometer.core.instrument.MeterRegistry;
-import java.nio.file.Path;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.OptionalLong;
 import java.util.SortedMap;
-import java.util.TreeMap;
 import java.util.concurrent.locks.StampedLock;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -201,18 +199,40 @@ public final class SegmentedJournal implements Journal {
   }
 
   @Override
-  public SortedMap<Long, Path> getTailSegments(final long index) {
+  public SegmentInfo getTailSegments(final long index) {
     final var tailSegments = segments.getTailSegments(index);
-    final var treeMap =
-        tailSegments.entrySet().stream()
-            .collect(
-                Collectors.toMap(
-                    Entry::getKey,
-                    e -> e.getValue().file().file().toPath(),
-                    (a, b) -> b,
-                    TreeMap::new));
+    if (tailSegments.isEmpty()) {
+      return SegmentInfo.EMPTY;
+    }
 
-    return Collections.unmodifiableSortedMap(treeMap);
+    final var segmentPaths =
+        tailSegments.values().stream()
+            .map(segment -> segment.file().file().toPath())
+            .collect(Collectors.toList());
+
+    final var firstAsqn = findFirstAsqn(tailSegments);
+
+    return new SegmentInfo(segmentPaths, firstAsqn);
+  }
+
+  /**
+   * Finds the first valid ASQN in the segments by reading records until one with an ASQN is found.
+   */
+  private static OptionalLong findFirstAsqn(final SortedMap<Long, Segment> segments) {
+    for (final var segment : segments.values()) {
+      final var reader = segment.createReader();
+      try {
+        while (reader.hasNext()) {
+          final var record = reader.next();
+          if (record.asqn() != ASQN_IGNORE) {
+            return OptionalLong.of(record.asqn());
+          }
+        }
+      } finally {
+        reader.close();
+      }
+    }
+    return OptionalLong.empty();
   }
 
   @Override

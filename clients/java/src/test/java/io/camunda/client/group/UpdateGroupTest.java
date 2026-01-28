@@ -53,6 +53,20 @@ public class UpdateGroupTest extends ClientRestTest {
   }
 
   @Test
+  void shouldUpdateGroupWithEmptyDescription() {
+    // given
+    gatewayService.onUpdateGroupRequest(GROUP_ID, Instancio.create(GroupUpdateResult.class));
+
+    // when
+    client.newUpdateGroupCommand(GROUP_ID).name(UPDATED_NAME).description("").send().join();
+
+    // then
+    final GroupUpdateRequest request = gatewayService.getLastRequest(GroupUpdateRequest.class);
+    assertThat(request.getName()).isEqualTo(UPDATED_NAME);
+    assertThat(request.getDescription()).isEqualTo("");
+  }
+
+  @Test
   void shouldRaiseExceptionOnNotFoundGroup() {
     // given
     gatewayService.errorOnRequest(

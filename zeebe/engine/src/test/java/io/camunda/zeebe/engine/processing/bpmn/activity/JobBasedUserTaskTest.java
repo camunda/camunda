@@ -95,7 +95,8 @@ public final class JobBasedUserTaskTest {
         .hasBpmnElementType(BpmnElementType.USER_TASK)
         .hasFlowScopeKey(processInstanceKey)
         .hasBpmnProcessId(PROCESS_ID)
-        .hasProcessInstanceKey(processInstanceKey);
+        .hasProcessInstanceKey(processInstanceKey)
+        .hasRootProcessInstanceKey(processInstanceKey);
   }
 
   @Test

@@ -7,23 +7,21 @@
  */
 
 import {TableToolbar, Modal, TableBatchAction} from '@carbon/react';
-import {TableBatchActions} from '../../../InstancesTable/Toolbar/styled';
+import {TableBatchActions} from './styled';
 import pluralSuffix from 'modules/utils/pluralSuffix';
 import {useState} from 'react';
-import {panelStatesStore} from 'modules/stores/panelStates';
 import {RetryFailed, Error} from '@carbon/react/icons';
 import {MigrateAction} from './MigrateAction';
-import {MoveAction} from '../../../InstancesTable/Toolbar/MoveAction';
+import {MoveAction} from './MoveAction';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {observer} from 'mobx-react';
 import {useCancelProcessInstancesBatchOperation} from 'modules/mutations/processes/useCancelProcessInstancesBatchOperation';
 import {useResolveProcessInstancesIncidentsBatchOperation} from 'modules/mutations/processes/useResolveProcessInstancesIncidentsBatchOperation';
 import {tracking} from 'modules/tracking';
-import {useSearchParams} from 'react-router-dom';
-import {buildMutationRequestBody} from './buildMutationRequestBody';
 import {handleOperationError} from 'modules/utils/notifications';
-import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
-import {variableFilterStore} from 'modules/stores/variableFilter';
+import {useBatchOperationMutationRequestBody} from 'modules/hooks/useBatchOperationMutationRequestBody';
+import {useBatchOperationSuccessNotification} from 'modules/hooks/useBatchOperationSuccessNotification';
+import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelectionV2';
 
 type Props = {
   selectedInstancesCount: number;
@@ -37,8 +35,7 @@ const ACTION_NAMES: Readonly<
 };
 
 const Toolbar: React.FC<Props> = observer(({selectedInstancesCount}) => {
-  const variable = variableFilterStore.variable;
-  const [searchParams] = useSearchParams();
+  const displaySuccessNotification = useBatchOperationSuccessNotification();
   const [modalMode, setModalMode] = useState<
     'RESOLVE_INCIDENT' | 'CANCEL_PROCESS_INSTANCE' | null
   >(null);
@@ -46,9 +43,12 @@ const Toolbar: React.FC<Props> = observer(({selectedInstancesCount}) => {
     setModalMode(null);
   };
 
+  const batchOperationMutationRequestBody =
+    useBatchOperationMutationRequestBody();
+
   const cancelMutation = useCancelProcessInstancesBatchOperation({
-    onSuccess: () => {
-      panelStatesStore.expandOperationsPanel();
+    onSuccess: ({batchOperationKey, batchOperationType}) => {
+      displaySuccessNotification(batchOperationType, batchOperationKey);
       tracking.track({
         eventName: 'batch-operation',
         operationType: 'CANCEL_PROCESS_INSTANCE',
@@ -56,14 +56,13 @@ const Toolbar: React.FC<Props> = observer(({selectedInstancesCount}) => {
       processInstancesSelectionStore.reset();
     },
     onError: (error) => {
-      panelStatesStore.expandOperationsPanel();
       handleOperationError(error.response?.status);
     },
   });
 
   const resolveMutation = useResolveProcessInstancesIncidentsBatchOperation({
-    onSuccess: () => {
-      panelStatesStore.expandOperationsPanel();
+    onSuccess: ({batchOperationKey, batchOperationType}) => {
+      displaySuccessNotification(batchOperationType, batchOperationKey);
       tracking.track({
         eventName: 'batch-operation',
         operationType: 'RESOLVE_INCIDENT',
@@ -71,7 +70,6 @@ const Toolbar: React.FC<Props> = observer(({selectedInstancesCount}) => {
       processInstancesSelectionStore.reset();
     },
     onError: (error) => {
-      panelStatesStore.expandOperationsPanel();
       handleOperationError(error.response?.status);
     },
   });
@@ -81,28 +79,10 @@ const Toolbar: React.FC<Props> = observer(({selectedInstancesCount}) => {
       return;
     }
 
-    const {
-      selectedProcessInstanceIds,
-      excludedProcessInstanceIds,
-      checkedRunningProcessInstanceIds,
-    } = processInstancesSelectionStore;
-
-    const includeIds =
-      selectedProcessInstanceIds.length > 0
-        ? checkedRunningProcessInstanceIds
-        : [];
-
-    const requestBody = buildMutationRequestBody({
-      searchParams,
-      includeIds,
-      excludeIds: excludedProcessInstanceIds,
-      variableFilter: variable,
-    });
-
     if (modalMode === 'CANCEL_PROCESS_INSTANCE') {
-      cancelMutation.mutate(requestBody);
+      cancelMutation.mutate(batchOperationMutationRequestBody);
     } else {
-      resolveMutation.mutate(requestBody);
+      resolveMutation.mutate(batchOperationMutationRequestBody);
     }
 
     closeModal();
@@ -160,6 +140,8 @@ const Toolbar: React.FC<Props> = observer(({selectedInstancesCount}) => {
                 return `${selectedInstancesCount} items selected`;
               case 'carbon.table.batch.item.selected':
                 return `${selectedInstancesCount} item selected`;
+              case 'carbon.table.batch.selectAll':
+                return 'Select all items';
             }
           }}
         >

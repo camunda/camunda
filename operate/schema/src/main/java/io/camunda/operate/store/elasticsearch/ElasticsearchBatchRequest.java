@@ -49,7 +49,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
 
   @Autowired private OperateProperties operateProperties;
 
-  @Autowired private ElasticsearchClient es8Client;
+  @Autowired private ElasticsearchClient esClient;
 
   @Override
   public BatchRequest add(final String index, final ExporterEntity entity)
@@ -105,98 +105,6 @@ public class ElasticsearchBatchRequest implements BatchRequest {
                                 a.doc(updateFields) // partial document to update
                                     .upsert(entity) // full document if missing
                             )));
-    return this;
-  }
-
-  @Override
-  public BatchRequest upsertWithRouting(
-      final String index,
-      final String id,
-      final ExporterEntity entity,
-      final Map<String, Object> updateFields,
-      final String routing) {
-    LOGGER.debug(
-        "Add upsert request with routing {} for index {} id {} entity {} and update fields {}",
-        routing,
-        index,
-        id,
-        entity,
-        updateFields);
-    bulkRequestBuilder.operations(
-        op ->
-            op.update(
-                u ->
-                    u.index(index)
-                        .id(id)
-                        .routing(routing)
-                        .retryOnConflict(UPDATE_RETRY_COUNT)
-                        .action(
-                            a ->
-                                a.doc(updateFields) // partial document to update
-                                    .upsert(entity) // full document if missing
-                            )));
-    return this;
-  }
-
-  @Override
-  public BatchRequest upsertWithScript(
-      final String index,
-      final String id,
-      final ExporterEntity entity,
-      final String script,
-      final Map<String, Object> parameters) {
-    LOGGER.debug(
-        "Add upsert request with for index {} id {} entity {} and script {} with parameters {} ",
-        index,
-        id,
-        entity,
-        script,
-        parameters);
-    final Map<String, JsonData> paramsMap =
-        parameters.entrySet().stream()
-            .collect(Collectors.toMap(Map.Entry::getKey, e -> JsonData.of(e.getValue())));
-    bulkRequestBuilder.operations(
-        op ->
-            op.update(
-                u ->
-                    u.index(index)
-                        .id(id)
-                        .action(
-                            a -> a.script(s -> s.source(script).params(paramsMap)).upsert(entity))
-                        .retryOnConflict(UPDATE_RETRY_COUNT)));
-    return this;
-  }
-
-  @Override
-  public BatchRequest upsertWithScriptAndRouting(
-      final String index,
-      final String id,
-      final ExporterEntity entity,
-      final String script,
-      final Map<String, Object> parameters,
-      final String routing) {
-    LOGGER.debug(
-        "Add upsert request with routing {} for index {} id {} entity {} and script {} with parameters {} ",
-        routing,
-        index,
-        id,
-        entity,
-        script,
-        parameters);
-    final Map<String, JsonData> paramsMap =
-        parameters.entrySet().stream()
-            .collect(Collectors.toMap(Map.Entry::getKey, e -> JsonData.of(e.getValue())));
-    bulkRequestBuilder.operations(
-        op ->
-            op.update(
-                u ->
-                    u.index(index)
-                        .id(id)
-                        .routing(routing)
-                        .action(
-                            a -> a.script(s -> s.source(script).params(paramsMap)).upsert(entity))
-                        .retryOnConflict(UPDATE_RETRY_COUNT)));
-
     return this;
   }
 
@@ -259,7 +167,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
   public void execute() throws PersistenceException {
     try {
       ElasticsearchUtil.processBulkRequest(
-          es8Client,
+          esClient,
           bulkRequestBuilder,
           operateProperties.getElasticsearch().getBulkRequestMaxSizeInBytes());
     } catch (final MissingRequiredPropertyException ignored) {
@@ -271,7 +179,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
   public void executeWithRefresh() {
     try {
       ElasticsearchUtil.processBulkRequest(
-          es8Client,
+          esClient,
           bulkRequestBuilder,
           true,
           operateProperties.getElasticsearch().getBulkRequestMaxSizeInBytes());

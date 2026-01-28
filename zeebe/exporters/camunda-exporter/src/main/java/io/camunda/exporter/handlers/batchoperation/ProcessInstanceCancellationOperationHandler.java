@@ -41,6 +41,11 @@ public class ProcessInstanceCancellationOperationHandler
   }
 
   @Override
+  long getRootProcessInstanceKey(final Record<ProcessInstanceRecordValue> record) {
+    return record.getValue().getRootProcessInstanceKey();
+  }
+
+  @Override
   long getItemKey(final Record<ProcessInstanceRecordValue> record) {
     return record.getValue().getProcessInstanceKey();
   }

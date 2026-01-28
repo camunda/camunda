@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.state.query;
 
 import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.el.ExpressionLanguageMetrics;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.state.ProcessingDbState;
 import io.camunda.zeebe.engine.state.QueryService;
@@ -20,6 +21,7 @@ import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.time.InstantSource;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
@@ -81,13 +83,12 @@ public final class StateQueryService implements QueryService {
               Protocol.DEPLOYMENT_PARTITION,
               zeebeDb,
               zeebeDb.createContext(),
-              () -> {
-                throw new UnsupportedOperationException("Not allowed to generate a new key");
-              },
+              KeyGenerator.immutable(Protocol.DEPLOYMENT_PARTITION),
               new TransientPendingSubscriptionState(),
               new TransientPendingSubscriptionState(),
               new EngineConfiguration(),
-              clock);
+              clock,
+              ExpressionLanguageMetrics.noop());
     }
   }
 }

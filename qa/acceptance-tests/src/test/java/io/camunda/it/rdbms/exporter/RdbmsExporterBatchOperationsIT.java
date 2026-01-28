@@ -7,22 +7,6 @@
  */
 package io.camunda.it.rdbms.exporter;
 
-import static io.camunda.it.rdbms.exporter.RecordFixtures.generateLifecycleRecord;
-import static io.camunda.it.rdbms.exporter.RecordFixtures.getBatchOperationChunkRecord;
-import static io.camunda.it.rdbms.exporter.RecordFixtures.getBatchOperationCompletedRecord;
-import static io.camunda.it.rdbms.exporter.RecordFixtures.getBatchOperationCompletedWithErrorsRecord;
-import static io.camunda.it.rdbms.exporter.RecordFixtures.getBatchOperationCreatedRecord;
-import static io.camunda.it.rdbms.exporter.RecordFixtures.getBatchOperationLifecycleCanceledRecord;
-import static io.camunda.it.rdbms.exporter.RecordFixtures.getBatchOperationLifecycleResumeRecord;
-import static io.camunda.it.rdbms.exporter.RecordFixtures.getBatchOperationLifecycleSuspendedRecord;
-import static io.camunda.it.rdbms.exporter.RecordFixtures.getBatchOperationModifyProcessInstanceRecord;
-import static io.camunda.it.rdbms.exporter.RecordFixtures.getBatchOperationProcessMigratedRecord;
-import static io.camunda.it.rdbms.exporter.RecordFixtures.getBatchOperationResolveIncidentRecord;
-import static io.camunda.it.rdbms.exporter.RecordFixtures.getCanceledProcessRecord;
-import static io.camunda.it.rdbms.exporter.RecordFixtures.getFailedBatchOperationModifyProcessInstanceRecord;
-import static io.camunda.it.rdbms.exporter.RecordFixtures.getFailedBatchOperationProcessMigratedRecord;
-import static io.camunda.it.rdbms.exporter.RecordFixtures.getFailedBatchOperationResolveIncidentRecord;
-import static io.camunda.it.rdbms.exporter.RecordFixtures.getRejectedCancelProcessRecord;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assumptions.assumeThat;
 
@@ -61,6 +45,7 @@ import org.springframework.test.context.TestPropertySource;
     })
 class RdbmsExporterBatchOperationsIT {
 
+  private static final RecordFixtures FIXTURES = new RecordFixtures();
   private final ExporterTestController controller = new ExporterTestController();
   private final VendorDatabaseProperties vendorDatabaseProperties =
       new VendorDatabaseProperties(
@@ -72,11 +57,8 @@ class RdbmsExporterBatchOperationsIT {
               setProperty("disableFkBeforeTruncate", "true");
             }
           });
-
   @Autowired private LiquibaseSchemaManager liquibaseSchemaManager;
-
   @Autowired private RdbmsService rdbmsService;
-
   private RdbmsExporterWrapper exporter;
 
   @BeforeEach
@@ -102,9 +84,9 @@ class RdbmsExporterBatchOperationsIT {
   @Test
   public void shouldExportActiveBatchOperation() {
     // given
-    final var batchOperationCreatedRecord = getBatchOperationCreatedRecord(1L);
+    final var batchOperationCreatedRecord = FIXTURES.getBatchOperationCreatedRecord();
     final var batchOperationKey = batchOperationCreatedRecord.getKey();
-    final var batchOperationChunkRecord = getBatchOperationChunkRecord(batchOperationKey, 2L);
+    final var batchOperationChunkRecord = FIXTURES.getBatchOperationChunkRecord(batchOperationKey);
 
     // when
     exporter.export(batchOperationCreatedRecord);
@@ -123,7 +105,7 @@ class RdbmsExporterBatchOperationsIT {
     // given
     final var batchOperationKey = givenBatchOperationIsCreatedAndIsActive();
     final var batchOperationCompletedRecord =
-        getBatchOperationCompletedRecord(batchOperationKey, 3L);
+        FIXTURES.getBatchOperationCompletedRecord(batchOperationKey);
 
     // when
     exporter.export(batchOperationCompletedRecord);
@@ -139,7 +121,7 @@ class RdbmsExporterBatchOperationsIT {
     // given
     final var batchOperationKey = givenBatchOperationIsCreatedAndIsActive();
     final var completedWithErrorsRecord =
-        getBatchOperationCompletedWithErrorsRecord(batchOperationKey, 3L);
+        FIXTURES.getBatchOperationCompletedWithErrorsRecord(batchOperationKey);
 
     // when
     exporter.export(completedWithErrorsRecord);
@@ -156,7 +138,7 @@ class RdbmsExporterBatchOperationsIT {
     // given
     final var batchOperationKey = givenBatchOperationIsCreatedAndIsActive();
     final var failedRecord =
-        generateLifecycleRecord(batchOperationKey, 3L, BatchOperationIntent.FAILED, true);
+        FIXTURES.generateLifecycleRecord(batchOperationKey, BatchOperationIntent.FAILED, true);
 
     // when
     exporter.export(failedRecord);
@@ -173,7 +155,7 @@ class RdbmsExporterBatchOperationsIT {
     // given
     final var batchOperationKey = givenBatchOperationIsCreatedAndIsActive();
     final var batchOperationCanceledRecord =
-        getBatchOperationLifecycleCanceledRecord(batchOperationKey, 3L);
+        FIXTURES.getBatchOperationLifecycleCanceledRecord(batchOperationKey);
 
     // when
     exporter.export(batchOperationCanceledRecord);
@@ -198,7 +180,7 @@ class RdbmsExporterBatchOperationsIT {
     final var batchOperationKey = givenBatchOperationIsCreatedAndIsActive();
 
     final var batchOperationSuspendedRecord =
-        getBatchOperationLifecycleSuspendedRecord(batchOperationKey, 3L);
+        FIXTURES.getBatchOperationLifecycleSuspendedRecord(batchOperationKey);
     // when
     exporter.export(batchOperationSuspendedRecord);
 
@@ -213,11 +195,11 @@ class RdbmsExporterBatchOperationsIT {
     // given
     final var batchOperationKey = givenBatchOperationIsCreatedAndIsActive();
     final var batchOperationSuspendedRecord =
-        getBatchOperationLifecycleSuspendedRecord(batchOperationKey, 3L);
+        FIXTURES.getBatchOperationLifecycleSuspendedRecord(batchOperationKey);
     exporter.export(batchOperationSuspendedRecord);
 
     final var batchOperationResumeRecord =
-        getBatchOperationLifecycleResumeRecord(batchOperationKey, 4L);
+        FIXTURES.getBatchOperationLifecycleResumeRecord(batchOperationKey);
     // when we resume it
     exporter.export(batchOperationResumeRecord);
 
@@ -230,12 +212,12 @@ class RdbmsExporterBatchOperationsIT {
   @Test
   public void shouldMonitorCancelProcessInstanceBatchOperation() {
     // given
-    final var batchOperationCreatedRecord = getBatchOperationCreatedRecord(1L);
+    final var batchOperationCreatedRecord = FIXTURES.getBatchOperationCreatedRecord();
     final var batchOperationKey = batchOperationCreatedRecord.getKey();
-    final var batchOperationChunkRecord = getBatchOperationChunkRecord(batchOperationKey, 2L);
+    final var batchOperationChunkRecord = FIXTURES.getBatchOperationChunkRecord(batchOperationKey);
     final var processInstanceKey = 1L;
     final var canceledProcessRecord =
-        getCanceledProcessRecord(processInstanceKey, batchOperationKey, 3L);
+        FIXTURES.getCanceledProcessRecord(processInstanceKey, batchOperationKey);
 
     // when
     exporter.export(batchOperationCreatedRecord);
@@ -256,12 +238,12 @@ class RdbmsExporterBatchOperationsIT {
   public void shouldMonitorCancelProcessInstanceBatchOperationNoExportItemsOnCreation() {
     setup(false);
     // given
-    final var batchOperationCreatedRecord = getBatchOperationCreatedRecord(1L);
+    final var batchOperationCreatedRecord = FIXTURES.getBatchOperationCreatedRecord();
     final var batchOperationKey = batchOperationCreatedRecord.getKey();
-    final var batchOperationChunkRecord = getBatchOperationChunkRecord(batchOperationKey, 2L);
+    final var batchOperationChunkRecord = FIXTURES.getBatchOperationChunkRecord(batchOperationKey);
     final var processInstanceKey = 1L;
     final var canceledProcessRecord =
-        getCanceledProcessRecord(processInstanceKey, batchOperationKey, 3L);
+        FIXTURES.getCanceledProcessRecord(processInstanceKey, batchOperationKey);
 
     // when
     exporter.export(batchOperationCreatedRecord);
@@ -286,12 +268,12 @@ class RdbmsExporterBatchOperationsIT {
   @Test
   public void shouldMonitorFailedCancelProcessInstanceBatchOperation() {
     // given
-    final var batchOperationCreatedRecord = getBatchOperationCreatedRecord(1L);
+    final var batchOperationCreatedRecord = FIXTURES.getBatchOperationCreatedRecord();
     final var batchOperationKey = batchOperationCreatedRecord.getKey();
-    final var batchOperationChunkRecord = getBatchOperationChunkRecord(batchOperationKey, 2L);
+    final var batchOperationChunkRecord = FIXTURES.getBatchOperationChunkRecord(batchOperationKey);
     final var processInstanceKey = 1L;
     final var rejectedCancelProcessRecord =
-        getRejectedCancelProcessRecord(processInstanceKey, batchOperationKey, 3L);
+        FIXTURES.getRejectedCancelProcessRecord(processInstanceKey, batchOperationKey);
 
     // when
     exporter.export(batchOperationCreatedRecord);
@@ -312,12 +294,12 @@ class RdbmsExporterBatchOperationsIT {
   public void shouldMonitorFailedCancelProcessInstanceBatchOperationNoExportItemsOnCreation() {
     setup(false);
     // given
-    final var batchOperationCreatedRecord = getBatchOperationCreatedRecord(1L);
+    final var batchOperationCreatedRecord = FIXTURES.getBatchOperationCreatedRecord();
     final var batchOperationKey = batchOperationCreatedRecord.getKey();
-    final var batchOperationChunkRecord = getBatchOperationChunkRecord(batchOperationKey, 2L);
+    final var batchOperationChunkRecord = FIXTURES.getBatchOperationChunkRecord(batchOperationKey);
     final var processInstanceKey = 1L;
     final var rejectedCancelProcessRecord =
-        getRejectedCancelProcessRecord(processInstanceKey, batchOperationKey, 3L);
+        FIXTURES.getRejectedCancelProcessRecord(processInstanceKey, batchOperationKey);
 
     // when
     exporter.export(batchOperationCreatedRecord);
@@ -343,12 +325,12 @@ class RdbmsExporterBatchOperationsIT {
   public void shouldMonitorResolveIncidentBatchOperation() {
     // given
     final var batchOperationCreatedRecord =
-        getBatchOperationCreatedRecord(1L, BatchOperationType.RESOLVE_INCIDENT);
+        FIXTURES.getBatchOperationCreatedRecord(BatchOperationType.RESOLVE_INCIDENT);
     final var batchOperationKey = batchOperationCreatedRecord.getKey();
-    final var batchOperationChunkRecord = getBatchOperationChunkRecord(batchOperationKey, 2L);
+    final var batchOperationChunkRecord = FIXTURES.getBatchOperationChunkRecord(batchOperationKey);
     final var incidentKey = 1L;
     final var incidentResolvedRecord =
-        getBatchOperationResolveIncidentRecord(incidentKey, batchOperationKey, 3L);
+        FIXTURES.getBatchOperationResolveIncidentRecord(incidentKey, batchOperationKey);
 
     // when
     exporter.export(batchOperationCreatedRecord);
@@ -369,12 +351,12 @@ class RdbmsExporterBatchOperationsIT {
   public void shouldMonitorFailedResolveIncidentBatchOperation() {
     // given
     final var batchOperationCreatedRecord =
-        getBatchOperationCreatedRecord(1L, BatchOperationType.RESOLVE_INCIDENT);
+        FIXTURES.getBatchOperationCreatedRecord(BatchOperationType.RESOLVE_INCIDENT);
     final var batchOperationKey = batchOperationCreatedRecord.getKey();
-    final var batchOperationChunkRecord = getBatchOperationChunkRecord(batchOperationKey, 2L);
+    final var batchOperationChunkRecord = FIXTURES.getBatchOperationChunkRecord(batchOperationKey);
     final var incidentKey = 1L;
     final var resolveIncidentFailedRecord =
-        getFailedBatchOperationResolveIncidentRecord(incidentKey, batchOperationKey, 3L);
+        FIXTURES.getFailedBatchOperationResolveIncidentRecord(incidentKey, batchOperationKey);
 
     // when
     exporter.export(batchOperationCreatedRecord);
@@ -395,12 +377,12 @@ class RdbmsExporterBatchOperationsIT {
   public void shouldMonitorProcessInstanceMigrationBatchOperation() {
     // given
     final var batchOperationCreatedRecord =
-        getBatchOperationCreatedRecord(1L, BatchOperationType.MIGRATE_PROCESS_INSTANCE);
+        FIXTURES.getBatchOperationCreatedRecord(BatchOperationType.MIGRATE_PROCESS_INSTANCE);
     final var batchOperationKey = batchOperationCreatedRecord.getKey();
-    final var batchOperationChunkRecord = getBatchOperationChunkRecord(batchOperationKey, 2L);
+    final var batchOperationChunkRecord = FIXTURES.getBatchOperationChunkRecord(batchOperationKey);
     final var processInstanceKey = 1L;
     final var processMigratedRecord =
-        getBatchOperationProcessMigratedRecord(processInstanceKey, batchOperationKey, 3L);
+        FIXTURES.getBatchOperationProcessMigratedRecord(processInstanceKey, batchOperationKey);
 
     // when
     exporter.export(batchOperationCreatedRecord);
@@ -421,12 +403,13 @@ class RdbmsExporterBatchOperationsIT {
   public void shouldMonitorFailedProcessInstanceMigrationBatchOperation() {
     // given
     final var batchOperationCreatedRecord =
-        getBatchOperationCreatedRecord(1L, BatchOperationType.MIGRATE_PROCESS_INSTANCE);
+        FIXTURES.getBatchOperationCreatedRecord(BatchOperationType.MIGRATE_PROCESS_INSTANCE);
     final var batchOperationKey = batchOperationCreatedRecord.getKey();
-    final var batchOperationChunkRecord = getBatchOperationChunkRecord(batchOperationKey, 2L);
+    final var batchOperationChunkRecord = FIXTURES.getBatchOperationChunkRecord(batchOperationKey);
     final var processInstanceKey = 1L;
     final var processFailedMigrateRecord =
-        getFailedBatchOperationProcessMigratedRecord(processInstanceKey, batchOperationKey, 3L);
+        FIXTURES.getFailedBatchOperationProcessMigratedRecord(
+            processInstanceKey, batchOperationKey);
 
     // when
     exporter.export(batchOperationCreatedRecord);
@@ -447,12 +430,13 @@ class RdbmsExporterBatchOperationsIT {
   public void shouldMonitorModifyProcessInstanceBatchOperation() {
     // given
     final var batchOperationCreatedRecord =
-        getBatchOperationCreatedRecord(1L, BatchOperationType.MODIFY_PROCESS_INSTANCE);
+        FIXTURES.getBatchOperationCreatedRecord(BatchOperationType.MODIFY_PROCESS_INSTANCE);
     final var batchOperationKey = batchOperationCreatedRecord.getKey();
-    final var batchOperationChunkRecord = getBatchOperationChunkRecord(batchOperationKey, 2L);
+    final var batchOperationChunkRecord = FIXTURES.getBatchOperationChunkRecord(batchOperationKey);
     final var processInstanceKey = 1L;
     final var processInstanceModifiedRecord =
-        getBatchOperationModifyProcessInstanceRecord(processInstanceKey, batchOperationKey, 3L);
+        FIXTURES.getBatchOperationModifyProcessInstanceRecord(
+            processInstanceKey, batchOperationKey);
 
     // when
     exporter.export(batchOperationCreatedRecord);
@@ -473,13 +457,13 @@ class RdbmsExporterBatchOperationsIT {
   public void shouldMonitorFailedModifyProcessInstanceBatchOperation() {
     // given
     final var batchOperationCreatedRecord =
-        getBatchOperationCreatedRecord(1L, BatchOperationType.MODIFY_PROCESS_INSTANCE);
+        FIXTURES.getBatchOperationCreatedRecord(BatchOperationType.MODIFY_PROCESS_INSTANCE);
     final var batchOperationKey = batchOperationCreatedRecord.getKey();
-    final var batchOperationChunkRecord = getBatchOperationChunkRecord(batchOperationKey, 2L);
+    final var batchOperationChunkRecord = FIXTURES.getBatchOperationChunkRecord(batchOperationKey);
     final var processInstanceKey = 1L;
     final var modifyProcessIncidentFailedRecord =
-        getFailedBatchOperationModifyProcessInstanceRecord(
-            processInstanceKey, batchOperationKey, 3L);
+        FIXTURES.getFailedBatchOperationModifyProcessInstanceRecord(
+            processInstanceKey, batchOperationKey);
 
     // when
     exporter.export(batchOperationCreatedRecord);
@@ -497,9 +481,9 @@ class RdbmsExporterBatchOperationsIT {
   }
 
   private long givenBatchOperationIsCreatedAndIsActive() {
-    final var batchOperationCreatedRecord = getBatchOperationCreatedRecord(1L);
+    final var batchOperationCreatedRecord = FIXTURES.getBatchOperationCreatedRecord();
     final var batchOperationKey = batchOperationCreatedRecord.getKey();
-    final var batchOperationChunkRecord = getBatchOperationChunkRecord(batchOperationKey, 2L);
+    final var batchOperationChunkRecord = FIXTURES.getBatchOperationChunkRecord(batchOperationKey);
 
     exporter.export(batchOperationCreatedRecord);
     exporter.export(batchOperationChunkRecord);

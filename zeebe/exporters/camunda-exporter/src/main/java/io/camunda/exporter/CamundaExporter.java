@@ -21,6 +21,7 @@ import static io.camunda.zeebe.protocol.record.ValueType.GROUP;
 import static io.camunda.zeebe.protocol.record.ValueType.HISTORY_DELETION;
 import static io.camunda.zeebe.protocol.record.ValueType.INCIDENT;
 import static io.camunda.zeebe.protocol.record.ValueType.JOB;
+import static io.camunda.zeebe.protocol.record.ValueType.JOB_METRICS_BATCH;
 import static io.camunda.zeebe.protocol.record.ValueType.MAPPING_RULE;
 import static io.camunda.zeebe.protocol.record.ValueType.MESSAGE_START_EVENT_SUBSCRIPTION;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS;
@@ -29,6 +30,7 @@ import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE_CREATI
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE_MIGRATION;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE_MODIFICATION;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_MESSAGE_SUBSCRIPTION;
+import static io.camunda.zeebe.protocol.record.ValueType.RESOURCE;
 import static io.camunda.zeebe.protocol.record.ValueType.ROLE;
 import static io.camunda.zeebe.protocol.record.ValueType.TENANT;
 import static io.camunda.zeebe.protocol.record.ValueType.USAGE_METRIC;
@@ -249,7 +251,7 @@ public class CamundaExporter implements Exporter {
     provider.init(
         configuration,
         clientAdapter.getExporterEntityCacheProvider(),
-        context.getMeterRegistry(),
+        context,
         metadata,
         clientAdapter.objectMapper());
 
@@ -367,6 +369,7 @@ public class CamundaExporter implements Exporter {
             DECISION_EVALUATION,
             PROCESS,
             FORM,
+            RESOURCE,
             USER_TASK,
             BATCH_OPERATION_CREATION,
             BATCH_OPERATION_EXECUTION,
@@ -374,7 +377,8 @@ public class CamundaExporter implements Exporter {
             BATCH_OPERATION_CHUNK,
             USAGE_METRIC,
             CLUSTER_VARIABLE,
-            HISTORY_DELETION);
+            HISTORY_DELETION,
+            JOB_METRICS_BATCH);
 
     @Override
     public boolean acceptType(final RecordType recordType) {

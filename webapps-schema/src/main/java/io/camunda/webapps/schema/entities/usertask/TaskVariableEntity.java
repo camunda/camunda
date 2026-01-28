@@ -11,6 +11,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import io.camunda.webapps.schema.entities.BeforeVersion880;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.PartitionedEntity;
+import io.camunda.webapps.schema.entities.SinceVersion;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 
 public class TaskVariableEntity
@@ -54,6 +55,10 @@ public class TaskVariableEntity
   @BeforeVersion880
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private TaskJoinRelationship join;
+
+  /** Attention! This field will be filled in only for data imported after v. 8.9.0. */
+  @SinceVersion(value = "8.9.0", requireDefault = false)
+  private Long rootProcessInstanceKey;
 
   public TaskVariableEntity() {}
 
@@ -167,6 +172,15 @@ public class TaskVariableEntity
 
   public TaskVariableEntity setPosition(final Long position) {
     this.position = position;
+    return this;
+  }
+
+  public Long getRootProcessInstanceKey() {
+    return rootProcessInstanceKey;
+  }
+
+  public TaskVariableEntity setRootProcessInstanceKey(final Long rootProcessInstanceKey) {
+    this.rootProcessInstanceKey = rootProcessInstanceKey;
     return this;
   }
 }

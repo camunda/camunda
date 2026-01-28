@@ -39,6 +39,7 @@
 /.github/workflows/ci*                                   @camunda/monorepo-devops-team
 /.github/workflows/commitlint.yml                        @camunda/monorepo-devops-team
 /.github/workflows/dispatch-release*                     @camunda/monorepo-devops-team
+/.github/workflows/docs*                                 @camunda/monorepo-devops-team
 /.github/workflows/issue-add-support-label.yml           @camunda/monorepo-devops-team
 /.github/workflows/labeler.yml                           @camunda/monorepo-devops-team
 /.github/workflows/preview-env*                          @camunda/monorepo-devops-team
@@ -49,6 +50,7 @@
 /.github/workflows/zeebe-release-stable-dry-run.yml      @camunda/monorepo-devops-team
 /.github/workflows/check-outdated-prs.yml                @camunda/monorepo-devops-team
 /.github/workflows/create-urgent-hotfix-img.yml          @camunda/monorepo-devops-team
+/.github/workflows/auto-merge-back-to-stable.yml         @camunda/monorepo-devops-team
 
 ###################
 ## Core Features ##
@@ -122,10 +124,26 @@
 /zeebe/broker/src/main/java/io/camunda/zeebe/broker/transport @camunda/zeebe-distributed-platform
 /zeebe/broker/src/test/java/io/camunda/zeebe/broker/transport @camunda/zeebe-distributed-platform
 
-# Performance  + Load testing
-/zeebe/load-tests @camunda/zeebe-distributed-platform
+###############
+## Identity  ##
+###############
 
-# Identity
-/identity/        @camunda/identity
+/identity/        @camunda/identity-frontend
 /authentication/  @camunda/identity
 /security/        @camunda/identity
+
+
+##########################
+## Reliability Testing  ##
+##########################
+
+# Performance + Load testing
+/load-tests/ @camunda/reliability-testing
+/.github/workflows/*load-test*.yml @camunda/reliability-testing
+
+#################
+## Agentic AI  ##
+#################
+
+# MCP gateway
+/gateways/gateway-mcp @camunda/connectors-agentic-ai

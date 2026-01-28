@@ -22,6 +22,12 @@ public class Data {
   /** How often we take snapshots of streams (time unit) */
   private Duration snapshotPeriod = Duration.ofMinutes(5);
 
+  /** This section allows to configure the audit log setup. */
+  @NestedConfigurationProperty private AuditLog auditLog = new AuditLog();
+
+  /** This section allows to configure the history deletion setup. */
+  @NestedConfigurationProperty private HistoryDeletion historyDeletion = new HistoryDeletion();
+
   /** This section allows to configure primary Zeebe's data storage. */
   @NestedConfigurationProperty private PrimaryStorage primaryStorage = new PrimaryStorage();
 
@@ -33,6 +39,22 @@ public class Data {
 
   /** This section allows configuring exporters */
   private Map<String, Exporter> exporters = new HashMap<>();
+
+  public AuditLog getAuditLog() {
+    return auditLog;
+  }
+
+  public void setAuditLog(final AuditLog auditLog) {
+    this.auditLog = auditLog;
+  }
+
+  public HistoryDeletion getHistoryDeletion() {
+    return historyDeletion;
+  }
+
+  public void setHistoryDeletion(final HistoryDeletion historyDeletion) {
+    this.historyDeletion = historyDeletion;
+  }
 
   public Duration getSnapshotPeriod() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(

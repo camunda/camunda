@@ -7,15 +7,17 @@
  */
 package io.camunda.operate.webapp.api.v1.dao.elasticsearch;
 
+import static io.camunda.operate.util.ElasticsearchTestHelper.unwrapQueryVal;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 
+import co.elastic.clients.elasticsearch.core.SearchRequest;
 import io.camunda.operate.webapp.api.v1.entities.ProcessDefinition;
 import io.camunda.operate.webapp.api.v1.entities.Query;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -38,24 +40,41 @@ public class ElasticsearchProcessDefinitionDaoTest {
             .setVersionTag("testTag");
     final Query<ProcessDefinition> query =
         new Query<ProcessDefinition>().setFilter(processDefinition);
-    final SearchSourceBuilder searchSourceBuilder = spy(new SearchSourceBuilder());
-
+    final var searchReqBuilder = spy(new SearchRequest.Builder());
     // when
-    processDefinitionDao.buildQueryOn(query, ProcessDefinition.KEY, searchSourceBuilder);
+    processDefinitionDao.buildQueryOn(query, ProcessDefinition.KEY, searchReqBuilder, false);
 
-    // then
-    verify(processDefinitionDao, times(1)).buildFiltering(query, searchSourceBuilder);
-    verify(processDefinitionDao, times(1))
-        .buildTermQuery(ProcessDefinition.NAME, processDefinition.getName());
-    verify(processDefinitionDao, times(1))
-        .buildTermQuery(ProcessDefinition.BPMN_PROCESS_ID, processDefinition.getBpmnProcessId());
-    verify(processDefinitionDao, times(1))
-        .buildTermQuery(ProcessDefinition.TENANT_ID, processDefinition.getTenantId());
-    verify(processDefinitionDao, times(1))
-        .buildTermQuery(ProcessDefinition.VERSION, processDefinition.getVersion());
-    verify(processDefinitionDao, times(1))
-        .buildTermQuery(ProcessDefinition.VERSION_TAG, processDefinition.getVersionTag());
-    verify(processDefinitionDao, times(1))
-        .buildTermQuery(ProcessDefinition.KEY, processDefinition.getKey());
+    final ArgumentCaptor<co.elastic.clients.elasticsearch._types.query_dsl.Query> captor =
+        ArgumentCaptor.forClass(co.elastic.clients.elasticsearch._types.query_dsl.Query.class);
+
+    // verify interaction and capture argument
+    Mockito.verify(searchReqBuilder).query(captor.capture());
+
+    // get captured value
+    final var queries = captor.getValue().bool().must();
+
+    assertThat(queries.size()).isEqualTo(6);
+
+    assertThat(queries.get(0).terms().field()).isEqualTo(ProcessDefinition.NAME);
+    assertThat(unwrapQueryVal(queries.get(0), String.class)).isEqualTo(processDefinition.getName());
+
+    assertThat(queries.get(1).terms().field()).isEqualTo(ProcessDefinition.BPMN_PROCESS_ID);
+    assertThat(unwrapQueryVal(queries.get(1), String.class))
+        .isEqualTo(processDefinition.getBpmnProcessId());
+
+    assertThat(queries.get(2).terms().field()).isEqualTo(ProcessDefinition.TENANT_ID);
+    assertThat(unwrapQueryVal(queries.get(2), String.class))
+        .isEqualTo(processDefinition.getTenantId());
+
+    assertThat(queries.get(3).terms().field()).isEqualTo(ProcessDefinition.VERSION);
+    assertThat(unwrapQueryVal(queries.get(3), Integer.class))
+        .isEqualTo(processDefinition.getVersion());
+
+    assertThat(queries.get(4).terms().field()).isEqualTo(ProcessDefinition.VERSION_TAG);
+    assertThat(unwrapQueryVal(queries.get(4), String.class))
+        .isEqualTo(processDefinition.getVersionTag());
+
+    assertThat(queries.get(5).terms().field()).isEqualTo(ProcessDefinition.KEY);
+    assertThat(unwrapQueryVal(queries.get(5), Long.class)).isEqualTo(processDefinition.getKey());
   }
 }

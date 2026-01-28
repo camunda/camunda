@@ -11,6 +11,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import io.camunda.webapps.schema.entities.BeforeVersion880;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.PartitionedEntity;
+import io.camunda.webapps.schema.entities.SinceVersion;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.Objects;
 
@@ -30,6 +31,11 @@ public class TaskProcessInstanceEntity
   @BeforeVersion880
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private TaskJoinRelationship join;
+
+  /** Attention! This field will be filled in only for data imported after v. 8.9.0. */
+  @SinceVersion(value = "8.9.0", requireDefault = false)
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private Long rootProcessInstanceKey;
 
   public TaskProcessInstanceEntity() {}
 
@@ -83,9 +89,18 @@ public class TaskProcessInstanceEntity
     return this;
   }
 
+  public Long getRootProcessInstanceKey() {
+    return rootProcessInstanceKey;
+  }
+
+  public TaskProcessInstanceEntity setRootProcessInstanceKey(final Long rootProcessInstanceKey) {
+    this.rootProcessInstanceKey = rootProcessInstanceKey;
+    return this;
+  }
+
   @Override
   public int hashCode() {
-    return Objects.hash(id, tenantId, partitionId, processInstanceId, join);
+    return Objects.hash(id, tenantId, partitionId, processInstanceId, join, rootProcessInstanceKey);
   }
 
   @Override
@@ -94,6 +109,7 @@ public class TaskProcessInstanceEntity
       return false;
     }
     return partitionId == that.partitionId
+        && Objects.equals(rootProcessInstanceKey, that.rootProcessInstanceKey)
         && Objects.equals(id, that.id)
         && Objects.equals(tenantId, that.tenantId)
         && Objects.equals(processInstanceId, that.processInstanceId)

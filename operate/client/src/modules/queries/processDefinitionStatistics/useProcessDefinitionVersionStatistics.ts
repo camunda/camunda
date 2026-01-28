@@ -18,17 +18,26 @@ type UseProcessDefinitionVersionStatisticsOptions = {
 
 const useProcessDefinitionVersionStatistics = (
   processDefinitionId: string,
-  {payload, enabled = true}: UseProcessDefinitionVersionStatisticsOptions,
+  {payload, enabled = true}: UseProcessDefinitionVersionStatisticsOptions = {},
 ) => {
+  const payloadWithDefaultSorting: GetProcessDefinitionInstanceVersionStatisticsRequestBody =
+    {
+      sort: [
+        {field: 'activeInstancesWithIncidentCount', order: 'desc'},
+        {field: 'activeInstancesWithoutIncidentCount', order: 'desc'},
+      ],
+      ...payload,
+    };
+
   return useQuery({
     queryKey: queryKeys.processDefinitionStatistics.getByVersion(
       processDefinitionId,
-      payload,
+      payloadWithDefaultSorting,
     ),
     queryFn: async () => {
       const {response, error} = await fetchProcessDefinitionVersionStatistics(
         processDefinitionId,
-        payload,
+        payloadWithDefaultSorting,
       );
 
       if (response !== null) {

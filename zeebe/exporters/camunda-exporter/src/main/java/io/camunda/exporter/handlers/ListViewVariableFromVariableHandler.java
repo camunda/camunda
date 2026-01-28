@@ -82,8 +82,13 @@ public class ListViewVariableFromVariableHandler
         .setTenantId(tenantOrDefault(recordValue.getTenantId()));
 
     // set parent
-    final Long processInstanceKey = recordValue.getProcessInstanceKey();
+    final long processInstanceKey = recordValue.getProcessInstanceKey();
     entity.getJoinRelation().setParent(processInstanceKey);
+
+    final var rootProcessInstanceKey = recordValue.getRootProcessInstanceKey();
+    if (rootProcessInstanceKey > 0) {
+      entity.setRootProcessInstanceKey(rootProcessInstanceKey);
+    }
   }
 
   @Override

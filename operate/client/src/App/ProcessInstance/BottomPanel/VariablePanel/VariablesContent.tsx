@@ -17,10 +17,14 @@ import {useVariables} from 'modules/queries/variables/useVariables';
 import {VariablesFinalForm} from './VariablesFinalForm';
 import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
 import {isRequestError} from 'modules/request';
+import {IS_ELEMENT_SELECTION_V2} from 'modules/feature-flags';
+import {useVariableScopeKey} from 'modules/hooks/variables';
 
 const VariablesContent: React.FC = observer(() => {
   const {displayStatus, error} = useVariables();
-  const scopeId = getScopeId();
+  const scopeKey = IS_ELEMENT_SELECTION_V2
+    ? useVariableScopeKey()
+    : getScopeId();
 
   if (displayStatus === 'error') {
     return (
@@ -57,8 +61,8 @@ const VariablesContent: React.FC = observer(() => {
   if (displayStatus === 'no-variables') {
     return (
       <Content>
-        {scopeId !== null ? (
-          <VariablesFinalForm scopeId={scopeId} />
+        {scopeKey !== null ? (
+          <VariablesFinalForm scopeKey={scopeKey} />
         ) : (
           <EmptyMessageContainer>
             <EmptyMessage message="The Flow Node has no Variables" />
@@ -73,7 +77,7 @@ const VariablesContent: React.FC = observer(() => {
       {displayStatus === 'spinner' && (
         <Loading data-testid="variables-spinner" />
       )}
-      {scopeId !== null && <VariablesFinalForm scopeId={scopeId} />}
+      {scopeKey !== null && <VariablesFinalForm scopeKey={scopeKey} />}
     </Content>
   );
 });

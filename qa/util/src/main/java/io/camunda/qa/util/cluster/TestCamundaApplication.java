@@ -15,6 +15,7 @@ import io.atomix.cluster.MemberId;
 import io.camunda.application.Profile;
 import io.camunda.application.commons.CommonsModuleConfiguration;
 import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
+import io.camunda.application.initializers.McpGatewayInitializer;
 import io.camunda.application.initializers.WebappsConfigurationInitializer;
 import io.camunda.authentication.config.AuthenticationProperties;
 import io.camunda.client.CredentialsProvider;
@@ -175,7 +176,8 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
         .withAdditionalProfile(Profile.OPERATE)
         .withAdditionalProfile(Profile.TASKLIST)
         .withAdditionalProfile(Profile.IDENTITY)
-        .withAdditionalInitializer(new WebappsConfigurationInitializer());
+        .withAdditionalInitializer(new WebappsConfigurationInitializer())
+        .withAdditionalInitializer(new McpGatewayInitializer());
   }
 
   @Override

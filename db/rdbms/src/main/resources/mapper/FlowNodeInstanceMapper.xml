@@ -26,6 +26,7 @@
     FLOW_NODE_ID,
     FLOW_NODE_NAME,
     PROCESS_INSTANCE_KEY,
+    ROOT_PROCESS_INSTANCE_KEY,
     PROCESS_DEFINITION_ID,
     PROCESS_DEFINITION_KEY,
     TYPE,
@@ -40,8 +41,7 @@
     WHEN NUM_SUBPROCESS_INCIDENTS > 0 OR INCIDENT_KEY IS NOT NULL THEN ${true}
     ELSE ${false}
     END AS HAS_INCIDENT,
-    PARTITION_ID,
-    HISTORY_CLEANUP_DATE
+    PARTITION_ID
     FROM ${prefix}FLOW_NODE_INSTANCE
     <include refid="io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.searchFilter"/>
     ) t
@@ -168,6 +168,7 @@
     <constructor>
       <idArg column="FLOW_NODE_INSTANCE_KEY" javaType="java.lang.Long"/>
       <arg column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
+      <arg column="ROOT_PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
       <arg column="PROCESS_DEFINITION_KEY" javaType="java.lang.Long"/>
       <arg column="PROCESS_DEFINITION_ID" javaType="java.lang.String"/>
       <arg column="FLOW_NODE_SCOPE_KEY" javaType="java.lang.Long"/>
@@ -183,19 +184,18 @@
       <arg column="HAS_INCIDENT" javaType="java.lang.Boolean"/>
       <arg column="TENANT_ID" javaType="java.lang.String"/>
       <arg column="PARTITION_ID" javaType="java.lang.Integer"/>
-      <arg column="HISTORY_CLEANUP_DATE" javaType="java.time.OffsetDateTime"/>
     </constructor>
   </resultMap>
 
   <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.FlowNodeInstanceDbModel">
     INSERT INTO ${prefix}FLOW_NODE_INSTANCE (FLOW_NODE_INSTANCE_KEY, FLOW_NODE_ID, FLOW_NODE_NAME, FLOW_NODE_SCOPE_KEY, PROCESS_INSTANCE_KEY,
-                                    PROCESS_DEFINITION_ID, PROCESS_DEFINITION_KEY, TYPE, STATE,
+                                             ROOT_PROCESS_INSTANCE_KEY, PROCESS_DEFINITION_ID, PROCESS_DEFINITION_KEY, TYPE, STATE,
                                              START_DATE, END_DATE, TENANT_ID, TREE_PATH,
-                                             INCIDENT_KEY, NUM_SUBPROCESS_INCIDENTS, PARTITION_ID, HISTORY_CLEANUP_DATE)
-    VALUES (#{flowNodeInstanceKey}, #{flowNodeId}, #{flowNodeName}, #{flowNodeScopeKey}, #{processInstanceKey}, #{processDefinitionId},
-            #{processDefinitionKey}, #{type}, #{state},
+                                             INCIDENT_KEY, NUM_SUBPROCESS_INCIDENTS, PARTITION_ID)
+    VALUES (#{flowNodeInstanceKey}, #{flowNodeId}, #{flowNodeName}, #{flowNodeScopeKey}, #{processInstanceKey},
+            #{rootProcessInstanceKey}, #{processDefinitionId}, #{processDefinitionKey}, #{type}, #{state},
             #{startDate, jdbcType=TIMESTAMP}, #{endDate, jdbcType=TIMESTAMP}, #{tenantId},
-            #{treePath}, #{incidentKey}, #{numSubprocessIncidents}, #{partitionId}, #{historyCleanupDate, jdbcType=TIMESTAMP})
+            #{treePath}, #{incidentKey}, #{numSubprocessIncidents}, #{partitionId})
   </insert>
 
   <update id="update" parameterType="io.camunda.db.rdbms.write.domain.FlowNodeInstanceDbModel">
@@ -210,8 +210,7 @@
         STATE                    = #{state},
         START_DATE               = #{startDate, jdbcType=TIMESTAMP},
         END_DATE                 = #{endDate, jdbcType=TIMESTAMP},
-        TENANT_ID                = #{tenantId},
-        HISTORY_CLEANUP_DATE     = #{historyCleanupDate, jdbcType=TIMESTAMP}
+        TENANT_ID                = #{tenantId}
     WHERE FLOW_NODE_INSTANCE_KEY = #{flowNodeInstanceKey}
   </update>
 
@@ -242,18 +241,10 @@
     WHERE FLOW_NODE_INSTANCE_KEY = #{flowNodeInstanceKey}
   </update>
 
-  <update id="updateHistoryCleanupDate">
-    UPDATE ${prefix}FLOW_NODE_INSTANCE SET
-      HISTORY_CLEANUP_DATE = #{historyCleanupDate, jdbcType=TIMESTAMP}
-    WHERE PROCESS_INSTANCE_KEY IN
-    <foreach collection="processInstanceKeys" item="key" open="(" separator="," close=")">
-      #{key}
-    </foreach>
-  </update>
-
-  <delete id="cleanupHistory">
+  <delete id="deleteProcessInstanceRelatedData">
     <bind name="tableName" value="'FLOW_NODE_INSTANCE'"/>
-    <include refid="io.camunda.db.rdbms.sql.Commons.historyCleanup"/>
+    <bind name="primaryKeyColumn" value="'FLOW_NODE_INSTANCE_KEY'"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.processInstanceHistoryDeletion"/>
   </delete>
 
 </mapper>

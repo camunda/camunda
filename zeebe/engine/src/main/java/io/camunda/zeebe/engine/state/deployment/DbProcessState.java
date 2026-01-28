@@ -21,6 +21,7 @@ import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.db.impl.DbTenantAwareKey;
 import io.camunda.zeebe.db.impl.DbTenantAwareKey.PlacementType;
+import io.camunda.zeebe.el.ExpressionLanguageMetrics;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.deployment.model.BpmnFactory;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
@@ -113,8 +114,9 @@ public final class DbProcessState implements MutableProcessState {
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
       final TransactionContext transactionContext,
       final EngineConfiguration config,
-      final InstantSource clock) {
-    transformer = BpmnFactory.createTransformer(clock, config);
+      final InstantSource clock,
+      final ExpressionLanguageMetrics expressionLanguageMetrics) {
+    transformer = BpmnFactory.createTransformer(clock, expressionLanguageMetrics);
     processDefinitionKey = new DbLong();
     persistedProcess = new PersistedProcess();
     tenantIdKey = new DbString();

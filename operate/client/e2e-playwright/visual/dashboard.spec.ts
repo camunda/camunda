@@ -10,9 +10,8 @@ import {expect} from '@playwright/test';
 import {test} from '../visual-fixtures';
 import {
   mockIncidentsByError,
-  mockIncidentsByProcess,
+  mockProcessDefinitionStatistics,
   mockResponses,
-  mockStatistics,
 } from '../mocks/dashboard.mocks';
 import {URL_API_PATTERN} from '../constants';
 import {clientConfigMock} from '../mocks/clientConfig';
@@ -34,13 +33,8 @@ test.describe('dashboard page', () => {
     await page.route(
       URL_API_PATTERN,
       mockResponses({
-        statistics: {
-          running: 0,
-          active: 0,
-          withIncidents: 0,
-        },
         incidentsByError: [],
-        incidentsByProcess: [],
+        processDefinitionStatistics: {items: [], page: {totalItems: 0}},
       }),
     );
 
@@ -66,9 +60,8 @@ test.describe('dashboard page', () => {
     await page.route(
       URL_API_PATTERN,
       mockResponses({
-        statistics: mockStatistics,
         incidentsByError: mockIncidentsByError,
-        incidentsByProcess: mockIncidentsByProcess,
+        processDefinitionStatistics: mockProcessDefinitionStatistics,
       }),
     );
 
@@ -81,16 +74,15 @@ test.describe('dashboard page', () => {
     await page.route(
       URL_API_PATTERN,
       mockResponses({
-        statistics: mockStatistics,
         incidentsByError: mockIncidentsByError,
-        incidentsByProcess: mockIncidentsByProcess,
+        processDefinitionStatistics: mockProcessDefinitionStatistics,
       }),
     );
 
     await dashboardPage.gotoDashboardPage();
 
     const expandInstancesByProcessRow = page
-      .getByTestId('instances-by-process')
+      .getByTestId('instances-by-process-definition')
       .getByRole('button', {
         name: /expand current row/i,
       })
@@ -98,10 +90,17 @@ test.describe('dashboard page', () => {
 
     expect(expandInstancesByProcessRow).toBeEnabled();
 
+    await expect(
+      page.getByText(/order process – 146 instances in 2\+ versions/i),
+    ).toBeVisible();
+
     await expandInstancesByProcessRow.click();
 
     await expect(
       page.getByText(/order process – 136 instances in version 2/i),
+    ).toBeVisible();
+    await expect(
+      page.getByText(/order process – 10 instances in version 1/i),
     ).toBeVisible();
 
     const expandIncidentsByErrorRow = page

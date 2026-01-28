@@ -11,14 +11,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.impl.AuthorizationChecker;
 import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -103,7 +107,86 @@ class DefaultResourceAccessProviderTest {
   }
 
   @Test
-  void shouldAllowAccessToResource() {
+  void shouldResolveResourceAccessForAllPropertyNames() {
+    // given
+    final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
+    final var authorization =
+        Authorization.of(
+            a ->
+                a.processDefinition()
+                    .readProcessDefinition()
+                    .resourcePropertyNames(Set.of("propA", "propB", "propC")));
+
+    when(authorizationChecker.retrieveAuthorizedAuthorizationScopes(
+            any(CamundaAuthentication.class), any(Authorization.class)))
+        .thenReturn(
+            List.of(
+                AuthorizationScope.property("propA"),
+                AuthorizationScope.property("propB"),
+                AuthorizationScope.property("propC")));
+
+    // when
+    final var result = resourceAccessProvider.resolveResourceAccess(authentication, authorization);
+
+    // then
+    assertThat(result.denied()).isFalse();
+    assertThat(result.allowed()).isTrue();
+    assertThat(result.wildcard()).isFalse();
+    assertThat(result.authorization().resourceType()).isEqualTo(authorization.resourceType());
+    assertThat(result.authorization().permissionType()).isEqualTo(authorization.permissionType());
+    assertThat(result.authorization().resourcePropertyNames())
+        .containsExactlyInAnyOrder("propA", "propB", "propC");
+  }
+
+  @Test
+  void shouldResolvePartialResourceAccessByPropertyNames() {
+    // given
+    final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
+    final var authorization =
+        Authorization.of(
+            a ->
+                a.processDefinition()
+                    .readProcessDefinition()
+                    .resourcePropertyNames(Set.of("propA", "propB", "propC")));
+
+    when(authorizationChecker.retrieveAuthorizedAuthorizationScopes(
+            any(CamundaAuthentication.class), any(Authorization.class)))
+        .thenReturn(List.of(AuthorizationScope.property("propB")));
+
+    // when
+    final var result = resourceAccessProvider.resolveResourceAccess(authentication, authorization);
+
+    // then
+    assertThat(result.denied()).isFalse();
+    assertThat(result.allowed()).isTrue();
+    assertThat(result.wildcard()).isFalse();
+    assertThat(result.authorization().resourcePropertyNames()).containsExactly("propB");
+  }
+
+  @Test
+  void shouldDenyResourceAccessByPropertyNamesWhenNoneRetrieved() {
+    // given
+    final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
+    final var authorization =
+        Authorization.of(
+            a -> a.processDefinition().readProcessDefinition().authorizedByProperty("propB"));
+
+    when(authorizationChecker.retrieveAuthorizedAuthorizationScopes(
+            any(CamundaAuthentication.class), any(Authorization.class)))
+        .thenReturn(List.of());
+
+    // when
+    final var result = resourceAccessProvider.resolveResourceAccess(authentication, authorization);
+
+    // then
+    assertThat(result.denied()).isTrue();
+    assertThat(result.allowed()).isFalse();
+    assertThat(result.wildcard()).isFalse();
+    assertThat(result.authorization().resourcePropertyNames()).isEmpty();
+  }
+
+  @Test
+  void shouldAllowAccessToResourceByIdBasedAuthorization() {
     // given
     final var authScopeInvoice = AuthorizationScope.id("invoice");
     final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
@@ -131,7 +214,7 @@ class DefaultResourceAccessProviderTest {
   }
 
   @Test
-  void shouldDenyAccessToResource() {
+  void shouldDenyAccessToResourceByIdBasedAuthorization() {
     // given
     final var authScopeInvoice = AuthorizationScope.id("invoice");
     final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
@@ -250,6 +333,123 @@ class DefaultResourceAccessProviderTest {
   }
 
   @Test
+  void shouldAllowAccessToResourceByPropertyBasedAuthorization() {
+    // given
+    final var authentication =
+        CamundaAuthentication.of(a -> a.user("trevor").groupIds(List.of("managers")));
+    final var authorization =
+        Authorization.of(
+            (Authorization.Builder<UserTaskEntity> a) ->
+                a.userTask().readUserTask().authorizedByAssignee().authorizedByCandidateGroups());
+
+    final var userTask = createUserTask("trevor");
+
+    when(authorizationChecker.retrieveAuthorizedAuthorizationScopes(
+            any(CamundaAuthentication.class), any(Authorization.class)))
+        .thenReturn(
+            List.of(
+                AuthorizationScope.property(Authorization.PROP_ASSIGNEE),
+                AuthorizationScope.property(Authorization.PROP_CANDIDATE_USERS),
+                AuthorizationScope.property(Authorization.PROP_CANDIDATE_GROUPS)));
+
+    // when
+    final var result =
+        resourceAccessProvider.hasResourceAccess(authentication, authorization, userTask);
+
+    // then
+    assertThat(result.allowed()).isTrue();
+    assertThat(result.denied()).isFalse();
+    assertThat(result.wildcard()).isFalse();
+    assertThat(result.authorization().resourcePropertyNames())
+        .containsExactlyInAnyOrder(
+            Authorization.PROP_ASSIGNEE, Authorization.PROP_CANDIDATE_GROUPS);
+  }
+
+  @Test
+  void shouldDenyAccessToResourceByPropertyBasedAuthorizationWhenNoPropertiesAuthorized() {
+    // given
+    final var authentication = CamundaAuthentication.of(a -> a.user("jimmy").groupIds(List.of()));
+    final var authorization =
+        Authorization.of(
+            (Authorization.Builder<UserTaskEntity> a) ->
+                a.userTask().readUserTask().authorizedByAssignee());
+
+    final var userTask = createUserTask("jimmy");
+
+    when(authorizationChecker.retrieveAuthorizedAuthorizationScopes(
+            any(CamundaAuthentication.class), any(Authorization.class)))
+        .thenReturn(List.of());
+
+    // when
+    final var result =
+        resourceAccessProvider.hasResourceAccess(authentication, authorization, userTask);
+
+    // then
+    assertThat(result.denied()).isTrue();
+    assertThat(result.allowed()).isFalse();
+    assertThat(result.wildcard()).isFalse();
+    assertThat(result.authorization().resourcePropertyNames()).isEmpty();
+  }
+
+  @Test
+  void shouldDenyAccessToResourceByPropertyBasedAuthorizationWhenResourceDoesNotMatch() {
+    // given
+    final var authentication =
+        CamundaAuthentication.of(a -> a.user("franklin").groupIds(List.of()));
+    final var authorization =
+        Authorization.of(
+            (Authorization.Builder<UserTaskEntity> a) ->
+                a.userTask().readUserTask().authorizedByAssignee());
+
+    // User task is assigned to someone else
+    final var userTask = createUserTask("michael");
+
+    when(authorizationChecker.retrieveAuthorizedAuthorizationScopes(
+            any(CamundaAuthentication.class), any(Authorization.class)))
+        .thenReturn(List.of(AuthorizationScope.property(Authorization.PROP_ASSIGNEE)));
+
+    // when
+    final var result =
+        resourceAccessProvider.hasResourceAccess(authentication, authorization, userTask);
+
+    // then
+    assertThat(result.denied()).isTrue();
+    assertThat(result.allowed()).isFalse();
+    assertThat(result.wildcard()).isFalse();
+    assertThat(result.authorization().resourcePropertyNames())
+        .containsExactly(Authorization.PROP_ASSIGNEE);
+  }
+
+  @Test
+  void shouldDenyAccessToResourceByPropertyBasedAuthorizationWhenNoMatcherRegisteredForResource() {
+    // given
+    final var authentication = CamundaAuthentication.of(a -> a.user("martin"));
+    final var authorization =
+        Authorization.of(
+            (Authorization.Builder<TestResource> a) ->
+                a.processDefinition()
+                    .readProcessDefinition()
+                    .authorizedByProperty("anotherValue")
+                    .authorizedByProperty("unknownProperty"));
+
+    final var resource = new TestResource("id123", "value456");
+
+    when(authorizationChecker.retrieveAuthorizedAuthorizationScopes(
+            any(CamundaAuthentication.class), any(Authorization.class)))
+        .thenReturn(List.of(AuthorizationScope.property("anotherValue")));
+
+    // when
+    final var result =
+        resourceAccessProvider.hasResourceAccess(authentication, authorization, resource);
+
+    // then
+    assertThat(result.denied()).isTrue();
+    assertThat(result.allowed()).isFalse();
+    assertThat(result.wildcard()).isFalse();
+    assertThat(result.authorization().resourcePropertyNames()).containsExactly("anotherValue");
+  }
+
+  @Test
   void shouldAllowAccessToResourceByResourceId() {
     // given
     final var authScopeInvoice = AuthorizationScope.id("invoice");
@@ -303,6 +503,12 @@ class DefaultResourceAccessProviderTest {
     assertThat(result.allowed()).isFalse();
     assertThat(result.wildcard()).isFalse();
     assertThat(result.authorization()).isEqualTo(authorization);
+  }
+
+  private UserTaskEntity createUserTask(final String assignee) {
+    final var mockedTask = mock(UserTaskEntity.class);
+    lenient().when(mockedTask.assignee()).thenReturn(assignee);
+    return mockedTask;
   }
 
   record TestResource(String id, String anotherValue) {}

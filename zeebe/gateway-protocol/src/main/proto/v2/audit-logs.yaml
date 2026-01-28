@@ -78,16 +78,11 @@ components:
             - $ref: 'keys.yaml#/components/schemas/AuditLogKey'
           description: The unique key of the audit log entry.
         entityKey:
-          type: string
-          description: The key of the entity this audit log refers to.
+          $ref: '#/components/schemas/AuditLogEntityKey'
         entityType:
-          allOf:
-            - $ref: '#/components/schemas/AuditLogEntityTypeEnum'
-          description: The type of the entity.
+          $ref: '#/components/schemas/AuditLogEntityTypeEnum'
         operationType:
-          allOf:
-            - $ref: '#/components/schemas/AuditLogOperationTypeEnum'
-          description: The type of operation performed.
+          $ref: '#/components/schemas/AuditLogOperationTypeEnum'
         batchOperationKey:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/BatchOperationKey'
@@ -104,24 +99,18 @@ components:
           type: string
           description: The ID of the actor who performed the operation.
         actorType:
-          allOf:
-            - $ref: '#/components/schemas/AuditLogActorTypeEnum'
-          description: The type of the actor.
+          $ref: '#/components/schemas/AuditLogActorTypeEnum'
         tenantId:
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/TenantId'
           description: The tenant ID of the audit log.
         result:
-          allOf:
-            - $ref: '#/components/schemas/AuditLogResultEnum'
-          description: The result of the audit log.
+          $ref: '#/components/schemas/AuditLogResultEnum'
         annotation:
           type: string
           description: Additional notes about the operation.
         category:
-          allOf:
-            - $ref: '#/components/schemas/AuditLogCategoryEnum'
-          description: The category of the audit log.
+          $ref: '#/components/schemas/AuditLogCategoryEnum'
         processDefinitionId:
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/ProcessDefinitionId'
@@ -165,6 +154,18 @@ components:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/DecisionEvaluationKey'
           description: The key of the decision evaluation.
+        deploymentKey:
+          allOf:
+            - $ref: 'deployments.yaml#/components/schemas/DeploymentKey'
+          description: The key of the deployment.
+        formKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/FormKey'
+          description: The key of the form.
+        resourceKey:
+          allOf:
+            - $ref: 'deployments.yaml#/components/schemas/ResourceKey'
+          description: The system-assigned key for this resource.
 
     AuditLogSearchQuerySortRequest:
       type: object
@@ -247,7 +248,7 @@ components:
         result:
           description: The result search filter.
           allOf:
-            - $ref: "#/components/schemas/AuditLogResultEnum"
+            - $ref: '#/components/schemas/AuditLogResultFilterProperty'
         timestamp:
           description: The timestamp search filter.
           allOf:
@@ -259,7 +260,11 @@ components:
         actorType:
           description: The actor type search filter.
           allOf:
-            - $ref: '#/components/schemas/AuditLogActorTypeEnum'
+            - $ref: '#/components/schemas/AuditLogActorTypeFilterProperty'
+        entityKey:
+          description: The entity key search filter.
+          allOf:
+            - $ref: '#/components/schemas/AuditLogEntityKeyFilterProperty'
         entityType:
           description: The entity type search filter.
           allOf:
@@ -272,6 +277,54 @@ components:
           description: The category search filter.
           allOf:
             - $ref: '#/components/schemas/CategoryFilterProperty'
+        deploymentKey:
+          description: The deployment key search filter.
+          allOf:
+            - $ref: 'deployments.yaml#/components/schemas/DeploymentKeyFilterProperty'
+        formKey:
+          description: The form key search filter.
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/FormKeyFilterProperty'
+        resourceKey:
+          description: The resource key search filter.
+          allOf:
+            - $ref: 'deployments.yaml#/components/schemas/ResourceKeyFilterProperty'
+        batchOperationType:
+          description: The batch operation type search filter.
+          allOf:
+            - $ref: 'batch-operations.yaml#/components/schemas/BatchOperationTypeFilterProperty'
+        processDefinitionId:
+          description: The process definition ID search filter.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+        jobKey:
+          description: The job key search filter.
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/JobKeyFilterProperty'
+        userTaskKey:
+          description: The user task key search filter.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/BasicStringFilterProperty'
+        decisionRequirementsId:
+          description: The decision requirements ID search filter.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+        decisionRequirementsKey:
+          description: The decision requirements key search filter.
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/DecisionRequirementsKeyFilterProperty'
+        decisionDefinitionId:
+          description: The decision definition ID search filter.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+        decisionDefinitionKey:
+          description: The decision definition key search filter.
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/DecisionDefinitionKeyFilterProperty'
+        decisionEvaluationKey:
+          description: The decision evaluation key search filter.
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/DecisionEvaluationKeyFilterProperty'
 
     AuditLogSearchQueryResult:
       description: Audit log search response.
@@ -285,10 +338,18 @@ components:
           items:
             $ref: '#/components/schemas/AuditLogResult'
 
+    AuditLogEntityKey:
+      description: System-generated entity key for an audit log entry.
+      format: AuditLogEntityKey
+      x-semantic-type: AuditLogEntityKey
+      example: "22517998136843567"
+      type: string
+
     ## Enums
 
     AuditLogEntityTypeEnum:
       type: string
+      description: The type of entity affected by the operation.
       enum:
         - AUTHORIZATION
         - BATCH
@@ -297,15 +358,16 @@ components:
         - INCIDENT
         - MAPPING_RULE
         - PROCESS_INSTANCE
+        - RESOURCE
         - ROLE
         - TENANT
         - USER
         - USER_TASK
-        - RESOURCE
         - VARIABLE
 
     AuditLogOperationTypeEnum:
       type: string
+      description: The type of operation performed.
       enum:
         - ASSIGN
         - CANCEL
@@ -319,29 +381,72 @@ components:
         - RESUME
         - SUSPEND
         - UNASSIGN
-        - UPDATE
         - UNKNOWN
+        - UPDATE
 
     AuditLogActorTypeEnum:
       type: string
+      description: The type of actor who performed the operation.
       enum:
-        - USER
+        - ANONYMOUS
         - CLIENT
+        - UNKNOWN
+        - USER
 
     AuditLogResultEnum:
       type: string
+      description: The result status of the operation.
       enum:
-        - SUCCESS
         - FAIL
+        - SUCCESS
 
     AuditLogCategoryEnum:
       type: string
+      description: The category of the audit log operation.
       enum:
-        - OPERATOR
-        - USER_TASK
         - ADMIN
+        - DEPLOYED_RESOURCES
+        - USER_TASKS
 
     ## Filters
+
+    AuditLogEntityKeyFilterProperty:
+      description: EntityKey property with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: "#/components/schemas/AuditLogEntityKey"
+        - $ref: '#/components/schemas/AdvancedAuditLogEntityKeyFilter'
+
+    AdvancedAuditLogEntityKeyFilter:
+      title: Advanced filter
+      description: Advanced entityKey filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/AuditLogEntityKey"
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/AuditLogEntityKey"
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: "#/components/schemas/AuditLogEntityKey"
+        $notIn:
+          description: Checks if the property matches none of the provided values.
+          type: array
+          items:
+            $ref: "#/components/schemas/AuditLogEntityKey"
 
     EntityTypeFilterProperty:
       description: AuditLogEntityTypeEnum property with full advanced search capabilities.
@@ -445,5 +550,75 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AuditLogCategoryEnum'
+        $like:
+          $ref: 'filters.yaml#/components/schemas/LikeFilter'
+
+    AuditLogResultFilterProperty:
+      description: AuditLogResultEnum property with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: '#/components/schemas/AuditLogResultEnum'
+        - $ref: '#/components/schemas/AdvancedResultFilter'
+
+    AdvancedResultFilter:
+      title: Advanced filter
+      description: Advanced AuditLogResultEnum filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: '#/components/schemas/AuditLogResultEnum'
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: '#/components/schemas/AuditLogResultEnum'
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditLogResultEnum'
+        $like:
+          $ref: 'filters.yaml#/components/schemas/LikeFilter'
+
+    AuditLogActorTypeFilterProperty:
+      description: AuditLogActorTypeEnum property with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: '#/components/schemas/AuditLogActorTypeEnum'
+        - $ref: '#/components/schemas/AdvancedActorTypeFilter'
+
+    AdvancedActorTypeFilter:
+      title: Advanced filter
+      description: Advanced AuditLogActorTypeEnum filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: '#/components/schemas/AuditLogActorTypeEnum'
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: '#/components/schemas/AuditLogActorTypeEnum'
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditLogActorTypeEnum'
         $like:
           $ref: 'filters.yaml#/components/schemas/LikeFilter'

@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="io.camunda.db.rdbms.sql.HistoryDeletionMapper">
+
+  <resultMap id="historyDeletionResultMap" type="io.camunda.db.rdbms.write.domain.HistoryDeletionDbModel">
+    <constructor>
+      <idArg column="RESOURCE_KEY" javaType="java.lang.Long"/>
+      <arg column="RESOURCE_TYPE" javaType="io.camunda.db.rdbms.write.domain.HistoryDeletionDbModel$HistoryDeletionTypeDbModel"/>
+      <idArg column="BATCH_OPERATION_KEY" javaType="java.lang.Long"/>
+      <arg column="PARTITION_ID" javaType="java.lang.Integer"/>
+    </constructor>
+  </resultMap>
+
+  <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.HistoryDeletionDbModel">
+    INSERT INTO ${prefix}HISTORY_DELETION (
+      RESOURCE_KEY,
+      BATCH_OPERATION_KEY,
+      RESOURCE_TYPE,
+      PARTITION_ID
+    ) VALUES (
+      #{resourceKey},
+      #{batchOperationKey},
+      #{resourceType},
+      #{partitionId}
+    )
+  </insert>
+
+  <select id="getHistoryDeletionBatch" resultMap="historyDeletionResultMap">
+    SELECT *
+    FROM ${prefix}HISTORY_DELETION
+    WHERE PARTITION_ID = #{partitionId}
+    ORDER BY BATCH_OPERATION_KEY, RESOURCE_KEY
+    LIMIT #{limit}
+  </select>
+
+  <select id="getHistoryDeletionBatch" databaseId="mssql" resultMap="historyDeletionResultMap">
+    SELECT TOP (#{limit}) *
+    FROM ${prefix}HISTORY_DELETION
+    WHERE PARTITION_ID = #{partitionId}
+    ORDER BY BATCH_OPERATION_KEY, RESOURCE_KEY
+  </select>
+
+  <select id="getHistoryDeletionBatch" databaseId="oracle" resultMap="historyDeletionResultMap">
+    SELECT *
+    FROM (
+           SELECT *
+           FROM ${prefix}HISTORY_DELETION
+           WHERE PARTITION_ID = #{partitionId}
+           ORDER BY BATCH_OPERATION_KEY, RESOURCE_KEY
+         )
+    WHERE ROWNUM &lt;= #{limit}
+  </select>
+
+  <delete id="delete">
+    DELETE FROM ${prefix}HISTORY_DELETION
+    WHERE RESOURCE_KEY = #{resourceKey}
+      AND BATCH_OPERATION_KEY = #{batchOperationKey}
+  </delete>
+
+  <delete id="deleteByResourceKeys">
+    DELETE FROM ${prefix}HISTORY_DELETION
+    WHERE RESOURCE_KEY IN
+    <foreach collection="resourceKeys" item="resourceKey" open="(" separator="," close=")">
+      #{resourceKey}
+    </foreach>
+  </delete>
+
+</mapper>

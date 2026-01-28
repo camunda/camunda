@@ -11,6 +11,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import io.camunda.webapps.schema.entities.BeforeVersion880;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.PartitionedEntity;
+import io.camunda.webapps.schema.entities.SinceVersion;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -140,6 +141,11 @@ public class TaskEntity
   @BeforeVersion880
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private TaskImplementation implementation;
+
+  /** Attention! This field will be filled in only for data imported after v. 8.9.0. */
+  @SinceVersion(value = "8.9.0", requireDefault = false)
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private Long rootProcessInstanceKey;
 
   public TaskEntity() {}
 
@@ -441,6 +447,15 @@ public class TaskEntity
 
   public TaskEntity setImplementation(final TaskImplementation implementation) {
     this.implementation = implementation;
+    return this;
+  }
+
+  public Long getRootProcessInstanceKey() {
+    return rootProcessInstanceKey;
+  }
+
+  public TaskEntity setRootProcessInstanceKey(final Long rootProcessInstanceKey) {
+    this.rootProcessInstanceKey = rootProcessInstanceKey;
     return this;
   }
 

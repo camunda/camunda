@@ -243,6 +243,8 @@ components:
             - state
             - startDate
             - endDate
+            - actorType
+            - actorId
         order:
           $ref: 'search-models.yaml#/components/schemas/SortOrderEnum'
       required:
@@ -281,6 +283,14 @@ components:
           description: The state of the batch operation.
           allOf:
             - $ref: '#/components/schemas/BatchOperationStateFilterProperty'
+        actorType:
+          description: The type of the actor who performed the operation.
+          allOf:
+            - $ref: 'audit-logs.yaml#/components/schemas/AuditLogActorTypeEnum'
+        actorId:
+          description: The ID of the actor who performed the operation.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
 
     BatchOperationSearchQueryResult:
       description: The batch operation search query result.
@@ -313,6 +323,11 @@ components:
           type: string
           description: The end date of the batch operation.
           format: date-time
+        actorType:
+          $ref: 'audit-logs.yaml#/components/schemas/AuditLogActorTypeEnum'
+        actorId:
+          type: string
+          description: The ID of the actor who performed the operation. Available for batch operations created since 8.9.
         operationsTotalCount:
           type: integer
           description: The total number of items contained in this batch operation.

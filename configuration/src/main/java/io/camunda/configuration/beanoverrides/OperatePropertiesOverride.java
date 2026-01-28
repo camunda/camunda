@@ -11,7 +11,7 @@ import io.camunda.configuration.DocumentBasedSecondaryStorageBackup;
 import io.camunda.configuration.InterceptorPlugin;
 import io.camunda.configuration.SecondaryStorage;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
-import io.camunda.configuration.Security;
+import io.camunda.configuration.SecondaryStorageSecurity;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.operate.conditions.DatabaseType;
 import io.camunda.operate.property.BackupProperties;
@@ -139,7 +139,7 @@ public class OperatePropertiesOverride {
   }
 
   private void populateFromSecurity(
-      final Security security,
+      final SecondaryStorageSecurity security,
       final Supplier<SslProperties> getSsl,
       final Consumer<SslProperties> setSsl) {
     final SslProperties sslProps = Objects.requireNonNullElseGet(getSsl.get(), SslProperties::new);

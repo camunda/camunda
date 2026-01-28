@@ -10,10 +10,15 @@ package io.camunda.exporter.rdbms;
 import io.camunda.db.rdbms.RdbmsSchemaManager;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
-import io.camunda.db.rdbms.write.RdbmsWriter;
+import io.camunda.db.rdbms.write.RdbmsWriterConfig.HistoryDeletionConfig;
+import io.camunda.db.rdbms.write.RdbmsWriters;
+import io.camunda.db.rdbms.write.service.HistoryCleanupService;
+import io.camunda.db.rdbms.write.service.HistoryDeletionService;
+import io.camunda.exporter.rdbms.RdbmsExporter.Builder;
 import io.camunda.exporter.rdbms.cache.RdbmsBatchOperationCacheLoader;
 import io.camunda.exporter.rdbms.cache.RdbmsDecisionRequirementsCacheLoader;
 import io.camunda.exporter.rdbms.cache.RdbmsProcessCacheLoader;
+import io.camunda.exporter.rdbms.handlers.AuditLogExportHandler;
 import io.camunda.exporter.rdbms.handlers.ClusterVariableExportHandler;
 import io.camunda.exporter.rdbms.handlers.CorrelatedMessageSubscriptionFromMessageStartEventSubscriptionExportHandler;
 import io.camunda.exporter.rdbms.handlers.CorrelatedMessageSubscriptionFromProcessMessageSubscriptionExportHandler;
@@ -24,8 +29,10 @@ import io.camunda.exporter.rdbms.handlers.FlowNodeExportHandler;
 import io.camunda.exporter.rdbms.handlers.FlowNodeInstanceIncidentExportHandler;
 import io.camunda.exporter.rdbms.handlers.FormExportHandler;
 import io.camunda.exporter.rdbms.handlers.GroupExportHandler;
+import io.camunda.exporter.rdbms.handlers.HistoryDeletionDeletedHandler;
 import io.camunda.exporter.rdbms.handlers.IncidentExportHandler;
 import io.camunda.exporter.rdbms.handlers.JobExportHandler;
+import io.camunda.exporter.rdbms.handlers.JobMetricsBatchExportHandler;
 import io.camunda.exporter.rdbms.handlers.MappingRuleExportHandler;
 import io.camunda.exporter.rdbms.handlers.MessageSubscriptionExportHandler;
 import io.camunda.exporter.rdbms.handlers.ProcessExportHandler;
@@ -38,24 +45,43 @@ import io.camunda.exporter.rdbms.handlers.UsageMetricExportHandler;
 import io.camunda.exporter.rdbms.handlers.UserExportHandler;
 import io.camunda.exporter.rdbms.handlers.UserTaskExportHandler;
 import io.camunda.exporter.rdbms.handlers.VariableExportHandler;
-import io.camunda.exporter.rdbms.handlers.auditlog.AuditLogExportHandler;
-import io.camunda.exporter.rdbms.handlers.auditlog.BatchOperationCreationAuditLogTransformer;
-import io.camunda.exporter.rdbms.handlers.auditlog.BatchOperationLifecycleManagementAuditLogTransformer;
-import io.camunda.exporter.rdbms.handlers.auditlog.DecisionEvaluationAuditLogTransformer;
-import io.camunda.exporter.rdbms.handlers.auditlog.ProcessInstanceCreationAuditLogTransformer;
-import io.camunda.exporter.rdbms.handlers.auditlog.ProcessInstanceMigrationAuditLogTransformer;
-import io.camunda.exporter.rdbms.handlers.auditlog.ProcessInstanceModificationAuditLogTransformer;
 import io.camunda.exporter.rdbms.handlers.batchoperation.BatchOperationChunkExportHandler;
 import io.camunda.exporter.rdbms.handlers.batchoperation.BatchOperationCreatedExportHandler;
 import io.camunda.exporter.rdbms.handlers.batchoperation.BatchOperationLifecycleManagementExportHandler;
+import io.camunda.exporter.rdbms.handlers.batchoperation.HistoryDeletionBatchOperationExportHandler;
 import io.camunda.exporter.rdbms.handlers.batchoperation.IncidentBatchOperationExportHandler;
 import io.camunda.exporter.rdbms.handlers.batchoperation.ProcessInstanceCancellationBatchOperationExportHandler;
 import io.camunda.exporter.rdbms.handlers.batchoperation.ProcessInstanceMigrationBatchOperationExportHandler;
 import io.camunda.exporter.rdbms.handlers.batchoperation.ProcessInstanceModificationBatchOperationExportHandler;
+import io.camunda.search.entities.BatchOperationType;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
-import io.camunda.zeebe.exporter.common.auditlog.AuditLogConfiguration;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.AuthorizationAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.BatchOperationCreationAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.BatchOperationLifecycleManagementAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.DecisionAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.DecisionEvaluationAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.DecisionRequirementsRecordAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.FormAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.GroupAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.GroupEntityAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.IncidentResolutionAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.MappingRuleAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.ProcessAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.ProcessInstanceCancelAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.ProcessInstanceCreationAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.ProcessInstanceMigrationAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.ProcessInstanceModificationAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.ResourceAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.RoleAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.RoleEntityAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.TenantAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.TenantEntityAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.UserAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.UserTaskAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.VariableAddUpdateAuditLogTransformer;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCacheImpl;
 import io.camunda.zeebe.exporter.common.cache.batchoperation.CachedBatchOperationEntity;
@@ -65,6 +91,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.cache.CaffeineCacheStatsCounter;
+import java.util.HashSet;
 import java.util.Set;
 
 /** https://docs.camunda.io/docs/next/components/zeebe/technical-concepts/process-lifecycles/ */
@@ -100,15 +127,15 @@ public class RdbmsExporterWrapper implements Exporter {
     config.validate(); // throws exception if configuration is invalid
 
     final int partitionId = context.getPartitionId();
-    final RdbmsWriter rdbmsWriter =
-        rdbmsService.createWriter(config.createRdbmsWriterConfig(partitionId));
+    final var rdbmsWriterConfig = config.createRdbmsWriterConfig(partitionId);
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(rdbmsWriterConfig);
 
     final var builder =
         new RdbmsExporter.Builder()
             .partitionId(partitionId)
             .flushInterval(config.getFlushInterval())
             .queueSize(config.getQueueSize())
-            .rdbmsWriter(rdbmsWriter);
+            .rdbmsWriter(rdbmsWriters);
 
     processCache =
         new ExporterEntityCacheImpl<>(
@@ -129,8 +156,24 @@ public class RdbmsExporterWrapper implements Exporter {
             new RdbmsBatchOperationCacheLoader(rdbmsService.getBatchOperationReader()),
             new CaffeineCacheStatsCounter(NAMESPACE, "batchOperation", context.getMeterRegistry()));
 
-    createHandlers(partitionId, rdbmsWriter, builder);
-    createBatchOperationHandlers(rdbmsWriter, builder);
+    final var historyCleanupService =
+        new HistoryCleanupService(
+            rdbmsWriterConfig, rdbmsWriters, rdbmsService.getProcessInstanceReader());
+    builder.historyCleanupService(historyCleanupService);
+    final var historyDeletionService =
+        new HistoryDeletionService(
+            rdbmsWriters,
+            rdbmsService.getHistoryDeletionDbReader(),
+            rdbmsService.getProcessInstanceReader(),
+            new HistoryDeletionConfig(
+                config.getHistoryDeletion().getDelayBetweenRuns(),
+                config.getHistoryDeletion().getMaxDelayBetweenRuns(),
+                config.getHistoryDeletion().getQueueBatchSize(),
+                config.getHistoryDeletion().getDependentRowLimit()));
+    builder.historyDeletionService(historyDeletionService);
+
+    createHandlers(partitionId, rdbmsWriters, builder, config, historyCleanupService);
+    createBatchOperationHandlers(rdbmsWriters, builder, historyCleanupService);
 
     exporter = builder.rdbmsSchemaManager(rdbmsSchemaManager).build();
   }
@@ -161,135 +204,185 @@ public class RdbmsExporterWrapper implements Exporter {
   }
 
   private void createHandlers(
-      final long partitionId, final RdbmsWriter rdbmsWriter, final RdbmsExporter.Builder builder) {
+      final int partitionId,
+      final RdbmsWriters rdbmsWriters,
+      final Builder builder,
+      final ExporterConfiguration config,
+      final HistoryCleanupService historyCleanupService) {
 
     if (partitionId == PROCESS_DEFINITION_PARTITION) {
       builder.withHandler(
           ValueType.PROCESS,
-          new ProcessExportHandler(rdbmsWriter.getProcessDefinitionWriter(), processCache));
+          new ProcessExportHandler(rdbmsWriters.getProcessDefinitionWriter(), processCache));
       builder.withHandler(
-          ValueType.MAPPING_RULE, new MappingRuleExportHandler(rdbmsWriter.getMappingRuleWriter()));
-      builder.withHandler(ValueType.TENANT, new TenantExportHandler(rdbmsWriter.getTenantWriter()));
-      builder.withHandler(ValueType.ROLE, new RoleExportHandler(rdbmsWriter.getRoleWriter()));
-      builder.withHandler(ValueType.USER, new UserExportHandler(rdbmsWriter.getUserWriter()));
+          ValueType.MAPPING_RULE,
+          new MappingRuleExportHandler(rdbmsWriters.getMappingRuleWriter()));
+      builder.withHandler(
+          ValueType.TENANT, new TenantExportHandler(rdbmsWriters.getTenantWriter()));
+      builder.withHandler(ValueType.ROLE, new RoleExportHandler(rdbmsWriters.getRoleWriter()));
+      builder.withHandler(ValueType.USER, new UserExportHandler(rdbmsWriters.getUserWriter()));
       builder.withHandler(
           ValueType.AUTHORIZATION,
-          new AuthorizationExportHandler(rdbmsWriter.getAuthorizationWriter()));
+          new AuthorizationExportHandler(rdbmsWriters.getAuthorizationWriter()));
       builder.withHandler(
           ValueType.DECISION,
           new DecisionDefinitionExportHandler(
-              rdbmsWriter.getDecisionDefinitionWriter(), decisionRequirementsCache));
+              rdbmsWriters.getDecisionDefinitionWriter(), decisionRequirementsCache));
       builder.withHandler(
           ValueType.DECISION_REQUIREMENTS,
           new DecisionRequirementsExportHandler(
-              rdbmsWriter.getDecisionRequirementsWriter(), decisionRequirementsCache));
+              rdbmsWriters.getDecisionRequirementsWriter(), decisionRequirementsCache));
+      builder.withHandler(ValueType.FORM, new FormExportHandler(rdbmsWriters.getFormWriter()));
     }
+
     builder.withHandler(
         ValueType.DECISION_EVALUATION,
-        new DecisionInstanceExportHandler(rdbmsWriter.getDecisionInstanceWriter()));
-    builder.withHandler(ValueType.GROUP, new GroupExportHandler(rdbmsWriter.getGroupWriter()));
+        new DecisionInstanceExportHandler(rdbmsWriters.getDecisionInstanceWriter()));
+    builder.withHandler(ValueType.GROUP, new GroupExportHandler(rdbmsWriters.getGroupWriter()));
     builder.withHandler(
         ValueType.INCIDENT,
-        new IncidentExportHandler(rdbmsWriter.getIncidentWriter(), processCache));
+        new IncidentExportHandler(rdbmsWriters.getIncidentWriter(), processCache));
     builder.withHandler(
         ValueType.INCIDENT,
-        new ProcessInstanceIncidentExportHandler(rdbmsWriter.getProcessInstanceWriter()));
+        new ProcessInstanceIncidentExportHandler(rdbmsWriters.getProcessInstanceWriter()));
     builder.withHandler(
         ValueType.INCIDENT,
-        new FlowNodeInstanceIncidentExportHandler(rdbmsWriter.getFlowNodeInstanceWriter()));
+        new FlowNodeInstanceIncidentExportHandler(rdbmsWriters.getFlowNodeInstanceWriter()));
     builder.withHandler(
         ValueType.PROCESS_INSTANCE,
         new ProcessInstanceExportHandler(
-            rdbmsWriter.getProcessInstanceWriter(),
-            rdbmsWriter.getHistoryCleanupService(),
-            processCache));
+            rdbmsWriters.getProcessInstanceWriter(), historyCleanupService, processCache));
     builder.withHandler(
         ValueType.PROCESS_INSTANCE,
-        new FlowNodeExportHandler(rdbmsWriter.getFlowNodeInstanceWriter(), processCache));
+        new FlowNodeExportHandler(rdbmsWriters.getFlowNodeInstanceWriter(), processCache));
     builder.withHandler(
-        ValueType.VARIABLE, new VariableExportHandler(rdbmsWriter.getVariableWriter()));
+        ValueType.VARIABLE, new VariableExportHandler(rdbmsWriters.getVariableWriter()));
     builder.withHandler(
         ValueType.CLUSTER_VARIABLE,
-        new ClusterVariableExportHandler(rdbmsWriter.getClusterVariableWriter()));
+        new ClusterVariableExportHandler(rdbmsWriters.getClusterVariableWriter()));
     builder.withHandler(
         ValueType.USER_TASK,
-        new UserTaskExportHandler(rdbmsWriter.getUserTaskWriter(), processCache));
-    builder.withHandler(ValueType.FORM, new FormExportHandler(rdbmsWriter.getFormWriter()));
-    builder.withHandler(ValueType.JOB, new JobExportHandler(rdbmsWriter.getJobWriter()));
+        new UserTaskExportHandler(rdbmsWriters.getUserTaskWriter(), processCache));
+    builder.withHandler(ValueType.JOB, new JobExportHandler(rdbmsWriters.getJobWriter()));
     builder.withHandler(
         ValueType.PROCESS_INSTANCE,
-        new SequenceFlowExportHandler(rdbmsWriter.getSequenceFlowWriter()));
+        new SequenceFlowExportHandler(rdbmsWriters.getSequenceFlowWriter()));
     builder.withHandler(
         ValueType.USAGE_METRIC,
         new UsageMetricExportHandler(
-            rdbmsWriter.getUsageMetricWriter(), rdbmsWriter.getUsageMetricTUWriter()));
+            rdbmsWriters.getUsageMetricWriter(), rdbmsWriters.getUsageMetricTUWriter()));
     builder.withHandler(
         ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
-        new MessageSubscriptionExportHandler(rdbmsWriter.getMessageSubscriptionWriter()));
+        new MessageSubscriptionExportHandler(rdbmsWriters.getMessageSubscriptionWriter()));
     builder.withHandler(
         ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
         new CorrelatedMessageSubscriptionFromProcessMessageSubscriptionExportHandler(
-            rdbmsWriter.getCorrelatedMessageSubscriptionWriter()));
+            rdbmsWriters.getCorrelatedMessageSubscriptionWriter()));
     builder.withHandler(
         ValueType.MESSAGE_START_EVENT_SUBSCRIPTION,
         new CorrelatedMessageSubscriptionFromMessageStartEventSubscriptionExportHandler(
-            rdbmsWriter.getCorrelatedMessageSubscriptionWriter()));
+            rdbmsWriters.getCorrelatedMessageSubscriptionWriter()));
+    builder.withHandler(
+        ValueType.HISTORY_DELETION,
+        new HistoryDeletionDeletedHandler(rdbmsWriters.getHistoryDeletionWriter()));
+    builder.withHandler(
+        ValueType.JOB_METRICS_BATCH,
+        new JobMetricsBatchExportHandler(rdbmsWriters.getJobMetricsBatchWriter()));
 
-    registerAuditLogHandlers(rdbmsWriter, builder);
+    if (config.getAuditLog().isEnabled()) {
+      registerAuditLogHandlers(rdbmsWriters, builder, config, partitionId);
+    }
   }
 
   private void createBatchOperationHandlers(
-      final RdbmsWriter rdbmsWriter, final RdbmsExporter.Builder builder) {
+      final RdbmsWriters rdbmsWriters,
+      final Builder builder,
+      final HistoryCleanupService historyCleanupService) {
     builder.withHandler(
         ValueType.BATCH_OPERATION_CREATION,
         new BatchOperationCreatedExportHandler(
-            rdbmsWriter.getBatchOperationWriter(), batchOperationCache));
+            rdbmsWriters.getBatchOperationWriter(), batchOperationCache));
     builder.withHandler(
         ValueType.BATCH_OPERATION_CHUNK,
-        new BatchOperationChunkExportHandler(rdbmsWriter.getBatchOperationWriter()));
+        new BatchOperationChunkExportHandler(rdbmsWriters.getBatchOperationWriter()));
     builder.withHandler(
         ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
         new BatchOperationLifecycleManagementExportHandler(
-            rdbmsWriter.getBatchOperationWriter(),
-            rdbmsWriter.getHistoryCleanupService(),
-            batchOperationCache));
+            rdbmsWriters.getBatchOperationWriter(), historyCleanupService, batchOperationCache));
 
     // Handlers per batch operation to track status
     builder.withHandler(
         ValueType.PROCESS_INSTANCE,
         new ProcessInstanceCancellationBatchOperationExportHandler(
-            rdbmsWriter.getBatchOperationWriter(), batchOperationCache));
+            rdbmsWriters.getBatchOperationWriter(), batchOperationCache));
     builder.withHandler(
         ValueType.INCIDENT,
         new IncidentBatchOperationExportHandler(
-            rdbmsWriter.getBatchOperationWriter(), batchOperationCache));
+            rdbmsWriters.getBatchOperationWriter(), batchOperationCache));
     builder.withHandler(
         ValueType.PROCESS_INSTANCE_MIGRATION,
         new ProcessInstanceMigrationBatchOperationExportHandler(
-            rdbmsWriter.getBatchOperationWriter(), batchOperationCache));
+            rdbmsWriters.getBatchOperationWriter(), batchOperationCache));
     builder.withHandler(
         ValueType.PROCESS_INSTANCE_MODIFICATION,
         new ProcessInstanceModificationBatchOperationExportHandler(
-            rdbmsWriter.getBatchOperationWriter(), batchOperationCache));
+            rdbmsWriters.getBatchOperationWriter(), batchOperationCache));
+    builder.withHandler(
+        ValueType.HISTORY_DELETION,
+        new HistoryDeletionBatchOperationExportHandler(
+            rdbmsWriters.getBatchOperationWriter(),
+            batchOperationCache,
+            BatchOperationType.DELETE_PROCESS_INSTANCE));
+    builder.withHandler(
+        ValueType.HISTORY_DELETION,
+        new HistoryDeletionBatchOperationExportHandler(
+            rdbmsWriters.getBatchOperationWriter(),
+            batchOperationCache,
+            BatchOperationType.DELETE_PROCESS_DEFINITION));
   }
 
   private void registerAuditLogHandlers(
-      final RdbmsWriter rdbmsWriter, final RdbmsExporter.Builder builder) {
-    Set.of(
-            new BatchOperationCreationAuditLogTransformer(),
-            new BatchOperationLifecycleManagementAuditLogTransformer(),
-            new DecisionEvaluationAuditLogTransformer(),
-            new ProcessInstanceCreationAuditLogTransformer(),
-            new ProcessInstanceMigrationAuditLogTransformer(),
-            new ProcessInstanceModificationAuditLogTransformer())
-        .forEach(
-            transformer ->
-                builder.withHandler(
-                    transformer.config().valueType(),
-                    new AuditLogExportHandler<>(
-                        rdbmsWriter.getAuditLogWriter(),
-                        vendorDatabaseProperties,
-                        transformer,
-                        new AuditLogConfiguration()))); // TODO figure the correct configuration
+      final RdbmsWriters rdbmsWriters,
+      final Builder builder,
+      final ExporterConfiguration config,
+      final int partitionId) {
+    final Set<AuditLogTransformer<?>> transformers = new HashSet<>();
+    transformers.add(new BatchOperationLifecycleManagementAuditLogTransformer());
+    transformers.add(new DecisionEvaluationAuditLogTransformer());
+    transformers.add(new IncidentResolutionAuditLogTransformer());
+    transformers.add(new ProcessInstanceCancelAuditLogTransformer());
+    transformers.add(new ProcessInstanceCreationAuditLogTransformer());
+    transformers.add(new ProcessInstanceMigrationAuditLogTransformer());
+    transformers.add(new ProcessInstanceModificationAuditLogTransformer());
+    transformers.add(new UserTaskAuditLogTransformer());
+    transformers.add(new VariableAddUpdateAuditLogTransformer());
+
+    if (partitionId == PROCESS_DEFINITION_PARTITION) {
+      transformers.add(new AuthorizationAuditLogTransformer());
+      transformers.add(new BatchOperationCreationAuditLogTransformer());
+      transformers.add(new DecisionAuditLogTransformer());
+      transformers.add(new DecisionRequirementsRecordAuditLogTransformer());
+      transformers.add(new FormAuditLogTransformer());
+      transformers.add(new GroupAuditLogTransformer());
+      transformers.add(new GroupEntityAuditLogTransformer());
+      transformers.add(new MappingRuleAuditLogTransformer());
+      transformers.add(new ProcessAuditLogTransformer());
+      transformers.add(new ResourceAuditLogTransformer());
+      transformers.add(new RoleAuditLogTransformer());
+      transformers.add(new RoleEntityAuditLogTransformer());
+      transformers.add(new TenantAuditLogTransformer());
+      transformers.add(new TenantEntityAuditLogTransformer());
+      transformers.add(new UserAuditLogTransformer());
+    }
+
+    transformers.forEach(
+        transformer ->
+            builder.withHandler(
+                transformer.config().valueType(),
+                new AuditLogExportHandler<>(
+                    rdbmsWriters.getAuditLogWriter(),
+                    vendorDatabaseProperties,
+                    transformer,
+                    config.getAuditLog())));
   }
 }

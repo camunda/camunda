@@ -27,6 +27,7 @@ import io.camunda.client.annotation.value.JobWorkerValue.SourceAware.*;
 import io.camunda.client.annotation.value.VariableValue;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.DocumentReferenceResponse;
+import io.camunda.client.api.response.UserTaskProperties;
 import io.camunda.client.bean.BeanInfo;
 import io.camunda.client.bean.MethodInfo;
 import io.camunda.client.bean.ParameterInfo;
@@ -87,6 +88,10 @@ public class AnnotationUtil {
     return KEY_ANNOTATIONS.keySet().stream()
             .anyMatch(parameterInfo.getParameter()::isAnnotationPresent)
         && KeyTargetType.isValidParameterType(parameterInfo.getParameter().getType());
+  }
+
+  public static boolean isUserTaskProperties(final ParameterInfo parameterInfo) {
+    return parameterInfo.getParameter().getType().isAssignableFrom(UserTaskProperties.class);
   }
 
   public static Optional<Function<ActivatedJob, Long>> getKeyResolver(

@@ -34,8 +34,10 @@ import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
 import io.camunda.zeebe.protocol.record.intent.EscalationIntent;
+import io.camunda.zeebe.protocol.record.intent.ExpressionIntent;
 import io.camunda.zeebe.protocol.record.intent.FormIntent;
 import io.camunda.zeebe.protocol.record.intent.GlobalListenerBatchIntent;
+import io.camunda.zeebe.protocol.record.intent.GlobalListenerIntent;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.HistoryDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.IdentitySetupIntent;
@@ -43,6 +45,7 @@ import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.JobMetricsBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageCorrelationIntent;
@@ -94,12 +97,15 @@ import io.camunda.zeebe.protocol.record.value.DeploymentDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.protocol.record.value.ErrorRecordValue;
 import io.camunda.zeebe.protocol.record.value.EscalationRecordValue;
+import io.camunda.zeebe.protocol.record.value.ExpressionRecordValue;
 import io.camunda.zeebe.protocol.record.value.GlobalListenerBatchRecordValue;
+import io.camunda.zeebe.protocol.record.value.GlobalListenerRecordValue;
 import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionRecordValue;
 import io.camunda.zeebe.protocol.record.value.IdentitySetupRecordValue;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
+import io.camunda.zeebe.protocol.record.value.JobMetricsBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.MappingRuleRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageBatchRecordValue;
@@ -344,8 +350,16 @@ public final class ValueTypeMapping {
         ValueType.CONDITIONAL_EVALUATION,
         new Mapping<>(ConditionalEvaluationRecordValue.class, ConditionalEvaluationIntent.class));
     mapping.put(
+        ValueType.EXPRESSION, new Mapping<>(ExpressionRecordValue.class, ExpressionIntent.class));
+    mapping.put(
         ValueType.GLOBAL_LISTENER_BATCH,
         new Mapping<>(GlobalListenerBatchRecordValue.class, GlobalListenerBatchIntent.class));
+    mapping.put(
+        ValueType.JOB_METRICS_BATCH,
+        new Mapping<>(JobMetricsBatchRecordValue.class, JobMetricsBatchIntent.class));
+    mapping.put(
+        ValueType.GLOBAL_LISTENER,
+        new Mapping<>(GlobalListenerRecordValue.class, GlobalListenerIntent.class));
     return mapping;
   }
 

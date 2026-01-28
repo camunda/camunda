@@ -19,7 +19,6 @@ import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.AllPar
 import io.camunda.zeebe.gateway.api.util.TestBrokerClusterState;
 import io.camunda.zeebe.protocol.impl.SubscriptionUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
-import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
@@ -56,13 +55,8 @@ final class PublishMessageDispatchStrategyTest {
     final var routingState =
         new RoutingState(1, new AllPartitions(3), new HashMod(messagePartitionCount));
     final var clusterConfiguration =
-        new ClusterConfiguration(
-            1,
-            Map.of(),
-            Optional.empty(),
-            Optional.empty(),
-            Optional.of(routingState),
-            Optional.empty());
+        ClusterConfiguration.builder().version(1).routingState(Optional.of(routingState)).build();
+
     final var topologyManager =
         new TestTopologyManager(new TestBrokerClusterState(partitionCount), clusterConfiguration);
 

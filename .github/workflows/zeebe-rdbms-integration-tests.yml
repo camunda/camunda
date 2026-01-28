@@ -43,9 +43,9 @@ jobs:
             database-type: "mariadb"
             database-image-version: "12.0"
             it-database-type: "rdbms_mariadb"
-          - database-name: "MSSQL 2022"
+          - database-name: "MSSQL 2025"
             database-type: "mssql"
-            database-image-version: "2022-latest"
+            database-image-version: "2025-latest"
             it-database-type: "rdbms_mssql"
           - database-name: "Oracle 23c"
             database-type: "oracle"
@@ -57,4 +57,4 @@ jobs:
       database-type: ${{ matrix.database-type }}
       database-image-version: ${{ matrix.database-image-version }}
       it-database-type: ${{ matrix.it-database-type }}
-      notify-slack-on-failure: true
+      notify-slack-on-failure: ${{ github.event_name == 'schedule' }}

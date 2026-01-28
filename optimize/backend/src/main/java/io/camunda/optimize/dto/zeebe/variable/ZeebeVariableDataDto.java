@@ -69,6 +69,11 @@ public class ZeebeVariableDataDto implements VariableRecordValue {
     return bpmnProcessId;
   }
 
+  @Override
+  public long getRootProcessInstanceKey() {
+    return -1L; // not used in Optimize
+  }
+
   public void setBpmnProcessId(final String bpmnProcessId) {
     this.bpmnProcessId = bpmnProcessId;
   }
@@ -98,6 +103,12 @@ public class ZeebeVariableDataDto implements VariableRecordValue {
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hash(
+        name, value, scopeKey, processInstanceKey, processDefinitionKey, bpmnProcessId, tenantId);
+  }
+
+  @Override
   public boolean equals(final Object o) {
     if (o == null || getClass() != o.getClass()) {
       return false;
@@ -110,12 +121,6 @@ public class ZeebeVariableDataDto implements VariableRecordValue {
         && Objects.equals(value, that.value)
         && Objects.equals(bpmnProcessId, that.bpmnProcessId)
         && Objects.equals(tenantId, that.tenantId);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(
-        name, value, scopeKey, processInstanceKey, processDefinitionKey, bpmnProcessId, tenantId);
   }
 
   @Override

@@ -1,0 +1,480 @@
+# description: This workflow builds the Camunda Docker image, pushes it to Harbor, runs Helm integration and E2E tests, and triggers SaaS E2E smoke tests in the c8-cross-component-e2e-tests repo. This is part of the AlwaysGreen project where every PR is deployed via helm to confirm no breaking changes.
+# type: CI
+# owner: @camunda/distribution
+---
+name: Docker Build, Helm Deploy & E2E Tests (SaaS + Helm)
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Docker image version tag (defaults to pr-<sha> or Maven version)'
+        type: string
+        required: false
+      helmRepositoryBranchName:
+        description: 'Helm repository branch name'
+        type: string
+        default: 'main'
+      helmRepositoryDirName:
+        description: 'Helm chart directory name'
+        type: string
+        default: 'camunda-platform-8.9'
+      scenario:
+        description: 'Test scenario'
+        type: string
+        default: 'keycloak-original'
+      deployment-ttl:
+        description: 'Deployment TTL'
+        type: string
+        default: ''
+      shortname:
+        description: 'Short name for the deployment'
+        type: string
+        default: 'kcor'
+  pull_request:
+    paths:
+      - ".github/workflows/docker-build-helm-integration.yml"
+      - "camunda.Dockerfile"
+      - "dist/**"
+      - "zeebe/**"
+      - "operate/**"
+      - "tasklist/**"
+      - "identity/**"
+
+# Cancel in-progress runs when a new commit is pushed to the same PR
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  GHA_BEST_PRACTICES_LINTER: enabled
+  HARBOR_REGISTRY: registry.camunda.cloud
+  HARBOR_REPOSITORY: registry.camunda.cloud/team-camunda/camunda
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  # Gate job - checks conditions once, all other jobs depend on this
+  should-run:
+    name: Check Run Conditions
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    permissions: { }
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' &&
+       contains(
+         fromJson(
+           '["eamonnmoloney",
+             "remcowesterhoud",
+             "korthout",
+             "fabiopaini-camunda",
+             "eppdot",
+             "koevskinikola",
+             "kristinkomschow",
+             "konstantinos-mylosis",
+             "danielkelemen",
+             "tanjinyi",
+             "tmetzke",
+             "OmranAbazid",
+             "mustafadagher",
+             "ce-dmelnych",
+             "slolatte",
+             "pedesen",
+             "berkaycanbc",
+             "georgios-goulos",
+             "vsgoulart",
+             "tsedekey",
+             "lev-safro",
+             "npepinpe",
+             "deepthidevaki",
+             "ChrisKujawa",
+             "lenaschoenburg",
+             "entangled90",
+             "panagiotisgts",
+             "rodrigo-lourenco-lopes",
+             "bmudric",
+             "Ben-Sheppard",
+             "ana-vinogradova-camunda",
+             "mrm1st3r"]'
+          ), github.actor) &&
+       !contains(github.event.pull_request.labels.*.name, 'skip-always-green'))
+    steps:
+      - run: echo "Workflow conditions met, proceeding with build"
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          job_name: docker-build-helm-integration-should-run
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+  # Parallel frontend builds
+  build-operate-frontend:
+    name: Build Operate Frontend
+    needs: should-run
+    permissions: { }
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - uses: ./.github/actions/build-frontend
+        with:
+          directory: ./operate/client
+          package-manager: "npm"
+      - name: Upload Operate frontend artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: operate-frontend
+          path: operate/client/build
+          retention-days: 1
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          job_name: docker-build-helm-integration-operate-frontend
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+  build-tasklist-frontend:
+    name: Build Tasklist Frontend
+    needs: should-run
+    permissions: { }
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - uses: ./.github/actions/build-frontend
+        with:
+          directory: ./tasklist/client
+          package-manager: "npm"
+      - name: Upload Tasklist frontend artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tasklist-frontend
+          path: tasklist/client/build
+          retention-days: 1
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          job_name: docker-build-helm-integration-tasklist-frontend
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+  build-identity-frontend:
+    name: Build Identity Frontend
+    needs: should-run
+    permissions: { }
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - uses: ./.github/actions/build-frontend
+        with:
+          directory: ./identity/client
+          package-manager: "npm"
+      - name: Upload Identity frontend artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: identity-frontend
+          path: identity/client/dist
+          retention-days: 1
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          job_name: docker-build-helm-integration-identity-frontend
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  # Main build job - waits for all frontends to complete
+  build-and-push:
+    name: Build and Push Docker Image
+    needs: [build-operate-frontend, build-tasklist-frontend, build-identity-frontend]
+    permissions: { }
+    runs-on: gcp-perf-core-8-default
+    timeout-minutes: 30
+    outputs:
+      image-tag: ${{ steps.set-image-tag.outputs.tag }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup build environment
+        uses: ./.github/actions/setup-build
+        with:
+          dockerhub-readonly: true
+          harbor: true
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          minimus: true
+
+      - name: Get Maven project version
+        id: maven-version
+        run: |
+          VERSION=$(./mvnw -q -Dexec.executable=echo -Dexec.args="\${project.version}" --non-recursive exec:exec)
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Set semantic image tag
+        id: set-image-tag
+        run: |
+          MAVEN_VERSION="${{ steps.maven-version.outputs.version }}"
+          if [[ -n "${{ inputs.version }}" ]]; then
+            # Use explicitly provided version
+            echo "tag=${{ inputs.version }}" >> "$GITHUB_OUTPUT"
+          elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            # For PRs: <maven-version>-pr<number> (e.g., 8.9.0-SNAPSHOT-pr123)
+            echo "tag=${MAVEN_VERSION}-pr${{ github.event.pull_request.number }}" >> "$GITHUB_OUTPUT"
+          else
+            # For manual dispatch: <maven-version>-<short-sha> (e.g., 8.9.0-SNAPSHOT-abc1234)
+            SHA_SHORT="${GITHUB_SHA::7}"
+            echo "tag=${MAVEN_VERSION}-${SHA_SHORT}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Download Operate frontend artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: operate-frontend
+          path: operate/client/build
+
+      - name: Download Tasklist frontend artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: tasklist-frontend
+          path: tasklist/client/build
+
+      - name: Download Identity frontend artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: identity-frontend
+          path: identity/client/dist
+
+      - name: Build Camunda
+        id: build-camunda
+        uses: ./.github/actions/build-zeebe
+        with:
+          maven-extra-args: -PskipFrontendBuild
+
+      - name: Build and push Docker image to Harbor
+        id: build-docker
+        uses: ./.github/actions/build-platform-docker
+        with:
+          repository: ${{ env.HARBOR_REPOSITORY }}
+          version: ${{ steps.set-image-tag.outputs.tag }}
+          distball: ${{ steps.build-camunda.outputs.distball }}
+          platforms: linux/amd64
+          dockerfile: camunda.Dockerfile
+          push: true
+
+      - name: Output image details
+        run: |
+          {
+            echo "### Docker Image Built and Pushed"
+            echo ""
+            echo "**Repository:** ${{ env.HARBOR_REPOSITORY }}"
+            echo "**Tag:** ${{ steps.set-image-tag.outputs.tag }}"
+            echo "**Full Image:** ${{ env.HARBOR_REPOSITORY }}:${{ steps.set-image-tag.outputs.tag }}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          job_name: docker-build-helm-integration-build
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  format-identifier:
+    name: Format Identifier
+    # Runs in parallel with frontend builds (no dependency on their outputs)
+    needs: should-run
+    permissions: { }
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      identifier: ${{ steps.format.outputs.identifier }}
+    steps:
+      - name: Format identifier
+        id: format
+        shell: bash
+        run: |
+          # Create a unique identifier based on run ID and short SHA
+          SHA_SHORT="${GITHUB_SHA::7}"
+          IDENTIFIER="docker-helm-${{ github.run_id }}-${SHA_SHORT}"
+          # Truncate to max 40 chars if needed (k8s namespace limit)
+          IDENTIFIER="${IDENTIFIER:0:40}"
+          echo "identifier=${IDENTIFIER}" >> "$GITHUB_OUTPUT"
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          job_name: docker-build-helm-integration-format-identifier
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  helm-deploy:
+    name: Helm chart Integration Tests
+    needs: [build-and-push, format-identifier]
+    uses: camunda/camunda-platform-helm/.github/workflows/test-integration-template.yaml@main
+    secrets: inherit
+    with:
+      identifier: ${{ needs.format-identifier.outputs.identifier }}
+      platforms: gke
+      camunda-helm-git-ref: ${{ inputs.helmRepositoryBranchName || 'main' }}
+      camunda-helm-dir: ${{ inputs.helmRepositoryDirName || 'camunda-platform-8.9' }}
+      namespace-prefix: monorepo
+      test-enabled: true
+      e2e-enabled: true
+      deployment-ttl: ${{ inputs.deployment-ttl || '' }}
+      scenario: ${{ inputs.scenario || 'keycloak-original' }}
+      shortname: ${{ inputs.shortname || 'kcor' }}
+      always-delete-namespace: true
+      flows: install
+      extra-values: |
+        orchestration:
+          image:
+            registry: registry.camunda.cloud
+            repository: team-camunda/camunda
+            tag: ${{ needs.build-and-push.outputs.image-tag }}
+            pullSecrets:
+              - name: index-docker-io
+              - name: registry-camunda-cloud
+      vault-secret-mapping: |
+        secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_USR | TEST_DOCKER_USERNAME;
+        secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_PSW | TEST_DOCKER_PASSWORD;
+        secret/data/github.com/organizations/camunda NEXUS_USR | TEST_DOCKER_USERNAME_CAMUNDA_CLOUD;
+        secret/data/github.com/organizations/camunda NEXUS_PSW | TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD;
+  trigger-saas-e2e:
+    name: Trigger SaaS E2E tests
+    runs-on: ubuntu-latest
+    needs: [build-and-push, format-identifier]
+    timeout-minutes: 30
+    permissions: { }
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+      - name: Generate GitHub App Token (for dispatch)
+        id: github-token
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
+        with:
+          github-app-id-vault-key: GITHUB_APP_ID
+          github-app-id-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/quality-assurance-ci
+          github-app-private-key-vault-key: GITHUB_APP_SECRET
+          github-app-private-key-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/quality-assurance-ci
+          vault-auth-method: approle
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-url: ${{ secrets.VAULT_ADDR }}
+          owner: camunda
+          repositories: camunda,c8-cross-component-e2e-tests
+
+      - name: Trigger repository_dispatch for SaaS Monorepo
+        env:
+          GITHUB_TOKEN: ${{ steps.github-token.outputs.token }}
+        run: |
+          curl -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
+            https://api.github.com/repos/camunda/c8-cross-component-e2e-tests/dispatches \
+            -d '{
+                  "event_type": "run-saas-generation-smoke",
+                  "client_payload": {
+                      "source_repo": "${{ github.repository }}",
+                      "source_sha": "${{ github.sha }}",
+                      "c8Version": "8.9",
+                      "zeebeVersion": "${{ needs.build-and-push.outputs.image-tag }}",
+                      "operateVersion": "SNAPSHOT",
+                      "tasklistVersion": "SNAPSHOT",
+                      "connectorsVersion": "SNAPSHOT",
+                      "optimizeVersion": "8-SNAPSHOT"
+                  }
+                }'
+
+      - name: Get trigger timestamp
+        id: trigger-time
+        run: echo "trigger_time=$(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> "$GITHUB_OUTPUT"
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          job_name: trigger-saas-e2e
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+      - name: Wait for downstream workflow to finish
+        id: wait-downstream
+        env:
+          GH_TOKEN: ${{ steps.github-token.outputs.token }}
+          TRIGGER_TIME: ${{ steps.trigger-time.outputs.trigger_time }}
+        run: |
+          set -e
+          echo "Waiting for E2E workflow to complete in camunda/c8-cross-component-e2e-tests triggered after $TRIGGER_TIME"
+
+          TARGET_REPO="camunda/c8-cross-component-e2e-tests"
+          WORKFLOW_FILE="playwright_saas_pr_trigger_monorepo_8_9.yml"
+
+          # Wait up to 40 min (80 x 30s)
+          for _ in {1..80}; do
+            # Grab the first run created after the trigger event
+            RUN_ID=$(gh api "/repos/$TARGET_REPO/actions/workflows/$WORKFLOW_FILE/runs?event=repository_dispatch&per_page=5" \
+              --jq ".workflow_runs[] | select(.created_at > \"$TRIGGER_TIME\") | .id" | head -n1)
+
+            if [[ -n "$RUN_ID" ]]; then
+              echo "downstream_run_url=https://github.com/$TARGET_REPO/actions/runs/$RUN_ID" >> "$GITHUB_OUTPUT"
+              STATUS=$(gh api /repos/$TARGET_REPO/actions/runs/"$RUN_ID" --jq .status)
+              CONCLUSION=$(gh api /repos/$TARGET_REPO/actions/runs/"$RUN_ID" --jq .conclusion)
+              echo "Workflow run $RUN_ID status: $STATUS ($CONCLUSION)"
+              if [[ "$STATUS" == "completed" ]]; then
+                if [[ "$CONCLUSION" == "success" ]]; then
+                  echo "Downstream workflow succeeded!"
+                  exit 0
+                else
+                  echo "Downstream workflow failed: $CONCLUSION"
+                  exit 1
+                fi
+              fi
+            fi
+            sleep 30
+          done
+          echo "Timed out waiting for downstream workflow to complete."
+          exit 1
+
+      - name: Add SaaS downstream workflow link to Job Summary
+        if: always()
+        run: |
+          if [ -n "${{ steps.wait-downstream.outputs.downstream_run_url }}" ]; then
+            {
+              echo "### SaaS Downstream Workflow Run"
+              echo ""
+              echo "[Open the triggered SaaS E2E workflow run in camunda/c8-cross-component-e2e-tests](${{ steps.wait-downstream.outputs.downstream_run_url }})"
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "No downstream workflow run URL found." >> "$GITHUB_STEP_SUMMARY"
+          fi
+

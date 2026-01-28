@@ -17,6 +17,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.response.CorrelatedMessageSubscription;
+import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import java.util.List;
 import java.util.stream.IntStream;
@@ -24,6 +25,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 @MultiDbTest
+@CompatibilityTest
 public class CorrelatedMessageSubscriptionSearchIT {
 
   private static final int NUMBER_OF_CORRELATED_MESSAGES = 8;

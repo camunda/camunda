@@ -6,22 +6,21 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {type ProcessDto} from 'modules/api/processes/fetchGroupedProcesses';
 import {CopiableContent} from 'modules/components/PanelHeader/CopiableContent';
 
 type Props = {
-  bpmnProcessId?: ProcessDto['bpmnProcessId'];
+  processDefinitionId?: string;
 };
 
-const CopiableProcessID: React.FC<Props> = ({bpmnProcessId}) => {
-  if (bpmnProcessId === undefined) {
+const CopiableProcessID: React.FC<Props> = ({processDefinitionId}) => {
+  if (processDefinitionId === undefined) {
     return null;
   }
 
   return (
     <CopiableContent
       copyButtonDescription="Process ID / Click to copy"
-      content={bpmnProcessId}
+      content={processDefinitionId}
     />
   );
 };

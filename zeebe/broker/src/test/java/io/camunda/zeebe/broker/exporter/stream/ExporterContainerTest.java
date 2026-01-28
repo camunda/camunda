@@ -118,6 +118,85 @@ final class ExporterContainerTest {
     }
   }
 
+  private static final class ConfigurableFilter implements Context.RecordFilter {
+
+    private final boolean acceptTypeResult;
+    private final boolean acceptValueResult;
+    private final boolean acceptIntentResult;
+    private final boolean acceptRecordResult;
+
+    private ConfigurableFilter(
+        final boolean acceptTypeResult,
+        final boolean acceptValueResult,
+        final boolean acceptIntentResult,
+        final boolean acceptRecordResult) {
+      this.acceptTypeResult = acceptTypeResult;
+      this.acceptValueResult = acceptValueResult;
+      this.acceptIntentResult = acceptIntentResult;
+      this.acceptRecordResult = acceptRecordResult;
+    }
+
+    static Builder builder() {
+      return new Builder();
+    }
+
+    @Override
+    public boolean acceptType(final RecordType recordType) {
+      return acceptTypeResult;
+    }
+
+    @Override
+    public boolean acceptValue(final ValueType valueType) {
+      return acceptValueResult;
+    }
+
+    @Override
+    public boolean acceptIntent(final Intent intent) {
+      return acceptIntentResult;
+    }
+
+    @Override
+    public boolean acceptRecord(final Record<?> record) {
+      return acceptRecordResult;
+    }
+
+    static final class Builder {
+      private boolean acceptTypeResult;
+      private boolean acceptValueResult;
+      private boolean acceptIntentResult;
+      private boolean acceptRecordResult;
+
+      private Builder() {
+        // defaults to false for all flags
+      }
+
+      Builder acceptTypeResult(final boolean acceptTypeResult) {
+        this.acceptTypeResult = acceptTypeResult;
+        return this;
+      }
+
+      Builder acceptValueResult(final boolean acceptValueResult) {
+        this.acceptValueResult = acceptValueResult;
+        return this;
+      }
+
+      Builder acceptIntentResult(final boolean acceptIntentResult) {
+        this.acceptIntentResult = acceptIntentResult;
+        return this;
+      }
+
+      Builder acceptRecordResult(final boolean acceptRecordResult) {
+        this.acceptRecordResult = acceptRecordResult;
+        return this;
+      }
+
+      ConfigurableFilter build() {
+        return new ConfigurableFilter(
+            acceptTypeResult, acceptValueResult, acceptIntentResult, acceptRecordResult);
+      }
+    }
+  }
+
   @Nested
   class WithDefaultInitialization {
 
@@ -721,6 +800,159 @@ final class ExporterContainerTest {
       // then
       assertThat(meterRegistry.getMeters().getFirst().getId().getName())
           .isEqualTo(REGISTERED_COUNTER_NAME);
+    }
+  }
+
+  @Nested
+  class RecordFilterConditions {
+
+    @BeforeEach
+    void beforeEach(final @TempDir Path storagePath) throws Exception {
+      runtime = new ExporterContainerRuntime(storagePath);
+
+      final var descriptor =
+          runtime
+              .getRepository()
+              .validateAndAddExporterDescriptor(
+                  EXPORTER_ID, FakeExporter.class, Map.of("key", "value"));
+      exporterContainer = runtime.newContainer(descriptor, PARTITION_ID);
+      exporter = (FakeExporter) exporterContainer.getExporter();
+
+      exporterContainer.configureExporter();
+      runtime.getState().setPosition(EXPORTER_ID, 0);
+      exporterContainer.initMetadata();
+    }
+
+    @Test
+    void shouldNotExportRecordWhenTypeIsRejectedByFilter() throws Exception {
+      // given
+      exporter
+          .getContext()
+          .setFilter(
+              ConfigurableFilter.builder()
+                  .acceptTypeResult(false)
+                  .acceptValueResult(true)
+                  .acceptIntentResult(true)
+                  .acceptRecordResult(true)
+                  .build());
+
+      final var mockedRecord = mock(TypedRecord.class);
+      when(mockedRecord.getPosition()).thenReturn(1L);
+      final var recordMetadata = new RecordMetadata();
+
+      // when
+      exporterContainer.exportRecord(recordMetadata, mockedRecord);
+
+      // then
+      assertThat(exporter.getRecord()).isNull();
+      // filtered record still advances committed position
+      assertThat(exporterContainer.getPosition()).isEqualTo(1);
+      assertThat(exporterContainer.getLastUnacknowledgedPosition()).isZero();
+    }
+
+    @Test
+    void shouldNotExportRecordWhenValueTypeIsRejectedByFilter() throws Exception {
+      // given
+      exporter
+          .getContext()
+          .setFilter(
+              ConfigurableFilter.builder()
+                  .acceptTypeResult(true)
+                  .acceptValueResult(false)
+                  .acceptIntentResult(true)
+                  .acceptRecordResult(true)
+                  .build());
+
+      final var mockedRecord = mock(TypedRecord.class);
+      when(mockedRecord.getPosition()).thenReturn(1L);
+      final var recordMetadata = new RecordMetadata();
+
+      // when
+      exporterContainer.exportRecord(recordMetadata, mockedRecord);
+
+      // then
+      assertThat(exporter.getRecord()).isNull();
+      assertThat(exporterContainer.getPosition()).isEqualTo(1);
+      assertThat(exporterContainer.getLastUnacknowledgedPosition()).isZero();
+    }
+
+    @Test
+    void shouldNotExportRecordWhenIntentIsRejectedByFilter() throws Exception {
+      // given
+      exporter
+          .getContext()
+          .setFilter(
+              ConfigurableFilter.builder()
+                  .acceptTypeResult(true)
+                  .acceptValueResult(true)
+                  .acceptIntentResult(false)
+                  .acceptRecordResult(true)
+                  .build());
+
+      final var mockedRecord = mock(TypedRecord.class);
+      when(mockedRecord.getPosition()).thenReturn(1L);
+      final var recordMetadata = new RecordMetadata();
+
+      // when
+      exporterContainer.exportRecord(recordMetadata, mockedRecord);
+
+      // then
+      assertThat(exporter.getRecord()).isNull();
+      assertThat(exporterContainer.getPosition()).isEqualTo(1);
+      assertThat(exporterContainer.getLastUnacknowledgedPosition()).isZero();
+    }
+
+    @Test
+    void shouldNotExportRecordWhenRecordPredicateIsRejectedByFilter() throws Exception {
+      // given
+      exporter
+          .getContext()
+          .setFilter(
+              ConfigurableFilter.builder()
+                  .acceptTypeResult(true)
+                  .acceptValueResult(true)
+                  .acceptIntentResult(true)
+                  .acceptRecordResult(false)
+                  .build());
+
+      final var mockedRecord = mock(TypedRecord.class);
+      when(mockedRecord.getPosition()).thenReturn(1L);
+      final var recordMetadata = new RecordMetadata();
+
+      // when
+      exporterContainer.exportRecord(recordMetadata, mockedRecord);
+
+      // then
+      assertThat(exporter.getRecord()).isNull();
+      assertThat(exporterContainer.getPosition()).isEqualTo(1);
+      assertThat(exporterContainer.getLastUnacknowledgedPosition()).isZero();
+    }
+
+    @Test
+    void shouldExportRecordWhenAllFilterConditionsAccept() throws Exception {
+      // given
+      exporter
+          .getContext()
+          .setFilter(
+              ConfigurableFilter.builder()
+                  .acceptTypeResult(true)
+                  .acceptValueResult(true)
+                  .acceptIntentResult(true)
+                  .acceptRecordResult(true)
+                  .build());
+
+      final var mockedRecord = mock(TypedRecord.class);
+      when(mockedRecord.getPosition()).thenReturn(1L);
+      final var recordMetadata = new RecordMetadata();
+
+      // when
+      exporterContainer.exportRecord(recordMetadata, mockedRecord);
+
+      // then
+      assertThat(exporter.getRecord()).isNotNull().isEqualTo(mockedRecord);
+      assertThat(exporterContainer.getLastUnacknowledgedPosition()).isEqualTo(1);
+      // committed position is still previous value until record is acknowledged
+      assertThat(exporterContainer.getPosition()).isZero();
     }
   }
 }

@@ -24,6 +24,7 @@ import io.camunda.client.api.response.EvaluateDecisionResponse;
 import io.camunda.client.api.search.response.DecisionDefinitionType;
 import io.camunda.client.api.search.response.DecisionInstance;
 import io.camunda.client.api.search.response.DecisionInstanceState;
+import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import java.time.OffsetDateTime;
@@ -35,6 +36,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 @MultiDbTest
+@CompatibilityTest
 class DecisionInstanceSearchIT {
 
   private static final String DECISION_DEFINITION_ID_1 = "decision_1";

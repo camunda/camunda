@@ -323,4 +323,28 @@ public final class FilterBuilders {
               fn) {
     return fn.apply(processDefinitionInstanceVersionStatistics()).build();
   }
+
+  public static IncidentProcessInstanceStatisticsByDefinitionFilter.Builder
+      incidentProcessInstanceStatisticsByDefinition() {
+    return new IncidentProcessInstanceStatisticsByDefinitionFilter.Builder();
+  }
+
+  public static IncidentProcessInstanceStatisticsByDefinitionFilter
+      incidentProcessInstanceStatisticsByDefinition(
+          final Function<
+                  IncidentProcessInstanceStatisticsByDefinitionFilter.Builder,
+                  ObjectBuilder<IncidentProcessInstanceStatisticsByDefinitionFilter>>
+              fn) {
+    return fn.apply(incidentProcessInstanceStatisticsByDefinition()).build();
+  }
+
+  public static GlobalJobStatisticsFilter.Builder globalJobStatistics() {
+    return new GlobalJobStatisticsFilter.Builder();
+  }
+
+  public static GlobalJobStatisticsFilter globalJobStatistics(
+      final Function<GlobalJobStatisticsFilter.Builder, ObjectBuilder<GlobalJobStatisticsFilter>>
+          fn) {
+    return fn.apply(globalJobStatistics()).build();
+  }
 }

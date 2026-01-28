@@ -68,14 +68,13 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>camunda-exporter</artifactId>
+      <artifactId>zeebe-exporter-api</artifactId>
       <scope>test</scope>
     </dependency>
 
-    <!-- ELASTICSEARCH -->
     <dependency>
-      <groupId>org.elasticsearch.client</groupId>
-      <artifactId>elasticsearch-rest-high-level-client</artifactId>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-exporter</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -105,13 +104,8 @@
     </dependency>
 
     <dependency>
-      <groupId>org.elasticsearch</groupId>
-      <artifactId>elasticsearch</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.elasticsearch</groupId>
-      <artifactId>elasticsearch-x-content</artifactId>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-exporter-test</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -122,11 +116,6 @@
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-autoconfigure</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.lucene</groupId>
-      <artifactId>lucene-core</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -287,11 +276,6 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-protocol</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.elasticsearch.client</groupId>
-      <artifactId>elasticsearch-rest-client</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

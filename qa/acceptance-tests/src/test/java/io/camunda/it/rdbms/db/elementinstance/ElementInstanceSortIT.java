@@ -13,7 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.FlowNodeInstanceDbReader;
-import io.camunda.db.rdbms.write.RdbmsWriter;
+import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
@@ -159,12 +159,12 @@ public class ElementInstanceSortIT {
       final RdbmsService rdbmsService,
       final Function<Builder, ObjectBuilder<FlowNodeInstanceSort>> sortBuilder,
       final Comparator<FlowNodeInstanceEntity> comparator) {
-    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final FlowNodeInstanceDbReader reader = rdbmsService.getFlowNodeInstanceReader();
 
     final var processDefinitionKey = nextKey();
     createAndSaveRandomElementInstances(
-        rdbmsWriter, b -> b.processDefinitionKey(processDefinitionKey));
+        rdbmsWriters, b -> b.processDefinitionKey(processDefinitionKey));
 
     final var searchResult =
         reader

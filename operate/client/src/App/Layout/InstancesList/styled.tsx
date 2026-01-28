@@ -7,22 +7,18 @@
  */
 
 import styled, {css} from 'styled-components';
-import {COLLAPSABLE_PANEL_MIN_WIDTH} from 'modules/constants';
 
 type ContainerProps = {
   $hasLeftPanel?: boolean;
-  $hasRightPanel?: boolean;
   $hasFooter?: boolean;
   $hasAdditionalTopContent?: boolean;
 };
 
 const gridColumnLayout = css<ContainerProps>`
-  ${({$hasLeftPanel = false, $hasRightPanel = false}) => {
-    if ($hasLeftPanel && $hasRightPanel) {
+  ${({$hasLeftPanel = false}) => {
+    if ($hasLeftPanel) {
       return css`
-        grid-template-columns:
-          auto minmax(0, 1fr)
-          ${COLLAPSABLE_PANEL_MIN_WIDTH};
+        grid-template-columns: auto minmax(0, 1fr);
       `;
     }
 

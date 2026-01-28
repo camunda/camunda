@@ -7,10 +7,10 @@
  */
 
 import {observer} from 'mobx-react';
-import {useInstancesCount} from 'modules/queries/processInstancesStatistics/useInstancesCount';
+import {useInstancesCountV2} from 'modules/queries/processInstancesStatistics/useInstancesCountV2';
 import pluralSuffix from 'modules/utils/pluralSuffix';
 import {Container, InlineNotification, Button} from './styled';
-import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
+import {useProcessDefinitionKeyContext} from '../../../processDefinitionKeyContext';
 import {useListViewXml} from 'modules/queries/processDefinitions/useListViewXml';
 import {getFlowNodeName} from 'modules/utils/flowNodes';
 
@@ -28,7 +28,7 @@ const BatchModificationNotification: React.FC<Props> = observer(
       processDefinitionKey,
     });
 
-    const {data: instancesCount = 0} = useInstancesCount(
+    const {data: instancesCount = 0} = useInstancesCountV2(
       {},
       processDefinitionKey,
       sourceFlowNodeId,

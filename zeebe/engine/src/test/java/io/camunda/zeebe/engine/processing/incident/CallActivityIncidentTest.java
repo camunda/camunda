@@ -192,6 +192,7 @@ public final class CallActivityIncidentTest {
 
     assertIncidentCreated(incident, elementInstance)
         .hasElementInstancePath(List.of(List.of(processInstanceKey, elementInstance.getKey())))
+        .hasRootProcessInstanceKey(processInstanceKey)
         .hasProcessDefinitionKey(incident.getValue().getProcessDefinitionKey())
         .hasErrorType(ErrorType.CALLED_ELEMENT_ERROR)
         .hasErrorMessage(
@@ -276,6 +277,7 @@ public final class CallActivityIncidentTest {
 
     assertIncidentCreated(incident, elementInstance, tenantId)
         .hasElementInstancePath(List.of(List.of(processInstanceKey, elementInstance.getKey())))
+        .hasRootProcessInstanceKey(processInstanceKey)
         .hasProcessDefinitionKey(incident.getValue().getProcessDefinitionKey())
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(

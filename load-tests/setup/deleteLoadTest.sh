@@ -15,5 +15,5 @@ fi
 namespace=${1//\//} # remove trailing slashes
 
 kubens default
-kubectl delete namespace $namespace --wait=false
-rm -r $namespace
+kubectl delete namespace "$namespace" --wait=false
+rm -rf "$namespace"

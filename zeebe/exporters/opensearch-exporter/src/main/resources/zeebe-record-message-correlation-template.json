@@ -34,6 +34,9 @@
             "processInstanceKey": {
               "type": "long"
             },
+            "processDefinitionKey": {
+              "type": "long"
+            },
             "messageKey": {
               "type": "long"
             },

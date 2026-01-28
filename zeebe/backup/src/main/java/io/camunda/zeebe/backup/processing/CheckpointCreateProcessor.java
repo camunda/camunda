@@ -70,7 +70,9 @@ public final class CheckpointCreateProcessor {
     // Get current partition count from routing information if available
     final int currentPartitionCount = partitionCountSupplier.getCurrentPartitionCount();
     final long checkpointId = checkpointRecord.getCheckpointId();
-    final var descriptor = BackupDescriptorImpl.from(record, currentPartitionCount);
+    final var latestBackupPosition = checkpointState.getLatestBackupPosition();
+    final var descriptor =
+        BackupDescriptorImpl.from(record, latestBackupPosition, currentPartitionCount);
 
     // Create backup (either normal or failed based on scaling state)
     if (scalingInProgress) {

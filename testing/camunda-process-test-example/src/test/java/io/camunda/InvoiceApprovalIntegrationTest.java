@@ -34,7 +34,6 @@ import io.camunda.process.test.api.CamundaSpringProcessTest;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -50,8 +49,6 @@ import org.wiremock.spring.EnableWireMock;
       "camunda.process-test.connectors-secrets.INVOICE_REJECTION_URL=http://host.testcontainers.internal:${wiremock.server.port}"
     })
 @CamundaSpringProcessTest
-@Disabled(
-    "https://camunda.slack.com/archives/C08PLN35WGM/p1765534773892579?thread_ts=1765531708.791569&cid=C08PLN35WGM")
 public class InvoiceApprovalIntegrationTest {
 
   @Value("${wiremock.server.port}")

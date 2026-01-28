@@ -104,6 +104,9 @@
                 "tags": {
                   "type": "keyword"
                 },
+                "jobToUserTaskMigration": {
+                  "type": "boolean"
+                },
                 "result": {
                   "properties": {
                     "type": {
@@ -157,6 +160,9 @@
                       "type": "boolean"
                     }
                   }
+                },
+                "rootProcessInstanceKey": {
+                  "type": "long"
                 }
               }
             },

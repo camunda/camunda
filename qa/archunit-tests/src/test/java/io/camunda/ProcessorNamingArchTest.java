@@ -17,7 +17,6 @@ import com.tngtech.archunit.lang.ArchCondition;
 import com.tngtech.archunit.lang.ArchRule;
 import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.syntax.ArchRuleDefinition;
-import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -33,8 +32,6 @@ public final class ProcessorNamingArchTest {
       ArchRuleDefinition.classes()
           .that()
           .implement(TypedRecordProcessor.class)
-          .or()
-          .implement(CommandProcessor.class)
           .should(
               new ArchCondition<>(
                   "follow the processor naming convention: <ValueType><Intent>Processor") {
@@ -137,13 +134,12 @@ public final class ProcessorNamingArchTest {
 
                 // cache holder to avoid rebuilding reflection data for every class
                 private static final class NamingCache {
-                  private static final Set<String> INTENTS = new HashSet<>();
+                  private static final Map<String, Set<String>> VALUE_TYPE_TO_INTENTS =
+                      new HashMap<>();
                   private static final Set<String> VALUE_TYPES = new HashSet<>();
                   private static final Set<String> WHITELIST =
                       Set.of(
                           "BpmnStreamProcessor", // special case
-                          "CommandProcessor", // will be removed in #40162
-                          "CommandProcessorImpl", // will be removed in #40162
                           "UserTaskProcessor"); // will be refactored in the future
                   private static volatile boolean initialized = false;
 
@@ -159,14 +155,22 @@ public final class ProcessorNamingArchTest {
                         final String enumName = constant.name();
                         final String pascal = toPascal(enumName);
                         VALUE_TYPES.add(pascal);
-                      }
-                      for (final Class<?> intentEnumClass : Intent.INTENT_CLASSES) {
-                        final Object[] intentConstants = intentEnumClass.getEnumConstants();
-                        if (intentConstants != null) {
-                          for (final Object intent : intentConstants) {
-                            final String intentPascal = toPascal(((Enum<?>) intent).name());
-                            INTENTS.add(intentPascal);
+                        // attempt to load corresponding Intent enum
+                        final Class<?> intentEnumClass =
+                            Intent.VALUE_TYPE_TO_INTENT_MAP.get(constant);
+                        if (intentEnumClass != null) {
+                          final Object[] intentConstants = intentEnumClass.getEnumConstants();
+                          final Set<String> intents = new HashSet<>();
+                          if (intentConstants != null) {
+                            for (final Object intent : intentConstants) {
+                              final String intentPascal = toPascal(((Enum<?>) intent).name());
+                              intents.add(intentPascal);
+                            }
                           }
+                          VALUE_TYPE_TO_INTENTS.put(pascal, intents);
+                        } else {
+                          // No intent enum available; leave empty set (some ValueTypes may be meta)
+                          VALUE_TYPE_TO_INTENTS.put(pascal, Collections.emptySet());
                         }
                       }
                       initialized = true;
@@ -198,7 +202,8 @@ public final class ProcessorNamingArchTest {
                   }
 
                   private static Set<String> intentsFor(final String valueTypePascal) {
-                    return INTENTS;
+                    return VALUE_TYPE_TO_INTENTS.getOrDefault(
+                        valueTypePascal, Collections.emptySet());
                   }
                 }
               });

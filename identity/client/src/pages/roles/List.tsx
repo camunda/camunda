@@ -8,7 +8,7 @@
 
 import { FC } from "react";
 import { TrashCan } from "@carbon/react/icons";
-import { useNavigate } from "react-router";
+import { useNavigate } from "react-router-dom";
 import useTranslate from "src/utility/localization";
 import { usePaginatedApi } from "src/utility/api";
 import Page, { PageHeader } from "src/components/layout/Page";

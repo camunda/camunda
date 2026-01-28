@@ -120,10 +120,20 @@ paths:
         - Resource
       operationId: deleteResource
       summary: Delete resource
-      description: |
-        Deletes a deployed resource.
-        This can be a process definition, decision requirements definition, or form definition
-        deployed using the deploy resources endpoint. Specify the resource you want to delete in the `resourceKey` parameter.
+      description: |-
+        Deletes a deployed resource. This can be a process definition, decision requirements
+        definition, or form definition deployed using the deploy resources endpoint. Specify the
+        resource you want to delete in the `resourceKey` parameter.
+
+        Once a resource has been deleted it cannot be recovered. If the resource needs to be
+        available again, a new deployment of the resource is required.
+
+        By default, only the resource itself is deleted from the runtime state. To also delete the
+        historic data associated with a resource, set the `deleteHistory` flag in the request body
+        to `true`. The historic data is deleted asynchronously via a batch operation. The details of
+        the created batch operation are included in the response. Note that history deletion is only
+        supported for process resources; for other resource types this flag is ignored and no history
+        will be deleted.
       parameters:
         - name: resourceKey
           in: path
@@ -143,6 +153,10 @@ paths:
       responses:
         "200":
           description: The resource is deleted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteResourceResponse'
         "400":
           $ref: 'common-responses.yaml#/components/responses/InvalidData'
         "404":
@@ -260,7 +274,7 @@ components:
             The dmn ID of the decision requirements graph that this decision is part of, as parsed during deployment.
         decisionDefinitionKey:
           allOf:
-            - $ref:  'keys.yaml#/components/schemas/DecisionDefinitionKey'
+            - $ref: 'keys.yaml#/components/schemas/DecisionDefinitionKey'
           description: |
             The assigned decision key, which acts as a unique identifier for this decision.
         decisionRequirementsKey:
@@ -345,6 +359,37 @@ components:
       properties:
         operationReference:
           $ref: 'keys.yaml#/components/schemas/OperationReference'
+        deleteHistory:
+          description: |
+            Indicates if the historic data of a process resource should be deleted via a
+            batch operation asynchronously.
+
+            This flag is only effective for process resources. For other resource types
+            (decisions, forms, generic resources), this flag is ignored and no history
+            will be deleted. In those cases, the `batchOperation` field in the response
+            will not be populated.
+          type: boolean
+          required: false
+          default: false
+
+    DeleteResourceResponse:
+      type: object
+      required:
+        - resourceKey
+      properties:
+        resourceKey:
+          allOf:
+            - $ref: '#/components/schemas/ResourceKey'
+          description: The system-assigned key for this resource, requested to be deleted.
+        batchOperation:
+          allOf:
+            - $ref: 'batch-operations.yaml#/components/schemas/BatchOperationCreatedResult'
+          description: |
+            The batch operation created for asynchronously deleting the historic data.
+
+            This field is only populated when the request `deleteHistory` is set to `true` and the resource
+            is a process definition. For other resource types (decisions, forms, generic resources),
+            this field will not be present in the response.
 
     ResourceResult:
       type: object
@@ -390,3 +435,81 @@ components:
         - $ref: 'keys.yaml#/components/schemas/DecisionDefinitionKey'
       description: The system-assigned key for this resource.
       format: ResourceKey
+
+    ## Filters
+
+    DeploymentKeyFilterProperty:
+      description: DeploymentKey property with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: "#/components/schemas/DeploymentKey"
+        - $ref: '#/components/schemas/AdvancedDeploymentKeyFilter'
+
+    AdvancedDeploymentKeyFilter:
+      title: Advanced filter
+      description: Advanced DeploymentKey filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: '#/components/schemas/DeploymentKey'
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: '#/components/schemas/DeploymentKey'
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: '#/components/schemas/DeploymentKey'
+        $notIn:
+          description: Checks if the property matches none of the provided values.
+          type: array
+          items:
+            $ref: '#/components/schemas/DeploymentKey'
+
+    ResourceKeyFilterProperty:
+      description: ResourceKey property with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: "#/components/schemas/ResourceKey"
+        - $ref: "#/components/schemas/AdvancedResourceKeyFilter"
+
+    AdvancedResourceKeyFilter:
+      title: Advanced filter
+      description: Advanced ResourceKey filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/ResourceKey"
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/ResourceKey"
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: "#/components/schemas/ResourceKey"
+        $notIn:
+          description: Checks if the property matches none of the provided values.
+          type: array
+          items:
+            $ref: "#/components/schemas/ResourceKey"

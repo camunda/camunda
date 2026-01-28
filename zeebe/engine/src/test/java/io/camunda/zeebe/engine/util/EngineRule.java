@@ -33,13 +33,16 @@ import io.camunda.zeebe.engine.util.client.ClusterVariableClient;
 import io.camunda.zeebe.engine.util.client.ConditionalEvaluationClient;
 import io.camunda.zeebe.engine.util.client.DecisionEvaluationClient;
 import io.camunda.zeebe.engine.util.client.DeploymentClient;
+import io.camunda.zeebe.engine.util.client.ExpressionClient;
 import io.camunda.zeebe.engine.util.client.GlobalListenerBatchClient;
+import io.camunda.zeebe.engine.util.client.GlobalListenerClient;
 import io.camunda.zeebe.engine.util.client.GroupClient;
 import io.camunda.zeebe.engine.util.client.HistoryDeletionClient;
 import io.camunda.zeebe.engine.util.client.IdentitySetupClient;
 import io.camunda.zeebe.engine.util.client.IncidentClient;
 import io.camunda.zeebe.engine.util.client.JobActivationClient;
 import io.camunda.zeebe.engine.util.client.JobClient;
+import io.camunda.zeebe.engine.util.client.JobMetricsBatchClient;
 import io.camunda.zeebe.engine.util.client.MappingRuleClient;
 import io.camunda.zeebe.engine.util.client.MessageCorrelationClient;
 import io.camunda.zeebe.engine.util.client.ProcessInstanceClient;
@@ -495,6 +498,14 @@ public final class EngineRule extends ExternalResource {
     return new ClusterVariableClient(environmentRule);
   }
 
+  public JobMetricsBatchClient jobMetricsBatch() {
+    return new JobMetricsBatchClient(environmentRule);
+  }
+
+  public ExpressionClient expression() {
+    return new ExpressionClient(environmentRule);
+  }
+
   public JobActivationClient jobs() {
     return new JobActivationClient(environmentRule);
   }
@@ -743,6 +754,10 @@ public final class EngineRule extends ExternalResource {
 
   public GlobalListenerBatchClient globalListenerBatch() {
     return new GlobalListenerBatchClient(environmentRule);
+  }
+
+  public GlobalListenerClient globalListener() {
+    return new GlobalListenerClient(environmentRule);
   }
 
   private static final class VersatileBlob implements DbKey, DbValue {

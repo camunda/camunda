@@ -15,7 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.application.commons.rdbms.RdbmsConfiguration;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.DecisionInstanceDbReader;
-import io.camunda.db.rdbms.write.RdbmsWriter;
+import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.it.rdbms.db.fixtures.DecisionDefinitionFixtures;
 import io.camunda.it.rdbms.db.fixtures.DecisionInstanceFixtures;
 import io.camunda.it.rdbms.db.util.RdbmsTestConfiguration;
@@ -53,22 +53,22 @@ public class DecisionInstanceSpecificFilterIT {
 
   @Autowired private DecisionInstanceDbReader decisionInstanceReader;
 
-  private RdbmsWriter rdbmsWriter;
+  private RdbmsWriters rdbmsWriters;
 
   @BeforeEach
   public void beforeAll() {
-    rdbmsWriter = rdbmsService.createWriter(0L);
+    rdbmsWriters = rdbmsService.createWriter(0L);
 
     final var decisionDefinitionKey = nextKey();
     final var decisionDefinition =
         DecisionDefinitionFixtures.createAndSaveDecisionDefinition(
-            rdbmsWriter,
+            rdbmsWriters,
             b ->
                 b.decisionDefinitionKey(decisionDefinitionKey)
                     .decisionDefinitionId("decision" + decisionDefinitionKey)
                     .name("Decision " + decisionDefinitionKey));
     createAndSaveRandomDecisionInstances(
-        rdbmsWriter,
+        rdbmsWriters,
         b ->
             b.state(DecisionInstanceState.FAILED)
                 .decisionType(DecisionDefinitionType.LITERAL_EXPRESSION)
@@ -84,13 +84,13 @@ public class DecisionInstanceSpecificFilterIT {
 
     final var decisionDefinition =
         DecisionDefinitionFixtures.createAndSaveDecisionDefinition(
-            rdbmsWriter,
+            rdbmsWriters,
             b ->
                 b.decisionDefinitionKey(decisionDefinitionKey)
                     .decisionDefinitionId("decision-" + decisionDefinitionKey)
                     .name("Decision " + decisionDefinitionKey));
     createAndSaveDecisionInstance(
-        rdbmsWriter,
+        rdbmsWriters,
         DecisionInstanceFixtures.createRandomized(
             b ->
                 b.decisionInstanceId("42-1")

@@ -45,6 +45,8 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
   private static final StringValue RUNTIME_INSTRUCTIONS_KEY =
       new StringValue("runtimeInstructions");
   private static final StringValue TAGS_KEY = new StringValue("tags");
+  private static final StringValue ROOT_PROCESS_INSTANCE_KEY_KEY =
+      new StringValue("rootProcessInstanceKey");
 
   private final StringProperty bpmnProcessIdProperty = new StringProperty(BPMN_PROCESS_ID_KEY, "");
   private final LongProperty processDefinitionKeyProperty =
@@ -66,9 +68,11 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
               RUNTIME_INSTRUCTIONS_KEY, ProcessInstanceCreationRuntimeInstruction::new);
   private final ArrayProperty<StringValue> tagsProperty =
       new ArrayProperty<>(TAGS_KEY, StringValue::new);
+  private final LongProperty rootProcessInstanceKeyProperty =
+      new LongProperty(ROOT_PROCESS_INSTANCE_KEY_KEY, -1);
 
   public ProcessInstanceCreationRecord() {
-    super(10);
+    super(11);
     declareProperty(bpmnProcessIdProperty)
         .declareProperty(processDefinitionKeyProperty)
         .declareProperty(processInstanceKeyProperty)
@@ -78,7 +82,8 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
         .declareProperty(startInstructionsProperty)
         .declareProperty(runtimeInstructionsProperty)
         .declareProperty(tenantIdProperty)
-        .declareProperty(tagsProperty);
+        .declareProperty(tagsProperty)
+        .declareProperty(rootProcessInstanceKeyProperty);
   }
 
   @Override
@@ -143,6 +148,17 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
     if (tags != null) {
       tags.forEach(tag -> tagsProperty.add().wrap(BufferUtil.wrapString(tag)));
     }
+    return this;
+  }
+
+  @Override
+  public long getRootProcessInstanceKey() {
+    return rootProcessInstanceKeyProperty.getValue();
+  }
+
+  public ProcessInstanceCreationRecord setRootProcessInstanceKey(
+      final long rootProcessInstanceKey) {
+    rootProcessInstanceKeyProperty.setValue(rootProcessInstanceKey);
     return this;
   }
 

@@ -14,6 +14,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import io.camunda.gateway.protocol.model.UserRequest;
+import io.camunda.gateway.protocol.model.UserUpdateRequest;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
@@ -21,8 +23,6 @@ import io.camunda.service.UserServices;
 import io.camunda.service.UserServices.UserDTO;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
-import io.camunda.zeebe.gateway.protocol.rest.UserRequest;
-import io.camunda.zeebe.gateway.protocol.rest.UserUpdateRequest;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.config.ApiFiltersConfiguration;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;

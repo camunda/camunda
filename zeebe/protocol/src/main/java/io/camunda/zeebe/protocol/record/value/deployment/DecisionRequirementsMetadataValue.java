@@ -68,4 +68,9 @@ public interface DecisionRequirementsMetadataValue extends TenantOwned {
    *     {@code false}
    */
   boolean isDuplicate();
+
+  /**
+   * @return the key of the deployment this DRG was deployed with
+   */
+  long getDeploymentKey();
 }

@@ -120,7 +120,7 @@ final class CheckpointRecordsProcessorTest {
     final MockTypedCheckpointRecord record =
         new MockTypedCheckpointRecord(
             checkpointPosition, 0, CheckpointIntent.CREATE, RecordType.COMMAND, value);
-    final var backupDescriptor = BackupDescriptorImpl.from(record, dynamicPartitionCount.get());
+    final var backupDescriptor = BackupDescriptorImpl.from(record, -1, dynamicPartitionCount.get());
 
     // when
     final var result = (MockProcessingResult) processor.process(record, resultBuilder);
@@ -161,7 +161,7 @@ final class CheckpointRecordsProcessorTest {
     final MockTypedCheckpointRecord record =
         new MockTypedCheckpointRecord(
             checkpointPosition + 10, 0, CheckpointIntent.CREATE, RecordType.COMMAND, value);
-    final var backupDescriptor = BackupDescriptorImpl.from(record, dynamicPartitionCount.get());
+    final var backupDescriptor = BackupDescriptorImpl.from(record, -1, dynamicPartitionCount.get());
 
     // when
     final var result = (MockProcessingResult) processor.process(record, resultBuilder);
@@ -198,7 +198,7 @@ final class CheckpointRecordsProcessorTest {
     final MockTypedCheckpointRecord record =
         new MockTypedCheckpointRecord(
             checkpointPosition + 10, 0, CheckpointIntent.CREATE, RecordType.COMMAND, value);
-    final var backupDescriptor = BackupDescriptorImpl.from(record, dynamicPartitionCount.get());
+    final var backupDescriptor = BackupDescriptorImpl.from(record, -1, dynamicPartitionCount.get());
 
     // when
     final var result = (MockProcessingResult) processor.process(record, resultBuilder);
@@ -516,6 +516,56 @@ final class CheckpointRecordsProcessorTest {
   }
 
   @Test
+  void shouldStartNewRangeWhenFirstBackupConfirmed() {
+    // given
+    final var newCheckpointId = 5;
+    final var newCheckpointPosition = 50;
+    final var value =
+        new CheckpointRecord()
+            .setCheckpointId(newCheckpointId)
+            .setCheckpointPosition(newCheckpointPosition)
+            .setCheckpointType(CheckpointType.MANUAL_BACKUP)
+            .setFirstLogPosition(-1);
+    final var record =
+        new MockTypedCheckpointRecord(
+            newCheckpointPosition, 0, CheckpointIntent.CONFIRM_BACKUP, RecordType.COMMAND, value);
+
+    // when
+    processor.process(record, resultBuilder);
+
+    // then
+    verify(backupManager, times(1)).startNewRange(newCheckpointId);
+  }
+
+  @Test
+  void shouldExtendRangeWhenSubsequentBackupConfirmed() {
+    // given
+    final var currentBackupId = 5;
+    final var currentBackupPosition = 50;
+    final var timestamp = Instant.now().toEpochMilli();
+    state.setLatestBackupInfo(
+        currentBackupId, currentBackupPosition, timestamp, CheckpointType.MANUAL_BACKUP);
+
+    final var newCheckpointId = 10;
+    final var newCheckpointPosition = 100;
+    final var value =
+        new CheckpointRecord()
+            .setCheckpointId(newCheckpointId)
+            .setCheckpointPosition(newCheckpointPosition)
+            .setCheckpointType(CheckpointType.MANUAL_BACKUP)
+            .setFirstLogPosition(currentBackupPosition); // position 50, so 50 <= 50+1 is true
+    final var record =
+        new MockTypedCheckpointRecord(
+            newCheckpointPosition, 0, CheckpointIntent.CONFIRM_BACKUP, RecordType.COMMAND, value);
+
+    // when
+    processor.process(record, resultBuilder);
+
+    // then
+    verify(backupManager, times(1)).extendRange(currentBackupId, newCheckpointId);
+  }
+
+  @Test
   void shouldReplayConfirmedBackupRecord() {
     // given
     final var backupId = 15;
@@ -589,7 +639,7 @@ final class CheckpointRecordsProcessorTest {
     final MockTypedCheckpointRecord record =
         new MockTypedCheckpointRecord(
             checkpointPosition, 0, CheckpointIntent.CREATE, RecordType.COMMAND, value, 1, 1);
-    final var backupDescriptor = BackupDescriptorImpl.from(record, dynamicPartitionCount.get());
+    final var backupDescriptor = BackupDescriptorImpl.from(record, -1, dynamicPartitionCount.get());
 
     // Set up scaling in progress supplier to return true
     scalingInProgress.set(true);
@@ -636,7 +686,7 @@ final class CheckpointRecordsProcessorTest {
     final MockTypedCheckpointRecord firstRecord =
         new MockTypedCheckpointRecord(
             firstCheckpointPosition, 0, CheckpointIntent.CREATE, RecordType.COMMAND, firstValue);
-    var backupDescriptor = BackupDescriptorImpl.from(firstRecord, firstPartitionCount);
+    var backupDescriptor = BackupDescriptorImpl.from(firstRecord, -1, firstPartitionCount);
 
     // when - first checkpoint creation
     processor.process(firstRecord, resultBuilder);
@@ -657,7 +707,7 @@ final class CheckpointRecordsProcessorTest {
     final MockTypedCheckpointRecord secondRecord =
         new MockTypedCheckpointRecord(
             secondCheckpointPosition, 0, CheckpointIntent.CREATE, RecordType.COMMAND, secondValue);
-    backupDescriptor = BackupDescriptorImpl.from(secondRecord, secondPartitionCount);
+    backupDescriptor = BackupDescriptorImpl.from(secondRecord, -1, secondPartitionCount);
 
     // when - second checkpoint creation
     processor.process(secondRecord, resultBuilder);

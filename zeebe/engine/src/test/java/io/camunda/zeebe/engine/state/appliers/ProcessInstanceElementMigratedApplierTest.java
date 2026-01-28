@@ -47,7 +47,8 @@ public class ProcessInstanceElementMigratedApplierTest {
             .setVersion(1)
             .setElementId("process")
             .setBpmnElementType(BpmnElementType.PROCESS)
-            .setProcessInstanceKey(2L);
+            .setProcessInstanceKey(2L)
+            .setRootProcessInstanceKey(4L);
     elementInstanceState.createInstance(
         new ElementInstance(
             processInstance.getProcessInstanceKey(),
@@ -76,6 +77,7 @@ public class ProcessInstanceElementMigratedApplierTest {
         .hasProcessInstanceKey(processInstance.getProcessInstanceKey())
         .hasParentElementInstanceKey(processInstance.getParentElementInstanceKey())
         .hasParentProcessInstanceKey(processInstance.getParentProcessInstanceKey())
+        .hasRootProcessInstanceKey(processInstance.getRootProcessInstanceKey())
         .hasTenantId(processInstance.getTenantId())
         .hasBpmnElementType(processInstance.getBpmnElementType())
         .hasBpmnEventType(processInstance.getBpmnEventType())

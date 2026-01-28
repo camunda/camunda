@@ -8,12 +8,16 @@
 package io.camunda.exporter.tasks.archiver;
 
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.exporter.tasks.archiver.ArchiveBatch.BasicArchiveBatch;
+import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import org.slf4j.Logger;
 
-public class UsageMetricArchiverJob extends ArchiverJob {
+public class UsageMetricArchiverJob extends ArchiverJob<BasicArchiveBatch> {
 
   private final UsageMetricTemplate usageMetricTemplate;
 
@@ -39,17 +43,19 @@ public class UsageMetricArchiverJob extends ArchiverJob {
   }
 
   @Override
-  public CompletableFuture<ArchiveBatch> getNextBatch() {
+  public CompletableFuture<ArchiveBatch.BasicArchiveBatch> getNextBatch() {
     return getArchiverRepository().getUsageMetricNextBatch();
   }
 
   @Override
-  public String getSourceIndexName() {
-    return usageMetricTemplate.getFullQualifiedName();
+  public UsageMetricTemplate getTemplateDescriptor() {
+    return usageMetricTemplate;
   }
 
   @Override
-  public String getIdFieldName() {
-    return UsageMetricTemplate.ID;
+  protected Map<String, List<String>> createIdsByFieldMap(
+      final IndexTemplateDescriptor templateDescriptor,
+      final ArchiveBatch.BasicArchiveBatch batch) {
+    return Map.of(UsageMetricTemplate.ID, batch.ids());
   }
 }

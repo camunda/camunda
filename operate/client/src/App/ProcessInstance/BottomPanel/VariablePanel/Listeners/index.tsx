@@ -17,6 +17,8 @@ import {EmptyMessage} from 'modules/components/EmptyMessage';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {spaceAndCapitalize} from 'modules/utils/spaceAndCapitalize';
 import {formatDate} from 'modules/utils/date';
+import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
+import {IS_ELEMENT_SELECTION_V2} from 'modules/feature-flags';
 
 import {
   CellContainer,
@@ -64,14 +66,20 @@ const Listeners: React.FC<Props> = observer(
     hasNextPage,
     hasPreviousPage,
   }) => {
-    const {metaData} = flowNodeMetaDataStore.state;
-    const isUserTask = metaData?.instanceMetadata?.flowNodeType === 'USER_TASK';
+    const isUserTaskV1 =
+      flowNodeMetaDataStore.state.metaData?.instanceMetadata?.flowNodeType ===
+      'USER_TASK';
+
+    const {resolvedElementInstance} = useProcessInstanceElementSelection();
+    const hasUserTaskSelected = IS_ELEMENT_SELECTION_V2
+      ? resolvedElementInstance?.type === 'USER_TASK'
+      : isUserTaskV1;
 
     const [selectedOption, setSelectedOption] =
       useState<FilterLabelMappingKeys>('All listeners');
 
     const handleEmptyMessages = () => {
-      if (isUserTask) {
+      if (hasUserTaskSelected) {
         if (selectedOption === 'All listeners') {
           return 'This flow node has no execution listeners nor user task listeners';
         }
@@ -88,7 +96,7 @@ const Listeners: React.FC<Props> = observer(
 
     return (
       <Content>
-        {isUserTask && (
+        {hasUserTaskSelected && (
           <Dropdown
             id="listenerTypeFilter"
             data-testid="listener-type-filter"

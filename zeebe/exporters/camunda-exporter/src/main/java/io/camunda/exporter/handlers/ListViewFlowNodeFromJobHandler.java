@@ -91,6 +91,11 @@ public class ListViewFlowNodeFromJobHandler
     } else {
       entity.setJobFailedWithRetriesLeft(false);
     }
+
+    final long rootProcessInstanceKey = recordValue.getRootProcessInstanceKey();
+    if (rootProcessInstanceKey > 0) {
+      entity.setRootProcessInstanceKey(rootProcessInstanceKey);
+    }
   }
 
   @Override

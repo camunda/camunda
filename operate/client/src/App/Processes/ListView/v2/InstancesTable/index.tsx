@@ -16,17 +16,23 @@ import {Paths} from 'modules/Routes';
 import {tracking} from 'modules/tracking';
 import {Link} from 'modules/components/Link';
 import {useFilters} from 'modules/hooks/useFilters';
-import type {ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.8';
-
-/** Stores */
-import {processesStore} from 'modules/stores/processes/processes.list';
+import type {
+  ProcessInstance,
+  BatchOperationItem,
+  ProcessInstanceState,
+  BatchOperationType,
+} from '@camunda/camunda-api-zod-schemas/8.8';
 import {batchModificationStore} from 'modules/stores/batchModification';
-import {Toolbar} from '../../InstancesTable/Toolbar';
+import {Toolbar} from './Toolbar';
 import {getProcessInstanceFilters} from 'modules/utils/filter/getProcessInstanceFilters';
 import {useLocation, useSearchParams} from 'react-router-dom';
-import {BatchModificationFooter} from '../../InstancesTable/BatchModificationFooter';
-import type {InstanceEntityState} from 'modules/types/operate';
-import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
+import {BatchModificationFooter} from './BatchModificationFooter';
+import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelectionV2';
+import {InstanceOperations} from './InstanceOperations';
+import {getProcessDefinitionName} from 'modules/utils/instance';
+import {useOperationItemsForInstances} from 'modules/queries/batch-operations/useOperationItemsForInstances';
+import {useActiveOperationItemsForInstances} from 'modules/queries/batch-operations/useActiveOperationItemsForInstances';
+import {InlineLoading} from '@carbon/react';
 
 type InstancesTableProps = {
   state: 'skeleton' | 'loading' | 'error' | 'empty' | 'content';
@@ -44,9 +50,9 @@ const InstancesTable: React.FC<InstancesTableProps> = observer(
     onVerticalScrollStartReach,
     onVerticalScrollEndReach,
   }) => {
-    const hasVersionTags = processInstances.some(({processDefinitionKey}) => {
-      return processesStore.getVersionTag(processDefinitionKey);
-    });
+    const hasVersionTags = processInstances.some(
+      ({processDefinitionVersionTag}) => !!processDefinitionVersionTag,
+    );
 
     const filters = useFilters();
     const location = useLocation();
@@ -62,6 +68,32 @@ const InstancesTable: React.FC<InstancesTableProps> = observer(
       (tenant === undefined || tenant === 'all');
 
     const batchOperationId = searchParams.get('operationId') ?? undefined;
+    const isOperationStateColumnVisible = !!batchOperationId;
+
+    const processInstanceKeys = processInstances.map(
+      (instance) => instance.processInstanceKey,
+    );
+
+    const {data: operationItemsData, isLoading: isLoadingOperationItems} =
+      useOperationItemsForInstances(batchOperationId, processInstanceKeys);
+
+    const operationItemsMap = new Map<string, BatchOperationItem>();
+    operationItemsData?.items.forEach((item) => {
+      operationItemsMap.set(item.processInstanceKey, item);
+    });
+
+    const {data: activeOperationItemsData} =
+      useActiveOperationItemsForInstances(processInstanceKeys);
+
+    const activeOperationsMap = new Map<string, BatchOperationType[]>();
+    activeOperationItemsData?.items.forEach((item) => {
+      const existing = activeOperationsMap.get(item.processInstanceKey);
+      if (existing) {
+        existing.push(item.operationType);
+      } else {
+        activeOperationsMap.set(item.processInstanceKey, [item.operationType]);
+      }
+    });
 
     const getEmptyListMessage = () => {
       return {
@@ -85,16 +117,15 @@ const InstancesTable: React.FC<InstancesTableProps> = observer(
         />
         <SortableTable
           state={state}
+          columnsWithNoContentPadding={['operations']}
           selectionType="checkbox"
           onSelectAll={processInstancesSelectionStore.selectAllProcessInstances}
           onSelect={(rowId) => {
             processInstancesSelectionStore.selectProcessInstance(rowId);
           }}
-          checkIsAllSelected={() =>
-            processInstancesSelectionStore.state.isAllChecked
-          }
+          checkIsAllSelected={() => processInstancesSelectionStore.isAllChecked}
           checkIsIndeterminate={() =>
-            !processInstancesSelectionStore.state.isAllChecked &&
+            !processInstancesSelectionStore.isAllChecked &&
             processInstancesSelectionStore.selectedProcessInstanceCount > 0
           }
           checkIsRowSelected={(rowId) => {
@@ -102,16 +133,26 @@ const InstancesTable: React.FC<InstancesTableProps> = observer(
               rowId,
             );
           }}
+          rowOperationError={
+            isOperationStateColumnVisible
+              ? (rowId) => {
+                  const operationItem = operationItemsMap.get(rowId);
+                  return operationItem?.state === 'FAILED'
+                    ? (operationItem.errorMessage ?? 'Operation failed')
+                    : null;
+                }
+              : undefined
+          }
           emptyMessage={getEmptyListMessage()}
           onVerticalScrollStartReach={onVerticalScrollStartReach}
           onVerticalScrollEndReach={onVerticalScrollEndReach}
           rows={processInstances.map((instance) => {
-            const versionTag = processesStore.getVersionTag(
-              instance.processDefinitionKey,
+            const instanceState: ProcessInstanceState | 'INCIDENT' =
+              instance.hasIncident ? 'INCIDENT' : instance.state;
+
+            const operationItem = operationItemsMap.get(
+              instance.processInstanceKey,
             );
-            const instanceState: InstanceEntityState = instance.hasIncident
-              ? 'INCIDENT'
-              : instance.state;
 
             return {
               id: instance.processInstanceKey,
@@ -123,7 +164,7 @@ const InstancesTable: React.FC<InstancesTableProps> = observer(
                     size={20}
                   />
 
-                  {instance.processDefinitionName}
+                  {getProcessDefinitionName(instance)}
                 </ProcessName>
               ),
               processInstanceKey: (
@@ -142,10 +183,17 @@ const InstancesTable: React.FC<InstancesTableProps> = observer(
                 </Link>
               ),
               processVersion: instance.processDefinitionVersion,
-              versionTag: versionTag ?? '--',
+              versionTag: instance.processDefinitionVersionTag ?? '--',
               tenant: isTenantColumnVisible ? instance.tenantId : undefined,
+              ...(isOperationStateColumnVisible && {
+                instanceOperationState: isLoadingOperationItems ? (
+                  <InlineLoading description="Loading..." />
+                ) : (
+                  (operationItem?.state ?? '--')
+                ),
+              }),
               startDate: formatDate(instance.startDate),
-              endDate: instance.endDate ? formatDate(instance.endDate) : null,
+              endDate: formatDate(instance.endDate ?? null),
               parentInstanceId: (
                 <>
                   {instance.parentProcessInstanceKey ? (
@@ -169,6 +217,18 @@ const InstancesTable: React.FC<InstancesTableProps> = observer(
                   )}
                 </>
               ),
+              operations: (
+                <InstanceOperations
+                  processInstanceKey={instance.processInstanceKey}
+                  isInstanceActive={
+                    instance.state === 'ACTIVE' || instance.hasIncident
+                  }
+                  hasIncident={instance.hasIncident}
+                  activeOperations={
+                    activeOperationsMap.get(instance.processInstanceKey) ?? []
+                  }
+                />
+              ),
             };
           })}
           headerColumns={[
@@ -177,6 +237,14 @@ const InstancesTable: React.FC<InstancesTableProps> = observer(
               key: 'processName',
               sortKey: 'processDefinitionName',
             },
+            ...(isOperationStateColumnVisible
+              ? [
+                  {
+                    header: 'Operation State',
+                    key: 'instanceOperationState',
+                  },
+                ]
+              : []),
             {
               header: 'Process Instance Key',
               key: 'processInstanceKey',
@@ -220,6 +288,11 @@ const InstancesTable: React.FC<InstancesTableProps> = observer(
               header: 'Parent Process Instance Key',
               key: 'parentInstanceId',
               sortKey: 'parentProcessInstanceKey',
+            },
+            {
+              header: 'Operations',
+              key: 'operations',
+              isDisabled: true,
             },
           ]}
           batchOperationId={batchOperationId}

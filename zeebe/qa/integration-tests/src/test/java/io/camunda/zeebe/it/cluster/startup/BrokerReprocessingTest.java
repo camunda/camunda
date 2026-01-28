@@ -391,7 +391,9 @@ public final class BrokerReprocessingTest {
     // when
     reprocessingTrigger.accept(this);
 
-    incident = RecordingExporter.incidentRecords(IncidentIntent.CREATED).getLast();
+    final var signal =
+        clientRule.getClient().newBroadcastSignalCommand().signalName("any").send().join();
+    incident = RecordingExporter.incidentRecords(IncidentIntent.CREATED).limit(4).getLast();
 
     clientRule
         .getClient()

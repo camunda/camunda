@@ -30,6 +30,11 @@ public class ResolveIncidentOperationHandler
   }
 
   @Override
+  long getRootProcessInstanceKey(final Record<IncidentRecordValue> record) {
+    return record.getValue().getRootProcessInstanceKey();
+  }
+
+  @Override
   long getItemKey(final Record<IncidentRecordValue> record) {
     return record.getKey();
   }

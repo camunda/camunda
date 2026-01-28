@@ -106,8 +106,6 @@ describe('<DecisionOperations />', () => {
       }),
     );
 
-    expect(panelStatesStore.state.isOperationsCollapsed).toBe(true);
-
     await user.click(
       await screen.findByLabelText(
         'Yes, I confirm I want to delete this DRD and all related instances.',
@@ -119,7 +117,6 @@ describe('<DecisionOperations />', () => {
     await waitFor(() =>
       expect(operationsStore.state.operations).toEqual([mockOperation]),
     );
-    expect(panelStatesStore.state.isOperationsCollapsed).toBe(false);
   });
 
   it('should show notification on operation error', async () => {
@@ -140,8 +137,6 @@ describe('<DecisionOperations />', () => {
       }),
     );
 
-    expect(panelStatesStore.state.isOperationsCollapsed).toBe(true);
-
     await user.click(
       await screen.findByLabelText(
         'Yes, I confirm I want to delete this DRD and all related instances.',
@@ -157,7 +152,6 @@ describe('<DecisionOperations />', () => {
         isDismissable: true,
       });
     });
-    expect(panelStatesStore.state.isOperationsCollapsed).toBe(true);
   });
 
   it('should show notification on operation auth error', async () => {
@@ -178,8 +172,6 @@ describe('<DecisionOperations />', () => {
       }),
     );
 
-    expect(panelStatesStore.state.isOperationsCollapsed).toBe(true);
-
     await user.click(
       await screen.findByLabelText(
         'Yes, I confirm I want to delete this DRD and all related instances.',
@@ -194,7 +186,6 @@ describe('<DecisionOperations />', () => {
       subtitle: 'Please contact the administrator if you need access.',
       isDismissable: true,
     });
-    expect(panelStatesStore.state.isOperationsCollapsed).toBe(true);
   });
 
   it('should disable button and show spinner when delete operation is triggered', async () => {
@@ -311,8 +302,6 @@ describe('<DecisionOperations />', () => {
         name: /^delete decision definition "myDecision - version 2"$/i,
       }),
     );
-
-    expect(panelStatesStore.state.isOperationsCollapsed).toBe(true);
 
     await user.click(screen.getByRole('button', {name: /danger Delete/}));
 

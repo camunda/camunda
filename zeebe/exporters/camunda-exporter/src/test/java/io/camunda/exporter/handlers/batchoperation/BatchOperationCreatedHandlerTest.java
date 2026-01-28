@@ -17,7 +17,7 @@ import static org.mockito.Mockito.verify;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
-import io.camunda.webapps.schema.entities.operation.BatchOperationActorType;
+import io.camunda.webapps.schema.entities.auditlog.AuditLogActorType;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationType;
 import io.camunda.zeebe.auth.Authorization;
@@ -132,7 +132,7 @@ class BatchOperationCreatedHandlerTest {
     underTest.updateEntity(record, entity);
 
     // then
-    assertThat(entity.getActorType()).isEqualTo(BatchOperationActorType.USER);
+    assertThat(entity.getActorType()).isEqualTo(AuditLogActorType.USER);
     assertThat(entity.getActorId()).isEqualTo("username");
   }
 
@@ -155,8 +155,31 @@ class BatchOperationCreatedHandlerTest {
     underTest.updateEntity(record, entity);
 
     // then
-    assertThat(entity.getActorType()).isEqualTo(BatchOperationActorType.CLIENT);
+    assertThat(entity.getActorType()).isEqualTo(AuditLogActorType.CLIENT);
     assertThat(entity.getActorId()).isEqualTo("client-id");
+  }
+
+  @Test
+  void shouldUpdateEntityWithActorInfoFromRecordWithAnonymousClaim() {
+    // given
+    final var recordValue = factory.generateObject(BatchOperationCreationRecordValue.class);
+    final Record<BatchOperationCreationRecordValue> record =
+        factory.generateRecord(
+            ValueType.BATCH_OPERATION_CREATION,
+            r ->
+                r.withIntent(BatchOperationIntent.CREATED)
+                    .withValue(recordValue)
+                    .withBrokerVersion("8.9.0") // required for storing actor info
+                    .withAuthorizations(Map.of(Authorization.AUTHORIZED_ANONYMOUS_USER, true)));
+
+    final var entity = new BatchOperationEntity();
+
+    // when
+    underTest.updateEntity(record, entity);
+
+    // then
+    assertThat(entity.getActorType()).isEqualTo(AuditLogActorType.ANONYMOUS);
+    assertThat(entity.getActorId()).isNull();
   }
 
   @Test
@@ -178,7 +201,7 @@ class BatchOperationCreatedHandlerTest {
     underTest.updateEntity(record, entity);
 
     // then
-    assertThat(entity.getActorType()).isNull();
+    assertThat(entity.getActorType()).isEqualTo(AuditLogActorType.UNKNOWN);
     assertThat(entity.getActorId()).isNull();
   }
 

@@ -122,7 +122,8 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
                       .setResourceName(drg.getResourceName())
                       .setChecksum(drg.getChecksumBuffer())
                       .setResource(resource.getResourceBuffer())
-                      .setTenantId(drg.getTenantId()));
+                      .setTenantId(drg.getTenantId())
+                      .setDeploymentKey(deployment.getDeploymentKey()));
 
               deployment.decisionsMetadata().stream()
                   .filter(

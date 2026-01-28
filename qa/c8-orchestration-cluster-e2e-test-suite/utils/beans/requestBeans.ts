@@ -113,6 +113,21 @@ export const mappingRuleRequiredFields: string[] = [
 ];
 export const roleRequiredFields: string[] = ['roleId', 'name', 'description'];
 export const authorizedComponentRequiredFields: string[] = ['authorizationKey'];
+export const authorizationRequiredFields: string[] = [
+  'ownerId',
+  'ownerType',
+  'resourceType',
+  'resourceId',
+  'permissionTypes',
+  'authorizationKey',
+];
+export const authorizationRequiredFieldsWithoutPermissionTypes: string[] = [
+  'ownerId',
+  'ownerType',
+  'resourceType',
+  'resourceId',
+  'authorizationKey',
+];
 export const userRequiredFields: string[] = ['username', 'name', 'email'];
 export const decisionDefinitionRequiredFields: string[] = [
   'decisionDefinitionId',
@@ -122,6 +137,50 @@ export const decisionDefinitionRequiredFields: string[] = [
   'tenantId',
   'decisionDefinitionKey',
   'decisionRequirementsKey',
+];
+export const decisionRequirementRequiredFields: string[] = [
+  'decisionRequirementsId',
+  'version',
+  'decisionRequirementsName',
+  'tenantId',
+  'decisionRequirementsKey',
+  'resourceName',
+];
+export const decisionInstanceRequiredFields: string[] = [
+  'decisionEvaluationInstanceKey',
+  'state',
+  'evaluationDate',
+  'decisionDefinitionId',
+  'decisionDefinitionName',
+  'decisionDefinitionVersion',
+  'decisionDefinitionType',
+  'result',
+  'tenantId',
+  'decisionEvaluationKey',
+  'processDefinitionKey',
+  'processInstanceKey',
+  'decisionDefinitionKey',
+  'elementInstanceKey',
+  'rootDecisionDefinitionKey',
+];
+export const getDecisionInstanceResponseRequiredFields: string[] = [
+  'decisionEvaluationInstanceKey',
+  'state',
+  'evaluationDate',
+  'decisionDefinitionId',
+  'decisionDefinitionName',
+  'decisionDefinitionVersion',
+  'decisionDefinitionType',
+  'result',
+  'tenantId',
+  'decisionEvaluationKey',
+  'processDefinitionKey',
+  'processInstanceKey',
+  'decisionDefinitionKey',
+  'elementInstanceKey',
+  'evaluatedInputs',
+  'matchedRules',
+  'rootDecisionDefinitionKey',
 ];
 export const evaluateDecisionRequiredFields: string[] = [
   'decisionDefinitionId',
@@ -181,6 +240,13 @@ export const correlateMessageRequiredFields: string[] = [
   'tenantId',
   'messageKey',
   'processInstanceKey',
+];
+export const usageMetricsGetResponseRequiredFields: string[] = [
+  'activeTenants',
+  'tenants',
+  'processInstances',
+  'decisionInstances',
+  'assignees',
 ];
 export const expectedMessageSubscription1 = {
   messageName: 'Message_143t419',
@@ -529,6 +595,46 @@ export function CREATE_COMPONENT_AUTHORIZATION(
   };
 }
 
+export function CREATE_CUSTOM_AUTHORIZATION_BODY(
+  ownerId: string,
+  ownerType:
+    | 'USER'
+    | 'CLIENT'
+    | 'ROLE'
+    | 'GROUP'
+    | 'MAPPING_RULE'
+    | 'WRONG_VALUE_FOR_TEST',
+  resourceId: string,
+  resourceType:
+    | 'AUDIT_LOG'
+    | 'AUTHORIZATION'
+    | 'MAPPING_RULE'
+    | 'MESSAGE'
+    | 'BATCH'
+    | 'COMPONENT'
+    | 'SYSTEM'
+    | 'TENANT'
+    | 'RESOURCE'
+    | 'PROCESS_DEFINITION'
+    | 'DECISION_REQUIREMENTS_DEFINITION'
+    | 'DECISION_DEFINITION'
+    | 'GROUP'
+    | 'USER'
+    | 'ROLE'
+    | 'DOCUMENT'
+    | 'USER_TASK'
+    | 'WRONG_VALUE_FOR_TEST',
+  permissionTypes: string[],
+) {
+  return {
+    ownerId: ownerId,
+    ownerType: ownerType,
+    resourceType: resourceType,
+    resourceId: resourceId,
+    permissionTypes: permissionTypes,
+  };
+}
+
 export function GET_CURRENT_USER_EXPECTED_BODY(
   username: string,
   name: string,
@@ -610,3 +716,4 @@ export function CREATE_CLUSTER_VARIABLE() {
     value: {testKey: `testValue-${uid}`},
   };
 }
+

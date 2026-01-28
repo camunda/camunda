@@ -63,6 +63,10 @@ public class SequenceFlowHandler
         .setBpmnProcessId(recordValue.getBpmnProcessId())
         .setActivityId(recordValue.getElementId())
         .setTenantId(ExporterUtil.tenantOrDefault(recordValue.getTenantId()));
+    final long rootProcessInstanceKey = recordValue.getRootProcessInstanceKey();
+    if (rootProcessInstanceKey > 0) {
+      entity.setRootProcessInstanceKey(rootProcessInstanceKey);
+    }
   }
 
   @Override

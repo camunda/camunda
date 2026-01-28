@@ -649,7 +649,7 @@ public class AuthorizationCheckerTest {
               .thenResultContains(PermissionType.ACCESS)
               .build(),
           CollectPermissionScenario.displayName(
-                  "frank SYSTEM wildcard READ + specific READ_USAGE_METRIC+UPDATE -> union")
+                  "frank SYSTEM wildcard READ + specific READ_JOB_METRIC+READ_USAGE_METRIC+UPDATE -> union")
               .given(
                   authEntity(
                       AuthorizationOwnerType.USER,
@@ -664,11 +664,17 @@ public class AuthorizationCheckerTest {
                       AuthorizationResourceType.SYSTEM,
                       AuthorizationResourceMatcher.ID,
                       RESOURCE_ID,
-                      Set.of(PermissionType.READ_USAGE_METRIC, PermissionType.UPDATE)))
+                      Set.of(
+                          PermissionType.READ_USAGE_METRIC,
+                          PermissionType.READ_JOB_METRIC,
+                          PermissionType.UPDATE)))
               .whenUser("frank")
               .accessesResource(RESOURCE_ID, AuthorizationResourceType.SYSTEM)
               .thenResultContains(
-                  PermissionType.READ, PermissionType.READ_USAGE_METRIC, PermissionType.UPDATE)
+                  PermissionType.READ,
+                  PermissionType.READ_USAGE_METRIC,
+                  PermissionType.READ_JOB_METRIC,
+                  PermissionType.UPDATE)
               .build(),
           CollectPermissionScenario.displayName("hank AUDIT_LOG wildcard -> {READ}")
               .given(

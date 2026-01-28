@@ -13,13 +13,13 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import io.camunda.gateway.protocol.model.MappingRuleCreateRequest;
+import io.camunda.gateway.protocol.model.MappingRuleUpdateRequest;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.MappingRuleServices;
 import io.camunda.service.MappingRuleServices.MappingRuleDTO;
-import io.camunda.zeebe.gateway.protocol.rest.MappingRuleCreateRequest;
-import io.camunda.zeebe.gateway.protocol.rest.MappingRuleUpdateRequest;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRuleRecord;
 import java.util.concurrent.CompletableFuture;

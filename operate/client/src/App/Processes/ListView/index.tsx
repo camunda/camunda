@@ -10,7 +10,7 @@ import {InstancesList} from '../../Layout/InstancesList';
 import {VisuallyHiddenH1} from 'modules/components/VisuallyHiddenH1';
 import {Filters} from './Filters';
 import {InstancesTable} from './InstancesTable';
-import {DiagramPanel} from './v2/DiagramPanel';
+import {DiagramPanel} from './DiagramPanel';
 import {observer} from 'mobx-react';
 import {useEffect} from 'react';
 import {processesStore} from 'modules/stores/processes/processes.list';
@@ -24,9 +24,10 @@ import {notificationsStore} from 'modules/stores/notifications';
 import {variableFilterStore} from 'modules/stores/variableFilter';
 import {reaction} from 'mobx';
 import {tracking} from 'modules/tracking';
-import {OperationsPanel} from 'modules/components/OperationsPanel';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {ProcessDefinitionKeyContext} from './processDefinitionKeyContext';
+import {useSelectedProcessDefinition} from 'modules/hooks/processDefinitions';
+import {SelectedProcessDefinitionContext} from './selectedProcessDefinitionContext';
 
 type LocationType = Omit<Location, 'state'> & {
   state: {refreshContent?: boolean};
@@ -124,21 +125,25 @@ const ListView: React.FC = observer(() => {
     tenant,
     version,
   });
+  const {data: selectedProcessDefinition} = useSelectedProcessDefinition();
 
   return (
     <ProcessDefinitionKeyContext.Provider value={processDefinitionKey}>
-      <VisuallyHiddenH1>Operate Process Instances</VisuallyHiddenH1>
-      <InstancesList
-        type="process"
-        leftPanel={<Filters />}
-        topPanel={<DiagramPanel />}
-        bottomPanel={<InstancesTable />}
-        rightPanel={<OperationsPanel />}
-        frame={{
-          isVisible: batchModificationStore.state.isEnabled,
-          headerTitle: 'Batch Modification Mode',
-        }}
-      />
+      <SelectedProcessDefinitionContext.Provider
+        value={selectedProcessDefinition}
+      >
+        <VisuallyHiddenH1>Operate Process Instances</VisuallyHiddenH1>
+        <InstancesList
+          type="process"
+          leftPanel={<Filters />}
+          topPanel={<DiagramPanel />}
+          bottomPanel={<InstancesTable />}
+          frame={{
+            isVisible: batchModificationStore.state.isEnabled,
+            headerTitle: 'Batch Modification Mode',
+          }}
+        />
+      </SelectedProcessDefinitionContext.Provider>
     </ProcessDefinitionKeyContext.Provider>
   );
 });

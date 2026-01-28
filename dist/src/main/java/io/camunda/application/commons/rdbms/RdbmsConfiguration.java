@@ -25,10 +25,14 @@ import io.camunda.db.rdbms.read.service.FlowNodeInstanceDbReader;
 import io.camunda.db.rdbms.read.service.FormDbReader;
 import io.camunda.db.rdbms.read.service.GroupDbReader;
 import io.camunda.db.rdbms.read.service.GroupMemberDbReader;
+import io.camunda.db.rdbms.read.service.HistoryDeletionDbReader;
 import io.camunda.db.rdbms.read.service.IncidentDbReader;
+import io.camunda.db.rdbms.read.service.IncidentProcessInstanceStatisticsByDefinitionDbReader;
+import io.camunda.db.rdbms.read.service.IncidentProcessInstanceStatisticsByErrorDbReader;
 import io.camunda.db.rdbms.read.service.JobDbReader;
 import io.camunda.db.rdbms.read.service.MappingRuleDbReader;
 import io.camunda.db.rdbms.read.service.MessageSubscriptionDbReader;
+import io.camunda.db.rdbms.read.service.PersistentWebSessionDbReader;
 import io.camunda.db.rdbms.read.service.ProcessDefinitionDbReader;
 import io.camunda.db.rdbms.read.service.ProcessDefinitionInstanceStatisticsDbReader;
 import io.camunda.db.rdbms.read.service.ProcessDefinitionInstanceVersionStatisticsDbReader;
@@ -59,10 +63,12 @@ import io.camunda.db.rdbms.sql.ExporterPositionMapper;
 import io.camunda.db.rdbms.sql.FlowNodeInstanceMapper;
 import io.camunda.db.rdbms.sql.FormMapper;
 import io.camunda.db.rdbms.sql.GroupMapper;
+import io.camunda.db.rdbms.sql.HistoryDeletionMapper;
 import io.camunda.db.rdbms.sql.IncidentMapper;
 import io.camunda.db.rdbms.sql.JobMapper;
 import io.camunda.db.rdbms.sql.MappingRuleMapper;
 import io.camunda.db.rdbms.sql.MessageSubscriptionMapper;
+import io.camunda.db.rdbms.sql.PersistentWebSessionMapper;
 import io.camunda.db.rdbms.sql.ProcessDefinitionMapper;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
 import io.camunda.db.rdbms.sql.PurgeMapper;
@@ -76,7 +82,7 @@ import io.camunda.db.rdbms.sql.UserMapper;
 import io.camunda.db.rdbms.sql.UserTaskMapper;
 import io.camunda.db.rdbms.sql.VariableMapper;
 import io.camunda.db.rdbms.write.RdbmsWriterFactory;
-import io.camunda.db.rdbms.write.RdbmsWriterMetrics;
+import io.camunda.db.rdbms.write.service.PersistentWebSessionWriter;
 import io.camunda.search.clients.reader.ProcessDefinitionMessageSubscriptionStatisticsReader;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.sql.Connection;
@@ -86,6 +92,8 @@ import org.apache.ibatis.session.SqlSessionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.actuate.health.HealthContributor;
+import org.springframework.boot.actuate.jdbc.DataSourceHealthIndicator;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
@@ -287,8 +295,15 @@ public class RdbmsConfiguration {
   }
 
   @Bean
-  public RdbmsWriterMetrics rdbmsExporterMetrics(final MeterRegistry meterRegistry) {
-    return new RdbmsWriterMetrics(meterRegistry);
+  public HistoryDeletionDbReader historyDeletionDbReader(
+      final HistoryDeletionMapper historyDeletionMapper) {
+    return new HistoryDeletionDbReader(historyDeletionMapper);
+  }
+
+  @Bean
+  public IncidentProcessInstanceStatisticsByErrorDbReader
+      incidentProcessInstanceStatisticsByErrorReader(final IncidentMapper incidentMapper) {
+    return new IncidentProcessInstanceStatisticsByErrorDbReader(incidentMapper);
   }
 
   @Bean
@@ -306,6 +321,24 @@ public class RdbmsConfiguration {
   }
 
   @Bean
+  public IncidentProcessInstanceStatisticsByDefinitionDbReader
+      incidentProcessInstanceStatisticsByDefinitionReader(final IncidentMapper incidentMapper) {
+    return new IncidentProcessInstanceStatisticsByDefinitionDbReader(incidentMapper);
+  }
+
+  @Bean
+  public PersistentWebSessionDbReader persistentWebSessionReader(
+      final PersistentWebSessionMapper persistentWebSessionMapper) {
+    return new PersistentWebSessionDbReader(persistentWebSessionMapper);
+  }
+
+  @Bean
+  public PersistentWebSessionWriter persistentWebSessionWriter(
+      final PersistentWebSessionMapper persistentWebSessionMapper) {
+    return new PersistentWebSessionWriter(persistentWebSessionMapper);
+  }
+
+  @Bean
   public RdbmsWriterFactory rdbmsWriterFactory(
       final SqlSessionFactory sqlSessionFactory,
       final ExporterPositionMapper exporterPositionMapper,
@@ -315,10 +348,11 @@ public class RdbmsConfiguration {
       final FlowNodeInstanceMapper flowNodeInstanceMapper,
       final IncidentMapper incidentMapper,
       final ProcessInstanceMapper processInstanceMapper,
+      final ProcessDefinitionMapper processDefinitionMapper,
       final PurgeMapper purgeMapper,
       final UserTaskMapper userTaskMapper,
       final VariableMapper variableMapper,
-      final RdbmsWriterMetrics metrics,
+      final MeterRegistry meterRegistry,
       final BatchOperationDbReader batchOperationReader,
       final JobMapper jobMapper,
       final SequenceFlowMapper sequenceFlowMapper,
@@ -327,7 +361,8 @@ public class RdbmsConfiguration {
       final BatchOperationMapper batchOperationMapper,
       final MessageSubscriptionMapper messageSubscriptionMapper,
       final CorrelatedMessageSubscriptionMapper correlatedMessageSubscriptionMapper,
-      final ClusterVariableMapper clusterVariableMapper) {
+      final ClusterVariableMapper clusterVariableMapper,
+      final HistoryDeletionMapper historyDeletionMapper) {
     return new RdbmsWriterFactory(
         sqlSessionFactory,
         exporterPositionMapper,
@@ -337,10 +372,11 @@ public class RdbmsConfiguration {
         flowNodeInstanceMapper,
         incidentMapper,
         processInstanceMapper,
+        processDefinitionMapper,
         purgeMapper,
         userTaskMapper,
         variableMapper,
-        metrics,
+        meterRegistry,
         batchOperationReader,
         jobMapper,
         sequenceFlowMapper,
@@ -349,7 +385,8 @@ public class RdbmsConfiguration {
         batchOperationMapper,
         messageSubscriptionMapper,
         correlatedMessageSubscriptionMapper,
-        clusterVariableMapper);
+        clusterVariableMapper,
+        historyDeletionMapper);
   }
 
   @Bean
@@ -388,7 +425,12 @@ public class RdbmsConfiguration {
       final CorrelatedMessageSubscriptionDbReader correlatedMessageSubscriptionReader,
       final ProcessDefinitionInstanceStatisticsDbReader processDefinitionInstanceStatisticsReader,
       final ProcessDefinitionInstanceVersionStatisticsDbReader
-          processDefinitionInstanceVersionStatisticsReader) {
+          processDefinitionInstanceVersionStatisticsReader,
+      final HistoryDeletionDbReader historyDeletionDbReader,
+      final IncidentProcessInstanceStatisticsByErrorDbReader
+          incidentProcessInstanceStatisticsByErrorReader,
+      final IncidentProcessInstanceStatisticsByDefinitionDbReader
+          incidentProcessInstanceStatisticsByDefinitionReader) {
     return new RdbmsService(
         rdbmsWriterFactory,
         auditLogReader,
@@ -422,7 +464,10 @@ public class RdbmsConfiguration {
         processDefinitionMessageSubscriptionStatisticsReader,
         correlatedMessageSubscriptionReader,
         processDefinitionInstanceStatisticsReader,
-        processDefinitionInstanceVersionStatisticsReader);
+        processDefinitionInstanceVersionStatisticsReader,
+        historyDeletionDbReader,
+        incidentProcessInstanceStatisticsByErrorReader,
+        incidentProcessInstanceStatisticsByDefinitionReader);
   }
 
   @Bean
@@ -434,5 +479,11 @@ public class RdbmsConfiguration {
         LOG.debug("JDBC Spec: {}.{}", meta.getJDBCMajorVersion(), meta.getJDBCMinorVersion());
       }
     };
+  }
+
+  @Bean
+  HealthContributor rdbmsStatusHealthIndicator(final DataSource dataSource) {
+    // Equivalent to what Boot would normally wire for "db"
+    return new DataSourceHealthIndicator(dataSource);
   }
 }

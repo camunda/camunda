@@ -11,6 +11,7 @@ import static io.camunda.webapps.schema.SupportedVersions.SUPPORTED_ELASTICSEARC
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.tasklist.management.SearchEngineHealthIndicator;
@@ -20,11 +21,12 @@ import io.camunda.tasklist.qa.util.TestUtil;
 import io.camunda.tasklist.util.TasklistIntegrationTest;
 import io.camunda.tasklist.util.TestApplication;
 import java.util.Map;
-import org.elasticsearch.client.RestHighLevelClient;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.util.TestPropertyValues;
 import org.springframework.context.ApplicationContextInitializer;
@@ -50,33 +52,30 @@ import org.testcontainers.elasticsearch.ElasticsearchContainer;
 @ContextConfiguration(initializers = {ElasticsearchConnectorBasicAuthIT.ElasticsearchStarter.class})
 public class ElasticsearchConnectorBasicAuthIT extends TasklistIntegrationTest {
 
-  static ElasticsearchContainer elasticsearch =
+  private static final ElasticsearchContainer ELASTICSEARCH_CONTAINER =
       new ElasticsearchContainer(
               "docker.elastic.co/elasticsearch/elasticsearch:" + SUPPORTED_ELASTICSEARCH_VERSION)
-          .withEnv(
-              Map.of(
-                  "xpack.security.enabled", "true",
-                  "ELASTIC_PASSWORD", "changeme"
-                  //        "xpack.security.transport.ssl.enabled","true",
-                  //        "xpack.security.http.ssl.enabled", "true",
-                  //        "xpack.security.transport.ssl.verification_mode","none",//"certificate",
-                  //        "xpack.security.transport.ssl.keystore.path",
-                  // "elastic-certificates.p12",
-                  //        "xpack.security.transport.ssl.truststore.path",
-                  // "elastic-certificates.p12"
-                  ))
+          .withEnv(Map.of("xpack.security.enabled", "true"))
+          .withPassword("elastic")
           .withExposedPorts(9200);
 
-  @Autowired RestHighLevelClient tasklistEsClient;
+  @Autowired
+  @Qualifier("tasklistEs8Client")
+  ElasticsearchClient es8Client;
 
   @BeforeAll
-  public static void beforeClass() {
+  static void beforeAll() {
     assumeTrue(TestUtil.isElasticSearch());
+  }
+
+  @AfterAll
+  static void afterAll() {
+    ELASTICSEARCH_CONTAINER.stop();
   }
 
   @Test
   public void canConnect() {
-    assertThat(tasklistEsClient).isNotNull();
+    assertThat(es8Client).isNotNull();
   }
 
   static class ElasticsearchStarter
@@ -84,15 +83,24 @@ public class ElasticsearchConnectorBasicAuthIT extends TasklistIntegrationTest {
 
     @Override
     public void initialize(final ConfigurableApplicationContext applicationContext) {
-      elasticsearch.start();
-      final String elsUrl = String.format("http://%s", elasticsearch.getHttpHostAddress());
+      ELASTICSEARCH_CONTAINER.start();
+
+      final String elsUrl =
+          String.format("http://%s", ELASTICSEARCH_CONTAINER.getHttpHostAddress());
+
       TestPropertyValues.of(
-              // "camunda.tasklist.elasticsearch.host="+elasticsearch.getHost(),
-              // "camunda.tasklist.elasticsearch.port="+elasticsearch.getFirstMappedPort(),
-              "camunda.data.secondary-storage.elasticsearch.url=" + elsUrl,
+              "camunda.database.type=elasticsearch",
               "camunda.data.secondary-storage.type=elasticsearch",
+              "camunda.operate.database=elasticsearch",
+              "camunda.tasklist.database=elasticsearch",
+              "zeebe.broker.exporters.camundaexporter.args.connect.type=elasticsearch",
+              "camunda.data.secondary-storage.elasticsearch.url=" + elsUrl,
+              "camunda.database.url=" + elsUrl,
+              "camunda.operate.elasticsearch.url=" + elsUrl,
+              "camunda.tasklist.elasticsearch.url=" + elsUrl,
+              "zeebe.broker.exporters.camundaexporter.args.connect.url=" + elsUrl,
               "camunda.data.secondary-storage.elasticsearch.username=elastic",
-              "camunda.data.secondary-storage.elasticsearch.password=changeme")
+              "camunda.data.secondary-storage.elasticsearch.password=elastic")
           .applyTo(applicationContext.getEnvironment());
     }
   }

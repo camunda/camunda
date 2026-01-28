@@ -102,10 +102,10 @@ const IncidentsTable: React.FC<IncidentsTableProps> = observer(
               }
             } else {
               if (IS_ELEMENT_SELECTION_V2) {
-                selectElementInstance(
-                  incident.elementId,
-                  incident.elementInstanceKey,
-                );
+                selectElementInstance({
+                  elementId: incident.elementId,
+                  elementInstanceKey: incident.elementInstanceKey,
+                });
               } else {
                 selectFlowNode(rootNode, {
                   flowNodeId: incident.elementId,

@@ -22,7 +22,6 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import java.util.stream.Collectors;
-import org.awaitility.Awaitility;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -168,9 +167,7 @@ public final class DeploymentClusteredTest {
         .send()
         .join();
 
-    Awaitility.await("until deployment distribution is send once to partition 2")
-        .atMost(Duration.ofMinutes(1))
-        .pollInterval(Duration.ofMillis(200))
+    RecordingExporter.await(Duration.ofMinutes(1))
         .until(
             () ->
                 RecordingExporter.deploymentRecords(DeploymentIntent.CREATE)
@@ -187,9 +184,7 @@ public final class DeploymentClusteredTest {
     clusteringRule.startBroker(leaderForDeploymentPartition);
 
     // then
-    Awaitility.await("until partition 2 has processed the distribute command once")
-        .atMost(Duration.ofMinutes(1))
-        .pollInterval(Duration.ofMillis(200))
+    RecordingExporter.await(Duration.ofMinutes(1))
         .untilAsserted(
             () ->
                 assertThat(
@@ -199,9 +194,7 @@ public final class DeploymentClusteredTest {
                     .describedAs("expect that deployment is distributed")
                     .isNotEmpty());
 
-    Awaitility.await("until partition 2 has rejected the second distribute command")
-        .atMost(Duration.ofMinutes(1))
-        .pollInterval(Duration.ofMillis(200))
+    RecordingExporter.await(Duration.ofMinutes(1))
         .untilAsserted(
             () ->
                 assertThat(

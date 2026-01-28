@@ -233,6 +233,11 @@ public final class BrokerTopologyManagerImpl extends Actor
                 })
             .orElse(oldTopology.getLastCompletedChangeId());
 
+    if (oldTopology.configuredClusterState().incarnationNumber()
+        != clusterTopology.incarnationNumber()) {
+      topologyListeners.forEach(BrokerTopologyListener::clusterIncarnationChanged);
+    }
+
     if (newClusterSize != oldTopology.getClusterSize()
         || newPartitionsCount != oldTopology.getPartitionsCount()
         || newReplicationFactor != oldTopology.getReplicationFactor()
@@ -252,7 +257,8 @@ public final class BrokerTopologyManagerImpl extends Actor
               newReplicationFactor,
               partitionIds,
               newLastChange,
-              clusterId);
+              clusterId,
+              clusterTopology.incarnationNumber());
 
       return new BrokerClientTopologyImpl(oldTopology.liveClusterState(), newClusterInfo);
     }

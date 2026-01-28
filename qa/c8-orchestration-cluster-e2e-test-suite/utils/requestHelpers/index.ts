@@ -11,6 +11,7 @@ export * from './resource-requestHelpers';
 export * from './user-task-requestHelpers';
 export * from './process-instance-requestHelpers';
 export * from './get-value-from-state-requestHelpers';
+export * from './batch-operation-requestHelpers';
 export {createRoleAndStoreResponseFields} from './role-requestHelpers';
 export {createRole} from './role-requestHelpers';
 export {assignRolesToMappingRules} from './role-requestHelpers';
@@ -30,6 +31,7 @@ export {assertTenantInResponse} from './tenant-requestHelpers';
 export {assertDecisionDefinitionInResponse} from './decision-definition-requestHelpers';
 export {deployDecisionAndStoreResponse} from './decision-definition-requestHelpers';
 export {assertGroupsInResponse} from './group-requestHelpers';
+export {createGroup} from './group-requestHelpers';
 export {createGroupAndStoreResponseFields} from './group-requestHelpers';
 export {DECISION_DEFINITION_RESPONSE_FROM_DEPLOYMENT} from '../beans/requestBeans';
 export {assertUserInResponse} from './user-requestHelpers';
@@ -37,7 +39,14 @@ export {assertUserNameInResponse} from './user-requestHelpers';
 export {createUser} from './user-requestHelpers';
 export {assignRoleToUsers} from './user-requestHelpers';
 export {createUsersAndStoreResponseFields} from './user-requestHelpers';
-export {createComponentAuthorization} from './authorization-requestHelpers';
+export {
+  createComponentAuthorization,
+  grantUserResourceAuthorization,
+  cleanupAuthorizations,
+  expectAuthorizationCanBeFound,
+  verifyAuthorizationFields,
+  type Authorization,
+} from './authorization-requestHelpers';
 export {assertRoleInResponse} from './role-requestHelpers';
 export {assertClientsInResponse} from './clients-requestHelpers';
 export {setupProcessInstanceForTests} from './job-requestHelpers';
@@ -50,3 +59,18 @@ export {
   deleteTenantClusterVariable,
   assertClusterVariableInResponse,
 } from './cluster-variable-requestHelpers';
+export {
+  createProcessInstanceWithAJob,
+  createSingleIncidentProcessInstance,
+  createTwoIncidentsInOneProcess,
+  createIncidentsInTwoProcesses,
+  createTwoDifferentIncidentsInOneProcess} from './incident-requestHelpers';
+export {
+  deployMammalDecisionAndStoreResponse,
+  deployTwoSimpleDecisionsAndStoreResponse,
+} from './decision-requirement-requestHelper';
+export {
+  createMammalProcessInstanceAndDeployMammalDecision,
+  type DecisionInstance,
+} from './decision-instance-requestHelpers';
+export {createProcessInstanceAndRetrieveTimeStamp} from './clock-requestHelpers';

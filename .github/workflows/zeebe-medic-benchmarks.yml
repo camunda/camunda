@@ -22,7 +22,7 @@ jobs:
       test: ${{ steps.data.outputs.test }}
       operate: ${{ steps.data.outputs.operate }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Collect test data
         id: data
         run: |
@@ -54,9 +54,19 @@ jobs:
       name: ${{ needs.test-data.outputs.test }}-typical
       ttl: 28
       reuse-tag: ${{ inputs.reuse-tag || '' }}
-      load-test-load: >
-        --set starter.rate=50
-        --set starter.bpmnXmlPath="bpmn/typical_process.bpmn"
+      scenario: typical
+  setup-postgres-typical-load-test:
+    name: Typical load test
+    needs:
+      - test-data
+    uses: ./.github/workflows/camunda-load-test.yml
+    secrets: inherit
+    with:
+      name: ${{ needs.test-data.outputs.test }}-postgres-typical
+      ttl: 28
+      reuse-tag: ${{ inputs.reuse-tag || '' }}
+      secondary-storage-type: 'postgresql'
+      scenario: typical
   setup-realistic-test:
     name: Realistic load test
     uses: ./.github/workflows/camunda-load-test.yml
@@ -67,7 +77,7 @@ jobs:
       name: ${{ needs.test-data.outputs.test }}-mixed
       ttl: 28
       reuse-tag: ${{ inputs.reuse-tag || '' }}
-      realistic: true
+      scenario: realistic
   setup-latency-test:
     name: Latency test
     uses: ./.github/workflows/camunda-load-test.yml
@@ -78,9 +88,7 @@ jobs:
       name: ${{ needs.test-data.outputs.test }}-latency
       ttl: 28
       reuse-tag: ${{ inputs.reuse-tag || '' }}
-      load-test-load: >
-        --set starter.rate=1
-        --set workers.worker.replicas=1
+      scenario: latency
 
   notify:
     name: Notify on failure
@@ -88,7 +96,7 @@ jobs:
     needs: [ setup-typical-load-test, setup-realistic-test, setup-latency-test ]
     if: failure()
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - id: slack-notify
         uses: slackapi/slack-github-action@v2.1.1
         with:

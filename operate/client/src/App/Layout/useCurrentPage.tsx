@@ -16,6 +16,7 @@ const useCurrentPage = () => {
     | 'dashboard'
     | 'processes'
     | 'decisions'
+    | 'operations-log'
     | 'process-details'
     | 'decision-details'
     | 'login'
@@ -30,6 +31,10 @@ const useCurrentPage = () => {
 
     if (matchPath(Paths.decisions(), location.pathname) !== null) {
       return 'decisions';
+    }
+
+    if (matchPath(Paths.operationsLog(), location.pathname) !== null) {
+      return 'operations-log';
     }
 
     if (matchPath(Paths.processInstance(), location.pathname) !== null) {

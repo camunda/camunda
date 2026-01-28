@@ -27,7 +27,6 @@ import io.camunda.zeebe.backup.common.ManifestImpl;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 final class ManifestSerializationTest {
@@ -73,7 +72,6 @@ final class ManifestSerializationTest {
         new ManifestImpl(
             new BackupIdentifierImpl(1, 2, 43),
             new BackupDescriptorImpl(
-                Optional.empty(),
                 2345234L,
                 3,
                 "1.2.0-SNAPSHOT",
@@ -114,7 +112,6 @@ final class ManifestSerializationTest {
             new BackupImpl(
                 new BackupIdentifierImpl(1, 2, 43),
                 new BackupDescriptorImpl(
-                    Optional.empty(),
                     2345234L,
                     3,
                     "1.2.0-SNAPSHOT",
@@ -338,7 +335,6 @@ final class ManifestSerializationTest {
         new ManifestImpl(
             new BackupIdentifierImpl(1, 2, 43),
             new BackupDescriptorImpl(
-                Optional.empty(),
                 2345234L,
                 3,
                 "1.2.0-SNAPSHOT",

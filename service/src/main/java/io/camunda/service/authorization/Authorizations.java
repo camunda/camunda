@@ -91,14 +91,33 @@ public abstract class Authorizations {
   public static final Authorization<UserEntity> USER_READ_AUTHORIZATION =
       Authorization.of(a -> a.user().read());
 
+  public static final Authorization<UserTaskEntity>
+      PROCESS_DEFINITION_READ_USER_TASK_AUTHORIZATION =
+          Authorization.of(a -> a.processDefinition().readUserTask());
+
   public static final Authorization<UserTaskEntity> USER_TASK_READ_AUTHORIZATION =
-      Authorization.of(a -> a.processDefinition().readUserTask());
+      Authorization.of(a -> a.userTask().read());
+
+  public static final Authorization<UserTaskEntity> USER_TASK_READ_BY_PROPERTIES_AUTHORIZATION =
+      Authorization.of(
+          a ->
+              a.userTask()
+                  .read()
+                  .authorizedByAssignee()
+                  .authorizedByCandidateUsers()
+                  .authorizedByCandidateGroups());
 
   public static final Authorization<VariableEntity> VARIABLE_READ_AUTHORIZATION =
       Authorization.of(a -> a.processDefinition().readProcessInstance());
 
   public static final Authorization<AuditLogEntity> AUDIT_LOG_READ_AUTHORIZATION =
       Authorization.of(a -> a.auditLog().read());
+
+  public static final Authorization<AuditLogEntity> AUDIT_LOG_READ_PROCESS_INSTANCE_AUTHORIZATION =
+      Authorization.of(a -> a.processDefinition().readProcessInstance().transitive());
+
+  public static final Authorization<AuditLogEntity> AUDIT_LOG_READ_USER_TASK_AUTHORIZATION =
+      Authorization.of(a -> a.processDefinition().readUserTask().transitive());
 
   public static final Authorization<ClusterVariableEntity> CLUSTER_VARIABLE_READ_AUTHORIZATION =
       Authorization.of(a -> a.clusterVariable().read());

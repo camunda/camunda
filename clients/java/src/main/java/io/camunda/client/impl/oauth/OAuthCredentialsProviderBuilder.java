@@ -25,6 +25,7 @@ import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_CLIENT_ID;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_CLIENT_SECRET;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_CONNECT_TIMEOUT;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_ISSUER_URL;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_READ_TIMEOUT;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_SSL_CLIENT_KEYSTORE_KEY_SECRET;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_SSL_CLIENT_KEYSTORE_PATH;
@@ -34,6 +35,7 @@ import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_TOKEN_AUDIENCE;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_TOKEN_RESOURCE;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_TOKEN_SCOPE;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_WELL_KNOWN_CONFIGURATION_URL;
 import static java.lang.Math.toIntExact;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -543,6 +545,9 @@ public final class OAuthCredentialsProviderBuilder {
         OAUTH_ENV_AUTHORIZATION_SERVER,
         LegacyZeebeClientEnvironmentVariables.OAUTH_ENV_AUTHORIZATION_SERVER);
     applyEnvironmentValueIfNotNull(
+        this::wellKnownConfigurationUrl, OAUTH_ENV_WELL_KNOWN_CONFIGURATION_URL);
+    applyEnvironmentValueIfNotNull(this::issuerUrl, OAUTH_ENV_ISSUER_URL);
+    applyEnvironmentValueIfNotNull(
         this::keystorePath,
         OAUTH_ENV_SSL_CLIENT_KEYSTORE_PATH,
         LegacyZeebeClientEnvironmentVariables.OAUTH_ENV_SSL_CLIENT_KEYSTORE_PATH);
@@ -607,8 +612,6 @@ public final class OAuthCredentialsProviderBuilder {
           // if the keystore key alias is not set, apply the first one
           clientAssertionKeystoreKeyAlias = keyStore.aliases().nextElement();
         }
-      } else {
-        Objects.requireNonNull(clientSecret, String.format(INVALID_ARGUMENT_MSG, "client secret"));
       }
       Objects.requireNonNull(audience, String.format(INVALID_ARGUMENT_MSG, "audience"));
       Objects.requireNonNull(

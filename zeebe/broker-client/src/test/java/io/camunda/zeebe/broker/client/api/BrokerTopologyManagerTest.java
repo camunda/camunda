@@ -404,13 +404,11 @@ final class BrokerTopologyManagerTest {
 
     // when
     final ClusterConfiguration clusterTopology =
-        new ClusterConfiguration(
-            1,
-            Map.of(),
-            Optional.of(new CompletedChange(1, Status.COMPLETED, Instant.now(), Instant.now())),
-            Optional.empty(),
-            Optional.empty(),
-            Optional.empty());
+        ClusterConfiguration.builder()
+            .version(1)
+            .lastChange(
+                Optional.of(new CompletedChange(1, Status.COMPLETED, Instant.now(), Instant.now())))
+            .build();
 
     topologyManager.onClusterConfigurationUpdated(clusterTopology);
     actorSchedulerRule.workUntilDone();

@@ -114,12 +114,6 @@
       <artifactId>slf4j-api</artifactId>
     </dependency>
 
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-configuration-processor</artifactId>
-      <optional>true</optional>
-    </dependency>
-
     <!--  test scope  -->
 
     <dependency>
@@ -208,9 +202,6 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
         <configuration>
-          <usedDependencies>
-            <dependency>org.springframework.boot:spring-boot-configuration-processor</dependency>
-          </usedDependencies>
           <ignoredNonTestScopedDependencies>
             <dependency>org.springframework:spring-beans</dependency>
             <dependency>org.awaitility:awaitility</dependency>
@@ -218,6 +209,22 @@
             <dependency>org.apache.httpcomponents.core5:httpcore5</dependency>
             <dependency>io.camunda:camunda-process-test-dsl</dependency>
           </ignoredNonTestScopedDependencies>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <compilerArgs>
+            <arg>-parameters</arg>
+          </compilerArgs>
+          <annotationProcessorPaths>
+            <path>
+              <groupId>org.springframework.boot</groupId>
+              <artifactId>spring-boot-configuration-processor</artifactId>
+            </path>
+          </annotationProcessorPaths>
         </configuration>
       </plugin>
 

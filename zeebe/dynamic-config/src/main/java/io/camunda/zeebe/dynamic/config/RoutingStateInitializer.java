@@ -40,7 +40,8 @@ public class RoutingStateInitializer implements ClusterConfigurationModifier {
             configuration.lastChange(),
             configuration.pendingChanges(),
             Optional.of(routingState),
-            configuration.clusterId());
+            configuration.clusterId(),
+            configuration.incarnationNumber());
     return CompletableActorFuture.completed(withRoutingState);
   }
 }

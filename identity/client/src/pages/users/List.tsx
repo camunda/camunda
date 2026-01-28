@@ -7,7 +7,7 @@
  */
 
 import { FC } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate } from "react-router-dom";
 import { Edit, TrashCan } from "@carbon/react/icons";
 import useTranslate from "src/utility/localization";
 import { usePaginatedApi } from "src/utility/api";

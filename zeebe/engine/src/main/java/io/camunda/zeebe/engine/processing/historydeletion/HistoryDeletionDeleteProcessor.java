@@ -22,7 +22,6 @@ import io.camunda.zeebe.protocol.record.intent.HistoryDeletionIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 
-// TODO add authorization checks with https://github.com/camunda/camunda/issues/41771
 @ExcludeAuthorizationCheck
 public class HistoryDeletionDeleteProcessor implements TypedRecordProcessor<HistoryDeletionRecord> {
 
@@ -46,6 +45,7 @@ public class HistoryDeletionDeleteProcessor implements TypedRecordProcessor<Hist
   public void processRecord(final TypedRecord<HistoryDeletionRecord> command) {
     switch (command.getValue().getResourceType()) {
       case PROCESS_INSTANCE -> deleteProcessInstance(command);
+      case PROCESS_DEFINITION -> deleteProcessDefinition(command);
       default ->
           throw new UnsupportedOperationException(
               "Unsupported resource type: " + command.getValue().getResourceType());
@@ -70,6 +70,14 @@ public class HistoryDeletionDeleteProcessor implements TypedRecordProcessor<Hist
               rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
               responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
             });
+  }
+
+  private void deleteProcessDefinition(final TypedRecord<HistoryDeletionRecord> command) {
+    final var recordValue = command.getValue();
+    stateWriter.appendFollowUpEvent(
+        recordValue.getResourceKey(), HistoryDeletionIntent.DELETED, recordValue);
+    responseWriter.writeEventOnCommand(
+        recordValue.getResourceKey(), HistoryDeletionIntent.DELETED, recordValue, command);
   }
 
   private Either<Rejection, HistoryDeletionRecord> validateProcessInstanceDoesNotExist(

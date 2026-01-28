@@ -24,6 +24,9 @@
             "processInstanceKey": {
               "type": "long"
             },
+            "processDefinitionKey": {
+              "type": "long"
+            },
             "tenantId": {
               "type": "keyword"
             },

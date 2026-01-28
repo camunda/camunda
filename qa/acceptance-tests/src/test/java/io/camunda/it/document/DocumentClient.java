@@ -41,7 +41,7 @@ public interface DocumentClient extends AutoCloseable {
   BackupRepository zeebeBackupRepository(
       String repositoryName, SnapshotNameProvider snapshotNameProvider);
 
-  List<String> cat() throws IOException;
+  List<String> cat(String indexPrefix) throws IOException;
 
   /**
    * Index a document with the given ID and content to the specified index.
@@ -61,8 +61,8 @@ public interface DocumentClient extends AutoCloseable {
    * @param document the document content to index
    * @throws IOException if indexing fails after retries
    */
-  default void indexWithRetry(String indexName, String documentId, Object document)
-      throws IOException {
+  default void indexWithRetry(
+      final String indexName, final String documentId, final Object document) throws IOException {
     final int maxRetries = 3;
     IOException lastException = null;
 
@@ -70,12 +70,12 @@ public interface DocumentClient extends AutoCloseable {
       try {
         index(indexName, documentId, document);
         return; // Success, exit retry loop
-      } catch (IOException e) {
+      } catch (final IOException e) {
         lastException = e;
         if (attempt < maxRetries - 1) {
           try {
             Thread.sleep(100 * (attempt + 1)); // Progressive backoff
-          } catch (InterruptedException ie) {
+          } catch (final InterruptedException ie) {
             Thread.currentThread().interrupt();
             throw new IOException("Interrupted during retry", ie);
           }

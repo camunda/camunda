@@ -17,11 +17,12 @@ import org.agrona.DirectBuffer;
 public final class TenantScopeClusterVariableEvaluationContext implements ScopedEvaluationContext {
 
   private final ClusterVariableState clusterVariableState;
-  private String tenantId;
+  private final String tenantId;
 
   public TenantScopeClusterVariableEvaluationContext(
       final ClusterVariableState clusterVariableState) {
     this.clusterVariableState = clusterVariableState;
+    tenantId = "";
   }
 
   public TenantScopeClusterVariableEvaluationContext(

@@ -9,20 +9,12 @@
 import {InputOutputMappings} from './index';
 import {render, screen} from 'modules/testing-library';
 import {mockProcessWithInputOutputMappingsXML} from 'modules/testUtils';
-import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
-import {act, useEffect} from 'react';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 
 const Wrapper = ({children}: {children?: React.ReactNode}) => {
-  useEffect(() => {
-    return () => {
-      flowNodeSelectionStore.reset();
-    };
-  }, []);
-
   return (
     <QueryClientProvider client={getMockQueryClient()}>
       <ProcessDefinitionKeyContext.Provider value="123">
@@ -40,25 +32,16 @@ describe('Input Mappings', () => {
   );
 
   it('should display input mappings', async () => {
-    act(() => {
-      flowNodeSelectionStore.setSelection({
-        flowNodeId: 'Event_0bonl61',
-      });
-    });
-
-    const {rerender} = render(<InputOutputMappings type="Input" />, {
-      wrapper: Wrapper,
-    });
+    const {rerender} = render(
+      <InputOutputMappings type="Input" elementId="Event_0bonl61" />,
+      {
+        wrapper: Wrapper,
+      },
+    );
 
     expect(screen.getByText('No Input Mappings defined')).toBeInTheDocument();
 
-    act(() => {
-      flowNodeSelectionStore.setSelection({
-        flowNodeId: 'Activity_0qtp1k6',
-      });
-    });
-
-    rerender(<InputOutputMappings type="Input" />);
+    rerender(<InputOutputMappings type="Input" elementId="Activity_0qtp1k6" />);
 
     expect(await screen.findByText(/local variable name/i)).toBeInTheDocument();
     expect(screen.getByText(/variable assignment value/i)).toBeInTheDocument();
@@ -69,25 +52,18 @@ describe('Input Mappings', () => {
   });
 
   it('should display output mappings', async () => {
-    act(() => {
-      flowNodeSelectionStore.setSelection({
-        flowNodeId: 'Event_0bonl61',
-      });
-    });
-
-    const {rerender} = render(<InputOutputMappings type="Input" />, {
-      wrapper: Wrapper,
-    });
+    const {rerender} = render(
+      <InputOutputMappings type="Input" elementId="Event_0bonl61" />,
+      {
+        wrapper: Wrapper,
+      },
+    );
 
     expect(screen.getByText('No Input Mappings defined')).toBeInTheDocument();
 
-    act(() => {
-      flowNodeSelectionStore.setSelection({
-        flowNodeId: 'Activity_0qtp1k6',
-      });
-    });
-
-    rerender(<InputOutputMappings type="Output" />);
+    rerender(
+      <InputOutputMappings type="Output" elementId="Activity_0qtp1k6" />,
+    );
     expect(
       await screen.findByText(/process variable name/i),
     ).toBeInTheDocument();
@@ -107,15 +83,11 @@ describe('Input Mappings', () => {
       message:
         'Output mappings are defined while modelling the diagram. They are used to control the variable propagation from the flow node scope. Process variables in the parent scopes are created/updated with the specified assignment.',
     },
-  ])(
+  ] as const)(
     'should display/hide information banner for input/output mappings',
     async ({type, message}) => {
-      flowNodeSelectionStore.setSelection({
-        flowNodeId: 'Activity_0qtp1k6',
-      });
-
       const {user, rerender} = render(
-        <InputOutputMappings type={type as 'Input' | 'Output'} />,
+        <InputOutputMappings type={type} elementId="Activity_0qtp1k6" />,
         {
           wrapper: Wrapper,
         },
@@ -129,7 +101,9 @@ describe('Input Mappings', () => {
       mockFetchProcessDefinitionXml().withSuccess(
         mockProcessWithInputOutputMappingsXML,
       );
-      rerender(<InputOutputMappings type={type as 'Input' | 'Output'} />);
+      rerender(
+        <InputOutputMappings type={type} elementId="Activity_0qtp1k6" />,
+      );
       expect(screen.queryByText(message)).not.toBeInTheDocument();
     },
   );

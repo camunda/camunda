@@ -32,13 +32,14 @@ export async function getProcessDefinitionKey(
 export async function createCancellationBatch(
   request: APIRequestContext,
   numberOfInstances = 3,
+  processDefinitionId = 'batch_cancellation_process',
 ): Promise<string> {
   const processInstanceKeys: string[] = [];
   for (let i = 0; i < numberOfInstances; i++) {
     const startRes = await request.post(buildUrl('/process-instances'), {
       headers: jsonHeaders(),
       data: {
-        processDefinitionId: 'batch_cancellation_process',
+        processDefinitionId: processDefinitionId,
       },
     });
     await assertStatusCode(startRes, 200);
@@ -149,4 +150,24 @@ export async function verifyIncidentsForProcessInstance(
       `Unexpected number of incident items. Found: ${JSON.stringify(json)}`,
     ).toBe(expectedIncidentCount);
   }).toPass(defaultAssertionOptions);
+}
+
+export async function expectProcessInstanceCanBeFound(
+  request: APIRequestContext,
+  processInstanceKey: string,
+) {
+  await expect(async () => {
+    const statusRes = await request.get(
+      buildUrl(`/process-instances/${processInstanceKey}`),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    await assertStatusCode(statusRes, 200);
+    const json = await statusRes.json();
+    expect(json.processInstanceKey).toBe(processInstanceKey);
+  }).toPass({
+    intervals: [5_000, 10_000, 15_000, 25_000, 35_000],
+    timeout: 180_000,
+  });
 }

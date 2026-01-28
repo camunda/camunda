@@ -57,6 +57,9 @@ public class Rdbms extends SecondaryStorageDatabase<RdbmsHistory> {
 
   @NestedConfigurationProperty private RdbmsMetrics metrics = new RdbmsMetrics();
 
+  @NestedConfigurationProperty
+  private RdbmsInsertBatching insertBatching = new RdbmsInsertBatching();
+
   public String getPrefix() {
     return prefix;
   }
@@ -132,6 +135,11 @@ public class Rdbms extends SecondaryStorageDatabase<RdbmsHistory> {
     this.history = history;
   }
 
+  @Override
+  public String databaseName() {
+    return "rdbms";
+  }
+
   public RdbmsMetrics getMetrics() {
     return metrics;
   }
@@ -140,8 +148,11 @@ public class Rdbms extends SecondaryStorageDatabase<RdbmsHistory> {
     this.metrics = metrics;
   }
 
-  @Override
-  public String databaseName() {
-    return "rdbms";
+  public RdbmsInsertBatching getInsertBatching() {
+    return insertBatching;
+  }
+
+  public void setInsertBatching(final RdbmsInsertBatching insertBatching) {
+    this.insertBatching = insertBatching;
   }
 }

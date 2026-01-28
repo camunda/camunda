@@ -36,6 +36,7 @@ public record AuditLogDbModel(
     String decisionDefinitionId,
     Long processDefinitionKey,
     Long processInstanceKey,
+    Long rootProcessInstanceKey,
     Long elementInstanceKey,
     Long jobKey,
     Long userTaskKey,
@@ -44,7 +45,9 @@ public record AuditLogDbModel(
     Long decisionEvaluationKey,
     Long deploymentKey,
     Long formKey,
-    Long resourceKey)
+    Long resourceKey,
+    int partitionId,
+    OffsetDateTime historyCleanupDate)
     implements DbModel<AuditLogDbModel> {
 
   @Override
@@ -75,6 +78,7 @@ public record AuditLogDbModel(
                 .decisionDefinitionId(decisionDefinitionId)
                 .processDefinitionKey(processDefinitionKey)
                 .processInstanceKey(processInstanceKey)
+                .rootProcessInstanceKey(rootProcessInstanceKey)
                 .elementInstanceKey(elementInstanceKey)
                 .jobKey(jobKey)
                 .userTaskKey(userTaskKey)
@@ -83,8 +87,47 @@ public record AuditLogDbModel(
                 .decisionEvaluationKey(decisionEvaluationKey)
                 .deploymentKey(deploymentKey)
                 .formKey(formKey)
-                .resourceKey(resourceKey))
+                .resourceKey(resourceKey)
+                .partitionId(partitionId)
+                .historyCleanupDate(historyCleanupDate))
         .build();
+  }
+
+  public Builder toBuilder() {
+    return new Builder()
+        .auditLogKey(auditLogKey)
+        .entityKey(entityKey)
+        .entityType(entityType)
+        .operationType(operationType)
+        .entityVersion(entityVersion)
+        .entityValueType(entityValueType)
+        .entityOperationIntent(entityOperationIntent)
+        .batchOperationKey(batchOperationKey)
+        .batchOperationType(batchOperationType)
+        .timestamp(timestamp)
+        .actorType(actorType)
+        .actorId(actorId)
+        .tenantId(tenantId)
+        .tenantScope(tenantScope)
+        .result(result)
+        .annotation(annotation)
+        .category(category)
+        .processDefinitionId(processDefinitionId)
+        .decisionRequirementsId(decisionRequirementsId)
+        .decisionDefinitionId(decisionDefinitionId)
+        .processDefinitionKey(processDefinitionKey)
+        .processInstanceKey(processInstanceKey)
+        .elementInstanceKey(elementInstanceKey)
+        .jobKey(jobKey)
+        .userTaskKey(userTaskKey)
+        .decisionRequirementsKey(decisionRequirementsKey)
+        .decisionDefinitionKey(decisionDefinitionKey)
+        .decisionEvaluationKey(decisionEvaluationKey)
+        .deploymentKey(deploymentKey)
+        .formKey(formKey)
+        .resourceKey(resourceKey)
+        .partitionId(partitionId)
+        .historyCleanupDate(historyCleanupDate);
   }
 
   public static class Builder implements ObjectBuilder<AuditLogDbModel> {
@@ -111,6 +154,7 @@ public record AuditLogDbModel(
     private String decisionDefinitionId;
     private Long processDefinitionKey;
     private Long processInstanceKey;
+    private Long rootProcessInstanceKey;
     private Long elementInstanceKey;
     private Long jobKey;
     private Long userTaskKey;
@@ -120,6 +164,8 @@ public record AuditLogDbModel(
     private Long deploymentKey;
     private Long formKey;
     private Long resourceKey;
+    private int partitionId;
+    private OffsetDateTime historyCleanupDate;
 
     public Builder() {}
 
@@ -233,6 +279,11 @@ public record AuditLogDbModel(
       return this;
     }
 
+    public Builder rootProcessInstanceKey(final Long rootProcessInstanceKey) {
+      this.rootProcessInstanceKey = rootProcessInstanceKey;
+      return this;
+    }
+
     public Builder elementInstanceKey(final Long elementInstanceKey) {
       this.elementInstanceKey = elementInstanceKey;
       return this;
@@ -278,6 +329,16 @@ public record AuditLogDbModel(
       return this;
     }
 
+    public Builder partitionId(final int partitionId) {
+      this.partitionId = partitionId;
+      return this;
+    }
+
+    public Builder historyCleanupDate(final OffsetDateTime historyCleanupDate) {
+      this.historyCleanupDate = historyCleanupDate;
+      return this;
+    }
+
     @Override
     public AuditLogDbModel build() {
       return new AuditLogDbModel(
@@ -303,6 +364,7 @@ public record AuditLogDbModel(
           decisionDefinitionId,
           processDefinitionKey,
           processInstanceKey,
+          rootProcessInstanceKey,
           elementInstanceKey,
           jobKey,
           userTaskKey,
@@ -311,7 +373,9 @@ public record AuditLogDbModel(
           decisionEvaluationKey,
           deploymentKey,
           formKey,
-          resourceKey);
+          resourceKey,
+          partitionId,
+          historyCleanupDate);
     }
   }
 }

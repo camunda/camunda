@@ -4,21 +4,32 @@
 # see https://docs.docker.com/build/buildkit/#getting-started
 
 ARG BASE_IMAGE="reg.mini.dev/1212/openjre-base:21-dev"
-ARG BASE_DIGEST="sha256:027bcb32b9435055b31412a5ad29868a53b2f3b6637d9fed0e3bc6f757847151"
+ARG BASE_DIGEST="sha256:cc7175593660c343b265defdfaaa9b01789b711135323d3546a48c20fdf48a00"
 ARG JATTACH_VERSION="v2.2"
 ARG JATTACH_CHECKSUM_AMD64="acd9e17f15749306be843df392063893e97bfecc5260eef73ee98f06e5cfe02f"
 ARG JATTACH_CHECKSUM_ARM64="288ae5ed87ee7fe0e608c06db5a23a096a6217c9878ede53c4e33710bdcaab51"
 
 # If you don't have access to Minimus hardened base images, you can use public
-# base images like this instead on your own risk:
-#ARG BASE_IMAGE="eclipse-temurin:21-jre-noble"
-#ARG BASE_DIGEST="sha256:20e7f7288e1c18eebe8f06a442c9f7183342d9b022d3b9a9677cae2b558ddddd"
+# base images like this instead on your own risk.
+# Simply pass `--build-arg BASE=public` in order to build with the Temurin JDK.
+ARG BASE_IMAGE_PUBLIC="eclipse-temurin:21.0.9_10-jre-noble"
+ARG BASE_DIGEST_PUBLIC="sha256:d3eb69add1874bc785382d6282db53a67841f602a1139dee6c4a1221d8c56568"
+ARG BASE="hardened"
 
 # set to "build" to build zeebe from scratch instead of using a distball
 ARG DIST="distball"
 
+### Base Application Image ###
+# hadolint ignore=DL3006
+FROM ${BASE_IMAGE}@${BASE_DIGEST} AS base-hardened
+
+### Base Public Application Image ###
+# hadolint ignore=DL3006
+FROM ${BASE_IMAGE_PUBLIC}@${BASE_DIGEST_PUBLIC} AS base-public
+
 ### Build zeebe from scratch ###
-FROM reg.mini.dev/openjdk:21.0.9-dev AS build
+# hadolint ignore=DL3006
+FROM base-${BASE} AS build
 
 # hadolint ignore=DL3002
 USER root
@@ -74,7 +85,7 @@ FROM ${DIST} AS dist
 ### Application Image ###
 # https://docs.docker.com/engine/reference/builder/#automatic-platform-args-in-the-global-scope
 # hadolint ignore=DL3006
-FROM ${BASE_IMAGE}@${BASE_DIGEST} AS app
+FROM base-${BASE} AS app
 # leave unset to use the default value at the top of the file
 ARG BASE_IMAGE
 ARG BASE_DIGEST

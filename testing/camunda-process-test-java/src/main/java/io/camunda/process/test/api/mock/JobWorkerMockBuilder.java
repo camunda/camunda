@@ -63,6 +63,17 @@ public interface JobWorkerMockBuilder {
   JobWorkerMock thenThrowBpmnError(final String errorCode, final Map<String, Object> variables);
 
   /**
+   * Configures the mock worker to throw a BPMN error with the specified error code, error message,
+   * and variables.
+   *
+   * @param errorCode the error code to throw.
+   * @param errorMessage the error message to include when throwing the error.
+   * @param variables the variables to include when throwing the error.
+   */
+  JobWorkerMock thenThrowBpmnError(
+      final String errorCode, final String errorMessage, final Map<String, Object> variables);
+
+  /**
    * Configures the mock worker with a custom job handler.
    *
    * @param jobHandler the custom job handler to use for processing jobs.

@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Web Modeler" exporterVersion="f728e02" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.8.0">
+  <bpmn:process id="mammalAnimalProcess" name="mammalAnimalProcess" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_1">
+      <bpmn:outgoing>Flow_0nl8alw</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_0nl8alw" sourceRef="StartEvent_1" targetRef="isMammal" />
+    <bpmn:businessRuleTask id="isMammal" name="Decide if animal is a mammal">
+      <bpmn:extensionElements>
+        <zeebe:calledDecision decisionId="IsMammal" resultVariable="isMammal" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0nl8alw</bpmn:incoming>
+      <bpmn:outgoing>Flow_0lj77p3</bpmn:outgoing>
+    </bpmn:businessRuleTask>
+    <bpmn:exclusiveGateway id="Gateway_11cuamg" name="Is a mammal?">
+      <bpmn:incoming>Flow_0lj77p3</bpmn:incoming>
+      <bpmn:outgoing>Flow_1t0rucw</bpmn:outgoing>
+      <bpmn:outgoing>Flow_12vtfp3</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_0lj77p3" sourceRef="isMammal" targetRef="Gateway_11cuamg" />
+    <bpmn:endEvent id="Event_1c4jkn4" name="A mammal end">
+      <bpmn:incoming>Flow_1t0rucw</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_1t0rucw" name="yes" sourceRef="Gateway_11cuamg" targetRef="Event_1c4jkn4">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=isMammal</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:endEvent id="Event_0xrkaq6" name="Not a mammal end">
+      <bpmn:incoming>Flow_12vtfp3</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_12vtfp3" name="no" sourceRef="Gateway_11cuamg" targetRef="Event_0xrkaq6">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=not(isMammal)</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="mammalAnimalProcess">
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+        <dc:Bounds x="150" y="100" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_03rn0cw_di" bpmnElement="isMammal">
+        <dc:Bounds x="240" y="78" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_11cuamg_di" bpmnElement="Gateway_11cuamg" isMarkerVisible="true">
+        <dc:Bounds x="395" y="93" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="455" y="111" width="70" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1c4jkn4_di" bpmnElement="Event_1c4jkn4">
+        <dc:Bounds x="502" y="32" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="484" y="75" width="74" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0xrkaq6_di" bpmnElement="Event_0xrkaq6">
+        <dc:Bounds x="502" y="152" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="485" y="195" width="72" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_0nl8alw_di" bpmnElement="Flow_0nl8alw">
+        <di:waypoint x="186" y="118" />
+        <di:waypoint x="240" y="118" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0lj77p3_di" bpmnElement="Flow_0lj77p3">
+        <di:waypoint x="340" y="118" />
+        <di:waypoint x="395" y="118" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1t0rucw_di" bpmnElement="Flow_1t0rucw">
+        <di:waypoint x="420" y="93" />
+        <di:waypoint x="420" y="50" />
+        <di:waypoint x="502" y="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="391" y="63" width="18" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_12vtfp3_di" bpmnElement="Flow_12vtfp3">
+        <di:waypoint x="420" y="143" />
+        <di:waypoint x="420" y="170" />
+        <di:waypoint x="502" y="170" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="429" y="154" width="13" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

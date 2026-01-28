@@ -59,7 +59,7 @@ class OperateProcessInstancePage {
   readonly incidentBannerButton: (count: number) => Locator;
   readonly incidentTypeFilter: Locator;
   readonly executionCountToggle: Locator;
-  readonly executionCountToggleButton: Locator;
+  readonly executionCountToggleLabel: Locator;
   readonly endDateField: Locator;
   readonly incidentsViewHeader: Locator;
   readonly modificationModeText: Locator;
@@ -70,6 +70,11 @@ class OperateProcessInstancePage {
   readonly addVariableModificationButton: Locator;
   readonly modalDialog: Locator;
   readonly noVariablesText: Locator;
+  readonly variableCellByName: (name: string | RegExp) => Locator;
+  readonly viewAllChildProcessesLink: Locator;
+  readonly instanceHeaderSkeleton: Locator;
+  readonly viewAllCalledInstancesLink: Locator;
+  readonly viewParentInstanceLink: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -153,12 +158,6 @@ class OperateProcessInstancePage {
     this.incidentTypeFilter = page.getByRole('combobox', {
       name: /filter by incident type/i,
     });
-    this.executionCountToggle = this.instanceHistory.locator(
-      '[aria-label="show execution count"], [aria-label="hide execution count"]',
-    );
-    this.executionCountToggleButton = this.instanceHistory.locator(
-      'button[aria-label="Execution count"][role="switch"]',
-    );
     this.endDateField = this.instanceHeader.getByTestId('end-date');
     this.incidentsViewHeader = page.getByText(/incidents\s+-\s+/i);
     this.modificationModeText = page.getByText(
@@ -175,6 +174,23 @@ class OperateProcessInstancePage {
     });
     this.modalDialog = page.getByRole('dialog');
     this.noVariablesText = page.getByText(/The Flow Node has no Variables/i);
+
+    this.variableCellByName = (name) =>
+      this.variablesList.getByRole('cell', {name});
+    this.viewAllChildProcessesLink = this.instanceHeader.getByRole('link', {
+      name: 'View all',
+    });
+    this.instanceHeaderSkeleton = page.getByTestId('instance-header-skeleton');
+    this.viewAllCalledInstancesLink = page.getByRole('link', {
+      name: /view all called instances/i,
+    });
+    this.viewParentInstanceLink = page.getByRole('link', {
+      name: /view parent instance/i,
+    });
+    this.executionCountToggle = this.page.locator('#toggle-execution-count');
+    this.executionCountToggleLabel = this.page.locator(
+      '#toggle-execution-count_label',
+    );
   }
 
   async connectorResultVariableName(name: string): Promise<Locator> {
@@ -499,6 +515,7 @@ class OperateProcessInstancePage {
   }
 
   async clickTreeItem(name: string | RegExp, exact?: boolean): Promise<void> {
+    await expect(this.getTreeItem(name, exact)).toBeVisible();
     await this.getTreeItem(name, exact).click();
   }
 
@@ -545,24 +562,24 @@ class OperateProcessInstancePage {
   }
 
   async toggleExecutionCount(): Promise<void> {
-    await this.executionCountToggleButton.waitFor({state: 'visible'});
-    const isChecked =
-      await this.executionCountToggleButton.getAttribute('aria-checked');
-
-    if (isChecked === 'false') {
-      await this.executionCountToggleButton.click({force: true});
-      await expect(this.executionCountToggleButton).toHaveAttribute(
+    await this.executionCountToggle.waitFor({state: 'visible'});
+    if (
+      (await this.executionCountToggle.getAttribute('aria-checked')) !== 'true'
+    ) {
+      await this.executionCountToggleLabel.click();
+      await expect(this.executionCountToggle).toHaveAttribute(
         'aria-checked',
         'true',
-        {
-          timeout: 5000,
-        },
       );
     }
   }
 
   getDiagramElement(elementId: string): Locator {
     return this.diagram.locator(`[data-element-id="${elementId}"]`);
+  }
+
+  async clickDiagramElement(elementId: string): Promise<void> {
+    await this.getDiagramElement(elementId).click();
   }
 
   async getDiagramElementBadge(elementId: string) {
@@ -582,6 +599,18 @@ class OperateProcessInstancePage {
     for (const elementId of elementIds) {
       await expect(this.getDiagramElement(elementId)).toBeVisible();
     }
+  }
+
+  async clickViewAllChildProcesses(): Promise<void> {
+    await this.viewAllChildProcessesLink.click();
+  }
+
+  async clickViewAllCalledInstances(): Promise<void> {
+    await this.viewAllCalledInstancesLink.click();
+  }
+
+  async clickViewParentInstance(): Promise<void> {
+    await this.viewParentInstanceLink.click();
   }
 }
 

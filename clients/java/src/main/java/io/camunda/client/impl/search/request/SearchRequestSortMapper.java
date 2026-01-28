@@ -148,6 +148,14 @@ public class SearchRequestSortMapper {
         .collect(Collectors.toList());
   }
 
+  public static List<SearchRequestSort>
+      fromIncidentProcessInstanceStatisticsByDefinitionQuerySortRequest(
+          final List<IncidentProcessInstanceStatisticsByDefinitionQuerySortRequest> requests) {
+    return requests.stream()
+        .map(r -> createFrom(r.getField(), r.getOrder()))
+        .collect(Collectors.toList());
+  }
+
   public static List<ProcessDefinitionSearchQuerySortRequest>
       toProcessDefinitionSearchQuerySortRequest(final List<SearchRequestSort> requests) {
     return requests.stream()
@@ -609,6 +617,14 @@ public class SearchRequestSortMapper {
 
   public static List<SearchRequestSort> fromAuditLogSearchQuerySortRequest(
       final List<AuditLogSearchQuerySortRequest> requests) {
+    return requests.stream()
+        .map(r -> createFrom(r.getField(), r.getOrder()))
+        .collect(Collectors.toList());
+  }
+
+  public static List<SearchRequestSort>
+      fromIncidentProcessInstanceStatisticsByErrorQuerySortRequest(
+          final List<IncidentProcessInstanceStatisticsByErrorQuerySortRequest> requests) {
     return requests.stream()
         .map(r -> createFrom(r.getField(), r.getOrder()))
         .collect(Collectors.toList());

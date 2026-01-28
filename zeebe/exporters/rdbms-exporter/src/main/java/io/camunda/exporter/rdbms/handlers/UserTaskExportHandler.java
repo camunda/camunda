@@ -154,6 +154,7 @@ public class UserTaskExportHandler implements RdbmsExportHandler<UserTaskRecordV
         .formKey(value.getFormKey() > 0 ? value.getFormKey() : null)
         .processDefinitionKey(value.getProcessDefinitionKey())
         .processInstanceKey(value.getProcessInstanceKey())
+        .rootProcessInstanceKey(value.getRootProcessInstanceKey())
         .elementInstanceKey(value.getElementInstanceKey())
         .tenantId(value.getTenantId())
         .dueDate(DateUtil.toOffsetDateTime(value.getDueDate()))

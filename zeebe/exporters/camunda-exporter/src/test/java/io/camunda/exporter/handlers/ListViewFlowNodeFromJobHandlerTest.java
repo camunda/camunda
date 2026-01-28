@@ -166,6 +166,32 @@ public class ListViewFlowNodeFromJobHandlerTest {
         .isEqualTo(
             new ListViewJoinRelation(ListViewTemplate.ACTIVITIES_JOIN_RELATION)
                 .setParent(jobRecord.getValue().getProcessInstanceKey()));
+    assertThat(flowNodeInstanceForListViewEntity.getRootProcessInstanceKey())
+        .isPositive()
+        .isEqualTo(jobRecord.getValue().getRootProcessInstanceKey());
+  }
+
+  @Test
+  void shouldNotSetRootProcessInstanceKeyWhenDefault() {
+    // given
+    final Record<JobRecordValue> jobRecord =
+        factory.generateRecord(
+            ValueType.JOB,
+            r ->
+                r.withIntent(JobIntent.CREATED)
+                    .withValue(
+                        ImmutableJobRecordValue.builder()
+                            .from(factory.generateObject(JobRecordValue.class))
+                            .withRootProcessInstanceKey(-1)
+                            .build()));
+
+    // when
+    final FlowNodeInstanceForListViewEntity flowNodeInstanceForListViewEntity =
+        new FlowNodeInstanceForListViewEntity();
+    underTest.updateEntity(jobRecord, flowNodeInstanceForListViewEntity);
+
+    // then
+    assertThat(flowNodeInstanceForListViewEntity.getRootProcessInstanceKey()).isNull();
   }
 
   @Test

@@ -47,6 +47,16 @@ public class BatchOperationSortImpl extends SearchRequestSortBase<BatchOperation
   }
 
   @Override
+  public BatchOperationSort actorType() {
+    return field("actorType");
+  }
+
+  @Override
+  public BatchOperationSort actorId() {
+    return field("actorId");
+  }
+
+  @Override
   protected BatchOperationSort self() {
     return this;
   }

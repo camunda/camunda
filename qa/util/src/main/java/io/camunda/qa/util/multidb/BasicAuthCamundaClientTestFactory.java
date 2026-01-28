@@ -8,12 +8,12 @@
 package io.camunda.qa.util.multidb;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.impl.basicauth.BasicAuthCredentialsProviderBuilder;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.TestUser;
-import io.camunda.qa.util.multidb.CamundaMultiDBExtension.ApplicationUnderTest;
 import io.camunda.security.configuration.InitializationConfiguration;
-import io.camunda.zeebe.qa.util.cluster.TestGateway;
+import java.net.URI;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import org.agrona.CloseHelper;
@@ -27,9 +27,13 @@ public final class BasicAuthCamundaClientTestFactory implements CamundaClientTes
 
   private final Map<String, CamundaClient> cachedClients = new ConcurrentHashMap<>();
 
-  public BasicAuthCamundaClientTestFactory(final ApplicationUnderTest application) {
+  public BasicAuthCamundaClientTestFactory(
+      final CamundaClientBuilder camundaClientBuilder,
+      final URI restAddress,
+      final URI grpcAddress) {
     cachedClients.put(
-        InitializationConfiguration.DEFAULT_USER_USERNAME, createDefaultUserClient(application));
+        InitializationConfiguration.DEFAULT_USER_USERNAME,
+        createDefaultUserClient(camundaClientBuilder, restAddress, grpcAddress));
   }
 
   @Override
@@ -44,40 +48,55 @@ public final class BasicAuthCamundaClientTestFactory implements CamundaClientTes
 
   @Override
   public CamundaClient getCamundaClient(
-      final TestGateway<?> gateway, final Authenticated authenticated) {
+      final CamundaClientBuilder camundaClientBuilder,
+      final URI restAddress,
+      final Authenticated authenticated) {
     if (authenticated == null) {
-      LOGGER.info(
-          "Creating unauthorized Camunda client for broker address '{}", gateway.restAddress());
-      return gateway.newClientBuilder().preferRestOverGrpc(true).build();
+      LOGGER.info("Creating unauthorized Camunda client for broker address '{}", restAddress);
+      return camundaClientBuilder.restAddress(restAddress).preferRestOverGrpc(true).build();
     }
 
     LOGGER.info(
         "Retrieving Camunda client for user '{}' and broker address '{}",
         authenticated.value(),
-        gateway.restAddress());
+        restAddress);
     final var username = authenticated.value();
     return cachedClients.get(username);
   }
 
-  public void createClientForUser(final TestGateway<?> gateway, final TestUser user) {
-    final var client = createAuthenticatedClient(gateway, user.username(), user.password());
+  public void createClientForUser(
+      final CamundaClientBuilder camundaClientBuilder,
+      final URI restAddress,
+      final URI grpcAddress,
+      final TestUser user) {
+    final var client =
+        createAuthenticatedClient(
+            camundaClientBuilder, restAddress, grpcAddress, user.username(), user.password());
     cachedClients.put(user.username(), client);
   }
 
-  private CamundaClient createDefaultUserClient(final ApplicationUnderTest application) {
+  private CamundaClient createDefaultUserClient(
+      final CamundaClientBuilder camundaClientBuilder,
+      final URI restAddress,
+      final URI grpcAddress) {
     return createAuthenticatedClient(
-        application.application(),
+        camundaClientBuilder,
+        restAddress,
+        grpcAddress,
         InitializationConfiguration.DEFAULT_USER_USERNAME,
         InitializationConfiguration.DEFAULT_USER_PASSWORD);
   }
 
   private CamundaClient createAuthenticatedClient(
-      final TestGateway<?> gateway, final String username, final String password) {
-    return gateway
-        .newClientBuilder()
+      final CamundaClientBuilder camundaClientBuilder,
+      final URI restAddress,
+      final URI grpcAddress,
+      final String username,
+      final String password) {
+    return camundaClientBuilder
         .preferRestOverGrpc(true)
-        .restAddress(gateway.restAddress())
-        .grpcAddress(gateway.grpcAddress())
+        .restAddress(restAddress)
+        .grpcAddress(grpcAddress)
         .credentialsProvider(
             new BasicAuthCredentialsProviderBuilder().username(username).password(password).build())
         .build();

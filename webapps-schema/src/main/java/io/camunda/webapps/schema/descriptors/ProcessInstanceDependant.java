@@ -7,13 +7,17 @@
  */
 package io.camunda.webapps.schema.descriptors;
 
-public interface ProcessInstanceDependant {
+public interface ProcessInstanceDependant extends IndexTemplateDescriptor {
 
   String PROCESS_INSTANCE_KEY = "processInstanceKey";
 
-  String getFullQualifiedName();
+  String ROOT_PROCESS_INSTANCE_KEY = "rootProcessInstanceKey";
 
   default String getProcessInstanceDependantField() {
     return PROCESS_INSTANCE_KEY;
+  }
+
+  default String getRootProcessInstanceKeyField() {
+    return ROOT_PROCESS_INSTANCE_KEY;
   }
 }

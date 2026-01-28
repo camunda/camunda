@@ -7,7 +7,7 @@
  */
 package io.camunda.it.rdbms.db.fixtures;
 
-import io.camunda.db.rdbms.write.RdbmsWriter;
+import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.RoleMemberDbModel;
 import io.camunda.db.rdbms.write.domain.RoleMemberDbModel.Builder;
 import io.camunda.zeebe.protocol.record.value.EntityType;
@@ -28,17 +28,17 @@ public final class RoleMemberFixtures extends CommonFixtures {
   }
 
   public static void createAndSaveRandomRoleMember(
-      final RdbmsWriter rdbmsWriter, final Function<Builder, Builder> builderFunction) {
-    rdbmsWriter.getRoleWriter().addMember(createRandomized(builderFunction));
-    rdbmsWriter.flush();
+      final RdbmsWriters rdbmsWriters, final Function<Builder, Builder> builderFunction) {
+    rdbmsWriters.getRoleWriter().addMember(createRandomized(builderFunction));
+    rdbmsWriters.flush();
   }
 
   public static void createAndSaveRandomRoleMembers(
-      final RdbmsWriter rdbmsWriter, final Function<Builder, Builder> builderFunction) {
+      final RdbmsWriters rdbmsWriters, final Function<Builder, Builder> builderFunction) {
     for (int i = 0; i < 20; i++) {
-      rdbmsWriter.getRoleWriter().addMember(createRandomized(builderFunction));
+      rdbmsWriters.getRoleWriter().addMember(createRandomized(builderFunction));
     }
 
-    rdbmsWriter.flush();
+    rdbmsWriters.flush();
   }
 }

@@ -34,6 +34,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation.AwaitRedistributionCompletion;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation.AwaitRelocationCompletion;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation.StartPartitionScaleUp;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.UpdateIncarnationNumberOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.UpdateRoutingState;
 import io.camunda.zeebe.dynamic.config.state.CompletedChange;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
@@ -243,6 +244,8 @@ final class ClusterApiUtils {
           new Operation()
               .operation(OperationEnum.UPDATE_ROUTING_STATE)
               .brokerId(Integer.parseInt(updateRoutingState.memberId().id()));
+      case final UpdateIncarnationNumberOperation updateIncarnationNumberOperation ->
+          new Operation().operation(OperationEnum.UPDATE_INCARNATION_NUMBER);
       default -> new Operation().operation(OperationEnum.UNKNOWN);
     };
   }
@@ -500,6 +503,10 @@ final class ClusterApiUtils {
               new TopologyChangeCompletedInner()
                   .operation(TopologyChangeCompletedInner.OperationEnum.UPDATE_ROUTING_STATE)
                   .brokerId(Integer.parseInt(updateRoutingState.memberId().id()));
+          case final UpdateIncarnationNumberOperation updateIncarnationNumberOperation ->
+              new TopologyChangeCompletedInner()
+                  .operation(TopologyChangeCompletedInner.OperationEnum.UPDATE_INCARNATION_NUMBER)
+                  .brokerId(Integer.parseInt(updateIncarnationNumberOperation.memberId().id()));
           default ->
               new TopologyChangeCompletedInner()
                   .operation(TopologyChangeCompletedInner.OperationEnum.UNKNOWN);

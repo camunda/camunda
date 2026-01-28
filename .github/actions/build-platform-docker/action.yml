@@ -64,6 +64,10 @@ runs:
       run: |
         echo is-main-or-stable-branch="$IS_MAIN_OR_STABLE_BRANCH" | tee -a $GITHUB_OUTPUT
 
+    - name: Check for Fork
+      uses: ./.github/actions/is-fork
+      id: is-fork
+
     - name: Set up multi-platform support
       uses: docker/setup-qemu-action@v3
       with:
@@ -117,6 +121,22 @@ runs:
       shell: bash
       run: echo "result=$(realpath --relative-to="${PWD}" ${{ inputs.distball }})" >> $GITHUB_OUTPUT
 
+    - name: Set additional build args dynamically based on workflow run context
+      id: get-additional-build-args
+      shell: bash
+      run: |
+        # Check if current workflow run is related to a fork PR
+        if [[ "${{ steps.is-fork.outputs.is-fork }}" == "true" ]]; then
+          echo "The current workflow run is related to a fork PR."
+          echo "As a result, private Minimus hardened base images will be replaced with public images."
+
+          {
+            echo 'result<<EOF'
+            echo 'BASE=public'
+            echo 'EOF'
+          } | tee -a $GITHUB_OUTPUT
+        fi
+
     - name: Build Docker image
       uses: docker/build-push-action@v6
       env:
@@ -135,4 +155,5 @@ runs:
           DATE=${{ steps.get-date.outputs.result }}
           REVISION=${{ inputs.revision != '' && inputs.revision || github.sha }}
           VERSION=${{ inputs.version != '' && inputs.version || steps.get-version.outputs.result }}
+          ${{ steps.get-additional-build-args.outputs.result }}
         target: app

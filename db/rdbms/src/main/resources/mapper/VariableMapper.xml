@@ -22,13 +22,14 @@
     SELECT
       VAR_KEY,
       PROCESS_INSTANCE_KEY,
+      ROOT_PROCESS_INSTANCE_KEY,
       SCOPE_KEY,
       VAR_NAME,
       VAR_VALUE,
-    VAR_FULL_VALUE,
+      VAR_FULL_VALUE,
       TENANT_ID,
-    IS_PREVIEW,
-    PROCESS_DEFINITION_ID
+      IS_PREVIEW,
+      PROCESS_DEFINITION_ID
     FROM ${prefix}VARIABLE
       <include refid="io.camunda.db.rdbms.sql.VariableMapper.searchFilter"/>
       ) t
@@ -131,17 +132,21 @@
       <arg column="IS_PREVIEW" javaType="java.lang.Boolean"/>
       <arg column="SCOPE_KEY" javaType="java.lang.Long"/>
       <arg column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
+      <arg column="ROOT_PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
       <arg column="PROCESS_DEFINITION_ID" javaType="java.lang.String"/>
       <arg column="TENANT_ID" javaType="java.lang.String"/>
     </constructor>
   </resultMap>
 
-  <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.VariableDbModel">
-    INSERT INTO ${prefix}VARIABLE (VAR_KEY, PROCESS_INSTANCE_KEY, PROCESS_DEFINITION_ID, SCOPE_KEY, TYPE, VAR_NAME, DOUBLE_VALUE,
+  <insert id="insert" parameterType="io.camunda.db.rdbms.sql.VariableMapper$BatchInsertVariablesDto">
+    INSERT INTO ${prefix}VARIABLE (VAR_KEY, PROCESS_INSTANCE_KEY, ROOT_PROCESS_INSTANCE_KEY, PROCESS_DEFINITION_ID, SCOPE_KEY, TYPE, VAR_NAME, DOUBLE_VALUE,
                                    LONG_VALUE, VAR_VALUE, VAR_FULL_VALUE, TENANT_ID, IS_PREVIEW,
-                                   PARTITION_ID, HISTORY_CLEANUP_DATE)
-    VALUES (#{variableKey}, #{processInstanceKey}, #{processDefinitionId}, #{scopeKey}, #{type}, #{name}, #{doubleValue, jdbcType=DOUBLE},
-            #{longValue, jdbcType=NUMERIC}, #{value}, #{fullValue}, #{tenantId}, #{isPreview}, #{partitionId}, #{historyCleanupDate, jdbcType=TIMESTAMP})
+                                   PARTITION_ID)
+    VALUES
+    <foreach collection="variables" item="variable" separator=",">
+      (#{variable.variableKey}, #{variable.processInstanceKey}, #{variable.rootProcessInstanceKey}, #{variable.processDefinitionId}, #{variable.scopeKey}, #{variable.type}, #{variable.name}, #{variable.doubleValue, jdbcType=DOUBLE},
+       #{variable.longValue, jdbcType=NUMERIC}, #{variable.value}, #{variable.fullValue}, #{variable.tenantId}, #{variable.isPreview}, #{variable.partitionId})
+    </foreach>
   </insert>
 
   <update id="update" parameterType="io.camunda.db.rdbms.write.domain.VariableDbModel">
@@ -151,23 +156,14 @@
           LONG_VALUE   = #{longValue, jdbcType=NUMERIC},
           VAR_VALUE  = #{value},
           VAR_FULL_VALUE = #{fullValue},
-          IS_PREVIEW     = #{isPreview},
-          HISTORY_CLEANUP_DATE = #{historyCleanupDate, jdbcType=TIMESTAMP}
+          IS_PREVIEW     = #{isPreview}
       WHERE VAR_KEY = #{variableKey}
   </update>
 
-  <update id="updateHistoryCleanupDate">
-    UPDATE ${prefix}VARIABLE SET
-    HISTORY_CLEANUP_DATE = #{historyCleanupDate, jdbcType=TIMESTAMP}
-    WHERE PROCESS_INSTANCE_KEY IN
-    <foreach collection="processInstanceKeys" item="key" open="(" separator="," close=")">
-      #{key}
-    </foreach>
-  </update>
-
-  <delete id="cleanupHistory">
+  <delete id="deleteProcessInstanceRelatedData">
     <bind name="tableName" value="'VARIABLE'"/>
-    <include refid="io.camunda.db.rdbms.sql.Commons.historyCleanup"/>
+    <bind name="primaryKeyColumn" value="'VAR_KEY'"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.processInstanceHistoryDeletion"/>
   </delete>
 
   <update id="migrateToProcess" parameterType="java.util.Map">

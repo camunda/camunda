@@ -24,6 +24,7 @@ import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
+import java.net.InetSocketAddress;
 import java.security.cert.CertificateException;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
@@ -32,15 +33,39 @@ import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Test;
 
 final class NettyMessagingServiceTlsTest {
-
   @AutoClose private final MeterRegistry registry = new SimpleMeterRegistry();
+
+  @Test
+  void shouldAllowEnablingEndpointIdentification() throws CertificateException {
+    // given
+    final var serverAddress = SocketUtil.getNextAddress();
+    final var clientAddress = SocketUtil.getNextAddress();
+    final var certificate = new SelfSignedCertificate(serverAddress.getHostString());
+    final var client = createSecureMessagingService(certificate, clientAddress, true);
+    final var server = createSecureMessagingService(certificate, serverAddress);
+    final var payload = "foo".getBytes();
+
+    // when
+    client.start().join();
+    server.start().join();
+    server.registerHandler(
+        "topic",
+        (sender, request) ->
+            CompletableFuture.completedFuture((new String(request) + "bar").getBytes()));
+    final var response = client.sendAndReceive(server.address(), "topic", payload).join();
+
+    // then
+    assertThat(response).isEqualTo("foobar".getBytes());
+  }
 
   @Test
   void shouldCommunicateOverTls() throws CertificateException {
     // given
-    final var certificate = new SelfSignedCertificate();
-    final var client = createSecureMessagingService(certificate);
-    final var server = createSecureMessagingService(certificate);
+    final var serverAddress = SocketUtil.getNextAddress();
+    final var clientAddress = SocketUtil.getNextAddress();
+    final var certificate = new SelfSignedCertificate("invalid-hostname");
+    final var client = createSecureMessagingService(certificate, clientAddress);
+    final var server = createSecureMessagingService(certificate, serverAddress);
     final var payload = "foo".getBytes();
 
     // when
@@ -59,9 +84,10 @@ final class NettyMessagingServiceTlsTest {
   @Test
   void shouldFailWhenClientIsNotUsingTls() throws CertificateException {
     // given
-    final var certificate = new SelfSignedCertificate();
+    final var serverAddress = SocketUtil.getNextAddress();
+    final var certificate = new SelfSignedCertificate(serverAddress.getHostString());
     final var client = createInsecureMessagingService();
-    final var server = createSecureMessagingService(certificate);
+    final var server = createSecureMessagingService(certificate, serverAddress);
     final var payload = "foo".getBytes();
 
     // when
@@ -85,9 +111,11 @@ final class NettyMessagingServiceTlsTest {
   @Test
   void shouldFailWhenServerIsNotUsingTls() throws CertificateException {
     // given
-    final var certificate = new SelfSignedCertificate();
+    final var serverAddress = SocketUtil.getNextAddress();
+    final var clientAddress = SocketUtil.getNextAddress();
+    final var certificate = new SelfSignedCertificate(serverAddress.getHostString());
     final var server = createInsecureMessagingService();
-    final var client = createSecureMessagingService(certificate);
+    final var client = createSecureMessagingService(certificate, clientAddress);
     final var payload = "foo".getBytes();
 
     // when
@@ -116,14 +144,26 @@ final class NettyMessagingServiceTlsTest {
   }
 
   private NettyMessagingService createSecureMessagingService(
-      final SelfSignedCertificate certificate) {
+      final SelfSignedCertificate certificate, final InetSocketAddress address) {
+    return createSecureMessagingService(certificate, address, false);
+  }
+
+  private NettyMessagingService createSecureMessagingService(
+      final SelfSignedCertificate certificate,
+      final InetSocketAddress address,
+      final boolean tlsEndpointIdentificationEnabled) {
     final var config =
         new MessagingConfig()
-            .setPort(SocketUtil.getNextAddress().getPort())
+            .setPort(address.getPort())
             .setTlsEnabled(true)
+            .setTlsEndpointIdentificationEnabled(tlsEndpointIdentificationEnabled)
             .setCertificateChain(certificate.certificate())
             .setPrivateKey(certificate.privateKey());
     return new NettyMessagingService(
-        "cluster", Address.from(config.getPort()), config, "secureTestPrefix", registry);
+        "cluster",
+        Address.from(address.getHostString(), address.getPort()),
+        config,
+        "secureTestPrefix",
+        registry);
   }
 }

@@ -17,7 +17,7 @@ import java.util.function.Function;
 
 public record AuditLogDbQuery(
     AuditLogFilter filter,
-    List<String> authorizedResourceIds,
+    AuditLogAuthorizationFilter authorizationFilter,
     List<String> authorizedTenantIds,
     DbQuerySorting<AuditLogEntity> sort,
     DbQueryPage page) {
@@ -31,7 +31,7 @@ public record AuditLogDbQuery(
     private static final AuditLogFilter EMPTY_FILTER = FilterBuilders.auditLog().build();
 
     private AuditLogFilter filter;
-    private List<String> authorizedResourceIds = List.of();
+    private AuditLogAuthorizationFilter authorizationFilter;
     private List<String> authorizedTenantIds = List.of();
     private DbQuerySorting<AuditLogEntity> sort;
     private DbQueryPage page;
@@ -41,8 +41,8 @@ public record AuditLogDbQuery(
       return this;
     }
 
-    public Builder authorizedResourceIds(final List<String> authorizedResourceIds) {
-      this.authorizedResourceIds = authorizedResourceIds;
+    public Builder authorizationFilter(final AuditLogAuthorizationFilter authorizationFilter) {
+      this.authorizationFilter = authorizationFilter;
       return this;
     }
 
@@ -78,9 +78,10 @@ public record AuditLogDbQuery(
     public AuditLogDbQuery build() {
       filter = Objects.requireNonNullElse(filter, EMPTY_FILTER);
       sort = Objects.requireNonNullElse(sort, new DbQuerySorting<>(List.of()));
-      authorizedResourceIds = Objects.requireNonNullElse(authorizedResourceIds, List.of());
+      authorizationFilter =
+          Objects.requireNonNullElse(authorizationFilter, AuditLogAuthorizationFilter.denyAll());
       authorizedTenantIds = Objects.requireNonNullElse(authorizedTenantIds, List.of());
-      return new AuditLogDbQuery(filter, authorizedResourceIds, authorizedTenantIds, sort, page);
+      return new AuditLogDbQuery(filter, authorizationFilter, authorizedTenantIds, sort, page);
     }
   }
 }

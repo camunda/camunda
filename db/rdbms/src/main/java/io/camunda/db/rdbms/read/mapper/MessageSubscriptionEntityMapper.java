@@ -19,6 +19,7 @@ public class MessageSubscriptionEntityMapper {
         .processDefinitionId(messageSubscriptionDbModel.processDefinitionId())
         .processDefinitionKey(messageSubscriptionDbModel.processDefinitionKey())
         .processInstanceKey(messageSubscriptionDbModel.processInstanceKey())
+        .rootProcessInstanceKey(messageSubscriptionDbModel.rootProcessInstanceKey())
         .flowNodeId(messageSubscriptionDbModel.flowNodeId())
         .flowNodeInstanceKey(messageSubscriptionDbModel.flowNodeInstanceKey())
         .messageSubscriptionState(messageSubscriptionDbModel.messageSubscriptionState())

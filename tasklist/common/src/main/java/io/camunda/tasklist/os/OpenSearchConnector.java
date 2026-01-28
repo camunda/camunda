@@ -49,7 +49,6 @@ import org.apache.http.ssl.TrustStrategy;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.OpenSearchException;
-import org.opensearch.client.opensearch.cluster.HealthRequest;
 import org.opensearch.client.opensearch.cluster.HealthResponse;
 import org.opensearch.client.transport.OpenSearchTransport;
 import org.opensearch.client.transport.aws.AwsSdk2Transport;
@@ -73,7 +72,6 @@ import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain;
 public class OpenSearchConnector {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(OpenSearchConnector.class);
-  private static final String AWS_OPENSEARCH_SERVICE_NAME = "es";
 
   private PluginRepository osClientRepository = new PluginRepository();
   @Autowired private TasklistProperties tasklistProperties;
@@ -102,15 +100,7 @@ public class OpenSearchConnector {
     osClientRepository.load(tasklistProperties.getOpenSearch().getInterceptorPlugins());
     final OpenSearchClient openSearchClient =
         createOsClient(tasklistProperties.getOpenSearch(), osClientRepository);
-    try {
-      final HealthResponse response = openSearchClient.cluster().health();
-      LOGGER.info("OpenSearch cluster health: {}", response.status());
-    } catch (final IOException e) {
-      LOGGER.error(
-          "Error in getting health status from localhost:"
-              + tasklistProperties.getOpenSearch().getPort(),
-          e);
-    }
+    checkHealth(openSearchClient);
     return openSearchClient;
   }
 
@@ -142,21 +132,8 @@ public class OpenSearchConnector {
 
     final OpenSearchTransport transport = builder.build();
     final OpenSearchClient openSearchClient = new OpenSearchClient(transport);
-    try {
-      final HealthResponse response = openSearchClient.cluster().health();
-      LOGGER.info("OpenSearch cluster health: {}", response.status());
-    } catch (final IOException e) {
-      LOGGER.error(
-          "Error in getting health status from localhost:"
-              + tasklistProperties.getOpenSearch().getPort(),
-          e);
-    }
 
-    if (!checkHealth(openSearchClient)) {
-      LOGGER.warn("OpenSearch cluster is not accessible");
-    } else {
-      LOGGER.debug("OpenSearch connection was successfully created.");
-    }
+    checkHealth(openSearchClient);
     return openSearchClient;
   }
 
@@ -300,7 +277,15 @@ public class OpenSearchConnector {
     return builder;
   }
 
-  public boolean checkHealth(final OpenSearchClient osClient) {
+  private void checkHealth(final OpenSearchClient openSearchClient) {
+    if (!isHealthy(openSearchClient)) {
+      LOGGER.warn("OpenSearch cluster is not accessible");
+    } else {
+      LOGGER.debug("OpenSearch connection was successfully created.");
+    }
+  }
+
+  boolean isHealthy(final OpenSearchClient osClient) {
     final OpenSearchProperties osConfig = tasklistProperties.getOpenSearch();
     if (!osConfig.isHealthCheckEnabled()) {
       LOGGER.debug("Opensearch health check is disabled");
@@ -310,8 +295,7 @@ public class OpenSearchConnector {
     return Failsafe.with(retryPolicy)
         .get(
             () -> {
-              final HealthResponse clusterHealthResponse =
-                  osClient.cluster().health(new HealthRequest.Builder().build());
+              final HealthResponse clusterHealthResponse = osClient.cluster().health();
               return clusterHealthResponse.clusterName().equals(osConfig.getClusterName());
             });
   }

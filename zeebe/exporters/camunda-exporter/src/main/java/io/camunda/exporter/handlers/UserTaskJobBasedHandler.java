@@ -86,7 +86,8 @@ public class UserTaskJobBasedHandler implements ExportHandler<TaskEntity, JobRec
   @Override
   public boolean handlesRecord(final Record<JobRecordValue> record) {
     return SUPPORTED_INTENTS.contains(record.getIntent())
-        && record.getValue().getType().equals(Protocol.USER_TASK_JOB_TYPE);
+        && record.getValue().getType().equals(Protocol.USER_TASK_JOB_TYPE)
+        && !record.getValue().isJobToUserTaskMigration();
   }
 
   @Override
@@ -147,6 +148,10 @@ public class UserTaskJobBasedHandler implements ExportHandler<TaskEntity, JobRec
     joinRelation.setName(TaskJoinRelationshipType.TASK.getType());
     joinRelation.setParent(Long.valueOf(entity.getProcessInstanceId()));
     entity.setJoin(joinRelation);
+    final long rootProcessInstanceKey = record.getValue().getRootProcessInstanceKey();
+    if (rootProcessInstanceKey > 0) {
+      entity.setRootProcessInstanceKey(rootProcessInstanceKey);
+    }
   }
 
   @Override

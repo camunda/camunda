@@ -10,6 +10,8 @@ package io.camunda.authentication.config;
 import static io.camunda.security.configuration.OidcAuthenticationConfiguration.CLIENT_AUTHENTICATION_METHODS;
 
 import io.camunda.security.configuration.OidcAuthenticationConfiguration;
+import java.util.HashMap;
+import java.util.Map;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.ClientRegistration.Builder;
 import org.springframework.security.oauth2.client.registration.ClientRegistrations;
@@ -45,6 +47,14 @@ public final class ClientRegistrationFactory {
     }
     if (configuration.getAuthorizationUri() != null) {
       builder.authorizationUri(configuration.getAuthorizationUri());
+    }
+    if (configuration.getEndSessionEndpointUri() != null) {
+      // end_session_endpoint should be located in the provider metadata
+      // this will also override any other metadata provided by the builder previously
+      // there is no way to get the current builder metadata or merge into it
+      final Map<String, Object> metadata = new HashMap<>();
+      metadata.put("end_session_endpoint", configuration.getEndSessionEndpointUri());
+      builder.providerConfigurationMetadata(metadata);
     }
     if (configuration.getTokenUri() != null) {
       builder.tokenUri(configuration.getTokenUri());

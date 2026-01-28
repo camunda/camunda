@@ -34,6 +34,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.camunda.zeebe.util.ByteValue;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -41,6 +42,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.assertj.core.api.InstanceOfAssertFactories;
+import org.awaitility.Awaitility;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -67,6 +69,7 @@ public final class ActivateJobsTest {
 
   @Before
   public void setup() {
+    ENGINE.clock().reset();
     taskType = Strings.newRandomValidBpmnId();
   }
 
@@ -366,7 +369,7 @@ public final class ActivateJobsTest {
         .hasType(taskType)
         .hasWorker(worker)
         .hasRetries(3)
-        .hasDeadline(jobActivate.getTimestamp() + timeout.toMillis());
+        .hasDeadline(clock.getCurrentTimeInMillis() + timeout.toMillis());
 
     assertThat(jobActivated.getVariables()).containsExactly(entry("foo", "bar"));
 
@@ -488,6 +491,46 @@ public final class ActivateJobsTest {
     assertThat(jobs).describedAs("Failed job without retries should not be activated").isEmpty();
   }
 
+  @Test // regression: https://github.com/camunda/camunda/issues/42244
+  public void shouldSetFutureTimeoutOnActivation() {
+    // given
+    final BpmnModelInstance modelInstance =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .serviceTask("task", task -> task.zeebeJobType(taskType))
+            .endEvent()
+            .done();
+    ENGINE.deployment().withXmlResource(modelInstance).deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var jobKey =
+        Awaitility.await("job has been activated")
+            .until(() -> activateJobs(taskType, 10, 60_000), jobs -> !jobs.isEmpty())
+            .getFirst();
+    ENGINE.job().withKey(jobKey).yield();
+
+    // when
+    // pin the clock in the future; without the fix, the next activation would also result in an
+    // immediate timeout, since the deadline was based on the original record timestamp, and not
+    // the time at which a job is activated
+    final var clockInstant = Instant.now().plusSeconds(3600);
+    ENGINE.clock().pinAt(clockInstant);
+    final var jobs =
+        ENGINE
+            .jobs()
+            .withType(taskType)
+            .withMaxJobsToActivate(10)
+            .withTimeout(60_000)
+            .activate()
+            .getValue();
+
+    // then
+    assertThat(jobs.getJobs())
+        .allSatisfy(
+            job ->
+                assertThat(job.getDeadline())
+                    .isEqualTo(clockInstant.plusSeconds(60).toEpochMilli()));
+  }
+
   private Record<JobRecordValue> completeJob(final long jobKey) {
     return ENGINE.job().withKey(jobKey).complete();
   }
@@ -497,10 +540,15 @@ public final class ActivateJobsTest {
   }
 
   private List<Long> activateJobs(final String type, final int amount) {
+    return activateJobs(type, amount, 100_000); // large-ish timeout to ensure most tests pass
+  }
+
+  private List<Long> activateJobs(final String type, final int amount, final long timeoutMs) {
     return ENGINE
         .jobs()
         .withType(type)
         .withMaxJobsToActivate(amount)
+        .withTimeout(timeoutMs)
         .activate()
         .getValue()
         .getJobKeys();

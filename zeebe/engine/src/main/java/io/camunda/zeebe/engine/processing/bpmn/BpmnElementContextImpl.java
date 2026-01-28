@@ -53,6 +53,11 @@ public final class BpmnElementContextImpl implements BpmnElementContext {
   }
 
   @Override
+  public long getRootProcessInstanceKey() {
+    return recordValue.getRootProcessInstanceKey();
+  }
+
+  @Override
   public int getProcessVersion() {
     return recordValue.getVersion();
   }

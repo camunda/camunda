@@ -14,6 +14,7 @@
         <zeebe:ioMapping>
           <zeebe:input source="=1" target="task02" />
         </zeebe:ioMapping>
+        <zeebe:assignmentDefinition candidateUsers="bob, userCandidateUser, simon" />
         <zeebe:userTask />
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_1ffbwjw</bpmn:incoming>

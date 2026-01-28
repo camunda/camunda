@@ -7,12 +7,13 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
+import io.camunda.gateway.mapping.http.RequestMapper;
+import io.camunda.gateway.protocol.model.AdHocSubProcessActivateActivitiesInstruction;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.AdHocSubProcessActivityServices;
 import io.camunda.service.AdHocSubProcessActivityServices.AdHocSubProcessActivateActivitiesRequest;
-import io.camunda.zeebe.gateway.protocol.rest.AdHocSubProcessActivateActivitiesInstruction;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
-import io.camunda.zeebe.gateway.rest.mapper.RequestMapper;
+import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.ResponseEntity;
@@ -45,7 +46,7 @@ public class AdHocSubProcessActivityController {
 
   private CompletableFuture<ResponseEntity<Object>> activateActivities(
       final AdHocSubProcessActivateActivitiesRequest request) {
-    return RequestMapper.executeServiceMethodWithNoContentResult(
+    return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
             adHocSubProcessActivityServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())

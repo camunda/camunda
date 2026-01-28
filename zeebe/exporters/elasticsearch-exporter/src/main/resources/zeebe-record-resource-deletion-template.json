@@ -24,6 +24,15 @@
             },
             "tenantId": {
               "type": "keyword"
+            },
+            "deleteHistory": {
+              "type": "boolean"
+            },
+            "batchOperationKey": {
+              "type": "long"
+            },
+            "batchOperationType": {
+              "type": "keyword"
             }
           }
         }

@@ -7,6 +7,9 @@
  */
 package io.camunda.zeebe.engine.processing.usertask.processors;
 
+import static io.camunda.zeebe.engine.processing.usertask.processors.UserTaskAuthorizationHelper.buildProcessDefinitionUpdateUserTaskRequest;
+import static io.camunda.zeebe.engine.processing.usertask.processors.UserTaskAuthorizationHelper.buildUserTaskRequest;
+
 import io.camunda.zeebe.engine.processing.AsyncRequestBehavior;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
@@ -21,6 +24,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AsyncRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
@@ -38,7 +42,8 @@ public final class UserTaskClaimProcessor implements UserTaskCommandProcessor {
   private final TypedResponseWriter responseWriter;
   private final AsyncRequestState asyncRequestState;
   private final AsyncRequestBehavior asyncRequestBehavior;
-  private final UserTaskCommandPreconditionChecker preconditionChecker;
+  private final AuthorizationCheckBehavior authCheckBehavior;
+  private final UserTaskCommandPreconditionChecker commandChecker;
 
   public UserTaskClaimProcessor(
       final ProcessingState state,
@@ -49,19 +54,20 @@ public final class UserTaskClaimProcessor implements UserTaskCommandProcessor {
     responseWriter = writers.response();
     asyncRequestState = state.getAsyncRequestState();
     this.asyncRequestBehavior = asyncRequestBehavior;
-    preconditionChecker =
+    this.authCheckBehavior = authCheckBehavior;
+    commandChecker =
         new UserTaskCommandPreconditionChecker(
-            List.of(LifecycleState.CREATED),
-            "claim",
-            UserTaskClaimProcessor::checkClaim,
-            state.getUserTaskState(),
-            authCheckBehavior);
+            List.of(LifecycleState.CREATED), "claim", state.getUserTaskState(), authCheckBehavior);
   }
 
   @Override
   public Either<Rejection, UserTaskRecord> validateCommand(
       final TypedRecord<UserTaskRecord> command) {
-    return preconditionChecker.check(command);
+    return commandChecker
+        .checkUserTaskExists(command)
+        .flatMap(userTask -> checkAuthorization(command, userTask))
+        .flatMap(userTask -> commandChecker.checkLifecycleState(command, userTask))
+        .flatMap(userTask -> checkClaim(command, userTask));
   }
 
   @Override
@@ -105,6 +111,16 @@ public final class UserTaskClaimProcessor implements UserTaskCommandProcessor {
         request.requestId(),
         request.requestStreamId());
     stateWriter.appendFollowUpEvent(request.key(), AsyncRequestIntent.PROCESSED, request.record());
+  }
+
+  private Either<Rejection, UserTaskRecord> checkAuthorization(
+      final TypedRecord<UserTaskRecord> command, final UserTaskRecord persistedUserTask) {
+    return authCheckBehavior
+        .isAnyAuthorizedOrInternalCommand(
+            buildProcessDefinitionUpdateUserTaskRequest(command, persistedUserTask),
+            buildUserTaskRequest(command, persistedUserTask, PermissionType.UPDATE),
+            buildUserTaskRequest(command, persistedUserTask, PermissionType.CLAIM))
+        .map(ignored -> persistedUserTask);
   }
 
   private static Either<Rejection, UserTaskRecord> checkClaim(

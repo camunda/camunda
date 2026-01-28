@@ -162,6 +162,26 @@ public interface BackupAcceptance {
                     .containsExactly(backupId, CheckpointType.MANUAL_BACKUP));
   }
 
+  @Test
+  default void shouldExposeFirstLogPositionInBackupStatus() {
+    // given
+    final var cluster = getTestCluster();
+    final var actuator = BackupActuator.of(cluster.availableGateway());
+    try (final var client = cluster.newClientBuilder().build()) {
+      client.newPublishMessageCommand().messageName("name").correlationKey("key").send().join();
+    }
+
+    // when
+    actuator.take(1);
+    waitUntilBackupIsCompleted(actuator, 1L);
+
+    // then
+    assertThat(actuator.status(1L).getDetails())
+        .allSatisfy(
+            partitionBackupInfo ->
+                assertThat(partitionBackupInfo.getFirstLogPosition()).isPositive());
+  }
+
   private static void waitUntilBackupIsCompleted(
       final BackupActuator actuator, final long backupId) {
     Awaitility.await("until a backup exists with the id %d".formatted(backupId))

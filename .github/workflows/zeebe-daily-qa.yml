@@ -31,7 +31,7 @@ jobs:
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Set stable/8.* branches as JSON array of strings
         id: set-matrix
         run: |
@@ -78,7 +78,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Daily QA
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Print branch and template
         run: |
           echo "Branch: ${{ matrix.branch }}"

@@ -39,7 +39,7 @@ public final class TopologyClusterTest {
       TestCluster.builder()
           .withEmbeddedGateway(false)
           .withGatewaysCount(1)
-          .withGatewayConfig(gateway -> gateway.withCreateSchema(false))
+          .withGatewayConfig(gateway -> gateway.withCreateSchema(false).withUnauthenticatedAccess())
           .withBrokersCount(3)
           .withBrokerConfig(node -> node.withCreateSchema(false))
           .withPartitionsCount(3)

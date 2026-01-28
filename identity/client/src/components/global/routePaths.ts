@@ -34,4 +34,10 @@ export const Paths = {
   authorizations() {
     return "/authorizations";
   },
+  clusterVariables() {
+    return "/cluster-variables";
+  },
+  operationsLog() {
+    return "/operations-log";
+  },
 } as const;

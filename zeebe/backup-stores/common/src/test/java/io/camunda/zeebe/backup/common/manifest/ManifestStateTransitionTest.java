@@ -18,7 +18,6 @@ import io.camunda.zeebe.backup.common.BackupImpl;
 import io.camunda.zeebe.backup.common.Manifest;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import java.time.Instant;
-import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 final class ManifestStateTransitionTest {
@@ -32,12 +31,7 @@ final class ManifestStateTransitionTest {
             new BackupImpl(
                 new BackupIdentifierImpl(1, 2, 43),
                 new BackupDescriptorImpl(
-                    Optional.empty(),
-                    2345234L,
-                    3,
-                    "1.2.0-SNAPSHOT",
-                    Instant.now(),
-                    CheckpointType.MANUAL_BACKUP),
+                    2345234L, 3, "1.2.0-SNAPSHOT", Instant.now(), CheckpointType.MANUAL_BACKUP),
                 null,
                 null));
 
@@ -56,12 +50,7 @@ final class ManifestStateTransitionTest {
             new BackupImpl(
                 new BackupIdentifierImpl(1, 2, 43),
                 new BackupDescriptorImpl(
-                    Optional.empty(),
-                    2345234L,
-                    3,
-                    "1.2.0-SNAPSHOT",
-                    Instant.now(),
-                    CheckpointType.MANUAL_BACKUP),
+                    2345234L, 3, "1.2.0-SNAPSHOT", Instant.now(), CheckpointType.MANUAL_BACKUP),
                 null,
                 null));
 
@@ -85,12 +74,7 @@ final class ManifestStateTransitionTest {
             new BackupImpl(
                 new BackupIdentifierImpl(1, 2, 43),
                 new BackupDescriptorImpl(
-                    Optional.empty(),
-                    2345234L,
-                    3,
-                    "1.2.0-SNAPSHOT",
-                    Instant.now(),
-                    CheckpointType.MANUAL_BACKUP),
+                    2345234L, 3, "1.2.0-SNAPSHOT", Instant.now(), CheckpointType.MANUAL_BACKUP),
                 null,
                 null));
 
@@ -115,12 +99,7 @@ final class ManifestStateTransitionTest {
             new BackupImpl(
                 new BackupIdentifierImpl(1, 2, 43),
                 new BackupDescriptorImpl(
-                    Optional.empty(),
-                    2345234L,
-                    3,
-                    "1.2.0-SNAPSHOT",
-                    Instant.now(),
-                    CheckpointType.MANUAL_BACKUP),
+                    2345234L, 3, "1.2.0-SNAPSHOT", Instant.now(), CheckpointType.MANUAL_BACKUP),
                 null,
                 null));
 

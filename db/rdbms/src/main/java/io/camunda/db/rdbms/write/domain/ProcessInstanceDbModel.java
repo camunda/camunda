@@ -15,6 +15,7 @@ import java.util.function.Function;
 
 public record ProcessInstanceDbModel(
     Long processInstanceKey,
+    Long rootProcessInstanceKey,
     String processDefinitionId,
     Long processDefinitionKey,
     ProcessInstanceState state,
@@ -39,7 +40,7 @@ public record ProcessInstanceDbModel(
         .apply(
             new ProcessInstanceDbModelBuilder()
                 .processInstanceKey(processInstanceKey)
-                .processInstanceKey(processInstanceKey())
+                .rootProcessInstanceKey(rootProcessInstanceKey)
                 .processDefinitionKey(processDefinitionKey)
                 .processDefinitionId(processDefinitionId)
                 .startDate(startDate)
@@ -61,6 +62,7 @@ public record ProcessInstanceDbModel(
       implements ObjectBuilder<ProcessInstanceDbModel> {
 
     private Long processInstanceKey;
+    private Long rootProcessInstanceKey;
     private String processDefinitionId;
     private Long processDefinitionKey;
     private ProcessInstanceState state;
@@ -82,6 +84,11 @@ public record ProcessInstanceDbModel(
     // Builder methods for each field
     public ProcessInstanceDbModelBuilder processInstanceKey(final Long processInstanceKey) {
       this.processInstanceKey = processInstanceKey;
+      return this;
+    }
+
+    public ProcessInstanceDbModelBuilder rootProcessInstanceKey(final Long rootProcessInstanceKey) {
+      this.rootProcessInstanceKey = rootProcessInstanceKey;
       return this;
     }
 
@@ -165,6 +172,7 @@ public record ProcessInstanceDbModel(
     public ProcessInstanceDbModel build() {
       return new ProcessInstanceDbModel(
           processInstanceKey,
+          rootProcessInstanceKey,
           processDefinitionId,
           processDefinitionKey,
           state,

@@ -20,7 +20,11 @@ import type {
   QueryProcessInstancesRequestBody,
   Variable,
 } from '@camunda/camunda-api-zod-schemas/8.8';
-import type {QueryAuditLogsRequestBody} from '@camunda/camunda-api-zod-schemas/8.9';
+import type {
+  QueryAuditLogsRequestBody,
+  GetIncidentProcessInstanceStatisticsByErrorRequestBody,
+  GetIncidentProcessInstanceStatisticsByDefinitionRequestBody,
+} from '@camunda/camunda-api-zod-schemas/8.9';
 
 const queryKeys = {
   variables: {
@@ -91,6 +95,10 @@ const queryKeys = {
       processDefinitionId: string,
       payload?: GetProcessDefinitionInstanceVersionStatisticsRequestBody,
     ) => ['processDefinitionVersionStatistics', processDefinitionId, payload],
+    runningInstancesCount: () => [
+      'processDefinitionStatistics',
+      'runningInstancesCount',
+    ],
   },
   incidents: {
     get: (incidentKey: string) => ['incident', incidentKey],
@@ -152,6 +160,7 @@ const queryKeys = {
     },
   },
   processInstances: {
+    base: () => ['processInstances'],
     searchPaginated: (payload: QueryProcessInstancesRequestBody) => [
       'processInstances',
       'search',
@@ -186,6 +195,17 @@ const queryKeys = {
       'auditLogsSearch',
       payload,
     ],
+  },
+  incidentProcessInstanceStatisticsByError: {
+    get: (payload?: GetIncidentProcessInstanceStatisticsByErrorRequestBody) => [
+      'incidentProcessInstanceStatisticsByError',
+      payload,
+    ],
+  },
+  incidentProcessInstanceStatisticsByDefinition: {
+    get: (
+      payload?: GetIncidentProcessInstanceStatisticsByDefinitionRequestBody,
+    ) => ['incidentProcessInstanceStatisticsByDefinition', payload],
   },
 };
 

@@ -17,6 +17,10 @@ import {
   type CreateProcessInstanceRequestBody,
 } from '@camunda/camunda-api-zod-schemas/8.8';
 import {BASE_REQUEST_OPTIONS, getFullURL} from 'common/api';
+import {
+  endpoints as endpointsV89,
+  type QueryUserTaskAuditLogsRequestBody,
+} from '@camunda/camunda-api-zod-schemas/8.9';
 
 const api = {
   queryTasks: (body: QueryUserTasksRequestBody = {}) => {
@@ -166,6 +170,31 @@ const api = {
     return new Request(getFullURL(endpoints.getProcessStartForm.getUrl(body)), {
       ...BASE_REQUEST_OPTIONS,
       method: endpoints.getProcessStartForm.method,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+  },
+  queryUserTaskAuditLogs: (
+    params: {userTaskKey: string} & QueryUserTaskAuditLogsRequestBody,
+  ) => {
+    const {userTaskKey, ...body} = params;
+    return new Request(
+      getFullURL(endpointsV89.queryUserTaskAuditLogs.getUrl({userTaskKey})),
+      {
+        ...BASE_REQUEST_OPTIONS,
+        method: endpointsV89.queryUserTaskAuditLogs.method,
+        body: JSON.stringify(body),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      },
+    );
+  },
+  getAuditLog: (params: {auditLogKey: string}) => {
+    return new Request(getFullURL(endpointsV89.getAuditLog.getUrl(params)), {
+      ...BASE_REQUEST_OPTIONS,
+      method: endpointsV89.getAuditLog.method,
       headers: {
         'Content-Type': 'application/json',
       },

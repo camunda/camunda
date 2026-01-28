@@ -21,6 +21,18 @@ public interface MutableConditionalSubscriptionState extends ConditionalSubscrip
   void put(final long key, ConditionalSubscriptionRecord subscription);
 
   /**
+   * Migrates an existing conditional subscription by its subscription key.
+   *
+   * <p>This method is intended to be used during process instance migration to update an existing
+   * subscription's process definition key, catch event ID, and BPMN process id to match the target
+   * process definition, while retaining the same subscription key.
+   *
+   * @param key the key of the subscription
+   * @param subscription the subscription record
+   */
+  void migrate(final long key, ConditionalSubscriptionRecord subscription);
+
+  /**
    * Stores a conditional subscription for a root-level conditional start event (where {@code
    * elementInstanceKey < 0}).
    *

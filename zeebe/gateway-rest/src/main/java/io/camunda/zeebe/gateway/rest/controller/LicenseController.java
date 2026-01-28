@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
+import io.camunda.gateway.protocol.model.LicenseResponse;
 import io.camunda.service.ManagementServices;
-import io.camunda.zeebe.gateway.protocol.rest.LicenseResponse;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.time.OffsetDateTime;

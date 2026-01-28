@@ -17,7 +17,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.application.commons.rdbms.RdbmsConfiguration;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.UserDbReader;
-import io.camunda.db.rdbms.write.RdbmsWriter;
+import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.GroupMemberDbModel;
 import io.camunda.db.rdbms.write.domain.RoleMemberDbModel;
 import io.camunda.db.rdbms.write.domain.TenantMemberDbModel;
@@ -55,25 +55,25 @@ public class UserSpecificFilterIT {
 
   @Autowired private UserDbReader userReader;
 
-  private RdbmsWriter rdbmsWriter;
+  private RdbmsWriters rdbmsWriters;
 
   @BeforeEach
   public void beforeAll() {
-    rdbmsWriter = rdbmsService.createWriter(0L);
+    rdbmsWriters = rdbmsService.createWriter(0L);
   }
 
   @Test
   public void shouldFilterUsersForTenant() {
     final var tenant = TenantFixtures.createRandomized(b -> b);
     final var anotherTenant = TenantFixtures.createRandomized(b -> b);
-    createAndSaveTenant(rdbmsWriter, tenant);
-    createAndSaveTenant(rdbmsWriter, anotherTenant);
+    createAndSaveTenant(rdbmsWriters, tenant);
+    createAndSaveTenant(rdbmsWriters, anotherTenant);
 
     Arrays.asList("user-abc", "user-123", "user-1337")
         .forEach(
             username ->
                 createAndSaveUser(
-                    rdbmsWriter,
+                    rdbmsWriters,
                     UserFixtures.createRandomized(
                         b ->
                             b.name("User 1337")
@@ -98,14 +98,14 @@ public class UserSpecificFilterIT {
   public void shouldFilterUsersForGroup() {
     final var group = GroupFixtures.createRandomized(b -> b);
     final var anotherGroup = GroupFixtures.createRandomized(b -> b);
-    createAndSaveGroup(rdbmsWriter, group);
-    createAndSaveGroup(rdbmsWriter, anotherGroup);
+    createAndSaveGroup(rdbmsWriters, group);
+    createAndSaveGroup(rdbmsWriters, anotherGroup);
 
     Arrays.asList("user-abc", "user-123", "user-1337")
         .forEach(
             username ->
                 createAndSaveUser(
-                    rdbmsWriter,
+                    rdbmsWriters,
                     UserFixtures.createRandomized(
                         b ->
                             b.name("User 1337")
@@ -130,14 +130,14 @@ public class UserSpecificFilterIT {
   public void shouldFilterUsersForRole() {
     final var role = RoleFixtures.createRandomized(b -> b);
     final var anotherRole = RoleFixtures.createRandomized(b -> b);
-    createAndSaveRole(rdbmsWriter, role);
-    createAndSaveRole(rdbmsWriter, anotherRole);
+    createAndSaveRole(rdbmsWriters, role);
+    createAndSaveRole(rdbmsWriters, anotherRole);
 
     Arrays.asList("user-abc", "user-123", "user-1337")
         .forEach(
             username ->
                 createAndSaveUser(
-                    rdbmsWriter,
+                    rdbmsWriters,
                     UserFixtures.createRandomized(
                         b ->
                             b.name("User 1337")
@@ -161,9 +161,9 @@ public class UserSpecificFilterIT {
   @ParameterizedTest
   @MethodSource("shouldFindWithSpecificFilterParameters")
   public void shouldFindWithSpecificFilter(final UserFilter filter) {
-    createAndSaveRandomUsers(rdbmsWriter);
+    createAndSaveRandomUsers(rdbmsWriters);
     createAndSaveUser(
-        rdbmsWriter,
+        rdbmsWriters,
         UserFixtures.createRandomized(
             b ->
                 b.userKey(1337L)
@@ -189,17 +189,17 @@ public class UserSpecificFilterIT {
   }
 
   private void addUserToTenant(final String tenantId, final String entityId) {
-    rdbmsWriter.getTenantWriter().addMember(new TenantMemberDbModel(tenantId, entityId, "USER"));
-    rdbmsWriter.flush();
+    rdbmsWriters.getTenantWriter().addMember(new TenantMemberDbModel(tenantId, entityId, "USER"));
+    rdbmsWriters.flush();
   }
 
   private void addUserToGroup(final String groupId, final String entityId) {
-    rdbmsWriter.getGroupWriter().addMember(new GroupMemberDbModel(groupId, entityId, "USER"));
-    rdbmsWriter.flush();
+    rdbmsWriters.getGroupWriter().addMember(new GroupMemberDbModel(groupId, entityId, "USER"));
+    rdbmsWriters.flush();
   }
 
   private void addUserToRole(final String roleId, final String entityId) {
-    rdbmsWriter.getRoleWriter().addMember(new RoleMemberDbModel(roleId, entityId, "USER"));
-    rdbmsWriter.flush();
+    rdbmsWriters.getRoleWriter().addMember(new RoleMemberDbModel(roleId, entityId, "USER"));
+    rdbmsWriters.flush();
   }
 }

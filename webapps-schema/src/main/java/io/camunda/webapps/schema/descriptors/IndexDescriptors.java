@@ -30,6 +30,7 @@ import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.DraftTaskVariableTemplate;
 import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.IncidentTemplate;
+import io.camunda.webapps.schema.descriptors.template.JobMetricsBatchTemplate;
 import io.camunda.webapps.schema.descriptors.template.JobTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate;
@@ -88,7 +89,8 @@ public class IndexDescriptors {
                 new UsageMetricTemplate(indexPrefix, isElasticsearch),
                 new UsageMetricTUTemplate(indexPrefix, isElasticsearch),
                 new AuditLogTemplate(indexPrefix, isElasticsearch),
-                new HistoryDeletionIndex(indexPrefix, isElasticsearch))
+                new HistoryDeletionIndex(indexPrefix, isElasticsearch),
+                new JobMetricsBatchTemplate(indexPrefix, isElasticsearch))
             .collect(Collectors.toMap(Object::getClass, Function.identity()));
   }
 

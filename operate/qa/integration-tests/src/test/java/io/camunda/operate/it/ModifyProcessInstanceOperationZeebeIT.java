@@ -849,22 +849,6 @@ public class ModifyProcessInstanceOperationZeebeIT extends OperateZeebeAbstractI
     assertThat(flowNodeStates.get(eventSubprocessTaskFlowNodeId))
         .isEqualTo(FlowNodeStateDto.ACTIVE);
     assertThat(flowNodeStates.get(subprocessFlowNodeId)).isEqualTo(FlowNodeStateDto.ACTIVE);
-    // check statistics
-    final var statistics =
-        flowNodeInstanceReader.getFlowNodeStatisticsForProcessInstance(
-            tester.getProcessInstanceKey());
-    final var eventSubProcessTaskStatistic =
-        statistics.stream()
-            .filter(s -> s.getActivityId().equals(eventSubprocessTaskFlowNodeId))
-            .findFirst()
-            .orElseThrow();
-    final var eventSubProcessStatistic =
-        statistics.stream()
-            .filter(s -> s.getActivityId().equals(subprocessFlowNodeId))
-            .findFirst()
-            .orElseThrow();
-    assertThat(eventSubProcessTaskStatistic.getActive()).isEqualTo(5);
-    assertThat(eventSubProcessStatistic.getActive()).isEqualTo(2);
   }
 
   @Test

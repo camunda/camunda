@@ -21,6 +21,7 @@ public record IncidentDbModel(
     Long processDefinitionKey,
     String processDefinitionId,
     Long processInstanceKey,
+    Long rootProcessInstanceKey,
     Long flowNodeInstanceKey,
     String flowNodeId,
     Long jobKey,
@@ -31,8 +32,7 @@ public record IncidentDbModel(
     IncidentState state,
     String treePath,
     String tenantId,
-    int partitionId,
-    OffsetDateTime historyCleanupDate)
+    int partitionId)
     implements DbModel<IncidentDbModel> {
 
   private static final Logger LOG = LoggerFactory.getLogger(IncidentDbModel.class);
@@ -48,6 +48,7 @@ public record IncidentDbModel(
                 .processDefinitionKey(processDefinitionKey)
                 .processDefinitionId(processDefinitionId)
                 .processInstanceKey(processInstanceKey)
+                .rootProcessInstanceKey(rootProcessInstanceKey)
                 .flowNodeInstanceKey(flowNodeInstanceKey)
                 .flowNodeId(flowNodeId)
                 .jobKey(jobKey)
@@ -58,8 +59,7 @@ public record IncidentDbModel(
                 .state(state)
                 .treePath(treePath)
                 .tenantId(tenantId)
-                .partitionId(partitionId)
-                .historyCleanupDate(historyCleanupDate))
+                .partitionId(partitionId))
         .build();
   }
 
@@ -78,6 +78,7 @@ public record IncidentDbModel(
         processDefinitionKey,
         processDefinitionId,
         processInstanceKey,
+        rootProcessInstanceKey,
         flowNodeInstanceKey,
         flowNodeId,
         jobKey,
@@ -88,8 +89,7 @@ public record IncidentDbModel(
         state,
         treePath,
         tenantId,
-        partitionId,
-        historyCleanupDate);
+        partitionId);
   }
 
   public static class Builder implements ObjectBuilder<IncidentDbModel> {
@@ -98,6 +98,7 @@ public record IncidentDbModel(
     private Long processDefinitionKey;
     private String processDefinitionId;
     private Long processInstanceKey;
+    private Long rootProcessInstanceKey;
     private Long flowNodeInstanceKey;
     private String flowNodeId;
     private Long jobKey;
@@ -109,7 +110,6 @@ public record IncidentDbModel(
     private String treePath;
     private String tenantId;
     private int partitionId;
-    private OffsetDateTime historyCleanupDate;
 
     public Builder incidentKey(final Long incidentKey) {
       this.incidentKey = incidentKey;
@@ -128,6 +128,11 @@ public record IncidentDbModel(
 
     public Builder processInstanceKey(final Long processInstanceKey) {
       this.processInstanceKey = processInstanceKey;
+      return this;
+    }
+
+    public Builder rootProcessInstanceKey(final Long rootProcessInstanceKey) {
+      this.rootProcessInstanceKey = rootProcessInstanceKey;
       return this;
     }
 
@@ -186,11 +191,6 @@ public record IncidentDbModel(
       return this;
     }
 
-    public Builder historyCleanupDate(final OffsetDateTime value) {
-      historyCleanupDate = value;
-      return this;
-    }
-
     @Override
     public IncidentDbModel build() {
       return new IncidentDbModel(
@@ -198,6 +198,7 @@ public record IncidentDbModel(
           processDefinitionKey,
           processDefinitionId,
           processInstanceKey,
+          rootProcessInstanceKey,
           flowNodeInstanceKey,
           flowNodeId,
           jobKey,
@@ -208,8 +209,7 @@ public record IncidentDbModel(
           state,
           treePath,
           tenantId,
-          partitionId,
-          historyCleanupDate);
+          partitionId);
     }
   }
 }

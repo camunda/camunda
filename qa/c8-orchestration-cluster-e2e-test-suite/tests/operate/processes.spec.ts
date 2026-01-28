@@ -28,14 +28,14 @@ let instanceToCancel: ProcessInstance;
 let deployedProcess: DeployedProcess | undefined;
 
 test.beforeAll(async () => {
-  await deploy(['./resources/orderProcess_v_1.bpmn']);
+  await deploy(['./resources/orderProcess_processes.bpmn']);
   deployedProcess = {
     version: 1,
-    bpmnProcessId: 'orderProcess',
+    bpmnProcessId: 'orderProcessProcessesTest',
   };
 
   const instanceWithoutAnIncidentResponse = await createSingleInstance(
-    'orderProcess',
+    'orderProcessProcessesTest',
     1,
   );
   instanceWithoutAnIncident = {
@@ -87,13 +87,21 @@ test.describe('Processes', () => {
       await expect(
         operateFiltersPanelPage.runningInstancesCheckbox,
       ).toBeChecked();
-      await expect(operateFiltersPanelPage.activeCheckbox).toBeChecked();
-      await expect(operateFiltersPanelPage.incidentsCheckbox).toBeChecked();
+      await expect(
+        operateFiltersPanelPage.activeInstancesCheckbox,
+      ).toBeChecked();
+      await expect(
+        operateFiltersPanelPage.incidentsInstancesCheckbox,
+      ).toBeChecked();
       await expect(
         operateFiltersPanelPage.finishedInstancesCheckbox,
       ).not.toBeChecked();
-      await expect(operateFiltersPanelPage.completedCheckbox).not.toBeChecked();
-      await expect(operateFiltersPanelPage.canceledCheckbox).not.toBeChecked();
+      await expect(
+        operateFiltersPanelPage.completedInstancesCheckbox,
+      ).not.toBeChecked();
+      await expect(
+        operateFiltersPanelPage.canceledInstancesCheckbox,
+      ).not.toBeChecked();
     });
 
     await test.step('Validate no process selected message', async () => {
@@ -116,8 +124,15 @@ test.describe('Processes', () => {
         `${instanceWithoutAnIncident.processInstanceKey}, ${instanceWithAnIncident.processInstanceKey}`,
       );
 
-      await expect(operateProcessesPage.dataList).toBeVisible();
-      await expect(operateProcessesPage.processInstancesTable).toHaveCount(2);
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(operateProcessesPage.dataList).toBeVisible();
+          await expect(operateProcessesPage.processInstancesTable).toHaveCount(2);
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+      });
 
       await waitForAssertion({
         assertion: async () => {
@@ -156,7 +171,9 @@ test.describe('Processes', () => {
         instanceWithoutAnIncident.processInstanceKey,
       );
 
-      await operateFiltersPanelPage.selectProcess('Order process');
+      await operateFiltersPanelPage.selectProcess(
+        'Order process processes test',
+      );
       await waitForAssertion({
         assertion: async () => {
           await expect
@@ -167,7 +184,9 @@ test.describe('Processes', () => {
         },
         onFailure: async () => {
           await page.reload();
-          await operateFiltersPanelPage.selectProcess('Order process');
+          await operateFiltersPanelPage.selectProcess(
+            'Order process processes test',
+          );
         },
       });
 
@@ -229,27 +248,39 @@ test.describe('Processes', () => {
         `${baseUrl}/operate/processes?process=testProcess&version=1`,
       );
 
-      await expect(operateDiagramPage.diagramSpinner).toBeVisible();
+      await expect(page).toHaveURL(`${baseUrl}/operate/processes?process=testProcess&version=1`);
 
-      await expect(operateFiltersPanelPage.processNameFilter).toBeDisabled();
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(operateFiltersPanelPage.processNameFilter).toBeDisabled({
+            timeout: 5000,
+          });
+        },
+        onFailure: async () => {
+          page.reload();
+        },
+        maxRetries: 5,
+      });
+
+      await expect(operateDiagramPage.diagramSpinner).toBeVisible();
     });
 
     await test.step('Deploy new process and verify it loads', async () => {
       await deploy(['./resources/newProcess.bpmn']);
-      await sleep(2000);
+      await sleep(5000);
 
       await expect(operateDiagramPage.diagram).toBeInViewport({timeout: 20000});
 
-      await expect(operateDiagramPage.diagramSpinner).not.toBeVisible();
+      await expect(operateDiagramPage.diagramSpinner).toBeHidden();
 
       await expect(
         operateProcessesPage.noMatchingInstancesMessage,
       ).toBeVisible();
 
       await expect(operateFiltersPanelPage.processNameFilter).toBeEnabled();
-      await expect(operateFiltersPanelPage.processNameFilter).toHaveValue(
-        'Test Process',
-      );
+      await expect
+        .poll(() => operateFiltersPanelPage.processNameFilter.inputValue())
+        .toBe('Test Process');
     });
   });
 

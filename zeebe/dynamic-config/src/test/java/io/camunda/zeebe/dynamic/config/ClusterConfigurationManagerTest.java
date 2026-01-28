@@ -315,13 +315,10 @@ final class ClusterConfigurationManagerTest {
     // when
     final var topologyWithoutMember = topologyWithMemberLeft.updateMember(localMemberId, m -> null);
     final var notConflictingTopology =
-        new ClusterConfiguration(
-            topologyWithoutMember.version() + 1,
-            topologyWithoutMember.members(),
-            topologyWithoutMember.lastChange(),
-            topologyWithoutMember.pendingChanges(),
-            topologyWithoutMember.routingState(),
-            topologyWithoutMember.clusterId());
+        ClusterConfiguration.builder()
+            .from(topologyWithoutMember)
+            .version(topologyWithoutMember.version() + 1)
+            .build();
     clusterTopologyManager.onGossipReceived(notConflictingTopology);
 
     // then

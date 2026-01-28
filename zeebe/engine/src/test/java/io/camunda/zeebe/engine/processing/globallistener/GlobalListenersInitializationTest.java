@@ -30,9 +30,14 @@ public class GlobalListenersInitializationTest {
     // given a global listener batch record containing the desired configuration
     final GlobalListenerBatchRecord record =
         new GlobalListenerBatchRecord()
-            .addTaskListener(new GlobalListenerRecord().setType("global1").addEventType("all"))
             .addTaskListener(
                 new GlobalListenerRecord()
+                    .setId("GlobalListener_global1")
+                    .setType("global1")
+                    .addEventType("all"))
+            .addTaskListener(
+                new GlobalListenerRecord()
+                    .setId("GlobalListener_global2")
                     .setType("global2")
                     .addEventType("creating")
                     .addEventType("completing")

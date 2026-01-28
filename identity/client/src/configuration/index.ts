@@ -29,10 +29,6 @@ export const isTenantsApiEnabled = getClientConfigBoolean(
   false,
 );
 
-// Will be removed with https://github.com/camunda/camunda/issues/40370
-export const isUserTaskAuthorizationEnabled =
-  window.localStorage.getItem("enableUserTaskAuthorization") === "true";
-
 export const docsUrl = "https://docs.camunda.io";
 
 export const isSaaS = Boolean(getClientConfigString("organizationId"));

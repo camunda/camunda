@@ -119,6 +119,7 @@ public final class CancelProcessInstanceTest {
         .hasBpmnProcessId("PROCESS")
         .hasVersion(1)
         .hasProcessInstanceKey(processInstanceKey)
+        .hasRootProcessInstanceKey(processInstanceKey)
         .hasElementId("PROCESS");
 
     final List<Record<ProcessInstanceRecordValue>> processEvents =
@@ -243,6 +244,7 @@ public final class CancelProcessInstanceTest {
         .hasBpmnProcessId("PROCESS")
         .hasVersion(1)
         .hasProcessInstanceKey(processInstanceKey)
+        .hasRootProcessInstanceKey(processInstanceKey)
         .hasElementId("task");
   }
 
@@ -321,6 +323,7 @@ public final class CancelProcessInstanceTest {
         .hasBpmnProcessId("shouldCancelIntermediateCatchEvent")
         .hasVersion(1)
         .hasProcessInstanceKey(processInstanceKey)
+        .hasRootProcessInstanceKey(processInstanceKey)
         .hasElementId("shouldCancelIntermediateCatchEvent");
   }
 

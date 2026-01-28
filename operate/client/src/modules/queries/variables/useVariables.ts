@@ -11,14 +11,18 @@ import {useInfiniteQuery} from '@tanstack/react-query';
 import {searchVariables} from 'modules/api/v2/variables/searchVariables';
 import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstancePageParams';
 import {getScopeId} from 'modules/utils/variables';
-import {useDisplayStatus} from 'modules/hooks/variables';
+import {useDisplayStatus, useVariableScopeKey} from 'modules/hooks/variables';
 import {queryKeys} from '../queryKeys';
+import {IS_ELEMENT_SELECTION_V2} from 'modules/feature-flags';
 
 const MAX_VARIABLES_PER_REQUEST = 50;
 
 function useVariables(options?: {refetchInterval?: number | false}) {
   const {processInstanceId = ''} = useProcessInstancePageParams();
-  const scopeKey = getScopeId();
+  const scopeKey = IS_ELEMENT_SELECTION_V2
+    ? // eslint-disable-next-line react-hooks/rules-of-hooks
+      useVariableScopeKey()
+    : getScopeId();
   const {refetchInterval = false} = options ?? {};
   const result = useInfiniteQuery({
     queryKey: queryKeys.variables.searchWithFilter({
@@ -67,6 +71,7 @@ function useVariables(options?: {refetchInterval?: number | false}) {
     refetchInterval,
   });
   const displayStatus = useDisplayStatus({
+    scopeKey,
     isLoading: result.isLoading,
     isFetchingNextPage: result.isFetchingNextPage,
     isFetchingPreviousPage: result.isFetchingPreviousPage,

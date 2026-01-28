@@ -20,7 +20,7 @@ import org.springframework.context.annotation.Import;
 
 @SpringBootTest(
     classes = DefaultConfigurationTest.TestConfig.class,
-    properties = {"spring.config.location=file:src/main/config/application.yaml"})
+    properties = {"spring.config.location="})
 class DefaultConfigurationTest {
 
   @Autowired private CamundaSecurityProperties camundaSecurityProperties;

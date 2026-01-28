@@ -23,6 +23,21 @@ import org.junit.jupiter.api.Test;
 class AuditLogConfigurationTest {
 
   @Test
+  void shouldBeEnabledByDefault() {
+    final var config = new AuditLogConfiguration();
+
+    assertThat(config.isEnabled()).isTrue();
+  }
+
+  @Test
+  void shouldBeDisabled() {
+    final var config = new AuditLogConfiguration();
+    config.setEnabled(false);
+
+    assertThat(config.isEnabled()).isFalse();
+  }
+
+  @Test
   void shouldHaveDefaultUserAndClientConfigurations() {
     final var config = new AuditLogConfiguration();
 
@@ -45,7 +60,7 @@ class AuditLogConfigurationTest {
   void shouldBeEnabledWhenUserCategoryConfigured() {
     final var config = new AuditLogConfiguration();
     config.getClient().setCategories(Set.of());
-    config.getUser().setCategories(Set.of(AuditLogOperationCategory.OPERATOR));
+    config.getUser().setCategories(Set.of(AuditLogOperationCategory.DEPLOYED_RESOURCES));
 
     assertThat(config.isEnabled()).isTrue();
   }
@@ -53,10 +68,40 @@ class AuditLogConfigurationTest {
   @Test
   void shouldBeEnabledWhenClientCategoryConfigured() {
     final var config = new AuditLogConfiguration();
-    config.getClient().setCategories(Set.of(AuditLogOperationCategory.OPERATOR));
+    config.getClient().setCategories(Set.of(AuditLogOperationCategory.DEPLOYED_RESOURCES));
     config.getUser().setCategories(Set.of());
 
     assertThat(config.isEnabled()).isTrue();
+  }
+
+  @Test
+  void shouldBeDisabledForAnonymousActors() {
+    final var config = new AuditLogConfiguration();
+
+    final var auditLog =
+        new AuditLogInfo(
+            AuditLogOperationCategory.DEPLOYED_RESOURCES,
+            AuditLogEntityType.PROCESS_INSTANCE,
+            AuditLogOperationType.MODIFY,
+            AuditLogActor.anonymous(),
+            Optional.empty());
+
+    assertThat(config.isEnabled(auditLog)).isFalse();
+  }
+
+  @Test
+  void shouldBeEnabledForUnknownActors() {
+    final var config = new AuditLogConfiguration();
+
+    final var auditLog =
+        new AuditLogInfo(
+            AuditLogOperationCategory.DEPLOYED_RESOURCES,
+            AuditLogEntityType.PROCESS_INSTANCE,
+            AuditLogOperationType.MODIFY,
+            AuditLogActor.unknown(),
+            Optional.empty());
+
+    assertThat(config.isEnabled(auditLog)).isTrue();
   }
 
   @Test
@@ -64,12 +109,12 @@ class AuditLogConfigurationTest {
     final var config = new AuditLogConfiguration();
     config
         .getUser()
-        .setCategories(Set.of(AuditLogOperationCategory.OPERATOR))
+        .setCategories(Set.of(AuditLogOperationCategory.DEPLOYED_RESOURCES))
         .setExcludes(Set.of());
 
     final var auditLog =
         new AuditLogInfo(
-            AuditLogOperationCategory.OPERATOR,
+            AuditLogOperationCategory.DEPLOYED_RESOURCES,
             AuditLogEntityType.PROCESS_INSTANCE,
             AuditLogOperationType.MODIFY,
             new AuditLogActor(AuditLogActorType.USER, "test-user"),
@@ -83,12 +128,12 @@ class AuditLogConfigurationTest {
     final var config = new AuditLogConfiguration();
     config
         .getClient()
-        .setCategories(Set.of(AuditLogOperationCategory.USER_TASK))
+        .setCategories(Set.of(AuditLogOperationCategory.USER_TASKS))
         .setExcludes(Set.of());
 
     final var auditLog =
         new AuditLogInfo(
-            AuditLogOperationCategory.USER_TASK,
+            AuditLogOperationCategory.USER_TASKS,
             AuditLogEntityType.USER_TASK,
             AuditLogOperationType.UNKNOWN,
             new AuditLogActor(AuditLogActorType.CLIENT, "test-client"),
@@ -102,12 +147,12 @@ class AuditLogConfigurationTest {
     final var config = new AuditLogConfiguration();
     config
         .getUser()
-        .setCategories(Set.of(AuditLogOperationCategory.OPERATOR))
+        .setCategories(Set.of(AuditLogOperationCategory.DEPLOYED_RESOURCES))
         .setExcludes(Set.of());
 
     final var auditLog =
         new AuditLogInfo(
-            AuditLogOperationCategory.USER_TASK,
+            AuditLogOperationCategory.USER_TASKS,
             AuditLogEntityType.USER_TASK,
             AuditLogOperationType.UNKNOWN,
             new AuditLogActor(AuditLogActorType.USER, "test-user"),
@@ -123,7 +168,7 @@ class AuditLogConfigurationTest {
 
     final var auditLog =
         new AuditLogInfo(
-            AuditLogOperationCategory.OPERATOR,
+            AuditLogOperationCategory.DEPLOYED_RESOURCES,
             AuditLogEntityType.PROCESS_INSTANCE,
             AuditLogOperationType.MODIFY,
             new AuditLogActor(AuditLogActorType.CLIENT, "test-client"),
@@ -137,12 +182,12 @@ class AuditLogConfigurationTest {
     final var config = new AuditLogConfiguration();
     config
         .getUser()
-        .setCategories(Set.of(AuditLogOperationCategory.OPERATOR))
+        .setCategories(Set.of(AuditLogOperationCategory.DEPLOYED_RESOURCES))
         .setExcludes(Set.of(AuditLogEntityType.VARIABLE));
 
     final var auditLog =
         new AuditLogInfo(
-            AuditLogOperationCategory.OPERATOR,
+            AuditLogOperationCategory.DEPLOYED_RESOURCES,
             AuditLogEntityType.VARIABLE,
             AuditLogOperationType.UNKNOWN,
             new AuditLogActor(AuditLogActorType.USER, "test-user"),
@@ -156,12 +201,12 @@ class AuditLogConfigurationTest {
     final var config = new AuditLogConfiguration();
     config
         .getUser()
-        .setCategories(Set.of(AuditLogOperationCategory.OPERATOR))
+        .setCategories(Set.of(AuditLogOperationCategory.DEPLOYED_RESOURCES))
         .setExcludes(Set.of(AuditLogEntityType.VARIABLE));
 
     final var auditLog =
         new AuditLogInfo(
-            AuditLogOperationCategory.OPERATOR,
+            AuditLogOperationCategory.DEPLOYED_RESOURCES,
             AuditLogEntityType.PROCESS_INSTANCE,
             AuditLogOperationType.MODIFY,
             new AuditLogActor(AuditLogActorType.USER, "test-user"),
@@ -178,16 +223,16 @@ class AuditLogConfigurationTest {
 
       assertThat(config.getCategories())
           .containsExactlyInAnyOrder(
-              AuditLogOperationCategory.OPERATOR,
-              AuditLogOperationCategory.USER_TASK,
+              AuditLogOperationCategory.DEPLOYED_RESOURCES,
+              AuditLogOperationCategory.USER_TASKS,
               AuditLogOperationCategory.ADMIN);
     }
 
     @Test
-    void shouldHaveDefaultExcludes() {
+    void shouldNotHaveDefaultExcludes() {
       final var config = new ActorAuditLogConfiguration();
 
-      assertThat(config.getExcludes()).containsExactly(AuditLogEntityType.VARIABLE);
+      assertThat(config.getExcludes()).isEmpty();
     }
   }
 }

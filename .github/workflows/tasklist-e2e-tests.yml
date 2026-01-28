@@ -31,7 +31,7 @@ jobs:
     permissions:
       pull-requests: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       # Detect changes against the base branch
       - name: Detect changes
         uses: ./.github/actions/paths-filter
@@ -47,7 +47,7 @@ jobs:
     if: ${{ needs.detect-changes.outputs.tasklist-backend-changes == 'true' || needs.detect-changes.outputs.tasklist-frontend-changes == 'true' }}
     services:
       elasticsearch:
-        image: docker.elastic.co/elasticsearch/elasticsearch:8.18.4
+        image: docker.elastic.co/elasticsearch/elasticsearch:8.19.10
         env:
           discovery.type: single-node
           cluster.name: docker-cluster
@@ -61,11 +61,11 @@ jobs:
 
     steps:
       - name: Check out repository code
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
 
       - name: Import Secrets
         id: secrets
-        uses: hashicorp/vault-action@2c5827061f1ad91ca97897d6257ebe638e033699
+        uses: hashicorp/vault-action@79632e33d6953d190b940ffa440bf97821cabd80
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -76,7 +76,7 @@ jobs:
             secret/data/github.com/organizations/camunda NEXUS_PSW;
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: "22"
 
@@ -97,7 +97,7 @@ jobs:
         run: npm run build
 
       - name: Setup Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: "adopt"
           java-version: "21"
@@ -145,7 +145,7 @@ jobs:
 
       - name: Python setup
         if: always()
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.x"
 

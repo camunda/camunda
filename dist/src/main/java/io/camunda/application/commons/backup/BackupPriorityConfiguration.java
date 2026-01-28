@@ -42,6 +42,7 @@ import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.DraftTaskVariableTemplate;
 import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.IncidentTemplate;
+import io.camunda.webapps.schema.descriptors.template.JobMetricsBatchTemplate;
 import io.camunda.webapps.schema.descriptors.template.JobTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate;
@@ -145,7 +146,8 @@ public class BackupPriorityConfiguration {
             // AUDIT LOG
             new AuditLogTemplate(indexPrefix, isElasticsearch),
             // CAMUNDA
-            new ClusterVariableIndex(indexPrefix, isElasticsearch));
+            new ClusterVariableIndex(indexPrefix, isElasticsearch),
+            new JobMetricsBatchTemplate(indexPrefix, isElasticsearch));
 
     LOG.debug("Prio1 are {}", prio1);
     LOG.debug("Prio2 are {}", prio2);

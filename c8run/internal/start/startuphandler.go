@@ -21,6 +21,8 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+var evalSymlinks = filepath.EvalSymlinks
+
 func printSystemInformation(javaVersion, javaHome, javaOpts string, usingElasticsearch bool) {
 	fmt.Println("")
 	fmt.Println("")
@@ -146,10 +148,14 @@ func resolveJavaHomeAndBinary() (string, string, error) {
 	var javaHomeAfterSymlink string
 	var err error
 	if javaHome != "" {
-		javaHomeAfterSymlink, err = filepath.EvalSymlinks(javaHome)
+		javaHomeAfterSymlink, err = evalSymlinks(javaHome)
 		if err != nil {
-			log.Debug().Err(err).Msg("JAVA_HOME is not a valid path, obtaining JAVA_HOME from java binary")
-			javaHome = ""
+			if _, statErr := os.Stat(javaHome); statErr != nil {
+				log.Debug().Err(err).Msg("JAVA_HOME is not a valid path, obtaining JAVA_HOME from java binary")
+				javaHome = ""
+			} else {
+				log.Debug().Err(err).Msg("Failed to resolve JAVA_HOME symlinks, continuing with provided path")
+			}
 		} else {
 			javaHome = javaHomeAfterSymlink
 		}
@@ -326,7 +332,7 @@ func (s *StartupHandler) StartCommand(wg *sync.WaitGroup, ctx context.Context, s
 	}
 
 	s.ProcessHandler.AttemptToStartProcess(processInfo.Connectors.PidPath, "Connectors", func() {
-		connectorsCmd := c8.ConnectorsCmd(ctx, javaBinary, parentDir, processInfo.Camunda.Version, state.Settings.Port)
+		connectorsCmd := c8.ConnectorsCmd(ctx, javaBinary, parentDir, processInfo.Connectors.Version, state.Settings.Port)
 		connectorsLogPath := filepath.Join(parentDir, "log", "connectors.log")
 		err := s.startApplication(connectorsCmd, processInfo.Connectors.PidPath, connectorsLogPath, stop)
 		if err != nil {

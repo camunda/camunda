@@ -35,6 +35,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -78,6 +79,8 @@ public class CredentialsProviderOidcTest {
   }
 
   @Test
+  // this allows to run the test in a loop, as the in memory auth cache is cleared
+  @DirtiesContext(methodMode = DirtiesContext.MethodMode.BEFORE_METHOD)
   void shouldHaveZeebeAuth() throws IOException {
     // given
     final Map<String, String> headers = new HashMap<>();

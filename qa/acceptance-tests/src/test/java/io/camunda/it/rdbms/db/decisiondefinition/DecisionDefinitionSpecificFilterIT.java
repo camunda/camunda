@@ -14,7 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.application.commons.rdbms.RdbmsConfiguration;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.DecisionDefinitionDbReader;
-import io.camunda.db.rdbms.write.RdbmsWriter;
+import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.it.rdbms.db.fixtures.DecisionDefinitionFixtures;
 import io.camunda.it.rdbms.db.util.RdbmsTestConfiguration;
 import io.camunda.search.filter.DecisionDefinitionFilter;
@@ -24,6 +24,7 @@ import io.camunda.search.sort.DecisionDefinitionSort;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,19 +45,19 @@ public class DecisionDefinitionSpecificFilterIT {
 
   @Autowired private DecisionDefinitionDbReader decisionDefinitionReader;
 
-  private RdbmsWriter rdbmsWriter;
+  private RdbmsWriters rdbmsWriters;
 
   @BeforeEach
   public void beforeAll() {
-    rdbmsWriter = rdbmsService.createWriter(0L);
+    rdbmsWriters = rdbmsService.createWriter(0L);
   }
 
   @ParameterizedTest
   @MethodSource("shouldFindWithSpecificFilterParameters")
   public void shouldFindWithSpecificFilter(final DecisionDefinitionFilter filter) {
-    createAndSaveRandomDecisionDefinitions(rdbmsWriter);
+    createAndSaveRandomDecisionDefinitions(rdbmsWriters);
     createAndSaveDecisionDefinition(
-        rdbmsWriter,
+        rdbmsWriters,
         DecisionDefinitionFixtures.createRandomized(
             b ->
                 b.decisionDefinitionKey(1337L)
@@ -79,6 +80,53 @@ public class DecisionDefinitionSpecificFilterIT {
     assertThat(searchResult.total()).isEqualTo(1);
     assertThat(searchResult.items()).hasSize(1);
     assertThat(searchResult.items().getFirst().decisionDefinitionKey()).isEqualTo(1337L);
+  }
+
+  @Test
+  public void shouldFindDecisionDefinitionWithLatestVersion() {
+    createAndSaveDecisionDefinition(
+        rdbmsWriters,
+        DecisionDefinitionFixtures.createRandomized(
+            b ->
+                b.decisionDefinitionKey(4711L)
+                    .decisionDefinitionId("sorting-test-process")
+                    .name("Sorting Test Process")
+                    .version(1)
+                    .decisionRequirementsKey(1338L)
+                    .decisionRequirementsId("requirements-1338")
+                    .decisionRequirementsName("requirements-name-1338")
+                    .decisionRequirementsVersion(1338)
+                    .tenantId("sorting-tenant1")));
+
+    createAndSaveDecisionDefinition(
+        rdbmsWriters,
+        DecisionDefinitionFixtures.createRandomized(
+            b ->
+                b.decisionDefinitionKey(4712L)
+                    .decisionDefinitionId("sorting-test-process")
+                    .name("Sorting Test Process")
+                    .version(2)
+                    .decisionRequirementsKey(1338L)
+                    .decisionRequirementsId("requirements-1338")
+                    .decisionRequirementsName("requirements-name-1338")
+                    .decisionRequirementsVersion(1338)
+                    .tenantId("sorting-tenant1")));
+
+    final var searchResult =
+        decisionDefinitionReader.search(
+            new DecisionDefinitionQuery(
+                new DecisionDefinitionFilter.Builder()
+                    .decisionDefinitionIds("sorting-test-process")
+                    .isLatestVersion(true)
+                    .build(),
+                DecisionDefinitionSort.of(b -> b),
+                SearchQueryPage.of(b -> b.from(0).size(5))));
+
+    assertThat(searchResult.total()).isEqualTo(1);
+    assertThat(searchResult.items()).hasSize(1);
+    assertThat(searchResult.items().getFirst().decisionDefinitionId())
+        .isEqualTo("sorting-test-process");
+    assertThat(searchResult.items().getFirst().version()).isEqualTo(2);
   }
 
   static List<DecisionDefinitionFilter> shouldFindWithSpecificFilterParameters() {

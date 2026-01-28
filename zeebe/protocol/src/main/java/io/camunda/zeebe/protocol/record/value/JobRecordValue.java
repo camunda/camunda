@@ -136,6 +136,22 @@ public interface JobRecordValue
    */
   Set<String> getTags();
 
+  /**
+   * @return true if the job is part of a user task migration
+   */
+  boolean isJobToUserTaskMigration();
+
+  /**
+   * Returns the key of the root process instance in the hierarchy. For jobs in top-level process
+   * instances, this is equal to {@link #getProcessInstanceKey()}. For jobs in child process
+   * instances (created via call activities), this is the key of the topmost parent process
+   * instance.
+   *
+   * @return the key of the root process instance, or {@code -1L} if not set for versions prior to
+   *     8.9
+   */
+  long getRootProcessInstanceKey();
+
   @Value.Immutable
   @ImmutableProtocol(builder = ImmutableJobResultValue.Builder.class)
   interface JobResultValue {

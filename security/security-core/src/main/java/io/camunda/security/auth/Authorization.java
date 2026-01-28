@@ -22,11 +22,13 @@ import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.S
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.TENANT;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.USER;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.USER_TASK;
+import static io.camunda.zeebe.protocol.record.value.AuthorizationScope.WILDCARD;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.CREATE_PROCESS_INSTANCE;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.DELETE_PROCESS_INSTANCE;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.READ;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_DECISION_DEFINITION;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_DECISION_INSTANCE;
+import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_JOB_METRIC;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_PROCESS_DEFINITION;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_PROCESS_INSTANCE;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_USAGE_METRIC;
@@ -39,40 +41,109 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 public record Authorization<T>(
     @JsonProperty("resource_type") AuthorizationResourceType resourceType,
     @JsonProperty("permission_type") PermissionType permissionType,
     @JsonProperty("resource_ids") List<String> resourceIds,
-    @JsonIgnore Function<T, String> resourceIdSupplier) {
+    @JsonIgnore Function<T, String> resourceIdSupplier,
+    @JsonProperty("resource_property_names") Set<String> resourcePropertyNames,
+    @JsonIgnore Predicate<T> condition,
+    @JsonProperty("transitive") boolean transitive) {
+
+  // USER TASK property names
+  public static final String PROP_ASSIGNEE = "assignee";
+  public static final String PROP_CANDIDATE_USERS = "candidateUsers";
+  public static final String PROP_CANDIDATE_GROUPS = "candidateGroups";
 
   public boolean hasAnyResourceIds() {
     return resourceIds != null && !resourceIds.isEmpty();
   }
 
+  public boolean hasAnyResourcePropertyNames() {
+    return resourcePropertyNames != null && !resourcePropertyNames.isEmpty();
+  }
+
+  public boolean hasAnyResourceAccess() {
+    return hasAnyResourceIds() || hasAnyResourcePropertyNames();
+  }
+
   public static <T> Authorization<T> withAuthorization(
       final Authorization<T> authorization, final String resourceId) {
-    return of(
-        b ->
-            b.resourceType(authorization.resourceType())
-                .permissionType(authorization.permissionType())
-                .resourceIds(List.of(resourceId)));
+    return authorization.withResourceId(resourceId);
   }
 
   public static <T> Authorization<T> withAuthorization(
       final Authorization<T> authorization, final Function<T, String> resourceIdSupplier) {
-    return of(
-        b ->
-            b.resourceType(authorization.resourceType())
-                .permissionType(authorization.permissionType())
-                .resourceIdSupplier(resourceIdSupplier));
+    return authorization.withResourceIdSupplier(resourceIdSupplier);
+  }
+
+  public Authorization<T> withResourceId(final String resourceId) {
+    return withResourceIds(List.of(resourceId));
+  }
+
+  public Authorization<T> withResourceIds(final List<String> resourceIds) {
+    return new Authorization<>(
+        resourceType(),
+        permissionType(),
+        List.copyOf(resourceIds),
+        resourceIdSupplier(),
+        resourcePropertyNames(),
+        condition(),
+        transitive());
+  }
+
+  public Authorization<T> withResourceIdSupplier(final Function<T, String> resourceIdSupplier) {
+    return new Authorization<>(
+        resourceType(),
+        permissionType(),
+        resourceIds(),
+        resourceIdSupplier,
+        resourcePropertyNames(),
+        condition(),
+        transitive());
+  }
+
+  public Authorization<T> withResourcePropertyNames(final Set<String> resourcePropertyNames) {
+    return new Authorization<>(
+        resourceType(),
+        permissionType(),
+        resourceIds(),
+        resourceIdSupplier(),
+        resourcePropertyNames,
+        condition(),
+        transitive());
+  }
+
+  public Authorization<T> withCondition(final Predicate<T> condition) {
+    return new Authorization<>(
+        resourceType(),
+        permissionType(),
+        resourceIds(),
+        resourceIdSupplier(),
+        resourcePropertyNames(),
+        condition,
+        transitive());
   }
 
   public static <T> Authorization<T> of(final Function<Builder<T>, Builder<T>> builderFunction) {
     return builderFunction.apply(new Builder<>()).build();
+  }
+
+  public boolean appliesTo(final T document) {
+    return condition == null || condition.test(document);
+  }
+
+  @JsonIgnore
+  public boolean isWildcard() {
+    return resourceIds != null
+        && resourceIds.stream().anyMatch(id -> WILDCARD.getResourceId().equals(id));
   }
 
   public static class Builder<T> {
@@ -80,6 +151,9 @@ public record Authorization<T>(
     private PermissionType permissionType;
     private List<String> resourceIds;
     private Function<T, String> resourceIdSupplier;
+    private Set<String> resourcePropertyNames;
+    private Predicate<T> condition = null;
+    private boolean transitive = false;
 
     public Builder<T> resourceType(final AuthorizationResourceType resourceType) {
       this.resourceType = resourceType;
@@ -88,6 +162,16 @@ public record Authorization<T>(
 
     public Builder<T> permissionType(final PermissionType permissionType) {
       this.permissionType = permissionType;
+      return this;
+    }
+
+    public Builder<T> condition(final Predicate<T> condition) {
+      this.condition = condition;
+      return this;
+    }
+
+    public Builder<T> transitive() {
+      transitive = true;
       return this;
     }
 
@@ -175,6 +259,10 @@ public record Authorization<T>(
       return permissionType(READ_USAGE_METRIC);
     }
 
+    public Builder<T> readJobMetric() {
+      return permissionType(READ_JOB_METRIC);
+    }
+
     public Builder<T> deleteProcessInstance() {
       return permissionType(DELETE_PROCESS_INSTANCE);
     }
@@ -209,8 +297,40 @@ public record Authorization<T>(
       return this;
     }
 
+    public Builder<T> resourcePropertyNames(final Set<String> resourcePropertyNames) {
+      this.resourcePropertyNames = resourcePropertyNames;
+      return this;
+    }
+
+    public Builder<T> authorizedByProperty(final String propertyName) {
+      if (this.resourcePropertyNames == null) {
+        this.resourcePropertyNames = new HashSet<>();
+      }
+      this.resourcePropertyNames.add(propertyName);
+      return this;
+    }
+
+    public Builder<T> authorizedByAssignee() {
+      return authorizedByProperty(PROP_ASSIGNEE);
+    }
+
+    public Builder<T> authorizedByCandidateUsers() {
+      return authorizedByProperty(PROP_CANDIDATE_USERS);
+    }
+
+    public Builder<T> authorizedByCandidateGroups() {
+      return authorizedByProperty(PROP_CANDIDATE_GROUPS);
+    }
+
     public Authorization<T> build() {
-      return new Authorization<>(resourceType, permissionType, resourceIds, resourceIdSupplier);
+      return new Authorization<>(
+          resourceType,
+          permissionType,
+          resourceIds,
+          resourceIdSupplier,
+          resourcePropertyNames,
+          condition,
+          transitive);
     }
   }
 }

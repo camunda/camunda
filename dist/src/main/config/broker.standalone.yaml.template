@@ -923,6 +923,7 @@
         #     adHocSubProcessInstruction: true
         #     conditionalEventSubscription: true
         #     conditionalEvaluation: true
+        #     jobMetricsBatch: true
         #
         #   retention:
         #     enabled: false
@@ -1010,6 +1011,7 @@
         #     adHocSubProcessInstruction: true
         #     conditionalEventSubscription: true
         #     conditionalEvaluation: true
+        #     jobMetricsBatch: true
 
       # Camunda Exporter ----------
       # An example configuration for the camunda exporter:

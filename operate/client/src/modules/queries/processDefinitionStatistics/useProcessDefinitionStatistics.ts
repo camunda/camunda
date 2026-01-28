@@ -20,10 +20,23 @@ const useProcessDefinitionStatistics = ({
   payload,
   enabled = true,
 }: UseProcessDefinitionStatisticsOptions = {}) => {
+  const payloadWithDefaultSorting: GetProcessDefinitionInstanceStatisticsRequestBody =
+    {
+      sort: [
+        {field: 'activeInstancesWithIncidentCount', order: 'desc'},
+        {field: 'activeInstancesWithoutIncidentCount', order: 'desc'},
+      ],
+      ...payload,
+    };
+
   return useQuery({
-    queryKey: queryKeys.processDefinitionStatistics.get(payload),
+    queryKey: queryKeys.processDefinitionStatistics.get(
+      payloadWithDefaultSorting,
+    ),
     queryFn: async () => {
-      const {response, error} = await fetchProcessDefinitionStatistics(payload);
+      const {response, error} = await fetchProcessDefinitionStatistics(
+        payloadWithDefaultSorting,
+      );
 
       if (response !== null) {
         return response;

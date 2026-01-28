@@ -10,6 +10,7 @@ package io.camunda.exporter.tasks.incident;
 import static io.camunda.search.test.utils.SearchDBExtension.INCIDENT_IDX_PREFIX;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -17,6 +18,7 @@ import io.camunda.exporter.ExporterMetadata;
 import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.exceptions.PersistenceException;
+import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.notifier.IncidentNotifier;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.ActiveIncident;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.Document;
@@ -77,7 +79,6 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.EnumSource.Mode;
-import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -400,7 +401,7 @@ abstract class IncidentUpdateRepositoryIT {
       final var repository = createRepository();
       final var executor = Executors.newSingleThreadScheduledExecutor();
 
-      final var incidentNotifier = Mockito.mock(IncidentNotifier.class);
+      final var incidentNotifier = mock(IncidentNotifier.class);
       when(incidentNotifier.notifyAsync(anyList()))
           .thenReturn(CompletableFuture.completedFuture(null));
 
@@ -424,7 +425,14 @@ abstract class IncidentUpdateRepositoryIT {
       // when
       final var incidentUpdateTask =
           new IncidentUpdateTask(
-              metadata, repository, true, 100, executor, incidentNotifier, LOGGER);
+              metadata,
+              repository,
+              true,
+              100,
+              executor,
+              incidentNotifier,
+              mock(CamundaExporterMetrics.class),
+              LOGGER);
 
       incidentUpdateTask.execute().toCompletableFuture().join();
 

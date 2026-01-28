@@ -18,6 +18,7 @@ public record VariableEntity(
     Boolean isPreview,
     Long scopeKey,
     Long processInstanceKey,
+    Long rootProcessInstanceKey,
     String processDefinitionId,
     String tenantId)
     implements TenantOwnedEntity {}

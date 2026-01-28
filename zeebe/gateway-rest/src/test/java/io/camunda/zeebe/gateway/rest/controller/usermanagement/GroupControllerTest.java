@@ -14,6 +14,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import io.camunda.gateway.protocol.model.GroupCreateRequest;
+import io.camunda.gateway.protocol.model.GroupUpdateRequest;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
@@ -25,8 +27,6 @@ import io.camunda.service.RoleServices;
 import io.camunda.service.UserServices;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
-import io.camunda.zeebe.gateway.protocol.rest.GroupCreateRequest;
-import io.camunda.zeebe.gateway.protocol.rest.GroupUpdateRequest;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.config.ApiFiltersConfiguration;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
@@ -452,6 +452,48 @@ public class GroupControllerTest {
     }
 
     @Test
+    void shouldUpdateGroupWithEmptyDescriptionAndReturnResponse() {
+      // given
+      final var groupKey = 111L;
+      final var groupId = "111";
+      final var groupName = "updatedName";
+      final var description = "";
+      when(groupServices.updateGroup(groupId, groupName, description))
+          .thenReturn(
+              CompletableFuture.completedFuture(
+                  new GroupRecord()
+                      .setGroupKey(groupKey)
+                      .setGroupId(groupId)
+                      .setName(groupName)
+                      .setDescription(description)));
+
+      // when
+      webClient
+          .put()
+          .uri("%s/%s".formatted(GROUP_BASE_URL, groupId))
+          .accept(MediaType.APPLICATION_JSON)
+          .contentType(MediaType.APPLICATION_JSON)
+          .bodyValue(new GroupUpdateRequest().name(groupName).description(description))
+          .exchange()
+          .expectStatus()
+          .isOk()
+          .expectBody()
+          .json(
+              """
+            {
+              "groupId": "%s",
+              "name": "%s",
+              "description": "%s"
+            }
+            """
+                  .formatted(groupId, groupName, description),
+              JsonCompareMode.STRICT);
+
+      // then
+      verify(groupServices, times(1)).updateGroup(groupId, groupName, description);
+    }
+
+    @Test
     void shouldFailOnUpdateGroupWithEmptyName() {
       // given
       final var groupId = "groupId";
@@ -485,11 +527,16 @@ public class GroupControllerTest {
     }
 
     @Test
-    void shouldFailOnUpdateGroupWithoutDescription() {
+    void shouldUpdateGroupWithoutDescription() {
       // given
       final var groupId = "groupId";
       final var name = "name";
       final var uri = "%s/%s".formatted(GROUP_BASE_URL, groupId);
+      final String description = null;
+      when(groupServices.updateGroup(groupId, name, description))
+          .thenReturn(
+              CompletableFuture.completedFuture(
+                  new GroupRecord().setGroupId(groupId).setName(name).setDescription(description)));
 
       // when / then
       webClient
@@ -497,24 +544,23 @@ public class GroupControllerTest {
           .uri(uri)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new GroupUpdateRequest().name(name))
+          .bodyValue(new GroupUpdateRequest().name(name).description(description))
           .exchange()
           .expectStatus()
-          .isBadRequest()
+          .isOk()
           .expectBody()
           .json(
               """
-            {
-              "type": "about:blank",
-              "status": 400,
-              "title": "INVALID_ARGUMENT",
-              "detail": "No description provided.",
-              "instance": "%s"
-            }"""
-                  .formatted(uri),
+           {
+             "groupId": "%s",
+             "name": "%s",
+             "description": "%s"
+           }
+           """
+                  .formatted(groupId, name, ""),
               JsonCompareMode.STRICT);
 
-      verifyNoInteractions(groupServices);
+      verify(groupServices, times(1)).updateGroup(groupId, name, description);
     }
 
     @Test

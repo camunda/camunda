@@ -17,20 +17,18 @@ import {Locations} from 'modules/Routes';
 import {tracking} from 'modules/tracking';
 import {MigrationConfirmationModal} from '../MigrationConfirmationModal/index.tsx';
 import {useMigrateProcessInstancesBatchOperation} from 'modules/mutations/processes/useMigrateProcessInstancesBatchOperation';
-import {buildMigrationBatchOperationFilter} from './buildMigrationBatchOperationFilter';
-import {panelStatesStore} from 'modules/stores/panelStates';
 import {handleOperationError} from 'modules/utils/notifications';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
-import {parseProcessInstancesSearchFilter} from 'modules/utils/filter/v2/processInstancesSearch';
+import {buildMutationRequestBody} from 'modules/utils/buildMutationRequestBody.ts';
+import {useBatchOperationSuccessNotification} from 'modules/hooks/useBatchOperationSuccessNotification.ts';
 
 const Footer: React.FC = observer(() => {
   const [searchParams] = useSearchParams();
-  const baseFilter = parseProcessInstancesSearchFilter(searchParams);
-
+  const displaySuccessNotification = useBatchOperationSuccessNotification();
   const navigate = useNavigate();
-
   const {mutate: migrateProcess} = useMigrateProcessInstancesBatchOperation({
-    onSuccess: () => {
+    onSuccess: ({batchOperationKey, batchOperationType}) => {
+      displaySuccessNotification(batchOperationType, batchOperationKey);
       tracking.track({
         eventName: 'batch-operation',
         operationType: 'MIGRATE_PROCESS_INSTANCE',
@@ -148,16 +146,28 @@ const Footer: React.FC = observer(() => {
                     'excludeIds' in batchOperationQuery
                       ? batchOperationQuery.excludeIds
                       : [];
+                  const variable =
+                    'variable' in batchOperationQuery
+                      ? batchOperationQuery.variable
+                      : undefined;
 
-                  const filter = buildMigrationBatchOperationFilter({
-                    baseFilter,
+                  const requestBody = buildMutationRequestBody({
+                    searchParams,
                     includeIds,
                     excludeIds,
-                    processDefinitionKey: sourceProcessDefinitionKey,
+                    variableFilter:
+                      variable !== undefined
+                        ? {
+                            name: variable.name,
+                            values: variable.values.join(','),
+                          }
+                        : undefined,
+                    processDefinitionKey:
+                      sourceProcessDefinitionKey ?? undefined,
                   });
 
                   migrateProcess({
-                    filter,
+                    ...requestBody,
                     migrationPlan: {
                       targetProcessDefinitionKey,
                       mappingInstructions: Object.entries(elementMapping).map(
@@ -169,7 +179,6 @@ const Footer: React.FC = observer(() => {
                     },
                   });
 
-                  panelStatesStore.expandOperationsPanel();
                   processInstanceMigrationStore.disable();
                   processInstancesSelectionStore.reset();
 

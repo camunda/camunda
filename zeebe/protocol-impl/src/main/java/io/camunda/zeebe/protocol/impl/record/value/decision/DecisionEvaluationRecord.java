@@ -60,9 +60,11 @@ public final class DecisionEvaluationRecord extends UnifiedRecordValue
   private final StringProperty failedDecisionIdProp = new StringProperty("failedDecisionId", "");
   private final StringProperty tenantIdProp =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  private final LongProperty rootProcessInstanceKeyProp =
+      new LongProperty("rootProcessInstanceKey", -1L);
 
   public DecisionEvaluationRecord() {
-    super(17);
+    super(18);
     declareProperty(decisionKeyProp)
         .declareProperty(decisionIdProp)
         .declareProperty(decisionNameProp)
@@ -79,7 +81,8 @@ public final class DecisionEvaluationRecord extends UnifiedRecordValue
         .declareProperty(evaluatedDecisionsProp)
         .declareProperty(evaluationFailureMessageProp)
         .declareProperty(failedDecisionIdProp)
-        .declareProperty(tenantIdProp);
+        .declareProperty(tenantIdProp)
+        .declareProperty(rootProcessInstanceKeyProp);
   }
 
   @Override
@@ -330,6 +333,16 @@ public final class DecisionEvaluationRecord extends UnifiedRecordValue
 
   public DecisionEvaluationRecord setTenantId(final String tenantId) {
     tenantIdProp.setValue(tenantId);
+    return this;
+  }
+
+  @Override
+  public long getRootProcessInstanceKey() {
+    return rootProcessInstanceKeyProp.getValue();
+  }
+
+  public DecisionEvaluationRecord setRootProcessInstanceKey(final long rootProcessInstanceKey) {
+    rootProcessInstanceKeyProp.setValue(rootProcessInstanceKey);
     return this;
   }
 }

@@ -34,11 +34,13 @@ public class OidcAuthenticationConfiguration {
   private String clientName;
   private String clientId;
   private String clientSecret;
+  private String idTokenAlgorithm = "RS256";
   private String grantType = "authorization_code";
   private String redirectUri;
   private List<String> scope = Arrays.asList("openid", "profile");
   private String jwkSetUri;
   private String authorizationUri;
+  private String endSessionEndpointUri;
   private String tokenUri;
   private AuthorizeRequestConfiguration authorizeRequestConfiguration =
       new AuthorizeRequestConfiguration();
@@ -52,6 +54,7 @@ public class OidcAuthenticationConfiguration {
   private String clientAuthenticationMethod = CLIENT_AUTHENTICATION_METHOD_CLIENT_SECRET_BASIC;
   private AssertionConfiguration assertionConfiguration = new AssertionConfiguration();
   private Duration clockSkew = DEFAULT_CLOCK_SKEW;
+  private boolean idpLogoutEnabled = true;
 
   @PostConstruct
   public void validate() {
@@ -72,6 +75,14 @@ public class OidcAuthenticationConfiguration {
 
   public void setIssuerUri(final String issuerUri) {
     this.issuerUri = issuerUri;
+  }
+
+  public String getIdTokenAlgorithm() {
+    return idTokenAlgorithm;
+  }
+
+  public void setIdTokenAlgorithm(final String idTokenAlgorithm) {
+    this.idTokenAlgorithm = idTokenAlgorithm;
   }
 
   public String getClientName() {
@@ -136,6 +147,14 @@ public class OidcAuthenticationConfiguration {
 
   public void setAuthorizationUri(final String authorizationUri) {
     this.authorizationUri = authorizationUri;
+  }
+
+  public String getEndSessionEndpointUri() {
+    return endSessionEndpointUri;
+  }
+
+  public void setEndSessionEndpointUri(final String endSessionEndpointUri) {
+    this.endSessionEndpointUri = endSessionEndpointUri;
   }
 
   public String getTokenUri() {
@@ -232,16 +251,26 @@ public class OidcAuthenticationConfiguration {
     this.clockSkew = clockSkew;
   }
 
+  public boolean isIdpLogoutEnabled() {
+    return idpLogoutEnabled;
+  }
+
+  public void setIdpLogoutEnabled(final boolean idpLogoutEnabled) {
+    this.idpLogoutEnabled = idpLogoutEnabled;
+  }
+
   public boolean isSet() {
     return issuerUri != null
         || clientId != null
         || clientName != null
         || clientSecret != null
+        || !"RS256".equals(idTokenAlgorithm)
         || !"authorization_code".equals(grantType)
         || redirectUri != null
         || !Arrays.asList("openid", "profile").equals(scope)
         || jwkSetUri != null
         || authorizationUri != null
+        || endSessionEndpointUri != null
         || tokenUri != null
         || authorizeRequestConfiguration == null
         || authorizeRequestConfiguration.isSet()
@@ -260,7 +289,8 @@ public class OidcAuthenticationConfiguration {
         || assertionConfiguration.getKidDigestAlgorithm() != KidDigestAlgorithm.SHA256
         || assertionConfiguration.getKidEncoding() != KidEncoding.BASE64URL
         || assertionConfiguration.getKidCase() != null
-        || !DEFAULT_CLOCK_SKEW.equals(clockSkew);
+        || !DEFAULT_CLOCK_SKEW.equals(clockSkew)
+        || !idpLogoutEnabled;
   }
 
   public static Builder builder() {
@@ -272,11 +302,13 @@ public class OidcAuthenticationConfiguration {
     private String clientId;
     private String clientName;
     private String clientSecret;
+    private String idTokenAlgorithm = "RS256";
     private String grantType = "authorization_code";
     private String redirectUri;
     private List<String> scope = Arrays.asList("openid", "profile");
     private String jwkSetUri;
     private String authorizationUri;
+    private String endSessionEndpointUri;
     private String tokenUri;
     private AuthorizeRequestConfiguration authorizeRequestConfiguration =
         new AuthorizeRequestConfiguration();
@@ -289,6 +321,7 @@ public class OidcAuthenticationConfiguration {
     private String clientAuthenticationMethod = CLIENT_AUTHENTICATION_METHOD_CLIENT_SECRET_BASIC;
     private AssertionConfiguration assertionConfiguration = new AssertionConfiguration();
     private Duration clockSkew = DEFAULT_CLOCK_SKEW;
+    private boolean idpLogoutEnabled = true;
 
     public Builder issuerUri(final String issuerUri) {
       this.issuerUri = issuerUri;
@@ -307,6 +340,11 @@ public class OidcAuthenticationConfiguration {
 
     public Builder clientSecret(final String clientSecret) {
       this.clientSecret = clientSecret;
+      return this;
+    }
+
+    public Builder idTokenAlgorithm(final String idTokenAlgorithm) {
+      this.idTokenAlgorithm = idTokenAlgorithm;
       return this;
     }
 
@@ -332,6 +370,11 @@ public class OidcAuthenticationConfiguration {
 
     public Builder authorizationUri(final String authorizationUri) {
       this.authorizationUri = authorizationUri;
+      return this;
+    }
+
+    public Builder endSessionEndpointUri(final String endSessionEndpointUri) {
+      this.endSessionEndpointUri = endSessionEndpointUri;
       return this;
     }
 
@@ -392,14 +435,21 @@ public class OidcAuthenticationConfiguration {
       return this;
     }
 
+    public Builder idpLogoutEnabled(final boolean idpLogoutEnabled) {
+      this.idpLogoutEnabled = idpLogoutEnabled;
+      return this;
+    }
+
     public OidcAuthenticationConfiguration build() {
       final OidcAuthenticationConfiguration config = new OidcAuthenticationConfiguration();
       config.setIssuerUri(issuerUri);
       config.setClientId(clientId);
       config.setClientName(clientName);
       config.setClientSecret(clientSecret);
+      config.setIdTokenAlgorithm(idTokenAlgorithm);
       config.setGrantType(grantType);
       config.setRedirectUri(redirectUri);
+      config.setEndSessionEndpointUri(endSessionEndpointUri);
       config.setScope(scope);
       config.setJwkSetUri(jwkSetUri);
       config.setAuthorizationUri(authorizationUri);
@@ -414,6 +464,7 @@ public class OidcAuthenticationConfiguration {
       config.setClientAuthenticationMethod(clientAuthenticationMethod);
       config.setAssertion(assertionConfiguration);
       config.setClockSkew(clockSkew);
+      config.setIdpLogoutEnabled(idpLogoutEnabled);
       return config;
     }
   }

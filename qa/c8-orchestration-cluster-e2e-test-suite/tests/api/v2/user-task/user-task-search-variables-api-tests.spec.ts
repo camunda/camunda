@@ -97,8 +97,7 @@ test.describe.parallel('Search User Task Variables Tests', () => {
     }).toPass(defaultAssertionOptions);
   });
 
-  // Skipped due to bug 39819:  https://github.com/camunda/camunda/issues/39819
-  test.skip('Search user task variables - unauthorized', async ({request}) => {
+  test('Search user task variables - unauthorized', async ({request}) => {
     const userTaskKey = await findUserTask(
       request,
       state['processInstanceKey'] as string,
@@ -116,8 +115,7 @@ test.describe.parallel('Search User Task Variables Tests', () => {
     await assertUnauthorizedRequest(res);
   });
 
-  // Skipped due to bug 39819:  https://github.com/camunda/camunda/issues/39819
-  test.skip('Search user task variables - bad request - invalid payload', async ({
+  test('Search user task variables - bad request - invalid payload', async ({
     request,
   }) => {
     const userTaskKey = await findUserTask(
@@ -135,7 +133,10 @@ test.describe.parallel('Search User Task Variables Tests', () => {
         },
       },
     );
-    await assertBadRequest(res, 'Request property [page] cannot be parsed');
+    await assertBadRequest(
+      res,
+      'At least one of [from, after, before, limit] is required.',
+    );
   });
 
   test('Search user task variables - bad request - invalid user task key', async ({

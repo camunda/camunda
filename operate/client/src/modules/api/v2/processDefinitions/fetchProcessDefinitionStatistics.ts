@@ -14,7 +14,7 @@ import {
 import {requestWithThrow} from 'modules/request';
 
 const fetchProcessDefinitionStatistics = async (
-  payload: GetProcessDefinitionInstanceStatisticsRequestBody = {},
+  payload?: GetProcessDefinitionInstanceStatisticsRequestBody,
 ) => {
   return requestWithThrow<GetProcessDefinitionInstanceStatisticsResponseBody>({
     url: endpoints.getProcessDefinitionInstanceStatistics.getUrl(),

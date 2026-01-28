@@ -89,6 +89,7 @@ public class DecisionInstanceExportHandler
         .processDefinitionKey(value.getProcessDefinitionKey())
         .processDefinitionId(value.getBpmnProcessId())
         .processInstanceKey(value.getProcessInstanceKey())
+        .rootProcessInstanceKey(value.getRootProcessInstanceKey())
         .decisionRequirementsKey(value.getDecisionRequirementsKey())
         .decisionRequirementsId(value.getDecisionRequirementsId())
         .flowNodeInstanceKey(value.getElementInstanceKey())

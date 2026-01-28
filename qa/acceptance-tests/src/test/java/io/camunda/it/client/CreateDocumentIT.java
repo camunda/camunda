@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.within;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
+import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -23,6 +24,7 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 @MultiDbTest
+@CompatibilityTest
 public class CreateDocumentIT {
 
   private static CamundaClient camundaClient;

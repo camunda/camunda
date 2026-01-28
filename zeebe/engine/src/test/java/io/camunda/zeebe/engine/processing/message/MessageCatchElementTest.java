@@ -205,6 +205,7 @@ public final class MessageCatchElementTest {
 
     Assertions.assertThat(processMessageSubscription.getValue())
         .hasProcessInstanceKey(processInstanceKey)
+        .hasRootProcessInstanceKey(processInstanceKey)
         .hasElementInstanceKey(catchEventEntered.getKey())
         .hasMessageName("order canceled");
 
@@ -234,6 +235,7 @@ public final class MessageCatchElementTest {
 
     Assertions.assertThat(subscription.getValue())
         .hasProcessInstanceKey(processInstanceKey)
+        .hasRootProcessInstanceKey(processInstanceKey)
         .hasElementInstanceKey(catchEventEntered.getKey())
         .hasMessageName("order canceled");
 

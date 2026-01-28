@@ -7,10 +7,9 @@
  */
 package io.camunda.db.rdbms.write.service;
 
-import io.camunda.db.rdbms.sql.HistoryCleanupMapper.CleanupHistoryDto;
-import io.camunda.db.rdbms.sql.ProcessBasedHistoryCleanupMapper;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper.EndProcessInstanceDto;
+import io.camunda.db.rdbms.sql.ProcessInstanceMapper.UpdateHistoryCleanupDateDto;
 import io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel;
 import io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel.ProcessInstanceDbModelBuilder;
 import io.camunda.db.rdbms.write.queue.ContextType;
@@ -21,9 +20,10 @@ import io.camunda.db.rdbms.write.queue.UpsertMerger;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.function.Function;
 
-public class ProcessInstanceWriter {
+public class ProcessInstanceWriter implements RdbmsWriter {
 
   private final ProcessInstanceMapper mapper;
   private final ExecutionQueue executionQueue;
@@ -129,20 +129,14 @@ public class ProcessInstanceWriter {
               WriteStatementType.UPDATE,
               processInstanceKey,
               "io.camunda.db.rdbms.sql.ProcessInstanceMapper.updateHistoryCleanupDate",
-              new ProcessBasedHistoryCleanupMapper.UpdateHistoryCleanupDateDto.Builder()
+              new UpdateHistoryCleanupDateDto.Builder()
                   .processInstanceKey(processInstanceKey)
                   .historyCleanupDate(historyCleanupDate)
                   .build()));
     }
   }
 
-  public int cleanupHistory(
-      final int partitionId, final OffsetDateTime cleanupDate, final int rowsToRemove) {
-    return mapper.cleanupHistory(
-        new CleanupHistoryDto.Builder()
-            .partitionId(partitionId)
-            .cleanupDate(cleanupDate)
-            .limit(rowsToRemove)
-            .build());
+  public int deleteByKeys(final List<Long> processInstanceKeys) {
+    return mapper.deleteByKeys(processInstanceKeys);
   }
 }

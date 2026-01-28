@@ -65,7 +65,7 @@ gh api -X GET "repos/${OWNER_NAME}/${REPO_NAME}/actions/runs?sha=${PR_HEAD_SHA}&
       echo "* ⏱️ [Job ${workflow_name} / ${job_name}](${job_url}) got cancelled due to timeout:"
       echo "  * Try rerunning if that is the first time, otherwise try parallelizing/speeding up the job."
       if [ "${workflow_name}" == "CI" ]; then
-        echo "  * Avoid increasing the timeout to [keep fast workflows in Unified CI](https://github.com/camunda/camunda/wiki/CI-&-Automation#workflow-inclusion-criteria)."
+        echo "  * Avoid increasing the timeout to [keep fast workflows in Unified CI](https://camunda.github.io/camunda/ci/#workflow-inclusion-criteria)."
       fi
       if [[ $runner_name == camunda-* ]]; then
         echo "  * Check [resource usage for runner \`${runner_name}\`](https://dashboard.int.camunda.com/d/000000019/pods?orgId=1&var-namespace=camunda&var-pod=${runner_name}&var-container=All&from=now-7d&to=now)."

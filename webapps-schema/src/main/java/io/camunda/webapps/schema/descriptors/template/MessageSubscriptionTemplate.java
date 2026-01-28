@@ -104,6 +104,8 @@ public class MessageSubscriptionTemplate extends AbstractTemplateDescriptor
    */
   @Deprecated public static final String POSITION_JOB = "positionJob";
 
+  public static final String ROOT_PROCESS_INSTANCE_KEY = "rootProcessInstanceKey";
+
   public MessageSubscriptionTemplate(final String indexPrefix, final boolean isElasticsearch) {
     super(indexPrefix, isElasticsearch);
   }

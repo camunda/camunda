@@ -105,9 +105,6 @@ public class AWSOpenSearchSetupHelper extends OpenSearchSetupHelper {
 
   @Override
   public void cleanup(final String prefix) {
-    // reset cluster settings if changed
-    super.resetLifecyclePollInterval();
-
     try {
       client.indices().delete(new DeleteIndexRequest.Builder().index(prefix + "*").build());
     } catch (final IOException e) {

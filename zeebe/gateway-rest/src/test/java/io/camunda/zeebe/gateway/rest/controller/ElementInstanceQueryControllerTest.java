@@ -12,6 +12,9 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.gateway.protocol.model.ElementInstanceStateEnum;
+import io.camunda.gateway.protocol.model.IncidentErrorTypeEnum;
+import io.camunda.gateway.protocol.model.IncidentStateEnum;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
@@ -31,9 +34,6 @@ import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.ElementInstanceServices;
 import io.camunda.service.exception.ErrorMapper;
-import io.camunda.zeebe.gateway.protocol.rest.ElementInstanceStateEnum;
-import io.camunda.zeebe.gateway.protocol.rest.IncidentErrorTypeEnum;
-import io.camunda.zeebe.gateway.protocol.rest.IncidentStateEnum;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
@@ -92,6 +92,7 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
                   new FlowNodeInstanceEntity(
                       1L,
                       2L,
+                      37L,
                       3L,
                       OffsetDateTime.parse("2023-05-17T00:00:00Z"),
                       OffsetDateTime.parse("2023-05-23T00:00:00Z"),
@@ -132,6 +133,7 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
       new FlowNodeInstanceEntity(
           23L,
           5L,
+          37L,
           17L,
           OffsetDateTime.parse("2023-05-17T10:10:10Z"),
           OffsetDateTime.parse("2023-05-23T10:10:10Z"),
@@ -152,6 +154,7 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
           3L,
           "processDefId",
           2L,
+          37L,
           IncidentEntity.ErrorType.JOB_NO_RETRIES,
           "error",
           "elementId",
@@ -228,6 +231,7 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
                       234L,
                       "Test_Process",
                       789L,
+                      37L,
                       ErrorType.CALLED_DECISION_ERROR,
                       "Process crashed",
                       "elementId",

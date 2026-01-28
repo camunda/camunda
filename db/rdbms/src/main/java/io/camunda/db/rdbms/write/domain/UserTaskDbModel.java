@@ -28,6 +28,7 @@ public class UserTaskDbModel implements Copyable<UserTaskDbModel> {
   private Long formKey;
   private Long processDefinitionKey;
   private Long processInstanceKey;
+  private Long rootProcessInstanceKey;
   private Long elementInstanceKey;
   private String tenantId;
   private OffsetDateTime dueDate;
@@ -41,7 +42,6 @@ public class UserTaskDbModel implements Copyable<UserTaskDbModel> {
   private Integer priority;
   private Set<String> tags;
   private int partitionId;
-  private OffsetDateTime historyCleanupDate;
 
   public UserTaskDbModel(final Long userTaskKey) {
     this.userTaskKey = userTaskKey;
@@ -59,6 +59,7 @@ public class UserTaskDbModel implements Copyable<UserTaskDbModel> {
       final Long formKey,
       final Long processDefinitionKey,
       final Long processInstanceKey,
+      final Long rootProcessInstanceKey,
       final Long elementInstanceKey,
       final String tenantId,
       final OffsetDateTime dueDate,
@@ -68,8 +69,7 @@ public class UserTaskDbModel implements Copyable<UserTaskDbModel> {
       final Map<String, String> customHeaders,
       final Integer priority,
       final Set<String> tags,
-      final int partitionId,
-      final OffsetDateTime historyCleanupDate) {
+      final int partitionId) {
     this.userTaskKey = userTaskKey;
     this.elementId = elementId;
     this.name = name;
@@ -81,6 +81,7 @@ public class UserTaskDbModel implements Copyable<UserTaskDbModel> {
     this.formKey = formKey;
     this.processDefinitionKey = processDefinitionKey;
     this.processInstanceKey = processInstanceKey;
+    this.rootProcessInstanceKey = rootProcessInstanceKey;
     this.elementInstanceKey = elementInstanceKey;
     this.tenantId = tenantId;
     this.dueDate = dueDate;
@@ -92,7 +93,6 @@ public class UserTaskDbModel implements Copyable<UserTaskDbModel> {
     this.priority = priority;
     this.tags = tags;
     this.partitionId = partitionId;
-    this.historyCleanupDate = historyCleanupDate;
   }
 
   @Override
@@ -189,6 +189,14 @@ public class UserTaskDbModel implements Copyable<UserTaskDbModel> {
 
   public void processInstanceKey(final Long processInstanceKey) {
     this.processInstanceKey = processInstanceKey;
+  }
+
+  public Long rootProcessInstanceKey() {
+    return rootProcessInstanceKey;
+  }
+
+  public void rootProcessInstanceKey(final Long rootProcessInstanceKey) {
+    this.rootProcessInstanceKey = rootProcessInstanceKey;
   }
 
   public Long elementInstanceKey() {
@@ -292,14 +300,6 @@ public class UserTaskDbModel implements Copyable<UserTaskDbModel> {
     return partitionId;
   }
 
-  public OffsetDateTime historyCleanupDate() {
-    return historyCleanupDate;
-  }
-
-  public void historyCleanupDate(final OffsetDateTime historyCleanupDate) {
-    this.historyCleanupDate = historyCleanupDate;
-  }
-
   public Builder toBuilder() {
     return new Builder()
         .userTaskKey(userTaskKey)
@@ -313,6 +313,7 @@ public class UserTaskDbModel implements Copyable<UserTaskDbModel> {
         .formKey(formKey)
         .processDefinitionKey(processDefinitionKey)
         .processInstanceKey(processInstanceKey)
+        .rootProcessInstanceKey(rootProcessInstanceKey)
         .elementInstanceKey(elementInstanceKey)
         .tenantId(tenantId)
         .dueDate(dueDate)
@@ -324,8 +325,7 @@ public class UserTaskDbModel implements Copyable<UserTaskDbModel> {
         .customHeaders(customHeaders)
         .priority(priority)
         .tags(tags)
-        .partitionId(partitionId)
-        .historyCleanupDate(historyCleanupDate);
+        .partitionId(partitionId);
   }
 
   public static class Builder implements ObjectBuilder<UserTaskDbModel> {
@@ -341,6 +341,7 @@ public class UserTaskDbModel implements Copyable<UserTaskDbModel> {
     private Long formKey;
     private Long processDefinitionKey;
     private Long processInstanceKey;
+    private Long rootProcessInstanceKey;
     private Long elementInstanceKey;
     private String tenantId;
     private OffsetDateTime dueDate;
@@ -353,7 +354,6 @@ public class UserTaskDbModel implements Copyable<UserTaskDbModel> {
     private Integer priority;
     private Set<String> tags;
     private int partitionId;
-    private OffsetDateTime historyCleanupDate;
 
     // Public constructor to initialize the builder
     public Builder() {}
@@ -419,6 +419,11 @@ public class UserTaskDbModel implements Copyable<UserTaskDbModel> {
       return this;
     }
 
+    public Builder rootProcessInstanceKey(final Long rootProcessInstanceKey) {
+      this.rootProcessInstanceKey = rootProcessInstanceKey;
+      return this;
+    }
+
     public Builder elementInstanceKey(final Long elementInstanceKey) {
       this.elementInstanceKey = elementInstanceKey;
       return this;
@@ -479,11 +484,6 @@ public class UserTaskDbModel implements Copyable<UserTaskDbModel> {
       return this;
     }
 
-    public Builder historyCleanupDate(final OffsetDateTime value) {
-      historyCleanupDate = value;
-      return this;
-    }
-
     // Build method to create the record
     @Override
     public UserTaskDbModel build() {
@@ -500,6 +500,7 @@ public class UserTaskDbModel implements Copyable<UserTaskDbModel> {
               formKey,
               processDefinitionKey,
               processInstanceKey,
+              rootProcessInstanceKey,
               elementInstanceKey,
               tenantId,
               dueDate,
@@ -509,8 +510,7 @@ public class UserTaskDbModel implements Copyable<UserTaskDbModel> {
               customHeaders,
               priority,
               tags,
-              partitionId,
-              historyCleanupDate);
+              partitionId);
 
       model.candidateUsers(candidateUsers);
       model.candidateGroups(candidateGroups);

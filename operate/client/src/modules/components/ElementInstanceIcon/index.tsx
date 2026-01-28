@@ -93,6 +93,11 @@ import FlowNodeEventCompensationEnd from 'modules/components/Icon/flow-node-comp
 import FlowNodeEventCompensationIntermediateThrow from 'modules/components/Icon/flow-node-compensation-intermediate-event-throw.svg?react';
 import FlowNodeEventCompensationBoundary from 'modules/components/Icon/flow-node-compensation-boundary-event.svg?react';
 
+import FlowNodeEventConditionalStart from 'modules/components/Icon/flow-node-conditional-start-event.svg?react';
+import FlowNodeEventConditionalIntermediateCatch from 'modules/components/Icon/flow-node-conditional-intermediate-catch-event.svg?react';
+import FlowNodeEventConditionalNonInterrupting from 'modules/components/Icon/flow-node-conditional-intermediate-catch-non-interrupting-event.svg?react';
+import FlowNodeEventConditionalNonInterruptingStart from 'modules/components/Icon/flow-node-conditional-intermediate-catch-non-interrupting-start-event.svg?react';
+
 type Props = {
   diagramBusinessObject: BusinessObject | undefined;
   isRootProcess?: boolean;
@@ -338,6 +343,33 @@ const ElementInstanceIcon: React.FC<Props> = ({
           return <FlowNodeEventCompensationIntermediateThrow {...svgProps} />;
         case 'bpmn:EndEvent':
           return <FlowNodeEventCompensationEnd {...svgProps} />;
+      }
+
+    case 'bpmn:ConditionalEventDefinition':
+      switch (diagramBusinessObject.$type) {
+        default:
+        case 'bpmn:StartEvent':
+          switch (isInterruptingEvent(diagramBusinessObject)) {
+            default:
+            case true:
+              return <FlowNodeEventConditionalStart {...svgProps} />;
+            case false:
+              return (
+                <FlowNodeEventConditionalNonInterruptingStart {...svgProps} />
+              );
+          }
+        case 'bpmn:IntermediateCatchEvent':
+          return <FlowNodeEventConditionalIntermediateCatch {...svgProps} />;
+        case 'bpmn:BoundaryEvent':
+          switch (getBoundaryEventType(diagramBusinessObject)) {
+            default:
+            case 'interrupting':
+              return (
+                <FlowNodeEventConditionalIntermediateCatch {...svgProps} />
+              );
+            case 'non-interrupting':
+              return <FlowNodeEventConditionalNonInterrupting {...svgProps} />;
+          }
       }
   }
 

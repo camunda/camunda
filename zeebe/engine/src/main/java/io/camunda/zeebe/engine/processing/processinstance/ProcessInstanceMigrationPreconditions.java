@@ -67,7 +67,11 @@ public final class ProcessInstanceMigrationPreconditions {
   private static final Set<BpmnElementType> UNSUPPORTED_ELEMENT_TYPES =
       EnumSet.complementOf(SUPPORTED_ELEMENT_TYPES);
   private static final Set<BpmnEventType> SUPPORTED_INTERMEDIATE_CATCH_EVENT_TYPES =
-      EnumSet.of(BpmnEventType.MESSAGE, BpmnEventType.TIMER, BpmnEventType.SIGNAL);
+      EnumSet.of(
+          BpmnEventType.MESSAGE,
+          BpmnEventType.TIMER,
+          BpmnEventType.SIGNAL,
+          BpmnEventType.CONDITIONAL);
 
   private static final String ERROR_MESSAGE_PROCESS_INSTANCE_NOT_FOUND =
       "Expected to migrate process instance but no process instance found with key '%d'";
@@ -573,8 +577,9 @@ public final class ProcessInstanceMigrationPreconditions {
    * @param targetElementId target element id
    * @param elementInstance element instance to do the check
    * @param processInstanceKey process instance key to be logged
+   * @return whether the migration is to a different user task implementation
    */
-  public static void requireSupportedUserTaskImplementation(
+  public static boolean requireSupportedUserTaskImplementation(
       final DeployedProcess sourceProcessDefinition,
       final DeployedProcess targetProcessDefinition,
       final String targetElementId,
@@ -582,14 +587,17 @@ public final class ProcessInstanceMigrationPreconditions {
       final long processInstanceKey) {
     final ProcessInstanceRecord elementInstanceRecord = elementInstance.getValue();
     if (elementInstanceRecord.getBpmnElementType() != BpmnElementType.USER_TASK) {
-      return;
+      return false;
     }
 
     final AbstractFlowElement targetElement =
         targetProcessDefinition.getProcess().getElementById(targetElementId);
     final BpmnElementType targetElementType = targetElement.getElementType();
-    if (targetElementType != BpmnElementType.USER_TASK) {
-      return;
+
+    if (targetElementType != BpmnElementType.USER_TASK
+        && !(targetElement instanceof final ExecutableMultiInstanceBody tmi
+            && tmi.getInnerActivity().getElementType() == BpmnElementType.USER_TASK)) {
+      return false;
     }
 
     final ExecutableUserTask targetUserTask =
@@ -623,6 +631,8 @@ public final class ProcessInstanceMigrationPreconditions {
       throw new ProcessInstanceMigrationPreconditionFailedException(
           reason, RejectionType.INVALID_STATE);
     }
+    return sourceUserTaskType.equals(JOB_WORKER_IMPLEMENTATION)
+        && targetUserTaskType.equals(ZEEBE_USER_TASK_IMPLEMENTATION);
   }
 
   /**

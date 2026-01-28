@@ -21,6 +21,15 @@ const pages = {
   taskDetailsProcess(id: string = ':id') {
     return `/${id}/process`;
   },
+  taskDetailsHistory(id: string = ':id') {
+    return `/${id}/history`;
+  },
+  taskDetailsHistoryAuditLog(
+    id: string = ':id',
+    auditLogKey: string = ':auditLogKey',
+  ) {
+    return `/${id}/history/${auditLogKey}`;
+  },
   processes(
     options: {tenantId?: string; matchAllChildren?: boolean} = {
       matchAllChildren: false,
@@ -52,4 +61,15 @@ function useStartProcessParams(): {bpmnProcessId: string} {
   return {bpmnProcessId: bpmnProcessId ?? ''};
 }
 
-export {pages, useTaskDetailsParams, useStartProcessParams};
+function useHistoryItemDetailsParams(): {id: string; auditLogKey: string} {
+  const {id, auditLogKey} = useParams<'id' | 'auditLogKey'>();
+
+  return {id: id ?? '', auditLogKey: auditLogKey ?? ''};
+}
+
+export {
+  pages,
+  useTaskDetailsParams,
+  useStartProcessParams,
+  useHistoryItemDetailsParams,
+};

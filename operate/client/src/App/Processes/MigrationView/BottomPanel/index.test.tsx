@@ -17,8 +17,9 @@ import {BottomPanel} from '.';
 import {open} from 'modules/mocks/diagrams';
 import {elements, SOURCE_PROCESS_DEFINITION_KEY, Wrapper} from './tests/mocks';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
-import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 import {processesStore} from 'modules/stores/processes/processes.migration';
+import {mockSearchProcessDefinitions} from 'modules/mocks/api/v2/processDefinitions/searchProcessDefinitions';
+import {searchResult} from 'modules/testUtils';
 
 const TARGET_PROCESS_DEFINITION_KEY = '2';
 
@@ -79,29 +80,28 @@ const getMatcherFunction = (flowNodeName: string): MatcherFunction => {
 
 describe('MigrationView/BottomPanel', () => {
   beforeEach(async () => {
-    mockFetchGroupedProcesses().withSuccess([
-      {
-        bpmnProcessId: 'orderProcess',
-        name: '',
-        tenantId: '<default>',
-        processes: [
-          {
-            bpmnProcessId: 'orderProcess',
-            id: SOURCE_PROCESS_DEFINITION_KEY,
-            version: 1,
-            name: 'orderProcess',
-            versionTag: '',
-          },
-          {
-            bpmnProcessId: 'orderProcess',
-            id: TARGET_PROCESS_DEFINITION_KEY,
-            version: 2,
-            name: 'orderProcess',
-            versionTag: '',
-          },
-        ],
-      },
-    ]);
+    mockSearchProcessDefinitions().withSuccess(
+      searchResult([
+        {
+          processDefinitionId: 'orderProcess',
+          processDefinitionKey: SOURCE_PROCESS_DEFINITION_KEY,
+          version: 1,
+          name: 'orderProcess',
+          versionTag: '',
+          tenantId: '<default>',
+          hasStartForm: false,
+        },
+        {
+          processDefinitionId: 'orderProcess',
+          processDefinitionKey: TARGET_PROCESS_DEFINITION_KEY,
+          version: 2,
+          name: 'orderProcess',
+          versionTag: '',
+          tenantId: '<default>',
+          hasStartForm: false,
+        },
+      ]),
+    );
     vi.stubGlobal('location', {
       ...window.location,
       search: '?process=orderProcess&version=1',

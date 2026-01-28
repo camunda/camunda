@@ -20,6 +20,7 @@ import io.camunda.service.ConditionalServices;
 import io.camunda.service.ConditionalServices.EvaluateConditionalRequest;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.exception.ServiceException;
+import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.conditional.ConditionalEvaluationRecord;
 import java.util.concurrent.CompletableFuture;
@@ -59,12 +60,13 @@ public class ConditionalControllerTest extends RestControllerTest {
   @ParameterizedTest
   @MethodSource("provideConditionalEvaluationScenarios")
   void shouldEvaluateConditionalStartEvents(
-      final ConditionalEvaluationRecord mockResponseRecord, final String expectedApiResponse) {
+      final BrokerResponse<ConditionalEvaluationRecord> mockResponse,
+      final String expectedApiResponse) {
     // given
     when(multiTenancyCfg.isChecksEnabled()).thenReturn(false);
 
     when(conditionalServices.evaluateConditional(any(EvaluateConditionalRequest.class)))
-        .thenReturn(CompletableFuture.completedFuture(mockResponseRecord));
+        .thenReturn(CompletableFuture.completedFuture(mockResponse));
 
     final var request =
         """
@@ -115,7 +117,7 @@ public class ConditionalControllerTest extends RestControllerTest {
             "type":"about:blank",
             "title":"INVALID_ARGUMENT",
             "status":400,
-            "detail":"Expected to handle request Evaluate Conditional Event with tenant identifier 'tenantId', but multi-tenancy is disabled",
+            "detail":"Expected to handle request Evaluate Conditional with tenant identifier 'tenantId', but multi-tenancy is disabled",
             "instance":"/v2/conditionals/evaluation"
          }""";
 
@@ -152,7 +154,7 @@ public class ConditionalControllerTest extends RestControllerTest {
             "type":"about:blank",
             "title":"INVALID_ARGUMENT",
             "status":400,
-            "detail":"Expected to handle request Evaluate Conditional Event with tenant identifiers [], but no tenant identifier was provided.",
+            "detail":"Expected to handle request Evaluate Conditional with tenant identifiers [], but no tenant identifier was provided.",
             "instance":"/v2/conditionals/evaluation"
          }""";
 
@@ -344,11 +346,17 @@ public class ConditionalControllerTest extends RestControllerTest {
   private static Stream<Arguments> provideConditionalEvaluationScenarios() {
     return Stream.of(
         Arguments.of(
-            new ConditionalEvaluationRecord()
-                .addStartedProcessInstance(2251799813685249L, 2251799813685250L)
-                .addStartedProcessInstance(2251799813685251L, 2251799813685252L),
+            new BrokerResponse<>(
+                new ConditionalEvaluationRecord()
+                    .setTenantId("<default>")
+                    .addStartedProcessInstance(2251799813685249L, 2251799813685250L)
+                    .addStartedProcessInstance(2251799813685251L, 2251799813685252L),
+                1,
+                12345L),
             """
             {
+                "conditionalEvaluationKey": "12345",
+                "tenantId": "<default>",
                 "processInstances": [
                     {
                         "processDefinitionKey": "2251799813685249",
@@ -361,9 +369,12 @@ public class ConditionalControllerTest extends RestControllerTest {
                 ]
             }"""),
         Arguments.of(
-            new ConditionalEvaluationRecord(),
+            new BrokerResponse<>(
+                new ConditionalEvaluationRecord().setTenantId("<default>"), 0, 99999L),
             """
             {
+                "conditionalEvaluationKey": "99999",
+                "tenantId": "<default>",
                 "processInstances": []
             }"""));
   }

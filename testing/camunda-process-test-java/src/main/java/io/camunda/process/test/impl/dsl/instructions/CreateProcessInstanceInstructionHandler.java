@@ -16,8 +16,12 @@
 package io.camunda.process.test.impl.dsl.instructions;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3;
 import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.api.dsl.instructions.CreateProcessInstanceInstruction;
+import io.camunda.process.test.api.dsl.instructions.createProcessInstance.CreateProcessInstanceRuntimeInstruction;
+import io.camunda.process.test.api.dsl.instructions.createProcessInstance.CreateProcessInstanceTerminateRuntimeInstruction;
+import io.camunda.process.test.impl.dsl.AssertionFacade;
 import io.camunda.process.test.impl.dsl.TestCaseInstructionHandler;
 
 public class CreateProcessInstanceInstructionHandler
@@ -27,14 +31,52 @@ public class CreateProcessInstanceInstructionHandler
   public void execute(
       final CreateProcessInstanceInstruction instruction,
       final CamundaProcessTestContext context,
-      final CamundaClient camundaClient) {
+      final CamundaClient camundaClient,
+      final AssertionFacade assertionFacade) {
 
-    // dummy implementation as a placeholder
-    camundaClient.newCreateInstanceCommand().bpmnProcessId("process").latestVersion().send().join();
+    final String processDefinitionId =
+        instruction
+            .getProcessDefinitionSelector()
+            .getProcessDefinitionId()
+            .orElseThrow(
+                () ->
+                    new IllegalArgumentException("Missing required property: processDefinitionId"));
+
+    final CreateProcessInstanceCommandStep3 command =
+        camundaClient
+            .newCreateInstanceCommand()
+            .bpmnProcessId(processDefinitionId)
+            .latestVersion()
+            .variables(instruction.getVariables());
+
+    instruction
+        .getStartInstructions()
+        .forEach(startInstruction -> command.startBeforeElement(startInstruction.getElementId()));
+
+    instruction
+        .getRuntimeInstructions()
+        .forEach(runtimeInstruction -> applyRuntimeInstruction(runtimeInstruction, command));
+
+    command.send().join();
   }
 
   @Override
   public Class<CreateProcessInstanceInstruction> getInstructionType() {
     return CreateProcessInstanceInstruction.class;
+  }
+
+  private static void applyRuntimeInstruction(
+      final CreateProcessInstanceRuntimeInstruction runtimeInstruction,
+      final CreateProcessInstanceCommandStep3 command) {
+
+    if (runtimeInstruction instanceof CreateProcessInstanceTerminateRuntimeInstruction) {
+      final CreateProcessInstanceTerminateRuntimeInstruction terminateInstruction =
+          (CreateProcessInstanceTerminateRuntimeInstruction) runtimeInstruction;
+      command.terminateAfterElement(terminateInstruction.getAfterElementId());
+
+    } else {
+      throw new IllegalArgumentException(
+          "Unsupported runtime instruction: " + runtimeInstruction.getClass().getName());
+    }
   }
 }

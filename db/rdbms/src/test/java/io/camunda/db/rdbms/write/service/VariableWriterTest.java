@@ -8,13 +8,17 @@
 package io.camunda.db.rdbms.write.service;
 
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.sql.VariableMapper;
+import io.camunda.db.rdbms.sql.VariableMapper.BatchInsertVariablesDto;
+import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.domain.VariableDbModel;
 import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
@@ -28,8 +32,9 @@ class VariableWriterTest {
   private final VariableMapper mapper = mock(VariableMapper.class);
   private final VendorDatabaseProperties vendorDatabaseProperties =
       mock(VendorDatabaseProperties.class);
+  private final RdbmsWriterConfig config = mock(RdbmsWriterConfig.class, RETURNS_DEEP_STUBS);
   private final VariableWriter writer =
-      new VariableWriter(executionQueue, mapper, vendorDatabaseProperties);
+      new VariableWriter(executionQueue, mapper, vendorDatabaseProperties, config);
 
   @Test
   void shouldCreateVariable() {
@@ -45,13 +50,19 @@ class VariableWriterTest {
 
     verify(executionQueue)
         .executeInQueue(
-            eq(
-                new QueueItem(
-                    ContextType.VARIABLE,
-                    WriteStatementType.INSERT,
-                    123L,
-                    "io.camunda.db.rdbms.sql.VariableMapper.insert",
-                    truncatedModel)));
+            argThat(
+                queueItem ->
+                    queueItem.contextType() == ContextType.VARIABLE
+                        && queueItem.statementType() == WriteStatementType.INSERT
+                        && queueItem
+                            .statementId()
+                            .equals("io.camunda.db.rdbms.sql.VariableMapper.insert")
+                        && queueItem.parameter() instanceof BatchInsertVariablesDto
+                        && ((BatchInsertVariablesDto) queueItem.parameter()).variables().size() == 1
+                        && ((BatchInsertVariablesDto) queueItem.parameter())
+                            .variables()
+                            .getFirst()
+                            .equals(truncatedModel)));
   }
 
   @Test

@@ -53,8 +53,8 @@ jobs:
           - 5000:5000
     steps:
       - name: Check out repository code
-        uses: actions/checkout@v4
-      - uses: hadolint/hadolint-action@v3.1.0
+        uses: actions/checkout@v6
+      - uses: hadolint/hadolint-action@v3.3.0
         with:
           ignore: DL3018 # redundant when pinning the base image
           dockerfile: operate.Dockerfile
@@ -77,7 +77,7 @@ jobs:
           username: minimus
           password: ${{ steps.secrets.outputs.minimus-token }}
       - name: Setup Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: "adopt"
           java-version: "21"

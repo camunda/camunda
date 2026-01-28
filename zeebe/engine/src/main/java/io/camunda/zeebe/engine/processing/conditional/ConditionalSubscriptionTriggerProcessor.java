@@ -23,9 +23,7 @@ import io.camunda.zeebe.protocol.impl.record.value.conditional.ConditionalSubscr
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ConditionalSubscriptionIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
-import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 
 @ExcludeAuthorizationCheck
 public class ConditionalSubscriptionTriggerProcessor
@@ -38,12 +36,10 @@ public class ConditionalSubscriptionTriggerProcessor
   private static final String NO_ACTIVE_ELEMENT_FOUND_FOR_CONDITIONAL_MESSAGE =
       "Expected to trigger condition subscription with key '%d', but the element with key '%d' is "
           + "not active anymore for process instance with key '%d' and catch event id '%s'.";
-  private static final DirectBuffer NO_VARIABLES = new UnsafeBuffer();
 
   private final ConditionalSubscriptionState conditionSubscriptionState;
   private final ProcessState processState;
   private final ElementInstanceState elementInstanceState;
-  private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
 
@@ -56,12 +52,11 @@ public class ConditionalSubscriptionTriggerProcessor
     conditionSubscriptionState = processingState.getConditionalSubscriptionState();
     processState = processingState.getProcessState();
     elementInstanceState = processingState.getElementInstanceState();
-    keyGenerator = processingState.getKeyGenerator();
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     eventHandle =
         new EventHandle(
-            keyGenerator,
+            processingState.getKeyGenerator(),
             processingState.getEventScopeInstanceState(),
             writers,
             processState,
@@ -100,21 +95,6 @@ public class ConditionalSubscriptionTriggerProcessor
               elementInstanceKey,
               subscription.getProcessInstanceKey(),
               subscription.getCatchEventId()));
-      return;
-    }
-
-    final boolean isStartEvent = elementInstanceKey < 0;
-    if (isStartEvent) {
-      final long processInstanceKey = keyGenerator.nextKey();
-      subscription.setProcessInstanceKey(processInstanceKey);
-      stateWriter.appendFollowUpEvent(
-          record.getKey(), ConditionalSubscriptionIntent.TRIGGERED, subscription);
-      eventHandle.activateProcessInstanceForStartEvent(
-          subscription.getProcessDefinitionKey(),
-          processInstanceKey,
-          subscription.getCatchEventIdBuffer(),
-          NO_VARIABLES, // TODO - this needs to updated to pass variables from the condition
-          tenantId);
       return;
     }
 

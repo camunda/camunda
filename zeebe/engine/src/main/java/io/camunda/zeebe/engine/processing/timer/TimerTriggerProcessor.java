@@ -63,7 +63,7 @@ public final class TimerTriggerProcessor implements TypedRecordProcessor<TimerRe
       final BpmnBehaviors bpmnBehaviors,
       final Writers writers) {
     catchEventBehavior = bpmnBehaviors.catchEventBehavior();
-    expressionProcessor = bpmnBehaviors.expressionBehavior();
+    expressionProcessor = bpmnBehaviors.expressionProcessor();
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
 

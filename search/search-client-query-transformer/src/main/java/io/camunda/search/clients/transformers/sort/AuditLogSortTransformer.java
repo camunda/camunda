@@ -10,7 +10,6 @@ package io.camunda.search.clients.transformers.sort;
 import static io.camunda.webapps.schema.descriptors.template.AuditLogTemplate.ACTOR_ID;
 import static io.camunda.webapps.schema.descriptors.template.AuditLogTemplate.ACTOR_TYPE;
 import static io.camunda.webapps.schema.descriptors.template.AuditLogTemplate.ANNOTATION;
-import static io.camunda.webapps.schema.descriptors.template.AuditLogTemplate.AUDIT_LOG_KEY;
 import static io.camunda.webapps.schema.descriptors.template.AuditLogTemplate.BATCH_OPERATION_KEY;
 import static io.camunda.webapps.schema.descriptors.template.AuditLogTemplate.BATCH_OPERATION_TYPE;
 import static io.camunda.webapps.schema.descriptors.template.AuditLogTemplate.CATEGORY;
@@ -22,6 +21,7 @@ import static io.camunda.webapps.schema.descriptors.template.AuditLogTemplate.DE
 import static io.camunda.webapps.schema.descriptors.template.AuditLogTemplate.ELEMENT_INSTANCE_KEY;
 import static io.camunda.webapps.schema.descriptors.template.AuditLogTemplate.ENTITY_KEY;
 import static io.camunda.webapps.schema.descriptors.template.AuditLogTemplate.ENTITY_TYPE;
+import static io.camunda.webapps.schema.descriptors.template.AuditLogTemplate.ID;
 import static io.camunda.webapps.schema.descriptors.template.AuditLogTemplate.JOB_KEY;
 import static io.camunda.webapps.schema.descriptors.template.AuditLogTemplate.OPERATION_TYPE;
 import static io.camunda.webapps.schema.descriptors.template.AuditLogTemplate.PROCESS_DEFINITION_ID;
@@ -37,10 +37,10 @@ public class AuditLogSortTransformer implements FieldSortingTransformer {
   @Override
   public String apply(final String domainField) {
     return switch (domainField) {
+      case "auditLogKey" -> ID;
       case "actorId" -> ACTOR_ID;
       case "actorType" -> ACTOR_TYPE;
       case "annotation" -> ANNOTATION;
-      case "auditLogKey" -> AUDIT_LOG_KEY;
       case "batchOperationKey" -> BATCH_OPERATION_KEY;
       case "batchOperationType" -> BATCH_OPERATION_TYPE;
       case "category" -> CATEGORY;

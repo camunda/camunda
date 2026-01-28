@@ -10,7 +10,7 @@ import {test} from 'fixtures';
 import {expect} from '@playwright/test';
 import {deploy, createInstances} from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
-import {navigateToApp, validateURL} from '@pages/UtilitiesPage';
+import {navigateToApp} from '@pages/UtilitiesPage';
 import {sleep} from 'utils/sleep';
 import {waitForAssertion} from 'utils/waitForAssertion';
 
@@ -87,7 +87,6 @@ test.describe.serial('Process Instance Migration', () => {
     page,
     operateFiltersPanelPage,
     operateProcessesPage,
-    operateOperationPanelPage,
     operateProcessMigrationModePage,
   }) => {
     test.slow();
@@ -261,34 +260,32 @@ test.describe.serial('Process Instance Migration', () => {
           targetValue: 'SequentialMultiInstanceAdHocSubProcess',
         },
         {label: 'target element for task k', targetValue: 'TaskK'},
+        {
+          label: 'target element for ai agent task',
+          targetValue: 'AIAgentTask',
+        },
+        {
+          label: 'target element for agent tools',
+          targetValue: 'AgentTools',
+        },
+        {
+          label: 'target element for ai agent sub process',
+          targetValue: 'AIAgentsubprocess',
+        },
       ]);
 
       await operateProcessMigrationModePage.completeProcessInstanceMigration();
-    });
 
-    await test.step('Verify migration operation is created and completes', async () => {
-      await expect(operateProcessesPage.operationsList).toBeVisible({
-        timeout: 30000,
-      });
       await sleep(500);
     });
 
     await test.step('Verify 6 instances migrated to target version', async () => {
-      await operateProcessesPage.expandOperationsPanel();
-
-      const operationEntry =
-        operateOperationPanelPage.getMigrationOperationEntry(6);
-
-      await expect(operationEntry).toBeVisible({timeout: 120000});
-
-      await operateOperationPanelPage.clickOperationLink(operationEntry);
-
-      await validateURL(page, /operationId=/);
+      await operateFiltersPanelPage.selectVersion(targetVersion);
 
       await waitForAssertion({
         assertion: async () => {
           await expect(page.getByText('6 results')).toBeVisible({
-            timeout: 30000,
+            timeout: 3000,
           });
         },
         onFailure: async () => {
@@ -296,7 +293,9 @@ test.describe.serial('Process Instance Migration', () => {
         },
       });
 
-      await expect(operateProcessesPage.getVersionCells('2')).toHaveCount(6, {
+      await expect(
+        operateProcessesPage.versionCells(targetVersion),
+      ).toHaveCount(6, {
         timeout: 30000,
       });
     });
@@ -306,31 +305,25 @@ test.describe.serial('Process Instance Migration', () => {
     page,
     operateFiltersPanelPage,
     operateProcessesPage,
-    operateOperationPanelPage,
   }) => {
     const targetBpmnProcessId = testProcesses.processV2.bpmnProcessId;
     const targetVersion = testProcesses.processV2.version.toString();
 
-    await test.step('Navigate to processes and expand operations panel', async () => {
+    await test.step('Navigate to processes page', async () => {
       await operateFiltersPanelPage.selectProcess(targetBpmnProcessId);
       await operateFiltersPanelPage.selectVersion(targetVersion);
 
       await expect(operateProcessesPage.resultsText.first()).toBeVisible({
         timeout: 30000,
       });
-
-      await operateOperationPanelPage.expandOperationIdField();
     });
 
-    await test.step('Get migration operation ID and verify TaskF instances', async () => {
-      const operationId =
-        await operateOperationPanelPage.getMigrationOperationId();
-
+    await test.step('Verify TaskF instances', async () => {
       await operateFiltersPanelPage.selectProcess(targetBpmnProcessId);
       await operateFiltersPanelPage.selectVersion(targetVersion);
 
       await page.goto(
-        `operate/processes?active=true&incidents=true&process=${targetBpmnProcessId}&version=${targetVersion}&operationId=${operationId}&flowNodeId=TaskF`,
+        `operate/processes?active=true&incidents=true&process=${targetBpmnProcessId}&version=${targetVersion}&flowNodeId=TaskF`,
       );
 
       await expect(page.getByText('6 results')).toBeVisible({timeout: 90000});
@@ -341,36 +334,64 @@ test.describe.serial('Process Instance Migration', () => {
     page,
     operateFiltersPanelPage,
     operateProcessesPage,
-    operateOperationPanelPage,
   }) => {
     const targetBpmnProcessId = testProcesses.processV2.bpmnProcessId;
     const targetVersion = testProcesses.processV2.version.toString();
 
-    await test.step('Navigate to processes and expand operations panel', async () => {
+    await test.step('Navigate to processes page', async () => {
       await operateFiltersPanelPage.selectProcess(targetBpmnProcessId);
       await operateFiltersPanelPage.selectVersion(targetVersion);
 
       await expect(operateProcessesPage.resultsText.first()).toBeVisible({
         timeout: 30000,
       });
-
-      await operateOperationPanelPage.expandOperationIdField();
     });
 
     const tasksToVerify = ['TaskI', 'TaskJ', 'TaskK'];
     for (const taskId of tasksToVerify) {
-      await test.step(`Get migration operation ID and verify ${taskId} instances`, async () => {
-        const operationId =
-          await operateOperationPanelPage.getMigrationOperationId();
-
+      await test.step(`Verify ${taskId} instances`, async () => {
         await operateFiltersPanelPage.selectProcess(targetBpmnProcessId);
         await operateFiltersPanelPage.selectVersion(targetVersion);
 
         await page.goto(
-          `operate/processes?active=true&incidents=true&process=${targetBpmnProcessId}&version=${targetVersion}&operationId=${operationId}&flowNodeId=${taskId}`,
+          `operate/processes?active=true&incidents=true&process=${targetBpmnProcessId}&version=${targetVersion}&flowNodeId=${taskId}`,
         );
 
         await expect(page.getByText('6 results')).toBeVisible({timeout: 90000});
+      });
+    }
+  });
+
+  test('Migrated ai agent task and ad hoc sub processes', async ({
+    page,
+    operateFiltersPanelPage,
+    operateProcessesPage,
+  }) => {
+    const targetBpmnProcessId = testProcesses.processV2.bpmnProcessId;
+    const targetVersion = testProcesses.processV2.version.toString();
+
+    await test.step('Navigate to processes page', async () => {
+      await operateFiltersPanelPage.selectProcess(targetBpmnProcessId);
+      await operateFiltersPanelPage.selectVersion(targetVersion);
+
+      await expect(operateProcessesPage.resultsText.first()).toBeVisible({
+        timeout: 30000,
+      });
+    });
+
+    const tasksToVerify = ['AIAgentTask', 'AIAgentsubprocess'];
+    for (const taskId of tasksToVerify) {
+      await test.step(`Verify ${taskId} instances`, async () => {
+        await operateFiltersPanelPage.selectProcess(targetBpmnProcessId);
+        await operateFiltersPanelPage.selectVersion(targetVersion);
+
+        await page.goto(
+          `operate/processes?active=true&incidents=true&process=${targetBpmnProcessId}&version=${targetVersion}&flowNodeId=${taskId}`,
+        );
+
+        await expect(page.getByText('6 results')).toBeVisible({
+          timeout: 90000,
+        });
       });
     }
   });
@@ -379,7 +400,6 @@ test.describe.serial('Process Instance Migration', () => {
     page,
     operateFiltersPanelPage,
     operateProcessesPage,
-    operateOperationPanelPage,
     operateProcessMigrationModePage,
   }) => {
     test.slow();
@@ -543,6 +563,18 @@ test.describe.serial('Process Instance Migration', () => {
         'Sequential multi instance Ad hoc sub process',
         'Sequential multi instance Ad hoc sub process 2',
       );
+      await operateProcessMigrationModePage.mapFlowNode(
+        'AI agent Task',
+        'AI agent Task 2',
+      );
+      await operateProcessMigrationModePage.mapFlowNode(
+        'Agent tools',
+        'Agent tools 2',
+      );
+      await operateProcessMigrationModePage.mapFlowNode(
+        'AI Agent sub process',
+        'AI Agent sub process 2',
+      );
     });
 
     await test.step('Proceed to summary and verify migration details', async () => {
@@ -563,25 +595,19 @@ test.describe.serial('Process Instance Migration', () => {
       await sleep(2000);
     });
 
-    await test.step('Verify migration operation is created and completes', async () => {
-      await operateProcessesPage.waitForOperationToComplete();
-    });
-
     await test.step('Verify 3 instances migrated to target version', async () => {
-      const operationEntry =
-        operateOperationPanelPage.getMigrationOperationEntry(3);
-
-      await expect(operationEntry).toBeVisible({
-        timeout: 120000,
+      await operateFiltersPanelPage.selectProcess(targetBpmnProcessId);
+      await operateFiltersPanelPage.selectVersion(targetVersion);
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(
+            operateProcessesPage.versionCells(targetVersion),
+          ).toHaveCount(3, {timeout: 6000});
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
       });
-
-      await operateOperationPanelPage.clickOperationLink(operationEntry);
-
-      await validateURL(page, /operationId=/);
-
-      await expect(
-        operateProcessesPage.getVersionCells(targetVersion),
-      ).toHaveCount(3, {timeout: 60000});
     });
 
     await test.step('Verify remaining instances still at source version', async () => {
@@ -599,6 +625,7 @@ test.describe.serial('Process Instance Migration', () => {
     operateFiltersPanelPage,
     operateProcessesPage,
     operateDiagramPage,
+    page,
   }) => {
     const targetBpmnProcessId = testProcesses.processV3.bpmnProcessId;
     const targetVersion = testProcesses.processV3.version.toString();
@@ -629,12 +656,17 @@ test.describe.serial('Process Instance Migration', () => {
     });
 
     await test.step('Verify Business rule task incident migration', async () => {
-      await operateDiagramPage.clickFlowNode('BusinessRuleTask2');
-      await operateDiagramPage.clickShowMetaData();
-
-      await operateDiagramPage.verifyIncidentInPopover(/invalid.*decision/i);
-
-      await operateDiagramPage.closeMetadataModal();
+      await waitForAssertion({
+        assertion: async () => {
+          await operateDiagramPage.clickFlowNode('BusinessRuleTask2');
+          await operateDiagramPage.verifyIncidentInPopover(
+            /invalid.*decision/i,
+          );
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+      });
     });
   });
 

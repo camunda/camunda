@@ -19,6 +19,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.Process;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.enums.BatchOperationState;
+import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneApplication;
@@ -39,6 +40,7 @@ import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
+@CompatibilityTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 public class BatchOperationLifecycleManagementIT {
 
@@ -48,10 +50,12 @@ public class BatchOperationLifecycleManagementIT {
   private static final TestStandaloneApplication<?> APPLICATION =
       new TestStandaloneBroker()
           .withUnauthenticatedAccess()
-          // set schedulerInterval via properties because it is not yet supported in unified config
-          .withProperty(
-              "zeebe.broker.experimental.engine.batchOperations.schedulerInterval",
-              Duration.ofDays(1));
+          .withUnifiedConfig(
+              cfg ->
+                  cfg.getProcessing()
+                      .getEngine()
+                      .getBatchOperations()
+                      .setSchedulerInterval(Duration.ofDays(1)));
 
   String testScopeId;
 

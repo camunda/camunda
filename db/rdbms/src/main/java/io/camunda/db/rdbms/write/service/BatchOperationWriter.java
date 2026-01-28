@@ -32,7 +32,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class BatchOperationWriter {
+public class BatchOperationWriter implements RdbmsWriter {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(BatchOperationWriter.class);
 
@@ -240,10 +240,5 @@ public class BatchOperationWriter {
 
   public int cleanupHistory(final OffsetDateTime cleanupDate, final int rowsToRemove) {
     return mapper.cleanupHistory(new CleanupBatchOperationHistoryDto(cleanupDate, rowsToRemove));
-  }
-
-  public int cleanupItemHistory(final OffsetDateTime cleanupDate, final int rowsToRemove) {
-    return mapper.cleanupItemHistory(
-        new CleanupBatchOperationHistoryDto(cleanupDate, rowsToRemove));
   }
 }

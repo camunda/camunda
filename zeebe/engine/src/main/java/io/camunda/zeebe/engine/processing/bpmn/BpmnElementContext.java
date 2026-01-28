@@ -29,6 +29,15 @@ public interface BpmnElementContext {
 
   long getProcessDefinitionKey();
 
+  /**
+   * Returns the key of the root process instance in the hierarchy.
+   *
+   * <p><b>Warning:</b> This value is only set for process instance records created after version
+   * 8.9.0 and part of hierarchies created after that version. For older process instances, the
+   * method will return -1.
+   */
+  long getRootProcessInstanceKey();
+
   int getProcessVersion();
 
   DirectBuffer getBpmnProcessId();

@@ -28,6 +28,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.UnaryOperator;
 import org.junit.jupiter.api.Test;
 
 public class UserTaskCompletionVariableHandlerTest {
@@ -169,6 +170,28 @@ public class UserTaskCompletionVariableHandlerTest {
         .isEqualTo(taskRecord.getValue().getProcessInstanceKey());
     assertThat(variableEntity.getIsPreview()).isFalse();
     assertThat(variableEntity.getFullValue()).isEqualTo("\"val1\"");
+    assertThat(variableEntity.getRootProcessInstanceKey())
+        .isPositive()
+        .isEqualTo(taskRecord.getValue().getRootProcessInstanceKey());
+  }
+
+  @Test
+  void shouldNotSetRootProcessInstanceKeyWhenDefault() {
+    // given
+    final long scopeKey = 456;
+    final var taskRecord =
+        generateRecordWithVariables(
+            scopeKey,
+            Map.of("var1", "val1"),
+            userTaskRecord -> userTaskRecord.withRootProcessInstanceKey(-1L));
+
+    // when
+    final var batch = new SnapshotTaskVariableBatch(String.valueOf(scopeKey), new ArrayList<>());
+    underTest.updateEntity(taskRecord, batch);
+
+    // then
+    final var variableEntity = batch.variables().getFirst();
+    assertThat(variableEntity.getRootProcessInstanceKey()).isNull();
   }
 
   @Test
@@ -194,16 +217,25 @@ public class UserTaskCompletionVariableHandlerTest {
 
   private Record<UserTaskRecordValue> generateRecordWithVariables(
       final long elementInstanceKey, final Map<String, Object> variables) {
+    return generateRecordWithVariables(elementInstanceKey, variables, UnaryOperator.identity());
+  }
+
+  private Record<UserTaskRecordValue> generateRecordWithVariables(
+      final long elementInstanceKey,
+      final Map<String, Object> variables,
+      final UnaryOperator<ImmutableUserTaskRecordValue.Builder> userTaskModifier) {
     return factory.generateRecord(
         ValueType.USER_TASK,
         r ->
             r.withIntent(UserTaskIntent.COMPLETED)
                 .withValue(
-                    ImmutableUserTaskRecordValue.builder()
-                        .from(factory.generateObject(UserTaskRecordValue.class))
-                        .withUserTaskKey(elementInstanceKey)
-                        .withElementInstanceKey(elementInstanceKey)
-                        .withVariables(variables)
+                    userTaskModifier
+                        .apply(
+                            ImmutableUserTaskRecordValue.builder()
+                                .from(factory.generateObject(UserTaskRecordValue.class))
+                                .withUserTaskKey(elementInstanceKey)
+                                .withElementInstanceKey(elementInstanceKey)
+                                .withVariables(variables))
                         .build()));
   }
 }

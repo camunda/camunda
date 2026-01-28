@@ -8,17 +8,21 @@
 package io.camunda.operate.store.elasticsearch;
 
 import static io.camunda.operate.util.ElasticsearchUtil.*;
-import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
-import static io.camunda.operate.util.ElasticsearchUtil.scroll;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.Refresh;
+import co.elastic.clients.elasticsearch._types.Script;
+import co.elastic.clients.elasticsearch._types.ScriptLanguage;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
+import co.elastic.clients.elasticsearch.core.search.Hit;
+import co.elastic.clients.json.JsonData;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.store.OperationStore;
+import io.camunda.operate.store.ScrollException;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
@@ -31,18 +35,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.support.WriteRequest;
-import org.elasticsearch.action.update.UpdateRequest;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.index.query.TermQueryBuilder;
-import org.elasticsearch.script.Script;
-import org.elasticsearch.script.ScriptType;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.elasticsearch.xcontent.XContentType;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.BeanFactory;
@@ -61,7 +54,7 @@ public class ElasticsearchOperationStore implements OperationStore {
   @Qualifier("operateObjectMapper")
   private ObjectMapper objectMapper;
 
-  @Autowired private RestHighLevelClient esClient;
+  @Autowired private ElasticsearchClient esClient;
 
   @Autowired private OperationTemplate operationTemplate;
 
@@ -72,7 +65,23 @@ public class ElasticsearchOperationStore implements OperationStore {
   @Override
   public Map<String, String> getIndexNameForAliasAndIds(
       final String alias, final Collection<String> ids) {
-    return ElasticsearchUtil.getIndexNames(alias, ids, esClient);
+
+    final var searchRequestBuilder =
+        new SearchRequest.Builder()
+            .index(alias)
+            .query(ElasticsearchUtil.idsQuery(ids.toArray(String[]::new)))
+            .source(s -> s.fetch(Boolean.FALSE));
+
+    try {
+      final var resStream =
+          ElasticsearchUtil.scrollAllStream(esClient, searchRequestBuilder, MAP_CLASS);
+
+      return resStream
+          .flatMap(res -> res.hits().hits().stream())
+          .collect(Collectors.toMap(Hit::id, Hit::index));
+    } catch (final ScrollException e) {
+      throw new OperateRuntimeException(e.getMessage(), e);
+    }
   }
 
   @Override
@@ -85,33 +94,45 @@ public class ElasticsearchOperationStore implements OperationStore {
       throw new OperateRuntimeException(
           "Wrong call to search for operation. Not enough parameters.");
     }
-    final TermQueryBuilder zeebeCommandKeyQ =
-        zeebeCommandKey != null
-            ? termQuery(OperationTemplate.ZEEBE_COMMAND_KEY, zeebeCommandKey)
-            : null;
-    final TermQueryBuilder processInstanceKeyQ =
-        processInstanceKey != null
-            ? termQuery(OperationTemplate.PROCESS_INSTANCE_KEY, processInstanceKey)
-            : null;
-    final TermQueryBuilder incidentKeyQ =
-        incidentKey != null ? termQuery(OperationTemplate.INCIDENT_KEY, incidentKey) : null;
-    final TermQueryBuilder operationTypeQ =
-        operationType != null ? termQuery(OperationTemplate.TYPE, operationType.name()) : null;
 
-    final QueryBuilder query =
-        joinWithAnd(
+    final var zeebeCommandKeyQ =
+        zeebeCommandKey != null
+            ? ElasticsearchUtil.termsQuery(OperationTemplate.ZEEBE_COMMAND_KEY, zeebeCommandKey)
+            : null;
+    final var processInstanceKeyQ =
+        processInstanceKey != null
+            ? ElasticsearchUtil.termsQuery(
+                OperationTemplate.PROCESS_INSTANCE_KEY, processInstanceKey)
+            : null;
+    final var incidentKeyQ =
+        incidentKey != null
+            ? ElasticsearchUtil.termsQuery(OperationTemplate.INCIDENT_KEY, incidentKey)
+            : null;
+    final var operationTypeQ =
+        operationType != null
+            ? ElasticsearchUtil.termsQuery(OperationTemplate.TYPE, operationType.name())
+            : null;
+
+    final var query =
+        ElasticsearchUtil.joinWithAnd(
             zeebeCommandKeyQ,
             processInstanceKeyQ,
             incidentKeyQ,
             operationTypeQ,
-            termsQuery(
-                OperationTemplate.STATE, OperationState.SENT.name(), OperationState.LOCKED.name()));
-    final SearchRequest searchRequest =
-        new SearchRequest(operationTemplate.getAlias())
-            .source(new SearchSourceBuilder().query(query).size(1));
+            ElasticsearchUtil.termsQuery(
+                OperationTemplate.STATE,
+                List.of(OperationState.SENT.name(), OperationState.LOCKED.name())));
+
+    final var searchRequestBuilder =
+        new SearchRequest.Builder().index(operationTemplate.getAlias()).size(1).query(query);
+
     try {
-      return scroll(searchRequest, OperationEntity.class, objectMapper, esClient);
-    } catch (final IOException e) {
+      return ElasticsearchUtil.scrollAllStream(
+              esClient, searchRequestBuilder, OperationEntity.class)
+          .flatMap(res -> res.hits().hits().stream())
+          .map(Hit::source)
+          .toList();
+    } catch (final ScrollException e) {
       final String message =
           String.format("Exception occurred, while obtaining the operations: %s", e.getMessage());
       throw new OperateRuntimeException(message, e);
@@ -121,11 +142,11 @@ public class ElasticsearchOperationStore implements OperationStore {
   @Override
   public String add(final BatchOperationEntity batchOperationEntity) throws PersistenceException {
     try {
-      final var indexRequest =
-          new IndexRequest(batchOperationTemplate.getFullQualifiedName())
-              .id(batchOperationEntity.getId())
-              .source(objectMapper.writeValueAsString(batchOperationEntity), XContentType.JSON);
-      esClient.index(indexRequest, RequestOptions.DEFAULT);
+      esClient.index(
+          i ->
+              i.index(batchOperationTemplate.getFullQualifiedName())
+                  .id(batchOperationEntity.getId())
+                  .document(batchOperationEntity));
     } catch (final IOException e) {
       LOGGER.error("Error persisting batch operation", e);
       throw new PersistenceException(
@@ -143,16 +164,15 @@ public class ElasticsearchOperationStore implements OperationStore {
       final Map<String, Object> jsonMap =
           objectMapper.readValue(objectMapper.writeValueAsString(operation), HashMap.class);
 
-      UpdateRequest updateRequest =
-          new UpdateRequest()
-              .index(operationTemplate.getFullQualifiedName())
-              .id(operation.getId())
-              .doc(jsonMap)
-              .retryOnConflict(UPDATE_RETRY_COUNT);
-      if (refreshImmediately) {
-        updateRequest = updateRequest.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
-      }
-      esClient.update(updateRequest, RequestOptions.DEFAULT);
+      esClient.update(
+          u ->
+              u.index(operationTemplate.getFullQualifiedName())
+                  .id(operation.getId())
+                  .doc(jsonMap)
+                  .retryOnConflict(UPDATE_RETRY_COUNT)
+                  .refresh(refreshImmediately ? Refresh.True : Refresh.False),
+          Void.class);
+
     } catch (final IOException e) {
       throw new PersistenceException(
           String.format(
@@ -169,13 +189,13 @@ public class ElasticsearchOperationStore implements OperationStore {
       final String script,
       final Map<String, Object> parameters) {
     try {
-      final UpdateRequest updateRequest =
-          new UpdateRequest()
-              .index(index)
-              .id(id)
-              .script(getScriptWithParameters(script, parameters))
-              .retryOnConflict(UPDATE_RETRY_COUNT);
-      esClient.update(updateRequest, RequestOptions.DEFAULT);
+      esClient.update(
+          u ->
+              u.index(index)
+                  .id(id)
+                  .retryOnConflict(UPDATE_RETRY_COUNT)
+                  .script(getScriptWithParameters(script, parameters)),
+          Void.class);
     } catch (final Exception e) {
       final String message =
           String.format("Exception occurred, while executing update request: %s", e.getMessage());
@@ -188,16 +208,15 @@ public class ElasticsearchOperationStore implements OperationStore {
     return beanFactory.getBean(BatchRequest.class);
   }
 
-  private Script getScriptWithParameters(final String script, final Map<String, Object> parameters)
-      throws PersistenceException {
-    try {
-      return new Script(
-          ScriptType.INLINE,
-          Script.DEFAULT_SCRIPT_LANG,
-          script,
-          objectMapper.readValue(objectMapper.writeValueAsString(parameters), HashMap.class));
-    } catch (final IOException e) {
-      throw new PersistenceException(e);
-    }
+  private Script getScriptWithParameters(final String script, final Map<String, Object> params) {
+    final Map<String, JsonData> jsonDataParams =
+        params.entrySet().stream()
+            .collect(Collectors.toMap(Map.Entry::getKey, e -> JsonData.of(e.getValue())));
+
+    return new Script.Builder()
+        .params(jsonDataParams)
+        .source(script)
+        .lang(ScriptLanguage.Painless)
+        .build();
   }
 }

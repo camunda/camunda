@@ -12,7 +12,7 @@ import io.camunda.configuration.InterceptorPlugin;
 import io.camunda.configuration.SecondaryStorage;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.SecondaryStorageDatabase;
-import io.camunda.configuration.Security;
+import io.camunda.configuration.SecondaryStorageSecurity;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.beans.LegacySearchEngineConnectProperties;
 import io.camunda.configuration.beans.SearchEngineConnectProperties;
@@ -113,7 +113,7 @@ public class SearchEngineConnectPropertiesOverride {
   }
 
   private void populateFromSecurity(final SearchEngineConnectProperties override) {
-    final Security security = resolveSecurity(override);
+    final SecondaryStorageSecurity security = resolveSecurity(override);
     if (security == null) {
       return;
     }
@@ -124,7 +124,7 @@ public class SearchEngineConnectPropertiesOverride {
     override.getSecurity().setSelfSigned(security.isSelfSigned());
   }
 
-  private Security resolveSecurity(final SearchEngineConnectProperties override) {
+  private SecondaryStorageSecurity resolveSecurity(final SearchEngineConnectProperties override) {
     final SecondaryStorage secondaryStorage =
         unifiedConfiguration.getCamunda().getData().getSecondaryStorage();
 

@@ -324,6 +324,7 @@ class UserTaskExportHandlerTest {
     assertThat(model.formKey()).isEqualTo(recordValue.getFormKey());
     assertThat(model.processDefinitionKey()).isEqualTo(recordValue.getProcessDefinitionKey());
     assertThat(model.processInstanceKey()).isEqualTo(recordValue.getProcessInstanceKey());
+    assertThat(model.rootProcessInstanceKey()).isEqualTo(recordValue.getRootProcessInstanceKey());
     assertThat(model.elementInstanceKey()).isEqualTo(recordValue.getElementInstanceKey());
     assertThat(model.tenantId()).isEqualTo(recordValue.getTenantId());
     assertThat(model.candidateGroups()).isEqualTo(recordValue.getCandidateGroupsList());

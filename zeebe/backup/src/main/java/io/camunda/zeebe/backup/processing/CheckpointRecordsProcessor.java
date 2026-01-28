@@ -95,7 +95,8 @@ public final class CheckpointRecordsProcessor
             partitionCountSupplier,
             metrics);
 
-    checkpointConfirmBackupProcessor = new CheckpointConfirmBackupProcessor(checkpointState);
+    checkpointConfirmBackupProcessor =
+        new CheckpointConfirmBackupProcessor(checkpointState, backupManager);
     checkpointCreatedEventApplier =
         new CheckpointCreatedEventApplier(checkpointState, checkpointListeners, metrics);
     checkpointBackupConfirmedApplier = new CheckpointBackupConfirmedApplier(checkpointState);

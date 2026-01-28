@@ -8,6 +8,7 @@
 package io.camunda.zeebe.backup.s3.manifest;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
+import io.camunda.zeebe.backup.api.BackupDescriptor;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
@@ -46,5 +47,10 @@ public record FailedBackupManifest(
   @Override
   public FailedBackupManifest asFailed(final String failureReason) {
     return this;
+  }
+
+  @Override
+  public Optional<BackupDescriptor> backupDescriptor() {
+    return descriptor.map(Function.identity());
   }
 }

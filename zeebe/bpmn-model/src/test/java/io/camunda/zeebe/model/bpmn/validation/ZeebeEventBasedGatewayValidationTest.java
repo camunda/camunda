@@ -24,6 +24,7 @@ import io.camunda.zeebe.model.bpmn.instance.IntermediateCatchEvent;
 import io.camunda.zeebe.model.bpmn.instance.Message;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeSubscription;
 import java.util.Arrays;
+import java.util.Collections;
 import org.junit.runners.Parameterized.Parameters;
 
 public class ZeebeEventBasedGatewayValidationTest extends AbstractZeebeValidationTest {
@@ -102,7 +103,7 @@ public class ZeebeEventBasedGatewayValidationTest extends AbstractZeebeValidatio
         singletonList(
             expect(
                 EventBasedGateway.class,
-                "Event-based gateway must not have an outgoing sequence flow to other elements than message/timer/signal intermediate catch events."))
+                "Event-based gateway must not have an outgoing sequence flow to other elements than message/timer/signal/conditional intermediate catch events."))
       },
       {
         Bpmn.createExecutableProcess("process")
@@ -121,6 +122,48 @@ public class ZeebeEventBasedGatewayValidationTest extends AbstractZeebeValidatio
             expect(
                 EventBasedGateway.class,
                 "Target elements of an event gateway must not have any additional incoming sequence flows other than that from the event gateway."))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .eventBasedGateway()
+            .intermediateCatchEvent()
+            .condition("x > 1")
+            .moveToLastGateway()
+            .intermediateCatchEvent("catch2")
+            .timerWithDuration("PT2M")
+            .endEvent()
+            .done(),
+        Collections.emptyList()
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .eventBasedGateway()
+            .intermediateCatchEvent()
+            .condition("x > 1")
+            .moveToLastGateway()
+            .intermediateCatchEvent("catch2")
+            .condition("x > 1") // Same condition - should fail
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(
+                EventBasedGateway.class,
+                "Multiple conditional event definitions with the same condition expression '=x > 1' are not allowed."))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .eventBasedGateway()
+            .intermediateCatchEvent()
+            .condition("x > 1")
+            .moveToLastGateway()
+            .intermediateCatchEvent("catch2")
+            .condition("x > 2") // Same condition - should fail
+            .endEvent()
+            .done(),
+        Collections.emptyList()
       }
     };
   }

@@ -22,9 +22,12 @@ import {Paths} from 'modules/Routes';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {mockMe} from 'modules/mocks/api/v2/me';
-import {createUser} from 'modules/testUtils';
+import {createUser, searchResult} from 'modules/testUtils';
 import {mockSearchDecisionDefinitions} from 'modules/mocks/api/v2/decisionDefinitions/searchDecisionDefinitions';
-import {mockDecisionDefinitions} from 'modules/mocks/mockDecisionDefinitions';
+import {
+  createDecisionDefinition,
+  mockDecisionDefinitions,
+} from 'modules/mocks/mockDecisionDefinitions';
 
 function getWrapper(initialPath: string = Paths.decisions()) {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
@@ -61,7 +64,15 @@ const MOCK_FILTERS_PARAMS = {
 
 describe('<Filters />', () => {
   beforeEach(async () => {
-    mockSearchDecisionDefinitions().withSuccess(mockDecisionDefinitions);
+    mockSearchDecisionDefinitions().withSuccess(
+      searchResult([
+        createDecisionDefinition({version: 2}),
+        createDecisionDefinition({version: 1}),
+      ]),
+    );
+    mockSearchDecisionDefinitions().withSuccess(
+      searchResult([createDecisionDefinition({version: 2})]),
+    );
     mockMe().withSuccess(createUser({authorizedComponents: ['operate']}));
     mockMe().withSuccess(createUser({authorizedComponents: ['operate']}));
     vi.useFakeTimers({shouldAdvanceTime: true});
@@ -79,7 +90,7 @@ describe('<Filters />', () => {
     });
 
     expect(screen.getByText(/^decision$/i)).toBeInTheDocument();
-    expect(screen.getByLabelText('Name')).toBeInTheDocument();
+    expect(screen.getByRole('combobox', {name: 'Name'})).toBeInTheDocument();
     expect(
       screen.getByLabelText('Version', {selector: 'button'}),
     ).toBeInTheDocument();
@@ -101,12 +112,6 @@ describe('<Filters />', () => {
   });
 
   it('should write filters to url', async () => {
-    // Note: Reversed call order. Second one for name suggestions, first one for versions.
-    mockSearchDecisionDefinitions().withSuccess({
-      items: mockDecisionDefinitions.items.slice(0, 2),
-      page: {totalItems: 2},
-    });
-    mockSearchDecisionDefinitions().withSuccess(mockDecisionDefinitions);
     const {user} = render(<Filters />, {
       wrapper: getWrapper(),
     });
@@ -114,7 +119,9 @@ describe('<Filters />', () => {
     expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/decisions$/);
     expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
-    await waitFor(() => expect(screen.getByLabelText('Name')).toHaveValue(''));
+    await waitFor(() =>
+      expect(screen.getByRole('combobox', {name: 'Name'})).toHaveValue(''),
+    );
     await selectDecision({user, option: 'Assign Approver Group'});
     await selectDecisionVersion({user, option: '2'});
 
@@ -211,7 +218,7 @@ describe('<Filters />', () => {
     });
 
     await waitFor(() =>
-      expect(screen.getByLabelText('Name')).toHaveValue(
+      expect(screen.getByRole('combobox', {name: 'Name'})).toHaveValue(
         'Assign Approver Group',
       ),
     );
@@ -334,12 +341,6 @@ describe('<Filters />', () => {
   });
 
   it('should select decision name and version', async () => {
-    // Note: Reversed call order. Second one for name suggestions, first one for versions.
-    mockSearchDecisionDefinitions().withSuccess({
-      items: mockDecisionDefinitions.items.slice(0, 2),
-      page: {totalItems: 2},
-    });
-    mockSearchDecisionDefinitions().withSuccess(mockDecisionDefinitions);
     const {user} = render(<Filters />, {
       wrapper: getWrapper(),
     });
@@ -348,7 +349,9 @@ describe('<Filters />', () => {
       screen.getByLabelText('Version', {selector: 'button'}),
     ).toBeDisabled();
 
-    await waitFor(() => expect(screen.getByLabelText('Name')).toHaveValue(''));
+    await waitFor(() =>
+      expect(screen.getByRole('combobox', {name: 'Name'})).toHaveValue(''),
+    );
     await selectDecision({user, option: 'Assign Approver Group'});
     await waitFor(() => expectVersion('2'));
     expect(

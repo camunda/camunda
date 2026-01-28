@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.gateway.rest.deserializer;
 
-import io.camunda.zeebe.gateway.protocol.rest.AdvancedClusterVariableScopeFilter;
-import io.camunda.zeebe.gateway.protocol.rest.ClusterVariableScopeEnum;
-import io.camunda.zeebe.gateway.protocol.rest.ClusterVariableScopeFilterProperty;
+import io.camunda.gateway.protocol.model.AdvancedClusterVariableScopeFilter;
+import io.camunda.gateway.protocol.model.ClusterVariableScopeEnum;
+import io.camunda.gateway.protocol.model.ClusterVariableScopeFilterProperty;
 
 public class ClusterVariableScopeFilterPropertyDeserializer
     extends FilterDeserializer<ClusterVariableScopeFilterProperty, ClusterVariableScopeEnum> {

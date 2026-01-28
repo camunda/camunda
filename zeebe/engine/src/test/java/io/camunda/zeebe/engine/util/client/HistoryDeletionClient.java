@@ -42,6 +42,12 @@ public class HistoryDeletionClient {
     return this;
   }
 
+  public HistoryDeletionClient processDefinition(final long processDefinitionKey) {
+    record.setResourceType(HistoryDeletionType.PROCESS_DEFINITION);
+    record.setResourceKey(processDefinitionKey);
+    return this;
+  }
+
   public Record<HistoryDeletionRecordValue> delete() {
     final long position = writer.writeCommand(HistoryDeletionIntent.DELETE, record);
     return expectation.apply(position);

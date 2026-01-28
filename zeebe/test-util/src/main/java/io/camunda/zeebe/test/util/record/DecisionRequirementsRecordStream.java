@@ -44,4 +44,8 @@ public class DecisionRequirementsRecordStream
   public DecisionRequirementsRecordStream withResourceName(final String resourceName) {
     return valueFilter(v -> v.getResourceName().equals(resourceName));
   }
+
+  public DecisionRequirementsRecordStream withDeploymentKey(final long deploymentKey) {
+    return valueFilter(v -> v.getDeploymentKey() == deploymentKey);
+  }
 }

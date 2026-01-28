@@ -63,4 +63,28 @@ public enum ZeebeTaskListenerEventType {
   updating,
   completing,
   canceling;
+
+  @SuppressWarnings("deprecation")
+  public ZeebeTaskListenerEventType resolve() {
+    // convert deprecated event types to their non-deprecated counterparts
+    switch (this) {
+      case create:
+      case creating:
+        return ZeebeTaskListenerEventType.creating;
+      case assignment:
+      case assigning:
+        return ZeebeTaskListenerEventType.assigning;
+      case update:
+      case updating:
+        return ZeebeTaskListenerEventType.updating;
+      case complete:
+      case completing:
+        return ZeebeTaskListenerEventType.completing;
+      case cancel:
+      case canceling:
+        return ZeebeTaskListenerEventType.canceling;
+      default:
+        throw new IllegalStateException("Unexpected value: " + this);
+    }
+  }
 }

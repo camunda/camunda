@@ -33,11 +33,11 @@ import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.elasticsearch.client.RestClient;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.util.TestPropertyValues;
 import org.springframework.boot.test.web.client.TestRestTemplate;
@@ -68,27 +68,31 @@ public class ElasticsearchConnectorBasicAuthNoClusterPrivilegesIT extends Taskli
 
   private static final String ES_ADMIN_USER = "elastic";
   private static final String ES_ADMIN_PASSWORD = "changeme";
-  static ElasticsearchContainer elasticsearch =
+  private static final String TASKLIST_ES_USER = "tasklist_user";
+  private static final String TASKLIST_ES_PASSWORD = "tasklist_pwd";
+
+  private static final ElasticsearchContainer ELASTICSEARCH_CONTAINER =
       new ElasticsearchContainer(
               "docker.elastic.co/elasticsearch/elasticsearch:" + SUPPORTED_ELASTICSEARCH_VERSION)
           .withEnv(Map.of("xpack.security.enabled", "true", "ELASTIC_PASSWORD", ES_ADMIN_PASSWORD))
           .withExposedPorts(9200);
-  private static final String TASKLIST_ES_USER = "tasklist_user";
-  private static final String TASKLIST_ES_PASSWORD = "tasklist_pwd";
-  @Autowired RestHighLevelClient tasklistEsClient;
+
+  @Autowired
+  @Qualifier("tasklistEs8Client")
+  ElasticsearchClient es8Client;
 
   @Autowired private TestRestTemplate testRestTemplate;
 
   @LocalManagementPort private int managementPort;
 
   @BeforeAll
-  public static void beforeClass() {
+  static void beforeAll() {
     assumeTrue(TestUtil.isElasticSearch());
   }
 
   @Test
   public void canConnect() {
-    assertThat(tasklistEsClient).isNotNull();
+    assertThat(es8Client).isNotNull();
     final var healthCheck =
         testRestTemplate.getForEntity(
             "http://localhost:" + managementPort + "/actuator/health", Map.class);
@@ -101,14 +105,24 @@ public class ElasticsearchConnectorBasicAuthNoClusterPrivilegesIT extends Taskli
 
     @Override
     public void initialize(final ConfigurableApplicationContext applicationContext) {
-      elasticsearch.start();
+      ELASTICSEARCH_CONTAINER.start();
 
       createElasticsearchRoleAndUser();
 
-      final String elsUrl = String.format("http://%s", elasticsearch.getHttpHostAddress());
+      final String elsUrl =
+          String.format("http://%s", ELASTICSEARCH_CONTAINER.getHttpHostAddress());
+
       TestPropertyValues.of(
-              "camunda.data.secondary-storage.elasticsearch.url=" + elsUrl,
+              "camunda.database.type=elasticsearch",
               "camunda.data.secondary-storage.type=elasticsearch",
+              "camunda.operate.database=elasticsearch",
+              "camunda.tasklist.database=elasticsearch",
+              "zeebe.broker.exporters.camundaexporter.args.connect.type=elasticsearch",
+              "camunda.database.url=" + elsUrl,
+              "camunda.data.secondary-storage.elasticsearch.url=" + elsUrl,
+              "camunda.operate.elasticsearch.url=" + elsUrl,
+              "camunda.tasklist.elasticsearch.url=" + elsUrl,
+              "zeebe.broker.exporters.camundaexporter.args.connect.url=" + elsUrl,
               "camunda.data.secondary-storage.elasticsearch.username=" + TASKLIST_ES_USER,
               "camunda.data.secondary-storage.elasticsearch.password=" + TASKLIST_ES_PASSWORD,
               // Disable health check as tasklist ES client has no cluster privileges
@@ -156,7 +170,7 @@ public class ElasticsearchConnectorBasicAuthNoClusterPrivilegesIT extends Taskli
       final var credentialProvider = new BasicCredentialsProvider();
       credentialProvider.setCredentials(
           AuthScope.ANY, new UsernamePasswordCredentials(ES_ADMIN_USER, ES_ADMIN_PASSWORD));
-      final URI uri = new URI("http://" + elasticsearch.getHttpHostAddress());
+      final URI uri = new URI("http://" + ELASTICSEARCH_CONTAINER.getHttpHostAddress());
       return new ElasticsearchClient(
           new RestClientTransport(
               RestClient.builder(new HttpHost(uri.getHost(), uri.getPort(), uri.getScheme()))

@@ -11,7 +11,7 @@ import java.util.Collection;
 
 public interface TenantCheckApplier<T> {
 
-  void apply(final T searchRequest);
+  T apply(final T searchRequest);
 
-  void apply(final T searchRequest, Collection<String> tenantIds);
+  T apply(final T searchRequest, Collection<String> tenantIds);
 }

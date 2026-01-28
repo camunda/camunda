@@ -7,7 +7,7 @@
  */
 package io.camunda.exporter.tasks.historydeletion;
 
-import java.util.Map;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 /** Repository for querying and managing history deletion requests. */
@@ -25,10 +25,44 @@ public interface HistoryDeletionRepository extends AutoCloseable {
    */
   CompletableFuture<HistoryDeletionBatch> getNextBatch();
 
+  /**
+   * Deletes documents from the specified index where the given field matches any of the provided
+   * values.
+   *
+   * @param sourceIndexName The index to delete the documents from
+   * @param idFieldName The field name to match against
+   * @param fieldValues The values to match for deletion
+   * @return a {@link CompletableFuture} containing the field values
+   */
+  CompletableFuture<List<Long>> deleteDocumentsByField(
+      final String sourceIndexName, final String idFieldName, final List<Long> fieldValues);
+
+  /**
+   * Deletes documents from the specified index by their IDs.
+   *
+   * @param sourceIndexName The index to delete the documents from
+   * @param ids The list of document IDs to delete
+   * @return a {@link CompletableFuture} containing th number of entities that were deleted
+   */
+  CompletableFuture<Integer> deleteDocumentsById(
+      final String sourceIndexName, final List<String> ids);
+
   class NoopHistoryDeletionRepository implements HistoryDeletionRepository {
     @Override
     public CompletableFuture<HistoryDeletionBatch> getNextBatch() {
-      return CompletableFuture.completedFuture(new HistoryDeletionBatch(Map.of()));
+      return CompletableFuture.completedFuture(new HistoryDeletionBatch(List.of()));
+    }
+
+    @Override
+    public CompletableFuture<List<Long>> deleteDocumentsByField(
+        final String sourceIndexName, final String idFieldName, final List<Long> fieldValues) {
+      return CompletableFuture.completedFuture(fieldValues);
+    }
+
+    @Override
+    public CompletableFuture<Integer> deleteDocumentsById(
+        final String sourceIndexName, final List<String> ids) {
+      return CompletableFuture.completedFuture(0);
     }
 
     @Override

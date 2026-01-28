@@ -7,6 +7,8 @@
  */
 package io.camunda.search.query;
 
+import io.camunda.search.aggregation.AggregationBase;
+import io.camunda.search.aggregation.DecisionDefinitionLatestVersionAggregation;
 import io.camunda.search.filter.DecisionDefinitionFilter;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.page.SearchQueryPage;
@@ -25,6 +27,14 @@ public record DecisionDefinitionQuery(
     return fn.apply(new Builder()).build();
   }
 
+  @Override
+  public AggregationBase aggregation() {
+    if (filter.isLatestVersion()) {
+      return new DecisionDefinitionLatestVersionAggregation(filter, sort, page);
+    }
+    return null;
+  }
+
   public static final class Builder extends SearchQueryBase.AbstractQueryBuilder<Builder>
       implements TypedSearchQueryBuilder<
           DecisionDefinitionQuery, Builder, DecisionDefinitionFilter, DecisionDefinitionSort> {
@@ -37,8 +47,15 @@ public record DecisionDefinitionQuery(
     private DecisionDefinitionFilter filter;
     private DecisionDefinitionSort sort;
 
+    @Override
     public Builder filter(final DecisionDefinitionFilter value) {
       filter = value;
+      return this;
+    }
+
+    @Override
+    public Builder sort(final DecisionDefinitionSort value) {
+      sort = value;
       return this;
     }
 
@@ -46,11 +63,6 @@ public record DecisionDefinitionQuery(
         final Function<DecisionDefinitionFilter.Builder, ObjectBuilder<DecisionDefinitionFilter>>
             fn) {
       return filter(FilterBuilders.decisionDefinition(fn));
-    }
-
-    public Builder sort(final DecisionDefinitionSort value) {
-      sort = value;
-      return this;
     }
 
     public Builder sort(

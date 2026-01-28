@@ -29,6 +29,7 @@ import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.worker.JobWorker;
+import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -44,6 +45,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 @MultiDbTest
+@CompatibilityTest
 public class ProcessInstanceSearchIT {
 
   public static final String INCIDENT_ERROR_MESSAGE_V1 =

@@ -16,9 +16,11 @@ import io.camunda.db.rdbms.sql.CorrelatedMessageSubscriptionMapper;
 import io.camunda.db.rdbms.sql.DecisionInstanceMapper;
 import io.camunda.db.rdbms.sql.ExporterPositionMapper;
 import io.camunda.db.rdbms.sql.FlowNodeInstanceMapper;
+import io.camunda.db.rdbms.sql.HistoryDeletionMapper;
 import io.camunda.db.rdbms.sql.IncidentMapper;
 import io.camunda.db.rdbms.sql.JobMapper;
 import io.camunda.db.rdbms.sql.MessageSubscriptionMapper;
+import io.camunda.db.rdbms.sql.ProcessDefinitionMapper;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
 import io.camunda.db.rdbms.sql.PurgeMapper;
 import io.camunda.db.rdbms.sql.SequenceFlowMapper;
@@ -28,6 +30,7 @@ import io.camunda.db.rdbms.sql.UserTaskMapper;
 import io.camunda.db.rdbms.sql.VariableMapper;
 import io.camunda.db.rdbms.write.queue.DefaultExecutionQueue;
 import io.camunda.db.rdbms.write.service.ExporterPositionService;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.apache.ibatis.session.SqlSessionFactory;
 
 public class RdbmsWriterFactory {
@@ -40,10 +43,11 @@ public class RdbmsWriterFactory {
   private final FlowNodeInstanceMapper flowNodeInstanceMapper;
   private final IncidentMapper incidentMapper;
   private final ProcessInstanceMapper processInstanceMapper;
+  private final ProcessDefinitionMapper processDefinitionMapper;
   private final PurgeMapper purgeMapper;
   private final UserTaskMapper userTaskMapper;
   private final VariableMapper variableMapper;
-  private final RdbmsWriterMetrics metrics;
+  private final MeterRegistry meterRegistry;
   private final BatchOperationDbReader batchOperationReader;
   private final JobMapper jobMapper;
   private final SequenceFlowMapper sequenceFlowMapper;
@@ -53,6 +57,7 @@ public class RdbmsWriterFactory {
   private final MessageSubscriptionMapper messageSubscriptionMapper;
   private final CorrelatedMessageSubscriptionMapper correlatedMessageSubscriptionMapper;
   private final ClusterVariableMapper clusterVariableMapper;
+  private final HistoryDeletionMapper historyDeletionMapper;
 
   public RdbmsWriterFactory(
       final SqlSessionFactory sqlSessionFactory,
@@ -63,10 +68,11 @@ public class RdbmsWriterFactory {
       final FlowNodeInstanceMapper flowNodeInstanceMapper,
       final IncidentMapper incidentMapper,
       final ProcessInstanceMapper processInstanceMapper,
+      final ProcessDefinitionMapper processDefinitionMapper,
       final PurgeMapper purgeMapper,
       final UserTaskMapper userTaskMapper,
       final VariableMapper variableMapper,
-      final RdbmsWriterMetrics metrics,
+      final MeterRegistry meterRegistry,
       final BatchOperationDbReader batchOperationReader,
       final JobMapper jobMapper,
       final SequenceFlowMapper sequenceFlowMapper,
@@ -75,7 +81,8 @@ public class RdbmsWriterFactory {
       final BatchOperationMapper batchOperationMapper,
       final MessageSubscriptionMapper messageSubscriptionMapper,
       final CorrelatedMessageSubscriptionMapper correlatedMessageSubscriptionMapper,
-      final ClusterVariableMapper clusterVariableMapper) {
+      final ClusterVariableMapper clusterVariableMapper,
+      final HistoryDeletionMapper historyDeletionMapper) {
     this.sqlSessionFactory = sqlSessionFactory;
     this.exporterPositionMapper = exporterPositionMapper;
     this.vendorDatabaseProperties = vendorDatabaseProperties;
@@ -84,11 +91,12 @@ public class RdbmsWriterFactory {
     this.flowNodeInstanceMapper = flowNodeInstanceMapper;
     this.incidentMapper = incidentMapper;
     this.processInstanceMapper = processInstanceMapper;
+    this.processDefinitionMapper = processDefinitionMapper;
     this.purgeMapper = purgeMapper;
     this.userTaskMapper = userTaskMapper;
     this.variableMapper = variableMapper;
     this.jobMapper = jobMapper;
-    this.metrics = metrics;
+    this.meterRegistry = meterRegistry;
     this.batchOperationReader = batchOperationReader;
     this.sequenceFlowMapper = sequenceFlowMapper;
     this.usageMetricMapper = usageMetricMapper;
@@ -97,9 +105,11 @@ public class RdbmsWriterFactory {
     this.messageSubscriptionMapper = messageSubscriptionMapper;
     this.correlatedMessageSubscriptionMapper = correlatedMessageSubscriptionMapper;
     this.clusterVariableMapper = clusterVariableMapper;
+    this.historyDeletionMapper = historyDeletionMapper;
   }
 
-  public RdbmsWriter createWriter(final RdbmsWriterConfig config) {
+  public RdbmsWriters createWriter(final RdbmsWriterConfig config) {
+    final var metrics = new RdbmsWriterMetrics(meterRegistry, config.partitionId());
     final var executionQueue =
         new DefaultExecutionQueue(
             sqlSessionFactory,
@@ -107,7 +117,7 @@ public class RdbmsWriterFactory {
             config.queueSize(),
             config.queueMemoryLimit(),
             metrics);
-    return new RdbmsWriter(
+    return new RdbmsWriters(
         config,
         executionQueue,
         new ExporterPositionService(executionQueue, exporterPositionMapper),
@@ -117,6 +127,7 @@ public class RdbmsWriterFactory {
         flowNodeInstanceMapper,
         incidentMapper,
         processInstanceMapper,
+        processDefinitionMapper,
         purgeMapper,
         userTaskMapper,
         variableMapper,
@@ -129,6 +140,7 @@ public class RdbmsWriterFactory {
         batchOperationMapper,
         messageSubscriptionMapper,
         correlatedMessageSubscriptionMapper,
-        clusterVariableMapper);
+        clusterVariableMapper,
+        historyDeletionMapper);
   }
 }

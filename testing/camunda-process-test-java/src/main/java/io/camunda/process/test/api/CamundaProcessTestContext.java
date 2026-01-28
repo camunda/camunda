@@ -17,6 +17,12 @@ package io.camunda.process.test.api;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
+import io.camunda.client.api.command.CompleteAdHocSubProcessResultStep1;
+import io.camunda.client.api.command.CompleteUserTaskJobResultStep1;
+import io.camunda.process.test.api.assertions.ElementSelector;
+import io.camunda.process.test.api.assertions.IncidentSelector;
+import io.camunda.process.test.api.assertions.JobSelector;
+import io.camunda.process.test.api.assertions.ProcessInstanceSelector;
 import io.camunda.process.test.api.assertions.UserTaskSelector;
 import io.camunda.process.test.api.mock.JobWorkerMockBuilder;
 import io.camunda.zeebe.client.ZeebeClient;
@@ -158,6 +164,30 @@ public interface CamundaProcessTestContext {
   void completeJob(final String jobType, final Map<String, Object> variables);
 
   /**
+   * Completes a job matching the specified selector.
+   *
+   * @param jobSelector the selector to identify the job to complete
+   */
+  void completeJob(final JobSelector jobSelector);
+
+  /**
+   * Completes a job matching the specified selector and sets the provided variables.
+   *
+   * @param jobSelector the selector to identify the job to complete
+   * @param variables a map of variables to set when completing the job
+   */
+  void completeJob(final JobSelector jobSelector, final Map<String, Object> variables);
+
+  /**
+   * Completes a job matching the specified selector with the variables from the example data
+   * property of the related BPMN element. If no property is defined, it completes the job without
+   * variables.
+   *
+   * @param jobSelector the selector to identify the job to complete
+   */
+  void completeJobWithExampleData(final JobSelector jobSelector);
+
+  /**
    * Throws a BPMN error from a job of the specified type.
    *
    * @param jobType the type of the job to throw the error from, matching the `zeebeJobType` in the
@@ -176,6 +206,56 @@ public interface CamundaProcessTestContext {
    */
   void throwBpmnErrorFromJob(
       final String jobType, final String errorCode, final Map<String, Object> variables);
+
+  /**
+   * Throws a BPMN error from a job of the specified type with an error message and sets the
+   * provided variables.
+   *
+   * @param jobType the type of the job to throw the error from, matching the `zeebeJobType` in the
+   *     BPMN model
+   * @param errorCode the error code to throw
+   * @param errorMessage the error message to throw
+   * @param variables a map of variables to set when throwing the error
+   */
+  void throwBpmnErrorFromJob(
+      final String jobType,
+      final String errorCode,
+      final String errorMessage,
+      final Map<String, Object> variables);
+
+  /**
+   * Throws a BPMN error from a job that matches the specified selector.
+   *
+   * @param jobSelector the selector to identify the job to throw the error from
+   * @param errorCode the error code to throw
+   */
+  void throwBpmnErrorFromJob(final JobSelector jobSelector, final String errorCode);
+
+  /**
+   * Throws a BPMN error from a job that matches the specified selector and sets the provided
+   * variables.
+   *
+   * @param jobSelector the selector to identify the job to throw the error from
+   * @param errorCode the error code to throw
+   * @param variables a map of variables to set when throwing the error
+   */
+  void throwBpmnErrorFromJob(
+      final JobSelector jobSelector, final String errorCode, final Map<String, Object> variables);
+
+  /**
+   * Throws a BPMN error from a job that matches the specified selector with an error message and
+   * sets the provided variables.
+   *
+   * @param jobSelector the selector to identify the job to throw the error from
+   * @param errorCode the error code to throw
+   * @param errorMessage the error message to throw
+   * @param variables a map of variables to set when throwing the error
+   */
+  void throwBpmnErrorFromJob(
+      final JobSelector jobSelector,
+      final String errorCode,
+      final String errorMessage,
+      final Map<String, Object> variables);
 
   /**
    * Completes a user task with the given BPMN element ID.
@@ -233,4 +313,64 @@ public interface CamundaProcessTestContext {
    * @param decisionOutput the decision's output which may be a value, list or map.
    */
   void mockDmnDecision(final String decisionId, final Object decisionOutput);
+
+  /**
+   * Resolves an incident matching the specified selector. If the incident is related to a job,
+   * increases the job retries by 1 before resolving.
+   *
+   * @param incidentSelector the selector to identify the incident to resolve
+   */
+  void resolveIncident(final IncidentSelector incidentSelector);
+
+  /**
+   * Completes a job of an ad-hoc sub-process matching the specified selector.
+   *
+   * @param jobSelector the selector to identify the job to complete
+   * @param jobResult the consumer to configure the ad-hoc sub-process result
+   */
+  void completeJobOfAdHocSubProcess(
+      final JobSelector jobSelector, final Consumer<CompleteAdHocSubProcessResultStep1> jobResult);
+
+  /**
+   * Completes a job of an ad-hoc sub-process matching the specified selector and sets the provided
+   * variables.
+   *
+   * @param jobSelector the selector to identify the job to complete
+   * @param variables a map of variables to set when completing the job
+   * @param jobResult the consumer to configure the ad-hoc sub-process result
+   */
+  void completeJobOfAdHocSubProcess(
+      final JobSelector jobSelector,
+      final Map<String, Object> variables,
+      final Consumer<CompleteAdHocSubProcessResultStep1> jobResult);
+
+  /**
+   * Updates variables for a process instance.
+   *
+   * @param processInstanceSelector the selector to identify the process instance
+   * @param variables a map of variables to update
+   */
+  void updateVariables(
+      final ProcessInstanceSelector processInstanceSelector, final Map<String, Object> variables);
+
+  /**
+   * Updates local variables for a specific element within a process instance.
+   *
+   * @param processInstanceSelector the selector to identify the process instance
+   * @param elementSelector the selector to identify the element
+   * @param variables a map of variables to update
+   */
+  void updateLocalVariables(
+      final ProcessInstanceSelector processInstanceSelector,
+      final ElementSelector elementSelector,
+      final Map<String, Object> variables);
+
+  /**
+   * Completes a job of a user task listener matching the specified selector.
+   *
+   * @param jobSelector the selector to identify the job to complete
+   * @param jobResult the consumer to configure the user task job result
+   */
+  void completeJobOfUserTaskListener(
+      final JobSelector jobSelector, final Consumer<CompleteUserTaskJobResultStep1> jobResult);
 }

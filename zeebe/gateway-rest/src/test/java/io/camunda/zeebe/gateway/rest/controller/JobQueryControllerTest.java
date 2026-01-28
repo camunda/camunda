@@ -11,6 +11,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.gateway.protocol.model.JobActivationResult;
 import io.camunda.search.entities.JobEntity;
 import io.camunda.search.entities.JobEntity.JobKind;
 import io.camunda.search.entities.JobEntity.JobState;
@@ -22,7 +23,6 @@ import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.JobServices;
-import io.camunda.zeebe.gateway.protocol.rest.JobActivationResult;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.time.OffsetDateTime;
 import java.util.List;

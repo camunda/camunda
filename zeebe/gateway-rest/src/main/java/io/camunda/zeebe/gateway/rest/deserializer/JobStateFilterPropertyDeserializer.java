@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.gateway.rest.deserializer;
 
-import io.camunda.zeebe.gateway.protocol.rest.AdvancedJobStateFilter;
-import io.camunda.zeebe.gateway.protocol.rest.JobStateEnum;
-import io.camunda.zeebe.gateway.protocol.rest.JobStateFilterProperty;
+import io.camunda.gateway.protocol.model.AdvancedJobStateFilter;
+import io.camunda.gateway.protocol.model.JobStateEnum;
+import io.camunda.gateway.protocol.model.JobStateFilterProperty;
 
 public class JobStateFilterPropertyDeserializer
     extends FilterDeserializer<JobStateFilterProperty, JobStateEnum> {

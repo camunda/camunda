@@ -33,6 +33,7 @@ public class AuditLogEntityMapper {
         .decisionDefinitionId(auditLogDbModel.decisionDefinitionId())
         .processDefinitionKey(auditLogDbModel.processDefinitionKey())
         .processInstanceKey(auditLogDbModel.processInstanceKey())
+        .rootProcessInstanceKey(auditLogDbModel.rootProcessInstanceKey())
         .elementInstanceKey(auditLogDbModel.elementInstanceKey())
         .jobKey(auditLogDbModel.jobKey())
         .userTaskKey(auditLogDbModel.userTaskKey())

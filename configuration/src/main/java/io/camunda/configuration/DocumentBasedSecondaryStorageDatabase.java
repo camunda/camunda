@@ -53,7 +53,8 @@ public abstract class DocumentBasedSecondaryStorageDatabase
   /** Template priority for index templates. */
   private Integer templatePriority;
 
-  @NestedConfigurationProperty private Security security = new Security(databaseName());
+  @NestedConfigurationProperty
+  private SecondaryStorageSecurity security = new SecondaryStorageSecurity(databaseName());
 
   /** Sets the interceptor plugins */
   private List<InterceptorPlugin> interceptorPlugins = new ArrayList<>();
@@ -197,11 +198,11 @@ public abstract class DocumentBasedSecondaryStorageDatabase
     this.bulk = bulk;
   }
 
-  public Security getSecurity() {
+  public SecondaryStorageSecurity getSecurity() {
     return security;
   }
 
-  public void setSecurity(final Security security) {
+  public void setSecurity(final SecondaryStorageSecurity security) {
     this.security = security;
   }
 

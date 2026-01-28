@@ -25,6 +25,9 @@ import {useProcessInstance} from 'modules/queries/processInstance/useProcessInst
 import {useProcessInstanceIncidentsCount} from 'modules/queries/incidents/useProcessInstanceIncidentsCount';
 import {useGetIncidentsByElementInstance} from 'modules/queries/incidents/useGetIncidentsByElementInstance';
 import {useFlownodeInstancesStatistics} from 'modules/queries/flownodeInstancesStatistics/useFlownodeInstancesStatistics';
+import {useElementSelectionInstanceKey} from 'modules/hooks/useElementSelectionInstanceKey';
+import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
+import {IS_ELEMENT_SELECTION_V2} from 'modules/feature-flags';
 
 const tabIds = {
   incidents: 'incidents',
@@ -48,10 +51,20 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
   const {processInstanceId = ''} = useProcessInstancePageParams();
   const isRootNodeSelected = useIsRootNodeSelected();
   const {data: processInstance} = useProcessInstance();
+  let {hasSelection, selectedElementId} = useProcessInstanceElementSelection();
+  let resolvedElementInstanceKey = useElementSelectionInstanceKey();
 
-  const flowNodeId = flowNodeSelectionStore.state.selection?.flowNodeId;
-  const flowNodeInstanceId =
-    flowNodeSelectionStore.state.selection?.flowNodeInstanceId;
+  // TODO: Remove these assignments to remove the feature flag from the component
+  hasSelection = IS_ELEMENT_SELECTION_V2
+    ? hasSelection
+    : // eslint-disable-next-line react-hooks/rules-of-hooks
+      !useIsRootNodeSelected();
+  selectedElementId = IS_ELEMENT_SELECTION_V2
+    ? selectedElementId
+    : (flowNodeSelectionStore.state.selection?.flowNodeId ?? null);
+  resolvedElementInstanceKey = IS_ELEMENT_SELECTION_V2
+    ? resolvedElementInstanceKey
+    : (flowNodeSelectionStore.state.selection?.flowNodeInstanceId ?? null);
 
   const [listenerTypeFilter, setListenerTypeFilter] =
     useState<ListenerTypeFilter>();
@@ -68,9 +81,9 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
   );
 
   const {data: elementIncidentsData} = useGetIncidentsByElementInstance(
-    flowNodeInstanceId ?? '',
+    resolvedElementInstanceKey ?? '',
     {
-      enabled: !isRootNodeSelected && !!flowNodeInstanceId,
+      enabled: !isRootNodeSelected && !!resolvedElementInstanceKey,
       select: (data) => data.page.totalItems,
     },
   );
@@ -79,8 +92,8 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
 
   // Get flow node incidents count from statistics
   const flowNodeIncidentsFromStats =
-    !isRootNodeSelected && flowNodeId
-      ? statistics?.items.find((item) => item.elementId === flowNodeId)?.incidents ?? 0
+    !isRootNodeSelected && selectedElementId
+      ? statistics?.items.find((item) => item.elementId === selectedElementId)?.incidents ?? 0
       : 0;
 
   // Use element incidents count if available, otherwise use statistics
@@ -96,7 +109,7 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
     ? `Incidents (${isRootNodeSelected ? processIncidentsCount : elementIncidentsCountFinal})`
     : 'Incidents';
 
-  const shouldFetchListeners = flowNodeInstanceId || flowNodeId;
+  const shouldFetchListeners = resolvedElementInstanceKey || selectedElementId;
   const {
     data: jobs,
     fetchNextPage,
@@ -107,8 +120,8 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
     payload: {
       filter: {
         processInstanceKey: processInstanceId,
-        elementId: flowNodeId,
-        elementInstanceKey: flowNodeInstanceId,
+        elementId: selectedElementId ?? undefined,
+        elementInstanceKey: resolvedElementInstanceKey ?? undefined,
         kind: listenerTypeFilter,
       },
     },
@@ -120,6 +133,7 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
 
   return (
     <TabView
+      key={`tabview-${selectedElementId}-${resolvedElementInstanceKey}`}
       onTabChange={(tabId) => setSelectedTab(tabId)}
       tabs={[
         ...(shouldShowIncidentsTab
@@ -157,13 +171,18 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
             setListenerTabVisibility(false);
           },
         },
-        ...(isRootNodeSelected
+        ...(!hasSelection || !selectedElementId
           ? []
           : [
               {
                 id: tabIds.inputMappings,
                 label: 'Input Mappings',
-                content: <InputOutputMappings type="Input" />,
+                content: (
+                  <InputOutputMappings
+                    type="Input"
+                    elementId={selectedElementId}
+                  />
+                ),
                 onClick: () => {
                   setListenerTabVisibility(false);
                 },
@@ -171,7 +190,12 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
               {
                 id: tabIds.outputMappings,
                 label: 'Output Mappings',
-                content: <InputOutputMappings type="Output" />,
+                content: (
+                  <InputOutputMappings
+                    type="Output"
+                    elementId={selectedElementId}
+                  />
+                ),
                 onClick: () => {
                   setListenerTabVisibility(false);
                 },
@@ -201,21 +225,16 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
         },
         {
           id: tabIds.operationsLog,
-          label: 'Operations log',
+          label: 'Operations Log',
           content: (
-            <OperationsLog
-              isRootNodeSelected={isRootNodeSelected}
-              flowNodeInstanceId={flowNodeInstanceId}
-              isVisible={selectedTab === tabIds.operationsLog}
-            />
+            <OperationsLog isVisible={selectedTab === tabIds.operationsLog} />
           ),
           removePadding: true,
           onClick: () => {
-            setListenerTabVisibility(true);
+            setListenerTabVisibility(false);
           },
         },
       ]}
-      key={`tabview-${flowNodeId}-${flowNodeInstanceId}`}
     />
   );
 });

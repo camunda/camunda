@@ -50,6 +50,7 @@ public final class IdentitySetupInitializeProcessor
 
     createRoles(initializationKey, setupRecord.getRoles());
     createDefaultTenant(initializationKey, setupRecord.getDefaultTenant());
+    createTenants(initializationKey, setupRecord.getTenants());
     createUsers(initializationKey, setupRecord.getUsers());
     createMappingRules(initializationKey, setupRecord.getMappingRules());
     createRoleMembers(initializationKey, setupRecord.getRoleMembers());
@@ -67,6 +68,11 @@ public final class IdentitySetupInitializeProcessor
 
   private void createDefaultTenant(final long key, final TenantRecord defaultTenant) {
     commandWriter.appendFollowUpCommand(key, TenantIntent.CREATE, defaultTenant);
+  }
+
+  private void createTenants(final long key, final List<TenantRecordValue> tenants) {
+    tenants.forEach(
+        tenant -> commandWriter.appendFollowUpCommand(key, TenantIntent.CREATE, tenant));
   }
 
   private void createUsers(final long key, final List<UserRecordValue> users) {

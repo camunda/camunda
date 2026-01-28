@@ -99,6 +99,10 @@ public class MultiDbConfigurator {
                   Map.of(
                       "waitPeriodBeforeArchiving",
                       retentionEnabled ? "1s" : "1h", // find completed instances almost directly
+                      "delayBetweenRuns",
+                      "1000",
+                      "maxDelayBetweenRuns",
+                      "1000",
                       "retention",
                       Map.of(
                           "enabled",

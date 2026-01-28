@@ -51,7 +51,7 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
   public EndEventProcessor(
       final BpmnBehaviors bpmnBehaviors,
       final BpmnStateTransitionBehavior stateTransitionBehavior) {
-    expressionProcessor = bpmnBehaviors.expressionBehavior();
+    expressionProcessor = bpmnBehaviors.expressionProcessor();
     eventPublicationBehavior = bpmnBehaviors.eventPublicationBehavior();
     incidentBehavior = bpmnBehaviors.incidentBehavior();
     this.stateTransitionBehavior = stateTransitionBehavior;

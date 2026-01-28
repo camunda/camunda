@@ -55,6 +55,7 @@ public class SequenceFlowExportHandler implements RdbmsExportHandler<ProcessInst
     return new Builder()
         .flowNodeId(value.getElementId())
         .processInstanceKey(value.getProcessInstanceKey())
+        .rootProcessInstanceKey(value.getRootProcessInstanceKey())
         .processDefinitionKey(value.getProcessDefinitionKey())
         .processDefinitionId(value.getBpmnProcessId())
         .tenantId(value.getTenantId())

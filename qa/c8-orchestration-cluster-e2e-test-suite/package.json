@@ -10,7 +10,7 @@
     "responses:regenerate": "assert-json-body extract"
   },
   "devDependencies": {
-    "@inquirer/prompts": "^7.3.2",
+    "@inquirer/prompts": "^8.0.0",
     "@playwright/test": "^1.51.0",
     "@types/axios": "^0.14.4",
     "@types/node": "^22.13.9",
@@ -19,14 +19,14 @@
     "eslint": "9.32.0",
     "eslint-config-prettier": "^10.0.2",
     "eslint-plugin-license-header": "0.8.0",
-    "eslint-plugin-playwright": "2.2.0",
-    "eslint-plugin-prettier": "5.5.0",
+    "eslint-plugin-playwright": "2.5.0",
+    "eslint-plugin-prettier": "5.5.4",
     "husky": "^9.1.7",
     "lint-staged": "^16.0.0",
     "playwright-slack-report": "^1.1.89",
     "prettier": "3.6.2",
     "typescript": "5.8.2",
-    "valibot": "1.1.0",
+    "valibot": "1.2.0",
     "zeebe-node": "^8.3.2"
   },
   "lint-staged": {

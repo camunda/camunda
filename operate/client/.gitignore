@@ -5,6 +5,7 @@
 
 # testing
 /coverage
+TEST-*.xml
 
 # production
 /build
@@ -30,3 +31,4 @@ yarn-error.log*
 /e2e-playwright/docs-screenshots/**/*.png
 
 *.tsbuildinfo
+TEST-*.xml

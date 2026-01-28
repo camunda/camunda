@@ -49,6 +49,8 @@ class ExporterConfigurationTest {
     configuration.setBatchOperationItemInsertBlockSize(-1000);
     configuration.getBatchOperationCache().setMaxSize(-1000);
     configuration.getProcessCache().setMaxSize(-1000);
+    configuration.getInsertBatching().setMaxVariableInsertBatchSize(-1000);
+    configuration.getInsertBatching().setMaxAuditLogInsertBatchSize(-1000);
     configuration.setHistory(historyConfiguration);
 
     // when
@@ -70,7 +72,9 @@ class ExporterConfigurationTest {
         .hasMessageContaining("historyCleanupBatchSize must be")
         .hasMessageContaining("batchOperationItemInsertBlockSize must be")
         .hasMessageContaining("batchOperationCache.maxSize must be")
-        .hasMessageContaining("processCache.maxSize must be");
+        .hasMessageContaining("processCache.maxSize must be")
+        .hasMessageContaining("insertBatching.maxAuditLogInsertBatchSize must be")
+        .hasMessageContaining("insertBatching.maxVariableInsertBatchSize must be");
   }
 
   @Test
@@ -363,5 +367,41 @@ class ExporterConfigurationTest {
 
     assertThatThrownBy(configuration::validate)
         .hasMessageContaining("processCache.maxSize must be");
+  }
+
+  @Test
+  public void shouldFailWithZeroVariableInsertBatchSize() {
+    final ExporterConfiguration configuration = new ExporterConfiguration();
+    configuration.getInsertBatching().setMaxVariableInsertBatchSize(0);
+
+    assertThatThrownBy(configuration::validate)
+        .hasMessageContaining("insertBatching.maxVariableInsertBatchSize must be");
+  }
+
+  @Test
+  public void shouldFailWithNegativeVariableInsertBatchSize() {
+    final ExporterConfiguration configuration = new ExporterConfiguration();
+    configuration.getInsertBatching().setMaxVariableInsertBatchSize(-1);
+
+    assertThatThrownBy(configuration::validate)
+        .hasMessageContaining("insertBatching.maxVariableInsertBatchSize must be");
+  }
+
+  @Test
+  public void shouldFailWithZeroAuditLogInsertBatchSize() {
+    final ExporterConfiguration configuration = new ExporterConfiguration();
+    configuration.getInsertBatching().setMaxAuditLogInsertBatchSize(0);
+
+    assertThatThrownBy(configuration::validate)
+        .hasMessageContaining("insertBatching.maxAuditLogInsertBatchSize must be");
+  }
+
+  @Test
+  public void shouldFailWithNegativeAuditLogInsertBatchSize() {
+    final ExporterConfiguration configuration = new ExporterConfiguration();
+    configuration.getInsertBatching().setMaxAuditLogInsertBatchSize(-1);
+
+    assertThatThrownBy(configuration::validate)
+        .hasMessageContaining("insertBatching.maxAuditLogInsertBatchSize must be");
   }
 }

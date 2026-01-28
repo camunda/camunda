@@ -16,16 +16,17 @@ import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstan
 import {useQueryClient} from '@tanstack/react-query';
 import {queryKeys} from 'modules/queries/queryKeys';
 import {useElementInstanceVariables} from 'modules/mutations/elementInstances/useElementInstanceVariables';
+import {handleMutationError} from 'modules/utils/notifications';
 
 type Props = {
-  scopeId: string;
+  scopeKey: string;
 };
 
-const VariablesFinalForm: React.FC<Props> = ({scopeId}) => {
+const VariablesFinalForm: React.FC<Props> = ({scopeKey}) => {
   const queryClient = useQueryClient();
   const {processInstanceId = ''} = useProcessInstancePageParams();
   const {mutateAsync: mutateAsyncVariables} = useElementInstanceVariables(
-    scopeId,
+    scopeKey,
     processInstanceId,
   );
 
@@ -39,39 +40,38 @@ const VariablesFinalForm: React.FC<Props> = ({scopeId}) => {
           });
         },
       }}
-      key={scopeId}
+      key={scopeKey}
       render={(props) => <VariablesForm {...props} />}
       onSubmit={async (values, form) => {
         const {initialValues} = form.getState();
         const isNewVariable = initialValues?.name === '';
         const {name, value} = values;
 
-        try {
-          await mutateAsyncVariables({
-            name,
-            value: JSON.stringify(JSON.parse(value)),
-          });
-
-          notificationsStore.displayNotification({
-            kind: 'success',
-            title: isNewVariable ? 'Variable added' : 'Variable updated',
-            isDismissable: true,
-          });
-        } catch (error) {
-          if (error instanceof Error) {
-            notificationsStore.displayNotification({
-              kind: 'error',
-              title: 'Variable could not be saved',
-              subtitle: error.message,
-              isDismissable: true,
-            });
-          }
-        } finally {
-          form.reset({});
-          await queryClient.invalidateQueries({
-            queryKey: queryKeys.variables.search(),
-          });
-        }
+        await mutateAsyncVariables(
+          {name, value: JSON.stringify(JSON.parse(value))},
+          {
+            onSuccess: () => {
+              notificationsStore.displayNotification({
+                kind: 'success',
+                title: isNewVariable ? 'Variable added' : 'Variable updated',
+                isDismissable: true,
+              });
+            },
+            onError: (error) => {
+              handleMutationError({
+                statusCode: error.status,
+                title: 'Variable could not be saved',
+                subtitle: error.statusText,
+              });
+            },
+            onSettled: async () => {
+              form.reset({});
+              await queryClient.invalidateQueries({
+                queryKey: queryKeys.variables.search(),
+              });
+            },
+          },
+        ).catch(() => void 0);
       }}
     />
   );

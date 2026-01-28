@@ -65,16 +65,6 @@ export class Common {
     await this.clickLogoutButton();
   }
 
-  collapseOperationsPanel() {
-    return this.page
-      .getByRole('button', {name: /collapse operations/i})
-      .click();
-  }
-
-  expandOperationsPanel() {
-    return this.page.getByRole('button', {name: /expand operations/i}).click();
-  }
-
   disableModalAnimation() {
     return this.page.addStyleTag({
       content: `

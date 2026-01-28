@@ -12,6 +12,11 @@ import io.camunda.authentication.session.WebSessionDeletionTask;
 import io.camunda.authentication.session.WebSessionMapper;
 import io.camunda.authentication.session.WebSessionMapper.SpringBasedWebSessionAttributeConverter;
 import io.camunda.authentication.session.WebSessionRepository;
+import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
+import io.camunda.db.rdbms.read.service.PersistentWebSessionDbReader;
+import io.camunda.db.rdbms.read.service.PersistentWebSessionRdbmsClient;
+import io.camunda.db.rdbms.write.service.PersistentWebSessionWriter;
 import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.search.clients.DocumentBasedSearchClient;
 import io.camunda.search.clients.DocumentBasedWriteClient;
@@ -46,6 +51,10 @@ public class WebSessionRepositoryConfiguration {
   }
 
   @Bean
+  @ConditionalOnSecondaryStorageType({
+    SecondaryStorageType.elasticsearch,
+    SecondaryStorageType.opensearch
+  })
   public PersistentWebSessionIndexDescriptor persistentWebSessionIndex() {
     final var indexPrefix = connectConfiguration.getIndexPrefix();
     final var isElasticsearch =
@@ -54,11 +63,24 @@ public class WebSessionRepositoryConfiguration {
   }
 
   @Bean
-  public PersistentWebSessionClient persistentWebSessionClient(
+  @ConditionalOnSecondaryStorageType({
+    SecondaryStorageType.elasticsearch,
+    SecondaryStorageType.opensearch
+  })
+  public PersistentWebSessionClient persistentWebSessionClientSearch(
       final DocumentBasedSearchClient searchClient,
       final DocumentBasedWriteClient writeClient,
       final PersistentWebSessionIndexDescriptor descriptor) {
     return new PersistentWebSessionSearchImpl(searchClient, writeClient, descriptor);
+  }
+
+  @Bean
+  @ConditionalOnSecondaryStorageType(SecondaryStorageType.rdbms)
+  public PersistentWebSessionClient persistentWebSessionClientRdbms(
+      final PersistentWebSessionDbReader persistentWebSessionDbReader,
+      final PersistentWebSessionWriter persistentWebSessionWriter) {
+    return new PersistentWebSessionRdbmsClient(
+        persistentWebSessionDbReader, persistentWebSessionWriter);
   }
 
   @Bean

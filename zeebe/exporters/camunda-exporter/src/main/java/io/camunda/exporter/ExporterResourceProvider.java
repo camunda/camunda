@@ -15,10 +15,10 @@ import io.camunda.exporter.errorhandling.Error;
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCacheImpl;
 import io.camunda.zeebe.exporter.common.cache.decisionRequirements.CachedDecisionRequirementsEntity;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
-import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Collection;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -28,7 +28,7 @@ public interface ExporterResourceProvider {
   void init(
       final ExporterConfiguration configuration,
       final ExporterEntityCacheProvider entityCacheProvider,
-      final MeterRegistry meterRegistry,
+      final Context context,
       final ExporterMetadata exporterMetadata,
       final ObjectMapper objectMapper);
 
@@ -55,6 +55,13 @@ public interface ExporterResourceProvider {
    * @param <T> the expected descriptor type
    */
   <T extends IndexTemplateDescriptor> T getIndexTemplateDescriptor(Class<T> descriptorClass);
+
+  /**
+   * @param descriptorClass the expected descriptor type
+   * @return the index descriptor instance for the given class.
+   * @param <T> the expected descriptor type
+   */
+  <T extends IndexDescriptor> T getIndexDescriptor(Class<T> descriptorClass);
 
   /**
    * @return A {@link Set} of {@link ExportHandler} to be registered with the exporter

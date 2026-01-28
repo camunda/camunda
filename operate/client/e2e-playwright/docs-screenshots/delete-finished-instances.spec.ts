@@ -11,7 +11,6 @@ import {expect} from '@playwright/test';
 
 import {
   mockBatchOperations,
-  mockGroupedProcesses,
   mockResponses as mockProcessesResponses,
   mockNewDeleteOperation,
   mockProcessInstances,
@@ -41,7 +40,6 @@ test.describe('delete finished instances', () => {
     await page.route(
       URL_API_PATTERN,
       mockProcessesResponses({
-        groupedProcesses: mockGroupedProcesses,
         processDefinitions: mockProcessDefinitions,
         batchOperations: mockBatchOperations,
         processInstances: mockFinishedOrderProcessInstances,
@@ -105,7 +103,6 @@ test.describe('delete finished instances', () => {
     await page.route(
       URL_API_PATTERN,
       mockProcessesResponses({
-        groupedProcesses: mockGroupedProcesses,
         processDefinitions: mockProcessDefinitions,
         batchOperations: {
           ...mockBatchOperations,
@@ -129,16 +126,6 @@ test.describe('delete finished instances', () => {
     await filtersPanel.selectProcess('Order process');
     await filtersPanel.selectVersion('1');
     await filtersPanel.processVersionFilter.blur();
-
-    await commonPage.expandOperationsPanel();
-
-    await processesPage.diagram.moveCanvasHorizontally(-200);
-
-    await page.screenshot({
-      path: 'e2e-playwright/docs-screenshots/delete-finished-instances/operate-operations-panel-delete-operation.png',
-    });
-
-    await commonPage.collapseOperationsPanel();
 
     await processesPage.diagram.moveCanvasHorizontally(200);
 
@@ -249,16 +236,6 @@ test.describe('delete finished instances', () => {
         });
       }
 
-      if (route.request().url().includes('/api/processes/grouped')) {
-        return route.fulfill({
-          status: 200,
-          body: JSON.stringify(mockGroupedProcesses),
-          headers: {
-            'content-type': 'application/json',
-          },
-        });
-      }
-
       if (route.request().url().includes('/v2/process-definitions/search')) {
         return route.fulfill({
           status: 200,
@@ -280,7 +257,9 @@ test.describe('delete finished instances', () => {
       }
     });
 
-    await expect(page.getByText('Instance deleted')).toBeInViewport();
+    await expect(
+      page.getByText('Instance is scheduled for deletion'),
+    ).toBeInViewport();
 
     await page.screenshot({
       path: 'e2e-playwright/docs-screenshots/delete-finished-instances/operate-instance-deleted-notification.png',

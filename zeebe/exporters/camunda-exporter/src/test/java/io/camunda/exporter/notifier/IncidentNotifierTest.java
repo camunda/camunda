@@ -20,6 +20,7 @@ import static io.camunda.exporter.notifier.IncidentNotifier.FIELD_NAME_PROCESS_I
 import static io.camunda.exporter.notifier.IncidentNotifier.FIELD_NAME_PROCESS_KEY;
 import static io.camunda.exporter.notifier.IncidentNotifier.FIELD_NAME_PROCESS_NAME;
 import static io.camunda.exporter.notifier.IncidentNotifier.FIELD_NAME_PROCESS_VERSION;
+import static io.camunda.exporter.notifier.IncidentNotifier.FIELD_NAME_PROCESS_VERSION_TAG;
 import static io.camunda.exporter.notifier.IncidentNotifier.FIELD_NAME_STATE;
 import static io.camunda.exporter.notifier.IncidentNotifier.MESSAGE;
 import static io.camunda.webapps.schema.entities.incident.ErrorType.JOB_NO_RETRIES;
@@ -76,7 +77,8 @@ class IncidentNotifierTest {
   private final IncidentState incidentState = IncidentState.ACTIVE;
   private final String bpmnProcessId = "testProcessId";
   private final String processName = "processName";
-  private final String processVersion = "234";
+  private final int processVersion = 1;
+  private final String processVersionTag = "versionA";
   private final M2mTokenManager m2mTokenManager = mock(M2mTokenManager.class);
   private final ExporterEntityCache<Long, CachedProcessEntity> processCache =
       mock(ExporterEntityCache.class);
@@ -97,7 +99,10 @@ class IncidentNotifierTest {
             null,
             TestObjectMapper.objectMapper());
     when(processCache.get(any()))
-        .thenReturn(Optional.of(new CachedProcessEntity(processName, processVersion, null, null)));
+        .thenReturn(
+            Optional.of(
+                new CachedProcessEntity(
+                    processName, processVersion, processVersionTag, null, null)));
   }
 
   @Test
@@ -117,7 +122,7 @@ class IncidentNotifierTest {
     final ArgumentCaptor<HttpRequest> requestCaptor = ArgumentCaptor.forClass(HttpRequest.class);
     verify(httpClient).send(requestCaptor.capture(), eq(HttpResponse.BodyHandlers.ofString()));
     final HttpRequest request = requestCaptor.getValue();
-    assertThat(request.uri().toString()).isEqualTo(ALERT_WEBHOOKURL_URL);
+    assertThat(request.uri()).hasToString(ALERT_WEBHOOKURL_URL);
     assertThat(request.headers().allValues("Authorization").getFirst())
         .isEqualTo("Bearer " + m2mToken);
 
@@ -160,7 +165,7 @@ class IncidentNotifierTest {
     final HttpRequest request = requestCaptor.getValue();
     assertThat(request.headers().allValues("Authorization").getFirst())
         .isEqualTo("Bearer " + m2mToken);
-    assertThat(request.uri().toString()).isEqualTo(ALERT_WEBHOOKURL_URL);
+    assertThat(request.uri()).hasToString(ALERT_WEBHOOKURL_URL);
 
     final String body = extractBody(request.bodyPublisher().orElseThrow());
     final DocumentContext jsonContext = JsonPath.parse(body);
@@ -262,22 +267,21 @@ class IncidentNotifierTest {
   }
 
   private void assertIncidentFields(final HashMap incidentFields) {
-    assertThat(incidentFields.get(FIELD_NAME_MESSAGE)).isEqualTo(MESSAGE);
-    assertThat(incidentFields.get(FIELD_NAME_JOB_KEY)).isEqualTo(jobKey.intValue());
-    assertThat(incidentFields.get(FIELD_NAME_PROCESS_KEY))
-        .isEqualTo(processDefinitionKey.intValue());
-    assertThat(incidentFields.get(FIELD_NAME_BPMN_PROCESS_ID)).isEqualTo(bpmnProcessId);
-    assertThat(incidentFields.get(FIELD_NAME_PROCESS_NAME)).isEqualTo(processName);
-    assertThat(incidentFields.get(FIELD_NAME_PROCESS_VERSION)).isEqualTo(processVersion);
-    assertThat(incidentFields.get(FIELD_NAME_FLOW_NODE_INSTANCE_KEY))
-        .isEqualTo(flowNodeInstanceId.intValue());
-    assertThat(incidentFields.get(FIELD_NAME_CREATION_TIME)).isNotNull();
-    assertThat(incidentFields.get(FIELD_NAME_ERROR_MESSAGE)).isEqualTo(errorMessage);
-    assertThat(incidentFields.get(FIELD_NAME_ERROR_TYPE)).isEqualTo(errorType.name());
-    assertThat(incidentFields.get(FIELD_NAME_FLOW_NODE_ID)).isEqualTo(flowNodeId);
-    assertThat(incidentFields.get(FIELD_NAME_STATE)).isEqualTo(incidentState.name());
-    assertThat(incidentFields.get(FIELD_NAME_PROCESS_INSTANCE_ID))
-        .isEqualTo(String.valueOf(processInstanceKey));
+    assertThat(incidentFields)
+        .containsEntry(FIELD_NAME_MESSAGE, MESSAGE)
+        .containsEntry(FIELD_NAME_JOB_KEY, jobKey.intValue())
+        .containsEntry(FIELD_NAME_PROCESS_KEY, processDefinitionKey.intValue())
+        .containsEntry(FIELD_NAME_BPMN_PROCESS_ID, bpmnProcessId)
+        .containsEntry(FIELD_NAME_PROCESS_NAME, processName)
+        .containsEntry(FIELD_NAME_PROCESS_VERSION, processVersion)
+        .containsEntry(FIELD_NAME_PROCESS_VERSION_TAG, processVersionTag)
+        .containsEntry(FIELD_NAME_FLOW_NODE_INSTANCE_KEY, flowNodeInstanceId.intValue())
+        .containsKey(FIELD_NAME_CREATION_TIME)
+        .containsEntry(FIELD_NAME_ERROR_MESSAGE, errorMessage)
+        .containsEntry(FIELD_NAME_ERROR_TYPE, errorType.name())
+        .containsEntry(FIELD_NAME_FLOW_NODE_ID, flowNodeId)
+        .containsEntry(FIELD_NAME_STATE, incidentState.name())
+        .containsEntry(FIELD_NAME_PROCESS_INSTANCE_ID, String.valueOf(processInstanceKey));
   }
 
   private IncidentEntity createIncident(final String id) {

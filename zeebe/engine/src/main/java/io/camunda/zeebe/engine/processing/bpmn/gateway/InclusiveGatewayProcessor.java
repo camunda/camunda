@@ -38,7 +38,7 @@ public final class InclusiveGatewayProcessor
   public InclusiveGatewayProcessor(
       final BpmnBehaviors behaviors, final BpmnStateTransitionBehavior stateTransitionBehavior) {
     this.stateTransitionBehavior = stateTransitionBehavior;
-    expressionBehavior = behaviors.expressionBehavior();
+    expressionBehavior = behaviors.expressionProcessor();
     incidentBehavior = behaviors.incidentBehavior();
     jobBehavior = behaviors.jobBehavior();
   }

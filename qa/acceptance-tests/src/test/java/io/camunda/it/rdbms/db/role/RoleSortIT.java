@@ -13,7 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.RoleDbReader;
-import io.camunda.db.rdbms.write.RdbmsWriter;
+import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.RoleEntity;
@@ -55,11 +55,11 @@ public class RoleSortIT {
       final RdbmsService rdbmsService,
       final Function<Builder, ObjectBuilder<RoleSort>> sortBuilder,
       final Comparator<RoleEntity> comparator) {
-    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final RoleDbReader reader = rdbmsService.getRoleReader();
 
     final var name = nextStringId();
-    createAndSaveRandomRoles(rdbmsWriter, b -> b.name(name));
+    createAndSaveRandomRoles(rdbmsWriters, b -> b.name(name));
 
     final var searchResult =
         reader

@@ -34,6 +34,7 @@ public class DecisionInstanceEntityTransformer
         source.getEvaluationFailureMessage(),
         source.getProcessDefinitionKey(),
         source.getProcessInstanceKey(),
+        source.getRootProcessInstanceKey(),
         source.getElementInstanceKey(),
         source.getTenantId(),
         source.getDecisionId(),

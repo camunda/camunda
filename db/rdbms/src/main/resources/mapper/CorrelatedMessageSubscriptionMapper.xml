@@ -18,13 +18,13 @@
       <arg column="CORRELATION_TIME" javaType="java.time.OffsetDateTime"/>
       <arg column="FLOW_NODE_ID" javaType="java.lang.String"/>
       <arg column="FLOW_NODE_INSTANCE_KEY" javaType="java.lang.Long"/>
-      <arg column="HISTORY_CLEANUP_DATE" javaType="java.time.OffsetDateTime"/>
       <idArg column="MESSAGE_KEY" javaType="java.lang.Long"/>
       <arg column="MESSAGE_NAME" javaType="java.lang.String"/>
       <arg column="PARTITION_ID" javaType="java.lang.Integer"/>
       <arg column="PROCESS_DEFINITION_ID" javaType="java.lang.String"/>
       <arg column="PROCESS_DEFINITION_KEY" javaType="java.lang.Long"/>
       <arg column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
+      <arg column="ROOT_PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
       <idArg column="SUBSCRIPTION_KEY" javaType="java.lang.Long"/>
       <arg column="SUBSCRIPTION_TYPE" javaType="io.camunda.search.entities.CorrelatedMessageSubscriptionEntity$MessageSubscriptionType" />
       <arg column="TENANT_ID" javaType="java.lang.String"/>
@@ -37,13 +37,13 @@
       CORRELATION_TIME,
       FLOW_NODE_ID,
       FLOW_NODE_INSTANCE_KEY,
-      HISTORY_CLEANUP_DATE,
       MESSAGE_KEY,
       MESSAGE_NAME,
       PARTITION_ID,
       PROCESS_DEFINITION_ID,
       PROCESS_DEFINITION_KEY,
       PROCESS_INSTANCE_KEY,
+      ROOT_PROCESS_INSTANCE_KEY,
       SUBSCRIPTION_KEY,
       SUBSCRIPTION_TYPE,
       TENANT_ID
@@ -53,13 +53,13 @@
       #{correlationTime, jdbcType=TIMESTAMP},
       #{flowNodeId},
       #{flowNodeInstanceKey},
-      #{historyCleanupDate, jdbcType=TIMESTAMP},
       #{messageKey},
       #{messageName},
       #{partitionId},
       #{processDefinitionId},
       #{processDefinitionKey},
       #{processInstanceKey},
+      #{rootProcessInstanceKey},
       #{subscriptionKey},
       #{subscriptionType},
       #{tenantId}
@@ -80,13 +80,13 @@
         CORRELATION_TIME,
         FLOW_NODE_ID,
         FLOW_NODE_INSTANCE_KEY,
-        HISTORY_CLEANUP_DATE,
         MESSAGE_KEY,
         MESSAGE_NAME,
         PARTITION_ID,
         PROCESS_DEFINITION_ID,
         PROCESS_DEFINITION_KEY,
         PROCESS_INSTANCE_KEY,
+        ROOT_PROCESS_INSTANCE_KEY,
         SUBSCRIPTION_KEY,
         SUBSCRIPTION_TYPE,
         TENANT_ID
@@ -193,17 +193,9 @@
     </if>
   </sql>
 
-  <update id="updateHistoryCleanupDate">
-    UPDATE ${prefix}CORRELATED_MESSAGE_SUBSCRIPTION SET
-      HISTORY_CLEANUP_DATE = #{historyCleanupDate, jdbcType=TIMESTAMP}
-    WHERE PROCESS_INSTANCE_KEY IN
-    <foreach collection="processInstanceKeys" item="key" open="(" separator="," close=")">
-      #{key}
-    </foreach>
-  </update>
-
-  <delete id="cleanupHistory">
+  <delete id="deleteProcessInstanceRelatedData">
     <bind name="tableName" value="'CORRELATED_MESSAGE_SUBSCRIPTION'"/>
-    <include refid="io.camunda.db.rdbms.sql.Commons.historyCleanup"/>
+    <bind name="primaryKeyColumn" value="''"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.processInstanceHistoryDeletion"/>
   </delete>
 </mapper>

@@ -146,38 +146,45 @@ final class SecureClusteredMessagingIT {
   }
 
   private static void configureCertChainGateway(final TestStandaloneGateway gateway) {
-    // set security via properties because it is not yet supported in unified config
-    gateway.withProperty("zeebe.gateway.cluster.security.enabled", true);
-    gateway.withProperty(
-        "zeebe.gateway.cluster.security.certificateChainPath", CERTIFICATE.certificate());
-    gateway.withProperty("zeebe.gateway.cluster.security.privateKeyPath", CERTIFICATE.privateKey());
+    gateway.withUnifiedConfig(
+        cfg -> {
+          final var tlsCluster = cfg.getSecurity().getTransportLayerSecurity().getCluster();
+          tlsCluster.setEnabled(true);
+          tlsCluster.setCertificateChainPath(CERTIFICATE.certificate());
+          tlsCluster.setCertificatePrivateKeyPath(CERTIFICATE.privateKey());
+        });
   }
 
   private static void configureCertChainBroker(final TestStandaloneBroker broker) {
-    // set security via properties because it is not yet supported in unified config
-    broker.withProperty("zeebe.broker.network.security.enabled", true);
-    broker.withProperty(
-        "zeebe.broker.network.security.certificateChainPath", CERTIFICATE.certificate());
-    broker.withProperty("zeebe.broker.network.security.privateKeyPath", CERTIFICATE.privateKey());
+    broker.withUnifiedConfig(
+        cfg -> {
+          final var tlsCluster = cfg.getSecurity().getTransportLayerSecurity().getCluster();
+          tlsCluster.setEnabled(true);
+          tlsCluster.setCertificateChainPath(CERTIFICATE.certificate());
+          tlsCluster.setCertificatePrivateKeyPath(CERTIFICATE.privateKey());
+        });
   }
 
   private static void configureKeyStoreGateway(
-      // set security via properties because it is not yet supported in unified config
-      final TestStandaloneGateway gateway,
-      final File pkcs12) {
-    gateway.withProperty("zeebe.gateway.cluster.security.enabled", true);
-    gateway.withProperty(
-        "zeebe.gateway.cluster.security.keyStore.filePath", pkcs12.getAbsolutePath());
-    gateway.withProperty("zeebe.gateway.cluster.security.keyStore.password", "password");
+      final TestStandaloneGateway gateway, final File pkcs12) {
+    gateway.withUnifiedConfig(
+        cfg -> {
+          final var tlsCluster = cfg.getSecurity().getTransportLayerSecurity().getCluster();
+          tlsCluster.setEnabled(true);
+          tlsCluster.getKeyStore().setFilePath(pkcs12.getAbsoluteFile());
+          tlsCluster.getKeyStore().setPassword("password");
+        });
   }
 
   private static void configureKeyStoreBroker(
       final TestStandaloneBroker broker, final File pkcs12) {
-    // set security via properties because it is not yet supported in unified config
-    broker.withProperty("zeebe.broker.network.security.enabled", true);
-    broker.withProperty(
-        "zeebe.broker.network.security.keyStore.filePath", pkcs12.getAbsoluteFile());
-    broker.withProperty("zeebe.broker.network.security.keyStore.password", "password");
+    broker.withUnifiedConfig(
+        cfg -> {
+          final var tlsCluster = cfg.getSecurity().getTransportLayerSecurity().getCluster();
+          tlsCluster.setEnabled(true);
+          tlsCluster.getKeyStore().setFilePath(pkcs12.getAbsoluteFile());
+          tlsCluster.getKeyStore().setPassword("password");
+        });
   }
 
   private record TestCase(

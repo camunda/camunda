@@ -16,7 +16,7 @@ import {
 import {Route, MemoryRouter, Routes, Link} from 'react-router-dom';
 import {ListView} from '../index';
 import {
-  groupedProcessesMock,
+  mockProcessDefinitions,
   mockProcessXML,
   mockProcessInstances,
   mockProcessInstancesWithOperation,
@@ -29,7 +29,6 @@ import {processesStore} from 'modules/stores/processes/processes.list';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {AppHeader} from 'App/Layout/AppHeader';
 import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
-import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 import {act, useEffect} from 'react';
 import {Paths} from 'modules/Routes';
 import {mockQueryBatchOperations} from 'modules/mocks/api/v2/batchOperations/queryBatchOperations';
@@ -81,8 +80,8 @@ describe('Instances', () => {
   beforeEach(() => {
     mockSearchProcessDefinitions().withSuccess(searchResult([]));
     mockSearchProcessDefinitions().withSuccess(searchResult([]));
+    mockSearchProcessDefinitions().withSuccess(mockProcessDefinitions);
     mockFetchProcessInstances().withSuccess(mockProcessInstances);
-    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
     mockQueryBatchOperations().withSuccess({
       items: [],
@@ -237,7 +236,7 @@ describe('Instances', () => {
     );
 
     mockFetchProcessInstances().withDelay(mockProcessInstances);
-    mockFetchGroupedProcesses().withDelay(groupedProcessesMock);
+    mockSearchProcessDefinitions().withDelay(mockProcessDefinitions);
 
     await user.click(
       await within(
@@ -280,7 +279,7 @@ describe('Instances', () => {
 
     expect(screen.getByTestId('search').textContent).toBe(queryString);
 
-    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
+    mockSearchProcessDefinitions().withSuccess(mockProcessDefinitions);
     mockQueryBatchOperations().withSuccess({
       items: [],
       page: {
@@ -292,7 +291,7 @@ describe('Instances', () => {
 
     await waitFor(() => expect(handleRefetchSpy).toHaveBeenCalledTimes(1));
 
-    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
+    mockSearchProcessDefinitions().withSuccess(mockProcessDefinitions);
     mockQueryBatchOperations().withSuccess({
       items: [],
       page: {
@@ -306,7 +305,7 @@ describe('Instances', () => {
 
     await waitFor(() => expect(handleRefetchSpy).toHaveBeenCalledTimes(2));
 
-    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
+    mockSearchProcessDefinitions().withSuccess(mockProcessDefinitions);
     mockQueryBatchOperations().withSuccess({
       items: [],
       page: {
@@ -317,7 +316,7 @@ describe('Instances', () => {
     vi.runOnlyPendingTimers();
     await waitFor(() => expect(handleRefetchSpy).toHaveBeenCalledTimes(3));
 
-    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
+    mockSearchProcessDefinitions().withSuccess(mockProcessDefinitions);
     mockQueryBatchOperations().withSuccess({
       items: [],
       page: {

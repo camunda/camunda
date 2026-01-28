@@ -8,6 +8,7 @@
 package io.camunda.zeebe.backup.s3.manifest;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
+import io.camunda.zeebe.backup.api.BackupDescriptor;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
@@ -30,9 +31,15 @@ public record InProgressBackupManifest(
     return BackupStatusCode.IN_PROGRESS;
   }
 
-  public CompletedBackupManifest asCompleted(final FileSet snapshot, final FileSet segments) {
-    return new CompletedBackupManifest(
-        id, descriptor, snapshot, segments, createdAt, Instant.now());
+  @Override
+  public BackupStatus toStatus() {
+    return new BackupStatusImpl(
+        id,
+        Optional.of(descriptor),
+        statusCode(),
+        Optional.empty(),
+        Optional.of(createdAt),
+        Optional.of(modifiedAt));
   }
 
   @Override
@@ -48,13 +55,12 @@ public record InProgressBackupManifest(
   }
 
   @Override
-  public BackupStatus toStatus() {
-    return new BackupStatusImpl(
-        id,
-        Optional.of(descriptor),
-        statusCode(),
-        Optional.empty(),
-        Optional.of(createdAt),
-        Optional.of(modifiedAt));
+  public Optional<BackupDescriptor> backupDescriptor() {
+    return Optional.of(descriptor);
+  }
+
+  public CompletedBackupManifest asCompleted(final FileSet snapshot, final FileSet segments) {
+    return new CompletedBackupManifest(
+        id, descriptor, snapshot, segments, createdAt, Instant.now());
   }
 }

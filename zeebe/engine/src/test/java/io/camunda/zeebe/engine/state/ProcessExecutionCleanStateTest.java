@@ -58,6 +58,9 @@ public final class ProcessExecutionCleanStateTest {
           ZbColumnFamilies.ROUTING,
           ZbColumnFamilies.SCALING_STARTED_AT,
           ZbColumnFamilies.USAGE_METRICS,
+          ZbColumnFamilies.JOB_METRICS_META,
+          ZbColumnFamilies.JOB_METRICS_STRING_ENCODING,
+          ZbColumnFamilies.JOB_METRICS,
           ZbColumnFamilies.GLOBAL_LISTENER_CURRENT_CONFIG);
 
   @Rule public EngineRule engineRule = EngineRule.singlePartition();

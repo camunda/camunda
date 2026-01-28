@@ -32,7 +32,7 @@ public class MappingJackson2HttpMessageConverterConfiguration {
   public MappingJackson2HttpMessageConverter gatewayRestMappingJackson2HttpMessageConverter(
       @Qualifier("gatewayRestObjectMapper") final ObjectMapper objectMapper) {
     final PackageSpecificJackson2HttpMessageConverter messageConverter =
-        new PackageSpecificJackson2HttpMessageConverter("io.camunda.zeebe.gateway.protocol.rest");
+        new PackageSpecificJackson2HttpMessageConverter("io.camunda.gateway.protocol.model");
     messageConverter.setObjectMapper(objectMapper);
     return messageConverter;
   }

@@ -18,9 +18,11 @@ package io.camunda.client.spring.configuration;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.impl.CamundaObjectMapper;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 
@@ -28,22 +30,17 @@ import org.springframework.context.annotation.Bean;
 @AutoConfigureAfter(
     name = {
       "org.springframework.boot.jackson2.autoconfigure.Jackson2AutoConfiguration",
-      "org.springframework.boot.autoconfigure.jackson.JacksonAutoConfiguration"
+      "org.springframework.boot.autoconfigure.jackson.JacksonAutoConfiguration",
+      "org.springframework.boot.jackson.autoconfigure.JacksonAutoConfiguration"
     })
 public class JsonMapperConfiguration {
-  final ObjectMapper objectMapper;
-
-  @Autowired
-  public JsonMapperConfiguration(@Autowired(required = false) final ObjectMapper objectMapper) {
-    this.objectMapper = objectMapper;
-  }
+  private static final Logger LOG = LoggerFactory.getLogger(JsonMapperConfiguration.class);
 
   @Bean(name = "camundaJsonMapper")
   @ConditionalOnMissingBean
-  public JsonMapper jsonMapper() {
-    if (objectMapper == null) {
-      return new CamundaObjectMapper();
-    }
+  @ConditionalOnBean(ObjectMapper.class)
+  public JsonMapper jsonMapper(final ObjectMapper objectMapper) {
+    LOG.debug("Using jackson 2 to configure Camunda client json mapper");
     return new CamundaObjectMapper(objectMapper.copy());
   }
 }

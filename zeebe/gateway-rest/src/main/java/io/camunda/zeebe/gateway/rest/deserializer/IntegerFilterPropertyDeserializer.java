@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.gateway.rest.deserializer;
 
-import io.camunda.zeebe.gateway.protocol.rest.AdvancedIntegerFilter;
-import io.camunda.zeebe.gateway.protocol.rest.IntegerFilterProperty;
+import io.camunda.gateway.protocol.model.AdvancedIntegerFilter;
+import io.camunda.gateway.protocol.model.IntegerFilterProperty;
 
 public class IntegerFilterPropertyDeserializer
     extends FilterDeserializer<IntegerFilterProperty, Integer> {

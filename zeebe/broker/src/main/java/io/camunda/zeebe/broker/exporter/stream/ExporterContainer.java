@@ -203,11 +203,12 @@ final class ExporterContainer implements Controller {
     return context.getConfiguration().getId();
   }
 
-  private boolean acceptRecord(final RecordMetadata metadata) {
+  private boolean acceptRecord(final RecordMetadata rawMetadata, final TypedRecord<?> typedEvent) {
     final Context.RecordFilter filter = context.getFilter();
-    return filter.acceptType(metadata.getRecordType())
-        && filter.acceptValue(metadata.getValueType())
-        && filter.acceptIntent(metadata.getIntent());
+    return filter.acceptType(rawMetadata.getRecordType())
+        && filter.acceptValue(rawMetadata.getValueType())
+        && filter.acceptIntent(rawMetadata.getIntent())
+        && filter.acceptRecord(typedEvent);
   }
 
   void configureExporter() throws Exception {
@@ -216,10 +217,10 @@ final class ExporterContainer implements Controller {
         () -> exporter.configure(context), exporter.getClass().getClassLoader());
   }
 
-  boolean exportRecord(final RecordMetadata rawMetadata, final TypedRecord typedEvent) {
+  boolean exportRecord(final RecordMetadata rawMetadata, final TypedRecord<?> typedEvent) {
     try {
       if (position < typedEvent.getPosition()) {
-        if (acceptRecord(rawMetadata)) {
+        if (acceptRecord(rawMetadata, typedEvent)) {
           export(typedEvent);
         } else {
           updatePositionOnSkipIfUpToDate(typedEvent.getPosition());

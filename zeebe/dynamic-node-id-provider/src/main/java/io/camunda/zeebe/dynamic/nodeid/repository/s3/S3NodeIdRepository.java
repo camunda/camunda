@@ -194,13 +194,22 @@ public class S3NodeIdRepository implements NodeIdRepository {
     return builder.build();
   }
 
-  public record Config(String bucketName, Duration leaseDuration) {
+  public record Config(
+      String bucketName, Duration leaseDuration, Duration nodeIdMappingUpdateTimeout) {
     public Config {
       if (leaseDuration.toMillis() <= 0) {
         throw new IllegalArgumentException("leaseDuration must be greater than 0");
       }
       if (bucketName == null || bucketName.isEmpty()) {
         throw new IllegalArgumentException("bucketName cannot be null or empty");
+      }
+      if (nodeIdMappingUpdateTimeout.toMillis() <= 0) {
+        throw new IllegalArgumentException("nodeIdMappingUpdateTimeout must be greater than 0");
+      }
+      if (nodeIdMappingUpdateTimeout.toMillis() <= leaseDuration.toMillis()) {
+        throw new IllegalArgumentException(
+            "Expected nodeIdMappingUpdateTimeout to be greater than leaseDuration (%s), but got %s."
+                .formatted(leaseDuration, nodeIdMappingUpdateTimeout));
       }
     }
   }

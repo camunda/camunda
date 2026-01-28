@@ -47,6 +47,7 @@ const useAuditLogs = <T = QueryAuditLogsResponseBody>(
     staleTime: 5000,
     refetchInterval: 5000,
     initialPageParam: 0,
+    maxPages: 2,
     placeholderData: (prevData) => prevData,
     getNextPageParam: (lastPage, _, lastPageParam) => {
       const nextPage = lastPageParam + PAGE_LIMIT;

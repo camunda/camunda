@@ -40,6 +40,8 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
   private static final StringValue CORRELATION_KEY_KEY = new StringValue("correlationKey");
   private static final StringValue ELEMENT_ID_KEY = new StringValue("elementId");
   private static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
+  private static final StringValue ROOT_PROCESS_INSTANCE_KEY_KEY =
+      new StringValue("rootProcessInstanceKey");
 
   private final IntegerProperty subscriptionPartitionIdProp =
       new IntegerProperty(SUBSCRIPTION_PARTITION_ID_KEY);
@@ -56,9 +58,11 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
   private final StringProperty elementIdProp = new StringProperty(ELEMENT_ID_KEY, "");
   private final StringProperty tenantIdProp =
       new StringProperty(TENANT_ID_KEY, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  private final LongProperty rootProcessInstanceKeyProp =
+      new LongProperty(ROOT_PROCESS_INSTANCE_KEY_KEY, -1L);
 
   public ProcessMessageSubscriptionRecord() {
-    super(12);
+    super(13);
     declareProperty(subscriptionPartitionIdProp)
         .declareProperty(processInstanceKeyProp)
         .declareProperty(elementInstanceKeyProp)
@@ -70,7 +74,8 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
         .declareProperty(bpmnProcessIdProp)
         .declareProperty(correlationKeyProp)
         .declareProperty(elementIdProp)
-        .declareProperty(tenantIdProp);
+        .declareProperty(tenantIdProp)
+        .declareProperty(rootProcessInstanceKeyProp);
   }
 
   public void wrap(final ProcessMessageSubscriptionRecord record) {
@@ -86,6 +91,7 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
     setCorrelationKey(record.getCorrelationKeyBuffer());
     setElementId(record.getElementIdBuffer());
     setTenantId(record.getTenantId());
+    setRootProcessInstanceKey(record.getRootProcessInstanceKey());
   }
 
   @JsonIgnore
@@ -190,6 +196,16 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
 
   public ProcessMessageSubscriptionRecord setInterrupting(final boolean interrupting) {
     interruptingProp.setValue(interrupting);
+    return this;
+  }
+
+  @Override
+  public long getRootProcessInstanceKey() {
+    return rootProcessInstanceKeyProp.getValue();
+  }
+
+  public ProcessMessageSubscriptionRecord setRootProcessInstanceKey(final long key) {
+    rootProcessInstanceKeyProp.setValue(key);
     return this;
   }
 

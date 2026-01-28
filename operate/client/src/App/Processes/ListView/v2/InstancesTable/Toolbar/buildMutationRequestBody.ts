@@ -10,50 +10,29 @@ import type {
   CreateCancellationBatchOperationRequestBody,
   CreateIncidentResolutionBatchOperationRequestBody,
 } from '@camunda/camunda-api-zod-schemas/8.8';
-import {parseProcessInstancesSearchFilter} from 'modules/utils/filter/v2/processInstancesSearch';
-import {buildProcessInstanceKeyCriterion} from 'modules/mutations/processes/buildProcessInstanceKeyCriterion';
-import {getValidVariableValues} from 'modules/utils/filter/getValidVariableValues';
-import type {Variable} from 'modules/stores/variableFilter';
+import type {RequestFilters} from 'modules/utils/filter';
+import {
+  buildProcessInstanceFilter,
+  type BuildProcessInstanceFilterOptions,
+} from 'modules/utils/filter/v2/processInstanceFilterBuilder';
 
 type BuildMutationRequestBodyParams = {
-  searchParams: URLSearchParams;
-  includeIds?: string[];
-  excludeIds?: string[];
-  variableFilter?: Variable;
+  baseFilter: RequestFilters;
+  includeIds: string[];
+  excludeIds: string[];
 };
 
 const buildMutationRequestBody = ({
-  searchParams,
+  baseFilter,
   includeIds = [],
   excludeIds = [],
-  variableFilter,
 }: BuildMutationRequestBodyParams) => {
-  const baseFilter = parseProcessInstancesSearchFilter(searchParams);
+  const builderOptions: BuildProcessInstanceFilterOptions = {
+    includeIds,
+    excludeIds,
+  };
 
-  const keyCriterion = buildProcessInstanceKeyCriterion(includeIds, excludeIds);
-
-  let filter = baseFilter ?? {};
-
-  if (keyCriterion) {
-    filter = {...filter, processInstanceKey: keyCriterion};
-  }
-
-  if (variableFilter?.name && variableFilter?.values) {
-    const parsed = (getValidVariableValues(variableFilter.values) ?? []).map(
-      (v) => JSON.stringify(v),
-    );
-    if (parsed.length > 0) {
-      filter = {
-        ...filter,
-        variables: [
-          {
-            name: variableFilter.name,
-            value: parsed.length === 1 ? parsed[0]! : {$in: parsed},
-          },
-        ],
-      };
-    }
-  }
+  const filter = buildProcessInstanceFilter(baseFilter, builderOptions);
 
   const requestBody:
     | CreateIncidentResolutionBatchOperationRequestBody

@@ -74,11 +74,6 @@
 
     <!-- ELASTICSEARCH -->
     <dependency>
-      <groupId>org.elasticsearch</groupId>
-      <artifactId>elasticsearch-x-content</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>org.elasticsearch.client</groupId>
       <artifactId>elasticsearch-rest-client</artifactId>
     </dependency>
@@ -99,13 +94,13 @@
     </dependency>
 
     <dependency>
-      <groupId>co.elastic.clients</groupId>
-      <artifactId>elasticsearch-java</artifactId>
+      <groupId>org.elasticsearch</groupId>
+      <artifactId>elasticsearch-x-content</artifactId>
     </dependency>
 
     <dependency>
-      <groupId>org.apache.lucene</groupId>
-      <artifactId>lucene-core</artifactId>
+      <groupId>co.elastic.clients</groupId>
+      <artifactId>elasticsearch-java</artifactId>
     </dependency>
 
     <!-- OPENSEARCH -->
@@ -147,6 +142,11 @@
     </dependency>
 
     <dependency>
+      <groupId>org.apache.lucene</groupId>
+      <artifactId>lucene-core</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-junit-jupiter</artifactId>
       <scope>test</scope>
@@ -167,12 +167,6 @@
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-params</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter-engine</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -200,9 +194,14 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
         <configuration>
-          <ignoredUnusedDeclaredDependencies>
+          <ignoredUnusedDeclaredDependencies combine.children="append">
             <dep>org.junit.platform:junit-platform-suite</dep>
             <dep>org.junit.platform:junit-platform-suite-engine</dep>
+            <dep>io.camunda:zeebe-build-tools</dep>
+            <dep>org.apache.logging.log4j:log4j-core</dep>
+            <dep>org.apache.logging.log4j:log4j-slf4j2-impl</dep>
+            <dep>org.apache.lucene:lucene-core</dep>
+            <dep>org.elasticsearch:elasticsearch-x-content</dep>
           </ignoredUnusedDeclaredDependencies>
         </configuration>
       </plugin>

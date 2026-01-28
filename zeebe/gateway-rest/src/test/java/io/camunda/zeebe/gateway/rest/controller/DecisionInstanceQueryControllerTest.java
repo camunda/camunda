@@ -12,6 +12,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.gateway.protocol.model.DecisionInstanceStateEnum;
 import io.camunda.search.entities.DecisionInstanceEntity;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceInputEntity;
@@ -29,7 +30,6 @@ import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.DecisionInstanceServices;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.util.ObjectBuilder;
-import io.camunda.zeebe.gateway.protocol.rest.DecisionInstanceStateEnum;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -92,6 +92,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                       null,
                       2251799813688736L,
                       6755399441058457L,
+                      3755399441058437L,
                       6755399441058465L,
                       "tenantId",
                       "ddi",
@@ -244,6 +245,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
             null,
             2251799813688736L,
             6755399441058457L,
+            3755399441058437L,
             6755399441058465L,
             "tenantId",
             "ddi",

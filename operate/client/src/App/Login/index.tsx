@@ -168,6 +168,7 @@ const Login: React.FC = () => {
                     {({input, meta}) => (
                       <PasswordInput
                         {...input}
+                        type="password"
                         name={input.name}
                         id={input.name}
                         onChange={input.onChange}

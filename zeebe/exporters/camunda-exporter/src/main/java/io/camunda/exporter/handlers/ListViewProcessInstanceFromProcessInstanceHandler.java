@@ -145,6 +145,10 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
           .setParentProcessInstanceKey(recordValue.getParentProcessInstanceKey())
           .setParentFlowNodeInstanceKey(recordValue.getParentElementInstanceKey());
     }
+    final long rootProcessInstanceKey = recordValue.getRootProcessInstanceKey();
+    if (rootProcessInstanceKey > 0) {
+      piEntity.setRootProcessInstanceKey(rootProcessInstanceKey);
+    }
   }
 
   @Override

@@ -24,6 +24,7 @@ public class VariableEntityTransformer
         source.getIsPreview(),
         source.getScopeKey(),
         source.getProcessInstanceKey(),
+        source.getRootProcessInstanceKey(),
         source.getBpmnProcessId(),
         source.getTenantId());
   }

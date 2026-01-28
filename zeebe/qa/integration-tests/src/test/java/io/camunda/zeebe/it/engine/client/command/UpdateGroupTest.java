@@ -71,6 +71,18 @@ class UpdateGroupTest {
   }
 
   @Test
+  void shouldUpdateGroupWithEmptyDescription() {
+    // when
+    client.newUpdateGroupCommand(groupId).name(UPDATED_GROUP_NAME).description("").send().join();
+
+    // then
+    ZeebeAssertHelper.assertGroupUpdated(
+        UPDATED_GROUP_NAME,
+        group ->
+            assertThat(group).hasGroupId(groupId).hasName(UPDATED_GROUP_NAME).hasDescription(""));
+  }
+
+  @Test
   void shouldRejectUpdateIfNameIsNull() {
     // when / then
     assertThatThrownBy(

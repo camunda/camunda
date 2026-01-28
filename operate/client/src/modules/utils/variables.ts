@@ -13,6 +13,7 @@ import {modificationsStore} from 'modules/stores/modifications';
 import {TOKEN_OPERATIONS} from 'modules/constants';
 import type {InfiniteData} from '@tanstack/react-query';
 
+/** @deprecated Use the `useVariableScopeKey` hook instead. */
 const getScopeId = () => {
   const {selection} = flowNodeSelectionStore.state;
   const {metaData} = flowNodeMetaDataStore.state;

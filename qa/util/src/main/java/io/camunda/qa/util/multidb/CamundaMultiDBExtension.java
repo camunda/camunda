@@ -230,6 +230,10 @@ public class CamundaMultiDBExtension
   public static final Duration TIMEOUT_DATABASE_READINESS = Duration.ofMinutes(3);
   public static final String KEYCLOAK_REALM = "camunda";
   private static final Logger LOGGER = LoggerFactory.getLogger(CamundaMultiDBExtension.class);
+  private static final String EXTENSION_COORDINATION_KEY = "extension-running";
+  private static final String EXTENSION_NAME = "CamundaMultiDBExtension";
+  private static final String PREFERRED_EXTENSION_PROPERTY = "camunda.test.preferred.extension";
+  private static final String PREFERRED_EXTENSION_MULTIDB = "multi-db";
   private final List<AutoCloseable> closeables = new ArrayList<>();
   private final TestStandaloneApplication<?> defaultTestApplication;
 
@@ -248,6 +252,19 @@ public class CamundaMultiDBExtension
 
   public CamundaMultiDBExtension(final TestStandaloneApplication testApplication) {
     defaultTestApplication = testApplication;
+  }
+
+  private static ExtensionContext.Store coordinationStore(final ExtensionContext context) {
+    final Class<?> testClass = context.getRequiredTestClass();
+    return context
+        .getRoot()
+        .getStore(ExtensionContext.Namespace.create("test-extension-coordination", testClass));
+  }
+
+  private static boolean isOwner(final ExtensionContext context) {
+    final String extensionRunning =
+        coordinationStore(context).get(EXTENSION_COORDINATION_KEY, String.class);
+    return EXTENSION_NAME.equals(extensionRunning);
   }
 
   private DatabaseType getDatabaseType(final ExtensionContext extensionContext) {
@@ -286,9 +303,31 @@ public class CamundaMultiDBExtension
 
   @Override
   public void beforeAll(final ExtensionContext context) throws Exception {
+    final Class<?> testClass = context.getRequiredTestClass();
+
+    final String preferredExtension = System.getProperty(PREFERRED_EXTENSION_PROPERTY);
+    if (preferredExtension != null
+        && !preferredExtension.isBlank()
+        && !PREFERRED_EXTENSION_MULTIDB.equals(preferredExtension)) {
+      LOGGER.info(
+          "Skipping CamundaMultiDBExtension - preferred extension is {}", preferredExtension);
+      return;
+    }
+
+    final var store = coordinationStore(context);
+
+    // Check if another extension has already initialized
+    final var extensionRunning = store.get(EXTENSION_COORDINATION_KEY, String.class);
+    if (extensionRunning != null) {
+      LOGGER.info("Skipping CamundaMultiDBExtension - {} is already running", extensionRunning);
+      return;
+    }
+
+    // Mark this extension as running
+    store.put(EXTENSION_COORDINATION_KEY, EXTENSION_NAME);
+
     final var databaseType = getDatabaseType(context);
     LOGGER.info("Starting up Camunda instance, with {}", databaseType);
-    final Class<?> testClass = context.getRequiredTestClass();
     final var isHistoryRelatedTest = testClass.isAnnotationPresent(HistoryMultiDbTest.class);
     testPrefix = testClass.getSimpleName().toLowerCase();
     RecordingExporter.reset();
@@ -380,11 +419,17 @@ public class CamundaMultiDBExtension
 
     if (isHistoryRelatedTest) {
       // make sure history clean up policies are applied more often
-      final Duration pollInterval =
-          getDatabaseType(context) == DatabaseType.ES
-              ? Duration.ofSeconds(5)
-              : Duration.ofMinutes(1);
-      setupHelper.applyIndexPoliciesPollInterval(pollInterval);
+      switch (getDatabaseType(context)) {
+        case ES, LOCAL:
+          setupHelper.applyIndexPoliciesPollInterval(Duration.ofSeconds(1));
+          break;
+        case OS:
+          setupHelper.applyIndexPoliciesPollInterval(
+              Duration.ofMinutes(1)); // OpenSearch can't go lower
+          break;
+        default:
+          break;
+      }
     }
 
     // we need to close the test application before cleaning up
@@ -418,13 +463,19 @@ public class CamundaMultiDBExtension
     if (shouldSetupKeycloak) {
       authenticatedClientFactory =
           new OidcCamundaClientTestFactory(
-              applicationUnderTest,
+              applicationUnderTest.application.newClientBuilder(),
+              applicationUnderTest.application.restAddress(),
+              applicationUnderTest.application.grpcAddress(),
               testPrefix,
               keycloakContainer.getAuthServerUrl()
                   + "/realms/camunda/protocol/openid-connect/token");
       injectStaticKeycloakContainerField(testClass, keycloakContainer);
     } else {
-      authenticatedClientFactory = new BasicAuthCamundaClientTestFactory(applicationUnderTest);
+      authenticatedClientFactory =
+          new BasicAuthCamundaClientTestFactory(
+              applicationUnderTest.application.newClientBuilder(),
+              applicationUnderTest.application.restAddress(),
+              applicationUnderTest.application.grpcAddress());
     }
 
     if (applicationUnderTest.shouldBeManaged) {
@@ -438,6 +489,7 @@ public class CamundaMultiDBExtension
     // such they are reusable and tests methods are not relying on order, etc.
     // We want to run tests in an efficient manner, and reduce setup time
     injectStaticClientField(testClass);
+    injectStaticDatabaseTypeField(testClass, context);
   }
 
   private KeycloakContainer setupKeycloak() {
@@ -476,7 +528,11 @@ public class CamundaMultiDBExtension
           try {
             final var clientFactory =
                 (BasicAuthCamundaClientTestFactory) authenticatedClientFactory;
-            clientFactory.createClientForUser(applicationUnderTest.application, user);
+            clientFactory.createClientForUser(
+                applicationUnderTest.application.newClientBuilder(),
+                applicationUnderTest.application.restAddress(),
+                applicationUnderTest.application.grpcAddress(),
+                user);
           } catch (final ClassCastException e) {
             LOGGER.warn(
                 "Could not create client for user, as the application is not configured for basic authentication: %s",
@@ -488,7 +544,11 @@ public class CamundaMultiDBExtension
         mappingRule -> {
           try {
             final var clientFactory = (OidcCamundaClientTestFactory) authenticatedClientFactory;
-            clientFactory.createClientForMappingRule(applicationUnderTest.application, mappingRule);
+            clientFactory.createClientForMappingRule(
+                applicationUnderTest.application.newClientBuilder(),
+                applicationUnderTest.application.restAddress(),
+                applicationUnderTest.application.grpcAddress(),
+                mappingRule);
           } catch (final ClassCastException e) {
             LOGGER.warn(
                 "Could not create client for mapping rule, as the application is not configured for OIDC authentication",
@@ -504,7 +564,11 @@ public class CamundaMultiDBExtension
         client -> {
           try {
             final var clientFactory = (OidcCamundaClientTestFactory) authenticatedClientFactory;
-            clientFactory.createClientForClient(applicationUnderTest.application, client);
+            clientFactory.createClientForClient(
+                applicationUnderTest.application.newClientBuilder(),
+                applicationUnderTest.application.restAddress(),
+                applicationUnderTest.application.grpcAddress(),
+                client);
           } catch (final ClassCastException e) {
             LOGGER.warn(
                 "Could not create client for client, as the application is not configured for OIDC authentication",
@@ -665,6 +729,24 @@ public class CamundaMultiDBExtension
     }
   }
 
+  private void injectStaticDatabaseTypeField(
+      final Class<?> testClass, final ExtensionContext context) {
+    for (final Field field : testClass.getDeclaredFields()) {
+      try {
+        if (field.getType() == DatabaseType.class) {
+          if (ModifierSupport.isStatic(field)) {
+            field.setAccessible(true);
+            field.set(null, getDatabaseType(context));
+          } else {
+            fail("DatabaseType field couldn't be injected. Make sure it is static.");
+          }
+        }
+      } catch (final Exception ex) {
+        throw new RuntimeException(ex);
+      }
+    }
+  }
+
   private void injectStaticKeycloakContainerField(
       final Class<?> testClass, final KeycloakContainer keycloakContainer) {
     for (final Field field : testClass.getDeclaredFields()) {
@@ -685,28 +767,53 @@ public class CamundaMultiDBExtension
 
   @Override
   public void afterAll(final ExtensionContext context) throws Exception {
+    // Only cleanup if this extension actually ran
+    if (!isOwner(context)) {
+      LOGGER.debug("Skipping CamundaMultiDBExtension cleanup - extension didn't run");
+      return;
+    }
+
     CloseHelper.quietCloseAll(closeables);
-    authenticatedClientFactory.close();
+    CloseHelper.quietClose(authenticatedClientFactory);
     RecordingExporter.reset();
+
+    coordinationStore(context).remove(EXTENSION_COORDINATION_KEY);
   }
 
   @Override
   public boolean supportsParameter(
       final ParameterContext parameterContext, final ExtensionContext extensionContext)
       throws ParameterResolutionException {
-    return parameterContext.getParameter().getType() == CamundaClient.class;
+    if (!isOwner(extensionContext)) {
+      return false;
+    }
+    final Class<?> paramType = parameterContext.getParameter().getType();
+    return paramType == CamundaClient.class || paramType == DatabaseType.class;
   }
 
   @Override
   public Object resolveParameter(
       final ParameterContext parameterContext, final ExtensionContext extensionContext)
       throws ParameterResolutionException {
-    return getCamundaClient(parameterContext.getParameter().getAnnotation(Authenticated.class));
+    if (!isOwner(extensionContext)) {
+      throw new ParameterResolutionException(
+          "CamundaMultiDBExtension cannot resolve parameter because it did not own the test class");
+    }
+    final Class<?> paramType = parameterContext.getParameter().getType();
+    if (paramType == CamundaClient.class) {
+      return getCamundaClient(parameterContext.getParameter().getAnnotation(Authenticated.class));
+    }
+    if (paramType == DatabaseType.class) {
+      return getDatabaseType(extensionContext);
+    }
+    throw new ParameterResolutionException("Unsupported parameter type: " + paramType);
   }
 
   private CamundaClient getCamundaClient(final Authenticated authenticated) {
     return authenticatedClientFactory.getCamundaClient(
-        applicationUnderTest.application, authenticated);
+        applicationUnderTest.application.newClientBuilder(),
+        applicationUnderTest.application.restAddress(),
+        authenticated);
   }
 
   public record ApplicationUnderTest(

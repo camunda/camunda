@@ -14,11 +14,23 @@ public class Engine {
   /** Configuration properties for the engine's distribution settings. */
   @NestedConfigurationProperty private Distribution distribution = new Distribution();
 
+  /** Configuration properties for the engine's batch operation settings. */
+  @NestedConfigurationProperty
+  private EngineBatchOperation batchOperations = new EngineBatchOperation();
+
   public Distribution getDistribution() {
     return distribution;
   }
 
   public void setDistribution(final Distribution distribution) {
     this.distribution = distribution;
+  }
+
+  public EngineBatchOperation getBatchOperations() {
+    return batchOperations;
+  }
+
+  public void setBatchOperations(final EngineBatchOperation batchOperations) {
+    this.batchOperations = batchOperations;
   }
 }

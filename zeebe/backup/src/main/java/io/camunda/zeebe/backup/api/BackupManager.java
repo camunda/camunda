@@ -67,4 +67,8 @@ public interface BackupManager {
    */
   void createFailedBackup(
       final long checkpointId, BackupDescriptor backupDescriptor, String failureReason);
+
+  void extendRange(final long previousCheckpointId, final long newCheckpointId);
+
+  void startNewRange(final long checkpointId);
 }

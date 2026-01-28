@@ -7,7 +7,7 @@
  */
 package io.camunda.it.rdbms.db.fixtures;
 
-import io.camunda.db.rdbms.write.RdbmsWriter;
+import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.TenantDbModel;
 import io.camunda.db.rdbms.write.domain.TenantDbModel.Builder;
 import java.util.List;
@@ -24,42 +24,42 @@ public final class TenantFixtures extends CommonFixtures {
     return builderFunction.apply(builder).build();
   }
 
-  public static void createAndSaveRandomTenants(final RdbmsWriter rdbmsWriter) {
-    createAndSaveRandomTenants(rdbmsWriter, b -> b);
+  public static void createAndSaveRandomTenants(final RdbmsWriters rdbmsWriters) {
+    createAndSaveRandomTenants(rdbmsWriters, b -> b);
   }
 
   public static void createAndSaveRandomTenants(
-      final RdbmsWriter rdbmsWriter, final Function<Builder, Builder> builderFunction) {
+      final RdbmsWriters rdbmsWriters, final Function<Builder, Builder> builderFunction) {
     for (int i = 0; i < 20; i++) {
-      rdbmsWriter.getTenantWriter().create(TenantFixtures.createRandomized(builderFunction));
+      rdbmsWriters.getTenantWriter().create(TenantFixtures.createRandomized(builderFunction));
     }
 
-    rdbmsWriter.flush();
+    rdbmsWriters.flush();
   }
 
-  public static TenantDbModel createAndSaveTenant(final RdbmsWriter rdbmsWriter) {
+  public static TenantDbModel createAndSaveTenant(final RdbmsWriters rdbmsWriters) {
     final var instance = TenantFixtures.createRandomized(b -> b);
-    createAndSaveTenants(rdbmsWriter, List.of(instance));
+    createAndSaveTenants(rdbmsWriters, List.of(instance));
     return instance;
   }
 
   public static TenantDbModel createAndSaveTenant(
-      final RdbmsWriter rdbmsWriter, final Function<Builder, Builder> builderFunction) {
+      final RdbmsWriters rdbmsWriters, final Function<Builder, Builder> builderFunction) {
     final var instance = TenantFixtures.createRandomized(builderFunction);
-    createAndSaveTenants(rdbmsWriter, List.of(instance));
+    createAndSaveTenants(rdbmsWriters, List.of(instance));
     return instance;
   }
 
   public static void createAndSaveTenant(
-      final RdbmsWriter rdbmsWriter, final TenantDbModel tenant) {
-    createAndSaveTenants(rdbmsWriter, List.of(tenant));
+      final RdbmsWriters rdbmsWriters, final TenantDbModel tenant) {
+    createAndSaveTenants(rdbmsWriters, List.of(tenant));
   }
 
   public static void createAndSaveTenants(
-      final RdbmsWriter rdbmsWriter, final List<TenantDbModel> tenantList) {
+      final RdbmsWriters rdbmsWriters, final List<TenantDbModel> tenantList) {
     for (final TenantDbModel tenant : tenantList) {
-      rdbmsWriter.getTenantWriter().create(tenant);
+      rdbmsWriters.getTenantWriter().create(tenant);
     }
-    rdbmsWriter.flush();
+    rdbmsWriters.flush();
   }
 }

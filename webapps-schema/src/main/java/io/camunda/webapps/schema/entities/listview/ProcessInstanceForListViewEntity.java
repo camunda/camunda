@@ -10,9 +10,11 @@ package io.camunda.webapps.schema.entities.listview;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import io.camunda.webapps.schema.entities.BeforeVersion880;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.PartitionedEntity;
+import io.camunda.webapps.schema.entities.SinceVersion;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -56,6 +58,11 @@ public class ProcessInstanceForListViewEntity
 
   @BeforeVersion880 private Long position;
   @BeforeVersion880 private Set<String> tags;
+
+  /** Attention! This field will be filled in only for data imported after v. 8.9.0. */
+  @SinceVersion(value = "8.9.0", requireDefault = false)
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private Long rootProcessInstanceKey;
 
   @JsonIgnore private Object[] sortValues;
 
@@ -265,6 +272,16 @@ public class ProcessInstanceForListViewEntity
     return this;
   }
 
+  public Long getRootProcessInstanceKey() {
+    return rootProcessInstanceKey;
+  }
+
+  public ProcessInstanceForListViewEntity setRootProcessInstanceKey(
+      final Long rootProcessInstanceKey) {
+    this.rootProcessInstanceKey = rootProcessInstanceKey;
+    return this;
+  }
+
   @Override
   public int hashCode() {
     return Objects.hash(
@@ -287,7 +304,8 @@ public class ProcessInstanceForListViewEntity
         tenantId,
         joinRelation,
         position,
-        tags);
+        tags,
+        rootProcessInstanceKey);
   }
 
   @Override
@@ -304,6 +322,7 @@ public class ProcessInstanceForListViewEntity
         && partitionId == that.partitionId
         && incident == that.incident
         && Objects.equals(processDefinitionKey, that.processDefinitionKey)
+        && Objects.equals(rootProcessInstanceKey, that.rootProcessInstanceKey)
         && Objects.equals(processName, that.processName)
         && Objects.equals(processVersion, that.processVersion)
         && Objects.equals(processVersionTag, that.processVersionTag)

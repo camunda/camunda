@@ -7,7 +7,7 @@
  */
 package io.camunda.db.rdbms.write.queue;
 
-import io.camunda.db.rdbms.sql.ProcessBasedHistoryCleanupMapper.UpdateHistoryCleanupDateDto;
+import io.camunda.db.rdbms.sql.ProcessInstanceMapper.UpdateHistoryCleanupDateDto;
 import io.camunda.util.ObjectBuilder;
 import java.time.Duration;
 import java.time.OffsetDateTime;

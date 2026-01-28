@@ -45,6 +45,17 @@ func Clean(camundaVersion string, elasticsearchVersion string) {
 			}
 		}
 	}
+
+	connectorJars, err := filepath.Glob("connector-runtime-bundle-*-with-dependencies.jar")
+	if err != nil {
+		log.Error().Err(err).Msg("failed to discover connector jars")
+	} else {
+		for _, jar := range connectorJars {
+			if err := os.Remove(jar); err != nil && !errors.Is(err, os.ErrNotExist) {
+				log.Error().Err(err).Str("file", jar).Msg("failed to remove connector jar")
+			}
+		}
+	}
 }
 
 func downloadAndExtract(filePath, url, extractDir string, baseDir string, authToken string, extractFunc func(string, string) error) error {

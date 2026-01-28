@@ -7,8 +7,10 @@
  */
 package io.camunda.application.commons.service;
 
+import io.camunda.application.commons.condition.ConditionalOnAnyHttpGatewayEnabled;
 import io.camunda.document.store.EnvironmentConfigurationLoader;
 import io.camunda.document.store.SimpleDocumentStoreRegistry;
+import io.camunda.gateway.protocol.model.JobActivationResult;
 import io.camunda.search.clients.AuditLogSearchClient;
 import io.camunda.search.clients.AuthorizationSearchClient;
 import io.camunda.search.clients.BatchOperationSearchClient;
@@ -48,6 +50,7 @@ import io.camunda.service.DecisionInstanceServices;
 import io.camunda.service.DecisionRequirementsServices;
 import io.camunda.service.DocumentServices;
 import io.camunda.service.ElementInstanceServices;
+import io.camunda.service.ExpressionServices;
 import io.camunda.service.FormServices;
 import io.camunda.service.GroupServices;
 import io.camunda.service.IncidentServices;
@@ -61,6 +64,7 @@ import io.camunda.service.ResourceServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.SignalServices;
 import io.camunda.service.TenantServices;
+import io.camunda.service.TopologyServices;
 import io.camunda.service.UsageMetricsServices;
 import io.camunda.service.UserServices;
 import io.camunda.service.UserTaskServices;
@@ -70,8 +74,6 @@ import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
-import io.camunda.zeebe.gateway.protocol.rest.JobActivationResult;
-import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.context.annotation.Bean;
@@ -79,7 +81,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Configuration(proxyBeanMethods = false)
-@ConditionalOnRestGatewayEnabled
+@ConditionalOnAnyHttpGatewayEnabled
 public class CamundaServicesConfiguration {
 
   @Bean
@@ -350,6 +352,7 @@ public class CamundaServicesConfiguration {
       final FormServices formServices,
       final ElementInstanceServices elementInstanceServices,
       final VariableServices variableServices,
+      final AuditLogServices auditLogServices,
       final ProcessCache processCache,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
@@ -360,6 +363,7 @@ public class CamundaServicesConfiguration {
         formServices,
         elementInstanceServices,
         variableServices,
+        auditLogServices,
         processCache,
         null,
         executorProvider,
@@ -393,6 +397,20 @@ public class CamundaServicesConfiguration {
         brokerClient,
         securityContextProvider,
         clusterVariableSearchClient,
+        null,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
+  }
+
+  @Bean
+  public ExpressionServices expressionServices(
+      final BrokerClient brokerClient,
+      final SecurityContextProvider securityContextProvider,
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+    return new ExpressionServices(
+        brokerClient,
+        securityContextProvider,
         null,
         executorProvider,
         brokerRequestAuthorizationConverter);
@@ -560,6 +578,20 @@ public class CamundaServicesConfiguration {
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     return new ConditionalServices(
+        brokerClient,
+        securityContextProvider,
+        null,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
+  }
+
+  @Bean
+  public TopologyServices topologyServices(
+      final BrokerClient brokerClient,
+      final SecurityContextProvider securityContextProvider,
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+    return new TopologyServices(
         brokerClient,
         securityContextProvider,
         null,

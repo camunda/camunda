@@ -50,8 +50,6 @@ public interface BatchOperationMapper extends HistoryCleanupMapper {
 
   int cleanupHistory(CleanupBatchOperationHistoryDto dto);
 
-  int cleanupItemHistory(CleanupBatchOperationHistoryDto dto);
-
   record CleanupBatchOperationHistoryDto(OffsetDateTime cleanupDate, int limit) {}
 
   record UpdateHistoryCleanupDateDto(String batchOperationKey, OffsetDateTime historyCleanupDate) {}

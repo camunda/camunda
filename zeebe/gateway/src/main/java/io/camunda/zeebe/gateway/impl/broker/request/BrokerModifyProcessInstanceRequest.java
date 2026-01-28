@@ -96,10 +96,13 @@ public final class BrokerModifyProcessInstanceRequest
             moveInstruction -> {
               final var mappedInstruction =
                   new ProcessInstanceModificationMoveInstruction()
+                      .setSourceElementInstanceKey(moveInstruction.getSourceElementInstanceKey())
                       .setSourceElementId(moveInstruction.getSourceElementId())
                       .setTargetElementId(moveInstruction.getTargetElementId())
                       .setAncestorScopeKey(moveInstruction.getAncestorElementInstanceKey())
-                      .setUseSourceParentKeyAsAncestorScope(
+                      .setInferAncestorScopeFromSourceHierarchy(
+                          moveInstruction.getInferAncestorScopeFromSourceHierarchy())
+                      .setUseSourceParentKeyAsAncestorScopeKey(
                           moveInstruction.getUseSourceParentKeyAsAncestorScopeKey());
               moveInstruction.getVariableInstructionsList().stream()
                   .map(this::mapVariableInstruction)

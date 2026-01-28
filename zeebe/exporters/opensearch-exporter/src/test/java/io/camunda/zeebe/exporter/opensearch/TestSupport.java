@@ -80,6 +80,7 @@ final class TestSupport {
       case CONDITIONAL_SUBSCRIPTION -> config.conditionalSubscription = value;
       case CONDITIONAL_EVALUATION -> config.conditionalEvaluation = value;
       case GLOBAL_LISTENER_BATCH -> config.globalListenerBatch = value;
+      case GLOBAL_LISTENER -> config.globalListener = value;
       default ->
           throw new IllegalArgumentException(
               "No known indexing configuration option for value type " + valueType);
@@ -137,7 +138,9 @@ final class TestSupport {
             ValueType.MULTI_INSTANCE,
             ValueType.HISTORY_DELETION,
             ValueType.CONDITIONAL_SUBSCRIPTION,
-            ValueType.CONDITIONAL_EVALUATION);
+            ValueType.CONDITIONAL_EVALUATION,
+            ValueType.EXPRESSION,
+            ValueType.JOB_METRICS_BATCH);
     return EnumSet.complementOf(excludedValueTypes).stream();
   }
 

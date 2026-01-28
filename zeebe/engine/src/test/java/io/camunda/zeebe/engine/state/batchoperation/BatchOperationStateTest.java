@@ -20,14 +20,21 @@ import io.camunda.zeebe.engine.state.mutable.MutableBatchOperationState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
+import io.camunda.zeebe.protocol.impl.record.value.NestedRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationError;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceMigrationPlan;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceModificationPlan;
+import io.camunda.zeebe.protocol.impl.record.value.history.HistoryDeletionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationMoveInstruction;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.HistoryDeletionIntent;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationErrorType;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
+import io.camunda.zeebe.protocol.record.value.HistoryDeletionRecordValue;
+import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -88,6 +95,11 @@ public class BatchOperationStateTest {
     assertThat(batchOperation.isInitialized()).isFalse();
     assertThat(batchOperation.getNumTotalItems()).isEqualTo(0);
     assertThat(batchOperation.getNumExecutedItems()).isEqualTo(0);
+    assertThat(batchOperation.hasFollowUpCommand()).isFalse();
+    assertThat(batchOperation.getFollowUpCommand())
+        .extracting(NestedRecord::getValueType, NestedRecord::getIntent)
+        .containsOnly(ValueType.NULL_VAL, Intent.UNKNOWN);
+    assertThat(batchOperation.getFollowUpCommand().getRecordValue()).isNull();
   }
 
   @Test
@@ -169,6 +181,65 @@ public class BatchOperationStateTest {
     assertThat(recordFilter).isEqualTo(filter);
     assertThat(batchOperation.getModificationPlan()).isEqualTo(modificationPlan);
     assertThat(batchOperation.getStatus()).isEqualTo(BatchOperationStatus.CREATED);
+  }
+
+  @Test
+  void shouldCreateBatchOperationWithFollowupCommand() throws JsonProcessingException {
+    // given
+    final var batchOperationKey = 1L;
+    final var type = BatchOperationType.DELETE_PROCESS_INSTANCE;
+    final var filter =
+        new ProcessInstanceFilter.Builder()
+            .processDefinitionIds("process")
+            .processDefinitionVersions(1)
+            .build();
+    final String username = "bud spencer";
+    final var authentication = CamundaAuthentication.of(b -> b.user(username));
+    final var authorizationCheck =
+        Authorization.withAuthorization(
+            Authorization.of(a -> a.processDefinition().updateProcessInstance()), "myProcess");
+    final var record =
+        new BatchOperationCreationRecord()
+            .setBatchOperationKey(batchOperationKey)
+            .setBatchOperationType(type)
+            .setEntityFilter(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(filter)))
+            .setAuthentication(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(authentication)))
+            .setAuthorizationCheck(
+                new UnsafeBuffer(MsgPackConverter.convertToMsgPack(authorizationCheck)))
+            .setFollowUpCommand(
+                ValueType.HISTORY_DELETION,
+                HistoryDeletionIntent.DELETE,
+                new HistoryDeletionRecord()
+                    .setResourceType(HistoryDeletionType.PROCESS_DEFINITION)
+                    .setResourceKey(1));
+
+    // when
+    state.create(batchOperationKey, record);
+
+    // then
+    final var batchOperation = state.get(batchOperationKey).get();
+    final var recordFilter =
+        new ObjectMapper().readValue(batchOperation.getEntityFilter(), ProcessInstanceFilter.class);
+
+    assertThat(batchOperation.getKey()).isEqualTo(batchOperationKey);
+    assertThat(batchOperation.getBatchOperationType()).isEqualTo(type);
+    assertThat(recordFilter).isEqualTo(filter);
+    assertThat(batchOperation.getStatus()).isEqualTo(BatchOperationStatus.CREATED);
+    assertThat(batchOperation.getAuthentication()).isEqualTo(authentication);
+    assertThat(batchOperation.isInitialized()).isFalse();
+    assertThat(batchOperation.getNumTotalItems()).isEqualTo(0);
+    assertThat(batchOperation.getNumExecutedItems()).isEqualTo(0);
+    assertThat(batchOperation.hasFollowUpCommand()).isTrue();
+    assertThat(batchOperation.getFollowUpCommand())
+        .extracting(NestedRecord::getValueType, NestedRecord::getIntent)
+        .containsOnly(ValueType.HISTORY_DELETION, HistoryDeletionIntent.DELETE);
+    assertThat(batchOperation.getFollowUpCommand().getRecordValue())
+        .isInstanceOfSatisfying(
+            HistoryDeletionRecordValue.class,
+            value -> {
+              assertThat(value.getResourceType()).isEqualTo(HistoryDeletionType.PROCESS_DEFINITION);
+              assertThat(value.getResourceKey()).isEqualTo(1);
+            });
   }
 
   @Test

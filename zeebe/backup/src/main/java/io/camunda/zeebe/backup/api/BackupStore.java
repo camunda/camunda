@@ -7,12 +7,9 @@
  */
 package io.camunda.zeebe.backup.api;
 
-import io.camunda.zeebe.backup.common.LoggingBackupStore;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
-import org.slf4j.Logger;
-import org.slf4j.event.Level;
 
 /** A store where the backup is stored * */
 public interface BackupStore {
@@ -42,9 +39,14 @@ public interface BackupStore {
    */
   CompletableFuture<BackupStatusCode> markFailed(BackupIdentifier id, final String failureReason);
 
-  CompletableFuture<Void> closeAsync();
+  /** Returns all range markers stored for this partition. */
+  CompletableFuture<Collection<BackupRangeMarker>> rangeMarkers(int partitionId);
 
-  default BackupStore logging(final Logger logger, final Level level) {
-    return new LoggingBackupStore(this, logger, level);
-  }
+  /** Stores a given {@link BackupRangeMarker} for the given partition. */
+  CompletableFuture<Void> storeRangeMarker(int partitionId, BackupRangeMarker marker);
+
+  /** Deletes a given {@link BackupRangeMarker} for the given partition. */
+  CompletableFuture<Void> deleteRangeMarker(int partitionId, BackupRangeMarker marker);
+
+  CompletableFuture<Void> closeAsync();
 }

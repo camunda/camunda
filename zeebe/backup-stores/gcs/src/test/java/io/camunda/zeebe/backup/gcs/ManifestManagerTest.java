@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Map;
-import java.util.Optional;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -39,8 +38,7 @@ final class ManifestManagerTest {
     final var backup =
         new BackupImpl(
             new BackupIdentifierImpl(1, 2, 3),
-            new BackupDescriptorImpl(
-                Optional.empty(), 1, 1, "version", Instant.now(), CheckpointType.MANUAL_BACKUP),
+            new BackupDescriptorImpl(1, 1, "version", Instant.now(), CheckpointType.MANUAL_BACKUP),
             new NamedFileSetImpl(
                 Map.of("snapshotFile1", Path.of("file1"), "snapshotFile2", Path.of("file2"))),
             new NamedFileSetImpl(Map.of("segmentFile1", Path.of("file3"))));
@@ -71,8 +69,7 @@ final class ManifestManagerTest {
     final var backup =
         new BackupImpl(
             new BackupIdentifierImpl(1, 2, 3),
-            new BackupDescriptorImpl(
-                Optional.empty(), 1, 1, "version", Instant.now(), CheckpointType.MANUAL_BACKUP),
+            new BackupDescriptorImpl(1, 1, "version", Instant.now(), CheckpointType.MANUAL_BACKUP),
             new NamedFileSetImpl(
                 Map.of("snapshotFile1", Path.of("file1"), "snapshotFile2", Path.of("file2"))),
             new NamedFileSetImpl(Map.of("segmentFile1", Path.of("file3"))));
@@ -112,8 +109,7 @@ final class ManifestManagerTest {
     final var backup =
         new BackupImpl(
             new BackupIdentifierImpl(1, 2, 3),
-            new BackupDescriptorImpl(
-                Optional.empty(), 1, 1, "version", Instant.now(), CheckpointType.MANUAL_BACKUP),
+            new BackupDescriptorImpl(1, 1, "version", Instant.now(), CheckpointType.MANUAL_BACKUP),
             new NamedFileSetImpl(Map.of()),
             new NamedFileSetImpl(Map.of()));
 
@@ -136,8 +132,7 @@ final class ManifestManagerTest {
     final var backup =
         new BackupImpl(
             new BackupIdentifierImpl(1, 2, 3),
-            new BackupDescriptorImpl(
-                Optional.empty(), 1, 1, "version", Instant.now(), CheckpointType.MANUAL_BACKUP),
+            new BackupDescriptorImpl(1, 1, "version", Instant.now(), CheckpointType.MANUAL_BACKUP),
             new NamedFileSetImpl(Map.of()),
             new NamedFileSetImpl(Map.of()));
 
@@ -160,8 +155,7 @@ final class ManifestManagerTest {
     final var backup =
         new BackupImpl(
             new BackupIdentifierImpl(1, 2, 3),
-            new BackupDescriptorImpl(
-                Optional.empty(), 1, 1, "version", Instant.now(), CheckpointType.MANUAL_BACKUP),
+            new BackupDescriptorImpl(1, 1, "version", Instant.now(), CheckpointType.MANUAL_BACKUP),
             new NamedFileSetImpl(Map.of()),
             new NamedFileSetImpl(Map.of()));
 
@@ -193,8 +187,7 @@ final class ManifestManagerTest {
     final var backup =
         new BackupImpl(
             new BackupIdentifierImpl(1, 2, 3),
-            new BackupDescriptorImpl(
-                Optional.empty(), 1, 1, "version", Instant.now(), CheckpointType.MANUAL_BACKUP),
+            new BackupDescriptorImpl(1, 1, "version", Instant.now(), CheckpointType.MANUAL_BACKUP),
             new NamedFileSetImpl(Map.of()),
             new NamedFileSetImpl(Map.of()));
 

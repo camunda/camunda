@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.gateway.rest.deserializer;
 
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationInstruction;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationInstructionById;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationInstructionByKey;
+import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstruction;
+import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionById;
+import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionByKey;
 import java.util.List;
 import java.util.Set;
 

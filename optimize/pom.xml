@@ -48,10 +48,10 @@
 
     <zeebe.version>${project.version}</zeebe.version>
     <!-- We use this for the Zeebe test container version only -->
-    <zeebe.docker.version>8.7.0-alpha4</zeebe.docker.version>
+    <zeebe.docker.version>8.9</zeebe.docker.version>
 
     <!-- maven plugins -->
-    <surefire-plugin.version>3.5.3</surefire-plugin.version>
+    <surefire-plugin.version>3.5.4</surefire-plugin.version>
 
     <!-- maven dependency plugin -->
     <dependencyAnalyzeFailOnWarning>false</dependencyAnalyzeFailOnWarning>
@@ -67,23 +67,22 @@
     <!-- https://www.elastic.co/guide/en/elasticsearch/client/java-api/6.5/_using_another_logger.html -->
     <elasticsearch.log4j.version>2.24.2</elasticsearch.log4j.version>
     <!-- OpenSearch-->
-    <opensearch.client.version>2.10.4</opensearch.client.version>
+    <opensearch.client.version>2.26.0</opensearch.client.version>
     <!-- The least supported opensearch version we should test against-->
     <opensearch.test.version>2.17.0</opensearch.test.version>
     <!-- the opensearch version of the previous Optimize version -->
     <previous.optimize.opensearch.version>2.9.0</previous.optimize.opensearch.version>
-    <jsonpath.version>2.9.0</jsonpath.version>
     <apache.http5-client.version>5.4</apache.http5-client.version>
     <quartz.version>2.5.2</quartz.version>
 
     <!-- testing config -->
-    <mockito.version>5.18.0</mockito.version>
+    <mockito.version>5.21.0</mockito.version>
     <mockito-inline.version>5.2.0</mockito-inline.version>
-    <junit.jupiter.version>5.13.4</junit.jupiter.version>
-    <junit.platform.version>1.13.4</junit.platform.version>
+    <junit.jupiter.version>5.14.2</junit.jupiter.version>
+    <junit.platform.version>1.14.2</junit.platform.version>
     <mockserver.version>5.15.0</mockserver.version>
-    <assertj.version>3.27.6</assertj.version>
-    <google-java-format.plugin.version>1.28.0</google-java-format.plugin.version>
+    <assertj.version>3.27.7</assertj.version>
+    <google-java-format.plugin.version>1.33.0</google-java-format.plugin.version>
     <!-- This is the default profile used for the DB selection in tests -->
     <database.type>elasticsearch</database.type>
 
@@ -218,7 +217,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-dependency-plugin</artifactId>
-          <version>3.8.1</version>
+          <version>3.9.0</version>
           <configuration>
             <failOnWarning>${dependencyAnalyze.failOnWarning}</failOnWarning>
             <ignoredUnusedDeclaredDependencies combine.children="append">
@@ -279,7 +278,7 @@
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>templating-maven-plugin</artifactId>
-          <version>3.0.0</version>
+          <version>3.1.0</version>
         </plugin>
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
@@ -289,7 +288,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-jar-plugin</artifactId>
-          <version>3.4.2</version>
+          <version>3.5.0</version>
           <executions>
             <execution>
               <id>empty-javadoc-jar</id>
@@ -338,12 +337,12 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-war-plugin</artifactId>
-          <version>3.4.0</version>
+          <version>3.5.1</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-assembly-plugin</artifactId>
-          <version>3.7.1</version>
+          <version>3.8.0</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -356,12 +355,12 @@
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>exec-maven-plugin</artifactId>
-          <version>3.5.1</version>
+          <version>3.6.3</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-antrun-plugin</artifactId>
-          <version>3.1.0</version>
+          <version>3.2.0</version>
         </plugin>
         <plugin>
           <groupId>org.sonatype.plugins</groupId>
@@ -391,7 +390,7 @@
         <plugin>
           <groupId>com.diffplug.spotless</groupId>
           <artifactId>spotless-maven-plugin</artifactId>
-          <version>2.46.1</version>
+          <version>3.2.0</version>
           <configuration>
             <java>
               <includes>
@@ -523,7 +522,7 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-release-plugin</artifactId>
-            <version>3.1.1</version>
+            <version>3.3.1</version>
             <configuration>
               <localCheckout>true</localCheckout>
               <scmCommentPrefix xml:space="preserve">build: </scmCommentPrefix>
@@ -532,7 +531,7 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-source-plugin</artifactId>
-            <version>3.3.1</version>
+            <version>3.4.0</version>
             <executions>
               <execution>
                 <id>attach-sources</id>

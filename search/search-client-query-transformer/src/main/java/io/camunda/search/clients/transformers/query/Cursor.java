@@ -7,10 +7,10 @@
  */
 package io.camunda.search.clients.transformers.query;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.json.JsonMapper;
-import java.io.IOException;
+import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.search.exception.CamundaSearchException.Reason;
 import java.util.Base64;
 
 public class Cursor {
@@ -27,8 +27,11 @@ public class Cursor {
       final var value = MAPPER.writeValueAsString(values);
 
       return Base64.getEncoder().encodeToString(value.getBytes());
-    } catch (final JsonProcessingException e) {
-      throw new RuntimeException(e);
+    } catch (final Exception e) {
+      throw new CamundaSearchException(
+          "Cannot encode data store pagination information into a cursor",
+          e,
+          Reason.SEARCH_CLIENT_FAILED);
     }
   }
 
@@ -41,8 +44,9 @@ public class Cursor {
       final var decodedCursor = Base64.getDecoder().decode(cursor);
 
       return MAPPER.readValue(decodedCursor, Object[].class);
-    } catch (final IOException e) {
-      throw new RuntimeException(e);
+    } catch (final Exception e) {
+      throw new CamundaSearchException(
+          "Cannot decode pagination cursor '%s'".formatted(cursor), e, Reason.INVALID_ARGUMENT);
     }
   }
 }

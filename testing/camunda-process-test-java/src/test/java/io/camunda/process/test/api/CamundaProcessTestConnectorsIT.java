@@ -38,14 +38,11 @@ import org.apache.hc.core5.http.HttpResponse;
 import org.apache.hc.core5.http.io.entity.HttpEntities;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.testcontainers.Testcontainers;
 
 @WireMockTest(httpPort = 9999)
-@Disabled(
-    "https://camunda.slack.com/archives/C08PLN35WGM/p1765534773892579?thread_ts=1765531708.791569&cid=C08PLN35WGM")
 public class CamundaProcessTestConnectorsIT {
 
   // The ID is part of the connector configuration in the BPMN element

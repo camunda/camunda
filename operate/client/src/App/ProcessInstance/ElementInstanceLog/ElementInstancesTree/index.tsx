@@ -39,6 +39,8 @@ import {useBatchOperationItems} from 'modules/queries/batch-operations/useBatchO
 import {tracking} from 'modules/tracking';
 import type {FlowNodeInstance} from 'modules/types/operate';
 import {TreeView} from '@carbon/react';
+import {IS_ELEMENT_SELECTION_V2} from 'modules/feature-flags';
+import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 
 const TREE_NODE_HEIGHT = 32;
 const FOLDABLE_ELEMENT_TYPES: ElementInstance['type'][] = [
@@ -124,19 +126,34 @@ const NonFoldableElementInstancesNode: React.FC<NonFoldableElementInstancesNodeP
         useElementInstanceHistoryTree();
       const isRoot = elementType === 'PROCESS';
       const {processInstance} = useElementInstanceHistoryTree();
+      const {isSelected} = useProcessInstanceElementSelection();
 
       const rootNode = useRootNode();
-      const isSelected = flowNodeSelectionStore.isSelected({
-        flowNodeId: isRoot ? undefined : elementId,
-        flowNodeInstanceId: scopeKey,
-        isMultiInstance: elementType === 'MULTI_INSTANCE_BODY',
-      });
+
+      const isElementSelected = IS_ELEMENT_SELECTION_V2
+        ? isSelected({
+            elementId: isRoot ? undefined : elementId,
+            elementInstanceKey: scopeKey,
+            isMultiInstanceBody: elementType === 'MULTI_INSTANCE_BODY',
+          })
+        : flowNodeSelectionStore.isSelected({
+            flowNodeId: isRoot ? undefined : elementId,
+            flowNodeInstanceId: scopeKey,
+            isMultiInstance: elementType === 'MULTI_INSTANCE_BODY',
+          });
+
+      const {selectElementInstance, clearSelection} =
+        useProcessInstanceElementSelection();
 
       const handleSelect = () => {
         if (isRoot) {
-          selectFlowNode(rootNode, {
-            processInstanceId: processInstance.processInstanceKey,
-          });
+          if (IS_ELEMENT_SELECTION_V2) {
+            clearSelection();
+          } else {
+            selectFlowNode(rootNode, {
+              processInstanceId: processInstance.processInstanceKey,
+            });
+          }
           return;
         }
 
@@ -154,11 +171,15 @@ const NonFoldableElementInstancesNode: React.FC<NonFoldableElementInstancesNodeP
         }
 
         tracking.track({eventName: 'instance-history-item-clicked'});
-        selectFlowNode(rootNode, {
-          flowNodeId: elementId,
-          flowNodeInstanceId: scopeKey,
-          isMultiInstance: false,
-        });
+        if (IS_ELEMENT_SELECTION_V2) {
+          selectElementInstance({elementId, elementInstanceKey: scopeKey});
+        } else {
+          selectFlowNode(rootNode, {
+            flowNodeId: elementId,
+            flowNodeInstanceId: scopeKey,
+            isMultiInstance: false,
+          });
+        }
       };
 
       return (
@@ -166,8 +187,8 @@ const NonFoldableElementInstancesNode: React.FC<NonFoldableElementInstancesNodeP
           {...rest}
           key={scopeKey}
           data-testid={`tree-node-${scopeKey}`}
-          selected={isSelected ? [scopeKey] : []}
-          active={isSelected ? scopeKey : undefined}
+          selected={isElementSelected ? [scopeKey] : []}
+          active={isElementSelected ? scopeKey : undefined}
           id={scopeKey}
           value={scopeKey}
           aria-label={elementName}
@@ -222,11 +243,21 @@ const NonFoldableVirtualElementInstanceNode: React.FC<NonFoldableVirtualElementI
       const businessObject = businessObjects[elementId];
 
       const rootNode = useRootNode();
-      const isSelected = flowNodeSelectionStore.isSelected({
-        flowNodeId: isRoot ? undefined : elementId,
-        flowNodeInstanceId: scopeKey,
-        isMultiInstance: isMultiInstance(businessObject),
-      });
+      const {isSelected} = useProcessInstanceElementSelection();
+
+      const isElementSelected = IS_ELEMENT_SELECTION_V2
+        ? isSelected({
+            elementId: isRoot ? undefined : elementId,
+            elementInstanceKey: scopeKey,
+            isMultiInstanceBody: isMultiInstance(businessObject),
+          })
+        : flowNodeSelectionStore.isSelected({
+            flowNodeId: isRoot ? undefined : elementId,
+            flowNodeInstanceId: scopeKey,
+            isMultiInstance: isMultiInstance(businessObject),
+          });
+
+      const {selectElementInstance} = useProcessInstanceElementSelection();
 
       const handleSelect = () => {
         if (modificationsStore.state.status === 'moving-token') {
@@ -243,12 +274,20 @@ const NonFoldableVirtualElementInstanceNode: React.FC<NonFoldableVirtualElementI
         }
 
         tracking.track({eventName: 'instance-history-item-clicked'});
-        selectFlowNode(rootNode, {
-          flowNodeId: elementId,
-          flowNodeInstanceId: scopeKey,
-          isMultiInstance: false,
-          isPlaceholder: true,
-        });
+        if (IS_ELEMENT_SELECTION_V2) {
+          selectElementInstance({
+            elementId,
+            elementInstanceKey: scopeKey,
+            isPlaceholder: true,
+          });
+        } else {
+          selectFlowNode(rootNode, {
+            flowNodeId: elementId,
+            flowNodeInstanceId: scopeKey,
+            isMultiInstance: false,
+            isPlaceholder: true,
+          });
+        }
       };
 
       return (
@@ -256,11 +295,11 @@ const NonFoldableVirtualElementInstanceNode: React.FC<NonFoldableVirtualElementI
           {...rest}
           key={scopeKey}
           data-testid={`tree-node-${scopeKey}`}
-          selected={isSelected ? [scopeKey] : []}
-          active={isSelected ? scopeKey : undefined}
+          selected={isElementSelected ? [scopeKey] : []}
+          active={isElementSelected ? scopeKey : undefined}
           id={scopeKey}
           value={scopeKey}
-          aria-label={elementName}
+          aria-label={`${elementName}, this flow node instance is planned to be added`}
           renderIcon={renderIcon}
           isExpanded={false}
           onSelect={handleSelect}
@@ -343,11 +382,21 @@ const FoldableVirtualElementInstanceNode: React.FC<FoldableVirtualElementInstanc
       const isRoot = elementType === 'bpmn:Process';
 
       const rootNode = useRootNode();
-      const isSelected = flowNodeSelectionStore.isSelected({
-        flowNodeId: isRoot ? undefined : elementId,
-        flowNodeInstanceId: scopeKey,
-        isMultiInstance: isMultiInstance(businessObject),
-      });
+
+      const {isSelected} = useProcessInstanceElementSelection();
+
+      const isElementSelected = IS_ELEMENT_SELECTION_V2
+        ? isSelected({
+            elementId: isRoot ? undefined : elementId,
+            elementInstanceKey: scopeKey,
+            isMultiInstanceBody: isMultiInstance(businessObject),
+          })
+        : flowNodeSelectionStore.isSelected({
+            flowNodeId: isRoot ? undefined : elementId,
+            flowNodeInstanceId: scopeKey,
+            isMultiInstance: isMultiInstance(businessObject),
+          });
+
       const virtualChildren = convertToVirtualElementInstance({
         flowNodeInstances: getVisibleChildPlaceholders(
           scopeKey,
@@ -363,6 +412,8 @@ const FoldableVirtualElementInstanceNode: React.FC<FoldableVirtualElementInstanc
         instanceHistoryModificationStore.state.expandedFlowNodeInstanceIds.includes(
           scopeKey,
         );
+
+      const {selectElementInstance} = useProcessInstanceElementSelection();
 
       const handleSelect = async () => {
         if (modificationsStore.state.status === 'moving-token') {
@@ -386,22 +437,31 @@ const FoldableVirtualElementInstanceNode: React.FC<FoldableVirtualElementInstanc
         }
 
         tracking.track({eventName: 'instance-history-item-clicked'});
-        selectFlowNode(rootNode, {
-          flowNodeId: elementId,
-          flowNodeInstanceId: scopeKey,
-          isMultiInstance: isMultiInstance(businessObject),
-          isPlaceholder: true,
-        });
+        if (IS_ELEMENT_SELECTION_V2) {
+          selectElementInstance({
+            elementId,
+            elementInstanceKey: scopeKey,
+            isMultiInstanceBody: isMultiInstance(businessObject),
+            isPlaceholder: true,
+          });
+        } else {
+          selectFlowNode(rootNode, {
+            flowNodeId: elementId,
+            flowNodeInstanceId: scopeKey,
+            isMultiInstance: isMultiInstance(businessObject),
+            isPlaceholder: true,
+          });
+        }
       };
 
       const elementProps = {
         ...carbonTreeNodeProps,
         'data-testid': `tree-node-${scopeKey}`,
-        selected: isSelected ? [scopeKey] : [],
-        active: isSelected ? scopeKey : undefined,
+        selected: isElementSelected ? [scopeKey] : [],
+        active: isElementSelected ? scopeKey : undefined,
         id: scopeKey,
         value: scopeKey,
-        'aria-label': elementName,
+        'aria-label': `${elementName}, this flow node instance is planned to be added`,
         renderIcon,
         isExpanded,
         onSelect: handleSelect,
@@ -502,11 +562,21 @@ const FoldableElementInstancesNode: React.FC<FoldableElementInstancesNodeProps> 
       const isRoot = elementType === 'PROCESS';
 
       const rootNode = useRootNode();
-      const isSelected = flowNodeSelectionStore.isSelected({
-        flowNodeId: isRoot ? undefined : elementId,
-        flowNodeInstanceId: scopeKey,
-        isMultiInstance: elementType === 'MULTI_INSTANCE_BODY',
-      });
+
+      const {isSelected} = useProcessInstanceElementSelection();
+
+      const isElementSelected = IS_ELEMENT_SELECTION_V2
+        ? isSelected({
+            elementId: isRoot ? undefined : elementId,
+            elementInstanceKey: scopeKey,
+            isMultiInstanceBody: elementType === 'MULTI_INSTANCE_BODY',
+          })
+        : flowNodeSelectionStore.isSelected({
+            flowNodeId: isRoot ? undefined : elementId,
+            flowNodeInstanceId: scopeKey,
+            isMultiInstance: elementType === 'MULTI_INSTANCE_BODY',
+          });
+
       const isExpanded = elementInstancesTreeStore.isNodeExpanded(scopeKey);
 
       const virtualChildren = modificationsStore.isModificationModeEnabled
@@ -523,11 +593,18 @@ const FoldableElementInstancesNode: React.FC<FoldableElementInstancesNodeProps> 
           })
         : [];
 
+      const {selectElementInstance, clearSelection} =
+        useProcessInstanceElementSelection();
+
       const handleSelect = async () => {
         if (isRoot) {
-          selectFlowNode(rootNode, {
-            processInstanceId: processInstance.processInstanceKey,
-          });
+          if (IS_ELEMENT_SELECTION_V2) {
+            clearSelection();
+          } else {
+            selectFlowNode(rootNode, {
+              processInstanceId: processInstance.processInstanceKey,
+            });
+          }
           return;
         }
 
@@ -554,23 +631,39 @@ const FoldableElementInstancesNode: React.FC<FoldableElementInstancesNodeProps> 
         tracking.track({eventName: 'instance-history-item-clicked'});
 
         if (elementType !== 'AD_HOC_SUB_PROCESS_INNER_INSTANCE') {
-          selectFlowNode(rootNode, {
-            flowNodeId: elementId,
-            flowNodeInstanceId: scopeKey,
-            isMultiInstance: elementType === 'MULTI_INSTANCE_BODY',
-          });
+          if (IS_ELEMENT_SELECTION_V2) {
+            selectElementInstance({
+              elementId,
+              elementInstanceKey: scopeKey,
+              isMultiInstanceBody: elementType === 'MULTI_INSTANCE_BODY',
+            });
+          } else {
+            selectFlowNode(rootNode, {
+              flowNodeId: elementId,
+              flowNodeInstanceId: scopeKey,
+              isMultiInstance: elementType === 'MULTI_INSTANCE_BODY',
+            });
+          }
           return;
         }
 
         const childInstances = elementInstancesTreeStore.getItems(scopeKey);
 
         if (isExpanded && childInstances.length > 0) {
-          selectFlowNode(rootNode, {
-            flowNodeId: elementId,
-            flowNodeInstanceId: scopeKey,
-            isMultiInstance: false,
-            anchorFlowNodeId: childInstances[0].elementId,
-          });
+          if (IS_ELEMENT_SELECTION_V2) {
+            selectElementInstance({
+              elementId,
+              elementInstanceKey: scopeKey,
+              anchorElementId: childInstances[0].elementId,
+            });
+          } else {
+            selectFlowNode(rootNode, {
+              flowNodeId: elementId,
+              flowNodeInstanceId: scopeKey,
+              isMultiInstance: false,
+              anchorFlowNodeId: childInstances[0].elementId,
+            });
+          }
           return;
         }
 
@@ -589,19 +682,27 @@ const FoldableElementInstancesNode: React.FC<FoldableElementInstancesNodeProps> 
           return;
         }
 
-        selectFlowNode(rootNode, {
-          flowNodeId: elementId,
-          flowNodeInstanceId: scopeKey,
-          isMultiInstance: false,
-          anchorFlowNodeId: firstChild.elementId,
-        });
+        if (IS_ELEMENT_SELECTION_V2) {
+          selectElementInstance({
+            elementId,
+            elementInstanceKey: scopeKey,
+            anchorElementId: firstChild.elementId,
+          });
+        } else {
+          selectFlowNode(rootNode, {
+            flowNodeId: elementId,
+            flowNodeInstanceId: scopeKey,
+            isMultiInstance: false,
+            anchorFlowNodeId: firstChild.elementId,
+          });
+        }
       };
 
       const elementProps = {
         ...carbonTreeNodeProps,
         'data-testid': `tree-node-${scopeKey}`,
-        selected: isSelected ? [scopeKey] : [],
-        active: isSelected ? scopeKey : undefined,
+        selected: isElementSelected ? [scopeKey] : [],
+        active: isElementSelected ? scopeKey : undefined,
         id: scopeKey,
         value: scopeKey,
         'aria-label': elementName,
@@ -785,16 +886,16 @@ const ElementInstancesTree: React.FC<ElementInstancesTreeProps> = observer(
   (props) => {
     const {processInstance, businessObjects, errorMessage, ...rest} = props;
     const scrollableContainerRef = useRef<HTMLDivElement>(null);
-    const {data: {items: migrationItems} = {items: []}} =
-      useBatchOperationItems({
-        filter: {
-          processInstanceKey: processInstance.processInstanceKey,
-          operationType: 'MIGRATE_PROCESS_INSTANCE',
-          state: 'COMPLETED',
-        },
-        sort: [{field: 'processedDate', order: 'desc'}],
-        page: {limit: 1, from: 0},
-      });
+    const {data} = useBatchOperationItems({
+      filter: {
+        processInstanceKey: processInstance.processInstanceKey,
+        operationType: 'MIGRATE_PROCESS_INSTANCE',
+        state: 'COMPLETED',
+      },
+      sort: [{field: 'processedDate', order: 'desc'}],
+      page: {limit: 1, from: 0},
+    });
+    const migrationItems = data?.pages[0].items ?? [];
     const latestMigrationDate =
       migrationItems.length > 0 ? migrationItems[0].processedDate : undefined;
     const rootElementInstance = useMemo<ElementInstance>(() => {

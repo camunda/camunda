@@ -28,7 +28,8 @@ public record RdbmsWriterConfig(
      * processed and are completed or failed.
      */
     boolean exportBatchOperationItemsOnCreation,
-    HistoryConfig history) {
+    HistoryConfig history,
+    InsertBatchingConfig insertBatchingConfig) {
 
   public static final int DEFAULT_QUEUE_SIZE = 1000;
   // Default memory limit: 20MB - aligned with CamundaExporter's default
@@ -49,6 +50,7 @@ public record RdbmsWriterConfig(
     private boolean exportBatchOperationItemsOnCreation =
         DEFAULT_EXPORT_BATCH_OPERATION_ITEMS_ON_CREATION;
     private HistoryConfig history = new HistoryConfig.Builder().build();
+    private InsertBatchingConfig insertBatchingConfig = new InsertBatchingConfig.Builder().build();
 
     public Builder partitionId(final int partitionId) {
       this.partitionId = partitionId;
@@ -81,6 +83,11 @@ public record RdbmsWriterConfig(
       return this;
     }
 
+    public Builder insertBatchingConfig(final InsertBatchingConfig insertBatchingConfig) {
+      this.insertBatchingConfig = insertBatchingConfig;
+      return this;
+    }
+
     @Override
     public RdbmsWriterConfig build() {
       return new RdbmsWriterConfig(
@@ -89,7 +96,8 @@ public record RdbmsWriterConfig(
           queueMemoryLimit,
           batchOperationItemInsertBlockSize,
           exportBatchOperationItemsOnCreation,
-          history);
+          history,
+          insertBatchingConfig);
     }
   }
 
@@ -103,16 +111,20 @@ public record RdbmsWriterConfig(
       Duration minHistoryCleanupInterval,
       Duration maxHistoryCleanupInterval,
       int historyCleanupBatchSize,
+      int historyCleanupProcessInstanceBatchSize,
       Duration usageMetricsCleanup,
       Duration usageMetricsTTL) {
 
     public static final Duration DEFAULT_HISTORY_TTL = Duration.ofDays(30);
     public static final Duration DEFAULT_BATCH_OPERATION_HISTORY_TTL = Duration.ofDays(5);
-    public static final Duration DEFAULT_MIN_HISTORY_CLEANUP_INTERVAL = Duration.ofMinutes(1);
+    public static final Duration DEFAULT_MIN_HISTORY_CLEANUP_INTERVAL = Duration.ofSeconds(5);
     public static final Duration DEFAULT_MAX_HISTORY_CLEANUP_INTERVAL = Duration.ofMinutes(60);
     public static final Duration DEFAULT_USAGE_METRICS_CLEANUP = Duration.ofDays(1);
     public static final Duration DEFAULT_USAGE_METRICS_TTL = Duration.ofDays(730);
-    public static final int DEFAULT_HISTORY_CLEANUP_BATCH_SIZE = 1000;
+    public static final int DEFAULT_HISTORY_CLEANUP_BATCH_SIZE = 10000;
+    // Keep this smaller to avoid Oracle IN-clause limit (1000)
+    // when passing PI keys to deleteProcessInstanceRelatedData()
+    public static final int DEFAULT_HISTORY_CLEANUP_PROCESS_INSTANCE_BATCH_SIZE = 1000;
 
     public static RdbmsWriterConfig.Builder builder() {
       return new RdbmsWriterConfig.Builder();
@@ -133,6 +145,8 @@ public record RdbmsWriterConfig(
       private Duration minHistoryCleanupInterval = DEFAULT_MIN_HISTORY_CLEANUP_INTERVAL;
       private Duration maxHistoryCleanupInterval = DEFAULT_MAX_HISTORY_CLEANUP_INTERVAL;
       private int historyCleanupBatchSize = DEFAULT_HISTORY_CLEANUP_BATCH_SIZE;
+      private int historyCleanupProcessInstanceBatchSize =
+          DEFAULT_HISTORY_CLEANUP_PROCESS_INSTANCE_BATCH_SIZE;
       private Duration usageMetricsCleanup = DEFAULT_USAGE_METRICS_CLEANUP;
       private Duration usageMetricsTTL = DEFAULT_USAGE_METRICS_TTL;
 
@@ -190,6 +204,12 @@ public record RdbmsWriterConfig(
         return this;
       }
 
+      public HistoryConfig.Builder historyCleanupProcessInstanceBatchSize(
+          final int historyCleanupProcessInstanceBatchSize) {
+        this.historyCleanupProcessInstanceBatchSize = historyCleanupProcessInstanceBatchSize;
+        return this;
+      }
+
       public HistoryConfig.Builder usageMetricsCleanup(final Duration usageMetricsCleanup) {
         this.usageMetricsCleanup = usageMetricsCleanup;
         return this;
@@ -212,8 +232,53 @@ public record RdbmsWriterConfig(
             minHistoryCleanupInterval,
             maxHistoryCleanupInterval,
             historyCleanupBatchSize,
+            historyCleanupProcessInstanceBatchSize,
             usageMetricsCleanup,
             usageMetricsTTL);
+      }
+    }
+  }
+
+  public record HistoryDeletionConfig(
+      Duration delayBetweenRuns,
+      Duration maxDelayBetweenRuns,
+      int queueBatchSize,
+      int dependentRowLimit) {}
+
+  public record InsertBatchingConfig(
+      /*
+       * The maximum size of variable insert batches.
+       */
+      int variableInsertBatchSize,
+      /*
+       * The maximum size of audit log insert batches.
+       */
+      int auditLogInsertBatchSize) {
+    public static final int DEFAULT_VARIABLE_INSERT_BATCH_SIZE = 10;
+    public static final int DEFAULT_AUDIT_LOG_INSERT_BATCH_SIZE = 10;
+
+    public static InsertBatchingConfig.Builder builder() {
+      return new InsertBatchingConfig.Builder();
+    }
+
+    public static class Builder implements ObjectBuilder<InsertBatchingConfig> {
+
+      private int variableInsertBatchSize = DEFAULT_VARIABLE_INSERT_BATCH_SIZE;
+      private int auditLogInsertBatchSize = DEFAULT_AUDIT_LOG_INSERT_BATCH_SIZE;
+
+      public Builder variableInsertBatchSize(final int variableInsertBatchSize) {
+        this.variableInsertBatchSize = variableInsertBatchSize;
+        return this;
+      }
+
+      public Builder auditLogInsertBatchSize(final int auditLogInsertBatchSize) {
+        this.auditLogInsertBatchSize = auditLogInsertBatchSize;
+        return this;
+      }
+
+      @Override
+      public InsertBatchingConfig build() {
+        return new InsertBatchingConfig(variableInsertBatchSize, auditLogInsertBatchSize);
       }
     }
   }

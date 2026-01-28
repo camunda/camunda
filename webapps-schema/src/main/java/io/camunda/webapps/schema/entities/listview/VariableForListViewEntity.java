@@ -11,6 +11,7 @@ import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.BeforeVersion880;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.PartitionedEntity;
+import io.camunda.webapps.schema.entities.SinceVersion;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.Objects;
 
@@ -32,6 +33,10 @@ public class VariableForListViewEntity
   @BeforeVersion880
   private ListViewJoinRelation joinRelation =
       new ListViewJoinRelation(ListViewTemplate.VARIABLES_JOIN_RELATION);
+
+  /** Attention! This field will be filled in only for data imported after v. 8.9.0. */
+  @SinceVersion(value = "8.9.0", requireDefault = false)
+  private Long rootProcessInstanceKey;
 
   public static String getIdBy(final long scopeKey, final String name) {
     return String.format("%d-%s", scopeKey, name);
@@ -132,6 +137,15 @@ public class VariableForListViewEntity
     return this;
   }
 
+  public Long getRootProcessInstanceKey() {
+    return rootProcessInstanceKey;
+  }
+
+  public VariableForListViewEntity setRootProcessInstanceKey(final Long rootProcessInstanceKey) {
+    this.rootProcessInstanceKey = rootProcessInstanceKey;
+    return this;
+  }
+
   @Override
   public int hashCode() {
     return Objects.hash(
@@ -143,7 +157,8 @@ public class VariableForListViewEntity
         varValue,
         tenantId,
         position,
-        joinRelation);
+        joinRelation,
+        rootProcessInstanceKey);
   }
 
   @Override
@@ -159,6 +174,7 @@ public class VariableForListViewEntity
         && partitionId == that.partitionId
         && Objects.equals(processInstanceKey, that.processInstanceKey)
         && Objects.equals(scopeKey, that.scopeKey)
+        && Objects.equals(rootProcessInstanceKey, that.rootProcessInstanceKey)
         && Objects.equals(varName, that.varName)
         && Objects.equals(varValue, that.varValue)
         && Objects.equals(tenantId, that.tenantId)

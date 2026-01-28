@@ -17,6 +17,7 @@ import io.camunda.client.api.response.Process;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.response.ProcessInstanceSequenceFlow;
 import io.camunda.it.util.TestHelper;
+import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import java.util.ArrayList;
 import java.util.List;
@@ -26,6 +27,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 @MultiDbTest
+@CompatibilityTest
 public class ProcessInstanceSequenceFlowsIT {
 
   public static final List<String> RESOURCES =

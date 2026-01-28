@@ -41,7 +41,8 @@ test.describe('Cluster API Tests', () => {
     await assertUnauthorizedRequest(res);
   });
 
-  test('Get Cluster Status', async ({request}) => {
+  //Skipped due to bug 43397: https://github.com/camunda/camunda/issues/43397
+  test.skip('Get Cluster Status', async ({request}) => {
     const res = await request.get(buildUrl('/status'));
     expect(res.status()).toBe(204);
     const result = await res.body();

@@ -41,6 +41,8 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessResponse
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Deployment;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluateConditionalRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluateConditionalResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluateDecisionRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluateDecisionResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.FailJobRequest;
@@ -53,6 +55,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstance
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Partition;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Partition.PartitionBrokerHealth;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Partition.PartitionBrokerRole;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ProcessInstanceReference;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ProcessMetadata;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageResponse;
@@ -443,6 +446,13 @@ public final class RecordingGatewayService extends GatewayImplBase {
     handle(request, responseObserver);
   }
 
+  @Override
+  public void evaluateConditional(
+      final EvaluateConditionalRequest request,
+      final StreamObserver<EvaluateConditionalResponse> responseObserver) {
+    handle(request, responseObserver);
+  }
+
   public void onTopologyRequest(
       final int clusterSize,
       final int partitionsCount,
@@ -534,6 +544,44 @@ public final class RecordingGatewayService extends GatewayImplBase {
                 .build());
   }
 
+  public void onEvaluateConditionalRequest(
+      final long processDefinitionKey, final long processInstanceKey) {
+    onEvaluateConditionalRequest(
+        12345L,
+        CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER,
+        processDefinitionKey,
+        processInstanceKey);
+  }
+
+  public void onEvaluateConditionalRequest(
+      final long conditionalEvaluationKey,
+      final String tenantId,
+      final long processDefinitionKey,
+      final long processInstanceKey) {
+    addRequestHandler(
+        EvaluateConditionalRequest.class,
+        request ->
+            EvaluateConditionalResponse.newBuilder()
+                .setConditionalEvaluationKey(conditionalEvaluationKey)
+                .setTenantId(tenantId)
+                .addProcessInstances(
+                    ProcessInstanceReference.newBuilder()
+                        .setProcessDefinitionKey(processDefinitionKey)
+                        .setProcessInstanceKey(processInstanceKey)
+                        .build())
+                .build());
+  }
+
+  public void onEvaluateConditionalRequest() {
+    addRequestHandler(
+        EvaluateConditionalRequest.class,
+        request ->
+            EvaluateConditionalResponse.newBuilder()
+                .setConditionalEvaluationKey(12345L)
+                .setTenantId(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER)
+                .build());
+  }
+
   public void onCreateProcessInstanceWithResultRequest(
       final long processDefinitionKey,
       final String bpmnProcessId,
@@ -588,6 +636,31 @@ public final class RecordingGatewayService extends GatewayImplBase {
     addRequestHandler(
         SetVariablesRequest.class,
         request -> SetVariablesResponse.newBuilder().setKey(key).build());
+  }
+
+  public void onDeleteResourceRequest(final long resourceKey) {
+    addRequestHandler(
+        DeleteResourceRequest.class,
+        request ->
+            DeleteResourceResponse.newBuilder()
+                .setResourceKey(String.valueOf(resourceKey))
+                .build());
+  }
+
+  public void onDeleteResourceRequest(
+      final long resourceKey, final String batchOperationKey, final int batchOperationType) {
+    addRequestHandler(
+        DeleteResourceRequest.class,
+        request ->
+            DeleteResourceResponse.newBuilder()
+                .setResourceKey(String.valueOf(resourceKey))
+                .setBatchOperation(
+                    io.camunda.zeebe.gateway.protocol.GatewayOuterClass.BatchOperationCreatedResult
+                        .newBuilder()
+                        .setBatchOperationKey(batchOperationKey)
+                        .setBatchOperationTypeValue(batchOperationType)
+                        .build())
+                .build());
   }
 
   public void errorOnRequest(

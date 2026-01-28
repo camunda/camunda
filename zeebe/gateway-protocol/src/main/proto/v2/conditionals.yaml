@@ -96,12 +96,33 @@ components:
       type: object
       required:
         - processInstances
+        - conditionalEvaluationKey
+        - tenantId
+      x-semantic-provider:
+        - conditionalEvaluationKey
       properties:
+        conditionalEvaluationKey:
+          allOf:
+            - $ref: '#/components/schemas/ConditionalEvaluationKey'
+          description: The unique key of the conditional evaluation operation.
+        tenantId:
+          description: The tenant ID of the conditional evaluation operation.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/TenantId'
         processInstances:
           type: array
           items:
             $ref: '#/components/schemas/ProcessInstanceReference'
           description: List of process instances created. If no root-level conditional start events evaluated to true, the list will be empty.
+
+    ConditionalEvaluationKey:
+      allOf:
+        - $ref: 'keys.yaml#/components/schemas/LongKey'
+      description: System-generated key for a conditional evaluation.
+      format: ConditionalEvaluationKey
+      x-semantic-type: ConditionalEvaluationKey
+      example: "2251799813687654"
+      type: string
 
     ProcessInstanceReference:
       type: object

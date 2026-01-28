@@ -6,29 +6,48 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {render, screen} from 'modules/testing-library';
+import {render, screen, within} from 'modules/testing-library';
 import {ListView} from '..';
-import {createWrapper} from './mocks';
+import {getWrapper} from './mocks';
 import {
-  groupedProcessesMock,
+  mockProcessDefinitions,
   mockProcessXML,
   createUser,
+  mockProcessInstancesV2,
   searchResult,
+  createProcessDefinition,
 } from 'modules/testUtils';
-import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 import {mockQueryBatchOperations} from 'modules/mocks/api/v2/batchOperations/queryBatchOperations';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/v2/processInstances/fetchProcessInstancesStatistics';
 import {mockMe} from 'modules/mocks/api/v2/me';
 import {mockSearchProcessDefinitions} from 'modules/mocks/api/v2/processDefinitions/searchProcessDefinitions';
 import {mockSearchProcessInstances} from 'modules/mocks/api/v2/processInstances/searchProcessInstances';
-import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
+import {mockDeleteResource} from 'modules/mocks/api/v2/resource/deleteResource';
+import {notificationsStore} from 'modules/stores/notifications';
+
+vi.mock('modules/stores/notifications', () => ({
+  notificationsStore: {
+    displayNotification: vi.fn(() => () => {}),
+  },
+}));
 
 describe('<ListView /> - operations', () => {
   beforeEach(() => {
-    mockSearchProcessDefinitions().withSuccess(searchResult([]));
-    mockSearchProcessDefinitions().withSuccess(searchResult([]));
-    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
+    mockSearchProcessDefinitions().withSuccess(mockProcessDefinitions);
+    mockSearchProcessDefinitions().withSuccess(mockProcessDefinitions);
+    mockSearchProcessDefinitions().withSuccess(mockProcessDefinitions);
+    mockSearchProcessDefinitions().withSuccess(
+      searchResult([
+        createProcessDefinition({
+          processDefinitionId: 'demoProcess',
+          processDefinitionKey: 'demoProcess1',
+          name: 'New demo process',
+          version: 1,
+        }),
+      ]),
+    );
+    mockSearchProcessDefinitions().withSuccess(mockProcessDefinitions);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
     mockQueryBatchOperations().withSuccess({
       items: [],
@@ -40,27 +59,24 @@ describe('<ListView /> - operations', () => {
       items: [],
     });
     mockMe().withSuccess(createUser());
-    mockFetchProcessInstances().withSuccess({
-      processInstances: [],
-      totalCount: 0,
-    });
   });
 
   it('should show delete button when version is selected', async () => {
+    mockSearchProcessInstances().withSuccess(mockProcessInstancesV2);
+    mockSearchProcessInstances().withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
     mockSearchProcessInstances().withSuccess({
       items: [],
       page: {totalItems: 0},
     });
 
-    const queryString = '?process=demoProcess&version=1';
-
-    vi.stubGlobal('location', {
-      ...window.location,
-      search: queryString,
-    });
+    const queryString =
+      '?active=true&incidents=true&process=demoProcess&version=1';
 
     render(<ListView />, {
-      wrapper: createWrapper(`/processes${queryString}`),
+      wrapper: getWrapper(`/processes${queryString}`),
     });
 
     expect(
@@ -80,8 +96,17 @@ describe('<ListView /> - operations', () => {
   });
 
   it('should not show delete button when no process is selected', async () => {
+    mockSearchProcessInstances().withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
+    mockSearchProcessInstances().withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
+
     render(<ListView />, {
-      wrapper: createWrapper('/processes'),
+      wrapper: getWrapper('/processes'),
     });
 
     expect(
@@ -100,15 +125,19 @@ describe('<ListView /> - operations', () => {
   });
 
   it('should not show delete button when no version is selected', async () => {
-    const queryString = '?process=demoProcess';
-
-    vi.stubGlobal('location', {
-      ...window.location,
-      search: queryString,
+    mockSearchProcessInstances().withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
+    mockSearchProcessInstances().withSuccess({
+      items: [],
+      page: {totalItems: 0},
     });
 
+    const queryString = '?active=true&incidents=true&process=demoProcess';
+
     render(<ListView />, {
-      wrapper: createWrapper(`/processes${queryString}`),
+      wrapper: getWrapper(`/processes${queryString}`),
     });
 
     expect(
@@ -126,21 +155,25 @@ describe('<ListView /> - operations', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('should show delete button when user has resource based permissions', async () => {
+  it('should show permission error notification when delete operation returns 403', async () => {
+    mockSearchProcessInstances().withSuccess(mockProcessInstancesV2);
+    mockSearchProcessInstances().withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
+    mockSearchProcessInstances().withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
     mockSearchProcessInstances().withSuccess({
       items: [],
       page: {totalItems: 0},
     });
 
-    const queryString = '?process=demoProcess&version=1';
+    mockDeleteResource().withServerError(403);
 
-    vi.stubGlobal('location', {
-      ...window.location,
-      search: queryString,
-    });
-
-    render(<ListView />, {
-      wrapper: createWrapper(`/processes${queryString}`),
+    const {user} = render(<ListView />, {
+      wrapper: getWrapper('/processes?process=demoProcess&version=1'),
     });
 
     expect(
@@ -148,36 +181,26 @@ describe('<ListView /> - operations', () => {
         name: /delete process definition/i,
       }),
     ).toBeInTheDocument();
-    expect(
-      await screen.findByRole('button', {name: 'Zoom in diagram'}),
-    ).toBeInTheDocument();
-  });
 
-  it('should not show delete button when user has no resource based permissions', async () => {
-    mockSearchProcessInstances().withSuccess({
-      items: [],
-      page: {totalItems: 0},
+    await user.click(
+      screen.getByRole('button', {name: /delete process definition/i}),
+    );
+
+    const dialog = await screen.findByRole('dialog', {
+      name: 'Delete Process Definition',
     });
+    const confirmCheckbox = within(dialog).getByLabelText(
+      /Yes, I confirm I want to delete this process definition/i,
+    );
+    const deleteButton = within(dialog).getByRole('button', {name: /Delete/i});
+    await user.click(confirmCheckbox);
+    await user.click(deleteButton);
 
-    const queryString = '?process=demoProcess&version=1';
-
-    vi.stubGlobal('location', {
-      ...window.location,
-      search: queryString,
+    expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+      kind: 'warning',
+      title: "You don't have permission to perform this operation",
+      subtitle: 'Please contact the administrator if you need access.',
+      isDismissable: true,
     });
-
-    vi.stubGlobal('clientConfig', {
-      resourcePermissionsEnabled: true,
-    });
-
-    render(<ListView />, {
-      wrapper: createWrapper(`/processes${queryString}`),
-    });
-
-    expect(
-      screen.queryByRole('button', {
-        name: /delete process definition/i,
-      }),
-    ).not.toBeInTheDocument();
   });
 });

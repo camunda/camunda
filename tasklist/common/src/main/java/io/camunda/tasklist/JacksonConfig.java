@@ -55,7 +55,7 @@ public class JacksonConfig {
                 DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE,
                 DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
                 DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
-            .featuresToEnable(JsonParser.Feature.ALLOW_COMMENTS, SerializationFeature.INDENT_OUTPUT)
+            .featuresToEnable(JsonParser.Feature.ALLOW_COMMENTS)
             .build();
   }
 

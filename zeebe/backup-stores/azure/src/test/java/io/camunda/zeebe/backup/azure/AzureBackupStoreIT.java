@@ -26,7 +26,6 @@ import io.camunda.zeebe.backup.azure.util.AzuriteContainer;
 import io.camunda.zeebe.backup.common.BackupStoreException.UnexpectedManifestState;
 import io.camunda.zeebe.backup.common.Manifest;
 import io.camunda.zeebe.backup.testkit.BackupStoreTestKit;
-import io.camunda.zeebe.backup.testkit.support.TestBackupProvider;
 import java.io.FileNotFoundException;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -35,7 +34,7 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ArgumentsSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -79,7 +78,7 @@ public class AzureBackupStoreIT implements BackupStoreTestKit {
   }
 
   @ParameterizedTest
-  @ArgumentsSource(TestBackupProvider.class)
+  @MethodSource("provideBackups")
   void backupShouldExistAfterStoreIsClosed(final Backup backup) {
     // given
     getStore().save(backup).join();
@@ -96,7 +95,7 @@ public class AzureBackupStoreIT implements BackupStoreTestKit {
   }
 
   @ParameterizedTest
-  @ArgumentsSource(TestBackupProvider.class)
+  @MethodSource("provideBackups")
   void cannotDeleteUploadingBlock(final Backup backup) {
 
     // given when
@@ -108,13 +107,14 @@ public class AzureBackupStoreIT implements BackupStoreTestKit {
         .withThrowableOfType(Throwable.class)
         .withRootCauseInstanceOf(UnexpectedManifestState.class)
         .withMessageContaining(
-            "Cannot delete Backup with id "
-                + "'BackupIdentifierImpl[nodeId=1, partitionId=2, checkpointId=3]' "
-                + "while saving is in progress.");
+            """
+                Cannot delete Backup with id \
+                'BackupId{node=1, partition=2, checkpoint=3}' \
+                while saving is in progress.""");
   }
 
   @ParameterizedTest
-  @ArgumentsSource(TestBackupProvider.class)
+  @MethodSource("provideBackups")
   void cannotRestoreUploadingBackup(final Backup backup, @TempDir final Path targetDir) {
     // when
     uploadInProgressManifest(backup);
@@ -125,9 +125,10 @@ public class AzureBackupStoreIT implements BackupStoreTestKit {
         .withThrowableOfType(Throwable.class)
         .withRootCauseInstanceOf(UnexpectedManifestState.class)
         .withMessageContaining(
-            "Expected to restore from completed backup with id "
-                + "'BackupIdentifierImpl[nodeId=1, partitionId=2, checkpointId=3]', "
-                + "but was in state 'IN_PROGRESS'");
+            """
+                Expected to restore from completed backup with id \
+                'BackupId{node=1, partition=2, checkpoint=3}', \
+                but was in state 'IN_PROGRESS'""");
   }
 
   void uploadInProgressManifest(final Backup backup) {

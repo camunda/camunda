@@ -36,6 +36,10 @@ public class JobEntity
   @SinceVersion(value = "8.9.0", requireDefault = false)
   private OffsetDateTime lastUpdateTime;
 
+  /** Attention! This field will be filled in only for data imported after v. 8.9.0. */
+  @SinceVersion(value = "8.9.0", requireDefault = false)
+  private Long rootProcessInstanceKey;
+
   @BeforeVersion880 private String tenantId;
   @BeforeVersion880 private String type;
   @BeforeVersion880 private String worker;
@@ -277,6 +281,15 @@ public class JobEntity
     return this;
   }
 
+  public Long getRootProcessInstanceKey() {
+    return rootProcessInstanceKey;
+  }
+
+  public JobEntity setRootProcessInstanceKey(final Long rootProcessInstanceKey) {
+    this.rootProcessInstanceKey = rootProcessInstanceKey;
+    return this;
+  }
+
   public Boolean isDenied() {
     return denied;
   }
@@ -323,7 +336,8 @@ public class JobEntity
         denied,
         deniedReason,
         creationTime,
-        lastUpdateTime);
+        lastUpdateTime,
+        rootProcessInstanceKey);
   }
 
   @Override
@@ -360,7 +374,8 @@ public class JobEntity
         && Objects.equals(denied, jobEntity.denied)
         && Objects.equals(deniedReason, jobEntity.deniedReason)
         && Objects.equals(creationTime, jobEntity.creationTime)
-        && Objects.equals(lastUpdateTime, jobEntity.lastUpdateTime);
+        && Objects.equals(lastUpdateTime, jobEntity.lastUpdateTime)
+        && Objects.equals(rootProcessInstanceKey, jobEntity.rootProcessInstanceKey);
   }
 
   @Override
@@ -422,6 +437,8 @@ public class JobEntity
         + creationTime
         + ", lastUpdateTime="
         + lastUpdateTime
+        + ", rootProcessInstanceKey="
+        + rootProcessInstanceKey
         + "} "
         + super.toString();
   }

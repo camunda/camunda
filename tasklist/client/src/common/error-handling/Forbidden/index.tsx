@@ -12,7 +12,17 @@ import {Launch} from '@carbon/react/icons';
 import Icon from './forbidden.svg?react';
 import styles from './styles.module.scss';
 
-const Forbidden: React.FC = () => {
+type Props = {
+  titleKey?: string;
+  descKey?: string;
+  linkLabelKey?: string;
+};
+
+const Forbidden: React.FC<Props> = ({
+  titleKey = 'forbiddenPageTitle',
+  descKey = 'forbiddenPageDesc',
+  linkLabelKey = 'forbiddenPageLinkLabel',
+}) => {
   const {t} = useTranslation();
 
   return (
@@ -21,10 +31,10 @@ const Forbidden: React.FC = () => {
         <Stack gap={6}>
           <Icon />
           <Stack gap={3}>
-            <h3 className={styles.title}>{t('forbiddenPageTitle')}</h3>
+            <h3 className={styles.title}>{t(titleKey)}</h3>
             <div className={styles.description}>
               <Trans
-                i18nKey="forbiddenPageDesc"
+                i18nKey={descKey}
                 components={{
                   strong: <strong />,
                 }}
@@ -36,7 +46,7 @@ const Forbidden: React.FC = () => {
             target="_blank"
             renderIcon={Launch}
           >
-            {t('forbiddenPageLinkLabel')}
+            {t(linkLabelKey)}
           </Link>
         </Stack>
       </div>

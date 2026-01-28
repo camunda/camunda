@@ -30,6 +30,8 @@ public class IdentitySetupRecord extends UnifiedRecordValue implements IdentityS
   private final ArrayProperty<UserRecord> usersProp = new ArrayProperty<>("users", UserRecord::new);
   private final ObjectProperty<TenantRecord> defaultTenantProp =
       new ObjectProperty<>("defaultTenant", new TenantRecord());
+  private final ArrayProperty<TenantRecord> tenantsProp =
+      new ArrayProperty<>("tenants", TenantRecord::new);
   private final ArrayProperty<TenantRecord> tenantMembersProp =
       new ArrayProperty<>("tenantMembers", TenantRecord::new);
   private final ArrayProperty<MappingRuleRecord> mappingRulesProp =
@@ -38,11 +40,12 @@ public class IdentitySetupRecord extends UnifiedRecordValue implements IdentityS
       new ArrayProperty<>("authorizations", AuthorizationRecord::new);
 
   public IdentitySetupRecord() {
-    super(7);
+    super(8);
     declareProperty(rolesProp)
         .declareProperty(roleMembersProp)
         .declareProperty(usersProp)
         .declareProperty(defaultTenantProp)
+        .declareProperty(tenantsProp)
         .declareProperty(tenantMembersProp)
         .declareProperty(mappingRulesProp)
         .declareProperty(authorizationsProp);
@@ -69,6 +72,11 @@ public class IdentitySetupRecord extends UnifiedRecordValue implements IdentityS
   }
 
   @Override
+  public List<TenantRecordValue> getTenants() {
+    return tenantsProp.stream().map(TenantRecordValue.class::cast).toList();
+  }
+
+  @Override
   public Collection<TenantRecordValue> getTenantMembers() {
     return tenantMembersProp.stream()
         .map(TenantRecordValue.class::cast)
@@ -89,6 +97,11 @@ public class IdentitySetupRecord extends UnifiedRecordValue implements IdentityS
 
   public IdentitySetupRecord setDefaultTenant(final TenantRecord tenant) {
     defaultTenantProp.getValue().copyFrom(tenant);
+    return this;
+  }
+
+  public IdentitySetupRecord addTenant(final TenantRecord tenant) {
+    tenantsProp.add().copyFrom(tenant);
     return this;
   }
 

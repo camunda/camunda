@@ -14,7 +14,7 @@ import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.search.schema.SchemaManager;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import io.camunda.zeebe.exporter.test.ExporterTestContext;
 
 public class SchemaWithExporter {
 
@@ -35,7 +35,7 @@ public class SchemaWithExporter {
     provider.init(
         config,
         clientAdapter.getExporterEntityCacheProvider(),
-        new SimpleMeterRegistry(),
+        new ExporterTestContext(),
         new ExporterMetadata(clientAdapter.objectMapper()),
         clientAdapter.objectMapper());
 

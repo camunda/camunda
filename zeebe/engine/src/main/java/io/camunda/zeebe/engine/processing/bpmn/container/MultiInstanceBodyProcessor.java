@@ -74,7 +74,7 @@ public final class MultiInstanceBodyProcessor
     this.stateTransitionBehavior = stateTransitionBehavior;
     eventSubscriptionBehavior = bpmnBehaviors.eventSubscriptionBehavior();
     stateBehavior = bpmnBehaviors.stateBehavior();
-    expressionBehavior = bpmnBehaviors.expressionBehavior();
+    expressionBehavior = bpmnBehaviors.expressionProcessor();
     incidentBehavior = bpmnBehaviors.incidentBehavior();
     multiInstanceInputCollectionBehavior = bpmnBehaviors.inputCollectionBehavior();
     multiInstanceOutputCollectionBehavior = bpmnBehaviors.outputCollectionBehavior();

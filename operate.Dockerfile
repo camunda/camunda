@@ -1,14 +1,24 @@
 # hadolint global ignore=DL3006
 ARG BASE_IMAGE="reg.mini.dev/1212/openjre-base:21-dev"
-ARG BASE_DIGEST="sha256:027bcb32b9435055b31412a5ad29868a53b2f3b6637d9fed0e3bc6f757847151"
+ARG BASE_DIGEST="sha256:cc7175593660c343b265defdfaaa9b01789b711135323d3546a48c20fdf48a00"
 
 # If you don't have access to Minimus hardened base images, you can use public
-# base images like this instead on your own risk:
-#ARG BASE_IMAGE="alpine:3.22.2"
-#ARG BASE_DIGEST="sha256:4b7ce07002c69e8f3d704a9c5d6fd3053be500b7f1c69fc0d80990c2ad8dd412"
+# base images like this instead on your own risk.
+# Simply pass `--build-arg BASE=public` in order to build with the Temurin JDK.
+ARG BASE_IMAGE_PUBLIC="eclipse-temurin:21.0.9_10-jre-noble"
+ARG BASE_DIGEST_PUBLIC="sha256:d3eb69add1874bc785382d6282db53a67841f602a1139dee6c4a1221d8c56568"
+ARG BASE="hardened"
+
+### Base Application Image ###
+# hadolint ignore=DL3006
+FROM ${BASE_IMAGE}@${BASE_DIGEST} AS base-hardened
+
+### Base Public Application Image ###
+# hadolint ignore=DL3006
+FROM ${BASE_IMAGE_PUBLIC}@${BASE_DIGEST_PUBLIC} AS base-public
 
 # Prepare Operate Distribution
-FROM ${BASE_IMAGE}@${BASE_DIGEST} AS prepare
+FROM base-${BASE} AS prepare
 ARG DISTBALL="dist/target/camunda-zeebe-*.tar.gz"
 WORKDIR /tmp/operate
 
@@ -23,7 +33,7 @@ RUN sed -i '/^exec /i cat /usr/local/operate/notice.txt' bin/operate
 # TARGETARCH is provided by buildkit
 # https://docs.docker.com/engine/reference/builder/#automatic-platform-args-in-the-global-scope
 # hadolint ignore=DL3006
-FROM ${BASE_IMAGE}@${BASE_DIGEST} AS app
+FROM base-${BASE} AS app
 
 # leave unset to use the default value at the top of the file
 ARG BASE_IMAGE

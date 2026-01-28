@@ -20,7 +20,7 @@ API endpoints:
 Note: When using the Desktop Modeler, Authentication may be set to None.
 
 Next steps:
-1. Model a process with Desktop Modeler -> Zeebe: {{.DesktopModelerTarget}}
+1. Model and deploy a process with Desktop Modeler -> Cluster endpoint: {{.DesktopModelerTarget}}
 2. View your process in Operate
 3. Run a job worker via Java/Node SDK
 4. Build your first AI agent

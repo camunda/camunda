@@ -9,17 +9,19 @@ package io.camunda.zeebe.backup.s3;
 
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.s3.S3BackupConfig.Builder;
+import io.camunda.zeebe.backup.s3.util.S3TestBackupProvider;
 import io.camunda.zeebe.backup.testkit.support.BackupAssert;
-import io.camunda.zeebe.backup.testkit.support.TestBackupProvider;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.stream.Stream;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.InstanceOfAssertFactory;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ArgumentsSource;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
 import org.testcontainers.junit.jupiter.Container;
@@ -52,7 +54,7 @@ final class CustomBasePathIT {
                     .withStartupTimeout(Duration.ofMinutes(1)));
 
     @ParameterizedTest
-    @ArgumentsSource(TestBackupProvider.class)
+    @MethodSource("provideBackups")
     void canBackupAndRestore(final Backup backup, @TempDir final Path target) {
       // given
       final var config =
@@ -81,6 +83,10 @@ final class CustomBasePathIT {
           .asInstanceOf(new InstanceOfAssertFactory<>(Backup.class, BackupAssert::assertThatBackup))
           .hasSameContentsAs(backup);
     }
+
+    static Stream<? extends Arguments> provideBackups() throws Exception {
+      return S3TestBackupProvider.provideArguments();
+    }
   }
 
   @Nested
@@ -101,7 +107,7 @@ final class CustomBasePathIT {
                     .withStartupTimeout(Duration.ofMinutes(1)));
 
     @ParameterizedTest
-    @ArgumentsSource(TestBackupProvider.class)
+    @MethodSource("provideBackups")
     void canBackupAndRestore(final Backup backup, @TempDir final Path target) {
       // given
       final var config =
@@ -128,6 +134,10 @@ final class CustomBasePathIT {
           .succeedsWithin(Duration.ofSeconds(30))
           .asInstanceOf(new InstanceOfAssertFactory<>(Backup.class, BackupAssert::assertThatBackup))
           .hasSameContentsAs(backup);
+    }
+
+    static Stream<? extends Arguments> provideBackups() throws Exception {
+      return S3TestBackupProvider.provideArguments();
     }
   }
 }

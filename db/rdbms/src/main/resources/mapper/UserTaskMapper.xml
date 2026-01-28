@@ -14,17 +14,17 @@
     INSERT INTO ${prefix}USER_TASK (USER_TASK_KEY, ELEMENT_ID, NAME, PROCESS_DEFINITION_ID, CREATION_DATE,
                            COMPLETION_DATE, ASSIGNEE, STATE,
                            FORM_KEY,
-                           PROCESS_DEFINITION_KEY, PROCESS_INSTANCE_KEY,
+                           PROCESS_DEFINITION_KEY, PROCESS_INSTANCE_KEY, ROOT_PROCESS_INSTANCE_KEY,
                            ELEMENT_INSTANCE_KEY, TENANT_ID, DUE_DATE, FOLLOW_UP_DATE,
                            EXTERNAL_FORM_REFERENCE, PROCESS_DEFINITION_VERSION, CUSTOM_HEADERS,
-                                    PRIORITY, PARTITION_ID, HISTORY_CLEANUP_DATE)
+                                    PRIORITY, PARTITION_ID)
     VALUES (#{userTaskKey}, #{elementId}, #{name}, #{processDefinitionId}, #{creationDate, jdbcType=TIMESTAMP},
             #{completionDate, jdbcType=TIMESTAMP},
             #{assignee}, #{state}, #{formKey},
-            #{processDefinitionKey}, #{processInstanceKey}, #{elementInstanceKey}, #{tenantId},
+            #{processDefinitionKey}, #{processInstanceKey}, #{rootProcessInstanceKey}, #{elementInstanceKey}, #{tenantId},
             #{dueDate, jdbcType=TIMESTAMP}, #{followUpDate, jdbcType=TIMESTAMP},
             #{externalFormReference}, #{processDefinitionVersion}, #{serializedCustomHeaders},
-            #{priority}, #{partitionId}, #{historyCleanupDate, jdbcType=TIMESTAMP})
+            #{priority}, #{partitionId})
   </insert>
 
   <insert id="insertCandidateUsers" parameterType="io.camunda.db.rdbms.write.domain.UserTaskDbModel">
@@ -68,6 +68,7 @@
     <result property="processDefinitionKey" column="PROCESS_DEFINITION_KEY"
       javaType="java.lang.Long"/>
     <result property="processInstanceKey" column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
+    <result property="rootProcessInstanceKey" column="ROOT_PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
     <result property="elementInstanceKey" column="ELEMENT_INSTANCE_KEY" javaType="java.lang.Long"/>
     <result property="tenantId" column="TENANT_ID" javaType="java.lang.String"/>
     <result property="dueDate" column="DUE_DATE" javaType="java.time.OffsetDateTime"/>
@@ -78,7 +79,6 @@
       javaType="java.lang.Integer"/>
     <result property="serializedCustomHeaders" column="CUSTOM_HEADERS" javaType="java.lang.String"/>
     <result property="priority" column="PRIORITY" javaType="java.lang.Integer"/>
-    <result property="historyCleanupDate" column="HISTORY_CLEANUP_DATE" javaType="java.time.OffsetDateTime"/>
     <collection property="candidateGroups" ofType="java.lang.String" javaType="java.util.List">
       <id column="CANDIDATE_GROUP"/>
     </collection>
@@ -114,6 +114,7 @@
     ut.FORM_KEY,
     ut.PROCESS_DEFINITION_KEY,
     ut.PROCESS_INSTANCE_KEY,
+    ut.ROOT_PROCESS_INSTANCE_KEY,
     ut.ELEMENT_INSTANCE_KEY,
     ut.TENANT_ID,
     ut.DUE_DATE,
@@ -121,8 +122,7 @@
     ut.EXTERNAL_FORM_REFERENCE,
     ut.PROCESS_DEFINITION_VERSION,
     ut.CUSTOM_HEADERS,
-    ut.PRIORITY,
-    ut.HISTORY_CLEANUP_DATE
+    ut.PRIORITY
     FROM ${prefix}USER_TASK ut
     <include refid="io.camunda.db.rdbms.sql.UserTaskMapper.searchFilter"/>
     ) filtered
@@ -146,23 +146,55 @@
   <sql id="searchFilter">
     <where>
       <!-- authorization filters -->
-      <if test="(authorizedProcessDefinitionIds != null and !authorizedProcessDefinitionIds.isEmpty()) or (authorizedUserTaskKeys != null and !authorizedUserTaskKeys.isEmpty())">
+      <if test="(authorizedProcessDefinitionIds != null and !authorizedProcessDefinitionIds.isEmpty())
+              or (authorizedUserTaskKeys != null and !authorizedUserTaskKeys.isEmpty())
+              or (authorizationProperties != null and authorizationProperties.hasAnyProperty())">
         AND
         <trim prefix="(" suffix=")" prefixOverrides="OR">
+          <!-- ID-based: process definition -->
           <if test="authorizedProcessDefinitionIds != null and !authorizedProcessDefinitionIds.isEmpty()">
             OR ut.PROCESS_DEFINITION_ID IN
             <foreach collection="authorizedProcessDefinitionIds" item="processDefinitionId" open="(" separator="," close=")">
               #{processDefinitionId}
             </foreach>
           </if>
+          <!-- ID-based: user task key -->
           <if test="authorizedUserTaskKeys != null and !authorizedUserTaskKeys.isEmpty()">
             OR ut.USER_TASK_KEY IN
             <foreach collection="authorizedUserTaskKeys" item="userTaskKey" open="(" separator="," close=")">
               #{userTaskKey}
             </foreach>
           </if>
+          <!-- Property-based: assignee -->
+          <if test="authorizationProperties != null and authorizationProperties.assignee != null and !authorizationProperties.assignee.isEmpty()">
+            OR ut.ASSIGNEE = #{authorizationProperties.assignee}
+          </if>
+          <!-- Property-based: candidate users -->
+          <if test="authorizationProperties != null and authorizationProperties.candidateUsers != null and !authorizationProperties.candidateUsers.isEmpty()">
+            OR EXISTS (
+            SELECT 1 FROM ${prefix}CANDIDATE_USER cu
+            WHERE cu.USER_TASK_KEY = ut.USER_TASK_KEY
+            AND cu.CANDIDATE_USER IN
+            <foreach collection="authorizationProperties.candidateUsers" item="candidateUser" open="(" separator="," close=")">
+              #{candidateUser}
+            </foreach>
+            )
+          </if>
+          <!-- Property-based: candidate groups -->
+          <if test="authorizationProperties != null and authorizationProperties.candidateGroups != null and !authorizationProperties.candidateGroups.isEmpty()">
+            OR EXISTS (
+            SELECT 1 FROM ${prefix}CANDIDATE_GROUP cg
+            WHERE cg.USER_TASK_KEY = ut.USER_TASK_KEY
+            AND cg.CANDIDATE_GROUP IN
+            <foreach collection="authorizationProperties.candidateGroups" item="candidateGroup" open="(" separator="," close=")">
+              #{candidateGroup}
+            </foreach>
+            )
+          </if>
         </trim>
       </if>
+
+      <!-- tenant filter -->
       <if test="authorizedTenantIds != null and !authorizedTenantIds.isEmpty()">
         AND ut.TENANT_ID IN
         <foreach collection="authorizedTenantIds" item="tenantId" open="(" separator="," close=")">
@@ -305,40 +337,40 @@
       <!-- Variables Filter -->
       <if
         test="filter.processInstanceVariableFilter != null and !filter.processInstanceVariableFilter.isEmpty()">
-        AND EXISTS (Select * from ${prefix}VARIABLE v where v.PROCESS_INSTANCE_KEY =
-        ut.PROCESS_INSTANCE_KEY
-        AND ( 1 = 1
-        <foreach collection="filter.processInstanceVariableFilter" item="variableValueFilter">
-          AND ( v.VAR_NAME = #{variableValueFilter.name}
-          <if
-            test="variableValueFilter.valueOperations != null and !variableValueFilter.valueOperations.isEmpty()">
-            <foreach collection="variableValueFilter.valueOperations" item="operation">
-              AND
-              <include refid="io.camunda.db.rdbms.sql.Commons.variableOperationCondition"/>
-            </foreach>
-          </if>
-          )
+        AND
+        <foreach collection="filter.processInstanceVariableFilter" item="variableValueFilter" separator=" AND ">
+          EXISTS (Select * from ${prefix}VARIABLE v where v.PROCESS_INSTANCE_KEY =
+          ut.PROCESS_INSTANCE_KEY
+          AND (
+            ( v.VAR_NAME = #{variableValueFilter.name}
+            <if
+              test="variableValueFilter.valueOperations != null and !variableValueFilter.valueOperations.isEmpty()">
+              <foreach collection="variableValueFilter.valueOperations" item="operation">
+                AND
+                <include refid="io.camunda.db.rdbms.sql.Commons.variableOperationCondition"/>
+              </foreach>
+            </if>
+          )))
         </foreach>
-        ))
       </if>
 
       <!-- Local Variables Filter -->
       <if test="filter.localVariableFilters != null and !filter.localVariableFilters.isEmpty()">
-        AND EXISTS (Select * from ${prefix}VARIABLE v where v.SCOPE_KEY = ut.ELEMENT_INSTANCE_KEY
-        AND (
+        AND
         <foreach collection="filter.localVariableFilters" item="variableValueFilter"
           separator=" AND ">
-          ( v.VAR_NAME = #{variableValueFilter.name}
-          <if
-            test="variableValueFilter.valueOperations != null and !variableValueFilter.valueOperations.isEmpty()">
-            <foreach collection="variableValueFilter.valueOperations" item="operation">
-              AND
-              <include refid="io.camunda.db.rdbms.sql.Commons.variableOperationCondition"/>
-            </foreach>
-          </if>
-          )
+          EXISTS (Select * from ${prefix}VARIABLE v where v.SCOPE_KEY = ut.ELEMENT_INSTANCE_KEY
+          AND (
+            ( v.VAR_NAME = #{variableValueFilter.name}
+            <if
+              test="variableValueFilter.valueOperations != null and !variableValueFilter.valueOperations.isEmpty()">
+              <foreach collection="variableValueFilter.valueOperations" item="operation">
+                AND
+                <include refid="io.camunda.db.rdbms.sql.Commons.variableOperationCondition"/>
+              </foreach>
+            </if>
+            )))
         </foreach>
-        ))
       </if>
     </where>
   </sql>
@@ -352,8 +384,7 @@
     FOLLOW_UP_DATE = #{followUpDate, jdbcType=TIMESTAMP},
     CUSTOM_HEADERS = #{serializedCustomHeaders},
     PRIORITY = #{priority},
-    ASSIGNEE = #{assignee},
-    HISTORY_CLEANUP_DATE = #{historyCleanupDate, jdbcType=TIMESTAMP}
+    ASSIGNEE = #{assignee}
     WHERE USER_TASK_KEY = #{userTaskKey}
   </update>
 
@@ -375,15 +406,6 @@
     WHERE USER_TASK_KEY = #{userTaskKey}
   </delete>
 
-  <update id="updateHistoryCleanupDate">
-    UPDATE ${prefix}USER_TASK SET
-    HISTORY_CLEANUP_DATE = #{historyCleanupDate, jdbcType=TIMESTAMP}
-    WHERE PROCESS_INSTANCE_KEY IN
-    <foreach collection="processInstanceKeys" item="key" open="(" separator="," close=")">
-      #{key}
-    </foreach>
-  </update>
-
   <update id="migrateToProcess" parameterType="java.util.Map">
     UPDATE ${prefix}USER_TASK SET
     ELEMENT_ID = #{elementId},
@@ -394,9 +416,10 @@
     WHERE USER_TASK_KEY = #{userTaskKey}
   </update>
 
-  <delete id="cleanupHistory">
+  <delete id="deleteProcessInstanceRelatedData">
     <bind name="tableName" value="'USER_TASK'"/>
-    <include refid="io.camunda.db.rdbms.sql.Commons.historyCleanup"/>
+    <bind name="primaryKeyColumn" value="'USER_TASK_KEY'"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.processInstanceHistoryDeletion"/>
   </delete>
 
 </mapper>

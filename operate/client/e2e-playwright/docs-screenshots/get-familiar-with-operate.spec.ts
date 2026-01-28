@@ -9,14 +9,12 @@
 import {test} from '../visual-fixtures';
 import {
   mockIncidentsByError,
-  mockIncidentsByProcess,
-  mockStatistics as mockDashboardStatistics,
+  mockProcessDefinitionStatistics,
   mockResponses as mockDashboardResponses,
 } from '../mocks/dashboard.mocks';
 
 import {
   mockBatchOperations,
-  mockGroupedProcesses,
   mockOrderProcessInstances,
   mockProcessDefinitions,
   mockResponses as mockProcessesResponses,
@@ -40,9 +38,8 @@ test.describe('get familiar with operate', () => {
     await page.route(
       URL_API_PATTERN,
       mockDashboardResponses({
-        statistics: mockDashboardStatistics,
         incidentsByError: mockIncidentsByError,
-        incidentsByProcess: mockIncidentsByProcess,
+        processDefinitionStatistics: mockProcessDefinitionStatistics,
       }),
     );
 
@@ -62,7 +59,6 @@ test.describe('get familiar with operate', () => {
     await page.route(
       URL_API_PATTERN,
       mockProcessesResponses({
-        groupedProcesses: mockGroupedProcesses,
         processDefinitions: mockProcessDefinitions,
         batchOperations: mockBatchOperations,
         processInstances: mockOrderProcessInstances,

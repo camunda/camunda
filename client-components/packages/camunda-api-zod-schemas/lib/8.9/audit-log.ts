@@ -52,13 +52,13 @@ const auditLogOperationTypeSchema = z.enum([
 ]);
 type AuditLogOperationType = z.infer<typeof auditLogOperationTypeSchema>;
 
-const auditLogActorTypeSchema = z.enum(['USER', 'CLIENT']);
+const auditLogActorTypeSchema = z.enum(['USER', 'CLIENT', 'ANONYMOUS', 'UNKNOWN']);
 type AuditLogActorType = z.infer<typeof auditLogActorTypeSchema>;
 
 const auditLogResultSchema = z.enum(['SUCCESS', 'FAIL']);
 type AuditLogResult = z.infer<typeof auditLogResultSchema>;
 
-const auditLogCategorySchema = z.enum(['OPERATOR', 'USER_TASK', 'ADMIN']);
+const auditLogCategorySchema = z.enum(['DEPLOYED_RESOURCES', 'USER_TASKS', 'ADMIN']);
 type AuditLogCategory = z.infer<typeof auditLogCategorySchema>;
 
 const auditLogSchema = z.object({
@@ -86,6 +86,9 @@ const auditLogSchema = z.object({
 	decisionDefinitionId: z.string().optional(),
 	decisionDefinitionKey: z.string().optional(),
 	decisionEvaluationKey: z.string().optional(),
+	deploymentKey: z.string().optional(),
+	formKey: z.string().optional(),
+	resourceKey: z.string().optional(),
 });
 type AuditLog = z.infer<typeof auditLogSchema>;
 
@@ -103,6 +106,9 @@ const auditLogFilterSchema = z
 		entityType: getEnumFilterSchema(auditLogEntityTypeSchema).optional(),
 		tenantId: advancedStringFilterSchema.optional(),
 		category: getEnumFilterSchema(auditLogCategorySchema).optional(),
+		deploymentKey: advancedStringFilterSchema.optional(),
+		formKey: advancedStringFilterSchema.optional(),
+		resourceKey: advancedStringFilterSchema.optional(),
 	})
 	.partial();
 

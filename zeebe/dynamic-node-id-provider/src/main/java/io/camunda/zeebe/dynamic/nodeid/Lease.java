@@ -13,6 +13,7 @@ import io.camunda.zeebe.dynamic.nodeid.repository.Metadata;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
@@ -53,7 +54,7 @@ public record Lease(
         metadata.task().get(), expireAt, nodeInstance, VersionMappings.of(nodeInstance));
   }
 
-  public static Lease from(
+  public static Lease nextLease(
       final String taskId, final long expiry, final NodeInstance currentNodeInstance) {
     final var nodeInstance = currentNodeInstance.nextVersion();
     return new Lease(taskId, expiry, nodeInstance, VersionMappings.of(nodeInstance));
@@ -92,7 +93,8 @@ public record Lease(
     return now <= timestamp;
   }
 
-  public Lease renew(final long now, final Duration leaseDuration) {
+  public Lease renew(
+      final long now, final Duration leaseDuration, final VersionMappings knownVersionMappings) {
     if (!isStillValid(now)) {
       throw new IllegalStateException(
           "Lease is not valid anymore("
@@ -121,6 +123,14 @@ public record Lease(
     public static VersionMappings of(final NodeInstance... nodeInstance) {
       final var map = new TreeMap<Integer, Version>();
       for (final var node : nodeInstance) {
+        map.put(node.id(), node.version());
+      }
+      return new VersionMappings(Collections.unmodifiableSortedMap(map));
+    }
+
+    public static VersionMappings of(final Collection<NodeInstance> nodeInstances) {
+      final var map = new TreeMap<Integer, Version>();
+      for (final var node : nodeInstances) {
         map.put(node.id(), node.version());
       }
       return new VersionMappings(Collections.unmodifiableSortedMap(map));

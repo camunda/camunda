@@ -18,7 +18,6 @@ import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperation
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
-import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue.BatchOperationProcessInstanceMigrationPlanValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationExecutionRecordValue;
@@ -152,7 +151,7 @@ public final class BatchOperationClient {
           writer.writeCommandOnPartition(
               partition,
               r ->
-                  r.intent(ProcessInstanceCreationIntent.CREATE)
+                  r.intent(BatchOperationIntent.CREATE)
                       .event(batchOperationCreationRecord)
                       .authorizations(authorizations)
                       .requestId(new Random().nextLong())
@@ -213,9 +212,26 @@ public final class BatchOperationClient {
 
   public static class BatchOperationExecutionClient {
 
+    private static final Function<Long, Record<BatchOperationExecutionRecordValue>>
+        SUCCESS_EXPECTATION =
+            (position) ->
+                RecordingExporter.batchOperationExecutionRecords(
+                        BatchOperationExecutionIntent.EXECUTED)
+                    .withSourceRecordPosition(position)
+                    .getFirst();
+    private static final Function<Long, Record<BatchOperationExecutionRecordValue>>
+        REJECTION_EXPECTATION =
+            (position) ->
+                RecordingExporter.batchOperationExecutionRecords(
+                        BatchOperationExecutionIntent.EXECUTE)
+                    .onlyCommandRejections()
+                    .withSourceRecordPosition(position)
+                    .getFirst();
     private final CommandWriter writer;
     private final BatchOperationExecutionRecord batchOperationExecutionRecord;
     private int partition = DEFAULT_PARTITION;
+    private Function<Long, Record<BatchOperationExecutionRecordValue>> expectation =
+        SUCCESS_EXPECTATION;
 
     public BatchOperationExecutionClient(final CommandWriter writer) {
       this.writer = writer;
@@ -229,6 +245,11 @@ public final class BatchOperationClient {
 
     public BatchOperationExecutionClient onPartition(final int partition) {
       this.partition = partition;
+      return this;
+    }
+
+    public BatchOperationExecutionClient expectRejection() {
+      expectation = REJECTION_EXPECTATION;
       return this;
     }
 
@@ -247,28 +268,7 @@ public final class BatchOperationClient {
                       .authorizations(authorizations)
                       .requestId(new Random().nextLong())
                       .requestStreamId(new Random().nextInt()));
-      return RecordingExporter.batchOperationExecutionRecords()
-          .withIntent(BatchOperationExecutionIntent.EXECUTED)
-          .withSourceRecordPosition(position)
-          .withPartitionId(partition)
-          .getFirst();
-    }
-
-    public void executeWithoutExpectation() {
-      executeWithoutExpectation(
-          AuthorizationUtil.getAuthInfoWithClaim(Authorization.AUTHORIZED_ANONYMOUS_USER, true));
-    }
-
-    public void executeWithoutExpectation(final AuthInfo authorizations) {
-      final long position =
-          writer.writeCommandOnPartition(
-              partition,
-              r ->
-                  r.intent(BatchOperationExecutionIntent.EXECUTE)
-                      .event(batchOperationExecutionRecord)
-                      .authorizations(authorizations)
-                      .requestId(new Random().nextLong())
-                      .requestStreamId(new Random().nextInt()));
+      return expectation.apply(position);
     }
   }
 

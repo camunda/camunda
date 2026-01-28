@@ -7,40 +7,29 @@
  */
 package io.camunda.operate.store.elasticsearch.dao;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.ExpandWildcard;
+import co.elastic.clients.elasticsearch._types.Result;
+import co.elastic.clients.elasticsearch.core.IndexRequest;
+import co.elastic.clients.elasticsearch.core.IndexResponse;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
+import co.elastic.clients.elasticsearch.core.SearchResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.store.elasticsearch.dao.response.AggregationResponse;
 import io.camunda.operate.store.elasticsearch.dao.response.InsertResponse;
-import io.camunda.operate.store.elasticsearch.dao.response.SearchResponse;
-import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import java.io.IOException;
-import java.lang.reflect.ParameterizedType;
-import java.util.List;
-import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.action.index.IndexResponse;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.support.IndicesOptions;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.rest.RestStatus;
-import org.elasticsearch.search.aggregations.Aggregation;
-import org.elasticsearch.search.aggregations.Aggregations;
-import org.elasticsearch.search.aggregations.metrics.ParsedSum;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.elasticsearch.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class GenericDAO<T extends ExporterEntity, I extends IndexDescriptor> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(GenericDAO.class);
-  private RestHighLevelClient esClient;
+  private ElasticsearchClient esClient;
   private ObjectMapper objectMapper;
   private I index;
-  private Class<T> typeOfEntity;
 
   private GenericDAO() {
     // No constructor, only Builder class should be used
@@ -53,8 +42,7 @@ public class GenericDAO<T extends ExporterEntity, I extends IndexDescriptor> {
    * @param index
    * @param esClient
    */
-  @SuppressWarnings("unchecked")
-  GenericDAO(final ObjectMapper objectMapper, final I index, final RestHighLevelClient esClient) {
+  GenericDAO(final ObjectMapper objectMapper, final I index, final ElasticsearchClient esClient) {
     if (objectMapper == null) {
       throw new IllegalStateException("ObjectMapper can't be null");
     }
@@ -68,9 +56,6 @@ public class GenericDAO<T extends ExporterEntity, I extends IndexDescriptor> {
     this.objectMapper = objectMapper;
     this.index = index;
     this.esClient = esClient;
-    typeOfEntity =
-        (Class<T>)
-            ((ParameterizedType) getClass().getGenericSuperclass()).getActualTypeArguments()[0];
   }
 
   /**
@@ -80,21 +65,16 @@ public class GenericDAO<T extends ExporterEntity, I extends IndexDescriptor> {
    * @param entity
    * @return insert request
    */
-  public IndexRequest buildESIndexRequest(final T entity) {
-    try {
-      return new IndexRequest(index.getFullQualifiedName())
-          .id(entity.getId())
-          .source(objectMapper.writeValueAsString(entity), XContentType.JSON);
-    } catch (final JsonProcessingException e) {
-      throw new OperateRuntimeException("error building Index/InserRequest");
-    }
+  public IndexRequest<T> buildESIndexRequest(final T entity) {
+    return IndexRequest.of(
+        i -> i.index(index.getFullQualifiedName()).id(entity.getId()).document(entity));
   }
 
   public InsertResponse insert(final T entity) {
     try {
-      final IndexRequest request = buildESIndexRequest(entity);
-      final IndexResponse response = esClient.index(request, RequestOptions.DEFAULT);
-      if (response.status() != RestStatus.CREATED) {
+      final var request = buildESIndexRequest(entity);
+      final IndexResponse response = esClient.index(request);
+      if (response.result() != Result.Created) {
         return InsertResponse.failure();
       }
 
@@ -106,49 +86,30 @@ public class GenericDAO<T extends ExporterEntity, I extends IndexDescriptor> {
     throw new OperateRuntimeException("Error while trying to upsert entity: " + entity);
   }
 
-  public SearchResponse<T> search(final Query query) {
-    final SearchSourceBuilder source =
-        SearchSourceBuilder.searchSource()
-            .query(query.getQueryBuilder())
-            .aggregation(query.getAggregationBuilder());
-    final SearchRequest searchRequest =
-        new SearchRequest(index.getFullQualifiedName())
-            .indicesOptions(IndicesOptions.lenientExpandOpen())
-            .source(source);
-    try {
-      final List<T> hits =
-          ElasticsearchUtil.scroll(searchRequest, typeOfEntity, objectMapper, esClient);
-      return new SearchResponse<>(false, hits);
-    } catch (final IOException e) {
-      LOGGER.error("Error searching at index: " + index, e);
-    }
-    return new SearchResponse<>(true);
-  }
-
   public AggregationResponse searchWithAggregation(final Query query) {
-    final SearchSourceBuilder source =
-        SearchSourceBuilder.searchSource()
-            .query(query.getQueryBuilder())
-            .aggregation(query.getAggregationBuilder());
-    final SearchRequest searchRequest =
-        new SearchRequest(index.getFullQualifiedName())
-            .indicesOptions(IndicesOptions.lenientExpandOpen())
-            .source(source);
     try {
+      final SearchRequest searchRequest =
+          SearchRequest.of(
+              s ->
+                  s.index(index.getFullQualifiedName())
+                      .allowNoIndices(true)
+                      .ignoreUnavailable(true)
+                      .expandWildcards(ExpandWildcard.Open)
+                      .query(query.getEsQuery())
+                      .aggregations(query.getGroupName(), query.getAggregation()));
 
-      final Aggregations aggregations =
-          esClient.search(searchRequest, RequestOptions.DEFAULT).getAggregations();
+      final SearchResponse<Void> response = esClient.search(searchRequest, Void.class);
 
-      if (aggregations == null) {
+      if (response.aggregations() == null) {
         throw new OperateRuntimeException("Search with aggregation returned no aggregation");
       }
 
-      final Aggregation group = aggregations.get(query.getGroupName());
-      if (!(group instanceof final ParsedSum terms)) {
+      final var aggregation = response.aggregations().get(query.getGroupName());
+      if (aggregation == null || aggregation.sum() == null) {
         throw new OperateRuntimeException("Unexpected response for aggregations");
       }
 
-      return new AggregationResponse(false, null, (long) terms.getValue());
+      return new AggregationResponse(false, null, (long) aggregation.sum().value());
     } catch (final IOException e) {
       LOGGER.error("Error searching at index: " + index, e);
     }
@@ -163,7 +124,7 @@ public class GenericDAO<T extends ExporterEntity, I extends IndexDescriptor> {
    */
   public static class Builder<T extends ExporterEntity, I extends IndexDescriptor> {
     private ObjectMapper objectMapper;
-    private RestHighLevelClient esClient;
+    private ElasticsearchClient esClient;
     private I index;
 
     public Builder() {}
@@ -178,7 +139,7 @@ public class GenericDAO<T extends ExporterEntity, I extends IndexDescriptor> {
       return this;
     }
 
-    public Builder<T, I> esClient(final RestHighLevelClient esClient) {
+    public Builder<T, I> esClient(final ElasticsearchClient esClient) {
       this.esClient = esClient;
       return this;
     }

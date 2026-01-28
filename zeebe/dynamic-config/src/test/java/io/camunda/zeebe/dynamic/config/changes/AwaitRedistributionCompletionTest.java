@@ -31,24 +31,27 @@ public class AwaitRedistributionCompletionTest extends AbstractApplierTest {
 
   ClusterConfiguration empty = ClusterConfiguration.init();
   ClusterConfiguration validAllPartitionConfig =
-      new ClusterConfiguration(
-          1,
-          Map.of(),
-          Optional.empty(),
-          Optional.empty(),
-          Optional.of(RoutingState.initializeWithPartitionCount(3)),
-          Optional.empty());
+      ClusterConfiguration.builder()
+          .version(1)
+          .members(Map.of())
+          .lastChange(Optional.empty())
+          .pendingChanges(Optional.empty())
+          .routingState(Optional.of(RoutingState.initializeWithPartitionCount(3)))
+          .clusterId(Optional.empty())
+          .build();
 
   ClusterConfiguration valid3OutOf6Partitions =
-      new ClusterConfiguration(
-          1,
-          Map.of(),
-          Optional.empty(),
-          Optional.empty(),
-          Optional.of(
-              new RoutingState(
-                  1, new ActivePartitions(3, Set.of(), Set.of(4, 5, 6)), new HashMod(3))),
-          Optional.empty());
+      ClusterConfiguration.builder()
+          .version(1)
+          .members(Map.of())
+          .lastChange(Optional.empty())
+          .pendingChanges(Optional.empty())
+          .routingState(
+              Optional.of(
+                  new RoutingState(
+                      1, new ActivePartitions(3, Set.of(), Set.of(4, 5, 6)), new HashMod(3))))
+          .clusterId(Optional.empty())
+          .build();
 
   PartitionScalingChangeExecutor executor = new NoopPartitionScalingChangeExecutor();
 

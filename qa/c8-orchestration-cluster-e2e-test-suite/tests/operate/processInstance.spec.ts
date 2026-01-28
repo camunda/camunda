@@ -13,6 +13,7 @@ import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToApp} from '@pages/UtilitiesPage';
 import {DATE_REGEX} from 'utils/constants';
 import {sleep} from 'utils/sleep';
+import {waitForAssertion} from '../../utils/waitForAssertion';
 
 type ProcessInstance = {
   processInstanceKey: string;
@@ -96,9 +97,7 @@ test.describe('Process Instance', () => {
       await operateProcessInstancePage.saveVariableButton.click();
 
       await expect(operateProcessInstancePage.variableSpinner).toBeVisible();
-      await expect(
-        operateProcessInstancePage.variableSpinner,
-      ).not.toBeVisible();
+      await expect(operateProcessInstancePage.variableSpinner).toBeHidden();
     });
 
     await test.step('Retry one incident to resolve it', async () => {
@@ -109,24 +108,31 @@ test.describe('Process Instance', () => {
           /Condition error/i,
         ),
       ).toBeVisible();
+      await waitForAssertion({
+        assertion: async () => {
+          await expect
+            .poll(
+              async () =>
+                await operateProcessInstancePage.incidentsTableOperationSpinner.isVisible(),
+            )
+            .toBe(false);
+        },
+        onFailure: async () => {
+          await page.reload();
+          await sleep(5000);
+        },
+      });
 
       await expect
-        .poll(
-          async () =>
-            await operateProcessInstancePage.incidentsTableOperationSpinner.isVisible(),
-        )
-        .toBe(false);
-
-      await expect(operateProcessInstancePage.incidentsTableRows).toHaveCount(
-        1,
-      );
+        .poll(() => operateProcessInstancePage.incidentsTableRows.count())
+        .toBe(1);
 
       await expect(
         operateProcessInstancePage.incidentsTable.getByText(/is cool\?/i),
       ).toBeVisible();
       await expect(
         operateProcessInstancePage.incidentsTable.getByText(/where to go\?/i),
-      ).not.toBeVisible();
+      ).toBeHidden();
     });
 
     await test.step('Add variable isCool', async () => {
@@ -139,9 +145,7 @@ test.describe('Process Instance', () => {
 
       await operateProcessInstancePage.saveVariableButton.click();
       await expect(operateProcessInstancePage.variableSpinner).toBeVisible();
-      await expect(
-        operateProcessInstancePage.variableSpinner,
-      ).not.toBeVisible();
+      await expect(operateProcessInstancePage.variableSpinner).toBeHidden();
     });
 
     await test.step('Retry second incident to resolve it', async () => {
@@ -155,15 +159,21 @@ test.describe('Process Instance', () => {
     });
 
     await test.step('Expect all incidents resolved', async () => {
-      await expect(
-        operateProcessInstancePage.incidentsBanner,
-      ).not.toBeVisible();
-      await expect(operateProcessInstancePage.incidentsTable).not.toBeVisible();
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(operateProcessInstancePage.incidentsBanner).toBeHidden();
+        },
+        onFailure: async () => {
+          await page.reload();
+          await sleep(500);
+        },
+      });
+      await expect(operateProcessInstancePage.incidentsTable).toBeHidden();
       await expect(operateProcessInstancePage.completedIcon).toBeVisible();
     });
   });
 
-  test('Cancel an instance', async ({page, operateProcessInstancePage}) => {
+  test('Cancel an instance', async ({operateProcessInstancePage, page}) => {
     const instanceId = instanceWithIncidentToCancel.processInstanceKey;
 
     await test.step('Navigate to process instance with incident', async () => {
@@ -183,27 +193,34 @@ test.describe('Process Instance', () => {
       await operateProcessInstancePage.cancelInstance(instanceId);
 
       await expect(operateProcessInstancePage.operationSpinner).toBeVisible();
-      await expect(
-        operateProcessInstancePage.operationSpinner,
-      ).not.toBeVisible();
+      await expect(operateProcessInstancePage.operationSpinner).toBeHidden();
     });
 
     await test.step('Verify instance is canceled', async () => {
-      await expect(
-        operateProcessInstancePage.incidentBannerButton(3),
-      ).not.toBeVisible({timeout: 60000});
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(
+            operateProcessInstancePage.incidentBannerButton(3),
+          ).toBeHidden();
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+        maxRetries: 5,
+      });
 
       await expect(operateProcessInstancePage.terminatedIcon).toBeVisible();
 
-      await expect(
-        await operateProcessInstancePage.endDateField.innerText(),
-      ).toMatch(DATE_REGEX);
+      expect(await operateProcessInstancePage.endDateField.innerText()).toMatch(
+        DATE_REGEX,
+      );
     });
   });
 
   test('Should render collapsed sub process and navigate between planes', async ({
     page,
     operateProcessInstancePage,
+    operateDiagramPage,
   }) => {
     const {diagram} = operateProcessInstancePage;
 
@@ -230,10 +247,21 @@ test.describe('Process Instance', () => {
     await test.step('Navigate to fill form flow node', async () => {
       await page.keyboard.press('ArrowRight');
       await operateProcessInstancePage.clickTreeItem(/fill form/i);
-
       await expect(
         diagram.getByText('fill form', {exact: false}),
       ).toBeVisible();
+
+      await waitForAssertion({
+        assertion: async () => {
+          await operateDiagramPage.popover.waitFor({
+            state: 'visible',
+          });
+        },
+        onFailure: async () => {
+          await operateProcessInstancePage.clickTreeItem(/fill form/i);
+        },
+      });
+
       await expect(page.getByText(/retries left/i)).toBeVisible();
     });
 
@@ -243,9 +271,7 @@ test.describe('Process Instance', () => {
       await expect(
         diagram.getByText('submit application', {exact: false}),
       ).toBeVisible();
-      await expect(
-        diagram.getByText('fill form', {exact: false}),
-      ).not.toBeVisible();
+      await expect(diagram.getByText('fill form', {exact: false})).toBeHidden();
     });
 
     await test.step('Navigate back to start event', async () => {

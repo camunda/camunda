@@ -11,11 +11,7 @@ import { Controller, useForm } from "react-hook-form";
 import { Checkbox, CheckboxGroup, Dropdown } from "@carbon/react";
 import { useApiCall } from "src/utility/api";
 import useTranslate from "src/utility/localization";
-import {
-  isOIDC,
-  isTenantsApiEnabled,
-  isUserTaskAuthorizationEnabled,
-} from "src/configuration";
+import { isOIDC, isTenantsApiEnabled } from "src/configuration";
 import { FormModal, UseEntityModalProps } from "src/components/modal";
 import {
   Authorization,
@@ -33,13 +29,18 @@ import { DocumentationLink } from "src/components/documentation";
 import { Caption, Row, TextFieldContainer } from "../components";
 import OwnerSelection from "../owner-selection";
 import { useDropdownAutoFocus } from "./useDropdownAutoFocus";
-import { isValidId, isValidResourceId } from "src/utility/validate";
+import {
+  isValidId,
+  isValidResourceId,
+  getIdPattern,
+} from "src/utility/validate";
 
 type ResourcePermissionsType = {
   [key in keyof typeof ResourceType]: Authorization["permissionTypes"];
 };
 
 const resourcePermissions: ResourcePermissionsType = {
+  AUDIT_LOG: [PermissionType.READ],
   AUTHORIZATION: [
     PermissionType.CREATE,
     PermissionType.DELETE,
@@ -114,6 +115,7 @@ const resourcePermissions: ResourcePermissionsType = {
   ],
   SYSTEM: [
     PermissionType.READ,
+    PermissionType.READ_JOB_METRIC,
     PermissionType.READ_USAGE_METRIC,
     PermissionType.UPDATE,
   ],
@@ -135,6 +137,12 @@ const resourcePermissions: ResourcePermissionsType = {
     PermissionType.READ,
   ],
   DOCUMENT: [PermissionType.CREATE, PermissionType.READ, PermissionType.DELETE],
+  GLOBAL_LISTENER: [
+    PermissionType.CREATE_TASK_LISTENER,
+    PermissionType.DELETE_TASK_LISTENER,
+    PermissionType.READ_TASK_LISTENER,
+    PermissionType.UPDATE_TASK_LISTENER,
+  ],
 };
 
 export const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
@@ -163,12 +171,6 @@ export const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
   if (!isTenantsApiEnabled) {
     resourceTypeItems = resourceTypeItems.filter(
       (type) => type !== ResourceType.TENANT,
-    );
-  }
-
-  if (!isUserTaskAuthorizationEnabled) {
-    resourceTypeItems = resourceTypeItems.filter(
-      (type) => type !== ResourceType.USER_TASK,
     );
   }
 
@@ -326,7 +328,10 @@ export const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
               rules={{
                 required: t("resourceIdRequired"),
                 validate: (value) =>
-                  isValidResourceId(value) || t("pleaseEnterValidResourceId"),
+                  isValidResourceId(value) ||
+                  t("pleaseEnterValidResourceId", {
+                    pattern: getIdPattern(),
+                  }),
               }}
               render={({ field, fieldState }) => (
                 <TextField

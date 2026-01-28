@@ -16,6 +16,7 @@ import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerRecord;
 import io.camunda.zeebe.protocol.record.intent.GlobalListenerBatchIntent;
+import io.camunda.zeebe.protocol.record.value.GlobalListenerSource;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import java.util.Objects;
@@ -82,10 +83,14 @@ public final class GlobalListenersInitializer implements StreamProcessorLifecycl
         .map(
             listener ->
                 new GlobalListenerRecord()
+                    .setId(listener.id())
                     .setType(listener.type())
                     .setEventTypes(listener.eventTypes())
                     .setRetries(Integer.parseInt(listener.retries()))
-                    .setAfterNonGlobal(listener.afterNonGlobal()))
+                    .setAfterNonGlobal(listener.afterNonGlobal())
+                    .setPriority(listener.priority())
+                    .setSource(GlobalListenerSource.CONFIGURATION)
+                    .setListenerType(listener.listenerType()))
         .forEach(record::addTaskListener);
     return record;
   }

@@ -16,6 +16,7 @@ import java.util.function.Function;
 public record FlowNodeInstanceDbModel(
     Long flowNodeInstanceKey,
     Long processInstanceKey,
+    Long rootProcessInstanceKey,
     Long processDefinitionKey,
     String processDefinitionId,
     Long flowNodeScopeKey,
@@ -30,8 +31,7 @@ public record FlowNodeInstanceDbModel(
     Long numSubprocessIncidents,
     Boolean hasIncident,
     String tenantId,
-    Integer partitionId,
-    OffsetDateTime historyCleanupDate)
+    Integer partitionId)
     implements Copyable<FlowNodeInstanceDbModel> {
 
   @Override
@@ -43,6 +43,7 @@ public record FlowNodeInstanceDbModel(
             new FlowNodeInstanceDbModelBuilder()
                 .flowNodeInstanceKey(flowNodeInstanceKey)
                 .processInstanceKey(processInstanceKey())
+                .rootProcessInstanceKey(rootProcessInstanceKey())
                 .processDefinitionKey(processDefinitionKey)
                 .processDefinitionId(processDefinitionId)
                 .flowNodeScopeKey(flowNodeScopeKey)
@@ -57,8 +58,7 @@ public record FlowNodeInstanceDbModel(
                 .numSubprocessIncidents(numSubprocessIncidents)
                 .hasIncident(hasIncident)
                 .tenantId(tenantId)
-                .partitionId(partitionId)
-                .historyCleanupDate(historyCleanupDate))
+                .partitionId(partitionId))
         .build();
   }
 
@@ -67,6 +67,7 @@ public record FlowNodeInstanceDbModel(
 
     private Long flowNodeInstanceKey;
     private Long processInstanceKey;
+    private Long rootProcessInstanceKey;
     private Long processDefinitionKey;
     private String processDefinitionId;
     private Long flowNodeScopeKey;
@@ -82,7 +83,6 @@ public record FlowNodeInstanceDbModel(
     private Boolean hasIncident;
     private String tenantId;
     private int partitionId;
-    private OffsetDateTime historyCleanupDate;
 
     // Public constructor to initialize the builder
     public FlowNodeInstanceDbModelBuilder() {}
@@ -95,6 +95,12 @@ public record FlowNodeInstanceDbModel(
 
     public FlowNodeInstanceDbModelBuilder processInstanceKey(final Long processInstanceKey) {
       this.processInstanceKey = processInstanceKey;
+      return this;
+    }
+
+    public FlowNodeInstanceDbModelBuilder rootProcessInstanceKey(
+        final Long rootProcessInstanceKey) {
+      this.rootProcessInstanceKey = rootProcessInstanceKey;
       return this;
     }
 
@@ -178,16 +184,12 @@ public record FlowNodeInstanceDbModel(
       return this;
     }
 
-    public FlowNodeInstanceDbModelBuilder historyCleanupDate(final OffsetDateTime value) {
-      historyCleanupDate = value;
-      return this;
-    }
-
     @Override
     public FlowNodeInstanceDbModel build() {
       return new FlowNodeInstanceDbModel(
           flowNodeInstanceKey,
           processInstanceKey,
+          rootProcessInstanceKey,
           processDefinitionKey,
           processDefinitionId,
           flowNodeScopeKey,
@@ -202,8 +204,7 @@ public record FlowNodeInstanceDbModel(
           numSubprocessIncidents,
           hasIncident,
           tenantId,
-          partitionId,
-          historyCleanupDate);
+          partitionId);
     }
   }
 }

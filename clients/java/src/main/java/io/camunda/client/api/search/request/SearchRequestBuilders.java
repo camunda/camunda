@@ -35,6 +35,7 @@ import io.camunda.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.client.api.search.filter.RoleFilter;
 import io.camunda.client.api.search.filter.TenantFilter;
 import io.camunda.client.api.search.filter.UserFilter;
+import io.camunda.client.api.search.filter.UserTaskAuditLogFilter;
 import io.camunda.client.api.search.filter.UserTaskFilter;
 import io.camunda.client.api.search.filter.UserTaskVariableFilter;
 import io.camunda.client.api.search.filter.VariableFilter;
@@ -87,6 +88,7 @@ import io.camunda.client.impl.search.filter.ProcessInstanceFilterImpl;
 import io.camunda.client.impl.search.filter.RoleFilterImpl;
 import io.camunda.client.impl.search.filter.TenantFilterImpl;
 import io.camunda.client.impl.search.filter.UserFilterImpl;
+import io.camunda.client.impl.search.filter.UserTaskAuditLogFilterImpl;
 import io.camunda.client.impl.search.filter.UserTaskFilterImpl;
 import io.camunda.client.impl.search.filter.UserTaskVariableFilterImpl;
 import io.camunda.client.impl.search.filter.VariableFilterImpl;
@@ -469,6 +471,13 @@ public final class SearchRequestBuilders {
     final AuditLogSort sort = new AuditLogSortImpl();
     fn.accept(sort);
     return sort;
+  }
+
+  public static UserTaskAuditLogFilter userTaskAuditLogFilter(
+      final Consumer<UserTaskAuditLogFilter> fn) {
+    final UserTaskAuditLogFilter filter = new UserTaskAuditLogFilterImpl();
+    fn.accept(filter);
+    return filter;
   }
 
   public static SearchRequestOffsetPage offsetPage(final Consumer<SearchRequestOffsetPage> fn) {

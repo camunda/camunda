@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.gateway.rest.deserializer;
 
-import io.camunda.zeebe.gateway.protocol.rest.AdvancedBatchOperationStateFilter;
-import io.camunda.zeebe.gateway.protocol.rest.BatchOperationStateEnum;
-import io.camunda.zeebe.gateway.protocol.rest.BatchOperationStateFilterProperty;
+import io.camunda.gateway.protocol.model.AdvancedBatchOperationStateFilter;
+import io.camunda.gateway.protocol.model.BatchOperationStateEnum;
+import io.camunda.gateway.protocol.model.BatchOperationStateFilterProperty;
 
 public class BatchOperationStateFilterPropertyDeserializer
     extends FilterDeserializer<BatchOperationStateFilterProperty, BatchOperationStateEnum> {

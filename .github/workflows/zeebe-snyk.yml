@@ -91,7 +91,7 @@ jobs:
     steps:
       - name: Install Snyk CLI
         uses: snyk/actions/setup@master
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: ${{ inputs.ref }}
       - uses: ./.github/actions/setup-build

@@ -11,7 +11,9 @@ import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationCategory;
 import java.util.Set;
 
-public final class AuditLogConfiguration {
+public final class AuditLogConfiguration implements AuditLogCheck {
+
+  private boolean enabled = true;
 
   private ActorAuditLogConfiguration user = new ActorAuditLogConfiguration();
   private ActorAuditLogConfiguration client = new ActorAuditLogConfiguration();
@@ -36,31 +38,57 @@ public final class AuditLogConfiguration {
 
   @Override
   public String toString() {
-    return "AuditLogConfiguration{" + "user=" + user + ", client=" + client + '}';
+    return "AuditLogConfiguration{"
+        + "enabled="
+        + enabled
+        + ", user="
+        + user
+        + ", client="
+        + client
+        + '}';
   }
 
   public boolean isEnabled() {
-    return !(getUser().getCategories().isEmpty() && getClient().getCategories().isEmpty());
+    return enabled
+        && !(getUser().getCategories().isEmpty() && getClient().getCategories().isEmpty());
   }
 
+  public void setEnabled(final boolean enabled) {
+    this.enabled = enabled;
+  }
+
+  @Override
   public boolean isEnabled(final AuditLogInfo auditLog) {
-    final var config =
+    final AuditLogCheck check =
         switch (auditLog.actor().actorType()) {
           case USER -> getUser();
           case CLIENT -> getClient();
+          case ANONYMOUS -> AuditLogCheck.DISABLED;
+          case UNKNOWN -> {
+            // TODO: enable logging after ensuring all expected events are correctly captured
+            //            LOG.warn("{} has unknown actor.", auditLog);
+
+            yield AuditLogCheck.ENABLED;
+          }
         };
 
-    return config.getCategories().contains(auditLog.category())
-        && !config.getExcludes().contains(auditLog.entityType());
+    return isEnabled() && check.isEnabled(auditLog);
   }
 
-  public static final class ActorAuditLogConfiguration {
+  public static final class ActorAuditLogConfiguration implements AuditLogCheck {
+
     private Set<AuditLogOperationCategory> categories =
         Set.of(
-            AuditLogOperationCategory.OPERATOR,
-            AuditLogOperationCategory.USER_TASK,
-            AuditLogOperationCategory.ADMIN);
-    private Set<AuditLogEntityType> excludes = Set.of(AuditLogEntityType.VARIABLE);
+            AuditLogOperationCategory.ADMIN,
+            AuditLogOperationCategory.DEPLOYED_RESOURCES,
+            AuditLogOperationCategory.USER_TASKS);
+    private Set<AuditLogEntityType> excludes = Set.of();
+
+    @Override
+    public boolean isEnabled(final AuditLogInfo auditLog) {
+      return getCategories().contains(auditLog.category())
+          && !getExcludes().contains(auditLog.entityType());
+    }
 
     public Set<AuditLogEntityType> getExcludes() {
       return excludes;

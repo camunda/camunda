@@ -15,6 +15,7 @@ import io.atomix.cluster.protocol.SwimMembershipProtocolConfig;
 import io.atomix.utils.net.Address;
 import io.camunda.application.commons.actor.ActorSchedulerConfiguration.SchedulerConfiguration;
 import io.camunda.application.commons.broker.client.BrokerClientConfiguration.BrokerClientTimeoutConfiguration;
+import io.camunda.application.commons.condition.ConditionalOnAnyHttpGatewayEnabled;
 import io.camunda.application.commons.job.JobHandlerConfiguration.ActivateJobHandlerConfiguration;
 import io.camunda.configuration.beans.GatewayBasedProperties;
 import io.camunda.zeebe.gateway.RestApiCompositeFilter;
@@ -22,7 +23,6 @@ import io.camunda.zeebe.gateway.impl.configuration.ClusterCfg;
 import io.camunda.zeebe.gateway.impl.configuration.FilterCfg;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.impl.configuration.MembershipCfg;
-import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import io.camunda.zeebe.gateway.rest.impl.filters.FilterRepository;
 import jakarta.servlet.Filter;
 import java.time.Duration;
@@ -59,7 +59,7 @@ public final class GatewayBasedConfiguration {
     return lifecycleProperties.getTimeoutPerShutdownPhase();
   }
 
-  @ConditionalOnRestGatewayEnabled
+  @ConditionalOnAnyHttpGatewayEnabled
   @Bean
   public CompositeFilter restApiCompositeFilter() {
     final List<FilterCfg> filterCfgs = properties.getFilters();

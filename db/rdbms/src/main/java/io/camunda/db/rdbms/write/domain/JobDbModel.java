@@ -41,11 +41,11 @@ public class JobDbModel implements Copyable<JobDbModel> {
   private String processDefinitionId;
   private Long processDefinitionKey;
   private Long processInstanceKey;
+  private Long rootProcessInstanceKey;
   private String elementId;
   private Long elementInstanceKey;
   private String tenantId;
   private int partitionId;
-  private OffsetDateTime historyCleanupDate;
   private OffsetDateTime creationTime;
   private OffsetDateTime lastUpdateTime;
 
@@ -72,11 +72,11 @@ public class JobDbModel implements Copyable<JobDbModel> {
       final String processDefinitionId,
       final Long processDefinitionKey,
       final Long processInstanceKey,
+      final Long rootProcessInstanceKey,
       final String elementId,
       final Long elementInstanceKey,
       final String tenantId,
       final int partitionId,
-      final OffsetDateTime historyCleanupDate,
       final OffsetDateTime creationTime,
       final OffsetDateTime lastUpdateTime) {
     this.jobKey = jobKey;
@@ -98,11 +98,11 @@ public class JobDbModel implements Copyable<JobDbModel> {
     this.processDefinitionId = processDefinitionId;
     this.processDefinitionKey = processDefinitionKey;
     this.processInstanceKey = processInstanceKey;
+    this.rootProcessInstanceKey = rootProcessInstanceKey;
     this.elementId = elementId;
     this.elementInstanceKey = elementInstanceKey;
     this.tenantId = tenantId;
     this.partitionId = partitionId;
-    this.historyCleanupDate = historyCleanupDate;
     this.creationTime = creationTime;
     this.lastUpdateTime = lastUpdateTime;
   }
@@ -144,11 +144,11 @@ public class JobDbModel implements Copyable<JobDbModel> {
         processDefinitionId,
         processDefinitionKey,
         processInstanceKey,
+        rootProcessInstanceKey,
         elementId,
         elementInstanceKey,
         tenantId,
         partitionId,
-        historyCleanupDate,
         creationTime,
         lastUpdateTime);
   }
@@ -302,6 +302,14 @@ public class JobDbModel implements Copyable<JobDbModel> {
     this.processInstanceKey = processInstanceKey;
   }
 
+  public Long rootProcessInstanceKey() {
+    return rootProcessInstanceKey;
+  }
+
+  public void rootProcessInstanceKey(final Long rootProcessInstanceKey) {
+    this.rootProcessInstanceKey = rootProcessInstanceKey;
+  }
+
   public String elementId() {
     return elementId;
   }
@@ -332,14 +340,6 @@ public class JobDbModel implements Copyable<JobDbModel> {
 
   public void partitionId(final int partitionId) {
     this.partitionId = partitionId;
-  }
-
-  public OffsetDateTime historyCleanupDate() {
-    return historyCleanupDate;
-  }
-
-  public void historyCleanupDate(final OffsetDateTime historyCleanupDate) {
-    this.historyCleanupDate = historyCleanupDate;
   }
 
   public OffsetDateTime creationTime() {
@@ -378,11 +378,11 @@ public class JobDbModel implements Copyable<JobDbModel> {
         .processDefinitionId(processDefinitionId)
         .processDefinitionKey(processDefinitionKey)
         .processInstanceKey(processInstanceKey)
+        .rootProcessInstanceKey(rootProcessInstanceKey)
         .elementId(elementId)
         .elementInstanceKey(elementInstanceKey)
         .tenantId(tenantId)
         .partitionId(partitionId)
-        .historyCleanupDate(historyCleanupDate)
         .creationTime(creationTime)
         .lastUpdateTime(lastUpdateTime);
   }
@@ -407,11 +407,11 @@ public class JobDbModel implements Copyable<JobDbModel> {
     private String processDefinitionId;
     private Long processDefinitionKey;
     private Long processInstanceKey;
+    private Long rootProcessInstanceKey;
     private String elementId;
     private Long elementInstanceKey;
     private String tenantId;
     private int partitionId;
-    private OffsetDateTime historyCleanupDate;
     private OffsetDateTime creationTime;
     private OffsetDateTime lastUpdateTime;
 
@@ -520,13 +520,13 @@ public class JobDbModel implements Copyable<JobDbModel> {
       return this;
     }
 
-    public Builder partitionId(final int partitionId) {
-      this.partitionId = partitionId;
+    public Builder rootProcessInstanceKey(final Long rootProcessInstanceKey) {
+      this.rootProcessInstanceKey = rootProcessInstanceKey;
       return this;
     }
 
-    public Builder historyCleanupDate(final OffsetDateTime value) {
-      historyCleanupDate = value;
+    public Builder partitionId(final int partitionId) {
+      this.partitionId = partitionId;
       return this;
     }
 
@@ -561,11 +561,11 @@ public class JobDbModel implements Copyable<JobDbModel> {
           processDefinitionId,
           processDefinitionKey,
           processInstanceKey,
+          rootProcessInstanceKey,
           elementId,
           elementInstanceKey,
           tenantId,
           partitionId,
-          historyCleanupDate,
           creationTime,
           lastUpdateTime);
     }

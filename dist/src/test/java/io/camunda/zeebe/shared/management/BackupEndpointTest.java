@@ -25,17 +25,17 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.management.backups.BackupInfo;
 import io.camunda.management.backups.Error;
 import io.camunda.management.backups.TakeBackupRuntimeResponse;
+import io.camunda.zeebe.backup.client.api.BackupAlreadyExistException;
+import io.camunda.zeebe.backup.client.api.BackupApi;
+import io.camunda.zeebe.backup.client.api.BackupRequestHandler;
+import io.camunda.zeebe.backup.client.api.BackupStatus;
+import io.camunda.zeebe.backup.client.api.PartitionBackupStatus;
+import io.camunda.zeebe.backup.client.api.State;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerErrorException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerError;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg;
 import io.camunda.zeebe.gateway.admin.IncompleteTopologyException;
-import io.camunda.zeebe.gateway.admin.backup.BackupAlreadyExistException;
-import io.camunda.zeebe.gateway.admin.backup.BackupApi;
-import io.camunda.zeebe.gateway.admin.backup.BackupRequestHandler;
-import io.camunda.zeebe.gateway.admin.backup.BackupStatus;
-import io.camunda.zeebe.gateway.admin.backup.PartitionBackupStatus;
-import io.camunda.zeebe.gateway.admin.backup.State;
 import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse;
 import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse.PartitionCheckpointState;
 import io.camunda.zeebe.protocol.management.BackupStatusCode;
@@ -347,6 +347,7 @@ final class BackupEndpointTest {
                  "createdAt": "2022-09-19T14:44:17.340409393Z",
                  "lastUpdatedAt": "2022-09-20T14:44:17.340409393Z",
                  "snapshotId" : "1-1-1-1",
+                 "firstLogPosition": 5,
                  "checkpointPosition": 1,
                  "brokerId": 0,
                  "brokerVersion": "8.0.6"
@@ -357,6 +358,7 @@ final class BackupEndpointTest {
                  "createdAt": "2022-09-19T14:44:17.340409393Z",
                  "lastUpdatedAt": "2022-09-20T14:44:17.340409393Z",
                  "snapshotId" : "1-1-1-1",
+                 "firstLogPosition": 5,
                  "checkpointPosition": 1,
                  "brokerId": 0,
                  "brokerVersion": "8.0.6"
@@ -400,6 +402,7 @@ final class BackupEndpointTest {
                  "createdAt": "2022-09-19T14:44:17.340409393Z",
                  "lastUpdatedAt": "2022-09-20T14:44:17.340409393Z",
                  "snapshotId" : "1-1-1-1",
+                 "firstLogPosition": 5,
                  "checkpointPosition": 1,
                  "brokerId": 0,
                  "brokerVersion": "8.0.6"
@@ -441,6 +444,7 @@ final class BackupEndpointTest {
           Optional.of("2022-09-19T14:44:17.340409393Z"),
           Optional.of("2022-09-20T14:44:17.340409393Z"),
           Optional.of("1-1-1-1"),
+          OptionalLong.of(5),
           OptionalLong.of(1),
           OptionalInt.of(0),
           Optional.of("8.0.6"));
@@ -463,6 +467,7 @@ final class BackupEndpointTest {
           Optional.empty(),
           Optional.empty(),
           Optional.empty(),
+          OptionalLong.empty(),
           OptionalLong.empty(),
           OptionalInt.empty(),
           Optional.empty());
@@ -606,6 +611,7 @@ final class BackupEndpointTest {
           Optional.of("2022-09-19T14:44:17.340409393Z"),
           Optional.empty(),
           Optional.empty(),
+          OptionalLong.empty(),
           OptionalLong.empty(),
           OptionalInt.empty(),
           Optional.of("8.0.6"));

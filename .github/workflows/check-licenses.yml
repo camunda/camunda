@@ -30,6 +30,8 @@ jobs:
       actions: read
       contents: read
     runs-on: gcp-core-16-default
+    # Skip analysis on fork PRs as they cannot access FOSSA due to lack of credentials
+    if: github.event_name != 'pull_request' || !github.event.pull_request.head.repo.fork
     # If you change the job timeout, update the timeout in camunda/infra-global-github-actions/fossa/pr-check accordingly.
     timeout-minutes: 31
     strategy:
@@ -49,7 +51,7 @@ jobs:
             -Dquickly=true
             -DskipQaBuild=true
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
 
     # Import FOSSA_API_KEY secret from Vault
     - name: Import Secrets
@@ -70,7 +72,7 @@ jobs:
         vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
         vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
 
-    - uses: actions/setup-go@v5
+    - uses: actions/setup-go@v6
       if: matrix.project.name == 'c8run'
       with:
         go-version: '>=1.23.1'
@@ -84,11 +86,11 @@ jobs:
         echo "${MAVEN_CONFIG}" | tee ./.mvn/maven.config
 
     - name: Setup fossa-cli
-      uses: camunda/infra-global-github-actions/fossa/setup@003e8939059d3374598f904f327151d70abe8d92
+      uses: camunda/infra-global-github-actions/fossa/setup@8a60c6ac7a1a041dec275e1ef3635dd6bf2b072c
 
     - name: Get context info
       id: info
-      uses: camunda/infra-global-github-actions/fossa/info@003e8939059d3374598f904f327151d70abe8d92
+      uses: camunda/infra-global-github-actions/fossa/info@8a60c6ac7a1a041dec275e1ef3635dd6bf2b072c
 
     - name: Adjust pom.xml files for FOSSA
       if: contains(fromJson('["optimize", "single-app"]'), matrix.project.name)
@@ -111,7 +113,7 @@ jobs:
           optimize/pom.xml
 
     - name: Analyze project
-      uses: camunda/infra-global-github-actions/fossa/analyze@003e8939059d3374598f904f327151d70abe8d92
+      uses: camunda/infra-global-github-actions/fossa/analyze@8a60c6ac7a1a041dec275e1ef3635dd6bf2b072c
       with:
         api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
         branch: ${{  steps.info.outputs.head-ref }}
@@ -123,7 +125,7 @@ jobs:
     # It does not fail for pre-existing issues already present in the base branch.
     - name: Check Pull Request for new License Issues
       if: steps.info.outputs.is-pull-request == 'true'
-      uses: camunda/infra-global-github-actions/fossa/pr-check@003e8939059d3374598f904f327151d70abe8d92
+      uses: camunda/infra-global-github-actions/fossa/pr-check@8a60c6ac7a1a041dec275e1ef3635dd6bf2b072c
       with:
         api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
         base-ref: ${{ steps.info.outputs.base-ref }}
@@ -159,7 +161,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Check for aborted jobs
         continue-on-error: true
         uses: ./.github/actions/observe-aborted-jobs

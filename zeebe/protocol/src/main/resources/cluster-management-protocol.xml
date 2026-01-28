@@ -70,6 +70,8 @@
     <!-- Following fields will have a valid value if status == COMPLETED or status == INPROGRESS -->
     <field name="checkpointPosition" id="5" type="int64"/>
     <field name="numberOfPartitions" id="6" type="uint16"/>
+    <!-- The first log position included in this backup, may be null if unknown -->
+    <field name="firstLogPosition" id="12" type="int64"/>
     <data name="snapshotId" id="7" type="varDataEncoding"/>
     <!-- failure reason will have a valid value if status == FAILED -->
     <data name="failureReason" id="8" type="varDataEncoding"/>

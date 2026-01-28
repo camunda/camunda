@@ -14,6 +14,7 @@ import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
+import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.ClockIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
@@ -23,6 +24,7 @@ import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.EscalationIntent;
 import io.camunda.zeebe.protocol.record.intent.GlobalListenerBatchIntent;
+import io.camunda.zeebe.protocol.record.intent.GlobalListenerIntent;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.HistoryDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.IdentitySetupIntent;
@@ -73,12 +75,15 @@ import io.camunda.zeebe.protocol.record.value.DeploymentDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.protocol.record.value.ErrorRecordValue;
 import io.camunda.zeebe.protocol.record.value.EscalationRecordValue;
+import io.camunda.zeebe.protocol.record.value.ExpressionRecordValue;
 import io.camunda.zeebe.protocol.record.value.GlobalListenerBatchRecordValue;
+import io.camunda.zeebe.protocol.record.value.GlobalListenerRecordValue;
 import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionRecordValue;
 import io.camunda.zeebe.protocol.record.value.IdentitySetupRecordValue;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
+import io.camunda.zeebe.protocol.record.value.JobMetricsBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.MappingRuleRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageBatchRecordValue;
@@ -115,6 +120,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.Spliterator;
 import java.util.Spliterators;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
@@ -266,6 +272,11 @@ public final class RecordingExporter implements Exporter {
     return usageMetricsRecords().withIntent(intent);
   }
 
+  public static JobMetricsBatchRecordStream jobMetricsBatchRecords() {
+    return new JobMetricsBatchRecordStream(
+        records(ValueType.JOB_METRICS_BATCH, JobMetricsBatchRecordValue.class));
+  }
+
   public static CommandDistributionRecordStream commandDistributionRecords() {
     return new CommandDistributionRecordStream(
         records(ValueType.COMMAND_DISTRIBUTION, CommandDistributionRecordValue.class));
@@ -388,6 +399,10 @@ public final class RecordingExporter implements Exporter {
   public static ClusterVariableRecordStream clusterVariableRecords() {
     return new ClusterVariableRecordStream(
         records(ValueType.CLUSTER_VARIABLE, ClusterVariableRecordValue.class));
+  }
+
+  public static ExpressionRecordStream expressionRecords() {
+    return new ExpressionRecordStream(records(ValueType.EXPRESSION, ExpressionRecordValue.class));
   }
 
   public static VariableRecordStream variableRecords(final VariableIntent intent) {
@@ -634,7 +649,7 @@ public final class RecordingExporter implements Exporter {
   }
 
   public static BatchOperationExecutionRecordStream batchOperationExecutionRecords(
-      final BatchOperationIntent intent) {
+      final BatchOperationExecutionIntent intent) {
     return batchOperationExecutionRecords().withIntent(intent);
   }
 
@@ -698,6 +713,16 @@ public final class RecordingExporter implements Exporter {
   public static GlobalListenerBatchRecordStream globalListenerBatchRecords(
       final GlobalListenerBatchIntent intent) {
     return globalListenerBatchRecords().withIntent(intent);
+  }
+
+  public static GlobalListenerRecordStream globalListenerRecords() {
+    return new GlobalListenerRecordStream(
+        records(ValueType.GLOBAL_LISTENER, GlobalListenerRecordValue.class));
+  }
+
+  public static GlobalListenerRecordStream globalListenerRecords(
+      final GlobalListenerIntent intent) {
+    return globalListenerRecords().withIntent(intent);
   }
 
   public static void autoAcknowledge(final boolean shouldAcknowledgeRecords) {
@@ -772,6 +797,15 @@ public final class RecordingExporter implements Exporter {
       try {
         overrideMaximumWaitTime = true;
         conditionFactory.untilAsserted(throwingRunnable);
+      } finally {
+        overrideMaximumWaitTime = false;
+      }
+    }
+
+    public void until(final Callable<Boolean> callable) {
+      try {
+        overrideMaximumWaitTime = true;
+        conditionFactory.until(callable);
       } finally {
         overrideMaximumWaitTime = false;
       }

@@ -81,8 +81,8 @@ public final class RaftPartitionFactory {
     storageConfig.setFreeDiskSpace(
         brokerCfg.getData().getDisk().getFreeSpace().getReplication().toBytes());
     storageConfig.setJournalIndexDensity(brokerCfg.getData().getLogIndexDensity());
-    storageConfig.setPreallocateSegmentFiles(
-        brokerCfg.getExperimental().getRaft().isPreallocateSegmentFiles());
+    storageConfig.setSegmentAllocator(
+        brokerCfg.getExperimental().getRaft().getSegmentPreallocationStrategy().segmentAllocator());
 
     partitionConfig.setStorageConfig(storageConfig);
     partitionConfig.setEntryValidator(new ZeebeEntryValidator());

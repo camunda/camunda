@@ -29,8 +29,17 @@ const Paths = {
   decisionInstance(decisionInstanceId: string = ':decisionInstanceId') {
     return `/decisions/${decisionInstanceId}`;
   },
+  operationsLog() {
+    return '/operations-log';
+  },
   forbidden() {
     return '/forbidden';
+  },
+  batchOperations() {
+    return '/batch-operations';
+  },
+  batchOperation(batchOperationKey: string = ':batchOperationKey') {
+    return `/batch-operations/${batchOperationKey}`;
   },
 } as const;
 

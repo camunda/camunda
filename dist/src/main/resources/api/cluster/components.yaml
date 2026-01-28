@@ -328,6 +328,7 @@ schemas:
           - UPDATE_ROUTING_STATE
           - DELETE_HISTORY
           - PARTITION_DELETE_EXPORTER
+          - UPDATE_INCARNATION_NUMBER
       brokerId:
         $ref: "components.yaml#/schemas/BrokerId"
       partitionId:

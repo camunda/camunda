@@ -272,6 +272,7 @@ public class UserTaskHandlerTest {
     final var dateTime = OffsetDateTime.now().format(DateTimeFormatter.ISO_ZONED_DATE_TIME);
     final var formKey = 456L;
     final var elementId = "elementId";
+    final var rootProcessInstanceKey = 999L;
     final UserTaskRecordValue taskRecordValue =
         ImmutableUserTaskRecordValue.builder()
             .from(factory.generateObject(UserTaskRecordValue.class))
@@ -286,6 +287,7 @@ public class UserTaskHandlerTest {
             .withElementInstanceKey(flowNodeInstanceKey)
             .withFormKey(formKey)
             .withElementId(elementId)
+            .withRootProcessInstanceKey(rootProcessInstanceKey)
             .build();
 
     final Record<UserTaskRecordValue> taskCreatingRecord =
@@ -300,7 +302,8 @@ public class UserTaskHandlerTest {
     formCache.put(String.valueOf(formKey), new CachedFormEntity("my-form", 987L));
     processCache.put(
         processDefinitionKey,
-        new CachedProcessEntity("my-process", "v1", List.of(), Map.of(elementId, "my-flow-node")));
+        new CachedProcessEntity(
+            "my-process", 1, "v1", List.of(), Map.of(elementId, "my-flow-node")));
 
     // when
     final TaskEntity taskEntity =
@@ -356,6 +359,7 @@ public class UserTaskHandlerTest {
             ExporterUtil.toZonedOffsetDateTime(
                 Instant.ofEpochMilli(taskCreatingRecord.getTimestamp())));
     assertThat(taskEntity.getImplementation()).isEqualTo(TaskImplementation.ZEEBE_USER_TASK);
+    assertThat(taskEntity.getRootProcessInstanceKey()).isEqualTo(rootProcessInstanceKey);
   }
 
   @Test
@@ -850,6 +854,7 @@ public class UserTaskHandlerTest {
 
     underTest.flush(taskEntity, mockRequest);
     final Map<String, Object> expectedUpdates = new HashMap<>();
+    expectedUpdates.put(TaskTemplate.KEY, taskEntity.getKey());
     expectedUpdates.put(TaskTemplate.ASSIGNEE, taskEntity.getAssignee());
     expectedUpdates.put(TaskTemplate.CHANGED_ATTRIBUTES, List.of("assignee"));
     expectedUpdates.put(TaskTemplate.STATE, TaskState.CREATED);
@@ -893,6 +898,7 @@ public class UserTaskHandlerTest {
 
     underTest.flush(taskEntity, mockRequest);
     final Map<String, Object> expectedUpdates = new HashMap<>();
+    expectedUpdates.put(TaskTemplate.KEY, taskEntity.getKey());
     expectedUpdates.put(TaskTemplate.ASSIGNEE, null);
     expectedUpdates.put(TaskTemplate.CHANGED_ATTRIBUTES, List.of("assignee"));
     expectedUpdates.put(TaskTemplate.STATE, TaskState.CREATED);
@@ -988,6 +994,7 @@ public class UserTaskHandlerTest {
 
     underTest.flush(taskEntity, mockRequest);
     final Map<String, Object> expectedUpdates = new HashMap<>();
+    expectedUpdates.put(TaskTemplate.KEY, taskEntity.getKey());
     expectedUpdates.put(TaskTemplate.PRIORITY, taskEntity.getPriority());
     expectedUpdates.put(TaskTemplate.FOLLOW_UP_DATE, taskEntity.getFollowUpDate());
     expectedUpdates.put(TaskTemplate.DUE_DATE, taskEntity.getDueDate());
@@ -1060,6 +1067,7 @@ public class UserTaskHandlerTest {
 
     underTest.flush(taskEntity, mockRequest);
     final Map<String, Object> expectedUpdates = new HashMap<>();
+    expectedUpdates.put(TaskTemplate.KEY, taskEntity.getKey());
     expectedUpdates.put(TaskTemplate.PRIORITY, taskEntity.getPriority());
     expectedUpdates.put(TaskTemplate.ASSIGNEE, taskEntity.getAssignee());
     expectedUpdates.put(TaskTemplate.CHANGED_ATTRIBUTES, List.of("priority", "assignee"));
@@ -1071,6 +1079,87 @@ public class UserTaskHandlerTest {
     verify(mockRequest, times(1))
         .upsertWithRouting(
             indexName, taskEntity.getId(), taskEntity, expectedUpdates, taskEntity.getId());
+  }
+
+  @Test
+  void flushedCreatingEntityShouldContainUserTaskMigrationUpdates() {
+    // given
+    final long processInstanceKey = 123;
+    final long flowNodeInstanceKey = 456;
+    final long recordKey = 110;
+    final String bpmnProcessId = "process-id";
+    final String formId = "my-form-id";
+    final long formKey = 789L;
+    exporterMetadata.setFirstUserTaskKey(TaskImplementation.ZEEBE_USER_TASK, 100);
+    formCache.put(String.valueOf(formKey), new CachedFormEntity(formId, 3L));
+    final var dateTime = OffsetDateTime.now();
+    final UserTaskRecordValue taskRecordValue =
+        ImmutableUserTaskRecordValue.builder()
+            .withChangedAttributes(
+                List.of(
+                    "priority",
+                    "dueDate",
+                    "followUpDate",
+                    "candidateUsersList",
+                    "candidateGroupsList"))
+            .withProcessInstanceKey(processInstanceKey)
+            .withBpmnProcessId(bpmnProcessId)
+            .withProcessDefinitionVersion(2)
+            .withPriority(99)
+            .withDueDate(dateTime.format(DateTimeFormatter.ISO_ZONED_DATE_TIME))
+            .withFollowUpDate(dateTime.format(DateTimeFormatter.ISO_ZONED_DATE_TIME))
+            .withCandidateUsersList(Arrays.asList("user1", "user2"))
+            .withCandidateGroupsList(Arrays.asList("group1", "group2"))
+            .withElementInstanceKey(flowNodeInstanceKey)
+            .withFormKey(formKey)
+            .build();
+
+    final Record<UserTaskRecordValue> taskRecord =
+        factory.generateRecord(
+            ValueType.USER_TASK,
+            r ->
+                r.withIntent(UserTaskIntent.CREATING)
+                    .withValue(taskRecordValue)
+                    .withKey(recordKey)
+                    .withTimestamp(System.currentTimeMillis()));
+
+    // when
+    final TaskEntity taskEntity = underTest.createNewEntity(String.valueOf(recordKey));
+    underTest.updateEntity(taskRecord, taskEntity);
+
+    final BatchRequest mockRequest = mock(BatchRequest.class);
+
+    underTest.flush(taskEntity, mockRequest);
+    final Map<String, Object> expectedUpdates = new HashMap<>();
+    expectedUpdates.put(TaskTemplate.PRIORITY, taskEntity.getPriority());
+    expectedUpdates.put(TaskTemplate.STATE, TaskState.CREATING);
+    expectedUpdates.put(TaskTemplate.IMPLEMENTATION, taskEntity.getImplementation());
+    expectedUpdates.put(TaskTemplate.FORM_ID, taskEntity.getFormId());
+    expectedUpdates.put(TaskTemplate.FORM_KEY, taskEntity.getFormKey());
+    expectedUpdates.put(TaskTemplate.KEY, taskEntity.getKey());
+    expectedUpdates.put(TaskTemplate.FORM_VERSION, 3L);
+    expectedUpdates.put(TaskTemplate.PROCESS_DEFINITION_ID, taskEntity.getProcessDefinitionId());
+    expectedUpdates.put(TaskTemplate.BPMN_PROCESS_ID, taskEntity.getBpmnProcessId());
+    expectedUpdates.put(TaskTemplate.PROCESS_DEFINITION_VERSION, 2);
+
+    // then
+    assertThat(taskEntity.getPriority()).isEqualTo(taskRecordValue.getPriority());
+    assertThat(taskEntity.getDueDate()).isEqualTo(taskRecordValue.getDueDate());
+    assertThat(taskEntity.getFollowUpDate()).isEqualTo(taskRecordValue.getFollowUpDate());
+    assertThat(taskEntity.getFormId()).isEqualTo(formId);
+    assertThat(taskEntity.getFormKey()).isEqualTo(String.valueOf(formKey));
+    assertThat(taskEntity.getImplementation()).isEqualTo(TaskImplementation.ZEEBE_USER_TASK);
+    assertThat(Arrays.stream(taskEntity.getCandidateGroups()).toList())
+        .isEqualTo(taskRecordValue.getCandidateGroupsList());
+    assertThat(Arrays.stream(taskEntity.getCandidateUsers()).toList())
+        .isEqualTo(taskRecordValue.getCandidateUsersList());
+    verify(mockRequest, times(1))
+        .upsertWithRouting(
+            indexName,
+            String.valueOf(recordKey),
+            taskEntity,
+            expectedUpdates,
+            String.valueOf(processInstanceKey));
   }
 
   @ParameterizedTest
@@ -1116,6 +1205,25 @@ public class UserTaskHandlerTest {
           .describedAs("Expect state to be updated to {}", expectedState)
           .containsEntry(TaskTemplate.STATE, expectedState);
     }
+  }
+
+  @Test
+  public void shouldNotSetRootProcessInstanceKeyWhenUndefined() {
+    // given
+    final UserTaskRecordValue taskRecordValue =
+        ImmutableUserTaskRecordValue.builder().withRootProcessInstanceKey(-1L).build();
+
+    final Record<UserTaskRecordValue> taskRecord =
+        factory.generateRecord(
+            ValueType.USER_TASK,
+            r -> r.withIntent(UserTaskIntent.CREATING).withValue(taskRecordValue));
+
+    // when
+    final TaskEntity taskEntity = underTest.createNewEntity("id");
+    underTest.updateEntity(taskRecord, taskEntity);
+
+    // then
+    assertThat(taskEntity.getRootProcessInstanceKey()).isNull();
   }
 
   /**

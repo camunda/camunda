@@ -9,27 +9,31 @@ package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
 import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToResponse;
 
+import io.camunda.gateway.mapping.http.ResponseMapper;
+import io.camunda.gateway.mapping.http.mapper.AuthorizationMapper;
+import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
+import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
+import io.camunda.gateway.mapping.http.validator.AuthorizationRequestValidator;
+import io.camunda.gateway.protocol.model.AuthorizationRequest;
+import io.camunda.gateway.protocol.model.AuthorizationSearchQuery;
+import io.camunda.gateway.protocol.model.AuthorizationSearchResult;
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.validation.AuthorizationValidator;
+import io.camunda.security.validation.IdentifierValidator;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
 import io.camunda.service.AuthorizationServices.UpdateAuthorizationRequest;
-import io.camunda.zeebe.gateway.protocol.rest.AuthorizationRequest;
-import io.camunda.zeebe.gateway.protocol.rest.AuthorizationSearchQuery;
-import io.camunda.zeebe.gateway.protocol.rest.AuthorizationSearchResult;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaDeleteMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPutMapping;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
-import io.camunda.zeebe.gateway.rest.mapper.RequestMapper;
-import io.camunda.zeebe.gateway.rest.mapper.ResponseMapper;
+import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
-import io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryRequestMapper;
-import io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryResponseMapper;
 import java.util.concurrent.CompletableFuture;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -40,22 +44,24 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public class AuthorizationController {
   private final AuthorizationServices authorizationServices;
   private final CamundaAuthenticationProvider authenticationProvider;
-  private final SecurityConfiguration securityConfiguration;
+  private final AuthorizationMapper authorizationMapper;
 
   public AuthorizationController(
       final AuthorizationServices authorizationServices,
       final CamundaAuthenticationProvider authenticationProvider,
-      final SecurityConfiguration securityConfiguration) {
+      final IdentifierValidator identifierValidator) {
     this.authorizationServices = authorizationServices;
     this.authenticationProvider = authenticationProvider;
-    this.securityConfiguration = securityConfiguration;
+    authorizationMapper =
+        new AuthorizationMapper(
+            new AuthorizationRequestValidator(new AuthorizationValidator(identifierValidator)));
   }
 
   @CamundaPostMapping()
   public CompletableFuture<ResponseEntity<Object>> createAuthorization(
       @RequestBody final AuthorizationRequest authorizationCreateRequest) {
-    return RequestMapper.toCreateAuthorizationRequest(
-            authorizationCreateRequest, securityConfiguration.getCompiledIdValidationPattern())
+    return authorizationMapper
+        .toCreateAuthorizationRequest(authorizationCreateRequest)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::create);
   }
 
@@ -77,7 +83,7 @@ public class AuthorizationController {
   @CamundaDeleteMapping(path = "/{authorizationKey}")
   public CompletableFuture<ResponseEntity<Object>> delete(
       @PathVariable final long authorizationKey) {
-    return RequestMapper.executeServiceMethodWithNoContentResult(
+    return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
             authorizationServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
@@ -88,10 +94,8 @@ public class AuthorizationController {
   public CompletableFuture<ResponseEntity<Object>> updateAuthorization(
       @PathVariable final long authorizationKey,
       @RequestBody final AuthorizationRequest authorizationUpdateRequest) {
-    return RequestMapper.toUpdateAuthorizationRequest(
-            authorizationKey,
-            authorizationUpdateRequest,
-            securityConfiguration.getCompiledIdValidationPattern())
+    return authorizationMapper
+        .toUpdateAuthorizationRequest(authorizationKey, authorizationUpdateRequest)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::update);
   }
 
@@ -118,17 +122,18 @@ public class AuthorizationController {
 
   private CompletableFuture<ResponseEntity<Object>> create(
       final CreateAuthorizationRequest createAuthorizationRequest) {
-    return RequestMapper.executeServiceMethod(
+    return RequestExecutor.executeServiceMethod(
         () ->
             authorizationServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .createAuthorization(createAuthorizationRequest),
-        ResponseMapper::toAuthorizationCreateResponse);
+        ResponseMapper::toAuthorizationCreateResponse,
+        HttpStatus.CREATED);
   }
 
   private CompletableFuture<ResponseEntity<Object>> update(
       final UpdateAuthorizationRequest authorizationRequest) {
-    return RequestMapper.executeServiceMethodWithNoContentResult(
+    return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
             authorizationServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())

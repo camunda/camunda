@@ -16,6 +16,8 @@ public final class ProcessInstanceBatchRecord extends UnifiedRecordValue
     implements ProcessInstanceBatchRecordValue {
 
   private final LongProperty processInstanceKeyProperty = new LongProperty("processInstanceKey");
+  private final LongProperty processDefinitionKeyProperty =
+      new LongProperty("processDefinitionKey", -1L);
   private final LongProperty batchElementInstanceKeyProperty =
       new LongProperty("batchElementInstanceKey");
 
@@ -35,8 +37,9 @@ public final class ProcessInstanceBatchRecord extends UnifiedRecordValue
   private final LongProperty indexProperty = new LongProperty("index", -1L);
 
   public ProcessInstanceBatchRecord() {
-    super(3);
+    super(4);
     declareProperty(processInstanceKeyProperty)
+        .declareProperty(processDefinitionKeyProperty)
         .declareProperty(batchElementInstanceKeyProperty)
         .declareProperty(indexProperty);
   }
@@ -48,6 +51,16 @@ public final class ProcessInstanceBatchRecord extends UnifiedRecordValue
 
   public ProcessInstanceBatchRecord setProcessInstanceKey(final long processInstanceKey) {
     processInstanceKeyProperty.setValue(processInstanceKey);
+    return this;
+  }
+
+  @Override
+  public long getProcessDefinitionKey() {
+    return processDefinitionKeyProperty.getValue();
+  }
+
+  public ProcessInstanceBatchRecord setProcessDefinitionKey(final long processDefinitionKey) {
+    processDefinitionKeyProperty.setValue(processDefinitionKey);
     return this;
   }
 

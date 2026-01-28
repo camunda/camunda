@@ -10,6 +10,10 @@ package io.camunda.operate.qa.util;
 import static io.camunda.operate.util.ThreadUtil.sleepFor;
 import static io.camunda.webapps.schema.SupportedVersions.SUPPORTED_ELASTICSEARCH_VERSION;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.ElasticsearchException;
+import co.elastic.clients.elasticsearch._types.HealthStatus;
+import co.elastic.clients.elasticsearch.cluster.HealthResponse;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.exporter.CamundaExporter;
 import io.camunda.operate.exceptions.OperateRuntimeException;
@@ -32,14 +36,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import org.apache.http.HttpHost;
-import org.elasticsearch.ElasticsearchException;
-import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
-import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestClient;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.cluster.health.ClusterHealthStatus;
 import org.keycloak.admin.client.Keycloak;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -112,11 +108,6 @@ public class TestContainerUtil {
   private TestStandaloneBroker broker;
   private GenericContainer operateContainer;
   private Keycloak keycloakClient;
-
-  public static RestHighLevelClient getEsClient() {
-    return new RestHighLevelClient(
-        RestClient.builder(new HttpHost(ELS_HOST, ELS_PORT, ELS_SCHEME)));
-  }
 
   public void startIdentity(
       final TestContext testContext, final String version, final boolean multiTenancyEnabled) {
@@ -322,22 +313,17 @@ public class TestContainerUtil {
         testContext.getExternalElsPort());
   }
 
-  public boolean checkElasctisearchHealth(final TestContext testContext) {
+  public boolean checkElasticsearchHealth(
+      final TestContext testContext, final ElasticsearchClient esClient) {
     try {
-      final RestHighLevelClient esClient =
-          new RestHighLevelClient(
-              RestClient.builder(
-                  new HttpHost(
-                      testContext.getExternalElsHost(), testContext.getExternalElsPort())));
       return RetryOperation.<Boolean>newBuilder()
           .noOfRetry(5)
           .retryOn(IOException.class, ElasticsearchException.class)
           .delayInterval(3, TimeUnit.SECONDS)
           .retryConsumer(
               () -> {
-                final ClusterHealthResponse clusterHealthResponse =
-                    esClient.cluster().health(new ClusterHealthRequest(), RequestOptions.DEFAULT);
-                return clusterHealthResponse.getStatus().equals(ClusterHealthStatus.GREEN);
+                final HealthResponse clusterHealthResponse = esClient.cluster().health();
+                return clusterHealthResponse.status() == HealthStatus.Green;
               })
           .build()
           .retry();

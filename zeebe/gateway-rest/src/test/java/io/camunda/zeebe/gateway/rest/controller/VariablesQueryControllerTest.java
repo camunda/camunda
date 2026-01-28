@@ -134,8 +134,8 @@ public class VariablesQueryControllerTest extends RestControllerTest {
           .total(2L)
           .items(
               List.of(
-                  new VariableEntity(0L, "n", "v", null, false, 2L, 3L, "bpid", "<default>"),
-                  new VariableEntity(1L, "ne", "v", "ve", true, 2L, 3L, "bpid", "<default>")))
+                  new VariableEntity(0L, "n", "v", null, false, 2L, 3L, 4L, "bpid", "<default>"),
+                  new VariableEntity(1L, "ne", "v", "ve", true, 2L, 3L, 4L, "bpid", "<default>")))
           .startCursor("0")
           .endCursor("1")
           .build();
@@ -151,9 +151,9 @@ public class VariablesQueryControllerTest extends RestControllerTest {
         .thenReturn(variableServices);
 
     when(variableServices.getByKey(VALID_VARIABLE_KEY))
-        .thenReturn(new VariableEntity(0L, "n", "v", null, false, 2L, 3L, "bpid", "<default>"));
+        .thenReturn(new VariableEntity(0L, "n", "v", null, false, 2L, 3L, 4L, "bpid", "<default>"));
     when(variableServices.getByKey(VALID_TRUNCATED_VARIABLE_KEY))
-        .thenReturn(new VariableEntity(1L, "ne", "v", "ve", true, 2L, 3L, "bpid", "<default>"));
+        .thenReturn(new VariableEntity(1L, "ne", "v", "ve", true, 2L, 3L, 4L, "bpid", "<default>"));
 
     when(variableServices.getByKey(INVALID_VARIABLE_KEY))
         .thenThrow(

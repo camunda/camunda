@@ -9,19 +9,14 @@
 import {styles} from '@carbon/elements';
 import styled from 'styled-components';
 import {PanelHeader as BasePanelHeader} from 'modules/components/PanelHeader';
-import {OPERATIONS_EXPANDED_PANEL_WIDTH} from 'modules/components/OperationsPanel/constants';
 
 const PanelHeader = styled(BasePanelHeader)`
   padding-right: 0;
   gap: var(--cds-spacing-09);
-  &.panelOffset {
-    margin-right: calc(
-      ${OPERATIONS_EXPANDED_PANEL_WIDTH}px - var(--cds-spacing-09)
-    );
-  }
 `;
 
 const Description = styled.dl`
+  min-width: 5rem;
   overflow: hidden;
 `;
 
@@ -39,4 +34,18 @@ const DescriptionData = styled.dd`
   white-space: nowrap;
 `;
 
-export {PanelHeader, Description, DescriptionTitle, DescriptionData};
+const HeaderActions = styled.div`
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--cds-spacing-03);
+  margin-right: var(--cds-spacing-03);
+`;
+
+export {
+  PanelHeader,
+  Description,
+  DescriptionTitle,
+  DescriptionData,
+  HeaderActions,
+};

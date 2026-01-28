@@ -100,7 +100,10 @@ function mapDecisionDefinitionVersionFilter(
   filter: DecisionsFilter,
 ): DecisionInstancesSearchFilter['decisionDefinitionVersion'] {
   if (filter.version && filter.version !== 'all') {
-    return parseInt(filter.version);
+    const version = parseInt(filter.version, 10);
+    if (!isNaN(version)) {
+      return version;
+    }
   }
 }
 

@@ -95,6 +95,7 @@ final class ClusterEndpointIT {
                   OperationEnum.PARTITION_LEAVE,
                   OperationEnum.PARTITION_LEAVE,
                   OperationEnum.DELETE_HISTORY,
+                  OperationEnum.UPDATE_INCARNATION_NUMBER,
                   OperationEnum.PARTITION_BOOTSTRAP,
                   OperationEnum.PARTITION_BOOTSTRAP,
                   OperationEnum.PARTITION_JOIN,

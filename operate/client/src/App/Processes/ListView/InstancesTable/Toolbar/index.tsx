@@ -10,10 +10,9 @@ import {TableToolbar, Modal, TableBatchAction} from '@carbon/react';
 import {TableBatchActions} from './styled';
 import pluralSuffix from 'modules/utils/pluralSuffix';
 import {useState} from 'react';
-import {panelStatesStore} from 'modules/stores/panelStates';
 import {RetryFailed, Error} from '@carbon/react/icons';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
-import {MigrateAction} from '../../v2/InstancesTable/Toolbar/MigrateAction';
+import {MigrateAction} from './MigrateAction';
 import {MoveAction} from './MoveAction';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {observer} from 'mobx-react';
@@ -24,6 +23,7 @@ import {getProcessInstancesRequestFilters} from 'modules/utils/filter';
 import {processInstancesStore} from 'modules/stores/processInstances';
 import {buildMutationRequestBody} from './buildMutationRequestBody';
 import {handleOperationError} from 'modules/utils/notifications';
+import {useBatchOperationSuccessNotification} from 'modules/hooks/useBatchOperationSuccessNotification';
 
 type Props = {
   selectedInstancesCount: number;
@@ -37,6 +37,7 @@ const ACTION_NAMES: Readonly<
 };
 
 const Toolbar: React.FC<Props> = observer(({selectedInstancesCount}) => {
+  const displaySuccessNotification = useBatchOperationSuccessNotification();
   const [modalMode, setModalMode] = useState<
     'RESOLVE_INCIDENT' | 'CANCEL_PROCESS_INSTANCE' | null
   >(null);
@@ -45,8 +46,8 @@ const Toolbar: React.FC<Props> = observer(({selectedInstancesCount}) => {
   };
 
   const cancelMutation = useCancelProcessInstancesBatchOperation({
-    onSuccess: () => {
-      panelStatesStore.expandOperationsPanel();
+    onSuccess: ({batchOperationKey, batchOperationType}) => {
+      displaySuccessNotification(batchOperationType, batchOperationKey);
       tracking.track({
         eventName: 'batch-operation',
         operationType: 'CANCEL_PROCESS_INSTANCE',
@@ -54,14 +55,13 @@ const Toolbar: React.FC<Props> = observer(({selectedInstancesCount}) => {
       processInstancesSelectionStore.reset();
     },
     onError: (error) => {
-      panelStatesStore.expandOperationsPanel();
       handleOperationError(error.response?.status);
     },
   });
 
   const resolveMutation = useResolveProcessInstancesIncidentsBatchOperation({
-    onSuccess: () => {
-      panelStatesStore.expandOperationsPanel();
+    onSuccess: ({batchOperationKey, batchOperationType}) => {
+      displaySuccessNotification(batchOperationType, batchOperationKey);
       tracking.track({
         eventName: 'batch-operation',
         operationType: 'RESOLVE_INCIDENT',
@@ -69,7 +69,6 @@ const Toolbar: React.FC<Props> = observer(({selectedInstancesCount}) => {
       processInstancesSelectionStore.reset();
     },
     onError: (error) => {
-      panelStatesStore.expandOperationsPanel();
       handleOperationError(error.response?.status);
     },
   });
@@ -187,6 +186,8 @@ const Toolbar: React.FC<Props> = observer(({selectedInstancesCount}) => {
                 return `${selectedInstancesCount} items selected`;
               case 'carbon.table.batch.item.selected':
                 return `${selectedInstancesCount} item selected`;
+              case 'carbon.table.batch.selectAll':
+                return 'All items selected';
             }
           }}
         >

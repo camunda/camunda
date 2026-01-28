@@ -70,12 +70,17 @@ class UpdateTenantTest {
   }
 
   @Test
-  void shouldRejectUpdateIfDescriptionIsNull() {
-    // when / then
-    assertThatThrownBy(
-            () -> client.newUpdateTenantCommand(TENANT_ID).name("new name").send().join())
-        .isInstanceOf(ProblemException.class)
-        .hasMessageContaining("No description provided");
+  void shouldUpdateIfDescriptionIsNull() {
+    // when
+    client.newUpdateTenantCommand(TENANT_ID).name("new name").send().join();
+
+    // then
+    ZeebeAssertHelper.assertTenantUpdated(
+        TENANT_ID,
+        tenant -> {
+          assertThat(tenant.getName()).isEqualTo("new name");
+          assertThat(tenant.getDescription()).isEmpty();
+        });
   }
 
   @Test
