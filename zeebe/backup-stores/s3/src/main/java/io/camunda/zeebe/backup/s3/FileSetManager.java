@@ -21,6 +21,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.function.Supplier;
 import org.apache.commons.compress.compressors.CompressorException;
@@ -106,11 +107,19 @@ final class FileSetManager {
       return FileSet.FileMetadata.withCompression(algorithm);
     } else {
       LOG.trace("Saving file {}({}) in prefix {}", fileName, filePath, prefix);
-      client
-          .putObject(
-              put -> put.bucket(config.bucketName()).key(prefix + fileName),
-              AsyncRequestBody.fromFile(filePath))
-          .join();
+      // Use InputStream instead of File to bypass AWS SDK's file modification time
+      // check: https://github.com/camunda/camunda/issues/44035
+      try (final var inputStream = Files.newInputStream(filePath);
+          final var executor = Executors.newThreadPerTaskExecutor(threadBuilder.factory())) {
+        final var fileSize = Files.size(filePath);
+        client
+            .putObject(
+                put -> put.bucket(config.bucketName()).key(prefix + fileName),
+                AsyncRequestBody.fromInputStream(inputStream, fileSize, executor))
+            .join();
+      } catch (final IOException e) {
+        throw new UncheckedIOException("Failed to upload file: " + filePath, e);
+      }
       return FileSet.FileMetadata.none();
     }
   }
