@@ -193,15 +193,8 @@ public class SimpleSearchQueryMapper {
 
     ofNullable(source.getVariables())
         .filter(not(List::isEmpty))
-        .ifPresent(
-            vars ->
-                target.variables(
-                    vars.stream()
-                        .map(
-                            v ->
-                                new VariableValueFilterProperty(
-                                    v.getName(), getStringFilter(v.getValue())))
-                        .toList()));
+        .map(SimpleSearchQueryMapper::convertVariableValueFilterProperties)
+        .ifPresent(target::variables);
 
     ofNullable(source.getProcessInstanceKey())
         .map(SimpleSearchQueryMapper::getBasicStringFilter)
@@ -330,6 +323,71 @@ public class SimpleSearchQueryMapper {
           .ifPresent(filterModel::processInstanceKey);
     }
     return filterModel;
+  }
+
+  public static io.camunda.gateway.protocol.model.UserTaskFilter toUserTaskFilter(
+      final io.camunda.gateway.protocol.model.simple.UserTaskFilter filter) {
+    final var filterModel = new io.camunda.gateway.protocol.model.UserTaskFilter();
+    if (filter != null) {
+      ofNullable(filter.getState())
+          .map(s -> new io.camunda.gateway.protocol.model.AdvancedUserTaskStateFilter().$eq(s))
+          .ifPresent(filterModel::state);
+      ofNullable(filter.getAssignee())
+          .map(SimpleSearchQueryMapper::getStringFilter)
+          .ifPresent(filterModel::assignee);
+      ofNullable(filter.getPriority())
+          .map(SimpleSearchQueryMapper::getIntegerFilter)
+          .ifPresent(filterModel::priority);
+      ofNullable(filter.getElementId()).ifPresent(filterModel::elementId);
+      ofNullable(filter.getName()).ifPresent(filterModel::name);
+      ofNullable(filter.getCandidateGroup())
+          .map(SimpleSearchQueryMapper::getStringFilter)
+          .ifPresent(filterModel::candidateGroup);
+      ofNullable(filter.getCandidateUser())
+          .map(SimpleSearchQueryMapper::getStringFilter)
+          .ifPresent(filterModel::candidateUser);
+      ofNullable(filter.getTenantId())
+          .map(SimpleSearchQueryMapper::getStringFilter)
+          .ifPresent(filterModel::tenantId);
+      ofNullable(filter.getProcessDefinitionId()).ifPresent(filterModel::processDefinitionId);
+      ofNullable(filter.getCreationDate())
+          .map(SimpleSearchQueryMapper::getDateTimeFilter)
+          .ifPresent(filterModel::creationDate);
+      ofNullable(filter.getCompletionDate())
+          .map(SimpleSearchQueryMapper::getDateTimeFilter)
+          .ifPresent(filterModel::completionDate);
+      ofNullable(filter.getFollowUpDate())
+          .map(SimpleSearchQueryMapper::getDateTimeFilter)
+          .ifPresent(filterModel::followUpDate);
+      ofNullable(filter.getDueDate())
+          .map(SimpleSearchQueryMapper::getDateTimeFilter)
+          .ifPresent(filterModel::dueDate);
+      ofNullable(filter.getProcessInstanceVariables())
+          .map(SimpleSearchQueryMapper::convertVariableValueFilterProperties)
+          .ifPresent(filterModel::processInstanceVariables);
+      ofNullable(filter.getLocalVariables())
+          .map(SimpleSearchQueryMapper::convertVariableValueFilterProperties)
+          .ifPresent(filterModel::localVariables);
+      ofNullable(filter.getUserTaskKey()).ifPresent(filterModel::userTaskKey);
+      ofNullable(filter.getProcessDefinitionKey()).ifPresent(filterModel::processDefinitionKey);
+      ofNullable(filter.getProcessInstanceKey()).ifPresent(filterModel::processInstanceKey);
+      ofNullable(filter.getElementInstanceKey()).ifPresent(filterModel::elementInstanceKey);
+      ofNullable(filter.getTags()).ifPresent(filterModel::tags);
+    }
+    return filterModel;
+  }
+
+  private static List<VariableValueFilterProperty> convertVariableValueFilterProperties(
+      final List<io.camunda.gateway.protocol.model.simple.VariableValueFilterProperty> simple) {
+    if (simple == null) {
+      return null;
+    }
+    return simple.stream()
+        .map(
+            simpleVar ->
+                new VariableValueFilterProperty(
+                    simpleVar.getName(), getStringFilter(simpleVar.getValue())))
+        .toList();
   }
 
   private static StringFilterProperty getStringFilter(final String value) {

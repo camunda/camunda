@@ -460,6 +460,17 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, UserTaskQuery> toUserTaskQuery(
+      final io.camunda.gateway.protocol.model.simple.UserTaskFilter filter,
+      final io.camunda.gateway.protocol.model.simple.SearchQueryPageRequest page,
+      final List<UserTaskSearchQuerySortRequest> sort) {
+    return toUserTaskQuery(
+        new UserTaskSearchQuery()
+            .filter(SimpleSearchQueryMapper.toUserTaskFilter(filter))
+            .page(SimpleSearchQueryMapper.toPageRequest(page))
+            .sort(sort == null ? List.of() : sort));
+  }
+
+  public static Either<ProblemDetail, UserTaskQuery> toUserTaskQuery(
       final UserTaskSearchQuery request) {
 
     if (request == null) {

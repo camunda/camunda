@@ -11,7 +11,9 @@ import static io.camunda.gateway.mcp.tool.ToolDescriptions.EVENTUAL_CONSISTENCY_
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.FILTER_DESCRIPTION;
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.PAGE_DESCRIPTION;
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.SORT_DESCRIPTION;
+import static io.camunda.gateway.mcp.tool.ToolDescriptions.TRUNCATE_VARIABLES_DESCRIPTION;
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.VARIABLE_KEY_POSITIVE_MESSAGE;
+import static io.camunda.gateway.mcp.tool.ToolDescriptions.VARIABLE_VALUE_RETURN_FORMAT;
 
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
@@ -46,8 +48,7 @@ public class VariableTools {
 
   @McpTool(
       description =
-          "Search for variables. The variable value is returned in serialized JSON format and may be truncated depending on the truncateValues parameter. "
-              + EVENTUAL_CONSISTENCY_NOTE,
+          "Search for variables. " + VARIABLE_VALUE_RETURN_FORMAT + " " + EVENTUAL_CONSISTENCY_NOTE,
       annotations = @McpAnnotations(readOnlyHint = true))
   public CallToolResult searchVariables(
       @McpToolParam(description = FILTER_DESCRIPTION, required = false)
@@ -56,10 +57,7 @@ public class VariableTools {
           final List<VariableSearchQuerySortRequest> sort,
       @McpToolParam(description = PAGE_DESCRIPTION, required = false)
           final McpSearchQueryPageRequest page,
-      @McpToolParam(
-              description =
-                  "When true (default), long variable values in the response are truncated. When false, full variable values are returned.",
-              required = false)
+      @McpToolParam(description = TRUNCATE_VARIABLES_DESCRIPTION, required = false)
           final Boolean truncateValues) {
     try {
       final var variableSearchQuery = SearchQueryRequestMapper.toVariableQuery(filter, page, sort);
@@ -81,8 +79,7 @@ public class VariableTools {
 
   @McpTool(
       description =
-          "Get variable by key. The variable value is returned in serialized JSON format. "
-              + EVENTUAL_CONSISTENCY_NOTE,
+          "Get variable by key. " + VARIABLE_VALUE_RETURN_FORMAT + " " + EVENTUAL_CONSISTENCY_NOTE,
       annotations = @McpAnnotations(readOnlyHint = true))
   public CallToolResult getVariable(
       @McpToolParam @Positive(message = VARIABLE_KEY_POSITIVE_MESSAGE) final Long variableKey) {
