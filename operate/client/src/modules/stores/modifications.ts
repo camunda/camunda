@@ -681,6 +681,29 @@ class Modifications {
     return {activateInstructions, moveInstructions, terminateInstructions};
   }
 
+  #attachRootVariableModifications(
+    processInstanceKey: string,
+    instructions: ModifyProcessInstanceRequestBody,
+  ): boolean {
+    const rootVariables = this.#getVariablesForScope(processInstanceKey);
+    if (rootVariables === undefined) {
+      return true;
+    }
+
+    const hostInstruction =
+      instructions.activateInstructions?.at(0) ??
+      instructions.moveInstructions?.at(0);
+    if (hostInstruction === undefined) {
+      return false;
+    }
+
+    hostInstruction.variableInstructions ??= [];
+    hostInstruction.variableInstructions.push({
+      variables: rootVariables,
+    });
+    return true;
+  }
+
   applyModifications = async ({
     processInstanceId,
     onSuccess,
@@ -694,6 +717,10 @@ class Modifications {
 
     if (IS_INSTANCE_MODIFICATION_V2) {
       const instructions = this.#generateModificationInstructions();
+      const isAttachRootVarsSuccessful = this.#attachRootVariableModifications(
+        processInstanceId,
+        instructions,
+      );
 
       // TODO: Logging is used for debugging/verifying the migration.
       // Remove together with IS_INSTANCE_MODIFICATION_V2 flag.
@@ -705,6 +732,15 @@ class Modifications {
       console.log('V1 Payload:', this.generateModificationsPayload());
       console.log('V2 Payload:', instructions);
       console.groupEnd();
+
+      if (!isAttachRootVarsSuccessful) {
+        logger.error(
+          'Failed to attach root variable modifications. No suitable host instruction found.',
+        );
+        onError(400);
+        this.reset();
+        return;
+      }
 
       const response = await modifyProcessInstance(
         processInstanceId,
