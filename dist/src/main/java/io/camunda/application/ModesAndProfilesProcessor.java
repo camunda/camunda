@@ -96,16 +96,20 @@ public class ModesAndProfilesProcessor implements SpringApplicationRunListener {
     }
   }
 
+  private void setupActiveProfiles(final Set<String> profiles) {
+    environment
+        .getPropertySources()
+        .addLast(
+            new MapPropertySource(
+                "camundaDefaultProfiles",
+                Map.of(
+                    ACTIVE_PROFILES_PROPERTY_NAME,
+                    profiles)));
+  }
+
   private void configureWithProfiles() {
     if (!environment.containsProperty(ACTIVE_PROFILES_PROPERTY_NAME)) {
-      environment
-          .getPropertySources()
-          .addLast(
-              new MapPropertySource(
-                  "camundaDefaultProfiles",
-                  Map.of(
-                      ACTIVE_PROFILES_PROPERTY_NAME,
-                      DEFAULT_PROFILES)));
+      setupActiveProfiles(DEFAULT_PROFILES);
     }
   }
 
@@ -149,7 +153,7 @@ public class ModesAndProfilesProcessor implements SpringApplicationRunListener {
       profiles.add(Profile.DEVELOPMENT.getId());
     }
 
-    environment.setActiveProfiles(profiles.toArray(new String[0]));
+    setupActiveProfiles(profiles);
   }
 
   private void configureProfilesForBrokerMode() {
@@ -160,7 +164,7 @@ public class ModesAndProfilesProcessor implements SpringApplicationRunListener {
       profiles.add(Profile.DEVELOPMENT.getId());
     }
 
-    environment.setActiveProfiles(profiles.toArray(new String[0]));
+    setupActiveProfiles(profiles);
   }
 
   private void configureProfilesForGatewayMode() {
@@ -176,6 +180,6 @@ public class ModesAndProfilesProcessor implements SpringApplicationRunListener {
       profiles.add(Profile.DEVELOPMENT.getId());
     }
 
-    environment.setActiveProfiles(profiles.toArray(new String[0]));
+    setupActiveProfiles(profiles);
   }
 }
