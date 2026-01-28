@@ -14,20 +14,16 @@ import {
   fireEvent,
 } from 'modules/testing-library';
 import {ProcessInstance} from '../index';
-import {
-  createBatchOperation,
-  createUser,
-  createvariable,
-} from 'modules/testUtils';
+import {createUser, createvariable} from 'modules/testUtils';
 import {storeStateLocally} from 'modules/utils/localStorage';
 import {singleInstanceMetadata} from 'modules/mocks/metadata';
 import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
-import {mockModify} from 'modules/mocks/api/processInstances/modify';
 import {getWrapper, mockRequests} from './mocks';
 import {modificationsStore} from 'modules/stores/modifications';
 import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
 import {mockMe} from 'modules/mocks/api/v2/me';
 import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
+import {mockModifyProcessInstance} from 'modules/mocks/api/v2/processInstances/modifyProcessInstance';
 
 vi.mock('modules/utils/bpmn');
 vi.mock('modules/stores/process', () => ({
@@ -256,9 +252,7 @@ describe('ProcessInstance - modification mode', () => {
 
   it('should display loading overlay when modifications are applied', async () => {
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
-    mockModify().withSuccess(
-      createBatchOperation({type: 'MODIFY_PROCESS_INSTANCE'}),
-    );
+    mockModifyProcessInstance().withSuccess(null);
     mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
     mockSearchVariables().withSuccess({
       items: [],
