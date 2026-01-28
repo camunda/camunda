@@ -23,6 +23,8 @@ public class SubscriptionManager {
   private static final Logger LOGGER = LoggerFactory.getLogger(SubscriptionManager.class);
 
   private final Map<String, ProcessInstanceSubscription> subscriptions = new ConcurrentHashMap<>();
+  private final Map<String, SequenceFlowsSubscription> sequenceFlowsSubscriptions =
+      new ConcurrentHashMap<>();
   private final WebSocketSession session;
   private final ProcessInstanceServices processInstanceServices;
   private final TaskScheduler taskScheduler;
@@ -43,29 +45,15 @@ public class SubscriptionManager {
   }
 
   public String subscribe(final String topic, final Map<String, Object> parameters) {
-    // Validate topic
-    if (!"process-instance".equals(topic)) {
-      throw new IllegalArgumentException("Unsupported topic: " + topic);
-    }
+    return switch (topic) {
+      case "process-instance" -> subscribeToProcessInstance(parameters);
+      case "sequence-flows" -> subscribeToSequenceFlows(parameters);
+      default -> throw new IllegalArgumentException("Unsupported topic: " + topic);
+    };
+  }
 
-    // Extract processInstanceKey
-    final Object keyObj = parameters.get("processInstanceKey");
-    if (keyObj == null) {
-      throw new IllegalArgumentException("Missing processInstanceKey parameter");
-    }
-
-    final Long processInstanceKey;
-    if (keyObj instanceof Number) {
-      processInstanceKey = ((Number) keyObj).longValue();
-    } else if (keyObj instanceof String) {
-      try {
-        processInstanceKey = Long.parseLong((String) keyObj);
-      } catch (final NumberFormatException e) {
-        throw new IllegalArgumentException("Invalid processInstanceKey format: " + keyObj);
-      }
-    } else {
-      throw new IllegalArgumentException("Invalid processInstanceKey type: " + keyObj.getClass());
-    }
+  private String subscribeToProcessInstance(final Map<String, Object> parameters) {
+    final Long processInstanceKey = extractProcessInstanceKey(parameters);
 
     // Generate subscription ID
     final String subscriptionId = UUID.randomUUID().toString();
@@ -89,21 +77,83 @@ public class SubscriptionManager {
     return subscriptionId;
   }
 
+  private String subscribeToSequenceFlows(final Map<String, Object> parameters) {
+    final Long processInstanceKey = extractProcessInstanceKey(parameters);
+
+    // Generate subscription ID
+    final String subscriptionId = UUID.randomUUID().toString();
+
+    // Create and start subscription
+    final SequenceFlowsSubscription subscription =
+        new SequenceFlowsSubscription(
+            subscriptionId,
+            processInstanceKey,
+            session,
+            processInstanceServices,
+            objectMapper,
+            authenticationProvider);
+
+    sequenceFlowsSubscriptions.put(subscriptionId, subscription);
+    subscription.startPolling(taskScheduler, 200L); // 200ms poll interval (0.2s)
+
+    LOGGER.debug(
+        "Created subscription {} for sequence flows of process instance {}",
+        subscriptionId,
+        processInstanceKey);
+
+    return subscriptionId;
+  }
+
+  private Long extractProcessInstanceKey(final Map<String, Object> parameters) {
+    final Object keyObj = parameters.get("processInstanceKey");
+    if (keyObj == null) {
+      throw new IllegalArgumentException("Missing processInstanceKey parameter");
+    }
+
+    if (keyObj instanceof Number) {
+      return ((Number) keyObj).longValue();
+    } else if (keyObj instanceof String) {
+      try {
+        return Long.parseLong((String) keyObj);
+      } catch (final NumberFormatException e) {
+        throw new IllegalArgumentException("Invalid processInstanceKey format: " + keyObj);
+      }
+    } else {
+      throw new IllegalArgumentException("Invalid processInstanceKey type: " + keyObj.getClass());
+    }
+  }
+
   public void unsubscribe(final String subscriptionId) {
-    final ProcessInstanceSubscription subscription = subscriptions.remove(subscriptionId);
-    if (subscription != null) {
-      subscription.stopPolling();
-      LOGGER.debug("Removed subscription {}", subscriptionId);
+    // Try process instance subscriptions
+    final ProcessInstanceSubscription piSubscription = subscriptions.remove(subscriptionId);
+    if (piSubscription != null) {
+      piSubscription.stopPolling();
+      LOGGER.debug("Removed process instance subscription {}", subscriptionId);
+      return;
+    }
+
+    // Try sequence flows subscriptions
+    final SequenceFlowsSubscription sfSubscription =
+        sequenceFlowsSubscriptions.remove(subscriptionId);
+    if (sfSubscription != null) {
+      sfSubscription.stopPolling();
+      LOGGER.debug("Removed sequence flows subscription {}", subscriptionId);
     }
   }
 
   public void stopAll() {
-    LOGGER.debug("Stopping all {} subscriptions", subscriptions.size());
+    final int totalCount = subscriptions.size() + sequenceFlowsSubscriptions.size();
+    LOGGER.debug("Stopping all {} subscriptions", totalCount);
+
     subscriptions.values().forEach(ProcessInstanceSubscription::stopPolling);
     subscriptions.clear();
+
+    sequenceFlowsSubscriptions.values().forEach(SequenceFlowsSubscription::stopPolling);
+    sequenceFlowsSubscriptions.clear();
   }
 
   public boolean hasSubscription(final String subscriptionId) {
-    return subscriptions.containsKey(subscriptionId);
+    return subscriptions.containsKey(subscriptionId)
+        || sequenceFlowsSubscriptions.containsKey(subscriptionId);
   }
 }
