@@ -28,8 +28,7 @@ public final class SequenceFlowFixtures extends CommonFixtures {
             .processDefinitionKey(nextKey())
             .processDefinitionId("process-definition-" + nextKey)
             .tenantId("tenant-" + nextKey)
-            .partitionId(0)
-            .historyCleanupDate(NOW);
+            .partitionId(0);
 
     return builderFunction.apply(builder).build();
   }

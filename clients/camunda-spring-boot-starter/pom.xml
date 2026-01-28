@@ -54,12 +54,6 @@
     </dependency>
 
     <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-jackson2</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-core</artifactId>
     </dependency>
@@ -77,6 +71,18 @@
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-core</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>tools.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <optional>true</optional>
+    </dependency>
+
+    <dependency>
+      <groupId>tools.jackson.core</groupId>
+      <artifactId>jackson-core</artifactId>
+      <optional>true</optional>
     </dependency>
 
     <dependency>
@@ -188,6 +194,16 @@
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-params</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-jackson2</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-jackson</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>

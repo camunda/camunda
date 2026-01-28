@@ -23,12 +23,12 @@ orchestration:
         username: camunda
         secret:
           inlineSecret: camunda
+        # set to 2001 and not 2000 o´to directly see when queue is full in metrics dashboard
         queueSize: 2001
         history:
           defaultHistoryTTL: PT1H
           minHistoryCleanupInterval: PT1S
-          maxHistoryCleanupInterval: PT5S
-          historyCleanupBatchSize: 50000
+          maxHistoryCleanupInterval: PT1M
 
   # We set extra configuration to configure additional settings for Broker and Gateway, that are part
   # of the orchestration cluster.
@@ -61,8 +61,8 @@ orchestration:
       # ZEEBE_BROKER_EXPERIMENTAL_ROCKSDB_MEMORYLIMIT
       zeebe.broker.experimental.rocksdb.memoryLimit: "64MB"
       # History cleanup adjust batch sizes
-      camunda.data.secondary-storage.rdbms.history.defaultHistoryCleanupBatchSize: 100000
-      camunda.data.secondary-storage.rdbms.history.defaultHistoryCleanupProcessInstanceBatchSize: 2000
+      camunda.data.secondary-storage.rdbms.history.historyCleanupBatchSize: 100000
+      camunda.data.secondary-storage.rdbms.history.historyCleanupProcessInstanceBatchSize: 2000
 
 ########################################################################################
 ################################################### Disable ElasticSearch for RDBMS

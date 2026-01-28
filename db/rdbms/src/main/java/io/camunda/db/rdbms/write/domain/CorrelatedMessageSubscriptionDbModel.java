@@ -17,7 +17,6 @@ public record CorrelatedMessageSubscriptionDbModel(
     OffsetDateTime correlationTime,
     String flowNodeId,
     Long flowNodeInstanceKey,
-    OffsetDateTime historyCleanupDate,
     Long messageKey,
     String messageName,
     Integer partitionId,
@@ -43,7 +42,6 @@ public record CorrelatedMessageSubscriptionDbModel(
                 .correlationTime(correlationTime)
                 .flowNodeId(flowNodeId)
                 .flowNodeInstanceKey(flowNodeInstanceKey)
-                .historyCleanupDate(historyCleanupDate)
                 .messageKey(messageKey)
                 .messageName(messageName)
                 .partitionId(partitionId)
@@ -62,7 +60,6 @@ public record CorrelatedMessageSubscriptionDbModel(
     private OffsetDateTime correlationTime;
     private String flowNodeId;
     private Long flowNodeInstanceKey;
-    private OffsetDateTime historyCleanupDate;
     private Long messageKey;
     private String messageName;
     private Integer partitionId;
@@ -93,11 +90,6 @@ public record CorrelatedMessageSubscriptionDbModel(
 
     public Builder flowNodeId(final String flowNodeId) {
       this.flowNodeId = flowNodeId;
-      return this;
-    }
-
-    public Builder historyCleanupDate(final OffsetDateTime historyCleanupDate) {
-      this.historyCleanupDate = historyCleanupDate;
       return this;
     }
 
@@ -158,7 +150,6 @@ public record CorrelatedMessageSubscriptionDbModel(
           correlationTime,
           flowNodeId,
           flowNodeInstanceKey,
-          historyCleanupDate,
           messageKey,
           messageName,
           partitionId,

@@ -18,7 +18,6 @@
       <arg column="CORRELATION_TIME" javaType="java.time.OffsetDateTime"/>
       <arg column="FLOW_NODE_ID" javaType="java.lang.String"/>
       <arg column="FLOW_NODE_INSTANCE_KEY" javaType="java.lang.Long"/>
-      <arg column="HISTORY_CLEANUP_DATE" javaType="java.time.OffsetDateTime"/>
       <idArg column="MESSAGE_KEY" javaType="java.lang.Long"/>
       <arg column="MESSAGE_NAME" javaType="java.lang.String"/>
       <arg column="PARTITION_ID" javaType="java.lang.Integer"/>
@@ -38,7 +37,6 @@
       CORRELATION_TIME,
       FLOW_NODE_ID,
       FLOW_NODE_INSTANCE_KEY,
-      HISTORY_CLEANUP_DATE,
       MESSAGE_KEY,
       MESSAGE_NAME,
       PARTITION_ID,
@@ -55,7 +53,6 @@
       #{correlationTime, jdbcType=TIMESTAMP},
       #{flowNodeId},
       #{flowNodeInstanceKey},
-      #{historyCleanupDate, jdbcType=TIMESTAMP},
       #{messageKey},
       #{messageName},
       #{partitionId},
@@ -83,7 +80,6 @@
         CORRELATION_TIME,
         FLOW_NODE_ID,
         FLOW_NODE_INSTANCE_KEY,
-        HISTORY_CLEANUP_DATE,
         MESSAGE_KEY,
         MESSAGE_NAME,
         PARTITION_ID,
