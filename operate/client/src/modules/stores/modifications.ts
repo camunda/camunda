@@ -36,7 +36,7 @@ type VariableInstruction = NonNullable<
   ActivateInstruction['variableInstructions']
 >[number];
 
-/** Maps internal scopeId to elementIds. */
+/** Maps internal scopeIds to elementIds. */
 type ScopeMap = {[internalScopeId: string]: string};
 
 type FlowNodeModificationPayload =
@@ -464,7 +464,6 @@ class Modifications {
     return scopeMap;
   }
 
-  /** @param scopeMap Map of API scopeIds to local scopeIds (generated in the client). */
   #getVariableInstructionsForScopeMap(
     scopeMap: ScopeMap,
   ): VariableInstruction[] {
