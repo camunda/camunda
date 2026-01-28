@@ -69,6 +69,11 @@ orchestration:
   cpuThreadCount: "3"
   ## @param core.ioThreadCount defines how many threads can be used for the exporting on each broker pod
   ioThreadCount: "3"
+#  service:
+#    extraPorts:
+#      - port: 26500
+#        protocol: TCP
+#        name: "realgrpc"
   # Resources of the orchestration cluster
   resources:
     requests:

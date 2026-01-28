@@ -36,7 +36,7 @@ jobs:
     with:
       name: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}
       ref: ${{ github.event.pull_request.head.ref }}
-      scenario: 'max'
+      load-test-load: '--set global.connect.serviceName=camunda-headless --set starter.rate=300'
 
   delete-benchmark:
     name: Benchmark Cleanup
