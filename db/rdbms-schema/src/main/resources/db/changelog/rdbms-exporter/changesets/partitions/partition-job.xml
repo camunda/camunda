@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+  <!-- PostgreSQL: Create JOB table with list partitioning -->
+  <changeSet id="create_job_table_postgresql" author="camunda" dbms="postgresql">
+    <sql splitStatements="false">
+      CREATE TABLE ${prefix}JOB (
+        JOB_KEY BIGINT,
+        PROCESS_DEFINITION_ID VARCHAR(${userCharColumnSize}),
+        PROCESS_DEFINITION_KEY BIGINT,
+        PROCESS_INSTANCE_KEY BIGINT,
+        ROOT_PROCESS_INSTANCE_KEY BIGINT,
+        ELEMENT_ID VARCHAR(${userCharColumnSize}),
+        ELEMENT_INSTANCE_KEY BIGINT,
+        TENANT_ID VARCHAR(${userCharColumnSize}),
+        TYPE VARCHAR(255),
+        WORKER VARCHAR(${userCharColumnSize}),
+        STATE VARCHAR(20),
+        KIND VARCHAR(50),
+        LISTENER_EVENT_TYPE VARCHAR(50),
+        ERROR_MESSAGE VARCHAR(4000),
+        ERROR_CODE VARCHAR(255),
+        DEADLINE TIMESTAMP(3) WITH TIME ZONE,
+        END_TIME TIMESTAMP(3) WITH TIME ZONE,
+        CUSTOM_HEADERS TEXT,
+        RETRIES SMALLINT,
+        HAS_FAILED_WITH_RETRIES_LEFT BOOLEAN,
+        IS_DENIED BOOLEAN,
+        DENIED_REASON VARCHAR(${userCharColumnSize}),
+        PARTITION_ID INTEGER,
+        HISTORY_CLEANUP_DATE TIMESTAMP(3) WITH TIME ZONE,
+        PRIMARY KEY (JOB_KEY, PARTITION_ID)
+      ) PARTITION BY LIST (PARTITION_ID);
+    </sql>
+  </changeSet>
+
+  <changeSet id="create_job_partitions_postgresql" author="camunda" dbms="postgresql">
+    <sql splitStatements="false">
+      DO $$
+      DECLARE
+        partition_count INTEGER := ${partitionsCount};
+        i INTEGER;
+      BEGIN
+        FOR i IN 1..(partition_count) LOOP
+          EXECUTE format('CREATE TABLE ${prefix}JOB_PART_%s PARTITION OF ${prefix}JOB FOR VALUES IN (%s)', i, i);
+        END LOOP;
+      END $$;
+    </sql>
+  </changeSet>
+
+  <!-- Oracle: Create JOB table with hash partitioning -->
+  <changeSet id="create_job_table_oracle" author="camunda" dbms="oracle">
+    <sql splitStatements="false">
+      CREATE TABLE ${prefix}JOB (
+        JOB_KEY NUMBER(19),
+        PROCESS_DEFINITION_ID VARCHAR2(${userCharColumnSize}),
+        PROCESS_DEFINITION_KEY NUMBER(19),
+        PROCESS_INSTANCE_KEY NUMBER(19),
+        ROOT_PROCESS_INSTANCE_KEY NUMBER(19),
+        ELEMENT_ID VARCHAR2(${userCharColumnSize}),
+        ELEMENT_INSTANCE_KEY NUMBER(19),
+        TENANT_ID VARCHAR2(${userCharColumnSize}),
+        TYPE VARCHAR2(255),
+        WORKER VARCHAR2(${userCharColumnSize}),
+        STATE VARCHAR2(20),
+        KIND VARCHAR2(50),
+        LISTENER_EVENT_TYPE VARCHAR2(50),
+        ERROR_MESSAGE VARCHAR2(4000),
+        ERROR_CODE VARCHAR2(255),
+        DEADLINE TIMESTAMP(3) WITH TIME ZONE,
+        END_TIME TIMESTAMP(3) WITH TIME ZONE,
+        CUSTOM_HEADERS CLOB,
+        RETRIES NUMBER(5),
+        HAS_FAILED_WITH_RETRIES_LEFT NUMBER(1),
+        IS_DENIED NUMBER(1),
+        DENIED_REASON VARCHAR2(${userCharColumnSize}),
+        PARTITION_ID NUMBER,
+        HISTORY_CLEANUP_DATE TIMESTAMP(3) WITH TIME ZONE,
+        PRIMARY KEY (JOB_KEY, PARTITION_ID)
+      ) PARTITION BY HASH (PARTITION_ID) PARTITIONS ${partitionsCount}
+    </sql>
+  </changeSet>
+
+  <!-- MSSQL: Create partition function and scheme -->
+  <changeSet id="create_job_partition_function_mssql" author="camunda" dbms="mssql">
+    <preConditions onFail="MARK_RAN">
+      <sqlCheck expectedResult="0">
+        SELECT COUNT(*) FROM sys.partition_functions WHERE name = '${prefix}PF_JOB'
+      </sqlCheck>
+    </preConditions>
+    <sql splitStatements="false">
+      DECLARE @partitionCount INT = ${partitionsCount};
+      DECLARE @sql NVARCHAR(MAX);
+      DECLARE @i INT = 0;
+
+      SET @sql = N'CREATE PARTITION FUNCTION ${prefix}PF_JOB (INT) AS RANGE LEFT FOR VALUES (';
+      WHILE @i &lt; @partitionCount - 1
+      BEGIN
+        SET @sql = @sql + CAST(@i AS NVARCHAR(10));
+        IF @i &lt; @partitionCount - 2
+          SET @sql = @sql + N', ';
+        SET @i = @i + 1;
+      END;
+      SET @sql = @sql + N')';
+      EXEC sp_executesql @sql;
+
+      SET @sql = N'CREATE PARTITION SCHEME ${prefix}PS_JOB AS PARTITION ${prefix}PF_JOB ALL TO ([PRIMARY])';
+      EXEC sp_executesql @sql;
+    </sql>
+  </changeSet>
+
+  <!-- MSSQL: Create JOB table (after partition function/scheme) -->
+  <changeSet id="create_job_table_mssql" author="camunda" dbms="mssql">
+    <sql splitStatements="false">
+      CREATE TABLE ${prefix}JOB (
+        JOB_KEY BIGINT,
+        PROCESS_DEFINITION_ID NVARCHAR(${userCharColumnSize}),
+        PROCESS_DEFINITION_KEY BIGINT,
+        PROCESS_INSTANCE_KEY BIGINT,
+        ROOT_PROCESS_INSTANCE_KEY BIGINT,
+        ELEMENT_ID NVARCHAR(${userCharColumnSize}),
+        ELEMENT_INSTANCE_KEY BIGINT,
+        TENANT_ID NVARCHAR(${userCharColumnSize}),
+        TYPE NVARCHAR(255),
+        WORKER NVARCHAR(${userCharColumnSize}),
+        STATE NVARCHAR(20),
+        KIND NVARCHAR(50),
+        LISTENER_EVENT_TYPE NVARCHAR(50),
+        ERROR_MESSAGE NVARCHAR(4000),
+        ERROR_CODE NVARCHAR(255),
+        DEADLINE DATETIMEOFFSET(3),
+        END_TIME DATETIMEOFFSET(3),
+        CUSTOM_HEADERS NVARCHAR(MAX),
+        RETRIES SMALLINT,
+        HAS_FAILED_WITH_RETRIES_LEFT BIT,
+        IS_DENIED BIT,
+        DENIED_REASON NVARCHAR(${userCharColumnSize}),
+        PARTITION_ID INT,
+        HISTORY_CLEANUP_DATE DATETIMEOFFSET(3),
+        PRIMARY KEY (JOB_KEY, PARTITION_ID)
+      )
+    </sql>
+  </changeSet>
+
+  <!-- MariaDB/MySQL: Create JOB table (no partitioning support) -->
+  <changeSet id="create_job_table" author="camunda" dbms="h2,mariadb,mysql">
+    <createTable tableName="${prefix}JOB">
+      <column name="JOB_KEY" type="BIGINT">
+        <constraints primaryKey="true"/>
+      </column>
+      <column name="PROCESS_DEFINITION_ID" type="VARCHAR(${userCharColumnSize})"/>
+      <column name="PROCESS_DEFINITION_KEY" type="BIGINT"/>
+      <column name="PROCESS_INSTANCE_KEY" type="BIGINT"/>
+      <column name="ROOT_PROCESS_INSTANCE_KEY" type="BIGINT"/>
+      <column name="ELEMENT_ID" type="VARCHAR(${userCharColumnSize})"/>
+      <column name="ELEMENT_INSTANCE_KEY" type="BIGINT"/>
+      <column name="TENANT_ID" type="VARCHAR(${userCharColumnSize})"/>
+      <column name="TYPE" type="VARCHAR(255)"/>
+      <column name="WORKER" type="VARCHAR(${userCharColumnSize})"/>
+      <column name="STATE" type="VARCHAR(20)"/>
+      <column name="KIND" type="VARCHAR(50)"/>
+      <column name="LISTENER_EVENT_TYPE" type="VARCHAR(50)"/>
+      <column name="ERROR_MESSAGE" type="VARCHAR(4000)"/>
+      <column name="ERROR_CODE" type="VARCHAR(255)"/>
+      <column name="DEADLINE" type="TIMESTAMP(3)"/>
+      <column name="END_TIME" type="TIMESTAMP(3)"/>
+      <column name="CUSTOM_HEADERS" type="CLOB"/>
+      <column name="RETRIES" type="SMALLINT"/>
+      <column name="HAS_FAILED_WITH_RETRIES_LEFT" type="BOOLEAN"/>
+      <column name="IS_DENIED" type="BOOLEAN"/>
+      <column name="DENIED_REASON" type="VARCHAR(${userCharColumnSize})"/>
+      <column name="PARTITION_ID" type="INT"/>
+      <column name="HISTORY_CLEANUP_DATE" type="TIMESTAMP(3)"/>
+    </createTable>
+  </changeSet>
+
+  <!-- Generic indices for all databases -->
+  <changeSet id="create_job_indices" author="camunda">
+    <createIndex tableName="${prefix}JOB" indexName="${prefix}IDX_JOB_PI_KEY">
+      <column name="PROCESS_INSTANCE_KEY"/>
+    </createIndex>
+
+    <createIndex tableName="${prefix}JOB" indexName="${prefix}IDX_JOB_RPI_KEY">
+      <column name="ROOT_PROCESS_INSTANCE_KEY"/>
+    </createIndex>
+
+    <createIndex tableName="${prefix}JOB" indexName="${prefix}IDX_JOB_FNI_KEY">
+      <column name="ELEMENT_INSTANCE_KEY"/>
+    </createIndex>
+  </changeSet>
+
+</databaseChangeLog>

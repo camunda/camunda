@@ -18,7 +18,7 @@ primary:
       cpu: 6000m
 
   persistence:
-    size: 128Gi
+    size: 192Gi
     storageClass: "ssd"
 
   extendedConfiguration: |-

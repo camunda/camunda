@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+  <!-- PostgreSQL: Create INCIDENT table with list partitioning -->
+  <changeSet id="create_incident_table_postgresql" author="camunda" dbms="postgresql">
+    <sql splitStatements="false">
+      CREATE TABLE ${prefix}INCIDENT (
+        INCIDENT_KEY BIGINT,
+        FLOW_NODE_INSTANCE_KEY BIGINT,
+        FLOW_NODE_ID VARCHAR(${userCharColumnSize}),
+        PROCESS_INSTANCE_KEY BIGINT,
+        ROOT_PROCESS_INSTANCE_KEY BIGINT,
+        PROCESS_DEFINITION_ID VARCHAR(${userCharColumnSize}),
+        PROCESS_DEFINITION_KEY BIGINT,
+        ERROR_MESSAGE VARCHAR(4000),
+        ERROR_MESSAGE_HASH INTEGER,
+        ERROR_TYPE VARCHAR(100),
+        STATE VARCHAR(20),
+        CREATION_DATE TIMESTAMP(3) WITH TIME ZONE,
+        END_DATE TIMESTAMP(3) WITH TIME ZONE,
+        TREE_PATH VARCHAR(4000),
+        TENANT_ID VARCHAR(${userCharColumnSize}),
+        JOB_KEY BIGINT,
+        SCOPE_KEY BIGINT,
+        PARTITION_ID INTEGER,
+        HISTORY_CLEANUP_DATE TIMESTAMP(3) WITH TIME ZONE,
+        PRIMARY KEY (INCIDENT_KEY, PARTITION_ID)
+      ) PARTITION BY LIST (PARTITION_ID);
+    </sql>
+  </changeSet>
+
+  <changeSet id="create_incident_partitions_postgresql" author="camunda" dbms="postgresql">
+    <sql splitStatements="false">
+      DO $$
+      DECLARE
+        partition_count INTEGER := ${partitionsCount};
+        i INTEGER;
+      BEGIN
+        FOR i IN 1..(partition_count) LOOP
+          EXECUTE format('CREATE TABLE ${prefix}INCIDENT_PART_%s PARTITION OF ${prefix}INCIDENT FOR VALUES IN (%s)', i, i);
+        END LOOP;
+      END $$;
+    </sql>
+  </changeSet>
+
+  <!-- Oracle: Create INCIDENT table with hash partitioning -->
+  <changeSet id="create_incident_table_oracle" author="camunda" dbms="oracle">
+    <sql splitStatements="false">
+      CREATE TABLE ${prefix}INCIDENT (
+        INCIDENT_KEY NUMBER(19),
+        FLOW_NODE_INSTANCE_KEY NUMBER(19),
+        FLOW_NODE_ID VARCHAR2(${userCharColumnSize}),
+        PROCESS_INSTANCE_KEY NUMBER(19),
+        ROOT_PROCESS_INSTANCE_KEY NUMBER(19),
+        PROCESS_DEFINITION_ID VARCHAR2(${userCharColumnSize}),
+        PROCESS_DEFINITION_KEY NUMBER(19),
+        ERROR_MESSAGE VARCHAR2(4000),
+        ERROR_MESSAGE_HASH NUMBER,
+        ERROR_TYPE VARCHAR2(100),
+        STATE VARCHAR2(20),
+        CREATION_DATE TIMESTAMP(3) WITH TIME ZONE,
+        END_DATE TIMESTAMP(3) WITH TIME ZONE,
+        TREE_PATH VARCHAR2(4000),
+        TENANT_ID VARCHAR2(${userCharColumnSize}),
+        JOB_KEY NUMBER(19),
+        SCOPE_KEY NUMBER(19),
+        PARTITION_ID NUMBER,
+        HISTORY_CLEANUP_DATE TIMESTAMP(3) WITH TIME ZONE,
+        PRIMARY KEY (INCIDENT_KEY, PARTITION_ID)
+      ) PARTITION BY HASH (PARTITION_ID) PARTITIONS ${partitionsCount}
+    </sql>
+  </changeSet>
+
+  <!-- MSSQL: Create partition function and scheme -->
+  <changeSet id="create_incident_partition_function_mssql" author="camunda" dbms="mssql">
+    <preConditions onFail="MARK_RAN">
+      <sqlCheck expectedResult="0">
+        SELECT COUNT(*) FROM sys.partition_functions WHERE name = '${prefix}PF_INCIDENT'
+      </sqlCheck>
+    </preConditions>
+    <sql splitStatements="false">
+      DECLARE @partitionCount INT = ${partitionsCount};
+      DECLARE @sql NVARCHAR(MAX);
+      DECLARE @i INT = 0;
+
+      SET @sql = N'CREATE PARTITION FUNCTION ${prefix}PF_INCIDENT (INT) AS RANGE LEFT FOR VALUES (';
+      WHILE @i &lt; @partitionCount - 1
+      BEGIN
+        SET @sql = @sql + CAST(@i AS NVARCHAR(10));
+        IF @i &lt; @partitionCount - 2
+          SET @sql = @sql + N', ';
+        SET @i = @i + 1;
+      END;
+      SET @sql = @sql + N')';
+      EXEC sp_executesql @sql;
+
+      SET @sql = N'CREATE PARTITION SCHEME ${prefix}PS_INCIDENT AS PARTITION ${prefix}PF_INCIDENT ALL TO ([PRIMARY])';
+      EXEC sp_executesql @sql;
+    </sql>
+  </changeSet>
+
+  <!-- MSSQL: Create INCIDENT table (after partition function/scheme) -->
+  <changeSet id="create_incident_table_mssql" author="camunda" dbms="mssql">
+    <sql splitStatements="false">
+      CREATE TABLE ${prefix}INCIDENT (
+        INCIDENT_KEY BIGINT,
+        FLOW_NODE_INSTANCE_KEY BIGINT,
+        FLOW_NODE_ID NVARCHAR(${userCharColumnSize}),
+        PROCESS_INSTANCE_KEY BIGINT,
+        ROOT_PROCESS_INSTANCE_KEY BIGINT,
+        PROCESS_DEFINITION_ID NVARCHAR(${userCharColumnSize}),
+        PROCESS_DEFINITION_KEY BIGINT,
+        ERROR_MESSAGE NVARCHAR(4000),
+        ERROR_MESSAGE_HASH INT,
+        ERROR_TYPE NVARCHAR(100),
+        STATE NVARCHAR(20),
+        CREATION_DATE DATETIMEOFFSET(3),
+        END_DATE DATETIMEOFFSET(3),
+        TREE_PATH NVARCHAR(4000),
+        TENANT_ID NVARCHAR(${userCharColumnSize}),
+        JOB_KEY BIGINT,
+        SCOPE_KEY BIGINT,
+        PARTITION_ID INT,
+        HISTORY_CLEANUP_DATE DATETIMEOFFSET(3),
+        PRIMARY KEY (INCIDENT_KEY, PARTITION_ID)
+      )
+    </sql>
+  </changeSet>
+
+  <!-- MariaDB/MySQL: Create INCIDENT table (no partitioning support) -->
+  <changeSet id="create_incident_table" author="camunda" dbms="h2,mariadb,mysql">
+    <createTable tableName="${prefix}INCIDENT">
+      <column name="INCIDENT_KEY" type="BIGINT">
+        <constraints primaryKey="true"/>
+      </column>
+      <column name="FLOW_NODE_INSTANCE_KEY" type="BIGINT"/>
+      <column name="FLOW_NODE_ID" type="VARCHAR(${userCharColumnSize})"/>
+      <column name="PROCESS_INSTANCE_KEY" type="BIGINT"/>
+      <column name="ROOT_PROCESS_INSTANCE_KEY" type="BIGINT"/>
+      <column name="PROCESS_DEFINITION_ID" type="VARCHAR(${userCharColumnSize})"/>
+      <column name="PROCESS_DEFINITION_KEY" type="BIGINT"/>
+      <column name="ERROR_MESSAGE" type="VARCHAR(4000)"/>
+      <column name="ERROR_MESSAGE_HASH" type="INT"/>
+      <column name="ERROR_TYPE" type="VARCHAR(100)"/>
+      <column name="STATE" type="VARCHAR(20)"/>
+      <column name="CREATION_DATE" type="TIMESTAMP(3)"/>
+      <column name="END_DATE" type="TIMESTAMP(3)"/>
+      <column name="TREE_PATH" type="VARCHAR(4000)"/>
+      <column name="TENANT_ID" type="VARCHAR(${userCharColumnSize})"/>
+      <column name="JOB_KEY" type="BIGINT"/>
+      <column name="SCOPE_KEY" type="BIGINT"/>
+      <column name="PARTITION_ID" type="INT"/>
+      <column name="HISTORY_CLEANUP_DATE" type="TIMESTAMP(3)"/>
+    </createTable>
+  </changeSet>
+
+  <!-- Generic indices for all databases -->
+  <changeSet id="create_incident_indices" author="camunda">
+    <createIndex tableName="${prefix}INCIDENT" indexName="${prefix}IDX_INCIDENT_PI_KEY">
+      <column name="PROCESS_INSTANCE_KEY"/>
+    </createIndex>
+
+    <createIndex tableName="${prefix}INCIDENT" indexName="${prefix}IDX_INCIDENT_RPI_KEY">
+      <column name="ROOT_PROCESS_INSTANCE_KEY"/>
+    </createIndex>
+  </changeSet>
+
+</databaseChangeLog>

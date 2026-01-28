@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+  <!-- PostgreSQL: Create HISTORY_DELETION table with list partitioning -->
+  <changeSet id="create_history_deletion_table_postgresql" author="camunda" dbms="postgresql">
+    <sql splitStatements="false">
+      CREATE TABLE ${prefix}HISTORY_DELETION (
+        RESOURCE_KEY BIGINT NOT NULL,
+        BATCH_OPERATION_KEY BIGINT NOT NULL,
+        RESOURCE_TYPE VARCHAR(50) NOT NULL,
+        PARTITION_ID INTEGER NOT NULL,
+        PRIMARY KEY (RESOURCE_KEY, BATCH_OPERATION_KEY, PARTITION_ID)
+      ) PARTITION BY LIST (PARTITION_ID);
+    </sql>
+  </changeSet>
+
+  <changeSet id="create_history_deletion_partitions_postgresql" author="camunda" dbms="postgresql">
+    <sql splitStatements="false">
+      DO $$
+      DECLARE
+        partition_count INTEGER := ${partitionsCount};
+        i INTEGER;
+      BEGIN
+        FOR i IN 1..(partition_count) LOOP
+          EXECUTE format('CREATE TABLE ${prefix}HISTORY_DELETION_PART_%s PARTITION OF ${prefix}HISTORY_DELETION FOR VALUES IN (%s)', i, i);
+        END LOOP;
+      END $$;
+    </sql>
+  </changeSet>
+
+  <!-- Oracle: Create HISTORY_DELETION table with hash partitioning -->
+  <changeSet id="create_history_deletion_table_oracle" author="camunda" dbms="oracle">
+    <sql splitStatements="false">
+      CREATE TABLE ${prefix}HISTORY_DELETION (
+        RESOURCE_KEY NUMBER(19) NOT NULL,
+        BATCH_OPERATION_KEY NUMBER(19) NOT NULL,
+        RESOURCE_TYPE VARCHAR2(50) NOT NULL,
+        PARTITION_ID NUMBER NOT NULL,
+        PRIMARY KEY (RESOURCE_KEY, BATCH_OPERATION_KEY, PARTITION_ID)
+      ) PARTITION BY HASH (PARTITION_ID) PARTITIONS ${partitionsCount}
+    </sql>
+  </changeSet>
+
+  <!-- MSSQL: Create partition function and scheme -->
+  <changeSet id="create_history_deletion_partition_function_mssql" author="camunda" dbms="mssql">
+    <preConditions onFail="MARK_RAN">
+      <sqlCheck expectedResult="0">
+        SELECT COUNT(*) FROM sys.partition_functions WHERE name = '${prefix}PF_HISTORY_DELETION'
+      </sqlCheck>
+    </preConditions>
+    <sql splitStatements="false">
+      DECLARE @partitionCount INT = ${partitionsCount};
+      DECLARE @sql NVARCHAR(MAX);
+      DECLARE @i INT = 0;
+
+      SET @sql = N'CREATE PARTITION FUNCTION ${prefix}PF_HISTORY_DELETION (INT) AS RANGE LEFT FOR VALUES (';
+      WHILE @i &lt; @partitionCount - 1
+      BEGIN
+        SET @sql = @sql + CAST(@i AS NVARCHAR(10));
+        IF @i &lt; @partitionCount - 2
+          SET @sql = @sql + N', ';
+        SET @i = @i + 1;
+      END;
+      SET @sql = @sql + N')';
+      EXEC sp_executesql @sql;
+
+      SET @sql = N'CREATE PARTITION SCHEME ${prefix}PS_HISTORY_DELETION AS PARTITION ${prefix}PF_HISTORY_DELETION ALL TO ([PRIMARY])';
+      EXEC sp_executesql @sql;
+    </sql>
+  </changeSet>
+
+  <!-- MSSQL: Create HISTORY_DELETION table (after partition function/scheme) -->
+  <changeSet id="create_history_deletion_table_mssql" author="camunda" dbms="mssql">
+    <sql splitStatements="false">
+      CREATE TABLE ${prefix}HISTORY_DELETION (
+        RESOURCE_KEY BIGINT NOT NULL,
+        BATCH_OPERATION_KEY BIGINT NOT NULL,
+        RESOURCE_TYPE NVARCHAR(50) NOT NULL,
+        PARTITION_ID INT NOT NULL,
+        PRIMARY KEY (RESOURCE_KEY, BATCH_OPERATION_KEY, PARTITION_ID)
+      )
+    </sql>
+  </changeSet>
+
+  <!-- MariaDB/MySQL: Create HISTORY_DELETION table (no partitioning support) -->
+  <changeSet id="create_history_deletion_table" author="camunda" dbms="h2,mariadb,mysql">
+    <createTable tableName="${prefix}HISTORY_DELETION">
+      <column name="RESOURCE_KEY" type="BIGINT">
+        <constraints primaryKey="true" nullable="false"/>
+      </column>
+      <column name="BATCH_OPERATION_KEY" type="BIGINT">
+        <constraints primaryKey="true" nullable="false"/>
+      </column>
+      <column name="RESOURCE_TYPE" type="VARCHAR(50)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="PARTITION_ID" type="INT">
+        <constraints nullable="false"/>
+      </column>
+    </createTable>
+  </changeSet>
+
+</databaseChangeLog>

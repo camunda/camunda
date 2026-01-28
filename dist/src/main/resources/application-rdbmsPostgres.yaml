@@ -30,22 +30,21 @@ zeebe:
     data:
       snapshotPeriod: 1m
 
-    cluster:
-      partitionsCount: 1
-
     exporters:
       rdbms:
         # Classname doesn't matter, since this exporter is present via spring bean
         className: io.camunda.exporter.rdbms.RdbmsExporter
 
 camunda:
+  cluster:
+    partition-count: 3
   data:
     secondary-storage:
       type: rdbms
       rdbms:
         url: jdbc:postgresql:camunda
         username: camunda
-        password: demo
+        password: camunda
         flushInterval: PT0.5S
         queueSize: 1000
         history:

@@ -42,7 +42,7 @@ camunda:
       rdbms:
         url: jdbc:oracle:thin:@localhost:1521/FREEPDB1
         username: camunda
-        password: demo
+        password: camunda
         flushInterval: PT0.5S
         maxQueueSize: 1000
         history:

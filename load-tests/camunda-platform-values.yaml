@@ -60,9 +60,9 @@ orchestration:
   image:
     tag: "SNAPSHOT"
   ## @param core.clusterSize defines the amount of brokers (=replicas), which are deployed via helm
-  clusterSize: "3"
+  clusterSize: "6"
   ## @param core.partitionCount defines how many partitions are set up in the cluster
-  partitionCount: "3"
+  partitionCount: "6"
   ## @param core.replicationFactor defines how each partition is replicated, the value defines the number of nodes
   replicationFactor: "3"
   ## @param core.cpuThreadCount defines how many threads can be used for the processing on each broker pod

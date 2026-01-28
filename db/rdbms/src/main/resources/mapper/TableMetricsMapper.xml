@@ -12,10 +12,12 @@
 
   <select id="countTableRows" parameterType="java.lang.String" resultType="long"
     databaseId="postgresql">
-    SELECT COALESCE(c.reltuples::BIGINT, -1) AS estimate
+    SELECT SUM(COALESCE(c.reltuples::BIGINT, -1)) AS estimate
     FROM pg_class c
            JOIN pg_namespace n ON n.oid = c.relnamespace
-    WHERE LOWER(c.relname) = LOWER('${prefix}${tableName}')
+    WHERE (LOWER(c.relname) = LOWER('${prefix}${tableName}')
+      OR c.relname LIKE LOWER('${prefix}${tableName}_part_%'))
+      AND c.relkind IN ('r', 'p')
       AND n.nspname = 'public'
   </select>
 

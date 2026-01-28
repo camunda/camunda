@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+  <!-- PostgreSQL: Create USER_TASK table with list partitioning -->
+  <changeSet id="create_user_task_table_postgresql" author="camunda" dbms="postgresql">
+    <sql splitStatements="false">
+      CREATE TABLE ${prefix}USER_TASK (
+        USER_TASK_KEY BIGINT,
+        ELEMENT_ID VARCHAR(${userCharColumnSize}),
+        NAME VARCHAR(${userCharColumnSize}),
+        PROCESS_DEFINITION_ID VARCHAR(${userCharColumnSize}),
+        CREATION_DATE TIMESTAMP(3) WITH TIME ZONE,
+        COMPLETION_DATE TIMESTAMP(3) WITH TIME ZONE,
+        ASSIGNEE VARCHAR(${userCharColumnSize}),
+        STATE VARCHAR(20),
+        FORM_KEY BIGINT,
+        PROCESS_DEFINITION_KEY BIGINT,
+        PROCESS_INSTANCE_KEY BIGINT,
+        ROOT_PROCESS_INSTANCE_KEY BIGINT,
+        ELEMENT_INSTANCE_KEY BIGINT,
+        TENANT_ID VARCHAR(${userCharColumnSize}),
+        DUE_DATE TIMESTAMP(3) WITH TIME ZONE,
+        FOLLOW_UP_DATE TIMESTAMP(3) WITH TIME ZONE,
+        EXTERNAL_FORM_REFERENCE VARCHAR(${userCharColumnSize}),
+        PROCESS_DEFINITION_VERSION SMALLINT,
+        CUSTOM_HEADERS TEXT,
+        PRIORITY INTEGER,
+        PARTITION_ID INTEGER,
+        HISTORY_CLEANUP_DATE TIMESTAMP(3) WITH TIME ZONE,
+        PRIMARY KEY (USER_TASK_KEY, PARTITION_ID)
+      ) PARTITION BY LIST (PARTITION_ID);
+    </sql>
+  </changeSet>
+
+  <changeSet id="create_user_task_partitions_postgresql" author="camunda" dbms="postgresql">
+    <sql splitStatements="false">
+      DO $$
+      DECLARE
+        partition_count INTEGER := ${partitionsCount};
+        i INTEGER;
+      BEGIN
+        FOR i IN 1..(partition_count) LOOP
+          EXECUTE format('CREATE TABLE ${prefix}USER_TASK_PART_%s PARTITION OF ${prefix}USER_TASK FOR VALUES IN (%s)', i, i);
+        END LOOP;
+      END $$;
+    </sql>
+  </changeSet>
+
+  <!-- Oracle: Create USER_TASK table with hash partitioning -->
+  <changeSet id="create_user_task_table_oracle" author="camunda" dbms="oracle">
+    <sql splitStatements="false">
+      CREATE TABLE ${prefix}USER_TASK (
+        USER_TASK_KEY NUMBER(19),
+        ELEMENT_ID VARCHAR2(${userCharColumnSize}),
+        NAME VARCHAR2(${userCharColumnSize}),
+        PROCESS_DEFINITION_ID VARCHAR2(${userCharColumnSize}),
+        CREATION_DATE TIMESTAMP(3) WITH TIME ZONE,
+        COMPLETION_DATE TIMESTAMP(3) WITH TIME ZONE,
+        ASSIGNEE VARCHAR2(${userCharColumnSize}),
+        STATE VARCHAR2(20),
+        FORM_KEY NUMBER(19),
+        PROCESS_DEFINITION_KEY NUMBER(19),
+        PROCESS_INSTANCE_KEY NUMBER(19),
+        ROOT_PROCESS_INSTANCE_KEY NUMBER(19),
+        ELEMENT_INSTANCE_KEY NUMBER(19),
+        TENANT_ID VARCHAR2(${userCharColumnSize}),
+        DUE_DATE TIMESTAMP(3) WITH TIME ZONE,
+        FOLLOW_UP_DATE TIMESTAMP(3) WITH TIME ZONE,
+        EXTERNAL_FORM_REFERENCE VARCHAR2(${userCharColumnSize}),
+        PROCESS_DEFINITION_VERSION NUMBER(5),
+        CUSTOM_HEADERS CLOB,
+        PRIORITY NUMBER,
+        PARTITION_ID NUMBER,
+        HISTORY_CLEANUP_DATE TIMESTAMP(3) WITH TIME ZONE,
+        PRIMARY KEY (USER_TASK_KEY, PARTITION_ID)
+      ) PARTITION BY HASH (PARTITION_ID) PARTITIONS ${partitionsCount}
+    </sql>
+  </changeSet>
+
+  <!-- MSSQL: Create partition function and scheme -->
+  <changeSet id="create_user_task_partition_function_mssql" author="camunda" dbms="mssql">
+    <preConditions onFail="MARK_RAN">
+      <sqlCheck expectedResult="0">
+        SELECT COUNT(*) FROM sys.partition_functions WHERE name = '${prefix}PF_USER_TASK'
+      </sqlCheck>
+    </preConditions>
+    <sql splitStatements="false">
+      DECLARE @partitionCount INT = ${partitionsCount};
+      DECLARE @sql NVARCHAR(MAX);
+      DECLARE @i INT = 0;
+
+      SET @sql = N'CREATE PARTITION FUNCTION ${prefix}PF_USER_TASK (INT) AS RANGE LEFT FOR VALUES (';
+      WHILE @i &lt; @partitionCount - 1
+      BEGIN
+        SET @sql = @sql + CAST(@i AS NVARCHAR(10));
+        IF @i &lt; @partitionCount - 2
+          SET @sql = @sql + N', ';
+        SET @i = @i + 1;
+      END;
+      SET @sql = @sql + N')';
+      EXEC sp_executesql @sql;
+
+      SET @sql = N'CREATE PARTITION SCHEME ${prefix}PS_USER_TASK AS PARTITION ${prefix}PF_USER_TASK ALL TO ([PRIMARY])';
+      EXEC sp_executesql @sql;
+    </sql>
+  </changeSet>
+
+  <!-- MSSQL: Create USER_TASK table (after partition function/scheme) -->
+  <changeSet id="create_user_task_table_mssql" author="camunda" dbms="mssql">
+    <sql splitStatements="false">
+      CREATE TABLE ${prefix}USER_TASK (
+        USER_TASK_KEY BIGINT,
+        ELEMENT_ID NVARCHAR(${userCharColumnSize}),
+        NAME NVARCHAR(${userCharColumnSize}),
+        PROCESS_DEFINITION_ID NVARCHAR(${userCharColumnSize}),
+        CREATION_DATE DATETIMEOFFSET(3),
+        COMPLETION_DATE DATETIMEOFFSET(3),
+        ASSIGNEE NVARCHAR(${userCharColumnSize}),
+        STATE NVARCHAR(20),
+        FORM_KEY BIGINT,
+        PROCESS_DEFINITION_KEY BIGINT,
+        PROCESS_INSTANCE_KEY BIGINT,
+        ROOT_PROCESS_INSTANCE_KEY BIGINT,
+        ELEMENT_INSTANCE_KEY BIGINT,
+        TENANT_ID NVARCHAR(${userCharColumnSize}),
+        DUE_DATE DATETIMEOFFSET(3),
+        FOLLOW_UP_DATE DATETIMEOFFSET(3),
+        EXTERNAL_FORM_REFERENCE NVARCHAR(${userCharColumnSize}),
+        PROCESS_DEFINITION_VERSION SMALLINT,
+        CUSTOM_HEADERS NVARCHAR(MAX),
+        PRIORITY INT,
+        PARTITION_ID INT,
+        HISTORY_CLEANUP_DATE DATETIMEOFFSET(3),
+        PRIMARY KEY (USER_TASK_KEY, PARTITION_ID)
+      )
+    </sql>
+  </changeSet>
+
+  <!-- MariaDB/MySQL: Create USER_TASK table (no partitioning support) -->
+  <changeSet id="create_user_task_table" author="camunda" dbms="h2,mariadb,mysql">
+    <createTable tableName="${prefix}USER_TASK">
+      <column name="USER_TASK_KEY" type="BIGINT">
+        <constraints primaryKey="true"/>
+      </column>
+      <column name="ELEMENT_ID" type="VARCHAR(${userCharColumnSize})"/>
+      <column name="NAME" type="VARCHAR(${userCharColumnSize})"/>
+      <column name="PROCESS_DEFINITION_ID" type="VARCHAR(${userCharColumnSize})"/>
+      <column name="CREATION_DATE" type="TIMESTAMP(3)"/>
+      <column name="COMPLETION_DATE" type="TIMESTAMP(3)"/>
+      <column name="ASSIGNEE" type="VARCHAR(${userCharColumnSize})"/>
+      <column name="STATE" type="VARCHAR(20)"/>
+      <column name="FORM_KEY" type="BIGINT"/>
+      <column name="PROCESS_DEFINITION_KEY" type="BIGINT"/>
+      <column name="PROCESS_INSTANCE_KEY" type="BIGINT"/>
+      <column name="ROOT_PROCESS_INSTANCE_KEY" type="BIGINT"/>
+      <column name="ELEMENT_INSTANCE_KEY" type="BIGINT"/>
+      <column name="TENANT_ID" type="VARCHAR(${userCharColumnSize})"/>
+      <column name="DUE_DATE" type="TIMESTAMP(3)"/>
+      <column name="FOLLOW_UP_DATE" type="TIMESTAMP(3)"/>
+      <column name="EXTERNAL_FORM_REFERENCE" type="VARCHAR(${userCharColumnSize})"/>
+      <column name="PROCESS_DEFINITION_VERSION" type="SMALLINT"/>
+      <column name="CUSTOM_HEADERS" type="CLOB"/>
+      <column name="PRIORITY" type="INT"/>
+      <column name="PARTITION_ID" type="INT">
+        <constraints primaryKey="true"/>
+      </column>
+      <column name="HISTORY_CLEANUP_DATE" type="TIMESTAMP(3)"/>
+    </createTable>
+  </changeSet>
+
+  <!-- Generic indices for all databases -->
+  <changeSet id="create_user_task_indices" author="camunda">
+    <createIndex tableName="${prefix}USER_TASK" indexName="${prefix}IDX_USER_TASK_PI_KEY">
+      <column name="PROCESS_INSTANCE_KEY"/>
+    </createIndex>
+
+    <createIndex tableName="${prefix}USER_TASK" indexName="${prefix}IDX_USER_TASK_RPI_KEY">
+      <column name="ROOT_PROCESS_INSTANCE_KEY"/>
+    </createIndex>
+
+    <createIndex tableName="${prefix}USER_TASK" indexName="${prefix}IDX_USER_TASK_FNI_KEY">
+      <column name="ELEMENT_INSTANCE_KEY"/>
+    </createIndex>
+  </changeSet>
+
+</databaseChangeLog>

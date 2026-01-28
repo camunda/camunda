@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+  <!-- PostgreSQL: Create DECISION_INSTANCE table with list partitioning -->
+  <changeSet id="create_decision_instance_table_postgresql" author="camunda" dbms="postgresql">
+    <sql splitStatements="false">
+      CREATE TABLE ${prefix}DECISION_INSTANCE (
+        DECISION_INSTANCE_ID VARCHAR(${userCharColumnSize}),
+        DECISION_INSTANCE_KEY BIGINT,
+        PROCESS_INSTANCE_KEY BIGINT,
+        ROOT_PROCESS_INSTANCE_KEY BIGINT,
+        PROCESS_DEFINITION_ID VARCHAR(${userCharColumnSize}),
+        PROCESS_DEFINITION_KEY BIGINT,
+        DECISION_DEFINITION_ID VARCHAR(${userCharColumnSize}),
+        DECISION_DEFINITION_KEY BIGINT,
+        DECISION_REQUIREMENTS_ID VARCHAR(${userCharColumnSize}),
+        DECISION_REQUIREMENTS_KEY BIGINT,
+        FLOW_NODE_ID VARCHAR(${userCharColumnSize}),
+        FLOW_NODE_INSTANCE_KEY BIGINT,
+        ROOT_DECISION_DEFINITION_KEY BIGINT,
+        EVALUATION_DATE TIMESTAMP(3) WITH TIME ZONE,
+        TYPE VARCHAR(255),
+        STATE VARCHAR(255),
+        RESULT VARCHAR(${userCharColumnSize}),
+        EVALUATION_FAILURE VARCHAR(${userCharColumnSize}),
+        EVALUATION_FAILURE_MESSAGE VARCHAR(4000),
+        TENANT_ID VARCHAR(${userCharColumnSize}),
+        PARTITION_ID INTEGER,
+        HISTORY_CLEANUP_DATE TIMESTAMP(3) WITH TIME ZONE,
+        PRIMARY KEY (DECISION_INSTANCE_ID, PARTITION_ID)
+      ) PARTITION BY LIST (PARTITION_ID);
+    </sql>
+  </changeSet>
+
+  <changeSet id="create_decision_instance_partitions_postgresql" author="camunda" dbms="postgresql">
+    <sql splitStatements="false">
+      DO $$
+      DECLARE
+        partition_count INTEGER := ${partitionsCount};
+        i INTEGER;
+      BEGIN
+        FOR i IN 1..(partition_count) LOOP
+          EXECUTE format('CREATE TABLE ${prefix}DECISION_INSTANCE_PART_%s PARTITION OF ${prefix}DECISION_INSTANCE FOR VALUES IN (%s)', i, i);
+        END LOOP;
+      END $$;
+    </sql>
+  </changeSet>
+
+  <!-- Oracle: Create DECISION_INSTANCE table with hash partitioning -->
+  <changeSet id="create_decision_instance_table_oracle" author="camunda" dbms="oracle">
+    <sql splitStatements="false">
+      CREATE TABLE ${prefix}DECISION_INSTANCE (
+        DECISION_INSTANCE_ID VARCHAR2(${userCharColumnSize}),
+        DECISION_INSTANCE_KEY NUMBER(19),
+        PROCESS_INSTANCE_KEY NUMBER(19),
+        ROOT_PROCESS_INSTANCE_KEY NUMBER(19),
+        PROCESS_DEFINITION_ID VARCHAR2(${userCharColumnSize}),
+        PROCESS_DEFINITION_KEY NUMBER(19),
+        DECISION_DEFINITION_ID VARCHAR2(${userCharColumnSize}),
+        DECISION_DEFINITION_KEY NUMBER(19),
+        DECISION_REQUIREMENTS_ID VARCHAR2(${userCharColumnSize}),
+        DECISION_REQUIREMENTS_KEY NUMBER(19),
+        FLOW_NODE_ID VARCHAR2(${userCharColumnSize}),
+        FLOW_NODE_INSTANCE_KEY NUMBER(19),
+        ROOT_DECISION_DEFINITION_KEY NUMBER(19),
+        EVALUATION_DATE TIMESTAMP(3) WITH TIME ZONE,
+        TYPE VARCHAR2(255),
+        STATE VARCHAR2(255),
+        RESULT VARCHAR2(${userCharColumnSize}),
+        EVALUATION_FAILURE VARCHAR2(${userCharColumnSize}),
+        EVALUATION_FAILURE_MESSAGE VARCHAR2(4000),
+        TENANT_ID VARCHAR2(${userCharColumnSize}),
+        PARTITION_ID NUMBER,
+        HISTORY_CLEANUP_DATE TIMESTAMP(3) WITH TIME ZONE,
+        PRIMARY KEY (DECISION_INSTANCE_ID, PARTITION_ID)
+      ) PARTITION BY HASH (PARTITION_ID) PARTITIONS ${partitionsCount}
+    </sql>
+  </changeSet>
+
+  <!-- MSSQL: Create partition function and scheme -->
+  <changeSet id="create_decision_instance_partition_function_mssql" author="camunda" dbms="mssql">
+    <preConditions onFail="MARK_RAN">
+      <sqlCheck expectedResult="0">
+        SELECT COUNT(*) FROM sys.partition_functions WHERE name = '${prefix}PF_DECISION_INSTANCE'
+      </sqlCheck>
+    </preConditions>
+    <sql splitStatements="false">
+      DECLARE @partitionCount INT = ${partitionsCount};
+      DECLARE @sql NVARCHAR(MAX);
+      DECLARE @i INT = 0;
+
+      SET @sql = N'CREATE PARTITION FUNCTION ${prefix}PF_DECISION_INSTANCE (INT) AS RANGE LEFT FOR VALUES (';
+      WHILE @i &lt; @partitionCount - 1
+      BEGIN
+        SET @sql = @sql + CAST(@i AS NVARCHAR(10));
+        IF @i &lt; @partitionCount - 2
+          SET @sql = @sql + N', ';
+        SET @i = @i + 1;
+      END;
+      SET @sql = @sql + N')';
+      EXEC sp_executesql @sql;
+
+      SET @sql = N'CREATE PARTITION SCHEME ${prefix}PS_DECISION_INSTANCE AS PARTITION ${prefix}PF_DECISION_INSTANCE ALL TO ([PRIMARY])';
+      EXEC sp_executesql @sql;
+    </sql>
+  </changeSet>
+
+  <!-- MSSQL: Create DECISION_INSTANCE table (after partition function/scheme) -->
+  <changeSet id="create_decision_instance_table_mssql" author="camunda" dbms="mssql">
+    <sql splitStatements="false">
+      CREATE TABLE ${prefix}DECISION_INSTANCE (
+        -- TODO MS SQL Server: Change VARCHAR to NVARCHAR to support Unicode characters
+        DECISION_INSTANCE_ID VARCHAR(${userCharColumnSize}),
+        DECISION_INSTANCE_KEY BIGINT,
+        PROCESS_INSTANCE_KEY BIGINT,
+        ROOT_PROCESS_INSTANCE_KEY BIGINT,
+        PROCESS_DEFINITION_ID NVARCHAR(${userCharColumnSize}),
+        PROCESS_DEFINITION_KEY BIGINT,
+        DECISION_DEFINITION_ID NVARCHAR(${userCharColumnSize}),
+        DECISION_DEFINITION_KEY BIGINT,
+        DECISION_REQUIREMENTS_ID NVARCHAR(${userCharColumnSize}),
+        DECISION_REQUIREMENTS_KEY BIGINT,
+        FLOW_NODE_ID NVARCHAR(${userCharColumnSize}),
+        FLOW_NODE_INSTANCE_KEY BIGINT,
+        ROOT_DECISION_DEFINITION_KEY BIGINT,
+        EVALUATION_DATE DATETIMEOFFSET(3),
+        TYPE NVARCHAR(255),
+        STATE NVARCHAR(255),
+        RESULT NVARCHAR(${userCharColumnSize}),
+        EVALUATION_FAILURE NVARCHAR(${userCharColumnSize}),
+        EVALUATION_FAILURE_MESSAGE NVARCHAR(4000),
+        TENANT_ID NVARCHAR(${userCharColumnSize}),
+        PARTITION_ID INT,
+        HISTORY_CLEANUP_DATE DATETIMEOFFSET(3),
+        PRIMARY KEY (DECISION_INSTANCE_ID, PARTITION_ID)
+      )
+    </sql>
+  </changeSet>
+
+  <!-- MariaDB/MySQL: Create DECISION_INSTANCE table (no partitioning support) -->
+  <changeSet id="create_decision_instance_table" author="camunda" dbms="h2,mariadb,mysql">
+    <createTable tableName="${prefix}DECISION_INSTANCE">
+      <column name="DECISION_INSTANCE_ID" type="VARCHAR(${userCharColumnSize})">
+        <constraints primaryKey="true"/>
+      </column>
+      <column name="DECISION_INSTANCE_KEY" type="BIGINT"/>
+      <column name="PROCESS_INSTANCE_KEY" type="BIGINT"/>
+      <column name="ROOT_PROCESS_INSTANCE_KEY" type="BIGINT"/>
+      <column name="PROCESS_DEFINITION_ID" type="VARCHAR(${userCharColumnSize})"/>
+      <column name="PROCESS_DEFINITION_KEY" type="BIGINT"/>
+      <column name="DECISION_DEFINITION_ID" type="VARCHAR(${userCharColumnSize})"/>
+      <column name="DECISION_DEFINITION_KEY" type="BIGINT"/>
+      <column name="DECISION_REQUIREMENTS_ID" type="VARCHAR(${userCharColumnSize})"/>
+      <column name="DECISION_REQUIREMENTS_KEY" type="BIGINT"/>
+      <column name="FLOW_NODE_ID" type="VARCHAR(${userCharColumnSize})"/>
+      <column name="FLOW_NODE_INSTANCE_KEY" type="BIGINT"/>
+      <column name="ROOT_DECISION_DEFINITION_KEY" type="BIGINT"/>
+      <column name="EVALUATION_DATE" type="TIMESTAMP(3)"/>
+      <column name="TYPE" type="VARCHAR(255)"/>
+      <column name="STATE" type="VARCHAR(255)"/>
+      <column name="RESULT" type="VARCHAR(${userCharColumnSize})"/>
+      <column name="EVALUATION_FAILURE" type="VARCHAR(${userCharColumnSize})"/>
+      <column name="EVALUATION_FAILURE_MESSAGE" type="VARCHAR(4000)"/>
+      <column name="TENANT_ID" type="VARCHAR(${userCharColumnSize})"/>
+      <column name="PARTITION_ID" type="INT">
+        <constraints primaryKey="true"/>
+      </column>
+      <column name="HISTORY_CLEANUP_DATE" type="TIMESTAMP(3)"/>
+    </createTable>
+  </changeSet>
+
+  <!-- Generic indices for all databases -->
+  <changeSet id="create_decision_instance_indices" author="camunda">
+    <createIndex tableName="${prefix}DECISION_INSTANCE" indexName="${prefix}IDX_DECISION_INSTANCE_PI_KEY">
+      <column name="PROCESS_INSTANCE_KEY"/>
+    </createIndex>
+
+    <createIndex tableName="${prefix}DECISION_INSTANCE" indexName="${prefix}IDX_DECISION_INSTANCE_RPI_KEY">
+      <column name="ROOT_PROCESS_INSTANCE_KEY"/>
+    </createIndex>
+
+    <createIndex tableName="${prefix}DECISION_INSTANCE" indexName="${prefix}IDX_DECISION_INSTANCE_DD_KEY">
+      <column name="DECISION_DEFINITION_KEY"/>
+    </createIndex>
+
+    <createIndex tableName="${prefix}DECISION_INSTANCE" indexName="${prefix}IDX_DECISION_INSTANCE_FNI_KEY">
+      <column name="FLOW_NODE_INSTANCE_KEY"/>
+    </createIndex>
+  </changeSet>
+
+</databaseChangeLog>

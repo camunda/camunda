@@ -78,10 +78,13 @@ public class MyBatisConfiguration {
   public RdbmsSchemaManager rdbmsExporterLiquibase(
       final DataSource dataSource,
       final VendorDatabaseProperties vendorDatabaseProperties,
-      @Value("${camunda.data.secondary-storage.rdbms.prefix:}") final String prefix) {
+      @Value("${camunda.data.secondary-storage.rdbms.prefix:}") final String prefix,
+      @Value("${camunda.cluster.partition-count:1}") final int partitionsCount) {
     final String trimmedPrefix = StringUtils.trimToEmpty(prefix);
     LOGGER.info(
-        "Initializing Liquibase for RDBMS with global table trimmedPrefix '{}'.", trimmedPrefix);
+        "Initializing Liquibase for RDBMS with {} partitions and global table trimmedPrefix '{}'.",
+        partitionsCount,
+        trimmedPrefix);
 
     final var moduleConfig = new LiquibaseSchemaManager();
     moduleConfig.setDataSource(dataSource);
@@ -92,7 +95,9 @@ public class MyBatisConfiguration {
             "prefix",
             trimmedPrefix,
             "userCharColumnSize",
-            Integer.toString(vendorDatabaseProperties.userCharColumnSize())));
+            Integer.toString(vendorDatabaseProperties.userCharColumnSize()),
+            "partitionsCount",
+            Integer.toString(partitionsCount)));
     // changelog file located in src/main/resources directly in the module
     moduleConfig.setChangeLog("db/changelog/rdbms-exporter/changelog-master.xml");
 

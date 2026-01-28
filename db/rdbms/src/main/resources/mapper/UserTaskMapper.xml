@@ -28,26 +28,26 @@
   </insert>
 
   <insert id="insertCandidateUsers" parameterType="io.camunda.db.rdbms.write.domain.UserTaskDbModel">
-    INSERT INTO ${prefix}CANDIDATE_USER (USER_TASK_KEY, CANDIDATE_USER)
+    INSERT INTO ${prefix}CANDIDATE_USER (USER_TASK_KEY, PARTITION_ID, CANDIDATE_USER)
     VALUES
     <foreach collection="candidateUsers" item="candidateUser" separator=", ">
-      (#{userTaskKey}, #{candidateUser})
+      (#{userTaskKey}, #{partitionId}, #{candidateUser})
     </foreach>
   </insert>
 
   <insert id="insertCandidateGroups" parameterType="io.camunda.db.rdbms.write.domain.UserTaskDbModel">
-    INSERT INTO ${prefix}CANDIDATE_GROUP (USER_TASK_KEY, CANDIDATE_GROUP)
+    INSERT INTO ${prefix}CANDIDATE_GROUP (USER_TASK_KEY, PARTITION_ID, CANDIDATE_GROUP)
     VALUES
     <foreach collection="candidateGroups" item="candidateGroup" separator=", ">
-      (#{userTaskKey}, #{candidateGroup})
+      (#{userTaskKey}, #{partitionId}, #{candidateGroup})
     </foreach>
   </insert>
 
   <insert id="insertTags" parameterType="io.camunda.db.rdbms.write.domain.UserTaskDbModel">
-    INSERT INTO ${prefix}USER_TASK_TAG (USER_TASK_KEY, TAG_VALUE)
+    INSERT INTO ${prefix}USER_TASK_TAG (USER_TASK_KEY, PARTITION_ID, TAG_VALUE)
     VALUES
     <foreach collection="tags" item="tag" separator=", ">
-      (#{userTaskKey}, #{tag})
+      (#{userTaskKey}, #{partitionId}, #{tag})
     </foreach>
   </insert>
 
