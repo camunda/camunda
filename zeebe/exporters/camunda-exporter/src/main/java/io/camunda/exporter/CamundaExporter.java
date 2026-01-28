@@ -187,6 +187,13 @@ public class CamundaExporter implements Exporter {
 
   @Override
   public void export(final Record<?> record) {
+
+    // If a failure was recorded while flushing, throw it when trying to export the next record
+    final var failure = flusher.failure();
+    if (failure != null) {
+      throw failure;
+    }
+
     if (writer.getBatchSize() == 0) {
       metrics.startFlushLatencyMeasurement();
     }
@@ -388,16 +395,30 @@ public class CamundaExporter implements Exporter {
   }
 
   class Flusher {
-    final Semaphore semaphore = new Semaphore(WRITERS_NUMBER);
+    final Semaphore flushQueue = new Semaphore(WRITERS_NUMBER);
+    final Semaphore errorSemaphore = new Semaphore(1);
     private final ScheduledExecutorService flushExecutorService;
+    private ExporterException currentException = null;
 
     Flusher() {
       flushExecutorService = Executors.newSingleThreadScheduledExecutor();
     }
 
+    ExporterException failure() {
+      try {
+        errorSemaphore.acquire();
+      } catch (final InterruptedException e) {
+        throw new RuntimeException(e);
+      }
+      final var exception = currentException;
+      currentException = null;
+      errorSemaphore.release();
+      return exception;
+    }
+
     void flush() {
       try {
-        semaphore.acquire();
+        flushQueue.acquire();
       } catch (final InterruptedException e) {
         throw new RuntimeException(e);
       }
@@ -406,6 +427,13 @@ public class CamundaExporter implements Exporter {
       final var currentLastPosition = lastPosition;
       flushExecutorService.submit(
           () -> {
+            if (currentException != null) {
+              // Do nothing if there is already a recorded exception
+              flushQueue.release();
+              return;
+            }
+
+            // Execute flush
             try (final var ignored = metrics.measureFlushDuration()) {
               metrics.recordBulkSize(currentWriter.getBatchSize());
               final BatchRequest batchRequest =
@@ -415,9 +443,19 @@ public class CamundaExporter implements Exporter {
               metrics.stopFlushLatencyMeasurement();
             } catch (final PersistenceException ex) {
               metrics.recordFailedFlush();
-              throw new ExporterException(ex.getMessage(), ex);
+
+              // Record the exception and release the semaphore only after all other queued flushes
+              // are done
+              try {
+                errorSemaphore.acquire();
+              } catch (final InterruptedException e) {
+                throw new RuntimeException(e);
+              }
+              currentException = new ExporterException(ex.getMessage(), ex);
+              flushExecutorService.submit(() -> errorSemaphore.release());
+              return;
             } finally {
-              semaphore.release();
+              flushQueue.release();
             }
 
             // Update the record counters only after the flush was successful. If the synchronous
