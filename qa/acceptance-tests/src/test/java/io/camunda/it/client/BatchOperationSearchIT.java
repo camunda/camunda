@@ -479,6 +479,8 @@ public class BatchOperationSearchIT {
     assertThat(batch.getOperationsFailedCount()).isEqualTo(0);
     assertThat(batch.getActorType()).isEqualTo(AuditLogActorTypeEnum.USER);
     assertThat(batch.getActorId()).isEqualTo(InitializationConfiguration.DEFAULT_USER_USERNAME);
+    assertThat(batch.getStartDate()).isNotNull();
+    assertThat(batch.getEndDate()).isNotNull();
   }
 
   private static void assertItems(
