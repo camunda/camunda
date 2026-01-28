@@ -247,6 +247,16 @@
       <scope>provided</scope>
     </dependency>
 
+    <!-- Spring WebSocket support -->
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-websocket</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-websocket</artifactId>
+    </dependency>
+
     <!-- test dependencies -->
     <dependency>
       <groupId>io.camunda</groupId>
@@ -449,6 +459,8 @@
             <!-- Needed to run tests -->
             <dependency>org.springframework.boot:spring-boot-starter-web</dependency>
             <dependency>org.xmlunit:xmlunit-core</dependency>
+            <!-- Needed for WebSocket auto-configuration -->
+            <dependency>org.springframework.boot:spring-boot-starter-websocket</dependency>
           </usedDependencies>
         </configuration>
       </plugin>
