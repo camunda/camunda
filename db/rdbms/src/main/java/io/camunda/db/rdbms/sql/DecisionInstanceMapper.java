@@ -27,4 +27,6 @@ public interface DecisionInstanceMapper extends ProcessInstanceDependantMapper {
   List<DecisionInstanceDbModel.EvaluatedInput> loadInputs(List<String> decisionInstanceIds);
 
   List<DecisionInstanceDbModel.EvaluatedOutput> loadOutputs(List<String> decisionInstanceIds);
+
+  int cleanupHistory(HistoryCleanupMapper.CleanupHistoryDto dto);
 }

@@ -96,6 +96,8 @@ class HistoryCleanupServiceTest {
     when(batchOperationWriter.cleanupHistory(any(), anyInt())).thenReturn(0);
     when(usageMetricWriter.cleanupMetrics(anyInt(), any(), anyInt())).thenReturn(0);
     when(usageMetricTUWriter.cleanupMetrics(anyInt(), any(), anyInt())).thenReturn(0);
+    when(decisionInstanceWriter.cleanupHistory(anyInt(), any(), anyInt())).thenReturn(0);
+    when(auditLogWriter.cleanupHistory(anyInt(), any(), anyInt())).thenReturn(0);
 
     final var historyConfig = mock(RdbmsWriterConfig.HistoryConfig.class);
     when(config.history()).thenReturn(historyConfig);
@@ -162,6 +164,8 @@ class HistoryCleanupServiceTest {
     when(auditLogWriter.deleteProcessInstanceRelatedData(anyInt(), any(), anyInt())).thenReturn(0);
     when(processInstanceWriter.deleteByKeys(any())).thenReturn(3);
     when(batchOperationWriter.cleanupHistory(any(), anyInt())).thenReturn(1);
+    when(decisionInstanceWriter.cleanupHistory(anyInt(), any(), anyInt())).thenReturn(2);
+    when(auditLogWriter.cleanupHistory(anyInt(), any(), anyInt())).thenReturn(1);
 
     // when
     final Duration nextCleanupInterval =
@@ -194,6 +198,8 @@ class HistoryCleanupServiceTest {
     // PIs deleted since no child entities were found
     verify(processInstanceWriter).deleteByKeys(expiredProcessInstanceKeys);
     verify(batchOperationWriter).cleanupHistory(CLEANUP_DATE, 100);
+    verify(decisionInstanceWriter).cleanupHistory(PARTITION_ID, CLEANUP_DATE, 100);
+    verify(auditLogWriter).cleanupHistory(PARTITION_ID, CLEANUP_DATE, 100);
   }
 
   @Test
@@ -397,5 +403,24 @@ class HistoryCleanupServiceTest {
 
     assertThat(historyCleanupService.resolveBatchOperationTTL(BatchOperationType.ADD_VARIABLE))
         .isEqualTo(Duration.ofDays(90)); // default history TTL
+  }
+
+  @Test
+  void testCleanupStandaloneDecisionInstances() {
+    // given - no expired process instances, but standalone decision instances exist
+    when(processInstanceReader.selectExpiredProcessInstances(anyInt(), any(), anyInt()))
+        .thenReturn(java.util.Collections.emptyList());
+    when(batchOperationWriter.cleanupHistory(any(), anyInt())).thenReturn(0);
+    when(decisionInstanceWriter.cleanupHistory(anyInt(), any(), anyInt())).thenReturn(5);
+    when(auditLogWriter.cleanupHistory(anyInt(), any(), anyInt())).thenReturn(3);
+
+    // when
+    final Duration nextCleanupInterval =
+        historyCleanupService.cleanupHistory(PARTITION_ID, CLEANUP_DATE);
+
+    // then
+    assertThat(nextCleanupInterval).isEqualTo(Duration.ofHours(1));
+    verify(decisionInstanceWriter).cleanupHistory(PARTITION_ID, CLEANUP_DATE, 100);
+    verify(auditLogWriter).cleanupHistory(PARTITION_ID, CLEANUP_DATE, 100);
   }
 }

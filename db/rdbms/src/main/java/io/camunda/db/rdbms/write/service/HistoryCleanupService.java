@@ -234,6 +234,16 @@ public class HistoryCleanupService {
       numDeletedRecords.put(
           "batchOperation", batchOperationWriter.cleanupHistory(cleanupDate, cleanupBatchSize));
 
+      // Clean up standalone decision instances (without process instance context)
+      numDeletedRecords.put(
+          "standaloneDecisionInstance",
+          decisionInstanceWriter.cleanupHistory(partitionId, cleanupDate, cleanupBatchSize));
+
+      // Clean up audit logs for standalone decision instances
+      numDeletedRecords.put(
+          "standaloneDecisionAuditLog",
+          auditLogWriter.cleanupHistory(partitionId, cleanupDate, cleanupBatchSize));
+
       final long end = System.currentTimeMillis();
       logCleanUpInfo("", partitionId, numDeletedRecords, cleanupDate, end, start);
 

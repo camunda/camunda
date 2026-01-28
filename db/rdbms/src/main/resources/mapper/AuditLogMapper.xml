@@ -378,5 +378,10 @@
     LIMIT #{limit})
   </delete>
 
+  <delete id="cleanupHistory">
+    <bind name="tableName" value="'AUDIT_LOG'"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.historyCleanup"/>
+  </delete>
+
 </mapper>
 
