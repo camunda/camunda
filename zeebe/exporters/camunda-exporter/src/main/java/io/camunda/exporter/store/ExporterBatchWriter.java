@@ -15,7 +15,6 @@ import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.util.ObjectSizeEstimator;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.ArrayList;
@@ -30,12 +29,12 @@ import java.util.function.BiConsumer;
 public final class ExporterBatchWriter {
   private final Map<EntityIdAndEntityType, ExporterEntity> cachedEntities = new HashMap<>();
   private final List<EntityAndHandler> cachedEntitiesToFlush = new ArrayList<>();
-  private final Map<EntityIdAndEntityType, Long> cachedEntitySizes = new HashMap<>();
   private final Map<Long, Long> cachedRecordTimestamps = new HashMap<>();
 
   private final Map<ValueType, List<ExportHandler>> handlers;
   private final BiConsumer<String, Error> customErrorHandler;
   private final CamundaExporterMetrics metrics;
+  private int memoryEstimation = 0;
 
   private ExporterBatchWriter(
       final Map<ValueType, List<ExportHandler>> handlers,
@@ -47,6 +46,10 @@ public final class ExporterBatchWriter {
   }
 
   public void addRecord(final Record<?> record) {
+    addRecord(record, 0);
+  }
+
+  public void addRecord(final Record<?> record, final int length) {
     final ValueType valueType = record.getValueType();
 
     handlers
@@ -55,22 +58,26 @@ public final class ExporterBatchWriter {
             handler -> {
               if (handler.handlesRecord(record)) {
                 final List<String> entityIds = handler.generateIds(record);
-                entityIds.forEach(id -> updateAndCacheEntity(record, handler, id));
+                entityIds.forEach(
+                    id -> {
+                      updateAndCacheEntity(record, handler, id, length);
+                    });
               }
             });
   }
 
   private void updateAndCacheEntity(
-      final Record<?> record, final ExportHandler handler, final String id) {
+      final Record<?> record, final ExportHandler handler, final String id, final int length) {
     final var cacheKey = new EntityIdAndEntityType(id, handler.getEntityType());
 
+    if (!cachedEntities.containsKey(cacheKey)) {
+      memoryEstimation += length;
+    }
     final ExporterEntity entity =
         cachedEntities.computeIfAbsent(cacheKey, (k) -> handler.createNewEntity(id));
 
     handler.updateEntity(record, entity);
     cachedRecordTimestamps.put(record.getPosition(), record.getTimestamp());
-
-    cachedEntitySizes.put(cacheKey, ObjectSizeEstimator.estimateSize(entity));
 
     // we store all handlers for an entity to make sure not to miss any flushes.
     // we flush them in the same order as they were originally run.
@@ -99,8 +106,7 @@ public final class ExporterBatchWriter {
   }
 
   public int getBatchMemoryEstimateInMb() {
-    return (int) cachedEntitySizes.values().stream().mapToLong(Long::longValue).sum()
-        / (1024 * 1024);
+    return memoryEstimation / (1024 * 1024);
   }
 
   private void observeRecordTimestamps() {
@@ -121,7 +127,7 @@ public final class ExporterBatchWriter {
   private void reset() {
     cachedEntities.clear();
     cachedEntitiesToFlush.clear();
-    cachedEntitySizes.clear();
+    memoryEstimation = 0;
   }
 
   public static final class Builder {

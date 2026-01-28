@@ -187,12 +187,17 @@ public class CamundaExporter implements Exporter {
 
   @Override
   public void export(final Record<?> record) {
+    export(record, 0);
+  }
+
+  @Override
+  public void export(final Record<?> record, final int length) {
     if (writer.getBatchSize() == 0) {
       metrics.startFlushLatencyMeasurement();
     }
 
     // adding record is idempotent
-    writer.addRecord(record);
+    writer.addRecord(record, length);
 
     lastPosition = record.getPosition();
 
