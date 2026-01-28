@@ -123,7 +123,7 @@ public record RdbmsWriterConfig(
     public static final Duration DEFAULT_USAGE_METRICS_TTL = Duration.ofDays(730);
     public static final int DEFAULT_HISTORY_CLEANUP_BATCH_SIZE = 10000;
     // Keep this smaller to avoid Oracle IN-clause limit (1000)
-    // when passing PI keys to deleteProcessInstanceRelatedData()
+    // when passing PI keys to deleteRootProcessInstanceRelatedData()
     public static final int DEFAULT_HISTORY_CLEANUP_PROCESS_INSTANCE_BATCH_SIZE = 1000;
 
     public static RdbmsWriterConfig.Builder builder() {

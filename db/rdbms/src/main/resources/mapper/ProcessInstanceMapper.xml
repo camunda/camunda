@@ -458,6 +458,7 @@
     <foreach collection="processInstanceKeys" item="key" open="(" separator="," close=")">
       #{key}
     </foreach>
+    AND ROOT_PROCESS_INSTANCE_KEY = PROCESS_INSTANCE_KEY
   </update>
 
   <delete id="deleteByKeys">
@@ -468,13 +469,30 @@
     </foreach>
   </delete>
 
-  <select id="selectExpiredProcessInstances" resultType="java.lang.Long">
+  <select id="selectExpiredRootProcessInstances" resultType="java.lang.Long">
     SELECT PROCESS_INSTANCE_KEY
     FROM ${prefix}PROCESS_INSTANCE
     WHERE PARTITION_ID = #{partitionId}
       AND HISTORY_CLEANUP_DATE &lt; #{cleanupDate}
+      AND ROOT_PROCESS_INSTANCE_KEY = PROCESS_INSTANCE_KEY
     ORDER BY HISTORY_CLEANUP_DATE
     ${keysetPaging.limit}
   </select>
+
+  <sql id="deleteChildrenByRootProcessInstancesWhereClause">
+    AND ROOT_PROCESS_INSTANCE_KEY IN
+    <foreach collection="rootProcessInstanceKeys" item="key" open="(" separator=", " close=")">
+      #{key}
+    </foreach>
+    AND ROOT_PROCESS_INSTANCE_KEY != PROCESS_INSTANCE_KEY
+  </sql>
+
+  <delete id="deleteChildrenByRootProcessInstances">
+    <bind name="tableName" value="'PROCESS_INSTANCE'"/>
+    <bind name="primaryKeyColumn" value="'PROCESS_INSTANCE_KEY'"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.deleteByPartitionAndLimit">
+      <property name="extraWhereClauseId" value="deleteChildrenByRootProcessInstancesWhereClause"/>
+    </include>
+  </delete>
 
 </mapper>

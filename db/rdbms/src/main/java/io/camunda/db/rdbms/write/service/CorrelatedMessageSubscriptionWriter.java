@@ -14,7 +14,7 @@ import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
 
-public class CorrelatedMessageSubscriptionWriter extends ProcessInstanceDependant
+public class CorrelatedMessageSubscriptionWriter extends RootProcessInstanceDependant
     implements RdbmsWriter {
 
   private final ExecutionQueue executionQueue;

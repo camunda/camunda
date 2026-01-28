@@ -16,7 +16,7 @@ import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
 
-public class DecisionInstanceWriter extends ProcessInstanceDependant implements RdbmsWriter {
+public class DecisionInstanceWriter extends RootProcessInstanceDependant implements RdbmsWriter {
 
   private final DecisionInstanceMapper mapper;
   private final ExecutionQueue executionQueue;

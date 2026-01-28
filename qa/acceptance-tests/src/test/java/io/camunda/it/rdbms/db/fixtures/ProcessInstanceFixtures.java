@@ -57,6 +57,20 @@ public final class ProcessInstanceFixtures extends CommonFixtures {
     rdbmsWriters.flush();
   }
 
+  public static ProcessInstanceDbModel createAndSaveRandomRootProcessInstance(
+      final RdbmsWriters rdbmsWriters,
+      final Function<ProcessInstanceDbModelBuilder, ProcessInstanceDbModelBuilder>
+          builderFunction) {
+    final long processInstanceKey = nextKey();
+    return createAndSaveRandomProcessInstance(
+        rdbmsWriters,
+        b ->
+            builderFunction
+                .apply(b)
+                .processInstanceKey(processInstanceKey)
+                .rootProcessInstanceKey(processInstanceKey));
+  }
+
   public static ProcessInstanceDbModel createAndSaveRandomProcessInstance(
       final RdbmsWriters rdbmsWriters,
       final Function<ProcessInstanceDbModelBuilder, ProcessInstanceDbModelBuilder>

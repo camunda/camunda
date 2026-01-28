@@ -204,50 +204,51 @@
                    LIMIT #{limit})
   </sql>
 
-  <sql id="processInstanceHistoryDeletion">
+  <sql id="deleteByPartitionAndLimit">
     DELETE
     FROM ${prefix}${tableName}
     WHERE PARTITION_ID = #{partitionId}
-      AND PROCESS_INSTANCE_KEY IN
-    <foreach collection="processInstanceKeys" item="key" open="(" separator=", " close=")">
-      #{key}
-    </foreach>
+    <include refid="${extraWhereClauseId}" />
     LIMIT #{limit}
   </sql>
-  <sql id="processInstanceHistoryDeletion" databaseId="mssql">
+  <sql id="deleteByPartitionAndLimit" databaseId="mssql">
     DELETE TOP (#{limit})
     FROM ${prefix}${tableName}
     WHERE PARTITION_ID = #{partitionId}
-      AND PROCESS_INSTANCE_KEY IN
-    <foreach collection="processInstanceKeys" item="key" open="(" separator=", " close=")">
-      #{key}
-    </foreach>
+    <include refid="${extraWhereClauseId}" />
   </sql>
-  <sql id="processInstanceHistoryDeletion" databaseId="oracle">
+  <sql id="deleteByPartitionAndLimit" databaseId="oracle">
     <bind name="keyColumn" value="primaryKeyColumn != null &amp;&amp; primaryKeyColumn != '' ? primaryKeyColumn : 'rowid'"/>
     DELETE
     FROM ${prefix}${tableName}
     WHERE ${keyColumn} IN (SELECT ${keyColumn}
-                    FROM ${prefix}${tableName}
-                    WHERE PARTITION_ID = #{partitionId}
-                      AND PROCESS_INSTANCE_KEY IN
-                    <foreach collection="processInstanceKeys" item="key" open="(" separator=", " close=")">
-                      #{key}
-                    </foreach>
-                    AND ROWNUM &lt;= #{limit})
+    FROM ${prefix}${tableName}
+    WHERE PARTITION_ID = #{partitionId}
+    <include refid="${extraWhereClauseId}" />
+    AND ROWNUM &lt;= #{limit})
   </sql>
-  <sql id="processInstanceHistoryDeletion" databaseId="postgresql">
+  <sql id="deleteByPartitionAndLimit" databaseId="postgresql">
     <bind name="keyColumn" value="primaryKeyColumn != null &amp;&amp; primaryKeyColumn != '' ? primaryKeyColumn : 'ctid'"/>
     DELETE
     FROM ${prefix}${tableName}
     WHERE ${keyColumn} IN (SELECT ${keyColumn}
-                   FROM ${prefix}${tableName}
-                   WHERE PARTITION_ID = #{partitionId}
-                     AND PROCESS_INSTANCE_KEY IN
-                   <foreach collection="processInstanceKeys" item="key" open="(" separator=", " close=")">
-                     #{key}
-                   </foreach>
-                   LIMIT #{limit})
+    FROM ${prefix}${tableName}
+    WHERE PARTITION_ID = #{partitionId}
+    <include refid="${extraWhereClauseId}" />
+    LIMIT #{limit})
+  </sql>
+
+  <sql id="rootProcessInstanceHistoryDeletionWhereClause">
+    AND ROOT_PROCESS_INSTANCE_KEY IN
+    <foreach collection="rootProcessInstanceKeys" item="key" open="(" separator=", " close=")">
+      #{key}
+    </foreach>
+  </sql>
+
+  <sql id="rootProcessInstanceHistoryDeletion">
+    <include refid="io.camunda.db.rdbms.sql.Commons.deleteByPartitionAndLimit">
+      <property name="extraWhereClauseId" value="io.camunda.db.rdbms.sql.Commons.rootProcessInstanceHistoryDeletionWhereClause"/>
+    </include>
   </sql>
 
   <resultMap id="flowNodeStatisticsResultMap"
