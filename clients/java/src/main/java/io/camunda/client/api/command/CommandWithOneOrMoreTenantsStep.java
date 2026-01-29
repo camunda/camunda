@@ -16,7 +16,6 @@
 package io.camunda.client.api.command;
 
 import io.camunda.client.api.command.enums.TenantFilter;
-import io.camunda.client.protocol.rest.TenantFilterEnum;
 import java.util.List;
 
 public interface CommandWithOneOrMoreTenantsStep<T> extends CommandWithTenantStep<T> {

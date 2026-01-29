@@ -18,7 +18,6 @@ package io.camunda.client.api.command;
 import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.api.command.enums.TenantFilter;
 import io.camunda.client.api.response.ActivateJobsResponse;
-import io.camunda.client.protocol.rest.TenantFilterEnum;
 import java.time.Duration;
 import java.util.List;
 

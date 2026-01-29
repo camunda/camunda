@@ -18,6 +18,7 @@ package io.camunda.client.api.worker;
 import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.api.ExperimentalApi;
 import io.camunda.client.api.command.CommandWithOneOrMoreTenantsStep;
+import io.camunda.client.api.command.enums.TenantFilter;
 import java.time.Duration;
 import java.util.List;
 
@@ -251,6 +252,9 @@ public interface JobWorkerBuilderStep1 {
      * @return the builder for this worker
      */
     JobWorkerBuilderStep3 jobExceptionHandler(JobExceptionHandler jobExceptionHandler);
+
+    @Override
+    JobWorkerBuilderStep3 tenantFilter(final TenantFilter tenantFilter);
 
     /**
      * Open the worker and start to work on available tasks.

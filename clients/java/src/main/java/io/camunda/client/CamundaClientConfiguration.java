@@ -16,6 +16,7 @@
 package io.camunda.client;
 
 import io.camunda.client.api.JsonMapper;
+import io.camunda.client.api.command.enums.TenantFilter;
 import io.camunda.client.api.worker.JobExceptionHandler;
 import io.grpc.ClientInterceptor;
 import java.net.URI;
@@ -71,6 +72,11 @@ public interface CamundaClientConfiguration {
    * @see CamundaClientBuilder#defaultJobPollInterval(Duration)
    */
   Duration getDefaultJobPollInterval();
+
+  /**
+   * @see CamundaClientBuilder#defaultJobWorkerTenantFilter(TenantFilter)
+   */
+  TenantFilter getDefaultJobWorkerTenantFilter();
 
   /**
    * @see CamundaClientBuilder#defaultMessageTimeToLive(Duration)

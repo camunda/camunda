@@ -23,6 +23,7 @@ import static io.camunda.client.ClientProperties.DEFAULT_TENANT_ID;
 import static io.camunda.client.ClientProperties.GRPC_ADDRESS;
 import static io.camunda.client.ClientProperties.JOB_WORKER_EXECUTION_THREADS;
 import static io.camunda.client.ClientProperties.JOB_WORKER_MAX_JOBS_ACTIVE;
+import static io.camunda.client.ClientProperties.JOB_WORKER_TENANT_FILTER;
 import static io.camunda.client.ClientProperties.KEEP_ALIVE;
 import static io.camunda.client.ClientProperties.MAX_MESSAGE_SIZE;
 import static io.camunda.client.ClientProperties.MAX_METADATA_SIZE;
@@ -36,6 +37,7 @@ import static io.camunda.client.impl.CamundaClientEnvironmentVariables.BASIC_AUT
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.BASIC_AUTH_ENV_USERNAME;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.CAMUNDA_CLIENT_WORKER_STREAM_ENABLED;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.CA_CERTIFICATE_VAR;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.DEFAULT_JOB_WORKER_TENANT_FILTER_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.DEFAULT_JOB_WORKER_TENANT_IDS_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.DEFAULT_TENANT_ID_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.GRPC_ADDRESS_VAR;
@@ -59,6 +61,7 @@ import io.camunda.client.CredentialsProvider;
 import io.camunda.client.LegacyZeebeClientProperties;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.CommandWithTenantStep;
+import io.camunda.client.api.command.enums.TenantFilter;
 import io.camunda.client.api.worker.JobExceptionHandler;
 import io.camunda.client.impl.basicauth.BasicAuthCredentialsProviderBuilder;
 import io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder;
@@ -136,6 +139,7 @@ public final class CamundaClientBuilderImpl
   private boolean useDefaultRetryPolicy;
   private int maxHttpConnections = DEFAULT_MAX_HTTP_CONNECTIONS;
   private JobExceptionHandler jobExceptionHandler = DEFAULT_JOB_EXCEPTION_HANDLER;
+  private TenantFilter tenantFilter = TenantFilter.PROVIDED;
 
   @Override
   public URI getRestAddress() {
@@ -297,6 +301,17 @@ public final class CamundaClientBuilderImpl
     return maxHttpConnections;
   }
 
+  @Override
+  public CamundaClientBuilder defaultJobWorkerTenantFilter(final TenantFilter tenantFilter) {
+    this.tenantFilter = tenantFilter;
+    return this;
+  }
+
+  @Override
+  public TenantFilter getDefaultJobWorkerTenantFilter() {
+    return tenantFilter;
+  }
+
   private void gatewayAddress(final String gatewayAddress) {
     // we apply the legacy behaviour here, the plaintext parameter can still be changed as the
     // plaintext is checked AFTER the gateway address
@@ -449,6 +464,11 @@ public final class CamundaClientBuilderImpl
         value -> useDefaultRetryPolicy(Boolean.parseBoolean(value)),
         USE_DEFAULT_RETRY_POLICY,
         LegacyZeebeClientProperties.USE_DEFAULT_RETRY_POLICY);
+
+    BuilderUtils.applyPropertyValueIfNotNull(
+        properties,
+        value -> defaultJobWorkerTenantFilter(TenantFilter.valueOf(value)),
+        JOB_WORKER_TENANT_FILTER);
 
     return this;
   }
@@ -713,6 +733,10 @@ public final class CamundaClientBuilderImpl
     applyEnvironmentValueIfNotNull(
         value -> useDefaultRetryPolicy(Boolean.parseBoolean(value)),
         USE_DEFAULT_RETRY_POLICY_VAR,
+        LegacyZeebeClientEnvironmentVariables.USE_DEFAULT_RETRY_POLICY_VAR);
+    applyEnvironmentValueIfNotNull(
+        value -> defaultJobWorkerTenantFilter(TenantFilter.valueOf(value)),
+        DEFAULT_JOB_WORKER_TENANT_FILTER_VAR,
         LegacyZeebeClientEnvironmentVariables.USE_DEFAULT_RETRY_POLICY_VAR);
   }
 

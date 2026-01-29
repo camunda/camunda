@@ -16,7 +16,6 @@
 package io.camunda.client.api.command;
 
 import io.camunda.client.api.ExperimentalApi;
-import io.camunda.client.api.command.ActivateJobsCommandStep1.ActivateJobsCommandStep3;
 import io.camunda.client.api.command.enums.TenantFilter;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.StreamJobsResponse;

@@ -29,7 +29,6 @@ import io.camunda.client.api.response.StreamJobsResponse;
 import io.camunda.client.impl.RetriableStreamingFutureImpl;
 import io.camunda.client.impl.response.ActivatedJobImpl;
 import io.camunda.client.impl.response.StreamJobsResponseImpl;
-import io.camunda.client.protocol.rest.TenantFilterEnum;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.StreamActivatedJobsRequest;
@@ -173,7 +172,6 @@ public final class StreamJobsCommandImpl
   @Override
   public StreamJobsCommandStep3 tenantFilter(final TenantFilter tenantFilter) {
     builder.setTenantFilter(tenantFilter.toGrpc());
-    builder.clearTenantIds();
     return this;
   }
 

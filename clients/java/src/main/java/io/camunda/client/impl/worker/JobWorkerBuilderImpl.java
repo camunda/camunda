@@ -21,6 +21,7 @@ import static io.camunda.client.impl.command.ArgumentUtil.ensureNotNullNorEmpty;
 import static io.camunda.client.impl.command.ArgumentUtil.ensurePositive;
 
 import io.camunda.client.CamundaClientConfiguration;
+import io.camunda.client.api.command.enums.TenantFilter;
 import io.camunda.client.api.worker.BackoffSupplier;
 import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.api.worker.JobExceptionHandler;
@@ -64,6 +65,7 @@ public final class JobWorkerBuilderImpl
   private Duration streamingTimeout;
   private JobWorkerMetrics metrics = JobWorkerMetrics.noop();
   private JobExceptionHandler jobExceptionHandler;
+  private TenantFilter tenantFilter = TenantFilter.PROVIDED;
 
   public JobWorkerBuilderImpl(
       final CamundaClientConfiguration configuration,
@@ -84,6 +86,7 @@ public final class JobWorkerBuilderImpl
     enableStreaming = configuration.getDefaultJobWorkerStreamEnabled();
     defaultTenantIds = configuration.getDefaultJobWorkerTenantIds();
     jobExceptionHandler = configuration.getDefaultJobWorkerExceptionHandler();
+    tenantFilter = configuration.getDefaultJobWorkerTenantFilter();
     customTenantIds = new ArrayList<>();
     backoffSupplier = DEFAULT_BACKOFF_SUPPLIER;
     streamingTimeout = DEFAULT_STREAMING_TIMEOUT;
@@ -115,6 +118,12 @@ public final class JobWorkerBuilderImpl
   @Override
   public JobWorkerBuilderStep3 name(final String workerName) {
     this.workerName = workerName;
+    return this;
+  }
+
+  @Override
+  public JobWorkerBuilderStep3 tenantFilter(final TenantFilter tenantFilter) {
+    this.tenantFilter = tenantFilter;
     return this;
   }
 
@@ -196,6 +205,7 @@ public final class JobWorkerBuilderImpl
             workerName,
             timeout,
             fetchVariables,
+            tenantFilter,
             getTenantIds(),
             maxJobsActive);
 
@@ -212,6 +222,7 @@ public final class JobWorkerBuilderImpl
               workerName,
               timeout,
               fetchVariables,
+              tenantFilter,
               getTenantIds(),
               streamingTimeout,
               backoffSupplier,

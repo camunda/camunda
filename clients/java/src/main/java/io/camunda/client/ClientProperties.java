@@ -18,6 +18,7 @@ package io.camunda.client;
 import io.camunda.client.CamundaClientCloudBuilderStep1.CamundaClientCloudBuilderStep2;
 import io.camunda.client.CamundaClientCloudBuilderStep1.CamundaClientCloudBuilderStep2.CamundaClientCloudBuilderStep3;
 import io.camunda.client.CamundaClientCloudBuilderStep1.CamundaClientCloudBuilderStep2.CamundaClientCloudBuilderStep3.CamundaClientCloudBuilderStep4;
+import io.camunda.client.api.command.enums.TenantFilter;
 import java.net.URI;
 import java.time.Duration;
 import java.util.List;
@@ -156,6 +157,11 @@ public final class ClientProperties {
    * @see CamundaClientBuilder#useDefaultRetryPolicy(boolean)
    */
   public static final String USE_DEFAULT_RETRY_POLICY = "camunda.client.useDefaultRetryPolicy";
+
+  /**
+   * @see CamundaClientBuilder#defaultJobWorkerTenantFilter(TenantFilter)
+   */
+  public static final String JOB_WORKER_TENANT_FILTER = "camunda.client.worker.tenantFilter";
 
   private ClientProperties() {}
 }

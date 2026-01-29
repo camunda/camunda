@@ -17,6 +17,7 @@ package io.camunda.client;
 
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.CommandWithTenantStep;
+import io.camunda.client.api.command.enums.TenantFilter;
 import io.camunda.client.api.worker.JobExceptionHandler;
 import io.camunda.client.api.worker.JobHandler;
 import io.camunda.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep3;
@@ -186,6 +187,15 @@ public interface CamundaClientBuilder {
    * milliseconds.
    */
   CamundaClientBuilder defaultJobPollInterval(Duration pollInterval);
+
+  /**
+   * The behavior to adopt when filtering jobs during activation by a given worker. See {@link
+   * TenantFilter} for possible values.
+   *
+   * @param tenantFilter the default filter to use for all workers (unless overridden by {@link
+   *     JobWorkerBuilderStep3#tenantFilter(TenantFilter)}.
+   */
+  CamundaClientBuilder defaultJobWorkerTenantFilter(TenantFilter tenantFilter);
 
   /** The time-to-live which is used when none is provided for a message. Default is 1 hour. */
   CamundaClientBuilder defaultMessageTimeToLive(Duration timeToLive);
