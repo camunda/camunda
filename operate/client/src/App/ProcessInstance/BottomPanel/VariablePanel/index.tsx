@@ -76,7 +76,7 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
         kind: listenerTypeFilter,
       },
     },
-    disabled: !shouldFetchListeners,
+    enabled: !!shouldFetchListeners,
     select: (data) => data.pages?.flatMap((page) => page.items),
   });
 

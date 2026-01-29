@@ -8,9 +8,10 @@
 
 import {useQuery, queryOptions} from '@tanstack/react-query';
 import {getMe} from 'modules/api/v2/authentication/me';
+import {queryKeys} from './queryKeys';
 
 const currentUserQueryOptions = queryOptions({
-  queryKey: ['currentUser'],
+  queryKey: queryKeys.currentUser.get(),
   queryFn: async () => {
     const {response, error} = await getMe();
 

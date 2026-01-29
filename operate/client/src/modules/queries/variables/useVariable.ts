@@ -8,11 +8,12 @@
 
 import {useQuery} from '@tanstack/react-query';
 import {getVariable} from 'modules/api/v2/variables/getVariable';
+import {queryKeys} from '../queryKeys';
 
 function useVariable(variableKey: string, options?: {enabled?: boolean}) {
   const {enabled} = options ?? {};
   return useQuery({
-    queryKey: ['variable', variableKey],
+    queryKey: queryKeys.variable.get(variableKey),
     queryFn: async () => {
       const {response, error} = await getVariable(variableKey);
 

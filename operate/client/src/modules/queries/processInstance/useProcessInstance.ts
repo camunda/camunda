@@ -12,12 +12,7 @@ import type {ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.8';
 import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstancePageParams';
 import {fetchProcessInstance} from 'modules/api/v2/processInstances/fetchProcessInstance';
 import {isInstanceRunning} from 'modules/utils/instance';
-
-const PROCESS_INSTANCE_QUERY_KEY = 'processInstance';
-
-function getProcessInstanceQueryKey(processInstanceKey?: string) {
-  return [PROCESS_INSTANCE_QUERY_KEY, processInstanceKey];
-}
+import {queryKeys} from '../queryKeys';
 
 const useProcessInstance = <T = ProcessInstance>(
   select?: (data: ProcessInstance) => T,
@@ -25,7 +20,7 @@ const useProcessInstance = <T = ProcessInstance>(
   const {processInstanceId} = useProcessInstancePageParams();
 
   return useQuery({
-    queryKey: getProcessInstanceQueryKey(processInstanceId),
+    queryKey: queryKeys.processInstance.get(processInstanceId ?? ''),
     queryFn: processInstanceId
       ? async () => {
           const {response, error} =
@@ -49,4 +44,4 @@ const useProcessInstance = <T = ProcessInstance>(
   });
 };
 
-export {useProcessInstance, getProcessInstanceQueryKey};
+export {useProcessInstance};

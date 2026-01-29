@@ -12,8 +12,7 @@ import type {
 } from '@camunda/camunda-api-zod-schemas/8.8';
 import {useQuery} from '@tanstack/react-query';
 import {searchProcessInstances} from 'modules/api/v2/processInstances/searchProcessInstances';
-
-const PROCESS_INSTANCES_SEARCH_QUERY_KEY = 'processInstancesSearch';
+import {queryKeys} from '../queryKeys';
 
 type QueryOptions<T> = {
   enabled?: boolean;
@@ -25,7 +24,7 @@ const useProcessInstancesSearch = <T = QueryProcessInstancesResponseBody>(
   options?: QueryOptions<T>,
 ) => {
   return useQuery({
-    queryKey: [PROCESS_INSTANCES_SEARCH_QUERY_KEY, payload],
+    queryKey: queryKeys.processInstances.search(payload),
     queryFn: async () => {
       const {response, error} = await searchProcessInstances(payload);
       if (response !== null) {
