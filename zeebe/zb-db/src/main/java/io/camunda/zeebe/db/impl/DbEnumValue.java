@@ -60,7 +60,7 @@ public final class DbEnumValue<T extends Enum<T>> implements DbKey, DbValue {
   }
 
   @Override
-  public void write(final MutableDirectBuffer buffer, final int offset) {
-    value.write(buffer, offset);
+  public int write(final MutableDirectBuffer buffer, final int offset) {
+    return value.write(buffer, offset);
   }
 }

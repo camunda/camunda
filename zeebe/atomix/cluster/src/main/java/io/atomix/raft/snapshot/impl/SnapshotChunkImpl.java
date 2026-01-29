@@ -85,8 +85,8 @@ public final class SnapshotChunkImpl
   }
 
   @Override
-  public void write(final MutableDirectBuffer buffer, final int offset) {
-    super.write(buffer, offset);
+  public int write(final MutableDirectBuffer buffer, final int offset) {
+    final var len = super.write(buffer, offset);
 
     // The snapshot checksum is 0 for backwards compatibility reasons, when sending chunk data to
     // brokers on older versions which checks on the snapshot checksum.
@@ -99,6 +99,7 @@ public final class SnapshotChunkImpl
         .checksum(checksum)
         .snapshotChecksum(0)
         .putContent(content, 0, content.capacity());
+    return len + encoder.encodedLength();
   }
 
   @Override
