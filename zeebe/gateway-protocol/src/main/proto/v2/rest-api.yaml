@@ -42,6 +42,7 @@ tags:
   - name: Expression
   - name: Group
   - name: Incident
+  - name: Introspection
   - name: Job
   - name: Job metrics
   - name: License
@@ -206,6 +207,10 @@ paths:
     $ref: 'incidents.yaml#/paths/~1incidents~1statistics~1process-instances-by-definition'
   /incidents/statistics/process-instances-by-error:
     $ref: 'incidents.yaml#/paths/~1incidents~1statistics~1process-instances-by-error'
+
+  # Introspection endpoints
+  /introspection/element-instance:
+    $ref: 'introspection.yaml#/paths/~1introspection~1element-instance'
 
   # Job endpoints
   /jobs/activation:

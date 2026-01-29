@@ -53,6 +53,8 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
   private final ElementInstanceState elementInstanceState;
   private final ProcessState processState;
   private final AuthorizationCheckBehavior authorizationCheckBehavior;
+  private final InstantSource clock;
+  private final ProcessingState state;
 
   public JobBatchActivateProcessor(
       final Writers writers,
@@ -73,6 +75,8 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
     this.jobMetrics = jobMetrics;
     elementInstanceState = state.getElementInstanceState();
     processState = state.getProcessState();
+    this.clock = clock;
+    this.state = state;
   }
 
   @Override

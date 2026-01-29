@@ -15,6 +15,7 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import java.util.Iterator;
+import java.util.List;
 
 public class JobBatchActivatedApplier implements TypedEventApplier<JobBatchIntent, JobBatchRecord> {
 
@@ -26,6 +27,16 @@ public class JobBatchActivatedApplier implements TypedEventApplier<JobBatchInten
 
   @Override
   public void applyState(final long key, final JobBatchRecord value) {
+    // Update heartbeat for all requested tenants
+    final String jobType = value.getType();
+    final String worker = value.getWorker();
+    final long timestamp = System.currentTimeMillis();
+    final List<String> tenantIds = value.getTenantIds();
+    for (final String tenantId : tenantIds) {
+      jobState.updateJobTypeHeartbeat(jobType, tenantId, worker, timestamp);
+    }
+
+    // Activate jobs
     final Iterator<JobRecord> iterator = value.jobs().iterator();
     final Iterator<LongValue> keyIt = value.jobKeys().iterator();
     while (iterator.hasNext() && keyIt.hasNext()) {

@@ -1,0 +1,136 @@
+## Endpoint definitions
+
+paths:
+  /introspection/element-instance:
+    get:
+      x-eventually-consistent: false
+      tags:
+        - Introspection
+      operationId: introspectElementInstance
+      summary: Introspect element instance wait reason
+      description: |
+        Returns information about why the engine is currently waiting for a given element instance
+        in a process instance. The response includes the wait reason type (e.g., job-worker, message,
+        timer) and relevant details.
+        
+        This endpoint requires either an explicit `elementInstanceKey` or will resolve the active
+        element instance from the `processInstanceKey` and `elementId` combination.
+      parameters:
+        - name: processInstanceKey
+          in: query
+          required: true
+          description: The key of the process instance containing the element.
+          schema:
+            $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+        - name: elementId
+          in: query
+          required: true
+          description: The BPMN element ID (from the process definition).
+          schema:
+            type: string
+        - name: elementInstanceKey
+          in: query
+          required: false
+          description: |
+            The key of a specific element instance. If not provided, the system will attempt to
+            resolve the active element instance from the processInstanceKey and elementId.
+            If multiple active instances exist (e.g., in multi-instance scenarios), an error
+            will be returned indicating ambiguity.
+          schema:
+            $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
+      responses:
+        "200":
+          description: The element instance wait reason is successfully returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ElementInstanceWaitReason'
+        "400":
+          description: |
+            Invalid request. This can occur when:
+            - Required parameters are missing
+            - Multiple active element instances exist for the given processInstanceKey and elementId (ambiguity)
+            - The provided elementInstanceKey does not belong to the specified processInstanceKey and elementId
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: |
+            No active element instance was found for the given criteria.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+
+## Schema definitions
+
+components:
+  schemas:
+    ElementInstanceWaitReason:
+      type: object
+      additionalProperties: false
+      properties:
+        type:
+          description: The type of wait reason.
+          type: string
+          enum:
+            - job-worker
+            - message
+            - signal
+            - timer
+            - error
+            - escalation
+            - user-task
+        details:
+          description: Additional details specific to the wait reason type.
+          type: object
+          additionalProperties: true
+      required:
+        - type
+        - details
+
+    JobWorkerWaitDetails:
+      description: Details for a job-worker wait reason.
+      type: object
+      additionalProperties: false
+      properties:
+        jobType:
+          description: The job type (topic) that the engine is waiting for a worker to activate.
+          type: string
+        worker:
+          description: The name of the last worker that polled for this job type.
+          type: string
+          nullable: true
+        lastSeenAt:
+          description: |
+            The timestamp (ISO-8601 format) when the last ActivateJobs request was observed
+            for this job type. Null if no worker has polled yet.
+          type: string
+          format: date-time
+          nullable: true
+      required:
+        - jobType
+
+    AmbiguousElementInstanceError:
+      description: Error details when multiple element instances match the criteria.
+      type: object
+      additionalProperties: false
+      properties:
+        message:
+          description: Error message indicating ambiguity.
+          type: string
+        elementInstanceKeys:
+          description: List of element instance keys that match the criteria.
+          type: array
+          items:
+            $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
+      required:
+        - message
+        - elementInstanceKeys
