@@ -7,26 +7,23 @@
  */
 package io.camunda.zeebe.engine.state.migration;
 
-import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.engine.state.ObjectDbValue;
 import io.camunda.zeebe.msgpack.property.BinaryProperty;
 import org.agrona.DirectBuffer;
-import io.camunda.zeebe.engine.state.ObjectDbValue;
-import io.camunda.zeebe.engine.state.ObjectDbValue;
 
 public class TemporaryVariables extends ObjectDbValue {
-	private final BinaryProperty valueProp = new BinaryProperty("temporaryVariables");
+  private final BinaryProperty valueProp = new BinaryProperty("temporaryVariables");
 
-	public TemporaryVariables() {
-		super(1);
-		declareProperty(valueProp);
-	}
+  public TemporaryVariables() {
+    super(1);
+    declareProperty(valueProp);
+  }
 
-	public DirectBuffer get() {
-		return valueProp.getValue();
-	}
+  public DirectBuffer get() {
+    return valueProp.getValue();
+  }
 
-	public void set(final DirectBuffer value) {
-		valueProp.setValue(value);
-	}
+  public void set(final DirectBuffer value) {
+    valueProp.setValue(value);
+  }
 }
