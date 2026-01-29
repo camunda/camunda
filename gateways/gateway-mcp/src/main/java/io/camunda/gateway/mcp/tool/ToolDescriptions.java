@@ -28,7 +28,8 @@ public final class ToolDescriptions {
       "Note: Results are eventually consistent and may not immediately reflect recent changes.";
 
   public static final String FILTER_DESCRIPTION = "Filter search by the given fields";
-  public static final String SORT_DESCRIPTION = "Sort criteria";
+  public static final String SORT_DESCRIPTION =
+      "Sort criteria. Please use the fields you find in kebab case without underscores.";
   public static final String PAGE_DESCRIPTION = "Pagination criteria";
 
   public static final String PROCESS_DEFINITION_KEY_DESCRIPTION =

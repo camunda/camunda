@@ -19,6 +19,7 @@ import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.mcp.mapper.CallToolResultMapper;
 import io.camunda.gateway.mcp.model.McpProcessDefinitionFilter;
 import io.camunda.gateway.mcp.model.McpSearchQueryPageRequest;
+import io.camunda.gateway.protocol.model.ProcessDefinitionInstanceStatisticsQuerySortRequest;
 import io.camunda.gateway.protocol.model.ProcessDefinitionSearchQuerySortRequest;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.ProcessDefinitionServices;
@@ -86,6 +87,33 @@ public class ProcessDefinitionTools {
               processDefinitionServices
                   .withAuthentication(authenticationProvider.getCamundaAuthentication())
                   .getByKey(processDefinitionKey)));
+    } catch (final Exception e) {
+      return CallToolResultMapper.mapErrorToResult(e);
+    }
+  }
+
+  @McpTool(
+      description =
+          "Get process definition statistics in the cluster. It contains the numbers on active process instances per process definiton and other data. "
+              + EVENTUAL_CONSISTENCY_NOTE,
+      annotations = @McpAnnotations(readOnlyHint = true))
+  public CallToolResult getOverallProcessInstanceStatistics(
+      @McpToolParam(description = SORT_DESCRIPTION, required = false)
+          final List<ProcessDefinitionInstanceStatisticsQuerySortRequest> sort,
+      @McpToolParam(description = PAGE_DESCRIPTION, required = false)
+          final McpSearchQueryPageRequest page) {
+    try {
+      final var query =
+          SearchQueryRequestMapper.toProcessDefinitionInstanceStatisticsQuery(page, sort);
+      if (query.isLeft()) {
+        return CallToolResultMapper.mapProblemToResult(query.getLeft());
+      }
+
+      return CallToolResultMapper.from(
+          SearchQueryResponseMapper.toProcessInstanceStatisticsQueryResult(
+              processDefinitionServices
+                  .withAuthentication(authenticationProvider.getCamundaAuthentication())
+                  .getProcessDefinitionInstanceStatistics(query.get())));
     } catch (final Exception e) {
       return CallToolResultMapper.mapErrorToResult(e);
     }
