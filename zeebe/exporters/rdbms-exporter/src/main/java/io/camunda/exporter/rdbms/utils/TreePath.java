@@ -24,13 +24,6 @@ import org.slf4j.LoggerFactory;
  */
 public class TreePath {
 
-  /**
-   * Number of leaf segments to preserve when truncating. This ensures that prefix queries for
-   * incident propagation and hierarchy traversal still work correctly for the most recent call
-   * hierarchy levels.
-   */
-  private static final int LEAF_SEGMENTS_TO_PRESERVE = 9; // 3 levels (PI/FN/FNI per level)
-
   private static final Logger LOG = LoggerFactory.getLogger(TreePath.class);
 
   private final int maxLength;
