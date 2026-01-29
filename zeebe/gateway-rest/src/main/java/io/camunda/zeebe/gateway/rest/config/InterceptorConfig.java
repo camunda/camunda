@@ -7,22 +7,28 @@
  */
 package io.camunda.zeebe.gateway.rest.config;
 
+import io.camunda.zeebe.gateway.rest.interceptor.OTelContextInterceptor;
 import io.camunda.zeebe.gateway.rest.interceptor.SecondaryStorageInterceptor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
-public class SecondaryStorageConfig implements WebMvcConfigurer {
+public class InterceptorConfig implements WebMvcConfigurer {
 
   private final SecondaryStorageInterceptor secondaryStorageInterceptor;
+  private final OTelContextInterceptor otelContextInterceptor;
 
-  public SecondaryStorageConfig(final SecondaryStorageInterceptor secondaryStorageInterceptor) {
+  public InterceptorConfig(
+      final SecondaryStorageInterceptor secondaryStorageInterceptor,
+      final OTelContextInterceptor otelContextInterceptor) {
     this.secondaryStorageInterceptor = secondaryStorageInterceptor;
+    this.otelContextInterceptor = otelContextInterceptor;
   }
 
   @Override
   public void addInterceptors(final InterceptorRegistry registry) {
     registry.addInterceptor(secondaryStorageInterceptor);
+    registry.addInterceptor(otelContextInterceptor);
   }
 }
