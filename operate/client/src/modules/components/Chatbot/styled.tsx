@@ -173,7 +173,7 @@ const MessageBubble = styled.div<{$role: 'user' | 'assistant' | 'system'; $hasCh
           color: var(--cds-text-primary);
 
           .message-content {
-            white-space: pre-wrap;
+            /* Markdown handles its own formatting */
           }
         `}
 

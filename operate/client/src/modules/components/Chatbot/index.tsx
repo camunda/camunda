@@ -9,7 +9,7 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {Button, IconButton, Layer, TextArea} from '@carbon/react';
-import {ChatBot as ChatBotIcon, Close, Renew, Send, Attachment} from '@carbon/react/icons';
+import {Attachment, ChatBot as ChatBotIcon, Close, Renew, Send} from '@carbon/react/icons';
 import {
   ChatbotContainer,
   ChatbotToggle,
@@ -21,12 +21,13 @@ import {
   ResizeHandle,
   TypingIndicator,
 } from './styled';
-import {type Message, type ToolCall, type FileAttachment, useChat} from './useChat';
+import {type FileAttachment, type Message, type ToolCall, useChat} from './useChat';
 import type {LLMConfig} from './llmClient';
 import type {McpClientConfig} from './mcpClient';
 import {chatbotStore} from 'modules/stores/chatbot';
 import {observer} from 'mobx-react';
 import {ChartRenderer} from './visualizations/ChartRenderer';
+import {MarkdownRenderer} from './MarkdownRenderer';
 
 type ChatbotProps = {
   /** LLM provider configuration */
@@ -282,7 +283,11 @@ const Chatbot: React.FC<ChatbotProps> = observer(({
                   $hasChart={!!message.visualization}
                 >
                   <div className="message-content">
-                    {message.content}
+                    {message.role === 'assistant' ? (
+                      <MarkdownRenderer content={message.content} />
+                    ) : (
+                      message.content
+                    )}
                   </div>
                   {message.attachments && message.attachments.length > 0 && (
                     <div className="message-attachments">

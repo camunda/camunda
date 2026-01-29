@@ -9,6 +9,7 @@ A self-contained chatbot component for the Operate React frontend that connects 
 - 💬 Real-time chat interface with Carbon Design System styling
 - 🤖 Direct LLM connection (OpenAI GPT-4, Anthropic Claude)
 - 🔧 MCP Gateway integration for Camunda-specific tool calls
+- 📝 Markdown rendering with syntax highlighting for code blocks
 - 🎨 Theme-aware (supports light/dark mode)
 - ♿ Accessible (ARIA labels, keyboard navigation)
 - 📱 Responsive design
@@ -323,6 +324,7 @@ npm run test -- --filter=Chatbot
 - `useChat.ts` - React hook managing chat state and LLM/MCP communication
 - `llmClient.ts` - Direct LLM API client (OpenAI, Anthropic)
 - `mcpClient.ts` - MCP Gateway client for tool discovery and execution
+- `MarkdownRenderer.tsx` - Markdown rendering with syntax highlighting
 - `types.ts` - TypeScript type definitions
 - `styled.tsx` - Styled components using Carbon Design System
 
@@ -333,6 +335,5 @@ npm run test -- --filter=Chatbot
 - [ ] API key input modal in UI
 - [ ] File/image attachments
 - [ ] Voice input
-- [ ] Markdown rendering with syntax highlighting
 - [ ] Conversation export
 - [ ] Multiple conversation threads
