@@ -13,12 +13,30 @@ import {
   type ModificationPayload,
   type FlowNodeVariables,
 } from 'modules/api/processInstances/modify';
+import {type ModifyProcessInstanceRequestBody} from '@camunda/camunda-api-zod-schemas/8.9';
+import {modifyProcessInstance} from 'modules/api/v2/processInstances/modifyProcessInstance';
 import {logger} from 'modules/logger';
 import {tracking} from 'modules/tracking';
 import {getFlowNodeName} from 'modules/utils/flowNodes';
 import {getFlowNodesInBetween} from 'modules/utils/processInstanceDetailsDiagram';
 import type {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
 import {generateParentScopeIds} from 'modules/utils/modifications';
+import {IS_INSTANCE_MODIFICATION_V2} from 'modules/feature-flags';
+
+type ActivateInstruction = NonNullable<
+  ModifyProcessInstanceRequestBody['activateInstructions']
+>[number];
+type MoveInstruction = NonNullable<
+  ModifyProcessInstanceRequestBody['moveInstructions']
+>[number];
+type TerminateInstruction = NonNullable<
+  ModifyProcessInstanceRequestBody['terminateInstructions']
+>[number];
+type VariableInstruction = NonNullable<
+  ActivateInstruction['variableInstructions']
+>[number];
+
+type ScopeMap = {[internalScopeId: string]: string};
 
 type FlowNodeModificationPayload =
   | {
@@ -409,7 +427,7 @@ class Modifications {
       }));
   };
 
-  getVariableModificationsPerScope = (scopeId: string) => {
+  #getVariablesForScope(scopeId: string) {
     const variableModifications = this.variableModifications.filter(
       (modification) => modification.scopeId === scopeId,
     );
@@ -425,8 +443,40 @@ class Modifications {
       },
       {},
     );
-  };
+  }
 
+  #getScopeMap(
+    scopeIds: string[],
+    targetElementId: string,
+    parentScopeIds: {
+      [elementId: string]: string;
+    },
+  ): ScopeMap {
+    let scopeMap: ScopeMap = {};
+    for (const [elementId, parentScopeId] of Object.entries(parentScopeIds)) {
+      scopeMap[parentScopeId] = elementId;
+    }
+    for (const scopeId of scopeIds) {
+      scopeMap[scopeId] = targetElementId;
+    }
+
+    return scopeMap;
+  }
+
+  #getVariableInstructionsForScopeMap(
+    scopeMap: ScopeMap,
+  ): VariableInstruction[] {
+    let instructions: VariableInstruction[] = [];
+    for (const [scopeId, elementId] of Object.entries(scopeMap)) {
+      const variables = this.#getVariablesForScope(scopeId);
+      if (variables !== undefined) {
+        instructions.push({variables, scopeId: elementId});
+      }
+    }
+    return instructions;
+  }
+
+  /** @deprecated Replaced by getVariableInstructionsForScopeIds.  */
   setVariableModificationsForParentScopes = (parentScopeIds: {
     [flowNodeId: string]: string;
   }) => {
@@ -436,7 +486,7 @@ class Modifications {
           return variableModifications;
         }
 
-        const variables = this.getVariableModificationsPerScope(scopeId);
+        const variables = this.#getVariablesForScope(scopeId);
 
         if (variables === undefined) {
           return variableModifications;
@@ -450,6 +500,7 @@ class Modifications {
     );
   };
 
+  /** @deprecated Replaced by generateModificationInstructions. */
   generateModificationsPayload = () => {
     let variablesForNewScopes: string[] = [];
     const flowNodeModifications = this.flowNodeModifications.reduce<
@@ -458,9 +509,7 @@ class Modifications {
       const {operation} = payload;
 
       if (operation === 'ADD_TOKEN') {
-        const variablesPerScope = this.getVariableModificationsPerScope(
-          payload.scopeId,
-        );
+        const variablesPerScope = this.#getVariablesForScope(payload.scopeId);
 
         const variablesForParentScopes =
           this.setVariableModificationsForParentScopes(payload.parentScopeIds);
@@ -506,7 +555,7 @@ class Modifications {
         const variablesForAllTargetScopes = scopeIds.reduce<
           Array<{[key: string]: string}>
         >((allVariables, scopeId) => {
-          const variables = this.getVariableModificationsPerScope(scopeId);
+          const variables = this.#getVariablesForScope(scopeId);
           if (variables === undefined) {
             return allVariables;
           }
@@ -558,6 +607,101 @@ class Modifications {
     return [...flowNodeModifications, ...variableModifications];
   };
 
+  #generateModificationInstructions(): ModifyProcessInstanceRequestBody {
+    let activateInstructions: ActivateInstruction[] = [];
+    let moveInstructions: MoveInstruction[] = [];
+    let terminateInstructions: TerminateInstruction[] = [];
+
+    for (const modification of this.flowNodeModifications) {
+      switch (modification.operation) {
+        case 'CANCEL_TOKEN': {
+          const instruction: TerminateInstruction =
+            modification.flowNodeInstanceKey === undefined
+              ? {elementId: modification.flowNode.id}
+              : {elementInstanceKey: modification.flowNodeInstanceKey};
+
+          terminateInstructions.push(instruction);
+          break;
+        }
+        case 'ADD_TOKEN': {
+          const scopeMap = this.#getScopeMap(
+            [modification.scopeId],
+            modification.flowNode.id,
+            modification.parentScopeIds,
+          );
+
+          const instruction: ActivateInstruction = {
+            elementId: modification.flowNode.id,
+            ancestorElementInstanceKey:
+              modification.ancestorElement?.instanceKey,
+            variableInstructions:
+              this.#getVariableInstructionsForScopeMap(scopeMap),
+          };
+
+          activateInstructions.push(instruction);
+          break;
+        }
+        case 'MOVE_TOKEN': {
+          const scopeMap = this.#getScopeMap(
+            modification.scopeIds,
+            modification.targetFlowNode.id,
+            modification.parentScopeIds,
+          );
+
+          const instruction: MoveInstruction = {
+            sourceElementInstruction: modification.flowNodeInstanceKey
+              ? {
+                  sourceType: 'byKey',
+                  sourceElementInstanceKey: modification.flowNodeInstanceKey,
+                }
+              : {
+                  sourceType: 'byId',
+                  sourceElementId: modification.flowNode.id,
+                },
+            targetElementId: modification.targetFlowNode.id,
+            ancestorScopeInstruction: modification.ancestorElement?.instanceKey
+              ? {
+                  ancestorScopeType: 'direct',
+                  ancestorElementInstanceKey:
+                    modification.ancestorElement.instanceKey,
+                }
+              : undefined,
+            variableInstructions:
+              this.#getVariableInstructionsForScopeMap(scopeMap),
+          };
+
+          moveInstructions.push(instruction);
+          break;
+        }
+      }
+    }
+
+    return {activateInstructions, moveInstructions, terminateInstructions};
+  }
+
+  #attachRootVariableModifications(
+    processInstanceKey: string,
+    instructions: ModifyProcessInstanceRequestBody,
+  ): boolean {
+    const rootVariables = this.#getVariablesForScope(processInstanceKey);
+    if (rootVariables === undefined) {
+      return true;
+    }
+
+    const hostInstruction =
+      instructions.activateInstructions?.at(0) ??
+      instructions.moveInstructions?.at(0);
+    if (hostInstruction === undefined) {
+      return false;
+    }
+
+    hostInstruction.variableInstructions ??= [];
+    hostInstruction.variableInstructions.push({
+      variables: rootVariables,
+    });
+    return true;
+  }
+
   applyModifications = async ({
     processInstanceId,
     onSuccess,
@@ -568,6 +712,49 @@ class Modifications {
     onError: (statusCode: number) => void;
   }) => {
     this.startApplyingModifications();
+
+    if (IS_INSTANCE_MODIFICATION_V2) {
+      const instructions = this.#generateModificationInstructions();
+      const isAttachRootVarsSuccessful = this.#attachRootVariableModifications(
+        processInstanceId,
+        instructions,
+      );
+
+      // TODO: Logging is used for debugging/verifying the migration.
+      // Remove together with IS_INSTANCE_MODIFICATION_V2 flag.
+      console.group('Applying V2 Modifications');
+      console.log(
+        'Client State:',
+        JSON.parse(JSON.stringify(this.state.modifications)),
+      );
+      console.log('V1 Payload:', this.generateModificationsPayload());
+      console.log('V2 Payload:', instructions);
+      console.groupEnd();
+
+      if (!isAttachRootVarsSuccessful) {
+        logger.error(
+          'Failed to attach root variable modifications. No suitable host instruction found.',
+        );
+        onError(400);
+        this.reset();
+        return;
+      }
+
+      const response = await modifyProcessInstance(
+        processInstanceId,
+        instructions,
+      ).catch(() => null);
+
+      if (response?.ok) {
+        onSuccess();
+      } else {
+        logger.error('Failed to modify Process Instance');
+        onError(response?.status ?? 0);
+      }
+
+      this.reset();
+      return;
+    }
 
     const response = await modify({
       processInstanceId,
