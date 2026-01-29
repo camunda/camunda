@@ -7,37 +7,54 @@
  */
 package io.camunda.zeebe.engine.processing.identity.initialize;
 
-import static io.camunda.zeebe.protocol.record.value.AuthorizationScope.WILDCARD_CHAR;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Named.named;
+import static org.junit.jupiter.params.provider.Arguments.argumentSet;
+import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 import io.camunda.security.configuration.ConfiguredAuthorization;
 import io.camunda.security.validation.AuthorizationValidator;
 import io.camunda.security.validation.IdentifierValidator;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 class AuthorizationConfigurerTest {
 
-  private static final ConfiguredAuthorization INVALID_OWNER_TYPE =
-      new ConfiguredAuthorization(
-          null,
-          "foo",
-          AuthorizationResourceType.RESOURCE,
-          WILDCARD_CHAR,
-          Set.of(PermissionType.READ));
-  private static final ConfiguredAuthorization VALID_AUTH =
-      new ConfiguredAuthorization(
+  private static final ConfiguredAuthorization INVALID_WILDCARD_AUTH_MISSING_OWNER_TYPE =
+      ConfiguredAuthorization.wildcard(
+          null, "foo", AuthorizationResourceType.RESOURCE, Set.of(PermissionType.READ));
+  private static final ConfiguredAuthorization VALID_WILDCARD_AUTH =
+      ConfiguredAuthorization.wildcard(
           AuthorizationOwnerType.USER,
           "foo",
           AuthorizationResourceType.RESOURCE,
-          WILDCARD_CHAR,
+          Set.of(PermissionType.READ));
+  private static final ConfiguredAuthorization VALID_ID_BASED_AUTH =
+      ConfiguredAuthorization.idBased(
+          AuthorizationOwnerType.USER,
+          "bar",
+          AuthorizationResourceType.RESOURCE,
+          "123",
+          Set.of(PermissionType.READ));
+  private static final ConfiguredAuthorization VALID_PROPERTY_BASED_AUTH =
+      ConfiguredAuthorization.propertyBased(
+          AuthorizationOwnerType.USER,
+          "baz",
+          AuthorizationResourceType.USER,
+          "propertyName",
           Set.of(PermissionType.READ));
   private static final AuthorizationValidator VALIDATOR =
       new AuthorizationValidator(
@@ -47,32 +64,120 @@ class AuthorizationConfigurerTest {
   void shouldReturnViolationOnValidationFailure() {
     // when:
     final Either<List<String>, AuthorizationRecord> result =
-        new AuthorizationConfigurer(VALIDATOR).configure(INVALID_OWNER_TYPE);
+        new AuthorizationConfigurer(VALIDATOR).configure(INVALID_WILDCARD_AUTH_MISSING_OWNER_TYPE);
 
     // then:
     assertThat(result.isLeft()).isTrue();
-    assertThat(result.getLeft()).contains("No ownerType provided");
+    assertThat(result.getLeft()).containsExactly("No ownerType provided");
   }
 
   @Test
-  void shouldSuccessfullyConfigure() {
+  void shouldReturnViolationWhenBothResourceIdAndPropertyNameProvided() {
+    // given: an authorization with both resourceId and resourcePropertyName
+    final var authWithBoth =
+        new ConfiguredAuthorization(
+            AuthorizationOwnerType.USER,
+            "foo",
+            AuthorizationResourceType.RESOURCE,
+            "resource-123",
+            "propertyName",
+            Set.of(PermissionType.READ));
+
     // when:
-    final Either<List<String>, AuthorizationRecord> result =
-        new AuthorizationConfigurer(VALIDATOR).configure(VALID_AUTH);
+    final var result = new AuthorizationConfigurer(VALIDATOR).configure(authWithBoth);
+
+    // then:
+    assertThat(result.isLeft()).isTrue();
+    assertThat(result.getLeft())
+        .containsExactly(
+            "resourceId and resourcePropertyName are mutually exclusive. Provide only one of them.");
+  }
+
+  @ParameterizedTest
+  @MethodSource("missingResourceIdentifierCases")
+  void shouldReturnViolationWhenBothResourceIdAndPropertyNameMissing(
+      final String missingResourceId, final String missingPropertyName) {
+    // given: an authorization with neither resourceId nor resourcePropertyName
+    final var authWithNeither =
+        new ConfiguredAuthorization(
+            AuthorizationOwnerType.USER,
+            "foo",
+            AuthorizationResourceType.RESOURCE,
+            missingResourceId,
+            missingPropertyName,
+            Set.of(PermissionType.READ));
+
+    // when:
+    final var result = new AuthorizationConfigurer(VALIDATOR).configure(authWithNeither);
+
+    // then:
+    assertThat(result.isLeft()).isTrue();
+    assertThat(result.getLeft())
+        .containsExactly("Either resourceId or resourcePropertyName must be provided.");
+  }
+
+  private static Stream<Arguments> missingResourceIdentifierCases() {
+    return Stream.of(
+        argumentSet("Both null", null, null),
+        argumentSet("Both empty strings", "", ""),
+        argumentSet("Both blank strings", "  ", "  "),
+        argumentSet("Null resourceId and empty propertyName", null, ""));
+  }
+
+  @ParameterizedTest(name = "[{index}]: {0}")
+  @MethodSource("validAuthorizations")
+  void shouldSuccessfullyConfigure(
+      final ConfiguredAuthorization authorization, final AuthorizationRecord expected) {
+    // when:
+    final var result = new AuthorizationConfigurer(VALIDATOR).configure(authorization);
 
     // then:
     assertThat(result.isRight()).isTrue();
+    assertThat(result.get()).isEqualTo(expected);
+  }
+
+  private static Stream<Arguments> validAuthorizations() {
+    return Stream.of(
+        arguments(
+            named("Valid wildcard authorization", VALID_WILDCARD_AUTH),
+            new AuthorizationRecord()
+                .setOwnerType(VALID_WILDCARD_AUTH.ownerType())
+                .setOwnerId(VALID_WILDCARD_AUTH.ownerId())
+                .setResourceType(VALID_WILDCARD_AUTH.resourceType())
+                .setResourceMatcher(AuthorizationScope.WILDCARD.getMatcher())
+                .setResourceId(VALID_WILDCARD_AUTH.resourceId())
+                .setPermissionTypes(VALID_WILDCARD_AUTH.permissions())),
+        arguments(
+            named("Valid ID-based authorization", VALID_ID_BASED_AUTH),
+            new AuthorizationRecord()
+                .setOwnerType(VALID_ID_BASED_AUTH.ownerType())
+                .setOwnerId(VALID_ID_BASED_AUTH.ownerId())
+                .setResourceType(VALID_ID_BASED_AUTH.resourceType())
+                .setResourceMatcher(AuthorizationResourceMatcher.ID)
+                .setResourceId(VALID_ID_BASED_AUTH.resourceId())
+                .setPermissionTypes(VALID_ID_BASED_AUTH.permissions())),
+        arguments(
+            named("Valid PROPERTY-based authorization", VALID_PROPERTY_BASED_AUTH),
+            new AuthorizationRecord()
+                .setOwnerType(VALID_PROPERTY_BASED_AUTH.ownerType())
+                .setOwnerId(VALID_PROPERTY_BASED_AUTH.ownerId())
+                .setResourceType(VALID_PROPERTY_BASED_AUTH.resourceType())
+                .setResourceMatcher(AuthorizationResourceMatcher.PROPERTY)
+                .setResourcePropertyName(VALID_PROPERTY_BASED_AUTH.resourcePropertyName())
+                .setPermissionTypes(VALID_PROPERTY_BASED_AUTH.permissions())));
   }
 
   @Test
   void shouldAggregateToViolations() {
     // given:
     final List<ConfiguredAuthorization> auths =
-        List.of(VALID_AUTH, INVALID_OWNER_TYPE, INVALID_OWNER_TYPE);
+        List.of(
+            VALID_WILDCARD_AUTH,
+            INVALID_WILDCARD_AUTH_MISSING_OWNER_TYPE,
+            INVALID_WILDCARD_AUTH_MISSING_OWNER_TYPE);
 
     // when:
-    final Either<List<String>, List<AuthorizationRecord>> result =
-        new AuthorizationConfigurer(VALIDATOR).configureEntities(auths);
+    final var result = new AuthorizationConfigurer(VALIDATOR).configureEntities(auths);
 
     // then:
     assertThat(result.isLeft()).isTrue();
@@ -83,7 +188,8 @@ class AuthorizationConfigurerTest {
   @Test
   void shouldAggregateToAuthorizationRecords() {
     // given:
-    final List<ConfiguredAuthorization> auths = List.of(VALID_AUTH, VALID_AUTH);
+    final List<ConfiguredAuthorization> auths =
+        List.of(VALID_WILDCARD_AUTH, VALID_ID_BASED_AUTH, VALID_PROPERTY_BASED_AUTH);
 
     // when:
     final Either<List<String>, List<AuthorizationRecord>> result =
@@ -91,6 +197,6 @@ class AuthorizationConfigurerTest {
 
     // then:
     assertThat(result.isRight()).isTrue();
-    assertThat(result.get()).hasSize(2);
+    assertThat(result.get()).hasSize(3);
   }
 }
