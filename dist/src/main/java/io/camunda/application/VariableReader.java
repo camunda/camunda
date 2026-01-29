@@ -23,7 +23,7 @@ import java.util.List;
  */
 public final class VariableReader {
 
-  private static final String INDEX_NAME = "operate-variable-8.3.0_alias";
+  private static final String INDEX_NAME = "operate-variable-8.3.0_";
 
   private VariableReader() {}
 

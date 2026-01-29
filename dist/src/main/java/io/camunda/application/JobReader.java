@@ -25,7 +25,7 @@ import java.util.List;
  */
 public final class JobReader {
 
-  private static final String INDEX_NAME = "operate-job-8.6.0_alias";
+  private static final String INDEX_NAME = "operate-job-8.6.0_";
 
   private JobReader() {}
 

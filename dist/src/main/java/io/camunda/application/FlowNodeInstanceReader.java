@@ -25,7 +25,7 @@ import java.util.List;
  */
 public final class FlowNodeInstanceReader {
 
-  private static final String INDEX_NAME = "operate-flownode-instance-8.3.1_alias";
+  private static final String INDEX_NAME = "operate-flownode-instance-8.3.1_";
 
   private FlowNodeInstanceReader() {}
 

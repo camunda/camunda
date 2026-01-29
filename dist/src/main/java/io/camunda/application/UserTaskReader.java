@@ -27,7 +27,7 @@ import java.util.List;
  */
 public final class UserTaskReader {
 
-  private static final String INDEX_NAME = "tasklist-task-8.8.0_alias";
+  private static final String INDEX_NAME = "tasklist-task-8.8.0_";
 
   private UserTaskReader() {}
 
@@ -38,8 +38,7 @@ public final class UserTaskReader {
    * @return list of TaskEntity objects from ES
    */
   public static List<TaskEntity> readAllUserTasksFromEs(final ElasticsearchClient esClient) {
-    final var query =
-        Query.of(q -> q.term(t -> t.field("join.name").value(FieldValue.of("task"))));
+    final var query = Query.of(q -> q.term(t -> t.field("join.name").value(FieldValue.of("task"))));
 
     final var searchRequestBuilder =
         new SearchRequest.Builder()

@@ -26,7 +26,7 @@ import java.util.List;
  */
 public final class ProcessInstanceReader {
 
-  private static final String INDEX_NAME = "operate-list-view-8.3.0_alias";
+  private static final String INDEX_NAME = "operate-list-view-8.3.0_";
 
   private ProcessInstanceReader() {}
 
@@ -39,10 +39,7 @@ public final class ProcessInstanceReader {
   public static List<ProcessInstanceForListViewEntity> readAllProcessInstancesFromEs(
       final ElasticsearchClient esClient) {
     final var query =
-        Query.of(
-            q ->
-                q.term(
-                    t -> t.field("joinRelation").value(FieldValue.of("processInstance"))));
+        Query.of(q -> q.term(t -> t.field("joinRelation").value(FieldValue.of("processInstance"))));
 
     final var searchRequestBuilder =
         new SearchRequest.Builder()

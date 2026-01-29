@@ -30,7 +30,7 @@ import java.util.List;
  */
 public final class DecisionInstanceReader {
 
-  private static final String INDEX_NAME = "operate-decision-instance-8.3.0_alias";
+  private static final String INDEX_NAME = "operate-decision-instance-8.3.0_";
 
   private DecisionInstanceReader() {}
 

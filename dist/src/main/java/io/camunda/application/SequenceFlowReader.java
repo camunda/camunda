@@ -22,7 +22,7 @@ import java.util.List;
  */
 public final class SequenceFlowReader {
 
-  private static final String INDEX_NAME = "operate-sequence-flow-8.3.0_alias";
+  private static final String INDEX_NAME = "operate-sequence-flow-8.3.0_";
 
   private SequenceFlowReader() {}
 
