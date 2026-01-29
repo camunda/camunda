@@ -74,9 +74,11 @@ public class AuditLogHandler<R extends RecordValue> implements ExportHandler<Aud
 
   @Override
   public boolean handlesRecord(final Record<R> record) {
-    final var info = AuditLogInfo.of(record);
+    if (!transformer.supports(record)) {
+      return false;
+    }
 
-    return transformer.supports(record) && configuration.isEnabled(info);
+    return configuration.isEnabled(AuditLogInfo.of(record));
   }
 
   @Override

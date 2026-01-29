@@ -30,7 +30,6 @@ import io.camunda.zeebe.logstreams.impl.LogStreamMetricsDoc.FlowControlKeyNames;
 import io.camunda.zeebe.logstreams.impl.LogStreamMetricsDoc.FlowControlOutcome;
 import io.camunda.zeebe.logstreams.impl.LogStreamMetricsDoc.RecordAppendedKeyNames;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControl.Rejection;
-import io.camunda.zeebe.logstreams.impl.log.LogAppendEntryMetadata;
 import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.logstreams.log.WriteContext.InterPartition;
 import io.camunda.zeebe.logstreams.log.WriteContext.Internal;
@@ -49,7 +48,6 @@ import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
 public final class LogStreamMetrics {
@@ -149,8 +147,7 @@ public final class LogStreamMetrics {
         .increment(amount);
   }
 
-  public void flowControlAccepted(
-      final WriteContext context, final List<LogAppendEntryMetadata> batchMetadata) {
+  public void flowControlAccepted(final WriteContext context, final int batchMetadataSize) {
     triedAppends.increment();
 
     if (context instanceof UserCommand) {
@@ -162,13 +159,11 @@ public final class LogStreamMetrics {
             tagForContext(context),
             FlowControlOutcome.ACCEPTED,
             this::registerFlowControlOutcomeCounter)
-        .increment(batchMetadata.size());
+        .increment(batchMetadataSize);
   }
 
   public void flowControlRejected(
-      final WriteContext context,
-      final List<LogAppendEntryMetadata> batchMetadata,
-      final Rejection reason) {
+      final WriteContext context, final int batchMetadataSize, final Rejection reason) {
     triedAppends.increment();
     deferredAppends.increment();
 
@@ -182,7 +177,7 @@ public final class LogStreamMetrics {
             tagForContext(context),
             tagForRejection(reason),
             this::registerFlowControlOutcomeCounter)
-        .increment(batchMetadata.size());
+        .increment(batchMetadataSize);
   }
 
   public void setExportingRate(final long value) {

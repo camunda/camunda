@@ -24,18 +24,24 @@ import java.util.concurrent.CopyOnWriteArraySet;
 public class AtomixLogStorage implements LogStorage, RaftCommitListener {
 
   private final AtomixReaderFactory readerFactory;
+  private final AtomixReaderFactory uncommittedReaderFactory;
   private final ZeebeLogAppender logAppender;
   private final Set<CommitListener> commitListeners = new CopyOnWriteArraySet<>();
 
   public AtomixLogStorage(
-      final AtomixReaderFactory readerFactory, final ZeebeLogAppender logAppender) {
+      final AtomixReaderFactory readerFactory,
+      final AtomixReaderFactory uncommittedReaderFactory,
+      final ZeebeLogAppender logAppender) {
     this.readerFactory = readerFactory;
+    this.uncommittedReaderFactory = uncommittedReaderFactory;
     this.logAppender = logAppender;
   }
 
   public static AtomixLogStorage ofPartition(
-      final AtomixReaderFactory readerFactory, final ZeebeLogAppender appender) {
-    return new AtomixLogStorage(readerFactory, appender);
+      final AtomixReaderFactory readerFactory,
+      final AtomixReaderFactory uncommittedReaderFactory,
+      final ZeebeLogAppender appender) {
+    return new AtomixLogStorage(readerFactory, uncommittedReaderFactory, appender);
   }
 
   @Override
@@ -51,6 +57,11 @@ public class AtomixLogStorage implements LogStorage, RaftCommitListener {
       final AppendListener listener) {
     final var adapter = new AtomixAppendListenerAdapter(listener);
     logAppender.appendEntry(lowestPosition, highestPosition, bufferWriter, adapter);
+  }
+
+  @Override
+  public AtomixLogStorageReader newUncommittedReader() {
+    return new AtomixLogStorageReader(uncommittedReaderFactory.create());
   }
 
   @Override

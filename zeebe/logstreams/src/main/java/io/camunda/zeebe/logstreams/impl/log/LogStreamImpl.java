@@ -112,6 +112,12 @@ public final class LogStreamImpl implements LogStream, CommitListener {
   }
 
   @Override
+  public LogStreamReader newUncommitedLogsStreamReader() {
+    ensureOpen();
+    return createNonCommitedLogStreamReader();
+  }
+
+  @Override
   public void onCommit() {
     if (closed) {
       // This can be called by the raft thread after we've already closed the log stream.
@@ -130,6 +136,12 @@ public final class LogStreamImpl implements LogStream, CommitListener {
 
   private LogStreamReader createLogStreamReader() {
     final var newReader = new LogStreamReaderImpl(logStorage.newReader());
+    readers.add(newReader);
+    return newReader;
+  }
+
+  private LogStreamReader createNonCommitedLogStreamReader() {
+    final var newReader = new LogStreamReaderImpl(logStorage.newUncommittedReader());
     readers.add(newReader);
     return newReader;
   }

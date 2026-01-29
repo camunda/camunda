@@ -1,0 +1,27 @@
+---
+# Source: camunda-platform/templates/orchestration/service-headless.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: camunda-headless
+  labels:
+    app: camunda-platform
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: release-name
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    app.kubernetes.io/component: zeebe-broker
+spec:
+  clusterIP: None
+  publishNotReadyAddresses: true
+  type: ClusterIP
+  ports:
+    - port: 8080
+      protocol: TCP
+      name: rest
+    - port: 26500
+      protocol: TCP
+      name: grpc
+  selector:
+    app: camunda-platform
+    app.kubernetes.io/component: zeebe-broker

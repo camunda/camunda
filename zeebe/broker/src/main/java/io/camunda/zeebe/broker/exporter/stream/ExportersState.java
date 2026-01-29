@@ -12,6 +12,8 @@ import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 import org.agrona.DirectBuffer;
@@ -26,6 +28,8 @@ public final class ExportersState {
 
   private final DbString exporterId;
   private final ColumnFamily<DbString, ExporterStateEntry> exporterPositionColumnFamily;
+
+  private final Map<String, ExporterStateEntry> cachedEntries = new HashMap<>();
 
   public ExportersState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
@@ -50,6 +54,7 @@ public final class ExportersState {
       exporterStateEntry.setMetadata(metadata);
     }
     exporterPositionColumnFamily.upsert(this.exporterId, exporterStateEntry);
+    cachedEntries.put(exporterId, exporterStateEntry);
   }
 
   public void initializeExporterState(
@@ -64,6 +69,7 @@ public final class ExportersState {
       exporterStateEntry.setMetadata(metadata);
     }
     exporterPositionColumnFamily.upsert(this.exporterId, exporterStateEntry);
+    cachedEntries.put(exporterId, exporterStateEntry);
   }
 
   public long getPosition(final String exporterId) {
@@ -85,8 +91,14 @@ public final class ExportersState {
   }
 
   private Optional<ExporterStateEntry> findExporterStateEntry(final String exporterId) {
-    this.exporterId.wrapString(exporterId);
-    return Optional.ofNullable(exporterPositionColumnFamily.get(this.exporterId));
+    final var entry =
+        cachedEntries.computeIfAbsent(
+            exporterId,
+            key -> {
+              this.exporterId.wrapString(key);
+              return exporterPositionColumnFamily.get(this.exporterId);
+            });
+    return Optional.ofNullable(entry);
   }
 
   public void visitExporterState(final BiConsumer<String, ExporterStateEntry> consumer) {
@@ -106,6 +118,7 @@ public final class ExportersState {
   public void removeExporterState(final String exporterId) {
     this.exporterId.wrapString(exporterId);
     exporterPositionColumnFamily.deleteIfExists(this.exporterId);
+    cachedEntries.remove(exporterId);
   }
 
   public boolean hasExporters() {

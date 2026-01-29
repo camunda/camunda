@@ -13,7 +13,6 @@ import com.netflix.concurrency.limits.Limiter;
 import com.netflix.concurrency.limits.Limiter.Listener;
 import io.camunda.zeebe.logstreams.impl.LogStreamMetrics;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.RequestLimiter.CommandRateLimiterBuilder;
-import io.camunda.zeebe.logstreams.impl.log.LogAppendEntryMetadata;
 import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.logstreams.log.WriteContext.Internal;
 import io.camunda.zeebe.logstreams.log.WriteContext.UserCommand;
@@ -114,20 +113,20 @@ public final class FlowControl implements AppendListener {
   // False positive: https://github.com/checkstyle/checkstyle/issues/14891
   @SuppressWarnings("checkstyle:MissingSwitchDefault")
   public Either<Rejection, InFlightEntry> tryAcquire(
-      final WriteContext context, final List<LogAppendEntryMetadata> batchMetadata) {
-    final var result = tryAcquireInternal(context, batchMetadata);
+      final WriteContext context, final int batchMetadataSize) {
+    final var result = tryAcquireInternal(context, batchMetadataSize);
     switch (result) {
       case Either.Left<Rejection, InFlightEntry>(final var reason) ->
-          metrics.flowControlRejected(context, batchMetadata, reason);
+          metrics.flowControlRejected(context, batchMetadataSize, reason);
       case Either.Right<Rejection, InFlightEntry>(final var ignored) -> {
-        metrics.flowControlAccepted(context, batchMetadata);
+        metrics.flowControlAccepted(context, batchMetadataSize);
       }
     }
     return result;
   }
 
   private Either<Rejection, InFlightEntry> tryAcquireInternal(
-      final WriteContext context, final List<LogAppendEntryMetadata> batchMetadata) {
+      final WriteContext context, final int batchMetadataSize) {
     Listener requestListener = null;
     var alwaysAllowed = false;
     switch (context) {
@@ -146,14 +145,14 @@ public final class FlowControl implements AppendListener {
     }
 
     if (writeRateLimiter != null
-        && (!writeRateLimiter.tryAcquire(batchMetadata.size()) && !alwaysAllowed)) {
+        && (!writeRateLimiter.tryAcquire(batchMetadataSize) && !alwaysAllowed)) {
       if (requestListener != null) {
         requestListener.onIgnore();
       }
       return Either.left(Rejection.WriteRateLimitExhausted);
     }
 
-    return Either.right(new InFlightEntry(metrics, batchMetadata, requestListener));
+    return Either.right(new InFlightEntry(metrics, requestListener));
   }
 
   public void onAppend(final InFlightEntry entry, final long highestPosition) {

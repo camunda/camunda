@@ -20,6 +20,7 @@ import io.camunda.zeebe.logstreams.util.TestEntry;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.nio.ByteBuffer;
 import java.time.InstantSource;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -290,6 +291,11 @@ final class SequencerTest {
     }
 
     @Override
+    public LogStorageReader newUncommittedReader() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
     public void append(
         final long lowestPosition,
         final long highestPosition,
@@ -300,6 +306,15 @@ final class SequencerTest {
       }
       position = highestPosition;
       listener.onCommit(position, highestPosition);
+    }
+
+    @Override
+    public void append(
+        final long lowestPosition,
+        final long highestPosition,
+        final ByteBuffer blockBuffer,
+        final AppendListener listener) {
+      LogStorage.super.append(lowestPosition, highestPosition, blockBuffer, listener);
     }
 
     @Override

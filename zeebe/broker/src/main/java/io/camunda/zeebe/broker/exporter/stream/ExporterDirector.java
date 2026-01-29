@@ -370,7 +370,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   @Override
   protected void onActorStarting() {
     if (exporterMode == ExporterMode.ACTIVE) {
-      logStreamReader = logStream.newLogStreamReader();
+      logStreamReader = logStream.newUncommitedLogsStreamReader();
     }
   }
 
@@ -589,7 +589,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   }
 
   private void restartActiveExportingMode() {
-    logStreamReader = logStream.newLogStreamReader();
+    logStreamReader = logStream.newUncommitedLogsStreamReader();
     startActiveExportingFrom(-1);
   }
 

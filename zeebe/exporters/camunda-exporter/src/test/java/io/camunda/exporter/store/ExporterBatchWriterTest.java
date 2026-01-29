@@ -45,7 +45,7 @@ class ExporterBatchWriterTest {
     final TestRecord record = new TestRecord(0, JOB);
 
     // when
-    batchWriter.addRecord(record);
+    batchWriter.addRecord(record, 0);
 
     verify(handler, never()).handlesRecord(eq(record));
   }
@@ -56,7 +56,7 @@ class ExporterBatchWriterTest {
     when(handler.handlesRecord(eq(record))).thenReturn(false);
 
     // when
-    batchWriter.addRecord(record);
+    batchWriter.addRecord(record, 0);
 
     verify(handler).handlesRecord(eq(record));
 
@@ -77,7 +77,7 @@ class ExporterBatchWriterTest {
     when(handler.createNewEntity(eq(id))).thenReturn(entity);
 
     // when
-    batchWriter.addRecord(record);
+    batchWriter.addRecord(record, 0);
 
     // then
     verify(handler).handlesRecord(eq(record));
@@ -98,12 +98,12 @@ class ExporterBatchWriterTest {
     when(handler.createNewEntity(eq(id))).thenReturn(entity);
 
     // Add the record
-    batchWriter.addRecord(record);
+    batchWriter.addRecord(record, 0);
     clearInvocations(handler);
 
     // when
     // Add it again
-    batchWriter.addRecord(record);
+    batchWriter.addRecord(record, 0);
 
     // then
     verify(handler, never()).createNewEntity(eq(id));
@@ -121,7 +121,7 @@ class ExporterBatchWriterTest {
     when(handler.generateIds(eq(record))).thenReturn(List.of(id));
     when(handler.createNewEntity(eq(id))).thenReturn(entity);
 
-    batchWriter.addRecord(record);
+    batchWriter.addRecord(record, 0);
     assertThat(batchWriter.getBatchSize()).isEqualTo(1);
     assertThat(batchWriter.getEntitiesToFlushSize()).isEqualTo(1);
 

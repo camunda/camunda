@@ -118,6 +118,11 @@ public class TestLogStream implements LogStream {
     logStream.removeRecordAvailableListener(recordAwaiter);
   }
 
+  @Override
+  public LogStreamReader newUncommitedLogsStreamReader() {
+    return logStream.newUncommitedLogsStreamReader();
+  }
+
   private Either<WriteFailure, Long> syncTryWrite(
       final Supplier<Either<WriteFailure, Long>> writeOperation) {
     final var written =

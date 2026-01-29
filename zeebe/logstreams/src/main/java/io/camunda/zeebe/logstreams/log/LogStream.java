@@ -71,4 +71,9 @@ public interface LogStream extends AutoCloseable {
    * @param recordAwaiter the listener to remove
    */
   void removeRecordAvailableListener(LogRecordAwaiter recordAwaiter);
+
+  /**
+   * @return a future, when successfully completed it returns a newly created log stream reader
+   */
+  LogStreamReader newUncommitedLogsStreamReader();
 }

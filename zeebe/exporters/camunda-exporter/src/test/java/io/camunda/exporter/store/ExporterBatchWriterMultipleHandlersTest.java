@@ -55,7 +55,8 @@ public class ExporterBatchWriterMultipleHandlersTest {
     writer.addRecord(
         factory.generateRecord(
             ValueType.PROCESS_INSTANCE,
-            builder -> builder.withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)));
+            builder -> builder.withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)),
+        0);
 
     // then
     assertThat(writer.getBatchSize()).isEqualTo(1);
@@ -75,7 +76,8 @@ public class ExporterBatchWriterMultipleHandlersTest {
     writer.addRecord(
         factory.generateRecord(
             ValueType.PROCESS_INSTANCE,
-            builder -> builder.withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)));
+            builder -> builder.withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)),
+        0);
 
     // then
     assertThat(writer.getBatchSize()).isEqualTo(2);
@@ -94,7 +96,7 @@ public class ExporterBatchWriterMultipleHandlersTest {
         factory.generateRecord(
             ValueType.PROCESS_INSTANCE,
             builder -> builder.withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED));
-    writer.addRecord(record);
+    writer.addRecord(record, 0);
 
     final BatchRequest batchRequest = mock(BatchRequest.class);
 
@@ -121,7 +123,7 @@ public class ExporterBatchWriterMultipleHandlersTest {
         factory.generateRecord(
             ValueType.PROCESS_INSTANCE,
             builder -> builder.withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED));
-    writer.addRecord(record);
+    writer.addRecord(record, 0);
 
     final BatchRequest batchRequest = mock(BatchRequest.class);
 
@@ -153,7 +155,7 @@ public class ExporterBatchWriterMultipleHandlersTest {
         factory.generateRecord(
             ValueType.PROCESS_INSTANCE,
             builder -> builder.withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED));
-    writer.addRecord(record);
+    writer.addRecord(record, 0);
 
     final BatchRequest batchRequest = mock(BatchRequest.class);
 
@@ -201,7 +203,7 @@ public class ExporterBatchWriterMultipleHandlersTest {
         factory.generateRecord(
             ValueType.PROCESS_INSTANCE,
             builder -> builder.withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED));
-    writer.addRecord(record);
+    writer.addRecord(record, 0);
 
     final BatchRequest batchRequest = mock(BatchRequest.class);
 
@@ -394,8 +396,8 @@ public class ExporterBatchWriterMultipleHandlersTest {
               b -> b.withPosition(10L).withTimestamp(12L).withOperationReference(Long.MAX_VALUE));
 
       //  when
-      observedRecords.forEach(batchWriter::addRecord);
-      batchWriter.addRecord(unobservedRecord);
+      observedRecords.forEach(r -> batchWriter.addRecord(r, 0));
+      batchWriter.addRecord(unobservedRecord, 0);
       batchWriter.flush(batchRequest);
 
       // then
@@ -413,9 +415,9 @@ public class ExporterBatchWriterMultipleHandlersTest {
               ValueType.PROCESS_INSTANCE, b -> b.withPosition(1L).withTimestamp(4L));
 
       //  when
-      batchWriter.addRecord(record);
-      batchWriter.addRecord(record);
-      batchWriter.addRecord(record);
+      batchWriter.addRecord(record, 0);
+      batchWriter.addRecord(record, 0);
+      batchWriter.addRecord(record, 0);
       batchWriter.flush(batchRequest);
 
       // then
@@ -433,9 +435,9 @@ public class ExporterBatchWriterMultipleHandlersTest {
               ValueType.PROCESS_INSTANCE, b -> b.withPosition(1L).withTimestamp(4L));
 
       //  when
-      batchWriter.addRecord(record);
-      batchWriter.addRecord(record);
-      batchWriter.addRecord(record);
+      batchWriter.addRecord(record, 0);
+      batchWriter.addRecord(record, 0);
+      batchWriter.addRecord(record, 0);
       batchWriter.flush(batchRequest);
 
       // then
