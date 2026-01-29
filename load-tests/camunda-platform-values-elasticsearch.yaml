@@ -73,9 +73,9 @@ elasticsearch:
     resources:
       requests:
         cpu: 5
-        memory: 3Gi
+        memory: 8Gi
       limits:
         cpu: 5
-        memory: 6Gi
+        memory: 8Gi
   extraConfig:
     logger.org.elasticsearch.deprecation: "OFF"
