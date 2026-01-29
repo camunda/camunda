@@ -9,11 +9,16 @@ package io.camunda.zeebe.db.impl.rocksdb.transaction;
 
 import static io.camunda.zeebe.db.impl.rocksdb.transaction.RocksDbInternal.isRocksDbExceptionRecoverable;
 
+import com.google.common.primitives.Bytes;
 import io.camunda.zeebe.db.TransactionOperation;
 import io.camunda.zeebe.db.ZeebeDbException;
 import io.camunda.zeebe.db.ZeebeDbTransaction;
+
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.LangUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.rocksdb.ColumnFamilyHandle;
@@ -52,7 +57,9 @@ public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
       final int valueLength)
       throws Exception {
     try {
-      RocksDbInternal.putWithHandle.invokeExact(
+        final CFKEy cfkEy = new CFKEy(columnFamilyHandle, new UnsafeBuffer(key, keyOffset, keyLength).hashCode());
+        cache.put(cfkEy, BufferUtil.cloneBuffer(new UnsafeBuffer(value, valueOffset, valueLength)).byteArray());
+        RocksDbInternal.putWithHandle.invokeExact(
           nativeHandle,
           key,
           keyOffset,
@@ -93,7 +100,8 @@ public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
       final int keyOffset,
       final int keyLength)
       throws Exception {
-    final CFKEy cfkEy = new CFKEy(columnFamilyHandle, new UnsafeBuffer(key, keyOffset, keyLength));
+
+    final CFKEy cfkEy = new CFKEy(columnFamilyHandle, new UnsafeBuffer(key, keyOffset, keyLength).hashCode());
 
     return cache.computeIfAbsent(
         cfkEy,
@@ -112,7 +120,7 @@ public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
   public void delete(final long columnFamilyHandle, final byte[] key, final int keyLength)
       throws Exception {
     try {
-      cache.remove(new CFKEy(columnFamilyHandle, new UnsafeBuffer(key, 0, keyLength)));
+      cache.remove(new CFKEy(columnFamilyHandle, new UnsafeBuffer(key, 0, keyLength).hashCode()));
       RocksDbInternal.removeWithHandle.invokeExact(
           nativeHandle, key, keyLength, columnFamilyHandle, false);
     } catch (final Throwable e) {
@@ -188,5 +196,5 @@ public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
     transaction.close();
   }
 
-  record CFKEy(long columnFamilyHandle, UnsafeBuffer buffer) {}
+  record CFKEy(long columnFamilyHandle, long hash) {}
 }
