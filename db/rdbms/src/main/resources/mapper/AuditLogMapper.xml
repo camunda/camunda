@@ -143,6 +143,12 @@
           <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
         </foreach>
       </if>
+      <if test="filter.batchOperationTypeOperations != null and !filter.batchOperationTypeOperations.isEmpty()">
+        <foreach collection="filter.batchOperationTypeOperations" item="operation">
+          AND BATCH_OPERATION_TYPE
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
       <if test="filter.timestampOperations != null and !filter.timestampOperations.isEmpty()">
         <foreach collection="filter.timestampOperations" item="operation">
           AND TIMESTAMP
@@ -200,6 +206,24 @@
       <if test="filter.userTaskKeyOperations != null and !filter.userTaskKeyOperations.isEmpty()">
         <foreach collection="filter.userTaskKeyOperations" item="operation">
           AND USER_TASK_KEY
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.decisionRequirementsIdOperations != null and !filter.decisionRequirementsIdOperations.isEmpty()">
+        <foreach collection="filter.decisionRequirementsIdOperations" item="operation">
+          AND DECISION_REQUIREMENTS_ID
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.decisionRequirementsKeyOperations != null and !filter.decisionRequirementsKeyOperations.isEmpty()">
+        <foreach collection="filter.decisionRequirementsKeyOperations" item="operation">
+          AND DECISION_REQUIREMENTS_KEY
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.decisionDefinitionIdOperations != null and !filter.decisionDefinitionIdOperations.isEmpty()">
+        <foreach collection="filter.decisionDefinitionIdOperations" item="operation">
+          AND DECISION_DEFINITION_ID
           <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
         </foreach>
       </if>

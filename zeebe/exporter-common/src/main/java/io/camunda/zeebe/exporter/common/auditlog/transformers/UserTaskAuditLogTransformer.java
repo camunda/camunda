@@ -25,6 +25,7 @@ public class UserTaskAuditLogTransformer implements AuditLogTransformer<UserTask
         .setProcessDefinitionKey(value.getProcessDefinitionKey())
         .setProcessInstanceKey(value.getProcessInstanceKey())
         .setElementInstanceKey(value.getElementInstanceKey())
-        .setUserTaskKey(value.getUserTaskKey());
+        .setUserTaskKey(value.getUserTaskKey())
+        .setEntityKey(String.valueOf(value.getUserTaskKey()));
   }
 }
