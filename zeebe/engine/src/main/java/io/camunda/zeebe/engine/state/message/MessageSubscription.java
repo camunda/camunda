@@ -7,51 +7,50 @@
  */
 package io.camunda.zeebe.engine.state.message;
 
-import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.BooleanProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
+import io.camunda.zeebe.engine.state.ObjectDbValue;
 
-public final class MessageSubscription extends UnpackedObject implements DbValue {
+public final class MessageSubscription extends ObjectDbValue {
 
-  private final ObjectProperty<MessageSubscriptionRecord> recordProp =
-      new ObjectProperty<>("record", new MessageSubscriptionRecord());
+	private final ObjectProperty<MessageSubscriptionRecord> recordProp = new ObjectProperty<>("record",
+			new MessageSubscriptionRecord());
 
-  private final LongProperty keyProp = new LongProperty("key");
+	private final LongProperty keyProp = new LongProperty("key");
 
-  private final BooleanProperty correlatingProp = new BooleanProperty("correlating", false);
+	private final BooleanProperty correlatingProp = new BooleanProperty("correlating", false);
 
-  public MessageSubscription() {
-    super(3);
-    declareProperty(recordProp).declareProperty(keyProp).declareProperty(correlatingProp);
-  }
+	public MessageSubscription() {
+		super(3);
+		declareProperty(recordProp).declareProperty(keyProp).declareProperty(correlatingProp);
+	}
 
-  public MessageSubscriptionRecord getRecord() {
-    return recordProp.getValue();
-  }
+	public MessageSubscriptionRecord getRecord() {
+		return recordProp.getValue();
+	}
 
-  public MessageSubscription setRecord(final MessageSubscriptionRecord record) {
-    recordProp.getValue().wrap(record);
-    return this;
-  }
+	public MessageSubscription setRecord(final MessageSubscriptionRecord record) {
+		recordProp.getValue().wrap(record);
+		return this;
+	}
 
-  public long getKey() {
-    return keyProp.getValue();
-  }
+	public long getKey() {
+		return keyProp.getValue();
+	}
 
-  public MessageSubscription setKey(final long key) {
-    keyProp.setValue(key);
-    return this;
-  }
+	public MessageSubscription setKey(final long key) {
+		keyProp.setValue(key);
+		return this;
+	}
 
-  public boolean isCorrelating() {
-    return correlatingProp.getValue();
-  }
+	public boolean isCorrelating() {
+		return correlatingProp.getValue();
+	}
 
-  public MessageSubscription setCorrelating(final boolean correlating) {
-    correlatingProp.setValue(correlating);
-    return this;
-  }
+	public MessageSubscription setCorrelating(final boolean correlating) {
+		correlatingProp.setValue(correlating);
+		return this;
+	}
 }

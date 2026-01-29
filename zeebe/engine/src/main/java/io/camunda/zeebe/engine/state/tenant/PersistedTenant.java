@@ -7,14 +7,13 @@
  */
 package io.camunda.zeebe.engine.state.tenant;
 
-import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.engine.state.ObjectDbValue;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 
-public class PersistedTenant extends UnpackedObject implements DbValue {
+public class PersistedTenant extends ObjectDbValue {
 
   private final LongProperty tenantKeyProp = new LongProperty("tenantKey");
   private final StringProperty tenantIdProp = new StringProperty("tenantId");

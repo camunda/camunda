@@ -7,38 +7,37 @@
  */
 package io.camunda.zeebe.engine.state.instance;
 
-import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
+import io.camunda.zeebe.engine.state.ObjectDbValue;
 
-public class VariableDocumentState extends UnpackedObject implements DbValue {
+public class VariableDocumentState extends ObjectDbValue {
 
-  private final LongProperty variableDocumentKeyProp = new LongProperty("variableDocumentKey", -1);
-  private final ObjectProperty<VariableDocumentRecord> recordProp =
-      new ObjectProperty<>("variableDocumentRecord", new VariableDocumentRecord());
+	private final LongProperty variableDocumentKeyProp = new LongProperty("variableDocumentKey", -1);
+	private final ObjectProperty<VariableDocumentRecord> recordProp = new ObjectProperty<>("variableDocumentRecord",
+			new VariableDocumentRecord());
 
-  public VariableDocumentState() {
-    super(2);
-    declareProperty(variableDocumentKeyProp).declareProperty(recordProp);
-  }
+	public VariableDocumentState() {
+		super(2);
+		declareProperty(variableDocumentKeyProp).declareProperty(recordProp);
+	}
 
-  public long getKey() {
-    return variableDocumentKeyProp.getValue();
-  }
+	public long getKey() {
+		return variableDocumentKeyProp.getValue();
+	}
 
-  public VariableDocumentState setKey(final long variableDocumentKey) {
-    variableDocumentKeyProp.setValue(variableDocumentKey);
-    return this;
-  }
+	public VariableDocumentState setKey(final long variableDocumentKey) {
+		variableDocumentKeyProp.setValue(variableDocumentKey);
+		return this;
+	}
 
-  public VariableDocumentRecord getRecord() {
-    return recordProp.getValue();
-  }
+	public VariableDocumentRecord getRecord() {
+		return recordProp.getValue();
+	}
 
-  public VariableDocumentState setRecord(final VariableDocumentRecord record) {
-    recordProp.getValue().wrap(record);
-    return this;
-  }
+	public VariableDocumentState setRecord(final VariableDocumentRecord record) {
+		recordProp.getValue().wrap(record);
+		return this;
+	}
 }

@@ -9,8 +9,7 @@ package io.camunda.zeebe.engine.state.instance;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
-import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.engine.state.ObjectDbValue;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
@@ -18,7 +17,7 @@ import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public final class TimerInstance extends UnpackedObject implements DbValue, TenantOwned {
+public final class TimerInstance extends ObjectDbValue implements TenantOwned {
 
   public static final long NO_ELEMENT_INSTANCE = -1L;
 

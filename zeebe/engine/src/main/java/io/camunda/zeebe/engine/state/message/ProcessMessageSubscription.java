@@ -7,14 +7,13 @@
  */
 package io.camunda.zeebe.engine.state.message;
 
-import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.engine.state.ObjectDbValue;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 
-public final class ProcessMessageSubscription extends UnpackedObject implements DbValue {
+public final class ProcessMessageSubscription extends ObjectDbValue {
 
   private final ObjectProperty<ProcessMessageSubscriptionRecord> recordProp =
       new ObjectProperty<>("record", new ProcessMessageSubscriptionRecord());

@@ -7,25 +7,25 @@
  */
 package io.camunda.zeebe.engine.state.deployment;
 
-import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.BinaryProperty;
 import org.agrona.DirectBuffer;
+import io.camunda.zeebe.engine.state.ObjectDbValue;
+import io.camunda.zeebe.engine.state.ObjectDbValue;
 
-public class Digest extends UnpackedObject implements DbValue {
-  private final BinaryProperty digestProp = new BinaryProperty("digest");
+public class Digest extends ObjectDbValue {
+	private final BinaryProperty digestProp = new BinaryProperty("digest");
 
-  public Digest() {
-    super(1);
-    declareProperty(digestProp);
-  }
+	public Digest() {
+		super(1);
+		declareProperty(digestProp);
+	}
 
-  public DirectBuffer get() {
-    return digestProp.getValue();
-  }
+	public DirectBuffer get() {
+		return digestProp.getValue();
+	}
 
-  public Digest set(final DirectBuffer digest) {
-    digestProp.setValue(digest);
-    return this;
-  }
+	public Digest set(final DirectBuffer digest) {
+		digestProp.setValue(digest);
+		return this;
+	}
 }

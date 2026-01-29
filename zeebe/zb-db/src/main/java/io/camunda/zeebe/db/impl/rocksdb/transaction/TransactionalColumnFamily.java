@@ -60,6 +60,7 @@ class TransactionalColumnFamily<
   private final ValueType valueInstance;
   private final KeyType keyInstance;
   private final ColumnFamilyContext columnFamilyContext;
+  private final ColumnFamilyContext columnFamilyContextEnd;
   private final ForeignKeyChecker foreignKeyChecker;
   private final ColumnFamilyMetrics metrics;
 
@@ -79,6 +80,7 @@ class TransactionalColumnFamily<
     this.valueInstance = valueInstance;
     this.metrics = metrics;
     columnFamilyContext = new ColumnFamilyContext(columnFamily.getValue());
+    columnFamilyContextEnd = new ColumnFamilyContext(columnFamily.getValue());
     foreignKeyChecker = new ForeignKeyChecker(transactionDb, consistencyChecksSettings);
   }
 
@@ -93,7 +95,6 @@ class TransactionalColumnFamily<
             assertKeyDoesNotExist(transaction);
             assertForeignKeysExist(transaction, key, value);
             transaction.put(
-                transactionDb.getDefaultNativeHandle(),
                 columnFamilyContext.getKeyBufferArray(),
                 columnFamilyContext.getKeyLength(),
                 columnFamilyContext.getValueBufferArray(),
@@ -112,7 +113,6 @@ class TransactionalColumnFamily<
             assertKeyExists(transaction);
             assertForeignKeysExist(transaction, key, value);
             transaction.put(
-                transactionDb.getDefaultNativeHandle(),
                 columnFamilyContext.getKeyBufferArray(),
                 columnFamilyContext.getKeyLength(),
                 columnFamilyContext.getValueBufferArray(),
@@ -130,7 +130,6 @@ class TransactionalColumnFamily<
             columnFamilyContext.writeValue(value);
             assertForeignKeysExist(transaction, key, value);
             transaction.put(
-                transactionDb.getDefaultNativeHandle(),
                 columnFamilyContext.getKeyBufferArray(),
                 columnFamilyContext.getKeyLength(),
                 columnFamilyContext.getValueBufferArray(),
@@ -258,6 +257,33 @@ class TransactionalColumnFamily<
                 transactionDb.getDefaultNativeHandle(),
                 columnFamilyContext.getKeyBufferArray(),
                 columnFamilyContext.getKeyLength());
+          });
+    }
+  }
+
+  @Override
+  public void deletePrefix(final KeyType startKey) {
+    try (final var timer = metrics.measureDeleteLatency()) {
+      ensureInOpenTransaction(
+          transaction -> {
+            columnFamilyContext.writeKey(startKey);
+            final var keyStart = new byte[columnFamilyContext.getKeyLength()];
+            System.arraycopy(
+                columnFamilyContext.getKeyBufferArray(), 0, keyStart, 0, keyStart.length);
+            final var keyEnd = new byte[keyStart.length];
+            columnFamilyContext.withPrefixKey(
+                startKey,
+                (key, length) -> {
+                  System.arraycopy(key, 0, keyEnd, 0, length);
+                  for (int i = length; i < keyEnd.length; i++) {
+                    keyEnd[i] = (byte) 0xff;
+                  }
+                  try {
+                    transaction.deleteRange(keyStart, keyEnd);
+                  } catch (final Exception e) {
+                    throw new RuntimeException(e);
+                  }
+                });
           });
     }
   }

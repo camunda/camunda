@@ -11,48 +11,49 @@ import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
+import io.camunda.zeebe.engine.state.ObjectDbValue;
+import io.camunda.zeebe.engine.state.ObjectDbValue;
 
-public class PersistedUser extends UnpackedObject implements DbValue {
+public class PersistedUser extends ObjectDbValue {
 
-  private final ObjectProperty<UserRecord> userProp =
-      new ObjectProperty<>("user", new UserRecord());
+	private final ObjectProperty<UserRecord> userProp = new ObjectProperty<>("user", new UserRecord());
 
-  public PersistedUser() {
-    super(1);
-    declareProperty(userProp);
-  }
+	public PersistedUser() {
+		super(1);
+		declareProperty(userProp);
+	}
 
-  public PersistedUser copy() {
-    final var copy = new PersistedUser();
-    copy.copyFrom(this);
-    return copy;
-  }
+	public PersistedUser copy() {
+		final var copy = new PersistedUser();
+		copy.copyFrom(this);
+		return copy;
+	}
 
-  public UserRecord getUser() {
-    return userProp.getValue();
-  }
+	public UserRecord getUser() {
+		return userProp.getValue();
+	}
 
-  public void setUser(final UserRecord record) {
-    userProp.getValue().copyFrom(record);
-  }
+	public void setUser(final UserRecord record) {
+		userProp.getValue().copyFrom(record);
+	}
 
-  public long getUserKey() {
-    return getUser().getUserKey();
-  }
+	public long getUserKey() {
+		return getUser().getUserKey();
+	}
 
-  public String getUsername() {
-    return getUser().getUsername();
-  }
+	public String getUsername() {
+		return getUser().getUsername();
+	}
 
-  public String getName() {
-    return getUser().getName();
-  }
+	public String getName() {
+		return getUser().getName();
+	}
 
-  public String getEmail() {
-    return getUser().getEmail();
-  }
+	public String getEmail() {
+		return getUser().getEmail();
+	}
 
-  public String getPassword() {
-    return getUser().getPassword();
-  }
+	public String getPassword() {
+		return getUser().getPassword();
+	}
 }

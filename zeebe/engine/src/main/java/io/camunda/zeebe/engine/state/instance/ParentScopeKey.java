@@ -7,23 +7,22 @@
  */
 package io.camunda.zeebe.engine.state.instance;
 
-import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.LongProperty;
+import io.camunda.zeebe.engine.state.ObjectDbValue;
 
-public class ParentScopeKey extends UnpackedObject implements DbValue {
-  private final LongProperty keyProp = new LongProperty("parentScopeKey", -1L);
+public class ParentScopeKey extends ObjectDbValue {
+	private final LongProperty keyProp = new LongProperty("parentScopeKey", -1L);
 
-  public ParentScopeKey() {
-    super(1);
-    declareProperty(keyProp);
-  }
+	public ParentScopeKey() {
+		super(1);
+		declareProperty(keyProp);
+	}
 
-  public void set(final long key) {
-    keyProp.setValue(key);
-  }
+	public void set(final long key) {
+		keyProp.setValue(key);
+	}
 
-  public long get() {
-    return keyProp.getValue();
-  }
+	public long get() {
+		return keyProp.getValue();
+	}
 }

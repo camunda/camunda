@@ -7,15 +7,14 @@
  */
 package io.camunda.zeebe.engine.state.deployment;
 
-import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.engine.state.ObjectDbValue;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 /** DeplyomentRecord wrapper to store the record in the State. */
-public class DeploymentRaw extends UnpackedObject implements DbValue {
+public class DeploymentRaw extends ObjectDbValue {
 
   private final ObjectProperty<DeploymentRecord> deploymentRecordProperty =
       new ObjectProperty<>("deploymentRecord", new DeploymentRecord());

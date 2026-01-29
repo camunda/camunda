@@ -12,9 +12,11 @@ import static io.camunda.zeebe.db.impl.rocksdb.transaction.RocksDbInternal.isRoc
 import io.camunda.zeebe.db.TransactionOperation;
 import io.camunda.zeebe.db.ZeebeDbException;
 import io.camunda.zeebe.db.ZeebeDbTransaction;
+import java.nio.ByteBuffer;
 import org.agrona.LangUtil;
 import org.rocksdb.ColumnFamilyHandle;
 import org.rocksdb.ReadOptions;
+import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.RocksIterator;
 import org.rocksdb.Transaction;
@@ -22,13 +24,17 @@ import org.rocksdb.Transaction;
 public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
 
   private final long nativeHandle;
+  private final RocksDB rocksDB;
   private final TransactionRenovator transactionRenovator;
 
   private boolean inCurrentTransaction;
   private Transaction transaction;
 
   public ZeebeTransaction(
-      final Transaction transaction, final TransactionRenovator transactionRenovator) {
+      final RocksDB rocksDB,
+      final Transaction transaction,
+      final TransactionRenovator transactionRenovator) {
+    this.rocksDB = rocksDB;
     this.transactionRenovator = transactionRenovator;
     this.transaction = transaction;
     try {
@@ -39,7 +45,6 @@ public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
   }
 
   public void put(
-      final long columnFamilyHandle,
       final byte[] key,
       final int keyOffset,
       final int keyLength,
@@ -48,29 +53,17 @@ public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
       final int valueLength)
       throws Exception {
     try {
-      RocksDbInternal.putWithHandle.invokeExact(
-          nativeHandle,
-          key,
-          keyOffset,
-          keyLength,
-          value,
-          valueOffset,
-          valueLength,
-          columnFamilyHandle,
-          false);
+      final var keyBB = ByteBuffer.wrap(key, keyOffset, keyLength);
+      final var valueBB = ByteBuffer.wrap(value, valueOffset, valueLength);
+      transaction.put(keyBB, valueBB);
     } catch (final Throwable e) {
       LangUtil.rethrowUnchecked(e);
     }
   }
 
-  public void put(
-      final long columnFamilyHandle,
-      final byte[] key,
-      final int keyLength,
-      final byte[] value,
-      final int valueLength)
+  public void put(final byte[] key, final int keyLength, final byte[] value, final int valueLength)
       throws Exception {
-    put(columnFamilyHandle, key, 0, keyLength, value, 0, valueLength);
+    put(key, 0, keyLength, value, 0, valueLength);
   }
 
   public byte[] get(
@@ -107,6 +100,10 @@ public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
     } catch (final Throwable e) {
       LangUtil.rethrowUnchecked(e);
     }
+  }
+
+  public void deleteRange(final byte[] beginKey, final byte[] endKey) throws Exception {
+    rocksDB.deleteRange(beginKey, endKey);
   }
 
   public RocksIterator newIterator(final ReadOptions options, final ColumnFamilyHandle handle) {

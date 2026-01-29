@@ -7,12 +7,11 @@
  */
 package io.camunda.zeebe.engine.state.globallistener;
 
-import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.engine.state.ObjectDbValue;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerBatchRecord;
 
-public final class PersistedGlobalListenersConfig extends UnpackedObject implements DbValue {
+public final class PersistedGlobalListenersConfig extends ObjectDbValue {
 
   private final ObjectProperty<GlobalListenerBatchRecord> globalListeners =
       new ObjectProperty<>("globalListeners", new GlobalListenerBatchRecord());
