@@ -101,15 +101,6 @@
       <artifactId>micrometer-core</artifactId>
       <scope>test</scope>
     </dependency>
-    <!-- OpenTelemetry dependencies -->
-    <dependency>
-      <groupId>io.opentelemetry</groupId>
-      <artifactId>opentelemetry-context</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.opentelemetry</groupId>
-      <artifactId>opentelemetry-api</artifactId>
-    </dependency>
   </dependencies>
 
   <build>
