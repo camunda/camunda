@@ -13,7 +13,7 @@ import {fetchFlownodeInstancesStatistics} from 'modules/api/v2/flownodeInstances
 import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstancePageParams';
 import isEmpty from 'lodash/isEmpty';
 import {useBusinessObjects} from '../processDefinitions/useBusinessObjects';
-import {useIsProcessInstanceRunning} from '../processInstance/useIsProcessInstanceRunning';
+// import {useIsProcessInstanceRunning} from '../processInstance/useIsProcessInstanceRunning';
 
 const FLOWNODE_INSTANCES_STATISTICS_QUERY_KEY = 'flownodeInstancesStatistics';
 
@@ -29,7 +29,7 @@ const useFlownodeInstancesStatistics = <
 ): UseQueryResult<T, RequestError> => {
   const {processInstanceId} = useProcessInstancePageParams();
   const {data: businessObjects} = useBusinessObjects();
-  const {data: isProcessInstanceRunning} = useIsProcessInstanceRunning();
+  // const {data: isProcessInstanceRunning} = useIsProcessInstanceRunning();
 
   return useQuery({
     queryKey: getQueryKey(processInstanceId),
@@ -47,11 +47,11 @@ const useFlownodeInstancesStatistics = <
           }
         : skipToken,
     select,
-    refetchInterval: () => {
-      if (isProcessInstanceRunning) {
-        return 5000;
-      }
-    },
+    // refetchInterval: () => {
+    //   if (isProcessInstanceRunning) {
+    //     return 5000;
+    //   }
+    // },
   });
 };
 

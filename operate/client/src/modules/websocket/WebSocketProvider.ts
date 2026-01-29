@@ -6,7 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-const IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED = false;
-const IS_ELEMENT_SELECTION_V2 = true;
+import {createContext, useContext} from 'react';
 
-export {IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED, IS_ELEMENT_SELECTION_V2};
+const WebSocketContext = createContext<WebSocket | null>(null);
+
+const useWebsocketContext = () => useContext(WebSocketContext);
+
+export {WebSocketContext, useWebsocketContext};

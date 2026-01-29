@@ -23,7 +23,7 @@ import {AuthenticationCheck} from '../modules/auth/AuthenticationCheck';
 import {AuthorizationCheck} from '../modules/auth/AuthorizationCheck';
 import {SessionWatcher} from '../modules/auth/SessionWatcher';
 import {TrackPagination} from 'modules/tracking/TrackPagination';
-import {useEffect} from 'react';
+import {useEffect, useState} from 'react';
 import {tracking} from 'modules/tracking';
 import {currentTheme} from 'modules/stores/currentTheme';
 
@@ -31,6 +31,7 @@ import {ThemeSwitcher} from 'modules/components/ThemeSwitcher';
 import {ForbiddenPage} from 'modules/components/ForbiddenPage';
 import {ReactQueryProvider} from 'modules/react-query/ReactQueryProvider';
 import {getClientConfig} from '../modules/utils/getClientConfig';
+import {WebSocketContext} from 'modules/websocket/WebSocketProvider';
 
 const Wrapper: React.FC = () => {
   return (
@@ -138,11 +139,22 @@ const router = createBrowserRouter(routes, {
 });
 
 const App: React.FC = () => {
+  const [websocket, setWebsocket] = useState<WebSocket | null>(null);
+
   useEffect(() => {
     tracking.track({
       eventName: 'operate-loaded',
       theme: currentTheme.state.selectedTheme,
     });
+
+    const websocket = new WebSocket('ws://localhost:8080/v2/ws');
+    setWebsocket(websocket);
+    websocket.onopen = () => {
+      console.log('connected');
+    };
+    return () => {
+      websocket.close();
+    };
   }, []);
 
   return (
@@ -152,7 +164,9 @@ const App: React.FC = () => {
           <ThemeSwitcher />
           <Notifications />
           <NetworkStatusWatcher />
-          <RouterProvider router={router} />
+          <WebSocketContext.Provider value={websocket}>
+            <RouterProvider router={router} />
+          </WebSocketContext.Provider>
         </ReactQueryProvider>
       </ThemeProvider>
     </ErrorBoundary>

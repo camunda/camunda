@@ -78,6 +78,7 @@ import {isInstanceRunning} from 'modules/utils/instance';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 import {IS_ELEMENT_SELECTION_V2} from 'modules/feature-flags';
 import {hasMultipleScopes} from 'modules/utils/processInstanceDetailsDiagram';
+import {useElementInstanceStatisticsWebsocket} from 'modules/hooks/useElementInstanceStatisticsWebsocket';
 
 const OVERLAY_TYPE_STATE = 'flowNodeState';
 const OVERLAY_TYPE_MODIFICATIONS_BADGE = 'modificationsBadge';
@@ -176,6 +177,8 @@ const TopPanel: React.FC = observer(() => {
       diagramOverlaysStore.reset();
     };
   }, [processInstanceId]);
+
+  useElementInstanceStatisticsWebsocket(processInstance?.processInstanceKey);
 
   const flowNodeStateOverlays = useMemo(() => {
     const flowNodeIdsWithIncidents = statistics
