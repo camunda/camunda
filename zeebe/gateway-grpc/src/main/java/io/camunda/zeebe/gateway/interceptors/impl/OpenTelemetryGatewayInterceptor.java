@@ -2,12 +2,21 @@ package io.camunda.zeebe.telemetry;
 
 import io.grpc.*;
 import io.grpc.ServerCall.Listener;
-import io.opentelemetry.api.GlobalOpenTelemetry;
+import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
+import io.opentelemetry.context.propagation.ContextPropagators;
+import io.opentelemetry.exporter.otlp.trace.OtlpGrpcSpanExporter;
+import io.opentelemetry.sdk.OpenTelemetrySdk;
+import io.opentelemetry.sdk.resources.Resource;
+import io.opentelemetry.sdk.trace.SdkTracerProvider;
+import io.opentelemetry.sdk.trace.export.SimpleSpanProcessor;
+import io.opentelemetry.semconv.ServiceAttributes;
 
 public final class OpenTelemetryGatewayInterceptor implements ServerInterceptor {
 
@@ -15,7 +24,9 @@ public final class OpenTelemetryGatewayInterceptor implements ServerInterceptor 
 
   public OpenTelemetryGatewayInterceptor() {
     super();
-    tracer = GlobalOpenTelemetry.getTracer("io.camunda.zeebe.gateway.grpc");
+    tracer =
+        createOpenTelemetry("http://localhost:4317", "grpcGatewayInterceptor")
+            .getTracer("io.camunda.zeebe.gateway.grpc");
   }
 
   @Override
@@ -69,5 +80,26 @@ public final class OpenTelemetryGatewayInterceptor implements ServerInterceptor 
         }
       };
     }
+  }
+
+  public static OpenTelemetry createOpenTelemetry(final String exporter, final String serviceName) {
+    final Resource resource =
+        Resource.create(Attributes.of(ServiceAttributes.SERVICE_NAME, serviceName));
+
+    final OtlpGrpcSpanExporter otlpExporter =
+        OtlpGrpcSpanExporter.builder()
+            .setEndpoint(exporter) // Set your OTLP endpoint here
+            .build();
+
+    final SdkTracerProvider sdkTracerProvider =
+        SdkTracerProvider.builder()
+            .setResource(resource)
+            .addSpanProcessor(SimpleSpanProcessor.create(otlpExporter))
+            .build();
+
+    return OpenTelemetrySdk.builder()
+        .setTracerProvider(sdkTracerProvider)
+        .setPropagators(ContextPropagators.create(W3CTraceContextPropagator.getInstance()))
+        .build();
   }
 }
