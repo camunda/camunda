@@ -338,14 +338,25 @@ public final class RequestMapper extends RequestUtil {
       final ActivateJobsRequest grpcRequest) {
 
     List<String> tenantIds = grpcRequest.getTenantIdsList();
-    tenantIds = ensureTenantIdsSet("ActivateJobs", tenantIds);
+    final var tenantFilter =
+        switch (grpcRequest.getTenantFilter()) {
+          case ASSIGNED -> TenantFilter.ASSIGNED;
+          case PROVIDED -> {
+            tenantIds = ensureTenantIdsSet("ActivateJobs", tenantIds);
+            yield TenantFilter.PROVIDED;
+          }
+          case UNRECOGNIZED ->
+              throw new IllegalArgumentException(
+                  "Unrecognized tenantFilter option; expected one of ASSIGNED or PROVIDED.");
+        };
 
     return new BrokerActivateJobsRequest(grpcRequest.getType())
         .setTimeout(grpcRequest.getTimeout())
         .setWorker(grpcRequest.getWorker())
         .setMaxJobsToActivate(grpcRequest.getMaxJobsToActivate())
         .setVariables(grpcRequest.getFetchVariableList())
-        .setTenantIds(tenantIds);
+        .setTenantIds(tenantIds)
+        .setTenantFilter(tenantFilter);
   }
 
   public static BrokerResolveIncidentRequest toResolveIncidentRequest(
@@ -426,18 +437,20 @@ public final class RequestMapper extends RequestUtil {
       final StreamActivatedJobsRequest request, final Map<String, Object> claims) {
 
     List<String> tenantIds = request.getTenantIdsList();
-    tenantIds = ensureTenantIdsSet("StreamActivatedJobs", tenantIds);
-
-    final JobActivationPropertiesImpl jobActivationProperties = new JobActivationPropertiesImpl();
-    final DirectBuffer worker = wrapString(request.getWorker());
     final var tenantFilter =
         switch (request.getTenantFilter()) {
           case ASSIGNED -> TenantFilter.ASSIGNED;
-          case PROVIDED -> TenantFilter.PROVIDED;
+          case PROVIDED -> {
+            tenantIds = ensureTenantIdsSet("StreamActivatedJobs", tenantIds);
+            yield TenantFilter.PROVIDED;
+          }
           case UNRECOGNIZED ->
               throw new IllegalArgumentException(
                   "Unrecognized tenantFilter option; expected one of ASSIGNED or PROVIDED.");
         };
+
+    final JobActivationPropertiesImpl jobActivationProperties = new JobActivationPropertiesImpl();
+    final DirectBuffer worker = wrapString(request.getWorker());
     jobActivationProperties
         .setWorker(worker, 0, worker.capacity())
         .setTimeout(request.getTimeout())

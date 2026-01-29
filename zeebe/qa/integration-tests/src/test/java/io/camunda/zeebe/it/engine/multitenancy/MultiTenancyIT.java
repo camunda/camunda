@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.command.TopologyRequestStep1;
+import io.camunda.client.api.command.enums.TenantFilter;
 import io.camunda.client.api.response.ActivateJobsResponse;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.AssignUserTaskResponse;
@@ -29,6 +30,7 @@ import io.camunda.client.api.response.Process;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.response.PublishMessageResponse;
 import io.camunda.client.api.response.ResolveIncidentResponse;
+import io.camunda.client.api.response.StreamJobsResponse;
 import io.camunda.client.api.response.UnassignUserTaskResponse;
 import io.camunda.client.api.response.UpdateTimeoutJobResponse;
 import io.camunda.client.api.response.UpdateUserTaskResponse;
@@ -41,7 +43,9 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.qa.util.actuator.JobStreamActuator;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.qa.util.jobstream.JobStreamActuatorAssert;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.Strings;
@@ -51,18 +55,21 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 import org.apache.hc.core5.http.HttpStatus;
 import org.assertj.core.api.InstanceOfAssertFactories;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -709,10 +716,11 @@ public class MultiTenancyIT {
     }
   }
 
-  @Test
-  void shouldActivateJobForTenant() {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  void shouldActivateJobForTenant(final boolean preferRestOverGrpc) {
     // given
-    try (final var client = createCamundaClient(USER_TENANT_A)) {
+    try (final var client = createCamundaClient(USER_TENANT_A, preferRestOverGrpc)) {
       client
           .newDeployResourceCommand()
           .addProcessModel(process, "process.bpmn")
@@ -733,6 +741,7 @@ public class MultiTenancyIT {
               .newActivateJobsCommand()
               .jobType("type")
               .maxJobsToActivate(1)
+              .tenantFilter(TenantFilter.PROVIDED)
               .tenantId(TENANT_A)
               .send();
 
@@ -741,6 +750,131 @@ public class MultiTenancyIT {
           .describedAs(
               "Expect that job can be activated as the client has access process of tenant-a")
           .succeedsWithin(Duration.ofSeconds(10));
+    }
+  }
+
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  void shouldActivateJobForAssignedTenants(final boolean preferRestOverGrpc) {
+    // given
+    try (final var client = createCamundaClient(USER_TENANT_A, preferRestOverGrpc)) {
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(process, "process.bpmn")
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+      client
+          .newCreateInstanceCommand()
+          .bpmnProcessId(processId)
+          .latestVersion()
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+
+      // when
+      final Future<ActivateJobsResponse> result =
+          client
+              .newActivateJobsCommand()
+              .jobType("type")
+              .maxJobsToActivate(1)
+              .tenantFilter(TenantFilter.ASSIGNED)
+              .send();
+
+      // then
+      assertThat(result)
+          .describedAs(
+              "Expect that job can be activated as the client has access process of tenant-a")
+          .succeedsWithin(Duration.ofSeconds(10));
+    }
+  }
+
+  @Test
+  void shouldStreamJobForTenant() {
+    // given
+    final var jobs = new CopyOnWriteArrayList<ActivatedJob>();
+    try (final var client = createCamundaClient(USER_TENANT_A, false)) {
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(process, "process.bpmn")
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+
+      // when
+      final Future<StreamJobsResponse> result =
+          client
+              .newStreamJobsCommand()
+              .jobType("type")
+              .consumer(jobs::add)
+              .tenantFilter(TenantFilter.PROVIDED)
+              .tenantId(TENANT_A)
+              .send();
+      awaitStreamRegistered("type");
+      client
+          .newCreateInstanceCommand()
+          .bpmnProcessId(processId)
+          .latestVersion()
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+
+      // then
+      Awaitility.await("until job can be activated as the client has access process of tenant-a")
+          .atMost(Duration.ofSeconds(10))
+          .untilAsserted(
+              () -> {
+                assertThat(jobs)
+                    .hasSize(1)
+                    .allSatisfy(
+                        job -> {
+                          assertThat(job.getTenantId()).isEqualTo(TENANT_A);
+                        });
+              });
+    }
+  }
+
+  @Test
+  void shouldStreamJobForAssignedTenants() {
+    // given
+    final var jobs = new CopyOnWriteArrayList<ActivatedJob>();
+    try (final var client = createCamundaClient(USER_TENANT_A, false)) {
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(process, "process.bpmn")
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+
+      // when
+      final Future<StreamJobsResponse> result =
+          client
+              .newStreamJobsCommand()
+              .jobType("type")
+              .consumer(jobs::add)
+              .tenantFilter(TenantFilter.ASSIGNED)
+              .send();
+      awaitStreamRegistered("type");
+      client
+          .newCreateInstanceCommand()
+          .bpmnProcessId(processId)
+          .latestVersion()
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+
+      // then
+      Awaitility.await("until job can be activated as the client has access process of tenant-a")
+          .atMost(Duration.ofSeconds(10))
+          .untilAsserted(
+              () -> {
+                assertThat(jobs)
+                    .hasSize(1)
+                    .allSatisfy(
+                        job -> {
+                          assertThat(job.getTenantId()).isEqualTo(TENANT_A);
+                        });
+              });
     }
   }
 
@@ -1738,17 +1872,21 @@ public class MultiTenancyIT {
         Named.of("rest", TopologyRequestStep1::useRest));
   }
 
-  //
+  private static CamundaClient createCamundaClient(final String user) {
+    return createCamundaClient(user, true);
+  }
+
   /**
    * Creates a new Camunda Client with the given user. Note that the username and password are equal
    */
-  private static CamundaClient createCamundaClient(final String user) {
+  private static CamundaClient createCamundaClient(
+      final String user, final boolean preferRestOverGrpc) {
     return BROKER
         .newClientBuilder()
         .credentialsProvider(
             new BasicAuthCredentialsProviderBuilder().username(user).password(user).build())
         .defaultRequestTimeout(Duration.ofSeconds(10))
-        .preferRestOverGrpc(true)
+        .preferRestOverGrpc(preferRestOverGrpc)
         .build();
   }
 
@@ -1783,5 +1921,15 @@ public class MultiTenancyIT {
                     .tenantId(tenantId)
                     .send()
                     .join());
+  }
+
+  private void awaitStreamRegistered(final String jobType) {
+    final var actuator = JobStreamActuator.of(BROKER);
+    Awaitility.await("until stream with type '%s' is registered".formatted(jobType))
+        .untilAsserted(
+            () ->
+                JobStreamActuatorAssert.assertThat(actuator)
+                    .remoteStreams()
+                    .haveJobType(1, jobType));
   }
 }
