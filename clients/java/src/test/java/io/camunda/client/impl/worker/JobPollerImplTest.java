@@ -15,6 +15,7 @@
  */
 package io.camunda.client.impl.worker;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
@@ -25,6 +26,7 @@ import io.camunda.client.api.command.enums.TenantFilter;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.util.ClientTest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import java.time.Duration;
@@ -98,6 +100,70 @@ public final class JobPollerImplTest extends ClientTest {
               verify(jobConsumer, never()).accept(any(ActivatedJob.class));
               verify(doneCallback, never()).accept(any(Integer.class));
               verify(errorCallback).accept(any(StatusRuntimeException.class));
+            });
+  }
+
+  @Test
+  public void shouldSetAssignedTenantFilter() {
+    // given
+    final Duration requestTimeout = Duration.ofHours(123);
+    final JobPoller jobPoller =
+        new JobPollerImpl(
+            client,
+            requestTimeout,
+            "testJobType",
+            "testWorkerName",
+            Duration.ofSeconds(10),
+            Collections.emptyList(),
+            TenantFilter.ASSIGNED,
+            Collections.emptyList(),
+            10);
+    final Duration deadlineOffset = Duration.ofSeconds(10);
+
+    // when
+    jobPoller.poll(123, jobConsumer, doneCallback, errorCallback, () -> true);
+
+    // then
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(5))
+        .untilAsserted(
+            () -> {
+              final ActivateJobsRequest request = rule.getGatewayService().getLastRequest();
+              assertThat(request.getTenantFilter())
+                  .isEqualTo(GatewayOuterClass.TenantFilter.ASSIGNED);
+              assertThat(request.getTenantIdsList()).isEmpty();
+            });
+  }
+
+  @Test
+  public void shouldSetProvidedTenantFilter() {
+    // given
+    final Duration requestTimeout = Duration.ofHours(123);
+    final JobPoller jobPoller =
+        new JobPollerImpl(
+            client,
+            requestTimeout,
+            "testJobType",
+            "testWorkerName",
+            Duration.ofSeconds(10),
+            Collections.emptyList(),
+            TenantFilter.PROVIDED,
+            Collections.singletonList("test-tenant"),
+            10);
+    final Duration deadlineOffset = Duration.ofSeconds(10);
+
+    // when
+    jobPoller.poll(123, jobConsumer, doneCallback, errorCallback, () -> true);
+
+    // then
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(5))
+        .untilAsserted(
+            () -> {
+              final ActivateJobsRequest request = rule.getGatewayService().getLastRequest();
+              assertThat(request.getTenantFilter())
+                  .isEqualTo(GatewayOuterClass.TenantFilter.PROVIDED);
+              assertThat(request.getTenantIdsList()).containsExactly("test-tenant");
             });
   }
 

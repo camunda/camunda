@@ -28,6 +28,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayGrpc;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayImplBase;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.StreamActivatedJobsRequest;
 import io.grpc.ManagedChannel;
 import io.grpc.Status;
@@ -41,10 +42,12 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import org.awaitility.Awaitility;
 import org.jmock.lib.concurrent.DeterministicScheduler;
 import org.junit.Rule;
 import org.junit.jupiter.api.AfterEach;
@@ -117,6 +120,7 @@ final class JobStreamImplTest {
             .addFetchVariable("foo")
             .addFetchVariable("bar")
             .addTenantIds("test-tenant")
+            .setTenantFilter(GatewayOuterClass.TenantFilter.PROVIDED)
             .build();
 
     // when
@@ -200,14 +204,59 @@ final class JobStreamImplTest {
     assertThat(recreatedStream.isCancelled()).isFalse();
   }
 
+  @Test
+  public void shouldSetAssignedTenantFilter() {
+    // given
+    final Duration streamingTimeout = Duration.ofSeconds(2);
+    jobStreamer = createStreamer(streamingTimeout, TenantFilter.ASSIGNED);
+
+    jobStreamer.openStreamer(ignored -> {});
+    final ServerCallStreamObserver<GatewayOuterClass.ActivatedJob> initialStream =
+        service.lastStream();
+
+    // when
+    scheduler.tick(streamingTimeout.toMillis(), TimeUnit.MILLISECONDS);
+    scheduler.runUntilIdle();
+
+    // then
+    final StreamActivatedJobsRequest request = service.lastRequest();
+    assertThat(request.getTenantFilter()).isEqualTo(GatewayOuterClass.TenantFilter.ASSIGNED);
+    assertThat(request.getTenantIdsList()).isEmpty();
+  }
+
+  @Test
+  public void shouldSetProvidedTenantFilter() {
+    // given
+    final Duration streamingTimeout = Duration.ofSeconds(2);
+    jobStreamer = createStreamer(streamingTimeout);
+
+    jobStreamer.openStreamer(ignored -> {});
+    final ServerCallStreamObserver<GatewayOuterClass.ActivatedJob> initialStream =
+        service.lastStream();
+
+    // when
+    scheduler.tick(streamingTimeout.toMillis(), TimeUnit.MILLISECONDS);
+    scheduler.runUntilIdle();
+
+    // then
+    final StreamActivatedJobsRequest request = service.lastRequest();
+    assertThat(request.getTenantFilter()).isEqualTo(GatewayOuterClass.TenantFilter.PROVIDED);
+    assertThat(request.getTenantIdsList()).containsExactly("test-tenant");
+  }
+
   private JobStreamerImpl createStreamer(final Duration streamingTimeout) {
+    return createStreamer(streamingTimeout, TenantFilter.PROVIDED);
+  }
+
+  private JobStreamerImpl createStreamer(
+      final Duration streamingTimeout, final TenantFilter filter) {
     return new JobStreamerImpl(
         client,
         "type",
         "worker",
         Duration.ofSeconds(10),
         Arrays.asList("foo", "bar"),
-        TenantFilter.PROVIDED,
+        filter,
         Arrays.asList("test-tenant"),
         streamingTimeout,
         ignored -> 10_000L,
