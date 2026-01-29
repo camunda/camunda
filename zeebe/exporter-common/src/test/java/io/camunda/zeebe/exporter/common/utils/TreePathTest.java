@@ -119,4 +119,103 @@ public class TreePathTest {
     assertThat(truncated).isEqualTo(treePath.substring(0, columnSize));
     assertThat(truncated.length()).isEqualTo(columnSize);
   }
+
+  // Tests for unprefixed (intra-tree) paths
+
+  @Test
+  void shouldHandleUnprefixedPathWhenFits() {
+    // given
+    final var treePath = "123/456/789";
+
+    // when
+    final var truncated = TreePathTruncator.truncateTreePath(treePath, 1000);
+
+    // then
+    assertThat(truncated).isEqualTo("123/456/789");
+  }
+
+  @Test
+  void shouldTruncateUnprefixedPathWhenTooLong() {
+    // given
+    final var columnSize = 50;
+    final var sb = new StringBuilder();
+    sb.append("1234567890"); // first segment
+    for (int i = 1; i <= 20; i++) {
+      sb.append("/").append("seg" + i);
+    }
+    final var treePath = sb.toString();
+
+    // when
+    final var truncated = TreePathTruncator.truncateTreePath(treePath, columnSize);
+
+    // then
+    assertThat(truncated.length()).isLessThanOrEqualTo(columnSize);
+    assertThat(truncated).startsWith("1234567890"); // root preserved
+    assertThat(truncated).contains("seg20"); // leaf preserved
+  }
+
+  @Test
+  void shouldHandleUnprefixedPathWithVaryingSegmentLengths() {
+    // given
+    final var columnSize = 100;
+    final var sb = new StringBuilder();
+    sb.append("shortRoot");
+    sb.append("/veryLongSegmentIdentifier123456");
+    sb.append("/short");
+    sb.append("/mediumLength");
+    for (int i = 0; i < 10; i++) {
+      sb.append("/seg").append(i);
+    }
+    final var treePath = sb.toString();
+
+    // when
+    final var truncated = TreePathTruncator.truncateTreePath(treePath, columnSize);
+
+    // then
+    assertThat(truncated.length()).isLessThanOrEqualTo(columnSize);
+    assertThat(truncated).startsWith("shortRoot");
+    assertThat(truncated).contains("seg9"); // last segment
+  }
+
+  @Test
+  void shouldHandleSingleSegmentUnprefixedPath() {
+    // given
+    final var treePath = "1234567890";
+
+    // when
+    final var truncated = TreePathTruncator.truncateTreePath(treePath, 1000);
+
+    // then
+    assertThat(truncated).isEqualTo("1234567890");
+  }
+
+  @Test
+  void shouldTruncateLongSingleSegmentUnprefixedPath() {
+    // given
+    final var columnSize = 50;
+    final var treePath = "1234567890".repeat(10); // 100 characters
+
+    // when
+    final var truncated = TreePathTruncator.truncateTreePath(treePath, columnSize);
+
+    // then
+    assertThat(truncated).isEqualTo(treePath.substring(0, columnSize));
+    assertThat(truncated.length()).isEqualTo(columnSize);
+  }
+
+  @Test
+  void shouldMaximizeSegmentsForUnprefixedPath() {
+    // given
+    final var columnSize = 60;
+    final var treePath = "a/bb/ccc/dddd/eeeee/ffffff/ggggggg/hhhhhhhh/iiiiiiiii";
+
+    // when
+    final var truncated = TreePathTruncator.truncateTreePath(treePath, columnSize);
+
+    // then
+    assertThat(truncated.length()).isLessThanOrEqualTo(columnSize);
+    assertThat(truncated).startsWith("a"); // root preserved
+    // Should preserve as many leaf segments as possible
+    assertThat(truncated).contains("iiiiiiiii"); // last segment preserved
+  }
 }

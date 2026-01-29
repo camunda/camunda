@@ -22,12 +22,17 @@ import org.slf4j.LoggerFactory;
  * Utility class for truncating tree path strings by logical segments while preserving as much
  * structure as possible.
  *
- * <p>A tree path consists of segments separated by '/', where each segment is either:
+ * <p>This class supports two tree path formats:
  *
- * <ul>
- *   <li>"PI_x/FN_y/FNI_z" (if a process instance has an outgoing call edge)
- *   <li>"PI_x" (for a tail, i.e., the last process instance)
- * </ul>
+ * <ol>
+ *   <li><b>Prefixed format (inter-tree paths):</b> Segments with PI_/FN_/FNI_ prefixes:
+ *       <ul>
+ *         <li>"PI_x/FN_y/FNI_z" (if a process instance has an outgoing call edge)
+ *         <li>"PI_x" (for a tail, i.e., the last process instance)
+ *       </ul>
+ *   <li><b>Unprefixed format (intra-tree paths):</b> Plain numeric tokens separated by '/', where
+ *       each token represents a segment (e.g., "123/456/789")
+ * </ol>
  *
  * <p>This class provides methods to truncate such paths to fit within a specified maximum length,
  * prioritizing the retention of full segments from the start and end of the path.
@@ -40,24 +45,37 @@ public final class TreePathTruncator {
    * Truncates a tree path string by logical segments, ensuring the result does not exceed the
    * specified maximum length.
    *
-   * <p>A tree path consists of segments separated by '/', where each segment is either:
+   * <p>This method supports two tree path formats:
    *
-   * <ul>
-   *   <li>"PI_x/FN_y/FNI_z" (if a process instance has an outgoing call edge)
-   *   <li>"PI_x" (for a tail, i.e., the last process instance)
-   * </ul>
+   * <ol>
+   *   <li><b>Prefixed format (inter-tree paths):</b> Segments with PI_/FN_/FNI_ prefixes:
+   *       <ul>
+   *         <li>"PI_x/FN_y/FNI_z" (if a process instance has an outgoing call edge)
+   *         <li>"PI_x" (for a tail, i.e., the last process instance)
+   *       </ul>
+   *   <li><b>Unprefixed format (intra-tree paths):</b> Plain numeric tokens separated by '/' (e.g.,
+   *       "123/456/789")
+   * </ol>
    *
    * <p>The method attempts to keep as many full segments as possible from the start (prefix) and
    * end (suffix) of the path, removing segments from the middle if necessary. If no valid
    * truncation fits, it falls back to the minimal form (first and last segment only), and if that
    * still does not fit, it performs a hard character-based truncation.
    *
-   * <p>Examples:
+   * <p>Examples of prefixed paths:
    *
    * <ul>
    *   <li>PI_0
    *   <li>PI_0/FN_0/FNI_0/PI_1
    *   <li>PI_0/FN_0/FNI_0/PI_1/FN_1/FNI_1/PI_2
+   * </ul>
+   *
+   * <p>Examples of unprefixed paths:
+   *
+   * <ul>
+   *   <li>123
+   *   <li>123/456
+   *   <li>123/456/789
    * </ul>
    *
    * @param treePath the full tree path string to truncate (must not be null)
@@ -229,16 +247,24 @@ public final class TreePathTruncator {
   /**
    * Parses a tree path string into logical segments.
    *
-   * <p>Each segment starts with a "PI_" token, and may be followed by "FN_" and "FNI_" tokens.
-   * Segments are separated by '/'.
+   * <p>This method supports two formats:
    *
-   * <p>For example:
-   *
-   * <ul>
-   *   <li>PI_0
-   *   <li>PI_0/FN_0/FNI_0/PI_1
-   *   <li>PI_0/FN_0/FNI_0/PI_1/FN_1/FNI_1/PI_2
-   * </ul>
+   * <ol>
+   *   <li><b>Prefixed format (inter-tree paths):</b> Each segment starts with a "PI_" token, and
+   *       may be followed by "FN_" and "FNI_" tokens. Examples:
+   *       <ul>
+   *         <li>PI_0
+   *         <li>PI_0/FN_0/FNI_0/PI_1
+   *         <li>PI_0/FN_0/FNI_0/PI_1/FN_1/FNI_1/PI_2
+   *       </ul>
+   *   <li><b>Unprefixed format (intra-tree paths):</b> Plain numeric tokens separated by '/'.
+   *       Examples:
+   *       <ul>
+   *         <li>123
+   *         <li>123/456
+   *         <li>123/456/789
+   *       </ul>
+   * </ol>
    *
    * @param treePath the tree path string to parse
    * @return a list of logical segments, or an empty list if the format is invalid
@@ -248,6 +274,25 @@ public final class TreePathTruncator {
     if (tokens.isEmpty()) {
       return List.of();
     }
+    
+    // Check if this is a prefixed path (first token starts with PI_)
+    if (tokens.get(0).startsWith("PI_")) {
+      return parsePrefixedSegments(tokens);
+    } else {
+      // Unprefixed path: each token is its own segment
+      return new ArrayList<>(tokens);
+    }
+  }
+  
+  /**
+   * Parses prefixed (inter-tree) path segments.
+   *
+   * <p>Each segment starts with a "PI_" token, and may be followed by "FN_" and "FNI_" tokens.
+   *
+   * @param tokens the tokens to parse
+   * @return a list of logical segments, or an empty list if the format is invalid
+   */
+  private static List<String> parsePrefixedSegments(final List<String> tokens) {
     final var segments = new ArrayList<String>();
     var i = 0;
     while (i < tokens.size()) {
