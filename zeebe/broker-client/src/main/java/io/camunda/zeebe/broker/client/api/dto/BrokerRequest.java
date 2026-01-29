@@ -16,7 +16,6 @@ import io.camunda.zeebe.protocol.record.MessageHeaderDecoder;
 import io.camunda.zeebe.transport.ClientRequest;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
-import io.opentelemetry.context.Context;
 import java.util.Map;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
@@ -49,7 +48,7 @@ public abstract class BrokerRequest<T> implements ClientRequest {
     // Unsupported by default
   }
 
-  public void setOTelContext(final Context context) {
+  public void setTraceId(final String traceId) {
     // Unsupported by default
   }
 

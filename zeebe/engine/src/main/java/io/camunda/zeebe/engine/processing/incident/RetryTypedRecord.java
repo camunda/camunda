@@ -8,7 +8,6 @@
 package io.camunda.zeebe.engine.processing.incident;
 
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
-import io.camunda.zeebe.protocol.impl.encoding.OpenTelemetryContext;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordMetadataEncoder;
@@ -139,8 +138,8 @@ public final class RetryTypedRecord<T extends UnifiedRecordValue> implements Typ
   }
 
   @Override
-  public OpenTelemetryContext getOpenTelemetryContext() {
-    return null;
+  public String traceId() {
+    return "";
   }
 
   @Override

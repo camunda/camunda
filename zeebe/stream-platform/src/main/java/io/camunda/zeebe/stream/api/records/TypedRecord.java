@@ -10,7 +10,6 @@ package io.camunda.zeebe.stream.api.records;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
-import io.camunda.zeebe.protocol.impl.encoding.OpenTelemetryContext;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordMetadataDecoder;
@@ -29,7 +28,7 @@ public interface TypedRecord<T extends UnifiedRecordValue> extends Record<T> {
   AuthInfo getAuthInfo();
 
   @JsonIgnore
-  OpenTelemetryContext getOpenTelemetryContext();
+  String traceId();
 
   int getRequestStreamId();
 

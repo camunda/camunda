@@ -9,7 +9,6 @@ package io.camunda.zeebe.protocol.impl.record;
 
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
-import io.camunda.zeebe.protocol.impl.encoding.OpenTelemetryContext;
 import io.camunda.zeebe.protocol.record.MessageHeaderDecoder;
 import io.camunda.zeebe.protocol.record.MessageHeaderEncoder;
 import io.camunda.zeebe.protocol.record.RecordMetadataDecoder;
@@ -49,7 +48,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
   private short intentValue = Intent.NULL_VAL;
   private int requestStreamId;
   private final AuthInfo authorization = new AuthInfo();
-  private final OpenTelemetryContext otelContext = new OpenTelemetryContext();
+  private String traceId;
   private RejectionType rejectionType;
   private final UnsafeBuffer rejectionReason = new UnsafeBuffer(0, 0);
 
@@ -120,13 +119,13 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
       decoder.skipAuthorization();
     }
 
-    final int otelContextLength = decoder.otelContextLength();
-    if (otelContextLength > 0) {
-      final DirectBuffer otelBuffer = new UnsafeBuffer();
-      decoder.wrapOtelContext(otelBuffer);
-      otelContext.wrap(otelBuffer);
+    final int traceIdLength = decoder.traceIdLength();
+    if (traceIdLength > 0) {
+      final DirectBuffer traceIdBuffer = new UnsafeBuffer();
+      decoder.wrapTraceId(traceIdBuffer);
+      traceId = BufferUtil.bufferAsString(traceIdBuffer);
     } else {
-      decoder.skipOtelContext();
+      decoder.skipTraceId();
     }
   }
 
@@ -137,8 +136,8 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
         + rejectionReason.capacity()
         + RecordMetadataEncoder.authorizationHeaderLength()
         + authorization.getLength()
-        + RecordMetadataEncoder.otelContextHeaderLength()
-        + otelContext.getLength();
+        + RecordMetadataEncoder.traceIdHeaderLength()
+        + traceId.length();
   }
 
   @Override
@@ -176,7 +175,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
     // working with variable-length fields
     encoder.putRejectionReason(rejectionReason, 0, rejectionReason.capacity());
     encoder.putAuthorization(authorization.toDirectBuffer(), 0, authorization.getLength());
-    encoder.putOtelContext(otelContext.toDirectBuffer(), 0, otelContext.getLength());
+    encoder.putTraceId(traceId.getBytes(), 0, traceId.length());
   }
 
   public long getRequestId() {
@@ -272,18 +271,18 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
     return authorization;
   }
 
-  public RecordMetadata otelContext(final OpenTelemetryContext openTelemetryContext) {
-    otelContext.copyFrom(openTelemetryContext);
+  public RecordMetadata traceId(final String traceId) {
+    this.traceId = traceId;
     return this;
   }
 
-  public RecordMetadata otelContext(final DirectBuffer buffer) {
-    otelContext.wrap(buffer);
+  public RecordMetadata traceId(final DirectBuffer buffer) {
+    traceId = BufferUtil.bufferAsString(buffer);
     return this;
   }
 
-  public OpenTelemetryContext getOtelContext() {
-    return otelContext;
+  public String getTraceId() {
+    return traceId;
   }
 
   public RecordMetadata brokerVersion(final VersionInfo brokerVersion) {
@@ -333,7 +332,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
     rejectionType = RejectionType.NULL_VAL;
     rejectionReason.wrap(0, 0);
     authorization.reset();
-    otelContext.reset();
+    traceId = "";
     brokerVersion = CURRENT_BROKER_VERSION;
     recordVersion = DEFAULT_RECORD_VERSION;
     operationReference = RecordMetadataEncoder.operationReferenceNullValue();
@@ -352,7 +351,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
         rejectionType,
         rejectionReason,
         authorization,
-        otelContext,
+        traceId,
         protocolVersion,
         brokerVersion,
         recordVersion,
@@ -378,7 +377,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
         && rejectionType == that.rejectionType
         && rejectionReason.equals(that.rejectionReason)
         && authorization.equals(that.authorization)
-        && otelContext.equals(that.otelContext)
+        && traceId.equals(that.traceId)
         && brokerVersion.equals(that.brokerVersion)
         && recordVersion == that.recordVersion
         && operationReference == that.operationReference
@@ -410,8 +409,8 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
     if (!authorization.isEmpty()) {
       builder.append(", authorization=").append(authorization);
     }
-    if (!otelContext.isEmpty()) {
-      builder.append(", otelContext=").append(otelContext);
+    if (!traceId.isEmpty()) {
+      builder.append(", otelContext=").append(traceId);
     }
     if (operationReference != RecordMetadataEncoder.operationReferenceNullValue()) {
       builder.append(", operationReference=").append(operationReference);

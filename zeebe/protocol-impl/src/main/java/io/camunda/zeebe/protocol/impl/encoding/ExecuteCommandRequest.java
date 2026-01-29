@@ -20,7 +20,6 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.util.buffer.BufferReader;
 import io.camunda.zeebe.util.buffer.BufferWriter;
-import io.opentelemetry.context.Context;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -39,7 +38,7 @@ public final class ExecuteCommandRequest implements BufferReader, BufferWriter {
   private ValueType valueType;
   private Intent intent;
   private final AuthInfo authorization = new AuthInfo();
-  private final OpenTelemetryContext otelContext = new OpenTelemetryContext();
+  private String traceId;
 
   public ExecuteCommandRequest() {
     reset();
@@ -53,7 +52,7 @@ public final class ExecuteCommandRequest implements BufferReader, BufferWriter {
     intent = Intent.UNKNOWN;
     value.wrap(0, 0);
     authorization.reset();
-    otelContext.reset();
+    traceId = "";
 
     return this;
   }
@@ -145,8 +144,13 @@ public final class ExecuteCommandRequest implements BufferReader, BufferWriter {
     return this;
   }
 
-  public void setOtelContext(final Context context) {
-    otelContext.setContext(context);
+  public String getTraceId() {
+    return traceId;
+  }
+
+  public ExecuteCommandRequest setTraceId(final String traceId) {
+    this.traceId = traceId;
+    return this;
   }
 
   @Override
@@ -181,11 +185,11 @@ public final class ExecuteCommandRequest implements BufferReader, BufferWriter {
     authorization.wrap(buffer, offset, authorizationLength);
     offset += authorizationLength;
 
-    final int otleContextLength = bodyDecoder.otelContextLength();
-    offset += ExecuteCommandRequestDecoder.otelContextHeaderLength();
+    final int traceIdLength = bodyDecoder.traceIdLength();
+    offset += ExecuteCommandRequestDecoder.traceIdHeaderLength();
 
-    otelContext.wrap(buffer, offset, otleContextLength);
-    offset += otleContextLength;
+    traceId = bodyDecoder.traceId();
+    offset += traceIdLength;
 
     bodyDecoder.limit(offset);
 
@@ -205,7 +209,8 @@ public final class ExecuteCommandRequest implements BufferReader, BufferWriter {
         + value.capacity()
         + ExecuteCommandRequestEncoder.authorizationHeaderLength()
         + authorization.getLength()
-        + otelContext.getLength();
+        + ExecuteCommandRequestEncoder.traceIdHeaderLength()
+        + traceId.length();
   }
 
   @Override
@@ -228,6 +233,6 @@ public final class ExecuteCommandRequest implements BufferReader, BufferWriter {
         .intent(intent.value())
         .putValue(value, 0, value.capacity())
         .putAuthorization(authorization.toDirectBuffer(), 0, authorization.getLength())
-        .putOtelContext(otelContext.toDirectBuffer(), 0, otelContext.getLength());
+        .putTraceId(traceId.getBytes(), 0, traceId.length());
   }
 }

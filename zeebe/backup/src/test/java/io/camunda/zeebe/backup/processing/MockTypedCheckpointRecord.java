@@ -8,7 +8,6 @@
 package io.camunda.zeebe.backup.processing;
 
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
-import io.camunda.zeebe.protocol.impl.encoding.OpenTelemetryContext;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -130,8 +129,8 @@ record MockTypedCheckpointRecord(
   }
 
   @Override
-  public OpenTelemetryContext getOpenTelemetryContext() {
-    return null;
+  public String traceId() {
+    return "";
   }
 
   @Override

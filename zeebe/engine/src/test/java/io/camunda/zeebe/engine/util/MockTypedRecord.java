@@ -9,7 +9,6 @@ package io.camunda.zeebe.engine.util;
 
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
-import io.camunda.zeebe.protocol.impl.encoding.OpenTelemetryContext;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.Record;
@@ -58,8 +57,8 @@ public final class MockTypedRecord<T extends UnifiedRecordValue> implements Type
   }
 
   @Override
-  public OpenTelemetryContext getOpenTelemetryContext() {
-    return metadata.getOtelContext();
+  public String traceId() {
+    return metadata.getTraceId();
   }
 
   @Override

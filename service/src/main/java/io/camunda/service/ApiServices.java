@@ -16,6 +16,7 @@ import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
+import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.context.Context;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -64,7 +65,9 @@ public abstract class ApiServices<T extends ApiServices<T>> {
     final var brokerRequestAuthorization =
         brokerRequestAuthorizationConverter.convert(authentication);
     brokerRequest.setAuthorization(brokerRequestAuthorization);
-    brokerRequest.setOTelContext(Context.current());
+
+    final var traceId = Span.fromContext(Context.current()).getSpanContext().getTraceId();
+    brokerRequest.setTraceId(traceId);
 
     return brokerClient
         .sendRequest(brokerRequest)
