@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React, {useState, useMemo, useEffect} from 'react';
+import React, {useState, useMemo, useEffect, useRef} from 'react';
 import {observer} from 'mobx-react';
 
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
@@ -112,7 +112,29 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
 
   const hasAgentContext = Boolean(agentContextGate?.hasAgentContext);
 
-  const shouldShowAgentTab = Boolean(isAdHocSelection && hasAgentContext);
+  const selectionKey = `${processInstanceId}:${selectedScopeKey ?? ''}:$${
+    selectedElementId ?? ''
+  }`;
+  const lastSelectionKeyRef = useRef<string | null>(null);
+  const [stickyHasAgentContext, setStickyHasAgentContext] = useState(false);
+
+  useEffect(() => {
+    // Reset stickiness when selection changes
+    if (lastSelectionKeyRef.current !== selectionKey) {
+      lastSelectionKeyRef.current = selectionKey;
+      setStickyHasAgentContext(false);
+    }
+  }, [selectionKey]);
+
+  useEffect(() => {
+    if (hasAgentContext) {
+      setStickyHasAgentContext(true);
+    }
+  }, [hasAgentContext]);
+
+  const shouldShowAgentTab = Boolean(
+    isAdHocSelection && (hasAgentContext || stickyHasAgentContext),
+  );
 
   // Debugging: this is intentionally verbose to help validate when/why the tab appears.
   console.info('[AI Agent tab] render', {
@@ -128,6 +150,7 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
     isAdHocSelectionByElementId,
     shouldUseProcessWideGate,
     hasAgentContext,
+    stickyHasAgentContext,
     shouldShowAgentTab,
   });
 
@@ -202,12 +225,15 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
   // Get flow node incidents count from statistics
   const flowNodeIncidentsFromStats =
     !isRootNodeSelected && selectedElementId
-      ? statistics?.items.find((item) => item.elementId === selectedElementId)?.incidents ?? 0
+      ? (statistics?.items.find((item) => item.elementId === selectedElementId)
+          ?.incidents ?? 0)
       : 0;
 
   // Use element incidents count if available, otherwise use statistics
   const elementIncidentsCountFinal =
-    elementIncidentsCount > 0 ? elementIncidentsCount : flowNodeIncidentsFromStats;
+    elementIncidentsCount > 0
+      ? elementIncidentsCount
+      : flowNodeIncidentsFromStats;
 
   // Check if we should show incidents tab
   const shouldShowIncidentsTab =

@@ -128,6 +128,9 @@ function buildTimelineModel(params: {
             : `Tool calls (${toolCalls.length})`,
         timestamp,
         toolCalls,
+        ...(message.content && message.content.length > 0
+          ? {content: message.content}
+          : {}),
       });
 
       // Do NOT add a separate TOOL_CALL_RESULT event. Results are displayed inside the tool call.

@@ -30,6 +30,14 @@ const AgentContextTab: React.FC<Props> = ({
   scopeKey,
   isRunning,
 }) => {
+  // Debug: confirm the tab is mounted and visibility state
+  console.debug('[AI Agent] AgentContextTab render', {
+    isVisible,
+    processInstanceKey,
+    scopeKey,
+    isRunning,
+  });
+
   const shouldPoll = isVisible && isRunning;
 
   const query = useAgentContextVariable({
@@ -37,6 +45,14 @@ const AgentContextTab: React.FC<Props> = ({
     scopeKey,
     enabled: isVisible,
     refetchInterval: shouldPoll ? POLLING_INTERVAL_MS : false,
+  });
+
+  console.debug('[AI Agent] AgentContextTab query state', {
+    isVisible,
+    status: query.status,
+    isFetching: query.isFetching,
+    hasParsed: Boolean(query.data?.parsed),
+    hasParseError: Boolean(query.data?.parseError),
   });
 
   const timeline = useMemo(() => {

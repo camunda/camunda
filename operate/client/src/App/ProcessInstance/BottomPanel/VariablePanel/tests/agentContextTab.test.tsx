@@ -15,6 +15,7 @@ import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {Paths} from 'modules/Routes';
 import {http, HttpResponse} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
+import {act} from 'react';
 
 vi.mock('modules/hooks/useProcessInstanceElementSelection', () => {
   return {
@@ -97,6 +98,55 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
 };
 
 describe('VariablePanel - AI Agent tab', () => {
+  it('should keep the AI Agent tab visible once discovered for a selection', async () => {
+    let hasAgentContext = true;
+
+    vi.doMock('modules/queries/agentContext/useHasAgentContext', () => {
+      return {
+        useHasAgentContext: () => ({data: {hasAgentContext}}),
+      };
+    });
+
+    mockServer.use(
+      http.get('/v2/process-instances/:key', () => {
+        return HttpResponse.json({
+          processInstanceKey: '999',
+          state: 'ACTIVE',
+          startDate: '2018-06-21',
+          processDefinitionKey: '2',
+          processDefinitionVersion: 1,
+          processDefinitionId: 'someKey',
+          tenantId: '<default>',
+          processDefinitionName: 'someProcessName',
+          hasIncident: false,
+        });
+      }),
+      http.post('/v2/variables/search', () => {
+        return HttpResponse.json({
+          items: [],
+          page: {totalItems: 0, firstSortValues: [], lastSortValues: []},
+        });
+      }),
+    );
+
+    render(<VariablePanel setListenerTabVisibility={vi.fn()} />, {
+      wrapper: Wrapper,
+    });
+
+    expect(screen.getByRole('tab', {name: 'AI Agent'})).toBeInTheDocument();
+
+    // Simulate a transient refetch where the gate hasn't resolved yet.
+    hasAgentContext = false;
+
+    await act(async () => {
+      // force a rerender by triggering a state update
+      window.dispatchEvent(new Event('resize'));
+    });
+
+    // Tab should still be present (sticky)
+    expect(screen.getByRole('tab', {name: 'AI Agent'})).toBeInTheDocument();
+  });
+
   it('should show and select the AI Agent tab when agentContext is present on an ad-hoc selection', () => {
     mockServer.use(
       http.get('/v2/process-instances/:key', () => {

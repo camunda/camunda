@@ -107,6 +107,8 @@ export type AgentTimelineItem =
   | (AgentTimelineItemBase & {
       type: 'TOOL_CALL';
       toolCalls: AgentTimelineToolCall[];
+      /** Optional assistant text content emitted with the toolCalls (e.g. <thinking>...) */
+      content?: AgentContextContentPart[];
     })
   | (AgentTimelineItemBase & {
       type: 'TOOL_CALL_RESULT';

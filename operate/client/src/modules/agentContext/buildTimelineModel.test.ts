@@ -196,4 +196,46 @@ describe('agentContext timeline', () => {
     expect(jokes?.result?.content).toBe('j-ok');
     expect(superflux?.result?.content).toBe('24');
   });
+
+  it('includes assistant text content on TOOL_CALL events when present', () => {
+    const raw = {
+      conversation: {
+        messages: [
+          {
+            role: 'assistant',
+            content: [
+              {
+                type: 'text',
+                text: '<thinking>use tools</thinking>',
+              },
+            ],
+            toolCalls: [
+              {id: 'call-1', name: 'Jokes_API', arguments: {}},
+              {id: 'call-2', name: 'SuperfluxProduct', arguments: {a: 3, b: 5}},
+            ],
+          },
+          {
+            role: 'tool_call_result',
+            results: [
+              {id: 'call-1', name: 'Jokes_API', content: 'ok'},
+              {id: 'call-2', name: 'SuperfluxProduct', content: 24},
+            ],
+          },
+        ],
+      },
+    };
+
+    const ctx = parseAgentContext(raw);
+    const timeline = buildTimelineModel({agentContext: ctx});
+
+    const toolCall = timeline.events.find((i) => i.type === 'TOOL_CALL');
+    expect(toolCall?.type).toBe('TOOL_CALL');
+
+    const typedToolCall = toolCall as Extract<
+      (typeof timeline.events)[number],
+      {type: 'TOOL_CALL'}
+    >;
+
+    expect(typedToolCall.content?.[0].text).toContain('use tools');
+  });
 });

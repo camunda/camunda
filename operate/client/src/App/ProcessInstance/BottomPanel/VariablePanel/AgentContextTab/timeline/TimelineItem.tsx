@@ -170,6 +170,10 @@ const TimelineItem: React.FC<Props> = ({
 
           {item.type === 'TOOL_CALL' && (
             <ItemBody>
+              {item.content && item.content.length > 0
+                ? renderContentParts(item.content)
+                : null}
+
               {item.toolCalls.map((t) => (
                 <div key={t.id}>{renderToolCall(t)}</div>
               ))}
