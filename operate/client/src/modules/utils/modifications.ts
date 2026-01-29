@@ -141,7 +141,6 @@ const hasPendingCancelOrMoveModification = ({
   return (modificationsByFlowNode?.[flowNodeId]?.cancelledTokens ?? 0) > 0;
 };
 
-/** Returns true if a ADD or MOVE modification is queued in the store. */
 const hasPendingAddOrMoveModification = () => {
   return modificationsStore.flowNodeModifications.some(
     (modification) =>
