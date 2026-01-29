@@ -13,9 +13,9 @@ import io.camunda.zeebe.db.TransactionOperation;
 import io.camunda.zeebe.db.ZeebeDbException;
 import io.camunda.zeebe.db.ZeebeDbTransaction;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
-import java.nio.ByteBuffer;
 import org.agrona.LangUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.rocksdb.ColumnFamilyHandle;
@@ -60,20 +60,10 @@ public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
     try {
 
       final CFKEy cfkEy =
-          new CFKEy(columnFamilyHandle, new UnsafeBuffer(key, keyOffset, keyLength).hashCode());
+          new CFKEy(nativeHandle, new UnsafeBuffer(key, keyOffset, keyLength).hashCode());
       cache.put(
           cfkEy,
           BufferUtil.cloneBuffer(new UnsafeBuffer(value, valueOffset, valueLength)).byteArray());
-      RocksDbInternal.putWithHandle.invokeExact(
-          nativeHandle,
-          key,
-          keyOffset,
-          keyLength,
-          value,
-          valueOffset,
-          valueLength,
-          columnFamilyHandle,
-          false);
       final var keyBB = ByteBuffer.wrap(key, keyOffset, keyLength);
       final var valueBB = ByteBuffer.wrap(value, valueOffset, valueLength);
       transaction.put(keyBB, valueBB);
