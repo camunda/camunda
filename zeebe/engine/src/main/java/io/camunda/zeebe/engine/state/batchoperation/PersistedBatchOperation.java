@@ -10,8 +10,7 @@ package io.camunda.zeebe.engine.state.batchoperation;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import io.camunda.security.auth.CamundaAuthentication;
-import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.engine.state.ObjectDbValue;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.BinaryProperty;
 import io.camunda.zeebe.msgpack.property.BooleanProperty;
@@ -39,7 +38,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 /** The persisted record for a batch operation in the rocksDb state. */
-public class PersistedBatchOperation extends UnpackedObject implements DbValue {
+public class PersistedBatchOperation extends ObjectDbValue {
 
   /** The key of the batch operation. This is a unique identifier for the batch operation. */
   private final LongProperty keyProp = new LongProperty("key");

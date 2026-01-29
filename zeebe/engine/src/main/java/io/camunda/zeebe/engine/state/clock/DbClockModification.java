@@ -7,15 +7,14 @@
  */
 package io.camunda.zeebe.engine.state.clock;
 
-import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.engine.state.ObjectDbValue;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock.Modification;
 import java.time.Duration;
 import java.time.Instant;
 
-final class DbClockModification extends UnpackedObject implements DbValue {
+final class DbClockModification extends ObjectDbValue {
   // depending on the intent, the value may be a timestamp (epoch milliseconds) or an offset (in
   // milliseconds)
   private final LongProperty timeProperty = new LongProperty("time", 0);

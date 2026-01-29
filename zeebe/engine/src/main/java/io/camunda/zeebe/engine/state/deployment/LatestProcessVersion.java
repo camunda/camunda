@@ -7,11 +7,10 @@
  */
 package io.camunda.zeebe.engine.state.deployment;
 
-import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.engine.state.ObjectDbValue;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 
-public class LatestProcessVersion extends UnpackedObject implements DbValue {
+public class LatestProcessVersion extends ObjectDbValue {
   private final LongProperty latestProcessVersionProp = new LongProperty("latestProcessVersion");
 
   public LatestProcessVersion() {

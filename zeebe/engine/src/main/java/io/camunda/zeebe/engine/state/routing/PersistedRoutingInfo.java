@@ -7,10 +7,9 @@
  */
 package io.camunda.zeebe.engine.state.routing;
 
-import io.camunda.zeebe.db.DbValue;
+import io.camunda.zeebe.engine.state.ObjectDbValue;
 import io.camunda.zeebe.engine.state.immutable.RoutingState.MessageCorrelation;
 import io.camunda.zeebe.engine.state.immutable.RoutingState.MessageCorrelation.HashMod;
-import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
@@ -20,7 +19,7 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
-public final class PersistedRoutingInfo extends UnpackedObject implements DbValue {
+public final class PersistedRoutingInfo extends ObjectDbValue {
   private final ArrayProperty<IntegerValue> partitions =
       new ArrayProperty<>("partitions", IntegerValue::new);
   private final EnumProperty<MessageCorrelationStrategy> messageCorrelationStrategy =

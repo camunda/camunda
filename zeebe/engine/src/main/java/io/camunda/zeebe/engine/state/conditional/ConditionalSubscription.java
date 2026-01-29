@@ -7,37 +7,36 @@
  */
 package io.camunda.zeebe.engine.state.conditional;
 
-import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.protocol.impl.record.value.conditional.ConditionalSubscriptionRecord;
+import io.camunda.zeebe.engine.state.ObjectDbValue;
 
-public class ConditionalSubscription extends UnpackedObject implements DbValue {
+public class ConditionalSubscription extends ObjectDbValue {
 
-  private final ObjectProperty<ConditionalSubscriptionRecord> recordProp =
-      new ObjectProperty<>("conditionalSubscriptionRecord", new ConditionalSubscriptionRecord());
-  private final LongProperty keyProp = new LongProperty("key");
+	private final ObjectProperty<ConditionalSubscriptionRecord> recordProp = new ObjectProperty<>(
+			"conditionalSubscriptionRecord", new ConditionalSubscriptionRecord());
+	private final LongProperty keyProp = new LongProperty("key");
 
-  public ConditionalSubscription() {
-    super(2);
-    declareProperty(recordProp).declareProperty(keyProp);
-  }
+	public ConditionalSubscription() {
+		super(2);
+		declareProperty(recordProp).declareProperty(keyProp);
+	}
 
-  public ConditionalSubscriptionRecord getRecord() {
-    return recordProp.getValue();
-  }
+	public ConditionalSubscriptionRecord getRecord() {
+		return recordProp.getValue();
+	}
 
-  public void setRecord(final ConditionalSubscriptionRecord record) {
-    recordProp.getValue().wrap(record);
-  }
+	public void setRecord(final ConditionalSubscriptionRecord record) {
+		recordProp.getValue().wrap(record);
+	}
 
-  public long getKey() {
-    return keyProp.getValue();
-  }
+	public long getKey() {
+		return keyProp.getValue();
+	}
 
-  public ConditionalSubscription setKey(final long key) {
-    keyProp.setValue(key);
-    return this;
-  }
+	public ConditionalSubscription setKey(final long key) {
+		keyProp.setValue(key);
+		return this;
+	}
 }

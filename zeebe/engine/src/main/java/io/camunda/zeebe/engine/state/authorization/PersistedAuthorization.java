@@ -9,8 +9,7 @@ package io.camunda.zeebe.engine.state.authorization;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
-import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.engine.state.ObjectDbValue;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
@@ -26,7 +25,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-public class PersistedAuthorization extends UnpackedObject implements DbValue {
+public class PersistedAuthorization extends ObjectDbValue {
 
   private final LongProperty authorizationKeyProp = new LongProperty("authorizationKey");
   private final StringProperty ownerIdProp = new StringProperty("ownerId");

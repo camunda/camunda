@@ -7,26 +7,26 @@
  */
 package io.camunda.zeebe.engine.state.instance;
 
-import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
-import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
+import io.camunda.zeebe.engine.state.ObjectDbValue;
+import io.camunda.zeebe.engine.state.ObjectDbValue;
 
-public class UserTaskLifecycleStateValue extends UnpackedObject implements DbValue {
+public class UserTaskLifecycleStateValue extends ObjectDbValue {
 
-  private final EnumProperty<LifecycleState> lifecycleStateProp =
-      new EnumProperty<>("userTaskLifecycleState", LifecycleState.class);
+	private final EnumProperty<LifecycleState> lifecycleStateProp = new EnumProperty<>("userTaskLifecycleState",
+			LifecycleState.class);
 
-  public UserTaskLifecycleStateValue() {
-    super(1);
-    declareProperty(lifecycleStateProp);
-  }
+	public UserTaskLifecycleStateValue() {
+		super(1);
+		declareProperty(lifecycleStateProp);
+	}
 
-  public LifecycleState getLifecycleState() {
-    return lifecycleStateProp.getValue();
-  }
+	public LifecycleState getLifecycleState() {
+		return lifecycleStateProp.getValue();
+	}
 
-  public void setLifecycleState(final LifecycleState lifecycleState) {
-    lifecycleStateProp.setValue(lifecycleState);
-  }
+	public void setLifecycleState(final LifecycleState lifecycleState) {
+		lifecycleStateProp.setValue(lifecycleState);
+	}
 }

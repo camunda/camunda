@@ -7,8 +7,7 @@
  */
 package io.camunda.zeebe.engine.state.instance;
 
-import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.engine.state.ObjectDbValue;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
@@ -19,7 +18,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public final class IndexedRecord extends UnpackedObject implements DbValue {
+public final class IndexedRecord extends ObjectDbValue {
   // Static StringValue keys for property names
   private static final StringValue KEY_KEY = new StringValue("key");
   private static final StringValue STATE_KEY = new StringValue("state");

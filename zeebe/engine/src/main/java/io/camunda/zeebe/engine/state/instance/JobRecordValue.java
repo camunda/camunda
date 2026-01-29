@@ -7,26 +7,24 @@
  */
 package io.camunda.zeebe.engine.state.instance;
 
-import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.engine.state.ObjectDbValue;
 
-public class JobRecordValue extends UnpackedObject implements DbValue {
+public class JobRecordValue extends ObjectDbValue {
 
-  private final ObjectProperty<JobRecord> recordProp =
-      new ObjectProperty<>("jobRecord", new JobRecord());
+	private final ObjectProperty<JobRecord> recordProp = new ObjectProperty<>("jobRecord", new JobRecord());
 
-  public JobRecordValue() {
-    super(1);
-    declareProperty(recordProp);
-  }
+	public JobRecordValue() {
+		super(1);
+		declareProperty(recordProp);
+	}
 
-  public JobRecord getRecord() {
-    return recordProp.getValue();
-  }
+	public JobRecord getRecord() {
+		return recordProp.getValue();
+	}
 
-  public void setRecordWithoutVariables(final JobRecord record) {
-    recordProp.getValue().wrapWithoutVariables(record);
-  }
+	public void setRecordWithoutVariables(final JobRecord record) {
+		recordProp.getValue().wrapWithoutVariables(record);
+	}
 }
