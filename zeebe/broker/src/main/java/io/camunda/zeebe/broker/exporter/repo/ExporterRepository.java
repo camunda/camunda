@@ -104,7 +104,8 @@ public final class ExporterRepository {
               descriptor.getConfiguration(),
               NULL_PARTITION_ID,
               new SimpleMeterRegistry(),
-              InstantSource.system())) {
+              InstantSource.system(),
+              null)) {
 
         ThreadContextUtil.runCheckedWithClassLoader(
             () -> instance.configure(context), instance.getClass().getClassLoader());

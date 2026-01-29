@@ -57,6 +57,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
+import java.util.function.Supplier;
 import javax.annotation.WillCloseWhenClosed;
 import org.slf4j.Logger;
 
@@ -76,6 +77,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
   private final CamundaExporterMetrics metrics;
   private final Map<String, String> lastHistoricalArchiverDates = new ConcurrentHashMap<>();
   private final Cache<String, String> lifeCyclePolicyApplied;
+  private final Supplier<Long> exportingRateSupplier;
 
   public ElasticsearchArchiverRepository(
       final int partitionId,
@@ -101,6 +103,35 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
         resourceProvider.getIndexTemplateDescriptor(DecisionInstanceTemplate.class);
     this.metrics = metrics;
     lifeCyclePolicyApplied = buildLifeCycleAppliedCache(config.getRetention(), logger);
+    exportingRateSupplier = () -> Long.MAX_VALUE;
+  }
+
+  public ElasticsearchArchiverRepository(
+      final int partitionId,
+      final HistoryConfiguration config,
+      final ExporterResourceProvider resourceProvider,
+      @WillCloseWhenClosed final ElasticsearchAsyncClient client,
+      final Executor executor,
+      final CamundaExporterMetrics metrics,
+      final Logger logger,
+      final Supplier<Long> exportingRateSupplier) {
+    super(client, executor, logger);
+    this.partitionId = partitionId;
+    this.config = config;
+    allTemplatesDescriptors = resourceProvider.getIndexTemplateDescriptors();
+    listViewTemplateDescriptor =
+        resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class);
+    batchOperationTemplateDescriptor =
+        resourceProvider.getIndexTemplateDescriptor(BatchOperationTemplate.class);
+    usageMetricTemplateDescriptor =
+        resourceProvider.getIndexTemplateDescriptor(UsageMetricTemplate.class);
+    usageMetricTUTemplateDescriptor =
+        resourceProvider.getIndexTemplateDescriptor(UsageMetricTUTemplate.class);
+    decisionInstanceTemplateDescriptor =
+        resourceProvider.getIndexTemplateDescriptor(DecisionInstanceTemplate.class);
+    this.metrics = metrics;
+    lifeCyclePolicyApplied = buildLifeCycleAppliedCache(config.getRetention(), logger);
+    this.exportingRateSupplier = exportingRateSupplier;
   }
 
   private static Cache<String, String> buildLifeCycleAppliedCache(
@@ -383,11 +414,28 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
       final String sourceIndexName,
       final int batchSize) {
 
-    if (processInstanceKeys.isEmpty() || batchSize <= 0) {
-      return CompletableFuture.completedFuture(null);
-    }
+    final var rateValue = exportingRateSupplier.get();
+    final int effectiveBatchSize =
+        switch (rateValue) {
+          case final Long rate when rate >= 1000000 -> batchSize / 20;
+          case final Long rate when rate >= 500000 -> batchSize / 15;
+          case final Long rate when rate >= 100000 -> batchSize / 10;
+          case final Long rate when rate >= 50000 -> batchSize / 8;
+          case final Long rate when rate >= 10000 -> batchSize / 5;
+          case final Long rate when rate >= 5000 -> batchSize / 4;
+          case final Long rate when rate >= 1000 -> batchSize / 3;
+          case final Long rate when rate >= 500 -> batchSize / 2;
+          case final Long rate when rate >= 100 -> batchSize;
+          case final Long rate when rate >= 50 -> (batchSize * 3) / 2;
+          case final Long rate when rate >= 10 -> batchSize * 2;
+          case final Long rate when rate >= 1 -> batchSize * 3;
+          default -> batchSize * 4;
+        };
 
-    final int effectiveBatchSize = Math.max(1, batchSize);
+    logger.info(
+        "Moving documents in batch with effective batch size {}, export rate {}",
+        effectiveBatchSize,
+        rateValue);
 
     return CompletableFuture.allOf(
         processInstanceKeys.stream()
@@ -469,13 +517,15 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
               return reindexDocuments(destinationIndexName, sourceIndexName, idsToProcess)
                   .thenComposeAsync(
                       reindexResponse -> {
-                        if (reindexResponse.timedOut() != null
-                            && reindexResponse.timedOut()
-                            && batchSize > 1) {
+                        if (reindexResponse.timedOut() != null && reindexResponse.timedOut()) {
                           // Retry with smaller batch
                           return processOneKey(
                               key, fieldName, destinationIndexName, sourceIndexName, batchSize / 2);
-                        }
+                        } /*else if (reindexResponse.created() != null
+                              && reindexResponse.created() != idsToProcess.size()) {
+                            return reindexDocuments(
+                                destinationIndexName, sourceIndexName, idsToProcess);
+                          }*/
                         return deleteDocuments(sourceIndexName, idsToProcess)
                             .thenApply(ignored -> null);
                       },
@@ -804,6 +854,4 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
         .size(config.getRolloverBatchSize())
         .build();
   }
-
-  private class SlicingException extends RuntimeException {}
 }

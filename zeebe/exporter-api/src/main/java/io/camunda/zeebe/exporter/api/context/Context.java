@@ -21,6 +21,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.InstantSource;
+import java.util.function.Supplier;
 import org.slf4j.Logger;
 
 /** Encapsulates context associated with the exporter on open. */
@@ -63,6 +64,10 @@ public interface Context {
    * @param filter the filter to apply.
    */
   void setFilter(RecordFilter filter);
+
+  default Supplier<Long> getExporterRate() {
+    return () -> Long.MAX_VALUE;
+  }
 
   /**
    * A filter to limit the records which are exported.

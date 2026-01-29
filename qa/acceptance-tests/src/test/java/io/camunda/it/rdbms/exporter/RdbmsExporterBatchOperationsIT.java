@@ -77,6 +77,7 @@ class RdbmsExporterBatchOperationsIT {
                 Map.of("queueSize", 0, "exportBatchOperationItemsOnCreation", exportPendingItems)),
             1,
             Mockito.mock(MeterRegistry.class, Mockito.RETURNS_DEEP_STUBS),
+            null,
             null));
     exporter.open(controller);
   }

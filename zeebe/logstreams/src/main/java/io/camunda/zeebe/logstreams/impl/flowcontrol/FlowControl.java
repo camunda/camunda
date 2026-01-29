@@ -243,6 +243,10 @@ public final class FlowControl implements AppendListener {
     }
   }
 
+  public long getExportingRateMeasurement() {
+    return exportingRate.rate();
+  }
+
   public enum Rejection {
     WriteRateLimitExhausted,
     RequestLimitExhausted

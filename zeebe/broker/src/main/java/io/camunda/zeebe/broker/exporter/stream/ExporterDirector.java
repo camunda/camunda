@@ -122,7 +122,8 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
                         partitionId,
                         descriptorEntry.getValue(),
                         meterRegistry,
-                        clock))
+                        clock,
+                        () -> logStream.getFlowControl().getExportingRateMeasurement()))
             .collect(Collectors.toCollection(ArrayList::new));
     metrics = new ExporterMetrics(meterRegistry);
     metrics.initializeExporterState(exporterPhase);
@@ -327,7 +328,13 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     }
 
     final ExporterContainer container =
-        new ExporterContainer(descriptor, partitionId, initializationInfo, meterRegistry, clock);
+        new ExporterContainer(
+            descriptor,
+            partitionId,
+            initializationInfo,
+            meterRegistry,
+            clock,
+            () -> logStream.getFlowControl().getExportingRateMeasurement());
     container.initContainer(actor, metrics, state, exporterPhase);
     try {
       container.configureExporter();

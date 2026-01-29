@@ -52,7 +52,8 @@ class BackgroundTaskManagerFactoryTest {
             LoggerFactory.getLogger(BackgroundTaskManagerFactoryTest.class),
             mock(ExporterMetadata.class),
             new ObjectMapper(),
-            mock(ExporterEntityCacheImpl.class));
+            mock(ExporterEntityCacheImpl.class),
+            () -> Long.MAX_VALUE);
   }
 
   @Test

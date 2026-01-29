@@ -18,6 +18,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import java.time.InstantSource;
+import java.util.function.Supplier;
 import org.slf4j.Logger;
 
 public final class ExporterContext implements Context, AutoCloseable {
@@ -29,15 +30,17 @@ public final class ExporterContext implements Context, AutoCloseable {
   private final int partitionId;
   private final CompositeMeterRegistry meterRegistry;
   private final InstantSource clock;
+  private final Supplier<Long> exportingRateSupplier;
 
   private RecordFilter filter = DEFAULT_FILTER;
 
-  public ExporterContext(
+  /*  public ExporterContext(
       final Logger logger,
       final Configuration configuration,
       final int partitionId,
       final MeterRegistry meterRegistry,
-      final InstantSource clock) {
+      final InstantSource clock,
+      final Supplier<Long> exportingRateSupplier) {
     this.logger = logger;
     this.configuration = configuration;
     this.partitionId = partitionId;
@@ -47,6 +50,26 @@ public final class ExporterContext implements Context, AutoCloseable {
             Tags.concat(
                 PartitionKeyNames.tags(partitionId), Tags.of("exporterId", configuration.getId())));
     this.clock = clock;
+    this.exportingRateSupplier = exportingRateSupplier;
+  }*/
+
+  public ExporterContext(
+      final Logger logger,
+      final Configuration configuration,
+      final int partitionId,
+      final MeterRegistry meterRegistry,
+      final InstantSource clock,
+      final Supplier<Long> exportingRateSupplier) {
+    this.logger = logger;
+    this.configuration = configuration;
+    this.partitionId = partitionId;
+    this.meterRegistry =
+        MicrometerUtil.wrap(
+            meterRegistry,
+            Tags.concat(
+                PartitionKeyNames.tags(partitionId), Tags.of("exporterId", configuration.getId())));
+    this.clock = clock;
+    this.exportingRateSupplier = exportingRateSupplier;
   }
 
   @Override
@@ -82,6 +105,11 @@ public final class ExporterContext implements Context, AutoCloseable {
   public void setFilter(final RecordFilter filter) {
     EnsureUtil.ensureNotNull("filter", filter);
     this.filter = filter;
+  }
+
+  @Override
+  public Supplier<Long> getExporterRate() {
+    return exportingRateSupplier;
   }
 
   @Override

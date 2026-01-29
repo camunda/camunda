@@ -63,7 +63,8 @@ public final class ClusterChangeExecutorImpl implements ClusterChangeExecutor {
             descriptor.getConfiguration(),
             1,
             meterRegistry,
-            StreamClock.system());
+            StreamClock.system(),
+            null);
 
     try {
       exporter.configure(exporterContext);

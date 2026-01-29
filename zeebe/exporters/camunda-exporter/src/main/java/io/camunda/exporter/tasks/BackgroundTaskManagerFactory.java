@@ -59,6 +59,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.generic.OpenSearchGenericClient;
 import org.slf4j.Logger;
@@ -79,6 +80,7 @@ public final class BackgroundTaskManagerFactory {
   private BatchOperationUpdateRepository batchOperationUpdateRepository;
   private HistoryDeletionRepository historyDeletionRepository;
   private final ExporterEntityCacheImpl<Long, CachedProcessEntity> processCache;
+  private final Supplier<Long> exportingRateSupplier;
 
   public BackgroundTaskManagerFactory(
       final int partitionId,
@@ -89,7 +91,8 @@ public final class BackgroundTaskManagerFactory {
       final Logger logger,
       final ExporterMetadata metadata,
       final ObjectMapper objectMapper,
-      final ExporterEntityCacheImpl<Long, CachedProcessEntity> processCache) {
+      final ExporterEntityCacheImpl<Long, CachedProcessEntity> processCache,
+      final Supplier<Long> exportingRateSupplier) {
     this.partitionId = partitionId;
     this.exporterId = exporterId;
     this.config = config;
@@ -99,6 +102,7 @@ public final class BackgroundTaskManagerFactory {
     this.metadata = metadata;
     this.objectMapper = objectMapper;
     this.processCache = processCache;
+    this.exportingRateSupplier = exportingRateSupplier;
   }
 
   public BackgroundTaskManager build() {
@@ -233,7 +237,14 @@ public final class BackgroundTaskManagerFactory {
   private ElasticsearchArchiverRepository createArchiverRepository(
       final ElasticsearchAsyncClient asyncClient) {
     return new ElasticsearchArchiverRepository(
-        partitionId, config.getHistory(), resourceProvider, asyncClient, executor, metrics, logger);
+        partitionId,
+        config.getHistory(),
+        resourceProvider,
+        asyncClient,
+        executor,
+        metrics,
+        logger,
+        exportingRateSupplier);
   }
 
   private List<RunnableTask> buildTasks() {

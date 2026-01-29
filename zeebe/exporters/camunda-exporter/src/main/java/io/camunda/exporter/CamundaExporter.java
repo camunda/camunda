@@ -68,6 +68,7 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Supplier;
 import org.agrona.CloseHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -87,6 +88,7 @@ public class CamundaExporter implements Exporter {
   private SearchEngineClient searchEngineClient;
   private int partitionId;
   private Context context;
+  private Supplier<Long> exportingRateSupplier = () -> Long.MAX_VALUE;
 
   public CamundaExporter() {
     // the metadata will be initialized on open
@@ -109,6 +111,7 @@ public class CamundaExporter implements Exporter {
     this.context = context;
     configuration = context.getConfiguration().instantiate(ExporterConfiguration.class);
     partitionId = context.getPartitionId();
+    exportingRateSupplier = context.getExporterRate();
 
     LOG.info("Configuring exporter with {}", configuration);
     ConfigValidator.validate(configuration);
@@ -265,7 +268,8 @@ public class CamundaExporter implements Exporter {
                 context.getLogger(),
                 metadata,
                 clientAdapter.objectMapper(),
-                provider.getProcessCache())
+                provider.getProcessCache(),
+                exportingRateSupplier)
             .build();
   }
 

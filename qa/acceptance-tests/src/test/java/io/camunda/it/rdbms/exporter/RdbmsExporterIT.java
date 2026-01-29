@@ -130,6 +130,7 @@ class RdbmsExporterIT {
             new ExporterConfiguration("foo", Map.of("queueSize", 0)),
             1,
             Mockito.mock(MeterRegistry.class, Mockito.RETURNS_DEEP_STUBS),
+            null,
             null));
     exporter.open(controller);
   }
