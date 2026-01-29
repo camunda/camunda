@@ -296,6 +296,11 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
       final Map<String, List<String>> keysByField) {
 
     final var timer = Timer.start();
+    logger.info(
+        "Reindexing documents from index '{}' to index '{}' for {} fields",
+        sourceIndexName,
+        destinationIndexName,
+        keysByField.values().stream().flatMap(Collection::stream).toArray());
 
     final var futures =
         keysByField.entrySet().stream()
@@ -372,68 +377,111 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
 
   @Override
   public CompletableFuture<Void> moveDocumentsInBatch(
-      final List<String> keys,
+      final List<String> processInstanceKeys,
       final String fieldName,
       final String destinationIndexName,
       final String sourceIndexName,
       final int batchSize) {
 
+    if (processInstanceKeys.isEmpty() || batchSize <= 0) {
+      return CompletableFuture.completedFuture(null);
+    }
+
+    final int effectiveBatchSize = Math.max(1, batchSize);
+
     return CompletableFuture.allOf(
-        keys.stream()
+        processInstanceKeys.stream()
             .map(
                 key ->
-                    archivableKeys(key, sourceIndexName, fieldName, batchSize)
-                        .thenApplyAsync(
-                            resKeys -> {
-                              if (resKeys.isEmpty()) {
-                                return reindexDocuments(
-                                        destinationIndexName, sourceIndexName, List.of(key))
-                                    .thenAcceptAsync(
-                                        ignore -> deleteDocuments(sourceIndexName, List.of(key)),
-                                        executor);
-                              }
-                              return reindexDocuments(
-                                      destinationIndexName, sourceIndexName, resKeys)
-                                  .whenCompleteAsync(
-                                      (res, error) -> {
-                                        if (res != null
-                                            && res.timedOut() != null
-                                            && res.timedOut()) {
-                                          // Need to halve the batch size and retry
-                                          throw new SlicingException();
-                                        }
-                                      })
-                                  .thenApplyAsync(
-                                      ignore -> deleteDocuments(sourceIndexName, resKeys), executor)
-                                  .thenApplyAsync(
-                                      ignore ->
-                                          moveDocumentsInBatch(
-                                              keys,
-                                              fieldName,
-                                              destinationIndexName,
-                                              sourceIndexName,
-                                              config.getRolloverBatchSize()),
-                                      executor);
-                            },
-                            executor)
-                        .exceptionally(
-                            err -> {
-                              if (err instanceof SlicingException) {
-                                return moveDocumentsInBatch(
-                                    keys,
-                                    fieldName,
-                                    destinationIndexName,
-                                    sourceIndexName,
-                                    batchSize / 2);
-                              }
-                              return moveDocumentsInBatch(
-                                  keys,
-                                  fieldName,
-                                  destinationIndexName,
-                                  sourceIndexName,
-                                  batchSize);
-                            }))
+                    processOneKey(
+                        key, fieldName, destinationIndexName, sourceIndexName, effectiveBatchSize))
             .toArray(CompletableFuture[]::new));
+
+    /*return CompletableFuture.allOf(
+    processInstanceKeys.stream()
+        .map(
+            key ->
+                archivableKeys(key, sourceIndexName, fieldName, batchSize)
+                    .thenApplyAsync(
+                        resKeys -> {
+                          if (resKeys.isEmpty()) {
+                            return reindexDocuments(
+                                    destinationIndexName, sourceIndexName, List.of(key))
+                                .thenAcceptAsync(
+                                    ignore -> deleteDocuments(sourceIndexName, List.of(key)),
+                                    executor);
+                          }
+                          return reindexDocuments(
+                                  destinationIndexName, sourceIndexName, resKeys)
+                              .whenCompleteAsync(
+                                  (res, error) -> {
+                                    if (res != null
+                                        && res.timedOut() != null
+                                        && res.timedOut()) {
+                                      // Need to halve the batch size and retry
+                                      throw new SlicingException();
+                                    }
+                                  })
+                              .thenApplyAsync(
+                                  ignore -> deleteDocuments(sourceIndexName, resKeys), executor)
+                              .thenApplyAsync(
+                                  ignore ->
+                                      moveDocumentsInBatch(
+                                          processInstanceKeys,
+                                          fieldName,
+                                          destinationIndexName,
+                                          sourceIndexName,
+                                          config.getRolloverBatchSize()),
+                                  executor);
+                        },
+                        executor)
+                    .exceptionally(
+                        err -> {
+                          if (err instanceof SlicingException) {
+                            return moveDocumentsInBatch(
+                                processInstanceKeys,
+                                fieldName,
+                                destinationIndexName,
+                                sourceIndexName,
+                                batchSize / 2);
+                          }
+                          return moveDocumentsInBatch(
+                              processInstanceKeys,
+                              fieldName,
+                              destinationIndexName,
+                              sourceIndexName,
+                              batchSize);
+                        }))
+        .toArray(CompletableFuture[]::new));*/
+  }
+
+  private CompletableFuture<Void> processOneKey(
+      final String key,
+      final String fieldName,
+      final String destinationIndexName,
+      final String sourceIndexName,
+      final int batchSize) {
+
+    return archivableKeys(key, sourceIndexName, fieldName, batchSize)
+        .thenComposeAsync(
+            resKeys -> {
+              final List<String> idsToProcess = resKeys.isEmpty() ? List.of(key) : resKeys;
+              return reindexDocuments(destinationIndexName, sourceIndexName, idsToProcess)
+                  .thenComposeAsync(
+                      reindexResponse -> {
+                        if (reindexResponse.timedOut() != null
+                            && reindexResponse.timedOut()
+                            && batchSize > 1) {
+                          // Retry with smaller batch
+                          return processOneKey(
+                              key, fieldName, destinationIndexName, sourceIndexName, batchSize / 2);
+                        }
+                        return deleteDocuments(sourceIndexName, idsToProcess)
+                            .thenApply(ignored -> null);
+                      },
+                      executor);
+            },
+            executor);
   }
 
   private CompletableFuture<DeleteByQueryResponse> deleteDocuments(
