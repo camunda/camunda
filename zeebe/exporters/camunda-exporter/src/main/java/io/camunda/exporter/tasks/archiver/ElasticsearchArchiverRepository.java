@@ -415,22 +415,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
       final int batchSize) {
 
     final var rateValue = exportingRateSupplier.get();
-    final int effectiveBatchSize =
-        switch (rateValue) {
-          case final Long rate when rate >= 1000000 -> batchSize / 20;
-          case final Long rate when rate >= 500000 -> batchSize / 15;
-          case final Long rate when rate >= 100000 -> batchSize / 10;
-          case final Long rate when rate >= 50000 -> batchSize / 8;
-          case final Long rate when rate >= 10000 -> batchSize / 5;
-          case final Long rate when rate >= 5000 -> batchSize / 4;
-          case final Long rate when rate >= 1000 -> batchSize / 3;
-          case final Long rate when rate >= 500 -> batchSize / 2;
-          case final Long rate when rate >= 100 -> batchSize;
-          case final Long rate when rate >= 50 -> (batchSize * 3) / 2;
-          case final Long rate when rate >= 10 -> batchSize * 2;
-          case final Long rate when rate >= 1 -> batchSize * 3;
-          default -> batchSize * 4;
-        };
+    final int effectiveBatchSize = RateTier.calculateEffectiveBatchSize(rateValue, batchSize);
 
     logger.info(
         "Moving documents in batch with effective batch size {}, export rate {}",
@@ -444,63 +429,6 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
                     processOneKey(
                         key, fieldName, destinationIndexName, sourceIndexName, effectiveBatchSize))
             .toArray(CompletableFuture[]::new));
-
-    /*return CompletableFuture.allOf(
-    processInstanceKeys.stream()
-        .map(
-            key ->
-                archivableKeys(key, sourceIndexName, fieldName, batchSize)
-                    .thenApplyAsync(
-                        resKeys -> {
-                          if (resKeys.isEmpty()) {
-                            return reindexDocuments(
-                                    destinationIndexName, sourceIndexName, List.of(key))
-                                .thenAcceptAsync(
-                                    ignore -> deleteDocuments(sourceIndexName, List.of(key)),
-                                    executor);
-                          }
-                          return reindexDocuments(
-                                  destinationIndexName, sourceIndexName, resKeys)
-                              .whenCompleteAsync(
-                                  (res, error) -> {
-                                    if (res != null
-                                        && res.timedOut() != null
-                                        && res.timedOut()) {
-                                      // Need to halve the batch size and retry
-                                      throw new SlicingException();
-                                    }
-                                  })
-                              .thenApplyAsync(
-                                  ignore -> deleteDocuments(sourceIndexName, resKeys), executor)
-                              .thenApplyAsync(
-                                  ignore ->
-                                      moveDocumentsInBatch(
-                                          processInstanceKeys,
-                                          fieldName,
-                                          destinationIndexName,
-                                          sourceIndexName,
-                                          config.getRolloverBatchSize()),
-                                  executor);
-                        },
-                        executor)
-                    .exceptionally(
-                        err -> {
-                          if (err instanceof SlicingException) {
-                            return moveDocumentsInBatch(
-                                processInstanceKeys,
-                                fieldName,
-                                destinationIndexName,
-                                sourceIndexName,
-                                batchSize / 2);
-                          }
-                          return moveDocumentsInBatch(
-                              processInstanceKeys,
-                              fieldName,
-                              destinationIndexName,
-                              sourceIndexName,
-                              batchSize);
-                        }))
-        .toArray(CompletableFuture[]::new));*/
   }
 
   private CompletableFuture<Void> processOneKey(
@@ -853,5 +781,49 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
         .sort(sort -> sort.field(field -> field.field(sortField).order(SortOrder.Asc)))
         .size(config.getRolloverBatchSize())
         .build();
+  }
+
+  private sealed interface RateTier {
+
+    List<RateTier> RATE_TIERS =
+        List.of(
+            new RateTier.Divide(1_000_000, 20),
+            new RateTier.Divide(500_000, 15),
+            new RateTier.Divide(100_000, 10),
+            new RateTier.Divide(50_000, 8),
+            new RateTier.Divide(10_000, 5),
+            new RateTier.Divide(5_000, 4),
+            new RateTier.Divide(1_000, 3),
+            new RateTier.Divide(500, 2),
+            new RateTier.Multiply(100, 1),
+            new RateTier.Multiply(10, 2),
+            new RateTier.Multiply(1, 3),
+            new RateTier.Multiply(0, 4));
+
+    long threshold();
+
+    int apply(int batchSize);
+
+    static int calculateEffectiveBatchSize(final long rate, final int batchSize) {
+      return RATE_TIERS.stream()
+          .filter(tier -> rate >= tier.threshold())
+          .findFirst()
+          .map(tier -> tier.apply(batchSize))
+          .orElse(batchSize * 4);
+    }
+
+    record Multiply(long threshold, int factor) implements RateTier {
+      @Override
+      public int apply(final int batchSize) {
+        return batchSize * factor;
+      }
+    }
+
+    record Divide(long threshold, int factor) implements RateTier {
+      @Override
+      public int apply(final int batchSize) {
+        return batchSize / factor;
+      }
+    }
   }
 }
