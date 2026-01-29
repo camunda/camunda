@@ -20,30 +20,8 @@ import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.webapps.schema.descriptors.ComponentNames;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.AuthorizationAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.BatchOperationCreationAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.BatchOperationLifecycleManagementAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.DecisionAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.DecisionEvaluationAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.DecisionRequirementsRecordAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.FormAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.GroupAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.GroupEntityAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.IncidentResolutionAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.MappingRuleAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.ProcessAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.ProcessInstanceCancelAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.ProcessInstanceCreationAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.ProcessInstanceMigrationAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.ProcessInstanceModificationAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.ResourceAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.RoleAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.RoleEntityAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.TenantAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.TenantEntityAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.UserAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.UserTaskAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.VariableAddUpdateAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformerRegistry;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
 import io.camunda.zeebe.protocol.record.ValueType;
 import java.util.ArrayDeque;
@@ -252,69 +230,24 @@ public class DefaultExporterResourceProviderTest {
   }
 
   private static Stream<Arguments> expectedAuditLogTransformers() {
+    // Build expected transformers map for partition 1 (all transformers)
+    final Map<Class<?>, ValueType> allTransformers =
+        AuditLogTransformerRegistry.createAllTransformers().stream()
+            .collect(
+                Collectors.toMap(
+                    AuditLogTransformer::getClass,
+                    transformer -> transformer.config().valueType()));
+
+    // Build expected transformers map for other partitions (only all-partition transformers)
+    final Map<Class<?>, ValueType> allPartitionTransformers =
+        AuditLogTransformerRegistry.createAllPartitionTransformers().stream()
+            .collect(
+                Collectors.toMap(
+                    AuditLogTransformer::getClass,
+                    transformer -> transformer.config().valueType()));
+
     return Stream.of(
-        Arguments.arguments(
-            PROCESS_DEFINITION_PARTITION,
-            Map.ofEntries(
-                Map.entry(AuthorizationAuditLogTransformer.class, ValueType.AUTHORIZATION),
-                Map.entry(
-                    BatchOperationCreationAuditLogTransformer.class,
-                    ValueType.BATCH_OPERATION_CREATION),
-                Map.entry(
-                    BatchOperationLifecycleManagementAuditLogTransformer.class,
-                    ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT),
-                Map.entry(DecisionAuditLogTransformer.class, ValueType.DECISION),
-                Map.entry(
-                    DecisionEvaluationAuditLogTransformer.class, ValueType.DECISION_EVALUATION),
-                Map.entry(
-                    DecisionRequirementsRecordAuditLogTransformer.class,
-                    ValueType.DECISION_REQUIREMENTS),
-                Map.entry(FormAuditLogTransformer.class, ValueType.FORM),
-                Map.entry(GroupAuditLogTransformer.class, ValueType.GROUP),
-                Map.entry(GroupEntityAuditLogTransformer.class, ValueType.GROUP),
-                Map.entry(IncidentResolutionAuditLogTransformer.class, ValueType.INCIDENT),
-                Map.entry(MappingRuleAuditLogTransformer.class, ValueType.MAPPING_RULE),
-                Map.entry(ProcessAuditLogTransformer.class, ValueType.PROCESS),
-                Map.entry(
-                    ProcessInstanceCancelAuditLogTransformer.class, ValueType.PROCESS_INSTANCE),
-                Map.entry(
-                    ProcessInstanceCreationAuditLogTransformer.class,
-                    ValueType.PROCESS_INSTANCE_CREATION),
-                Map.entry(
-                    ProcessInstanceMigrationAuditLogTransformer.class,
-                    ValueType.PROCESS_INSTANCE_MIGRATION),
-                Map.entry(
-                    ProcessInstanceModificationAuditLogTransformer.class,
-                    ValueType.PROCESS_INSTANCE_MODIFICATION),
-                Map.entry(ResourceAuditLogTransformer.class, ValueType.RESOURCE),
-                Map.entry(RoleAuditLogTransformer.class, ValueType.ROLE),
-                Map.entry(RoleEntityAuditLogTransformer.class, ValueType.ROLE),
-                Map.entry(TenantAuditLogTransformer.class, ValueType.TENANT),
-                Map.entry(TenantEntityAuditLogTransformer.class, ValueType.TENANT),
-                Map.entry(UserAuditLogTransformer.class, ValueType.USER),
-                Map.entry(UserTaskAuditLogTransformer.class, ValueType.USER_TASK),
-                Map.entry(VariableAddUpdateAuditLogTransformer.class, ValueType.VARIABLE))),
-        Arguments.arguments(
-            2,
-            Map.ofEntries(
-                Map.entry(
-                    BatchOperationLifecycleManagementAuditLogTransformer.class,
-                    ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT),
-                Map.entry(
-                    DecisionEvaluationAuditLogTransformer.class, ValueType.DECISION_EVALUATION),
-                Map.entry(IncidentResolutionAuditLogTransformer.class, ValueType.INCIDENT),
-                Map.entry(
-                    ProcessInstanceCancelAuditLogTransformer.class, ValueType.PROCESS_INSTANCE),
-                Map.entry(
-                    ProcessInstanceCreationAuditLogTransformer.class,
-                    ValueType.PROCESS_INSTANCE_CREATION),
-                Map.entry(
-                    ProcessInstanceMigrationAuditLogTransformer.class,
-                    ValueType.PROCESS_INSTANCE_MIGRATION),
-                Map.entry(
-                    ProcessInstanceModificationAuditLogTransformer.class,
-                    ValueType.PROCESS_INSTANCE_MODIFICATION),
-                Map.entry(UserTaskAuditLogTransformer.class, ValueType.USER_TASK),
-                Map.entry(VariableAddUpdateAuditLogTransformer.class, ValueType.VARIABLE))));
+        Arguments.arguments(PROCESS_DEFINITION_PARTITION, allTransformers),
+        Arguments.arguments(2, allPartitionTransformers));
   }
 }
