@@ -57,6 +57,11 @@ public class FilesystemBackupStoreIT implements BackupStoreTestKit {
   }
 
   @Override
+  public int maxDeleteBatchSize() {
+    return 100;
+  }
+
+  @Override
   public FilesystemBackupStore getStore() {
     return backupStore;
   }

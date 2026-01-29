@@ -13,6 +13,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.google.common.collect.Iterables;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupDescriptor;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
@@ -26,6 +27,7 @@ import io.camunda.zeebe.backup.common.BackupImpl;
 import io.camunda.zeebe.backup.s3.S3BackupStoreException.BackupDeletionIncomplete;
 import io.camunda.zeebe.backup.s3.S3BackupStoreException.BackupInInvalidStateException;
 import io.camunda.zeebe.backup.s3.S3BackupStoreException.BackupReadException;
+import io.camunda.zeebe.backup.s3.S3BackupStoreException.ManifestNotFound;
 import io.camunda.zeebe.backup.s3.S3BackupStoreException.ManifestParseException;
 import io.camunda.zeebe.backup.s3.manifest.FileSet;
 import io.camunda.zeebe.backup.s3.manifest.Manifest;
@@ -33,16 +35,21 @@ import io.camunda.zeebe.backup.s3.manifest.NoBackupManifest;
 import io.camunda.zeebe.backup.s3.manifest.ValidBackupManifest;
 import io.camunda.zeebe.backup.s3.util.AsyncAggregatingSubscriber;
 import io.camunda.zeebe.util.SemanticVersion;
+import io.camunda.zeebe.util.VisibleForTesting;
+import io.camunda.zeebe.util.collection.Tuple;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.function.Function;
 import java.util.regex.Pattern;
+import java.util.stream.StreamSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
@@ -88,6 +95,7 @@ public final class S3BackupStore implements BackupStore {
   static final String SNAPSHOT_PREFIX = "snapshot/";
   static final String SEGMENTS_PREFIX = "segments/";
   static final String MANIFEST_OBJECT_KEY = "manifest.json";
+  static final int MAX_DELETE_BATCH_SIZE = 1000;
   private static final Logger LOG = LoggerFactory.getLogger(S3BackupStore.class);
   private static final int SCAN_PARALLELISM = 16;
   private final Pattern backupIdentifierPattern;
@@ -263,14 +271,35 @@ public final class S3BackupStore implements BackupStore {
                 return manifest;
               }
             })
-        .thenComposeAsync(
-            manifest ->
-                listObjects(manifest, Directory.MANIFESTS)
-                    .thenComposeAsync(this::deleteBackupObjects)
-                    .thenComposeAsync(
-                        ignored ->
-                            listObjects(manifest, Directory.CONTENTS)
-                                .thenComposeAsync(this::deleteBackupObjects)));
+        .thenCompose(manifest -> collectBackupObjects(manifest.id()))
+        .thenCompose(
+            backup ->
+                deleteIdentifierBatch(backup.getRight())
+                    .thenCompose(ignored -> deleteBackupObjects(List.of(backup.getLeft()))))
+        .exceptionally(
+            throwable -> {
+              if (throwable.getCause() instanceof ManifestNotFound) {
+                return null;
+              }
+              throw new CompletionException(throwable.getCause());
+            });
+  }
+
+  @Override
+  public CompletableFuture<Void> delete(final Collection<BackupIdentifier> ids) {
+    final var deletionFutures =
+        ids.stream()
+            .map(
+                id ->
+                    collectBackupObjects(id)
+                        .thenCompose(
+                            backup ->
+                                deleteIdentifierBatch(backup.getRight())
+                                    .thenCompose(
+                                        ignored -> deleteBackupObjects(List.of(backup.getLeft())))))
+            .toArray(CompletableFuture[]::new);
+
+    return CompletableFuture.allOf(deletionFutures);
   }
 
   @Override
@@ -313,14 +342,14 @@ public final class S3BackupStore implements BackupStore {
                     .map(S3Object::key)
                     .map(key -> key.substring(prefix.length()))
                     .map(BackupRangeMarker::fromName)
-                    .filter(marker -> marker != null)
+                    .filter(Objects::nonNull)
                     .toList());
   }
 
   @Override
   public CompletableFuture<Void> storeRangeMarker(
       final int partitionId, final BackupRangeMarker marker) {
-    final var key = rangeMarkersPrefix(partitionId) + BackupRangeMarker.toName(marker);
+    final var key = markerKey(partitionId, marker);
     return client
         .putObject(req -> req.bucket(config.bucketName()).key(key), AsyncRequestBody.empty())
         .thenApply(resp -> null);
@@ -329,10 +358,20 @@ public final class S3BackupStore implements BackupStore {
   @Override
   public CompletableFuture<Void> deleteRangeMarker(
       final int partitionId, final BackupRangeMarker marker) {
-    final var key = rangeMarkersPrefix(partitionId) + BackupRangeMarker.toName(marker);
+    final var key = markerKey(partitionId, marker);
     return client
         .deleteObject(req -> req.bucket(config.bucketName()).key(key))
         .thenApply(resp -> null);
+  }
+
+  @Override
+  public CompletableFuture<Void> deleteRangeMarkers(
+      final int partitionId, final Collection<BackupRangeMarker> markers) {
+    final var markerIdentifiers =
+        markers.stream()
+            .map(marker -> ObjectIdentifier.builder().key(markerKey(partitionId, marker)).build())
+            .toList();
+    return deleteIdentifierBatch(markerIdentifiers);
   }
 
   @Override
@@ -341,17 +380,17 @@ public final class S3BackupStore implements BackupStore {
     return CompletableFuture.completedFuture(null);
   }
 
+  private CompletableFuture<Void> deleteIdentifierBatch(final List<ObjectIdentifier> identifiers) {
+    final var futures =
+        StreamSupport.stream(
+                Iterables.partition(identifiers, MAX_DELETE_BATCH_SIZE).spliterator(), true)
+            .map(this::deleteBackupObjects)
+            .toArray(CompletableFuture[]::new);
+    return CompletableFuture.allOf(futures);
+  }
+
   private String rangeMarkersPrefix(final int partitionId) {
     return config.basePath().map(base -> base + "/").orElse("") + "ranges/" + partitionId + "/";
-  }
-
-  private CompletableFuture<List<ObjectIdentifier>> listBackupObjects(final Manifest manifest) {
-    return listObjects(manifest, Directory.CONTENTS);
-  }
-
-  private CompletableFuture<List<ObjectIdentifier>> listBackupManifestObjects(
-      final Manifest manifest) {
-    return listObjects(manifest, Directory.MANIFESTS);
   }
 
   private CompletableFuture<List<ObjectIdentifier>> listObjects(
@@ -394,6 +433,36 @@ public final class S3BackupStore implements BackupStore {
                     .map(S3Object::key)
                     .map(key -> ObjectIdentifier.builder().key(key).build())
                     .toList());
+  }
+
+  /**
+   * Returns a {@link Tuple} of the manifest object identifier with all content object identifiers
+   * associated with the given backup id.
+   *
+   * @param id the backup id
+   * @return a future with a {@link Tuple} with the manifest object identifier as left and the list
+   *     of related content objects as right.
+   * @throws BackupInInvalidStateException if no manifest object was found for the given backup id
+   */
+  private CompletableFuture<Tuple<ObjectIdentifier, List<ObjectIdentifier>>> collectBackupObjects(
+      final BackupIdentifier id) {
+    return readManifestObject(id)
+        .thenCompose(
+            manifest ->
+                listObjects(manifest, Directory.MANIFESTS)
+                    .thenCombine(
+                        listObjects(manifest, Directory.CONTENTS),
+                        (manifestObjects, contentObjects) -> {
+                          if (manifestObjects.isEmpty()) {
+                            throw new ManifestNotFound(
+                                "No manifest found for backup %s".formatted(id));
+                          }
+                          // there should only be one manifest object per backup
+                          if (manifestObjects.size() > 1) {
+                            LOG.debug("Found more than 1 manifest for backup id {}", id);
+                          }
+                          return Tuple.of(manifestObjects.getFirst(), contentObjects);
+                        }));
   }
 
   private CompletableFuture<Void> deleteBackupObjects(
@@ -588,6 +657,7 @@ public final class S3BackupStore implements BackupStore {
     return fileSetManager.save(prefix, backup.segments());
   }
 
+  @VisibleForTesting
   public String derivePath(
       final BackupDescriptor descriptor, final BackupIdentifier id, final Directory directory) {
     return isLegacyBackup(descriptor) ? legacyObjectPrefix(id) : objectPrefix(id, directory);
@@ -602,6 +672,10 @@ public final class S3BackupStore implements BackupStore {
                         "Invalid broker version format in manifest: " + descriptor.brokerVersion(),
                         null));
     return brokerVersion.major() == 8 && brokerVersion.minor() <= 8;
+  }
+
+  private String markerKey(final int partitionId, final BackupRangeMarker marker) {
+    return rangeMarkersPrefix(partitionId) + BackupRangeMarker.toName(marker);
   }
 
   public static S3AsyncClient buildClient(final S3BackupConfig config) {

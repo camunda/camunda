@@ -37,7 +37,9 @@ import io.camunda.zeebe.backup.common.Manifest.StatusCode;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Collection;
+import java.util.Map;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public final class ManifestManager {
   public static final int PRECONDITION_FAILED = 412;
@@ -179,6 +181,14 @@ public final class ManifestManager {
     }
 
     blobClient.delete();
+  }
+
+  public Map<BackupIdentifier, String> manifestUrls(final Collection<BackupIdentifier> ids) {
+    return ids.stream()
+        .collect(
+            Collectors.toMap(
+                id -> id,
+                id -> blobContainerClient.getBlobClient(manifestIdPath(id)).getBlobUrl()));
   }
 
   Manifest getManifest(final BackupIdentifier id) {

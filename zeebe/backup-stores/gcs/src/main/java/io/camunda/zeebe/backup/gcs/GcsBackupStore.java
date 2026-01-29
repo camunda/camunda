@@ -7,11 +7,16 @@
  */
 package io.camunda.zeebe.backup.gcs;
 
+import com.google.cloud.BatchResult.Callback;
+import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.BucketInfo;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.Storage.BlobListOption;
+import com.google.cloud.storage.StorageBatch;
+import com.google.cloud.storage.StorageException;
 import com.google.cloud.storage.StorageOptions;
+import com.google.common.collect.Iterables;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
@@ -26,6 +31,8 @@ import io.camunda.zeebe.backup.gcs.GcsBackupStoreException.ConfigurationExceptio
 import io.camunda.zeebe.backup.gcs.GcsConnectionConfig.Authentication.None;
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Spliterator;
@@ -34,6 +41,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,6 +56,7 @@ public final class GcsBackupStore implements BackupStore {
       "Invalid configuration for GcsBackupStore: %s";
   public static final String SNAPSHOT_FILESET_NAME = "snapshot";
   public static final String SEGMENTS_FILESET_NAME = "segments";
+  static final int MAX_DELETE_BLOB_BATCH_SIZE = 100;
   private static final Logger LOG = LoggerFactory.getLogger(GcsBackupStore.class);
   private final ExecutorService executor;
   private final ManifestManager manifestManager;
@@ -116,6 +126,21 @@ public final class GcsBackupStore implements BackupStore {
           manifestManager.deleteManifest(id);
           fileSetManager.delete(id, SNAPSHOT_FILESET_NAME);
           fileSetManager.delete(id, SEGMENTS_FILESET_NAME);
+        },
+        executor);
+  }
+
+  @Override
+  public CompletableFuture<Void> delete(final Collection<BackupIdentifier> ids) {
+    return CompletableFuture.runAsync(
+        () -> {
+          final var manifestUrls = manifestManager.manifestUrls(ids);
+          final var backupUrls = fileSetManager.backupDataUrls(ids);
+          final Map<BlobId, Collection<BlobId>> backupBlobs =
+              manifestUrls.entrySet().stream()
+                  .map(e -> Map.entry(e.getValue(), backupUrls.get(e.getKey())))
+                  .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+          deleteBackupBlobs(backupBlobs).join();
         },
         executor);
   }
@@ -202,6 +227,26 @@ public final class GcsBackupStore implements BackupStore {
   }
 
   @Override
+  public CompletableFuture<Void> deleteRangeMarkers(
+      final int partitionId, final Collection<BackupRangeMarker> markers) {
+    return CompletableFuture.supplyAsync(
+            () ->
+                markers.stream()
+                    .map(marker -> rangeMarkerBlobInfo(partitionId, marker))
+                    .map(BlobInfo::getBlobId)
+                    .collect(Collectors.toList()),
+            executor)
+        .thenComposeAsync(this::deleteBlobsInBatches, executor)
+        .thenAcceptAsync(
+            failures -> {
+              if (!failures) {
+                LOG.debug("Partial deletion of range markers for partition {}", partitionId);
+              }
+            },
+            executor);
+  }
+
+  @Override
   public CompletableFuture<Void> closeAsync() {
     return CompletableFuture.runAsync(
         () -> {
@@ -226,6 +271,61 @@ public final class GcsBackupStore implements BackupStore {
     return BlobInfo.newBuilder(
             bucketInfo, rangeMarkersPrefix(partitionId) + BackupRangeMarker.toName(marker))
         .build();
+  }
+
+  private CompletableFuture<Void> deleteBackupBlobs(
+      final Map<BlobId, Collection<BlobId>> manifestContentBlobs) {
+    final var futures =
+        manifestContentBlobs.entrySet().parallelStream()
+            .map(
+                entry ->
+                    deleteBlobsInBatches(entry.getValue())
+                        .thenComposeAsync(
+                            hasFailures ->
+                                hasFailures
+                                    ? CompletableFuture.completedFuture(true)
+                                    : deleteBlobsReturningFailures(List.of(entry.getKey())),
+                            executor)
+                        .thenAcceptAsync(
+                            failures -> {
+                              if (failures) {
+                                LOG.debug("Failed to delete manifest blob {}", entry.getKey());
+                              }
+                            },
+                            executor))
+            .toArray(CompletableFuture[]::new);
+    return CompletableFuture.allOf(futures);
+  }
+
+  private CompletableFuture<Boolean> deleteBlobsInBatches(final Collection<BlobId> blobs) {
+    final var batchFutures =
+        StreamSupport.stream(
+                Iterables.partition(blobs, MAX_DELETE_BLOB_BATCH_SIZE).spliterator(), true)
+            .map(this::deleteBlobsReturningFailures)
+            .toList();
+
+    return CompletableFuture.allOf(batchFutures.toArray(CompletableFuture[]::new))
+        .thenApply(ignored -> batchFutures.stream().anyMatch(CompletableFuture::join));
+  }
+
+  /**
+   * Deletes the given blobs in a single batch and returns whether there were any failures.
+   *
+   * @param blobIds the blobs to delete
+   * @return a future indicating whether there were any failures
+   */
+  private CompletableFuture<Boolean> deleteBlobsReturningFailures(final List<BlobId> blobIds) {
+    return CompletableFuture.supplyAsync(
+        () -> {
+          final StorageBatch batch = client.batch();
+          final AtomicBoolean hasFailures = new AtomicBoolean(false);
+          blobIds.forEach(
+              blobId ->
+                  batch.delete(blobId).notify(new ErrorOnlyCallback(() -> hasFailures.set(true))));
+          batch.submit();
+          return hasFailures.get();
+        },
+        executor);
   }
 
   public static Storage buildClient(final GcsBackupConfig config) {
@@ -254,6 +354,20 @@ public final class GcsBackupStore implements BackupStore {
       }
     } catch (final Exception e) {
       throw new ConfigurationException(ERROR_VALIDATION_FAILED.formatted(config), e);
+    }
+  }
+
+  private record ErrorOnlyCallback(Runnable runnable)
+      implements Callback<Boolean, StorageException> {
+
+    @Override
+    public void success(final Boolean deleted) {
+      // Ignore non-successful deletions here as they mean that the blob did not exist
+    }
+
+    @Override
+    public void error(final StorageException e) {
+      runnable.run();
     }
   }
 }

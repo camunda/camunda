@@ -64,6 +64,11 @@ public class GcsBackupStoreIT {
     }
 
     @Override
+    public int maxDeleteBatchSize() {
+      return GcsBackupStore.MAX_DELETE_BLOB_BATCH_SIZE;
+    }
+
+    @Override
     public BackupStore getStore() {
       return store;
     }
@@ -105,6 +110,11 @@ public class GcsBackupStoreIT {
     @AfterEach
     void tearDown() {
       store.closeAsync().join();
+    }
+
+    @Override
+    public int maxDeleteBatchSize() {
+      return GcsBackupStore.MAX_DELETE_BLOB_BATCH_SIZE;
     }
 
     @Override

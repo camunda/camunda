@@ -7,6 +7,9 @@
  */
 package io.camunda.zeebe.backup.azure;
 
+import static io.camunda.zeebe.backup.azure.AzureBackupStore.SEGMENTS_FILESET_NAME;
+import static io.camunda.zeebe.backup.azure.AzureBackupStore.SNAPSHOT_FILESET_NAME;
+
 import com.azure.core.util.BinaryData;
 import com.azure.storage.blob.BlobClient;
 import com.azure.storage.blob.BlobContainerClient;
@@ -21,7 +24,10 @@ import io.camunda.zeebe.backup.common.FileSet;
 import io.camunda.zeebe.backup.common.FileSet.NamedFile;
 import io.camunda.zeebe.backup.common.NamedFileSetImpl;
 import java.nio.file.Path;
+import java.util.Collection;
+import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 final class FileSetManager {
   // The path format is constructed by contents/partitionId/checkpointId/nodeId/nameOfFile
@@ -87,6 +93,30 @@ final class FileSetManager {
     }
 
     return new NamedFileSetImpl(pathByName);
+  }
+
+  public Map<BackupIdentifier, Collection<String>> backupDataUrls(
+      final Collection<BackupIdentifier> ids) {
+    assureContainerCreated();
+
+    return ids.stream().parallel().collect(Collectors.toMap(id -> id, this::listBackupObjects));
+  }
+
+  private Collection<String> listBackupObjects(final BackupIdentifier id) {
+    final var snapshotBlobs = listBlobUrls(id, SNAPSHOT_FILESET_NAME);
+    final var segmentBlobs = listBlobUrls(id, SEGMENTS_FILESET_NAME);
+
+    return Stream.concat(snapshotBlobs.stream(), segmentBlobs.stream()).toList();
+  }
+
+  private Collection<String> listBlobUrls(final BackupIdentifier id, final String fileSetName) {
+    return containerClient
+        .listBlobs(new ListBlobsOptions().setPrefix(fileSetPath(id, fileSetName)), null)
+        .stream()
+        .map(
+            blobItem ->
+                containerClient.getBlobClient(blobItem.getName()).getBlockBlobClient().getBlobUrl())
+        .toList();
   }
 
   void assureContainerCreated() {

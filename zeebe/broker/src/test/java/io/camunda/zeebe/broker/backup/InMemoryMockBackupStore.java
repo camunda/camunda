@@ -66,6 +66,12 @@ public class InMemoryMockBackupStore implements BackupStore, AutoCloseable {
   }
 
   @Override
+  public CompletableFuture<Void> delete(final Collection<BackupIdentifier> ids) {
+    ids.forEach(backupStatusMap::remove);
+    return CompletableFuture.completedFuture(null);
+  }
+
+  @Override
   public CompletableFuture<Backup> restore(final BackupIdentifier id, final Path targetFolder) {
     return CompletableFuture.completedFuture(backupMap.get(id));
   }
@@ -90,6 +96,12 @@ public class InMemoryMockBackupStore implements BackupStore, AutoCloseable {
   @Override
   public CompletableFuture<Void> deleteRangeMarker(
       final int partitionId, final BackupRangeMarker marker) {
+    throw new UnsupportedOperationException("Range markers are not yet supported");
+  }
+
+  @Override
+  public CompletableFuture<Void> deleteRangeMarkers(
+      final int partitionId, final Collection<BackupRangeMarker> markers) {
     throw new UnsupportedOperationException("Range markers are not yet supported");
   }
 

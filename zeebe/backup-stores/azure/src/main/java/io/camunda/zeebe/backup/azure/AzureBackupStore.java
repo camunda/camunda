@@ -12,8 +12,13 @@ import com.azure.identity.DefaultAzureCredentialBuilder;
 import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.BlobServiceClient;
 import com.azure.storage.blob.BlobServiceClientBuilder;
+import com.azure.storage.blob.batch.BlobBatchClient;
+import com.azure.storage.blob.batch.BlobBatchClientBuilder;
+import com.azure.storage.blob.batch.BlobBatchStorageException;
+import com.azure.storage.blob.models.BlobStorageException;
 import com.azure.storage.blob.models.ListBlobsOptions;
 import com.azure.storage.common.StorageSharedKeyCredential;
+import com.google.common.collect.Iterables;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
@@ -28,11 +33,15 @@ import io.camunda.zeebe.backup.common.BackupStoreException.UnexpectedManifestSta
 import io.camunda.zeebe.backup.common.Manifest;
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,11 +58,13 @@ public final class AzureBackupStore implements BackupStore {
       "Expected to restore from completed backup with id '%s', but was in state '%s'";
   public static final String SNAPSHOT_FILESET_NAME = "snapshot";
   public static final String SEGMENTS_FILESET_NAME = "segments";
+  static final int MAX_DELETE_BLOB_BATCH_SIZE = 256;
   private static final Logger LOG = LoggerFactory.getLogger(AzureBackupStore.class);
   private final ExecutorService executor;
   private final FileSetManager fileSetManager;
   private final ManifestManager manifestManager;
   private final BlobContainerClient blobContainerClient;
+  private final BlobBatchClient blobBatchClient;
   private final boolean createContainer;
   private boolean containerCreated;
 
@@ -64,6 +75,8 @@ public final class AzureBackupStore implements BackupStore {
   AzureBackupStore(final AzureBackupConfig config, final BlobServiceClient client) {
     executor = Executors.newVirtualThreadPerTaskExecutor();
     blobContainerClient = getContainerClient(client, config);
+    blobBatchClient =
+        new BlobBatchClientBuilder(blobContainerClient.getServiceClient()).buildClient();
     createContainer = isCreateContainer(config);
     containerCreated = !createContainer;
 
@@ -179,6 +192,21 @@ public final class AzureBackupStore implements BackupStore {
   }
 
   @Override
+  public CompletableFuture<Void> delete(final Collection<BackupIdentifier> ids) {
+    return CompletableFuture.runAsync(
+        () -> {
+          final var manifestUrls = manifestManager.manifestUrls(ids);
+          final var backupUrls = fileSetManager.backupDataUrls(ids);
+          final Map<String, Collection<String>> backupBlobs =
+              manifestUrls.entrySet().stream()
+                  .map(e -> Map.entry(e.getValue(), backupUrls.get(e.getKey())))
+                  .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+          deleteBlobs(backupBlobs).join();
+        },
+        executor);
+  }
+
+  @Override
   public CompletableFuture<Backup> restore(final BackupIdentifier id, final Path targetFolder) {
     return CompletableFuture.supplyAsync(
         () -> {
@@ -239,7 +267,7 @@ public final class AzureBackupStore implements BackupStore {
     return CompletableFuture.runAsync(
         () -> {
           assureContainerCreated();
-          final var blobName = rangeMarkersPrefix(partitionId) + BackupRangeMarker.toName(marker);
+          final var blobName = markerBlobUrl(partitionId, marker);
           final var blobClient = blobContainerClient.getBlobClient(blobName);
           blobClient.upload(BinaryData.fromBytes(new byte[0]), true);
         },
@@ -252,11 +280,33 @@ public final class AzureBackupStore implements BackupStore {
     return CompletableFuture.runAsync(
         () -> {
           assureContainerCreated();
-          final var blobName = rangeMarkersPrefix(partitionId) + BackupRangeMarker.toName(marker);
+          final var blobName = markerBlobUrl(partitionId, marker);
           final var blobClient = blobContainerClient.getBlobClient(blobName);
           blobClient.deleteIfExists();
         },
         executor);
+  }
+
+  @Override
+  public CompletableFuture<Void> deleteRangeMarkers(
+      final int partitionId, final Collection<BackupRangeMarker> markers) {
+    return CompletableFuture.supplyAsync(
+            () -> {
+              assureContainerCreated();
+              return markers.stream()
+                  .map(marker -> markerBlobUrl(partitionId, marker))
+                  .map(blobName -> blobContainerClient.getBlobClient(blobName).getBlobUrl())
+                  .collect(Collectors.toSet());
+            },
+            executor)
+        .thenComposeAsync(this::deleteBlobsInBatches, executor)
+        .thenAcceptAsync(
+            failures -> {
+              if (!failures) {
+                LOG.debug("Partial deletion of range markers for partition {}", partitionId);
+              }
+            },
+            executor);
   }
 
   @Override
@@ -277,8 +327,69 @@ public final class AzureBackupStore implements BackupStore {
         });
   }
 
+  private CompletableFuture<Void> deleteBlobs(
+      final Map<String, Collection<String>> manifestContentBlobs) {
+    final var futures =
+        manifestContentBlobs.entrySet().parallelStream()
+            .map(
+                entry ->
+                    deleteBlobsInBatches(entry.getValue())
+                        .thenComposeAsync(
+                            hasFailures ->
+                                hasFailures
+                                    ? CompletableFuture.completedFuture(true)
+                                    : deleteBlobsReturningFailures(List.of(entry.getKey())),
+                            executor)
+                        .thenAcceptAsync(
+                            failures -> {
+                              if (failures) {
+                                LOG.debug("Failed to delete manifest blob {}", entry.getKey());
+                              }
+                            },
+                            executor))
+            .toArray(CompletableFuture[]::new);
+    return CompletableFuture.allOf(futures);
+  }
+
+  private CompletableFuture<Boolean> deleteBlobsInBatches(final Collection<String> blobs) {
+    final var batchFutures =
+        StreamSupport.stream(
+                Iterables.partition(blobs, MAX_DELETE_BLOB_BATCH_SIZE).spliterator(), true)
+            .map(this::deleteBlobsReturningFailures)
+            .toList();
+
+    return CompletableFuture.allOf(batchFutures.toArray(CompletableFuture[]::new))
+        .thenApply(ignored -> batchFutures.stream().anyMatch(CompletableFuture::join));
+  }
+
+  /**
+   * Deletes the given blobs in a single batch and returns whether there were any failures.
+   *
+   * @param blobIds the blobs to delete
+   * @return a future indicating whether there were any failures
+   */
+  private CompletableFuture<Boolean> deleteBlobsReturningFailures(final List<String> blobIds) {
+    return CompletableFuture.supplyAsync(
+        () -> {
+          final var batchRequest = blobBatchClient.getBlobBatch();
+          blobIds.forEach(batchRequest::deleteBlob);
+          try {
+            blobBatchClient.submitBatch(batchRequest);
+          } catch (final BlobStorageException | BlobBatchStorageException ex) {
+            LOG.warn("Failed to delete blobs from storage.", ex);
+            return true;
+          }
+          return false;
+        },
+        executor);
+  }
+
   private String rangeMarkersPrefix(final int partitionId) {
     return "ranges/" + partitionId + "/";
+  }
+
+  private String markerBlobUrl(final int partitionId, final BackupRangeMarker marker) {
+    return rangeMarkersPrefix(partitionId) + BackupRangeMarker.toName(marker);
   }
 
   private void assureContainerCreated() {

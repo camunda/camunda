@@ -15,6 +15,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.cloud.storage.Blob;
+import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.BucketInfo;
 import com.google.cloud.storage.Storage;
@@ -30,10 +31,12 @@ import io.camunda.zeebe.backup.common.Manifest.InProgressManifest;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Collection;
+import java.util.Map;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 public final class ManifestManager {
@@ -198,6 +201,12 @@ public final class ManifestManager {
 
   public void deleteManifest(final BackupIdentifier id) {
     client.delete(manifestBlobInfo(id).getBlobId());
+  }
+
+  public Map<BackupIdentifier, BlobId> manifestUrls(final Collection<BackupIdentifier> ids) {
+    return ids.stream()
+        .parallel()
+        .collect(Collectors.toMap(id -> id, id -> manifestBlobInfo(id).getBlobId()));
   }
 
   private BlobInfo manifestBlobInfo(final BackupIdentifier id) {
