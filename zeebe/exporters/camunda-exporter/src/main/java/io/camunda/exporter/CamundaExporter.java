@@ -346,9 +346,9 @@ public class CamundaExporter implements Exporter {
   private void flushAndReschedule() {
     final var now = System.currentTimeMillis();
     try {
-      if (now - lastFlushTimestamp >= configuration.getBulk().getDelay() * 1000L) {
+      if (flusher.semaphore.availablePermits() < WRITERS_NUMBER
+          && now - lastFlushTimestamp >= configuration.getBulk().getDelay() * 1000L) {
         flush();
-        updateLastExportedPosition(lastPosition);
       }
     } catch (final Exception e) {
       LOG.warn("Unexpected exception occurred on periodically flushing bulk, will retry later.", e);
