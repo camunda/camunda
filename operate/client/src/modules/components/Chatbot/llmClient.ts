@@ -100,6 +100,23 @@ Examples:
 
 This helps users quickly access the detailed views they need without having to manually search.
 
+FORMATTING:
+You can use Markdown formatting in your responses including:
+- **bold** and *italic* text
+- \`inline code\` and \`\`\`code blocks\`\`\`
+- Bullet and numbered lists
+- [links](url)
+
+To display images, use standard Markdown image syntax:
+- Regular image: ![description](image_url)
+- User avatar with name: ![avatar:Username](avatar_url)
+- Large user avatar: ![avatar-large:Username](avatar_url)
+
+Example: To show a user's avatar, use:
+![avatar:tobi](https://ca.slack-edge.com/T0PM0P1SA-UET4R67E3-36d59a0dc3d1-512)
+
+This will display a circular avatar image with the user's name next to it.
+
 After receiving tool results, summarize the information clearly for the user.
 If a tool returns an error, explain what went wrong and suggest alternatives.`;
 
@@ -155,13 +172,17 @@ async function callOpenAI(
   const baseUrl = config.baseUrl || 'https://api.openai.com/v1';
   const model = config.model || DEFAULT_MODELS.openai;
 
+  // GPT-5 models use max_completion_tokens instead of max_tokens
+  const isGpt5 = model.startsWith('gpt-5') || model.startsWith('o1') || model.startsWith('o3');
+  const maxTokensParam = isGpt5 ? 'max_completion_tokens' : 'max_tokens';
+
   const requestBody: Record<string, unknown> = {
     model,
     messages: [
       {role: 'system', content: SYSTEM_PROMPT},
       ...messages,
     ],
-    max_tokens: config.maxTokens || 4096,
+    [maxTokensParam]: config.maxTokens || 4096,
     temperature: config.temperature ?? 0.7,
   };
 

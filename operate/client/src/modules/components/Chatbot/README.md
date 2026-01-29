@@ -10,6 +10,7 @@ A self-contained chatbot component for the Operate React frontend that connects 
 - 🤖 Direct LLM connection (OpenAI GPT-4, Anthropic Claude)
 - 🔧 MCP Gateway integration for Camunda-specific tool calls
 - 📝 Markdown rendering with syntax highlighting for code blocks
+- 🖼️ Image support including user avatars
 - 🎨 Theme-aware (supports light/dark mode)
 - ♿ Accessible (ARIA labels, keyboard navigation)
 - 📱 Responsive design

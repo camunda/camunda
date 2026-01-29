@@ -20,6 +20,9 @@ import styled from 'styled-components';
  * - - bullet lists
  * - 1. numbered lists
  * - [links](url)
+ * - ![images](url)
+ * - ![avatar:username](url) - user avatars with name
+ * - ![avatar-large:username](url) - large user avatars
  * - > blockquotes
  * - Headers (# ## ###)
  */
@@ -129,6 +132,47 @@ const MarkdownContainer = styled.div`
   th {
     background: var(--cds-layer-accent, #393939);
     font-weight: 600;
+  }
+
+  img {
+    max-width: 100%;
+    border-radius: 4px;
+    margin: 0.25em 0;
+  }
+
+  .user-avatar {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5em;
+
+    img {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      object-fit: cover;
+      vertical-align: middle;
+    }
+
+    &.large img {
+      width: 48px;
+      height: 48px;
+    }
+
+    .user-name {
+      font-weight: 500;
+    }
+  }
+
+  .inline-image {
+    display: block;
+    margin: 0.5em 0;
+
+    img {
+      max-width: 100%;
+      max-height: 300px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    }
   }
 `;
 
@@ -413,6 +457,50 @@ function parseInline(text: string): React.ReactNode {
       continue;
     }
 
+    // User avatar: ![avatar:username](url) - special format for user avatars
+    const avatarMatch = remaining.match(/^!\[avatar:([^\]]+)\]\(([^)]+)\)/);
+    if (avatarMatch) {
+      const userName = avatarMatch[1];
+      const imageUrl = avatarMatch[2];
+      parts.push(
+        <span key={key++} className="user-avatar">
+          <img src={imageUrl} alt={`${userName}'s avatar`} />
+          <span className="user-name">{userName}</span>
+        </span>
+      );
+      remaining = remaining.slice(avatarMatch[0].length);
+      continue;
+    }
+
+    // Large user avatar: ![avatar-large:username](url)
+    const largeAvatarMatch = remaining.match(/^!\[avatar-large:([^\]]+)\]\(([^)]+)\)/);
+    if (largeAvatarMatch) {
+      const userName = largeAvatarMatch[1];
+      const imageUrl = largeAvatarMatch[2];
+      parts.push(
+        <span key={key++} className="user-avatar large">
+          <img src={imageUrl} alt={`${userName}'s avatar`} />
+          <span className="user-name">{userName}</span>
+        </span>
+      );
+      remaining = remaining.slice(largeAvatarMatch[0].length);
+      continue;
+    }
+
+    // Regular image: ![alt text](url)
+    const imageMatch = remaining.match(/^!\[([^\]]*)\]\(([^)]+)\)/);
+    if (imageMatch) {
+      const altText = imageMatch[1] || 'Image';
+      const imageUrl = imageMatch[2];
+      parts.push(
+        <span key={key++} className="inline-image">
+          <img src={imageUrl} alt={altText} />
+        </span>
+      );
+      remaining = remaining.slice(imageMatch[0].length);
+      continue;
+    }
+
     // Links
     const linkMatch = remaining.match(/^\[([^\]]+)\]\(([^)]+)\)/);
     if (linkMatch) {
@@ -426,7 +514,7 @@ function parseInline(text: string): React.ReactNode {
     }
 
     // Regular character
-    const nextSpecial = remaining.search(/[`*\[]/);
+    const nextSpecial = remaining.search(/[`*\[!]/);
     if (nextSpecial === -1) {
       parts.push(remaining);
       break;
