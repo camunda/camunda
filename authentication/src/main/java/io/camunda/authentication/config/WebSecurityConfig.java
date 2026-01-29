@@ -167,6 +167,7 @@ public class WebSecurityConfig {
   public static final Set<String> WEBAPP_PATHS =
       Set.of(
           "/login/**",
+          "/clientlogin/**",
           "/logout",
           "/identity/**",
           "/operate/**",
