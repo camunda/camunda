@@ -16,6 +16,8 @@
 package io.camunda.client.api.command;
 
 import io.camunda.client.api.ExperimentalApi;
+import io.camunda.client.api.command.ActivateJobsCommandStep1.ActivateJobsCommandStep3;
+import io.camunda.client.api.command.enums.TenantFilter;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.StreamJobsResponse;
 import java.time.Duration;
@@ -104,5 +106,8 @@ public interface StreamJobsCommandStep1 {
      *     it to the broker.
      */
     StreamJobsCommandStep3 fetchVariables(String... fetchVariables);
+
+    @Override
+    StreamJobsCommandStep3 tenantFilter(TenantFilter tenantFilter);
   }
 }

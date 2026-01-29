@@ -23,6 +23,7 @@ import io.camunda.client.api.command.ActivateJobsCommandStep1;
 import io.camunda.client.api.command.ActivateJobsCommandStep1.ActivateJobsCommandStep2;
 import io.camunda.client.api.command.ActivateJobsCommandStep1.ActivateJobsCommandStep3;
 import io.camunda.client.api.command.FinalCommandStep;
+import io.camunda.client.api.command.enums.TenantFilter;
 import io.camunda.client.api.response.ActivateJobsResponse;
 import io.camunda.client.impl.RetriableStreamingFutureImpl;
 import io.camunda.client.impl.http.HttpCamundaFuture;
@@ -62,7 +63,6 @@ public final class ActivateJobsCommandImpl
 
   private final Set<String> defaultTenantIds;
   private final Set<String> customTenantIds;
-  private TenantFilterEnum tenantFilter;
   private final CamundaClientConfiguration config;
 
   public ActivateJobsCommandImpl(
@@ -85,7 +85,6 @@ public final class ActivateJobsCommandImpl
     useRest = config.preferRestOverGrpc();
     defaultTenantIds = new HashSet<>(config.getDefaultJobWorkerTenantIds());
     customTenantIds = new HashSet<>();
-    tenantFilter = TenantFilterEnum.PROVIDED;
   }
 
   @Override
@@ -143,8 +142,9 @@ public final class ActivateJobsCommandImpl
   }
 
   @Override
-  public ActivateJobsCommandStep3 tenantFilter(final TenantFilterEnum tenantFilterEnum) {
-    tenantFilter = tenantFilterEnum;
+  public ActivateJobsCommandStep3 tenantFilter(final TenantFilter tenantFilter) {
+    grpcRequestObjectBuilder.setTenantFilter(tenantFilter.toGrpc());
+    httpRequestObject.setTenantFilter(tenantFilter.toRest());
     return this;
   }
 
@@ -164,14 +164,18 @@ public final class ActivateJobsCommandImpl
   public CamundaFuture<ActivateJobsResponse> send() {
     grpcRequestObjectBuilder.clearTenantIds();
     httpRequestObject.setTenantIds(new ArrayList<>());
-    httpRequestObject.setTenantFilter(tenantFilter);
 
-    if (customTenantIds.isEmpty()) {
-      grpcRequestObjectBuilder.addAllTenantIds(defaultTenantIds);
-      httpRequestObject.setTenantIds(new ArrayList<>(defaultTenantIds));
-    } else {
-      grpcRequestObjectBuilder.addAllTenantIds(customTenantIds);
-      httpRequestObject.setTenantIds(new ArrayList<>(customTenantIds));
+    if ((useRest && httpRequestObject.getTenantFilter() == TenantFilterEnum.PROVIDED)
+        || (!useRest
+            && grpcRequestObjectBuilder.getTenantFilter()
+                == GatewayOuterClass.TenantFilter.PROVIDED)) {
+      if (customTenantIds.isEmpty()) {
+        grpcRequestObjectBuilder.addAllTenantIds(defaultTenantIds);
+        httpRequestObject.setTenantIds(new ArrayList<>(defaultTenantIds));
+      } else {
+        grpcRequestObjectBuilder.addAllTenantIds(customTenantIds);
+        httpRequestObject.setTenantIds(new ArrayList<>(customTenantIds));
+      }
     }
 
     if (useRest) {
