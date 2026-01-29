@@ -41,7 +41,7 @@ public final class ExecuteQueryResponse implements BufferReader, BufferWriter {
   }
 
   public ExecuteQueryResponse setBpmnProcessId(final DirectBuffer bpmnProcessId) {
-    this.rawBpmnProcessId.wrap(bpmnProcessId);
+    rawBpmnProcessId.wrap(bpmnProcessId);
     return this;
   }
 
@@ -51,10 +51,11 @@ public final class ExecuteQueryResponse implements BufferReader, BufferWriter {
   }
 
   @Override
-  public void write(final MutableDirectBuffer buffer, final int offset) {
+  public int write(final MutableDirectBuffer buffer, final int offset) {
     bodyEncoder
         .wrapAndApplyHeader(buffer, offset, headerEncoder)
         .putBpmnProcessId(rawBpmnProcessId, 0, rawBpmnProcessId.capacity());
+    return getLength();
   }
 
   @Override

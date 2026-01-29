@@ -157,8 +157,9 @@ final class RemoteStreamPusherTest {
     }
 
     @Override
-    public void write(final MutableDirectBuffer buffer, final int offset) {
+    public int write(final MutableDirectBuffer buffer, final int offset) {
       buffer.putInt(offset, version);
+      return getLength();
     }
   }
 

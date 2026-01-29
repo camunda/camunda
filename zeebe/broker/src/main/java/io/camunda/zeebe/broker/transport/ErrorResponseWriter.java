@@ -224,7 +224,8 @@ public final class ErrorResponseWriter implements BufferWriter {
   }
 
   @Override
-  public void write(final MutableDirectBuffer buffer, int offset) {
+  public int write(final MutableDirectBuffer buffer, int offset) {
+    final int initialOffset = offset;
     // protocol header
     messageHeaderEncoder.wrap(buffer, offset);
 
@@ -240,6 +241,8 @@ public final class ErrorResponseWriter implements BufferWriter {
     errorResponseEncoder.wrap(buffer, offset);
 
     errorResponseEncoder.errorCode(errorCode).putErrorData(errorMessage, 0, errorMessage.length);
+
+    return errorResponseEncoder.limit() - initialOffset;
   }
 
   public void reset() {

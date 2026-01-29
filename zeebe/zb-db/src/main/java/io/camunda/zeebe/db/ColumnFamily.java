@@ -157,6 +157,8 @@ public interface ColumnFamily<KeyType extends DbKey, ValueType extends DbValue>
    */
   void deleteExisting(KeyType key);
 
+  void deletePrefix(KeyType startKey);
+
   /**
    * Deletes the key-value pair if the key does exist in the column family. No-op if the key does
    * not exist.

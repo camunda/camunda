@@ -150,11 +150,20 @@ public class DbVariableState implements MutableVariableState {
 
   @Override
   public void removeAllVariables(final long scopeKey) {
-    visitVariablesLocal(
-        scopeKey,
-        dbString -> true,
-        (dbString, variable1) -> variablesColumnFamily.deleteExisting(scopeKeyVariableNameKey),
-        () -> false);
+    variablesColumnFamily.deletePrefix(scopeKeyVariableNameKey);
+  }
+
+  @Override
+  public void storeVariableDocumentState(final long key, final VariableDocumentRecord record) {
+    scopeKey.wrapLong(record.getScopeKey());
+    variableDocumentStateToWrite.setKey(key).setRecord(record);
+    variableDocumentStateByScopeKeyColumnFamily.insert(scopeKey, variableDocumentStateToWrite);
+  }
+
+  @Override
+  public void removeVariableDocumentState(final long scopeKey) {
+    this.scopeKey.wrapLong(scopeKey);
+    variableDocumentStateByScopeKeyColumnFamily.deleteIfExists(this.scopeKey);
   }
 
   @Override
@@ -323,19 +332,6 @@ public class DbVariableState implements MutableVariableState {
 
     final ParentScopeKey parentScopeKey = childParentColumnFamily.get(childKey);
     return parentScopeKey != null ? parentScopeKey.get() : NO_PARENT;
-  }
-
-  @Override
-  public void storeVariableDocumentState(final long key, final VariableDocumentRecord record) {
-    scopeKey.wrapLong(record.getScopeKey());
-    variableDocumentStateToWrite.setKey(key).setRecord(record);
-    variableDocumentStateByScopeKeyColumnFamily.insert(scopeKey, variableDocumentStateToWrite);
-  }
-
-  @Override
-  public void removeVariableDocumentState(final long scopeKey) {
-    this.scopeKey.wrapLong(scopeKey);
-    variableDocumentStateByScopeKeyColumnFamily.deleteIfExists(this.scopeKey);
   }
 
   @Override
