@@ -39,6 +39,7 @@ import io.camunda.zeebe.engine.state.immutable.ResourceState;
 import io.camunda.zeebe.engine.state.immutable.TimerInstanceState;
 import io.camunda.zeebe.engine.state.instance.TimerInstance;
 import io.camunda.zeebe.model.bpmn.util.time.Timer;
+import io.camunda.zeebe.protocol.impl.encoding.OpenTelemetryContext;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsMetadataRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsRecord;
@@ -147,6 +148,8 @@ public final class DeploymentCreateProcessor
       responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
       return;
     }
+
+    final OpenTelemetryContext openTelemetryContext = command.getOpenTelemetryContext();
 
     transformAndDistributeDeployment(command);
     // manage the top-level start event subscriptions except for timers
