@@ -8,6 +8,7 @@
 package io.camunda.zeebe.protocol.impl.stream.job;
 
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+import io.camunda.zeebe.protocol.record.value.TenantFilter;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.Collection;
 import java.util.Map;
@@ -41,6 +42,21 @@ public interface JobActivationProperties extends BufferWriter {
    * @see JobRecordValue#getDeadline()
    */
   long timeout();
+
+  /**
+   * Returns the type of tenant filter to apply when activating jobs.
+   *
+   * <ul>
+   *   <li>If {@link TenantFilter#ASSIGNED}, then {@link #tenantIds()} will be ignored, and the
+   *       accessible tenant IDs will be resolved during job activation.
+   *   <li>If {@link TenantFilter#PROVIDED}, then {@link #tenantIds()} will be used.
+   * </ul>
+   *
+   * If {@link TenantFilter#PROVIDED}, then {@link #tenantIds()} will be used.
+   *
+   * @see TenantFilter
+   */
+  TenantFilter tenantFilter();
 
   /**
    * Returns the identifiers of the tenants that own the jobs requested to be activated by the

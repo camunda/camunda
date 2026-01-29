@@ -10,11 +10,13 @@ package io.camunda.zeebe.protocol.impl.stream.job;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.DocumentProperty;
+import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
+import io.camunda.zeebe.protocol.record.value.TenantFilter;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Collection;
@@ -27,16 +29,19 @@ public class JobActivationPropertiesImpl extends UnpackedObject implements JobAc
   private final LongProperty timeoutProp = new LongProperty("timeout", -1);
   private final ArrayProperty<StringValue> fetchVariablesProp =
       new ArrayProperty<>("variables", StringValue::new);
+  private final EnumProperty<TenantFilter> tenantFilterEnumProperty =
+      new EnumProperty<>("tenantFilter", TenantFilter.class, TenantFilter.PROVIDED);
   private final ArrayProperty<StringValue> tenantIdsProp =
       new ArrayProperty<>(
           "tenantIds", () -> new StringValue(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
   private final DocumentProperty claimsProp = new DocumentProperty("claims");
 
   public JobActivationPropertiesImpl() {
-    super(5);
+    super(6);
     declareProperty(workerProp)
         .declareProperty(timeoutProp)
         .declareProperty(fetchVariablesProp)
+        .declareProperty(tenantFilterEnumProperty)
         .declareProperty(tenantIdsProp)
         .declareProperty(claimsProp);
   }
@@ -55,6 +60,11 @@ public class JobActivationPropertiesImpl extends UnpackedObject implements JobAc
   public JobActivationPropertiesImpl setFetchVariables(final Collection<StringValue> variables) {
     fetchVariablesProp.reset();
     variables.forEach(variable -> fetchVariablesProp.add().wrap(variable));
+    return this;
+  }
+
+  public JobActivationPropertiesImpl setTenantFilter(final TenantFilter tenantFilter) {
+    tenantFilterEnumProperty.setValue(tenantFilter);
     return this;
   }
 
@@ -77,6 +87,11 @@ public class JobActivationPropertiesImpl extends UnpackedObject implements JobAc
   @Override
   public long timeout() {
     return timeoutProp.getValue();
+  }
+
+  @Override
+  public TenantFilter tenantFilter() {
+    return tenantFilterEnumProperty.getValue();
   }
 
   @Override
