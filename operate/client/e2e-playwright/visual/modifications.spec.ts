@@ -71,6 +71,7 @@ test.describe('modifications', () => {
         sequenceFlowsV2: runningInstance.sequenceFlowsV2,
         variables: runningInstance.variables,
         xml: runningInstance.xml,
+        metaData: runningInstance.metaData,
       }),
     );
 
@@ -88,6 +89,10 @@ test.describe('modifications', () => {
       .getByRole('button', {
         name: /continue/i,
       })
+      .click();
+    await page.getByTestId('diagram').getByText('Signal user task').click();
+    await page
+      .getByRole('button', {name: 'Add single flow node instance'})
       .click();
 
     await processInstancePage.addVariableButton.click();

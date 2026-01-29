@@ -166,6 +166,10 @@ test.describe('process detail', () => {
     validateResults(results);
 
     await page.getByRole('button', {name: /continue/i}).click();
+    await page.getByTestId('diagram').getByText('Signal user task').click();
+    await page
+      .getByRole('button', {name: 'Add single flow node instance'})
+      .click();
 
     const modificationModeResults = await makeAxeBuilder()
       .disableRules(['aria-required-parent', 'list'])
