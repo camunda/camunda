@@ -177,40 +177,14 @@ public class Engine implements RecordProcessor {
         return processingResultBuilder.build();
       }
 
+      final var processor = currentProcessor;
+
       if (shouldProcessCommand(typedCommand)) {
-        if (currentProcessor.shouldProcessResultsInSeparateBatches()) {
+        if (processor.shouldProcessResultsInSeparateBatches()) {
           processingResultBuilder.withProcessInASeparateBatch();
         }
 
-        final String traceIdAndSpanId = record.traceId();
-
-        if (traceIdAndSpanId.isEmpty()) {
-          currentProcessor.processRecord(record);
-        } else {
-          final String[] split = traceIdAndSpanId.split(":");
-          final String traceId = split[0];
-          final String spanId = split[1];
-
-          final SpanContext parentSc =
-              SpanContext.createFromRemoteParent(
-                  traceId, spanId, TraceFlags.getSampled(), TraceState.getDefault());
-
-          final Context parentCtx = Context.root().with(Span.wrap(parentSc));
-
-          final Span child =
-              OtelBootstrap.tracer()
-                  .spanBuilder("%s:%s".formatted(record.getValueType(), record.getIntent()))
-                  .setParent(parentCtx)
-                  .startSpan();
-
-          try (final Scope scope1 = child.makeCurrent()) {
-            currentProcessor.processRecord(record);
-          } catch (final Exception e) {
-            throw new RuntimeException(e);
-          } finally {
-            child.end();
-          }
-        }
+        executeWithTracing(record, () -> processor.processRecord(record));
       }
     }
     return processingResultBuilder.build();
@@ -270,6 +244,38 @@ public class Engine implements RecordProcessor {
     return intent == ProcessInstanceIntent.CANCEL
         || intent == ProcessInstanceIntent.TERMINATE_ELEMENT
         || intent == ProcessInstanceBatchIntent.TERMINATE;
+  }
+
+  private void executeWithTracing(final TypedRecord record, final Runnable processingTask) {
+    final String traceIdAndSpanId = record.traceId();
+
+    if (traceIdAndSpanId.isEmpty()) {
+      processingTask.run();
+    } else {
+      final String[] split = traceIdAndSpanId.split(":");
+      final String traceId = split[0];
+      final String spanId = split[1];
+
+      final SpanContext parentSc =
+          SpanContext.createFromRemoteParent(
+              traceId, spanId, TraceFlags.getSampled(), TraceState.getDefault());
+
+      final Context parentCtx = Context.root().with(Span.wrap(parentSc));
+
+      final Span child =
+          OtelBootstrap.tracer()
+              .spanBuilder("%s:%s".formatted(record.getValueType(), record.getIntent()))
+              .setParent(parentCtx)
+              .startSpan();
+
+      try (final Scope scope = child.makeCurrent()) {
+        processingTask.run();
+      } catch (final Exception e) {
+        throw new RuntimeException(e);
+      } finally {
+        child.end();
+      }
+    }
   }
 
   private void handleUnexpectedError(
