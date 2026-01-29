@@ -22,6 +22,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.api.command.ActivateJobsCommandStep1.ActivateJobsCommandStep3;
 import io.camunda.client.api.command.ClientException;
+import io.camunda.client.api.command.enums.TenantFilter;
 import io.camunda.client.api.response.ActivateJobsResponse;
 import io.camunda.client.api.response.DocumentReferenceResponse;
 import io.camunda.client.impl.CamundaClientBuilderImpl;
@@ -29,10 +30,12 @@ import io.camunda.client.impl.CamundaObjectMapper;
 import io.camunda.client.impl.response.ActivatedJobImpl;
 import io.camunda.client.impl.util.EnumUtil;
 import io.camunda.client.util.ClientTest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob.JobKind;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob.ListenerEventType;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.StreamActivatedJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UserTaskProperties;
 import java.time.Duration;
 import java.util.Arrays;
@@ -614,6 +617,45 @@ public final class ActivateJobsTest extends ClientTest {
     assertThat(documentReferenceResponse.getMetadata().getFileName()).isEqualTo("file-name");
     assertThat(documentReferenceResponse.getMetadata().getExpiresAt())
         .isEqualTo("2025-06-28T07:32:28.93912+02:00");
+  }
+
+  @Test
+  public void shouldSetAssignedTenantFilter() {
+    // given
+    client
+        .newActivateJobsCommand()
+        .jobType("foo")
+        .maxJobsToActivate(1)
+        .tenantFilter(TenantFilter.ASSIGNED)
+        .send()
+        .join();
+
+    // when
+    final ActivateJobsRequest request = gatewayService.getLastRequest();
+
+    // then
+    assertThat(request.getTenantFilter()).isEqualTo(GatewayOuterClass.TenantFilter.ASSIGNED);
+    assertThat(request.getTenantIdsList()).isEmpty();
+  }
+
+  @Test
+  public void shouldSetProvidedTenantFilter() {
+    // given
+    client
+        .newActivateJobsCommand()
+        .jobType("foo")
+        .maxJobsToActivate(1)
+        .tenantFilter(TenantFilter.PROVIDED)
+        .tenantId("foo")
+        .send()
+        .join();
+
+    // when
+    final ActivateJobsRequest request = gatewayService.getLastRequest();
+
+    // then
+    assertThat(request.getTenantFilter()).isEqualTo(GatewayOuterClass.TenantFilter.PROVIDED);
+    assertThat(request.getTenantIdsList()).containsExactly("foo");
   }
 
   private static final class VariablesPojo {

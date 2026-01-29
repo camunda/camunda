@@ -66,7 +66,9 @@ public final class StreamJobsCommandImpl
     this.asyncStub = asyncStub;
     this.jsonMapper = jsonMapper;
     this.retryPredicate = retryPredicate;
-    builder = StreamActivatedJobsRequest.newBuilder();
+    builder =
+        StreamActivatedJobsRequest.newBuilder()
+            .setTenantFilter(GatewayOuterClass.TenantFilter.PROVIDED);
 
     timeout(config.getDefaultJobTimeout());
     workerName(config.getDefaultJobWorkerName());

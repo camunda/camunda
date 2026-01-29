@@ -77,8 +77,9 @@ public final class ActivateJobsCommandImpl
     httpRequestConfig = httpClient.newRequestConfig();
     this.jsonMapper = jsonMapper;
     this.retryPredicate = retryPredicate;
-    grpcRequestObjectBuilder = ActivateJobsRequest.newBuilder();
-    httpRequestObject = new JobActivationRequest();
+    grpcRequestObjectBuilder =
+        ActivateJobsRequest.newBuilder().setTenantFilter(GatewayOuterClass.TenantFilter.PROVIDED);
+    httpRequestObject = new JobActivationRequest().tenantFilter(TenantFilterEnum.PROVIDED);
     requestTimeout(config.getDefaultRequestTimeout());
     timeout(config.getDefaultJobTimeout());
     workerName(config.getDefaultJobWorkerName());
