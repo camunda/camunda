@@ -316,6 +316,7 @@
 
   <delete id="cleanupHistory">
     <bind name="tableName" value="'DECISION_INSTANCE'"/>
+    <bind name="primaryKeyColumn" value="'DECISION_INSTANCE_KEY'"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.historyCleanup"/>
   </delete>
 
