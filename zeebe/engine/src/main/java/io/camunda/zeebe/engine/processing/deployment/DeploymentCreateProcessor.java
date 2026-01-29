@@ -13,6 +13,7 @@ import static java.util.function.Predicate.not;
 
 import io.camunda.zeebe.el.ExpressionLanguageMetrics;
 import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.OtelBootstrap;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
@@ -64,7 +65,6 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.FeatureFlags;
 import io.camunda.zeebe.util.buffer.BufferUtil;
-import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanContext;
 import io.opentelemetry.api.trace.TraceFlags;
@@ -168,8 +168,8 @@ public final class DeploymentCreateProcessor
     final Context parentCtx = Context.root().with(Span.wrap(parentSc));
 
     final Span child =
-        GlobalOpenTelemetry.getTracer("deployment")
-            .spanBuilder("child")
+        OtelBootstrap.tracer()
+            .spanBuilder("%s:%s".formatted(command.getValueType(), command.getIntent()))
             .setParent(parentCtx)
             .startSpan();
 

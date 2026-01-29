@@ -140,6 +140,38 @@ public class BrokerModuleConfiguration implements CloseableSilently {
     return broker;
   }
 
+  //
+  //  @Bean
+  //  @ConditionalOnMissingBean(OpenTelemetry.class)
+  //  OpenTelemetrySdk openTelemetry(
+  //      final ObjectProvider<SdkTracerProvider> tracerProvider,
+  //      final ObjectProvider<ContextPropagators> propagators,
+  //      final ObjectProvider<SdkLoggerProvider> loggerProvider,
+  //      final ObjectProvider<SdkMeterProvider> meterProvider) {
+  //    final OpenTelemetrySdkBuilder builder = OpenTelemetrySdk.builder();
+  //    tracerProvider.ifAvailable(builder::setTracerProvider);
+  //    propagators.ifAvailable(builder::setPropagators);
+  //    loggerProvider.ifAvailable(builder::setLoggerProvider);
+  //    meterProvider.ifAvailable(builder::setMeterProvider);
+  //    return builder.build();
+  //  }
+  //
+  //  @Bean
+  //  @ConditionalOnMissingBean
+  //  Resource openTelemetryResource(
+  //      final Environment environment, final OpenTelemetryProperties properties) {
+  //    final Resource resource = Resource.getDefault();
+  //    return resource.merge(toResource(environment, properties));
+  //  }
+  //
+  //  private Resource toResource(
+  //      final Environment environment, final OpenTelemetryProperties properties) {
+  //    final ResourceBuilder builder = Resource.builder();
+  //    new OpenTelemetryResourceAttributes(environment, properties.getResourceAttributes())
+  //        .applyTo(builder::put);
+  //    return builder.build();
+  //  }
+
   protected void startBroker() {
     broker.start();
   }
