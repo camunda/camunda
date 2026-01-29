@@ -23,4 +23,11 @@ public interface BackupStatus {
   Optional<Instant> created();
 
   Optional<Instant> lastModified();
+
+  default boolean createdInRange(final Instant from, final Instant to) {
+    return descriptor()
+        .map(BackupDescriptor::checkpointTimestamp)
+        .map(c -> (c.equals(from) || c.isAfter(from)) && (c.equals(to) || c.isBefore(to)))
+        .orElse(false);
+  }
 }

@@ -7,26 +7,31 @@
  */
 package io.camunda.zeebe.backup.testkit;
 
+import static io.camunda.zeebe.backup.testkit.support.TestBackupProvider.createBackupWithTimestamp;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.backup.api.Backup;
+import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierWildcardImpl;
+import io.camunda.zeebe.backup.common.CheckpointIdGenerator;
 import io.camunda.zeebe.backup.testkit.support.TestBackupProvider;
 import io.camunda.zeebe.backup.testkit.support.WildcardBackupProvider;
 import io.camunda.zeebe.backup.testkit.support.WildcardBackupProvider.WildcardTestParameter;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 public interface ListingBackups {
 
@@ -76,5 +81,130 @@ public interface ListingBackups {
 
   default Backup getBackup(final BackupIdentifierImpl id) throws IOException {
     return TestBackupProvider.minimalBackupWithId(id);
+  }
+
+  @ParameterizedTest
+  @ValueSource(longs = {0, 12093L})
+  default void shouldFilterBackupsInTimeRange(final long offset) throws IOException {
+    // given
+    final var from = Instant.parse("2024-01-01T00:00:00Z");
+    final var to = Instant.parse("2024-01-01T12:00:00Z");
+    final var generator = new CheckpointIdGenerator(offset);
+
+    final var timestampInRange = Instant.parse("2024-01-01T06:00:00Z");
+    final var timestampBeforeRange = Instant.parse("2023-12-31T23:59:59Z");
+    final var timestampAfterRange = Instant.parse("2024-01-01T12:00:01Z");
+
+    final var backupInRange =
+        createBackupWithTimestamp(
+            new BackupIdentifierImpl(
+                1, 1, generator.fromTimestamp(timestampInRange.toEpochMilli())),
+            timestampInRange);
+    final var backupBeforeRange =
+        createBackupWithTimestamp(
+            new BackupIdentifierImpl(
+                1, 2, generator.fromTimestamp(timestampBeforeRange.toEpochMilli())),
+            timestampBeforeRange);
+    final var backupAfterRange =
+        createBackupWithTimestamp(
+            new BackupIdentifierImpl(
+                1, 3, generator.fromTimestamp(timestampAfterRange.toEpochMilli())),
+            timestampAfterRange);
+    final var backupAtStart =
+        createBackupWithTimestamp(
+            new BackupIdentifierImpl(1, 4, generator.fromTimestamp(from.toEpochMilli())), from);
+    final var backupAtEnd =
+        createBackupWithTimestamp(
+            new BackupIdentifierImpl(1, 5, generator.fromTimestamp(to.toEpochMilli())), to);
+
+    Stream.of(backupInRange, backupBeforeRange, backupAfterRange, backupAtStart, backupAtEnd)
+        .map(backup -> getStore().save(backup))
+        .forEach(CompletableFuture::join);
+
+    // when
+    final var wildcard =
+        BackupIdentifierWildcard.ofPattern(CheckpointPattern.ofTimeRange(from, to, generator));
+    final var result = getStore().list(wildcard);
+
+    // then - only backups within the range (including extremes)
+    assertThat(result).succeedsWithin(Duration.ofSeconds(20));
+    assertThat(result.join())
+        .map(BackupStatus::id)
+        .containsExactlyInAnyOrder(backupAtStart.id(), backupInRange.id(), backupAtEnd.id());
+  }
+
+  @Test
+  default void shouldReturnEmptyListWhenNoBackupsInRange() throws IOException {
+    // given
+    final var from = Instant.parse("2024-01-01T00:00:00Z");
+    final var to = Instant.parse("2024-01-01T12:00:00Z");
+    final var generator = new CheckpointIdGenerator(0L);
+
+    final var timestampBeforeRange = Instant.parse("2023-12-31T23:59:59Z");
+    final var timestampAfterRange = Instant.parse("2024-01-01T12:00:01Z");
+
+    final var backupBeforeRange =
+        createBackupWithTimestamp(
+            new BackupIdentifierImpl(
+                1, 1, generator.fromTimestamp(timestampBeforeRange.toEpochMilli())),
+            timestampBeforeRange);
+    final var backupAfterRange =
+        createBackupWithTimestamp(
+            new BackupIdentifierImpl(
+                1, 2, generator.fromTimestamp(timestampAfterRange.toEpochMilli())),
+            timestampAfterRange);
+
+    Stream.of(backupBeforeRange, backupAfterRange)
+        .map(backup -> getStore().save(backup))
+        .forEach(CompletableFuture::join);
+
+    // when
+    final var wildCard =
+        BackupIdentifierWildcard.ofPattern(CheckpointPattern.ofTimeRange(from, to, generator));
+    final var result = getStore().list(wildCard);
+
+    // then
+    assertThat(result).succeedsWithin(Duration.ofSeconds(20));
+    assertThat(result.join()).isEmpty();
+  }
+
+  @Test
+  default void shouldHandleMultipleBackupsInRange() throws IOException {
+    // given
+    final var from = Instant.parse("2024-01-01T00:00:00Z");
+    final var to = Instant.parse("2024-01-01T18:00:00Z");
+    final var generator = new CheckpointIdGenerator(0L);
+
+    final var timestamp1 = Instant.parse("2024-01-01T02:00:00Z");
+    final var timestamp2 = Instant.parse("2024-01-01T08:00:00Z");
+    final var timestamp3 = Instant.parse("2024-01-01T14:00:00Z");
+
+    final var backup1 =
+        createBackupWithTimestamp(
+            new BackupIdentifierImpl(1, 1, generator.fromTimestamp(timestamp1.toEpochMilli())),
+            timestamp1);
+    final var backup2 =
+        createBackupWithTimestamp(
+            new BackupIdentifierImpl(1, 2, generator.fromTimestamp(timestamp2.toEpochMilli())),
+            timestamp2);
+    final var backup3 =
+        createBackupWithTimestamp(
+            new BackupIdentifierImpl(1, 3, generator.fromTimestamp(timestamp3.toEpochMilli())),
+            timestamp3);
+
+    Stream.of(backup1, backup2, backup3)
+        .map(backup -> getStore().save(backup))
+        .forEach(CompletableFuture::join);
+
+    // when
+    final var wildCard =
+        BackupIdentifierWildcard.ofPattern(CheckpointPattern.ofTimeRange(from, to, generator));
+    final var result = getStore().list(wildCard);
+
+    // then
+    assertThat(result).succeedsWithin(Duration.ofSeconds(20));
+    assertThat(result.join())
+        .map(BackupStatus::id)
+        .containsExactlyInAnyOrder(backup1.id(), backup2.id(), backup3.id());
   }
 }

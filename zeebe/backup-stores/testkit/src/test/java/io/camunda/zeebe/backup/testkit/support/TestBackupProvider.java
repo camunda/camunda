@@ -142,4 +142,23 @@ public class TestBackupProvider {
         new NamedFileSetImpl(Map.of()),
         new NamedFileSetImpl(Map.of("segment-file-1", seg1)));
   }
+
+  public static Backup createBackupWithTimestamp(
+      final BackupIdentifierImpl id, final Instant timestamp) throws IOException {
+    final var backupDir = Files.createTempDirectory(TEMP_DIR, "backup");
+    Files.createDirectory(backupDir.resolve("segments/"));
+    final var seg1 = Files.createFile(backupDir.resolve("segments/segment-file-1"));
+    Files.write(seg1, RandomUtils.nextBytes(1));
+
+    return new BackupImpl(
+        id,
+        new BackupDescriptorImpl(
+            4,
+            5,
+            VersionUtil.getVersion(),
+            timestamp.truncatedTo(ChronoUnit.MILLIS),
+            CheckpointType.MANUAL_BACKUP),
+        new NamedFileSetImpl(Map.of()),
+        new NamedFileSetImpl(Map.of("segment-file-1", seg1)));
+  }
 }

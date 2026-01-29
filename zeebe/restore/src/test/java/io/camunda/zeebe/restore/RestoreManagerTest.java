@@ -9,12 +9,16 @@ package io.camunda.zeebe.restore;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.zeebe.backup.api.BackupRangeMarker;
+import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
+import io.camunda.zeebe.backup.common.CheckpointIdGenerator;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -75,5 +79,79 @@ final class RestoreManagerTest {
     // then - should fail because some-data-file is not ignored
     assertThatThrownBy(() -> restoreManager.restore(1L, false, List.of("lost+found")))
         .isInstanceOf(DirectoryNotEmptyException.class);
+  }
+
+  @Test
+  void shouldFailWhenBackupsAreNotContinuous(@TempDir final Path dir) {
+    // given
+    final var configuration = new BrokerCfg();
+    configuration.getData().setDirectory(dir.toString());
+    configuration.getCluster().setPartitionsCount(2);
+
+    final var backupStore = new TestRestorableBackupStore();
+    // Setup range markers for partition 1: complete range from 1 to 5
+    backupStore.storeRangeMarker(1, new BackupRangeMarker.Start(1L)).join();
+    backupStore.storeRangeMarker(1, new BackupRangeMarker.End(5L)).join();
+
+    // Setup range markers for partition 2: has a gap (1-3, then 5-7)
+    backupStore.storeRangeMarker(2, new BackupRangeMarker.Start(1L)).join();
+    backupStore.storeRangeMarker(2, new BackupRangeMarker.End(3L)).join();
+    backupStore.storeRangeMarker(2, new BackupRangeMarker.Start(5L)).join();
+    backupStore.storeRangeMarker(2, new BackupRangeMarker.End(7L)).join();
+
+    final var restoreManager =
+        new RestoreManager(configuration, backupStore, new SimpleMeterRegistry());
+
+    // when - trying to restore backups from 1 to 5
+    // then - should fail because partition 2 doesn't have a continuous range from 1 to 5
+    assertThatThrownBy(
+            () -> restoreManager.restore(new long[] {1L, 2L, 3L, 4L, 5L}, false, List.of()))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessage("Invalid backup ranges");
+  }
+
+  @Test
+  void shouldFailWhenBackupsAreNotContinuousUsingTimeRange(@TempDir final Path dir) {
+    // given
+    final var configuration = new BrokerCfg();
+    configuration.getData().setDirectory(dir.toString());
+    configuration.getCluster().setPartitionsCount(2);
+
+    final var backupStore = new TestRestorableBackupStore();
+    final var generator = new CheckpointIdGenerator();
+
+    // Add backups with timestamps
+    final var baseTime = Instant.parse("2024-01-01T10:00:00Z");
+    final var checkpointIds = new long[5];
+    for (int i = 0; i < 5; i++) {
+      final var timestamp = baseTime.plusSeconds((i + 1) * 60);
+      final var checkpointId = generator.fromTimestamp(timestamp.toEpochMilli());
+      checkpointIds[i] = checkpointId;
+      backupStore.addBackupWithTimestamp(
+          new BackupIdentifierImpl(0, 1, checkpointId), timestamp, 2);
+      backupStore.addBackupWithTimestamp(
+          new BackupIdentifierImpl(0, 2, checkpointId), timestamp, 2);
+    }
+
+    // Setup range markers for partition 1: complete range
+    backupStore.storeRangeMarker(1, new BackupRangeMarker.Start(checkpointIds[0])).join();
+    backupStore.storeRangeMarker(1, new BackupRangeMarker.End(checkpointIds[4])).join();
+
+    // Setup range markers for partition 2: has a gap (0-1, then 3-4)
+    backupStore.storeRangeMarker(2, new BackupRangeMarker.Start(checkpointIds[0])).join();
+    backupStore.storeRangeMarker(2, new BackupRangeMarker.End(checkpointIds[1])).join();
+    backupStore.storeRangeMarker(2, new BackupRangeMarker.Start(checkpointIds[3])).join();
+    backupStore.storeRangeMarker(2, new BackupRangeMarker.End(checkpointIds[4])).join();
+
+    final var restoreManager =
+        new RestoreManager(configuration, backupStore, new SimpleMeterRegistry());
+
+    // when - trying to restore backups from baseTime to baseTime + 5 minutes
+    // then - should fail because partition 2 doesn't have a continuous range
+    final var from = baseTime;
+    final var to = baseTime.plusSeconds(5 * 60);
+    assertThatThrownBy(() -> restoreManager.restore(from, to, false, List.of()))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessage("Invalid backup ranges");
   }
 }

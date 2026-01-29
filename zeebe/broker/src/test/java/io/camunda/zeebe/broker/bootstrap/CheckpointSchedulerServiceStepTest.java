@@ -17,6 +17,7 @@ import static org.mockito.Mockito.when;
 
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.Member;
+import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.management.CheckpointSchedulingService;
@@ -60,6 +61,7 @@ public class CheckpointSchedulerServiceStepTest {
     when(mockBrokerStartupContext.getClusterServices()).thenReturn(mockClusterServices);
     when(mockBrokerStartupContext.getCheckpointSchedulingService())
         .thenReturn(mockCheckpointSchedulingService);
+    when(mockBrokerStartupContext.getBrokerClient()).thenReturn(mock(BrokerClient.class));
 
     final Member member = mock(Member.class);
     when(mockClusterServices.getMembershipService()).thenReturn(mockMembershipService);

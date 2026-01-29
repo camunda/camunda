@@ -30,6 +30,7 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Collection;
+import java.util.Objects;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
@@ -169,6 +170,8 @@ public final class ManifestManager {
       return files
           .filter(filePath -> filterBlobsByWildcard(wildcard, filePath.toString()))
           .map(this::getManifestWithPath)
+          .filter(Objects::nonNull)
+          .filter(m -> wildcard.matches(m.id()))
           .toList();
     } catch (final IOException e) {
       throw new UncheckedIOException("Unable to list manifests from " + manifestsPath, e);
