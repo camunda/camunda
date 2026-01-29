@@ -177,7 +177,7 @@ jobs:
               echo "load-test-load=--set starter.rate=50 --set workers.worker.replicas=6 --set starter.bpmnXmlPath=bpmn/typical_process.bpmn" >> "$GITHUB_OUTPUT"
               ;;
             max)
-              echo "load-test-load=--set starter.rate=300" >> "$GITHUB_OUTPUT"
+              echo "load-test-load=--set starter.rate=500" >> "$GITHUB_OUTPUT"
               ;;
             custom)
               # Use the provided load-test-load inputs
