@@ -17,20 +17,26 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("/post-logout")
 public class PostLogoutController {
 
+  private static final String POST_LOGOUT_REDIRECT_ATTRIBUTE = "postLogoutRedirect";
+  private static final String DEFAULT_REDIRECT_PATH = "/";
+
   @GetMapping()
   public String postLogout(final HttpServletRequest request) {
     final HttpSession session = request.getSession(false);
     String redirect = null;
 
     if (session != null) {
-      redirect = (String) session.getAttribute("postLogoutRedirect");
-      session.removeAttribute("postLogoutRedirect"); // clean up
+      final Object postLogoutRedirect = session.getAttribute(POST_LOGOUT_REDIRECT_ATTRIBUTE);
+      if (postLogoutRedirect instanceof String) {
+        redirect = (String) postLogoutRedirect;
+      }
+      // clean up
+      session.removeAttribute(POST_LOGOUT_REDIRECT_ATTRIBUTE);
     }
 
-    if (redirect == null) {
-      redirect = "/";
+    if (redirect == null || redirect.isBlank()) {
+      redirect = DEFAULT_REDIRECT_PATH;
     }
-
     return "redirect:" + redirect;
   }
 }
