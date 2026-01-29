@@ -59,7 +59,7 @@ public class ExporterStateDistributeMessage
   }
 
   @Override
-  public void write(final MutableDirectBuffer buffer, final int offset) {
+  public int write(final MutableDirectBuffer buffer, final int offset) {
     super.write(buffer, offset);
 
     final var stateEncoder = encoder.stateCount(exporterState.size());
@@ -75,6 +75,7 @@ public class ExporterStateDistributeMessage
               .putExporterId(idBuffer, 0, idBuffer.capacity())
               .putMetadata(metadata, 0, metadata.capacity());
         });
+    return getLength();
   }
 
   @Override

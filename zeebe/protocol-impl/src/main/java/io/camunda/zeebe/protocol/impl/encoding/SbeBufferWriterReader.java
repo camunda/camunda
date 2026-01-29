@@ -40,7 +40,7 @@ public abstract class SbeBufferWriterReader<
   }
 
   @Override
-  public void write(final MutableDirectBuffer buffer, final int offset) {
+  public int write(final MutableDirectBuffer buffer, final int offset) {
     headerEncoder
         .wrap(buffer, offset)
         .blockLength(getBodyEncoder().sbeBlockLength())
@@ -49,6 +49,8 @@ public abstract class SbeBufferWriterReader<
         .version(getBodyEncoder().sbeSchemaVersion());
 
     getBodyEncoder().wrap(buffer, offset + headerEncoder.encodedLength());
+
+    return getLength();
   }
 
   @Override

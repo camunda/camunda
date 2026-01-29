@@ -35,7 +35,7 @@ public final class RemoveStreamRequest implements BufferReader, BufferWriter {
   }
 
   @Override
-  public void write(final MutableDirectBuffer buffer, final int offset) {
+  public int write(final MutableDirectBuffer buffer, final int offset) {
     messageEncoder.wrapAndApplyHeader(buffer, offset, headerEncoder);
 
     if (streamId != null) {
@@ -44,6 +44,7 @@ public final class RemoveStreamRequest implements BufferReader, BufferWriter {
           .high(streamId.getMostSignificantBits())
           .low(streamId.getLeastSignificantBits());
     }
+    return getLength();
   }
 
   public UUID streamId() {
