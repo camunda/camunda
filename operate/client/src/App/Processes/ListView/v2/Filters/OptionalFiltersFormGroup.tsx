@@ -36,7 +36,7 @@ import {
   ButtonContainer,
   FieldContainer,
 } from 'modules/components/FiltersPanel/styled';
-import {Variable} from './VariableField';
+import {VariablesFilter} from 'App/Processes/ListView/Filters/VariablesFilter';
 
 type OptionalFilter =
   | 'variable'
@@ -70,8 +70,8 @@ const OPTIONAL_FILTER_FIELDS: Record<
   }
 > = {
   variable: {
-    keys: ['variableName', 'variableValues'],
-    label: 'Variable',
+    keys: [],
+    label: 'Variables',
   },
   ids: {
     keys: ['ids'],
@@ -165,6 +165,8 @@ const OptionalFiltersFormGroup: React.FC<Props> = observer(
       useState<boolean>(false);
     const [isEndDateRangeModalOpen, setIsEndDateRangeModalOpen] =
       useState<boolean>(false);
+    const [isVariableFilterModalOpen, setIsVariableFilterModalOpen] =
+      useState<boolean>(false);
 
     return (
       <Stack gap={8}>
@@ -182,6 +184,9 @@ const OptionalFiltersFormGroup: React.FC<Props> = observer(
               eventName: 'optional-filter-selected',
               filterName: filter,
             });
+            if (filter === 'variable') {
+              setIsVariableFilterModalOpen(true);
+            }
             if (filter === 'startDateRange') {
               setIsStartDateRangeModalOpen(true);
             }
@@ -196,7 +201,13 @@ const OptionalFiltersFormGroup: React.FC<Props> = observer(
               {(() => {
                 switch (filter) {
                   case 'variable':
-                    return <Variable />;
+                    return (
+                      <VariablesFilter
+                        isModalOpen={isVariableFilterModalOpen}
+                        onModalOpen={() => setIsVariableFilterModalOpen(true)}
+                        onModalClose={() => setIsVariableFilterModalOpen(false)}
+                      />
+                    );
                   case 'startDateRange':
                     return (
                       <DateRangeField

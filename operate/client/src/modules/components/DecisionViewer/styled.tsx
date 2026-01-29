@@ -21,7 +21,7 @@ const Container = styled.div<ContainerProps>`
       &,
       & > ${ViewerCanvas} {
         height: 100%;
-        min-height: 200px;
+        min-height: 300px;
       }
 
       .powered-by {
