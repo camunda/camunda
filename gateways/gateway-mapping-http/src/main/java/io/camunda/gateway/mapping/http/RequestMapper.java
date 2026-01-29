@@ -204,7 +204,16 @@ public class RequestMapper {
   public static Either<ProblemDetail, ActivateJobsRequest> toJobsActivationRequest(
       final JobActivationRequest activationRequest, final boolean multiTenancyEnabled) {
 
-    if (activationRequest.getTenantFilter().equals(TenantFilterEnum.PROVIDED)) {
+    final var tenantFilter =
+        switch (activationRequest.getTenantFilter()) {
+          case ASSIGNED -> TenantFilter.ASSIGNED;
+          case PROVIDED -> TenantFilter.PROVIDED;
+          case null, default ->
+              throw new IllegalArgumentException(
+                  "Unrecognized tenantFilter option; expected one of ASSIGNED or PROVIDED.");
+        };
+
+    if (tenantFilter == TenantFilter.PROVIDED) {
       final Either<ProblemDetail, List<String>> validationResponse =
           validateTenantIds(
                   getStringListOrEmpty(activationRequest, JobActivationRequest::getTenantIds),
@@ -222,7 +231,7 @@ public class RequestMapper {
                   activationRequest.getType(),
                   activationRequest.getMaxJobsToActivate(),
                   tenantIds,
-                  TenantFilter.valueOf(activationRequest.getTenantFilter().getValue()),
+                  tenantFilter,
                   activationRequest.getTimeout(),
                   getStringOrEmpty(activationRequest, JobActivationRequest::getWorker),
                   getStringListOrEmpty(activationRequest, JobActivationRequest::getFetchVariable),
@@ -233,7 +242,7 @@ public class RequestMapper {
               activationRequest.getType(),
               activationRequest.getMaxJobsToActivate(),
               Collections.emptyList(),
-              TenantFilter.valueOf(activationRequest.getTenantFilter().getValue()),
+              tenantFilter,
               activationRequest.getTimeout(),
               getStringOrEmpty(activationRequest, JobActivationRequest::getWorker),
               getStringListOrEmpty(activationRequest, JobActivationRequest::getFetchVariable),
