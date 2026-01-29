@@ -17,6 +17,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.util.IdentityTester;
 import io.camunda.tasklist.util.MockMvcHelper;
+import io.camunda.tasklist.webapp.api.rest.v1.entities.FormResponse;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.ProcessResponse;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskAssignRequest;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskResponse;
@@ -154,5 +155,77 @@ public class MultiTenancyIT extends IdentityTester {
               Assertions.assertThat(task.getCreationDate()).isNotNull();
               Assertions.assertThat(task.getCompletionDate()).isNull();
             });
+  }
+
+  @Test
+  public void shouldReturnFormFromSameTenantOfProcessDefinition() throws Exception {
+    // Deploy two versions of the form for tenant 1
+    zeebeClient
+        .newDeployResourceCommand()
+        .addResourceFromClasspath("formDeployedV1.form")
+        .tenantId(TENANT_1)
+        .send()
+        .join();
+    zeebeClient
+        .newDeployResourceCommand()
+        .addResourceFromClasspath("formDeployedV2.form")
+        .tenantId(TENANT_1)
+        .send()
+        .join();
+
+    // Deploy two versions of the form for tenant 2,
+    // with the latest one being different from the one in tenant 1
+    zeebeClient
+        .newDeployResourceCommand()
+        .addResourceFromClasspath("formDeployedV1.form")
+        .tenantId(TENANT_2)
+        .send()
+        .join();
+    zeebeClient
+        .newDeployResourceCommand()
+        .addResourceFromClasspath("formDeployedV3.form")
+        .tenantId(TENANT_2)
+        .send()
+        .join();
+
+    // Start a process referencing the form for tenant 1
+    final String processDefinitionKey1 =
+        tester
+            .deployProcessForTenant(TENANT_1, "formIdProcessDeployed.bpmn")
+            .processIsDeployed()
+            .startProcessInstance(TENANT_1, "Process_11hxie4", null)
+            .taskIsCreated("Activity_14emqkd")
+            .getProcessDefinitionKey();
+
+    // Start a process referencing the form for tenant 3
+    final String processDefinitionKey2 =
+        tester
+            .deployProcessForTenant(TENANT_2, "formIdProcessDeployed.bpmn")
+            .processIsDeployed()
+            .startProcessInstance(TENANT_2, "Process_11hxie4", null)
+            .taskIsCreated("Activity_14emqkd")
+            .getProcessDefinitionKey();
+
+    // When fetching the form for the first process, the form from tenant 1 should be returned
+    final var tenant1Result =
+        mockMvcHelper.doRequest(
+            get(TasklistURIs.FORMS_URL_V1.concat("/Form_0mik7px"))
+                .param("processDefinitionKey", processDefinitionKey1)
+                .param("version", "2"));
+    assertThat(tenant1Result)
+        .hasOkHttpStatus()
+        .extractingContent(objectMapper, FormResponse.class)
+        .satisfies(form -> Assertions.assertThat(form.getTenantId()).isEqualTo(TENANT_1));
+
+    // When fetching the form for the second process, the form from tenant 2 should be returned
+    final var tenant2Result =
+        mockMvcHelper.doRequest(
+            get(TasklistURIs.FORMS_URL_V1.concat("/Form_0mik7px"))
+                .param("processDefinitionKey", processDefinitionKey2)
+                .param("version", "2"));
+    assertThat(tenant2Result)
+        .hasOkHttpStatus()
+        .extractingContent(objectMapper, FormResponse.class)
+        .satisfies(form -> Assertions.assertThat(form.getTenantId()).isEqualTo(TENANT_2));
   }
 }

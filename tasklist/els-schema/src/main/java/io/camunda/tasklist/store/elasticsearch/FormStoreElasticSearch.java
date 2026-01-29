@@ -72,17 +72,18 @@ public class FormStoreElasticSearch implements FormStore {
         version == null ? getFormEmbedded(id, processDefinitionId) : null;
     if (formEmbedded != null) {
       return formEmbedded;
-    } else if (isFormAssociatedToTask(id, processDefinitionId)) {
-      final var formLinked = getLinkedForm(id, version);
-      if (formLinked != null) {
-        return formLinked;
-      }
-    } else if (isFormAssociatedToProcess(id, processDefinitionId)) {
-      final var formLinked = getLinkedForm(id, version);
+    }
+
+    final Optional<String> tenantId =
+        getTenantIfFormAssociatedToTask(id, processDefinitionId)
+            .or(() -> getTenantIfFormAssociatedToProcess(id, processDefinitionId));
+    if (tenantId.isPresent()) {
+      final var formLinked = getLinkedForm(id, version, tenantId.get());
       if (formLinked != null) {
         return formLinked;
       }
     }
+
     throw new NotFoundException(String.format("form with id %s was not found", id));
   }
 
@@ -135,7 +136,8 @@ public class FormStoreElasticSearch implements FormStore {
     }
   }
 
-  private FormEntity getLinkedForm(final String formId, final Long formVersion) {
+  private FormEntity getLinkedForm(
+      final String formId, final Long formVersion, final String tenantId) {
     final SearchRequest searchRequest = new SearchRequest(formIndex.getFullQualifiedName());
     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
     final BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
@@ -159,7 +161,8 @@ public class FormStoreElasticSearch implements FormStore {
     searchRequest.source(searchSourceBuilder);
 
     try {
-      final SearchResponse searchResponse = tenantAwareClient.search(searchRequest);
+      final SearchResponse searchResponse =
+          tenantAwareClient.searchByTenantIds(searchRequest, List.of(tenantId));
 
       if (searchResponse.getHits().getHits().length > 0) {
         final Map<String, Object> sourceAsMap =
@@ -181,7 +184,8 @@ public class FormStoreElasticSearch implements FormStore {
     return null;
   }
 
-  private Boolean isFormAssociatedToTask(final String formId, final String processDefinitionId) {
+  private Optional<String> getTenantIfFormAssociatedToTask(
+      final String formId, final String processDefinitionId) {
     try {
       final BoolQueryBuilder boolQuery =
           QueryBuilders.boolQuery()
@@ -203,7 +207,13 @@ public class FormStoreElasticSearch implements FormStore {
 
       final SearchResponse searchResponse = tenantAwareClient.search(searchRequest);
 
-      return searchResponse.getHits().getTotalHits().value > 0;
+      if (searchResponse.getHits().getTotalHits().value > 0) {
+        return Optional.of(
+            (String)
+                searchResponse.getHits().getHits()[0].getSourceAsMap().get(TaskTemplate.TENANT_ID));
+      } else {
+        return Optional.empty();
+      }
     } catch (final IOException e) {
       final String formIdNotFoundMessage =
           String.format("Error retrieving the version for the formId: [%s]", formId);
@@ -211,7 +221,8 @@ public class FormStoreElasticSearch implements FormStore {
     }
   }
 
-  private Boolean isFormAssociatedToProcess(final String formId, final String processDefinitionId) {
+  private Optional<String> getTenantIfFormAssociatedToProcess(
+      final String formId, final String processDefinitionId) {
     try {
       final BoolQueryBuilder boolQuery =
           QueryBuilders.boolQuery()
@@ -227,7 +238,13 @@ public class FormStoreElasticSearch implements FormStore {
 
       final SearchResponse searchResponse = tenantAwareClient.search(searchRequest);
 
-      return searchResponse.getHits().getTotalHits().value > 0;
+      if (searchResponse.getHits().getTotalHits().value > 0) {
+        return Optional.of(
+            (String)
+                searchResponse.getHits().getHits()[0].getSourceAsMap().get(ProcessIndex.TENANT_ID));
+      } else {
+        return Optional.empty();
+      }
     } catch (final IOException e) {
       final String formIdNotFoundMessage =
           String.format("Error retrieving the version for the formId: [%s]", formId);
