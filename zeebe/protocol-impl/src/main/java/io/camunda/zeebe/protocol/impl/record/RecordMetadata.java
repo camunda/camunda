@@ -9,6 +9,7 @@ package io.camunda.zeebe.protocol.impl.record;
 
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
+import io.camunda.zeebe.protocol.impl.encoding.OpenTelemetryContext;
 import io.camunda.zeebe.protocol.record.MessageHeaderDecoder;
 import io.camunda.zeebe.protocol.record.MessageHeaderEncoder;
 import io.camunda.zeebe.protocol.record.RecordMetadataDecoder;
@@ -48,6 +49,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
   private short intentValue = Intent.NULL_VAL;
   private int requestStreamId;
   private final AuthInfo authorization = new AuthInfo();
+  private final OpenTelemetryContext otelContext = new OpenTelemetryContext();
   private RejectionType rejectionType;
   private final UnsafeBuffer rejectionReason = new UnsafeBuffer(0, 0);
 
@@ -117,6 +119,15 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
     } else {
       decoder.skipAuthorization();
     }
+
+    final int otelContextLength = decoder.otelContextLength();
+    if (otelContextLength > 0) {
+      final DirectBuffer otelBuffer = new UnsafeBuffer();
+      decoder.wrapOtelContext(otelBuffer);
+      otelContext.wrap(otelBuffer);
+    } else {
+      decoder.skipOtelContext();
+    }
   }
 
   @Override
@@ -125,7 +136,9 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
         + RecordMetadataEncoder.rejectionReasonHeaderLength()
         + rejectionReason.capacity()
         + RecordMetadataEncoder.authorizationHeaderLength()
-        + authorization.getLength();
+        + authorization.getLength()
+        + RecordMetadataEncoder.otelContextHeaderLength()
+        + otelContext.getLength();
   }
 
   @Override
@@ -163,6 +176,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
     // working with variable-length fields
     encoder.putRejectionReason(rejectionReason, 0, rejectionReason.capacity());
     encoder.putAuthorization(authorization.toDirectBuffer(), 0, authorization.getLength());
+    encoder.putOtelContext(otelContext.toDirectBuffer(), 0, otelContext.getLength());
   }
 
   public long getRequestId() {
@@ -258,6 +272,20 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
     return authorization;
   }
 
+  public RecordMetadata otelContext(final OpenTelemetryContext openTelemetryContext) {
+    otelContext.copyFrom(openTelemetryContext);
+    return this;
+  }
+
+  public RecordMetadata otelContext(final DirectBuffer buffer) {
+    otelContext.wrap(buffer);
+    return this;
+  }
+
+  public OpenTelemetryContext getOtelContext() {
+    return otelContext;
+  }
+
   public RecordMetadata brokerVersion(final VersionInfo brokerVersion) {
     this.brokerVersion = brokerVersion;
     return this;
@@ -305,6 +333,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
     rejectionType = RejectionType.NULL_VAL;
     rejectionReason.wrap(0, 0);
     authorization.reset();
+    otelContext.reset();
     brokerVersion = CURRENT_BROKER_VERSION;
     recordVersion = DEFAULT_RECORD_VERSION;
     operationReference = RecordMetadataEncoder.operationReferenceNullValue();
@@ -323,6 +352,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
         rejectionType,
         rejectionReason,
         authorization,
+        otelContext,
         protocolVersion,
         brokerVersion,
         recordVersion,
@@ -348,6 +378,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
         && rejectionType == that.rejectionType
         && rejectionReason.equals(that.rejectionReason)
         && authorization.equals(that.authorization)
+        && otelContext.equals(that.otelContext)
         && brokerVersion.equals(that.brokerVersion)
         && recordVersion == that.recordVersion
         && operationReference == that.operationReference
@@ -378,6 +409,9 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
 
     if (!authorization.isEmpty()) {
       builder.append(", authorization=").append(authorization);
+    }
+    if (!otelContext.isEmpty()) {
+      builder.append(", otelContext=").append(otelContext);
     }
     if (operationReference != RecordMetadataEncoder.operationReferenceNullValue()) {
       builder.append(", operationReference=").append(operationReference);
