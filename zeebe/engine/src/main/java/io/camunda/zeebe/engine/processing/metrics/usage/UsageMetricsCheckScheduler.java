@@ -23,9 +23,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class UsageMetricsChecker implements Task {
+public class UsageMetricsCheckScheduler implements Task {
 
-  private static final Logger LOG = LoggerFactory.getLogger(UsageMetricsChecker.class);
+  private static final Logger LOG = LoggerFactory.getLogger(UsageMetricsCheckScheduler.class);
 
   private final Duration exportInterval;
   private final InstantSource clock;
@@ -33,7 +33,7 @@ public class UsageMetricsChecker implements Task {
   private volatile boolean shouldReschedule = false;
   private final AtomicReference<ScheduledTask> scheduledTask = new AtomicReference<>(null);
 
-  public UsageMetricsChecker(final Duration exportInterval, final InstantSource clock) {
+  public UsageMetricsCheckScheduler(final Duration exportInterval, final InstantSource clock) {
     this.exportInterval = exportInterval;
     this.clock = clock;
   }
@@ -47,7 +47,7 @@ public class UsageMetricsChecker implements Task {
           processingContext
               .getScheduleService()
               .runAt(clock.millis() + exportInterval.toMillis(), this);
-      LOG.trace("UsageMetricsChecker scheduled");
+      LOG.trace("UsageMetricsCheckScheduler scheduled");
     }
 
     ofNullable(scheduledTask.getAndSet(nextTask)).ifPresent(ScheduledTask::cancel);
@@ -55,7 +55,7 @@ public class UsageMetricsChecker implements Task {
 
   @Override
   public TaskResult execute(final TaskResultBuilder taskResultBuilder) {
-    LOG.trace("UsageMetricsChecker running...");
+    LOG.trace("UsageMetricsCheckScheduler running...");
 
     taskResultBuilder.appendCommandRecord(
         UsageMetricIntent.EXPORT, new UsageMetricRecord().setEventType(EventType.NONE));

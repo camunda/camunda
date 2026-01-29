@@ -101,7 +101,7 @@ public final class DistributionMetrics {
   /**
    * This method is called when a current inflight distribution is being retried. This may happen if
    * the acknowledgement of the target partition is not received by the origin partition in-time.
-   * See {@link io.camunda.zeebe.engine.processing.distribution.CommandRedistributor}.
+   * See {@link io.camunda.zeebe.engine.processing.distribution.CommandRedistributionScheduler}.
    *
    * @param targetPartitionId the target partition id of the distribution
    */

@@ -31,9 +31,9 @@ import org.slf4j.LoggerFactory;
  * retry until it reaches the maximum backoff duration. This backoff is tracked for each retriable
  * distribution individually.
  */
-public final class CommandRedistributor implements StreamProcessorLifecycleAware {
+public final class CommandRedistributionScheduler implements StreamProcessorLifecycleAware {
 
-  private static final Logger LOG = LoggerFactory.getLogger(CommandRedistributor.class);
+  private static final Logger LOG = LoggerFactory.getLogger(CommandRedistributionScheduler.class);
 
   /**
    * Specifies how often this redistributor runs, i.e. the fixed delay between runs. It is also used
@@ -59,7 +59,7 @@ public final class CommandRedistributor implements StreamProcessorLifecycleAware
    */
   private final Map<RetriableDistribution, Long> retryCyclesPerDistribution = new HashMap<>();
 
-  public CommandRedistributor(
+  public CommandRedistributionScheduler(
       final CommandDistributionBehavior distributionBehavior,
       final RoutingInfo routingInfo,
       final EngineConfiguration config) {

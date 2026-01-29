@@ -29,7 +29,7 @@ public final class JobYieldProcessor implements TypedRecordProcessor<JobRecord> 
   private final BpmnJobActivationBehavior jobActivationBehavior;
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
-  private final JobCommandPreconditionChecker preconditionChecker;
+  private final JobCommandPreconditionValidator preconditionChecker;
   private final AuthorizationCheckBehavior authorizationCheckBehavior;
 
   public JobYieldProcessor(
@@ -43,7 +43,7 @@ public final class JobYieldProcessor implements TypedRecordProcessor<JobRecord> 
     rejectionWriter = writers.rejection();
     this.authorizationCheckBehavior = authorizationCheckBehavior;
     preconditionChecker =
-        new JobCommandPreconditionChecker(
+        new JobCommandPreconditionValidator(
             jobState, "yield", List.of(State.ACTIVATED), authorizationCheckBehavior);
   }
 

@@ -17,7 +17,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.zeebe.engine.processing.metrics.usage.UsageMetricsChecker;
+import io.camunda.zeebe.engine.processing.metrics.usage.UsageMetricsCheckScheduler;
 import io.camunda.zeebe.engine.util.ProcessingStateRule;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.metrics.UsageMetricRecord;
@@ -34,10 +34,10 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
-public class UsageMetricsCheckerTest {
+public class UsageMetricsCheckSchedulerTest {
 
   @Rule public final ProcessingStateRule stateRule = new ProcessingStateRule();
-  private UsageMetricsChecker checker;
+  private UsageMetricsCheckScheduler checker;
   private InstantSource mockClock;
   private TaskResultBuilder mockTaskResultBuilder;
   private ReadonlyStreamProcessorContext mockProcessingContext;
@@ -53,7 +53,7 @@ public class UsageMetricsCheckerTest {
     when(mockProcessingContext.getScheduleService()).thenReturn(mockProcessingScheduleService);
     recordCaptor = ArgumentCaptor.forClass(UnifiedRecordValue.class);
 
-    checker = new UsageMetricsChecker(Duration.ofMillis(1), mockClock);
+    checker = new UsageMetricsCheckScheduler(Duration.ofMillis(1), mockClock);
     checker.setProcessingContext(mockProcessingContext);
   }
 

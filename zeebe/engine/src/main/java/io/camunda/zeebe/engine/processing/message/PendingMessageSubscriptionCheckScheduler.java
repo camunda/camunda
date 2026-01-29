@@ -12,7 +12,7 @@ import io.camunda.zeebe.engine.state.immutable.PendingMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.message.MessageSubscription;
 import java.time.InstantSource;
 
-public final class PendingMessageSubscriptionChecker implements Runnable {
+public final class PendingMessageSubscriptionCheckScheduler implements Runnable {
   private final SubscriptionCommandSender commandSender;
   private final PendingMessageSubscriptionState state;
 
@@ -25,7 +25,7 @@ public final class PendingMessageSubscriptionChecker implements Runnable {
 
   private final InstantSource clock;
 
-  public PendingMessageSubscriptionChecker(
+  public PendingMessageSubscriptionCheckScheduler(
       final SubscriptionCommandSender commandSender,
       final PendingMessageSubscriptionState state,
       final long subscriptionTimeout,

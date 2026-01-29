@@ -23,19 +23,20 @@ import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class DeploymentRedistributor implements StreamProcessorLifecycleAware {
+public class DeploymentRedistributionScheduler implements StreamProcessorLifecycleAware {
 
   public static final Duration DEPLOYMENT_REDISTRIBUTION_INTERVAL = Duration.ofSeconds(10);
   private static final Duration RETRY_MAX_BACKOFF_DURATION = Duration.ofMinutes(5);
   private static final long MAX_RETRY_CYCLES =
       RETRY_MAX_BACKOFF_DURATION.dividedBy(DEPLOYMENT_REDISTRIBUTION_INTERVAL);
-  private static final Logger LOG = LoggerFactory.getLogger(DeploymentRedistributor.class);
+  private static final Logger LOG =
+      LoggerFactory.getLogger(DeploymentRedistributionScheduler.class);
   private final DeploymentDistributionCommandSender deploymentDistributionCommandSender;
   private final DeploymentState deploymentState;
   private final RoutingInfo routingInfo;
   private final Map<PendingDistribution, Long> retryCyclesPerDistribution = new HashMap<>();
 
-  public DeploymentRedistributor(
+  public DeploymentRedistributionScheduler(
       final DeploymentDistributionCommandSender deploymentDistributionCommandSender,
       final DeploymentState deploymentState,
       final RoutingInfo routingInfo) {

@@ -13,8 +13,8 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.exception.CamundaSearchException.Reason;
-import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationInitializer.BatchOperationInitializationException;
-import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationInitializer.BatchOperationInitializationResult;
+import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationInitializationHelper.BatchOperationInitializationException;
+import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationInitializationHelper.BatchOperationInitializationResult;
 import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationRetryHandler.RetryResult;
 import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationRetryHandler.RetryableOperation;
 import java.time.Duration;
