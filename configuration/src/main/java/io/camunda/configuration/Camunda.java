@@ -22,6 +22,7 @@ public class Camunda {
   private System system = new System();
   private Data data = new Data();
   private Api api = new Api();
+  private Expression expression = new Expression();
 
   public Cluster getCluster() {
     return cluster;
@@ -43,7 +44,7 @@ public class Camunda {
     return data;
   }
 
-  public void setData(Data data) {
+  public void setData(final Data data) {
     this.data = data;
   }
 
@@ -53,5 +54,13 @@ public class Camunda {
 
   public void setApi(final Api api) {
     this.api = api;
+  }
+
+  public Expression getExpression() {
+    return expression;
+  }
+
+  public void setExpression(final Expression expression) {
+    this.expression = expression;
   }
 }
