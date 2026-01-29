@@ -163,7 +163,18 @@ public class BpmnJobActivationBehavior {
       final JobActivationProperties jobActivationProperties, final JobRecord jobRecord) {
 
     final var ownerTenantId = jobRecord.getTenantId();
-    final var tenantIds = jobActivationProperties.tenantIds().stream().toList();
+    final var tenantIds =
+        switch (jobActivationProperties.tenantFilter()) {
+          case ASSIGNED ->
+              authorizationCheckBehavior
+                  .getAuthorizedTenantIds(jobActivationProperties.claims())
+                  .getAuthorizedTenantIds();
+          case PROVIDED -> jobActivationProperties.tenantIds().stream().toList();
+          default ->
+              throw new IllegalStateException(
+                  "Unexpected tenant filter: " + jobActivationProperties.tenantFilter());
+        };
+
     if (!tenantIds.contains(ownerTenantId)) {
       // don't push jobs to workers that don't request them from the job's tenant
       return false;

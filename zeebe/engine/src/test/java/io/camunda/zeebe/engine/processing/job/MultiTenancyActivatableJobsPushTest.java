@@ -25,6 +25,7 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+import io.camunda.zeebe.protocol.record.value.TenantFilter;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -72,6 +73,81 @@ public class MultiTenancyActivatableJobsPushTest {
     ENGINE.tenant().newTenant().withTenantId(tenantIdA).create();
     ENGINE.tenant().newTenant().withTenantId(tenantIdB).create();
     ENGINE.user().newUser(username).create();
+    // assign to both tenants, but only activate for A to really test the difference between
+    // ASSIGNED and PROVIDED
+    ENGINE
+        .tenant()
+        .addEntity(tenantIdA)
+        .withEntityId(username)
+        .withEntityType(EntityType.USER)
+        .add();
+    ENGINE
+        .tenant()
+        .addEntity(tenantIdB)
+        .withEntityId(username)
+        .withEntityType(EntityType.USER)
+        .add();
+    final Map<String, Object> authorizationClaims = Map.of(AUTHORIZED_USERNAME, username);
+
+    final JobActivationPropertiesImpl jobActivationPropertiesA =
+        new JobActivationPropertiesImpl()
+            .setWorker(worker, 0, worker.capacity())
+            .setTimeout(timeout)
+            .setFetchVariables(
+                List.of(new StringValue("a"), new StringValue("b"), new StringValue("c")))
+            .setClaims(authorizationClaims)
+            .setTenantIds(List.of(tenantIdA));
+
+    final JobActivationPropertiesImpl jobActivationPropertiesB =
+        new JobActivationPropertiesImpl()
+            .setWorker(worker, 0, worker.capacity())
+            .setTimeout(timeout)
+            .setFetchVariables(
+                List.of(new StringValue("a"), new StringValue("b"), new StringValue("c")))
+            .setClaims(authorizationClaims)
+            .setTenantIds(List.of(tenantIdB));
+
+    final var jobStreamA = JOB_STREAMER.addJobStream(jobTypeBuffer, jobActivationPropertiesA);
+    final var jobStreamB = JOB_STREAMER.addJobStream(jobTypeBuffer, jobActivationPropertiesB);
+
+    final int activationCount = 1;
+
+    // when
+    final long jobKey = createJob(jobType, PROCESS_ID, variables, tenantIdA);
+
+    // then
+    final Record<JobBatchRecordValue> batchRecord =
+        jobBatchRecords(JobBatchIntent.ACTIVATED).withType(jobType).getFirst();
+
+    // assert job batch record
+    final JobBatchRecordValue batch = batchRecord.getValue();
+    final List<JobRecordValue> jobs = batch.getJobs();
+    assertThat(jobs).hasSize(1);
+    assertThat(batch.getJobKeys()).contains(jobKey);
+
+    // assert event order
+    assertEventOrder(JobIntent.CREATED, JobBatchIntent.ACTIVATED);
+
+    // assert job stream
+    assertActivatedJob(jobStreamA, jobKey, worker, variables, activationCount, tenantIdA);
+    assertNoActivatedJobs(jobStreamB);
+  }
+
+  @Test
+  public void shouldPushJobsToAssignedTenants() {
+    // given
+    final String jobType = Strings.newRandomValidBpmnId();
+    final DirectBuffer jobTypeBuffer = BufferUtil.wrapString(jobType);
+    final DirectBuffer worker = BufferUtil.wrapString("test");
+    final Map<String, Object> variables = Map.of("a", "valA", "b", "valB", "c", "valC");
+    final long timeout = 30000L;
+    final String username = Strings.newRandomValidIdentityId();
+    final String tenantIdA = "tenant-a";
+    final String tenantIdB = "tenant-b";
+
+    ENGINE.tenant().newTenant().withTenantId(tenantIdA).create();
+    ENGINE.tenant().newTenant().withTenantId(tenantIdB).create();
+    ENGINE.user().newUser(username).create();
     ENGINE
         .tenant()
         .addEntity(tenantIdA)
@@ -87,7 +163,7 @@ public class MultiTenancyActivatableJobsPushTest {
             .setFetchVariables(
                 List.of(new StringValue("a"), new StringValue("b"), new StringValue("c")))
             .setClaims(authorizationClaims)
-            .setTenantIds(List.of(tenantIdA));
+            .setTenantFilter(TenantFilter.ASSIGNED);
 
     final JobActivationPropertiesImpl jobActivationPropertiesB =
         new JobActivationPropertiesImpl()

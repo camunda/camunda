@@ -484,7 +484,19 @@ public final class AuthorizationCheckBehavior {
    *     authorized to access
    */
   public AuthorizedTenants getAuthorizedTenantIds(final TypedRecord<?> command) {
-    return tenantResolver.getAuthorizedTenants(command.getAuthorizations());
+    return getAuthorizedTenantIds(command.getAuthorizations());
+  }
+
+  /**
+   * Retrieves all authorized tenants for the given claims. Includes tenants from user/client,
+   * groups, roles, and mapping rules.
+   *
+   * @param claims the authorization claims
+   * @return an {@link AuthorizedTenants} object containing all tenant IDs the principal is
+   *     authorized to access
+   */
+  public AuthorizedTenants getAuthorizedTenantIds(final Map<String, Object> claims) {
+    return tenantResolver.getAuthorizedTenants(claims);
   }
 
   private Stream<PersistedMappingRule> getPersistedMappingRules(
