@@ -25,6 +25,8 @@ public interface AuditLogMapper extends ProcessInstanceDependantMapper {
 
   int deleteProcessDefinitionRelatedData(List<Long> processDefinitionKeys, int limit);
 
+  int cleanupHistory(HistoryCleanupMapper.CleanupHistoryDto dto);
+
   record BatchInsertAuditLogsDto(List<AuditLogDbModel> auditLogs)
       implements BatchInsertDto<BatchInsertAuditLogsDto, AuditLogDbModel> {
 

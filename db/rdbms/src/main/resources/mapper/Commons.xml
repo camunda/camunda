@@ -185,23 +185,36 @@
     FROM ${prefix}${tableName}
     WHERE HISTORY_CLEANUP_DATE &lt; #{cleanupDate, jdbcType=TIMESTAMP}
   </sql>
+  <!--
+   Special handling for Oracle to delete using row identifiers.
+   We also do not use an IN clause to select the process instance keys,
+   but use XMLTABLE to handle large lists of keys. Oracle has a natural limit of 1000 elements per IN clause.
+ -->
   <sql id="historyCleanup" databaseId="oracle">
+    <bind name="keyColumn" value="primaryKeyColumn != null &amp;&amp; primaryKeyColumn != '' ? primaryKeyColumn : 'rowid'"/>
     DELETE
-    FROM ${prefix}${tableName}
-    WHERE rowid IN (SELECT rowid
-                    FROM ${prefix}${tableName}
-                    WHERE PARTITION_ID = #{partitionId}
-                      AND HISTORY_CLEANUP_DATE &lt; #{cleanupDate}
-                      AND ROWNUM &lt;= #{limit})
+    FROM ${prefix}${tableName} t1
+    WHERE ${keyColumn} IN (SELECT t2.${keyColumn}
+                           FROM ${prefix}${tableName} t2
+                           WHERE t2.PARTITION_ID = #{partitionId}
+                           AND HISTORY_CLEANUP_DATE &lt; #{cleanupDate}
+                           AND ROWNUM &lt;= #{limit})
   </sql>
+  <!--
+    Special handling for Oracle to delete using row identifiers.
+    We also do not use an IN clause to select the process instance keys,
+    but use XMLTABLE to handle large lists of keys. Oracle has a natural limit of 1000 elements per IN clause.
+  -->
   <sql id="historyCleanup" databaseId="postgresql">
+    <bind name="keyColumn" value="primaryKeyColumn != null &amp;&amp; primaryKeyColumn != '' ? primaryKeyColumn : 'ctid'"/>
     DELETE
-    FROM ${prefix}${tableName}
-    WHERE ctid IN (SELECT ctid
-                   FROM ${prefix}${tableName}
-                   WHERE PARTITION_ID = #{partitionId}
-                     AND HISTORY_CLEANUP_DATE &lt; #{cleanupDate}
-                   LIMIT #{limit})
+    FROM ${prefix}${tableName} t1
+    USING (SELECT ${keyColumn}
+           FROM ${prefix}${tableName}
+           WHERE PARTITION_ID = #{partitionId}
+           AND HISTORY_CLEANUP_DATE &lt; #{cleanupDate}
+           LIMIT #{limit}) t2
+    WHERE t1.${keyColumn} = t2.${keyColumn}
   </sql>
 
   <sql id="processInstanceHistoryDeletion">

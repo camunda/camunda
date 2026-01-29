@@ -234,6 +234,16 @@ public class HistoryCleanupService {
       numDeletedRecords.put(
           "batchOperation", batchOperationWriter.cleanupHistory(cleanupDate, cleanupBatchSize));
 
+      // Clean up standalone decision instances (without process instance context)
+      numDeletedRecords.put(
+          "standaloneDecisionInstance",
+          decisionInstanceWriter.cleanupHistory(partitionId, cleanupDate, cleanupBatchSize));
+
+      // Clean up audit logs for standalone decision instances
+      numDeletedRecords.put(
+          "standaloneDecisionAuditLog",
+          auditLogWriter.cleanupHistory(partitionId, cleanupDate, cleanupBatchSize));
+
       final long end = System.currentTimeMillis();
       logCleanUpInfo("", partitionId, numDeletedRecords, cleanupDate, end, start);
 
@@ -305,16 +315,19 @@ public class HistoryCleanupService {
   }
 
   /**
-   * Calculates the next cleanup interval duration based on the number of deleted process instances
-   * and the previous interval. The interval is adjusted as follows:
+   * Calculates the next cleanup interval duration based on the number of deleted records and the
+   * previous interval. The interval is adjusted as follows:
    *
    * <ul>
    *   <li>If this is the first run ({@code lastDuration} is {@code null}), use {@code
    *       minCleanupInterval}.
-   *   <li>If fewer than half of {@code processInstanceBatchSize} process instances were deleted,
-   *       double the interval, but do not exceed {@code maxCleanupInterval}.
-   *   <li>If at least {@code processInstanceBatchSize} process instances were deleted, halve the
-   *       interval, but do not go below {@code minCleanupInterval}.
+   *   <li>If deleted process instances are fewer than half of {@code processInstanceBatchSize} AND
+   *       other entities (standalone decisions, audit logs, batch operations) are fewer than half
+   *       of {@code cleanupBatchSize}, double the interval, but do not exceed {@code
+   *       maxCleanupInterval}.
+   *   <li>If process instances hit or exceed {@code processInstanceBatchSize} OR any other entity
+   *       type hits or exceeds {@code cleanupBatchSize}, halve the interval, but do not go below
+   *       {@code minCleanupInterval}.
    *   <li>Otherwise, keep the interval unchanged.
    * </ul>
    *
@@ -326,15 +339,34 @@ public class HistoryCleanupService {
   Duration calculateNewDuration(
       final Duration lastDuration, final Map<String, Integer> numDeletedRecords) {
     final int deletedProcessInstances = numDeletedRecords.getOrDefault("processInstance", 0);
+    final int deletedStandaloneDecisions =
+        numDeletedRecords.getOrDefault("standaloneDecisionInstance", 0);
+    final int deletedStandaloneAuditLogs =
+        numDeletedRecords.getOrDefault("standaloneDecisionAuditLog", 0);
+    final int deletedBatchOperations = numDeletedRecords.getOrDefault("batchOperation", 0);
+
+    // Check if process instances hit their batch size limit
+    final boolean processInstancesHitLimit = deletedProcessInstances >= processInstanceBatchSize;
+
+    // Check if any other entity type hit the cleanup batch size limit
+    final int maxOtherEntityDeleted =
+        Math.max(
+            deletedStandaloneDecisions,
+            Math.max(deletedStandaloneAuditLogs, deletedBatchOperations));
+    final boolean otherEntitiesHitLimit = maxOtherEntityDeleted >= cleanupBatchSize;
+
     Duration nextDuration;
 
     if (lastDuration == null) {
       nextDuration = minCleanupInterval;
-    } else if (deletedProcessInstances < processInstanceBatchSize / 2) {
+    } else if (deletedProcessInstances < processInstanceBatchSize / 2
+        && maxOtherEntityDeleted < cleanupBatchSize / 2) {
+      // Both process instances and other entities are below half their respective thresholds
       nextDuration = lastDuration.multipliedBy(2);
       nextDuration =
           nextDuration.compareTo(maxCleanupInterval) < 0 ? nextDuration : maxCleanupInterval;
-    } else if (deletedProcessInstances >= processInstanceBatchSize) {
+    } else if (processInstancesHitLimit || otherEntitiesHitLimit) {
+      // Either process instances or other entities hit their respective limits
       nextDuration = lastDuration.dividedBy(2);
       nextDuration =
           nextDuration.compareTo(minCleanupInterval) > 0 ? nextDuration : minCleanupInterval;
