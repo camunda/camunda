@@ -62,6 +62,7 @@ import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationPropertiesImpl;
 import io.camunda.zeebe.protocol.record.value.JobResultType;
+import io.camunda.zeebe.protocol.record.value.TenantFilter;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.ArrayList;
 import java.util.List;
@@ -429,11 +430,20 @@ public final class RequestMapper extends RequestUtil {
 
     final JobActivationPropertiesImpl jobActivationProperties = new JobActivationPropertiesImpl();
     final DirectBuffer worker = wrapString(request.getWorker());
+    final var tenantFilter =
+        switch (request.getTenantFilter()) {
+          case ASSIGNED -> TenantFilter.ASSIGNED;
+          case PROVIDED -> TenantFilter.PROVIDED;
+          case UNRECOGNIZED ->
+              throw new IllegalArgumentException(
+                  "Unrecognized tenantFilter option; expected one of ASSIGNED or PROVIDED.");
+        };
     jobActivationProperties
         .setWorker(worker, 0, worker.capacity())
         .setTimeout(request.getTimeout())
         .setFetchVariables(request.getFetchVariableList().stream().map(StringValue::new).toList())
         .setTenantIds(tenantIds)
+        .setTenantFilter(tenantFilter)
         .setClaims(claims);
 
     return jobActivationProperties;
