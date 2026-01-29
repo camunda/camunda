@@ -19,6 +19,7 @@ import io.camunda.operate.Metrics;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.entities.HitEntity;
 import io.camunda.operate.exceptions.NoSuchIndexException;
+import io.camunda.operate.exceptions.OperateFatalException;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.BackoffIdleStrategy;
@@ -239,6 +240,15 @@ public class ElasticsearchRecordsReader implements RecordsReader {
   @Override
   public ImportBatch readNextBatchBySequence(final Long sequence, final Long lastSequence)
       throws NoSuchIndexException {
+    if (sequence != null && lastSequence != null && sequence > lastSequence) {
+      final String negativeBatchError =
+          String.format(
+              "Batch read sequence %d is greater than last sequence %d. Import value type %s, partition %d.",
+              sequence, lastSequence, importValueType.name(), partitionId);
+      LOGGER.error(negativeBatchError);
+      throw new OperateFatalException(negativeBatchError);
+    }
+
     final String aliasName =
         importValueType.getAliasName(operateProperties.getZeebeElasticsearch().getPrefix());
     final int batchSize = batchSizeThrottle.get();
@@ -578,6 +588,10 @@ public class ElasticsearchRecordsReader implements RecordsReader {
           execute(active);
         }
         return imported;
+      } catch (final OperateFatalException ex) {
+        LOGGER.error(
+            "Fatal error occurred when importing data, not retrying: {}", ex.getMessage(), ex);
+        return false;
       } catch (final Exception ex) {
         LOGGER.error("Exception occurred when importing data: " + ex.getMessage(), ex);
         // retry the same job
