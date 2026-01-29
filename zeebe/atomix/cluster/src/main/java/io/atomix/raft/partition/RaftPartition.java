@@ -279,11 +279,13 @@ public final class RaftPartition implements Partition, HealthMonitorable {
 
   @VisibleForTesting
   public boolean shouldStepDown() {
-    final var primary = partitionMetadata.getPrimary();
-    return server != null
-        && config.isPriorityElectionEnabled()
-        && primary.isPresent()
-        && !primary.get().equals(server.getMemberId());
+    // Temporarily disable the check due to a bug
+    return true;
+    //    final var primary = partitionMetadata.getPrimary();
+    //    return server != null
+    //        && config.isPriorityElectionEnabled()
+    //        && primary.isPresent()
+    //        && !primary.get().equals(server.getMemberId());
   }
 
   public CompletableFuture<Void> stop() {
