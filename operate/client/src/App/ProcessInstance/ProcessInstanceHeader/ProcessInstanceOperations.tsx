@@ -173,6 +173,15 @@ const ProcessInstanceOperations: React.FC<Props> = ({processInstance}) => {
     });
   }
 
+  if (isInstanceActive && !isModificationModeEnabled) {
+    operations.push({
+      type: 'MIGRATE_PROCESS_INSTANCE',
+      onExecute: () => {
+        // TODO: Implement migrate functionality
+      },
+    });
+  }
+
   const isLoading =
     hasActiveOperationItems ||
     isCancelProcessInstancePending ||

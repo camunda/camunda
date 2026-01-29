@@ -6,8 +6,13 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Container, Table, Th, Td} from './styled';
+import {Container, Table, Th, Td, AdditionalContentWrapper} from './styled';
 import {StateIcon} from 'modules/components/StateIcon';
+import styled from 'styled-components';
+
+const BackButtonWrapper = styled.div`
+  margin-right: var(--cds-spacing-03);
+`;
 
 type Column = {
   title?: string;
@@ -22,6 +27,8 @@ type Props = {
   bodyColumns: Column[];
   additionalContent?: React.ReactNode;
   hideBottomBorder?: boolean;
+  backButton?: React.ReactNode;
+  customContent?: React.ReactNode;
 };
 
 const InstanceHeader: React.FC<Props> = ({
@@ -30,14 +37,17 @@ const InstanceHeader: React.FC<Props> = ({
   bodyColumns,
   additionalContent,
   hideBottomBorder = false,
+  backButton,
+  customContent,
 }) => {
   return (
     <Container
       data-testid="instance-header"
       $hideBottomBorder={hideBottomBorder}
     >
+      {backButton && <BackButtonWrapper>{backButton}</BackButtonWrapper>}
       <StateIcon state={state} size={24} data-testid={`${state}-icon`} />
-
+      {customContent}
       <Table>
         <thead>
           <tr>
@@ -65,7 +75,9 @@ const InstanceHeader: React.FC<Props> = ({
           </tr>
         </tbody>
       </Table>
-      {additionalContent}
+      {additionalContent && (
+        <AdditionalContentWrapper>{additionalContent}</AdditionalContentWrapper>
+      )}
     </Container>
   );
 };

@@ -7,7 +7,7 @@
  */
 
 import {observer} from 'mobx-react';
-import {Container, PanelHeader, ErrorMessage} from './styled';
+import {Container, PanelHeader, ErrorMessage, TogglesWrapper} from './styled';
 import {TimeStampPill} from './TimeStampPill';
 import {modificationsStore} from 'modules/stores/modifications';
 import {Stack} from '@carbon/react';
@@ -22,10 +22,12 @@ const Layout: React.FC<{children: React.ReactNode}> = observer(({children}) => {
     <Container data-testid="instance-history">
       <PanelHeader title="Instance History" size="sm">
         {!modificationsStore.isModificationModeEnabled && (
-          <Stack orientation="horizontal" gap={5}>
-            <TimeStampPill />
-            <ExecutionCountToggle />
-          </Stack>
+          <TogglesWrapper>
+            <Stack orientation="horizontal" gap={5}>
+              <TimeStampPill />
+              <ExecutionCountToggle />
+            </Stack>
+          </TogglesWrapper>
         )}
       </PanelHeader>
       {children}

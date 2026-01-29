@@ -156,7 +156,7 @@ const AppHeader: React.FC = observer(() => {
               {
                 key: 'processes',
                 label: 'Processes',
-                isCurrentPage: currentPage === 'processes',
+                isCurrentPage: currentPage === 'processes' || currentPage === 'process-details',
                 routeProps: {
                   to: Locations.processes(),
                   state: {refreshContent: true, hideOptionalFilters: true},
@@ -172,7 +172,7 @@ const AppHeader: React.FC = observer(() => {
               {
                 key: 'decisions',
                 label: 'Decisions',
-                isCurrentPage: currentPage === 'decisions',
+                isCurrentPage: currentPage === 'decisions' || currentPage === 'decision-details',
                 routeProps: {
                   to: Locations.decisions(),
                   state: {refreshContent: true, hideOptionalFilters: true},

@@ -17,12 +17,14 @@ type Props = {
   processInstanceKey: ProcessInstance['processInstanceKey'];
   onExecute: () => void;
   disabled?: boolean;
+  useIcons?: boolean;
 };
 
 const Cancel: React.FC<Props> = ({
   processInstanceKey,
   onExecute,
   disabled = false,
+  useIcons = false,
 }) => {
   const [isCancellationModalVisible, setIsCancellationModalVisible] =
     useState(false);
@@ -48,6 +50,7 @@ const Cancel: React.FC<Props> = ({
         title={`Cancel Instance ${processInstanceKey}`}
         disabled={disabled}
         size="sm"
+        useIcons={useIcons}
       />
 
       {isCancellationModalVisible && (

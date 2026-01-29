@@ -10,31 +10,69 @@ import {IconButton} from '@carbon/react';
 import styled, {css} from 'styled-components';
 import {DownloadBPMNDefinitionXML as BaseDownloadBPMNDefinitionXML} from 'modules/components/DownloadBPMNDefinitionXML';
 
-const ButtonContainer = styled.div`
+const ControlsContainer = styled.div`
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   position: absolute;
   right: var(--cds-spacing-05);
   bottom: var(--cds-spacing-05);
+  gap: var(--cds-spacing-03);
+  align-items: center;
+`;
+
+const ButtonsGroup = styled.div`
+  display: flex;
+  flex-direction: row;
+  gap: var(--cds-spacing-02);
+  background-color: var(--cds-layer-01);
+  border-radius: 2px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+`;
+
+const DownloadGroup = styled.div`
+  display: flex;
+  flex-direction: row;
+  background-color: var(--cds-layer-01);
+  border-radius: 4px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 `;
 
 const buttonStyles = css`
-  background-color: var(--cds-background);
+  background-color: transparent;
+  border: none;
+  color: inherit;
+  
+  &:hover {
+    background-color: var(--cds-layer-hover);
+    color: inherit;
+  }
+  
+  &:active {
+    background-color: var(--cds-layer-active);
+    color: inherit;
+  }
+  
+  svg {
+    fill: currentColor;
+  }
 `;
 
-const ZoomResetButton = styled(IconButton)`
-  ${buttonStyles}
-  margin-bottom: var(--cds-spacing-02);
-`;
-
-const ZoomInButton = styled(IconButton)`
+const ControlButton = styled(IconButton)`
   ${buttonStyles}
 `;
 
-const ZoomOutButton = styled(IconButton)`
+type MinimapButtonProps = {
+  $isSelected?: boolean;
+};
+
+const MinimapButton = styled(IconButton)<MinimapButtonProps>`
   ${buttonStyles}
-  border-top: none;
-  margin-bottom: var(--cds-spacing-02);
+  ${({$isSelected}) =>
+    $isSelected
+      ? css`
+          background-color: var(--cds-layer-selected);
+        `
+      : ''}
 `;
 
 const DownloadBPMNDefinitionXML = styled(BaseDownloadBPMNDefinitionXML)`
@@ -42,9 +80,10 @@ const DownloadBPMNDefinitionXML = styled(BaseDownloadBPMNDefinitionXML)`
 `;
 
 export {
-  ButtonContainer,
-  ZoomResetButton,
-  ZoomInButton,
-  ZoomOutButton,
+  ControlsContainer,
+  ButtonsGroup,
+  DownloadGroup,
+  ControlButton,
+  MinimapButton,
   DownloadBPMNDefinitionXML,
 };
