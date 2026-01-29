@@ -15,11 +15,23 @@ import io.camunda.configuration.Rdbms;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.RdbmsWriterFactory;
 import io.camunda.db.rdbms.write.RdbmsWriters;
+import io.camunda.db.rdbms.write.domain.DecisionInstanceDbModel;
+import io.camunda.db.rdbms.write.domain.FlowNodeInstanceDbModel;
+import io.camunda.db.rdbms.write.domain.IncidentDbModel;
+import io.camunda.db.rdbms.write.domain.JobDbModel;
+import io.camunda.db.rdbms.write.domain.MessageSubscriptionDbModel;
+import io.camunda.db.rdbms.write.domain.ProcessDefinitionDbModel;
+import io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel;
+import io.camunda.db.rdbms.write.domain.SequenceFlowDbModel;
+import io.camunda.db.rdbms.write.domain.UserTaskDbModel;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
@@ -92,21 +104,24 @@ public class StandaloneMigrator implements CommandLineRunner {
       migrateEntitiesWithBatchFlush(
           ProcessDefReader.readProcessDefinitions(client),
           rdbmsWriter.getProcessDefinitionWriter()::create,
-          rdbmsWriter);
+          rdbmsWriter,
+          ProcessDefinitionDbModel::processDefinitionKey);
       LOG.info("Process definitions migrated successfully.");
 
       LOG.info("Migrating process instances...");
       migrateEntitiesWithBatchFlush(
           ProcessInstanceReader.readProcessInstances(client),
           rdbmsWriter.getProcessInstanceWriter()::create,
-          rdbmsWriter);
+          rdbmsWriter,
+          ProcessInstanceDbModel::processInstanceKey);
       LOG.info("Process instances migrated successfully.");
 
       LOG.info("Migrating flow node instances...");
       migrateEntitiesWithBatchFlush(
           FlowNodeInstanceReader.readFlowNodeInstances(client),
           rdbmsWriter.getFlowNodeInstanceWriter()::create,
-          rdbmsWriter);
+          rdbmsWriter,
+          FlowNodeInstanceDbModel::flowNodeInstanceKey);
       LOG.info("Flow node instances migrated successfully.");
 
       LOG.info("Migrating variables...");
@@ -119,42 +134,50 @@ public class StandaloneMigrator implements CommandLineRunner {
 
       LOG.info("Migrating jobs...");
       migrateEntitiesWithBatchFlush(
-          JobReader.readJobs(client), rdbmsWriter.getJobWriter()::create, rdbmsWriter);
+          JobReader.readJobs(client),
+          rdbmsWriter.getJobWriter()::create,
+          rdbmsWriter,
+          JobDbModel::jobKey);
       LOG.info("Jobs migrated successfully.");
 
       LOG.info("Migrating sequence flows...");
       migrateEntitiesWithBatchFlush(
           SequenceFlowReader.readSequenceFlows(client),
           rdbmsWriter.getSequenceFlowWriter()::create,
-          rdbmsWriter);
+          rdbmsWriter,
+          SequenceFlowDbModel::flowNodeId);
       LOG.info("Sequence flows migrated successfully.");
 
       LOG.info("Migrating message subscriptions...");
       migrateEntitiesWithBatchFlush(
           MessageSubscriptionReader.readMessageSubscriptions(client),
           rdbmsWriter.getMessageSubscriptionWriter()::create,
-          rdbmsWriter);
+          rdbmsWriter,
+          MessageSubscriptionDbModel::messageSubscriptionKey);
       LOG.info("Message subscriptions migrated successfully.");
 
       LOG.info("Migrating user tasks...");
       migrateEntitiesWithBatchFlush(
           UserTaskReader.readUserTasks(client),
           rdbmsWriter.getUserTaskWriter()::create,
-          rdbmsWriter);
+          rdbmsWriter,
+          UserTaskDbModel::userTaskKey);
       LOG.info("User tasks migrated successfully.");
 
       LOG.info("Migrating decision instances...");
       migrateEntitiesWithBatchFlush(
           DecisionInstanceReader.readDecisionInstances(client),
           rdbmsWriter.getDecisionInstanceWriter()::create,
-          rdbmsWriter);
+          rdbmsWriter,
+          DecisionInstanceDbModel::decisionInstanceId);
       LOG.info("Decision instances migrated successfully.");
 
       LOG.info("Migrating incidents...");
       migrateEntitiesWithBatchFlush(
           IncidentReader.readIncidents(client),
           rdbmsWriter.getIncidentWriter()::create,
-          rdbmsWriter);
+          rdbmsWriter,
+          IncidentDbModel::incidentKey);
       LOG.info("Incidents migrated successfully.");
 
     } catch (final Exception e) {
@@ -163,12 +186,19 @@ public class StandaloneMigrator implements CommandLineRunner {
     }
   }
 
-  private <T> void migrateEntitiesWithBatchFlush(
+  private <T, K> void migrateEntitiesWithBatchFlush(
       final java.util.List<T> entities,
       final java.util.function.Consumer<T> writer,
-      final RdbmsWriters rdbmsWriter) {
+      final RdbmsWriters rdbmsWriter,
+      final Function<T, K> keyExtractor) {
     int count = 0;
+    final Set<K> keys = new HashSet<>();
     for (final T entity : entities) {
+      if (keys.contains(keyExtractor.apply(entity))) {
+        continue;
+      } else {
+        keys.add(keyExtractor.apply(entity));
+      }
       writer.accept(entity);
       count++;
       if (count % BATCH_SIZE == 0) {
