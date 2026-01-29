@@ -85,7 +85,7 @@ class TransactionalColumnFamily<
       ensureInOpenTransaction(
           transaction -> {
             columnFamilyContext.writeKey(key);
-            columnFamilyContext.writeValue(value);
+            final var valueLength = columnFamilyContext.writeValue(value);
 
             assertKeyDoesNotExist(transaction);
             assertForeignKeysExist(transaction, key, value);
@@ -94,7 +94,7 @@ class TransactionalColumnFamily<
                 columnFamilyContext.getKeyBufferArray(),
                 columnFamilyContext.getKeyLength(),
                 columnFamilyContext.getValueBufferArray(),
-                value.getLength());
+                valueLength);
           });
     }
   }
