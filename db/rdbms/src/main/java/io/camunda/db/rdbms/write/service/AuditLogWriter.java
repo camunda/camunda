@@ -9,6 +9,7 @@ package io.camunda.db.rdbms.write.service;
 
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.sql.AuditLogMapper;
+import io.camunda.db.rdbms.sql.HistoryCleanupMapper;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.domain.AuditLogDbModel;
 import io.camunda.db.rdbms.write.queue.ContextType;
@@ -17,6 +18,7 @@ import io.camunda.db.rdbms.write.queue.InsertAuditLogMerger;
 import io.camunda.db.rdbms.write.queue.QueueItem;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
 import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
+import java.time.OffsetDateTime;
 import java.util.List;
 
 public class AuditLogWriter extends ProcessInstanceDependant implements RdbmsWriter {
@@ -72,5 +74,11 @@ public class AuditLogWriter extends ProcessInstanceDependant implements RdbmsWri
   public int deleteProcessDefinitionRelatedData(
       final List<Long> processDefinitionKeys, final int limit) {
     return mapper.deleteProcessDefinitionRelatedData(processDefinitionKeys, limit);
+  }
+
+  public int cleanupHistory(
+      final int partitionId, final OffsetDateTime cleanupDate, final int limit) {
+    return mapper.cleanupHistory(
+        new HistoryCleanupMapper.CleanupHistoryDto(partitionId, cleanupDate, limit));
   }
 }

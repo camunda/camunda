@@ -232,14 +232,16 @@
                                             TENANT_ID,
                                             PARTITION_ID,
                                             HISTORY_CLEANUP_DATE)
-    VALUES (#{decisionInstanceId}, #{decisionInstanceKey}, #{processInstanceKey}, #{rootProcessInstanceKey},
+    VALUES (#{decisionInstanceId}, #{decisionInstanceKey}, #{processInstanceKey},
+            #{rootProcessInstanceKey},
             #{processDefinitionKey}, #{processDefinitionId},
             #{decisionDefinitionKey}, #{decisionDefinitionId},
             #{decisionRequirementsKey}, #{decisionRequirementsId},
             #{flowNodeInstanceKey}, #{flowNodeId},
             #{rootDecisionDefinitionKey},
             #{decisionType}, #{state},
-            #{evaluationDate, jdbcType=TIMESTAMP}, #{result}, #{evaluationFailure}, #{evaluationFailureMessage},
+            #{evaluationDate, jdbcType=TIMESTAMP}, #{result}, #{evaluationFailure},
+            #{evaluationFailureMessage},
             #{tenantId}, #{partitionId},
             #{historyCleanupDate, jdbcType=TIMESTAMP})
   </insert>
@@ -312,10 +314,15 @@
     </constructor>
   </resultMap>
 
+  <delete id="cleanupHistory">
+    <bind name="tableName" value="'DECISION_INSTANCE'"/>
+    <bind name="primaryKeyColumn" value="'DECISION_INSTANCE_ID'"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.historyCleanup"/>
+  </delete>
+
   <delete id="deleteProcessInstanceRelatedData">
     <bind name="tableName" value="'DECISION_INSTANCE'"/>
     <bind name="primaryKeyColumn" value="'DECISION_INSTANCE_ID'"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.processInstanceHistoryDeletion"/>
   </delete>
-
 </mapper>

@@ -9,12 +9,14 @@ package io.camunda.db.rdbms.write.service;
 
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.sql.DecisionInstanceMapper;
+import io.camunda.db.rdbms.sql.HistoryCleanupMapper;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.domain.DecisionInstanceDbModel;
 import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
+import java.time.OffsetDateTime;
 
 public class DecisionInstanceWriter extends ProcessInstanceDependant implements RdbmsWriter {
 
@@ -83,5 +85,11 @@ public class DecisionInstanceWriter extends ProcessInstanceDependant implements 
                   vendorDatabaseProperties.errorMessageSize(),
                   vendorDatabaseProperties.charColumnMaxBytes())));
     }
+  }
+
+  public int cleanupHistory(
+      final int partitionId, final OffsetDateTime cleanupDate, final int limit) {
+    return mapper.cleanupHistory(
+        new HistoryCleanupMapper.CleanupHistoryDto(partitionId, cleanupDate, limit));
   }
 }
