@@ -19,12 +19,38 @@ import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.trace.SdkTracerProvider;
 import io.opentelemetry.sdk.trace.export.BatchSpanProcessor;
 import io.opentelemetry.semconv.ServiceAttributes;
+import java.lang.reflect.Field;
 
 public final class OtelBootstrap {
 
   private OtelBootstrap() {}
 
+  /**
+   * Checks if GlobalOpenTelemetry has been set without triggering auto-configuration. Uses
+   * reflection to access the internal state of GlobalOpenTelemetry.
+   *
+   * @return true if GlobalOpenTelemetry was already explicitly set, false otherwise
+   */
+  private static boolean isGlobalOpenTelemetryAlreadySet() {
+    try {
+      final Field globalOpenTelemetryField =
+          GlobalOpenTelemetry.class.getDeclaredField("globalOpenTelemetry");
+      globalOpenTelemetryField.setAccessible(true);
+      final Object value = globalOpenTelemetryField.get(null);
+      return value != null;
+    } catch (final NoSuchFieldException | IllegalAccessException e) {
+      // If we can't access the field, assume it's not set and try to set it anyway
+      // The set() call will throw IllegalStateException if it was already set
+      return false;
+    }
+  }
+
   public static OpenTelemetry initGlobalOpenTelemetry() {
+    // Check if GlobalOpenTelemetry was already set without triggering auto-configuration
+    if (isGlobalOpenTelemetryAlreadySet()) {
+      return GlobalOpenTelemetry.get();
+    }
+
     final Resource resource =
         Resource.create(Attributes.of(ServiceAttributes.SERVICE_NAME, "camunda"));
 
