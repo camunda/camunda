@@ -8,6 +8,7 @@
 package io.camunda.zeebe.stream.impl.records;
 
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
+import io.camunda.zeebe.protocol.impl.encoding.OpenTelemetryContext;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -118,6 +119,11 @@ public class UnwrittenRecord implements TypedRecord {
   @Override
   public AuthInfo getAuthInfo() {
     return metadata.getAuthorization();
+  }
+
+  @Override
+  public OpenTelemetryContext getOpenTelemetryContext() {
+    return metadata.getOtelContext();
   }
 
   @Override

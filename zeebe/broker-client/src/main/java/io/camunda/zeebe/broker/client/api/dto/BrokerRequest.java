@@ -16,6 +16,7 @@ import io.camunda.zeebe.protocol.record.MessageHeaderDecoder;
 import io.camunda.zeebe.transport.ClientRequest;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
+import io.opentelemetry.context.Context;
 import java.util.Map;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
@@ -45,6 +46,10 @@ public abstract class BrokerRequest<T> implements ClientRequest {
   public abstract void setPartitionId(int partitionId);
 
   public void setAuthorization(final Map<String, Object> claims) {
+    // Unsupported by default
+  }
+
+  public void setOTelContext(final Context context) {
     // Unsupported by default
   }
 

@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.util;
 
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
+import io.camunda.zeebe.protocol.impl.encoding.OpenTelemetryContext;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.Record;
@@ -47,6 +48,20 @@ public final class MockTypedRecord<T extends UnifiedRecordValue> implements Type
     return value;
   }
 
+  public void setValue(final T value) {
+    this.value = value;
+  }
+
+  @Override
+  public AuthInfo getAuthInfo() {
+    return metadata.getAuthorization();
+  }
+
+  @Override
+  public OpenTelemetryContext getOpenTelemetryContext() {
+    return metadata.getOtelContext();
+  }
+
   @Override
   public int getRequestStreamId() {
     return metadata.getRequestStreamId();
@@ -60,10 +75,6 @@ public final class MockTypedRecord<T extends UnifiedRecordValue> implements Type
   @Override
   public int getLength() {
     return metadata.getLength() + value.getLength();
-  }
-
-  public void setValue(final T value) {
-    this.value = value;
   }
 
   public void setMetadata(final RecordMetadata metadata) {
@@ -148,10 +159,5 @@ public final class MockTypedRecord<T extends UnifiedRecordValue> implements Type
   @Override
   public String toJson() {
     throw new UnsupportedOperationException("not yet implemented");
-  }
-
-  @Override
-  public AuthInfo getAuthInfo() {
-    return metadata.getAuthorization();
   }
 }

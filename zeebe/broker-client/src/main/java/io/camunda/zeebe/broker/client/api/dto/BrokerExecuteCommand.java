@@ -17,6 +17,7 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.transport.RequestType;
+import io.opentelemetry.context.Context;
 import java.util.Map;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
@@ -68,6 +69,11 @@ public abstract class BrokerExecuteCommand<T> extends BrokerRequest<T> {
   @Override
   public void setAuthorization(final Map<String, Object> claims) {
     request.setAuthorization(new AuthInfo().setClaims(claims));
+  }
+
+  @Override
+  public void setOTelContext(final Context context) {
+    request.setOtelContext(context);
   }
 
   @Override
