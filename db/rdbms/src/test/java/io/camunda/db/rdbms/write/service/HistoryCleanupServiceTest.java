@@ -468,7 +468,7 @@ class HistoryCleanupServiceTest {
     final Duration nextDuration =
         historyCleanupService.calculateNewDuration(Duration.ofHours(4), numDeletedRecords);
 
-    // then - should keep the interval unchanged (total 45 < 100, but > 50)
-    assertThat(nextDuration).isEqualTo(Duration.ofHours(4));
+    // then - should double the interval (total 45 < 50)
+    assertThat(nextDuration).isEqualTo(Duration.ofHours(8));
   }
 }
