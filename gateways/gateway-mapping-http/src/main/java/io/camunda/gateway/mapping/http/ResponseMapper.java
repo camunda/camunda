@@ -108,6 +108,7 @@ import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.value.EvaluatedInputValue;
 import io.camunda.zeebe.protocol.record.value.EvaluatedOutputValue;
 import io.camunda.zeebe.protocol.record.value.MatchedRuleValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceIntrospectRecordValue.ProcessInstanceIntrospectActionRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
 import io.camunda.zeebe.util.Either;
 import java.time.OffsetDateTime;
@@ -798,10 +799,12 @@ public final class ResponseMapper {
 
   public static ProcessInstanceIntrospectResult toIntrospectProcessInstanceResponse(
       final ProcessInstanceIntrospectRecord brokerResponse) {
-    return new ProcessInstanceIntrospectResult(brokerResponse.getProcessInstanceKey());
+    return new ProcessInstanceIntrospectResult(
+        brokerResponse.getProcessInstanceKey(), brokerResponse.getActions());
   }
 
-  public record ProcessInstanceIntrospectResult(long processInstanceKey) {}
+  public record ProcessInstanceIntrospectResult(
+      long processInstanceKey, List<ProcessInstanceIntrospectActionRecordValue> actions) {}
 
   static class RestJobActivationResult
       implements JobActivationResult<io.camunda.gateway.protocol.model.JobActivationResult> {

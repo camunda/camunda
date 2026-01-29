@@ -17,8 +17,24 @@ package io.camunda.zeebe.protocol.record.value;
 
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValue;
+import java.util.List;
+import java.util.Map;
 import org.immutables.value.Value;
 
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableBatchOperationCreationRecordValue.Builder.class)
-public interface ProcessInstanceIntrospectRecordValue extends ProcessInstanceRelated, RecordValue {}
+public interface ProcessInstanceIntrospectRecordValue extends ProcessInstanceRelated, RecordValue {
+
+  List<ProcessInstanceIntrospectActionRecordValue> getActions();
+
+  @Value.Immutable
+  @ImmutableProtocol(builder = ImmutableProcessInstanceIntrospectActionRecordValue.Builder.class)
+  public interface ProcessInstanceIntrospectActionRecordValue {
+
+    String getAction();
+
+    Long getElementInstanceKey();
+
+    Map<String, String> getParameters();
+  }
+}

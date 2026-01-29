@@ -7,21 +7,26 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.processinstance;
 
+import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceIntrospectRecordValue;
+import java.util.List;
 
 public class ProcessInstanceIntrospectRecord extends UnifiedRecordValue
     implements ProcessInstanceIntrospectRecordValue {
 
   private static final StringValue PROCESS_INSTANCE_KEY_KEY = new StringValue("processInstanceKey");
+  private static final StringValue ACTIONS_KEY = new StringValue("actions");
   private final LongProperty processInstanceKeyProperty =
       new LongProperty(PROCESS_INSTANCE_KEY_KEY);
+  private final ArrayProperty<ProcessInstanceIntrospectActionRecord> actionsProperty =
+      new ArrayProperty<>(ACTIONS_KEY, ProcessInstanceIntrospectActionRecord::new);
 
   public ProcessInstanceIntrospectRecord() {
-    super(1);
-    declareProperty(processInstanceKeyProperty);
+    super(2);
+    declareProperty(processInstanceKeyProperty).declareProperty(actionsProperty);
   }
 
   @Override
@@ -37,5 +42,23 @@ public class ProcessInstanceIntrospectRecord extends UnifiedRecordValue
   @Override
   public long getProcessDefinitionKey() {
     return -1L;
+  }
+
+  public ProcessInstanceIntrospectRecord addAction(
+      final ProcessInstanceIntrospectActionRecordValue action) {
+    actionsProperty.add().copy(action);
+    return this;
+  }
+
+  @Override
+  public List<ProcessInstanceIntrospectActionRecordValue> getActions() {
+    return actionsProperty.stream()
+        .map(
+            action -> {
+              final var copy = new ProcessInstanceIntrospectActionRecord();
+              copy.copy(action);
+              return (ProcessInstanceIntrospectActionRecordValue) copy;
+            })
+        .toList();
   }
 }

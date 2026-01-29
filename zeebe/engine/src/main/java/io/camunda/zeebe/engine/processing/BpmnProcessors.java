@@ -143,7 +143,7 @@ public final class BpmnProcessors {
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_INSTANCE_INTROSPECT,
         ProcessInstanceIntrospectIntent.INTROSPECT,
-        new ProcessInstanceIntrospectProcessor(writers, keyGenerator));
+        new ProcessInstanceIntrospectProcessor(writers, keyGenerator, processingState));
 
     return bpmnStreamProcessor;
   }
