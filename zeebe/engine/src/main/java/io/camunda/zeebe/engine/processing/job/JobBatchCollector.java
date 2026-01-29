@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.job;
 
 import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.engine.state.immutable.JobState;
@@ -22,6 +23,7 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.TenantFilter;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
@@ -83,7 +85,7 @@ final class JobBatchCollector {
    *     activate on failure
    */
   public Either<TooLargeJob, Map<JobKind, Integer>> collectJobs(
-      final TypedRecord<JobBatchRecord> record) {
+      final TypedRecord<JobBatchRecord> record, final AuthorizedTenants authorizedTenants) {
     final JobBatchRecord value = record.getValue();
     final ValueArray<JobRecord> jobIterator = value.jobs();
     final ValueArray<LongValue> jobKeyIterator = value.jobKeys();
@@ -91,10 +93,7 @@ final class JobBatchCollector {
     final var maxActivatedCount = value.getMaxJobsToActivate();
     final var activatedCount = new MutableInteger(0);
     final var unwritableJob = new MutableReference<TooLargeJob>();
-    final var tenantIds =
-        value.getTenantIds().isEmpty()
-            ? List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
-            : value.getTenantIds();
+    final var tenantIds = computeTenantIds(value, authorizedTenants);
     final Map<JobKind, Integer> jobCountPerJobKind = new EnumMap<>(JobKind.class);
     // the tenant check is performed earlier in the JobBatchActivateProcessor, so we can skip it
     // here and only check if the requester has the correct permissions to access the jobs
@@ -156,6 +155,17 @@ final class JobBatchCollector {
     }
 
     return Either.right(jobCountPerJobKind);
+  }
+
+  private List<String> computeTenantIds(
+      final JobBatchRecord value, final AuthorizedTenants authorizedTenants) {
+    if (value.getTenantFilter() == TenantFilter.ASSIGNED) {
+      return authorizedTenants.getAuthorizedTenantIds();
+    } else if (value.getTenantIds().isEmpty()) {
+      return List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    } else {
+      return value.getTenantIds();
+    }
   }
 
   private boolean isAuthorizedForJob(

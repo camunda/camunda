@@ -30,6 +30,7 @@ import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.ActivateJobsResponseImpl;
 import io.camunda.client.protocol.rest.JobActivationRequest;
 import io.camunda.client.protocol.rest.JobActivationResult;
+import io.camunda.client.protocol.rest.TenantFilterEnum;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
@@ -61,6 +62,7 @@ public final class ActivateJobsCommandImpl
 
   private final Set<String> defaultTenantIds;
   private final Set<String> customTenantIds;
+  private TenantFilterEnum tenantFilter;
   private final CamundaClientConfiguration config;
 
   public ActivateJobsCommandImpl(
@@ -83,6 +85,7 @@ public final class ActivateJobsCommandImpl
     useRest = config.preferRestOverGrpc();
     defaultTenantIds = new HashSet<>(config.getDefaultJobWorkerTenantIds());
     customTenantIds = new HashSet<>();
+    tenantFilter = TenantFilterEnum.PROVIDED;
   }
 
   @Override
@@ -140,6 +143,12 @@ public final class ActivateJobsCommandImpl
   }
 
   @Override
+  public ActivateJobsCommandStep3 tenantFilter(final TenantFilterEnum tenantFilterEnum) {
+    tenantFilter = tenantFilterEnum;
+    return this;
+  }
+
+  @Override
   public FinalCommandStep<ActivateJobsResponse> requestTimeout(final Duration requestTimeout) {
     grpcRequestObjectBuilder.setRequestTimeout(requestTimeout.toMillis());
     httpRequestObject.setRequestTimeout(requestTimeout.toMillis());
@@ -155,6 +164,8 @@ public final class ActivateJobsCommandImpl
   public CamundaFuture<ActivateJobsResponse> send() {
     grpcRequestObjectBuilder.clearTenantIds();
     httpRequestObject.setTenantIds(new ArrayList<>());
+    httpRequestObject.setTenantFilter(tenantFilter);
+
     if (customTenantIds.isEmpty()) {
       grpcRequestObjectBuilder.addAllTenantIds(defaultTenantIds);
       httpRequestObject.setTenantIds(new ArrayList<>(defaultTenantIds));

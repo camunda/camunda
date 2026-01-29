@@ -300,6 +300,14 @@ components:
           type: array
           items:
             $ref: 'identifiers.yaml#/components/schemas/TenantId'
+        tenantFilter:
+          description: >
+            Determines how tenants are resolved for job activation.
+            When set to ASSIGNED, uses the tenants assigned to the authenticated user/client.
+            When set to PROVIDED (default), uses the tenants specified in the tenantIds field.
+          allOf:
+            - $ref: '#/components/schemas/TenantFilterEnum'
+          default: PROVIDED
       required:
         - type
         - timeout
@@ -970,6 +978,17 @@ components:
         - START
         - UNSPECIFIED
         - UPDATING
+
+    TenantFilterEnum:
+      description: >
+        Determines how tenants are resolved for job activation.
+        ASSIGNED uses the tenants assigned to the authenticated user/client.
+        PROVIDED uses the tenants explicitly specified in the request.
+      type: string
+      enum:
+        - ASSIGNED
+        - PROVIDED
+      default: PROVIDED
 
     ## Filters
 

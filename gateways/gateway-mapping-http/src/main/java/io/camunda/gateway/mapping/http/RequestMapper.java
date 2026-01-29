@@ -78,6 +78,7 @@ import io.camunda.gateway.protocol.model.SetVariableRequest;
 import io.camunda.gateway.protocol.model.SignalBroadcastRequest;
 import io.camunda.gateway.protocol.model.SourceElementIdInstruction;
 import io.camunda.gateway.protocol.model.SourceElementInstanceKeyInstruction;
+import io.camunda.gateway.protocol.model.TenantFilterEnum;
 import io.camunda.gateway.protocol.model.UseSourceParentKeyInstruction;
 import io.camunda.gateway.protocol.model.UserTaskAssignmentRequest;
 import io.camunda.gateway.protocol.model.UserTaskCompletionRequest;
@@ -116,6 +117,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.value.JobResultType;
 import io.camunda.zeebe.protocol.record.value.RuntimeInstructionType;
+import io.camunda.zeebe.protocol.record.value.TenantFilter;
 import io.camunda.zeebe.util.Either;
 import jakarta.servlet.http.Part;
 import java.io.IOException;
@@ -123,6 +125,7 @@ import java.io.InputStream;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -201,27 +204,41 @@ public class RequestMapper {
   public static Either<ProblemDetail, ActivateJobsRequest> toJobsActivationRequest(
       final JobActivationRequest activationRequest, final boolean multiTenancyEnabled) {
 
-    final Either<ProblemDetail, List<String>> validationResponse =
-        validateTenantIds(
-                getStringListOrEmpty(activationRequest, JobActivationRequest::getTenantIds),
-                multiTenancyEnabled,
-                "Activate Jobs")
-            .flatMap(
-                tenantIds ->
-                    validateJobActivationRequest(activationRequest)
-                        .map(Either::<ProblemDetail, List<String>>left)
-                        .orElseGet(() -> Either.right(tenantIds)));
+    if (activationRequest.getTenantFilter().equals(TenantFilterEnum.PROVIDED)) {
+      final Either<ProblemDetail, List<String>> validationResponse =
+          validateTenantIds(
+                  getStringListOrEmpty(activationRequest, JobActivationRequest::getTenantIds),
+                  multiTenancyEnabled,
+                  "Activate Jobs")
+              .flatMap(
+                  tenantIds ->
+                      validateJobActivationRequest(activationRequest)
+                          .map(Either::<ProblemDetail, List<String>>left)
+                          .orElseGet(() -> Either.right(tenantIds)));
 
-    return validationResponse.map(
-        tenantIds ->
-            new ActivateJobsRequest(
-                activationRequest.getType(),
-                activationRequest.getMaxJobsToActivate(),
-                tenantIds,
-                activationRequest.getTimeout(),
-                getStringOrEmpty(activationRequest, JobActivationRequest::getWorker),
-                getStringListOrEmpty(activationRequest, JobActivationRequest::getFetchVariable),
-                getLongOrZero(activationRequest, JobActivationRequest::getRequestTimeout)));
+      return validationResponse.map(
+          tenantIds ->
+              new ActivateJobsRequest(
+                  activationRequest.getType(),
+                  activationRequest.getMaxJobsToActivate(),
+                  tenantIds,
+                  TenantFilter.valueOf(activationRequest.getTenantFilter().getValue()),
+                  activationRequest.getTimeout(),
+                  getStringOrEmpty(activationRequest, JobActivationRequest::getWorker),
+                  getStringListOrEmpty(activationRequest, JobActivationRequest::getFetchVariable),
+                  getLongOrZero(activationRequest, JobActivationRequest::getRequestTimeout)));
+    } else {
+      return Either.right(
+          new ActivateJobsRequest(
+              activationRequest.getType(),
+              activationRequest.getMaxJobsToActivate(),
+              Collections.emptyList(),
+              TenantFilter.valueOf(activationRequest.getTenantFilter().getValue()),
+              activationRequest.getTimeout(),
+              getStringOrEmpty(activationRequest, JobActivationRequest::getWorker),
+              getStringListOrEmpty(activationRequest, JobActivationRequest::getFetchVariable),
+              getLongOrZero(activationRequest, JobActivationRequest::getRequestTimeout)));
+    }
   }
 
   public static FailJobRequest toJobFailRequest(

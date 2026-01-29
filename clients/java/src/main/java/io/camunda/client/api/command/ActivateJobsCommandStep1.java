@@ -17,6 +17,7 @@ package io.camunda.client.api.command;
 
 import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.api.response.ActivateJobsResponse;
+import io.camunda.client.protocol.rest.TenantFilterEnum;
 import java.time.Duration;
 import java.util.List;
 
@@ -102,6 +103,9 @@ public interface ActivateJobsCommandStep1
      *     it to the broker.
      */
     ActivateJobsCommandStep3 fetchVariables(String... fetchVariables);
+
+    @Override
+    ActivateJobsCommandStep3 tenantFilter(TenantFilterEnum tenantFilterEnum);
 
     /**
      * Sets the request timeout for the command.

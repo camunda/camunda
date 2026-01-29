@@ -30,6 +30,7 @@ import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.ResponseObserver;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
+import io.camunda.zeebe.protocol.record.value.TenantFilter;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -80,7 +81,8 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
             .setTenantIds(request.tenantIds())
             .setTimeout(request.timeout())
             .setWorker(request.worker())
-            .setVariables(request.fetchVariable());
+            .setVariables(request.fetchVariable())
+            .setTenantFilter(request.tenantFilter());
     final var brokerRequestAuthorization =
         brokerRequestAuthorizationConverter.convert(authentication);
     brokerRequest.setAuthorization(brokerRequestAuthorization);
@@ -153,10 +155,17 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
       String type,
       int maxJobsToActivate,
       List<String> tenantIds,
+      TenantFilter tenantFilter,
       long timeout,
       String worker,
       List<String> fetchVariable,
-      long requestTimeout) {}
+      long requestTimeout) {
+    public ActivateJobsRequest {
+      if (tenantFilter == null) {
+        tenantFilter = TenantFilter.PROVIDED;
+      }
+    }
+  }
 
   public record UpdateJobChangeset(Integer retries, Long timeout) {}
 }

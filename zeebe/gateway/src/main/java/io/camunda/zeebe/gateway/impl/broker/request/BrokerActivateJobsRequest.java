@@ -13,6 +13,7 @@ import io.camunda.zeebe.msgpack.value.ValueArray;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
+import io.camunda.zeebe.protocol.record.value.TenantFilter;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 import org.agrona.DirectBuffer;
@@ -52,6 +53,11 @@ public final class BrokerActivateJobsRequest extends BrokerExecuteCommand<JobBat
 
   public BrokerActivateJobsRequest setTenantIds(final List<String> tenantIds) {
     requestDto.setTenantIds(tenantIds);
+    return this;
+  }
+
+  public BrokerActivateJobsRequest setTenantFilter(final TenantFilter tenantFilter) {
+    requestDto.setTenantFilter(tenantFilter);
     return this;
   }
 

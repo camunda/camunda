@@ -15,6 +15,7 @@
  */
 package io.camunda.client.api.command;
 
+import io.camunda.client.protocol.rest.TenantFilterEnum;
 import java.util.List;
 
 public interface CommandWithOneOrMoreTenantsStep<T> extends CommandWithTenantStep<T> {
@@ -63,4 +64,15 @@ public interface CommandWithOneOrMoreTenantsStep<T> extends CommandWithTenantSte
    * @since 8.3
    */
   T tenantIds(String... tenantIds);
+
+  /**
+   * Specifies how to filter tenants for this command.
+   *
+   * @param tenantFilterEnum the tenant filter to apply, either {@code ASSIGNED} or {@code PROVIDED}
+   * @return the builder for this command with the tenant filter specified
+   */
+  default T tenantFilter(final TenantFilterEnum tenantFilterEnum) {
+    // Default noop implementation
+    return (T) this;
+  }
 }

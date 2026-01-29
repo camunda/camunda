@@ -11,6 +11,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.security.configuration.SecurityConfigurations;
 import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.processing.identity.AuthenticatedAuthorizedTenants;
+import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.job.JobBatchCollector.TooLargeJob;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
@@ -27,6 +29,7 @@ import io.camunda.zeebe.protocol.record.value.JobBatchRecordValueAssert;
 import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValueAssert;
+import io.camunda.zeebe.protocol.record.value.TenantFilter;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -83,7 +86,8 @@ final class JobBatchCollectorTest {
 
     // when - set up the evaluator to only accept the first job
     lengthEvaluator.canWriteEventOfLength = (length) -> toggle.getAndSet(false);
-    final Either<TooLargeJob, Map<JobKind, Integer>> result = collector.collectJobs(record);
+    final Either<TooLargeJob, Map<JobKind, Integer>> result =
+        collector.collectJobs(record, AuthorizedTenants.DEFAULT_TENANTS);
 
     // then
     final JobBatchRecord batchRecord = record.getValue();
@@ -105,7 +109,8 @@ final class JobBatchCollectorTest {
 
     // when - set up the evaluator to accept no jobs
     lengthEvaluator.canWriteEventOfLength = (length) -> false;
-    final Either<TooLargeJob, Map<JobKind, Integer>> result = collector.collectJobs(record);
+    final Either<TooLargeJob, Map<JobKind, Integer>> result =
+        collector.collectJobs(record, AuthorizedTenants.DEFAULT_TENANTS);
 
     // then
     final JobBatchRecord batchRecord = record.getValue();
@@ -128,7 +133,7 @@ final class JobBatchCollectorTest {
     createJobWithVariables(secondScopeKey, secondJobVariables);
 
     // when
-    collector.collectJobs(record);
+    collector.collectJobs(record, AuthorizedTenants.DEFAULT_TENANTS);
 
     // then
     final JobBatchRecord batchRecord = record.getValue();
@@ -151,7 +156,7 @@ final class JobBatchCollectorTest {
     final List<Job> jobs = Arrays.asList(createJob(scopeKey), createJob(scopeKey));
 
     // when
-    collector.collectJobs(record);
+    collector.collectJobs(record, AuthorizedTenants.DEFAULT_TENANTS);
 
     // then
     final JobBatchRecord batchRecord = record.getValue();
@@ -167,7 +172,8 @@ final class JobBatchCollectorTest {
     record.getValue().setMaxJobsToActivate(1);
 
     // when
-    final Either<TooLargeJob, Map<JobKind, Integer>> result = collector.collectJobs(record);
+    final Either<TooLargeJob, Map<JobKind, Integer>> result =
+        collector.collectJobs(record, AuthorizedTenants.DEFAULT_TENANTS);
 
     // then
     final JobBatchRecord batchRecord = record.getValue();
@@ -192,7 +198,7 @@ final class JobBatchCollectorTest {
     createJob(scopeKey);
 
     // when
-    collector.collectJobs(record);
+    collector.collectJobs(record, AuthorizedTenants.DEFAULT_TENANTS);
 
     // then
     final JobBatchRecord batchRecord = record.getValue();
@@ -220,7 +226,7 @@ final class JobBatchCollectorTest {
     record.getValue().setWorker(expectedWorker);
 
     // when
-    collector.collectJobs(record);
+    collector.collectJobs(record, AuthorizedTenants.DEFAULT_TENANTS);
 
     // then
     final JobBatchRecord batchRecord = record.getValue();
@@ -250,7 +256,7 @@ final class JobBatchCollectorTest {
     record.getValue().variables().add().wrap(BufferUtil.wrapString("foo"));
 
     // when
-    collector.collectJobs(record);
+    collector.collectJobs(record, AuthorizedTenants.DEFAULT_TENANTS);
 
     // then
     final JobBatchRecord batchRecord = record.getValue();
@@ -290,7 +296,7 @@ final class JobBatchCollectorTest {
           estimatedLength.set(length);
           return true;
         };
-    collector.collectJobs(record);
+    collector.collectJobs(record, AuthorizedTenants.DEFAULT_TENANTS);
 
     // then
     // the expected length is then the length of the initial record + the length of the activated
@@ -315,7 +321,7 @@ final class JobBatchCollectorTest {
     createJob(secondScopeKey, tenantB);
 
     // when
-    collector.collectJobs(record);
+    collector.collectJobs(record, AuthorizedTenants.DEFAULT_TENANTS);
 
     // then
     final JobBatchRecord batchRecord = record.getValue();
@@ -341,7 +347,7 @@ final class JobBatchCollectorTest {
     createJob(secondScopeKey, tenantB);
 
     // when
-    collector.collectJobs(record);
+    collector.collectJobs(record, AuthorizedTenants.DEFAULT_TENANTS);
 
     // then
     final JobBatchRecord batchRecord = record.getValue();
@@ -351,6 +357,36 @@ final class JobBatchCollectorTest {
               final List<JobRecordValue> activatedJobs = batch.getJobs();
               assertThat(activatedJobs).hasSize(1);
               JobRecordValueAssert.assertThat(activatedJobs.get(0)).hasTenantId(tenantA);
+            });
+  }
+
+  @Test
+  public void shouldCollectJobsUsingAssignedTenantsWhenTenantFilterIsAssigned() {
+    // given - jobs exist for two tenants
+    final String tenantA = "tenant-a";
+    final String tenantB = "tenant-b";
+    final TypedRecord<JobBatchRecord> record = createRecord(tenantA);
+    record.getValue().setTenantFilter(TenantFilter.ASSIGNED);
+    final long firstScopeKey = state.getKeyGenerator().nextKey();
+    final long secondScopeKey = state.getKeyGenerator().nextKey();
+    createJob(firstScopeKey, tenantA);
+    createJob(secondScopeKey, tenantB);
+
+    // when - collecting jobs with authorized tenants that include both tenants
+    final AuthorizedTenants authorizedTenants =
+        new AuthenticatedAuthorizedTenants(List.of(tenantA, tenantB));
+    collector.collectJobs(record, authorizedTenants);
+
+    // then - both jobs should be collected because ASSIGNED uses authorized tenants, not command
+    // tenants
+    final JobBatchRecord batchRecord = record.getValue();
+    JobBatchRecordValueAssert.assertThat(batchRecord)
+        .satisfies(
+            batch -> {
+              final List<JobRecordValue> activatedJobs = batch.getJobs();
+              assertThat(activatedJobs).hasSize(2);
+              assertThat(activatedJobs.stream().map(JobRecordValue::getTenantId).toList())
+                  .containsExactlyInAnyOrder(tenantA, tenantB);
             });
   }
 
