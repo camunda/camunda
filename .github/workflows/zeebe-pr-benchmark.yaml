@@ -36,6 +36,7 @@ jobs:
     with:
       name: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}
       ref: ${{ github.event.pull_request.head.ref }}
+      scenario: 'max'
 
   delete-benchmark:
     name: Benchmark Cleanup
