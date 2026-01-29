@@ -175,20 +175,22 @@ const parseProcessInstancesSearchSort = (
   });
 };
 
-const PROCESS_INSTANCE_FILTER_FIELDS = z.keyof(
-  ProcessInstancesFilterSchema.unwrap(),
-).def.values;
+const PROCESS_INSTANCE_FILTER_FIELDS = Object.values(
+  ProcessInstancesFilterSchema.unwrap().keyof().enum,
+);
 
-const BOOLEAN_PROCESS_INSTANCE_FILTER_FIELDS = z.keyof(
-  ProcessInstancesFilterSchema.unwrap().pick({
-    active: true,
-    incidents: true,
-    completed: true,
-    canceled: true,
-    retriesLeft: true,
-    hasElementInstanceIncident: true,
-  }),
-).def.values;
+const BOOLEAN_PROCESS_INSTANCE_FILTER_FIELDS = Object.values(
+  ProcessInstancesFilterSchema.unwrap()
+    .pick({
+      active: true,
+      incidents: true,
+      completed: true,
+      canceled: true,
+      retriesLeft: true,
+      hasElementInstanceIncident: true,
+    })
+    .keyof().enum,
+);
 
 function updateProcessInstancesFilterSearchString(
   currentSearch: URLSearchParams,

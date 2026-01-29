@@ -6,12 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-const IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED = false;
-const IS_ELEMENT_SELECTION_V2 = false;
-const IS_INSTANCE_MODIFICATION_V2 = false;
+import {endpoints} from '@camunda/camunda-api-zod-schemas/8.9';
+import {mockPostRequest} from '../../mockRequest';
 
-export {
-  IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED,
-  IS_ELEMENT_SELECTION_V2,
-  IS_INSTANCE_MODIFICATION_V2,
-};
+const mockModifyProcessInstance = (contextPath = '') =>
+  mockPostRequest<null>(
+    `${contextPath}${endpoints.modifyProcessInstance.getUrl({processInstanceKey: ':processInstanceKey'})}`,
+  );
+
+export {mockModifyProcessInstance};

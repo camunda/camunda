@@ -141,9 +141,19 @@ const hasPendingCancelOrMoveModification = ({
   return (modificationsByFlowNode?.[flowNodeId]?.cancelledTokens ?? 0) > 0;
 };
 
+/** Returns true if a ADD or MOVE modification is queued in the store. */
+const hasPendingAddOrMoveModification = () => {
+  return modificationsStore.flowNodeModifications.some(
+    (modification) =>
+      modification.operation === TOKEN_OPERATIONS.ADD_TOKEN ||
+      modification.operation === TOKEN_OPERATIONS.MOVE_TOKEN,
+  );
+};
+
 export {
   cancelAllTokens,
   generateParentScopeIds,
   finishMovingToken,
   hasPendingCancelOrMoveModification,
+  hasPendingAddOrMoveModification,
 };

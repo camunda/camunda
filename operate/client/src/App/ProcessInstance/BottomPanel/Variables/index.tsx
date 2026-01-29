@@ -128,6 +128,7 @@ const Variables: React.FC<Props> = observer(
         {(!isViewMode || displayStatus === 'variables') && (
           <VariablesTable
             scopeId={scopeKey}
+            isModificationModeEnabled={isModificationModeEnabled}
             isVariableModificationAllowed={isVariableModificationAllowed}
           />
         )}

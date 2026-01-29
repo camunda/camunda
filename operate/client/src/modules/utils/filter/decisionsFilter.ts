@@ -150,12 +150,14 @@ function parseDecisionInstancesSearchSort(
   });
 }
 
-const DECISION_INSTANCE_FILTER_FIELDS = z.keyof(DecisionsFilterSchema.unwrap())
-  .def.values;
+const DECISION_INSTANCE_FILTER_FIELDS = Object.values(
+  DecisionsFilterSchema.unwrap().keyof().enum,
+);
 
-const BOOLEAN_DECISION_INSTANCE_FILTER_FIELDS = z.keyof(
-  DecisionsFilterSchema.unwrap().pick({failed: true, evaluated: true}),
-).def.values;
+const BOOLEAN_DECISION_INSTANCE_FILTER_FIELDS = Object.values(
+  DecisionsFilterSchema.unwrap().pick({failed: true, evaluated: true}).keyof()
+    .enum,
+);
 
 function updateDecisionsFilterSearchString(
   currentSearch: URLSearchParams,
