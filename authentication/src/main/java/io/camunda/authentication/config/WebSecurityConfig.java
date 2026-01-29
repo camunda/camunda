@@ -905,9 +905,9 @@ public class WebSecurityConfig {
               .oauth2Login(
                   oauthLoginConfigurer -> {
                     oauthLoginConfigurer
-                        .successHandler(
-                            new ExternalClientRedirectLoginSuccessHandler(
-                                requestCache, authorizedClientRepository))
+//                        .successHandler(
+//                            new ExternalClientRedirectLoginSuccessHandler(
+//                                requestCache, authorizedClientRepository))
                         .clientRegistrationRepository(clientRegistrationRepository)
                         .authorizedClientRepository(authorizedClientRepository)
                         .redirectionEndpoint(
