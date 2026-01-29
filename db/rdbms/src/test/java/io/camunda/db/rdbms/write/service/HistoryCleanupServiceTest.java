@@ -423,4 +423,52 @@ class HistoryCleanupServiceTest {
     verify(decisionInstanceWriter).cleanupHistory(PARTITION_ID, CLEANUP_DATE, 100);
     verify(auditLogWriter).cleanupHistory(PARTITION_ID, CLEANUP_DATE, 100);
   }
+
+  @Test
+  void testCalculateNewDurationWhenStandaloneDecisionsHitLimit() {
+    // given - standalone decision instances hit the cleanup batch size limit
+    final var numDeletedRecords = new java.util.HashMap<String, Integer>();
+    numDeletedRecords.put("processInstance", 0);
+    numDeletedRecords.put("standaloneDecisionInstance", 100); // hit the limit
+    numDeletedRecords.put("standaloneDecisionAuditLog", 50);
+
+    // when
+    final Duration nextDuration =
+        historyCleanupService.calculateNewDuration(Duration.ofHours(4), numDeletedRecords);
+
+    // then - should halve the interval because standalone decisions hit limit
+    assertThat(nextDuration).isEqualTo(Duration.ofHours(2));
+  }
+
+  @Test
+  void testCalculateNewDurationWhenStandaloneAuditLogsHitLimit() {
+    // given - standalone audit logs hit the cleanup batch size limit
+    final var numDeletedRecords = new java.util.HashMap<String, Integer>();
+    numDeletedRecords.put("processInstance", 0);
+    numDeletedRecords.put("standaloneDecisionInstance", 50);
+    numDeletedRecords.put("standaloneDecisionAuditLog", 100); // hit the limit
+
+    // when
+    final Duration nextDuration =
+        historyCleanupService.calculateNewDuration(Duration.ofHours(4), numDeletedRecords);
+
+    // then - should halve the interval because audit logs hit limit
+    assertThat(nextDuration).isEqualTo(Duration.ofHours(2));
+  }
+
+  @Test
+  void testCalculateNewDurationWithStandaloneRecordsButNoLimit() {
+    // given - some standalone records deleted but not hitting limit
+    final var numDeletedRecords = new java.util.HashMap<String, Integer>();
+    numDeletedRecords.put("processInstance", 10);
+    numDeletedRecords.put("standaloneDecisionInstance", 20);
+    numDeletedRecords.put("standaloneDecisionAuditLog", 15);
+
+    // when
+    final Duration nextDuration =
+        historyCleanupService.calculateNewDuration(Duration.ofHours(4), numDeletedRecords);
+
+    // then - should keep the interval unchanged (total 45 < 100, but > 50)
+    assertThat(nextDuration).isEqualTo(Duration.ofHours(4));
+  }
 }

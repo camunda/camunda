@@ -315,16 +315,18 @@ public class HistoryCleanupService {
   }
 
   /**
-   * Calculates the next cleanup interval duration based on the number of deleted process instances
-   * and the previous interval. The interval is adjusted as follows:
+   * Calculates the next cleanup interval duration based on the number of deleted records and the
+   * previous interval. The interval is adjusted as follows:
    *
    * <ul>
    *   <li>If this is the first run ({@code lastDuration} is {@code null}), use {@code
    *       minCleanupInterval}.
-   *   <li>If fewer than half of {@code processInstanceBatchSize} process instances were deleted,
-   *       double the interval, but do not exceed {@code maxCleanupInterval}.
-   *   <li>If at least {@code processInstanceBatchSize} process instances were deleted, halve the
-   *       interval, but do not go below {@code minCleanupInterval}.
+   *   <li>If fewer than half of {@code processInstanceBatchSize} records were deleted (across
+   *       process instances, standalone decisions, and audit logs), double the interval, but do not
+   *       exceed {@code maxCleanupInterval}.
+   *   <li>If at least {@code processInstanceBatchSize} records were deleted, or if any entity type
+   *       hit the cleanup batch limit, halve the interval, but do not go below {@code
+   *       minCleanupInterval}.
    *   <li>Otherwise, keep the interval unchanged.
    * </ul>
    *
@@ -336,15 +338,28 @@ public class HistoryCleanupService {
   Duration calculateNewDuration(
       final Duration lastDuration, final Map<String, Integer> numDeletedRecords) {
     final int deletedProcessInstances = numDeletedRecords.getOrDefault("processInstance", 0);
+    final int deletedStandaloneDecisions =
+        numDeletedRecords.getOrDefault("standaloneDecisionInstance", 0);
+    final int deletedStandaloneAuditLogs =
+        numDeletedRecords.getOrDefault("standaloneDecisionAuditLog", 0);
+
+    // Check if any entity type hit the cleanup batch size limit
+    final boolean anyEntityHitLimit =
+        deletedStandaloneDecisions >= cleanupBatchSize
+            || deletedStandaloneAuditLogs >= cleanupBatchSize;
+
+    final int totalDeletedRecords =
+        deletedProcessInstances + deletedStandaloneDecisions + deletedStandaloneAuditLogs;
+
     Duration nextDuration;
 
     if (lastDuration == null) {
       nextDuration = minCleanupInterval;
-    } else if (deletedProcessInstances < processInstanceBatchSize / 2) {
+    } else if (totalDeletedRecords < processInstanceBatchSize / 2) {
       nextDuration = lastDuration.multipliedBy(2);
       nextDuration =
           nextDuration.compareTo(maxCleanupInterval) < 0 ? nextDuration : maxCleanupInterval;
-    } else if (deletedProcessInstances >= processInstanceBatchSize) {
+    } else if (deletedProcessInstances >= processInstanceBatchSize || anyEntityHitLimit) {
       nextDuration = lastDuration.dividedBy(2);
       nextDuration =
           nextDuration.compareTo(minCleanupInterval) > 0 ? nextDuration : minCleanupInterval;
