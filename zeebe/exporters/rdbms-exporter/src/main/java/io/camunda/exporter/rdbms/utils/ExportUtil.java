@@ -39,9 +39,8 @@ public class ExportUtil {
       final String treePath = String.join("/", treePathEntries);
 
       // Apply truncation for extremely deep nesting scenarios
-      final TreePath treePathObj = new TreePath(columnSize);
-      final int maxLength = columnSize - 100; // apply safety margin
-      if (treePath.length() > maxLength) {
+      if (treePath.length() > columnSize) {
+        final TreePath treePathObj = new TreePath(columnSize);
         treePathObj.startTreePath(treePathEntries.get(0));
         for (int i = 1; i < treePathEntries.size(); i++) {
           treePathObj.appendFlowNodeInstance(treePathEntries.get(i));
