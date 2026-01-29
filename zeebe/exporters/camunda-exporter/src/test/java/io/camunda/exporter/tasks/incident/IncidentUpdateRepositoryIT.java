@@ -696,9 +696,16 @@ abstract class IncidentUpdateRepositoryIT {
       final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
       final String suffix = date.format(formatter);
       return new IndexDescriptor() {
+
+
         @Override
         public String getFullQualifiedName() {
           return source.getFullQualifiedName() + "-" + suffix;
+        }
+
+        @Override
+        public String getShardedFullQualifiedName(final int partitionId) {
+          return "foo_" + partitionId;
         }
 
         @Override

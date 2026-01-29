@@ -7,6 +7,8 @@
  */
 package io.camunda.webapps.schema.descriptors;
 
+import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
+
 public abstract class AbstractIndexDescriptor implements IndexDescriptor {
 
   public static final String SCHEMA_FOLDER_OPENSEARCH = "/schema/opensearch/create";
@@ -34,7 +36,13 @@ public abstract class AbstractIndexDescriptor implements IndexDescriptor {
         formattedIndexPrefix(),
         getComponentName(),
         getIndexName(),
-        getVersion());
+        getVersion(),
+        START_PARTITION_ID);
+  }
+
+  @Override
+  public String getShardedFullQualifiedName(final int partitionId) {
+    return String.format("%sp%s", getFullQualifiedName(), partitionId);
   }
 
   @Override

@@ -29,6 +29,16 @@ public class AuthorizationIndex extends AbstractIndexDescriptor implements Prio5
   }
 
   @Override
+  public String getIndexName() {
+    return INDEX_NAME;
+  }
+
+  @Override
+  public String getFullQualifiedName() {
+    return super.getFullQualifiedName();
+  }
+
+  @Override
   public String getVersion() {
     return INDEX_VERSION;
   }
@@ -36,10 +46,5 @@ public class AuthorizationIndex extends AbstractIndexDescriptor implements Prio5
   @Override
   public String getComponentName() {
     return ComponentNames.CAMUNDA.toString();
-  }
-
-  @Override
-  public String getIndexName() {
-    return INDEX_NAME;
   }
 }

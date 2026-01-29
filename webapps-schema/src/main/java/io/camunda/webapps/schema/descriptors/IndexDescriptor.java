@@ -17,6 +17,8 @@ public interface IndexDescriptor {
 
   String getFullQualifiedName();
 
+  String getShardedFullQualifiedName(int partitionId);
+
   String getAlias();
 
   String getIndexName();

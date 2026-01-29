@@ -173,6 +173,11 @@ final class StandaloneDecisionArchiverJobTest extends ArchiverJobRecordingMetric
     }
 
     @Override
+    public String getShardedFullQualifiedName(final int partitionId) {
+      return "foo_" + partitionId;
+    }
+
+    @Override
     public String getAlias() {
       return "foo_alias";
     }

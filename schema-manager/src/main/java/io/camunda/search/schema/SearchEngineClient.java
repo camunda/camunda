@@ -18,6 +18,11 @@ import java.util.Map;
 public interface SearchEngineClient extends CloseableSilently {
   void createIndex(final IndexDescriptor indexDescriptor, final IndexConfiguration settings);
 
+  void createIndex(
+      final int partitionId,
+      final IndexDescriptor indexDescriptor,
+      final IndexConfiguration settings);
+
   /**
    * @param indexDescriptor indexDescriptor
    * @param indexConfiguration indexConfiguration
@@ -33,7 +38,9 @@ public interface SearchEngineClient extends CloseableSilently {
    * @param newProperties New properties to be appended to the index
    */
   void putMapping(
-      final IndexDescriptor indexDescriptor, final Collection<IndexMappingProperty> newProperties);
+      final int partitionId,
+      final IndexDescriptor indexDescriptor,
+      final Collection<IndexMappingProperty> newProperties);
 
   Map<String, IndexMapping> getMappings(
       final String namePattern, final MappingSource mappingSource);

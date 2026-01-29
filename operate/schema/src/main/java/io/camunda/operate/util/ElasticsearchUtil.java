@@ -51,13 +51,15 @@ public abstract class ElasticsearchUtil {
 
   public static String whereToSearch(
       final IndexTemplateDescriptor template, final QueryType queryType) {
-    switch (queryType) {
-      case ONLY_RUNTIME:
-        return template.getFullQualifiedName();
-      case ALL:
-      default:
-        return template.getAlias();
-    }
+    // TODO: Sort this out
+    //    switch (queryType) {
+    //      case ONLY_RUNTIME:
+    //        return template.getFullQualifiedName();
+    //      case ALL:
+    //      default:
+    //        return template.getAlias();
+    //    }
+    return template.getAlias();
   }
 
   public static Query joinWithOr(final Query... queries) {
