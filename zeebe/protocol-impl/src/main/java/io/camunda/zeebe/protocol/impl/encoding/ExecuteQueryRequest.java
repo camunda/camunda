@@ -73,12 +73,13 @@ public final class ExecuteQueryRequest implements BufferReader, BufferWriter {
   }
 
   @Override
-  public void write(final MutableDirectBuffer buffer, final int offset) {
+  public int write(final MutableDirectBuffer buffer, final int offset) {
     bodyEncoder
         .wrapAndApplyHeader(buffer, offset, headerEncoder)
         .partitionId(partitionId)
         .key(key)
         .valueType(valueType);
+    return getLength();
   }
 
   @Override

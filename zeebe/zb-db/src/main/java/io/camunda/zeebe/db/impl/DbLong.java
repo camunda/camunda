@@ -33,8 +33,9 @@ public final class DbLong implements DbKey, DbValue {
   }
 
   @Override
-  public void write(final MutableDirectBuffer buffer, final int offset) {
+  public int write(final MutableDirectBuffer buffer, final int offset) {
     buffer.putLong(offset, longValue, ZB_DB_BYTE_ORDER);
+    return getLength();
   }
 
   public long getValue() {

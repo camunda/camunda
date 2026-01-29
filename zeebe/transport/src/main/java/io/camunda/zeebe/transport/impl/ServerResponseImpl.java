@@ -46,8 +46,8 @@ public final class ServerResponseImpl implements ServerResponse {
   }
 
   @Override
-  public void write(final MutableDirectBuffer buffer, final int offset) {
-    writer.write(buffer, offset);
+  public int write(final MutableDirectBuffer buffer, final int offset) {
+    return writer.write(buffer, offset);
   }
 
   public BufferWriter getWriter() {
@@ -59,6 +59,7 @@ public final class ServerResponseImpl implements ServerResponse {
     return requestId;
   }
 
+  @Override
   public int getPartitionId() {
     return partitionId;
   }

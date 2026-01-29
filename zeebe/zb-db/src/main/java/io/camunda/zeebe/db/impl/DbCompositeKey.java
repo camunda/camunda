@@ -54,10 +54,10 @@ public class DbCompositeKey<FirstKeyType extends DbKey, SecondKeyType extends Db
   }
 
   @Override
-  public void write(final MutableDirectBuffer mutableDirectBuffer, final int offset) {
-    first.write(mutableDirectBuffer, offset);
-    final int firstKeyPartLength = first.getLength();
-    second.write(mutableDirectBuffer, offset + firstKeyPartLength);
+  public int write(final MutableDirectBuffer mutableDirectBuffer, final int offset) {
+    int written = first.write(mutableDirectBuffer, offset);
+    written += second.write(mutableDirectBuffer, offset + written);
+    return written;
   }
 
   private static Collection<DbForeignKey<DbKey>> collectContainedForeignKeys(

@@ -111,7 +111,8 @@ public final class ErrorResponse implements BufferWriter, BufferReader {
   }
 
   @Override
-  public void write(final MutableDirectBuffer buffer, int offset) {
+  public int write(final MutableDirectBuffer buffer, int offset) {
+    final int initialOffset = offset;
     headerEncoder
         .wrap(buffer, offset)
         .blockLength(bodyEncoder.sbeBlockLength())
@@ -125,6 +126,8 @@ public final class ErrorResponse implements BufferWriter, BufferReader {
         .wrap(buffer, offset)
         .errorCode(errorCode)
         .putErrorData(errorData, 0, errorData.capacity());
+
+    return bodyEncoder.limit() - initialOffset;
   }
 
   public byte[] toBytes() {

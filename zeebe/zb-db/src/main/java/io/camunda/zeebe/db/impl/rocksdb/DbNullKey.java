@@ -29,7 +29,8 @@ public final class DbNullKey implements DbKey {
   }
 
   @Override
-  public void write(final MutableDirectBuffer buffer, final int offset) {
+  public int write(final MutableDirectBuffer buffer, final int offset) {
     // do nothing
+    return 0;
   }
 }

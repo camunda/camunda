@@ -85,7 +85,7 @@ public final class ExecuteCommandRequest implements BufferReader, BufferWriter {
     final int decodedPartitionId = Protocol.decodePartitionId(key);
     if (decodedPartitionId >= Protocol.START_PARTITION_ID
         && decodedPartitionId <= Protocol.MAXIMUM_PARTITIONS) {
-      this.partitionId = decodedPartitionId;
+      partitionId = decodedPartitionId;
     }
 
     return this;
@@ -195,7 +195,8 @@ public final class ExecuteCommandRequest implements BufferReader, BufferWriter {
   }
 
   @Override
-  public void write(final MutableDirectBuffer buffer, int offset) {
+  public int write(final MutableDirectBuffer buffer, int offset) {
+    final int initialOffset = offset;
     headerEncoder
         .wrap(buffer, offset)
         .blockLength(bodyEncoder.sbeBlockLength())
@@ -214,5 +215,7 @@ public final class ExecuteCommandRequest implements BufferReader, BufferWriter {
         .intent(intent.value())
         .putValue(value, 0, value.capacity())
         .putAuthorization(authorization.toDirectBuffer(), 0, authorization.getLength());
+
+    return bodyEncoder.limit() - initialOffset;
   }
 }

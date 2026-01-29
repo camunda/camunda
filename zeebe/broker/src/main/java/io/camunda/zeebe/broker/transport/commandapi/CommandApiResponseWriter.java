@@ -30,5 +30,7 @@ public class CommandApiResponseWriter implements ResponseWriter {
   }
 
   @Override
-  public void write(final MutableDirectBuffer buffer, final int offset) {}
+  public int write(final MutableDirectBuffer buffer, final int offset) {
+    return 0;
+  }
 }
