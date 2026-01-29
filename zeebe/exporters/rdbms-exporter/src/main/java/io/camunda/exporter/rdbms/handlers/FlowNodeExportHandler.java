@@ -46,12 +46,15 @@ public class FlowNodeExportHandler implements RdbmsExportHandler<ProcessInstance
 
   private final FlowNodeInstanceWriter flowNodeInstanceWriter;
   private final ExporterEntityCache<Long, CachedProcessEntity> processCache;
+  private final int maxTreePathSize;
 
   public FlowNodeExportHandler(
       final FlowNodeInstanceWriter flowNodeInstanceWriter,
-      final ExporterEntityCache<Long, CachedProcessEntity> processCache) {
+      final ExporterEntityCache<Long, CachedProcessEntity> processCache,
+      final int maxTreePathSize) {
     this.flowNodeInstanceWriter = flowNodeInstanceWriter;
     this.processCache = processCache;
+    this.maxTreePathSize = maxTreePathSize;
   }
 
   @Override
@@ -104,7 +107,10 @@ public class FlowNodeExportHandler implements RdbmsExportHandler<ProcessInstance
         .partitionId(record.getPartitionId())
         .treePath(
             buildTreePath(
-                record.getKey(), value.getProcessInstanceKey(), value.getElementInstancePath()))
+                record.getKey(),
+                value.getProcessInstanceKey(),
+                value.getElementInstancePath(),
+                maxTreePathSize))
         .build();
   }
 
