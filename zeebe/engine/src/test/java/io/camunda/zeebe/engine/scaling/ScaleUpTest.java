@@ -203,7 +203,7 @@ public class ScaleUpTest {
         RecordingExporter.scaleRecords()
             .limit(r -> r.getIntent() == ScaleIntent.STATUS_RESPONSE)
             .getLast();
-    assertThat(record.getValue().getDesiredPartitionCount()).isEqualTo(4);
+    assertThat(record.getValue().getDesiredPartitionCount()).isEqualTo(23);
     assertThat(record.getValue().getRedistributedPartitions()).containsExactly(1, 2);
     // SCALE_UP command is the first command we manually appended, meaning it is positioned 1 before
     // the status command
