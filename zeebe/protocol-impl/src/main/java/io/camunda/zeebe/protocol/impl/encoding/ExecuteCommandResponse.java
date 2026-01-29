@@ -189,7 +189,8 @@ public final class ExecuteCommandResponse implements BufferReader, BufferWriter 
   }
 
   @Override
-  public void write(final MutableDirectBuffer buffer, int offset) {
+  public int write(final MutableDirectBuffer buffer, int offset) {
+    final int initialOffset = offset;
     headerEncoder
         .wrap(buffer, offset)
         .blockLength(bodyEncoder.sbeBlockLength())
@@ -209,5 +210,7 @@ public final class ExecuteCommandResponse implements BufferReader, BufferWriter 
         .rejectionType(rejectionType)
         .putValue(value, 0, value.capacity())
         .putRejectionReason(rejectionReason, 0, rejectionReason.capacity());
+
+    return bodyEncoder.limit() - initialOffset;
   }
 }
