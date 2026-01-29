@@ -9,11 +9,9 @@ package io.camunda.zeebe.gateway.rest.websocket.subscription;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
-import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.SequenceFlowEntity;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.ProcessInstanceServices;
-import io.camunda.zeebe.gateway.rest.websocket.message.CompletedMessage;
 import io.camunda.zeebe.gateway.rest.websocket.message.ErrorMessage;
 import io.camunda.zeebe.gateway.rest.websocket.message.UpdateMessage;
 import java.time.Duration;
@@ -36,8 +34,6 @@ class SequenceFlowsSubscription {
   private final ProcessInstanceServices processInstanceServices;
   private final ObjectMapper objectMapper;
   private final CamundaAuthenticationProvider authenticationProvider;
-  private volatile List<SequenceFlowEntity> lastKnownFlows;
-  private volatile ProcessInstanceEntity lastKnownProcessState;
   private volatile ScheduledFuture<?> pollingTask;
 
   SequenceFlowsSubscription(
@@ -94,71 +90,18 @@ class SequenceFlowsSubscription {
       if (currentFlows == null) {
         LOGGER.warn("Failed to fetch sequence flows for process instance {}", processInstanceKey);
         sendErrorMessage("Failed to fetch sequence flows", "INTERNAL_ERROR");
+        // Continue polling even on failure
         return;
       }
 
-      // Fetch process instance state to detect terminal state
-      final ProcessInstanceEntity currentProcessState;
-      try {
-        currentProcessState =
-            processInstanceServices
-                .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                .getByKey(processInstanceKey);
-
-        if (currentProcessState == null) {
-          LOGGER.warn("Process instance {} not found", processInstanceKey);
-          sendErrorMessage("Process instance not found", "RESOURCE_NOT_FOUND");
-          stopPolling();
-          return;
-        }
-      } catch (final Exception e) {
-        LOGGER.error("Error fetching process instance state {}", processInstanceKey, e);
-        sendErrorMessage("Failed to fetch process instance: " + e.getMessage(), "INTERNAL_ERROR");
-        return;
-      }
-
-      // Send update if changed OR if first poll (initial state)
-      if (lastKnownFlows == null || hasChanged(lastKnownFlows, currentFlows)) {
-        sendUpdate(currentFlows);
-
-        // Send COMPLETED only on transition TO terminal state (not every poll)
-        if (isTerminalState(currentProcessState)
-            && (lastKnownProcessState == null || !isTerminalState(lastKnownProcessState))) {
-          LOGGER.debug(
-              "Process instance {} reached terminal state, sending COMPLETED message",
-              processInstanceKey);
-          sendCompletedMessage(currentFlows);
-          // Keep polling - client decides when to unsubscribe
-        }
-
-        lastKnownFlows = currentFlows;
-      }
-
-      lastKnownProcessState = currentProcessState;
+      // Always send update on every poll
+      sendUpdate(currentFlows);
 
     } catch (final Exception e) {
       LOGGER.error("Error polling sequence flows for process instance {}", processInstanceKey, e);
       sendErrorMessage("Internal error: " + e.getMessage(), "INTERNAL_ERROR");
+      // Continue polling on error
     }
-  }
-
-  private boolean hasChanged(
-      final List<SequenceFlowEntity> previous, final List<SequenceFlowEntity> current) {
-    if (previous == null || current == null) {
-      return true;
-    }
-
-    // Simple size comparison - sequence flows are append-only
-    // If size changed, new flows were added
-    return previous.size() != current.size();
-  }
-
-  private boolean isTerminalState(final ProcessInstanceEntity entity) {
-    if (entity == null || entity.state() == null) {
-      return false;
-    }
-    return entity.state() == ProcessInstanceEntity.ProcessInstanceState.COMPLETED
-        || entity.state() == ProcessInstanceEntity.ProcessInstanceState.CANCELED;
   }
 
   private void sendUpdate(final List<SequenceFlowEntity> flows) {
@@ -169,18 +112,6 @@ class SequenceFlowsSubscription {
       session.sendMessage(new TextMessage(json));
     } catch (final Exception e) {
       LOGGER.error("Failed to send update for sequence flows {}", processInstanceKey, e);
-    }
-  }
-
-  private void sendCompletedMessage(final List<SequenceFlowEntity> flows) {
-    try {
-      final var result = SearchQueryResponseMapper.toSequenceFlowsResult(flows);
-      final var message = new CompletedMessage("COMPLETED", Instant.now(), subscriptionId, result);
-      final String json = objectMapper.writeValueAsString(message);
-      session.sendMessage(new TextMessage(json));
-    } catch (final Exception e) {
-      LOGGER.error(
-          "Failed to send completion message for sequence flows {}", processInstanceKey, e);
     }
   }
 

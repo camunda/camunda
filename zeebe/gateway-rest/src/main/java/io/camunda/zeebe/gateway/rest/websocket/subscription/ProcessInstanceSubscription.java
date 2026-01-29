@@ -12,7 +12,6 @@ import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.ProcessInstanceServices;
-import io.camunda.zeebe.gateway.rest.websocket.message.CompletedMessage;
 import io.camunda.zeebe.gateway.rest.websocket.message.ErrorMessage;
 import io.camunda.zeebe.gateway.rest.websocket.message.UpdateMessage;
 import java.time.Duration;
@@ -34,7 +33,6 @@ class ProcessInstanceSubscription {
   private final ProcessInstanceServices processInstanceServices;
   private final ObjectMapper objectMapper;
   private final CamundaAuthenticationProvider authenticationProvider;
-  private volatile ProcessInstanceEntity lastKnownState;
   private volatile ScheduledFuture<?> pollingTask;
 
   ProcessInstanceSubscription(
@@ -90,50 +88,18 @@ class ProcessInstanceSubscription {
       if (currentState == null) {
         LOGGER.warn("Process instance {} not found", processInstanceKey);
         sendErrorMessage("Process instance not found", "RESOURCE_NOT_FOUND");
-        stopPolling(); // Stop polling if not found
+        // Continue polling even if not found
         return;
       }
 
-      // Send update if changed OR if first poll (initial state)
-      if (lastKnownState == null || hasChanged(lastKnownState, currentState)) {
-        sendUpdate(currentState);
-
-        // Send COMPLETED only on transition TO terminal state (not every poll)
-        if (isTerminalState(currentState)
-            && (lastKnownState == null || !isTerminalState(lastKnownState))) {
-          LOGGER.debug(
-              "Process instance {} reached terminal state, sending COMPLETED message",
-              processInstanceKey);
-          sendCompletedMessage(currentState);
-          // Keep polling - client decides when to unsubscribe
-        }
-
-        lastKnownState = currentState;
-      }
+      // Always send update on every poll
+      sendUpdate(currentState);
 
     } catch (final Exception e) {
       LOGGER.error("Error polling process instance {}", processInstanceKey, e);
       sendErrorMessage("Internal error: " + e.getMessage(), "INTERNAL_ERROR");
+      // Continue polling on error
     }
-  }
-
-  private boolean hasChanged(
-      final ProcessInstanceEntity previous, final ProcessInstanceEntity current) {
-    if (previous == null || current == null) {
-      return true;
-    }
-
-    return !java.util.Objects.equals(previous.state(), current.state())
-        || !java.util.Objects.equals(previous.hasIncident(), current.hasIncident())
-        || !java.util.Objects.equals(previous.endDate(), current.endDate());
-  }
-
-  private boolean isTerminalState(final ProcessInstanceEntity entity) {
-    if (entity == null || entity.state() == null) {
-      return false;
-    }
-    return entity.state() == ProcessInstanceEntity.ProcessInstanceState.COMPLETED
-        || entity.state() == ProcessInstanceEntity.ProcessInstanceState.CANCELED;
   }
 
   private void sendUpdate(final ProcessInstanceEntity entity) {
@@ -144,18 +110,6 @@ class ProcessInstanceSubscription {
       session.sendMessage(new TextMessage(json));
     } catch (final Exception e) {
       LOGGER.error("Failed to send update for process instance {}", processInstanceKey, e);
-    }
-  }
-
-  private void sendCompletedMessage(final ProcessInstanceEntity entity) {
-    try {
-      final var result = SearchQueryResponseMapper.toProcessInstance(entity);
-      final var message = new CompletedMessage("COMPLETED", Instant.now(), subscriptionId, result);
-      final String json = objectMapper.writeValueAsString(message);
-      session.sendMessage(new TextMessage(json));
-    } catch (final Exception e) {
-      LOGGER.error(
-          "Failed to send completion message for process instance {}", processInstanceKey, e);
     }
   }
 
