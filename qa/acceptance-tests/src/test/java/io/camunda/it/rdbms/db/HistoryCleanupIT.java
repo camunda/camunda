@@ -216,4 +216,113 @@ public class HistoryCleanupIT {
         .isNotNull()
         .isEqualTo(expectedCleanupDate);
   }
+
+  @Test
+  public void shouldDeleteStandaloneDecisionInstanceDuringCleanup() {
+    // GIVEN - Create a standalone decision instance with an expired cleanup date
+    final var evaluationDate = OffsetDateTime.now().minusDays(40);
+    final var decisionInstance =
+        DecisionInstanceFixtures.createAndSaveRandomDecisionInstance(
+            rdbmsWriters, b -> b.processInstanceKey(-1L).evaluationDate(evaluationDate));
+    rdbmsWriters.flush();
+
+    // Verify it was created
+    final var countBefore =
+        jdbcTemplate.queryForObject(
+            "SELECT COUNT(*) FROM DECISION_INSTANCE WHERE DECISION_INSTANCE_KEY = "
+                + decisionInstance.decisionInstanceKey(),
+            Integer.class);
+    assertThat(countBefore).isEqualTo(1);
+
+    // WHEN - Run cleanup with a date that should trigger deletion
+    final var cleanupDate = OffsetDateTime.now();
+    historyCleanupService.cleanupHistory(0, cleanupDate);
+    rdbmsWriters.flush();
+
+    // THEN - Verify the standalone decision instance was deleted
+    final var countAfter =
+        jdbcTemplate.queryForObject(
+            "SELECT COUNT(*) FROM DECISION_INSTANCE WHERE DECISION_INSTANCE_KEY = "
+                + decisionInstance.decisionInstanceKey(),
+            Integer.class);
+    assertThat(countAfter)
+        .describedAs("Standalone decision instance should be deleted during cleanup")
+        .isEqualTo(0);
+  }
+
+  @Test
+  public void shouldDeleteStandaloneDecisionAuditLogDuringCleanup() {
+    // GIVEN - Create a standalone decision audit log with an expired cleanup date
+    final var evaluationDate = OffsetDateTime.now().minusDays(40);
+    final var processInstanceKey = Math.abs(new java.util.Random().nextLong());
+    final var auditLog =
+        AuditLogFixtures.createRandomized(
+            b ->
+                b.entityType(AuditLogEntityType.DECISION)
+                    .processInstanceKey(processInstanceKey)
+                    .historyCleanupDate(evaluationDate.plusDays(5))
+                    .timestamp(evaluationDate));
+    AuditLogFixtures.createAndSaveAuditLog(rdbmsWriters, auditLog);
+    rdbmsWriters.flush();
+
+    // Verify it was created
+    final var countBefore =
+        jdbcTemplate.queryForObject(
+            "SELECT COUNT(*) FROM AUDIT_LOG WHERE AUDIT_LOG_KEY = '" + auditLog.auditLogKey() + "'",
+            Integer.class);
+    assertThat(countBefore).isEqualTo(1);
+
+    // WHEN - Run cleanup with a date that should trigger deletion
+    final var cleanupDate = OffsetDateTime.now();
+    historyCleanupService.cleanupHistory(0, cleanupDate);
+    rdbmsWriters.flush();
+
+    // THEN - Verify the standalone decision audit log was deleted
+    final var countAfter =
+        jdbcTemplate.queryForObject(
+            "SELECT COUNT(*) FROM AUDIT_LOG WHERE AUDIT_LOG_KEY = '" + auditLog.auditLogKey() + "'",
+            Integer.class);
+    assertThat(countAfter)
+        .describedAs("Standalone decision audit log should be deleted during cleanup")
+        .isEqualTo(0);
+  }
+
+  @Test
+  public void shouldNotDeleteDecisionInstancesWithProcessInstanceDuringStandaloneCleanup() {
+    // GIVEN - Create a decision instance WITH a process instance
+    final var processInstance =
+        ProcessInstanceFixtures.createAndSaveRandomProcessInstance(rdbmsWriters, b -> b);
+    final var evaluationDate = OffsetDateTime.now().minusDays(40);
+    final var decisionInstance =
+        DecisionInstanceFixtures.createAndSaveRandomDecisionInstance(
+            rdbmsWriters,
+            b ->
+                b.processInstanceKey(processInstance.processInstanceKey())
+                    .evaluationDate(evaluationDate));
+    rdbmsWriters.flush();
+
+    // Verify it was created
+    final var countBefore =
+        jdbcTemplate.queryForObject(
+            "SELECT COUNT(*) FROM DECISION_INSTANCE WHERE DECISION_INSTANCE_KEY = "
+                + decisionInstance.decisionInstanceKey(),
+            Integer.class);
+    assertThat(countBefore).isEqualTo(1);
+
+    // WHEN - Run cleanup with a date that should trigger deletion
+    final var cleanupDate = OffsetDateTime.now();
+    historyCleanupService.cleanupHistory(0, cleanupDate);
+    rdbmsWriters.flush();
+
+    // THEN - Verify the decision instance with PI was NOT deleted by standalone cleanup
+    final var countAfter =
+        jdbcTemplate.queryForObject(
+            "SELECT COUNT(*) FROM DECISION_INSTANCE WHERE DECISION_INSTANCE_KEY = "
+                + decisionInstance.decisionInstanceKey(),
+            Integer.class);
+    assertThat(countAfter)
+        .describedAs(
+            "Decision instance with process instance should NOT be deleted by standalone cleanup")
+        .isEqualTo(1);
+  }
 }

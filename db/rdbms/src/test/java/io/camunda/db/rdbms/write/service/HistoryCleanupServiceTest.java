@@ -96,6 +96,8 @@ class HistoryCleanupServiceTest {
     when(batchOperationWriter.cleanupHistory(any(), anyInt())).thenReturn(0);
     when(usageMetricWriter.cleanupMetrics(anyInt(), any(), anyInt())).thenReturn(0);
     when(usageMetricTUWriter.cleanupMetrics(anyInt(), any(), anyInt())).thenReturn(0);
+    when(decisionInstanceWriter.cleanupHistory(anyInt(), any(), anyInt())).thenReturn(0);
+    when(auditLogWriter.cleanupHistory(anyInt(), any(), anyInt())).thenReturn(0);
 
     final var historyConfig = mock(RdbmsWriterConfig.HistoryConfig.class);
     when(config.history()).thenReturn(historyConfig);
@@ -162,6 +164,8 @@ class HistoryCleanupServiceTest {
     when(auditLogWriter.deleteProcessInstanceRelatedData(anyInt(), any(), anyInt())).thenReturn(0);
     when(processInstanceWriter.deleteByKeys(any())).thenReturn(3);
     when(batchOperationWriter.cleanupHistory(any(), anyInt())).thenReturn(1);
+    when(decisionInstanceWriter.cleanupHistory(anyInt(), any(), anyInt())).thenReturn(2);
+    when(auditLogWriter.cleanupHistory(anyInt(), any(), anyInt())).thenReturn(1);
 
     // when
     final Duration nextCleanupInterval =
@@ -194,6 +198,8 @@ class HistoryCleanupServiceTest {
     // PIs deleted since no child entities were found
     verify(processInstanceWriter).deleteByKeys(expiredProcessInstanceKeys);
     verify(batchOperationWriter).cleanupHistory(CLEANUP_DATE, 100);
+    verify(decisionInstanceWriter).cleanupHistory(PARTITION_ID, CLEANUP_DATE, 100);
+    verify(auditLogWriter).cleanupHistory(PARTITION_ID, CLEANUP_DATE, 100);
   }
 
   @Test
@@ -397,5 +403,72 @@ class HistoryCleanupServiceTest {
 
     assertThat(historyCleanupService.resolveBatchOperationTTL(BatchOperationType.ADD_VARIABLE))
         .isEqualTo(Duration.ofDays(90)); // default history TTL
+  }
+
+  @Test
+  void testCleanupStandaloneDecisionInstances() {
+    // given - no expired process instances, but standalone decision instances exist
+    when(processInstanceReader.selectExpiredProcessInstances(anyInt(), any(), anyInt()))
+        .thenReturn(java.util.Collections.emptyList());
+    when(batchOperationWriter.cleanupHistory(any(), anyInt())).thenReturn(0);
+    when(decisionInstanceWriter.cleanupHistory(anyInt(), any(), anyInt())).thenReturn(5);
+    when(auditLogWriter.cleanupHistory(anyInt(), any(), anyInt())).thenReturn(3);
+
+    // when
+    final Duration nextCleanupInterval =
+        historyCleanupService.cleanupHistory(PARTITION_ID, CLEANUP_DATE);
+
+    // then
+    assertThat(nextCleanupInterval).isEqualTo(Duration.ofHours(1));
+    verify(decisionInstanceWriter).cleanupHistory(PARTITION_ID, CLEANUP_DATE, 100);
+    verify(auditLogWriter).cleanupHistory(PARTITION_ID, CLEANUP_DATE, 100);
+  }
+
+  @Test
+  void testCalculateNewDurationWhenStandaloneDecisionsHitLimit() {
+    // given - standalone decision instances hit the cleanup batch size limit
+    final var numDeletedRecords = new java.util.HashMap<String, Integer>();
+    numDeletedRecords.put("processInstance", 0);
+    numDeletedRecords.put("standaloneDecisionInstance", 100); // hit the limit
+    numDeletedRecords.put("standaloneDecisionAuditLog", 50);
+
+    // when
+    final Duration nextDuration =
+        historyCleanupService.calculateNewDuration(Duration.ofHours(4), numDeletedRecords);
+
+    // then - should halve the interval because standalone decisions hit limit
+    assertThat(nextDuration).isEqualTo(Duration.ofHours(2));
+  }
+
+  @Test
+  void testCalculateNewDurationWhenStandaloneAuditLogsHitLimit() {
+    // given - standalone audit logs hit the cleanup batch size limit
+    final var numDeletedRecords = new java.util.HashMap<String, Integer>();
+    numDeletedRecords.put("processInstance", 0);
+    numDeletedRecords.put("standaloneDecisionInstance", 50);
+    numDeletedRecords.put("standaloneDecisionAuditLog", 100); // hit the limit
+
+    // when
+    final Duration nextDuration =
+        historyCleanupService.calculateNewDuration(Duration.ofHours(4), numDeletedRecords);
+
+    // then - should halve the interval because audit logs hit limit
+    assertThat(nextDuration).isEqualTo(Duration.ofHours(2));
+  }
+
+  @Test
+  void testCalculateNewDurationWithStandaloneRecordsButNoLimit() {
+    // given - some standalone records deleted but not hitting limit
+    final var numDeletedRecords = new java.util.HashMap<String, Integer>();
+    numDeletedRecords.put("processInstance", 10);
+    numDeletedRecords.put("standaloneDecisionInstance", 20);
+    numDeletedRecords.put("standaloneDecisionAuditLog", 15);
+
+    // when
+    final Duration nextDuration =
+        historyCleanupService.calculateNewDuration(Duration.ofHours(4), numDeletedRecords);
+
+    // then - should double the interval (total 45 < 50)
+    assertThat(nextDuration).isEqualTo(Duration.ofHours(8));
   }
 }
