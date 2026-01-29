@@ -48,6 +48,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
   private short intentValue = Intent.NULL_VAL;
   private int requestStreamId;
   private final AuthInfo authorization = new AuthInfo();
+  private String traceId;
   private RejectionType rejectionType;
   private final UnsafeBuffer rejectionReason = new UnsafeBuffer(0, 0);
 
@@ -117,6 +118,15 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
     } else {
       decoder.skipAuthorization();
     }
+
+    final int traceIdLength = decoder.traceIdLength();
+    if (traceIdLength > 0) {
+      final DirectBuffer traceIdBuffer = new UnsafeBuffer();
+      decoder.wrapTraceId(traceIdBuffer);
+      traceId = BufferUtil.bufferAsString(traceIdBuffer);
+    } else {
+      decoder.skipTraceId();
+    }
   }
 
   @Override
@@ -125,7 +135,9 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
         + RecordMetadataEncoder.rejectionReasonHeaderLength()
         + rejectionReason.capacity()
         + RecordMetadataEncoder.authorizationHeaderLength()
-        + authorization.getLength();
+        + authorization.getLength()
+        + RecordMetadataEncoder.traceIdHeaderLength()
+        + traceId.length();
   }
 
   @Override
@@ -163,6 +175,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
     // working with variable-length fields
     encoder.putRejectionReason(rejectionReason, 0, rejectionReason.capacity());
     encoder.putAuthorization(authorization.toDirectBuffer(), 0, authorization.getLength());
+    encoder.putTraceId(traceId.getBytes(), 0, traceId.length());
   }
 
   public long getRequestId() {
@@ -258,6 +271,20 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
     return authorization;
   }
 
+  public RecordMetadata traceId(final String traceId) {
+    this.traceId = traceId;
+    return this;
+  }
+
+  public RecordMetadata traceId(final DirectBuffer buffer) {
+    traceId = BufferUtil.bufferAsString(buffer);
+    return this;
+  }
+
+  public String getTraceId() {
+    return traceId;
+  }
+
   public RecordMetadata brokerVersion(final VersionInfo brokerVersion) {
     this.brokerVersion = brokerVersion;
     return this;
@@ -305,6 +332,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
     rejectionType = RejectionType.NULL_VAL;
     rejectionReason.wrap(0, 0);
     authorization.reset();
+    traceId = "";
     brokerVersion = CURRENT_BROKER_VERSION;
     recordVersion = DEFAULT_RECORD_VERSION;
     operationReference = RecordMetadataEncoder.operationReferenceNullValue();
@@ -323,6 +351,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
         rejectionType,
         rejectionReason,
         authorization,
+        traceId,
         protocolVersion,
         brokerVersion,
         recordVersion,
@@ -348,6 +377,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
         && rejectionType == that.rejectionType
         && rejectionReason.equals(that.rejectionReason)
         && authorization.equals(that.authorization)
+        && traceId.equals(that.traceId)
         && brokerVersion.equals(that.brokerVersion)
         && recordVersion == that.recordVersion
         && operationReference == that.operationReference
@@ -378,6 +408,9 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
 
     if (!authorization.isEmpty()) {
       builder.append(", authorization=").append(authorization);
+    }
+    if (!traceId.isEmpty()) {
+      builder.append(", otelContext=").append(traceId);
     }
     if (operationReference != RecordMetadataEncoder.operationReferenceNullValue()) {
       builder.append(", operationReference=").append(operationReference);

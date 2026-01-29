@@ -37,6 +37,12 @@ import io.camunda.zeebe.stream.api.RecordProcessor;
 import io.camunda.zeebe.stream.api.RecordProcessorContext;
 import io.camunda.zeebe.stream.api.records.ExceededBatchRecordSizeException;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.SpanContext;
+import io.opentelemetry.api.trace.TraceFlags;
+import io.opentelemetry.api.trace.TraceState;
+import io.opentelemetry.context.Context;
+import io.opentelemetry.context.Scope;
 import java.util.EnumSet;
 import java.util.Objects;
 import java.util.function.Supplier;
@@ -171,12 +177,14 @@ public class Engine implements RecordProcessor {
         return processingResultBuilder.build();
       }
 
+      final var processor = currentProcessor;
+
       if (shouldProcessCommand(typedCommand)) {
-        if (currentProcessor.shouldProcessResultsInSeparateBatches()) {
+        if (processor.shouldProcessResultsInSeparateBatches()) {
           processingResultBuilder.withProcessInASeparateBatch();
         }
 
-        currentProcessor.processRecord(record);
+        executeWithTracing(record, () -> processor.processRecord(record));
       }
     }
     return processingResultBuilder.build();
@@ -236,6 +244,38 @@ public class Engine implements RecordProcessor {
     return intent == ProcessInstanceIntent.CANCEL
         || intent == ProcessInstanceIntent.TERMINATE_ELEMENT
         || intent == ProcessInstanceBatchIntent.TERMINATE;
+  }
+
+  private void executeWithTracing(final TypedRecord record, final Runnable processingTask) {
+    final String traceIdAndSpanId = record.traceId();
+
+    if (traceIdAndSpanId.isEmpty()) {
+      processingTask.run();
+    } else {
+      final String[] split = traceIdAndSpanId.split(":");
+      final String traceId = split[0];
+      final String spanId = split[1];
+
+      final SpanContext parentSc =
+          SpanContext.createFromRemoteParent(
+              traceId, spanId, TraceFlags.getSampled(), TraceState.getDefault());
+
+      final Context parentCtx = Context.root().with(Span.wrap(parentSc));
+
+      final Span child =
+          OtelBootstrap.tracer()
+              .spanBuilder("%s:%s".formatted(record.getValueType(), record.getIntent()))
+              .setParent(parentCtx)
+              .startSpan();
+
+      try (final Scope scope = child.makeCurrent()) {
+        processingTask.run();
+      } catch (final Exception e) {
+        throw new RuntimeException(e);
+      } finally {
+        child.end();
+      }
+    }
   }
 
   private void handleUnexpectedError(

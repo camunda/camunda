@@ -133,6 +133,16 @@ public final class RetryTypedRecord<T extends UnifiedRecordValue> implements Typ
   }
 
   @Override
+  public AuthInfo getAuthInfo() {
+    return null;
+  }
+
+  @Override
+  public String traceId() {
+    return "";
+  }
+
+  @Override
   public int getRequestStreamId() {
     return RecordMetadataEncoder.requestStreamIdNullValue();
   }
@@ -145,10 +155,5 @@ public final class RetryTypedRecord<T extends UnifiedRecordValue> implements Typ
   @Override
   public int getLength() {
     return 0;
-  }
-
-  @Override
-  public AuthInfo getAuthInfo() {
-    return null;
   }
 }

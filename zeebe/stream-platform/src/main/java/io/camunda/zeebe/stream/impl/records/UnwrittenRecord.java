@@ -121,6 +121,11 @@ public class UnwrittenRecord implements TypedRecord {
   }
 
   @Override
+  public String traceId() {
+    return metadata.getTraceId();
+  }
+
+  @Override
   public int getRequestStreamId() {
     return metadata.getRequestStreamId();
   }

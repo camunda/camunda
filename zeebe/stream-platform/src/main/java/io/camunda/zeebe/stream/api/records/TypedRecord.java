@@ -27,6 +27,9 @@ public interface TypedRecord<T extends UnifiedRecordValue> extends Record<T> {
   @JsonIgnore
   AuthInfo getAuthInfo();
 
+  @JsonIgnore
+  String traceId();
+
   int getRequestStreamId();
 
   long getRequestId();

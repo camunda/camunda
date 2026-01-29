@@ -70,6 +70,15 @@ public abstract class BrokerExecuteCommand<T> extends BrokerRequest<T> {
     request.setAuthorization(new AuthInfo().setClaims(claims));
   }
 
+  public String getTraceId() {
+    return request.getTraceId();
+  }
+
+  @Override
+  public void setTraceId(final String traceId) {
+    request.setTraceId(traceId);
+  }
+
   @Override
   public boolean addressesSpecificPartition() {
     return getPartitionId() != ExecuteCommandRequestEncoder.partitionIdNullValue();

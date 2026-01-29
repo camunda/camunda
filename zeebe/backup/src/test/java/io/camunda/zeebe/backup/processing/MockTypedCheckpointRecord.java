@@ -124,6 +124,16 @@ record MockTypedCheckpointRecord(
   }
 
   @Override
+  public AuthInfo getAuthInfo() {
+    return null;
+  }
+
+  @Override
+  public String traceId() {
+    return "";
+  }
+
+  @Override
   public int getRequestStreamId() {
     return requestStreamId;
   }
@@ -136,10 +146,5 @@ record MockTypedCheckpointRecord(
   @Override
   public int getLength() {
     return 0;
-  }
-
-  @Override
-  public AuthInfo getAuthInfo() {
-    return null;
   }
 }

@@ -149,6 +149,7 @@ public final class DeploymentCreateProcessor
     }
 
     transformAndDistributeDeployment(command);
+
     // manage the top-level start event subscriptions except for timers
     startEventSubscriptionManager.tryReOpenStartEventSubscription(command.getValue());
   }

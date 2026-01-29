@@ -95,11 +95,6 @@ public final class TypedRecordImpl implements TypedRecord {
   }
 
   @Override
-  public AuthInfo getAuthInfo() {
-    return metadata.getAuthorization();
-  }
-
-  @Override
   public int getRecordVersion() {
     return metadata.getRecordVersion();
   }
@@ -132,6 +127,16 @@ public final class TypedRecordImpl implements TypedRecord {
   @Override
   public UnifiedRecordValue getValue() {
     return value;
+  }
+
+  @Override
+  public AuthInfo getAuthInfo() {
+    return metadata.getAuthorization();
+  }
+
+  @Override
+  public String traceId() {
+    return metadata.getTraceId();
   }
 
   @Override
