@@ -241,7 +241,7 @@ jobs:
           repository: 'gcr.io/zeebe-io/zeebe'
           revision: ${{ inputs.ref }}
           push: true
-          version: 'tmp-migrator'
+          version: 'tmp-migrator-2'
           distball: ${{ steps.build-camunda.outputs.distball }}
           dockerfile: 'camunda.Dockerfile'
       - name: Observe build status

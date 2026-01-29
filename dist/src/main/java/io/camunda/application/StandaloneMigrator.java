@@ -8,6 +8,8 @@
 package io.camunda.application;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.application.commons.rdbms.RdbmsConfiguration;
 import io.camunda.application.listeners.ApplicationErrorListener;
 import io.camunda.configuration.Camunda;
@@ -16,6 +18,7 @@ import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.RdbmsWriterFactory;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.DecisionInstanceDbModel;
+import io.camunda.db.rdbms.write.domain.ExporterPositionModel;
 import io.camunda.db.rdbms.write.domain.FlowNodeInstanceDbModel;
 import io.camunda.db.rdbms.write.domain.IncidentDbModel;
 import io.camunda.db.rdbms.write.domain.JobDbModel;
@@ -29,7 +32,14 @@ import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.LocalDateTime;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import org.slf4j.Logger;
@@ -46,9 +56,13 @@ public class StandaloneMigrator implements CommandLineRunner {
 
   private static final Logger LOG = LoggerFactory.getLogger(StandaloneMigrator.class);
   private static final int BATCH_SIZE = 100000;
+  private static final String DEFAULT_PARTITIONS_URL = "http://camunda:9600/actuator/partitions";
+  private static final String EXPORTER_NAME = "rdbms";
+
   private final ConnectConfiguration elasticsearch;
   private final Rdbms rdbms;
   private final RdbmsWriterFactory rdbmsWriterFactory;
+  private final String partitionsUrl;
 
   public StandaloneMigrator(
       final ConnectConfiguration elasticsearch,
@@ -57,6 +71,7 @@ public class StandaloneMigrator implements CommandLineRunner {
     this.elasticsearch = elasticsearch;
     this.rdbms = rdbms;
     this.rdbmsWriterFactory = rdbmsWriterFactory;
+    partitionsUrl = DEFAULT_PARTITIONS_URL;
   }
 
   public static void main(final String[] args) throws IOException {
@@ -100,6 +115,8 @@ public class StandaloneMigrator implements CommandLineRunner {
       final var rdbmsWriter =
           rdbmsWriterFactory.createWriter(new RdbmsWriterConfig.Builder().build());
 
+      LOG.info("Migrating exporter positions from partitions endpoint...");
+      migrateExporterPositions(rdbmsWriter);
       LOG.info("Migrating process definitions...");
       migrateEntitiesWithBatchFlush(
           ProcessDefReader.readProcessDefinitions(client),
@@ -180,6 +197,8 @@ public class StandaloneMigrator implements CommandLineRunner {
           IncidentDbModel::incidentKey);
       LOG.info("Incidents migrated successfully.");
 
+      LOG.info("Exporter positions migrated successfully.");
+
     } catch (final Exception e) {
       LOG.error("Failed to migrate from ES to RDBMS", e);
       throw e;
@@ -211,6 +230,46 @@ public class StandaloneMigrator implements CommandLineRunner {
       rdbmsWriter.flush(true);
     }
     LOG.info("Total {} entities migrated", count);
+  }
+
+  private void migrateExporterPositions(final RdbmsWriters rdbmsWriter) throws Exception {
+    final HttpClient httpClient = HttpClient.newHttpClient();
+    final HttpRequest request =
+        HttpRequest.newBuilder().uri(URI.create(partitionsUrl)).GET().build();
+
+    final HttpResponse<String> response =
+        httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+    if (response.statusCode() != 200) {
+      throw new RuntimeException(
+          "Failed to fetch partitions from " + partitionsUrl + ": HTTP " + response.statusCode());
+    }
+
+    final ObjectMapper objectMapper = new ObjectMapper();
+    final JsonNode rootNode = objectMapper.readTree(response.body());
+
+    final LocalDateTime now = LocalDateTime.now();
+    final Iterator<Map.Entry<String, JsonNode>> fields = rootNode.fields();
+    int count = 0;
+
+    while (fields.hasNext()) {
+      final Map.Entry<String, JsonNode> entry = fields.next();
+      final int partitionId = Integer.parseInt(entry.getKey());
+      final JsonNode partitionData = entry.getValue();
+      final long exportedPosition = partitionData.get("processedPosition").asLong();
+
+      final ExporterPositionModel positionModel =
+          new ExporterPositionModel(partitionId, EXPORTER_NAME, exportedPosition, now, now);
+
+      rdbmsWriter.getExporterPositionService().createWithoutQueue(positionModel);
+      count++;
+      LOG.info(
+          "Inserted exporter position for partition {} with position {}",
+          partitionId,
+          exportedPosition);
+    }
+
+    LOG.info("Total {} exporter positions migrated", count);
   }
 
   @EnableConfigurationProperties({ElasticsearchProperties.class, RdbmsProperties.class})
