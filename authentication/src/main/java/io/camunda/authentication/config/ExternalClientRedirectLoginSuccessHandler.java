@@ -76,7 +76,14 @@ public class ExternalClientRedirectLoginSuccessHandler
               authorizedClientRegistrationId, authentication, request);
       final OAuth2AccessToken accessToken = authorizedClient.getAccessToken();
 
-      return originalRedirectUrl + "?token=" + accessToken.getTokenValue();
+      final String appendingCharacter;
+      if (originalRedirectUrl.contains("?")) {
+        appendingCharacter = "&";
+      } else {
+        appendingCharacter = "?";
+      }
+
+      return originalRedirectUrl + appendingCharacter + "token=" + accessToken.getTokenValue();
     } else {
       return originalRedirectUrl;
     }
