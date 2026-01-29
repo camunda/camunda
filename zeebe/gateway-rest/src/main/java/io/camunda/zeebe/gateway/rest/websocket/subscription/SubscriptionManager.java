@@ -72,7 +72,7 @@ public class SubscriptionManager {
             authenticationProvider);
 
     subscriptions.put(subscriptionId, subscription);
-    subscription.startPolling(taskScheduler, 1000L); // 1 second poll interval
+    subscription.startPolling(taskScheduler, 20L); // 20ms poll interval (0.02s)
 
     LOGGER.debug(
         "Created subscription {} for process instance {}", subscriptionId, processInstanceKey);
@@ -97,7 +97,7 @@ public class SubscriptionManager {
             authenticationProvider);
 
     sequenceFlowsSubscriptions.put(subscriptionId, subscription);
-    subscription.startPolling(taskScheduler, 200L); // 200ms poll interval (0.2s)
+    subscription.startPolling(taskScheduler, 20L); // 20ms poll interval (0.02s)
 
     LOGGER.debug(
         "Created subscription {} for sequence flows of process instance {}",
@@ -124,7 +124,7 @@ public class SubscriptionManager {
             authenticationProvider);
 
     elementStatisticsSubscriptions.put(subscriptionId, subscription);
-    subscription.startPolling(taskScheduler, 200L); // 200ms poll interval (0.2s)
+    subscription.startPolling(taskScheduler, 20L); // 20ms poll interval (0.02s)
 
     LOGGER.debug(
         "Created subscription {} for element statistics of process instance {}",
