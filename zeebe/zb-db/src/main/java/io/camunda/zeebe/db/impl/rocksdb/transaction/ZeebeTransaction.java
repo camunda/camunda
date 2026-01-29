@@ -35,6 +35,7 @@ public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
   private boolean inCurrentTransaction;
   private Transaction transaction;
   private final Map<CFKEy, byte[]> cache = new HashMap<>();
+  private final byte[] NO_VALUE = new byte[0];
 
   public ZeebeTransaction(
       final Transaction transaction, final TransactionRenovator transactionRenovator) {
@@ -101,26 +102,28 @@ public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
       final int keyLength)
       throws Exception {
 
-    final CFKEy cfkEy = new CFKEy(columnFamilyHandle, new UnsafeBuffer(key, keyOffset, keyLength).hashCode());
+    final CFKEy cfkEy = new CFKEy(columnFamilyHandle, key, keyOffset, keyLength);
 
-    return cache.computeIfAbsent(
+    final byte[] cached = cache.computeIfAbsent(
         cfkEy,
         cfk -> {
           try {
-            return (byte[])
+            final byte[] value = (byte[])
                 RocksDbInternal.getWithHandle.invokeExact(
                     nativeHandle, readOptionsHandle, key, keyOffset, keyLength, columnFamilyHandle);
+            return value != null ? value : NO_VALUE;
           } catch (final Throwable e) {
             LangUtil.rethrowUnchecked(e);
             return null; // unreachable
           }
         });
+    return cached != NO_VALUE ? cached : null;
   }
 
   public void delete(final long columnFamilyHandle, final byte[] key, final int keyLength)
       throws Exception {
     try {
-      cache.remove(new CFKEy(columnFamilyHandle, new UnsafeBuffer(key, 0, keyLength).hashCode()));
+      cache.put(new CFKEy(columnFamilyHandle, key, 0, keyLength), NO_VALUE);
       RocksDbInternal.removeWithHandle.invokeExact(
           nativeHandle, key, keyLength, columnFamilyHandle, false);
     } catch (final Throwable e) {
@@ -196,5 +199,13 @@ public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
     transaction.close();
   }
 
-  record CFKEy(long columnFamilyHandle, long hash) {}
+  record CFKEy(long columnFamilyHandle, long hash) {
+    public CFKEy(
+        final long columnFamilyHandle,
+        final byte[] key,
+        final int keyOffset,
+        final int keyLengt) {
+      this(columnFamilyHandle, new UnsafeBuffer(key, keyOffset, keyLengt).hashCode());
+    }
+  }
 }
