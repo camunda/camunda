@@ -217,8 +217,7 @@
   <sql id="processInstanceHistoryDeletion" databaseId="mssql">
     DELETE TOP (#{limit})
     FROM ${prefix}${tableName}
-    WHERE PARTITION_ID = #{partitionId}
-      AND PROCESS_INSTANCE_KEY IN
+    WHERE PROCESS_INSTANCE_KEY IN
     <foreach collection="processInstanceKeys" item="key" open="(" separator=", " close=")">
       #{key}
     </foreach>
@@ -235,8 +234,7 @@
     FROM ${prefix}${tableName} t1
     WHERE ${keyColumn} IN (SELECT t2.${keyColumn}
                            FROM ${prefix}${tableName} t2
-                           WHERE t2.PARTITION_ID = #{partitionId}
-                             AND t2.PROCESS_INSTANCE_KEY IN (
+                           WHERE t2.PROCESS_INSTANCE_KEY IN (
                                SELECT COLUMN_VALUE
                                FROM XMLTABLE('/d/r'
                                     PASSING XMLTYPE(#{processInstanceKeys, typeHandler=io.camunda.db.rdbms.sql.typehandler.OracleXmlArrayTypeHandler})
@@ -255,8 +253,7 @@
     FROM ${prefix}${tableName} t1
     USING (SELECT ${keyColumn}
            FROM ${prefix}${tableName}
-           WHERE PARTITION_ID = #{partitionId}
-             AND PROCESS_INSTANCE_KEY = ANY(#{processInstanceKeys, jdbcType=ARRAY, typeHandler=io.camunda.db.rdbms.sql.typehandler.PostgresLongListToArrayTypeHandler})
+           WHERE PROCESS_INSTANCE_KEY = ANY(#{processInstanceKeys, jdbcType=ARRAY, typeHandler=io.camunda.db.rdbms.sql.typehandler.PostgresLongListToArrayTypeHandler})
            LIMIT #{limit}) t2
     WHERE t1.${keyColumn} = t2.${keyColumn}
   </sql>
