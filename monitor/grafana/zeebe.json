@@ -857,7 +857,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "The number of Active current instances.",
+          "description": "The number of active process instances.",
           "fieldConfig": {
             "defaults": {
               "color": {
