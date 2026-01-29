@@ -33,7 +33,8 @@ public class McpProcessInstanceFilter extends ProcessInstanceFilter {
   @Valid
   @Schema(
       name = "variables",
-      description = "The process instance variables. The value of the variable in serialized JSON format. Thus bare string values have to be double-quoted.",
+      description =
+          "The process instance variables. The value of the variable in serialized JSON format. Thus bare string values have to be double-quoted.",
       requiredMode = Schema.RequiredMode.NOT_REQUIRED)
   @JsonProperty("variables")
   public List<@Valid VariableValueFilterProperty> getVariables() {

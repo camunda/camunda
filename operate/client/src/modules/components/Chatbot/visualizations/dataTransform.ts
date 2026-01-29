@@ -49,6 +49,48 @@ export function analyzeToolResponse(
 }
 
 /**
+ * Analyzes multiple tool results for comparative visualization
+ */
+export function analyzeComparativeResults(
+  results: Array<{toolName: string; result: unknown; label?: string}>
+): VisualizationData | null {
+  console.log('[analyzeComparativeResults] Analyzing', results.length, 'results for comparison');
+  
+  if (results.length < 2) {
+    console.log('[analyzeComparativeResults] Need at least 2 results for comparison');
+    return null;
+  }
+
+  // Check if all results are from the same tool type
+  const toolTypes = results.map(r => {
+    if (r.toolName === 'searchProcessInstances' || r.toolName === 'search_process_instances') {
+      return 'processInstances';
+    }
+    if (r.toolName === 'searchIncidents' || r.toolName === 'search_incidents') {
+      return 'incidents';
+    }
+    return 'unknown';
+  });
+
+  const uniqueTypes = new Set(toolTypes);
+  
+  if (uniqueTypes.size === 1) {
+    // Same tool type - compare within same entity
+    const type = Array.from(uniqueTypes)[0];
+    if (type === 'processInstances') {
+      return compareProcessInstances(results);
+    } else if (type === 'incidents') {
+      return compareIncidents(results);
+    }
+  } else if (uniqueTypes.size === 2 && uniqueTypes.has('processInstances') && uniqueTypes.has('incidents')) {
+    // Different types - compare process instances vs incidents
+    return compareProcessInstancesVsIncidents(results);
+  }
+
+  return null;
+}
+
+/**
  * Analyzes process instance data and creates timeline visualization
  */
 function analyzeProcessInstances(result: unknown): VisualizationData | null {
@@ -86,7 +128,7 @@ function analyzeProcessInstances(result: unknown): VisualizationData | null {
   items.forEach((item) => {
     const timestamp = item.startDate || (item as any).creationTime || (item as any).timestamp || (item as any).created;
     
-    if (timestamp) {
+    if (timestamp && typeof timestamp === 'string') {
       try {
         const date = parseISO(timestamp);
         let timeKey: string;
@@ -204,7 +246,7 @@ function analyzeIncidents(result: unknown): VisualizationData | null {
   items.forEach((item) => {
     const timestamp = item.creationTime || (item as any).creationDate || (item as any).timestamp || (item as any).created;
     
-    if (timestamp) {
+    if (timestamp && typeof timestamp === 'string') {
       try {
         const date = parseISO(timestamp);
         let timeKey: string;
@@ -300,4 +342,373 @@ function extractArrayFromResult(result: unknown): unknown[] | null {
   }
 
   return null;
+}
+
+/**
+ * Compares multiple process instance result sets (e.g., active vs completed)
+ */
+function compareProcessInstances(
+  results: Array<{toolName: string; result: unknown; label?: string}>
+): VisualizationData | null {
+  console.log('[compareProcessInstances] Comparing', results.length, 'process instance sets');
+  
+  const allSeries: TimeSeriesDataPoint[] = [];
+  let minTime = Infinity;
+  let maxTime = -Infinity;
+
+  for (const {result, label} of results) {
+    const data = extractArrayFromResult(result);
+    if (!data || data.length === 0) continue;
+
+    const items = data.filter(
+      (item): item is ProcessInstanceItem =>
+        typeof item === 'object' && item !== null && 
+        ('startDate' in item || 'creationTime' in item || 'timestamp' in item || 'created' in item)
+    );
+
+    if (items.length === 0) continue;
+
+    // Determine group label
+    const groupLabel = label || detectGroupLabel(items, 'process');
+
+    // Collect timestamps for granularity
+    const timestamps = items
+      .map(item => item.startDate || (item as any).creationTime || (item as any).timestamp || (item as any).created)
+      .filter(Boolean)
+      .map(ts => parseISO(ts as string).getTime());
+
+    timestamps.forEach(t => {
+      minTime = Math.min(minTime, t);
+      maxTime = Math.max(maxTime, t);
+    });
+
+    // Group by time
+    const timeCounts = new Map<string, number>();
+    const timeSpanMs = maxTime - minTime;
+    const useMinuteGranularity = timeSpanMs < 60 * 60 * 1000;
+    const useHourGranularity = timeSpanMs < 24 * 60 * 60 * 1000;
+
+    items.forEach((item) => {
+      const timestamp = item.startDate || (item as any).creationTime || (item as any).timestamp || (item as any).created;
+      
+      if (timestamp && typeof timestamp === 'string') {
+        try {
+          const date = parseISO(timestamp);
+          let timeKey: string;
+          
+          if (useMinuteGranularity) {
+            timeKey = format(date, 'yyyy-MM-dd HH:mm');
+          } else if (useHourGranularity) {
+            timeKey = format(date, 'yyyy-MM-dd HH:00');
+          } else {
+            timeKey = format(startOfDay(date), 'yyyy-MM-dd');
+          }
+          
+          timeCounts.set(timeKey, (timeCounts.get(timeKey) || 0) + 1);
+        } catch {
+          // Skip invalid dates
+        }
+      }
+    });
+
+    // Convert to chart data points
+    timeCounts.forEach((count, timeStr) => {
+      allSeries.push({
+        group: groupLabel,
+        date: parseISO(timeStr),
+        value: count,
+      });
+    });
+  }
+
+  if (allSeries.length === 0) return null;
+
+  const timeSpanMs = maxTime - minTime;
+  const useMinuteGranularity = timeSpanMs < 60 * 60 * 1000;
+  const useHourGranularity = timeSpanMs < 24 * 60 * 60 * 1000;
+  const granularityLabel = useMinuteGranularity ? 'by Minute' : useHourGranularity ? 'by Hour' : 'by Day';
+
+  return {
+    type: 'timeline',
+    title: `Process Instances Comparison (${granularityLabel})`,
+    data: allSeries,
+    options: {
+      axes: {
+        bottom: {
+          title: 'Time',
+          mapsTo: 'date',
+          scaleType: ScaleTypes.TIME,
+        },
+        left: {
+          title: 'Number of Instances',
+          mapsTo: 'value',
+          scaleType: ScaleTypes.LINEAR,
+        },
+      },
+      height: '250px',
+      width: '100%',
+      resizable: true,
+      curve: 'curveMonotoneX',
+      points: {
+        enabled: true,
+        radius: 4,
+      },
+      timeScale: {
+        addSpaceOnEdges: 1,
+      },
+    },
+  };
+}
+
+/**
+ * Compares multiple incident result sets (e.g., resolved vs active)
+ */
+function compareIncidents(
+  results: Array<{toolName: string; result: unknown; label?: string}>
+): VisualizationData | null {
+  console.log('[compareIncidents] Comparing', results.length, 'incident sets');
+  
+  const allSeries: TimeSeriesDataPoint[] = [];
+  let minTime = Infinity;
+  let maxTime = -Infinity;
+
+  for (const {result, label} of results) {
+    const data = extractArrayFromResult(result);
+    if (!data || data.length === 0) continue;
+
+    const items = data.filter(
+      (item): item is IncidentItem =>
+        typeof item === 'object' && item !== null && 
+        ('creationTime' in item || 'creationDate' in item || 'timestamp' in item || 'created' in item)
+    );
+
+    if (items.length === 0) continue;
+
+    // Determine group label
+    const groupLabel = label || detectGroupLabel(items, 'incident');
+
+    // Collect timestamps for granularity
+    const timestamps = items
+      .map(item => item.creationTime || (item as any).creationDate || (item as any).timestamp || (item as any).created)
+      .filter(Boolean)
+      .map(ts => parseISO(ts as string).getTime());
+
+    timestamps.forEach(t => {
+      minTime = Math.min(minTime, t);
+      maxTime = Math.max(maxTime, t);
+    });
+
+    // Group by time
+    const timeCounts = new Map<string, number>();
+    const timeSpanMs = maxTime - minTime;
+    const useMinuteGranularity = timeSpanMs < 60 * 60 * 1000;
+    const useHourGranularity = timeSpanMs < 24 * 60 * 60 * 1000;
+
+    items.forEach((item) => {
+      const timestamp = item.creationTime || (item as any).creationDate || (item as any).timestamp || (item as any).created;
+      
+      if (timestamp && typeof timestamp === 'string') {
+        try {
+          const date = parseISO(timestamp);
+          let timeKey: string;
+          
+          if (useMinuteGranularity) {
+            timeKey = format(date, 'yyyy-MM-dd HH:mm');
+          } else if (useHourGranularity) {
+            timeKey = format(date, 'yyyy-MM-dd HH:00');
+          } else {
+            timeKey = format(startOfDay(date), 'yyyy-MM-dd');
+          }
+          
+          timeCounts.set(timeKey, (timeCounts.get(timeKey) || 0) + 1);
+        } catch (error) {
+          console.log('[compareIncidents] Failed to parse date:', timestamp, error);
+        }
+      }
+    });
+
+    // Convert to chart data points
+    timeCounts.forEach((count, timeStr) => {
+      allSeries.push({
+        group: groupLabel,
+        date: parseISO(timeStr),
+        value: count,
+      });
+    });
+  }
+
+  if (allSeries.length === 0) return null;
+
+  const timeSpanMs = maxTime - minTime;
+  const useMinuteGranularity = timeSpanMs < 60 * 60 * 1000;
+  const useHourGranularity = timeSpanMs < 24 * 60 * 60 * 1000;
+  const granularityLabel = useMinuteGranularity ? 'by Minute' : useHourGranularity ? 'by Hour' : 'by Day';
+
+  return {
+    type: 'timeline',
+    title: `Incidents Comparison (${granularityLabel})`,
+    data: allSeries,
+    options: {
+      axes: {
+        bottom: {
+          title: 'Time',
+          mapsTo: 'date',
+          scaleType: ScaleTypes.TIME,
+        },
+        left: {
+          title: 'Number of Incidents',
+          mapsTo: 'value',
+          scaleType: ScaleTypes.LINEAR,
+        },
+      },
+      height: '250px',
+      width: '100%',
+      resizable: true,
+      curve: 'curveMonotoneX',
+      points: {
+        enabled: true,
+        radius: 4,
+      },
+      timeScale: {
+        addSpaceOnEdges: 1,
+      },
+    },
+  };
+}
+
+/**
+ * Compares process instances vs incidents (different entities)
+ */
+function compareProcessInstancesVsIncidents(
+  results: Array<{toolName: string; result: unknown; label?: string}>
+): VisualizationData | null {
+  console.log('[compareProcessInstancesVsIncidents] Comparing process instances vs incidents');
+  
+  const allSeries: TimeSeriesDataPoint[] = [];
+  let minTime = Infinity;
+  let maxTime = -Infinity;
+
+  for (const {toolName, result, label} of results) {
+    const data = extractArrayFromResult(result);
+    if (!data || data.length === 0) continue;
+
+    const isProcessInstance = toolName === 'searchProcessInstances' || toolName === 'search_process_instances';
+    const groupLabel = label || (isProcessInstance ? 'Process Instances' : 'Incidents');
+
+    const items = data.filter((item): item is ProcessInstanceItem | IncidentItem =>
+      typeof item === 'object' && item !== null && 
+      ('startDate' in item || 'creationTime' in item)
+    );
+
+    if (items.length === 0) continue;
+
+    // Collect timestamps
+    const timestamps = items
+      .map(item => {
+        if ('startDate' in item) return item.startDate;
+        if ('creationTime' in item) return item.creationTime;
+        return null;
+      })
+      .filter(Boolean)
+      .map(ts => parseISO(ts as string).getTime());
+
+    timestamps.forEach(t => {
+      minTime = Math.min(minTime, t);
+      maxTime = Math.max(maxTime, t);
+    });
+
+    // Group by time
+    const timeCounts = new Map<string, number>();
+    const timeSpanMs = maxTime - minTime;
+    const useMinuteGranularity = timeSpanMs < 60 * 60 * 1000;
+    const useHourGranularity = timeSpanMs < 24 * 60 * 60 * 1000;
+
+    items.forEach((item) => {
+      const timestamp = ('startDate' in item ? item.startDate : undefined) || 
+                       ('creationTime' in item ? item.creationTime : undefined);
+      
+      if (timestamp && typeof timestamp === 'string') {
+        try {
+          const date = parseISO(timestamp);
+          let timeKey: string;
+          
+          if (useMinuteGranularity) {
+            timeKey = format(date, 'yyyy-MM-dd HH:mm');
+          } else if (useHourGranularity) {
+            timeKey = format(date, 'yyyy-MM-dd HH:00');
+          } else {
+            timeKey = format(startOfDay(date), 'yyyy-MM-dd');
+          }
+          
+          timeCounts.set(timeKey, (timeCounts.get(timeKey) || 0) + 1);
+        } catch {
+          // Skip invalid dates
+        }
+      }
+    });
+
+    // Convert to chart data points
+    timeCounts.forEach((count, timeStr) => {
+      allSeries.push({
+        group: groupLabel,
+        date: parseISO(timeStr),
+        value: count,
+      });
+    });
+  }
+
+  if (allSeries.length === 0) return null;
+
+  const timeSpanMs = maxTime - minTime;
+  const useMinuteGranularity = timeSpanMs < 60 * 60 * 1000;
+  const useHourGranularity = timeSpanMs < 24 * 60 * 60 * 1000;
+  const granularityLabel = useMinuteGranularity ? 'by Minute' : useHourGranularity ? 'by Hour' : 'by Day';
+
+  return {
+    type: 'timeline',
+    title: `Process Instances vs Incidents (${granularityLabel})`,
+    data: allSeries,
+    options: {
+      axes: {
+        bottom: {
+          title: 'Time',
+          mapsTo: 'date',
+          scaleType: ScaleTypes.TIME,
+        },
+        left: {
+          title: 'Count',
+          mapsTo: 'value',
+          scaleType: ScaleTypes.LINEAR,
+        },
+      },
+      height: '250px',
+      width: '100%',
+      resizable: true,
+      curve: 'curveMonotoneX',
+      points: {
+        enabled: true,
+        radius: 4,
+      },
+      timeScale: {
+        addSpaceOnEdges: 1,
+      },
+    },
+  };
+}
+
+/**
+ * Detects appropriate group label from data
+ */
+function detectGroupLabel(items: any[], type: 'process' | 'incident'): string {
+  if (items.length === 0) return type === 'process' ? 'Process Instances' : 'Incidents';
+
+  // Check for state field to determine label
+  if ('state' in items[0]) {
+    const state = items[0].state;
+    if (state) {
+      return `${state.charAt(0)}${state.slice(1).toLowerCase()} ${type === 'process' ? 'Instances' : 'Incidents'}`;
+    }
+  }
+
+  return type === 'process' ? 'Process Instances' : 'Incidents';
 }

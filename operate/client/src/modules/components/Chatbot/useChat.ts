@@ -11,7 +11,7 @@ import {callLLM, continueWithToolResults, type LLMConfig} from './llmClient';
 import {executeMcpTool, fetchMcpTools, type McpClientConfig} from './mcpClient';
 import type {McpTool} from './types';
 import type {VisualizationData} from './visualizations/types';
-import {analyzeToolResponse} from './visualizations/dataTransform';
+import {analyzeToolResponse, analyzeComparativeResults} from './visualizations/dataTransform';
 import {
   type NavigateFunction,
   navigateTo,
@@ -243,13 +243,35 @@ export function useChat({
 
         // Analyze tool results for visualization opportunities (use first visualization found)
         if (!visualization) {
-          for (const toolCall of currentToolCalls) {
-            if (!toolCall.isError && toolCall.result) {
-              const viz = analyzeToolResponse(toolCall.name, toolCall.result);
-              if (viz) {
-                visualization = viz;
-                console.log('[useChat] Generated visualization:', viz.type, 'for tool:', toolCall.name);
-                break; // Use first visualizable result
+          // Check if we have multiple tool calls that could be compared
+          if (allToolCalls.length >= 2) {
+            const comparableResults = allToolCalls
+              .filter(tc => !tc.isError && tc.result)
+              .map(tc => ({
+                toolName: tc.name,
+                result: tc.result,
+                label: undefined, // LLM doesn't provide labels, we'll detect from data
+              }));
+
+            if (comparableResults.length >= 2) {
+              const comparativeViz = analyzeComparativeResults(comparableResults);
+              if (comparativeViz) {
+                visualization = comparativeViz;
+                console.log('[useChat] Generated comparative visualization:', comparativeViz.type);
+              }
+            }
+          }
+
+          // If no comparative viz, try individual analysis
+          if (!visualization) {
+            for (const toolCall of currentToolCalls) {
+              if (!toolCall.isError && toolCall.result) {
+                const viz = analyzeToolResponse(toolCall.name, toolCall.result);
+                if (viz) {
+                  visualization = viz;
+                  console.log('[useChat] Generated visualization:', viz.type, 'for tool:', toolCall.name);
+                  break; // Use first visualizable result
+                }
               }
             }
           }

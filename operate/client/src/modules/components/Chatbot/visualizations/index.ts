@@ -7,5 +7,5 @@
  */
 
 export {ChartRenderer} from './ChartRenderer';
-export {analyzeToolResponse} from './dataTransform';
+export {analyzeToolResponse, analyzeComparativeResults} from './dataTransform';
 export type {VisualizationData, VisualizationType} from './types';
