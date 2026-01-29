@@ -87,7 +87,7 @@ orchestration:
     cloud.google.com/gke-nodepool: n2-standard-4
 
   ## @param core.pvcSize defines the persistent volume claim size, which is used by each broker pod https://kubernetes.io/docs/concepts/storage/persistent-volumes/#persistentvolumeclaims
-  pvcSize: "64Gi"
+  pvcSize: "128Gi"
   ## @param core.pvcStorageClassName can be used to set the storage class name which should be used by the persistent volume claim.
   # It is recommended to use a storage class, which is backed with a SSD. Set to "-" to disable use of default storage class.
   pvcStorageClassName: "ssd"

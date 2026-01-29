@@ -9,10 +9,18 @@ package io.camunda.zeebe.db.impl.rocksdb.transaction;
 
 import static io.camunda.zeebe.db.impl.rocksdb.transaction.RocksDbInternal.isRocksDbExceptionRecoverable;
 
+import com.google.common.primitives.Bytes;
 import io.camunda.zeebe.db.TransactionOperation;
 import io.camunda.zeebe.db.ZeebeDbException;
 import io.camunda.zeebe.db.ZeebeDbTransaction;
+
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.LangUtil;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.rocksdb.ColumnFamilyHandle;
 import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksDBException;
@@ -26,6 +34,7 @@ public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
 
   private boolean inCurrentTransaction;
   private Transaction transaction;
+  private final Map<CFKEy, byte[]> cache = new HashMap<>();
 
   public ZeebeTransaction(
       final Transaction transaction, final TransactionRenovator transactionRenovator) {
@@ -48,7 +57,9 @@ public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
       final int valueLength)
       throws Exception {
     try {
-      RocksDbInternal.putWithHandle.invokeExact(
+        final CFKEy cfkEy = new CFKEy(columnFamilyHandle, new UnsafeBuffer(key, keyOffset, keyLength).hashCode());
+        cache.put(cfkEy, BufferUtil.cloneBuffer(new UnsafeBuffer(value, valueOffset, valueLength)).byteArray());
+        RocksDbInternal.putWithHandle.invokeExact(
           nativeHandle,
           key,
           keyOffset,
@@ -89,19 +100,27 @@ public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
       final int keyOffset,
       final int keyLength)
       throws Exception {
-    try {
-      return (byte[])
-          RocksDbInternal.getWithHandle.invokeExact(
-              nativeHandle, readOptionsHandle, key, keyOffset, keyLength, columnFamilyHandle);
-    } catch (final Throwable e) {
-      LangUtil.rethrowUnchecked(e);
-      return null; // unreachable
-    }
+
+    final CFKEy cfkEy = new CFKEy(columnFamilyHandle, new UnsafeBuffer(key, keyOffset, keyLength).hashCode());
+
+    return cache.computeIfAbsent(
+        cfkEy,
+        cfk -> {
+          try {
+            return (byte[])
+                RocksDbInternal.getWithHandle.invokeExact(
+                    nativeHandle, readOptionsHandle, key, keyOffset, keyLength, columnFamilyHandle);
+          } catch (final Throwable e) {
+            LangUtil.rethrowUnchecked(e);
+            return null; // unreachable
+          }
+        });
   }
 
   public void delete(final long columnFamilyHandle, final byte[] key, final int keyLength)
       throws Exception {
     try {
+      cache.remove(new CFKEy(columnFamilyHandle, new UnsafeBuffer(key, 0, keyLength).hashCode()));
       RocksDbInternal.removeWithHandle.invokeExact(
           nativeHandle, key, keyLength, columnFamilyHandle, false);
     } catch (final Throwable e) {
@@ -115,6 +134,7 @@ public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
 
   void resetTransaction() {
     transaction = transactionRenovator.renewTransaction(transaction);
+    cache.clear();
     inCurrentTransaction = true;
   }
 
@@ -175,4 +195,6 @@ public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
   public void close() {
     transaction.close();
   }
+
+  record CFKEy(long columnFamilyHandle, long hash) {}
 }
