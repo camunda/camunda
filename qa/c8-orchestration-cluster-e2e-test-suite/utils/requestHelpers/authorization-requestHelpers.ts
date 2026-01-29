@@ -28,7 +28,7 @@ export interface Authorization {
   resourceType: string;
   permissionTypes: string[];
   authorizationKey?: string;
-};
+}
 
 export async function createComponentAuthorization(
   request: APIRequestContext,
@@ -149,4 +149,22 @@ export function verifyAuthorizationFields(
     authorizationRequiredFieldsWithoutPermissionTypes,
   );
   expect(obj.permissionTypes.sort()).toEqual(expected.permissionTypes.sort());
+}
+
+export async function expectAuthorizationCanNotBeFound(
+  request: APIRequestContext,
+  authorizationKey: string,
+) {
+  await expect(async () => {
+    const statusRes = await request.get(
+      buildUrl(`/authorizations/${authorizationKey}`),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    await assertStatusCode(statusRes, 404);
+  }).toPass({
+    intervals: [5_000, 10_000, 15_000, 25_000, 35_000],
+    timeout: 120_000,
+  });
 }

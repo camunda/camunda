@@ -46,6 +46,7 @@ export {
   expectAuthorizationCanBeFound,
   verifyAuthorizationFields,
   type Authorization,
+  expectAuthorizationCanNotBeFound,
 } from './authorization-requestHelpers';
 export {assertRoleInResponse} from './role-requestHelpers';
 export {assertClientsInResponse} from './clients-requestHelpers';
