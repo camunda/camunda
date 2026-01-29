@@ -123,4 +123,8 @@ public abstract class BrokerRequest<T> implements ClientRequest {
 
     return headerDecoder.schemaId() == schemaId && headerDecoder.templateId() == templateId;
   }
+
+  public void setTraceId(final String traceId) {
+
+  }
 }

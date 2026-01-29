@@ -114,6 +114,14 @@ public abstract class BrokerExecuteCommand<T> extends BrokerRequest<T> {
     return type;
   }
 
+  public String getTraceId() {
+    return request.getTraceId();
+  }
+
+  public void setTraceId(final String traceId) {
+    request.setTraceId(traceId);
+  }
+
   @Override
   public int getLength() {
     return request.getLength();
