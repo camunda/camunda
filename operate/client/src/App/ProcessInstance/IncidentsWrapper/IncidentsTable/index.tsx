@@ -21,14 +21,8 @@ import {
   getIncidentErrorName,
   isSingleIncidentSelected,
 } from 'modules/utils/incidents';
-import {
-  clearSelection as clearSelectionV1,
-  selectFlowNode,
-} from 'modules/utils/flowNodeSelection';
-import {useRootNode} from 'modules/hooks/flowNodeSelection';
 import type {EnhancedIncident} from 'modules/hooks/incidents';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
-import {IS_ELEMENT_SELECTION_V2} from 'modules/feature-flags';
 
 type IncidentsTableProps = {
   processInstanceKey: string;
@@ -53,7 +47,6 @@ const IncidentsTable: React.FC<IncidentsTableProps> = observer(
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [modalContent, setModalContent] = useState<string>('');
     const [modalTitle, setModalTitle] = useState<string>('');
-    const rootNode = useRootNode();
 
     const handleModalClose = () => {
       setIsModalVisible(false);
@@ -95,24 +88,12 @@ const IncidentsTable: React.FC<IncidentsTableProps> = observer(
             if (
               isSingleIncidentSelected(incidents, incident.elementInstanceKey)
             ) {
-              if (IS_ELEMENT_SELECTION_V2) {
-                clearSelection();
-              } else {
-                clearSelectionV1(rootNode);
-              }
+              clearSelection();
             } else {
-              if (IS_ELEMENT_SELECTION_V2) {
-                selectElementInstance({
-                  elementId: incident.elementId,
-                  elementInstanceKey: incident.elementInstanceKey,
-                });
-              } else {
-                selectFlowNode(rootNode, {
-                  flowNodeId: incident.elementId,
-                  flowNodeInstanceId: incident.elementInstanceKey,
-                  isMultiInstance: false,
-                });
-              }
+              selectElementInstance({
+                elementId: incident.elementId,
+                elementInstanceKey: incident.elementInstanceKey,
+              });
             }
           }}
           checkIsRowSelected={(rowId) => {

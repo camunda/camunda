@@ -10,19 +10,14 @@ import {type QueryVariablesResponseBody} from '@camunda/camunda-api-zod-schemas/
 import {useInfiniteQuery} from '@tanstack/react-query';
 import {searchVariables} from 'modules/api/v2/variables/searchVariables';
 import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstancePageParams';
-import {getScopeId} from 'modules/utils/variables';
 import {useDisplayStatus, useVariableScopeKey} from 'modules/hooks/variables';
 import {queryKeys} from '../queryKeys';
-import {IS_ELEMENT_SELECTION_V2} from 'modules/feature-flags';
 
 const MAX_VARIABLES_PER_REQUEST = 50;
 
 function useVariables(options?: {refetchInterval?: number | false}) {
   const {processInstanceId = ''} = useProcessInstancePageParams();
-  const scopeKey = IS_ELEMENT_SELECTION_V2
-    ? // eslint-disable-next-line react-hooks/rules-of-hooks
-      useVariableScopeKey()
-    : getScopeId();
+  const scopeKey = useVariableScopeKey();
   const {refetchInterval = false} = options ?? {};
   const result = useInfiniteQuery({
     queryKey: queryKeys.variables.searchWithFilter({

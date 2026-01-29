@@ -11,7 +11,6 @@ import {flowNodeSelectionStore} from './flowNodeSelection';
 import {modificationsStore} from './modifications';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {createInstance} from 'modules/testUtils';
-import {flowNodeMetaDataStore} from './flowNodeMetaData';
 
 const PROCESS_INSTANCE_ID = '2251799813689404';
 
@@ -39,7 +38,6 @@ describe('stores/flowNodeSelection', () => {
   afterEach(() => {
     flowNodeSelectionStore.reset();
     modificationsStore.reset();
-    flowNodeMetaDataStore.reset();
   });
 
   it('should initially select process instance', () => {

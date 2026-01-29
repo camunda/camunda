@@ -18,6 +18,7 @@ import {
   type Selection,
 } from 'modules/stores/flowNodeSelection';
 
+/** @deprecated Use useProcessInstanceElementSelection instead. */
 const init = (
   processInstanceId: string,
   statistics: ProcessDefinitionStatistic[],
@@ -33,6 +34,7 @@ const init = (
   );
 };
 
+/** @deprecated Use useProcessInstanceElementSelection instead. */
 const fetchMetaData = flowNodeMetaDataStore.retryOnConnectionLost(
   async (
     statistics: ProcessDefinitionStatistic[],

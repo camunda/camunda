@@ -8,8 +8,6 @@
 
 import {computed} from 'mobx';
 import {observer} from 'mobx-react';
-import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
-import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {modificationsStore} from 'modules/stores/modifications';
 import {type VariableFormValues} from 'modules/types/variables';
 import {generateUniqueID} from 'modules/utils/generateUniqueID';
@@ -24,7 +22,6 @@ import {
   useIsRootNodeSelected,
 } from 'modules/hooks/flowNodeSelection';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
-import {IS_ELEMENT_SELECTION_V2} from 'modules/feature-flags';
 
 const VariablesForm: React.FC<FormRenderProps<VariableFormValues>> = observer(
   ({handleSubmit, form, values}) => {
@@ -62,28 +59,7 @@ const VariablesForm: React.FC<FormRenderProps<VariableFormValues>> = observer(
       );
     });
 
-    const isVariableModificationAllowedV1 = computed(() => {
-      if (
-        !isModificationModeEnabled ||
-        flowNodeSelectionStore.state.selection === null
-      ) {
-        return false;
-      }
-
-      if (isRootNodeSelected) {
-        return !willAllFlowNodesBeCanceled;
-      }
-
-      return (
-        isPlaceholderSelected ||
-        (flowNodeMetaDataStore.isSelectedInstanceRunning &&
-          !hasPendingCancelOrMoveModification)
-      );
-    });
-
-    const isModificationAllowed = IS_ELEMENT_SELECTION_V2
-      ? isVariableModificationAllowed.get()
-      : isVariableModificationAllowedV1.get();
+    const isModificationAllowed = isVariableModificationAllowed.get();
 
     return (
       <Form onSubmit={handleSubmit}>

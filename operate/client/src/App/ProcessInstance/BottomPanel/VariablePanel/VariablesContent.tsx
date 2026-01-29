@@ -12,19 +12,15 @@ import {Content, EmptyMessageContainer} from './styled';
 import {ErrorMessage} from 'modules/components/ErrorMessage';
 import {EmptyMessage} from 'modules/components/EmptyMessage';
 import {Loading} from '@carbon/react';
-import {getScopeId} from 'modules/utils/variables';
 import {useVariables} from 'modules/queries/variables/useVariables';
 import {VariablesFinalForm} from './VariablesFinalForm';
 import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
 import {isRequestError} from 'modules/request';
-import {IS_ELEMENT_SELECTION_V2} from 'modules/feature-flags';
 import {useVariableScopeKey} from 'modules/hooks/variables';
 
 const VariablesContent: React.FC = observer(() => {
   const {displayStatus, error} = useVariables();
-  const scopeKey = IS_ELEMENT_SELECTION_V2
-    ? useVariableScopeKey()
-    : getScopeId();
+  const scopeKey = useVariableScopeKey();
 
   if (displayStatus === 'error') {
     return (

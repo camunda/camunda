@@ -6,9 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
-import {getFlowNodeName} from './flowNodes';
-import type {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
 import {
   flowNodeSelectionStore,
   type Selection,
@@ -104,76 +101,4 @@ const selectFlowNode = (rootNode: Selection, selection: Selection) => {
   }
 };
 
-/**
- * @deprecated
- * will be migrated to useProcessInstanceElementSelection
- */
-const getSelectedRunningInstanceCount = ({
-  totalRunningInstancesForFlowNode,
-  isRootNodeSelected,
-}: {
-  totalRunningInstancesForFlowNode: number;
-  isRootNodeSelected: boolean;
-}) => {
-  const currentSelection = flowNodeSelectionStore.state.selection;
-
-  if (currentSelection === null) {
-    return 0;
-  }
-
-  if (
-    currentSelection.isPlaceholder ||
-    isRootNodeSelected ||
-    currentSelection.flowNodeId === undefined
-  ) {
-    return 0;
-  }
-
-  if (currentSelection.flowNodeInstanceId !== undefined) {
-    return flowNodeMetaDataStore.isSelectedInstanceRunning ? 1 : 0;
-  }
-
-  return totalRunningInstancesForFlowNode;
-};
-
-/**
- * @deprecated
- * will be migrated to useProcessInstanceElementSelection
- */
-const getSelectedFlowNodeName = ({
-  businessObjects,
-  processDefinitionName,
-  isRootNodeSelected,
-}: {
-  businessObjects?: BusinessObjects;
-  processDefinitionName?: string;
-  isRootNodeSelected?: boolean;
-}) => {
-  if (
-    processDefinitionName === undefined ||
-    flowNodeSelectionStore.state.selection === null
-  ) {
-    return '';
-  }
-
-  if (isRootNodeSelected) {
-    return processDefinitionName;
-  }
-
-  if (flowNodeSelectionStore.state.selection.flowNodeId === undefined) {
-    return '';
-  }
-
-  return getFlowNodeName({
-    businessObjects,
-    flowNodeId: flowNodeSelectionStore.state.selection.flowNodeId,
-  });
-};
-
-export {
-  init,
-  clearSelection,
-  selectFlowNode,
-  getSelectedRunningInstanceCount,
-  getSelectedFlowNodeName,
-};
+export {init, clearSelection, selectFlowNode};
