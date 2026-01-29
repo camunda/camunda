@@ -1450,7 +1450,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 3
     permissions:
+      actions: read
       checks: read
+      pull-requests: write
     needs: # BELOW LIST IS IN ALPHABETICAL ORDER
       - actionlint
       - archunit-tests
@@ -1486,6 +1488,12 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+      - name: Post CI Failure Reasons
+        continue-on-error: true
+        uses: ./.github/actions/post-ci-failure-reasons
+        with:
+          github_token: ${{ github.token }}
+          has_failures: ${{ contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure') }}
       - run: |
           echo "The \`check-results\` job has the function to fail if any previous job was unsuccessful!"
           echo "If you're reading this and wondering what the is the problem, please check other GHA jobs of this workflow run to for errors/cancellation and see their logs."
