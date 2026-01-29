@@ -47,7 +47,7 @@ const DetailsModal: React.FC<Props> = ({
     },
   );
 
-  const {data: messageSubscriptionSearchResult} = useSearchMessageSubscriptions(
+  const {data: messageSubscriptions} = useSearchMessageSubscriptions(
     {
       filter: {
         elementInstanceKey: elementInstanceKey ?? '',
@@ -55,6 +55,7 @@ const DetailsModal: React.FC<Props> = ({
     },
     {
       enabled: isVisible && !!elementInstanceKey,
+      select: (data) => data.items,
     },
   );
 
@@ -67,8 +68,6 @@ const DetailsModal: React.FC<Props> = ({
       enabled: isVisible && !!calledDecisionDefinitionId,
     },
   );
-
-  const messageSubscription = messageSubscriptionSearchResult?.items?.[0];
 
   const {data: incident} = useGetIncidentsByElementInstance(
     elementInstanceKey,
@@ -95,7 +94,7 @@ const DetailsModal: React.FC<Props> = ({
         incident ?? null,
         job,
         calledProcessInstance,
-        messageSubscription,
+        messageSubscriptions,
         calledDecisionDefinition,
         calledDecisionInstance,
         userTask ?? null,
@@ -105,7 +104,7 @@ const DetailsModal: React.FC<Props> = ({
       incident,
       job,
       calledProcessInstance,
-      messageSubscription,
+      messageSubscriptions,
       calledDecisionDefinition,
       calledDecisionInstance,
       userTask,

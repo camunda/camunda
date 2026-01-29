@@ -483,7 +483,7 @@ describe('MetadataPopover <Details />', () => {
     expect(screen.getByText(/"jobWorker"/)).toBeInTheDocument();
   });
 
-  it('should display message name and correlation key for service task with message subscription data', async () => {
+  it('should display message subscriptions array for service task with message subscription data', async () => {
     const messageSubscription: MessageSubscription = {
       messageSubscriptionKey: 'msg-sub-123',
       messageName: 'orderReceived',
@@ -518,14 +518,24 @@ describe('MetadataPopover <Details />', () => {
     ).toBeInTheDocument();
 
     expect(
-      await screen.findByText(/"messageName": "orderReceived"/),
+      await screen.findByText(/"messageSubscriptions":/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/"messageName": "orderReceived"/),
     ).toBeInTheDocument();
     expect(
       screen.getByText(/"correlationKey": "order-123"/),
     ).toBeInTheDocument();
+    expect(
+      screen.getByText(/"subscriptionState": "CREATED"/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/"lastUpdated": "2023-01-15T10:00:00.000Z"/),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/"elementId": "Task_1"/)).toBeInTheDocument();
   });
 
-  it('should not display message fields when message name and correlation key are absent', async () => {
+  it('should not display message subscriptions when no message subscriptions exist', async () => {
     mockSearchJobs().withSuccess({items: [mockJob], page: {totalItems: 1}});
 
     const {user} = render(
@@ -538,8 +548,9 @@ describe('MetadataPopover <Details />', () => {
 
     await user.click(screen.getByRole('button', {name: 'Show more metadata'}));
 
-    expect(screen.queryByText(/"messageName"/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/"correlationKey"/)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/"messageSubscriptions"/),
+    ).not.toBeInTheDocument();
   });
 
   it('should display message subscription data for message events', async () => {
@@ -582,10 +593,92 @@ describe('MetadataPopover <Details />', () => {
     ).toBeInTheDocument();
 
     expect(
-      await screen.findByText(/"messageName": "clientMessage"/),
+      await screen.findByText(/"messageSubscriptions":/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/"messageName": "clientMessage"/),
     ).toBeInTheDocument();
     expect(
       screen.getByText(/"correlationKey": "client-456"/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/"subscriptionState": "CREATED"/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/"lastUpdated": "2023-01-15T10:00:00.000Z"/),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/"elementId": "Task_1"/)).toBeInTheDocument();
+  });
+
+  it('should display multiple message subscriptions in array format', async () => {
+    const messageSubscription1: MessageSubscription = {
+      messageSubscriptionKey: '2251799813686700',
+      messageName: 'MessageB',
+      correlationKey: '456',
+      processInstanceKey: '2251799813686695',
+      processDefinitionKey: '2251799813686580',
+      processDefinitionId: 'Process_MessageSubscriptions',
+      elementId: 'Event_CatchMessageB',
+      elementInstanceKey: '2251799813686699',
+      messageSubscriptionState: 'CREATED',
+      lastUpdatedDate: '2026-01-27T08:38:47.440Z',
+      tenantId: '<default>',
+    };
+
+    const messageSubscription2: MessageSubscription = {
+      messageSubscriptionKey: '2251799813686701',
+      messageName: 'MessageA',
+      correlationKey: '123',
+      processInstanceKey: '2251799813686695',
+      processDefinitionKey: '2251799813686580',
+      processDefinitionId: 'Process_MessageSubscriptions',
+      elementId: 'Event_CatchMessageA',
+      elementInstanceKey: '2251799813686699',
+      messageSubscriptionState: 'CREATED',
+      lastUpdatedDate: '2026-01-27T08:38:47.440Z',
+      tenantId: '<default>',
+    };
+
+    mockSearchMessageSubscriptions().withSuccess({
+      items: [messageSubscription1, messageSubscription2],
+      page: {totalItems: 2},
+    });
+
+    const {user} = render(
+      <Details
+        elementInstance={mockElementInstance}
+        businessObject={mockBusinessObject}
+      />,
+      {wrapper: TestWrapper},
+    );
+
+    await user.click(screen.getByRole('button', {name: 'Show more metadata'}));
+
+    expect(
+      screen.getByText(/Element "Service Task" 123456789 Metadata/),
+    ).toBeInTheDocument();
+
+    expect(
+      await screen.findByText(/"messageSubscriptions":/),
+    ).toBeInTheDocument();
+
+    expect(screen.getByText(/"messageName": "MessageB"/)).toBeInTheDocument();
+    expect(screen.getByText(/"correlationKey": "456"/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/"elementId": "Event_CatchMessageB"/),
+    ).toBeInTheDocument();
+
+    expect(screen.getByText(/"messageName": "MessageA"/)).toBeInTheDocument();
+    expect(screen.getByText(/"correlationKey": "123"/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/"elementId": "Event_CatchMessageA"/),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByText(/"subscriptionState": "CREATED"/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/"lastUpdated": "2026-01-27T08:38:47.440Z"/),
     ).toBeInTheDocument();
   });
 });
