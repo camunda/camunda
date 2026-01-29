@@ -25,13 +25,11 @@ const useElementInstancesSearch = (params: UseElementInstancesSearchParams) => {
   const {elementId, processInstanceKey, elementType, enabled = true} = params;
 
   return useQuery({
-    queryKey: [
-      queryKeys.elementInstances.search({
-        elementId,
-        processInstanceKey,
-        elementType,
-      }),
-    ],
+    queryKey: queryKeys.elementInstances.search({
+      elementId,
+      processInstanceKey,
+      elementType,
+    }),
     queryFn: async () => {
       const payload: QueryElementInstancesRequestBody = {
         filter: {
