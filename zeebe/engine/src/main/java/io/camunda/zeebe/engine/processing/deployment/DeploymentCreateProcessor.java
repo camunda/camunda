@@ -13,7 +13,6 @@ import static java.util.function.Predicate.not;
 
 import io.camunda.zeebe.el.ExpressionLanguageMetrics;
 import io.camunda.zeebe.engine.EngineConfiguration;
-import io.camunda.zeebe.engine.OtelBootstrap;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
@@ -65,12 +64,6 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.FeatureFlags;
 import io.camunda.zeebe.util.buffer.BufferUtil;
-import io.opentelemetry.api.trace.Span;
-import io.opentelemetry.api.trace.SpanContext;
-import io.opentelemetry.api.trace.TraceFlags;
-import io.opentelemetry.api.trace.TraceState;
-import io.opentelemetry.context.Context;
-import io.opentelemetry.context.Scope;
 import java.time.InstantSource;
 import java.util.List;
 import org.agrona.DirectBuffer;
@@ -155,31 +148,7 @@ public final class DeploymentCreateProcessor
       return;
     }
 
-    final String traceIdAndSpanId = command.traceId();
-
-    final String[] split = traceIdAndSpanId.split(":");
-    final String traceId = split[0];
-    final String spanId = split[1];
-
-    final SpanContext parentSc =
-        SpanContext.createFromRemoteParent(
-            traceId, spanId, TraceFlags.getSampled(), TraceState.getDefault());
-
-    final Context parentCtx = Context.root().with(Span.wrap(parentSc));
-
-    final Span child =
-        OtelBootstrap.tracer()
-            .spanBuilder("%s:%s".formatted(command.getValueType(), command.getIntent()))
-            .setParent(parentCtx)
-            .startSpan();
-
-    try (final Scope scope = child.makeCurrent()) {
-      transformAndDistributeDeployment(command);
-    } catch (final Exception e) {
-      throw new RuntimeException(e);
-    } finally {
-      child.end();
-    }
+    transformAndDistributeDeployment(command);
 
     // manage the top-level start event subscriptions except for timers
     startEventSubscriptionManager.tryReOpenStartEventSubscription(command.getValue());

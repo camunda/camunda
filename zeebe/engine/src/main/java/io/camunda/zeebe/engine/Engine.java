@@ -37,6 +37,12 @@ import io.camunda.zeebe.stream.api.RecordProcessor;
 import io.camunda.zeebe.stream.api.RecordProcessorContext;
 import io.camunda.zeebe.stream.api.records.ExceededBatchRecordSizeException;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.SpanContext;
+import io.opentelemetry.api.trace.TraceFlags;
+import io.opentelemetry.api.trace.TraceState;
+import io.opentelemetry.context.Context;
+import io.opentelemetry.context.Scope;
 import java.util.EnumSet;
 import java.util.Objects;
 import java.util.function.Supplier;
@@ -176,7 +182,35 @@ public class Engine implements RecordProcessor {
           processingResultBuilder.withProcessInASeparateBatch();
         }
 
-        currentProcessor.processRecord(record);
+        final String traceIdAndSpanId = record.traceId();
+
+        if (traceIdAndSpanId.isEmpty()) {
+          currentProcessor.processRecord(record);
+        } else {
+          final String[] split = traceIdAndSpanId.split(":");
+          final String traceId = split[0];
+          final String spanId = split[1];
+
+          final SpanContext parentSc =
+              SpanContext.createFromRemoteParent(
+                  traceId, spanId, TraceFlags.getSampled(), TraceState.getDefault());
+
+          final Context parentCtx = Context.root().with(Span.wrap(parentSc));
+
+          final Span child =
+              OtelBootstrap.tracer()
+                  .spanBuilder("%s:%s".formatted(record.getValueType(), record.getIntent()))
+                  .setParent(parentCtx)
+                  .startSpan();
+
+          try (final Scope scope1 = child.makeCurrent()) {
+            currentProcessor.processRecord(record);
+          } catch (final Exception e) {
+            throw new RuntimeException(e);
+          } finally {
+            child.end();
+          }
+        }
       }
     }
     return processingResultBuilder.build();
