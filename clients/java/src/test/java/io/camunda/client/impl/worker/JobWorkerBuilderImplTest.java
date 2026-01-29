@@ -30,6 +30,7 @@ import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.ActivateJobsCommandStep1.ActivateJobsCommandStep3;
 import io.camunda.client.api.command.StreamJobsCommandStep1.StreamJobsCommandStep3;
+import io.camunda.client.api.command.enums.TenantFilter;
 import io.camunda.client.api.response.ActivateJobsResponse;
 import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep3;
@@ -284,6 +285,67 @@ class JobWorkerBuilderImplTest {
     // then
     await(
         () -> assertThat(tenantIdCaptor.getValue()).containsExactlyInAnyOrder("1", "2", "3", "4"));
+  }
+
+  @Test
+  void shouldForwardDefaultTenantFilterOnStream() {
+    // given
+    final StreamJobsCommandStep3 lastStep = Mockito.mock(Answers.RETURNS_SELF);
+    Mockito.when(jobClient.newStreamJobsCommand().jobType(anyString()).consumer(any()))
+        .thenReturn(lastStep);
+    Mockito.when(lastStep.tenantIds(anyList())).thenReturn(lastStep);
+    @SuppressWarnings("unchecked")
+    final ArgumentCaptor<TenantFilter> tenantFilterCaptor =
+        ArgumentCaptor.forClass(TenantFilter.class);
+    Mockito.when(lastStep.tenantFilter(tenantFilterCaptor.capture())).thenReturn(lastStep);
+    Mockito.when(lastStep.send()).thenReturn(Mockito.mock());
+
+    // when
+    jobWorkerBuilder
+        .jobType("type")
+        .handler((c, j) -> {})
+        .timeout(1)
+        .name("test")
+        .maxJobsActive(30)
+        .streamEnabled(true)
+        .open();
+
+    // then
+    await(
+        () ->
+            assertThat(tenantFilterCaptor.getValue())
+                .isEqualTo(zeebeClientConfig.getDefaultJobWorkerTenantFilter()));
+  }
+
+  @Test
+  void shouldForwardDefaultTenantFilterOnPoll() {
+    // given
+    final ActivateJobsCommandStep3 lastStep = Mockito.mock(Answers.RETURNS_SELF);
+    Mockito.when(
+            jobClient.newActivateJobsCommand().jobType(anyString()).maxJobsToActivate(anyInt()))
+        .thenReturn(lastStep);
+    Mockito.when(lastStep.tenantIds(anyList())).thenReturn(lastStep);
+    @SuppressWarnings("unchecked")
+    final ArgumentCaptor<TenantFilter> tenantFilterCaptor =
+        ArgumentCaptor.forClass(TenantFilter.class);
+    Mockito.when(lastStep.tenantFilter(tenantFilterCaptor.capture())).thenReturn(lastStep);
+    Mockito.when(lastStep.send()).thenReturn(Mockito.mock());
+
+    // when
+    jobWorkerBuilder
+        .jobType("type")
+        .handler((c, j) -> {})
+        .timeout(1)
+        .name("test")
+        .maxJobsActive(30)
+        .streamEnabled(false)
+        .open();
+
+    // then
+    await(
+        () ->
+            assertThat(tenantFilterCaptor.getValue())
+                .isEqualTo(zeebeClientConfig.getDefaultJobWorkerTenantFilter()));
   }
 
   private void await(final ThrowingRunnable throwingRunnable) {
