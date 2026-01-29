@@ -54,7 +54,7 @@ public class CheckpointStateResponse implements BufferReader, BufferWriter {
   }
 
   @Override
-  public void write(final MutableDirectBuffer buffer, final int offset) {
+  public int write(final MutableDirectBuffer buffer, final int offset) {
     bodyEncoder.wrapAndApplyHeader(buffer, offset, headerEncoder);
 
     final var checkpointStateEncoder = bodyEncoder.checkpointStatesCount(checkpointStates.size());
@@ -78,6 +78,7 @@ public class CheckpointStateResponse implements BufferReader, BufferWriter {
           .checkpointTimestamp(partitionState.checkpointTimestamp)
           .checkpointPosition(partitionState.checkpointPosition);
     }
+    return getLength();
   }
 
   @Override

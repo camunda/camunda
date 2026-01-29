@@ -129,7 +129,8 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
   }
 
   @Override
-  public void write(final MutableDirectBuffer buffer, int offset) {
+  public int write(final MutableDirectBuffer buffer, int offset) {
+    final int initialOffset = offset;
     headerEncoder.wrap(buffer, offset);
 
     headerEncoder
@@ -163,6 +164,8 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
     // working with variable-length fields
     encoder.putRejectionReason(rejectionReason, 0, rejectionReason.capacity());
     encoder.putAuthorization(authorization.toDirectBuffer(), 0, authorization.getLength());
+
+    return encoder.limit() - initialOffset;
   }
 
   public long getRequestId() {
