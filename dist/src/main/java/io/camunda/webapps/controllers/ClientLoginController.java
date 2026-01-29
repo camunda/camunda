@@ -1,5 +1,13 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
 package io.camunda.webapps.controllers;
 
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
@@ -8,7 +16,6 @@ import org.springframework.security.oauth2.core.OAuth2AccessToken;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import jakarta.servlet.http.HttpServletRequest;
 
 @Controller
 public class ClientLoginController {
@@ -20,15 +27,16 @@ public class ClientLoginController {
   public ClientLoginController(OAuth2AuthorizedClientRepository authorizedClientRepository) {
     this.authorizedClientRepository = authorizedClientRepository;
   }
-  
+
   @GetMapping("/clientlogin")
-  public String redirectBackWithToken(HttpServletRequest request,
+  public String redirectBackWithToken(
+      HttpServletRequest request,
       Authentication authentication,
       @RequestParam("loginSuccessRedirect") String loginSuccessRedirect) {
-    
+
     return "redirect:" + appendTokenToRedirectUrl(request, authentication, loginSuccessRedirect);
   }
-  
+
   private String appendTokenToRedirectUrl(
       HttpServletRequest request, Authentication authentication, final String originalRedirectUrl) {
     if (originalRedirectUrl.startsWith(MODELER_URL_PROTOCOL)
