@@ -71,6 +71,9 @@ public class CommandApiRequestReader implements RequestReader {
           commandRequestDecoder.limit() + ExecuteCommandRequestDecoder.authorizationHeaderLength();
       authInfo.wrap(buffer, authOffset, commandRequestDecoder.authorizationLength());
       metadata.authorization(authInfo);
+
+      commandRequestDecoder.skipAuthorization();
+      metadata.traceId(commandRequestDecoder.traceId());
     }
   }
 

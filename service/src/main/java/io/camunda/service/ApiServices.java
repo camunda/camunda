@@ -67,7 +67,8 @@ public abstract class ApiServices<T extends ApiServices<T>> {
     brokerRequest.setAuthorization(brokerRequestAuthorization);
 
     final var traceId = Span.fromContext(Context.current()).getSpanContext().getTraceId();
-    brokerRequest.setTraceId(traceId);
+    final var spanId = Span.fromContext(Context.current()).getSpanContext().getSpanId();
+    brokerRequest.setTraceId(traceId + ":" + spanId);
 
     return brokerClient
         .sendRequest(brokerRequest)

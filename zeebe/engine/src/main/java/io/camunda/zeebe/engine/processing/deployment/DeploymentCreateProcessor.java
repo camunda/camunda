@@ -64,6 +64,13 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.FeatureFlags;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import io.opentelemetry.api.GlobalOpenTelemetry;
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.SpanContext;
+import io.opentelemetry.api.trace.TraceFlags;
+import io.opentelemetry.api.trace.TraceState;
+import io.opentelemetry.context.Context;
+import io.opentelemetry.context.Scope;
 import java.time.InstantSource;
 import java.util.List;
 import org.agrona.DirectBuffer;
@@ -148,9 +155,32 @@ public final class DeploymentCreateProcessor
       return;
     }
 
-    final String s = command.traceId();
+    final String traceIdAndSpanId = command.traceId();
 
-    transformAndDistributeDeployment(command);
+    final String[] split = traceIdAndSpanId.split(":");
+    final String traceId = split[0];
+    final String spanId = split[1];
+
+    final SpanContext parentSc =
+        SpanContext.createFromRemoteParent(
+            traceId, spanId, TraceFlags.getSampled(), TraceState.getDefault());
+
+    final Context parentCtx = Context.root().with(Span.wrap(parentSc));
+
+    final Span child =
+        GlobalOpenTelemetry.getTracer("deployment")
+            .spanBuilder("child")
+            .setParent(parentCtx)
+            .startSpan();
+
+    try (final Scope scope = child.makeCurrent()) {
+      transformAndDistributeDeployment(command);
+    } catch (final Exception e) {
+      throw new RuntimeException(e);
+    } finally {
+      child.end();
+    }
+
     // manage the top-level start event subscriptions except for timers
     startEventSubscriptionManager.tryReOpenStartEventSubscription(command.getValue());
   }
