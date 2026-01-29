@@ -8,6 +8,7 @@
 
 import React, {useMemo} from 'react';
 import styled from 'styled-components';
+import {getAvatarUrl} from './avatarRegistry';
 
 /**
  * Simple Markdown renderer for chat messages.
@@ -21,8 +22,7 @@ import styled from 'styled-components';
  * - 1. numbered lists
  * - [links](url)
  * - ![images](url)
- * - ![avatar:username](url) - user avatars with name
- * - ![avatar-large:username](url) - large user avatars
+ * - ![avatar:username](url) - user avatars (128x128px) with name
  * - > blockquotes
  * - Headers (# ## ###)
  */
@@ -143,23 +143,32 @@ const MarkdownContainer = styled.div`
   .user-avatar {
     display: inline-flex;
     align-items: center;
-    gap: 0.5em;
+    gap: 0.75em;
 
     img {
-      width: 32px;
-      height: 32px;
+      width: 128px;
+      height: 128px;
       border-radius: 50%;
       object-fit: cover;
       vertical-align: middle;
     }
 
-    &.large img {
-      width: 48px;
-      height: 48px;
+    .avatar-fallback {
+      width: 128px;
+      height: 128px;
+      border-radius: 50%;
+      background: var(--cds-button-primary, #0f62fe);
+      color: white;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 48px;
     }
 
     .user-name {
       font-weight: 500;
+      font-size: 1.1em;
     }
   }
 
@@ -458,32 +467,40 @@ function parseInline(text: string): React.ReactNode {
     }
 
     // User avatar: ![avatar:username](url) - special format for user avatars
-    const avatarMatch = remaining.match(/^!\[avatar:([^\]]+)\]\(([^)]+)\)/);
+    // The URL can be a path or we can look it up from the registry by username
+    const avatarMatch = remaining.match(/^!\[avatar:([^\]]+)\]\(([^)]*)\)/);
     if (avatarMatch) {
       const userName = avatarMatch[1];
-      const imageUrl = avatarMatch[2];
+      let imageUrl = avatarMatch[2];
+
+      // If no URL provided or URL is just the username, look up from registry
+      if (!imageUrl || imageUrl === userName || imageUrl.startsWith('/avatars/')) {
+        const registryUrl = getAvatarUrl(userName);
+        if (registryUrl) {
+          imageUrl = registryUrl;
+        }
+      }
+
       parts.push(
         <span key={key++} className="user-avatar">
-          <img src={imageUrl} alt={`${userName}'s avatar`} />
+          <img
+            src={imageUrl}
+            alt={`${userName}'s avatar`}
+            referrerPolicy="no-referrer"
+            onError={(e) => {
+              // Fallback to initials if image fails to load
+              const target = e.currentTarget;
+              target.style.display = 'none';
+              const fallback = document.createElement('span');
+              fallback.className = 'avatar-fallback';
+              fallback.textContent = userName.charAt(0).toUpperCase();
+              target.parentNode?.insertBefore(fallback, target);
+            }}
+          />
           <span className="user-name">{userName}</span>
         </span>
       );
       remaining = remaining.slice(avatarMatch[0].length);
-      continue;
-    }
-
-    // Large user avatar: ![avatar-large:username](url)
-    const largeAvatarMatch = remaining.match(/^!\[avatar-large:([^\]]+)\]\(([^)]+)\)/);
-    if (largeAvatarMatch) {
-      const userName = largeAvatarMatch[1];
-      const imageUrl = largeAvatarMatch[2];
-      parts.push(
-        <span key={key++} className="user-avatar large">
-          <img src={imageUrl} alt={`${userName}'s avatar`} />
-          <span className="user-name">{userName}</span>
-        </span>
-      );
-      remaining = remaining.slice(largeAvatarMatch[0].length);
       continue;
     }
 
@@ -494,7 +511,11 @@ function parseInline(text: string): React.ReactNode {
       const imageUrl = imageMatch[2];
       parts.push(
         <span key={key++} className="inline-image">
-          <img src={imageUrl} alt={altText} />
+          <img
+            src={imageUrl}
+            alt={altText}
+            referrerPolicy="no-referrer"
+          />
         </span>
       );
       remaining = remaining.slice(imageMatch[0].length);

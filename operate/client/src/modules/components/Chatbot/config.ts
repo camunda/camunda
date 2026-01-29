@@ -9,26 +9,27 @@
 /**
  * Chatbot Configuration Setup
  *
- * This file initializes the chatbot with OpenAI as the LLM provider
+ * This file initializes the chatbot with GitHub Models as the LLM provider
  * and connects to the Camunda MCP Gateway for tool execution.
  *
- * IMPORTANT: Perplexity AI does NOT support function/tool calling.
- * Use OpenAI or Anthropic for MCP tool integration.
+ * Recommended models from GitHub Models for tool calling:
+ * - gpt-4o (best overall - fast, smart, excellent tool use)
+ * - gpt-4o-mini (cost-effective, good tool use)
+ * - gpt-4-turbo (reliable alternative)
  *
  * To use:
  * 1. Import this file early in your app initialization
- * 2. Set the API key: chatbotStore.setApiKey('sk-...')
+ * 2. Optionally set a different API key: chatbotStore.setApiKey('github_pat_...')
  *
- * Get your OpenAI API key from: https://platform.openai.com/api-keys
+ * Get your GitHub PAT from: https://github.com/settings/tokens (with models:read scope)
  */
 
 import {chatbotStore} from 'modules/stores/chatbot';
 
 /**
- * Initialize chatbot with OpenAI configuration
+ * Initialize chatbot with GitHub Models configuration
  *
- * Note: Perplexity AI does NOT support function/tool calling.
- * Use OpenAI (gpt-4o) or Anthropic (claude) for MCP tool integration.
+ * Using gpt-4o which has the best tool/function calling support.
  */
 export function initializeChatbot() {
   console.log('[Chatbot] Initializing...');
@@ -37,13 +38,17 @@ export function initializeChatbot() {
   chatbotStore.enable();
   console.log('[Chatbot] Enabled:', chatbotStore.isEnabled);
 
-  // Configure OpenAI as the LLM provider (supports function calling)
-  // Alternative: Use 'anthropic' with an Anthropic API key
+  // Configure OpenAI as the LLM provider
+  // Recommended models for tool calling:
+  // - gpt-4o: Battle-tested, reliable, excellent tool calling (recommended)
+  // - gpt-5-turbo: Latest GPT-5, fast, excellent quality
+  // - gpt-5: Best quality, slower/more expensive
+  // - gpt-4o-mini: Faster/cheaper alternative
   chatbotStore.setLLMConfig({
-    provider: 'custom',
-    apiKey: 'your_pat_here', // SET YOUR OPENAI API KEY HERE
-    baseUrl: 'https://models.inference.ai.azure.com',
-    model: 'gpt-4o',
+    provider: 'openai',
+    apiKey: 'your_pat_here',
+    //baseUrl: 'https://models.inference.ai.azure.com',
+    model: 'gpt-4o', // Reliable choice - try 'gpt-5-turbo' for latest GPT-5
   });
   console.log('[Chatbot] API Key set, isConfigured:', chatbotStore.isConfigured);
 
@@ -63,10 +68,10 @@ export function initializeChatbot() {
 /**
  * Quick setup for development - call this in browser console:
  *
- * import('modules/components/Chatbot/config').then(m => m.setupWithApiKey('sk-your-openai-key'))
+ * import('modules/components/Chatbot/config').then(m => m.setupWithApiKey('github_pat_...'))
  */
 export function setupWithApiKey(apiKey: string) {
   initializeChatbot();
   chatbotStore.setApiKey(apiKey);
-  console.log('✅ Chatbot configured with OpenAI');
+  console.log('✅ Chatbot configured with GitHub Models (gpt-4o)');
 }

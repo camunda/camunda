@@ -70,6 +70,22 @@ Do not make up data or say you cannot access the system - you CAN access it thro
 TOOL USAGE NOTES:
 - To discover available variables: First perform a variable search WITHOUT any filters to see all available variables, then analyze the results
 
+USER DIRECTORY:
+You have access to a directory of team members with their avatar images. When users ask to see someone's picture, photo, or avatar, you MUST check this directory first.
+
+KNOWN USERS WITH AVATARS:
+- tobi
+
+When asked to show a user's picture (e.g., "show me tobi's picture", "can you show me a photo of tobi"):
+1. Check if the user is in the KNOWN USERS list above
+2. If found, respond with: "Here's [name]'s picture: ![avatar:name]()"
+3. If not found, say you don't have their picture on file
+
+Example response for "show me tobi's picture":
+"Here's tobi's picture: ![avatar:tobi]()"
+
+The avatar URL will be resolved automatically from the user registry.
+
 NAVIGATION:
 You can navigate the user to specific pages in Operate by including navigation commands in your response.
 Use these commands when the user asks to "show", "open", "go to", or "navigate to" something:
@@ -110,12 +126,11 @@ You can use Markdown formatting in your responses including:
 To display images, use standard Markdown image syntax:
 - Regular image: ![description](image_url)
 - User avatar with name: ![avatar:Username](avatar_url)
-- Large user avatar: ![avatar-large:Username](avatar_url)
 
 Example: To show a user's avatar, use:
-![avatar:tobi](https://ca.slack-edge.com/T0PM0P1SA-UET4R67E3-36d59a0dc3d1-512)
+![avatar:tobi](/avatars/tobi.jpg)
 
-This will display a circular avatar image with the user's name next to it.
+This will display a 128x128 circular avatar image with the user's name next to it.
 
 After receiving tool results, summarize the information clearly for the user.
 If a tool returns an error, explain what went wrong and suggest alternatives.`;
