@@ -22,6 +22,22 @@ message StreamActivatedJobsRequest {
   repeated string fetchVariable = 5;
   // a list of identifiers of tenants for which to stream jobs
   repeated string tenantIds = 6;
+  // the tenant filter for this stream; see TenantFilter for options.
+  // When PROVIDED, the tenantIds parameter is used to filter jobs only for
+  // those given tenants.
+  // When ASSIGNED, the tenant IDs assigned to the user/client which opened the
+  // stream are resolved during job activation (e.g. when a job is created and
+  // ready to be pushed).
+  // Defaults to TenantFilter.PROVIDED for backwards compatibility.
+  TenantFilter tenantFilter = 7;
+}
+
+// Used during job activation, describes whether jobs are activated only for
+// specific tenants (PROVIDED) via a provided list, or using whatever tenants
+// are assigned to the user/client when the job is activated (ASSIGNED).
+enum TenantFilter {
+  ASSIGNED = 0;
+  PROVIDED = 1;
 }
 
 message ActivateJobsRequest {
@@ -44,6 +60,14 @@ message ActivateJobsRequest {
   int64 requestTimeout = 6;
   // a list of IDs of tenants for which to activate jobs
   repeated string tenantIds = 7;
+  // the tenant filter for this stream; see TenantFilter for options.
+  // When PROVIDED, the tenantIds parameter is used to filter jobs only for
+  // those given tenants.
+  // When ASSIGNED, the tenant IDs assigned to the user/client which opened the
+  // stream are resolved during job activation (e.g. when a job is created and
+  // ready to be pushed).
+  // Defaults to TenantFilter.PROVIDED for backwards compatibility.
+  TenantFilter tenantFilter = 8;
 }
 
 message ActivateJobsResponse {
