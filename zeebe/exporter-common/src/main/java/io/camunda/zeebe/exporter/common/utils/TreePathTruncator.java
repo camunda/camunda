@@ -123,22 +123,74 @@ public final class TreePathTruncator {
    */
   private static Optional<TruncationCandidate> findBestTruncationCandidate(
       final List<String> segments, final int segmentCount, final int maxSize) {
-    // Try all possible prefix/suffix splits, skipping invalid ones
-    return IntStream.rangeClosed(1, segmentCount - 1)
-        .boxed()
-        .flatMap(
-            prefixCount ->
-                IntStream.rangeClosed(1, segmentCount - prefixCount - 1)
-                    .mapToObj(
-                        suffixCount ->
-                            createCandidate(
-                                segments, segmentCount, prefixCount, suffixCount, maxSize))
-                    .filter(Optional::isPresent)
-                    .map(Optional::get))
-        // Prefer longest, then most segments, then most balanced
+    // We binary search on the total number of kept segments (prefix + suffix).
+    // For a fixed number of kept segments, adding more segments always increases
+    // the resulting candidate length, so the globally longest valid candidate
+    // will always use the maximum number of kept segments that still fits.
+    int left = 2; // at least one prefix and one suffix
+    int right = segmentCount - 1; // must remove at least one middle segment
+    Optional<TruncationCandidate> bestCandidate = Optional.empty();
+
+    while (left <= right) {
+      final int mid = left + (right - left) / 2;
+      final Optional<TruncationCandidate> candidateForMid =
+          findBestCandidateForKeptSegments(segments, segmentCount, mid, maxSize);
+
+      if (candidateForMid.isPresent()) {
+        // mid kept segments fit; try to see if we can keep even more
+        bestCandidate = candidateForMid;
+        left = mid + 1;
+      } else {
+        // mid kept segments do not fit; try fewer
+        right = mid - 1;
+      }
+    }
+
+    return bestCandidate;
+  }
+
+  /**
+   * Finds the best candidate for a fixed number of kept segments (prefix + suffix).
+   *
+   * <p>For a given {@code keptSegments}, this will:
+   *
+   * <ul>
+   *   <li>Iterate over all valid prefix/suffix splits where {@code prefixCount + suffixCount =
+   *       keptSegments} and at least one middle segment is removed
+   *   <li>Create candidates that fit within {@code maxSize}
+   *   <li>Select the candidate with the greatest length, then the most balanced prefix/suffix
+   *       (smallest absolute difference)
+   * </ul>
+   *
+   * @param segments the parsed logical segments of the tree path
+   * @param segmentCount the total number of segments
+   * @param keptSegments the total number of segments to keep (prefix + suffix)
+   * @param maxSize the maximum allowed length of the result string
+   * @return an {@link Optional} containing the best candidate for this kept-segment count, or
+   *     empty if none fit
+   */
+  private static Optional<TruncationCandidate> findBestCandidateForKeptSegments(
+      final List<String> segments,
+      final int segmentCount,
+      final int keptSegments,
+      final int maxSize) {
+    // Must remove at least one segment from the middle
+    if (segmentCount - keptSegments <= 0) {
+      return Optional.empty();
+    }
+
+    return IntStream.rangeClosed(1, keptSegments - 1)
+        .mapToObj(
+            prefixCount -> {
+              final int suffixCount = keptSegments - prefixCount;
+              return createCandidate(
+                  segments, segmentCount, prefixCount, suffixCount, maxSize);
+            })
+        .filter(Optional::isPresent)
+        .map(Optional::get)
+        // For a fixed keptSegments, prefer longest and then most balanced
         .max(
             Comparator.comparingInt(TruncationCandidate::length)
-                .thenComparingInt(TruncationCandidate::keptSegments)
                 .thenComparingInt(c -> -c.prefixSuffixBalance()));
   }
 
