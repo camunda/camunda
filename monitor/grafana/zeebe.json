@@ -918,7 +918,7 @@
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
-              "expr": "max(zeebe_executed_instances_total{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\", action=\"activated\"}) - max(zeebe_executed_instances_total{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\", action=\"completed\"}) - max(zeebe_executed_instances_total{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\", action=\"terminated\"})",
+              "expr": "max(zeebe_executed_instances_total{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", action=\"activated\"}) by (partition)\n-\n(\n  max(zeebe_executed_instances_total{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", action=\"completed\"}) by (partition) \n  or \n  max(zeebe_executed_instances_total{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", action=\"activated\"}) by (partition) * 0\n)\n-\n(\n  max(zeebe_executed_instances_total{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", action=\"terminated\"}) by (partition) \n  or \n  max(zeebe_executed_instances_total{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", action=\"activated\"}) by (partition) * 0\n)",
               "format": "time_series",
               "intervalFactor": 1,
               "legendFormat": "partition: {{partition}}",
