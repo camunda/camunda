@@ -31,6 +31,7 @@ import {IS_ELEMENT_SELECTION_V2} from 'modules/feature-flags';
 import {useHasAgentContext} from 'modules/queries/agentContext/useHasAgentContext';
 import {isRunning} from 'modules/utils/instance';
 import {AgentContextTab} from './AgentContextTab';
+import {fireAgentTabConfettiOnce} from 'modules/agentContext/confetti/agentTabConfetti';
 
 const tabIds = {
   incidents: 'incidents',
@@ -84,6 +85,10 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
     resolvedElementInstanceKey ??
     null;
 
+  const selectionKey = `${processInstanceId}:${selectedScopeKey ?? ''}:$$${
+    selectedElementId ?? ''
+  }`;
+
   const isAdHocSelectionByType =
     resolvedElementInstance?.type === 'AD_HOC_SUB_PROCESS' ||
     resolvedElementInstance?.type === 'AD_HOC_SUB_PROCESS_INNER_INSTANCE';
@@ -104,17 +109,32 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
   // fall back to checking for agentContext on the whole process instance.
   const shouldUseProcessWideGate = selectedScopeKey === null;
 
+  const [adHocReloadToken, setAdHocReloadToken] = useState(0);
+  const lastAdHocSelectionKeyRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!isAdHocSelection) {
+      lastAdHocSelectionKeyRef.current = null;
+      return;
+    }
+
+    // Bump the reload token whenever the AHSP selection changes (or is re-established).
+    // This ensures agentContext is reloaded each time the user selects the AHSP.
+    if (lastAdHocSelectionKeyRef.current !== selectionKey) {
+      lastAdHocSelectionKeyRef.current = selectionKey;
+      setAdHocReloadToken((v) => v + 1);
+    }
+  }, [isAdHocSelection, selectionKey]);
+
   const {data: agentContextGate} = useHasAgentContext({
     processInstanceKey: processInstanceId,
     scopeKey: shouldUseProcessWideGate ? null : selectedScopeKey,
     enabled: Boolean(isAdHocSelection),
+    reloadToken: adHocReloadToken,
   });
 
   const hasAgentContext = Boolean(agentContextGate?.hasAgentContext);
 
-  const selectionKey = `${processInstanceId}:${selectedScopeKey ?? ''}:$${
-    selectedElementId ?? ''
-  }`;
   const lastSelectionKeyRef = useRef<string | null>(null);
   const [stickyHasAgentContext, setStickyHasAgentContext] = useState(false);
 
@@ -123,6 +143,9 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
     if (lastSelectionKeyRef.current !== selectionKey) {
       lastSelectionKeyRef.current = selectionKey;
       setStickyHasAgentContext(false);
+
+      // Also reset the visibility transition tracker so confetti can fire for the new selection.
+      prevShouldShowAgentTabRef.current = false;
     }
   }, [selectionKey]);
 
@@ -182,7 +205,13 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
 
   const [selectedTab, setSelectedTab] = useState<TabId>(initialSelectedTab);
 
+  const prevShouldShowAgentTabRef = useRef(false);
+
   useEffect(() => {
+    const justBecameVisible =
+      shouldShowAgentTab && !prevShouldShowAgentTabRef.current;
+    prevShouldShowAgentTabRef.current = shouldShowAgentTab;
+
     if (shouldShowAgentTab) {
       console.info('[AI Agent tab] auto-selecting agent tab for selection', {
         selectedElementId,
@@ -190,6 +219,17 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
         selectedScopeKey,
       });
       setSelectedTab(tabIds.agentContext);
+
+      if (justBecameVisible) {
+        // Confetti: when the tab first appears.
+        requestAnimationFrame(() => {
+          const el = document.querySelector(
+            '[data-testid="ai-agent-tab-button"]',
+          ) as HTMLElement | null;
+          fireAgentTabConfettiOnce(el);
+        });
+      }
+
       return;
     }
 
@@ -268,7 +308,7 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
 
   return (
     <TabView
-      key={`tabview-${selectedElementId}-${resolvedElementInstanceKey}`}
+      key={`tabview-${selectedElementId}-${resolvedElementInstanceKey}-${selectedScopeKey}`}
       onTabChange={(tabId) => setSelectedTab(tabId)}
       tabs={[
         ...(shouldShowAgentTab
@@ -282,12 +322,14 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
                     processInstanceKey={processInstanceId}
                     scopeKey={selectedScopeKey}
                     isRunning={isSelectedScopeRunning}
+                    reloadToken={adHocReloadToken}
                   />
                 ),
                 removePadding: true,
                 onClick: () => {
                   setListenerTabVisibility(false);
                 },
+                testId: 'ai-agent-tab-button',
               },
             ]
           : []),

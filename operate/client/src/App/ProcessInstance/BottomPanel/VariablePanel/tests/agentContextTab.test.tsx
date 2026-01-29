@@ -85,6 +85,14 @@ vi.mock('modules/feature-flags', () => {
   };
 });
 
+vi.mock('modules/agentContext/confetti/agentTabConfetti', () => {
+  return {
+    fireAgentTabConfettiOnce: vi.fn(),
+  };
+});
+
+import {fireAgentTabConfettiOnce} from 'modules/agentContext/confetti/agentTabConfetti';
+
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   return (
     <QueryClientProvider client={getMockQueryClient()}>
@@ -147,7 +155,7 @@ describe('VariablePanel - AI Agent tab', () => {
     expect(screen.getByRole('tab', {name: 'AI Agent'})).toBeInTheDocument();
   });
 
-  it('should show and select the AI Agent tab when agentContext is present on an ad-hoc selection', () => {
+  it('should show and select the AI Agent tab when agentContext is present on an ad-hoc selection', async () => {
     mockServer.use(
       http.get('/v2/process-instances/:key', () => {
         return HttpResponse.json({
@@ -179,5 +187,13 @@ describe('VariablePanel - AI Agent tab', () => {
 
     // Since AI Agent tab is inserted first, it should be selected and its title visible
     expect(screen.getByText('Timeline')).toBeInTheDocument();
+
+    // Confetti should be attempted when the tab appears (auto-selected)
+    await act(async () => {
+      // Allow requestAnimationFrame to run
+      await new Promise((r) => requestAnimationFrame(() => r(null)));
+    });
+
+    expect(fireAgentTabConfettiOnce).toHaveBeenCalled();
   });
 });

@@ -26,6 +26,10 @@ type UseAgentContextVariableParams = {
    * Use `false` to disable polling.
    */
   refetchInterval?: number | false;
+  /**
+   * Optional token to force refetching when the same scope is re-selected.
+   */
+  reloadToken?: number;
 };
 
 function useAgentContextVariable(params: UseAgentContextVariableParams) {
@@ -34,14 +38,18 @@ function useAgentContextVariable(params: UseAgentContextVariableParams) {
     scopeKey,
     enabled = true,
     refetchInterval = false,
+    reloadToken,
   } = params;
 
   return useQuery({
-    queryKey: queryKeys.variables.searchWithFilter({
-      processInstanceKey,
-      scopeKey,
-      name: AGENT_CONTEXT_VARIABLE_NAME,
-    }),
+    queryKey: [
+      ...queryKeys.variables.searchWithFilter({
+        processInstanceKey,
+        scopeKey,
+        name: AGENT_CONTEXT_VARIABLE_NAME,
+      }),
+      reloadToken ?? 0,
+    ],
     enabled: enabled && processInstanceKey !== '',
     refetchInterval,
     queryFn: async () => {

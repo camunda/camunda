@@ -20,6 +20,7 @@ type Props = {
   processInstanceKey: string;
   scopeKey: string | null;
   isRunning: boolean;
+  reloadToken?: number;
 };
 
 const POLLING_INTERVAL_MS = 2000;
@@ -29,6 +30,7 @@ const AgentContextTab: React.FC<Props> = ({
   processInstanceKey,
   scopeKey,
   isRunning,
+  reloadToken,
 }) => {
   // Debug: confirm the tab is mounted and visibility state
   console.debug('[AI Agent] AgentContextTab render', {
@@ -45,6 +47,7 @@ const AgentContextTab: React.FC<Props> = ({
     scopeKey,
     enabled: isVisible,
     refetchInterval: shouldPoll ? POLLING_INTERVAL_MS : false,
+    reloadToken,
   });
 
   console.debug('[AI Agent] AgentContextTab query state', {

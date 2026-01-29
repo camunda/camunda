@@ -9,7 +9,6 @@
 import styled, {css} from 'styled-components';
 import {
   spacing05,
-  spacing06,
   borderSubtle01,
   iconSecondary,
   iconPrimary,
@@ -61,19 +60,28 @@ const TimelineRow = styled.div<{$isFirst?: boolean; $isLast?: boolean}>`
     `}
 `;
 
-const TimelineRail = styled.div`
+const TimelineRail = styled.div<{$clipAtMarker?: boolean}>`
   position: relative;
   width: 1.25rem;
 
   &::before {
     content: '';
     position: absolute;
-    top: 0;
-    bottom: 0;
     left: 50%;
     transform: translateX(-50%);
     width: 2px;
     background: ${borderSubtle01};
+
+    /* Default full-height rail */
+    top: 0;
+    bottom: 0;
+
+    ${({$clipAtMarker}) =>
+      $clipAtMarker &&
+      css`
+        /* For loading markers, don't show the rail behind the spinner */
+        display: none;
+      `}
   }
 `;
 

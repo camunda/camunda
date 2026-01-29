@@ -21,6 +21,11 @@ type UseHasAgentContextParams = {
   processInstanceKey: ProcessInstance['processInstanceKey'] | '';
   scopeKey: Variable['scopeKey'] | null;
   enabled?: boolean;
+  /**
+   * Optional token to force refetching when the same scope is re-selected.
+   * Include a changing value (e.g. a counter) to bust react-query caching.
+   */
+  reloadToken?: number;
 };
 
 /**
@@ -30,14 +35,17 @@ type UseHasAgentContextParams = {
  * Agent Context right panel visibility.
  */
 function useHasAgentContext(params: UseHasAgentContextParams) {
-  const {processInstanceKey, scopeKey, enabled = true} = params;
+  const {processInstanceKey, scopeKey, enabled = true, reloadToken} = params;
 
   return useQuery({
-    queryKey: queryKeys.variables.searchWithFilter({
-      processInstanceKey,
-      scopeKey,
-      name: AGENT_CONTEXT_VARIABLE_NAME,
-    }),
+    queryKey: [
+      ...queryKeys.variables.searchWithFilter({
+        processInstanceKey,
+        scopeKey,
+        name: AGENT_CONTEXT_VARIABLE_NAME,
+      }),
+      reloadToken ?? 0,
+    ],
     enabled: enabled && processInstanceKey !== '',
     queryFn: async () => {
       const {response, error} = await searchVariables({

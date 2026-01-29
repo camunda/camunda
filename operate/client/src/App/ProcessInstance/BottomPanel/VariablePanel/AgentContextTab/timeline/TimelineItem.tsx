@@ -13,6 +13,7 @@ import {
   Tag,
   UnorderedList,
   ListItem,
+  Loading,
 } from '@carbon/react';
 import {useState} from 'react';
 import type {
@@ -93,6 +94,9 @@ const TimelineItem: React.FC<Props> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
 
+  const isPendingToolCall =
+    item.type === 'TOOL_CALL' && item.toolCalls.some((t) => !t.result);
+
   const railVariant = isHeader
     ? 'header'
     : item.type === 'STATUS'
@@ -129,8 +133,22 @@ const TimelineItem: React.FC<Props> = ({
 
   return (
     <TimelineRow $isFirst={isFirst} $isLast={isLast}>
-      <TimelineRail>
-        <TimelineDot $variant={railVariant} />
+      <TimelineRail $clipAtMarker={isPendingToolCall}>
+        {isPendingToolCall ? (
+          <div
+            style={{
+              position: 'absolute',
+              left: '50%',
+              top: '1.1rem',
+              transform: 'translate(-50%, -50%)',
+              background: 'transparent',
+            }}
+          >
+            <Loading small withOverlay={false} />
+          </div>
+        ) : (
+          <TimelineDot $variant={railVariant} />
+        )}
       </TimelineRail>
       <RowContent>
         <AccordionItem
