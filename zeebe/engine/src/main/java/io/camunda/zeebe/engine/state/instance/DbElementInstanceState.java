@@ -514,11 +514,6 @@ public final class DbElementInstanceState implements MutableElementInstanceState
 
   private void removeNumberOfTakenSequenceFlows(final long flowScopeKey) {
     this.flowScopeKey.wrapLong(flowScopeKey);
-
-    numberOfTakenSequenceFlowsColumnFamily.whileEqualPrefix(
-        this.flowScopeKey,
-        (key, number) -> {
-          numberOfTakenSequenceFlowsColumnFamily.deleteExisting(key);
-        });
+    numberOfTakenSequenceFlowsColumnFamily.deletePrefix(numberOfTakenSequenceFlowsKey);
   }
 }

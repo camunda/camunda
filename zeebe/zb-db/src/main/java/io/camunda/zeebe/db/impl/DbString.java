@@ -45,12 +45,13 @@ public final class DbString implements DbKey, DbValue {
   }
 
   @Override
-  public void write(final MutableDirectBuffer mutableDirectBuffer, int offset) {
+  public int write(final MutableDirectBuffer mutableDirectBuffer, int offset) {
     final int length = bytes.capacity();
     mutableDirectBuffer.putInt(offset, length, ZB_DB_BYTE_ORDER);
     offset += Integer.BYTES;
 
     mutableDirectBuffer.putBytes(offset, bytes, 0, bytes.capacity());
+    return getLength();
   }
 
   @Override

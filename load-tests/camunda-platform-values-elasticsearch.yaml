@@ -29,7 +29,7 @@ orchestration:
       zeebe.broker.exporters.camundaexporter.args.history.rolloverBatchSize: 300
       zeebe.broker.exporters.camundaexporter.args.history.waitPeriodBeforeArchiving: "1m"
       # Configure a rate limit for all writes, so that we can visualize flow control metrics.
-      zeebe.broker.flowControl.write.enabled: "true"
+      zeebe.broker.flowControl.write.enabled: "false"
       zeebe.broker.flowControl.write.limit: 8000
       zeebe.broker.flowControl.write.throttling.enabled: "true"
       # Disable the importers

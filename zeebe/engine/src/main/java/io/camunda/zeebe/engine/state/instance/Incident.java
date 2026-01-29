@@ -7,12 +7,11 @@
  */
 package io.camunda.zeebe.engine.state.instance;
 
-import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.engine.state.ObjectDbValue;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 
-public class Incident extends UnpackedObject implements DbValue {
+public class Incident extends ObjectDbValue {
   private final ObjectProperty<IncidentRecord> recordProp =
       new ObjectProperty<>("incidentRecord", new IncidentRecord());
 

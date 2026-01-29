@@ -7,8 +7,7 @@
  */
 package io.camunda.zeebe.engine.state.instance;
 
-import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.engine.state.ObjectDbValue;
 import io.camunda.zeebe.msgpack.property.BinaryProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
@@ -18,7 +17,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public final class EventTrigger extends UnpackedObject implements DbValue {
+public final class EventTrigger extends ObjectDbValue {
 
   private final StringProperty elementIdProp = new StringProperty("elementId");
   private final BinaryProperty variablesProp = new BinaryProperty("variables");

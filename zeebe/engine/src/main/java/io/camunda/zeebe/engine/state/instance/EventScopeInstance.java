@@ -7,8 +7,7 @@
  */
 package io.camunda.zeebe.engine.state.instance;
 
-import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.engine.state.ObjectDbValue;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.BooleanProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
@@ -17,7 +16,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public final class EventScopeInstance extends UnpackedObject implements DbValue {
+public final class EventScopeInstance extends ObjectDbValue {
 
   private final BooleanProperty acceptingProp = new BooleanProperty("accepting");
   private final BooleanProperty interruptedProp = new BooleanProperty("interrupted", false);

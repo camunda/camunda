@@ -7,8 +7,7 @@
  */
 package io.camunda.zeebe.engine.state.authorization;
 
-import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.engine.state.ObjectDbValue;
 import io.camunda.zeebe.msgpack.property.DocumentProperty;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
@@ -18,7 +17,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-public class Permissions extends UnpackedObject implements DbValue {
+public class Permissions extends ObjectDbValue {
   // A map of PermissionType to a List of Strings (resource identifiers)
   private final DocumentProperty permissions = new DocumentProperty("permissions");
 

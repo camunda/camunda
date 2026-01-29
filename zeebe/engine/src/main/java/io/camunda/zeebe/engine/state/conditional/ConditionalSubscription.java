@@ -7,13 +7,12 @@
  */
 package io.camunda.zeebe.engine.state.conditional;
 
-import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.engine.state.ObjectDbValue;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.protocol.impl.record.value.conditional.ConditionalSubscriptionRecord;
 
-public class ConditionalSubscription extends UnpackedObject implements DbValue {
+public class ConditionalSubscription extends ObjectDbValue {
 
   private final ObjectProperty<ConditionalSubscriptionRecord> recordProp =
       new ObjectProperty<>("conditionalSubscriptionRecord", new ConditionalSubscriptionRecord());

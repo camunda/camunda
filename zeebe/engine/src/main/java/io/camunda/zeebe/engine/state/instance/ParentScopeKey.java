@@ -7,11 +7,10 @@
  */
 package io.camunda.zeebe.engine.state.instance;
 
-import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.engine.state.ObjectDbValue;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 
-public class ParentScopeKey extends UnpackedObject implements DbValue {
+public class ParentScopeKey extends ObjectDbValue {
   private final LongProperty keyProp = new LongProperty("parentScopeKey", -1L);
 
   public ParentScopeKey() {

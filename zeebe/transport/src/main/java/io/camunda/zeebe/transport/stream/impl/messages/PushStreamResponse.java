@@ -29,8 +29,9 @@ public final class PushStreamResponse implements BufferReader, StreamResponse {
   }
 
   @Override
-  public void write(final MutableDirectBuffer buffer, final int offset) {
+  public int write(final MutableDirectBuffer buffer, final int offset) {
     messageEncoder.wrapAndApplyHeader(buffer, offset, headerEncoder);
+    return getLength();
   }
 
   @Override

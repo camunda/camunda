@@ -7,12 +7,11 @@
  */
 package io.camunda.zeebe.engine.state.instance;
 
-import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.engine.state.ObjectDbValue;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 
-public class UserTaskRecordValue extends UnpackedObject implements DbValue {
+public class UserTaskRecordValue extends ObjectDbValue {
 
   private final ObjectProperty<UserTaskRecord> recordProp =
       new ObjectProperty<>("userTaskRecord", new UserTaskRecord());
@@ -26,11 +25,11 @@ public class UserTaskRecordValue extends UnpackedObject implements DbValue {
     return recordProp.getValue();
   }
 
-  public void setRecordWithoutVariables(final UserTaskRecord record) {
-    recordProp.getValue().wrapWithoutVariables(record);
-  }
-
   public void setRecord(final UserTaskRecord record) {
     recordProp.getValue().wrap(record);
+  }
+
+  public void setRecordWithoutVariables(final UserTaskRecord record) {
+    recordProp.getValue().wrapWithoutVariables(record);
   }
 }

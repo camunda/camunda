@@ -191,20 +191,10 @@ public class ZeebeTransactionDb<
   }
 
   @Override
-  public Optional<String> getProperty(final String propertyName) {
-    String propertyValue = null;
-    try {
-      propertyValue = optimisticTransactionDB.getProperty(defaultHandle, propertyName);
-    } catch (final RocksDBException rde) {
-      LOG.debug(rde.getMessage(), rde);
-    }
-    return Optional.ofNullable(propertyValue);
-  }
-
-  @Override
   public TransactionContext createContext() {
     final Transaction transaction = optimisticTransactionDB.beginTransaction(defaultWriteOptions);
-    final ZeebeTransaction zeebeTransaction = new ZeebeTransaction(transaction, this);
+    final ZeebeTransaction zeebeTransaction =
+        new ZeebeTransaction(optimisticTransactionDB, transaction, this);
     closables.add(zeebeTransaction);
     return new DefaultTransactionContext(zeebeTransaction);
   }
@@ -224,6 +214,17 @@ public class ZeebeTransactionDb<
   @Override
   public void exportMetrics() {
     metricExporter.exportMetrics(optimisticTransactionDB);
+  }
+
+  @Override
+  public Optional<String> getProperty(final String propertyName) {
+    String propertyValue = null;
+    try {
+      propertyValue = optimisticTransactionDB.getProperty(defaultHandle, propertyName);
+    } catch (final RocksDBException rde) {
+      LOG.debug(rde.getMessage(), rde);
+    }
+    return Optional.ofNullable(propertyValue);
   }
 
   @Override

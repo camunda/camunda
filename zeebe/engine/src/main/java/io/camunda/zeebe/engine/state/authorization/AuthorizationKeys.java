@@ -7,15 +7,14 @@
  */
 package io.camunda.zeebe.engine.state.authorization;
 
-import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.engine.state.ObjectDbValue;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.value.LongValue;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-public class AuthorizationKeys extends UnpackedObject implements DbValue {
+public class AuthorizationKeys extends ObjectDbValue {
   private final ArrayProperty<LongValue> authorizationKeys =
       new ArrayProperty<>("authorizationKeys", LongValue::new);
 
