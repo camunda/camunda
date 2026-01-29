@@ -7,26 +7,24 @@
  */
 package io.camunda.zeebe.engine.state.authorization;
 
-import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.protocol.record.value.EntityType;
+import io.camunda.zeebe.engine.state.ObjectDbValue;
 
-public class EntityTypeValue extends UnpackedObject implements DbValue {
+public class EntityTypeValue extends ObjectDbValue {
 
-  private final EnumProperty<EntityType> entityTypeProp =
-      new EnumProperty<>("entityType", EntityType.class);
+	private final EnumProperty<EntityType> entityTypeProp = new EnumProperty<>("entityType", EntityType.class);
 
-  public EntityTypeValue() {
-    super(1);
-    declareProperty(entityTypeProp);
-  }
+	public EntityTypeValue() {
+		super(1);
+		declareProperty(entityTypeProp);
+	}
 
-  public EntityType getEntityType() {
-    return entityTypeProp.getValue();
-  }
+	public EntityType getEntityType() {
+		return entityTypeProp.getValue();
+	}
 
-  public void setEntityType(final EntityType entityType) {
-    entityTypeProp.setValue(entityType);
-  }
+	public void setEntityType(final EntityType entityType) {
+		entityTypeProp.setValue(entityType);
+	}
 }

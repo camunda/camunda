@@ -7,14 +7,13 @@
  */
 package io.camunda.zeebe.engine.state.compensation;
 
-import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.engine.state.ObjectDbValue;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.protocol.impl.record.value.compensation.CompensationSubscriptionRecord;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 
-public class CompensationSubscription extends UnpackedObject implements DbValue {
+public class CompensationSubscription extends ObjectDbValue {
 
   private final ObjectProperty<CompensationSubscriptionRecord> recordProp =
       new ObjectProperty<>("compensationSubscriptionRecord", new CompensationSubscriptionRecord());

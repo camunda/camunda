@@ -9,8 +9,7 @@ package io.camunda.zeebe.engine.state.deployment;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
-import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.engine.state.ObjectDbValue;
 import io.camunda.zeebe.msgpack.property.BinaryProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
@@ -20,7 +19,7 @@ import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
-public final class PersistedDecisionRequirements extends UnpackedObject implements DbValue {
+public final class PersistedDecisionRequirements extends ObjectDbValue {
 
   private final StringProperty decisionRequirementsIdProp =
       new StringProperty("decisionRequirementsId");

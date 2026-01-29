@@ -7,34 +7,34 @@
  */
 package io.camunda.zeebe.engine.state.asyncrequest;
 
-import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.engine.state.ObjectDbValue;
+
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.protocol.impl.record.value.AsyncRequestRecord;
 
-public class AsyncRequestMetadataValue extends UnpackedObject implements DbValue {
+public class AsyncRequestMetadataValue extends ObjectDbValue {
 
-  private final LongProperty asyncRequestKeyProperty = new LongProperty("asyncRequestKey", -1);
+	private final LongProperty asyncRequestKeyProperty = new LongProperty("asyncRequestKey", -1);
 
-  private final ObjectProperty<AsyncRequestRecord> recordProp =
-      new ObjectProperty<>("asyncRequestRecord", new AsyncRequestRecord());
+	private final ObjectProperty<AsyncRequestRecord> recordProp = new ObjectProperty<>("asyncRequestRecord",
+			new AsyncRequestRecord());
 
-  public AsyncRequestMetadataValue() {
-    super(2);
-    declareProperty(asyncRequestKeyProperty).declareProperty(recordProp);
-  }
+	public AsyncRequestMetadataValue() {
+		super(2);
+		declareProperty(asyncRequestKeyProperty).declareProperty(recordProp);
+	}
 
-  public void wrap(final long asyncRequestKey, final AsyncRequestRecord record) {
-    asyncRequestKeyProperty.setValue(asyncRequestKey);
-    recordProp.getValue().wrap(record);
-  }
+	public void wrap(final long asyncRequestKey, final AsyncRequestRecord record) {
+		asyncRequestKeyProperty.setValue(asyncRequestKey);
+		recordProp.getValue().wrap(record);
+	}
 
-  public AsyncRequestRecord getRecord() {
-    return recordProp.getValue();
-  }
+	public AsyncRequestRecord getRecord() {
+		return recordProp.getValue();
+	}
 
-  public long getAsyncRequestKey() {
-    return asyncRequestKeyProperty.getValue();
-  }
+	public long getAsyncRequestKey() {
+		return asyncRequestKeyProperty.getValue();
+	}
 }

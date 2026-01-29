@@ -7,8 +7,7 @@
  */
 package io.camunda.zeebe.engine.state.deployment;
 
-import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.engine.state.ObjectDbValue;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.value.LongValue;
@@ -17,7 +16,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.StreamSupport;
 
-public final class VersionInfo extends UnpackedObject implements DbValue {
+public final class VersionInfo extends ObjectDbValue {
   // The property key is named nextValue. This is not a great name and doesn't describe what it is.
   // However, changing this is not backwards compatible. Changing the variable name is the best we
   // can do to hide this name.

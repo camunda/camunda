@@ -7,24 +7,23 @@
  */
 package io.camunda.zeebe.engine.state.instance;
 
-import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.LongProperty;
+import io.camunda.zeebe.engine.state.ObjectDbValue;
 
-public class IncidentKey extends UnpackedObject implements DbValue {
+public class IncidentKey extends ObjectDbValue {
 
-  private final LongProperty keyProp = new LongProperty("key");
+	private final LongProperty keyProp = new LongProperty("key");
 
-  public IncidentKey() {
-    super(1);
-    declareProperty(keyProp);
-  }
+	public IncidentKey() {
+		super(1);
+		declareProperty(keyProp);
+	}
 
-  public long get() {
-    return keyProp.getValue();
-  }
+	public long get() {
+		return keyProp.getValue();
+	}
 
-  public void set(final long key) {
-    keyProp.setValue(key);
-  }
+	public void set(final long key) {
+		keyProp.setValue(key);
+	}
 }
