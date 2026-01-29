@@ -152,6 +152,7 @@ public class WebSecurityConfig {
           "/health",
           "/startup",
           // swagger-ui endpoint
+          "/swagger/**",
           "/swagger-ui/**",
           "/v3/api-docs/**",
           "/v2/rest-api.yaml",
