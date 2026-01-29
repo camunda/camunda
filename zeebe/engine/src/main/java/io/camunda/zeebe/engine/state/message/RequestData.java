@@ -7,43 +7,42 @@
  */
 package io.camunda.zeebe.engine.state.message;
 
+import io.camunda.zeebe.engine.state.ObjectDbValue;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.engine.state.ObjectDbValue;
-import io.camunda.zeebe.engine.state.ObjectDbValue;
 
 public class RequestData extends ObjectDbValue {
 
-	private final LongProperty requestIdProp = new LongProperty("requestId");
-	private final IntegerProperty requestStreamIdProp = new IntegerProperty("requestStreamId");
+  private final LongProperty requestIdProp = new LongProperty("requestId");
+  private final IntegerProperty requestStreamIdProp = new IntegerProperty("requestStreamId");
 
-	public RequestData() {
-		super(2);
-		declareProperty(requestIdProp).declareProperty(requestStreamIdProp);
-	}
+  public RequestData() {
+    super(2);
+    declareProperty(requestIdProp).declareProperty(requestStreamIdProp);
+  }
 
-	public RequestData copy() {
-		final var copy = new RequestData();
-		copy.setRequestIdProp(getRequestId());
-		copy.setRequestStreamIdProp(getRequestStreamId());
-		return copy;
-	}
+  public RequestData copy() {
+    final var copy = new RequestData();
+    copy.setRequestIdProp(getRequestId());
+    copy.setRequestStreamIdProp(getRequestStreamId());
+    return copy;
+  }
 
-	public Long getRequestId() {
-		return requestIdProp.getValue();
-	}
+  public Long getRequestId() {
+    return requestIdProp.getValue();
+  }
 
-	public RequestData setRequestIdProp(final long requestId) {
-		requestIdProp.setValue(requestId);
-		return this;
-	}
+  public RequestData setRequestIdProp(final long requestId) {
+    requestIdProp.setValue(requestId);
+    return this;
+  }
 
-	public Integer getRequestStreamId() {
-		return requestStreamIdProp.getValue();
-	}
+  public Integer getRequestStreamId() {
+    return requestStreamIdProp.getValue();
+  }
 
-	public RequestData setRequestStreamIdProp(final int requestStreamId) {
-		requestStreamIdProp.setValue(requestStreamId);
-		return this;
-	}
+  public RequestData setRequestStreamIdProp(final int requestStreamId) {
+    requestStreamIdProp.setValue(requestStreamId);
+    return this;
+  }
 }

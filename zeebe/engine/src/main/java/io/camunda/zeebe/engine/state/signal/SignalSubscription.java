@@ -7,39 +7,36 @@
  */
 package io.camunda.zeebe.engine.state.signal;
 
-import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.engine.state.ObjectDbValue;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalSubscriptionRecord;
-import io.camunda.zeebe.engine.state.ObjectDbValue;
-import io.camunda.zeebe.engine.state.ObjectDbValue;
 
 public class SignalSubscription extends ObjectDbValue {
 
-	private final ObjectProperty<SignalSubscriptionRecord> recordProp = new ObjectProperty<>("signalSubscriptionRecord",
-			new SignalSubscriptionRecord());
-	private final LongProperty keyProp = new LongProperty("key");
+  private final ObjectProperty<SignalSubscriptionRecord> recordProp =
+      new ObjectProperty<>("signalSubscriptionRecord", new SignalSubscriptionRecord());
+  private final LongProperty keyProp = new LongProperty("key");
 
-	public SignalSubscription() {
-		super(2);
-		declareProperty(recordProp).declareProperty(keyProp);
-	}
+  public SignalSubscription() {
+    super(2);
+    declareProperty(recordProp).declareProperty(keyProp);
+  }
 
-	public SignalSubscriptionRecord getRecord() {
-		return recordProp.getValue();
-	}
+  public SignalSubscriptionRecord getRecord() {
+    return recordProp.getValue();
+  }
 
-	public void setRecord(final SignalSubscriptionRecord record) {
-		recordProp.getValue().wrap(record);
-	}
+  public void setRecord(final SignalSubscriptionRecord record) {
+    recordProp.getValue().wrap(record);
+  }
 
-	public long getKey() {
-		return keyProp.getValue();
-	}
+  public long getKey() {
+    return keyProp.getValue();
+  }
 
-	public SignalSubscription setKey(final long key) {
-		keyProp.setValue(key);
-		return this;
-	}
+  public SignalSubscription setKey(final long key) {
+    keyProp.setValue(key);
+    return this;
+  }
 }

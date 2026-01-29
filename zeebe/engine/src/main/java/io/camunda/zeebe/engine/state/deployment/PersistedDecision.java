@@ -9,93 +9,101 @@ package io.camunda.zeebe.engine.state.deployment;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
+import io.camunda.zeebe.engine.state.ObjectDbValue;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
-import io.camunda.zeebe.engine.state.ObjectDbValue;
 import org.agrona.DirectBuffer;
-import io.camunda.zeebe.engine.state.ObjectDbValue;
 
 public final class PersistedDecision extends ObjectDbValue {
 
-	private static final long NO_DEPLOYMENT_KEY = -1L;
-	private final StringProperty decisionIdProp = new StringProperty("decisionId");
-	private final StringProperty decisionNameProp = new StringProperty("decisionName");
-	private final IntegerProperty versionProp = new IntegerProperty("version");
-	private final LongProperty decisionKeyProp = new LongProperty("decisionKey");
-	private final StringProperty decisionRequirementsIdProp = new StringProperty("decisionRequirementsId");
-	private final LongProperty decisionRequirementsKeyProp = new LongProperty("decisionRequirementsKey");
-	private final StringProperty tenantIdProp = new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-	private final LongProperty deploymentKeyProp = new LongProperty("deploymentKey", NO_DEPLOYMENT_KEY);
-	private final StringProperty versionTagProp = new StringProperty("versionTag", "");
+  private static final long NO_DEPLOYMENT_KEY = -1L;
+  private final StringProperty decisionIdProp = new StringProperty("decisionId");
+  private final StringProperty decisionNameProp = new StringProperty("decisionName");
+  private final IntegerProperty versionProp = new IntegerProperty("version");
+  private final LongProperty decisionKeyProp = new LongProperty("decisionKey");
+  private final StringProperty decisionRequirementsIdProp =
+      new StringProperty("decisionRequirementsId");
+  private final LongProperty decisionRequirementsKeyProp =
+      new LongProperty("decisionRequirementsKey");
+  private final StringProperty tenantIdProp =
+      new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  private final LongProperty deploymentKeyProp =
+      new LongProperty("deploymentKey", NO_DEPLOYMENT_KEY);
+  private final StringProperty versionTagProp = new StringProperty("versionTag", "");
 
-	public PersistedDecision() {
-		super(9);
-		declareProperty(decisionIdProp).declareProperty(decisionNameProp).declareProperty(versionProp)
-				.declareProperty(decisionKeyProp).declareProperty(decisionRequirementsIdProp)
-				.declareProperty(decisionRequirementsKeyProp).declareProperty(tenantIdProp)
-				.declareProperty(deploymentKeyProp).declareProperty(versionTagProp);
-	}
+  public PersistedDecision() {
+    super(9);
+    declareProperty(decisionIdProp)
+        .declareProperty(decisionNameProp)
+        .declareProperty(versionProp)
+        .declareProperty(decisionKeyProp)
+        .declareProperty(decisionRequirementsIdProp)
+        .declareProperty(decisionRequirementsKeyProp)
+        .declareProperty(tenantIdProp)
+        .declareProperty(deploymentKeyProp)
+        .declareProperty(versionTagProp);
+  }
 
-	public void wrap(final DecisionRecord record) {
-		decisionIdProp.setValue(record.getDecisionId());
-		decisionNameProp.setValue(record.getDecisionName());
-		versionProp.setValue(record.getVersion());
-		decisionKeyProp.setValue(record.getDecisionKey());
-		decisionRequirementsIdProp.setValue(record.getDecisionRequirementsIdBuffer());
-		decisionRequirementsKeyProp.setValue(record.getDecisionRequirementsKey());
-		tenantIdProp.setValue(record.getTenantId());
-		deploymentKeyProp.setValue(record.getDeploymentKey());
-		versionTagProp.setValue(record.getVersionTag());
-	}
+  public void wrap(final DecisionRecord record) {
+    decisionIdProp.setValue(record.getDecisionId());
+    decisionNameProp.setValue(record.getDecisionName());
+    versionProp.setValue(record.getVersion());
+    decisionKeyProp.setValue(record.getDecisionKey());
+    decisionRequirementsIdProp.setValue(record.getDecisionRequirementsIdBuffer());
+    decisionRequirementsKeyProp.setValue(record.getDecisionRequirementsKey());
+    tenantIdProp.setValue(record.getTenantId());
+    deploymentKeyProp.setValue(record.getDeploymentKey());
+    versionTagProp.setValue(record.getVersionTag());
+  }
 
-	public DirectBuffer getDecisionId() {
-		return decisionIdProp.getValue();
-	}
+  public DirectBuffer getDecisionId() {
+    return decisionIdProp.getValue();
+  }
 
-	public DirectBuffer getDecisionName() {
-		return decisionNameProp.getValue();
-	}
+  public DirectBuffer getDecisionName() {
+    return decisionNameProp.getValue();
+  }
 
-	public int getVersion() {
-		return versionProp.getValue();
-	}
+  public int getVersion() {
+    return versionProp.getValue();
+  }
 
-	public long getDecisionKey() {
-		return decisionKeyProp.getValue();
-	}
+  public long getDecisionKey() {
+    return decisionKeyProp.getValue();
+  }
 
-	public DirectBuffer getDecisionRequirementsId() {
-		return decisionRequirementsIdProp.getValue();
-	}
+  public DirectBuffer getDecisionRequirementsId() {
+    return decisionRequirementsIdProp.getValue();
+  }
 
-	public long getDecisionRequirementsKey() {
-		return decisionRequirementsKeyProp.getValue();
-	}
+  public long getDecisionRequirementsKey() {
+    return decisionRequirementsKeyProp.getValue();
+  }
 
-	public String getTenantId() {
-		return bufferAsString(tenantIdProp.getValue());
-	}
+  public String getTenantId() {
+    return bufferAsString(tenantIdProp.getValue());
+  }
 
-	public void setTenantId(final String tenantId) {
-		tenantIdProp.setValue(tenantId);
-	}
+  public void setTenantId(final String tenantId) {
+    tenantIdProp.setValue(tenantId);
+  }
 
-	public long getDeploymentKey() {
-		return deploymentKeyProp.getValue();
-	}
+  public long getDeploymentKey() {
+    return deploymentKeyProp.getValue();
+  }
 
-	public void setDeploymentKey(final long deploymentKey) {
-		deploymentKeyProp.setValue(deploymentKey);
-	}
+  public void setDeploymentKey(final long deploymentKey) {
+    deploymentKeyProp.setValue(deploymentKey);
+  }
 
-	public boolean hasDeploymentKey() {
-		return deploymentKeyProp.getValue() != NO_DEPLOYMENT_KEY;
-	}
+  public boolean hasDeploymentKey() {
+    return deploymentKeyProp.getValue() != NO_DEPLOYMENT_KEY;
+  }
 
-	public String getVersionTag() {
-		return bufferAsString(versionTagProp.getValue());
-	}
+  public String getVersionTag() {
+    return bufferAsString(versionTagProp.getValue());
+  }
 }
