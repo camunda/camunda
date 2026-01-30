@@ -213,7 +213,7 @@ public abstract class ImportJobAbstract implements ImportJob {
 
   protected static class EntitySizeEstimator {
     private static final int INITIAL_BUFFER_SIZE = 1024;
-    private static final int MAX_BUFFER_SIZE = 1024 * 1024;
+    private static final int MAX_BUFFER_SIZE = 5 * 1024 * 1024; // 5 MB
     private static final ThreadLocal<Kryo> KYRO_THREAD_LOCAL =
         ThreadLocal.withInitial(
             () -> {
