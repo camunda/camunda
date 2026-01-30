@@ -35,7 +35,7 @@ class BatchOperationInitializedHandlerTest {
 
   @Test
   void testGetHandledValueType() {
-    assertThat(underTest.getHandledValueType()).isEqualTo(ValueType.BATCH_OPERATION_CREATION);
+    assertThat(underTest.getHandledValueType()).isEqualTo(ValueType.BATCH_OPERATION_INITIALIZATION);
   }
 
   @Test

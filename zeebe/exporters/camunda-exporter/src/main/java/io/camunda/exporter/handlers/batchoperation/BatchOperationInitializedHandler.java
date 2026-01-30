@@ -33,7 +33,7 @@ public class BatchOperationInitializedHandler
 
   @Override
   public ValueType getHandledValueType() {
-    return ValueType.BATCH_OPERATION_CREATION;
+    return ValueType.BATCH_OPERATION_INITIALIZATION;
   }
 
   @Override
