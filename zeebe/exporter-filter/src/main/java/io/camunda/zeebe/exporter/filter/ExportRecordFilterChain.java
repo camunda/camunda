@@ -29,7 +29,6 @@ public final class ExportRecordFilterChain {
 
   /** Returns {@code true} if the record passes all configured filters. */
   public boolean acceptRecord(final Record<?> record) {
-    return recordFilters.stream()
-      .allMatch(filter -> filter.accept(record));
+    return recordFilters.stream().allMatch(filter -> filter.accept(record));
   }
 }
