@@ -11,6 +11,7 @@ import static io.camunda.zeebe.protocol.record.ValueType.AUTHORIZATION;
 import static io.camunda.zeebe.protocol.record.ValueType.BATCH_OPERATION_CHUNK;
 import static io.camunda.zeebe.protocol.record.ValueType.BATCH_OPERATION_CREATION;
 import static io.camunda.zeebe.protocol.record.ValueType.BATCH_OPERATION_EXECUTION;
+import static io.camunda.zeebe.protocol.record.ValueType.BATCH_OPERATION_INITIALIZATION;
 import static io.camunda.zeebe.protocol.record.ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT;
 import static io.camunda.zeebe.protocol.record.ValueType.CLUSTER_VARIABLE;
 import static io.camunda.zeebe.protocol.record.ValueType.DECISION;
@@ -372,6 +373,7 @@ public class CamundaExporter implements Exporter {
             RESOURCE,
             USER_TASK,
             BATCH_OPERATION_CREATION,
+            BATCH_OPERATION_INITIALIZATION,
             BATCH_OPERATION_EXECUTION,
             BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
             BATCH_OPERATION_CHUNK,
