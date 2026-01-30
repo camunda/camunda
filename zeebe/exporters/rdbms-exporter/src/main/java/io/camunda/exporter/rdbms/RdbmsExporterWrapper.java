@@ -58,30 +58,7 @@ import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.AuthorizationAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.BatchOperationCreationAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.BatchOperationLifecycleManagementAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.DecisionAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.DecisionEvaluationAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.DecisionRequirementsRecordAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.FormAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.GroupAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.GroupEntityAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.IncidentResolutionAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.MappingRuleAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.ProcessAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.ProcessInstanceCancelAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.ProcessInstanceCreationAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.ProcessInstanceMigrationAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.ProcessInstanceModificationAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.ResourceAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.RoleAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.RoleEntityAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.TenantAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.TenantEntityAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.UserAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.UserTaskAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.VariableAddUpdateAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformerRegistry;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCacheImpl;
 import io.camunda.zeebe.exporter.common.cache.batchoperation.CachedBatchOperationEntity;
@@ -347,32 +324,10 @@ public class RdbmsExporterWrapper implements Exporter {
       final ExporterConfiguration config,
       final int partitionId) {
     final Set<AuditLogTransformer<?>> transformers = new HashSet<>();
-    transformers.add(new BatchOperationLifecycleManagementAuditLogTransformer());
-    transformers.add(new DecisionEvaluationAuditLogTransformer());
-    transformers.add(new IncidentResolutionAuditLogTransformer());
-    transformers.add(new ProcessInstanceCancelAuditLogTransformer());
-    transformers.add(new ProcessInstanceCreationAuditLogTransformer());
-    transformers.add(new ProcessInstanceMigrationAuditLogTransformer());
-    transformers.add(new ProcessInstanceModificationAuditLogTransformer());
-    transformers.add(new UserTaskAuditLogTransformer());
-    transformers.add(new VariableAddUpdateAuditLogTransformer());
+    transformers.addAll(AuditLogTransformerRegistry.createAllPartitionTransformers());
 
     if (partitionId == PROCESS_DEFINITION_PARTITION) {
-      transformers.add(new AuthorizationAuditLogTransformer());
-      transformers.add(new BatchOperationCreationAuditLogTransformer());
-      transformers.add(new DecisionAuditLogTransformer());
-      transformers.add(new DecisionRequirementsRecordAuditLogTransformer());
-      transformers.add(new FormAuditLogTransformer());
-      transformers.add(new GroupAuditLogTransformer());
-      transformers.add(new GroupEntityAuditLogTransformer());
-      transformers.add(new MappingRuleAuditLogTransformer());
-      transformers.add(new ProcessAuditLogTransformer());
-      transformers.add(new ResourceAuditLogTransformer());
-      transformers.add(new RoleAuditLogTransformer());
-      transformers.add(new RoleEntityAuditLogTransformer());
-      transformers.add(new TenantAuditLogTransformer());
-      transformers.add(new TenantEntityAuditLogTransformer());
-      transformers.add(new UserAuditLogTransformer());
+      transformers.addAll(AuditLogTransformerRegistry.createPartitionSpecificTransformers());
     }
 
     transformers.forEach(
