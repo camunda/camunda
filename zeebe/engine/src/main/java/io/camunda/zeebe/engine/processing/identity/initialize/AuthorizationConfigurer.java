@@ -18,11 +18,6 @@ import java.util.List;
 public class AuthorizationConfigurer
     implements EntityInitializationConfigurer<ConfiguredAuthorization, AuthorizationRecord> {
 
-  private static final String ERROR_MUTUALLY_EXCLUSIVE_IDENTIFIERS =
-      "resourceId and resourcePropertyName are mutually exclusive. Provide only one of them.";
-  private static final String ERROR_MISSING_IDENTIFIER =
-      "Either resourceId or resourcePropertyName must be provided.";
-
   private final AuthorizationValidator validator;
 
   public AuthorizationConfigurer(final AuthorizationValidator validator) {
@@ -31,31 +26,14 @@ public class AuthorizationConfigurer
 
   @Override
   public Either<List<String>, AuthorizationRecord> configure(final ConfiguredAuthorization auth) {
-    final boolean hasResourceId = auth.hasResourceId();
-    final boolean hasPropertyName = auth.hasResourcePropertyName();
-
-    if (hasResourceId && hasPropertyName) {
-      return Either.left(List.of(ERROR_MUTUALLY_EXCLUSIVE_IDENTIFIERS));
-    }
-
-    if (!hasResourceId && !hasPropertyName) {
-      return Either.left(List.of(ERROR_MISSING_IDENTIFIER));
-    }
-
     final var violations =
-        hasResourceId
-            ? validator.validateIdBased(
-                auth.ownerId(),
-                auth.ownerType(),
-                auth.resourceType(),
-                auth.resourceId(),
-                auth.permissions())
-            : validator.validatePropertyBased(
-                auth.ownerId(),
-                auth.ownerType(),
-                auth.resourceType(),
-                auth.resourcePropertyName(),
-                auth.permissions());
+        validator.validate(
+            auth.ownerId(),
+            auth.ownerType(),
+            auth.resourceType(),
+            auth.resourceId(),
+            auth.resourcePropertyName(),
+            auth.permissions());
 
     if (!violations.isEmpty()) {
       return Either.left(violations);

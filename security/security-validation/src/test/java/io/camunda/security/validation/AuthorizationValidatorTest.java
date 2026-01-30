@@ -57,7 +57,7 @@ class AuthorizationValidatorTest {
         arguments(
             named(
                 "ID-based with wildcard",
-                new IdBasedAuthorization(
+                TestAuthorization.idBased(
                     "foo",
                     AuthorizationOwnerType.USER,
                     AuthorizationResourceType.RESOURCE,
@@ -66,7 +66,7 @@ class AuthorizationValidatorTest {
         arguments(
             named(
                 "ID-based with specific resource",
-                new IdBasedAuthorization(
+                TestAuthorization.idBased(
                     "foo",
                     AuthorizationOwnerType.USER,
                     AuthorizationResourceType.RESOURCE,
@@ -75,7 +75,7 @@ class AuthorizationValidatorTest {
         arguments(
             named(
                 "Property-based with valid property name",
-                new PropertyBasedAuthorization(
+                TestAuthorization.propertyBased(
                     "foo",
                     AuthorizationOwnerType.USER,
                     AuthorizationResourceType.RESOURCE,
@@ -90,7 +90,7 @@ class AuthorizationValidatorTest {
         arguments(
             named(
                 "ID-based without ownerId",
-                new IdBasedAuthorization(
+                TestAuthorization.idBased(
                     null,
                     AuthorizationOwnerType.USER,
                     AuthorizationResourceType.RESOURCE,
@@ -100,7 +100,7 @@ class AuthorizationValidatorTest {
         arguments(
             named(
                 "Property-based without ownerId",
-                new PropertyBasedAuthorization(
+                TestAuthorization.propertyBased(
                     "",
                     AuthorizationOwnerType.USER,
                     AuthorizationResourceType.RESOURCE,
@@ -111,33 +111,33 @@ class AuthorizationValidatorTest {
         arguments(
             named(
                 "ID-based without ownerType",
-                new IdBasedAuthorization(
+                TestAuthorization.idBased(
                     "foo", null, AuthorizationResourceType.RESOURCE, "2", permissions)),
             "No ownerType provided"),
         arguments(
             named(
                 "Property-based without ownerType",
-                new PropertyBasedAuthorization(
+                TestAuthorization.propertyBased(
                     "foo", null, AuthorizationResourceType.RESOURCE, "propertyName", permissions)),
             "No ownerType provided"),
         // Missing resourceType cases
         arguments(
             named(
                 "ID-based without resourceType",
-                new IdBasedAuthorization(
+                TestAuthorization.idBased(
                     "foo", AuthorizationOwnerType.USER, null, "3", permissions)),
             "No resourceType provided"),
         arguments(
             named(
                 "Property-based without resourceType",
-                new PropertyBasedAuthorization(
+                TestAuthorization.propertyBased(
                     "foo", AuthorizationOwnerType.USER, null, "propertyName", permissions)),
             "No resourceType provided"),
         // Missing permissions cases
         arguments(
             named(
                 "ID-based without permissions",
-                new IdBasedAuthorization(
+                TestAuthorization.idBased(
                     "foo",
                     AuthorizationOwnerType.USER,
                     AuthorizationResourceType.RESOURCE,
@@ -147,39 +147,30 @@ class AuthorizationValidatorTest {
         arguments(
             named(
                 "Property-based without permissions",
-                new PropertyBasedAuthorization(
+                TestAuthorization.propertyBased(
                     "foo",
                     AuthorizationOwnerType.USER,
                     AuthorizationResourceType.RESOURCE,
                     "propertyName",
                     null)),
             "No permissionTypes provided"),
-        // Missing resourceId/resourcePropertyName cases
+        // Missing both identifiers
         arguments(
             named(
-                "ID-based without resourceId",
-                new IdBasedAuthorization(
-                    "foo",
-                    AuthorizationOwnerType.USER,
-                    AuthorizationResourceType.RESOURCE,
-                    "",
-                    permissions)),
-            "No resourceId provided"),
-        arguments(
-            named(
-                "Property-based without resourcePropertyName",
-                new PropertyBasedAuthorization(
+                "Neither resourceId nor resourcePropertyName provided",
+                new TestAuthorization(
                     "foo",
                     AuthorizationOwnerType.USER,
                     AuthorizationResourceType.RESOURCE,
                     null,
+                    "",
                     permissions)),
-            "No resourcePropertyName provided"),
+            "Either resourceId or resourcePropertyName must be provided"),
         // Invalid resourceId/resourcePropertyName cases
         arguments(
             named(
                 "ID-based with invalid characters",
-                new IdBasedAuthorization(
+                TestAuthorization.idBased(
                     "foo",
                     AuthorizationOwnerType.USER,
                     AuthorizationResourceType.RESOURCE,
@@ -189,7 +180,7 @@ class AuthorizationValidatorTest {
         arguments(
             named(
                 "Property-based with invalid characters",
-                new PropertyBasedAuthorization(
+                TestAuthorization.propertyBased(
                     "foo",
                     AuthorizationOwnerType.USER,
                     AuthorizationResourceType.RESOURCE,
@@ -199,50 +190,62 @@ class AuthorizationValidatorTest {
         arguments(
             named(
                 "Property-based with wildcard as property name",
-                new PropertyBasedAuthorization(
+                TestAuthorization.propertyBased(
                     "foo",
                     AuthorizationOwnerType.USER,
                     AuthorizationResourceType.RESOURCE,
                     WILDCARD_CHAR,
                     permissions)),
-            "The provided resourcePropertyName contains illegal characters. It must match the pattern '^[a-zA-Z0-9_~@.+-]+$'"));
+            "The provided resourcePropertyName contains illegal characters. It must match the pattern '^[a-zA-Z0-9_~@.+-]+$'"),
+        // Mutually exclusive identifiers
+        arguments(
+            named(
+                "Both resourceId and resourcePropertyName provided",
+                new TestAuthorization(
+                    "foo",
+                    AuthorizationOwnerType.USER,
+                    AuthorizationResourceType.RESOURCE,
+                    "5",
+                    "propertyName",
+                    permissions)),
+            "resourceId and resourcePropertyName are mutually exclusive. Provide only one of them"));
   }
 
-  private static List<String> validateAuthorization(final TestAuthorization authorization) {
-    return switch (authorization) {
-      case IdBasedAuthorization idBased ->
-          VALIDATOR.validateIdBased(
-              idBased.ownerId(),
-              idBased.ownerType(),
-              idBased.resourceType(),
-              idBased.resourceId(),
-              idBased.permissions());
-      case PropertyBasedAuthorization propertyBased ->
-          VALIDATOR.validatePropertyBased(
-              propertyBased.ownerId(),
-              propertyBased.ownerType(),
-              propertyBased.resourceType(),
-              propertyBased.resourcePropertyName(),
-              propertyBased.permissions());
-    };
+  private List<String> validateAuthorization(final TestAuthorization authorizationTestCase) {
+    return VALIDATOR.validate(
+        authorizationTestCase.ownerId(),
+        authorizationTestCase.ownerType(),
+        authorizationTestCase.resourceType(),
+        authorizationTestCase.resourceId(),
+        authorizationTestCase.resourcePropertyName(),
+        authorizationTestCase.permissions());
   }
 
-  private sealed interface TestAuthorization
-      permits IdBasedAuthorization, PropertyBasedAuthorization {}
-
-  private record IdBasedAuthorization(
+  private record TestAuthorization(
       String ownerId,
       AuthorizationOwnerType ownerType,
       AuthorizationResourceType resourceType,
       String resourceId,
-      Set<PermissionType> permissions)
-      implements TestAuthorization {}
-
-  private record PropertyBasedAuthorization(
-      String ownerId,
-      AuthorizationOwnerType ownerType,
-      AuthorizationResourceType resourceType,
       String resourcePropertyName,
-      Set<PermissionType> permissions)
-      implements TestAuthorization {}
+      Set<PermissionType> permissions) {
+
+    static TestAuthorization idBased(
+        final String ownerId,
+        final AuthorizationOwnerType ownerType,
+        final AuthorizationResourceType resourceType,
+        final String resourceId,
+        final Set<PermissionType> permissions) {
+      return new TestAuthorization(ownerId, ownerType, resourceType, resourceId, null, permissions);
+    }
+
+    static TestAuthorization propertyBased(
+        final String ownerId,
+        final AuthorizationOwnerType ownerType,
+        final AuthorizationResourceType resourceType,
+        final String resourcePropertyName,
+        final Set<PermissionType> permissions) {
+      return new TestAuthorization(
+          ownerId, ownerType, resourceType, null, resourcePropertyName, permissions);
+    }
+  }
 }

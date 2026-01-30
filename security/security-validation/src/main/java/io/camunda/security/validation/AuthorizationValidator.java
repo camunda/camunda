@@ -16,6 +16,11 @@ import java.util.Set;
 
 public class AuthorizationValidator {
 
+  private static final String ERROR_MUTUALLY_EXCLUSIVE_IDENTIFIERS =
+      "resourceId and resourcePropertyName are mutually exclusive. Provide only one of them";
+  private static final String ERROR_MISSING_IDENTIFIER =
+      "Either resourceId or resourcePropertyName must be provided";
+
   private final IdentifierValidator identifierValidator;
 
   public AuthorizationValidator(final IdentifierValidator identifierValidator) {
@@ -23,35 +28,54 @@ public class AuthorizationValidator {
   }
 
   /**
-   * As enum values are only checked for null-values and there are different enum types that might
-   * be checked, they are typed as Enum<?>.
+   * Validates authorization properties. Determines the authorization type (ID-based vs
+   * property-based) and validates accordingly.
+   *
+   * <p>As enum values are only checked for null-values and there are different enum types that
+   * might be checked, they are typed as Enum<?>.
+   *
+   * @param ownerId the owner identifier
+   * @param ownerType the owner type enum
+   * @param resourceType the resource type enum
+   * @param resourceId the resource identifier (mutually exclusive with resourcePropertyName)
+   * @param resourcePropertyName the resource property name (mutually exclusive with resourceId)
+   * @param permissions the set of permissions
+   * @return a list of validation violations, empty if validation passes
    */
-  public List<String> validatePropertyBased(
-      final String ownerId,
-      final Enum<?> ownerType,
-      final Enum<?> resourceType,
-      final String resourcePropertyName,
-      final Set<? extends Enum<?>> permissions) {
-    final List<String> violations =
-        validateCommonProperties(ownerId, ownerType, resourceType, permissions);
-    identifierValidator.validateId(resourcePropertyName, "resourcePropertyName", violations);
-    return violations;
-  }
-
-  /**
-   * As enum values are only checked for null-values and there are different enum types that might
-   * be checked, they are typed as Enum<?>.
-   */
-  public List<String> validateIdBased(
+  public List<String> validate(
       final String ownerId,
       final Enum<?> ownerType,
       final Enum<?> resourceType,
       final String resourceId,
+      final String resourcePropertyName,
       final Set<? extends Enum<?>> permissions) {
-    final List<String> violations =
-        validateCommonProperties(ownerId, ownerType, resourceType, permissions);
-    identifierValidator.validateId(
-        resourceId, "resourceId", violations, AuthorizationScope.WILDCARD_CHAR::equals);
+
+    // Validate common properties
+    final var violations =
+        new ArrayList<>(validateCommonProperties(ownerId, ownerType, resourceType, permissions));
+
+    // Check for mutually exclusive identifiers
+    final boolean hasResourceId = resourceId != null && !resourceId.isBlank();
+    final boolean hasPropertyName = resourcePropertyName != null && !resourcePropertyName.isBlank();
+
+    if (hasResourceId && hasPropertyName) {
+      violations.add(ERROR_MUTUALLY_EXCLUSIVE_IDENTIFIERS);
+      return violations;
+    }
+
+    if (!hasResourceId && !hasPropertyName) {
+      violations.add(ERROR_MISSING_IDENTIFIER);
+      return violations;
+    }
+
+    // Validate type-specific properties
+    if (hasResourceId) {
+      identifierValidator.validateId(
+          resourceId, "resourceId", violations, AuthorizationScope.WILDCARD_CHAR::equals);
+    } else {
+      identifierValidator.validateId(resourcePropertyName, "resourcePropertyName", violations);
+    }
+
     return violations;
   }
 

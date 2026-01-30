@@ -9,7 +9,6 @@ package io.camunda.zeebe.engine.processing.identity.initialize;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Named.named;
-import static org.junit.jupiter.params.provider.Arguments.argumentSet;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 import io.camunda.security.configuration.ConfiguredAuthorization;
@@ -69,59 +68,6 @@ class AuthorizationConfigurerTest {
     // then:
     assertThat(result.isLeft()).isTrue();
     assertThat(result.getLeft()).containsExactly("No ownerType provided");
-  }
-
-  @Test
-  void shouldReturnViolationWhenBothResourceIdAndPropertyNameProvided() {
-    // given: an authorization with both resourceId and resourcePropertyName
-    final var authWithBoth =
-        new ConfiguredAuthorization(
-            AuthorizationOwnerType.USER,
-            "foo",
-            AuthorizationResourceType.RESOURCE,
-            "resource-123",
-            "propertyName",
-            Set.of(PermissionType.READ));
-
-    // when:
-    final var result = new AuthorizationConfigurer(VALIDATOR).configure(authWithBoth);
-
-    // then:
-    assertThat(result.isLeft()).isTrue();
-    assertThat(result.getLeft())
-        .containsExactly(
-            "resourceId and resourcePropertyName are mutually exclusive. Provide only one of them.");
-  }
-
-  @ParameterizedTest
-  @MethodSource("missingResourceIdentifierCases")
-  void shouldReturnViolationWhenBothResourceIdAndPropertyNameMissing(
-      final String missingResourceId, final String missingPropertyName) {
-    // given: an authorization with neither resourceId nor resourcePropertyName
-    final var authWithNeither =
-        new ConfiguredAuthorization(
-            AuthorizationOwnerType.USER,
-            "foo",
-            AuthorizationResourceType.RESOURCE,
-            missingResourceId,
-            missingPropertyName,
-            Set.of(PermissionType.READ));
-
-    // when:
-    final var result = new AuthorizationConfigurer(VALIDATOR).configure(authWithNeither);
-
-    // then:
-    assertThat(result.isLeft()).isTrue();
-    assertThat(result.getLeft())
-        .containsExactly("Either resourceId or resourcePropertyName must be provided.");
-  }
-
-  private static Stream<Arguments> missingResourceIdentifierCases() {
-    return Stream.of(
-        argumentSet("Both null", null, null),
-        argumentSet("Both empty strings", "", ""),
-        argumentSet("Both blank strings", "  ", "  "),
-        argumentSet("Null resourceId and empty propertyName", null, ""));
   }
 
   @ParameterizedTest(name = "[{index}]: {0}")
