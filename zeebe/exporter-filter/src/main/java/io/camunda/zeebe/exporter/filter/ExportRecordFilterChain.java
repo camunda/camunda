@@ -29,14 +29,7 @@ public final class ExportRecordFilterChain {
 
   /** Returns {@code true} if the record passes all configured filters. */
   public boolean acceptRecord(final Record<?> record) {
-    for (final ExporterRecordFilter filter : recordFilters) {
-      if (!filter.accept(record)) {
-        // First rejecting filter short-circuits the chain.
-        return false;
-      }
-    }
-
-    // No filter rejected the record.
-    return true;
+    return recordFilters.stream()
+      .allMatch(filter -> filter.accept(record));
   }
 }
