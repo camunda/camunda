@@ -50,6 +50,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
   private final AuthInfo authorization = new AuthInfo();
   private RejectionType rejectionType;
   private final UnsafeBuffer rejectionReason = new UnsafeBuffer(0, 0);
+  private int serializedLength = 0;
 
   // always the current version by default
   private int protocolVersion = Protocol.PROTOCOL_VERSION;
@@ -65,6 +66,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
   @Override
   public void wrap(final DirectBuffer buffer, int offset, final int length) {
     reset();
+    serializedLength = length;
 
     headerDecoder.wrap(buffer, offset);
 
@@ -129,7 +131,8 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
   }
 
   @Override
-  public void write(final MutableDirectBuffer buffer, int offset) {
+  public int write(final MutableDirectBuffer buffer, int offset) {
+    final int initialOffset = offset;
     headerEncoder.wrap(buffer, offset);
 
     headerEncoder
@@ -163,6 +166,8 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
     // working with variable-length fields
     encoder.putRejectionReason(rejectionReason, 0, rejectionReason.capacity());
     encoder.putAuthorization(authorization.toDirectBuffer(), 0, authorization.getLength());
+
+    return encoder.limit() - initialOffset;
   }
 
   public long getRequestId() {
@@ -295,6 +300,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
   }
 
   public RecordMetadata reset() {
+    serializedLength = 0;
     recordType = RecordType.NULL_VAL;
     requestId = RecordMetadataEncoder.requestIdNullValue();
     requestStreamId = RecordMetadataEncoder.requestStreamIdNullValue();
@@ -388,5 +394,9 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
 
     builder.append('}');
     return builder.toString();
+  }
+
+  public int getSerializedLength() {
+    return serializedLength;
   }
 }

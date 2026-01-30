@@ -17,7 +17,7 @@ jobs:
     timeout-minutes: 5
     permissions: {}
     outputs:
-      sanitized-name: ${{ steps.sanitize.outputs.branch_name }}-benchmark
+      sanitized-name: ${{ steps.sanitize.outputs.branch_name }}
     steps:
       - id: sanitize
         uses: camunda/infra-global-github-actions/sanitize-branch-name@main
@@ -36,6 +36,7 @@ jobs:
     with:
       name: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}
       ref: ${{ github.event.pull_request.head.ref }}
+      load-test-load: '--set global.connect.serviceName=camunda-headless --set starter.rate=400 --set workers.worker.replicas=5'
 
   delete-benchmark:
     name: Benchmark Cleanup

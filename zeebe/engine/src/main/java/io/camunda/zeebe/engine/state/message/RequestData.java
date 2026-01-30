@@ -7,12 +7,11 @@
  */
 package io.camunda.zeebe.engine.state.message;
 
-import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.engine.state.ObjectDbValue;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 
-public class RequestData extends UnpackedObject implements DbValue {
+public class RequestData extends ObjectDbValue {
 
   private final LongProperty requestIdProp = new LongProperty("requestId");
   private final IntegerProperty requestStreamIdProp = new IntegerProperty("requestStreamId");

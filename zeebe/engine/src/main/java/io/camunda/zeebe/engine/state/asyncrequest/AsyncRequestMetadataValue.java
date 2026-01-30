@@ -7,13 +7,12 @@
  */
 package io.camunda.zeebe.engine.state.asyncrequest;
 
-import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.engine.state.ObjectDbValue;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.protocol.impl.record.value.AsyncRequestRecord;
 
-public class AsyncRequestMetadataValue extends UnpackedObject implements DbValue {
+public class AsyncRequestMetadataValue extends ObjectDbValue {
 
   private final LongProperty asyncRequestKeyProperty = new LongProperty("asyncRequestKey", -1);
 

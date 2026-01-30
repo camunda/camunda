@@ -7,14 +7,13 @@
  */
 package io.camunda.zeebe.engine.state.instance;
 
-import io.camunda.zeebe.db.DbValue;
+import io.camunda.zeebe.engine.state.ObjectDbValue;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
-import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public final class TaskListenerIndicesRecord extends UnpackedObject implements DbValue {
+public final class TaskListenerIndicesRecord extends ObjectDbValue {
 
   private final IntegerProperty creatingTaskListenerIndexProp =
       new IntegerProperty("creatingTaskListenerIndex", 0);

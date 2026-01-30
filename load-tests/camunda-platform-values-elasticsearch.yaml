@@ -18,8 +18,6 @@ orchestration:
     application.yml: |
       zeebe.gateway.monitoring.enabled: "true"
       zeebe.gateway.threads.managementThreads: "1"
-      zeebe.broker.experimental.consistencyChecks.enablePreconditions: "true"
-      zeebe.broker.experimental.consistencyChecks.enableForeignKeyChecks: "true"
       zeebe.broker.executionMetricsExporterEnabled: "true"
       zeebe.broker.data.disk.freeSpace.processing: "3GB"
       zeebe.broker.data.disk.freeSpace.replication: "2GB"
@@ -31,8 +29,8 @@ orchestration:
       zeebe.broker.exporters.camundaexporter.args.history.rolloverBatchSize: 300
       zeebe.broker.exporters.camundaexporter.args.history.waitPeriodBeforeArchiving: "1m"
       # Configure a rate limit for all writes, so that we can visualize flow control metrics.
-      zeebe.broker.flowControl.write.enabled: "true"
-      zeebe.broker.flowControl.write.limit: 4000
+      zeebe.broker.flowControl.write.enabled: "false"
+      zeebe.broker.flowControl.write.limit: 8000
       zeebe.broker.flowControl.write.throttling.enabled: "true"
       # Disable the importers
       camunda.tasklist.importerEnabled: "false"
@@ -74,10 +72,10 @@ elasticsearch:
       accessModes: ["ReadWriteOnce"]
     resources:
       requests:
-        cpu: 3
-        memory: 3Gi
+        cpu: 5
+        memory: 8Gi
       limits:
-        cpu: 3
-        memory: 6Gi
+        cpu: 5
+        memory: 8Gi
   extraConfig:
     logger.org.elasticsearch.deprecation: "OFF"

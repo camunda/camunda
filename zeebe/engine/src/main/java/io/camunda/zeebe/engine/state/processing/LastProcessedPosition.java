@@ -7,11 +7,10 @@
  */
 package io.camunda.zeebe.engine.state.processing;
 
-import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.engine.state.ObjectDbValue;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 
-public class LastProcessedPosition extends UnpackedObject implements DbValue {
+public class LastProcessedPosition extends ObjectDbValue {
   private final LongProperty positionProp = new LongProperty("lastProcessPosition");
 
   public LastProcessedPosition() {

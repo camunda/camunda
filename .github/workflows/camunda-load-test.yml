@@ -177,7 +177,7 @@ jobs:
               echo "load-test-load=--set starter.rate=50 --set workers.worker.replicas=6 --set starter.bpmnXmlPath=bpmn/typical_process.bpmn" >> "$GITHUB_OUTPUT"
               ;;
             max)
-              echo "load-test-load=--set starter.rate=300" >> "$GITHUB_OUTPUT"
+              echo "load-test-load=--set starter.rate=500" >> "$GITHUB_OUTPUT"
               ;;
             custom)
               # Use the provided load-test-load inputs
@@ -218,24 +218,6 @@ jobs:
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
           minimus: true
-      - uses: ./.github/actions/build-frontend
-        name: Build Operate Frontend
-        id: build-operate-fe
-        with:
-          directory: ./operate/client
-          package-manager: "npm"
-      - uses: ./.github/actions/build-frontend
-        name: Build Tasklist Frontend
-        id: build-tasklist-fe
-        with:
-          directory: ./tasklist/client
-          package-manager: "npm"
-      - uses: ./.github/actions/build-frontend
-        name: Build Identity Frontend
-        id: build-identity-fe
-        with:
-          directory: ./identity/client
-          package-manager: "npm"
       - uses: ./.github/actions/build-zeebe
         name: Build Camunda Platform
         id: build-camunda

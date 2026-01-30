@@ -55,11 +55,13 @@ public final class ArrayValue<T extends BaseValue> extends BaseValue
   }
 
   @Override
-  public void write(final MsgPackWriter writer) {
-    writer.writeArrayHeader(items.size());
+  public int write(final MsgPackWriter writer) {
+    int length = 0;
+    length += writer.writeArrayHeader(items.size());
     for (int i = 0; i < items.size(); i++) {
-      items.get(i).write(writer);
+      length += items.get(i).write(writer);
     }
+    return length;
   }
 
   @Override
@@ -76,7 +78,7 @@ public final class ArrayValue<T extends BaseValue> extends BaseValue
 
   @Override
   public int getEncodedLength() {
-    return MsgPackWriter.getEncodedArrayHeaderLenght(items.size())
+    return MsgPackWriter.getEncodedArrayHeaderLength(items.size())
         + CollectionUtil.sum(items, BaseValue::getEncodedLength);
   }
 

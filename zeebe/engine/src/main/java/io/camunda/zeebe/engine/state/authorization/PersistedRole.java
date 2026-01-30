@@ -7,14 +7,13 @@
  */
 package io.camunda.zeebe.engine.state.authorization;
 
-import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.engine.state.ObjectDbValue;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 
-public class PersistedRole extends UnpackedObject implements DbValue {
+public class PersistedRole extends ObjectDbValue {
 
   private final LongProperty roleKeyProp = new LongProperty("roleKey");
   private final StringProperty roleIdProp = new StringProperty("roleId");

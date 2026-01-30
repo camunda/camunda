@@ -52,6 +52,13 @@ public class ListLogStorage implements LogStorage {
   }
 
   @Override
+  public LogStorageReader newUncommittedReader() {
+    final ListLogStorageReader listLogStorageReader = new ListLogStorageReader();
+    listLogStorageReaders.add(listLogStorageReader);
+    return listLogStorageReader;
+  }
+
+  @Override
   public void append(
       final long lowestPosition,
       final long highestPosition,

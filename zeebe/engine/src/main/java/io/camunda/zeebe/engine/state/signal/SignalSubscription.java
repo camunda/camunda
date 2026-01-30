@@ -7,13 +7,12 @@
  */
 package io.camunda.zeebe.engine.state.signal;
 
-import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.engine.state.ObjectDbValue;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalSubscriptionRecord;
 
-public class SignalSubscription extends UnpackedObject implements DbValue {
+public class SignalSubscription extends ObjectDbValue {
 
   private final ObjectProperty<SignalSubscriptionRecord> recordProp =
       new ObjectProperty<>("signalSubscriptionRecord", new SignalSubscriptionRecord());

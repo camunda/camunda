@@ -443,8 +443,9 @@ final class ClientStreamRequestManagerTest {
     }
 
     @Override
-    public void write(final MutableDirectBuffer buffer, final int offset) {
+    public int write(final MutableDirectBuffer buffer, final int offset) {
       buffer.putInt(offset, 0);
+      return getLength();
     }
   }
 }

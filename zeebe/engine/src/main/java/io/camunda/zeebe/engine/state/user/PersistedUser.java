@@ -7,12 +7,11 @@
  */
 package io.camunda.zeebe.engine.state.user;
 
-import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.engine.state.ObjectDbValue;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 
-public class PersistedUser extends UnpackedObject implements DbValue {
+public class PersistedUser extends ObjectDbValue {
 
   private final ObjectProperty<UserRecord> userProp =
       new ObjectProperty<>("user", new UserRecord());

@@ -88,14 +88,7 @@ public class RawTransactionalColumnFamily {
       final int valueOffset,
       final int valueLen)
       throws Exception {
-    transaction.put(
-        transactionDb.getDefaultNativeHandle(),
-        key,
-        keyOffset,
-        keyLen,
-        value,
-        valueOffset,
-        valueLen);
+    transaction.put(key, keyOffset, keyLen, value, valueOffset, valueLen);
   }
 
   public byte[] get(

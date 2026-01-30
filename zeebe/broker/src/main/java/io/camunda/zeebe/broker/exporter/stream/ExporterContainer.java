@@ -221,7 +221,7 @@ final class ExporterContainer implements Controller {
     try {
       if (position < typedEvent.getPosition()) {
         if (acceptRecord(rawMetadata, typedEvent)) {
-          export(typedEvent);
+          export(typedEvent, rawMetadata.getSerializedLength());
         } else {
           updatePositionOnSkipIfUpToDate(typedEvent.getPosition());
         }
@@ -242,9 +242,9 @@ final class ExporterContainer implements Controller {
     updateExporterState(lastAcknowledgedPosition, lastExportedMetadata);
   }
 
-  private void export(final Record<?> record) {
+  private void export(final Record<?> record, final int length) {
     ThreadContextUtil.runWithClassLoader(
-        () -> exporter.export(record), exporter.getClass().getClassLoader());
+        () -> exporter.export(record, length), exporter.getClass().getClassLoader());
     lastUnacknowledgedPosition = record.getPosition();
   }
 

@@ -66,9 +66,13 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.Semaphore;
 import org.agrona.CloseHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -76,10 +80,16 @@ import org.slf4j.LoggerFactory;
 public class CamundaExporter implements Exporter {
   private static final Logger LOG = LoggerFactory.getLogger(CamundaExporter.class);
 
+  private final int WRITERS_NUMBER = 3;
+
+  private ExporterBatchWriter writer;
+  private final Flusher flusher;
+  private final List<ExporterBatchWriter> writersPool = new ArrayList<>(WRITERS_NUMBER);
+  private int currentWriterIndex = 0;
+
   private Controller controller;
   private ExporterConfiguration configuration;
   private ClientAdapter clientAdapter;
-  private ExporterBatchWriter writer;
   private long lastPosition = -1;
   private final ExporterResourceProvider provider;
   private CamundaExporterMetrics metrics;
@@ -88,6 +98,7 @@ public class CamundaExporter implements Exporter {
   private SearchEngineClient searchEngineClient;
   private int partitionId;
   private Context context;
+  private long lastFlushTimestamp = 0L;
 
   public CamundaExporter() {
     // the metadata will be initialized on open
@@ -103,6 +114,8 @@ public class CamundaExporter implements Exporter {
   public CamundaExporter(final ExporterResourceProvider provider, final ExporterMetadata metadata) {
     this.provider = provider;
     this.metadata = metadata;
+
+    flusher = new Flusher();
   }
 
   @Override
@@ -131,10 +144,14 @@ public class CamundaExporter implements Exporter {
         }
       }
 
-      writer = createBatchWriter();
+      writersPool.clear();
+      for (int i = 0; i < WRITERS_NUMBER; i++) {
+        writersPool.add(createBatchWriter());
+      }
+      nextWriter();
       controller.readMetadata().ifPresent(metadata::deserialize);
       taskManager.start();
-      scheduleDelayedFlush();
+      scheduleDelayedFlush(System.currentTimeMillis());
 
       LOG.info("Exporter opened");
     } catch (final Exception e) {
@@ -179,12 +196,17 @@ public class CamundaExporter implements Exporter {
 
   @Override
   public void export(final Record<?> record) {
+    export(record, 0);
+  }
+
+  @Override
+  public void export(final Record<?> record, final int length) {
     if (writer.getBatchSize() == 0) {
       metrics.startFlushLatencyMeasurement();
     }
 
     // adding record is idempotent
-    writer.addRecord(record);
+    writer.addRecord(record, length);
 
     lastPosition = record.getPosition();
 
@@ -225,6 +247,11 @@ public class CamundaExporter implements Exporter {
     } finally {
       close();
     }
+  }
+
+  private void nextWriter() {
+    currentWriterIndex = (currentWriterIndex + 1) % WRITERS_NUMBER;
+    writer = writersPool.get(currentWriterIndex);
   }
 
   private void verifySetupOfResources() {
@@ -305,19 +332,29 @@ public class CamundaExporter implements Exporter {
     return builder.build();
   }
 
-  private void scheduleDelayedFlush() {
-    controller.scheduleCancellableTask(
-        Duration.ofSeconds(configuration.getBulk().getDelay()), this::flushAndReschedule);
+  private void scheduleDelayedFlush(final long now) {
+    long delta = configuration.getBulk().getDelay();
+    if (lastFlushTimestamp > 0) {
+      delta =
+          Math.min(
+              configuration.getBulk().getDelay() * 1000L - (now - lastFlushTimestamp),
+              configuration.getBulk().getDelay() * 1000L);
+    }
+
+    controller.scheduleCancellableTask(Duration.ofMillis(delta), this::flushAndReschedule);
   }
 
   private void flushAndReschedule() {
+    final var now = System.currentTimeMillis();
     try {
-      flush();
-      updateLastExportedPosition(lastPosition);
+      if (flusher.semaphore.availablePermits() < WRITERS_NUMBER
+          && now - lastFlushTimestamp >= configuration.getBulk().getDelay() * 1000L) {
+        flush();
+      }
     } catch (final Exception e) {
       LOG.warn("Unexpected exception occurred on periodically flushing bulk, will retry later.", e);
     }
-    scheduleDelayedFlush();
+    scheduleDelayedFlush(now);
   }
 
   private void flush() {
@@ -325,20 +362,8 @@ public class CamundaExporter implements Exporter {
       return;
     }
 
-    try (final var ignored = metrics.measureFlushDuration()) {
-      metrics.recordBulkSize(writer.getBatchSize());
-      final BatchRequest batchRequest = clientAdapter.createBatchRequest().withMetrics(metrics);
-      writer.flush(batchRequest);
-      metrics.recordFlushOccurrence(Instant.now());
-      metrics.stopFlushLatencyMeasurement();
-    } catch (final PersistenceException ex) {
-      metrics.recordFailedFlush();
-      throw new ExporterException(ex.getMessage(), ex);
-    }
-
-    // Update the record counters only after the flush was successful. If the synchronous flush
-    // fails then the exporter will be invoked with the same record again.
-    updateLastExportedPosition(lastPosition);
+    flusher.flush();
+    lastFlushTimestamp = System.currentTimeMillis();
   }
 
   private void updateLastExportedPosition(final long lastPosition) {
@@ -390,6 +415,48 @@ public class CamundaExporter implements Exporter {
     @Override
     public boolean acceptValue(final ValueType valueType) {
       return VALUE_TYPES_2_EXPORT.contains(valueType);
+    }
+  }
+
+  class Flusher {
+    final Semaphore semaphore = new Semaphore(WRITERS_NUMBER);
+    private final ScheduledExecutorService flushExecutorService;
+
+    Flusher() {
+      flushExecutorService = Executors.newSingleThreadScheduledExecutor();
+    }
+
+    void flush() {
+      try {
+        semaphore.acquire();
+      } catch (final InterruptedException e) {
+        throw new RuntimeException(e);
+      }
+
+      final var currentWriter = writer;
+      final var currentLastPosition = lastPosition;
+      flushExecutorService.submit(
+          () -> {
+            try (final var ignored = metrics.measureFlushDuration()) {
+              metrics.recordBulkSize(currentWriter.getBatchSize());
+              final BatchRequest batchRequest =
+                  clientAdapter.createBatchRequest().withMetrics(metrics);
+              currentWriter.flush(batchRequest);
+              metrics.recordFlushOccurrence(Instant.now());
+              metrics.stopFlushLatencyMeasurement();
+            } catch (final PersistenceException ex) {
+              metrics.recordFailedFlush();
+              throw new ExporterException(ex.getMessage(), ex);
+            } finally {
+              semaphore.release();
+            }
+
+            // Update the record counters only after the flush was successful. If the synchronous
+            // flush
+            // fails then the exporter will be invoked with the same record again.
+            updateLastExportedPosition(currentLastPosition);
+          });
+      nextWriter();
     }
   }
 }

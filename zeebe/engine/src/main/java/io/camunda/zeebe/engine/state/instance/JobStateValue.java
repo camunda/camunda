@@ -7,12 +7,11 @@
  */
 package io.camunda.zeebe.engine.state.instance;
 
-import io.camunda.zeebe.db.DbValue;
+import io.camunda.zeebe.engine.state.ObjectDbValue;
 import io.camunda.zeebe.engine.state.immutable.JobState;
-import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 
-public class JobStateValue extends UnpackedObject implements DbValue {
+public class JobStateValue extends ObjectDbValue {
 
   private final EnumProperty<JobState.State> stateProp =
       new EnumProperty<>("jobState", JobState.State.class);

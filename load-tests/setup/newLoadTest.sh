@@ -80,8 +80,7 @@ kubectl label namespace $namespace deadline-date="${deadline_date}" --overwrite
 cp -rv default/ $namespace
 
 # Copy camunda-platform-values*.yaml files to the new folder
-cp -v ../camunda-platform-values*.yaml $namespace/
-cp -v ../secondary-storage-values*.yaml $namespace/
+cp -v ../*.yaml $namespace/
 
 # Copy Prometheus ElasticSearch Exporter values.yaml to the new folder
 cp -v ../prometheus-elasticsearch-exporter-values.yaml $namespace/

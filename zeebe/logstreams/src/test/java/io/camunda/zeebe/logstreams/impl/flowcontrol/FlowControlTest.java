@@ -12,10 +12,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.logstreams.impl.LogStreamMetrics;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControl.Rejection;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.RateLimit.Throttling;
-import io.camunda.zeebe.logstreams.impl.log.LogAppendEntryMetadata;
 import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.logstreams.log.WriteContext.UserCommand;
-import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
@@ -99,12 +97,6 @@ public class FlowControlTest {
       final Intent intent,
       final ValueType valueType,
       final int n) {
-    return IntStream.range(1, n)
-        .mapToObj(
-            i ->
-                flowControl.tryAcquire(
-                    writeContext,
-                    List.of(new LogAppendEntryMetadata(RecordType.COMMAND, valueType, intent))))
-        .toList();
+    return IntStream.range(1, n).mapToObj(i -> flowControl.tryAcquire(writeContext, n)).toList();
   }
 }

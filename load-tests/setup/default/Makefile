@@ -69,7 +69,7 @@ endif
 # Install/upgrade Camunda Platform helm chart
 .PHONY: install-platform
 install-platform: setup-leader-balancer
-	helm upgrade $(namespace) camunda-platform-helm/charts/$(helm_chart) \
+	-helm upgrade $(namespace) camunda-platform-helm/charts/$(helm_chart) \
 		--install \
 		--namespace $(namespace) \
 		--reset-then-reuse-values \
@@ -77,6 +77,7 @@ install-platform: setup-leader-balancer
 		-f camunda-platform-values.yaml \
 		$(if $(storage_values_file),-f $(storage_values_file)) \
 		$(additional_platform_configuration)
+	-kubectl apply -f service.yaml -n $(namespace)
 
 # Install/upgrade Camunda Platform on stable VMs
 .PHONY: install-platform-stable
