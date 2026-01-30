@@ -13,8 +13,11 @@ import io.camunda.zeebe.logstreams.impl.LogStreamMetrics;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControl.Rejection;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.RateLimit.Throttling;
 import io.camunda.zeebe.logstreams.impl.log.LogAppendEntryMetadata;
+import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.logstreams.log.WriteContext.UserCommand;
+import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
+import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -104,7 +107,14 @@ public class FlowControlTest {
             i ->
                 flowControl.tryAcquire(
                     writeContext,
-                    List.of(new LogAppendEntryMetadata(RecordType.COMMAND, valueType, intent))))
+                    LogAppendEntryMetadata.copyMetadata(
+                        List.of(
+                            LogAppendEntry.of(
+                                new RecordMetadata()
+                                    .recordType(RecordType.COMMAND)
+                                    .valueType(valueType)
+                                    .intent(intent),
+                                new UnifiedRecordValue(0))))))
         .toList();
   }
 }
