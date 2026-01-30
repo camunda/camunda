@@ -221,4 +221,45 @@ public abstract class ImportJobAbstract implements ImportJob {
       }
     }
   }
+<<<<<<< HEAD
+=======
+
+  protected static class EntitySizeEstimator {
+    private static final int INITIAL_BUFFER_SIZE = 1024;
+    private static final int MAX_BUFFER_SIZE = 5 * 1024 * 1024; // 5 MB
+    private static final ThreadLocal<Kryo> KYRO_THREAD_LOCAL =
+        ThreadLocal.withInitial(
+            () -> {
+              final Kryo kryo = new Kryo();
+              kryo.setRegistrationRequired(false);
+              return kryo;
+            });
+
+    public static int estimateSize(final Object entity) {
+      final Kryo kryo = KYRO_THREAD_LOCAL.get();
+      try (final Output output = new Output(INITIAL_BUFFER_SIZE, MAX_BUFFER_SIZE)) {
+        kryo.writeClassAndObject(output, entity);
+        return output.position();
+      }
+    }
+  }
+
+  protected static class BatchFlusher<B extends ImportBatch, H> {
+    private final List<ImportBatch> subBatches = new ArrayList<>();
+
+    public BatchFlusher() {}
+
+    public List<ImportBatch> getSubBatches() {
+      return subBatches;
+    }
+
+    public void flush(final B batch, final List<H> batchHits, final String index) {
+      if (batch != null && batchHits != null && !batchHits.isEmpty()) {
+        batch.setHits(batchHits);
+        batch.setLastRecordIndexName(index);
+        subBatches.add(batch);
+      }
+    }
+  }
+>>>>>>> 371bfbf6 (feat: increase importer serialization max buffer to 5 MB)
 }
