@@ -57,10 +57,12 @@ String routingFor(final Record<?> record) {
 With a 3-partition Zeebe cluster and 3 shards per index:
 
 ```
-Zeebe Partition 1 → Elasticsearch Shard 0 (or 0 mod 3)
-Zeebe Partition 2 → Elasticsearch Shard 1 (or 1 mod 3) 
-Zeebe Partition 3 → Elasticsearch Shard 2 (or 2 mod 3)
+Zeebe Partition 1 → Elasticsearch Shard 1 
+Zeebe Partition 2 → Elasticsearch Shard 2
+Zeebe Partition 3 → Elasticsearch Shard 0 (wraps around via routing hash)
 ```
+
+> **Note**: Elasticsearch uses the routing value to determine shard assignment via a hash function. While the mapping isn't strictly sequential, the routing ensures consistent placement.
 
 ## Configuration
 

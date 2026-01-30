@@ -186,7 +186,7 @@ final class TemplateReaderTest {
   }
 
   @Test
-  void shouldUseOnShardForLowTrafficIndices() {
+  void shouldUseOneShardForLowTrafficIndices() {
     // given - low traffic value types that can use 1 shard
     final var lowTrafficValueTypes =
         new ValueType[] {
