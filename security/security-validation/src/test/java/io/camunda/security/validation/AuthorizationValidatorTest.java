@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -49,6 +50,25 @@ class AuthorizationValidatorTest {
 
     // then
     assertThat(violations).containsExactly(expectedViolation);
+  }
+
+  @Test
+  void shouldAggregateMultipleViolations() {
+    // given
+    final var authWithMultipleViolations =
+        new TestAuthorization(null, null, null, null, null, null);
+
+    // when
+    final var violations = validateAuthorization(authWithMultipleViolations);
+
+    // then
+    assertThat(violations)
+        .containsExactlyInAnyOrder(
+            "No ownerId provided",
+            "No ownerType provided",
+            "No resourceType provided",
+            "No permissionTypes provided",
+            "Either resourceId or resourcePropertyName must be provided");
   }
 
   static Stream<Arguments> validAuthorizationCases() {
