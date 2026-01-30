@@ -50,44 +50,8 @@ public class AuthorizationValidator {
       final String resourcePropertyName,
       final Set<? extends Enum<?>> permissions) {
 
-    // Validate common properties
-    final var violations =
-        new ArrayList<>(validateCommonProperties(ownerId, ownerType, resourceType, permissions));
+    final var violations = new ArrayList<String>();
 
-    // Check for mutually exclusive identifiers
-    final boolean hasResourceId = resourceId != null && !resourceId.isBlank();
-    final boolean hasPropertyName = resourcePropertyName != null && !resourcePropertyName.isBlank();
-
-    if (hasResourceId && hasPropertyName) {
-      violations.add(ERROR_MUTUALLY_EXCLUSIVE_IDENTIFIERS);
-      return violations;
-    }
-
-    if (!hasResourceId && !hasPropertyName) {
-      violations.add(ERROR_MISSING_IDENTIFIER);
-      return violations;
-    }
-
-    // Validate type-specific properties
-    if (hasResourceId) {
-      identifierValidator.validateId(
-          resourceId, "resourceId", violations, AuthorizationScope.WILDCARD_CHAR::equals);
-    } else {
-      identifierValidator.validateId(resourcePropertyName, "resourcePropertyName", violations);
-    }
-
-    return violations;
-  }
-
-  /* The validate method takes individual arguments instead of a whole object,
-   * because there is currently no common model for all intended use cases of these validators.
-   */
-  private List<String> validateCommonProperties(
-      final String ownerId,
-      final Enum<?> ownerType,
-      final Enum<?> resourceType,
-      final Set<? extends Enum<?>> permissions) {
-    final List<String> violations = new ArrayList<>();
     // owner validation
     identifierValidator.validateId(ownerId, "ownerId", violations);
     if (ownerType == null) {
@@ -103,6 +67,30 @@ public class AuthorizationValidator {
     if (permissions == null || permissions.isEmpty()) {
       violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("permissionTypes"));
     }
+
+    final boolean hasResourceId = resourceId != null && !resourceId.isBlank();
+    final boolean hasPropertyName = resourcePropertyName != null && !resourcePropertyName.isBlank();
+
+    // Check that only one identifier type is provided (ID-based XOR property-based)
+    if (hasResourceId && hasPropertyName) {
+      violations.add(ERROR_MUTUALLY_EXCLUSIVE_IDENTIFIERS);
+      return violations; // Early return as this is a structural error
+    }
+
+    // Check that at least one identifier type is provided
+    if (!hasResourceId && !hasPropertyName) {
+      violations.add(ERROR_MISSING_IDENTIFIER);
+      return violations; // Early return as this is a structural error
+    }
+
+    // Validate the provided identifier
+    if (hasResourceId) {
+      identifierValidator.validateId(
+          resourceId, "resourceId", violations, AuthorizationScope.WILDCARD_CHAR::equals);
+    } else {
+      identifierValidator.validateId(resourcePropertyName, "resourcePropertyName", violations);
+    }
+
     return violations;
   }
 }
