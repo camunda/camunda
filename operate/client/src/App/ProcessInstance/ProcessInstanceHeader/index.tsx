@@ -27,6 +27,7 @@ const headerColumns = [
   'Process Name',
   'Process Instance Key',
   'Version',
+  'Business Key',
   'Version Tag',
   'Tenant',
   'Start Date',
@@ -50,6 +51,10 @@ const skeletonColumns: {
   {
     name: 'Version',
     skeletonWidth: '34px',
+  },
+  {
+    name: 'Business Key',
+    skeletonWidth: '120px',
   },
   {
     name: 'Start Date',
@@ -154,6 +159,12 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
               {processDefinitionVersion}
             </Link>
           ),
+        },
+        {
+          // Mock business key for UI prototype
+          title: `ORDER-${processInstanceKey.slice(-6)}`,
+          content: `ORDER-${processInstanceKey.slice(-6)}`,
+          dataTestId: 'business-key',
         },
         ...(hasVersionTag
           ? [

@@ -41,6 +41,7 @@ import {Variable} from './VariableField';
 type OptionalFilter =
   | 'variable'
   | 'ids'
+  | 'businessKey'
   | 'parentInstanceId'
   | 'operationId'
   | 'errorMessage'
@@ -51,6 +52,7 @@ type OptionalFilter =
 const optionalFilters: Array<OptionalFilter> = [
   'variable',
   'ids',
+  'businessKey',
   'operationId',
   'parentInstanceId',
   'errorMessage',
@@ -84,6 +86,11 @@ const OPTIONAL_FILTER_FIELDS: Record<
       validateIdsLength,
       validatesIdsComplete,
     ),
+  },
+  businessKey: {
+    keys: ['businessKey'],
+    label: 'Business Key',
+    type: 'text',
   },
   operationId: {
     keys: ['operationId'],
