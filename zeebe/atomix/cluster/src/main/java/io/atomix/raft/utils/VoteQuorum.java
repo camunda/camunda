@@ -8,8 +8,11 @@
 package io.atomix.raft.utils;
 
 import io.atomix.cluster.MemberId;
+import java.util.Collection;
 
 public interface VoteQuorum {
+
+  Collection<MemberId> participants();
 
   void succeed(MemberId member);
 

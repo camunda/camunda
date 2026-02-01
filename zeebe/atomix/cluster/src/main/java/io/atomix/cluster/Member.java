@@ -35,6 +35,10 @@ public class Member extends Node {
   private final Properties properties;
   private final long nodeVersion;
 
+  public Member(final Member member) {
+    this(member.config());
+  }
+
   public Member(final MemberConfig config) {
     super(config);
     id = config.getId();
