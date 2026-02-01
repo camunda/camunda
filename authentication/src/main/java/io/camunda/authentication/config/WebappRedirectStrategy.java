@@ -28,14 +28,18 @@ public class WebappRedirectStrategy implements RedirectStrategy {
       final HttpServletRequest request, final HttpServletResponse response, final String url)
       throws IOException {
 
-    // TODO: fix return codes
+    if (url == null) {
+      response.setStatus(NO_CONTENT.value());
+      return;
+    }
+
     response.setHeader("Content-Type", "application/json");
     response.setStatus(OK.value());
 
     // must be last, because it will commit the response, and we cannot modify it afterwards
-    objectMapper.writeValue(response.getWriter(), new RedirectUrl(url));
+    objectMapper.writeValue(response.getWriter(), new RedirectResponse(url));
     response.getWriter().flush();
   }
 
-  private record RedirectUrl(String url) {}
+  private record RedirectResponse(String url) {}
 }

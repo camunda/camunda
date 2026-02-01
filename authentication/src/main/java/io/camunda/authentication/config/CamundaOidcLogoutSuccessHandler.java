@@ -7,6 +7,8 @@
  */
 package io.camunda.authentication.config;
 
+import static io.camunda.authentication.controller.PostLogoutController.POST_LOGOUT_REDIRECT_ATTRIBUTE;
+
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.core.Authentication;
@@ -36,10 +38,14 @@ public class CamundaOidcLogoutSuccessHandler extends OidcClientInitiatedLogoutSu
 
     final String referer = request.getHeader("referer");
     if (isAllowedRedirect(request, referer)) {
-      request.getSession().setAttribute("postLogoutRedirect", referer);
+      request.getSession().setAttribute(POST_LOGOUT_REDIRECT_ATTRIBUTE, referer);
     }
 
     final String baseLogoutUrl = super.determineTargetUrl(request, response, authentication);
+
+    if (baseLogoutUrl == null) {
+      return null;
+    }
 
     if (!(authentication instanceof final OAuth2AuthenticationToken oauth)) {
       return baseLogoutUrl;

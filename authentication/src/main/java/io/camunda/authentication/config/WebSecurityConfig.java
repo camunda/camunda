@@ -65,6 +65,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointRequest;
 import org.springframework.boot.actuate.logging.LoggersEndpoint;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -861,13 +862,27 @@ public class WebSecurityConfig {
 
     @Bean
     @ConditionalOnSecondaryStorageEnabled
-    public CamundaOidcLogoutSuccessHandler logoutSuccessHandler(
+    @ConditionalOnProperty(
+        value = "camunda.security.authentication.oidc.idpLogoutEnabled",
+        havingValue = "true",
+        matchIfMissing = true)
+    public LogoutSuccessHandler oidcLogoutSuccessHandler(
         final WebappRedirectStrategy redirectStrategy,
         final ClientRegistrationRepository repository) {
       final var handler = new CamundaOidcLogoutSuccessHandler(repository);
+      handler.setDefaultTargetUrl(null);
       handler.setPostLogoutRedirectUri("{baseUrl}/post-logout");
       handler.setRedirectStrategy(redirectStrategy);
       return handler;
+    }
+
+    @Bean
+    @ConditionalOnSecondaryStorageEnabled
+    @ConditionalOnProperty(
+        value = "camunda.security.authentication.oidc.idpLogoutEnabled",
+        havingValue = "false")
+    public LogoutSuccessHandler noContentLogoutSuccessHandler() {
+      return new NoContentResponseHandler();
     }
 
     @Bean
@@ -886,7 +901,7 @@ public class WebSecurityConfig {
         final OAuth2AuthorizedClientRepository authorizedClientRepository,
         final OAuth2AuthorizedClientManager authorizedClientManager,
         final OidcTokenEndpointCustomizer tokenEndpointCustomizer,
-        final CamundaOidcLogoutSuccessHandler logoutSuccessHandler)
+        final LogoutSuccessHandler logoutSuccessHandler)
         throws Exception {
       final var filterChainBuilder =
           httpSecurity

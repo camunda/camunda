@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("/post-logout")
 public class PostLogoutController {
 
-  private static final String POST_LOGOUT_REDIRECT_ATTRIBUTE = "postLogoutRedirect";
+  public static final String POST_LOGOUT_REDIRECT_ATTRIBUTE = "postLogoutRedirect";
   private static final String DEFAULT_REDIRECT_PATH = "/";
 
   @GetMapping()
