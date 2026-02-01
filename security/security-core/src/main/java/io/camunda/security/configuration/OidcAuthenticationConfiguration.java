@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Set;
 
 public class OidcAuthenticationConfiguration {
+  public static final String PREFIX = "camunda.security.authentication.oidc";
   public static final String GROUPS_CLAIM_PROPERTY =
       "camunda.security.authentication.oidc.groupsClaim";
 
