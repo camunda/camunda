@@ -719,7 +719,9 @@ public class SearchQueryFilterMapper {
           .ifPresent(builder::stateOperations);
       Optional.ofNullable(filter.getProcessDefinitionId()).ifPresent(builder::bpmnProcessIds);
       Optional.ofNullable(filter.getElementId()).ifPresent(builder::elementIds);
-      Optional.ofNullable(filter.getName()).ifPresent(builder::names);
+      Optional.ofNullable(filter.getName())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::nameOperations);
       Optional.ofNullable(filter.getAssignee())
           .map(mapToOperations(String.class))
           .ifPresent(builder::assigneeOperations);

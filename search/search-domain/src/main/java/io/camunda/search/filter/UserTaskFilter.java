@@ -23,7 +23,7 @@ import java.util.Set;
 public record UserTaskFilter(
     List<Long> userTaskKeys,
     List<String> elementIds,
-    List<String> names,
+    List<Operation<String>> nameOperations,
     List<String> bpmnProcessIds,
     List<Operation<String>> assigneeOperations,
     List<Operation<Integer>> priorityOperations,
@@ -48,7 +48,7 @@ public record UserTaskFilter(
 
     private List<Long> userTaskKeys;
     private List<String> elementIds;
-    private List<String> names;
+    private List<Operation<String>> nameOperations;
     private List<String> bpmnProcessIds;
     private List<Operation<String>> assigneeOperations;
     private List<Operation<Integer>> priorityOperations;
@@ -86,13 +86,19 @@ public record UserTaskFilter(
       return this;
     }
 
-    public Builder names(final String... values) {
-      return names(collectValuesAsList(values));
+    public Builder nameOperations(final List<Operation<String>> operations) {
+      nameOperations = addValuesToList(nameOperations, operations);
+      return this;
     }
 
-    public Builder names(final List<String> values) {
-      names = addValuesToList(names, values);
-      return this;
+    public Builder names(final String value, final String... values) {
+      return nameOperations(FilterUtil.mapDefaultToOperation(value, values));
+    }
+
+    @SafeVarargs
+    public final Builder nameOperations(
+        final Operation<String> operation, final Operation<String>... operations) {
+      return nameOperations(collectValues(operation, operations));
     }
 
     public Builder bpmnProcessIds(final String... values) {
@@ -294,7 +300,7 @@ public record UserTaskFilter(
       return new UserTaskFilter(
           Objects.requireNonNullElse(userTaskKeys, Collections.emptyList()),
           Objects.requireNonNullElse(elementIds, Collections.emptyList()),
-          Objects.requireNonNullElse(names, Collections.emptyList()),
+          Objects.requireNonNullElse(nameOperations, Collections.emptyList()),
           Objects.requireNonNullElse(bpmnProcessIds, Collections.emptyList()),
           Objects.requireNonNullElse(assigneeOperations, Collections.emptyList()),
           Objects.requireNonNullElse(priorityOperations, Collections.emptyList()),
