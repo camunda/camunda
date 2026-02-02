@@ -49,7 +49,6 @@ import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
 public final class LogStreamMetrics {
@@ -150,7 +149,7 @@ public final class LogStreamMetrics {
   }
 
   public void flowControlAccepted(
-      final WriteContext context, final List<LogAppendEntryMetadata> batchMetadata) {
+      final WriteContext context, final LogAppendEntryMetadata batchMetadata) {
     triedAppends.increment();
 
     if (context instanceof UserCommand) {
@@ -167,7 +166,7 @@ public final class LogStreamMetrics {
 
   public void flowControlRejected(
       final WriteContext context,
-      final List<LogAppendEntryMetadata> batchMetadata,
+      final LogAppendEntryMetadata batchMetadata,
       final Rejection reason) {
     triedAppends.increment();
     deferredAppends.increment();

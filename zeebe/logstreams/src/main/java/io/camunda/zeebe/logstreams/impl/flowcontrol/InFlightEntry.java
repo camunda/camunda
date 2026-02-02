@@ -11,18 +11,17 @@ import com.netflix.concurrency.limits.Limiter.Listener;
 import io.camunda.zeebe.logstreams.impl.LogStreamMetrics;
 import io.camunda.zeebe.logstreams.impl.log.LogAppendEntryMetadata;
 import io.camunda.zeebe.util.CloseableSilently;
-import java.util.List;
 
 public final class InFlightEntry {
   final LogStreamMetrics metrics;
-  List<LogAppendEntryMetadata> entryMetadata;
+  LogAppendEntryMetadata entryMetadata;
   Listener requestListener;
   CloseableSilently writeTimer;
   CloseableSilently commitTimer;
 
   public InFlightEntry(
       final LogStreamMetrics metrics,
-      final List<LogAppendEntryMetadata> entryMetadata,
+      final LogAppendEntryMetadata entryMetadata,
       final Listener requestListener) {
     this.metrics = metrics;
     this.entryMetadata = entryMetadata;
@@ -42,10 +41,10 @@ public final class InFlightEntry {
   public void onWrite() {
     final var entryMetadata = this.entryMetadata;
     if (entryMetadata != null) {
-      entryMetadata.forEach(
-          metadata ->
-              metrics.recordAppendedEntry(
-                  1, metadata.recordType(), metadata.valueType(), metadata.intent()));
+      for (int i = 0; i < entryMetadata.size(); i++) {
+        metrics.recordAppendedEntry(
+            1, entryMetadata.recordType(i), entryMetadata.valueType(i), entryMetadata.intent(i));
+      }
       this.entryMetadata = null;
     }
     final var writeTimer = this.writeTimer;
