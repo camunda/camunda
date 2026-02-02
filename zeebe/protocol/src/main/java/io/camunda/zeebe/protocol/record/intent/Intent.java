@@ -19,8 +19,10 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public interface Intent {
@@ -28,6 +30,18 @@ public interface Intent {
   Map<ValueType, Class<? extends Intent>> VALUE_TYPE_TO_INTENT_MAP = computeValueTypeToIntentMap();
   Collection<Class<? extends Intent>> INTENT_CLASSES =
       VALUE_TYPE_TO_INTENT_MAP.values().stream().distinct().collect(Collectors.toList());
+  Map<Class<? extends Intent>, Map<Short, Intent>> PROTOCOL_VALUE_TO_INTENT_MAP =
+      INTENT_CLASSES.stream()
+          .collect(
+              Collectors.toMap(
+                  Function.identity(),
+                  intentClass -> {
+                    final Map<Short, Intent> map = new HashMap<>();
+                    for (final Intent intentValue : intentClass.getEnumConstants()) {
+                      map.put(intentValue.value(), intentValue);
+                    }
+                    return map;
+                  }));
   short NULL_VAL = 255;
   Intent UNKNOWN = UnknownIntent.UNKNOWN;
 
@@ -126,12 +140,7 @@ public interface Intent {
       return Intent.UNKNOWN;
     }
     final Class<? extends Intent> intentClass = fromValueType(valueType);
-    for (final Intent intentValue : intentClass.getEnumConstants()) {
-      if (intentValue.value() == intent) {
-        return intentValue;
-      }
-    }
-    return Intent.UNKNOWN;
+    return PROTOCOL_VALUE_TO_INTENT_MAP.get(intentClass).getOrDefault(intent, UNKNOWN);
   }
 
   @SuppressWarnings("unchecked")
