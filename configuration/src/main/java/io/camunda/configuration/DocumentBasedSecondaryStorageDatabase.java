@@ -151,7 +151,7 @@ public abstract class DocumentBasedSecondaryStorageDatabase
   private void validateUrlConfiguration() {
     final String url = super.getUrl();
     final List<String> urls = super.getUrls();
-    final boolean hasNonDefaultUrl = !url.equals("http://localhost:9200");
+    final boolean hasNonDefaultUrl = !"http://localhost:9200".equals(url);
     final boolean hasUrls = urls != null && !urls.isEmpty();
 
     if (hasNonDefaultUrl && hasUrls) {

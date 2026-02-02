@@ -22,7 +22,8 @@ import org.junit.jupiter.api.Test;
 public class SecondaryStorageUrlValidationTest {
 
   /** Test implementation of DocumentBasedSecondaryStorageDatabase for unit testing. */
-  private static class TestDocumentBasedDatabase extends DocumentBasedSecondaryStorageDatabase {
+  private static final class TestDocumentBasedDatabase
+      extends DocumentBasedSecondaryStorageDatabase {
 
     @Override
     public String databaseName() {
