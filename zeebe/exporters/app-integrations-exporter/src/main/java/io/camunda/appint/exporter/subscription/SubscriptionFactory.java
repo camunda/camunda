@@ -11,6 +11,8 @@ import static io.camunda.appint.exporter.transport.Authentication.*;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.appint.exporter.config.Config;
 import io.camunda.appint.exporter.config.ConfigValidator;
 import io.camunda.appint.exporter.event.Event;
@@ -23,7 +25,11 @@ import io.camunda.appint.exporter.transport.JsonMapper;
 public class SubscriptionFactory {
 
   public static JsonMapper createJsonMapper() {
-    final var objectMapper = new ObjectMapper();
+    final var objectMapper =
+        new ObjectMapper()
+            .registerModule(new JavaTimeModule())
+            .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+
     return (object) -> {
       try {
         return objectMapper.writeValueAsString(object);

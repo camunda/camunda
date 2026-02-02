@@ -8,6 +8,7 @@
 package io.camunda.appint.exporter.event;
 
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Set;
 
@@ -32,9 +33,10 @@ public sealed interface Event {
       List<String> candidateUsers,
       String externalFormReference,
       Integer priority,
-      String formKey) {}
+      String formKey,
+      OffsetDateTime createdAt) {}
 
-  record UserTaskCreatedEvent(
+  record UserTaskEvent(
       @JsonUnwrapped EventMetaData eventMetaData,
       @JsonUnwrapped UserTaskMetaData userTaskMetaData,
       @JsonUnwrapped ProcessMetaData processMetaData)
