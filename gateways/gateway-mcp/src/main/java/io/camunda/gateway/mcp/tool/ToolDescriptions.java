@@ -41,11 +41,9 @@ public final class ToolDescriptions {
 
   /* Variable descriptions */
   public static final String VARIABLE_FILTER_FORMAT_NOTE =
-      """
-      Variable values in filters need to be in serialized JSON format.
-      Example string value: \\"myValue\\"
-      Example nested JSON value: "{\\"myVar\\":\\"myValue\\"}"
-      """;
+      "Variable values in filters need to be in serialized JSON format. "
+          + "Example string value: `\\\"myValue\\\"`. "
+          + "Example nested JSON value: `{\\\"myVar\\\":\\\"myValue\\\"}`.";
 
   public static final String VARIABLE_VALUE_RETURN_FORMAT =
       "The variable value is returned in serialized JSON format.";

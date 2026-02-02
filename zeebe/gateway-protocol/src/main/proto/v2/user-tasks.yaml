@@ -615,7 +615,7 @@ components:
         action:
           description: >
             A custom action value that will be accessible from user task events resulting
-            from this endpoint invocation. If not provided, it will default to "assign".
+            from this endpoint invocation. If not provided, it will default to `assign`.
           type: string
           nullable: true
 
