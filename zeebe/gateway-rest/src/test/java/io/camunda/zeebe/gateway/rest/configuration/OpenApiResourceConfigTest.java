@@ -8,26 +8,25 @@
 package io.camunda.zeebe.gateway.rest.configuration;
 
 import io.camunda.security.auth.CamundaAuthenticationProvider;
-import io.camunda.zeebe.gateway.rest.config.OpenApiConfigurer;
-import io.camunda.zeebe.gateway.rest.controller.TopologyController;
+import io.camunda.zeebe.gateway.rest.RestTest;
+import io.camunda.zeebe.gateway.rest.config.OpenApiResourceConfig;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 /**
  * Tests for OpenApiResourceConfig swagger redirect functionality. Verifies that the swagger
  * endpoint redirects are properly configured when swagger is enabled or disabled.
  */
-class OpenApiResourceConfigTest {
+class OpenApiResourceConfigTest extends RestTest {
 
   @Nested
-  @WebMvcTest(
-      value = {TopologyController.class},
-      properties = "camunda.rest.swagger.enabled=true")
-  class SwaggerEnabled extends RestApiConfigurationTest {
+  @WebMvcTest(useDefaultFilters = false, properties = "camunda.rest.swagger.enabled=true")
+  @Import(OpenApiResourceConfig.class)
+  class SwaggerEnabled extends RestTest {
 
-    @MockitoBean private OpenApiConfigurer openApiConfigurer;
     @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
 
     @Test
@@ -58,10 +57,9 @@ class OpenApiResourceConfigTest {
   }
 
   @Nested
-  @WebMvcTest(
-      value = {TopologyController.class},
-      properties = "camunda.rest.swagger.enabled=false")
-  class SwaggerDisabled extends RestApiConfigurationTest {
+  @WebMvcTest(useDefaultFilters = false, properties = "camunda.rest.swagger.enabled=false")
+  @Import(OpenApiResourceConfig.class)
+  class SwaggerDisabled extends RestTest {
 
     @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
 
@@ -79,10 +77,10 @@ class OpenApiResourceConfigTest {
   }
 
   @Nested
-  @WebMvcTest(value = {TopologyController.class})
-  class SwaggerDefaultBehavior extends RestApiConfigurationTest {
+  @WebMvcTest(useDefaultFilters = false)
+  @Import(OpenApiResourceConfig.class)
+  class SwaggerDefaultBehavior extends RestTest {
 
-    @MockitoBean private OpenApiConfigurer openApiConfigurer;
     @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
 
     @Test
