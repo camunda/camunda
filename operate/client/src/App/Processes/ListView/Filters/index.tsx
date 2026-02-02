@@ -38,7 +38,6 @@ import {
   OptionalFiltersFormGroup,
 } from './OptionalFiltersFormGroup';
 import {TenantField} from 'modules/components/TenantField';
-import {processesStore} from 'modules/stores/processes/processes.list';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {variableFilterStore} from 'modules/stores/variableFilter';
 import {useNavigate, useSearchParams} from 'react-router-dom';
@@ -137,11 +136,9 @@ const Filters: React.FC = observer(() => {
                   <div>
                     <Title>Tenant</Title>
                     <TenantField
-                      onChange={(selectedItem) => {
+                      onChange={() => {
                         form.change('process', undefined);
                         form.change('version', undefined);
-
-                        processesStore.fetchProcesses(selectedItem);
                       }}
                     />
                   </div>

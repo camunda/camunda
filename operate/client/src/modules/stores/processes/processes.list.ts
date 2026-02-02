@@ -14,6 +14,7 @@ class Processes extends ProcessesBase {
   }
 }
 
+/** @deprecated Use process-definition hooks instead. */
 const processesStore = new Processes();
 
 export {processesStore};

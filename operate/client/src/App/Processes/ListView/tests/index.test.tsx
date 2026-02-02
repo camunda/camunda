@@ -18,11 +18,10 @@ import {
   createProcessInstance,
 } from 'modules/testUtils';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
-import {processesStore} from 'modules/stores/processes/processes.list';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {AppHeader} from 'App/Layout/AppHeader';
 import {mockSearchProcessInstances} from 'modules/mocks/api/v2/processInstances/searchProcessInstances';
-import {act, useEffect} from 'react';
+import {useEffect} from 'react';
 import {Paths} from 'modules/Routes';
 import {mockQueryBatchOperations} from 'modules/mocks/api/v2/batchOperations/queryBatchOperations';
 import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations/queryBatchOperationItems';
@@ -45,7 +44,6 @@ function getWrapper(initialPath: string = Paths.processes()) {
     useEffect(() => {
       return () => {
         processInstancesSelectionStore.reset();
-        processesStore.reset();
       };
     }, []);
     return (
@@ -308,124 +306,37 @@ describe('Instances', () => {
     );
   });
 
-  it('should poll 3 times for grouped processes and redirect to initial processes page if process does not exist', async () => {
-    const handleRefetchSpy = vi.spyOn(processesStore, 'handleRefetch');
-    vi.useFakeTimers({shouldAdvanceTime: true});
+  it('should redirect to initial processes page if selected process definition does not exist', async () => {
+    mockSearchProcessDefinitions().withSuccess(searchResult([]));
+    mockSearchProcessDefinitions().withSuccess(searchResult([]));
+    mockSearchProcessInstances().withSuccess(searchResult([]));
+    mockSearchProcessInstances().withSuccess(searchResult([]));
+    mockQueryBatchOperations().withSuccess(searchResult([]));
 
     const queryString =
       '?active=true&incidents=true&process=non-existing-process&version=all';
-
-    vi.stubGlobal('location', {
-      ...window.location,
-      search: queryString,
-    });
-
-    mockSearchProcessInstances().withSuccess({
-      items: [],
-      page: {totalItems: 0},
-    });
-
     render(<ListView />, {
       wrapper: getWrapper(`${Paths.processes()}${queryString}`),
     });
 
+    expect(screen.getByTestId('data-table-skeleton')).toBeInTheDocument();
     expect(screen.getByTestId('search').textContent).toBe(queryString);
 
-    mockSearchProcessDefinitions().withSuccess(mockProcessDefinitions);
-    mockQueryBatchOperations().withSuccess({
-      items: [],
-      page: {
-        totalItems: 0,
-      },
-    });
-    mockSearchProcessInstances().withSuccess({
-      items: [],
-      page: {
-        totalItems: 0,
-      },
-    });
+    expect(screen.getByTestId('diagram-spinner')).toBeInTheDocument();
+    expect(screen.getByTestId('data-table-skeleton')).toBeInTheDocument();
 
-    await act(async () => {
-      vi.runOnlyPendingTimers();
-    });
-    await waitFor(() => expect(handleRefetchSpy).toHaveBeenCalledTimes(1));
-
-    mockSearchProcessDefinitions().withSuccess(mockProcessDefinitions);
-    mockQueryBatchOperations().withSuccess({
-      items: [],
-      page: {
-        totalItems: 0,
-      },
-    });
-    mockSearchProcessInstances().withSuccess({
-      items: [],
-      page: {
-        totalItems: 0,
-      },
-    });
-
-    await act(async () => {
-      vi.runOnlyPendingTimers();
-    });
-    await waitFor(() => expect(handleRefetchSpy).toHaveBeenCalledTimes(2));
-
-    mockSearchProcessDefinitions().withSuccess(mockProcessDefinitions);
-    mockQueryBatchOperations().withSuccess({
-      items: [],
-      page: {
-        totalItems: 0,
-      },
-    });
-    mockSearchProcessInstances().withSuccess({
-      items: [],
-      page: {
-        totalItems: 0,
-      },
-    });
-
-    await act(async () => {
-      vi.runOnlyPendingTimers();
-    });
-    await waitFor(() => expect(handleRefetchSpy).toHaveBeenCalledTimes(3));
-
-    mockSearchProcessDefinitions().withSuccess(mockProcessDefinitions);
-    mockQueryBatchOperations().withSuccess({
-      items: [],
-      page: {
-        totalItems: 0,
-      },
-    });
-
-    mockSearchProcessInstances().withSuccess({
-      items: [],
-      page: {
-        totalItems: 0,
-      },
-    });
-
-    await act(async () => {
-      vi.runOnlyPendingTimers();
-    });
-    await waitFor(() => {
-      expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/processes/);
-    });
-
+    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/processes/);
     await waitFor(() =>
       expect(screen.getByTestId('search').textContent).toBe(
         '?active=true&incidents=true',
       ),
     );
 
-    expect(processesStore.processes.length).toBe(5);
-
     expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
       isDismissable: true,
       kind: 'error',
       title: 'Process could not be found',
     });
-
-    vi.clearAllTimers();
-    vi.useRealTimers();
   });
 
   it('should hide Operation State column when Operation Id filter is not set', async () => {
