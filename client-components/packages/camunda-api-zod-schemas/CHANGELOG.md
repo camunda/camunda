@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.0.36
+
+### 🚀 Enhancements
+
+- Allow null processDefinitionName in incident statistics schema ([#44864](https://github.com/camunda/camunda/pull/44864))
+
+### ❤️ Contributors
+
+- Eddie Tsedeke ([@tsedekey](https://github.com/tsedekey))
+
 ## v0.0.35
 
 ### 🚀 Enhancements
