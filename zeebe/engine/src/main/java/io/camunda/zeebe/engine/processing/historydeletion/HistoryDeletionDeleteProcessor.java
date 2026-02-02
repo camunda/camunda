@@ -46,6 +46,7 @@ public class HistoryDeletionDeleteProcessor implements TypedRecordProcessor<Hist
     switch (command.getValue().getResourceType()) {
       case PROCESS_INSTANCE -> deleteProcessInstance(command);
       case PROCESS_DEFINITION -> deleteProcessDefinition(command);
+      case DECISION_INSTANCE -> deleteDecisionInstance(command);
       default ->
           throw new UnsupportedOperationException(
               "Unsupported resource type: " + command.getValue().getResourceType());
@@ -57,15 +58,7 @@ public class HistoryDeletionDeleteProcessor implements TypedRecordProcessor<Hist
 
     validateProcessInstanceDoesNotExist(recordValue)
         .ifRightOrLeft(
-            validRecord -> {
-              stateWriter.appendFollowUpEvent(
-                  recordValue.getResourceKey(), HistoryDeletionIntent.DELETED, recordValue);
-              responseWriter.writeEventOnCommand(
-                  recordValue.getResourceKey(),
-                  HistoryDeletionIntent.DELETED,
-                  recordValue,
-                  command);
-            },
+            validRecord -> writeHistoryDeletionEvent(recordValue, command),
             rejection -> {
               rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
               responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
@@ -74,10 +67,12 @@ public class HistoryDeletionDeleteProcessor implements TypedRecordProcessor<Hist
 
   private void deleteProcessDefinition(final TypedRecord<HistoryDeletionRecord> command) {
     final var recordValue = command.getValue();
-    stateWriter.appendFollowUpEvent(
-        recordValue.getResourceKey(), HistoryDeletionIntent.DELETED, recordValue);
-    responseWriter.writeEventOnCommand(
-        recordValue.getResourceKey(), HistoryDeletionIntent.DELETED, recordValue, command);
+    writeHistoryDeletionEvent(recordValue, command);
+  }
+
+  private void deleteDecisionInstance(final TypedRecord<HistoryDeletionRecord> command) {
+    final var recordValue = command.getValue();
+    writeHistoryDeletionEvent(recordValue, command);
   }
 
   private Either<Rejection, HistoryDeletionRecord> validateProcessInstanceDoesNotExist(
@@ -91,5 +86,13 @@ public class HistoryDeletionDeleteProcessor implements TypedRecordProcessor<Hist
       return Either.left(rejection);
     }
     return Either.right(record);
+  }
+
+  private void writeHistoryDeletionEvent(
+      final HistoryDeletionRecord recordValue, final TypedRecord<HistoryDeletionRecord> command) {
+    stateWriter.appendFollowUpEvent(
+        recordValue.getResourceKey(), HistoryDeletionIntent.DELETED, recordValue);
+    responseWriter.writeEventOnCommand(
+        recordValue.getResourceKey(), HistoryDeletionIntent.DELETED, recordValue, command);
   }
 }
