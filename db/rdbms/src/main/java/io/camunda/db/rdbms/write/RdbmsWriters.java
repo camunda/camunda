@@ -115,7 +115,7 @@ public class RdbmsWriters {
     writers.put(DecisionRequirementsWriter.class, new DecisionRequirementsWriter(executionQueue));
     writers.put(
         FlowNodeInstanceWriter.class,
-        new FlowNodeInstanceWriter(executionQueue, flowNodeInstanceMapper));
+        new FlowNodeInstanceWriter(executionQueue, flowNodeInstanceMapper, config));
     writers.put(GroupWriter.class, new GroupWriter(executionQueue));
     writers.put(
         IncidentWriter.class,

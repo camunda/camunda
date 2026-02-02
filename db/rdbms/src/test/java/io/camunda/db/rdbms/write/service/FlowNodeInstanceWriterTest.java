@@ -15,11 +15,14 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.db.rdbms.sql.FlowNodeInstanceMapper;
+import io.camunda.db.rdbms.write.RdbmsWriterConfig;
+import io.camunda.db.rdbms.write.domain.FlowNodeInstanceDbModel;
+import io.camunda.db.rdbms.write.queue.BatchInsertDto;
 import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.DefaultExecutionQueue;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
+import io.camunda.db.rdbms.write.queue.ListParameterUpsertMerger;
 import io.camunda.db.rdbms.write.queue.QueueItem;
-import io.camunda.db.rdbms.write.queue.UpsertMerger;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
 import java.time.OffsetDateTime;
@@ -32,18 +35,59 @@ class FlowNodeInstanceWriterTest {
 
   private ExecutionQueue executionQueue;
   private FlowNodeInstanceMapper mapper;
+  private RdbmsWriterConfig config;
+  private RdbmsWriterConfig.InsertBatchingConfig insertBatchingConfig;
   private FlowNodeInstanceWriter writer;
 
   @BeforeEach
   void setUp() {
     executionQueue = mock(DefaultExecutionQueue.class);
     mapper = mock(FlowNodeInstanceMapper.class);
-    writer = new FlowNodeInstanceWriter(executionQueue, mapper);
+    config = mock(RdbmsWriterConfig.class);
+    insertBatchingConfig = mock(RdbmsWriterConfig.InsertBatchingConfig.class);
+    writer = new FlowNodeInstanceWriter(executionQueue, mapper, config);
+  }
+
+  @Test
+  void shouldCreateFlowNodeInstanceWhenNotMerged() {
+    when(config.insertBatchingConfig()).thenReturn(insertBatchingConfig);
+    when(insertBatchingConfig.flowNodeInsertBatchSize()).thenReturn(1);
+    when(executionQueue.tryMergeWithExistingQueueItem(any())).thenReturn(false);
+
+    final var model = mock(FlowNodeInstanceDbModel.class);
+    when(model.flowNodeInstanceKey()).thenReturn(123L);
+
+    writer.create(model);
+
+    verify(executionQueue)
+        .executeInQueue(
+            eq(
+                new QueueItem(
+                    ContextType.FLOW_NODE,
+                    WriteStatementType.INSERT,
+                    123L,
+                    "io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.insert",
+                    new BatchInsertDto<>(model))));
+  }
+
+  @Test
+  void shouldMergeFlowNodeInstanceInsertionWhenPossible() {
+    when(config.insertBatchingConfig()).thenReturn(insertBatchingConfig);
+    when(insertBatchingConfig.flowNodeInsertBatchSize()).thenReturn(10);
+    when(executionQueue.tryMergeWithExistingQueueItem(any())).thenReturn(true);
+
+    final var model = mock(FlowNodeInstanceDbModel.class);
+    when(model.flowNodeInstanceKey()).thenReturn(123L);
+
+    writer.create(model);
+
+    verify(executionQueue, never()).executeInQueue(any(QueueItem.class));
   }
 
   @Test
   void whenFinishFlowNodeCanBeMergedWithInsertNoItemShouldBeEnqueued() {
-    when(executionQueue.tryMergeWithExistingQueueItem(any(UpsertMerger.class))).thenReturn(true);
+    when(executionQueue.tryMergeWithExistingQueueItem(any(ListParameterUpsertMerger.class)))
+        .thenReturn(true);
 
     writer.finish(1L, FlowNodeState.COMPLETED, NOW);
 
@@ -52,7 +96,8 @@ class FlowNodeInstanceWriterTest {
 
   @Test
   void whenFinishFlowNodeCannotBeMergedWithInsertItemShouldBeEnqueued() {
-    when(executionQueue.tryMergeWithExistingQueueItem(any(UpsertMerger.class))).thenReturn(false);
+    when(executionQueue.tryMergeWithExistingQueueItem(any(ListParameterUpsertMerger.class)))
+        .thenReturn(false);
 
     writer.finish(1L, FlowNodeState.COMPLETED, NOW);
 

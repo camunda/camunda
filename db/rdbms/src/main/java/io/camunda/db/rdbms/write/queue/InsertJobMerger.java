@@ -7,12 +7,11 @@
  */
 package io.camunda.db.rdbms.write.queue;
 
-import io.camunda.db.rdbms.sql.JobMapper.BatchInsertJobsDto;
 import io.camunda.db.rdbms.write.domain.JobDbModel;
 
-public class InsertJobMerger extends BatchInsertMerger<BatchInsertJobsDto, JobDbModel> {
+public class InsertJobMerger extends BatchInsertMerger<JobDbModel> {
 
   public InsertJobMerger(final JobDbModel job, final int maxBatchSize) {
-    super(ContextType.JOB, BatchInsertJobsDto.class, job, dto -> dto.jobs().size(), maxBatchSize);
+    super(ContextType.JOB, job, maxBatchSize);
   }
 }

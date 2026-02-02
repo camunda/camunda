@@ -138,12 +138,12 @@
     </constructor>
   </resultMap>
 
-  <insert id="insert" parameterType="io.camunda.db.rdbms.sql.VariableMapper$BatchInsertVariablesDto">
+  <insert id="insert" parameterType="io.camunda.db.rdbms.write.queue.BatchInsertDto">
     INSERT INTO ${prefix}VARIABLE (VAR_KEY, PROCESS_INSTANCE_KEY, ROOT_PROCESS_INSTANCE_KEY, PROCESS_DEFINITION_ID, SCOPE_KEY, TYPE, VAR_NAME, DOUBLE_VALUE,
                                    LONG_VALUE, VAR_VALUE, VAR_FULL_VALUE, TENANT_ID, IS_PREVIEW,
                                    PARTITION_ID)
     VALUES
-    <foreach collection="variables" item="variable" separator=",">
+    <foreach collection="dbModels" item="variable" separator=",">
       (#{variable.variableKey}, #{variable.processInstanceKey}, #{variable.rootProcessInstanceKey}, #{variable.processDefinitionId}, #{variable.scopeKey}, #{variable.type}, #{variable.name}, #{variable.doubleValue, jdbcType=DOUBLE},
        #{variable.longValue, jdbcType=NUMERIC}, #{variable.value}, #{variable.fullValue}, #{variable.tenantId}, #{variable.isPreview}, #{variable.partitionId})
     </foreach>

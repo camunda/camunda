@@ -11,6 +11,7 @@ import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.sql.JobMapper;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.domain.JobDbModel;
+import io.camunda.db.rdbms.write.queue.BatchInsertDto;
 import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.InsertJobMerger;
@@ -51,7 +52,7 @@ public class JobWriter extends ProcessInstanceDependant implements RdbmsWriter {
               WriteStatementType.INSERT,
               -1,
               "io.camunda.db.rdbms.sql.JobMapper.insert",
-              new JobMapper.BatchInsertJobsDto.Builder().job(truncatedJob).build()));
+              new BatchInsertDto<>(truncatedJob)));
     }
   }
 

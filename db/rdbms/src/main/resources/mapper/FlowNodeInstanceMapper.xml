@@ -187,15 +187,18 @@
     </constructor>
   </resultMap>
 
-  <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.FlowNodeInstanceDbModel">
+  <insert id="insert" parameterType="io.camunda.db.rdbms.write.queue.BatchInsertDto">
     INSERT INTO ${prefix}FLOW_NODE_INSTANCE (FLOW_NODE_INSTANCE_KEY, FLOW_NODE_ID, FLOW_NODE_NAME, FLOW_NODE_SCOPE_KEY, PROCESS_INSTANCE_KEY,
                                              ROOT_PROCESS_INSTANCE_KEY, PROCESS_DEFINITION_ID, PROCESS_DEFINITION_KEY, TYPE, STATE,
                                              START_DATE, END_DATE, TENANT_ID, TREE_PATH,
                                              INCIDENT_KEY, NUM_SUBPROCESS_INCIDENTS, PARTITION_ID)
-    VALUES (#{flowNodeInstanceKey}, #{flowNodeId}, #{flowNodeName}, #{flowNodeScopeKey}, #{processInstanceKey},
-            #{rootProcessInstanceKey}, #{processDefinitionId}, #{processDefinitionKey}, #{type}, #{state},
-            #{startDate, jdbcType=TIMESTAMP}, #{endDate, jdbcType=TIMESTAMP}, #{tenantId},
-            #{treePath}, #{incidentKey}, #{numSubprocessIncidents}, #{partitionId})
+    VALUES
+    <foreach collection="dbModels" item="flowNode" separator=",">
+      (#{flowNode.flowNodeInstanceKey}, #{flowNode.flowNodeId}, #{flowNode.flowNodeName}, #{flowNode.flowNodeScopeKey}, #{flowNode.processInstanceKey},
+       #{flowNode.rootProcessInstanceKey}, #{flowNode.processDefinitionId}, #{flowNode.processDefinitionKey}, #{flowNode.type}, #{flowNode.state},
+       #{flowNode.startDate, jdbcType=TIMESTAMP}, #{flowNode.endDate, jdbcType=TIMESTAMP}, #{flowNode.tenantId},
+       #{flowNode.treePath}, #{flowNode.incidentKey}, #{flowNode.numSubprocessIncidents}, #{flowNode.partitionId})
+    </foreach>
   </insert>
 
   <update id="update" parameterType="io.camunda.db.rdbms.write.domain.FlowNodeInstanceDbModel">
