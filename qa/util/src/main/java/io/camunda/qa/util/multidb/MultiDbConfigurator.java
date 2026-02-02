@@ -334,6 +334,6 @@ public class MultiDbConfigurator {
 
   private static void overrideRefreshInterval(final DocumentBasedSecondaryStorageDatabase db) {
     // make refresh interval lower so tests can run a bit faster
-    db.setRefreshIntervalByIndexName(Map.of("list-view", "1s"));
+    db.setRefreshInterval("100ms");
   }
 }
