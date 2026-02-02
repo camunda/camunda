@@ -24,7 +24,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class ElasticsearchEsTenantCheckApplierTest {
+public class ElasticsearchTenantCheckApplierTest {
 
   @Mock private TenantService tenantService;
 
