@@ -1,12 +1,29 @@
-ARG BASE_IMAGE="alpine:3.23.3"
-ARG BASE_DIGEST="sha256:25109184c71bdad752c8312a8623239686a9a2071e8825f20acb8f2198c3f659"
+# hadolint global ignore=DL3006
+ARG BASE_IMAGE="reg.mini.dev/1212/openjre-base:21-dev"
+ARG BASE_DIGEST="sha256:cc7175593660c343b265defdfaaa9b01789b711135323d3546a48c20fdf48a00"
 
-FROM ${BASE_IMAGE}@${BASE_DIGEST} AS base
+# If you don't have access to Minimus hardened base images, you can use public
+# base images like this instead on your own risk.
+# Simply pass `--build-arg BASE=public` in order to build with the Temurin JDK.
+ARG BASE_IMAGE_PUBLIC="eclipse-temurin:21.0.9_10-jre-noble"
+ARG BASE_DIGEST_PUBLIC="sha256:d3eb69add1874bc785382d6282db53a67841f602a1139dee6c4a1221d8c56568"
+ARG BASE="hardened"
+
+### Base Application Image ###
+# hadolint ignore=DL3006
+FROM ${BASE_IMAGE}@${BASE_DIGEST} AS base-hardened
+
+### Base Public Application Image ###
+# hadolint ignore=DL3006
+FROM ${BASE_IMAGE_PUBLIC}@${BASE_DIGEST_PUBLIC} AS base-public
+
+FROM base-${BASE} AS base
 WORKDIR /
 
 ARG VERSION=""
 ARG DISTRO=production
 ARG ARTIFACT_PATH=./optimize-distro/target
+ARG DISTBALL=""
 
 ENV TMP_DIR=/tmp/optimize \
     BUILD_DIR=/tmp/build
@@ -14,9 +31,10 @@ ENV TMP_DIR=/tmp/optimize \
 RUN mkdir -p ${TMP_DIR} && \
     mkdir -p ${BUILD_DIR}
 
-COPY ${ARTIFACT_PATH}/camunda-optimize-${VERSION}-${DISTRO}.tar.gz ${BUILD_DIR}
-RUN tar -xzf ${BUILD_DIR}/camunda-optimize-${VERSION}-${DISTRO}.tar.gz -C ${BUILD_DIR} && \
-    rm ${BUILD_DIR}/camunda-optimize-${VERSION}-${DISTRO}.tar.gz
+# Support both legacy path and monorepo DISTBALL pattern
+COPY ${DISTBALL:-${ARTIFACT_PATH}/camunda-optimize-${VERSION}-${DISTRO}.tar.gz} ${BUILD_DIR}/optimize-distro.tar.gz
+RUN tar -xzf ${BUILD_DIR}/optimize-distro.tar.gz -C ${BUILD_DIR} && \
+    rm ${BUILD_DIR}/optimize-distro.tar.gz
 COPY ./optimize/docker/bin/optimize.sh ${BUILD_DIR}/optimize.sh
 # Prevent environment-config.yaml from overriding service-config.yaml since the
 # service-config.yaml allows usage of OPTIMIZE_ environment variables
@@ -34,7 +52,7 @@ ARG BASE_IMAGE
 ARG BASE_DIGEST
 
 # OCI labels: https://github.com/opencontainers/image-spec/blob/main/annotations.md
-LABEL org.opencontainers.image.base.name="docker.io/library/${BASE_IMAGE}"
+LABEL org.opencontainers.image.base.name="${BASE_IMAGE}"
 LABEL org.opencontainers.image.base.digest="${BASE_DIGEST}"
 LABEL org.opencontainers.image.created="${DATE}"
 LABEL org.opencontainers.image.authors="optimize@camunda.com"
@@ -65,9 +83,10 @@ EXPOSE 8090 8091
 
 VOLUME /tmp
 
-RUN apk add --no-cache bash curl tini openjdk21-jre tzdata && \
-    apk -U upgrade && \
-    curl "https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh" --output /usr/local/bin/wait-for-it.sh && \
+# Switch to root to allow setting up our own user
+USER root
+RUN mkdir -p /usr/local/bin/ && \
+    wget -nv -O /usr/local/bin/wait-for-it.sh "https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh" && \
     chmod +x /usr/local/bin/wait-for-it.sh && \
     addgroup -S -g 1001 camunda && \
     adduser -S -g 1001 -u 1001 camunda && \
@@ -77,7 +96,6 @@ RUN apk add --no-cache bash curl tini openjdk21-jre tzdata && \
 WORKDIR /optimize
 USER 1001:1001
 
-ENTRYPOINT ["/sbin/tini", "--"]
 CMD ["./optimize.sh"]
 
 COPY --chown=1001:1001 --from=base /tmp/build .

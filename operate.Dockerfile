@@ -1,9 +1,24 @@
 # hadolint global ignore=DL3006
-ARG BASE_IMAGE="alpine:3.23.3"
-ARG BASE_DIGEST="sha256:25109184c71bdad752c8312a8623239686a9a2071e8825f20acb8f2198c3f659"
+ARG BASE_IMAGE="reg.mini.dev/1212/openjre-base:21-dev"
+ARG BASE_DIGEST="sha256:cc7175593660c343b265defdfaaa9b01789b711135323d3546a48c20fdf48a00"
+
+# If you don't have access to Minimus hardened base images, you can use public
+# base images like this instead on your own risk.
+# Simply pass `--build-arg BASE=public` in order to build with the Temurin JDK.
+ARG BASE_IMAGE_PUBLIC="eclipse-temurin:21.0.9_10-jre-noble"
+ARG BASE_DIGEST_PUBLIC="sha256:d3eb69add1874bc785382d6282db53a67841f602a1139dee6c4a1221d8c56568"
+ARG BASE="hardened"
+
+### Base Application Image ###
+# hadolint ignore=DL3006
+FROM ${BASE_IMAGE}@${BASE_DIGEST} AS base-hardened
+
+### Base Public Application Image ###
+# hadolint ignore=DL3006
+FROM ${BASE_IMAGE_PUBLIC}@${BASE_DIGEST_PUBLIC} AS base-public
 
 # Prepare Operate Distribution
-FROM ${BASE_IMAGE}@${BASE_DIGEST} AS prepare
+FROM base-${BASE} AS prepare
 ARG DISTBALL="dist/target/camunda-zeebe-*.tar.gz"
 WORKDIR /tmp/operate
 
@@ -14,19 +29,12 @@ RUN tar xzvf operate.tar.gz --strip 1 && \
 COPY docker-notice.txt notice.txt
 RUN sed -i '/^exec /i cat /usr/local/operate/notice.txt' bin/operate
 
-### Base image ###
-# hadolint ignore=DL3006
-FROM ${BASE_IMAGE}@${BASE_DIGEST} AS base
-
-# Install Tini
-RUN apk update && apk add --no-cache tini
-
 ### Application Image ###
 # TARGETARCH is provided by buildkit
 # https://docs.docker.com/engine/reference/builder/#automatic-platform-args-in-the-global-scope
 # hadolint ignore=DL3006
+FROM base-${BASE} AS app
 
-FROM base AS app
 # leave unset to use the default value at the top of the file
 ARG BASE_IMAGE
 ARG BASE_DIGEST
@@ -35,7 +43,7 @@ ARG DATE=""
 ARG REVISION=""
 
 # OCI labels: https://github.com/opencontainers/image-spec/blob/main/annotations.md
-LABEL org.opencontainers.image.base.name="docker.io/library/${BASE_IMAGE}"
+LABEL org.opencontainers.image.base.name="${BASE_IMAGE}"
 LABEL org.opencontainers.image.base.digest="${BASE_DIGEST}"
 LABEL org.opencontainers.image.created="${DATE}"
 LABEL org.opencontainers.image.authors="operate@camunda.com"
@@ -59,15 +67,14 @@ LABEL io.k8s.description="Tool for process observability and troubleshooting pro
 
 EXPOSE 8080
 
-RUN apk update && apk upgrade
-RUN apk add --no-cache bash openjdk21-jre tzdata gcompat libgcc libc6-compat
-
 ENV OPE_HOME=/usr/local/operate
 
 WORKDIR ${OPE_HOME}
 VOLUME /tmp
 VOLUME ${OPE_HOME}/logs
 
+# Switch to root to allow setting up our own user
+USER root
 RUN addgroup --gid 1001 camunda && \
     adduser -D -h ${OPE_HOME} -G camunda -u 1001 camunda && \
     # These directories are to be mounted by users, eagerly creating them and setting ownership
@@ -80,4 +87,4 @@ COPY --from=prepare --chown=1001:0 --chmod=0775 /tmp/operate ${OPE_HOME}
 
 USER 1001:1001
 
-ENTRYPOINT ["/sbin/tini", "--", "/usr/local/operate/bin/operate"]
+ENTRYPOINT ["/usr/local/operate/bin/operate"]
