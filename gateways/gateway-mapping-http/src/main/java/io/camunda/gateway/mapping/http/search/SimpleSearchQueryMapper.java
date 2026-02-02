@@ -378,11 +378,12 @@ public class SimpleSearchQueryMapper {
   }
 
   private static List<VariableValueFilterProperty> convertVariableValueFilterProperties(
-      final List<io.camunda.gateway.protocol.model.simple.VariableValueFilterProperty> simple) {
-    if (simple == null) {
+      final List<io.camunda.gateway.protocol.model.simple.VariableValueFilterProperty>
+          variableFilters) {
+    if (variableFilters == null) {
       return null;
     }
-    return simple.stream()
+    return variableFilters.stream()
         .map(
             simpleVar ->
                 new VariableValueFilterProperty(
