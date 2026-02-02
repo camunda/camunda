@@ -44,8 +44,7 @@ public final class DeleteDecisionInstanceBatchExecutorTest extends AbstractBatch
             .ofDecisionId(DECISION_ID)
             .withVariable("lightsaberColor", "blue")
             .evaluate()
-            .getValue()
-            .getDecisionKey();
+            .getKey();
 
     // when
     final var batchOperationKey =
