@@ -9,11 +9,13 @@ package io.camunda.zeebe.engine.processing.identity;
 
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.validation.AuthorizationValidator;
+import io.camunda.security.validation.GroupValidator;
 import io.camunda.security.validation.IdentifierValidator;
 import io.camunda.security.validation.RoleValidator;
 import io.camunda.security.validation.TenantValidator;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.identity.initialize.AuthorizationConfigurer;
+import io.camunda.zeebe.engine.processing.identity.initialize.GroupConfigurer;
 import io.camunda.zeebe.engine.processing.identity.initialize.IdentitySetupInitializer;
 import io.camunda.zeebe.engine.processing.identity.initialize.RoleConfigurer;
 import io.camunda.zeebe.engine.processing.identity.initialize.TenantConfigurer;
@@ -45,6 +47,7 @@ public final class IdentitySetupProcessors {
                 config.isEnableIdentitySetup(),
                 new AuthorizationConfigurer(new AuthorizationValidator(identifierValidator)),
                 new TenantConfigurer(new TenantValidator(identifierValidator)),
+                new GroupConfigurer(new GroupValidator(identifierValidator)),
                 new RoleConfigurer(new RoleValidator(identifierValidator))));
   }
 }

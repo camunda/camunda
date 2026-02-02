@@ -15,6 +15,7 @@ import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.validation.AuthorizationValidator;
+import io.camunda.security.validation.GroupValidator;
 import io.camunda.security.validation.IdentifierValidator;
 import io.camunda.security.validation.IdentityInitializationException;
 import io.camunda.security.validation.RoleValidator;
@@ -46,10 +47,12 @@ import io.camunda.zeebe.broker.system.configuration.partitioning.FixedPartitionC
 import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.camunda.zeebe.engine.processing.identity.initialize.AuthorizationConfigurer;
+import io.camunda.zeebe.engine.processing.identity.initialize.GroupConfigurer;
 import io.camunda.zeebe.engine.processing.identity.initialize.RoleConfigurer;
 import io.camunda.zeebe.engine.processing.identity.initialize.TenantConfigurer;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperationChunk;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.scheduler.ActorScheduler;
@@ -479,6 +482,8 @@ public final class SystemContext {
         new AuthorizationConfigurer(new AuthorizationValidator(identifierValidator));
     final TenantConfigurer tenantConfigurer =
         new TenantConfigurer(new TenantValidator(identifierValidator));
+    final GroupConfigurer groupConfigurer =
+        new GroupConfigurer(new GroupValidator(identifierValidator));
     final var roleConfigurer = new RoleConfigurer(new RoleValidator(identifierValidator));
 
     final Either<List<String>, List<AuthorizationRecord>> configuredAuthorizations =
@@ -486,6 +491,8 @@ public final class SystemContext {
             securityConfiguration.getInitialization().getAuthorizations());
     final Either<List<String>, List<TenantRecord>> configuredTenants =
         tenantConfigurer.configureEntities(securityConfiguration.getInitialization().getTenants());
+    final Either<List<String>, List<GroupRecord>> configuredGroups =
+        groupConfigurer.configureEntities(securityConfiguration.getInitialization().getGroups());
     final Either<List<String>, List<RoleRecord>> configuredRoles =
         roleConfigurer.configureEntities(securityConfiguration.getInitialization().getRoles());
 
@@ -507,6 +514,13 @@ public final class SystemContext {
         (violations) -> {
           throw new IdentityInitializationException(
               "Cannot initialize configured roles: %n- %s"
+                  .formatted(String.join(System.lineSeparator() + "- ", violations)));
+        });
+
+    configuredGroups.ifLeft(
+        (violations) -> {
+          throw new IdentityInitializationException(
+              "Cannot initialize configured groups: %n- %s"
                   .formatted(String.join(System.lineSeparator() + "- ", violations)));
         });
   }
