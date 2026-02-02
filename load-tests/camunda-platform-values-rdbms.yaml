@@ -60,6 +60,7 @@ orchestration:
       # RocksDB memory limit setting, limits the overall RocksDB memory usage
       # ZEEBE_BROKER_EXPERIMENTAL_ROCKSDB_MEMORYLIMIT
       zeebe.broker.experimental.rocksdb.memoryLimit: "64MB"
+      zeebe.broker.experimental.rocksdb.memoryFraction: 0.2
       # History cleanup adjust batch sizes
       camunda.data.secondary-storage.rdbms.history.historyCleanupBatchSize: 100000
       camunda.data.secondary-storage.rdbms.history.historyCleanupProcessInstanceBatchSize: 500
