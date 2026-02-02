@@ -13,9 +13,12 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.clients.SearchClientsProxy;
+import io.camunda.search.entities.DecisionInstanceEntity;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
+import io.camunda.search.filter.DecisionInstanceFilter;
 import io.camunda.search.filter.ProcessInstanceFilter;
+import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
@@ -356,6 +359,38 @@ abstract class AbstractBatchOperationTest {
         -1L, // jobKey
         null // tenantId
         );
+  }
+
+  protected long createDeleteDecisionInstanceBatchOperation(
+      final List<Long> itemKeys, final Map<String, Object> claims) {
+    final var result =
+        new SearchQueryResult.Builder<DecisionInstanceEntity>()
+            .items(itemKeys.stream().map(this::fakeDecisionInstanceEntity).toList())
+            .total(itemKeys.size())
+            .build();
+    when(searchClientsProxy.searchDecisionInstances(Mockito.any(DecisionInstanceQuery.class)))
+        .thenReturn(result);
+
+    final var filterBuffer = convertToBuffer(new DecisionInstanceFilter.Builder().build());
+
+    DirectBuffer authenticationBuffer = null;
+    if (claims != null) {
+      authenticationBuffer = convertToBuffer(CamundaAuthentication.of(b -> b.claims(claims)));
+      when(brokerRequestAuthorizationConverter.convert(any())).thenReturn(claims);
+    }
+
+    return engine
+        .batchOperation()
+        .newCreation(BatchOperationType.DELETE_DECISION_INSTANCE)
+        .withFilter(filterBuffer)
+        .withAuthentication(authenticationBuffer)
+        .create(DEFAULT_USER.getUsername())
+        .getValue()
+        .getBatchOperationKey();
+  }
+
+  protected DecisionInstanceEntity fakeDecisionInstanceEntity(final long decisionInstanceKey) {
+    return new DecisionInstanceEntity.Builder().decisionInstanceKey(decisionInstanceKey).build();
   }
 
   protected UserRecordValue createUser() {
