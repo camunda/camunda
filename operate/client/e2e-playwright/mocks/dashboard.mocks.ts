@@ -43,7 +43,6 @@ const mockIncidentsByDefinition: GetIncidentProcessInstanceStatisticsByDefinitio
       {
         processDefinitionId: 'complexProcess',
         processDefinitionKey: 2251799813687889,
-        processDefinitionName: null,
         processDefinitionVersion: 3,
         tenantId: '<default>',
         activeInstancesWithErrorCount: 56,
@@ -51,7 +50,6 @@ const mockIncidentsByDefinition: GetIncidentProcessInstanceStatisticsByDefinitio
       {
         processDefinitionId: 'complexProcess',
         processDefinitionKey: 2251799813687201,
-        processDefinitionName: null,
         processDefinitionVersion: 2,
         tenantId: '<default>',
         activeInstancesWithErrorCount: 20,
@@ -59,7 +57,6 @@ const mockIncidentsByDefinition: GetIncidentProcessInstanceStatisticsByDefinitio
       {
         processDefinitionId: 'complexProcess',
         processDefinitionKey: 2251799813686132,
-        processDefinitionName: null,
         processDefinitionVersion: 1,
         tenantId: '<default>',
         activeInstancesWithErrorCount: 14,
@@ -67,7 +64,6 @@ const mockIncidentsByDefinition: GetIncidentProcessInstanceStatisticsByDefinitio
       {
         processDefinitionId: 'called-process',
         processDefinitionKey: 2251799813687891,
-        processDefinitionName: null,
         processDefinitionVersion: 2,
         tenantId: '<default>',
         activeInstancesWithErrorCount: 56,
@@ -123,7 +119,6 @@ const mockIncidentsByDefinition: GetIncidentProcessInstanceStatisticsByDefinitio
       {
         processDefinitionId: 'error-end-process',
         processDefinitionKey: 2251799813686153,
-        processDefinitionName: null,
         processDefinitionVersion: 1,
         tenantId: '<default>',
         activeInstancesWithErrorCount: 20,
@@ -131,7 +126,6 @@ const mockIncidentsByDefinition: GetIncidentProcessInstanceStatisticsByDefinitio
       {
         processDefinitionId: 'nonInterruptingBoundaryEvent',
         processDefinitionKey: 2251799813687208,
-        processDefinitionName: null,
         processDefinitionVersion: 2,
         tenantId: '<default>',
         activeInstancesWithErrorCount: 16,
@@ -139,7 +133,6 @@ const mockIncidentsByDefinition: GetIncidentProcessInstanceStatisticsByDefinitio
       {
         processDefinitionId: 'nonInterruptingBoundaryEvent',
         processDefinitionKey: 2251799813686141,
-        processDefinitionName: null,
         processDefinitionVersion: 1,
         tenantId: '<default>',
         activeInstancesWithErrorCount: 3,
@@ -179,7 +172,6 @@ const mockIncidentsByDefinition: GetIncidentProcessInstanceStatisticsByDefinitio
       {
         processDefinitionId: 'loanProcess',
         processDefinitionKey: 2251799813686116,
-        processDefinitionName: null,
         processDefinitionVersion: 1,
         tenantId: '<default>',
         activeInstancesWithErrorCount: 15,
@@ -195,7 +187,6 @@ const mockIncidentsByDefinition: GetIncidentProcessInstanceStatisticsByDefinitio
       {
         processDefinitionId: 'interruptingBoundaryEvent',
         processDefinitionKey: 2251799813687206,
-        processDefinitionName: null,
         processDefinitionVersion: 2,
         tenantId: '<default>',
         activeInstancesWithErrorCount: 8,
@@ -203,7 +194,6 @@ const mockIncidentsByDefinition: GetIncidentProcessInstanceStatisticsByDefinitio
       {
         processDefinitionId: 'interruptingBoundaryEvent',
         processDefinitionKey: 2251799813686139,
-        processDefinitionName: null,
         processDefinitionVersion: 1,
         tenantId: '<default>',
         activeInstancesWithErrorCount: 1,
@@ -243,7 +233,6 @@ const mockIncidentsByDefinition: GetIncidentProcessInstanceStatisticsByDefinitio
       {
         processDefinitionId: 'bigProcess',
         processDefinitionKey: 2251799813686149,
-        processDefinitionName: null,
         processDefinitionVersion: 1,
         tenantId: '<default>',
         activeInstancesWithErrorCount: 1,
@@ -291,7 +280,6 @@ const mockIncidentsByDefinition: GetIncidentProcessInstanceStatisticsByDefinitio
       {
         processDefinitionId: 'intermediate-message-throw-event-process',
         processDefinitionKey: 2251799813686124,
-        processDefinitionName: null,
         processDefinitionVersion: 1,
         tenantId: '<default>',
         activeInstancesWithErrorCount: 0,
@@ -315,7 +303,6 @@ const mockIncidentsByDefinition: GetIncidentProcessInstanceStatisticsByDefinitio
       {
         processDefinitionId: 'message-end-event-process',
         processDefinitionKey: 2251799813686128,
-        processDefinitionName: null,
         processDefinitionVersion: 1,
         tenantId: '<default>',
         activeInstancesWithErrorCount: 0,
@@ -363,7 +350,6 @@ const mockIncidentsByDefinition: GetIncidentProcessInstanceStatisticsByDefinitio
       {
         processDefinitionId: 'intermediate-none-event-process',
         processDefinitionKey: 2251799813686126,
-        processDefinitionName: null,
         processDefinitionVersion: 1,
         tenantId: '<default>',
         activeInstancesWithErrorCount: 0,
@@ -371,7 +357,6 @@ const mockIncidentsByDefinition: GetIncidentProcessInstanceStatisticsByDefinitio
       {
         processDefinitionId: 'manual-task-process',
         processDefinitionKey: 2251799813686122,
-        processDefinitionName: null,
         processDefinitionVersion: 1,
         tenantId: '<default>',
         activeInstancesWithErrorCount: 0,
