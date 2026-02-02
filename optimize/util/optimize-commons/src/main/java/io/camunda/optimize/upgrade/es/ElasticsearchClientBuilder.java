@@ -112,11 +112,6 @@ public class ElasticsearchClientBuilder {
   }
 
   private static RestClientBuilder.HttpClientConfigCallback createHttpClientConfigCallback(
-      final ConfigurationService configurationService) {
-    return createHttpClientConfigCallback(configurationService, null);
-  }
-
-  private static RestClientBuilder.HttpClientConfigCallback createHttpClientConfigCallback(
       final ConfigurationService configurationService,
       final SSLContext sslContext,
       final HttpRequestInterceptor... requestInterceptors) {

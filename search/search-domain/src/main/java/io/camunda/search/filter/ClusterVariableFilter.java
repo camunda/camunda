@@ -58,11 +58,6 @@ public record ClusterVariableFilter(
       return this;
     }
 
-    private Builder valueUntypedOperations(final List<UntypedOperation> operations) {
-      valueOperations = addValuesToList(valueOperations, operations);
-      return this;
-    }
-
     public Builder values(final String value, final String... values) {
       return valueOperations(FilterUtil.mapDefaultToOperation(value, values));
     }

@@ -11,8 +11,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.rules.ExternalResource;
 
 public final class LogStreamReaderRule extends ExternalResource {
@@ -52,11 +50,6 @@ public final class LogStreamReaderRule extends ExternalResource {
       }
     }
     return null;
-  }
-
-  private DirectBuffer eventValue(final LoggedEvent event) {
-    assertThat(event).isNotNull();
-    return new UnsafeBuffer(event.getValueBuffer(), event.getValueOffset(), event.getValueLength());
   }
 
   public LogStreamReader resetReader() {

@@ -386,10 +386,6 @@ class RepositoryNodeIdProviderIT {
     assertLeaseIs(true);
   }
 
-  private void assertLeaseIsNotReady() {
-    assertLeaseIs(false);
-  }
-
   private void assertLeaseIs(final boolean status) {
     Awaitility.await("Until the lease is acquired")
         .untilAsserted(

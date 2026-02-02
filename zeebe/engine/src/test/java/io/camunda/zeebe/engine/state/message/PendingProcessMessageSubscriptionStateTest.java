@@ -253,11 +253,6 @@ public final class PendingProcessMessageSubscriptionStateTest {
   }
 
   private ProcessMessageSubscriptionRecord subscriptionRecord(
-      final String name, final String correlationKey, final long elementInstanceKey) {
-    return subscriptionRecord("handler", name, correlationKey, elementInstanceKey);
-  }
-
-  private ProcessMessageSubscriptionRecord subscriptionRecord(
       final String handlerId,
       final String name,
       final String correlationKey,

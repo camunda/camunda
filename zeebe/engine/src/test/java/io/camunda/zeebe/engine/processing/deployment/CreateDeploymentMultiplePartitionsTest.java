@@ -34,7 +34,6 @@ import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.List;
 import java.util.function.Consumer;
@@ -788,12 +787,6 @@ public final class CreateDeploymentMultiplePartitionsTest {
         .isLessThan(repeated.getDecisionRequirementsVersion());
     assertThat(original.getDecisionRequirementsKey())
         .isLessThan(repeated.getDecisionRequirementsKey());
-  }
-
-  private byte[] bpmnXml(final BpmnModelInstance definition) {
-    final ByteArrayOutputStream outStream = new ByteArrayOutputStream();
-    Bpmn.writeModelToStream(outStream, definition);
-    return outStream.toByteArray();
   }
 
   @SuppressWarnings("unchecked")

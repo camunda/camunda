@@ -178,8 +178,4 @@ public class AlertReaderES implements AlertReader {
     return ElasticsearchReaderUtil.mapHits(
         searchResponse.hits(), AlertDefinitionDto.class, objectMapper);
   }
-
-  private void logError(final String alertId) {
-    LOG.error("Was not able to retrieve alert with id [{}] from Elasticsearch.", alertId);
-  }
 }

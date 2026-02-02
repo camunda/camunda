@@ -646,12 +646,6 @@ public class CamundaProcessTestContextIT {
     return deploymentEvent.getProcesses().stream().findFirst().get().getProcessDefinitionKey();
   }
 
-  private long deployProcessModel(final String resourceName) {
-    final DeploymentEvent deploymentEvent =
-        client.newDeployResourceCommand().addResourceFromClasspath(resourceName).send().join();
-    return deploymentEvent.getProcesses().stream().findFirst().get().getProcessDefinitionKey();
-  }
-
   private long deployDmnModel(final DmnModelInstance dmnModel) {
     final DeploymentEvent deploymentEvent =
         client

@@ -89,10 +89,6 @@ public class ClusterPurgeTest {
     }
   }
 
-  private static void getSet(final boolean newValue) {
-    PurgingExporter.BLOCK_PURGE.set(newValue);
-  }
-
   private void configureExporter(final ExporterCfg exporterCfg) {
     exporterCfg.setClassName(PurgingExporter.class.getName());
   }

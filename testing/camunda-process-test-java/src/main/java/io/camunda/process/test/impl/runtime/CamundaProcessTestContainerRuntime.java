@@ -34,8 +34,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
-import org.testcontainers.containers.output.Slf4jLogConsumer;
-import org.testcontainers.elasticsearch.ElasticsearchContainer;
 
 public class CamundaProcessTestContainerRuntime
     implements AutoCloseable, CamundaProcessTestRuntime {
@@ -92,30 +90,6 @@ public class CamundaProcessTestContainerRuntime
           MultiTenancyConfiguration.MULTITENANCY_USER_USERNAME,
           MultiTenancyConfiguration.MULTITENANCY_USER_PASSWORD);
     }
-  }
-
-  /*
-   * The ES container has been removed in favor of an H2 database solution. However, the secondary
-   * storage implementation is going to become configurable in the near future so we're keeping
-   * this unused method in the code for now.
-   * {@see https://github.com/camunda/camunda/issues/29854}
-   */
-  private ElasticsearchContainer createElasticsearchContainer(
-      final Network network, final CamundaProcessTestRuntimeBuilder builder) {
-    final ElasticsearchContainer container =
-        containerFactory
-            .createElasticsearchContainer(
-                builder.getElasticsearchDockerImageName(),
-                builder.getElasticsearchDockerImageVersion())
-            .withLogConsumer(createContainerLogger(builder.getElasticsearchLoggerName()))
-            .withNetwork(network)
-            .withNetworkAliases(NETWORK_ALIAS_ELASTICSEARCH)
-            .withEnv(ContainerRuntimeEnvs.ELASTICSEARCH_ENV_XPACK_SECURITY_ENABLED, "false")
-            .withEnv(builder.getElasticsearchEnvVars());
-
-    builder.getElasticsearchExposedPorts().forEach(container::addExposedPort);
-
-    return container;
   }
 
   private CamundaContainer createCamundaContainer(
@@ -244,11 +218,6 @@ public class CamundaProcessTestContainerRuntime
     final Instant endTime = Instant.now();
     final Duration shutdownTime = Duration.between(startTime, endTime);
     LOGGER.info("Camunda container runtime stopped in {}", shutdownTime);
-  }
-
-  private static Slf4jLogConsumer createContainerLogger(final String name) {
-    final Logger logger = LoggerFactory.getLogger(name);
-    return new Slf4jLogConsumer(logger, true);
   }
 
   private static <T extends LogEntry> Slf4jJsonLogConsumer createContainerJsonLogger(

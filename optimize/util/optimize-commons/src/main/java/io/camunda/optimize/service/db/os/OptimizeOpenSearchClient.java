@@ -901,13 +901,6 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     return openSearchClient.indices().rollover(rolloverRequest);
   }
 
-  private RolloverRequest applyAliasPrefixAndRolloverConditions(final RolloverRequest request) {
-    return new RolloverRequest.Builder()
-        .alias(indexNameService.getOptimizeIndexAliasForIndex(request.alias()))
-        .conditions(request.conditions())
-        .build();
-  }
-
   private String rolloverConditionsStatus(final Map<String, Boolean> conditions) {
     final String conditionsNotMet =
         conditions.entrySet().stream()

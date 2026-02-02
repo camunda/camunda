@@ -26,7 +26,6 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import org.junit.Rule;
 import org.junit.Test;
@@ -227,17 +226,5 @@ public class UpdateAuthorizationMultipartitionTest {
         .isEqualTo(
             "Expected to create or update authorization with ownerId or resourceId '%s', but a mapping rule with this ID does not exist."
                 .formatted(nonexistentMappingRuleId));
-  }
-
-  private void interceptAuthorizationCreateForPartition(final int partitionId) {
-    final var hasInterceptedPartition = new AtomicBoolean(false);
-    engine.interceptInterPartitionCommands(
-        (receiverPartitionId, valueType, intent, recordKey, command) -> {
-          if (hasInterceptedPartition.get()) {
-            return true;
-          }
-          hasInterceptedPartition.set(true);
-          return !(receiverPartitionId == partitionId && intent == AuthorizationIntent.CREATE);
-        });
   }
 }

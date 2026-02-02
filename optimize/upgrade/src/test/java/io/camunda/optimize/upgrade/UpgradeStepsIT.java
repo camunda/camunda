@@ -406,8 +406,4 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     return applyLookupSkip(
         new DeleteIndexIfExistsStep(indexMapping.getIndexName(), indexMapping.getVersion()));
   }
-
-  private Map<String, Set<String>> getAliasMap(final String aliasName) throws IOException {
-    return getPrefixAwareClient().getAliasesForIndexPattern(aliasName);
-  }
 }

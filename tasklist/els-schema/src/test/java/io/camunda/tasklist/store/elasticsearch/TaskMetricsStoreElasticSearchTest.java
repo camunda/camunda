@@ -9,9 +9,6 @@ package io.camunda.tasklist.store.elasticsearch;
 
 import static io.camunda.tasklist.store.elasticsearch.TaskMetricsStoreElasticSearch.ASSIGNEE;
 import static io.camunda.tasklist.store.elasticsearch.TaskMetricsStoreElasticSearch.TU_ID_PATTERN;
-import static io.camunda.tasklist.util.ElasticsearchUtil.AGGREGATION_TERMS_SIZE;
-import static io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate.ASSIGNEE_HASH;
-import static io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate.END_TIME;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -22,15 +19,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import co.elastic.clients.elasticsearch._types.ExpandWildcard;
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
-import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
 import co.elastic.clients.elasticsearch._types.aggregations.Buckets;
 import co.elastic.clients.elasticsearch._types.aggregations.LongTermsAggregate;
 import co.elastic.clients.elasticsearch._types.aggregations.LongTermsBucket;
-import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
-import co.elastic.clients.elasticsearch._types.query_dsl.Query;
-import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
@@ -159,30 +151,6 @@ public class TaskMetricsStoreElasticSearchTest {
     final SearchRequest capturedRequest = captor.getValue();
     assertThat(capturedRequest.index()).containsExactly(METRIC_INDEX_NAME);
     assertThat(capturedRequest.aggregations()).containsKey(ASSIGNEE);
-  }
-
-  private SearchRequest buildSearchRequest(
-      final OffsetDateTime startTime, final OffsetDateTime endTime) {
-    final BoolQuery.Builder boolQueryBuilder = new BoolQuery.Builder();
-    boolQueryBuilder.must(
-        QueryBuilders.range(
-            r -> r.date(d -> d.field(END_TIME).gte(startTime.toString()).lt(endTime.toString()))));
-
-    final Query query = boolQueryBuilder.build()._toQuery();
-
-    final Aggregation termsAggregation =
-        Aggregation.of(a -> a.terms(t -> t.field(ASSIGNEE_HASH).size(AGGREGATION_TERMS_SIZE)));
-
-    return SearchRequest.of(
-        s ->
-            s.index(METRIC_INDEX_NAME)
-                .ignoreUnavailable(true)
-                .allowNoIndices(true)
-                .ignoreThrottled(true)
-                .expandWildcards(ExpandWildcard.Open)
-                .query(query)
-                .aggregations(ASSIGNEE, termsAggregation)
-                .size(0));
   }
 
   @Test

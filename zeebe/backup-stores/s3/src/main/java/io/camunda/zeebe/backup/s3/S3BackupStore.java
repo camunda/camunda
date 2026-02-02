@@ -345,15 +345,6 @@ public final class S3BackupStore implements BackupStore {
     return config.basePath().map(base -> base + "/").orElse("") + "ranges/" + partitionId + "/";
   }
 
-  private CompletableFuture<List<ObjectIdentifier>> listBackupObjects(final Manifest manifest) {
-    return listObjects(manifest, Directory.CONTENTS);
-  }
-
-  private CompletableFuture<List<ObjectIdentifier>> listBackupManifestObjects(
-      final Manifest manifest) {
-    return listObjects(manifest, Directory.MANIFESTS);
-  }
-
   private CompletableFuture<List<ObjectIdentifier>> listObjects(
       final Manifest manifest, final Directory directory) {
 

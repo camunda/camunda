@@ -21,7 +21,6 @@ import org.opensearch.client.opensearch.indices.PutIndicesSettingsRequest;
 import org.opensearch.client.opensearch.indices.PutIndicesSettingsResponse;
 import org.opensearch.client.opensearch.indices.RefreshRequest;
 import org.opensearch.client.opensearch.indices.RefreshResponse;
-import org.opensearch.client.opensearch.tasks.GetTasksResponse;
 import org.slf4j.Logger;
 
 public class OpenSearchIndexOperations extends OpenSearchRetryOperation {
@@ -131,32 +130,6 @@ public class OpenSearchIndexOperations extends OpenSearchRetryOperation {
   public PutIndicesSettingsResponse putSettings(final PutIndicesSettingsRequest request)
       throws IOException {
     return openSearchClient.indices().putSettings(request);
-  }
-
-  // Returns if task is completed under these conditions:
-  // - If the response is empty we can immediately return false to force a new reindex in outer
-  // retry loop
-  // - If the response has a status with uncompleted flag and a sum of changed documents
-  // (created,updated and deleted documents) not equal to total documents
-  //   we need to wait and poll again the task status
-  private boolean waitUntilTaskIsCompleted(final String taskId, final long srcCount) {
-    final GetTasksResponse taskResponse = waitTaskCompletion(taskId);
-
-    if (taskResponse != null) {
-      logProgress(taskId, taskResponse.response().total(), srcCount);
-
-      final long total = taskResponse.response().total();
-      LOG.info("Source docs: {}, Migrated docs: {}", srcCount, total);
-      return total == srcCount;
-    } else {
-      // need to reindex again
-      return false;
-    }
-  }
-
-  private void logProgress(final String taskId, final long processed, final long srcCount) {
-    final double progress = processed * 100.00 / srcCount;
-    LOG.info("TaskId: {}, Progress: {}%", taskId, String.format("%.2f", progress));
   }
 
   public GetIndexResponse get(final GetIndexRequest.Builder requestBuilder) {

@@ -65,15 +65,6 @@ public class DecisionRestService extends InternalAPIErrorController {
     return batchOperationWriter.scheduleDeleteDecisionDefinition(decisionDefinitionEntity);
   }
 
-  private void checkIdentityReadPermission(final Long decisionDefinitionKey) {
-    final String decisionId = decisionReader.getDecision(decisionDefinitionKey).getDecisionId();
-    if (!permissionsService.hasPermissionForDecision(
-        decisionId, PermissionType.READ_DECISION_DEFINITION)) {
-      throw new NotAuthorizedException(
-          String.format("No read permission for decision %s", decisionId));
-    }
-  }
-
   private void checkIdentityDeletePermission(final String decisionId) {
     if (!permissionsService.hasPermissionForDecision(
         decisionId, PermissionType.DELETE_DECISION_INSTANCE)) {

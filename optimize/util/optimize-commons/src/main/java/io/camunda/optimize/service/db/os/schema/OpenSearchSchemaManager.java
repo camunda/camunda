@@ -10,13 +10,9 @@ package io.camunda.optimize.service.db.os.schema;
 import static io.camunda.optimize.service.db.DatabaseConstants.INDEX_ALREADY_EXISTS_EXCEPTION_TYPE;
 import static io.camunda.optimize.service.db.es.schema.ElasticSearchSchemaManager.INDEX_EXIST_BATCH_SIZE;
 import static io.camunda.optimize.service.db.os.schema.OpenSearchIndexSettingsBuilder.buildDynamicSettings;
-import static io.camunda.optimize.service.util.mapper.ObjectMapperFactory.OPTIMIZE_MAPPER;
 import static java.net.HttpURLConnection.HTTP_BAD_REQUEST;
 import static java.util.stream.Collectors.toSet;
 
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Iterables;
 import io.camunda.optimize.service.db.os.MappingMetadataUtilOS;
 import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
@@ -51,7 +47,6 @@ import jakarta.json.spi.JsonProvider;
 import jakarta.json.stream.JsonParser;
 import java.io.IOException;
 import java.io.StringReader;
-import java.io.StringWriter;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -64,13 +59,9 @@ import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
-import org.opensearch.client.json.JsonData;
 import org.opensearch.client.json.ObjectDeserializer;
-import org.opensearch.client.json.jackson.JacksonJsonpGenerator;
-import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.json.jsonb.JsonbJsonpMapper;
 import org.opensearch.client.opensearch._types.OpenSearchException;
-import org.opensearch.client.opensearch._types.mapping.TypeMapping;
 import org.opensearch.client.opensearch.indices.Alias;
 import org.opensearch.client.opensearch.indices.CreateIndexRequest;
 import org.opensearch.client.opensearch.indices.GetIndicesSettingsRequest;
@@ -388,50 +379,6 @@ public class OpenSearchSchemaManager
                     aliasName -> new Alias.Builder().isWriteIndex(false).build()));
     additionalAliases.put(defaultAliasName, new Alias.Builder().isWriteIndex(true).build());
     return additionalAliases;
-  }
-
-  private Map<String, JsonData> convertToMap(final IndexSettings indexSettings) {
-    try {
-      final JacksonJsonpMapper jsonpMapper = new JacksonJsonpMapper(OPTIMIZE_MAPPER);
-      final StringWriter writer = new StringWriter();
-      final JacksonJsonpGenerator generator =
-          new JacksonJsonpGenerator(new JsonFactory().createGenerator(writer));
-      indexSettings.serialize(generator, jsonpMapper);
-      generator.flush();
-
-      try (final JsonParser jsonParser =
-          JsonProvider.provider().createParser(new StringReader(writer.toString()))) {
-
-        return ((Map<String, Object>) JsonData.from(jsonParser, jsonpMapper).to(Map.class))
-            .entrySet().stream()
-                .collect(
-                    Collectors.toMap(Map.Entry::getKey, entry -> JsonData.of(entry.getValue())));
-      }
-    } catch (final IOException e) {
-      LOG.error("Could not create settings!", e);
-      throw new OptimizeRuntimeException("Could not create index settings");
-    }
-  }
-
-  private TypeMapping getMappings(final String json) {
-    final ObjectMapper objectMapper = new ObjectMapper();
-    JsonNode indexAsJSONNode = null;
-    final String jsonNew =
-        "{\"mappings\": "
-            + json.replace("TypeMapping: ", "")
-                .replace("\"match_mapping_type\":[\"string\"]", "\"match_mapping_type\":\"string\"")
-                .replace("\"path_match\":[\"*\"]", "\"path_match\":\"*\"")
-            + "}";
-    try {
-      indexAsJSONNode = objectMapper.readTree(new StringReader(jsonNew));
-    } catch (final IOException e) {
-      throw new RuntimeException(e);
-    }
-
-    final JsonParser jsonParser =
-        JsonProvider.provider()
-            .createParser(new StringReader(indexAsJSONNode.get("mappings").toPrettyString()));
-    return TypeMapping._DESERIALIZER.deserialize(jsonParser, new JsonbJsonpMapper());
   }
 
   private void updateAllMappingsAndDynamicSettings(final OptimizeOpenSearchClient osClient) {

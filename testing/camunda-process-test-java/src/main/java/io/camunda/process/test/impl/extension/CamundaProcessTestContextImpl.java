@@ -23,7 +23,6 @@ import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.CompleteAdHocSubProcessResultStep1;
 import io.camunda.client.api.command.CompleteUserTaskJobResultStep1;
 import io.camunda.client.api.command.ThrowErrorCommandStep1;
-import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.search.enums.ElementInstanceState;
 import io.camunda.client.api.search.enums.IncidentState;
 import io.camunda.client.api.search.enums.JobKind;
@@ -664,28 +663,6 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
         .stream()
         .filter(jobSelector::test)
         .findFirst();
-  }
-
-  private ActivatedJob getActivatedJob(final String jobType, final CamundaClient client) {
-    return awaitBehavior.until(
-        () ->
-            client
-                .newActivateJobsCommand()
-                .jobType(jobType)
-                .maxJobsToActivate(1)
-                .requestTimeout(Duration.ofSeconds(1)) // avoid long blocking call
-                .send()
-                .join()
-                .getJobs()
-                .stream()
-                .findFirst()
-                .orElse(null),
-        job ->
-            assertThat(job)
-                .withFailMessage(
-                    "Expected to complete a job with the type '%s' but no job is available.",
-                    jobType)
-                .isNotNull());
   }
 
   private void awaitIncident(

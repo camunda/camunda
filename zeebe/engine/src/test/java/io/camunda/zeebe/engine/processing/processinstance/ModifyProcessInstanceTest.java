@@ -2901,20 +2901,6 @@ public class ModifyProcessInstanceTest {
         .getKey();
   }
 
-  private void assertThatElementIsTerminated(
-      final long processInstanceKey, final String elementId) {
-    assertThat(
-            RecordingExporter.processInstanceRecords()
-                .onlyEvents()
-                .withProcessInstanceKey(processInstanceKey)
-                .withElementId(elementId)
-                .limit(elementId, ProcessInstanceIntent.ELEMENT_TERMINATED)
-                .toList())
-        .extracting(Record::getIntent)
-        .containsSequence(
-            ProcessInstanceIntent.ELEMENT_TERMINATING, ProcessInstanceIntent.ELEMENT_TERMINATED);
-  }
-
   @Test
   public void shouldSubscribeToConditionalBoundaryEvent() {
     // given

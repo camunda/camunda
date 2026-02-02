@@ -160,17 +160,6 @@ public class ProcessDefinitionTenancyIT {
         .join();
   }
 
-  private static void startProcessInstance(
-      final CamundaClient camundaClient, final String processId, final String tenant) {
-    camundaClient
-        .newCreateInstanceCommand()
-        .bpmnProcessId(processId)
-        .latestVersion()
-        .tenantId(tenant)
-        .send()
-        .join();
-  }
-
   private static void waitForProcessBeingExported(final CamundaClient camundaClient) {
     Awaitility.await("should receive data from secondary storage")
         .atMost(Duration.ofMinutes(1))
