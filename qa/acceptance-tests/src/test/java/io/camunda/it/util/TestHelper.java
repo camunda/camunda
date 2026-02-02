@@ -618,7 +618,12 @@ public final class TestHelper {
         .untilAsserted(
             () -> {
               final var result =
-                  camundaClient.newProcessInstanceSearchRequest().filter(fn).send().join().items();
+                  camundaClient
+                      .newProcessInstanceSearchRequest()
+                      .filter(fn.andThen(f -> f.state(ProcessInstanceState.COMPLETED)))
+                      .send()
+                      .join()
+                      .items();
               assertThat(result).hasSize(expectedCount);
             });
   }

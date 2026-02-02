@@ -179,8 +179,8 @@ public class DeleteProcessInstanceHistoryIT {
   }
 
   @Test
-  void shouldProcessInstanceByUsingSingularDeletion() {
-    // given - 2 completed process instances
+  void shouldDeleteProcessInstanceByUsingSingularDeletion() {
+    // given - a completed process instance
     final var processId = Strings.newRandomValidBpmnId();
     deployProcessAndWaitForIt(
         camundaClient,
@@ -370,7 +370,7 @@ public class DeleteProcessInstanceHistoryIT {
   @Test
   void shouldReturnNotFoundForNonExistingProcessInstanceWithSingularDeletion() {
     // given - non-existing process instance key
-    final long nonExistingKey = -1;
+    final long nonExistingKey = 99999L;
 
     // when/then - try to delete non-existing process instance should throw not found exception
     assertThatExceptionOfType(ProblemException.class)
