@@ -36,14 +36,16 @@ public class IncidentExportHandler implements RdbmsExportHandler<IncidentRecordV
       Set.of(IncidentIntent.CREATED, IncidentIntent.RESOLVED, IncidentIntent.MIGRATED);
 
   private final IncidentWriter incidentWriter;
-
   private final ExporterEntityCache<Long, CachedProcessEntity> processCache;
+  private final int maxTreePathSize;
 
   public IncidentExportHandler(
       final IncidentWriter incidentWriter,
-      final ExporterEntityCache<Long, CachedProcessEntity> processCache) {
+      final ExporterEntityCache<Long, CachedProcessEntity> processCache,
+      final int maxTreePathSize) {
     this.incidentWriter = incidentWriter;
     this.processCache = processCache;
+    this.maxTreePathSize = maxTreePathSize;
   }
 
   @Override
@@ -123,7 +125,7 @@ public class IncidentExportHandler implements RdbmsExportHandler<IncidentRecordV
     // PI_<parentProcessInstanceKey>/FN_<parentCallActivityId>/FNI_<parentCallActivityInstanceKey>/
     // PI_<secondLevelProcessInstanceKey>/FN_<secondLevelCallActivityId>/FNI_<secondLevelCallActivityInstanceKey>/
     // PI_<currentProcessInstanceKey>/FN_<flowNodeId>/FNI_<flowNodeInstanceId>
-    final TreePath treePath = new TreePath();
+    final TreePath treePath = new TreePath(maxTreePathSize);
     for (int i = 0; i < elementInstancePath.size(); i++) {
       final List<Long> keysWithinOnePI = elementInstancePath.get(i);
       treePath.appendProcessInstance(keysWithinOnePI.get(0));
@@ -150,6 +152,6 @@ public class IncidentExportHandler implements RdbmsExportHandler<IncidentRecordV
       }
     }
 
-    return treePath.toString();
+    return treePath.toTruncatedString();
   }
 }

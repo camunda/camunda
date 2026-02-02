@@ -23,7 +23,8 @@ class ExportUtilTest {
     final var elementInstancePath = List.of(List.of(1L, 2L, 3L));
 
     // when
-    final String treePath = ExportUtil.buildTreePath(key, processInstanceKey, elementInstancePath);
+    final String treePath =
+        ExportUtil.buildTreePath(key, processInstanceKey, elementInstancePath, 4000);
 
     // then
     assertThat(treePath).isEqualTo("1/2/3");
@@ -37,7 +38,8 @@ class ExportUtilTest {
     final var elementInstancePath = List.of(List.of(1L, 2L, 3L), List.of(4L, 5L));
 
     // when
-    final String treePath = ExportUtil.buildTreePath(key, processInstanceKey, elementInstancePath);
+    final String treePath =
+        ExportUtil.buildTreePath(key, processInstanceKey, elementInstancePath, 4000);
 
     // then
     assertThat(treePath).isEqualTo("4/5");
@@ -51,7 +53,8 @@ class ExportUtilTest {
     final List<List<Long>> elementInstancePath = null;
 
     // when
-    final String treePath = ExportUtil.buildTreePath(key, processInstanceKey, elementInstancePath);
+    final String treePath =
+        ExportUtil.buildTreePath(key, processInstanceKey, elementInstancePath, 4000);
 
     // then
     assertThat(treePath).isEqualTo("123/456");
@@ -65,7 +68,8 @@ class ExportUtilTest {
     final List<List<Long>> elementInstancePath = emptyList();
 
     // when
-    final String treePath = ExportUtil.buildTreePath(key, processInstanceKey, elementInstancePath);
+    final String treePath =
+        ExportUtil.buildTreePath(key, processInstanceKey, elementInstancePath, 4000);
 
     // then
     assertThat(treePath).isEqualTo("123/456");

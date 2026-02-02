@@ -69,6 +69,7 @@ public class RdbmsWriters {
   private final ExecutionQueue executionQueue;
   private final ExporterPositionService exporterPositionService;
 
+  private final VendorDatabaseProperties vendorDatabaseProperties;
   private final RdbmsWriterMetrics metrics;
 
   private final Map<Class<?>, RdbmsWriter> writers = new HashMap<>();
@@ -100,6 +101,7 @@ public class RdbmsWriters {
       final HistoryDeletionMapper historyDeletionMapper) {
     this.executionQueue = executionQueue;
     this.exporterPositionService = exporterPositionService;
+    this.vendorDatabaseProperties = vendorDatabaseProperties;
     this.metrics = metrics;
     rdbmsPurger = new RdbmsPurger(purgeMapper, vendorDatabaseProperties);
 
@@ -317,5 +319,16 @@ public class RdbmsWriters {
     } else {
       return executionQueue.checkQueueForFlush();
     }
+  }
+
+  /**
+   * Returns the error message size from vendor-specific database properties. This value is used to
+   * determine the maximum length for tree paths and other string fields that need to fit within
+   * database column size constraints.
+   *
+   * @return the error message size in characters
+   */
+  public int getErrorMessageSize() {
+    return vendorDatabaseProperties.errorMessageSize();
   }
 }
