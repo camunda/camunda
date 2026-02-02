@@ -8,6 +8,7 @@
 
 import isEqual from 'lodash/isEqual';
 import {makeAutoObservable, type IReactionDisposer} from 'mobx';
+import {getValidVariableValues} from 'modules/utils/filter/getValidVariableValues';
 
 type Variable = {
   name: string;
@@ -48,6 +49,22 @@ class VariableFilter {
 
   get variable() {
     return this.state.variable;
+  }
+
+  get variableWithValidatedValues() {
+    if (!this.state.variable) {
+      return undefined;
+    }
+
+    const values =
+      getValidVariableValues(this.state.variable.values)?.map((value) =>
+        JSON.stringify(value),
+      ) ?? [];
+
+    return {
+      name: this.state.variable.name,
+      values,
+    };
   }
 }
 

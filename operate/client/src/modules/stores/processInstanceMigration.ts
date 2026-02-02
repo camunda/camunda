@@ -7,7 +7,6 @@
  */
 
 import {makeAutoObservable} from 'mobx';
-import type {BatchOperationQuery} from 'modules/api/processInstances/operations';
 
 const STEPS = {
   elementMapping: {
@@ -18,6 +17,12 @@ const STEPS = {
     stepNumber: 2,
     stepDescription: 'confirm',
   },
+};
+
+type BatchOperationQuery = {
+  ids?: string[];
+  excludeIds?: string[];
+  variable?: {name: string; values: string[]};
 };
 
 type State = {
