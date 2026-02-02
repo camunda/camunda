@@ -36,7 +36,8 @@ import {
   ButtonContainer,
   FieldContainer,
 } from 'modules/components/FiltersPanel/styled';
-import {VariablesFilter} from './VariablesFilter';
+import {VariableFilter} from './VariablesFilter';
+import {variableFilterStore} from 'modules/stores/variableFilter';
 
 type OptionalFilter =
   | 'variable'
@@ -202,7 +203,7 @@ const OptionalFiltersFormGroup: React.FC<Props> = observer(
                 switch (filter) {
                   case 'variable':
                     return (
-                      <VariablesFilter
+                      <VariableFilter
                         isModalOpen={isVariableFilterModalOpen}
                         onModalOpen={() => setIsVariableFilterModalOpen(true)}
                         onModalClose={() => setIsVariableFilterModalOpen(false)}
@@ -306,6 +307,11 @@ const OptionalFiltersFormGroup: React.FC<Props> = observer(
                         (visibleFilter) => visibleFilter !== filter,
                       ),
                     );
+
+                    // Clear variable filter store when removing the variable filter
+                    if (filter === 'variable') {
+                      variableFilterStore.setConditions([]);
+                    }
 
                     OPTIONAL_FILTER_FIELDS[filter].keys.forEach((key) => {
                       form.change(key, undefined);

@@ -9,7 +9,6 @@
 import {useState, useCallback, useEffect} from 'react';
 import {Button, Stack} from '@carbon/react';
 import {Add} from '@carbon/react/icons';
-import {getValidVariableValues} from 'modules/utils/filter/getValidVariableValues';
 import {type VariableFilterCondition} from './constants';
 import {VariableFilterRow} from './VariableFilterRow';
 import * as Styled from './styled';
@@ -33,35 +32,24 @@ const createEmptyCondition = (): VariableFilterCondition => ({
 });
 
 /**
- * VariablesFilterModal - Modal for filtering process instances by multiple variables.
+ * VariableFilterModal - Modal for filtering process instances by multiple variables.
  *
  * This component allows users to add multiple variable filter conditions with
  * logical operators. Results will match ALL conditions (AND logic).
  *
- * API Integration Notes:
- * TODO: Replace mock data handling with actual API call to POST /v2/process-instances/search
+ * The conditions are passed to the parent component via onApply, which stores them
+ * in variableFilterStore. The store triggers the V2 API search automatically via
+ * MobX reactions.
  *
- * Expected request format when applying filters:
- * {
- *   "filter": {
- *     "variables": [
- *       { "name": "customer_id", "value": { "$eq": "123" } },
- *       { "name": "status", "value": { "$like": "*active*" } },
- *       { "name": "priority", "value": { "$in": ["high", "critical"] } },
- *       { "name": "deleted_at", "value": { "$exists": false } }
- *     ]
- *   }
- * }
- *
- * Operator to API mapping:
+ * API format conversion (handled by convertVariableConditionsToApiFormat):
  * - equals        → { "$eq": value }
  * - notEqual      → { "$neq": value }
- * - contains      → { "$like": "*value*" } (auto-wrap wildcards)
- * - oneOf         → { "$in": [values] } (always array, even for single value)
+ * - contains      → { "$like": "*value*" }
+ * - oneOf         → { "$in": [values] }
  * - exists        → { "$exists": true }
  * - doesNotExist  → { "$exists": false }
  */
-const VariablesFilterModal: React.FC<Props> = ({
+const VariableFilterModal: React.FC<Props> = ({
   isOpen,
   onClose,
   onApply,
@@ -101,53 +89,16 @@ const VariablesFilterModal: React.FC<Props> = ({
   );
 
   const handleApply = () => {
+    // Filter out invalid conditions before passing to parent
     const validConditions = conditions.filter((c) => {
       if (!c.name.trim()) return false;
       if (c.operator === 'exists' || c.operator === 'doesNotExist') return true;
       return c.value.trim() !== '';
     });
 
-    try {
-      const apiConditions = validConditions.map((c) => {
-        const {name, operator, value} = c;
-
-        if (operator === 'exists') {
-          return {name, value: {$exists: true}};
-        }
-        if (operator === 'doesNotExist') {
-          return {name, value: {$exists: false}};
-        }
-
-        const parsed = (getValidVariableValues(value) ?? []).map((v) =>
-          JSON.stringify(v),
-        );
-
-        if (parsed.length === 0) {
-          throw new Error(`Invalid value for ${name}`);
-        }
-
-        switch (operator) {
-          case 'equals':
-            return {name, value: {$eq: parsed[0]}};
-          case 'notEqual':
-            return {name, value: {$neq: parsed[0]}};
-          case 'contains':
-            return {name, value: {$like: `*${parsed[0]}*`}};
-          case 'oneOf':
-            return {name, value: {$in: parsed}};
-          default:
-            return {name, value: {$eq: parsed[0]}};
-        }
-      });
-
-      // TODO: Send apiConditions to actual API
-      console.log('API conditions:', apiConditions);
-      onApply(validConditions);
-      onClose();
-    } catch (error) {
-      // TODO: Show validation error to user with notification
-      console.error('Invalid filter values:', error);
-    }
+    // Pass valid conditions to parent - API format conversion happens in the hook
+    onApply(validConditions);
+    onClose();
   };
 
   const handleCancel = () => {
@@ -174,7 +125,7 @@ const VariablesFilterModal: React.FC<Props> = ({
       primaryButtonDisabled={isApplyDisabled}
       preventCloseOnClickOutside
       selectorsFloatingMenus={['.cds--modal *']}
-      data-testid="variables-filter-modal"
+      data-testid="variable-filter-modal"
     >
       <Stack gap={6}>
         <Styled.Description>
@@ -208,4 +159,4 @@ const VariablesFilterModal: React.FC<Props> = ({
   );
 };
 
-export {VariablesFilterModal};
+export {VariableFilterModal};

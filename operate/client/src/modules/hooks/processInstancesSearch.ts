@@ -9,34 +9,35 @@
 import {
   parseProcessInstancesSearchFilter,
   parseProcessInstancesSearchSort,
+  convertVariableConditionsToApiFormat,
 } from 'modules/utils/filter/v2/processInstancesSearch';
 import {useMemo} from 'react';
 import {useSearchParams} from 'react-router-dom';
-import {getValidVariableValues} from 'modules/utils/filter/getValidVariableValues';
-import type {Variable} from 'modules/stores/variableFilter';
+import type {VariableCondition} from 'modules/stores/variableFilter';
 
-function useProcessInstancesSearchFilter(variable?: Variable) {
+function useProcessInstancesSearchFilter(conditions?: VariableCondition[]) {
   const [searchParams] = useSearchParams();
+
+  // Serialize conditions for stable dependency comparison
+  const conditionsKey = conditions ? JSON.stringify(conditions) : '';
 
   return useMemo(() => {
     const filter = parseProcessInstancesSearchFilter(searchParams);
 
-    if (filter && variable?.name && variable?.values) {
-      const parsed = (getValidVariableValues(variable.values) ?? []).map((v) =>
-        JSON.stringify(v),
-      );
-      if (parsed.length > 0) {
-        filter.variables = [
-          {
-            name: variable?.name,
-            value: parsed.length === 1 ? parsed[0]! : {$in: parsed},
-          },
-        ];
+    if (!filter) {
+      return filter;
+    }
+
+
+    if (conditions && conditions.length > 0) {
+      const apiVariables = convertVariableConditionsToApiFormat(conditions);
+      if (apiVariables.length > 0) {
+        filter.variables = apiVariables;
       }
     }
 
     return filter;
-  }, [searchParams, variable]);
+  }, [searchParams, conditionsKey]);
 }
 
 function useProcessInstancesSearchSort() {

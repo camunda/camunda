@@ -6,12 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useState} from 'react';
 import {observer} from 'mobx-react';
 import {createPortal} from 'react-dom';
 import {Edit} from '@carbon/react/icons';
 import {IconTextInput} from 'modules/components/IconInput';
-import {VariablesFilterModal} from './VariablesFilterModal';
+import {variableFilterStore} from 'modules/stores/variableFilter';
+import {VariableFilterModal} from './VariableFilterModal';
 import {type VariableFilterCondition, VARIABLE_FILTER_OPERATORS} from './constants';
 
 interface Props {
@@ -21,40 +21,23 @@ interface Props {
 }
 
 /**
- * VariablesFilter - Component for displaying and managing multiple variable filters.
+ * VariableFilter - Component for displaying and managing multiple variable filters.
  *
  * This component displays the applied variable filters in a text input field and
  * provides a button to open the modal editor for adding/editing filters.
  * - Single filter: shows the condition (e.g., "status equals active")
  * - Multiple filters: shows count (e.g., "2 conditions applied")
  *
- * Integration with form state:
- * TODO: Integrate with react-final-form to persist filter state
- * The conditions should be stored in the form state under a key like 'variableFilters'
- * and converted to the API format when submitting the search request.
- *
- * API format conversion example:
- * ```typescript
- * const convertToApiFormat = (conditions: VariableFilterCondition[]) => {
- *   return conditions.map(c => ({
- *     name: c.name,
- *     value: convertOperatorToApiFormat(c.operator, c.value)
- *   }));
- * };
- * ```
+ * The conditions are stored in variableFilterStore and automatically trigger
+ * API searches when changed via MobX reactions in the ListView.
  */
-const VariablesFilter: React.FC<Props> = observer(
+const VariableFilter: React.FC<Props> = observer(
   ({isModalOpen, onModalOpen, onModalClose}) => {
-    // TODO: Replace with form state from react-final-form
-    // const form = useForm();
-    // const formState = useFormState();
-    // const initialConditions = formState.values?.variableFilters ?? [];
-    const [conditions, setConditions] = useState<VariableFilterCondition[]>([]);
+    const conditions = variableFilterStore.conditions;
 
     const handleApply = (newConditions: VariableFilterCondition[]) => {
-      setConditions(newConditions);
-      // TODO: Update form state when integrating with actual filtering
-      // form.change('variableFilters', newConditions);
+      // Store conditions in MobX store - this triggers the search via reaction
+      variableFilterStore.setConditions(newConditions);
       onModalClose();
     };
 
@@ -94,11 +77,11 @@ const VariablesFilter: React.FC<Props> = observer(
           buttonLabel="Open variable editor"
           onIconClick={onModalOpen}
           onClick={onModalOpen}
-          data-testid="variables-filter-input"
+          data-testid="variable-filter-input"
         />
 
         {createPortal(
-          <VariablesFilterModal
+          <VariableFilterModal
             isOpen={isModalOpen}
             onClose={onModalClose}
             onApply={handleApply}
@@ -111,8 +94,8 @@ const VariablesFilter: React.FC<Props> = observer(
   },
 );
 
-export {VariablesFilter};
-export {VariablesFilterModal} from './VariablesFilterModal';
+export {VariableFilter};
+export {VariableFilterModal} from './VariableFilterModal';
 export {VariableFilterRow} from './VariableFilterRow';
 export type {VariableFilterCondition, VariableFilterOperator} from './constants';
 export {VARIABLE_FILTER_OPERATORS, MOCK_VARIABLE_NAMES} from './constants';

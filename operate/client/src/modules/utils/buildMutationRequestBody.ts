@@ -10,16 +10,18 @@ import type {
   CreateCancellationBatchOperationRequestBody,
   CreateIncidentResolutionBatchOperationRequestBody,
 } from '@camunda/camunda-api-zod-schemas/8.8';
-import {parseProcessInstancesSearchFilter} from 'modules/utils/filter/v2/processInstancesSearch';
+import {
+  parseProcessInstancesSearchFilter,
+  convertVariableConditionsToApiFormat,
+} from 'modules/utils/filter/v2/processInstancesSearch';
 import {buildProcessInstanceKeyCriterion} from 'modules/mutations/processes/buildProcessInstanceKeyCriterion';
-import {getValidVariableValues} from 'modules/utils/filter/getValidVariableValues';
-import type {Variable} from 'modules/stores/variableFilter';
+import type {VariableCondition} from 'modules/stores/variableFilter';
 
 type BuildMutationRequestBodyParams = {
   searchParams: URLSearchParams;
   includeIds?: string[];
   excludeIds?: string[];
-  variableFilter?: Variable;
+  variableConditions?: VariableCondition[];
   processDefinitionKey?: string;
 };
 
@@ -27,7 +29,7 @@ const buildMutationRequestBody = ({
   searchParams,
   includeIds = [],
   excludeIds = [],
-  variableFilter,
+  variableConditions,
   processDefinitionKey,
 }: BuildMutationRequestBodyParams) => {
   const baseFilter = parseProcessInstancesSearchFilter(searchParams);
@@ -47,19 +49,12 @@ const buildMutationRequestBody = ({
     };
   }
 
-  if (variableFilter?.name && variableFilter?.values) {
-    const parsed = (getValidVariableValues(variableFilter.values) ?? []).map(
-      (v) => JSON.stringify(v),
-    );
-    if (parsed.length > 0) {
+  if (variableConditions && variableConditions.length > 0) {
+    const apiVariables = convertVariableConditionsToApiFormat(variableConditions);
+    if (apiVariables.length > 0) {
       filter = {
         ...filter,
-        variables: [
-          {
-            name: variableFilter.name,
-            value: parsed.length === 1 ? parsed[0]! : {$in: parsed},
-          },
-        ],
+        variables: apiVariables,
       };
     }
   }
