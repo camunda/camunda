@@ -8,13 +8,13 @@
 package io.camunda.zeebe.exporter;
 
 import io.camunda.search.connect.plugin.PluginConfiguration;
-import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.exporter.filter.FilterConfiguration;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ElasticsearchExporterConfiguration {
+public class ElasticsearchExporterConfiguration implements FilterConfiguration {
 
   private static final String DEFAULT_URL = "http://localhost:9200";
 
@@ -64,11 +64,7 @@ public class ElasticsearchExporterConfiguration {
         + '}';
   }
 
-  public boolean shouldIndexRecord(final Record<?> record) {
-    return shouldIndexRecordType(record.getRecordType())
-        && shouldIndexValueType(record.getValueType());
-  }
-
+  @Override
   public boolean shouldIndexValueType(final ValueType valueType) {
     return switch (valueType) {
       case DEPLOYMENT -> index.deployment;
@@ -125,6 +121,7 @@ public class ElasticsearchExporterConfiguration {
    * @param valueType the value type of the record
    * @return true if the record should be indexed, false otherwise
    */
+  @Override
   public boolean shouldIndexRequiredValueType(final ValueType valueType) {
     return switch (valueType) {
       case DEPLOYMENT -> index.deployment;
@@ -138,6 +135,7 @@ public class ElasticsearchExporterConfiguration {
     };
   }
 
+  @Override
   public boolean shouldIndexRecordType(final RecordType recordType) {
     return switch (recordType) {
       case EVENT -> index.event;
