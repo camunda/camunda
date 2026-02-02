@@ -111,7 +111,7 @@ fi
 # ordering for maps to compare things properly
 # Exclude the minimus.images.version label, since it changes every time the image is patched, and
 # we can't really know in advance reliably what it will be.
-actualLabels=$(echo "${imageInfo}" | jq --sort-keys '[0].Config.Labels | del(."io.minimus.images.version")')
+actualLabels=$(echo "${imageInfo}" | jq --sort-keys '.[0].Config.Labels | del(."io.minimus.images.version")')
 
 if [[ -z "${actualLabels}" || "${actualLabels}" == "null" || "${actualLabels}" == "[]" ]]; then
   echo >&2 "No labels found in the given image ${imageName}; raw inspect output to follow"
