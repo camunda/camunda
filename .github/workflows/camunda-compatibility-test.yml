@@ -319,6 +319,15 @@ jobs:
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
 
+      - name: Build dependencies
+        uses: ./.github/actions/run-maven
+        with:
+          parameters: >-
+            install
+            -Dquickly
+            -pl qa/util
+            -am
+
       - name: Run compatibility tests
         uses: ./.github/actions/run-maven
         with:
