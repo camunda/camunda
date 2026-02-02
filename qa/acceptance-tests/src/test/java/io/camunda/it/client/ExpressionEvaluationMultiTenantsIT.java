@@ -27,8 +27,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
-@MultiDbTest
-@CompatibilityTest
+//@MultiDbTest
+@CompatibilityTest(enableMultiTenancy = true, enableAuthorization = true)
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms.*$")
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 public class ExpressionEvaluationMultiTenantsIT {
