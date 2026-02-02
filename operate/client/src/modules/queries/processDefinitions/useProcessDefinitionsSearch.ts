@@ -18,6 +18,7 @@ type QueryOptions<T> = {
   payload?: QueryProcessDefinitionsRequestBody;
   enabled?: boolean;
   select?: (result: QueryProcessDefinitionsResponseBody['items']) => T;
+  staleTime?: number;
 };
 
 function useProcessDefinitionsSearch<T>(options?: QueryOptions<T>) {
@@ -25,6 +26,7 @@ function useProcessDefinitionsSearch<T>(options?: QueryOptions<T>) {
     queryKey: queryKeys.processDefinitions.search(options?.payload),
     enabled: options?.enabled,
     select: options?.select,
+    staleTime: options?.staleTime,
     queryFn: async () => {
       const {error, response} = await searchProcessDefinitions(
         options?.payload,

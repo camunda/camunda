@@ -145,6 +145,7 @@ function useSelectedProcessDefinition() {
 function useProcessDefinitionNames(processDefinitionIds: string[]) {
   return useProcessDefinitionsSearch({
     enabled: processDefinitionIds.length > 0,
+    staleTime: 120_000,
     payload: {
       filter: {
         isLatestVersion: true,

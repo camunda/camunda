@@ -182,9 +182,10 @@ const InstancesTable: React.FC = observer(() => {
     return Array.from(new Set(logs));
   }, [data?.auditLogs]);
 
-  const {data: processDefinitionNameMap} = useProcessDefinitionNames(
-    operationProcessDefinitionIds,
-  );
+  const {
+    data: processDefinitionNameMap,
+    isLoading: isLoadingProcessDefinitionNames,
+  } = useProcessDefinitionNames(operationProcessDefinitionIds);
 
   const [detailsModal, setDetailsModal] = useState<DetailsModalState>({
     isOpen: false,
@@ -229,7 +230,7 @@ const InstancesTable: React.FC = observer(() => {
   );
 
   const getTableState = () => {
-    if (isLoading) {
+    if (isLoading || isLoadingProcessDefinitionNames) {
       return 'loading';
     } else if (error) {
       return 'error';
