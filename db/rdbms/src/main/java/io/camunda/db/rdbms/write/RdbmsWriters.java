@@ -144,7 +144,8 @@ public class RdbmsWriters {
             config,
             vendorDatabaseProperties));
     writers.put(
-        JobWriter.class, new JobWriter(executionQueue, jobMapper, vendorDatabaseProperties));
+        JobWriter.class,
+        new JobWriter(executionQueue, jobMapper, vendorDatabaseProperties, config));
     writers.put(JobMetricsBatchWriter.class, new JobMetricsBatchWriter(executionQueue));
     writers.put(
         SequenceFlowWriter.class, new SequenceFlowWriter(executionQueue, sequenceFlowMapper));
