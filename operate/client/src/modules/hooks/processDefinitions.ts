@@ -142,6 +142,27 @@ function useSelectedProcessDefinition() {
   });
 }
 
+function useProcessDefinitionNames(processDefinitionIds: string[]) {
+  return useProcessDefinitionsSearch({
+    enabled: processDefinitionIds.length > 0,
+    payload: {
+      filter: {
+        isLatestVersion: true,
+        processDefinitionId: {$in: processDefinitionIds},
+      },
+    },
+    select: (definitions) => {
+      return definitions.reduce<{[processDefinitionKey: string]: string}>(
+        (map, def) => {
+          map[def.processDefinitionKey] = getProcessDefinitionName(def);
+          return map;
+        },
+        {},
+      );
+    },
+  });
+}
+
 function useProcessDefinitionsSearchFilter() {
   const [searchParams] = useSearchParams();
   return useMemo(
@@ -159,4 +180,5 @@ export {
   useProcessDefinitionVersions,
   useProcessDefinitionSelection,
   useSelectedProcessDefinition,
+  useProcessDefinitionNames,
 };

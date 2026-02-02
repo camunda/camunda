@@ -13,7 +13,6 @@ import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {mockSearchProcessDefinitions} from 'modules/mocks/api/v2/processDefinitions/searchProcessDefinitions';
 import {mockMe} from 'modules/mocks/api/v2/me';
-import {processesStore} from 'modules/stores/processes/processes.list';
 import {createUser} from 'modules/testUtils';
 
 function getWrapper(initialPath = '/operations-log') {
@@ -56,10 +55,6 @@ describe('OperationsLog Filters', () => {
       ],
       page: {totalItems: 2},
     });
-  });
-
-  afterEach(() => {
-    processesStore.reset();
   });
 
   it('should render process filter fields', async () => {

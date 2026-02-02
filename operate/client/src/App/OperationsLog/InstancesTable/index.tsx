@@ -38,7 +38,10 @@ import {CellAppliedTo} from './CellAppliedTo';
 import {CellOperationType} from './CellOperationType';
 import {CellResult} from './CellResult';
 import {CellComment} from './CellComment';
-import {processesStore} from 'modules/stores/processes/processes.list';
+import {
+  useProcessDefinitionNames,
+  useSelectedProcessDefinition,
+} from 'modules/hooks/processDefinitions';
 import {
   auditLogEntityTypeSchema,
   auditLogOperationTypeSchema,
@@ -100,11 +103,7 @@ const InstancesTable: React.FC = observer(() => {
     OperationsLogFilterField,
     OperationsLogFilters
   >(location.search, AUDIT_LOG_FILTER_FIELDS, []);
-  const processDefinitionKey = processesStore.getProcessId({
-    process: filterValues.process,
-    tenant: filterValues.tenant,
-    version: filterValues.version,
-  });
+  const {data: selectedProcessDefinition} = useSelectedProcessDefinition();
 
   const request: QueryAuditLogsRequestBody = useMemo(() => {
     return {
@@ -116,7 +115,7 @@ const InstancesTable: React.FC = observer(() => {
       ],
       filter: {
         category: {$neq: 'ADMIN'},
-        processDefinitionKey: processDefinitionKey,
+        processDefinitionKey: selectedProcessDefinition?.processDefinitionKey,
         processInstanceKey: filterValues.processInstanceKey,
         tenantId: filterValues.tenant,
         operationType: filterValues.operationType
@@ -146,7 +145,7 @@ const InstancesTable: React.FC = observer(() => {
         actorId: filterValues.actorId,
       },
     };
-  }, [filterValues, processDefinitionKey, sort]);
+  }, [filterValues, selectedProcessDefinition?.processDefinitionKey, sort]);
 
   const {
     data,
@@ -173,6 +172,20 @@ const InstancesTable: React.FC = observer(() => {
     },
   });
 
+  const operationProcessDefinitionIds = useMemo(() => {
+    const logs = data?.auditLogs
+      .filter(
+        (l) => l.entityType === 'PROCESS_INSTANCE' && !!l.processDefinitionId,
+      )
+      .map((l) => l.processDefinitionId!);
+
+    return Array.from(new Set(logs));
+  }, [data?.auditLogs]);
+
+  const {data: processDefinitionNameMap} = useProcessDefinitionNames(
+    operationProcessDefinitionIds,
+  );
+
   const [detailsModal, setDetailsModal] = useState<DetailsModalState>({
     isOpen: false,
   });
@@ -198,12 +211,21 @@ const InstancesTable: React.FC = observer(() => {
         entityType: spaceAndCapitalize(item.entityType),
         operationType: <CellOperationType item={item} />,
         result: <CellResult item={item} />,
-        appliedTo: <CellAppliedTo item={item} />,
+        appliedTo: (
+          <CellAppliedTo
+            item={item}
+            processDefinitionName={
+              item.processDefinitionKey
+                ? processDefinitionNameMap?.[item.processDefinitionKey]
+                : undefined
+            }
+          />
+        ),
         user: item.actorId,
         timestamp: formatDate(item.timestamp),
         comment: <CellComment item={item} setDetailsModal={setDetailsModal} />,
       })) || [],
-    [data],
+    [data, processDefinitionNameMap],
   );
 
   const getTableState = () => {
