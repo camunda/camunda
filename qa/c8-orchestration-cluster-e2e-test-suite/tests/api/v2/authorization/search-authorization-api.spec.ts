@@ -37,56 +37,55 @@ import {cleanupRoles} from 'utils/rolesCleanup';
 import {cleanupGroups} from 'utils/groupsCleanup';
 import {cleanupMappingRules} from 'utils/mappingRuleCleanup';
 import {sleep} from 'utils/sleep';
-import { validateResponse } from 'json-body-assertions';
+import {validateResponse} from 'json-body-assertions';
 
 const AUTHORIZATION_SEARCH_ENDPOINT = '/authorizations/search';
 
 test.describe.parallel('Search Authorization API', () => {
   const cleanups: ((request: APIRequestContext) => Promise<void>)[] = [];
   let user: {
-      username: string;
-      name: string;
-      email: string;
-      password: string;
-    };
+    username: string;
+    name: string;
+    email: string;
+    password: string;
+  };
   let userAuthorizationKey: string;
   let originalUserAuthorization: Authorization = {} as Authorization;
   let originalRole: {
-      roleId: string;
-      name: string;
-      description: string;
-    };
-    let roleAuthorizationKey: string;
-    let userForRoleAuthorization: {
-      username: string;
-      name: string;
-      email: string;
-      password: string;
-    } = {} as {
-      username: string;
-      name: string;
-      email: string;
-      password: string;
-    };
+    roleId: string;
+    name: string;
+    description: string;
+  };
+  let roleAuthorizationKey: string;
+  let userForRoleAuthorization: {
+    username: string;
+    name: string;
+    email: string;
+    password: string;
+  } = {} as {
+    username: string;
+    name: string;
+    email: string;
+    password: string;
+  };
 
-    let originalMappingRule: {
-      mappingRuleId: string;
-      claimName: string;
-      claimValue: string;
-      name: string;
-    };
-    let originalGroup: {
-      groupId: string;
-      name: string;
-      description: string;
-    } = {} as {
-      groupId: string;
-      name: string;
-      description: string;
-    };
-    let mappingRuleAuthorizationKey: string;
-    let expectedUserAuthorization: Authorization = {} as Authorization;
-
+  let originalMappingRule: {
+    mappingRuleId: string;
+    claimName: string;
+    claimValue: string;
+    name: string;
+  };
+  let originalGroup: {
+    groupId: string;
+    name: string;
+    description: string;
+  } = {} as {
+    groupId: string;
+    name: string;
+    description: string;
+  };
+  let mappingRuleAuthorizationKey: string;
+  let expectedUserAuthorization: Authorization = {} as Authorization;
 
   test.beforeAll(async ({request}) => {
     await test.step('Setup - Create user for authorization tests', async () => {
@@ -117,9 +116,9 @@ test.describe.parallel('Search Authorization API', () => {
     });
 
     expectedUserAuthorization = {
-        ...originalUserAuthorization,
-        authorizationKey: userAuthorizationKey,
-      };
+      ...originalUserAuthorization,
+      authorizationKey: userAuthorizationKey,
+    };
 
     await test.step('Setup - Create role for Authorization tests', async () => {
       originalRole = await createRole(request);
@@ -183,17 +182,22 @@ test.describe.parallel('Search Authorization API', () => {
     }
   });
 
-  test('Search Authorization - no filter, multiple results - 200 Success', async ({request}) => {
+  test('Search Authorization - no filter, multiple results - 200 Success', async ({
+    request,
+  }) => {
     await expect(async () => {
       const res = await request.post(buildUrl(AUTHORIZATION_SEARCH_ENDPOINT), {
         headers: jsonHeaders(),
       });
       await assertStatusCode(res, 200);
-      await validateResponse({
-        path: AUTHORIZATION_SEARCH_ENDPOINT,
-        method: 'POST',
-        status: '200',
-      }, res);
+      await validateResponse(
+        {
+          path: AUTHORIZATION_SEARCH_ENDPOINT,
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
 
       const body = await res.json();
       expect(body.page.totalItems).toBeGreaterThanOrEqual(35);
@@ -201,7 +205,9 @@ test.describe.parallel('Search Authorization API', () => {
     }).toPass(defaultAssertionOptions);
   });
 
-  test('Search Authorization - results sorted by resourceType and filtered by ownerId - 200 Success', async ({request}) => {
+  test('Search Authorization - results sorted by resourceType and filtered by ownerId - 200 Success', async ({
+    request,
+  }) => {
     const ownerIdToSearch = user.username;
     await expect(async () => {
       const res = await request.post(buildUrl(AUTHORIZATION_SEARCH_ENDPOINT), {
@@ -209,9 +215,9 @@ test.describe.parallel('Search Authorization API', () => {
         data: {
           sort: [
             {
-              field: "resourceType",
-              order: "ASC"
-            }
+              field: 'resourceType',
+              order: 'ASC',
+            },
           ],
           filter: {
             ownerId: ownerIdToSearch,
@@ -219,11 +225,14 @@ test.describe.parallel('Search Authorization API', () => {
         },
       });
       await assertStatusCode(res, 200);
-      await validateResponse({
-        path: AUTHORIZATION_SEARCH_ENDPOINT,
-        method: 'POST',
-        status: '200',
-      }, res);
+      await validateResponse(
+        {
+          path: AUTHORIZATION_SEARCH_ENDPOINT,
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
 
       const body = await res.json();
       expect(body.page.totalItems).toBe(2);
@@ -233,11 +242,13 @@ test.describe.parallel('Search Authorization API', () => {
     }).toPass(defaultAssertionOptions);
   });
 
-  test('Search Authorization - filtered by ownerId, ownerType, and resourceType - single result - 200 Success', async ({request}) => {
+  test('Search Authorization - filtered by ownerId, ownerType, and resourceType - single result - 200 Success', async ({
+    request,
+  }) => {
     const ownerTypeToSearch = 'USER';
     const ownerIdToSearch = user.username;
     const resourceTypeToSearch = 'ROLE';
-    
+
     await expect(async () => {
       const res = await request.post(buildUrl(AUTHORIZATION_SEARCH_ENDPOINT), {
         headers: jsonHeaders(),
@@ -250,11 +261,14 @@ test.describe.parallel('Search Authorization API', () => {
         },
       });
       await assertStatusCode(res, 200);
-      await validateResponse({
-        path: AUTHORIZATION_SEARCH_ENDPOINT,
-        method: 'POST',
-        status: '200',
-      }, res);
+      await validateResponse(
+        {
+          path: AUTHORIZATION_SEARCH_ENDPOINT,
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
 
       const body = await res.json();
       expect(body.page.totalItems).toEqual(1);
@@ -262,10 +276,12 @@ test.describe.parallel('Search Authorization API', () => {
     }).toPass(defaultAssertionOptions);
   });
 
-  test('Search Authorization - filtered by ownerId and resourceIds - multiple results - 200 Success', async ({request}) => {
+  test('Search Authorization - filtered by ownerId and resourceIds - multiple results - 200 Success', async ({
+    request,
+  }) => {
     const ownerIdToSearch = 'admin';
     const resourceIdsToSearch = '*';
-    
+
     await expect(async () => {
       const res = await request.post(buildUrl(AUTHORIZATION_SEARCH_ENDPOINT), {
         headers: jsonHeaders(),
@@ -277,11 +293,14 @@ test.describe.parallel('Search Authorization API', () => {
         },
       });
       await assertStatusCode(res, 200);
-      await validateResponse({
-        path: AUTHORIZATION_SEARCH_ENDPOINT,
-        method: 'POST',
-        status: '200',
-      }, res);
+      await validateResponse(
+        {
+          path: AUTHORIZATION_SEARCH_ENDPOINT,
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
 
       const body = await res.json();
       expect(body.page.totalItems).toBeGreaterThanOrEqual(15);
@@ -301,11 +320,14 @@ test.describe.parallel('Search Authorization API', () => {
         },
       });
       await assertStatusCode(res, 200);
-      await validateResponse({
-        path: AUTHORIZATION_SEARCH_ENDPOINT,
-        method: 'POST',
-        status: '200',
-      }, res);
+      await validateResponse(
+        {
+          path: AUTHORIZATION_SEARCH_ENDPOINT,
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
 
       const body = await res.json();
       expect(body.page.totalItems).toEqual(0);
@@ -313,7 +335,9 @@ test.describe.parallel('Search Authorization API', () => {
     }).toPass(defaultAssertionOptions);
   });
 
-  test('Search Authorization - invalid sort field - 400 Bad Request', async ({request}) => {
+  test('Search Authorization - invalid sort field - 400 Bad Request', async ({
+    request,
+  }) => {
     const invalidSortField = 'invalidField';
     await expect(async () => {
       const res = await request.post(buildUrl(AUTHORIZATION_SEARCH_ENDPOINT), {
@@ -327,11 +351,16 @@ test.describe.parallel('Search Authorization API', () => {
           ],
         },
       });
-      await assertBadRequest(res, 'Unexpected value \'invalidField\' for enum field \'field\'. Use any of the following values: [ownerId, ownerType, resourceId, resourceType]');
+      await assertBadRequest(
+        res,
+        "Unexpected value 'invalidField' for enum field 'field'. Use any of the following values: [ownerId, ownerType, resourceId, resourceType]",
+      );
     }).toPass(defaultAssertionOptions);
   });
 
-  test('Search Authorization - invalid filter field - 400 Bad Request', async ({request}) => {
+  test('Search Authorization - invalid filter field - 400 Bad Request', async ({
+    request,
+  }) => {
     const invalidFilterField = 'meow';
     await expect(async () => {
       const res = await request.post(buildUrl(AUTHORIZATION_SEARCH_ENDPOINT), {
@@ -342,11 +371,16 @@ test.describe.parallel('Search Authorization API', () => {
           },
         },
       });
-      await assertBadRequest(res, `Request property [filter.${invalidFilterField}] cannot be parsed`);
+      await assertBadRequest(
+        res,
+        `Request property [filter.${invalidFilterField}] cannot be parsed`,
+      );
     }).toPass(defaultAssertionOptions);
   });
 
-  test('Search Authorization - Unauthorized - 401 Unauthorized', async ({request}) => {
+  test('Search Authorization - Unauthorized - 401 Unauthorized', async ({
+    request,
+  }) => {
     await expect(async () => {
       const res = await request.post(buildUrl(AUTHORIZATION_SEARCH_ENDPOINT), {
         // No auth headers
@@ -356,7 +390,9 @@ test.describe.parallel('Search Authorization API', () => {
     }).toPass(defaultAssertionOptions);
   });
 
-  test('Search Authorization - Forbidden for user without permission - 403 Forbidden', async ({request}) => {
+  test('Search Authorization - Forbidden for user without permission - 403 Forbidden', async ({
+    request,
+  }) => {
     let userWithResourcesAuthorizationToSendRequest: {
       username: string;
       name: string;
@@ -384,7 +420,10 @@ test.describe.parallel('Search Authorization API', () => {
     });
 
     await test.step('Poll authorization', async () => {
-      await expectAuthorizationCanBeFound(request, resourceAuthorizationKey.authorizationKey);
+      await expectAuthorizationCanBeFound(
+        request,
+        resourceAuthorizationKey.authorizationKey,
+      );
     });
 
     const token = encode(
@@ -393,16 +432,22 @@ test.describe.parallel('Search Authorization API', () => {
 
     await test.step('Attempt to search authorizations without proper permission', async () => {
       await expect(async () => {
-        const res = await request.post(buildUrl(AUTHORIZATION_SEARCH_ENDPOINT), {
-          headers: jsonHeaders(token), // overrides default demo:demo
-          data: {},
-        });
+        const res = await request.post(
+          buildUrl(AUTHORIZATION_SEARCH_ENDPOINT),
+          {
+            headers: jsonHeaders(token), // overrides default demo:demo
+            data: {},
+          },
+        );
         await assertStatusCode(res, 200);
-        await validateResponse({
-          path: AUTHORIZATION_SEARCH_ENDPOINT,
-          method: 'POST',
-          status: '200',
-        }, res);
+        await validateResponse(
+          {
+            path: AUTHORIZATION_SEARCH_ENDPOINT,
+            method: 'POST',
+            status: '200',
+          },
+          res,
+        );
         const body = await res.json();
         console.log(body);
         expect(body.page.totalItems).toEqual(0);
@@ -424,7 +469,7 @@ test.describe.parallel('Search Authorization API', () => {
     }).toPass(defaultAssertionOptions);
   });
 
-    test('Search Authorization - Pagination 0', async ({request}) => {
+  test('Search Authorization - Pagination 0', async ({request}) => {
     await expect(async () => {
       const res = await request.post(buildUrl(AUTHORIZATION_SEARCH_ENDPOINT), {
         headers: jsonHeaders(),
@@ -433,13 +478,16 @@ test.describe.parallel('Search Authorization API', () => {
         },
       });
       await assertStatusCode(res, 200);
-      await validateResponse({
-        path: AUTHORIZATION_SEARCH_ENDPOINT,
-        method: 'POST',
-        status: '200',
-      }, res);
+      await validateResponse(
+        {
+          path: AUTHORIZATION_SEARCH_ENDPOINT,
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
 
-      const body =  await res.json();
+      const body = await res.json();
       expect(body.page.totalItems).toBeGreaterThanOrEqual(35);
       expect(body.items.length).toEqual(0);
     }).toPass(defaultAssertionOptions);
