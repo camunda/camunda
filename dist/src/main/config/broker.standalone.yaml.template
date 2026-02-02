@@ -1460,7 +1460,7 @@
           # The default value is 5 minutes.
           # maxBackoffDuration: 5m
 
-        # batchOperation:
+        # batchOperations:
           # to avoid too large records, the set of executed items ina  batch operation is split into multiple chunks.
           # smaller values lead to more records needed to transport the items and the more metadata overhead is created.
           # larger values tend to overload the exporters as many rows need to be written per exported record.
