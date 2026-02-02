@@ -146,7 +146,8 @@ public final class EngineProcessors {
             decisionBehavior,
             clock,
             authCheckBehavior,
-            transientProcessMessageSubscriptionState);
+            transientProcessMessageSubscriptionState,
+            config);
 
     final var commandDistributionBehavior =
         new CommandDistributionBehavior(
@@ -375,7 +376,8 @@ public final class EngineProcessors {
       final DecisionBehavior decisionBehavior,
       final InstantSource clock,
       final AuthorizationCheckBehavior authCheckBehavior,
-      final TransientPendingSubscriptionState transientProcessMessageSubscriptionState) {
+      final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
+      final EngineConfiguration config) {
     return new BpmnBehaviorsImpl(
         processingState,
         writers,
@@ -387,7 +389,8 @@ public final class EngineProcessors {
         jobStreamer,
         clock,
         authCheckBehavior,
-        transientProcessMessageSubscriptionState);
+        transientProcessMessageSubscriptionState,
+        config);
   }
 
   private static TypedRecordProcessor<ProcessInstanceRecord> addProcessProcessors(
