@@ -257,10 +257,15 @@ public record RdbmsWriterConfig(
       /*
        * The maximum size of job insert batches.
        */
-      int jobInsertBatchSize) {
+      int jobInsertBatchSize,
+      /*
+       * The maximum size of flow node instance insert batches.
+       */
+      int flowNodeInsertBatchSize) {
     public static final int DEFAULT_VARIABLE_INSERT_BATCH_SIZE = 10;
     public static final int DEFAULT_AUDIT_LOG_INSERT_BATCH_SIZE = 10;
     public static final int DEFAULT_JOB_INSERT_BATCH_SIZE = 10;
+    public static final int DEFAULT_FLOW_NODE_INSERT_BATCH_SIZE = 10;
 
     public static InsertBatchingConfig.Builder builder() {
       return new InsertBatchingConfig.Builder();
@@ -271,6 +276,7 @@ public record RdbmsWriterConfig(
       private int variableInsertBatchSize = DEFAULT_VARIABLE_INSERT_BATCH_SIZE;
       private int auditLogInsertBatchSize = DEFAULT_AUDIT_LOG_INSERT_BATCH_SIZE;
       private int jobInsertBatchSize = DEFAULT_JOB_INSERT_BATCH_SIZE;
+      private int flowNodeInsertBatchSize = DEFAULT_FLOW_NODE_INSERT_BATCH_SIZE;
 
       public Builder variableInsertBatchSize(final int variableInsertBatchSize) {
         this.variableInsertBatchSize = variableInsertBatchSize;
@@ -287,10 +293,18 @@ public record RdbmsWriterConfig(
         return this;
       }
 
+      public Builder flowNodeInsertBatchSize(final int flowNodeInsertBatchSize) {
+        this.flowNodeInsertBatchSize = flowNodeInsertBatchSize;
+        return this;
+      }
+
       @Override
       public InsertBatchingConfig build() {
         return new InsertBatchingConfig(
-            variableInsertBatchSize, auditLogInsertBatchSize, jobInsertBatchSize);
+            variableInsertBatchSize,
+            auditLogInsertBatchSize,
+            jobInsertBatchSize,
+            flowNodeInsertBatchSize);
       }
     }
   }

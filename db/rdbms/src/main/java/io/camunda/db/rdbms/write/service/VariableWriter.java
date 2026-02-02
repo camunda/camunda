@@ -11,6 +11,7 @@ import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.sql.VariableMapper;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.domain.VariableDbModel;
+import io.camunda.db.rdbms.write.queue.BatchInsertDto;
 import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.InsertVariableMerger;
@@ -52,9 +53,7 @@ public class VariableWriter extends ProcessInstanceDependant implements RdbmsWri
               WriteStatementType.INSERT,
               truncatedVariable.variableKey(),
               "io.camunda.db.rdbms.sql.VariableMapper.insert",
-              new VariableMapper.BatchInsertVariablesDto.Builder()
-                  .variable(truncatedVariable)
-                  .build()));
+              new BatchInsertDto<>(truncatedVariable)));
     }
   }
 

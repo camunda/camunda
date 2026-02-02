@@ -9,13 +9,14 @@ package io.camunda.db.rdbms.sql;
 
 import io.camunda.db.rdbms.read.domain.FlowNodeInstanceDbQuery;
 import io.camunda.db.rdbms.write.domain.FlowNodeInstanceDbModel;
+import io.camunda.db.rdbms.write.queue.BatchInsertDto;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
 import java.time.OffsetDateTime;
 import java.util.List;
 
 public interface FlowNodeInstanceMapper extends ProcessInstanceDependantMapper {
 
-  void insert(FlowNodeInstanceDbModel flowNode);
+  void insert(BatchInsertDto<FlowNodeInstanceDbModel> dto);
 
   void updateStateAndEndDate(EndFlowNodeDto dto);
 

@@ -247,12 +247,12 @@
   </resultMap>
 
 
-  <insert id="insert" parameterType="io.camunda.db.rdbms.sql.JobMapper$BatchInsertJobsDto">
+  <insert id="insert" parameterType="io.camunda.db.rdbms.write.queue.BatchInsertDto">
     INSERT INTO ${prefix}JOB (JOB_KEY, PARTITION_ID, PROCESS_INSTANCE_KEY, ROOT_PROCESS_INSTANCE_KEY, ELEMENT_INSTANCE_KEY, PROCESS_DEFINITION_ID, PROCESS_DEFINITION_KEY,
     TENANT_ID, TYPE, WORKER, STATE, RETRIES, ERROR_MESSAGE, ERROR_CODE, END_TIME, CUSTOM_HEADERS, KIND, ELEMENT_ID, IS_DENIED, DENIED_REASON, LISTENER_EVENT_TYPE,
     DEADLINE, HAS_FAILED_WITH_RETRIES_LEFT, CREATION_TIME, LAST_UPDATE_TIME)
     VALUES
-    <foreach collection="jobs" item="job" separator=",">
+    <foreach collection="dbModels" item="job" separator=",">
       (#{job.jobKey}, #{job.partitionId}, #{job.processInstanceKey}, #{job.rootProcessInstanceKey}, #{job.elementInstanceKey}, #{job.processDefinitionId},
       #{job.processDefinitionKey}, #{job.tenantId}, #{job.type}, #{job.worker}, #{job.state}, #{job.retries}, #{job.errorMessage}, #{job.errorCode}, #{job.endTime, jdbcType=TIMESTAMP}, #{job.serializedCustomHeaders}, #{job.kind}, #{job.elementId}, #{job.isDenied},
       #{job.deniedReason}, #{job.listenerEventType}, #{job.deadline, jdbcType=TIMESTAMP}, #{job.hasFailedWithRetriesLeft}, #{job.creationTime, jdbcType=TIMESTAMP}, #{job.lastUpdateTime, jdbcType=TIMESTAMP})

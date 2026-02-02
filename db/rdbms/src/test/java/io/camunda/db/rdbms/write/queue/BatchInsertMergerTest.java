@@ -10,8 +10,6 @@ package io.camunda.db.rdbms.write.queue;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
-import io.camunda.db.rdbms.sql.AuditLogMapper.BatchInsertAuditLogsDto;
-import io.camunda.db.rdbms.sql.VariableMapper.BatchInsertVariablesDto;
 import io.camunda.db.rdbms.write.domain.AuditLogDbModel;
 import io.camunda.db.rdbms.write.domain.VariableDbModel;
 import io.camunda.search.entities.AuditLogEntity.AuditLogActorType;
@@ -75,7 +73,7 @@ class BatchInsertMergerTest {
             1);
 
     final var merger = new InsertVariableMerger(variable2, 50);
-    final var parameter = new BatchInsertVariablesDto(List.of(variable1));
+    final var parameter = new BatchInsertDto<>(List.of(variable1));
     final var queueItem =
         new QueueItem(ContextType.VARIABLE, WriteStatementType.INSERT, 1L, "statement", parameter);
 
@@ -83,12 +81,12 @@ class BatchInsertMergerTest {
 
     final var mergedItem = merger.merge(queueItem);
     assertThat(mergedItem.parameter())
-        .asInstanceOf(InstanceOfAssertFactories.type(BatchInsertVariablesDto.class))
+        .asInstanceOf(InstanceOfAssertFactories.type(BatchInsertDto.class))
         .satisfies(
             p -> {
-              assertThat(p.variables()).hasSize(2);
-              assertThat(p.variables().get(0)).isEqualTo(variable1);
-              assertThat(p.variables().get(1)).isEqualTo(variable2);
+              assertThat(p.dbModels()).hasSize(2);
+              assertThat(p.dbModels().get(0)).isEqualTo(variable1);
+              assertThat(p.dbModels().get(1)).isEqualTo(variable2);
             });
   }
 
@@ -169,7 +167,7 @@ class BatchInsertMergerTest {
             OffsetDateTime.now());
 
     final var merger = new InsertAuditLogMerger(auditLog2, 50);
-    final var parameter = new BatchInsertAuditLogsDto(List.of(auditLog1));
+    final var parameter = new BatchInsertDto<>(List.of(auditLog1));
     final var queueItem =
         new QueueItem(
             ContextType.AUDIT_LOG, WriteStatementType.INSERT, "key1", "statement", parameter);
@@ -178,12 +176,12 @@ class BatchInsertMergerTest {
 
     final var mergedItem = merger.merge(queueItem);
     assertThat(mergedItem.parameter())
-        .asInstanceOf(InstanceOfAssertFactories.type(BatchInsertAuditLogsDto.class))
+        .asInstanceOf(InstanceOfAssertFactories.type(BatchInsertDto.class))
         .satisfies(
             p -> {
-              assertThat(p.auditLogs()).hasSize(2);
-              assertThat(p.auditLogs().get(0)).isEqualTo(auditLog1);
-              assertThat(p.auditLogs().get(1)).isEqualTo(auditLog2);
+              assertThat(p.dbModels()).hasSize(2);
+              assertThat(p.dbModels().get(0)).isEqualTo(auditLog1);
+              assertThat(p.dbModels().get(1)).isEqualTo(auditLog2);
             });
   }
 
@@ -208,8 +206,7 @@ class BatchInsertMergerTest {
 
     final var merger = new InsertVariableMerger(variable, 2); // Max batch size of 2
 
-    final var parameter =
-        new BatchInsertVariablesDto(List.of(variable, variable)); // Already at max size
+    final var parameter = new BatchInsertDto<>(List.of(variable, variable)); // Already at max size
 
     final var queueItem =
         new QueueItem(ContextType.VARIABLE, WriteStatementType.INSERT, 1L, "statement", parameter);
@@ -238,7 +235,7 @@ class BatchInsertMergerTest {
 
     final var merger = new InsertVariableMerger(variable, 1); // Max batch size of 1
 
-    final var parameter = new BatchInsertVariablesDto(List.of(variable));
+    final var parameter = new BatchInsertDto<>(List.of(variable));
 
     final var queueItem =
         new QueueItem(ContextType.VARIABLE, WriteStatementType.INSERT, 1L, "statement", parameter);
