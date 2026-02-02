@@ -43,11 +43,10 @@ class InitializeAuthorizationIT {
   private static final String DEFAULT_PASSWORD = "password";
 
   private static final ConfiguredAuthorization CONFIGURED_AUTH_1 =
-      new ConfiguredAuthorization(
+      ConfiguredAuthorization.wildcard(
           AuthorizationOwnerType.USER,
           RESTRICTED,
           AuthorizationResourceType.PROCESS_DEFINITION,
-          "*",
           Set.of(PermissionType.READ_PROCESS_INSTANCE, PermissionType.CREATE_PROCESS_INSTANCE));
 
   @MultiDbTestApplication

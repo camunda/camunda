@@ -27,11 +27,12 @@ public final class AuthorizationRequestValidator {
   public Optional<ProblemDetail> validateIdBasedRequest(final AuthorizationIdBasedRequest request) {
     return validate(
         () ->
-            authorizationValidator.validateIdBased(
+            authorizationValidator.validate(
                 request.getOwnerId(),
                 request.getOwnerType(),
                 request.getResourceType(),
                 request.getResourceId(),
+                null,
                 Set.copyOf(request.getPermissionTypes())));
   }
 
@@ -39,10 +40,11 @@ public final class AuthorizationRequestValidator {
       final AuthorizationPropertyBasedRequest request) {
     return validate(
         () ->
-            authorizationValidator.validatePropertyBased(
+            authorizationValidator.validate(
                 request.getOwnerId(),
                 request.getOwnerType(),
                 request.getResourceType(),
+                null,
                 request.getResourcePropertyName(),
                 Set.copyOf(request.getPermissionTypes())));
   }

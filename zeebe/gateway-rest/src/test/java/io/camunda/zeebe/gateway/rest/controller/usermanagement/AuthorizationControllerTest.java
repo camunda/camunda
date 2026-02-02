@@ -463,7 +463,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
                 .resourceId("")
                 .resourceType(ResourceTypeEnum.RESOURCE)
                 .permissionTypes(permissions),
-            "No resourceId provided."),
+            "Either resourceId or resourcePropertyName must be provided."),
         Arguments.of(
             new AuthorizationIdBasedRequest()
                 .ownerId("ownerId")
@@ -565,7 +565,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
                 .resourcePropertyName("")
                 .resourceType(ResourceTypeEnum.RESOURCE)
                 .permissionTypes(permissions),
-            "No resourcePropertyName provided."),
+            "Either resourceId or resourcePropertyName must be provided."),
         Arguments.of(
             new AuthorizationPropertyBasedRequest()
                 .ownerId("ownerId")

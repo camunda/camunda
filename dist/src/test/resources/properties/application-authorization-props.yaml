@@ -1,0 +1,45 @@
+camunda:
+  security:
+    initialization:
+      authorizations:
+        # [0] Valid ID-based authorization with wildcard
+        - ownerType: USER
+          ownerId: john.doe
+          resourceType: PROCESS_DEFINITION
+          resourceId: "*"
+          permissions:
+            - READ_PROCESS_INSTANCE
+            - CREATE_PROCESS_INSTANCE
+
+        # [1] Valid ID-based authorization with specific resource
+        - ownerType: ROLE
+          ownerId: developers
+          resourceType: PROCESS_DEFINITION
+          resourceId: order-process
+          permissions:
+            - UPDATE_PROCESS_INSTANCE
+
+        # [2] Valid PROPERTY-based authorization
+        - ownerType: USER
+          ownerId: jane.doe
+          resourceType: USER_TASK
+          resourcePropertyName: assignee
+          permissions:
+            - READ
+            - UPDATE
+
+        # [3] Invalid authorization with both resourceId and resourcePropertyName
+        - ownerType: USER
+          ownerId: mark.smith
+          resourceType: USER_TASK
+          resourceId: some-task
+          resourcePropertyName: assignee
+          permissions:
+            - READ
+
+        # [4] Invalid authorization with neither resourceId nor resourcePropertyName
+        - ownerType: ROLE
+          ownerId: sales-team
+          resourceType: PROCESS_DEFINITION
+          permissions:
+            - CREATE_PROCESS_INSTANCE

@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.identity.initialize;
 import io.camunda.security.configuration.ConfiguredAuthorization;
 import io.camunda.security.validation.AuthorizationValidator;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
@@ -25,12 +26,13 @@ public class AuthorizationConfigurer
 
   @Override
   public Either<List<String>, AuthorizationRecord> configure(final ConfiguredAuthorization auth) {
-    final List<String> violations =
-        validator.validateIdBased(
+    final var violations =
+        validator.validate(
             auth.ownerId(),
             auth.ownerType(),
             auth.resourceType(),
             auth.resourceId(),
+            auth.resourcePropertyName(),
             auth.permissions());
 
     if (!violations.isEmpty()) {
@@ -41,12 +43,23 @@ public class AuthorizationConfigurer
   }
 
   private AuthorizationRecord mapToRecord(final ConfiguredAuthorization auth) {
-    return new AuthorizationRecord()
-        .setOwnerType(auth.ownerType())
-        .setOwnerId(auth.ownerId())
-        .setResourceType(auth.resourceType())
-        .setResourceMatcher(AuthorizationScope.of(auth.resourceId()).getMatcher())
-        .setResourceId(auth.resourceId())
-        .setPermissionTypes(auth.permissions());
+    final AuthorizationRecord record =
+        new AuthorizationRecord()
+            .setOwnerType(auth.ownerType())
+            .setOwnerId(auth.ownerId())
+            .setResourceType(auth.resourceType())
+            .setPermissionTypes(auth.permissions());
+
+    if (auth.hasResourceId()) {
+      record
+          .setResourceMatcher(AuthorizationScope.of(auth.resourceId()).getMatcher())
+          .setResourceId(auth.resourceId());
+    } else {
+      record
+          .setResourceMatcher(AuthorizationResourceMatcher.PROPERTY)
+          .setResourcePropertyName(auth.resourcePropertyName());
+    }
+
+    return record;
   }
 }

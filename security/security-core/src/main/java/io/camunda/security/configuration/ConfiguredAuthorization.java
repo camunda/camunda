@@ -9,6 +9,7 @@ package io.camunda.security.configuration;
 
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.Set;
 
@@ -17,4 +18,42 @@ public record ConfiguredAuthorization(
     String ownerId,
     AuthorizationResourceType resourceType,
     String resourceId,
-    Set<PermissionType> permissions) {}
+    String resourcePropertyName,
+    Set<PermissionType> permissions) {
+
+  public static ConfiguredAuthorization idBased(
+      final AuthorizationOwnerType ownerType,
+      final String ownerId,
+      final AuthorizationResourceType resourceType,
+      final String resourceId,
+      final Set<PermissionType> permissions) {
+    return new ConfiguredAuthorization(
+        ownerType, ownerId, resourceType, resourceId, null, permissions);
+  }
+
+  public static ConfiguredAuthorization wildcard(
+      final AuthorizationOwnerType ownerType,
+      final String ownerId,
+      final AuthorizationResourceType resourceType,
+      final Set<PermissionType> permissions) {
+    return idBased(ownerType, ownerId, resourceType, AuthorizationScope.WILDCARD_CHAR, permissions);
+  }
+
+  public static ConfiguredAuthorization propertyBased(
+      final AuthorizationOwnerType ownerType,
+      final String ownerId,
+      final AuthorizationResourceType resourceType,
+      final String resourcePropertyName,
+      final Set<PermissionType> permissions) {
+    return new ConfiguredAuthorization(
+        ownerType, ownerId, resourceType, null, resourcePropertyName, permissions);
+  }
+
+  public boolean hasResourceId() {
+    return resourceId != null && !resourceId.isBlank();
+  }
+
+  public boolean hasResourcePropertyName() {
+    return resourcePropertyName != null && !resourcePropertyName.isBlank();
+  }
+}
