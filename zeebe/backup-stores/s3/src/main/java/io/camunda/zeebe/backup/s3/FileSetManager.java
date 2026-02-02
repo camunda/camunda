@@ -23,7 +23,6 @@ import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Semaphore;
 import java.util.function.Supplier;
-import org.apache.commons.compress.compressors.CompressorException;
 import org.apache.commons.compress.compressors.CompressorStreamFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -153,7 +152,7 @@ final class FileSetManager {
         }
         return compressedFile;
       }
-    } catch (final IOException | CompressorException e) {
+    } catch (final IOException e) {
       throw new BackupCompressionFailed(
           "Failed to compress file %s using %s".formatted(file, algorithm), e);
     }
@@ -232,7 +231,7 @@ final class FileSetManager {
             Files.size(compressed),
             Files.size(decompressed));
       }
-    } catch (final IOException | CompressorException e) {
+    } catch (final IOException e) {
       throw new BackupCompressionFailed(
           "Failed to decompress from %s to %s using %s"
               .formatted(compressed, decompressed, algorithm),
