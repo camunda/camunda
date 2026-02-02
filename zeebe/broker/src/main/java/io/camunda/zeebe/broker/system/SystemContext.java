@@ -257,7 +257,7 @@ public final class SystemContext {
     Optional.of(experimental)
         .map(ExperimentalCfg::getEngine)
         .map(EngineCfg::getBatchOperations)
-        .ifPresent(c -> validateBatchOperationsConfig(c));
+        .ifPresent(this::validateBatchOperationsConfig);
 
     Optional.of(experimental)
         .map(ExperimentalCfg::getRocksdb)
@@ -294,14 +294,14 @@ public final class SystemContext {
     if (config.getSchedulerInterval().isNegative()) {
       errors.add(
           String.format(
-              "experimental.engine.batchOperation.schedulerInterval must be positive, but was %s",
+              "experimental.engine.batchOperations.schedulerInterval must be positive, but was %s",
               config.getSchedulerInterval()));
     }
 
     if (config.getChunkSize() <= 0) {
       errors.add(
           String.format(
-              "experimental.engine.batchOperation.chunkSize must be greater than 0, but was %s",
+              "experimental.engine.batchOperations.chunkSize must be greater than 0, but was %s",
               config.getChunkSize()));
     }
 
@@ -315,21 +315,21 @@ public final class SystemContext {
     if (config.getQueryPageSize() <= 0) {
       errors.add(
           String.format(
-              "experimental.engine.batchOperation.queryPageSize must be greater than 0, but was %s",
+              "experimental.engine.batchOperations.queryPageSize must be greater than 0, but was %s",
               config.getQueryPageSize()));
     }
 
     if (config.getQueryInClauseSize() <= 0) {
       errors.add(
           String.format(
-              "experimental.engine.batchOperation.queryInClauseSize must be greater than 0, but was %s",
+              "experimental.engine.batchOperations.queryInClauseSize must be greater than 0, but was %s",
               config.getQueryInClauseSize()));
     }
 
     if (config.getQueryRetryMax() < 0) {
       errors.add(
           String.format(
-              "experimental.engine.batchOperation.queryRetryMax must be greater than or equal to 0, but was %s",
+              "experimental.engine.batchOperations.queryRetryMax must be greater than or equal to 0, but was %s",
               config.getQueryRetryMax()));
     }
 
@@ -337,28 +337,28 @@ public final class SystemContext {
         || config.getQueryRetryInitialDelay().isZero()) {
       errors.add(
           String.format(
-              "experimental.engine.batchOperation.queryRetryInitialDelay must be positive, but was %s",
+              "experimental.engine.batchOperations.queryRetryInitialDelay must be positive, but was %s",
               config.getQueryRetryInitialDelay()));
     }
 
     if (config.getQueryRetryMaxDelay().isNegative() || config.getQueryRetryMaxDelay().isZero()) {
       errors.add(
           String.format(
-              "experimental.engine.batchOperation.queryRetryMaxDelay must be positive, but was %s",
+              "experimental.engine.batchOperations.queryRetryMaxDelay must be positive, but was %s",
               config.getQueryRetryMaxDelay()));
     }
 
     if (config.getQueryRetryMaxDelay().compareTo(config.getQueryRetryInitialDelay()) < 0) {
       errors.add(
           String.format(
-              "experimental.engine.batchOperation.queryRetryMaxDelay must be greater than or equal to the experimental.engine.batchOperation.queryRetryInitialDelay of %s, but was %s",
+              "experimental.engine.batchOperations.queryRetryMaxDelay must be greater than or equal to the experimental.engine.batchOperations.queryRetryInitialDelay of %s, but was %s",
               config.getQueryRetryInitialDelay(), config.getQueryRetryMaxDelay()));
     }
 
     if (config.getQueryRetryBackoffFactor() < 1) {
       errors.add(
           String.format(
-              "experimental.engine.batchOperation.queryRetryBackoffFactor must be greater than or equal to 1, but was %s",
+              "experimental.engine.batchOperations.queryRetryBackoffFactor must be greater than or equal to 1, but was %s",
               config.getQueryRetryBackoffFactor()));
     }
 

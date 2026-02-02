@@ -482,7 +482,7 @@ final class SystemContextTest {
     assertThatCode(() -> initSystemContext(brokerCfg))
         .isInstanceOf(InvalidConfigurationException.class)
         .hasMessageContaining(
-            "experimental.engine.batchOperation.schedulerInterval must be positive");
+            "experimental.engine.batchOperations.schedulerInterval must be positive");
   }
 
   @Test
@@ -495,7 +495,7 @@ final class SystemContextTest {
     assertThatCode(() -> initSystemContext(brokerCfg))
         .isInstanceOf(InvalidConfigurationException.class)
         .hasMessageContaining(
-            "experimental.engine.batchOperation.chunkSize must be greater than 0");
+            "experimental.engine.batchOperations.chunkSize must be greater than 0");
   }
 
   @Test
@@ -508,7 +508,7 @@ final class SystemContextTest {
     assertThatCode(() -> initSystemContext(brokerCfg))
         .isInstanceOf(InvalidConfigurationException.class)
         .hasMessageContaining(
-            "experimental.engine.batchOperation.queryPageSize must be greater than 0");
+            "experimental.engine.batchOperations.queryPageSize must be greater than 0");
   }
 
   @Test
@@ -521,7 +521,7 @@ final class SystemContextTest {
     assertThatCode(() -> initSystemContext(brokerCfg))
         .isInstanceOf(InvalidConfigurationException.class)
         .hasMessageContaining(
-            "experimental.engine.batchOperation.queryInClauseSize must be greater than 0");
+            "experimental.engine.batchOperations.queryInClauseSize must be greater than 0");
   }
 
   @Test
@@ -534,7 +534,7 @@ final class SystemContextTest {
     assertThatCode(() -> initSystemContext(brokerCfg))
         .isInstanceOf(InvalidConfigurationException.class)
         .hasMessageContaining(
-            "experimental.engine.batchOperation.queryRetryMax must be greater than or equal to 0");
+            "experimental.engine.batchOperations.queryRetryMax must be greater than or equal to 0");
   }
 
   @Test
@@ -547,7 +547,7 @@ final class SystemContextTest {
     assertThatCode(() -> initSystemContext(brokerCfg))
         .isInstanceOf(InvalidConfigurationException.class)
         .hasMessageContaining(
-            "experimental.engine.batchOperation.queryRetryBackoffFactor must be greater than or equal to");
+            "experimental.engine.batchOperations.queryRetryBackoffFactor must be greater than or equal to");
   }
 
   @Test
@@ -564,7 +564,7 @@ final class SystemContextTest {
     assertThatCode(() -> initSystemContext(brokerCfg))
         .isInstanceOf(InvalidConfigurationException.class)
         .hasMessageContaining(
-            "experimental.engine.batchOperation.queryRetryInitialDelay must be positive");
+            "experimental.engine.batchOperations.queryRetryInitialDelay must be positive");
   }
 
   @Test
@@ -581,7 +581,7 @@ final class SystemContextTest {
     assertThatCode(() -> initSystemContext(brokerCfg))
         .isInstanceOf(InvalidConfigurationException.class)
         .hasMessageContaining(
-            "experimental.engine.batchOperation.queryRetryMaxDelay must be positive");
+            "experimental.engine.batchOperations.queryRetryMaxDelay must be positive");
   }
 
   @Test
@@ -603,6 +603,6 @@ final class SystemContextTest {
     assertThatCode(() -> initSystemContext(brokerCfg))
         .isInstanceOf(InvalidConfigurationException.class)
         .hasMessageContaining(
-            "experimental.engine.batchOperation.queryRetryMaxDelay must be greater than or equal to the experimental.engine.batchOperation.queryRetryInitialDelay");
+            "experimental.engine.batchOperations.queryRetryMaxDelay must be greater than or equal to the experimental.engine.batchOperations.queryRetryInitialDelay");
   }
 }
