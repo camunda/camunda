@@ -10,6 +10,20 @@ ARG BASE_IMAGE_PUBLIC="alpine:3.23.0"
 ARG BASE_DIGEST_PUBLIC="sha256:51183f2cfa6320055da30872f211093f9ff1d3cf06f39a0bdb212314c5dc7375"
 ARG BASE="hardened"
 
+### Download wait-for-it.sh ###
+# hadolint ignore=DL3006,DL3007
+FROM alpine AS tools
+ARG TARGETARCH
+ARG WAITFORIT_CHECKSUM
+
+# hadolint ignore=DL4006,DL3018
+RUN --mount=type=cache,target=/root/.tools,rw \
+    apk add -q --no-cache curl 2>/dev/null && \
+    # Download wait-for-it.sh \
+    curl -sL "https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh" -o /wait-for-it.sh && \
+    echo "${WAITFORIT_CHECKSUM} /wait-for-it.sh" | sha256sum -c && \
+    chmod +x /wait-for-it.sh
+
 ### Base Application Image ###
 # hadolint ignore=DL3006
 FROM ${BASE_IMAGE}@${BASE_DIGEST} AS base-hardened
