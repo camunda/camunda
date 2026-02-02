@@ -67,8 +67,8 @@ public final class TreePathTruncator {
    *   <li>Continues until adding the next segment would exceed {@code maxSize}
    * </ol>
    *
-   * <p>If no valid truncation fits (e.g., even first + last segment exceeds maxSize), it falls
-   * back to hard character-based truncation.
+   * <p>If no valid truncation fits (e.g., even first + last segment exceeds maxSize), it falls back
+   * to hard character-based truncation.
    *
    * <p><b>Example of prefixed path truncation:</b>
    *
@@ -165,7 +165,8 @@ public final class TreePathTruncator {
     while (prefixCount + suffixCount < segmentCount) {
       // Determine next candidates
       final int nextPrefixIdx = prefixCount; // Index of next left segment to add
-      final int nextSuffixIdx = segmentCount - suffixCount - 1; // Index of next right segment to add
+      final int nextSuffixIdx =
+          segmentCount - suffixCount - 1; // Index of next right segment to add
 
       // If they meet in the middle, we've used all segments
       if (nextPrefixIdx > nextSuffixIdx) {
@@ -176,7 +177,8 @@ public final class TreePathTruncator {
       final String rightCandidate = segments.get(nextSuffixIdx);
 
       // Decide whether to add from left or right
-      final boolean addFromLeft = shouldAddFromLeft(leftCandidate, rightCandidate, prefixCount, suffixCount);
+      final boolean addFromLeft =
+          shouldAddFromLeft(leftCandidate, rightCandidate, prefixCount, suffixCount);
 
       // Try adding the chosen segment
       final int newPrefixCount = addFromLeft ? prefixCount + 1 : prefixCount;
