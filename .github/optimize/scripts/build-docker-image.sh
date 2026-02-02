@@ -22,7 +22,7 @@ docker buildx create --use
 export VERSION="${VERSION}"
 export DATE="$(date +%FT%TZ)"
 export REVISION="${REVISION}"
-export BASE_IMAGE=docker.io/library/alpine:3.23.0
+export BASE_IMAGE="reg.mini.dev/1212/openjre-base-compat:21-dev@sha256:6d72cf910cea8b66f3c4691b69371527c0c2dd528eddf87af55c1870e904707d"
 
 # if CI (GHA) export the variables for pushing in a later step
 if [ "${CI}" = "true" ]; then
