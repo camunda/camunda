@@ -58,6 +58,188 @@ Accept: application/json
   });
 %}
 
+
+### Search Users for Tenant
+# @name search-users-for-tenant
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/tenants/{{CONFIGURED_TENANT_ID}}/users/search
+Authorization: Bearer {{TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "sort": [
+    { "field": "username", "order": "ASC" }
+  ],
+  "page": { "from": 0, "limit": 100 }
+}
+
+> {%
+  client.test("Users search should be successful", function () {
+    client.assert(response.status === 200, "Expected 200, got " + response.status);
+  });
+
+  client.test("Response should be JSON", function () {
+    client.assert(response.headers.valueOf("Content-Type").includes("application/json"), "Response is not JSON");
+  });
+
+  client.test("All configured users should be returned", function () {
+    client.assert(response.status === 200, "Expected 200, got " + response.status);
+
+    const expectedUsers =["UserA", "UserB", "UserC", "demo", "test"];
+    let returnedUsers = response.body.items.map(u => u.username);
+
+    expectedUsers.forEach(u => {
+      client.assert(returnedUsers.includes(u), "Expected user '" + u + "' not found in tenant");
+    });
+  });
+%}
+
+### Search Groups for Tenant
+# @name search-groups-for-tenant
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/tenants/{{CONFIGURED_TENANT_ID}}/groups/search
+Authorization: Bearer {{TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "sort": [
+    { "field": "groupId", "order": "ASC" }
+  ],
+  "page": { "from": 0, "limit": 100 }
+}
+
+> {%
+  client.test("Groups search should be successful", function () {
+    client.assert(response.status === 200, "Expected 200, got " + response.status);
+  });
+
+  client.test("Response should be JSON", function () {
+    client.assert(response.headers.valueOf("Content-Type").includes("application/json"), "Response is not JSON");
+  });
+
+  client.test("All configured groups should be returned", function () {
+    client.assert(response.status === 200, "Expected 200, got " + response.status);
+
+    const expectedGroups =["R4GR", "adminGr", "connectorsGr"];
+    let returnedGroups = response.body.items.map(g => g.groupId);
+
+    expectedGroups.forEach(g => {
+      client.assert(returnedGroups.includes(g), "Expected group '" + g + "' not found in tenant");
+    });
+  });
+%}
+
+### Search Roles for Tenant
+# @name search-roles-for-tenant
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/tenants/{{CONFIGURED_TENANT_ID}}/roles/search
+Authorization: Bearer {{TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "sort": [
+    { "field": "roleId", "order": "ASC" }
+  ],
+  "page": { "from": 0, "limit": 100 }
+}
+
+> {%
+  client.test("Roles search should be successful", function () {
+    client.assert(response.status === 200, "Expected 200, got " + response.status);
+  });
+
+  client.test("Response should be JSON", function () {
+    client.assert(response.headers.valueOf("Content-Type").includes("application/json"), "Response is not JSON");
+  });
+
+  client.test("All configured roles should be returned", function () {
+    client.assert(response.status === 200, "Expected 200, got " + response.status);
+
+    const expectedRoles =["admin", "connectors"];
+    const notExistentRole ="R4";
+    let returnedRoles = response.body.items.map(r => r.roleId);
+
+    expectedRoles.forEach(r => {
+      client.assert(returnedRoles.includes(r), "Expected role '" + r + "' not found in tenant");
+    });
+    client.assert(
+        !returnedRoles.includes(notExistentRole),
+        "Non-existent role '" + notExistentRole + "' should NOT be returned"
+    );
+  });
+%}
+
+### Search Clients for Tenant
+# @name search-clients-for-tenant
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/tenants/{{CONFIGURED_TENANT_ID}}/clients/search
+Authorization: Bearer {{TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "sort": [
+    { "field": "clientId", "order": "ASC" }
+  ],
+  "page": { "from": 0, "limit": 100 }
+}
+
+> {%
+  client.test("Clients search should be successful", function () {
+    client.assert(response.status === 200, "Expected 200, got " + response.status);
+  });
+
+  client.test("Response should be JSON", function () {
+    client.assert(response.headers.valueOf("Content-Type").includes("application/json"), "Response is not JSON");
+  });
+
+  client.test("All configured clients should be returned", function () {
+    client.assert(response.status === 200, "Expected 200, got " + response.status);
+
+    const expectedClients =["adminCl", "connectorsCl", "msdfdsjhb"];
+    let returnedClients = response.body.items.map(c => c.clientId);
+
+    expectedClients.forEach(c => {
+      client.assert(returnedClients.includes(c), "Expected client '" + c + "' not found in tenant");
+    });
+  });
+%}
+
+### Search Mapping Rules for Tenant
+# @name search-mapping-rules-for-tenant
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/tenants/{{CONFIGURED_TENANT_ID}}/mapping-rules/search
+Authorization: Bearer {{TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "sort": [
+    { "field": "mappingRuleId", "order": "ASC" }
+  ],
+  "page": { "from": 0, "limit": 100 }
+}
+
+> {%
+  client.test("Mapping Rules search should be successful", function () {
+    client.assert(response.status === 200, "Expected 200, got " + response.status);
+  });
+
+  client.test("Response should be JSON", function () {
+    client.assert(response.headers.valueOf("Content-Type").includes("application/json"), "Response is not JSON");
+  });
+
+  client.test("None of the non-existent mapping rules should be returned", function () {
+    const nonExistentMappings = ["M1", "m2", "m."];
+    const returnedMappings = response.body.items.map(m => m.mappingRuleId);
+
+    nonExistentMappings.forEach(m => {
+      client.assert(
+          !returnedMappings.includes(m),
+          "Non-existent mapping rule '" + m + "' was unexpectedly returned"
+      );
+    });
+  });
+%}
+
 ### Create Tenant
 # @name create-tenant
 POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/tenants
