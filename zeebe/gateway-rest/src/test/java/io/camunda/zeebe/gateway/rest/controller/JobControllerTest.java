@@ -921,7 +921,8 @@ public class JobControllerTest extends RestControllerTest {
                 new StatisticsItem(
                     new StatusMetric(100, lastUpdatedAt),
                     new StatusMetric(80, lastUpdatedAt),
-                    new StatusMetric(5, lastUpdatedAt))));
+                    new StatusMetric(5, lastUpdatedAt))),
+            false);
 
     when(jobServices.getGlobalStatistics(any())).thenReturn(statisticsEntity);
 
@@ -952,7 +953,8 @@ public class JobControllerTest extends RestControllerTest {
                     "lastUpdatedAt": "2024-07-29T15:51:28.071Z"
                   }
                 }
-              ]
+              ],
+              "isIncomplete": false
             }""";
 
     // when/then

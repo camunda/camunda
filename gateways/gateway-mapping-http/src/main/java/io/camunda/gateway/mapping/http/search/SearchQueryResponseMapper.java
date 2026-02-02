@@ -1509,7 +1509,10 @@ public final class SearchQueryResponseMapper {
                         .toList())
             .orElseGet(Collections::emptyList);
 
-    return new GlobalJobStatisticsQueryResult().items(items);
+    final var isIncomplete =
+        ofNullable(entity).map(GlobalJobStatisticsEntity::isIncomplete).orElse(false);
+
+    return new GlobalJobStatisticsQueryResult().items(items).isIncomplete(isIncomplete);
   }
 
   private static GlobalJobStatisticsItem toGlobalJobStatisticsItem(

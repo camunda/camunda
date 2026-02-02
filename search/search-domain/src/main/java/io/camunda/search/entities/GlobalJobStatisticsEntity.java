@@ -10,7 +10,7 @@ package io.camunda.search.entities;
 import java.time.OffsetDateTime;
 import java.util.List;
 
-public record GlobalJobStatisticsEntity(List<StatisticsItem> items) {
+public record GlobalJobStatisticsEntity(List<StatisticsItem> items, boolean isIncomplete) {
 
   public record StatisticsItem(StatusMetric created, StatusMetric completed, StatusMetric failed) {}
 

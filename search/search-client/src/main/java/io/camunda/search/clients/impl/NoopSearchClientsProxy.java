@@ -401,6 +401,6 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
 
   @Override
   public GlobalJobStatisticsEntity getGlobalJobStatistics(final GlobalJobStatisticsQuery query) {
-    return new GlobalJobStatisticsEntity(List.of());
+    return new GlobalJobStatisticsEntity(List.of(), false);
   }
 }
