@@ -15,7 +15,12 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import java.util.Map;
 
-public record TestRecord(long position, ValueType valueType) implements Record<TestValue> {
+public record TestRecord(long position, ValueType valueType, int serializedLength)
+    implements Record<TestValue> {
+
+  public TestRecord(final long position, final ValueType valueType) {
+    this(position, valueType, 0);
+  }
 
   @Override
   public long getPosition() {
@@ -105,7 +110,7 @@ public record TestRecord(long position, ValueType valueType) implements Record<T
   @JsonIgnore
   @Override
   public int getSerializedLength() {
-    return 0;
+    return serializedLength;
   }
 
   @Override

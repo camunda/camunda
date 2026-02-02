@@ -114,6 +114,11 @@ record MockTypedCheckpointRecord(
   }
 
   @Override
+  public int getSerializedLength() {
+    return 0;
+  }
+
+  @Override
   public long getKey() {
     return 0;
   }
@@ -121,6 +126,11 @@ record MockTypedCheckpointRecord(
   @Override
   public CheckpointRecord getValue() {
     return value;
+  }
+
+  @Override
+  public AuthInfo getAuthInfo() {
+    return null;
   }
 
   @Override
@@ -136,10 +146,5 @@ record MockTypedCheckpointRecord(
   @Override
   public int getLength() {
     return 0;
-  }
-
-  @Override
-  public AuthInfo getAuthInfo() {
-    return null;
   }
 }

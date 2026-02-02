@@ -141,6 +141,11 @@ public final class RecordingExporterTest {
     }
 
     @Override
+    public int getSerializedLength() {
+      return 0;
+    }
+
+    @Override
     public String toJson() {
       return null;
     }

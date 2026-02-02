@@ -136,4 +136,77 @@ class ExporterBatchWriterTest {
     assertThat(batchWriter.getBatchSize()).isEqualTo(0);
     assertThat(batchWriter.getEntitiesToFlushSize()).isEqualTo(0);
   }
+
+  @Test
+  void shouldTrackMemoryEstimationWhenAddingRecords() {
+    // given
+    final TestRecord record1 = new TestRecord(0, NULL_VAL, 1024); // 1 KB
+    final TestRecord record2 = new TestRecord(1, NULL_VAL, 2048); // 2 KB
+    final String id1 = "1";
+    final String id2 = "2";
+    final TestExporterEntity entity1 = new TestExporterEntity().setId(id1);
+    final TestExporterEntity entity2 = new TestExporterEntity().setId(id2);
+
+    when(handler.handlesRecord(any())).thenReturn(true);
+    when(handler.generateIds(eq(record1))).thenReturn(List.of(id1));
+    when(handler.generateIds(eq(record2))).thenReturn(List.of(id2));
+    when(handler.createNewEntity(eq(id1))).thenReturn(entity1);
+    when(handler.createNewEntity(eq(id2))).thenReturn(entity2);
+
+    // when
+    batchWriter.addRecord(record1);
+    final int memoryAfterFirst = batchWriter.getBatchMemoryEstimateInMb();
+
+    batchWriter.addRecord(record2);
+    final int memoryAfterSecond = batchWriter.getBatchMemoryEstimateInMb();
+
+    // then
+    assertThat(memoryAfterFirst).isZero(); // 1024 bytes < 1 MB
+    assertThat(memoryAfterSecond).isZero(); // 3072 bytes < 1 MB
+  }
+
+  @Test
+  void shouldNotDoubleCountMemoryForSameEntity() {
+    // given
+    final TestRecord record = new TestRecord(0, NULL_VAL, 1024 * 1024); // 1 MB
+    final String id = "1";
+    final TestExporterEntity entity = new TestExporterEntity().setId(id);
+
+    when(handler.handlesRecord(any())).thenReturn(true);
+    when(handler.generateIds(eq(record))).thenReturn(List.of(id));
+    when(handler.createNewEntity(eq(id))).thenReturn(entity);
+
+    // when
+    batchWriter.addRecord(record);
+    final int memoryAfterFirst = batchWriter.getBatchMemoryEstimateInMb();
+
+    batchWriter.addRecord(record); // Update same entity
+    final int memoryAfterSecond = batchWriter.getBatchMemoryEstimateInMb();
+
+    // then
+    assertThat(memoryAfterFirst).isEqualTo(1); // 1 MB
+    assertThat(memoryAfterSecond).isEqualTo(1); // Still 1 MB, not 2 MB
+  }
+
+  @Test
+  void shouldResetMemoryEstimationAfterFlush() throws PersistenceException {
+    // given
+    final TestRecord record = new TestRecord(0, NULL_VAL, 2 * 1024 * 1024); // 2 MB
+    final String id = "1";
+    final TestExporterEntity entity = new TestExporterEntity().setId(id);
+
+    when(handler.handlesRecord(any())).thenReturn(true);
+    when(handler.generateIds(eq(record))).thenReturn(List.of(id));
+    when(handler.createNewEntity(eq(id))).thenReturn(entity);
+
+    batchWriter.addRecord(record);
+    assertThat(batchWriter.getBatchMemoryEstimateInMb()).isEqualTo(2);
+
+    // when
+    final BatchRequest batchRequest = mock(BatchRequest.class);
+    batchWriter.flush(batchRequest);
+
+    // then
+    assertThat(batchWriter.getBatchMemoryEstimateInMb()).isZero();
+  }
 }

@@ -47,6 +47,15 @@ public final class MockTypedRecord<T extends UnifiedRecordValue> implements Type
     return value;
   }
 
+  public void setValue(final T value) {
+    this.value = value;
+  }
+
+  @Override
+  public AuthInfo getAuthInfo() {
+    return metadata.getAuthorization();
+  }
+
   @Override
   public int getRequestStreamId() {
     return metadata.getRequestStreamId();
@@ -60,10 +69,6 @@ public final class MockTypedRecord<T extends UnifiedRecordValue> implements Type
   @Override
   public int getLength() {
     return metadata.getLength() + value.getLength();
-  }
-
-  public void setValue(final T value) {
-    this.value = value;
   }
 
   public void setMetadata(final RecordMetadata metadata) {
@@ -146,12 +151,12 @@ public final class MockTypedRecord<T extends UnifiedRecordValue> implements Type
   }
 
   @Override
-  public String toJson() {
-    throw new UnsupportedOperationException("not yet implemented");
+  public int getSerializedLength() {
+    return 0;
   }
 
   @Override
-  public AuthInfo getAuthInfo() {
-    return metadata.getAuthorization();
+  public String toJson() {
+    throw new UnsupportedOperationException("not yet implemented");
   }
 }
