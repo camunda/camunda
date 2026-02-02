@@ -218,7 +218,8 @@ public class RdbmsExporterWrapper implements Exporter {
     builder.withHandler(ValueType.GROUP, new GroupExportHandler(rdbmsWriters.getGroupWriter()));
     builder.withHandler(
         ValueType.INCIDENT,
-        new IncidentExportHandler(rdbmsWriters.getIncidentWriter(), processCache));
+        new IncidentExportHandler(
+            rdbmsWriters.getIncidentWriter(), processCache, rdbmsWriters.getErrorMessageSize()));
     builder.withHandler(
         ValueType.INCIDENT,
         new ProcessInstanceIncidentExportHandler(rdbmsWriters.getProcessInstanceWriter()));
@@ -228,10 +229,16 @@ public class RdbmsExporterWrapper implements Exporter {
     builder.withHandler(
         ValueType.PROCESS_INSTANCE,
         new ProcessInstanceExportHandler(
-            rdbmsWriters.getProcessInstanceWriter(), historyCleanupService, processCache));
+            rdbmsWriters.getProcessInstanceWriter(),
+            historyCleanupService,
+            processCache,
+            rdbmsWriters.getErrorMessageSize()));
     builder.withHandler(
         ValueType.PROCESS_INSTANCE,
-        new FlowNodeExportHandler(rdbmsWriters.getFlowNodeInstanceWriter(), processCache));
+        new FlowNodeExportHandler(
+            rdbmsWriters.getFlowNodeInstanceWriter(),
+            processCache,
+            rdbmsWriters.getErrorMessageSize()));
     builder.withHandler(
         ValueType.VARIABLE, new VariableExportHandler(rdbmsWriters.getVariableWriter()));
     builder.withHandler(
