@@ -142,7 +142,8 @@ public final class PartitionManagerImpl
             securityConfig,
             searchClientsProxy,
             brokerRequestAuthorizationConverter,
-            sharedRocksDbResources);
+            sharedRocksDbResources,
+            clusterConfigurationService);
     managementService =
         new DefaultPartitionManagementService(
             clusterServices.getMembershipService(), clusterServices.getCommunicationService());

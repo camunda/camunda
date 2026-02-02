@@ -28,7 +28,6 @@ import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.partition.impl.RaftPartitionServer;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
-import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthReport;
@@ -251,39 +250,11 @@ public final class RaftPartition implements Partition, HealthMonitorable {
   }
 
   public CompletableFuture<Void> stepDown() {
-    return server.stepDown();
-  }
-
-  /**
-   * Tries to step down if the following conditions are met:
-   *
-   * <ul>
-   *   <li>priority election is enabled
-   *   <li>the partition distributor determined a primary node
-   *   <li>this node is not the primary
-   * </ul>
-   */
-  public CompletableFuture<Void> stepDownIfNotPrimary() {
-    if (shouldStepDown()) {
-      LOG.info(
-          "Decided that {} should step down as {} from partition {} because {} is primary",
-          server.getMemberId(),
-          server.getRole(),
-          partitionMetadata.id(),
-          partitionMetadata.getPrimary().orElse(null));
-      return stepDown();
+    if (server != null && config.isPriorityElectionEnabled()) {
+      return server.stepDown();
     } else {
       return CompletableFuture.completedFuture(null);
     }
-  }
-
-  @VisibleForTesting
-  public boolean shouldStepDown() {
-    final var primary = partitionMetadata.getPrimary();
-    return server != null
-        && config.isPriorityElectionEnabled()
-        && primary.isPresent()
-        && !primary.get().equals(server.getMemberId());
   }
 
   public CompletableFuture<Void> stop() {

@@ -104,6 +104,8 @@ public final class ZeebePartitionFactory {
   private final SearchClientsProxy searchClientsProxy;
   private final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter;
   private final SharedRocksDbResources sharedRocksDbResources;
+  private final io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService
+      clusterConfigurationService;
 
   public ZeebePartitionFactory(
       final ActorSchedulingService actorSchedulingService,
@@ -123,7 +125,9 @@ public final class ZeebePartitionFactory {
       final SecurityConfiguration securityConfig,
       final SearchClientsProxy searchClientsProxy,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
-      final SharedRocksDbResources sharedRocksDbResources) {
+      final SharedRocksDbResources sharedRocksDbResources,
+      final io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService
+          clusterConfigurationService) {
     this.actorSchedulingService = actorSchedulingService;
     this.brokerCfg = brokerCfg;
     this.localBroker = localBroker;
@@ -142,6 +146,7 @@ public final class ZeebePartitionFactory {
     this.searchClientsProxy = searchClientsProxy;
     this.brokerRequestAuthorizationConverter = brokerRequestAuthorizationConverter;
     this.sharedRocksDbResources = sharedRocksDbResources;
+    this.clusterConfigurationService = clusterConfigurationService;
   }
 
   public ZeebePartition constructPartition(
@@ -196,6 +201,7 @@ public final class ZeebePartitionFactory {
             securityConfig,
             partitionMeterRegistry);
     context.setDynamicPartitionConfig(initialPartitionConfig);
+    context.setClusterConfigurationService(clusterConfigurationService);
 
     final PartitionTransition newTransitionBehavior =
         new PartitionTransitionImpl(generateTransitionSteps());

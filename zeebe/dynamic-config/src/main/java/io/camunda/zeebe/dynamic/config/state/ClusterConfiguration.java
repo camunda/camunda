@@ -377,6 +377,26 @@ public record ClusterConfiguration(
         .orElse(0);
   }
 
+  /**
+   * Returns the member with the highest priority for a given partition.
+   *
+   * @param partitionId the partition ID
+   * @return Optional containing the MemberId of the member with highest priority, or empty if
+   *     partition not found
+   */
+  public Optional<MemberId> getPrimaryMemberForPartition(final int partitionId) {
+    return members.entrySet().stream()
+        .filter(entry -> entry.getValue().hasPartition(partitionId))
+        .filter(entry -> entry.getValue().state() != State.LEFT)
+        .filter(entry -> entry.getValue().state() != State.UNINITIALIZED)
+        .max(
+            (e1, e2) ->
+                Integer.compare(
+                    e1.getValue().getPartition(partitionId).priority(),
+                    e2.getValue().getPartition(partitionId).priority()))
+        .map(Entry::getKey);
+  }
+
   public ClusterConfigurationChangeOperation nextPendingOperation() {
     if (!hasPendingChanges()) {
       throw new NoSuchElementException();
