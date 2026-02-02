@@ -114,7 +114,7 @@ public class UserTaskTools {
           final McpUserTaskAssignmentRequest assignmentOptions) {
     try {
       if (assignee == null || assignee.isBlank()) {
-        return unassignUserTask(userTaskKey);
+        return performUnassignment(userTaskKey);
       } else {
         // merge assignee root param with potential assignment options
         UserTaskAssignmentRequest request = new UserTaskAssignmentRequest().assignee(assignee);
@@ -125,14 +125,15 @@ public class UserTaskTools {
                   .action(assignmentOptions.getAction());
         }
 
-        return assignUserTask(userTaskKey, request);
+        return performAssignment(userTaskKey, request);
       }
     } catch (final Exception e) {
       return CallToolResultMapper.mapErrorToResult(e);
     }
   }
 
-  private CallToolResult assignUserTask(final Long userTaskKey, UserTaskAssignmentRequest request) {
+  private CallToolResult performAssignment(
+      final Long userTaskKey, UserTaskAssignmentRequest request) {
     final var mappedRequest = RequestMapper.toUserTaskAssignmentRequest(request, userTaskKey);
     if (mappedRequest.isLeft()) {
       return CallToolResultMapper.mapProblemToResult(mappedRequest.getLeft());
@@ -152,7 +153,7 @@ public class UserTaskTools {
                 .formatted(assignmentRequest.userTaskKey(), assignmentRequest.assignee()));
   }
 
-  private CallToolResult unassignUserTask(final long userTaskKey) {
+  private CallToolResult performUnassignment(final long userTaskKey) {
     final var unassignRequest = RequestMapper.toUserTaskUnassignmentRequest(userTaskKey);
 
     return CallToolResultMapper.fromPrimitive(
