@@ -25,7 +25,6 @@ import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.search.connect.plugin.PluginRepository;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
-import org.elasticsearch.client.RequestOptions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.parallel.Execution;
@@ -194,9 +193,10 @@ class ConnectorProxyTest {
         operateProperties.setElasticsearch(esProperties);
 
         final var connector = new ElasticsearchConnector(operateProperties);
+        connector.setObjectMapper(new ObjectMapper());
         final var client = connector.createEsClient(esProperties, new PluginRepository());
 
-        assertThat(client.ping(RequestOptions.DEFAULT)).isTrue();
+        assertThat(client.ping().value()).isTrue();
       }
       case OPENSEARCH -> {
         final var operateProperties = new OperateProperties();
