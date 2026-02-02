@@ -10,6 +10,7 @@ package io.camunda.search.entities;
 public enum BatchOperationType {
   RESOLVE_INCIDENT,
   CANCEL_PROCESS_INSTANCE,
+  DELETE_DECISION_INSTANCE,
   DELETE_PROCESS_INSTANCE,
   ADD_VARIABLE,
   UPDATE_VARIABLE,

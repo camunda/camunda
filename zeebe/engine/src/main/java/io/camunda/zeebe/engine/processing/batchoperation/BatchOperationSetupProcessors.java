@@ -12,6 +12,7 @@ import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
 import io.camunda.zeebe.engine.processing.batchoperation.handlers.CancelProcessInstanceBatchOperationExecutor;
+import io.camunda.zeebe.engine.processing.batchoperation.handlers.DeleteDecisionInstanceBatchOperationExecutor;
 import io.camunda.zeebe.engine.processing.batchoperation.handlers.DeleteProcessInstanceBatchOperationExecutor;
 import io.camunda.zeebe.engine.processing.batchoperation.handlers.MigrateProcessInstanceBatchOperationExecutor;
 import io.camunda.zeebe.engine.processing.batchoperation.handlers.ModifyProcessInstanceBatchOperationExecutor;
@@ -74,6 +75,9 @@ public final class BatchOperationSetupProcessors {
                 writers.command(), brokerRequestAuthorizationConverter),
             BatchOperationType.DELETE_PROCESS_INSTANCE,
             new DeleteProcessInstanceBatchOperationExecutor(
+                writers.command(), brokerRequestAuthorizationConverter),
+            BatchOperationType.DELETE_DECISION_INSTANCE,
+            new DeleteDecisionInstanceBatchOperationExecutor(
                 writers.command(), brokerRequestAuthorizationConverter));
 
     final var batchOperationInitializer =

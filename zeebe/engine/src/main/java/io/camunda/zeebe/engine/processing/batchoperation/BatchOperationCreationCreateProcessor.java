@@ -189,6 +189,8 @@ public final class BatchOperationCreationCreateProcessor
             case RESOLVE_INCIDENT -> PermissionType.CREATE_BATCH_OPERATION_RESOLVE_INCIDENT;
             case DELETE_PROCESS_INSTANCE ->
                 PermissionType.CREATE_BATCH_OPERATION_DELETE_PROCESS_INSTANCE;
+            case DELETE_DECISION_INSTANCE ->
+                PermissionType.CREATE_BATCH_OPERATION_DELETE_DECISION_INSTANCE;
           };
       return authCheckBehavior.isAuthorized(
           AuthorizationRequest.builder()

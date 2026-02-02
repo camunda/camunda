@@ -52,6 +52,7 @@ public class ItemProviderFactory {
           forDeleteProcessInstance(
               batchOperation.getEntityFilter(ProcessInstanceFilter.class),
               batchOperation.getAuthentication());
+      case DELETE_DECISION_INSTANCE -> forDeleteDecisionInstance();
     };
   }
 
@@ -111,5 +112,15 @@ public class ItemProviderFactory {
         metrics,
         filter.toBuilder().partitionId(partitionId).build(),
         authentication);
+  }
+
+  private ItemProvider forDeleteDecisionInstance() {
+    // Fake implementation - real implementation will be added in a future issue
+    return new ItemProvider() {
+      @Override
+      public ItemPage fetchItemPage(final String cursor, final int pageSize) {
+        return new ItemPage(java.util.Collections.emptyList(), null, 0, true);
+      }
+    };
   }
 }
