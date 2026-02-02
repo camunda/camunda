@@ -10,8 +10,10 @@ package io.camunda.security.validation;
 import static io.camunda.security.validation.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
 import static io.camunda.security.validation.ErrorMessages.ERROR_MESSAGE_ILLEGAL_CHARACTER;
 import static io.camunda.security.validation.ErrorMessages.ERROR_MESSAGE_TOO_MANY_CHARACTERS;
+import static java.util.Collections.emptyList;
 
 import io.camunda.zeebe.protocol.record.value.EntityType;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 import java.util.regex.Pattern;
@@ -34,6 +36,15 @@ public class IdentifierValidator {
   public IdentifierValidator(final Pattern idPattern, final Pattern groupIdPattern) {
     this.idPattern = idPattern;
     this.groupIdPattern = groupIdPattern;
+  }
+
+  public List<String> validateMembers(final List<String> memberIds, final EntityType memberType) {
+    if (memberIds == null) {
+      return emptyList();
+    }
+    final List<String> violations = new ArrayList<>();
+    memberIds.forEach(memberId -> validateMemberId(memberId, memberType, violations));
+    return violations;
   }
 
   public void validateMemberId(

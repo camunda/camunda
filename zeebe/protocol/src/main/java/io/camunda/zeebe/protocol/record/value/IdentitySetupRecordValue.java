@@ -44,4 +44,8 @@ public interface IdentitySetupRecordValue extends RecordValue {
   List<MappingRuleRecordValue> getMappingRules();
 
   Collection<AuthorizationRecordValue> getAuthorizations();
+
+  Collection<GroupRecordValue> getGroups();
+
+  Collection<GroupRecordValue> getGroupMembers();
 }

@@ -16,6 +16,7 @@ import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRe
 import io.camunda.zeebe.protocol.impl.record.value.authorization.IdentitySetupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRuleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
+import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.intent.IdentitySetupIntent;
@@ -39,23 +40,27 @@ import org.springframework.security.crypto.password.PasswordEncoder;
  */
 public final class IdentitySetupInitializer implements StreamProcessorLifecycleAware {
 
+  public static final String INVALID_CONFIGURED_ENTITY_MESSAGE =
+      "Found invalid %s. Aborting identity initialization! %n- %s";
   private static final Logger LOG = Loggers.PROCESS_PROCESSOR_LOGGER;
-
   private final SecurityConfiguration securityConfig;
   private final boolean enableIdentitySetup;
   private final AuthorizationConfigurer authorizationConfigurer;
   private final TenantConfigurer tenantConfigurer;
+  private final GroupConfigurer groupConfigurer;
   private final PasswordEncoder passwordEncoder;
 
   public IdentitySetupInitializer(
       final SecurityConfiguration securityConfig,
       final boolean enableIdentitySetup,
       final AuthorizationConfigurer authorizationConfigurer,
-      final TenantConfigurer tenantConfigurer) {
+      final TenantConfigurer tenantConfigurer,
+      final GroupConfigurer groupConfigurer) {
     this.securityConfig = securityConfig;
     this.enableIdentitySetup = enableIdentitySetup;
     this.authorizationConfigurer = authorizationConfigurer;
     this.tenantConfigurer = tenantConfigurer;
+    this.groupConfigurer = groupConfigurer;
     passwordEncoder = PasswordEncoderFactories.createDelegatingPasswordEncoder();
   }
 
@@ -100,26 +105,40 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
         authorizationConfigurer.configureEntities(initialization.getAuthorizations());
     final Either<List<String>, List<TenantRecord>> configuredTenants =
         tenantConfigurer.configureEntities(initialization.getTenants());
+    final Either<List<String>, List<GroupRecord>> configuredGroups =
+        groupConfigurer.configureEntities(initialization.getGroups());
 
     configuredAuthorizations.ifLeft(
         (violations) -> {
           throw new IdentityInitializationException(
-              "Found invalid authorizations. Aborting identity initialization! %n- %s"
-                  .formatted(String.join(System.lineSeparator() + "- ", violations)));
+              INVALID_CONFIGURED_ENTITY_MESSAGE.formatted(
+                  "authorizations", String.join(System.lineSeparator() + "- ", violations)));
         });
     configuredTenants.ifLeft(
         (violations) -> {
           throw new IdentityInitializationException(
-              "Found invalid tenants. Aborting identity initialization! %n- %s"
-                  .formatted(String.join(System.lineSeparator() + "- ", violations)));
+              INVALID_CONFIGURED_ENTITY_MESSAGE.formatted(
+                  "tenants", String.join(System.lineSeparator() + "- ", violations)));
+        });
+    configuredGroups.ifLeft(
+        (violations) -> {
+          throw new IdentityInitializationException(
+              INVALID_CONFIGURED_ENTITY_MESSAGE.formatted(
+                  "groups", String.join(System.lineSeparator() + "- ", violations)));
         });
     configuredAuthorizations.ifRight(auths -> auths.forEach(setupRecord::addAuthorization));
     configuredTenants.ifRight(tenants -> tenants.forEach(setupRecord::addTenant));
+    configuredGroups.ifRight(groups -> groups.forEach(setupRecord::addGroup));
     initialization
         .getTenants()
         .forEach(
             tenant ->
                 tenantConfigurer.configureMembers(tenant).forEach(setupRecord::addTenantMember));
+    initialization
+        .getGroups()
+        .forEach(
+            group ->
+                groupConfigurer.configureMembers(group).forEach(setupRecord::addGroupMember));
 
     initialization
         .getUsers()
