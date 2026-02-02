@@ -23,6 +23,8 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.system.ApplicationHome;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
 @ConditionalOnRestGatewayEnabled
@@ -30,7 +32,7 @@ import org.springframework.context.annotation.Configuration;
     name = "camunda.rest.swagger.enabled",
     havingValue = "true",
     matchIfMissing = true)
-public class OpenApiResourceConfig {
+public class OpenApiResourceConfig implements WebMvcConfigurer {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(OpenApiResourceConfig.class);
 
@@ -38,6 +40,12 @@ public class OpenApiResourceConfig {
 
   public OpenApiResourceConfig(final OpenApiConfigurer openApiConfigurer) {
     this.openApiConfigurer = openApiConfigurer;
+  }
+
+  @Override
+  public void addViewControllers(final ViewControllerRegistry registry) {
+    registry.addRedirectViewController("/swagger", "/swagger-ui/index.html");
+    registry.addRedirectViewController("/swagger/", "/swagger-ui/index.html");
   }
 
   @Bean

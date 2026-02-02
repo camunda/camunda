@@ -15,7 +15,6 @@ import io.camunda.search.filter.Operator;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.validation.IdentifierValidator;
-import io.camunda.zeebe.gateway.rest.config.JacksonConfig;
 import io.camunda.zeebe.gateway.rest.interceptor.SecondaryStorageInterceptor;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -26,20 +25,13 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.provider.Arguments;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.web.reactive.server.WebTestClient;
 
-@TestPropertySource(
-    properties = {
-      "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration"
-    })
-@Import({JacksonConfig.class, RestControllerTest.WebMvcTestConfig.class})
-public abstract class RestControllerTest {
+@Import({RestControllerTest.WebMvcTestConfig.class})
+public abstract class RestControllerTest extends RestTest {
   public static final List<List<Operation<Long>>> LONG_OPERATIONS =
       List.of(
           List.of(Operation.gt(5L)),
@@ -87,7 +79,6 @@ public abstract class RestControllerTest {
   protected static final CamundaAuthentication AUTHENTICATION_WITH_NON_DEFAULT_TENANT =
       CamundaAuthentication.of(a -> a.user("foo").group("groupId").tenant("tenantId"));
   private static final Pattern ID_PATTERN = Pattern.compile(SecurityConfiguration.DEFAULT_ID_REGEX);
-  @Autowired protected WebTestClient webClient;
   @MockitoBean protected SecondaryStorageInterceptor secondaryStorageInterceptor;
 
   @BeforeEach
