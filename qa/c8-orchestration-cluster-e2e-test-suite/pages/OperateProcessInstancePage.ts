@@ -354,7 +354,7 @@ class OperateProcessInstancePage {
       assertion: async () => {
         const filteredElementsData =
           await this.getHistoryElementsDataByName(itemName);
-        expect(filteredElementsData.length).toBeGreaterThan(0);
+        await expect.poll(() => filteredElementsData.length).toBeGreaterThan(0);
         if (filteredElementsData.length !== expectedStatus.length) {
           throw new Error(`Number does not match expected count.`);
         }
