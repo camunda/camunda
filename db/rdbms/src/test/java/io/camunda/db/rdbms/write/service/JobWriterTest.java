@@ -83,7 +83,9 @@ class JobWriterTest {
   }
 
   @Test
-  void shouldUpdateJob() {
+  void shouldUpdateJobWhenNotMerged() {
+    when(executionQueue.tryMergeWithExistingQueueItem(any())).thenReturn(false);
+
     final var model = mock(JobDbModel.class);
     when(model.jobKey()).thenReturn(123L);
 
@@ -98,5 +100,17 @@ class JobWriterTest {
                     123L,
                     "io.camunda.db.rdbms.sql.JobMapper.update",
                     model)));
+  }
+
+  @Test
+  void shouldMergeJobUpdateWhenPossible() {
+    when(executionQueue.tryMergeWithExistingQueueItem(any())).thenReturn(true);
+
+    final var model = mock(JobDbModel.class);
+    when(model.jobKey()).thenReturn(123L);
+
+    writer.update(model);
+
+    verify(executionQueue, never()).executeInQueue(any(QueueItem.class));
   }
 }
