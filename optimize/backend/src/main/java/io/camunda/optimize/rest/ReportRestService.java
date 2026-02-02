@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.rest;
 
+import static io.camunda.optimize.MetricEnum.REPORT_EVALUATION_TIME_METRIC;
 import static io.camunda.optimize.rest.constants.RestConstants.X_OPTIMIZE_CLIENT_LOCALE;
 import static io.camunda.optimize.rest.queryparam.QueryParamUtil.normalizeNullStringValue;
 import static io.camunda.optimize.rest.util.TimeZoneUtil.extractTimezone;
@@ -31,6 +32,8 @@ import io.camunda.optimize.service.report.ReportEvaluationService;
 import io.camunda.optimize.service.report.ReportService;
 import io.camunda.optimize.service.security.SessionService;
 import io.camunda.optimize.service.security.util.LocalDateUtil;
+import io.micrometer.core.instrument.Metrics;
+import io.micrometer.core.instrument.Timer;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.time.ZoneId;
@@ -156,6 +159,7 @@ public class ReportRestService {
       final HttpServletRequest request) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
     final ZoneId timezone = extractTimezone(request);
+    final long startTime = System.currentTimeMillis();
     final AuthorizedReportEvaluationResult reportEvaluationResult =
         reportEvaluationService.evaluateSavedReportWithAdditionalFilters(
             userId,
@@ -163,6 +167,13 @@ public class ReportRestService {
             reportId,
             reportEvaluationFilter,
             PaginationDto.fromPaginationRequest(paginationRequestDto));
+    final long took = System.currentTimeMillis() - startTime;
+    final Timer evaluationTimer =
+        Timer.builder(REPORT_EVALUATION_TIME_METRIC.getName())
+            .description(REPORT_EVALUATION_TIME_METRIC.getDescription())
+            .tag("reportId", reportId)
+            .register(Metrics.globalRegistry);
+    evaluationTimer.record(took, java.util.concurrent.TimeUnit.MILLISECONDS);
     return reportRestMapper.mapToLocalizedEvaluationResponseDto(
         reportEvaluationResult, request.getHeader(X_OPTIMIZE_CLIENT_LOCALE));
   }
