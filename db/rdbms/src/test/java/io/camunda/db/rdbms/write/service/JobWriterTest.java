@@ -7,14 +7,17 @@
  */
 package io.camunda.db.rdbms.write.service;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.sql.JobMapper;
+import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.domain.JobDbModel;
 import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
@@ -28,12 +31,19 @@ class JobWriterTest {
   private final JobMapper mapper = mock(JobMapper.class);
   private final VendorDatabaseProperties vendorDatabaseProperties =
       mock(VendorDatabaseProperties.class);
-  private final JobWriter writer = new JobWriter(executionQueue, mapper, vendorDatabaseProperties);
+  private final RdbmsWriterConfig config = mock(RdbmsWriterConfig.class);
+  private final RdbmsWriterConfig.InsertBatchingConfig insertBatchingConfig =
+      mock(RdbmsWriterConfig.InsertBatchingConfig.class);
+  private final JobWriter writer =
+      new JobWriter(executionQueue, mapper, vendorDatabaseProperties, config);
 
   @Test
-  void shouldCreateJob() {
+  void shouldCreateJobWhenNotMerged() {
     when(vendorDatabaseProperties.errorMessageSize()).thenReturn(5000);
     when(vendorDatabaseProperties.charColumnMaxBytes()).thenReturn(20000);
+    when(config.insertBatchingConfig()).thenReturn(insertBatchingConfig);
+    when(insertBatchingConfig.jobInsertBatchSize()).thenReturn(1);
+    when(executionQueue.tryMergeWithExistingQueueItem(any())).thenReturn(false);
 
     final var model = mock(JobDbModel.class);
     final var truncatedModel = mock(JobDbModel.class);
@@ -48,9 +58,27 @@ class JobWriterTest {
                 new QueueItem(
                     ContextType.JOB,
                     WriteStatementType.INSERT,
-                    123L,
+                    -1,
                     "io.camunda.db.rdbms.sql.JobMapper.insert",
-                    truncatedModel)));
+                    new JobMapper.BatchInsertJobsDto.Builder().job(truncatedModel).build())));
+  }
+
+  @Test
+  void shouldMergeJobInsertionWhenPossible() {
+    when(vendorDatabaseProperties.errorMessageSize()).thenReturn(5000);
+    when(vendorDatabaseProperties.charColumnMaxBytes()).thenReturn(20000);
+    when(config.insertBatchingConfig()).thenReturn(insertBatchingConfig);
+    when(insertBatchingConfig.jobInsertBatchSize()).thenReturn(10);
+    when(executionQueue.tryMergeWithExistingQueueItem(any())).thenReturn(true);
+
+    final var model = mock(JobDbModel.class);
+    final var truncatedModel = mock(JobDbModel.class);
+    when(model.truncateErrorMessage(anyInt(), anyInt())).thenReturn(truncatedModel);
+    when(model.jobKey()).thenReturn(123L);
+
+    writer.create(model);
+
+    verify(executionQueue, never()).executeInQueue(any(QueueItem.class));
   }
 
   @Test
