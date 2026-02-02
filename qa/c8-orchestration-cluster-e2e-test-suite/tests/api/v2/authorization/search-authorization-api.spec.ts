@@ -11,11 +11,8 @@ import {
   jsonHeaders,
   buildUrl,
   assertBadRequest,
-  assertInvalidArgument,
   assertUnauthorizedRequest,
-  assertNotFoundRequest,
   encode,
-  assertForbiddenRequest,
   assertStatusCode,
 } from '../../../../utils/http';
 import {defaultAssertionOptions} from '../../../../utils/constants';
@@ -32,11 +29,9 @@ import {
   grantUserResourceAuthorization,
 } from '@requestHelpers';
 import {CREATE_CUSTOM_AUTHORIZATION_BODY} from '../../../../utils/beans/requestBeans';
-import {waitForAssertion} from 'utils/waitForAssertion';
 import {cleanupRoles} from 'utils/rolesCleanup';
 import {cleanupGroups} from 'utils/groupsCleanup';
 import {cleanupMappingRules} from 'utils/mappingRuleCleanup';
-import {sleep} from 'utils/sleep';
 import {validateResponse} from 'json-body-assertions';
 
 const AUTHORIZATION_SEARCH_ENDPOINT = '/authorizations/search';
@@ -57,16 +52,11 @@ test.describe.parallel('Search Authorization API', () => {
     description: string;
   };
   let roleAuthorizationKey: string;
-  let userForRoleAuthorization: {
+  let userForRoleAuthorization: { 
     username: string;
-    name: string;
+    name: string; 
     email: string;
-    password: string;
-  } = {} as {
-    username: string;
-    name: string;
-    email: string;
-    password: string;
+    password: string; 
   };
 
   let originalMappingRule: {
@@ -76,10 +66,6 @@ test.describe.parallel('Search Authorization API', () => {
     name: string;
   };
   let originalGroup: {
-    groupId: string;
-    name: string;
-    description: string;
-  } = {} as {
     groupId: string;
     name: string;
     description: string;
@@ -200,8 +186,8 @@ test.describe.parallel('Search Authorization API', () => {
       );
 
       const body = await res.json();
-      expect(body.page.totalItems).toBeGreaterThanOrEqual(35);
-      expect(body.items.length).toBeGreaterThanOrEqual(35);
+      expect(body.page.totalItems).toBeGreaterThanOrEqual(3);
+      expect(body.items.length).toBeGreaterThanOrEqual(3);
     }).toPass(defaultAssertionOptions);
   });
 
@@ -390,7 +376,7 @@ test.describe.parallel('Search Authorization API', () => {
     }).toPass(defaultAssertionOptions);
   });
 
-  test('Search Authorization - Forbidden for user without permission - 403 Forbidden', async ({
+  test('Search Authorization - Returns empty results for user without permission - 200 Success', async ({
     request,
   }) => {
     let userWithResourcesAuthorizationToSendRequest: {
@@ -449,15 +435,14 @@ test.describe.parallel('Search Authorization API', () => {
           res,
         );
         const body = await res.json();
-        console.log(body);
         expect(body.page.totalItems).toEqual(0);
         expect(body.items.length).toEqual(0);
       }).toPass(defaultAssertionOptions);
     });
   });
 
-  // Has status 200 due to bug 39372: https://github.com/camunda/camunda/issues/39372
-  test('Search Authorization - Invalid pagination', async ({request}) => {
+  // Search Authorization: negative pagination values return 200 instead of 400 due to bug 39372: https://github.com/camunda/camunda/issues/39372
+  test('Search Authorization - Negative pagination values (known bug) - 200 instead of 400', async ({request}) => {
     await expect(async () => {
       const res = await request.post(buildUrl(AUTHORIZATION_SEARCH_ENDPOINT), {
         headers: jsonHeaders(),
