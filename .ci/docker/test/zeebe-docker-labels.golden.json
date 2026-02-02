@@ -17,5 +17,7 @@
   "org.opencontainers.image.title": "Zeebe",
   "org.opencontainers.image.url": "https://zeebe.io",
   "org.opencontainers.image.vendor": "Camunda Services GmbH",
-  "org.opencontainers.image.version": $VERSION
+  "org.opencontainers.image.version": $VERSION,
+  "io.minimus.images.galleryURL": "https://images.minimus.io/gallery/images/1212/openjre-base-compat",
+  "io.minimus.images.line": "21"
 }
