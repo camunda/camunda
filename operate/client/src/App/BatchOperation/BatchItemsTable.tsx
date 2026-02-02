@@ -7,10 +7,12 @@
  */
 
 import {useMemo, useCallback} from 'react';
+import {Link} from 'react-router-dom';
 import {SortableTable} from 'modules/components/SortableTable';
 import {useBatchOperationItems} from 'modules/queries/batch-operations/useBatchOperationItems';
 import {BatchStateIndicator} from 'App/BatchOperations/BatchStateIndicator';
 import {formatDate} from 'modules/utils/date';
+import {Paths} from 'modules/Routes';
 
 const TABLE_HEADERS = [
   {key: 'processInstanceKey', header: 'Process Instance Key', isDisabled: true},
@@ -50,11 +52,19 @@ export const BatchItemsTable: React.FC<Props> = ({
 
   const rows = useMemo(
     () =>
-      items.map((item) => ({
-        id: item.itemKey.toString(),
-        processInstanceKey: item.processInstanceKey,
-        state: <BatchStateIndicator status={item.state} />,
-        processedDate: formatDate(item.processedDate ?? ''),
+      items.map(({itemKey, processInstanceKey, state, processedDate}) => ({
+        id: itemKey.toString(),
+        processInstanceKey: (
+          <Link
+            to={Paths.processInstance(processInstanceKey)}
+            title={`View process instance ${processInstanceKey}`}
+            aria-label={`View process instance ${processInstanceKey}`}
+          >
+            {processInstanceKey}
+          </Link>
+        ),
+        state: <BatchStateIndicator status={state} />,
+        processedDate: formatDate(processedDate ?? ''),
       })),
     [items],
   );
