@@ -45,6 +45,7 @@ import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.TextContent;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -52,6 +53,9 @@ import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -98,8 +102,8 @@ class UserTaskToolsTest extends ToolsTest {
           .endCursor("v")
           .build();
 
-  static final String TRUNCATED_VALUE = "\"varValue";
-  static final String FULL_VALUE = "\"varValue\"";
+  static final String TRUNCATED_VALUE = "\\\"Lorem ipsum";
+  static final String FULL_VALUE = "\\\"Lorem ipsum dolor sit amet\\\"";
 
   static final VariableEntity VARIABLE_ENTITY =
       new VariableEntity(
@@ -340,6 +344,42 @@ class UserTaskToolsTest extends ToolsTest {
     }
 
     @Test
+    void shouldSearchUserTasksWithCompletionDateRangeFilter() {
+      // given
+      when(userTaskServices.search(any(UserTaskQuery.class)))
+          .thenReturn(USER_TASK_SEARCH_QUERY_RESULT);
+
+      final var completionDateFrom = OffsetDateTime.of(2026, 1, 15, 10, 20, 30, 0, ZoneOffset.UTC);
+      final var completionDateTo = OffsetDateTime.of(2026, 2, 28, 18, 45, 0, 0, ZoneOffset.UTC);
+
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder()
+                  .name("searchUserTasks")
+                  .arguments(
+                      Map.of(
+                          "filter",
+                          Map.of(
+                              "completionDate",
+                              Map.of(
+                                  "from", "2026-01-15T10:20:30Z", "to", "2026-02-28T18:45:00Z"))))
+                  .build());
+
+      // then
+      assertThat(result.isError()).isFalse();
+
+      verify(userTaskServices).search(userTaskQueryCaptor.capture());
+      final UserTaskQuery capturedQuery = userTaskQueryCaptor.getValue();
+
+      assertThat(capturedQuery.filter().completionDateOperations())
+          .extracting(Operation::operator, Operation::value)
+          .containsExactly(
+              tuple(Operator.GREATER_THAN_EQUALS, completionDateFrom),
+              tuple(Operator.LOWER_THAN, completionDateTo));
+    }
+
+    @Test
     void shouldIgnoreTenantIdCandidateGroupAndCandidateUserInFilter() {
       // given
       when(userTaskServices.search(any(UserTaskQuery.class)))
@@ -461,7 +501,7 @@ class UserTaskToolsTest extends ToolsTest {
     }
 
     @Test
-    void shouldUnassignUserTaskWhenAssigneeIsNull() {
+    void shouldUnassignUserTaskWhenAssigneeIsMissing() {
       // given
       when(userTaskServices.unassignUserTask(anyLong(), anyString()))
           .thenReturn(CompletableFuture.completedFuture(new UserTaskRecord()));
@@ -487,19 +527,21 @@ class UserTaskToolsTest extends ToolsTest {
       verify(userTaskServices).unassignUserTask(5L, "unassign");
     }
 
-    @Test
-    void shouldUnassignUserTaskWhenAssigneeIsEmpty() {
+    @ParameterizedTest
+    @NullAndEmptySource
+    @ValueSource(strings = {"  "})
+    void shouldUnassignUserTaskWhenAssigneeIsNullOrEmpty(String assignee) {
       // given
       when(userTaskServices.unassignUserTask(anyLong(), anyString()))
           .thenReturn(CompletableFuture.completedFuture(new UserTaskRecord()));
 
       // when
+      final var arguments = new LinkedHashMap<String, Object>(Map.of("userTaskKey", 5L));
+      arguments.put("assignee", assignee);
+
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("assignUserTask")
-                  .arguments(Map.of("userTaskKey", 5L, "assignee", ""))
-                  .build());
+              CallToolRequest.builder().name("assignUserTask").arguments(arguments).build());
 
       // then
       assertThat(result.isError()).isFalse();
