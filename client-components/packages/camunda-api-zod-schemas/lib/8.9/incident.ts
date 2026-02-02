@@ -28,7 +28,7 @@ const incidentProcessInstanceStatisticsByErrorSchema = z.object({
 const incidentProcessInstanceStatisticsByDefinitionSchema = z.object({
 	processDefinitionId: z.string(),
 	processDefinitionKey: z.number(),
-	processDefinitionName: z.string().nullable(),
+	processDefinitionName: z.string().optional(),
 	processDefinitionVersion: z.number(),
 	tenantId: z.string(),
 	activeInstancesWithErrorCount: z.number(),
