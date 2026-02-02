@@ -53,7 +53,6 @@ import io.camunda.gateway.protocol.model.ElementInstanceStateEnum;
 import io.camunda.gateway.protocol.model.EvaluatedDecisionInputItem;
 import io.camunda.gateway.protocol.model.EvaluatedDecisionOutputItem;
 import io.camunda.gateway.protocol.model.FormResult;
-import io.camunda.gateway.protocol.model.GlobalJobStatisticsItem;
 import io.camunda.gateway.protocol.model.GlobalJobStatisticsQueryResult;
 import io.camunda.gateway.protocol.model.GroupClientResult;
 import io.camunda.gateway.protocol.model.GroupClientSearchResult;
@@ -1499,31 +1498,25 @@ public final class SearchQueryResponseMapper {
 
   public static GlobalJobStatisticsQueryResult toGlobalJobStatisticsQueryResult(
       final GlobalJobStatisticsEntity entity) {
-    final var items =
-        ofNullable(entity)
-            .map(GlobalJobStatisticsEntity::items)
-            .map(
-                list ->
-                    list.stream()
-                        .map(SearchQueryResponseMapper::toGlobalJobStatisticsItem)
-                        .toList())
-            .orElseGet(Collections::emptyList);
+    if (entity == null) {
+      return new GlobalJobStatisticsQueryResult()
+          .created(new StatusMetric().count(0L))
+          .completed(new StatusMetric().count(0L))
+          .failed(new StatusMetric().count(0L))
+          .isIncomplete(false);
+    }
 
-    final var isIncomplete =
-        ofNullable(entity).map(GlobalJobStatisticsEntity::isIncomplete).orElse(false);
-
-    return new GlobalJobStatisticsQueryResult().items(items).isIncomplete(isIncomplete);
-  }
-
-  private static GlobalJobStatisticsItem toGlobalJobStatisticsItem(
-      final GlobalJobStatisticsEntity.StatisticsItem item) {
-    return new GlobalJobStatisticsItem()
-        .created(toStatusMetric(item.created()))
-        .completed(toStatusMetric(item.completed()))
-        .failed(toStatusMetric(item.failed()));
+    return new GlobalJobStatisticsQueryResult()
+        .created(toStatusMetric(entity.created()))
+        .completed(toStatusMetric(entity.completed()))
+        .failed(toStatusMetric(entity.failed()))
+        .isIncomplete(entity.isIncomplete());
   }
 
   private static StatusMetric toStatusMetric(final GlobalJobStatisticsEntity.StatusMetric metric) {
+    if (metric == null) {
+      return new StatusMetric().count(0L);
+    }
     return new StatusMetric()
         .count(metric.count())
         .lastUpdatedAt(formatDate(metric.lastUpdatedAt()));

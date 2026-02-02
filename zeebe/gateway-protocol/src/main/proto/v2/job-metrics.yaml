@@ -5,7 +5,7 @@ paths:
     post:
       x-eventually-consistent: true
       tags:
-        - Job metrics
+        - Job
       operationId: getGlobalJobStatistics
       summary: Global job statistics
       description: |
@@ -74,26 +74,10 @@ components:
       description: Global job statistics query result.
       type: object
       required:
-        - items
-        - isIncomplete
-      properties:
-        items:
-          description: List of aggregated job statistics.
-          type: array
-          items:
-            $ref: '#/components/schemas/GlobalJobStatisticsItem'
-        isIncomplete:
-          description: True if some data is missing because internal limits were reached and some metrics were not recorded.
-          type: boolean
-          example: false
-
-    GlobalJobStatisticsItem:
-      description: Aggregated job metrics for a time bucket.
-      type: object
-      required:
         - created
         - completed
         - failed
+        - isIncomplete
       properties:
         created:
           $ref: '#/components/schemas/StatusMetric'
@@ -101,6 +85,10 @@ components:
           $ref: '#/components/schemas/StatusMetric'
         failed:
           $ref: '#/components/schemas/StatusMetric'
+        isIncomplete:
+          description: True if some data is missing because internal limits were reached and some metrics were not recorded.
+          type: boolean
+          example: false
 
     StatusMetric:
       description: Metric for a single job status.

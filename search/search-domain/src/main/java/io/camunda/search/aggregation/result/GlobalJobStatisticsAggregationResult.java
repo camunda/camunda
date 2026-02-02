@@ -5,12 +5,9 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.search.entities;
+package io.camunda.search.aggregation.result;
 
-import java.time.OffsetDateTime;
+import io.camunda.search.entities.GlobalJobStatisticsEntity;
 
-public record GlobalJobStatisticsEntity(
-    StatusMetric created, StatusMetric completed, StatusMetric failed, boolean isIncomplete) {
-
-  public record StatusMetric(long count, OffsetDateTime lastUpdatedAt) {}
-}
+public record GlobalJobStatisticsAggregationResult(GlobalJobStatisticsEntity entity)
+    implements AggregationResultBase {}

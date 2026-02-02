@@ -9,6 +9,7 @@ package io.camunda.search.clients.transformers;
 
 import io.camunda.search.aggregation.AggregationBase;
 import io.camunda.search.aggregation.DecisionDefinitionLatestVersionAggregation;
+import io.camunda.search.aggregation.GlobalJobStatisticsAggregation;
 import io.camunda.search.aggregation.IncidentProcessInstanceStatisticsByDefinitionAggregation;
 import io.camunda.search.aggregation.IncidentProcessInstanceStatisticsByErrorAggregation;
 import io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation;
@@ -21,6 +22,7 @@ import io.camunda.search.aggregation.UsageMetricsAggregation;
 import io.camunda.search.aggregation.UsageMetricsTUAggregation;
 import io.camunda.search.aggregation.result.AggregationResultBase;
 import io.camunda.search.aggregation.result.DecisionDefinitionLatestVersionAggregationResult;
+import io.camunda.search.aggregation.result.GlobalJobStatisticsAggregationResult;
 import io.camunda.search.aggregation.result.IncidentProcessInstanceStatisticsByDefinitionAggregationResult;
 import io.camunda.search.aggregation.result.IncidentProcessInstanceStatisticsByErrorAggregationResult;
 import io.camunda.search.aggregation.result.ProcessDefinitionFlowNodeStatisticsAggregationResult;
@@ -37,6 +39,7 @@ import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.transformers.aggregation.AggregationTransformer;
 import io.camunda.search.clients.transformers.aggregation.DecisionDefinitionLatestVersionAggregationTransformer;
+import io.camunda.search.clients.transformers.aggregation.GlobalJobStatisticsAggregationTransformer;
 import io.camunda.search.clients.transformers.aggregation.IncidentProcessInstanceStatisticsByDefinitionAggregationTransformer;
 import io.camunda.search.clients.transformers.aggregation.IncidentProcessInstanceStatisticsByErrorAggregationTransformer;
 import io.camunda.search.clients.transformers.aggregation.ProcessDefinitionFlowNodeStatisticsAggregationTransformer;
@@ -49,6 +52,7 @@ import io.camunda.search.clients.transformers.aggregation.UsageMetricsAggregatio
 import io.camunda.search.clients.transformers.aggregation.UsageMetricsTUAggregationTransformer;
 import io.camunda.search.clients.transformers.aggregation.result.AggregationResultTransformer;
 import io.camunda.search.clients.transformers.aggregation.result.DecisionDefinitionLatestVersionAggregationResultTransformer;
+import io.camunda.search.clients.transformers.aggregation.result.GlobalJobStatisticsAggregationResultTransformer;
 import io.camunda.search.clients.transformers.aggregation.result.IncidentProcessInstanceStatisticsByDefinitionAggregationResultTransformer;
 import io.camunda.search.clients.transformers.aggregation.result.IncidentProcessInstanceStatisticsByErrorAggregationResultTransformer;
 import io.camunda.search.clients.transformers.aggregation.result.ProcessDefinitionFlowNodeStatisticsAggregationResultTransformer;
@@ -99,6 +103,7 @@ import io.camunda.search.clients.transformers.filter.DecisionRequirementsFilterT
 import io.camunda.search.clients.transformers.filter.FilterTransformer;
 import io.camunda.search.clients.transformers.filter.FlownodeInstanceFilterTransformer;
 import io.camunda.search.clients.transformers.filter.FormFilterTransformer;
+import io.camunda.search.clients.transformers.filter.GlobalJobStatisticsFilterTransformer;
 import io.camunda.search.clients.transformers.filter.GroupFilterTransformer;
 import io.camunda.search.clients.transformers.filter.GroupMemberFilterTransformer;
 import io.camunda.search.clients.transformers.filter.IncidentFilterTransformer;
@@ -166,6 +171,7 @@ import io.camunda.search.filter.DecisionRequirementsFilter;
 import io.camunda.search.filter.FilterBase;
 import io.camunda.search.filter.FlowNodeInstanceFilter;
 import io.camunda.search.filter.FormFilter;
+import io.camunda.search.filter.GlobalJobStatisticsFilter;
 import io.camunda.search.filter.GroupFilter;
 import io.camunda.search.filter.GroupMemberFilter;
 import io.camunda.search.filter.IncidentFilter;
@@ -199,6 +205,7 @@ import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.DecisionRequirementsQuery;
 import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.search.query.FormQuery;
+import io.camunda.search.query.GlobalJobStatisticsQuery;
 import io.camunda.search.query.GroupMemberQuery;
 import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.IncidentProcessInstanceStatisticsByDefinitionQuery;
@@ -275,6 +282,7 @@ import io.camunda.webapps.schema.descriptors.template.CorrelatedMessageSubscript
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.IncidentTemplate;
+import io.camunda.webapps.schema.descriptors.template.JobMetricsBatchTemplate;
 import io.camunda.webapps.schema.descriptors.template.JobTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate;
@@ -412,7 +420,8 @@ public final class ServiceTransformers {
             ClusterVariableQuery.class,
             AuditLogQuery.class,
             IncidentProcessInstanceStatisticsByErrorQuery.class,
-            IncidentProcessInstanceStatisticsByDefinitionQuery.class)
+            IncidentProcessInstanceStatisticsByDefinitionQuery.class,
+            GlobalJobStatisticsQuery.class)
         .forEach(cls -> mappers.put(cls, searchQueryTransformer));
 
     // document entity -> domain entity
@@ -556,6 +565,10 @@ public final class ServiceTransformers {
         UsageMetricsTUFilter.class,
         new UsageMetricsTUFilterTransformer(indexDescriptors.get(UsageMetricTUTemplate.class)));
     mappers.put(
+        GlobalJobStatisticsFilter.class,
+        new GlobalJobStatisticsFilterTransformer(
+            indexDescriptors.get(JobMetricsBatchTemplate.class)));
+    mappers.put(
         ProcessDefinitionStatisticsFilter.class,
         new ProcessDefinitionStatisticsFilterTransformer(
             mappers, indexDescriptors.get(ListViewTemplate.class)));
@@ -624,6 +637,8 @@ public final class ServiceTransformers {
     mappers.put(
         DecisionDefinitionLatestVersionAggregation.class,
         new DecisionDefinitionLatestVersionAggregationTransformer());
+    mappers.put(
+        GlobalJobStatisticsAggregation.class, new GlobalJobStatisticsAggregationTransformer());
 
     // aggregation result
     mappers.put(
@@ -657,5 +672,8 @@ public final class ServiceTransformers {
     mappers.put(
         DecisionDefinitionLatestVersionAggregationResult.class,
         new DecisionDefinitionLatestVersionAggregationResultTransformer());
+    mappers.put(
+        GlobalJobStatisticsAggregationResult.class,
+        new GlobalJobStatisticsAggregationResultTransformer());
   }
 }
