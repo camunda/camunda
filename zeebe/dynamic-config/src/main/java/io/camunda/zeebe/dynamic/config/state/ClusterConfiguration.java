@@ -389,6 +389,7 @@ public record ClusterConfiguration(
         .filter(entry -> entry.getValue().hasPartition(partitionId))
         .filter(entry -> entry.getValue().state() != State.LEFT)
         .filter(entry -> entry.getValue().state() != State.UNINITIALIZED)
+        .filter(entry -> entry.getValue().getPartition(partitionId) != null)
         .max(
             (e1, e2) ->
                 Integer.compare(
