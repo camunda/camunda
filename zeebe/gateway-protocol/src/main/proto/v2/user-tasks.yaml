@@ -414,7 +414,8 @@ components:
             - $ref: 'identifiers.yaml#/components/schemas/ElementId'
           description: The element ID of the user task.
         name:
-          type: string
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
           description: >
             The task name. This only works for data created with 8.8 and onwards.
             Instances from prior versions don't contain this data and cannot be found.
