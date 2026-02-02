@@ -13,7 +13,6 @@ import {open} from 'modules/mocks/diagrams';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockSearchProcessInstances} from 'modules/mocks/api/v2/processInstances/searchProcessInstances';
 import {
-  PROCESS_DEFINITION_KEY,
   mockProcessInstancesV2,
   setupSelectionStoreWithInstances,
   getProcessInstance,
@@ -32,21 +31,6 @@ const waitForDiagramToLoad = async (screen: Screen) => {
     expect(title).not.toBe('Please select an element from the diagram first.');
   });
 };
-
-vi.mock('modules/stores/processes/processes.list', () => {
-  const PROCESS_ID = 'MoveModificationProcess';
-
-  return {
-    processesStore: {
-      state: {processes: []},
-      versionsByProcessAndTenant: {
-        [`{${PROCESS_ID}}-{<default>}`]: [
-          {id: PROCESS_DEFINITION_KEY, version: 1},
-        ],
-      },
-    },
-  };
-});
 
 describe('<MoveAction />', () => {
   beforeEach(() => {
