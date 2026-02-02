@@ -126,8 +126,8 @@ public record RdbmsWriterConfig(
     // when passing PI keys to deleteRootProcessInstanceRelatedData()
     public static final int DEFAULT_HISTORY_CLEANUP_PROCESS_INSTANCE_BATCH_SIZE = 1000;
 
-    public static RdbmsWriterConfig.Builder builder() {
-      return new RdbmsWriterConfig.Builder();
+    public static HistoryConfig.Builder builder() {
+      return new HistoryConfig.Builder();
     }
 
     public static class Builder implements ObjectBuilder<HistoryConfig> {
