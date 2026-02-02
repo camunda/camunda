@@ -219,7 +219,7 @@ public final class OpensearchConnector {
 
     final var credentialsProvider = new BasicCredentialsProvider();
     credentialsProvider.setCredentials(
-        new AuthScope(getHttpHost(configuration)),
+        new AuthScope(null, -1),
         new UsernamePasswordCredentials(
             configuration.getUsername(), configuration.getPassword().toCharArray()));
 

@@ -24,9 +24,12 @@ import io.camunda.search.connect.plugin.PluginRepository;
 import java.util.List;
 import org.apache.hc.client5.http.async.methods.SimpleHttpRequest;
 import org.apache.hc.client5.http.async.methods.SimpleHttpResponse;
+import org.apache.hc.client5.http.auth.AuthScope;
+import org.apache.hc.client5.http.auth.CredentialsProvider;
 import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient;
 import org.apache.hc.client5.http.protocol.HttpClientContext;
 import org.apache.hc.core5.concurrent.FutureCallback;
+import org.apache.hc.core5.http.HttpHost;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -135,11 +138,52 @@ public class OpensearchConnectorTest {
     Assertions.assertThat(reqWrapper.getFirstHeader("foo").getValue()).isEqualTo("bar");
   }
 
+  @Test
+  void shouldResolveCredentialsForAllConfiguredUrls() throws Exception {
+    opensearchProperties.setUrls(List.of("http://opensearch-1:9205", "http://opensearch-2:9206"));
+    opensearchProperties.setUsername("user");
+    opensearchProperties.setPassword("secret");
+    final OpensearchConnector spyConnector = spy(opensearchConnector);
+    doReturn(true).when(spyConnector).checkHealth(any(OpenSearchClient.class));
+
+    final OpenSearchClient client =
+        spyConnector.createOsClient(opensearchProperties, new PluginRepository());
+
+    final var asyncClient =
+        getOpensearchApacheClient((ApacheHttpClient5Transport) client._transport());
+    final var credentialsProvider = getCredentialsProvider(asyncClient);
+    final var context = HttpClientContext.create();
+
+    Assertions.assertThat(
+            credentialsProvider.getCredentials(
+                new AuthScope(new HttpHost("http", "opensearch-1", 9205)), context))
+        .isNotNull();
+    Assertions.assertThat(
+            credentialsProvider.getCredentials(
+                new AuthScope(new HttpHost("http", "opensearch-2", 9206)), context))
+        .isNotNull();
+  }
+
   private static CloseableHttpAsyncClient getOpensearchApacheClient(
       final ApacheHttpClient5Transport client) throws Exception {
     final var field = client.getClass().getDeclaredField("client");
     field.setAccessible(true);
     return (CloseableHttpAsyncClient) field.get(client);
+  }
+
+  private static CredentialsProvider getCredentialsProvider(final CloseableHttpAsyncClient client)
+      throws Exception {
+    Class<?> current = client.getClass();
+    while (current != null) {
+      for (final var field : current.getDeclaredFields()) {
+        if (CredentialsProvider.class.isAssignableFrom(field.getType())) {
+          field.setAccessible(true);
+          return (CredentialsProvider) field.get(client);
+        }
+      }
+      current = current.getSuperclass();
+    }
+    throw new IllegalStateException("CredentialsProvider not found on client");
   }
 
   private static final class NoopCallback implements FutureCallback<SimpleHttpResponse> {

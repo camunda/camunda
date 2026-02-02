@@ -178,7 +178,7 @@ public class OpenSearchConnector {
 
     final BasicCredentialsProvider credentialsProvider = new BasicCredentialsProvider();
     credentialsProvider.setCredentials(
-        new AuthScope(getHttpHostForClient5(osConfig)),
+        new AuthScope(null, -1),
         new UsernamePasswordCredentials(
             osConfig.getUsername(), osConfig.getPassword().toCharArray()));
 
