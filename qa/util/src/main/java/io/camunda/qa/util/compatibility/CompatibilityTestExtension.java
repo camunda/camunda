@@ -239,6 +239,19 @@ public class CompatibilityTestExtension
       camundaContainer.withEnv("CAMUNDA_SECURITY_MULTI_TENANCY_CHECK_ENABLED", "true");
     }
 
+    // Apply additional environment variables from annotation
+    for (final String envVar : annotation.envVars()) {
+      final String[] parts = envVar.split("=", 2);
+      if (parts.length == 2) {
+        final String key = parts[0].trim();
+        final String value = parts[1].trim();
+        camundaContainer.withEnv(key, value);
+        LOGGER.debug("Setting custom environment variable: {}={}", key, value);
+      } else {
+        LOGGER.warn("Invalid environment variable format (expected KEY=VALUE): {}", envVar);
+      }
+    }
+
     // Configure initial user (required for basic auth)
     camundaContainer.withEnv("CAMUNDA_SECURITY_INITIALIZATION_USERS_0_USERNAME", "demo");
     camundaContainer.withEnv("CAMUNDA_SECURITY_INITIALIZATION_USERS_0_PASSWORD", "demo");
