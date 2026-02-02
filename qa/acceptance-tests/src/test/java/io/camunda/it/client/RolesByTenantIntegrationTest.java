@@ -34,8 +34,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 
 @MultiDbTest
-@CompatibilityTest
-public class RolesByTenantIntegrationTest {
+@CompatibilityTest(enableMultiTenancy = true, enableAuthorization = true)
+public class RolesByTenantIT {
 
   private static final String ADMIN_USERNAME = "admin";
   private static final String PASSWORD = "password";

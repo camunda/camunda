@@ -238,7 +238,7 @@ public class CompatibilityTestExtension
     }
 
     if (annotation.enableMultiTenancy()) {
-      camundaContainer.withEnv("CAMUNDA_SECURITY_MULTI_TENANCY_CHECK_ENABLED", "true");
+      camundaContainer.withEnv("CAMUNDA_SECURITY_MULTITENANCY_CHECKSENABLED", "true");
     }
 
     // Apply additional environment variables from annotation
