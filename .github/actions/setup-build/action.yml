@@ -31,6 +31,12 @@ inputs:
       Harbor login is automatically disabled for fork PRs.
     required: false
     default: "false"
+  minimus:
+    description: |
+      If enabled, logs into Minimus registry with a CI account.
+      Minimus login is automatically disabled for fork PRs.
+    required: false
+    default: "false"
   java-distribution:
     description: Java distribution to use
     required: false
@@ -251,5 +257,15 @@ runs:
     uses: docker/login-action@v3
     with:
       registry: registry.camunda.cloud
+      username: ${{ steps.secrets.outputs.ci-account-username }}
+      password: ${{ steps.secrets.outputs.ci-account-password }}
+  - name: Logs on to Minimus Registry
+    # Minimus login is disabled for fork PRs
+    if: >-
+      steps.is-fork.outputs.is-fork != 'true' &&
+      inputs.minimus == 'true'
+    uses: docker/login-action@v3
+    with:
+      registry: reg.mini.dev
       username: ${{ steps.secrets.outputs.ci-account-username }}
       password: ${{ steps.secrets.outputs.ci-account-password }}

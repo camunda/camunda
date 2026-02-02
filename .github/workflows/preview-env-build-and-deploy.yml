@@ -78,6 +78,7 @@ jobs:
 
     - uses: ./.github/actions/setup-build
       with:
+        minimus: true
         dockerhub-readonly: true
         harbor: true
         vault-address: ${{ secrets.VAULT_ADDR }}
