@@ -8,8 +8,9 @@
 package io.camunda.zeebe;
 
 import java.io.InputStream;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -20,6 +21,7 @@ import uk.co.real_logic.sbe.generation.CodeGenerator;
 import uk.co.real_logic.sbe.generation.java.JavaGenerator;
 import uk.co.real_logic.sbe.generation.java.JavaOutputManager;
 import uk.co.real_logic.sbe.ir.Ir;
+import uk.co.real_logic.sbe.ir.IrEncoder;
 import uk.co.real_logic.sbe.xml.IrGenerator;
 import uk.co.real_logic.sbe.xml.MessageSchema;
 import uk.co.real_logic.sbe.xml.ParserOptions;
@@ -83,8 +85,8 @@ public final class SbeGenerator {
             .build();
 
     for (final String filename : filenames) {
-      try (final InputStream in =
-          Files.newInputStream(FileSystems.getDefault().getPath(filename))) {
+      final Path filePath = Paths.get(filename);
+      try (final InputStream in = Files.newInputStream(filePath)) {
         final InputSource inputSource = new InputSource(in);
         inputSource.setSystemId(filename);
         final MessageSchema schema = XmlSchemaParser.parse(inputSource, options);
@@ -101,6 +103,26 @@ public final class SbeGenerator {
                 new JavaOutputManager(outputDir, ir.applicableNamespace()));
 
         codeGenerator.generate();
+
+        final String schemaFileName = filePath.getFileName().toString();
+        final String irFileName =
+            schemaFileName.substring(0, schemaFileName.lastIndexOf('.')) + ".sbeir";
+        final String irFilePath = filePath.resolveSibling(irFileName).toAbsolutePath().toString();
+        int attempts = 3;
+        while (attempts-- > 0) {
+          try (final IrEncoder irEncoder = new IrEncoder(irFilePath, ir)) {
+            irEncoder.encode();
+            break;
+          } catch (final Exception e) {
+            if (Thread.interrupted()) {
+              // Under IntelliJ, we get interrupted prematurely (unclear why). Swallow the interrupt
+              // and try again.
+              continue;
+            } else {
+              throw e;
+            }
+          }
+        }
       }
     }
   }
