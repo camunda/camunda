@@ -22,6 +22,7 @@ import {
   Title,
   ColumnRightPadding,
   CenteredRow,
+  DatePickerWrapper,
 } from "./components/styled";
 import {
   Button,
@@ -201,34 +202,39 @@ const List: FC = () => {
               size="sm"
             />
             <FormLabel>Timestamp</FormLabel>
-            <DatePicker
-              datePickerType="range"
-              dateFormat="Y-m-d"
-              value={[timestampRange.from ?? "", timestampRange.to ?? ""]}
-              onChange={(dates) => {
-                const [from, to] = dates;
-                setTimestampRange({
-                  from: from ? from.toISOString() : undefined,
-                  to: to ? to.toISOString() : undefined,
-                });
-              }}
-              short
-            >
-              <DatePickerInput
-                id="date-picker1"
-                labelText="From"
-                placeholder="YYYY-MM-DD"
-                hideLabel
-                size="sm"
-              />
-              <DatePickerInput
-                id="date-picker2"
-                labelText="To"
-                placeholder="YYYY-MM-DD"
-                hideLabel
-                size="sm"
-              />
-            </DatePicker>
+            <DatePickerWrapper>
+              <DatePicker
+                datePickerType="range"
+                dateFormat="Y-m-d"
+                value={[timestampRange.from ?? "", timestampRange.to ?? ""]}
+                onChange={(dates) => {
+                  const [from, to] = dates;
+                  setTimestampRange({
+                    from: from ? from.toISOString() : undefined,
+                    to: to ? to.toISOString() : undefined,
+                  });
+                }}
+              >
+                <DatePickerInput
+                  id="date-picker1"
+                  labelText="From"
+                  placeholder="YYYY-MM-DD"
+                  hideLabel
+                  size="sm"
+                  // @ts-expect-error - autoComplete is not in type definition but supported by underlying input
+                  autoComplete="off"
+                />
+                <DatePickerInput
+                  id="date-picker2"
+                  labelText="To"
+                  placeholder="YYYY-MM-DD"
+                  hideLabel
+                  size="sm"
+                  // @ts-expect-error - autoComplete is not in type definition but supported by underlying input
+                  autoComplete="off"
+                />
+              </DatePicker>
+            </DatePickerWrapper>
             <CenteredRow>
               <Button
                 kind="ghost"
