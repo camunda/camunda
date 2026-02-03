@@ -181,33 +181,10 @@ describe('ElementInstancesTree - Ad Hoc Sub Process Inner Instance', () => {
       await screen.findByText('Ad Hoc Inner Subprocess Test'),
     ).toBeInTheDocument();
 
-    mockServer.use(
-      http.post(
-        endpoints.queryElementInstances.getUrl(),
-        async ({request}) => {
-          const body = await request.json();
-          const result = queryElementInstancesRequestBodySchema.safeParse(body);
-
-          if (
-            !result.success ||
-            result.data?.filter?.elementInstanceScopeKey !== 'inner-1'
-          ) {
-            return HttpResponse.json(
-              {
-                error:
-                  'Invalid payload: elementInstanceScopeKey must be in filter',
-              },
-              {status: 400},
-            );
-          }
-
-          return HttpResponse.json(
-            adHocSubProcessInnerInstanceElementInstances.emptyLevel,
-          );
-        },
-        {once: true},
-      ),
-    );
+    mockSearchElementInstances().withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
 
     await user.click(
       await screen.findByLabelText('Ad Hoc Sub Process Inner Instance', {
@@ -246,27 +223,7 @@ describe('ElementInstancesTree - Ad Hoc Sub Process Inner Instance', () => {
       await screen.findByText('Ad Hoc Inner Subprocess Test'),
     ).toBeInTheDocument();
 
-    mockServer.use(
-      http.post(
-        endpoints.queryElementInstances.getUrl(),
-        async ({request}) => {
-          const body = await request.json();
-          const result = queryElementInstancesRequestBodySchema.safeParse(body);
-
-          if (
-            !result.success ||
-            result.data?.filter?.elementInstanceScopeKey !== 'inner-1'
-          ) {
-            throw new Error(
-              'Test assertion failed: Invalid payload structure. Expected filter.elementInstanceScopeKey="inner-1"',
-            );
-          }
-
-          return HttpResponse.json({error: 'an error occurred'}, {status: 400});
-        },
-        {once: true},
-      ),
-    );
+    mockSearchElementInstances().withNetworkError();
 
     await user.click(
       await screen.findByLabelText('Ad Hoc Sub Process Inner Instance', {
