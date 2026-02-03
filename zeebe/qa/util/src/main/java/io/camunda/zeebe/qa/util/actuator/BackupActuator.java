@@ -24,8 +24,8 @@ import feign.codec.ErrorDecoder;
 import feign.jackson.JacksonDecoder;
 import feign.jackson.JacksonEncoder;
 import io.camunda.management.backups.BackupInfo;
+import io.camunda.management.backups.CheckpointState;
 import io.camunda.management.backups.TakeBackupRuntimeResponse;
-import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator.ErrorResponse.Payload;
 import io.camunda.zeebe.qa.util.cluster.TestApplication;
 import io.zeebe.containers.ZeebeNode;
@@ -131,7 +131,7 @@ public interface BackupActuator {
 
   @RequestLine("GET /state")
   @Headers({"Content-Type: application/json", "Accept: application/json"})
-  CheckpointStateResponse state();
+  CheckpointState state();
 
   /**
    * Custom error handler, mapping errors with body to custom types for easier

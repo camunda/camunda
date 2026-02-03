@@ -11,7 +11,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.configuration.Filesystem;
 import io.camunda.configuration.PrimaryStorageBackup;
-import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse.PartitionBackupRange;
+import io.camunda.management.backups.PartitionBackupRange;
+import io.camunda.management.backups.PartitionBackupState;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
@@ -98,19 +99,20 @@ final class BackupRangeTrackingIT {
               final var ranges = states.getRanges();
               assertThat(ranges)
                   .describedAs("Each partition should have exactly one backup range")
-                  .extracting(PartitionBackupRange::partitionId)
+                  .extracting(PartitionBackupRange::getPartitionId)
                   .containsExactlyInAnyOrder(1, 2, 3);
               assertThat(ranges)
                   .allSatisfy(
                       range -> {
                         assertThat(states.getBackupStates())
                             .satisfiesOnlyOnce(
-                                state -> {
-                                  assertThat(state.partitionId()).isEqualTo(range.partitionId());
-                                  assertThat(state.checkpointId())
-                                      .isGreaterThanOrEqualTo(range.first().checkpointId());
+                                (final PartitionBackupState state) -> {
+                                  assertThat(state.getPartitionId())
+                                      .isEqualTo(range.getPartitionId());
+                                  assertThat(state.getCheckpointId())
+                                      .isGreaterThanOrEqualTo(range.getStart());
                                 });
-                        assertThat(range.last()).isNotEqualTo(range.first());
+                        assertThat(range.getEnd()).isNotEqualTo(range.getStart());
                       });
             });
   }
@@ -141,7 +143,7 @@ final class BackupRangeTrackingIT {
 
     final var lastBackupBeforeLeaderChange =
         actuator.state().getBackupStates().stream()
-            .filter(state -> state.partitionId() == 1)
+            .filter((final PartitionBackupState state) -> state.getPartitionId() == 1)
             .findFirst()
             .orElseThrow();
 
@@ -150,11 +152,11 @@ final class BackupRangeTrackingIT {
         .atMost(Duration.ofSeconds(30))
         .untilAsserted(
             () -> {
-              final var states = actuator.state();
+              final io.camunda.management.backups.CheckpointState states = actuator.state();
               final var ranges = states.getRanges();
               final var lastBackupAfterLeaderChange =
                   actuator.state().getBackupStates().stream()
-                      .filter(state -> state.partitionId() == 1)
+                      .filter((final PartitionBackupState state) -> state.getPartitionId() == 1)
                       .findFirst()
                       .orElseThrow();
               assertThat(lastBackupBeforeLeaderChange)
@@ -162,16 +164,16 @@ final class BackupRangeTrackingIT {
                   .isNotEqualTo(lastBackupAfterLeaderChange);
               assertThat(ranges)
                   .describedAs("Each partition should still have exactly one backup range")
-                  .extracting(PartitionBackupRange::partitionId)
+                  .extracting(PartitionBackupRange::getPartitionId)
                   .containsExactlyInAnyOrder(1, 2, 3);
               final var latestRange =
                   ranges.stream()
-                      .filter(range -> range.partitionId() == 1)
+                      .filter(range -> range.getPartitionId() == 1)
                       .findFirst()
                       .orElseThrow();
-              assertThat(latestRange.last().checkpointId())
+              assertThat(latestRange.getEnd())
                   .describedAs("Range should end with the latest checkpoint")
-                  .isEqualTo(lastBackupAfterLeaderChange.checkpointId());
+                  .isEqualTo(lastBackupAfterLeaderChange.getCheckpointId());
             });
   }
 

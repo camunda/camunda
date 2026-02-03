@@ -16,6 +16,7 @@ import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.broker.client.api.NoTopologyAvailableException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.protocol.impl.encoding.BackupListResponse;
+import io.camunda.zeebe.protocol.impl.encoding.BackupRangesResponse;
 import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse;
 import io.camunda.zeebe.protocol.management.BackupStatusCode;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
@@ -42,12 +43,6 @@ public final class BackupRequestHandler implements BackupApi {
     this.brokerClient = brokerClient;
     topologyManager = brokerClient.getTopologyManager();
     checkpointIdGenerator = new CheckpointIdGenerator();
-  }
-
-  public BackupRequestHandler(final BrokerClient brokerClient, final long backupIdOffset) {
-    this.brokerClient = brokerClient;
-    topologyManager = brokerClient.getTopologyManager();
-    checkpointIdGenerator = new CheckpointIdGenerator(backupIdOffset);
   }
 
   public BackupRequestHandler(
@@ -112,6 +107,28 @@ public final class BackupRequestHandler implements BackupApi {
                               .map(BrokerResponse::getResponse)
                               .collect(Collectors.toSet()))
                   .thenApply(this::aggregateCheckpointResponses);
+            });
+  }
+
+  @Override
+  public CompletionStage<BackupRangesResponse> getBackupRanges() {
+    return checkTopologyComplete()
+        .thenCompose(
+            topology -> {
+              final var responsesReceived =
+                  topology.getPartitions().stream()
+                      .map(this::createRangesRequest)
+                      .map(brokerClient::sendRequestWithRetry)
+                      .toList();
+
+              return CompletableFuture.allOf(responsesReceived.toArray(CompletableFuture[]::new))
+                  .thenApply(
+                      ignored ->
+                          responsesReceived.stream()
+                              .map(CompletableFuture::join)
+                              .map(BrokerResponse::getResponse)
+                              .collect(Collectors.toSet()))
+                  .thenApply(this::aggregateRangesResponses);
             });
   }
 
@@ -398,16 +415,26 @@ public final class BackupRequestHandler implements BackupApi {
     final var backupStates =
         responses.stream().flatMap(r -> r.getBackupStates().stream()).collect(Collectors.toSet());
 
-    final var ranges = responses.stream().flatMap(r -> r.getRanges().stream()).toList();
-
     response.setCheckpointStates(checkpointStates);
     response.setBackupStates(backupStates);
+    return response;
+  }
+
+  private BackupRangesResponse aggregateRangesResponses(final Set<BackupRangesResponse> responses) {
+    final var response = new BackupRangesResponse();
+    final var ranges = responses.stream().flatMap(r -> r.getRanges().stream()).toList();
     response.setRanges(ranges);
     return response;
   }
 
   private BrokerCheckpointStateRequest createCheckpointRequest(final int partitionId) {
     final var request = new BrokerCheckpointStateRequest();
+    request.setPartitionId(partitionId);
+    return request;
+  }
+
+  private BrokerBackupRangesRequest createRangesRequest(final int partitionId) {
+    final var request = new BrokerBackupRangesRequest();
     request.setPartitionId(partitionId);
     return request;
   }

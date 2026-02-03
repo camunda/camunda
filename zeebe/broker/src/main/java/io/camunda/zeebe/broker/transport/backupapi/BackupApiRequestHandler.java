@@ -18,10 +18,11 @@ import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.protocol.impl.encoding.BackupListResponse;
+import io.camunda.zeebe.protocol.impl.encoding.BackupRangesResponse;
+import io.camunda.zeebe.protocol.impl.encoding.BackupRangesResponse.CheckpointInfo;
+import io.camunda.zeebe.protocol.impl.encoding.BackupRangesResponse.PartitionBackupRange;
 import io.camunda.zeebe.protocol.impl.encoding.BackupStatusResponse;
 import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse;
-import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse.CheckpointInfo;
-import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse.PartitionBackupRange;
 import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse.PartitionCheckpointState;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
@@ -101,6 +102,7 @@ public final class BackupApiRequestHandler
       case LIST -> handleListBackupRequest(requestReader, responseWriter, errorWriter);
       case DELETE -> handleDeleteBackupRequest(requestReader, responseWriter, errorWriter);
       case QUERY_STATE -> handleQueryStateRequest(responseWriter, errorWriter);
+      case QUERY_RANGES -> handleQueryRangesRequest(responseWriter, errorWriter);
       default ->
           CompletableActorFuture.completed(unknownRequest(errorWriter, requestReader.type()));
     };
@@ -241,6 +243,16 @@ public final class BackupApiRequestHandler
               checkpointState.getLatestCheckpointPosition());
       response.getCheckpointStates().add(cpState);
     }
+    result.complete(Either.right(responseWriter.withCheckpointState(response)));
+    return result;
+  }
+
+  private ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>>
+      handleQueryRangesRequest(
+          final BackupApiResponseWriter responseWriter, final ErrorResponseWriter errorWriter) {
+    final ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>> result =
+        new CompletableActorFuture<>();
+    final var response = new BackupRangesResponse();
 
     backupManager
         .getBackupRangeStatus()
@@ -261,7 +273,7 @@ public final class BackupApiRequestHandler
                                   fromBackupStatus(r.last()),
                                   r.missingCheckpoints()))
                       .toList());
-              result.complete(Either.right(responseWriter.withCheckpointState(response)));
+              result.complete(Either.right(responseWriter.withBackupRanges(response)));
             });
 
     return result;

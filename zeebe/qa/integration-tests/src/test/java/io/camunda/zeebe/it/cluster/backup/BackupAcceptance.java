@@ -12,12 +12,11 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import feign.FeignException;
 import io.camunda.management.backups.BackupInfo;
+import io.camunda.management.backups.BackupType;
 import io.camunda.management.backups.PartitionBackupInfo;
+import io.camunda.management.backups.PartitionBackupRange;
 import io.camunda.management.backups.StateCode;
 import io.camunda.management.backups.TakeBackupRuntimeResponse;
-import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse.PartitionBackupRange;
-import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse.PartitionCheckpointState;
-import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import java.time.Duration;
@@ -150,21 +149,13 @@ public interface BackupAcceptance {
 
     assertThat(response.getBackupStates())
         .allSatisfy(
-            state ->
-                assertThat(state)
-                    .extracting(
-                        PartitionCheckpointState::checkpointId,
-                        PartitionCheckpointState::checkpointType)
-                    .containsExactly(backupId, CheckpointType.MANUAL_BACKUP));
+            state -> {
+              assertThat(state.getCheckpointId()).isEqualTo(backupId);
+              assertThat(state.getCheckpointType()).isEqualTo(BackupType.MANUAL_BACKUP);
+            });
 
     assertThat(response.getCheckpointStates())
-        .allSatisfy(
-            state ->
-                assertThat(state)
-                    .extracting(
-                        PartitionCheckpointState::checkpointId,
-                        PartitionCheckpointState::checkpointType)
-                    .containsExactly(backupId, CheckpointType.MANUAL_BACKUP));
+        .allSatisfy(state -> assertThat(state.getCheckpointId()).isEqualTo(backupId));
 
     Awaitility.await("until backup range is created")
         .atMost(Duration.ofSeconds(30))
@@ -173,17 +164,15 @@ public interface BackupAcceptance {
               final var ranges = actuator.state().getRanges();
               assertThat(ranges)
                   .describedAs("Backup ranges should be unique per partition")
-                  .extracting(PartitionBackupRange::partitionId)
+                  .extracting(PartitionBackupRange::getPartitionId)
                   .doesNotHaveDuplicates();
               assertThat(ranges)
                   .describedAs("All backup ranges should start and end with the same backup")
                   .allSatisfy(
                       range -> {
-                        assertThat(range.first().checkpointId()).isEqualTo(backupId);
-                        assertThat(range.first().checkpointType())
-                            .isEqualTo(CheckpointType.MANUAL_BACKUP);
-                        assertThat(range.first()).isEqualTo(range.last());
-                        assertThat(range.missingCheckpoints()).isEmpty();
+                        assertThat(range.getStart()).isEqualTo(backupId);
+                        assertThat(range.getEnd()).isEqualTo(backupId);
+                        assertThat(range.getMissingCheckpoints()).isEmpty();
                       });
             });
   }

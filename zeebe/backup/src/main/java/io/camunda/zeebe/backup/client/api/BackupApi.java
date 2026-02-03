@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.backup.client.api;
 
+import io.camunda.zeebe.protocol.impl.encoding.BackupRangesResponse;
 import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
@@ -52,6 +53,11 @@ public interface BackupApi {
    * @return the latest checkpoint and state for all partitions
    */
   CompletionStage<CheckpointStateResponse> getCheckpointState();
+
+  /**
+   * @return all backup ranges for all partitions
+   */
+  CompletionStage<BackupRangesResponse> getBackupRanges();
 
   /**
    * @return a list of available backups

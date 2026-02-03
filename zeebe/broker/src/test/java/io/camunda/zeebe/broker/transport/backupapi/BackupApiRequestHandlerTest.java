@@ -28,6 +28,8 @@ import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.protocol.impl.encoding.BackupListResponse;
+import io.camunda.zeebe.protocol.impl.encoding.BackupRangesResponse;
+import io.camunda.zeebe.protocol.impl.encoding.BackupRangesResponse.CheckpointInfo;
 import io.camunda.zeebe.protocol.impl.encoding.BackupRequest;
 import io.camunda.zeebe.protocol.impl.encoding.BackupStatusResponse;
 import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse;
@@ -536,9 +538,6 @@ final class BackupApiRequestHandlerTest {
   @Test
   void shouldReturnBackupRanges() {
     // given
-    when(checkpointState.getLatestCheckpointId()).thenReturn(NO_CHECKPOINT);
-    when(checkpointState.getLatestBackupId()).thenReturn(NO_CHECKPOINT);
-
     final long checkpointId1 = 10;
     final long checkpointId2 = 20;
     final long checkpointId3 = 30;
@@ -555,20 +554,20 @@ final class BackupApiRequestHandlerTest {
         .thenReturn(CompletableActorFuture.completed(List.of(range1, range2)));
 
     final var request =
-        new BackupRequest().setType(BackupRequestType.QUERY_STATE).setPartitionId(1);
+        new BackupRequest().setType(BackupRequestType.QUERY_RANGES).setPartitionId(1);
 
     // when
-    final var stateResponse = new CheckpointStateResponse();
-    serverOutput.setResponseObject(stateResponse);
+    final var rangesResponse = new BackupRangesResponse();
+    serverOutput.setResponseObject(rangesResponse);
     handleRequest(request);
 
     // then
     assertThat(responseFuture).succeedsWithin(Duration.ofMillis(100)).matches(Either::isRight);
-    assertThat(stateResponse.getRanges())
+    assertThat(rangesResponse.getRanges())
         .containsExactlyInAnyOrder(
-            new CheckpointStateResponse.PartitionBackupRange(
+            new BackupRangesResponse.PartitionBackupRange(
                 1, toCheckpointInfo(status1), toCheckpointInfo(status2), Set.of()),
-            new CheckpointStateResponse.PartitionBackupRange(
+            new BackupRangesResponse.PartitionBackupRange(
                 1, toCheckpointInfo(status3), toCheckpointInfo(status4), Set.of(25L)));
   }
 
@@ -583,10 +582,9 @@ final class BackupApiRequestHandlerTest {
         Optional.of(NOW));
   }
 
-  private static CheckpointStateResponse.CheckpointInfo toCheckpointInfo(
-      final BackupStatus status) {
+  private static CheckpointInfo toCheckpointInfo(final BackupStatus status) {
     final var descriptor = status.descriptor().orElseThrow();
-    return new CheckpointStateResponse.CheckpointInfo(
+    return new CheckpointInfo(
         status.id().checkpointId(),
         descriptor.firstLogPosition().orElse(-1L),
         descriptor.checkpointPosition(),
