@@ -239,6 +239,7 @@ public class CompatibilityTestExtension
 
     if (annotation.enableMultiTenancy()) {
       camundaContainer.withEnv("CAMUNDA_SECURITY_MULTITENANCY_CHECKSENABLED", "true");
+      camundaContainer.withEnv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI", "false");
     }
 
     // Apply additional environment variables from annotation

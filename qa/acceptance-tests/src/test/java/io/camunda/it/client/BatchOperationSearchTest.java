@@ -53,7 +53,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 @MultiDbTest
-@CompatibilityTest
+@CompatibilityTest(enableAuthorization = true)
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 public class BatchOperationSearchTest {
 
@@ -70,8 +70,7 @@ public class BatchOperationSearchTest {
   @BeforeAll
   public static void beforeAll(final TestInfo testInfo) {
     Objects.requireNonNull(camundaClient);
-    testScopeId =
-        testInfo.getTestMethod().map(Method::toString).orElse(UUID.randomUUID().toString());
+    testScopeId = UUID.randomUUID().toString();
 
     deployProcessAndWaitForIt(camundaClient, "process/service_tasks_v1.bpmn")
         .getProcessDefinitionKey();

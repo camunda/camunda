@@ -34,7 +34,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 
 @MultiDbTest
-@CompatibilityTest(enableMultiTenancy = true, enableAuthorization = true)
+@CompatibilityTest()
 public class RolesByTenantIT {
 
   private static final String ADMIN_USERNAME = "admin";
@@ -306,38 +306,8 @@ public class RolesByTenantIT {
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
-              final var tenantById = getTenantById(tenantId);
-              // Validate the response
-              assert tenantById.isRight();
+              final var response = camundaClient.newTenantsSearchRequest().filter(tenantFilter -> tenantFilter.tenantId(tenantId)).send().join();
+              assertThat(response).isNotNull();
             });
   }
-
-  // TODO once available, this test should use the client to make the request
-  private Either<Tuple<HttpStatus, String>, TenantResponse> getTenantById(final String tenantId)
-      throws URISyntaxException, IOException, InterruptedException {
-    final var encodedCredentials =
-        Base64.getEncoder().encodeToString("%s:%s".formatted(ADMIN_USERNAME, PASSWORD).getBytes());
-    final HttpRequest request =
-        HttpRequest.newBuilder()
-            .uri(
-                new URI(
-                    "%s%s"
-                        .formatted(
-                            camundaClient.getConfiguration().getRestAddress().toString(),
-                            "v2/tenants/%s".formatted(tenantId))))
-            .GET()
-            .header("Authorization", "Basic %s".formatted(encodedCredentials))
-            .build();
-
-    // Send the request and get the response
-    final HttpResponse<String> response =
-        httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-
-    if (response.statusCode() == HttpStatus.OK.value()) {
-      return Either.right(OBJECT_MAPPER.readValue(response.body(), TenantResponse.class));
-    }
-    return Either.left(Tuple.of(HttpStatus.resolve(response.statusCode()), response.body()));
-  }
-
-  private record TenantResponse(String tenantId) {}
 }
