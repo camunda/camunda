@@ -65,9 +65,9 @@ const DiagramHeader: React.FC<DiagramHeaderProps> = observer(
   },
 );
 
-function DefinitionSelectionContent(
-  props: Pick<DiagramHeaderProps, 'processDefinitionSelection'>,
-) {
+const DefinitionSelectionContent: React.FC<
+  Pick<DiagramHeaderProps, 'processDefinitionSelection'>
+> = (props) => {
   if (props.processDefinitionSelection.kind === 'no-match') {
     return null;
   }
@@ -93,11 +93,11 @@ function DefinitionSelectionContent(
       </Description>
     </>
   );
-}
+};
 
-function VersionTagContent(
-  props: Pick<DiagramHeaderProps, 'processDefinitionSelection'>,
-) {
+const VersionTagContent: React.FC<
+  Pick<DiagramHeaderProps, 'processDefinitionSelection'>
+> = (props) => {
   if (props.processDefinitionSelection.kind !== 'single-version') {
     return null;
   }
@@ -115,11 +115,11 @@ function VersionTagContent(
       <DescriptionData title={versionTag}>{versionTag}</DescriptionData>
     </Description>
   );
-}
+};
 
-function ProcessOperationsContent(
-  props: Pick<DiagramHeaderProps, 'processDefinitionSelection'>,
-) {
+const ProcessOperationsContent: React.FC<
+  Pick<DiagramHeaderProps, 'processDefinitionSelection'>
+> = (props) => {
   if (props.processDefinitionSelection.kind !== 'single-version') {
     return null;
   }
@@ -136,6 +136,6 @@ function ProcessOperationsContent(
       processVersion={version}
     />
   );
-}
+};
 
 export {DiagramHeader};
