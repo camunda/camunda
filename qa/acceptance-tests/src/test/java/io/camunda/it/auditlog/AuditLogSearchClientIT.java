@@ -311,6 +311,70 @@ public class AuditLogSearchClientIT {
   }
 
   @Test
+  void shouldSearchAuditLogsByFormKey(@Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
+    // when - deploy a decision with form
+    final var deployment =
+        client.newDeployResourceCommand().addResourceFromClasspath("form/form.form").send().join();
+    final var formKey = deployment.getForm().getFirst().getFormKey();
+    // then - wait for audit log entry and verify
+    final var auditLogItems =
+        awaitAuditLogEntryWithFilters(client, f -> f.formKey(String.valueOf(formKey)));
+
+    assertThat(auditLogItems.size()).isEqualTo(1);
+    assertThat(auditLogItems).isNotEmpty();
+    assertCommonAuditLogFields(
+        auditLogItems.getFirst(),
+        AuditLogEntityTypeEnum.RESOURCE,
+        AuditLogOperationTypeEnum.CREATE,
+        AuditLogCategoryEnum.DEPLOYED_RESOURCES);
+  }
+
+  @Test
+  void shouldSearchAuditLogsByResourceKey(
+      @Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
+    // when - deploy a decision with resource
+    final var deployment =
+        client
+            .newDeployResourceCommand()
+            .addResourceFromClasspath("rpa/test-rpa.rpa")
+            .tenantId(TENANT_A)
+            .send()
+            .join();
+    final long resourceKey = deployment.getResource().getFirst().getResourceKey();
+    // then - wait for audit log entry and verify
+    final var auditLogItems =
+        awaitAuditLogEntryWithFilters(client, f -> f.resourceKey(String.valueOf(resourceKey)));
+
+    assertThat(auditLogItems.size()).isEqualTo(1);
+    assertThat(auditLogItems).isNotEmpty();
+    assertCommonAuditLogFields(
+        auditLogItems.getFirst(),
+        AuditLogEntityTypeEnum.RESOURCE,
+        AuditLogOperationTypeEnum.CREATE,
+        AuditLogCategoryEnum.DEPLOYED_RESOURCES);
+  }
+
+  @Test
+  void shouldSearchAuditLogsByDeploymentKey(
+      @Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
+    // when
+    final var deployment = utils.getDeployments().getFirst();
+    final var deploymentKey = deployment.getKey();
+
+    // then - wait for audit log entry and verify
+    final var auditLogItems =
+        awaitAuditLogEntryWithFilters(client, f -> f.deploymentKey(String.valueOf(deploymentKey)));
+
+    assertThat(auditLogItems.size()).isEqualTo(1);
+    assertThat(auditLogItems).isNotEmpty();
+    assertCommonAuditLogFields(
+        auditLogItems.getFirst(),
+        AuditLogEntityTypeEnum.RESOURCE,
+        AuditLogOperationTypeEnum.CREATE,
+        AuditLogCategoryEnum.DEPLOYED_RESOURCES);
+  }
+
+  @Test
   void shouldSearchUserTaskAuditLogByKey(
       @Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
     // given
