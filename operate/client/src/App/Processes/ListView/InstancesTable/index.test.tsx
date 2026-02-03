@@ -7,9 +7,9 @@
  */
 
 import {render, screen, within} from 'modules/testing-library';
-import {InstancesTable} from './index.tsx';
+import {InstancesTable} from './index';
 import {MemoryRouter} from 'react-router-dom';
-import {Paths} from 'modules/Routes.tsx';
+import {Paths} from 'modules/Routes';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {useEffect} from 'react';
 import {QueryClientProvider} from '@tanstack/react-query';

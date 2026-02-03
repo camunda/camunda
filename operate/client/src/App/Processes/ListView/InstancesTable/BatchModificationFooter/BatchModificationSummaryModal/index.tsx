@@ -15,7 +15,7 @@ import {getProcessInstanceFilters} from 'modules/utils/filter';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {Title, DataTable} from './styled';
 import {tracking} from 'modules/tracking';
-import {useInstancesCount} from 'modules/queries/processInstancesStatistics/useInstancesCount.ts';
+import {useInstancesCount} from 'modules/queries/processInstancesStatistics/useInstancesCount';
 import {useListViewXml} from 'modules/queries/processDefinitions/useListViewXml';
 import {getFlowNodeName} from 'modules/utils/flowNodes';
 import {handleOperationError} from 'modules/utils/notifications';
