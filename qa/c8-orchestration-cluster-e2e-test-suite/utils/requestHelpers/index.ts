@@ -66,3 +66,8 @@ export {
   type DecisionInstance,
 } from './decision-instance-requestHelpers';
 export {createProcessInstanceAndRetrieveTimeStamp} from './clock-requestHelpers';
+export {
+  type CorrelatedMessageSubscription,
+  searchCorrelatedMessageSubscriptions,
+  CORRELATED_MESSAGE_SUBSCRIPTION_SEARCH_ENDPOINT,
+} from './message-requestHelpers';
