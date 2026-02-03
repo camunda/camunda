@@ -82,7 +82,7 @@ public class ElasticsearchConnectorIT {
   @Test
   void shouldSetCustomHeaderOnAllEsClientRequests() throws IOException {
     // given
-    final var client = connector.tasklistEsClient();
+    final var client = connector.tasklistEs8Client();
 
     // when
     client.cluster().health();
