@@ -758,28 +758,27 @@ final class LeaderAppender {
       member.openReplicationContext(raft.getLog());
     }
 
-    // If prior requests to the member have failed, build an empty append request to send to the
-    // member
-    // to prevent having to read from disk to configure, install, or append to an unavailable
-    // member.
-    if (member.getFailureCount() >= MIN_BACKOFF_FAILURE_COUNT) {
-      // If the member is not reachable for a long time, only send heartbeats to ping the follower.
-      // When the follower starts acknowledging, leader will start sending the actual events.
-      sendAppendRequest(member, buildAppendEmptyRequest(member));
-    }
     // If the member term is less than the current term or the member's configuration index is less
     // than the local configuration index, send a configuration update to the member.
     // Ensure that only one configuration attempt per member is attempted at any given time by
     // storing the
     // member state in a set of configuring members.
     // Once the configuration is complete sendAppendRequest will be called recursively.
-    else if (member.getConfigTerm() < raft.getTerm()
+    if (member.getConfigTerm() < raft.getTerm()
         || member.getConfigIndex() < raft.getCluster().getConfiguration().index()) {
       if (member.canConfigure()) {
         sendConfigureRequest(member, buildConfigureRequest());
       } else if (member.canHeartbeat()) {
         sendAppendRequest(member, buildAppendEmptyRequest(member));
       }
+    }
+    // If prior requests to the member have failed, build an empty append request to send to the
+    // member to prevent having to read from disk to configure, install, or append to an unavailable
+    // member.
+    else if (member.getFailureCount() >= MIN_BACKOFF_FAILURE_COUNT) {
+      // If the member is not reachable for a long time, only send heartbeats to ping the follower.
+      // When the follower starts acknowledging, leader will start sending the actual events.
+      sendAppendRequest(member, buildAppendEmptyRequest(member));
     }
     // If there's a snapshot at the member's nextIndex, replicate the snapshot.
     else if (member.getMember().getType() == RaftMember.Type.ACTIVE

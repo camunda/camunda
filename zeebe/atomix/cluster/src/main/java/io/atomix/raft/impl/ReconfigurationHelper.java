@@ -69,16 +69,22 @@ public final class ReconfigurationHelper {
           } catch (final Exception e) {
             logger.warn("Failed to join cluster, could not reload configuration from log", e);
             result.completeExceptionally(e);
+            return;
           }
 
-          // Always transition to the current member type, which is right now always PASSIVE before
-          // joining the cluster. This is required so that if the join was partially completed
-          // before the restart of this member, then this member should continue participating in
-          // the raft protocol in an active role. If the member stays INACTIVE, it won't respond to
-          // the requests from the other members. This is particularly important when joining a
-          // single member cluster, because the other member can continue the reconfiguration
-          // process only if this member responds to append and vote requests.
-          raftContext.transition(raftContext.getCluster().getLocalMember().getType());
+          // Always transition to PASSIVE or the last member type as found by
+          // `tryReloadConfigurationFromLog`.
+          // This ensures that the member trying to join is not stuck in `INACTIVE` which would
+          // prevent the joining from completing, particularly when joining a single-member cluster
+          // where this new node is already required for quorum.
+          switch (raftContext.getCluster().getLocalMember().getType()) {
+            // The last configuration entry is probably old and has the local member as INACTIVE.
+            // Ignore this and become PASSIVE instead.
+            case INACTIVE -> raftContext.transition(Type.PASSIVE);
+            // The last configuration entry has the local member as PASSIVE or ACTIVE, we can
+            // directly transition to that.
+            case final Type memberType -> raftContext.transition(memberType);
+          }
 
           // We don't know if the latest configuration loaded from the log is valid. So we will
           // retry join any way.
