@@ -8,6 +8,7 @@
 package io.camunda.configuration;
 
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
+import io.camunda.zeebe.dynamic.nodeid.fs.VersionedDirectoryLayout;
 import java.util.List;
 import java.util.Set;
 
@@ -21,7 +22,8 @@ public class Restore {
       Set.of("zeebe.restore.ignoreFilesInTarget");
 
   private boolean validateConfig = true;
-  private List<String> ignoreFilesInTarget = List.of("lost+found");
+  private List<String> ignoreFilesInTarget =
+      List.of("lost+found", VersionedDirectoryLayout.DIRECTORY_INITIALIZED_FILE);
 
   public boolean isValidateConfig() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
