@@ -82,8 +82,8 @@ public class ParallelDmnJobWorker {
    * Process orders in parallel using Java 21 structured concurrency with virtual threads. Each
    * order is evaluated against the DMN decision in its own virtual thread.
    */
-  private List<Map<String, Object>> processOrdersInParallel(
-      final List<Map<String, Object>> orders) throws InterruptedException {
+  private List<Map<String, Object>> processOrdersInParallel(final List<Map<String, Object>> orders)
+      throws Exception {
 
     try (var scope = new StructuredTaskScope.ShutdownOnFailure()) {
       // Create a subtask for each order
@@ -160,8 +160,7 @@ public class ParallelDmnJobWorker {
    * Convert DirectBuffer (MessagePack format) to a Map. The DMN engine returns results in
    * MessagePack format, which we need to deserialize.
    */
-  private Map<String, Object> convertDirectBufferToMap(final DirectBuffer buffer)
-      throws Exception {
+  private Map<String, Object> convertDirectBufferToMap(final DirectBuffer buffer) throws Exception {
     final byte[] bytes = new byte[buffer.capacity()];
     buffer.getBytes(0, bytes);
     return msgPackMapper.readValue(bytes, new TypeReference<>() {});
