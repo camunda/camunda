@@ -107,7 +107,7 @@ public class RestoreManager {
             .distinct()
             .sorted()
             .toArray();
-    LOG.info("Completed backups in range [{},{}] are {}", backupIds);
+    LOG.info("Completed backups in range [{},{}] are {}", from, to, backupIds);
 
     if (backupIds.length == 0) {
       throw new IllegalArgumentException("No backups found in range [" + from + "," + to + "]");
@@ -247,9 +247,9 @@ public class RestoreManager {
       final var maxBackup = Arrays.stream(backupIds).max().orElseThrow();
 
       for (int partition = 1; partition <= partitionCount; partition++) {
-        final var markers = BackupRanges.fromMarkers(backupStore.rangeMarkers(partition).join());
+        final var ranges = BackupRanges.fromMarkers(backupStore.rangeMarkers(partition).join());
         final var validRange =
-            markers.stream()
+            ranges.stream()
                 .filter(
                     r ->
                         r instanceof final BackupRange.Complete complete
@@ -258,7 +258,7 @@ public class RestoreManager {
 
         if (validRange.isEmpty()) {
           final var completeRanges =
-              markers.stream().filter(BackupRange.Complete.class::isInstance).toList();
+              ranges.stream().filter(BackupRange.Complete.class::isInstance).toList();
           LOG.error(
               "Expected to find a continuous range of backups between {} and {} for partition {}. Complete ranges are the following: {}",
               minBackup,

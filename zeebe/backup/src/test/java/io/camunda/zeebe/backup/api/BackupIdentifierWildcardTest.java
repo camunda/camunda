@@ -20,6 +20,7 @@ import io.camunda.zeebe.backup.common.CheckpointIdGenerator;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -341,8 +342,8 @@ class BackupIdentifierWildcardTest {
     assertThat(result).isEqualTo(expectedPattern);
   }
 
-  static java.util.stream.Stream<Arguments> provideLongestCommonPrefixTestCases() {
-    return java.util.stream.Stream.of(
+  static Stream<Arguments> provideLongestCommonPrefixTestCases() {
+    return Stream.of(
         // Two strings with common prefix
         Arguments.of(new String[] {"1700000000000", "1700999999999"}, new Prefix("1700")),
         // Two strings with no common prefix

@@ -7,10 +7,7 @@
  */
 package io.camunda.zeebe.backup.api;
 
-import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern.Any;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern.Exact;
-import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern.Prefix;
-import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern.TimeRange;
 import io.camunda.zeebe.backup.common.BackupIdentifierWildcardImpl;
 import io.camunda.zeebe.backup.common.CheckpointIdGenerator;
 import java.time.Instant;
@@ -51,7 +48,7 @@ public interface BackupIdentifierWildcard {
    * @param pattern the checkpoint pattern to match against
    * @return a BackupIdentifierWildcard with no partition or node ID specified
    */
-  static BackupIdentifierWildcardImpl ofPattern(final CheckpointPattern pattern) {
+  static BackupIdentifierWildcard ofPattern(final CheckpointPattern pattern) {
     return BackupIdentifierWildcard.forPartition(null, pattern);
   }
 
@@ -63,7 +60,7 @@ public interface BackupIdentifierWildcard {
    * @param pattern the checkpoint pattern to match against
    * @return a BackupIdentifierWildcard with the specified partition and pattern, but no node ID
    */
-  static BackupIdentifierWildcardImpl forPartition(
+  static BackupIdentifierWildcard forPartition(
       final Integer partition, final CheckpointPattern pattern) {
     return new BackupIdentifierWildcardImpl(
         Optional.empty(), Optional.ofNullable(partition), pattern);
@@ -175,8 +172,8 @@ public interface BackupIdentifierWildcard {
      * CheckpointIdGenerator to convert raw timestamps to checkpoint IDs (applying the configured
      * offset), then computes the common prefix to create a Prefix pattern.
      *
-     * @param from the start of the range (inclusive), in epoch milliseconds
-     * @param to the end of the range (inclusive), in epoch milliseconds
+     * @param from the start of the range (inclusive)
+     * @param to the end of the range (inclusive)
      * @param generator the CheckpointIdGenerator used to convert timestamps to checkpoint IDs
      * @return a CheckpointPattern (Prefix or Any) that matches checkpoints in the given range
      */
