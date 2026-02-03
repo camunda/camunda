@@ -86,6 +86,7 @@ public class SearchEngineConnectPropertiesOverride {
 
     override.setType(secondaryStorage.getType().name());
     override.setUrl(database.getUrl());
+    override.setUrls(database.getUrls());
 
     populateFromSecurity(override);
     populateFromInterceptorPlugins(override);

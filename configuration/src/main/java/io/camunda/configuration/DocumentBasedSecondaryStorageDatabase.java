@@ -97,12 +97,19 @@ public abstract class DocumentBasedSecondaryStorageDatabase
 
   @Override
   public String getUrl() {
+    validateUrlConfiguration();
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
         prefix() + ".url",
         super.getUrl(),
         String.class,
         BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH,
         legacyUrlProperties());
+  }
+
+  @Override
+  public List<String> getUrls() {
+    validateUrlConfiguration();
+    return super.getUrls();
   }
 
   @Override
@@ -133,6 +140,26 @@ public abstract class DocumentBasedSecondaryStorageDatabase
   @Override
   public void setHistory(final DocumentBasedHistory history) {
     this.history = history;
+  }
+
+  /**
+   * Validates that both 'url' and 'urls' are not configured simultaneously. Having both configured
+   * is ambiguous and would lead to unexpected behavior.
+   *
+   * @throws IllegalArgumentException if both url (non-default) and urls (non-empty) are configured
+   */
+  private void validateUrlConfiguration() {
+    final String url = super.getUrl();
+    final List<String> urls = super.getUrls();
+    final boolean hasNonDefaultUrl = !"http://localhost:9200".equals(url);
+    final boolean hasUrls = urls != null && !urls.isEmpty();
+
+    if (hasNonDefaultUrl && hasUrls) {
+      throw new IllegalArgumentException(
+          "Cannot configure both 'url' and 'urls' for "
+              + databaseName()
+              + ". Use 'url' for a single node or 'urls' for multiple nodes.");
+    }
   }
 
   public boolean isCreateSchema() {

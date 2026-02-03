@@ -91,8 +91,8 @@ public final class ElasticsearchConnector {
   }
 
   private RestClient createRestClient(final ConnectConfiguration configuration) {
-    final var httpHost = getHttpHost(configuration);
-    final var restClientBuilder = RestClient.builder(httpHost);
+    final var httpHosts = getHttpHosts(configuration);
+    final var restClientBuilder = RestClient.builder(httpHosts);
 
     if (configuration.getConnectTimeout() != null || configuration.getSocketTimeout() != null) {
       restClientBuilder.setRequestConfigCallback(
@@ -156,6 +156,23 @@ public final class ElasticsearchConnector {
     } catch (final Exception e) {
       throw new SearchClientConnectException("Error in url: " + elsConfig.getUrl(), e);
     }
+  }
+
+  private HttpHost[] getHttpHosts(final ConnectConfiguration elsConfig) {
+    final var urls = elsConfig.getUrls();
+    if (urls != null && !urls.isEmpty()) {
+      return urls.stream()
+          .map(
+              url -> {
+                try {
+                  return HttpHost.create(url);
+                } catch (final Exception e) {
+                  throw new SearchClientConnectException("Error in url: " + url, e);
+                }
+              })
+          .toArray(HttpHost[]::new);
+    }
+    return new HttpHost[] {getHttpHost(elsConfig)};
   }
 
   private void setupAuthentication(

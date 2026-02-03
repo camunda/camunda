@@ -110,9 +110,9 @@ public class OpenSearchConnector {
     if (hasAwsCredentials()) {
       return getAwsClient(osConfig);
     }
-    final HttpHost host = getHttpHostForClient5(osConfig);
+    final HttpHost[] hosts = getHttpHostsForClient5(osConfig);
     final ApacheHttpClient5TransportBuilder builder =
-        ApacheHttpClient5TransportBuilder.builder(host);
+        ApacheHttpClient5TransportBuilder.builder(hosts);
 
     builder.setHttpClientConfigCallback(
         httpClientBuilder -> {
@@ -142,6 +142,24 @@ public class OpenSearchConnector {
     return new HttpHost(uri.getScheme(), uri.getHost(), uri.getPort());
   }
 
+  private HttpHost[] getHttpHostsForClient5(final OpenSearchProperties osConfig) {
+    final var urls = osConfig.getUrls();
+    if (urls != null && !urls.isEmpty()) {
+      return urls.stream()
+          .map(
+              url -> {
+                try {
+                  final URI uri = new URI(url);
+                  return new HttpHost(uri.getScheme(), uri.getHost(), uri.getPort());
+                } catch (final URISyntaxException e) {
+                  throw new TasklistRuntimeException("Error in url: " + url, e);
+                }
+              })
+          .toArray(HttpHost[]::new);
+    }
+    return new HttpHost[] {getHttpHostForClient5(osConfig)};
+  }
+
   private URI getOsUri(final OpenSearchProperties osConfig) {
     try {
       return new URI(osConfig.getUrl());
@@ -160,7 +178,7 @@ public class OpenSearchConnector {
 
     final BasicCredentialsProvider credentialsProvider = new BasicCredentialsProvider();
     credentialsProvider.setCredentials(
-        new AuthScope(getHttpHostForClient5(osConfig)),
+        new AuthScope(null, -1),
         new UsernamePasswordCredentials(
             osConfig.getUsername(), osConfig.getPassword().toCharArray()));
 
@@ -338,7 +356,7 @@ public class OpenSearchConnector {
     final AwsSdk2Transport transport =
         new AwsSdk2Transport(
             httpClient,
-            osConfig.getHost(),
+            getHttpHostsForClient5(osConfig)[0].getHostName(),
             region,
             AwsSdk2TransportOptions.builder()
                 .setMapper(new JacksonJsonpMapper(tasklistObjectMapper))

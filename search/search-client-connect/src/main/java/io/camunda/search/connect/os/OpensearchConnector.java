@@ -101,12 +101,12 @@ public final class OpensearchConnector {
   }
 
   private OpenSearchTransport createAWSBasedTransport(final ConnectConfiguration configuration) {
-    final var httpHost = getHttpHost(configuration);
+    final var hostname = getHttpHosts(configuration)[0].getHostName();
     final var region = new DefaultAwsRegionProviderChain().getRegion();
     final var httpClient = AwsCrtHttpClient.builder().build();
     return new AwsSdk2Transport(
         httpClient,
-        httpHost.getHostName(),
+        hostname,
         region,
         AwsSdk2TransportOptions.builder()
             .setMapper(new SearchRequestJacksonJsonpMapperWrapper(objectMapper))
@@ -114,8 +114,8 @@ public final class OpensearchConnector {
   }
 
   private OpenSearchTransport createDefaultTransport(final ConnectConfiguration configuration) {
-    final var host = getHttpHost(configuration);
-    final var builder = ApacheHttpClient5TransportBuilder.builder(host);
+    final var hosts = getHttpHosts(configuration);
+    final var builder = ApacheHttpClient5TransportBuilder.builder(hosts);
 
     builder.setHttpClientConfigCallback(
         httpClientBuilder -> {
@@ -160,6 +160,24 @@ public final class OpensearchConnector {
     }
   }
 
+  private HttpHost[] getHttpHosts(final ConnectConfiguration osConfig) {
+    final var urls = osConfig.getUrls();
+    if (urls != null && !urls.isEmpty()) {
+      return urls.stream()
+          .map(
+              url -> {
+                try {
+                  final var uri = new URI(url);
+                  return new HttpHost(uri.getScheme(), uri.getHost(), uri.getPort());
+                } catch (final URISyntaxException e) {
+                  throw new SearchClientConnectException("Error in url: " + url, e);
+                }
+              })
+          .toArray(HttpHost[]::new);
+    }
+    return new HttpHost[] {getHttpHost(osConfig)};
+  }
+
   protected HttpAsyncClientBuilder configureHttpClient(
       final HttpAsyncClientBuilder httpAsyncClientBuilder,
       final ConnectConfiguration osConfig,
@@ -201,7 +219,7 @@ public final class OpensearchConnector {
 
     final var credentialsProvider = new BasicCredentialsProvider();
     credentialsProvider.setCredentials(
-        new AuthScope(getHttpHost(configuration)),
+        new AuthScope(null, -1),
         new UsernamePasswordCredentials(
             configuration.getUsername(), configuration.getPassword().toCharArray()));
 
