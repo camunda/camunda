@@ -272,8 +272,6 @@ public final class UserTaskServices
     return executeSearchRequest(
         () ->
             auditLogServices
-                // TODO: Implement authentication in issue:
-                // https://github.com/camunda/camunda/issues/41205
                 .withAuthentication(CamundaAuthentication.anonymous())
                 .search(auditLogWithUserTaskKeyFilter));
   }
