@@ -70,6 +70,9 @@ public final class SearchQueryRequestMapper {
   public static final BasicStringFilter EMPTY_BASIC_STRING_FILTER = new BasicStringFilter();
   public static final io.camunda.gateway.protocol.model.ProcessInstanceFilter
       EMPTY_PROCESS_INSTANCE_FILTER = new io.camunda.gateway.protocol.model.ProcessInstanceFilter();
+  public static final io.camunda.gateway.protocol.model.DecisionInstanceFilter
+      EMPTY_DECISION_INSTANCE_FILTER =
+          new io.camunda.gateway.protocol.model.DecisionInstanceFilter();
 
   public static final io.camunda.gateway.protocol.model
           .IncidentProcessInstanceStatisticsByDefinitionFilter

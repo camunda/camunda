@@ -82,6 +82,7 @@ import io.camunda.gateway.protocol.model.UseSourceParentKeyInstruction;
 import io.camunda.gateway.protocol.model.UserTaskAssignmentRequest;
 import io.camunda.gateway.protocol.model.UserTaskCompletionRequest;
 import io.camunda.gateway.protocol.model.UserTaskUpdateRequest;
+import io.camunda.search.filter.DecisionInstanceFilter;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.service.AdHocSubProcessActivityServices.AdHocSubProcessActivateActivitiesRequest;
 import io.camunda.service.AdHocSubProcessActivityServices.AdHocSubProcessActivateActivitiesRequest.AdHocSubProcessActivateActivityReference;
@@ -862,6 +863,17 @@ public class RequestMapper {
                 getKeyOrDefault(request, DecisionEvaluationByKey::getDecisionDefinitionKey, -1L),
                 getMapOrEmpty(request, DecisionEvaluationByKey::getVariables),
                 tenantId));
+  }
+
+  public static Either<ProblemDetail, DecisionInstanceFilter> toRequiredDecisionInstanceFilter(
+      final io.camunda.gateway.protocol.model.DecisionInstanceFilter request) {
+
+    final var filter = SearchQueryFilterMapper.toRequiredDecisionInstanceFilter(request);
+    if (filter.isLeft()) {
+      return Either.left(createProblemDetail(filter.getLeft()).get());
+    }
+
+    return Either.right(filter.get());
   }
 
   public static Either<ProblemDetail, AdHocSubProcessActivateActivitiesRequest>
