@@ -885,6 +885,7 @@ message BatchOperationCreatedResult {
     MODIFY_PROCESS_INSTANCE = 6;
     RESOLVE_INCIDENT = 7;
     UPDATE_VARIABLE = 8;
+    DELETE_DECISION_INSTANCE = 9;
   }
 
   // The batch operation key created to delete the resource.
