@@ -82,6 +82,13 @@ public class SearchEngineClientUtils {
       return this;
     }
 
+    public SchemaSettingsAppender withRefreshInterval(final String refreshInterval) {
+      if (refreshInterval != null) {
+        indexBlock.put("refresh_interval", refreshInterval);
+      }
+      return this;
+    }
+
     public InputStream build() throws IOException {
       return new ByteArrayInputStream(objectMapper.writeValueAsBytes(map));
     }
