@@ -441,7 +441,7 @@ test.describe.parallel('Search Authorization API', () => {
     });
   });
 
-  // Search Authorization: negative pagination values return 200 instead of 400 due to bug 39372: https://github.com/camunda/camunda/issues/39372
+  // Skiped due to bug 39372: https://github.com/camunda/camunda/issues/39372
   test.skip('Search Authorization - Negative pagination values (known bug) - 200 instead of 400', async ({request}) => {
     await expect(async () => {
       const res = await request.post(buildUrl(AUTHORIZATION_SEARCH_ENDPOINT), {
