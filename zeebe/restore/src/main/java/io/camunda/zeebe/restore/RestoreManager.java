@@ -10,6 +10,7 @@ package io.camunda.zeebe.restore;
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.raft.partition.RaftPartition;
+import io.camunda.db.rdbms.sql.ExporterPositionMapper;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern;
@@ -35,6 +36,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.restore.PartitionRestoreService.BackupValidator;
 import io.camunda.zeebe.util.FileUtil;
+import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil.PartitionKeyNames;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -50,6 +52,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
@@ -63,15 +66,26 @@ public class RestoreManager {
   private final BackupStore backupStore;
   private final MeterRegistry meterRegistry;
   private final CheckpointIdGenerator checkpointIdGenerator;
+  private final ExporterPositionMapper exporterPositionMapper;
+
+  @VisibleForTesting
+  RestoreManager(
+      final BrokerCfg configuration,
+      final BackupStore backupStore,
+      final MeterRegistry meterRegistry) {
+    this(configuration, backupStore, null, meterRegistry);
+  }
 
   public RestoreManager(
       final BrokerCfg configuration,
       final BackupStore backupStore,
+      final ExporterPositionMapper exporterPositionMapper,
       final MeterRegistry meterRegistry) {
     checkpointIdGenerator =
         new CheckpointIdGenerator(configuration.getData().getBackup().getOffset());
     this.configuration = configuration;
     this.backupStore = backupStore;
+    this.exporterPositionMapper = exporterPositionMapper;
     this.meterRegistry = meterRegistry;
   }
 
@@ -82,6 +96,32 @@ public class RestoreManager {
   }
 
   public void restore(
+      final Instant from,
+      final Instant to,
+      final boolean validateConfig,
+      final List<String> ignoreFilesInTarget)
+      throws IOException, ExecutionException, InterruptedException {
+    if (exporterPositionMapper == null) {
+      restoreTimeRange(from, to, validateConfig, ignoreFilesInTarget);
+    } else {
+      restoreRdbms(from, to, validateConfig, ignoreFilesInTarget);
+    }
+  }
+
+  private void restoreRdbms(
+      final Instant from,
+      final Instant to,
+      final boolean validateConfig,
+      final List<String> ignoreFilesInTarget) {
+    final var backupsByPartition = new ConcurrentHashMap<Integer, List<BackupStatus>>();
+    for (int partition = 1;
+        partition <= configuration.getCluster().getPartitionsCount();
+        partition++) {
+      final var ranges = backupStore.rangeMarkers(partition).join();
+    }
+  }
+
+  public void restoreTimeRange(
       final Instant from,
       final Instant to,
       final boolean validateConfig,

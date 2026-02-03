@@ -16,6 +16,7 @@ import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
 import io.camunda.configuration.beanoverrides.RestorePropertiesOverride;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.beans.RestoreProperties;
+import io.camunda.db.rdbms.sql.ExporterPositionMapper;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
@@ -65,6 +66,7 @@ public class RestoreApp implements ApplicationRunner {
   // Parsed from commandline Eg:-`--to=2024-01-01T12:00:00Z` (optional, requires --from)
   private Instant to;
 
+  private final ExporterPositionMapper exporterPositionMapper;
   private final RestoreProperties restoreConfiguration;
   private final MeterRegistry meterRegistry;
   private final PostRestoreAction postRestoreAction;
@@ -74,6 +76,7 @@ public class RestoreApp implements ApplicationRunner {
   public RestoreApp(
       final BrokerBasedProperties configuration,
       final BackupStore backupStore,
+      @Autowired(required = false) final ExporterPositionMapper exporterPositionMapper,
       final RestoreProperties restoreConfiguration,
       final MeterRegistry meterRegistry,
       final NodeIdProvider nodeIdProvider,
@@ -84,6 +87,7 @@ public class RestoreApp implements ApplicationRunner {
       final PreRestoreAction preRestoreAction) {
     this.configuration = configuration;
     this.backupStore = backupStore;
+    this.exporterPositionMapper = exporterPositionMapper;
     this.restoreConfiguration = restoreConfiguration;
     this.meterRegistry = meterRegistry;
     this.postRestoreAction = postRestoreAction;
@@ -121,7 +125,8 @@ public class RestoreApp implements ApplicationRunner {
       throws IOException, ExecutionException, InterruptedException {
     validateParameters();
 
-    final var restoreManager = new RestoreManager(configuration, backupStore, meterRegistry);
+    final var restoreManager =
+        new RestoreManager(configuration, backupStore, exporterPositionMapper, meterRegistry);
 
     preRestoreAction.beforeRestore(configuration.getCluster().getNodeId());
     if (backupId != null) {
