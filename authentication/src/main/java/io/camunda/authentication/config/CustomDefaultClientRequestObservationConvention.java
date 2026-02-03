@@ -8,9 +8,9 @@
 package io.camunda.authentication.config;
 
 import io.micrometer.common.KeyValues;
-import org.jspecify.annotations.NonNull;
 import org.springframework.http.client.observation.ClientRequestObservationContext;
 import org.springframework.http.client.observation.DefaultClientRequestObservationConvention;
+import org.springframework.lang.NonNull;
 
 /**
  * Custom implementation of DefaultClientRequestObservationConvention that allows adding common tags
