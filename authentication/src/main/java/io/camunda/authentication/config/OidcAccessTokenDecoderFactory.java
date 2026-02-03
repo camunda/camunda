@@ -21,9 +21,11 @@ import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
+import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
 import org.springframework.security.oauth2.core.OAuth2TokenValidator;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtTypeValidator;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 
 /**
@@ -139,7 +141,14 @@ public class OidcAccessTokenDecoderFactory {
       final JWTProcessor<SecurityContext> jwtProcessor,
       final OAuth2TokenValidator<Jwt> tokenValidator) {
     final var decoder = new NimbusJwtDecoder(jwtProcessor);
-    decoder.setJwtValidator(tokenValidator);
+    // Accept both standard JWT and at+jwt (RFC 9068) type headers
+    // Note: JwtTypeValidator constructor takes varargs of allowed types
+    final var typeValidator = new JwtTypeValidator("JWT", "at+jwt");
+    // Also allow tokens with no type header (null/empty)
+    typeValidator.setAllowEmpty(true);
+    final var combinedValidator =
+        new DelegatingOAuth2TokenValidator<>(typeValidator, tokenValidator);
+    decoder.setJwtValidator(combinedValidator);
     return decoder;
   }
 
