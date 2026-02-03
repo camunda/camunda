@@ -16,7 +16,6 @@ import co.elastic.clients.elasticsearch._types.Slices;
 import co.elastic.clients.elasticsearch._types.SlicesCalculation;
 import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.Time;
-import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery.Builder;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
 import co.elastic.clients.elasticsearch._types.query_dsl.TermsQuery;
@@ -26,7 +25,6 @@ import co.elastic.clients.elasticsearch.core.DeleteByQueryResponse;
 import co.elastic.clients.elasticsearch.core.ReindexRequest;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
-import co.elastic.clients.elasticsearch.core.reindex.Source;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.elasticsearch.indices.PutIndicesSettingsRequest;
 import co.elastic.clients.elasticsearch.indices.PutIndicesSettingsResponse;
@@ -268,18 +266,16 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
   @Override
   public CompletableFuture<Void> deleteDocuments(
       final String sourceIndexName, final Map<String, List<String>> keysByField) {
-    final var builder = new Builder();
-    for (final var entry : keysByField.entrySet()) {
-      builder.should(s -> s.terms(buildIdTermsQuery(entry.getKey(), entry.getValue())));
+    if (keysByField.isEmpty()) {
+      return CompletableFuture.completedFuture(null);
     }
-    final var combinedQ = builder.build();
 
     final var request =
         new DeleteByQueryRequest.Builder()
             .index(sourceIndexName)
             .slices(AUTO_SLICES)
             .conflicts(Conflicts.Proceed)
-            .query(q -> q.bool(combinedQ))
+            .query(buildOrFilterQuery(keysByField))
             .build();
 
     final var timer = Timer.start();
@@ -295,17 +291,13 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
       final String sourceIndexName,
       final String destinationIndexName,
       final Map<String, List<String>> keysByField) {
-    final var builder = new Builder();
-    for (final var entry : keysByField.entrySet()) {
-      builder.should(s -> s.terms(buildIdTermsQuery(entry.getKey(), entry.getValue())));
+    if (keysByField.isEmpty()) {
+      return CompletableFuture.completedFuture(null);
     }
-    final var combinedQ = builder.build();
 
-    final var source =
-        new Source.Builder().index(sourceIndexName).query(q -> q.bool(combinedQ)).build();
     final var request =
         new ReindexRequest.Builder()
-            .source(source)
+            .source(src -> src.index(sourceIndexName).query(buildOrFilterQuery(keysByField)))
             .dest(dest -> dest.index(destinationIndexName))
             .conflicts(Conflicts.Proceed)
             .scroll(REINDEX_SCROLL_TIMEOUT)
@@ -538,6 +530,17 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
         .build();
   }
 
+  /** Builds a boolean OR filter query for the given map of keys by field. */
+  private Query buildOrFilterQuery(final Map<String, List<String>> keysByField) {
+    final var boolQ = QueryBuilders.bool();
+    for (final var entry : keysByField.entrySet()) {
+      boolQ.should(s -> s.terms(buildIdTermsQuery(entry.getKey(), entry.getValue())));
+    }
+    boolQ.minimumShouldMatch("1");
+    // Use filter context to avoid scoring overhead
+    return QueryBuilders.bool(b -> b.filter(boolQ.build()._toQuery()));
+  }
+
   private SearchRequest createFinishedBatchOperationsSearchRequest() {
     final var endDateQ =
         QueryBuilders.range(
@@ -559,7 +562,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
         QueryBuilders.range(
             q -> q.date(d -> d.field(endTimeField).lte(config.getArchivingTimePoint())));
 
-    final Builder boolBuilder = QueryBuilders.bool();
+    final var boolBuilder = QueryBuilders.bool();
     boolBuilder.must(endDateQ);
 
     if (partitionId == START_PARTITION_ID) {

@@ -49,7 +49,6 @@ import org.opensearch.client.opensearch._types.Slices;
 import org.opensearch.client.opensearch._types.SlicesCalculation;
 import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch._types.Time;
-import org.opensearch.client.opensearch._types.query_dsl.BoolQuery.Builder;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch._types.query_dsl.QueryBuilders;
 import org.opensearch.client.opensearch._types.query_dsl.TermsQuery;
@@ -59,7 +58,6 @@ import org.opensearch.client.opensearch.core.DeleteByQueryResponse;
 import org.opensearch.client.opensearch.core.ReindexRequest;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
-import org.opensearch.client.opensearch.core.reindex.Source;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.generic.OpenSearchGenericClient;
 import org.opensearch.client.opensearch.generic.Requests;
@@ -271,18 +269,16 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
   @Override
   public CompletableFuture<Void> deleteDocuments(
       final String sourceIndexName, final Map<String, List<String>> keysByField) {
-    final var builder = new Builder();
-    for (final var entry : keysByField.entrySet()) {
-      builder.should(buildIdTermsQuery(entry.getKey(), entry.getValue()).toQuery());
+    if (keysByField.isEmpty()) {
+      return CompletableFuture.completedFuture(null);
     }
-    final var combinedQ = builder.build().toQuery();
 
     final var request =
         new DeleteByQueryRequest.Builder()
             .index(sourceIndexName)
             .slices(AUTO_SLICES)
             .conflicts(Conflicts.Proceed)
-            .query(combinedQ)
+            .query(buildOrFilterQuery(keysByField))
             .build();
 
     final var timer = Timer.start();
@@ -297,16 +293,13 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
       final String sourceIndexName,
       final String destinationIndexName,
       final Map<String, List<String>> keysByField) {
-    final var builder = new Builder();
-    for (final var entry : keysByField.entrySet()) {
-      builder.should(buildIdTermsQuery(entry.getKey(), entry.getValue()).toQuery());
+    if (keysByField.isEmpty()) {
+      return CompletableFuture.completedFuture(null);
     }
-    final var combinedQ = builder.build().toQuery();
 
-    final var source = new Source.Builder().index(sourceIndexName).query(combinedQ).build();
     final var request =
         new ReindexRequest.Builder()
-            .source(source)
+            .source(src -> src.index(sourceIndexName).query(buildOrFilterQuery(keysByField)))
             .dest(dest -> dest.index(destinationIndexName))
             .conflicts(Conflicts.Proceed)
             .scroll(REINDEX_SCROLL_TIMEOUT)
@@ -345,7 +338,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
             .build()
             .toQuery();
 
-    final Builder boolBuilder = QueryBuilders.bool();
+    final var boolBuilder = QueryBuilders.bool();
     boolBuilder.must(endDateQ);
 
     if (partitionId == START_PARTITION_ID) {
@@ -659,6 +652,17 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
         .field(idFieldName)
         .terms(terms -> terms.value(idValues.stream().map(FieldValue::of).toList()))
         .build();
+  }
+
+  /** Builds a boolean OR filter query for the given map of keys by field. */
+  private Query buildOrFilterQuery(final Map<String, List<String>> keysByField) {
+    final var boolQ = QueryBuilders.bool();
+    for (final var entry : keysByField.entrySet()) {
+      boolQ.should(buildIdTermsQuery(entry.getKey(), entry.getValue()).toQuery());
+    }
+    boolQ.minimumShouldMatch("1");
+    // Use filter context to avoid scoring overhead
+    return QueryBuilders.bool().filter(boolQ.build().toQuery()).build().toQuery();
   }
 
   private <T> CompletableFuture<T> sendRequestAsync(final RequestSender<T> sender) {
