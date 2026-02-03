@@ -21,8 +21,8 @@ import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.distribution.PersistedCommandDistribution;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.record.ValueType;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.HashSet;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 
 public class DbDistributionMigrationState8dot7 {
@@ -153,6 +153,16 @@ public class DbDistributionMigrationState8dot7 {
           final var partitionId = compositeKey.second().getValue();
           this.distributionKey.wrapLong(distributionKey);
           partitionKey.wrapInt(partitionId);
+
+          final var persistedDistribution =
+              commandDistributionRecordColumnFamily.get(this.distributionKey);
+
+          final var valueType = persistedDistribution.getValueType();
+          final var isDeploymentOrDeletion =
+              valueType == ValueType.DEPLOYMENT || valueType == ValueType.RESOURCE_DELETION;
+          if (!isDeploymentOrDeletion) {
+            return;
+          }
 
           final var isInQueuedCF =
               queuedCommandDistributionColumnFamily.exists(queuedDistributionKey);

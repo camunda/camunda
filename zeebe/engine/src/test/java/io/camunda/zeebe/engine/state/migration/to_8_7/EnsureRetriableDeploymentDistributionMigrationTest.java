@@ -188,6 +188,31 @@ public class EnsureRetriableDeploymentDistributionMigrationTest {
     assertThat(state.hasQueuedDistribution(QUEUE_ID, distributionKey, partitionId2)).isTrue();
   }
 
+  @Test
+  void shouldNotMigratePendingDistributionsUnrelatedToTheDeploymentQueue() {
+    // given
+    final var distributionKey = 123L;
+    final var distributionKey2 = 456L;
+    final var partitionId = 1;
+    state.addCommandDistribution(distributionKey, createClockRecord());
+    state.addPendingDistribution(distributionKey, partitionId);
+    state.addCommandDistribution(distributionKey2, createDeploymentCreateRecord());
+    state.addPendingDistribution(distributionKey2, partitionId);
+
+    // when
+    final var context = new MigrationTaskContextImpl(new ClusterContextImpl(1), processingState);
+    assertThat(sut.needsToRun(context)).isTrue();
+    sut.runMigration(context);
+
+    // then
+    assertThat(state.hasPendingDistribution(distributionKey)).isTrue();
+    assertThat(state.hasRetriableDistribution(distributionKey)).isFalse();
+    assertThat(state.hasQueuedDistribution(QUEUE_ID, distributionKey, partitionId)).isFalse();
+    assertThat(state.hasPendingDistribution(distributionKey2)).isTrue();
+    assertThat(state.hasRetriableDistribution(distributionKey2)).isTrue();
+    assertThat(state.hasQueuedDistribution(QUEUE_ID, distributionKey2, partitionId)).isTrue();
+  }
+
   private CommandDistributionRecord createDeploymentCreateRecord() {
     final var deploymentRecord = new DeploymentRecord();
     deploymentRecord
