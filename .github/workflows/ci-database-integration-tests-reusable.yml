@@ -82,7 +82,7 @@ jobs:
       - name: Run database integration test with ${{inputs.database-type}}
         run: >
           ./mvnw -B -T 2 --no-snapshot-updates
-          -D forkCount=10
+          -D forkCount=5
           -D maven.javadoc.skip=true
           -D skipUTs
           -D skipChecks
