@@ -17,6 +17,7 @@ public class JobMetricsCfg implements ConfigurationEntry {
   private int maxJobTypeLength = EngineConfiguration.DEFAULT_MAX_JOB_TYPE_LENGTH;
   private int maxTenantIdLength = EngineConfiguration.DEFAULT_MAX_TENANT_ID_LENGTH;
   private int maxUniqueKeys = EngineConfiguration.DEFAULT_MAX_UNIQUE_JOB_METRICS_KEYS;
+  private boolean isEnabled = EngineConfiguration.DEFAULT_JOB_METRICS_EXPORT_ENABLED;
 
   public Duration getExportInterval() {
     return exportInterval;
@@ -72,5 +73,13 @@ public class JobMetricsCfg implements ConfigurationEntry {
         + ", maxUniqueKeys="
         + maxUniqueKeys
         + '}';
+  }
+
+  public boolean isEnabled() {
+    return isEnabled;
+  }
+
+  public void setEnabled(final boolean enabled) {
+    isEnabled = enabled;
   }
 }
