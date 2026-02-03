@@ -24,7 +24,6 @@ import {Operation} from './NewVariableModification/Operation';
 import {ViewFullVariableButton} from './ViewFullVariableButton';
 import {useIsProcessInstanceRunning} from 'modules/queries/processInstance/useIsProcessInstanceRunning';
 import {useVariables} from 'modules/queries/variables/useVariables';
-import {IS_INSTANCE_MODIFICATION_V2} from 'modules/feature-flags';
 
 type Props = {
   scopeId: string | null;
@@ -89,11 +88,7 @@ const VariablesTable: React.FC<Props> = ({
             cellContent: (
               <Operations>
                 {(() => {
-                  if (
-                    IS_INSTANCE_MODIFICATION_V2
-                      ? isModificationModeEnabled
-                      : isVariableModificationAllowed
-                  ) {
+                  if (isModificationModeEnabled) {
                     return null;
                   }
 

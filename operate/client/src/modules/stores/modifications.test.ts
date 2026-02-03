@@ -20,6 +20,9 @@ import {
   generateParentScopeIds,
 } from 'modules/utils/modifications';
 import {mockNestedSubProcessBusinessObjects} from 'modules/mocks/mockNestedSubProcessBusinessObjects';
+import {mockServer} from 'modules/mock-server/node';
+import {http} from 'msw';
+import {endpoints} from '@camunda/camunda-api-zod-schemas/8.9';
 
 type AddModificationPayload = Extract<
   FlowNodeModification['payload'],
@@ -717,7 +720,7 @@ describe('stores/modifications', () => {
     ).toEqual([]);
   });
 
-  it('should generate modifications payload', () => {
+  it('should generate a instructions payload and call the API with it', async () => {
     modificationsStore.addModification({
       type: 'token',
       payload: {
@@ -922,79 +925,290 @@ describe('stores/modifications', () => {
       },
     });
 
-    expect(modificationsStore.generateModificationsPayload()).toEqual([
-      {
-        modification: 'ADD_TOKEN',
-        toFlowNodeId: 'flow_node_0',
-        variables: undefined,
-        ancestorElementInstanceKey: undefined,
-      },
-      {
-        modification: 'ADD_TOKEN',
-        toFlowNodeId: 'flow_node_1',
-        variables: {
-          'first-parent-scope': [
-            {
-              name10: 'value10',
-            },
-          ],
-          flow_node_1: [{name1: 'value1', name2: 'value2'}],
+    const successSpy = vi.fn();
+    const errorSpy = vi.fn();
+    let requestBody = null;
+    mockServer.use(
+      http.post(
+        endpoints.modifyProcessInstance.getUrl({
+          processInstanceKey: 'some-process-instance-key',
+        }),
+        async ({request}) => {
+          requestBody = await request.json();
+          return Response.json(null, {status: 201});
         },
-        ancestorElementInstanceKey: undefined,
-      },
-      {modification: 'CANCEL_TOKEN', fromFlowNodeId: 'flow_node_2'},
-      {
-        modification: 'MOVE_TOKEN',
-        fromFlowNodeId: 'flow_node_3',
-        toFlowNodeId: 'flow_node_4',
-        newTokensCount: 1,
-        variables: {
-          flow_node_4: [{name6: 'value6'}],
-          'first-parent': [
+        {once: true},
+      ),
+    );
+
+    await modificationsStore.applyModifications({
+      processInstanceId: 'some-process-instance-key',
+      onSuccess: successSpy,
+      onError: errorSpy,
+    });
+
+    expect(successSpy).toHaveBeenCalledOnce();
+    expect(errorSpy).not.toHaveBeenCalled();
+    expect(requestBody).toStrictEqual({
+      activateInstructions: [
+        {
+          elementId: 'flow_node_0',
+          variableInstructions: [],
+        },
+        {
+          elementId: 'flow_node_1',
+          variableInstructions: [
             {
-              name7: 'value7',
-              name8: 'value8',
+              variables: {name10: 'value10'},
+              scopeId: 'first-parent-scope',
             },
-          ],
-          'third-parent': [
             {
-              name9: 'value9',
+              variables: {name1: 'value1', name2: 'value2'},
+              scopeId: 'flow_node_1',
             },
           ],
         },
+        {
+          elementId: 'flow_node_11',
+          ancestorElementInstanceKey: 'some-ancestor-instance-key',
+          variableInstructions: [],
+        },
+      ],
+      moveInstructions: [
+        {
+          sourceElementInstruction: {
+            sourceType: 'byId',
+            sourceElementId: 'flow_node_3',
+          },
+          targetElementId: 'flow_node_4',
+          variableInstructions: [
+            {
+              variables: {name7: 'value7', name8: 'value8'},
+              scopeId: 'first-parent',
+            },
+            {
+              variables: {name9: 'value9'},
+              scopeId: 'third-parent',
+            },
+            {
+              variables: {name6: 'value6'},
+              scopeId: 'flow_node_4',
+            },
+          ],
+        },
+        {
+          sourceElementInstruction: {
+            sourceType: 'byKey',
+            sourceElementInstanceKey: 'some_instance_key_2',
+          },
+          targetElementId: 'flow_node_7',
+          variableInstructions: [],
+        },
+      ],
+      terminateInstructions: [
+        {elementId: 'flow_node_2'},
+        {elementInstanceKey: 'some_instance_key'},
+      ],
+    });
+  });
+
+  it('should attach root variable modifications to an activate instruction', async () => {
+    modificationsStore.addModification({
+      type: 'token',
+      payload: {
+        operation: 'ADD_TOKEN',
+        flowNode: {id: 'flow_node_0', name: 'flow node 0'},
+        scopeId: 'random-scope-id-0',
+        affectedTokenCount: 1,
+        visibleAffectedTokenCount: 1,
+        parentScopeIds: {},
       },
-      {
-        fromFlowNodeInstanceKey: 'some_instance_key',
-        modification: 'CANCEL_TOKEN',
+    });
+    modificationsStore.addModification({
+      type: 'variable',
+      payload: {
+        operation: 'ADD_VARIABLE',
+        scopeId: 'some-process-instance-key',
+        name: 'name1',
+        newValue: '"value1"',
+        id: '1',
+        flowNodeName: 'Process Instance',
       },
-      {
-        fromFlowNodeInstanceKey: 'some_instance_key_2',
-        modification: 'MOVE_TOKEN',
-        newTokensCount: 1,
-        toFlowNodeId: 'flow_node_7',
+    });
+    modificationsStore.addModification({
+      type: 'variable',
+      payload: {
+        operation: 'EDIT_VARIABLE',
+        scopeId: 'some-process-instance-key',
+        name: 'name2',
+        oldValue: '"value2"',
+        newValue: '"value2-edited"',
+        id: '2',
+        flowNodeName: 'Process Instance',
       },
-      {
-        ancestorElementInstanceKey: 'some-ancestor-instance-key',
-        modification: 'ADD_TOKEN',
-        toFlowNodeId: 'flow_node_11',
-        variables: undefined,
+    });
+    modificationsStore.addModification({
+      type: 'variable',
+      payload: {
+        operation: 'ADD_VARIABLE',
+        scopeId: 'random-scope-id-should-be-ignored',
+        name: 'name',
+        newValue: '"value"',
+        id: '0',
+        flowNodeName: 'flow node 0',
       },
-      {
-        modification: 'ADD_VARIABLE',
-        scopeKey: 'random-scope-id-5',
-        variables: {name3: 'value3'},
+    });
+
+    const successSpy = vi.fn();
+    const errorSpy = vi.fn();
+    let requestBody = null;
+    mockServer.use(
+      http.post(
+        endpoints.modifyProcessInstance.getUrl({
+          processInstanceKey: 'some-process-instance-key',
+        }),
+        async ({request}) => {
+          requestBody = await request.json();
+          return Response.json(null, {status: 201});
+        },
+        {once: true},
+      ),
+    );
+
+    await modificationsStore.applyModifications({
+      processInstanceId: 'some-process-instance-key',
+      onSuccess: successSpy,
+      onError: errorSpy,
+    });
+
+    expect(successSpy).toHaveBeenCalledOnce();
+    expect(errorSpy).not.toHaveBeenCalled();
+    expect(requestBody).toStrictEqual({
+      activateInstructions: [
+        {
+          elementId: 'flow_node_0',
+          variableInstructions: [
+            {variables: {name1: 'value1', name2: 'value2-edited'}},
+          ],
+        },
+      ],
+      moveInstructions: [],
+      terminateInstructions: [],
+    });
+  });
+
+  it('should attach root variable modifications to a move instruction', async () => {
+    modificationsStore.addMoveModification({
+      sourceFlowNodeId: 'flow_node_6',
+      sourceFlowNodeInstanceKey: 'some_instance_key_2',
+      targetFlowNodeId: 'flow_node_7',
+      affectedTokenCount: 1,
+      visibleAffectedTokenCount: 1,
+      newScopeCount: 1,
+      businessObjects: {},
+      bpmnProcessId: 'inner_sub_process',
+    });
+    modificationsStore.addModification({
+      type: 'variable',
+      payload: {
+        operation: 'ADD_VARIABLE',
+        scopeId: 'some-process-instance-key',
+        name: 'name1',
+        newValue: '"value1"',
+        id: '1',
+        flowNodeName: 'Process Instance',
       },
-      {
-        modification: 'ADD_VARIABLE',
-        scopeKey: 'random-scope-id-5',
-        variables: {name4: 'value4'},
+    });
+    modificationsStore.addModification({
+      type: 'variable',
+      payload: {
+        operation: 'EDIT_VARIABLE',
+        scopeId: 'some-process-instance-key',
+        name: 'name2',
+        oldValue: '"value2"',
+        newValue: '"value2-edited"',
+        id: '2',
+        flowNodeName: 'Process Instance',
       },
-      {
-        modification: 'EDIT_VARIABLE',
-        scopeKey: 'random-scope-id-5',
-        variables: {name5: 'value5-edited2'},
+    });
+    modificationsStore.addModification({
+      type: 'variable',
+      payload: {
+        operation: 'ADD_VARIABLE',
+        scopeId: 'random-scope-id-should-be-ignored',
+        name: 'name',
+        newValue: '"value"',
+        id: '0',
+        flowNodeName: 'flow node 0',
       },
-    ]);
+    });
+
+    const successSpy = vi.fn();
+    const errorSpy = vi.fn();
+    let requestBody = null;
+    mockServer.use(
+      http.post(
+        endpoints.modifyProcessInstance.getUrl({
+          processInstanceKey: 'some-process-instance-key',
+        }),
+        async ({request}) => {
+          requestBody = await request.json();
+          return Response.json(null, {status: 201});
+        },
+      ),
+    );
+
+    await modificationsStore.applyModifications({
+      processInstanceId: 'some-process-instance-key',
+      onSuccess: successSpy,
+      onError: errorSpy,
+    });
+
+    expect(successSpy).toHaveBeenCalledOnce();
+    expect(errorSpy).not.toHaveBeenCalled();
+    expect(requestBody).toStrictEqual({
+      activateInstructions: [],
+      moveInstructions: [
+        {
+          sourceElementInstruction: {
+            sourceType: 'byKey',
+            sourceElementInstanceKey: 'some_instance_key_2',
+          },
+          targetElementId: 'flow_node_7',
+          variableInstructions: [
+            {variables: {name1: 'value1', name2: 'value2-edited'}},
+          ],
+        },
+      ],
+      terminateInstructions: [],
+    });
+  });
+
+  it('should fail if root variable modifications cannot be attached to an instruction', async () => {
+    modificationsStore.cancelToken('flow_node_5', 'some_instance_key', {});
+    modificationsStore.addModification({
+      type: 'variable',
+      payload: {
+        operation: 'ADD_VARIABLE',
+        scopeId: 'some-process-instance-key',
+        name: 'name1',
+        newValue: '"value1"',
+        id: '1',
+        flowNodeName: 'Process Instance',
+      },
+    });
+
+    const successSpy = vi.fn();
+    const errorSpy = vi.fn();
+
+    await modificationsStore.applyModifications({
+      processInstanceId: 'some-process-instance-key',
+      onSuccess: successSpy,
+      onError: errorSpy,
+    });
+
+    expect(successSpy).not.toHaveBeenCalled();
+    expect(errorSpy).toHaveBeenCalledExactlyOnceWith(400);
   });
 
   it('should add tokens to flow nodes that has multiple running scopes', async () => {

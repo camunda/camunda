@@ -540,6 +540,17 @@ describe('Edit variable', () => {
     });
     act(() => {
       modificationsStore.enableModificationMode();
+      modificationsStore.addModification({
+        type: 'token',
+        payload: {
+          operation: 'ADD_TOKEN',
+          flowNode: {id: 'flow_node_0', name: 'flow node 0'},
+          scopeId: 'random-scope-id-0',
+          affectedTokenCount: 1,
+          visibleAffectedTokenCount: 1,
+          parentScopeIds: {},
+        },
+      });
     });
     await waitFor(() => {
       expect(screen.getByTestId('edit-variable-value')).toHaveValue('123');
@@ -594,6 +605,17 @@ describe('Edit variable', () => {
     });
     act(() => {
       modificationsStore.enableModificationMode();
+      modificationsStore.addModification({
+        type: 'token',
+        payload: {
+          operation: 'ADD_TOKEN',
+          flowNode: {id: 'flow_node_0', name: 'flow node 0'},
+          scopeId: 'random-scope-id-0',
+          affectedTokenCount: 1,
+          visibleAffectedTokenCount: 1,
+          parentScopeIds: {},
+        },
+      });
     });
     await waitFor(() => {
       expect(screen.getByTestId('edit-variable-value')).toHaveValue('123');

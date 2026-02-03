@@ -165,9 +165,7 @@ describe('VariablePanel', () => {
         wrapper: getWrapper(),
       });
 
-      expect(
-        await screen.findByRole('button', {name: /add variable/i}),
-      ).toBeInTheDocument();
+      expect(await screen.findByTestId('variables-list')).toBeInTheDocument();
 
       act(() => {
         flowNodeSelectionStore.setSelection({
@@ -197,9 +195,7 @@ describe('VariablePanel', () => {
         wrapper: getWrapper(),
       });
 
-      expect(
-        await screen.findByRole('button', {name: /add variable/i}),
-      ).toBeInTheDocument();
+      expect(await screen.findByTestId('variables-list')).toBeInTheDocument();
 
       mockSearchVariables().withServerError();
       mockSearchVariables().withServerError();
@@ -231,9 +227,7 @@ describe('VariablePanel', () => {
         wrapper: getWrapper(),
       });
 
-      expect(
-        await screen.findByRole('button', {name: /add variable/i}),
-      ).toBeInTheDocument();
+      expect(await screen.findByTestId('variables-list')).toBeInTheDocument();
 
       mockSearchVariables().withNetworkError();
 
@@ -264,9 +258,7 @@ describe('VariablePanel', () => {
         wrapper: getWrapper(),
       });
 
-      expect(
-        await screen.findByRole('button', {name: /add variable/i}),
-      ).toBeInTheDocument();
+      expect(await screen.findByTestId('variables-list')).toBeInTheDocument();
 
       mockFetchFlowNodeMetadata().withNetworkError();
 
