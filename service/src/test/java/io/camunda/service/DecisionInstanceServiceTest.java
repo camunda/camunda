@@ -22,6 +22,7 @@ import io.camunda.search.entities.DecisionInstanceEntity;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.exception.CamundaSearchException.Reason;
 import io.camunda.search.exception.ResourceAccessDeniedException;
+import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
@@ -221,5 +222,37 @@ class DecisionInstanceServiceTest {
     assertThatThrownBy(() -> services.deleteDecisionInstance(NON_EXISTENT_KEY, null).join())
         .isInstanceOf(ServiceException.class)
         .hasMessage("Decision Instance with key '" + NON_EXISTENT_KEY + "' not found");
+  }
+
+  @Test
+  void shouldDeleteProcessInstanceBatchOperationWithResult() {
+    // given
+    final var filter =
+        FilterBuilders.decisionInstance(b -> b.decisionDefinitionIds("test-process-definition-id"));
+
+    final long batchOperationKey = 123L;
+    final var record = new BatchOperationCreationRecord();
+    record.setBatchOperationKey(batchOperationKey);
+    record.setBatchOperationType(BatchOperationType.DELETE_DECISION_INSTANCE);
+
+    final var captor = ArgumentCaptor.forClass(BrokerCreateBatchOperationRequest.class);
+    when(brokerClient.sendRequest(captor.capture()))
+        .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(record)));
+
+    // when
+    final var result = services.deleteDecisionInstancesBatchOperation(filter).join();
+
+    // then
+    assertThat(result.getBatchOperationKey()).isEqualTo(batchOperationKey);
+    assertThat(result.getBatchOperationType())
+        .isEqualTo(BatchOperationType.DELETE_DECISION_INSTANCE);
+
+    // and our request got enriched
+    final var enrichedRecord = captor.getValue().getRequestWriter();
+
+    assertThat(
+        MsgPackConverter.convertToObject(
+            enrichedRecord.getAuthenticationBuffer(), CamundaAuthentication.class))
+        .isEqualTo(authentication);
   }
 }
