@@ -19,7 +19,12 @@ import java.util.Set;
 
 public class SupportedRecordsMapper implements RecordMapper<Event> {
 
-  private final Set<Intent> intents = Set.of(UserTaskIntent.CREATED);
+  private final Set<Intent> intents =
+      Set.of(
+          UserTaskIntent.CREATED,
+          UserTaskIntent.ASSIGNED,
+          UserTaskIntent.COMPLETED,
+          UserTaskIntent.CANCELED);
 
   @Override
   public boolean supports(final Record<?> record) {
