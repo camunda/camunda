@@ -13,9 +13,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.DeployResourceCommandStep1.DeployResourceCommandStep2;
+import io.camunda.client.api.response.Process;
+import io.camunda.client.api.search.enums.ProcessInstanceState;
+import io.camunda.client.api.search.response.DecisionInstanceState;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.sort.ProcessInstanceSort;
+import io.camunda.zeebe.DataReadMeter.ReadQuery;
 import io.camunda.zeebe.config.AppCfg;
 import io.camunda.zeebe.config.StarterCfg;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
@@ -28,6 +32,7 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletionStage;
@@ -54,6 +59,9 @@ public class Starter extends App {
   private Timer responseLatencyTimer;
   private ScheduledExecutorService executorService;
   private ProcessInstanceStartMeter processInstanceStartMeter;
+  private DataReadMeter dataReadMeter;
+  private final AtomicLong businessKey = new AtomicLong(0);
+  private long benchmarkProcessDefinitionKey;
 
   Starter(final AppCfg config) {
     super(config);
@@ -68,6 +76,10 @@ public class Starter extends App {
     final CamundaClient client = createCamundaClient();
     if (config.isMonitorDataAvailability()) {
       setupDataAvailabilityMeter(client);
+    }
+
+    if (config.isPerformReadBenchmarks()) {
+      setupDataReadMeter(client);
     }
 
     // init - check for topology and deploy process
@@ -88,6 +100,9 @@ public class Starter extends App {
                     executorService.shutdown();
                     if (config.isMonitorDataAvailability()) {
                       processInstanceStartMeter.close();
+                    }
+                    if (config.isPerformReadBenchmarks()) {
+                      dataReadMeter.close();
                     }
                     try {
                       executorService.awaitTermination(60, TimeUnit.SECONDS);
@@ -111,6 +126,10 @@ public class Starter extends App {
 
     if (config.isMonitorDataAvailability()) {
       processInstanceStartMeter.close();
+    }
+
+    if (config.isPerformReadBenchmarks()) {
+      dataReadMeter.close();
     }
   }
 
@@ -138,6 +157,76 @@ public class Starter extends App {
     processInstanceStartMeter.start();
   }
 
+  private void setupDataReadMeter(final CamundaClient client) {
+    LOG.info("Starting read benchmark queries");
+    dataReadMeter = new DataReadMeter(registry, Executors.newScheduledThreadPool(2));
+
+    final List<ReadQuery> queries =
+        List.of(
+            new ReadQuery(
+                "process_instances_active",
+                Duration.ofSeconds(5),
+                c ->
+                    c.newProcessInstanceSearchRequest()
+                        .filter(
+                            f ->
+                                f.processDefinitionId(starterCfg.getProcessId())
+                                    .orFilters(
+                                        List.of(
+                                            f1 -> f1.state(ProcessInstanceState.ACTIVE),
+                                            f1 -> f1.hasIncident(true))))
+                        .sort(ProcessInstanceSort::startDate)
+                        .page(p -> p.limit(100))),
+            new ReadQuery(
+                "process_instance_by_business_key",
+                Duration.ofSeconds(5),
+                c ->
+                    c.newProcessInstanceSearchRequest()
+                        .filter(
+                            f ->
+                                // search for the process instance started a minute ago
+                                f.variables(
+                                    Map.of(
+                                        starterCfg.getBusinessKey(),
+                                        businessKey.get() - starterCfg.getRate() * 60L)))
+                        .sort(ProcessInstanceSort::startDate)
+                        .page(p -> p.limit(100))),
+            new ReadQuery(
+                "process_definition_statistics",
+                Duration.ofSeconds(5),
+                c -> c.newProcessDefinitionInstanceStatisticsRequest().page(p -> p.limit(100))),
+            new ReadQuery(
+                "process_definition_element_statistics",
+                Duration.ofSeconds(5),
+                c ->
+                    c.newProcessDefinitionElementStatisticsRequest(benchmarkProcessDefinitionKey)
+                        .filter(
+                            f ->
+                                f.state(
+                                    s ->
+                                        s.in(
+                                            List.of(
+                                                ProcessInstanceState.ACTIVE,
+                                                ProcessInstanceState.COMPLETED))))),
+            new ReadQuery(
+                "decision_instance_list",
+                Duration.ofSeconds(5),
+                c ->
+                    c.newDecisionInstanceSearchRequest()
+                        .filter(
+                            f ->
+                                f.state(
+                                    d ->
+                                        d.in(
+                                            List.of(
+                                                DecisionInstanceState.EVALUATED,
+                                                DecisionInstanceState.FAILED))))
+                        .page(p -> p.limit(100))
+                        .sort(s -> s.evaluationDate().desc())));
+
+    dataReadMeter.start(client, queries);
+  }
+
   private ScheduledFuture<?> scheduleProcessInstanceCreation(
       final ScheduledExecutorService executorService,
       final CountDownLatch countDownLatch,
@@ -151,7 +240,6 @@ public class Starter extends App {
         Collections.unmodifiableMap(deserializeVariables(variablesString));
 
     final BooleanSupplier shouldContinue = createContinuationCondition(starterCfg);
-    final AtomicLong businessKey = new AtomicLong(0);
 
     return executorService.scheduleAtFixedRate(
         () -> {
@@ -265,7 +353,13 @@ public class Starter extends App {
 
     while (true) {
       try {
-        deployCmd.send().join();
+        final var result = deployCmd.send().join();
+        benchmarkProcessDefinitionKey =
+            result.getProcesses().stream()
+                .filter(p -> p.getBpmnProcessId().equals(starterCfg.getProcessId()))
+                .findFirst()
+                .map(Process::getProcessDefinitionKey)
+                .orElse(0L);
         break;
       } catch (final Exception e) {
         THROTTLED_LOGGER.warn("Failed to deploy process, retrying", e);
