@@ -282,11 +282,9 @@
       <column name="ERROR_TYPE" type="VARCHAR(100)"/>
       <column name="STATE" type="VARCHAR(20)"/>
       <column name="CREATION_DATE" type="TIMESTAMP WITH TIME ZONE(3)"/>
-      <column name="END_DATE" type="TIMESTAMP WITH TIME ZONE(3)"/>
       <column name="TREE_PATH" type="VARCHAR(4000)"/>
       <column name="TENANT_ID" type="VARCHAR(${userCharColumnSize})"/>
       <column name="JOB_KEY" type="BIGINT"/>
-      <column name="SCOPE_KEY" type="BIGINT"/>
       <column name="PARTITION_ID" type="NUMBER"/>
     </createTable>
 
