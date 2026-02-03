@@ -174,7 +174,7 @@ class OidcFlowTest {
       // Then the user is redirected to the OIDC authorization endpoint
       assertThat(result)
           .hasStatus(HttpStatus.FOUND)
-          .hasHeader("Location", "http://localhost/oauth2/authorization/oidc");
+          .hasHeader("Location", "/oauth2/authorization/oidc");
     }
 
     @Test

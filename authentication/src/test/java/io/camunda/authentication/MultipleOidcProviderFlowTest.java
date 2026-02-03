@@ -232,9 +232,7 @@ class MultipleOidcProviderFlowTest {
           mockMvcTester.get().uri("/").accept(MediaType.TEXT_HTML).exchange();
 
       // Then the user is redirected to the Login Page listing the OIDC providers
-      assertThat(result)
-          .hasStatus(HttpStatus.FOUND)
-          .hasHeader("Location", "http://localhost/login");
+      assertThat(result).hasStatus(HttpStatus.FOUND).hasHeader("Location", "/login");
     }
 
     @Test

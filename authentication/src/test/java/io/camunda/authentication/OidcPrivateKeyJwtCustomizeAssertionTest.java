@@ -130,7 +130,7 @@ class OidcPrivateKeyJwtCustomizeAssertionTest {
         mockMvcTester.get().uri("/").accept(MediaType.TEXT_HTML).exchange();
     assertThat(result)
         .hasStatus(HttpStatus.FOUND)
-        .hasHeader("Location", "http://localhost/oauth2/authorization/oidc");
+        .hasHeader("Location", "/oauth2/authorization/oidc");
   }
 
   @Test
