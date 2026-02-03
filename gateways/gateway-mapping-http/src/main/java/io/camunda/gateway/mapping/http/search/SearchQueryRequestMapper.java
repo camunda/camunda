@@ -462,12 +462,17 @@ public final class SearchQueryRequestMapper {
   public static Either<ProblemDetail, UserTaskQuery> toUserTaskQuery(
       final io.camunda.gateway.protocol.model.simple.UserTaskFilter filter,
       final io.camunda.gateway.protocol.model.simple.SearchQueryPageRequest page,
-      final List<UserTaskSearchQuerySortRequest> sort) {
+      final List<io.camunda.gateway.protocol.model.simple.UserTaskSearchQuerySortRequest> sort) {
     return toUserTaskQuery(
         new UserTaskSearchQuery()
             .filter(SimpleSearchQueryMapper.toUserTaskFilter(filter))
             .page(SimpleSearchQueryMapper.toPageRequest(page))
-            .sort(sort == null ? List.of() : sort));
+            .sort(
+                sort == null
+                    ? List.of()
+                    : sort.stream()
+                        .map(SimpleSearchQueryMapper::toUserTaskSearchQuerySortRequest)
+                        .toList()));
   }
 
   public static Either<ProblemDetail, UserTaskQuery> toUserTaskQuery(
@@ -505,14 +510,20 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, VariableQuery> toUserTaskVariableQuery(
-      final UserTaskVariableFilter filter,
+      final io.camunda.gateway.protocol.model.simple.UserTaskVariableFilter filter,
       final io.camunda.gateway.protocol.model.simple.SearchQueryPageRequest page,
-      final List<UserTaskVariableSearchQuerySortRequest> sort) {
+      final List<io.camunda.gateway.protocol.model.simple.UserTaskVariableSearchQuerySortRequest>
+          sort) {
     return toUserTaskVariableQuery(
         new UserTaskVariableSearchQueryRequest()
-            .filter(filter)
+            .filter(SimpleSearchQueryMapper.toUserTaskVariableFilter(filter))
             .page(SimpleSearchQueryMapper.toPageRequest(page))
-            .sort(sort == null ? List.of() : sort));
+            .sort(
+                sort == null
+                    ? List.of()
+                    : sort.stream()
+                        .map(SimpleSearchQueryMapper::toUserTaskVariableSearchQuerySortRequest)
+                        .toList()));
   }
 
   public static Either<ProblemDetail, VariableQuery> toVariableQuery(

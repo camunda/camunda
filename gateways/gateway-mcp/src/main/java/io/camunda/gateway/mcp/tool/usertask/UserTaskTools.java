@@ -24,10 +24,10 @@ import io.camunda.gateway.mcp.mapper.CallToolResultMapper;
 import io.camunda.gateway.mcp.model.McpSearchQueryPageRequest;
 import io.camunda.gateway.mcp.model.McpUserTaskAssignmentRequest;
 import io.camunda.gateway.mcp.model.McpUserTaskFilter;
-import io.camunda.gateway.protocol.model.UserTaskAssignmentRequest;
-import io.camunda.gateway.protocol.model.UserTaskSearchQuerySortRequest;
-import io.camunda.gateway.protocol.model.UserTaskVariableFilter;
-import io.camunda.gateway.protocol.model.UserTaskVariableSearchQuerySortRequest;
+import io.camunda.gateway.protocol.model.simple.UserTaskAssignmentRequest;
+import io.camunda.gateway.protocol.model.simple.UserTaskSearchQuerySortRequest;
+import io.camunda.gateway.protocol.model.simple.UserTaskVariableFilter;
+import io.camunda.gateway.protocol.model.simple.UserTaskVariableSearchQuerySortRequest;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.UserTaskServices;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
@@ -126,7 +126,14 @@ public class UserTaskTools {
                   .action(assignmentOptions.getAction());
         }
 
-        return performAssignment(userTaskKey, request);
+        // Convert simple model to advanced model
+        final var advancedRequest =
+            new io.camunda.gateway.protocol.model.UserTaskAssignmentRequest()
+                .assignee(request.getAssignee())
+                .allowOverride(request.getAllowOverride())
+                .action(request.getAction());
+
+        return performAssignment(userTaskKey, advancedRequest);
       }
     } catch (final Exception e) {
       return CallToolResultMapper.mapErrorToResult(e);
@@ -134,7 +141,8 @@ public class UserTaskTools {
   }
 
   private CallToolResult performAssignment(
-      final Long userTaskKey, UserTaskAssignmentRequest request) {
+      final Long userTaskKey,
+      io.camunda.gateway.protocol.model.UserTaskAssignmentRequest request) {
     final var mappedRequest = RequestMapper.toUserTaskAssignmentRequest(request, userTaskKey);
     if (mappedRequest.isLeft()) {
       return CallToolResultMapper.mapProblemToResult(mappedRequest.getLeft());
