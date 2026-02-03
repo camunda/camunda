@@ -11,6 +11,7 @@ import static io.camunda.authentication.controller.PostLogoutController.POST_LOG
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.util.Objects;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.client.oidc.web.logout.OidcClientInitiatedLogoutSuccessHandler;
@@ -43,7 +44,9 @@ public class CamundaOidcLogoutSuccessHandler extends OidcClientInitiatedLogoutSu
 
     final String baseLogoutUrl = super.determineTargetUrl(request, response, authentication);
 
-    if (baseLogoutUrl == null) {
+    // Break early if logout URL can't be constructed.
+    // Usually means IdP didn't provide end session endpoint in its metadata.
+    if (Objects.equals(baseLogoutUrl, getDefaultTargetUrl())) {
       return null;
     }
 

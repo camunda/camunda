@@ -871,7 +871,6 @@ public class WebSecurityConfig {
         final WebappRedirectStrategy redirectStrategy,
         final ClientRegistrationRepository repository) {
       final var handler = new CamundaOidcLogoutSuccessHandler(repository);
-      handler.setDefaultTargetUrl(null);
       handler.setPostLogoutRedirectUri("{baseUrl}/post-logout");
       handler.setRedirectStrategy(redirectStrategy);
       return handler;
