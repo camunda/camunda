@@ -260,7 +260,7 @@ public class ConditionalEventSubprocessStartEventTriggerTest {
     final long processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
     final var elementInstanceKey = awaitElementInstance(processInstanceKey, TASK_ID);
 
-    // when -  (variable updated in task local scope)
+    // when - (variable updated in task local scope)
     engine
         .variables()
         .ofScope(elementInstanceKey)
@@ -701,7 +701,7 @@ public class ConditionalEventSubprocessStartEventTriggerTest {
     // and when - x is updated again (UPDATE event) and still satisfies the condition
     engine.variables().ofScope(processInstanceKey).withDocument(Map.of("x", 12)).update();
 
-    // then - boundary should trigger now (on UPDATE)
+    // then - event subprocess start event should trigger now (on UPDATE)
     assertThat(
             RecordingExporter.conditionalSubscriptionRecords()
                 .withIntent(ConditionalSubscriptionIntent.TRIGGERED)
@@ -1423,7 +1423,7 @@ public class ConditionalEventSubprocessStartEventTriggerTest {
             .zeebeOutputExpression("= 20", "x")
             .done();
 
-    // callActivity allow to  propagate all child variables
+    // callActivity allows to propagate all child variables
     final var parent =
         Bpmn.createExecutableProcess(parentProcessId)
             .startEvent()
@@ -1452,6 +1452,129 @@ public class ConditionalEventSubprocessStartEventTriggerTest {
                 .withCondition("=x > 10")
                 .withVariableNames(List.of())
                 .withVariableEvents(List.of())
+                .limit(1))
+        .hasSize(1);
+  }
+
+  @Test
+  public void
+      shouldTriggerEventSubprocessStartEventWhenVariableSetAtEndPhaseWhileSubprocessScopeIsActive() {
+    // given
+    final String processId = helper.getBpmnProcessId();
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .serviceTask(TASK_ID, b -> b.zeebeJobType("task"))
+                .endEvent("outerEnd")
+                .moveToProcess(processId)
+                .eventSubProcess(
+                    SUB_ID, b -> b.startEvent(CATCH_ID).condition("=x > 10").endEvent("subEnd"))
+                .done())
+        .deploy();
+
+    final long processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
+
+    // when
+    engine.job().ofInstance(processInstanceKey).withType("task").withVariable("x", 20).complete();
+
+    engine.signal().withSignalName("testSpeedUp").broadcast();
+
+    // then
+    assertThat(
+            RecordingExporter.conditionalSubscriptionRecords()
+                .withIntent(ConditionalSubscriptionIntent.TRIGGERED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withCatchEventId(CATCH_ID)
+                .withCondition("=x > 10")
+                .withVariableNames(List.of())
+                .withVariableEvents(List.of())
+                .limit(1))
+        .hasSize(1);
+
+    // process completes via event subprocess
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .containsSubsequence(
+            tuple(TASK_ID, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(TASK_ID, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(CATCH_ID, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(CATCH_ID, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple("subEnd", ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple("subEnd", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(SUB_ID, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(SUB_ID, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(processId, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(processId, ProcessInstanceIntent.ELEMENT_COMPLETED));
+
+    // and not via outer end event
+    assertThat(
+            RecordingExporter.records()
+                .between(
+                    r -> r.getIntent() == DeploymentIntent.CREATED,
+                    r -> r.getIntent() == SignalIntent.BROADCASTED)
+                .processInstanceRecords()
+                .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId("outerEnd")
+                .limit(1))
+        .isEmpty();
+  }
+
+  @Test
+  public void
+      shouldTriggerEventSubprocessStartEventWhenConditionMatchesAfterPartialVariableUpdate() {
+    // given
+    final String processId = helper.getBpmnProcessId();
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent("start")
+                .serviceTask(TASK_ID, t -> t.zeebeJobType("task"))
+                .endEvent()
+                .moveToProcess(processId)
+                .eventSubProcess(
+                    SUB_ID,
+                    b ->
+                        b.startEvent(CATCH_ID)
+                            .condition(c -> c.condition("=x + y > 10").zeebeVariableNames("x,y"))
+                            .endEvent("subEnd"))
+                .done())
+        .deploy();
+
+    final long processInstanceKey =
+        engine.processInstance().ofBpmnProcessId(processId).withVariables(Map.of("x", 6)).create();
+
+    // when
+    engine
+        .variables()
+        .ofScope(processInstanceKey)
+        .withDocument(Map.of("y", 5))
+        .withLocalSemantic()
+        .update();
+
+    // then
+    assertThat(
+            RecordingExporter.conditionalSubscriptionRecords(
+                    ConditionalSubscriptionIntent.TRIGGERED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withCatchEventId(CATCH_ID)
+                .withCondition("=x + y > 10")
+                .withVariableNames("x", "y")
+                .withVariableEvents(List.of())
+                .limit(1))
+        .hasSize(1);
+
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withIntent(ProcessInstanceIntent.ELEMENT_TERMINATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId(TASK_ID)
                 .limit(1))
         .hasSize(1);
   }

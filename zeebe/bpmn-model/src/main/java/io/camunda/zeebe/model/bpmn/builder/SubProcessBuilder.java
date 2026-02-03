@@ -17,10 +17,10 @@
 package io.camunda.zeebe.model.bpmn.builder;
 
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.instance.FlowElement;
 import io.camunda.zeebe.model.bpmn.instance.SubProcess;
 import io.camunda.zeebe.model.bpmn.instance.bpmndi.BpmnShape;
 import io.camunda.zeebe.model.bpmn.instance.dc.Bounds;
-import java.util.Collection;
 import java.util.function.Consumer;
 
 /**
@@ -71,17 +71,19 @@ public class SubProcessBuilder extends AbstractSubProcessBuilder<SubProcessBuild
   }
 
   private double getLowestHeight() {
-    double lowestheight = 0;
+    double lowestHeight = 0;
 
-    // find the lowest element in the model
-    final Collection<BpmnShape> allShapes = modelInstance.getModelElementsByType(BpmnShape.class);
-    for (final BpmnShape shape : allShapes) {
-      final Bounds bounds = shape.getBounds();
-      final double bottom = bounds.getY() + bounds.getHeight();
-      if (bottom > lowestheight) {
-        lowestheight = bottom;
+    for (final FlowElement element : element.getFlowElements()) {
+      final BpmnShape shape = findBpmnShape(element);
+      if (shape != null) {
+        final Bounds bounds = shape.getBounds();
+        final double bottom = bounds.getY() + bounds.getHeight();
+        if (bottom > lowestHeight) {
+          lowestHeight = bottom;
+        }
       }
     }
-    return lowestheight;
+
+    return lowestHeight;
   }
 }
