@@ -178,8 +178,8 @@ public final class BackupRangeResolver {
             addFailure(
                 "Partition %d: backup range [%d, %d] has deletions: %s",
                 partitionId,
-                incomplete.startCheckpointId(),
-                incomplete.endCheckpointId(),
+                incomplete.interval().start(),
+                incomplete.interval().end(),
                 incomplete.deletedCheckpointIds());
         case final BackupRange.Complete complete -> {
           validateRangeCoverage(partitionId, safeStart, complete);
@@ -190,12 +190,12 @@ public final class BackupRangeResolver {
 
     private void validateRangeCoverage(
         final int partitionId, final long safeStart, final BackupRange.Complete range) {
-      if (range.startCheckpointId() > safeStart || range.endCheckpointId() < globalCheckpointId) {
+      if (range.interval().start() > safeStart || range.interval().end() < globalCheckpointId) {
         addFailure(
             "Partition %d: backup range [%d, %d] does not cover required range [%d, %d]",
             partitionId,
-            range.startCheckpointId(),
-            range.endCheckpointId(),
+            range.interval().start(),
+            range.interval().end(),
             safeStart,
             globalCheckpointId);
       }
