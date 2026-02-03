@@ -241,6 +241,19 @@ export const correlateMessageRequiredFields: string[] = [
   'messageKey',
   'processInstanceKey',
 ];
+export const correlatedMessageSubscriptionRequiredFields: string[] = [
+  'correlationKey',
+  'correlationTime',
+  'elementId',
+  'elementInstanceKey',
+  'messageKey',
+  'messageName',
+  'partitionId',
+  'processDefinitionId',
+  'processInstanceKey',
+  'subscriptionKey',
+  'tenantId',
+];
 export const usageMetricsGetResponseRequiredFields: string[] = [
   'activeTenants',
   'tenants',
@@ -268,6 +281,22 @@ export const expectedMessageSubscription3 = {
   tenantId: '<default>',
   elementId: 'Event_17u9bac',
   processDefinitionId: 'messageCatchEvent1',
+};
+
+export const expectedMessageSubscription1DoubleProcess = {
+  messageName: 'Message_256spvh',
+  correlationKey: '9324715',
+  tenantId: '<default>',
+  elementId: 'Event_Up',
+  processDefinitionId: 'Process_double_message_catch',
+};
+
+export const expectedMessageSubscription2DoubleProcess = {
+  messageName: 'Message_1tu3d5h',
+  correlationKey: '191919',
+  tenantId: '<default>',
+  elementId: 'Event_down',
+  processDefinitionId: 'Process_double_message_catch',
 };
 
 export function CREATE_NEW_GROUP() {
@@ -367,6 +396,28 @@ export const CORRELATE_MESSAGE = {
   name: expectedMessageSubscription3.messageName,
   correlationKey: expectedMessageSubscription3.correlationKey,
   variables: {foo: 'bar'},
+};
+
+export const CORRELATE_MESSAGE1 = {
+  name: expectedMessageSubscription1.messageName,
+  correlationKey: expectedMessageSubscription1.correlationKey,
+  variables: {foo: 'bar'},
+};
+
+export const CORRELATE_MESSAGE2 = {
+  name: expectedMessageSubscription2.messageName,
+  correlationKey: expectedMessageSubscription2.correlationKey,
+  variables: {foo: 'bar'},
+};
+
+export const CORRELATE_MESSAGE_DOUBLE_1 = {
+  name: expectedMessageSubscription1DoubleProcess.messageName,
+  correlationKey: expectedMessageSubscription1DoubleProcess.correlationKey,
+};
+
+export const CORRELATE_MESSAGE_DOUBLE_2 = {
+  name: expectedMessageSubscription2DoubleProcess.messageName,
+  correlationKey: expectedMessageSubscription2DoubleProcess.correlationKey,
 };
 
 export function CREATE_TXT_DOCUMENT_REQUEST() {
