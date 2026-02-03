@@ -26,7 +26,7 @@ class RdbmsDatasourcePropertyForwardingIT {
   public static final long MAX_POOL_SIZE = 42L;
   public static final long MAX_POOL_SIZE_DEFAULT = 10L;
   public static final long MINIMUM_IDLE = 2L;
-  public static final long MINIMUM_IDLE_DEFAULT = 10L;
+  public static final long MINIMUM_IDLE_DEFAULT = 2L;
   public static final long IDLE_TIMEOUT = 123456L;
   public static final long IDLE_TIMEOUT_DEFAULT = 600000L;
   public static final long MAX_LIFETIME = 18999999L;
