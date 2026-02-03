@@ -15,6 +15,7 @@ import io.camunda.zeebe.dynamic.nodeid.ControlledInstantSource;
 import io.camunda.zeebe.dynamic.nodeid.Lease;
 import io.camunda.zeebe.dynamic.nodeid.Lease.VersionMappings;
 import io.camunda.zeebe.dynamic.nodeid.NodeInstance;
+import io.camunda.zeebe.dynamic.nodeid.StoredRestoreStatus.RestoreStatus;
 import io.camunda.zeebe.dynamic.nodeid.Version;
 import io.camunda.zeebe.dynamic.nodeid.repository.NodeIdRepository.StoredLease;
 import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository.Config;
@@ -24,6 +25,7 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
@@ -219,6 +221,67 @@ public class S3NodeIdRepositoryIT {
 
     // then
     verify(clientMock).close();
+  }
+
+  @Test
+  public void shouldReturnNullWhenRestoreStatusNotInitialized() {
+    // given
+    repository = fixed(Clock.systemUTC().millis());
+
+    // when
+    final var restoreStatus = repository.getRestoreStatus();
+
+    // then
+    assertThat(restoreStatus).isNull();
+  }
+
+  @Test
+  public void shouldUpdateAndGetRestoreStatus() {
+    // given
+    repository = fixed(Clock.systemUTC().millis());
+    final var restoreStatus = new RestoreStatus(Set.of());
+
+    // when
+    repository.updateRestoreStatus(restoreStatus, null);
+    final var storedRestoreStatus = repository.getRestoreStatus();
+
+    // then
+    assertThat(storedRestoreStatus).isNotNull();
+    assertThat(storedRestoreStatus.restoreStatus()).isEqualTo(restoreStatus);
+    assertThat(storedRestoreStatus.etag()).isNotEmpty();
+  }
+
+  @Test
+  public void shouldUpdateRestoreStatusWithRestoredNodes() {
+    // given
+    repository = fixed(Clock.systemUTC().millis());
+    final var initialStatus = new RestoreStatus(Set.of());
+    repository.updateRestoreStatus(initialStatus, null);
+    final var storedInitial = repository.getRestoreStatus();
+
+    // when
+    final var updatedStatus = new RestoreStatus(Set.of(0, 1));
+    repository.updateRestoreStatus(updatedStatus, storedInitial.etag());
+    final var storedUpdated = repository.getRestoreStatus();
+
+    // then
+    assertThat(storedUpdated).isNotNull();
+    assertThat(storedUpdated.restoreStatus().restoredNodes()).containsExactlyInAnyOrder(0, 1);
+    assertThat(storedUpdated.etag()).isNotEqualTo(storedInitial.etag());
+  }
+
+  @Test
+  public void shouldFailToUpdateRestoreStatusWhenEtagMismatch() {
+    // given
+    repository = fixed(Clock.systemUTC().millis());
+    final var initialStatus = new RestoreStatus(Set.of());
+    repository.updateRestoreStatus(initialStatus, null);
+
+    // when/then
+    final var updatedStatus = new RestoreStatus(Set.of(0));
+    assertThatThrownBy(() -> repository.updateRestoreStatus(updatedStatus, "invalid-etag"))
+        .isInstanceOf(S3Exception.class)
+        .hasMessageContaining("At least one of the pre-conditions you specified did not hold");
   }
 
   private S3NodeIdRepository fixed(final long time) {
