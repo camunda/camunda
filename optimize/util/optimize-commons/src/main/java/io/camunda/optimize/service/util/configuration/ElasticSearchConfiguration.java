@@ -51,7 +51,11 @@ public class ElasticSearchConfiguration {
 
   @JsonIgnore
   public ProxyConfiguration getProxyConfig() {
-    return connection.getProxy();
+    final ProxyConfiguration proxyConfiguration = connection.getProxy();
+    if (proxyConfiguration != null) {
+      proxyConfiguration.validate();
+    }
+    return proxyConfiguration;
   }
 
   @JsonIgnore
