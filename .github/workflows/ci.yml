@@ -978,6 +978,7 @@ jobs:
           test_owner: "${{ matrix.owner }}"
       - uses: ./.github/actions/setup-build
         with:
+          minimus: true
           maven-cache-key-modifier: it-${{ matrix.group }}
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
@@ -1145,6 +1146,13 @@ jobs:
       TEST_ELASTICSEARCH_IMAGE: docker.elastic.co/elasticsearch/elasticsearch:8.16.4
     steps:
       - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-build
+        with:
+          dockerhub-readonly: true
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          minimus: true
       - uses: hadolint/hadolint-action@v3.1.0
         with:
           config: ./.hadolint.yaml
@@ -1158,12 +1166,6 @@ jobs:
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: ./hadolint.sarif
-      - uses: ./.github/actions/setup-build
-        with:
-          dockerhub-readonly: true
-          vault-address: ${{ secrets.VAULT_ADDR }}
-          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - uses: ./.github/actions/build-zeebe
         id: build-camunda
         with:
@@ -1186,6 +1188,8 @@ jobs:
         run: docker system prune -af
 
       - name: Verify Docker image
+        # Skip verification on fork PRs as there public base images are used that don't match our golden labels
+        if: github.event_name != 'pull_request' || !github.event.pull_request.head.repo.fork
         uses: ./.github/actions/verify-platform-docker
         with:
           imageName: ${{ env.LOCAL_DOCKER_IMAGE }}
@@ -1579,6 +1583,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-build
         with:
+          minimus: true
           dockerhub: true
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}

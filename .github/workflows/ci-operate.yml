@@ -81,6 +81,7 @@ jobs:
           java-distribution: adopt
           maven-cache-key-modifier: operate
           maven-version: 3.8.6
+          minimus: true
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
@@ -414,6 +415,7 @@ jobs:
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
       - uses: ./.github/actions/setup-build
         with:
+          minimus: true
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}

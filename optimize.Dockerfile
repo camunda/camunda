@@ -1,7 +1,38 @@
-ARG BASE_IMAGE="alpine:3.23.3"
-ARG BASE_DIGEST="sha256:25109184c71bdad752c8312a8623239686a9a2071e8825f20acb8f2198c3f659"
+# hadolint global ignore=DL3006
+ARG BASE_IMAGE="reg.mini.dev/1212/openjre-base-compat:21-dev"
+ARG BASE_DIGEST="sha256:c7016f60b7ff48500db655d2c6a5f19e7c2faef1a8c12112d77337b48b2c06a9"
+ARG WAITFORIT_CHECKSUM="b7a04f38de1e51e7455ecf63151c8c7e405bd2d45a2d4e16f6419db737a125d6"
 
-FROM ${BASE_IMAGE}@${BASE_DIGEST} AS base
+# If you don't have access to Minimus hardened base images, you can use public
+# base images like this instead on your own risk.
+# Simply pass `--build-arg BASE=public` in order to build with Alpine.
+ARG BASE_IMAGE_PUBLIC="alpine:3.23.0"
+ARG BASE_DIGEST_PUBLIC="sha256:51183f2cfa6320055da30872f211093f9ff1d3cf06f39a0bdb212314c5dc7375"
+ARG BASE="hardened"
+
+### Download wait-for-it.sh ###
+# hadolint ignore=DL3006,DL3007
+FROM alpine AS tools
+ARG WAITFORIT_CHECKSUM
+
+# hadolint ignore=DL4006,DL3018
+RUN --mount=type=cache,target=/root/.tools,rw \
+    apk add -q --no-cache curl 2>/dev/null && \
+    # Download wait-for-it.sh \
+    curl -sL "https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh" -o /wait-for-it.sh && \
+    echo "${WAITFORIT_CHECKSUM} /wait-for-it.sh" | sha256sum -c && \
+    chmod +x /wait-for-it.sh
+
+### Base Application Image ###
+# hadolint ignore=DL3006
+FROM ${BASE_IMAGE}@${BASE_DIGEST} AS base-hardened
+
+### Base Public Application Image ###
+# hadolint ignore=DL3006
+FROM ${BASE_IMAGE_PUBLIC}@${BASE_DIGEST_PUBLIC} AS base-public
+
+# Prepare Optimize Distribution
+FROM base-${BASE} AS prepare
 WORKDIR /
 
 ARG VERSION=""
@@ -23,18 +54,17 @@ COPY ./optimize/docker/bin/optimize.sh ${BUILD_DIR}/optimize.sh
 RUN rm ${BUILD_DIR}/config/environment-config.yaml
 
 ##### FINAL IMAGE #####
-FROM base AS app
-
+# hadolint ignore=DL3006
+FROM base-${BASE} AS app
+# leave unset to use the default value at the top of the file
 ARG VERSION=""
 ARG DATE=""
 ARG REVISION=""
-
-# leave the values below unset to use the default value at the top of the file
 ARG BASE_IMAGE
 ARG BASE_DIGEST
 
 # OCI labels: https://github.com/opencontainers/image-spec/blob/main/annotations.md
-LABEL org.opencontainers.image.base.name="docker.io/library/${BASE_IMAGE}"
+LABEL org.opencontainers.image.base.name="${BASE_IMAGE}"
 LABEL org.opencontainers.image.base.digest="${BASE_DIGEST}"
 LABEL org.opencontainers.image.created="${DATE}"
 LABEL org.opencontainers.image.authors="optimize@camunda.com"
@@ -65,19 +95,18 @@ EXPOSE 8090 8091
 
 VOLUME /tmp
 
-RUN apk add --no-cache bash curl tini openjdk21-jre tzdata && \
-    apk -U upgrade && \
-    curl "https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh" --output /usr/local/bin/wait-for-it.sh && \
-    chmod +x /usr/local/bin/wait-for-it.sh && \
-    addgroup -S -g 1001 camunda && \
+WORKDIR /optimize
+
+USER root
+RUN addgroup -S -g 1001 camunda && \
     adduser -S -g 1001 -u 1001 camunda && \
     mkdir -p /optimize && \
     chown 1001:1001 /optimize
 
-WORKDIR /optimize
+COPY --from=tools --chown=1001:0 /wait-for-it.sh /usr/local/bin/wait-for-it.sh
+COPY --chown=1001:1001 --from=prepare /tmp/build .
+
 USER 1001:1001
 
-ENTRYPOINT ["/sbin/tini", "--"]
+ENTRYPOINT ["tini", "--"]
 CMD ["./optimize.sh"]
-
-COPY --chown=1001:1001 --from=base /tmp/build .
