@@ -75,7 +75,8 @@ jobs:
         run: |
           # Get all version tags (format: 8.x.y)
           ALL_TAGS=$(git tag -l '[0-9]*.[0-9]*.[0-9]*' | sort -V)
-          echo "DEBUG: Found $(echo "$ALL_TAGS" | wc -l) total version tags"
+          TAG_COUNT=$(echo "$ALL_TAGS" | wc -l | tr -d ' ')
+          echo "DEBUG: Found $TAG_COUNT total version tags"
           echo "DEBUG: Latest 5 tags: $(echo "$ALL_TAGS" | tail -5 | tr '\n' ' ')"
 
           STABLE_VERSION="${{ steps.branch-info.outputs.stable-version }}"
@@ -95,7 +96,7 @@ jobs:
             for tag in $ALL_TAGS; do
               # Skip alpha/beta/rc releases (format: 8.x.x-alpha1, 8.x.x-rc1)
               if [[ "$tag" =~ -alpha|-beta|-rc ]]; then
-                ((SKIPPED_COUNT++)) || true
+                SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
                 continue
               fi
 
@@ -112,7 +113,7 @@ jobs:
                 if (( TAG_MAJOR > STABLE_MAJOR )) || \
                    (( TAG_MAJOR == STABLE_MAJOR && TAG_MINOR >= STABLE_MINOR )); then
                   FILTERED_TAGS+="$tag"$'\n'
-                  ((FILTERED_COUNT++)) || true
+                  FILTERED_COUNT=$((FILTERED_COUNT + 1))
                 fi
               fi
             done
@@ -122,7 +123,7 @@ jobs:
 
           # Save filtered tags
           echo "$FILTERED_TAGS" > /tmp/filtered_tags.txt
-          FILTERED_COUNT=$(echo "$FILTERED_TAGS" | grep -v '^$' | wc -l)
+          FILTERED_COUNT=$(echo "$FILTERED_TAGS" | grep -c -v '^$' || echo "0")
           echo "DEBUG: Filtered to $FILTERED_COUNT tags"
           echo "Filtered tags:"
           cat /tmp/filtered_tags.txt
@@ -166,7 +167,7 @@ jobs:
           if [[ -n "$FILTERED_TAGS" ]]; then
             for tag in $FILTERED_TAGS; do
               CLIENT_LIST+="$tag"$'\n'
-              ((CLIENT_COUNT++)) || true
+              CLIENT_COUNT=$((CLIENT_COUNT + 1))
             done
           fi
           echo "DEBUG: Added $CLIENT_COUNT versions to CLIENT_LIST"
@@ -180,7 +181,7 @@ jobs:
           fi
 
           echo "$CLIENT_LIST" > /tmp/client_list.txt
-          CLIENT_TOTAL=$(cat /tmp/client_list.txt | grep -v '^$' | wc -l | tr -d ' ')
+          CLIENT_TOTAL=$(grep -c -v '^$' /tmp/client_list.txt || echo "0")
           echo "DEBUG: CLIENT_LIST has $CLIENT_TOTAL total versions"
           echo "CLIENT_LIST:"
           cat /tmp/client_list.txt
@@ -206,7 +207,7 @@ jobs:
                   if (( TAG_MAJOR > STABLE_MAJOR )) || \
                      (( TAG_MAJOR == STABLE_MAJOR && TAG_MINOR >= NEXT_MINOR )); then
                     SERVER_LIST+="$tag"$'\n'
-                    ((SERVER_COUNT++)) || true
+                    SERVER_COUNT=$((SERVER_COUNT + 1))
                   fi
                 fi
               done
@@ -224,7 +225,7 @@ jobs:
           fi
 
           echo "$SERVER_LIST" > /tmp/server_list.txt
-          SERVER_TOTAL=$(cat /tmp/server_list.txt | grep -v '^$' | wc -l | tr -d ' ')
+          SERVER_TOTAL=$(grep -c -v '^$' /tmp/server_list.txt || echo "0")
           echo "DEBUG: SERVER_LIST has $SERVER_TOTAL total versions"
           echo "SERVER_LIST:"
           cat /tmp/server_list.txt
@@ -244,7 +245,7 @@ jobs:
           mkdir -p /tmp/compatibility-state
 
           # Load previously tested combinations if artifact exists
-          if [ -f /tmp/compatibility-state-download/tested-combinations.txt ]; then
+          if [[ -f /tmp/compatibility-state-download/tested-combinations.txt ]]; then
             cp /tmp/compatibility-state-download/tested-combinations.txt /tmp/compatibility-state/tested-combinations.txt
             echo "Loaded $(wc -l < /tmp/compatibility-state/tested-combinations.txt) previously tested combinations"
           else
@@ -279,7 +280,7 @@ jobs:
                 # Always run if server is snapshot
                 if [[ "$server" != *"-SNAPSHOT" ]]; then
                   echo "DEBUG: Skipping already tested: $COMBO"
-                  ((SKIPPED_COUNT++)) || true
+                  SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
                   continue
                 fi
               fi
@@ -287,7 +288,7 @@ jobs:
               # Add to matrix
               echo "DEBUG: Adding to matrix: $COMBO"
               MATRIX_ITEMS=$(echo "$MATRIX_ITEMS" | jq -c '. += [{"client": "'"$client"'", "server": "'"$server"'"}]')
-              ((ADDED_COUNT++)) || true
+              ADDED_COUNT=$((ADDED_COUNT + 1))
             done
           done
 
@@ -389,7 +390,7 @@ jobs:
           touch compatibility-state/tested-combinations.txt
 
           # Merge new results with existing (if any)
-          if [ -d compatibility-test-results ]; then
+          if [[ -d compatibility-test-results ]]; then
             cat compatibility-test-results/*.txt >> compatibility-state/tested-combinations.txt 2>/dev/null || true
           fi
 
