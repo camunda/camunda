@@ -7,63 +7,57 @@
  */
 package io.camunda.zeebe.exporter.filter;
 
+import static io.camunda.zeebe.exporter.filter.VariableNameFilterRecord.parseRules;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.exporter.filter.NameRule.Type;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import java.util.List;
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 final class VariableNameFilterRecordTest {
+
+  // ---------------------------------------------------------------------------
+  // Record-type behavior
+  // ---------------------------------------------------------------------------
 
   @Test
   void shouldAcceptNonVariableRecords() {
     // given
     final var filter = new VariableNameFilterRecord(List.of(), List.of());
-
-    @SuppressWarnings("unchecked")
-    final Record<ProcessInstanceRecordValue> record = Mockito.mock(Record.class);
-    final ProcessInstanceRecordValue value = Mockito.mock(ProcessInstanceRecordValue.class);
-    Mockito.when(record.getValue()).thenReturn(value);
+    final Record<ProcessInstanceRecordValue> record = nonVariableRecord();
 
     // when
     final boolean accepted = filter.accept(record);
 
     // then
-    Assertions.assertThat(accepted).isTrue();
+    assertThat(accepted).isTrue();
   }
+
+  // ---------------------------------------------------------------------------
+  // Inclusion rules
+  // ---------------------------------------------------------------------------
 
   @Test
   void shouldFilterVariableNamesUsingInclusionRules() {
     // given: only variables with exact name "foo" are allowed
-    final var inclusionRules =
-        VariableNameFilterRecord.parseRules(List.of("foo"), NameRule.Type.EXACT);
-
+    final var inclusionRules = parseRules(List.of("foo"), Type.EXACT);
     final var filter = new VariableNameFilterRecord(inclusionRules, List.of());
 
-    @SuppressWarnings("unchecked")
-    final Record<VariableRecordValue> matchingRecord = Mockito.mock(Record.class);
-    final VariableRecordValue matchingValue = Mockito.mock(VariableRecordValue.class);
-    Mockito.when(matchingRecord.getValue()).thenReturn(matchingValue);
-    Mockito.when(matchingValue.getName()).thenReturn("foo");
-
-    @SuppressWarnings("unchecked")
-    final Record<VariableRecordValue> nonMatchingRecord = Mockito.mock(Record.class);
-    final VariableRecordValue nonMatchingValue = Mockito.mock(VariableRecordValue.class);
-    Mockito.when(nonMatchingRecord.getValue()).thenReturn(nonMatchingValue);
-    Mockito.when(nonMatchingValue.getName()).thenReturn("bar");
+    final Record<VariableRecordValue> matchingRecord = variableRecord("foo");
+    final Record<VariableRecordValue> nonMatchingRecord = variableRecord("bar");
 
     // when
     final boolean matchingAccepted = filter.accept(matchingRecord);
     final boolean nonMatchingAccepted = filter.accept(nonMatchingRecord);
 
     // then
-    Assertions.assertThat(matchingAccepted).isTrue();
-    Assertions.assertThat(nonMatchingAccepted).isFalse();
+    assertThat(matchingAccepted).isTrue();
+    assertThat(nonMatchingAccepted).isFalse();
   }
 
   @Test
@@ -71,50 +65,36 @@ final class VariableNameFilterRecordTest {
     // given:
     //  - include names starting with "biz_"
     //  - exclude exact name "biz_debug"
-    final var inclusionRules =
-        VariableNameFilterRecord.parseRules(List.of("biz_"), NameRule.Type.STARTS_WITH);
-    final var exclusionRules =
-        VariableNameFilterRecord.parseRules(List.of("biz_debug"), NameRule.Type.EXACT);
+    final var inclusionRules = parseRules(List.of("biz_"), Type.STARTS_WITH);
+    final var exclusionRules = parseRules(List.of("biz_debug"), Type.EXACT);
 
     final var filter = new VariableNameFilterRecord(inclusionRules, exclusionRules);
 
-    @SuppressWarnings("unchecked")
-    final Record<VariableRecordValue> allowedRecord = Mockito.mock(Record.class);
-    final VariableRecordValue allowedValue = Mockito.mock(VariableRecordValue.class);
-    Mockito.when(allowedRecord.getValue()).thenReturn(allowedValue);
-    Mockito.when(allowedValue.getName()).thenReturn("biz_total");
-
-    @SuppressWarnings("unchecked")
-    final Record<VariableRecordValue> excludedRecord = Mockito.mock(Record.class);
-    final VariableRecordValue excludedValue = Mockito.mock(VariableRecordValue.class);
-    Mockito.when(excludedRecord.getValue()).thenReturn(excludedValue);
-    Mockito.when(excludedValue.getName()).thenReturn("biz_debug");
-
-    @SuppressWarnings("unchecked")
-    final Record<VariableRecordValue> notIncludedRecord = Mockito.mock(Record.class);
-    final VariableRecordValue notIncludedValue = Mockito.mock(VariableRecordValue.class);
-    Mockito.when(notIncludedRecord.getValue()).thenReturn(notIncludedValue);
-    Mockito.when(notIncludedValue.getName()).thenReturn("other");
+    final Record<VariableRecordValue> allowed = variableRecord("biz_total");
+    final Record<VariableRecordValue> excluded = variableRecord("biz_debug");
+    final Record<VariableRecordValue> notIncluded = variableRecord("other");
 
     // when
-    final boolean allowedAccepted = filter.accept(allowedRecord);
-    final boolean excludedAccepted = filter.accept(excludedRecord);
-    final boolean notIncludedAccepted = filter.accept(notIncludedRecord);
+    final boolean allowedAccepted = filter.accept(allowed);
+    final boolean excludedAccepted = filter.accept(excluded);
+    final boolean notIncludedAccepted = filter.accept(notIncluded);
 
     // then
-    Assertions.assertThat(allowedAccepted).as("name matches inclusion and not exclusion").isTrue();
-    Assertions.assertThat(excludedAccepted)
-        .as("name matches inclusion and exclusion -> excluded")
+    assertThat(allowedAccepted).as("name matches inclusion and not exclusion").isTrue();
+    assertThat(excludedAccepted)
+        .as("name matches both inclusion and exclusion -> excluded")
         .isFalse();
-    Assertions.assertThat(notIncludedAccepted)
-        .as("name does not match inclusion -> rejected")
-        .isFalse();
+    assertThat(notIncludedAccepted).as("name does not match inclusion -> rejected").isFalse();
   }
+
+  // ---------------------------------------------------------------------------
+  // parseRules behavior
+  // ---------------------------------------------------------------------------
 
   @Test
   void parseRulesShouldReturnEmptyListForNull() {
     // when
-    final var rules = VariableNameFilterRecord.parseRules(null, Type.EXACT);
+    final var rules = parseRules(null, Type.EXACT);
 
     // then
     assertThat(rules).isEmpty();
@@ -126,22 +106,43 @@ final class VariableNameFilterRecordTest {
     final var raw = List.of("  foo ", " ", "", "bar");
 
     // when
-    final var rules = VariableNameFilterRecord.parseRules(raw, NameRule.Type.EXACT);
+    final var rules = parseRules(raw, Type.EXACT);
 
     // then
-    assertThat(rules)
-        .hasSize(2)
-        .allSatisfy(
-            rule -> {
-              assertThat(rule.type()).isEqualTo(NameRule.Type.EXACT);
-            });
+    assertThat(rules).hasSize(2).allSatisfy(rule -> assertThat(rule.type()).isEqualTo(Type.EXACT));
     assertThat(rules.get(0).pattern()).isEqualTo("foo");
     assertThat(rules.get(1).pattern()).isEqualTo("bar");
   }
 
+  // ---------------------------------------------------------------------------
+  // Version constraint
+  // ---------------------------------------------------------------------------
+
   @Test
-  void shouldExposeMinRecordVersion() {
+  void shouldExposeMinRecordBrokerVersion() {
     final var filter = new VariableNameFilterRecord(List.of(), List.of());
-    assertThat(filter.minRecordVersion()).isEqualTo("8.9.0");
+
+    assertThat(filter.minRecordBrokerVersion().toString()).isEqualTo("8.9.0");
+  }
+
+  // ---------------------------------------------------------------------------
+  // Helpers
+  // ---------------------------------------------------------------------------
+
+  @SuppressWarnings("unchecked")
+  private static Record<ProcessInstanceRecordValue> nonVariableRecord() {
+    final var record = (Record<ProcessInstanceRecordValue>) mock(Record.class);
+    final var value = mock(ProcessInstanceRecordValue.class);
+    when(record.getValue()).thenReturn(value);
+    return record;
+  }
+
+  @SuppressWarnings("unchecked")
+  private static Record<VariableRecordValue> variableRecord(final String name) {
+    final var record = (Record<VariableRecordValue>) mock(Record.class);
+    final var value = mock(VariableRecordValue.class);
+    when(record.getValue()).thenReturn(value);
+    when(value.getName()).thenReturn(name);
+    return record;
   }
 }

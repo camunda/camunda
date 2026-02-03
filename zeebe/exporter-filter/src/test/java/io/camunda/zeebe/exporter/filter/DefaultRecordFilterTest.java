@@ -9,11 +9,14 @@ package io.camunda.zeebe.exporter.filter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.exporter.filter.config.TestConfiguration;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 final class DefaultRecordFilterTest {
@@ -82,5 +85,68 @@ final class DefaultRecordFilterTest {
 
     // then
     assertThat(accepted).isTrue();
+  }
+
+  @Test
+  void shouldApplyVariableNameRulesFromTestConfiguration() {
+    // given
+    final var configuration =
+        new TestConfiguration()
+            .withIndexedRecordType(RecordType.EVENT)
+            .withIndexedValueType(ValueType.VARIABLE);
+
+    configuration.indexConfig().withVariableNameInclusionExact(List.of("included"));
+
+    final var filter = new DefaultRecordFilter(configuration);
+
+    final var included = variableRecord("included");
+    final var other = variableRecord("other");
+
+    // when / then
+    assertThat(filter.acceptRecord(included)).isTrue();
+    assertThat(filter.acceptRecord(other)).isFalse();
+  }
+
+  @Test
+  void shouldApplyVariableNameExclusionRulesFromTestConfiguration() {
+    // given
+    final var configuration =
+        new TestConfiguration()
+            .withIndexedRecordType(RecordType.EVENT)
+            .withIndexedValueType(ValueType.VARIABLE);
+
+    // No inclusion rules -> all variable names are included by default,
+    // but we explicitly exclude the exact name "excluded".
+    configuration.indexConfig().withVariableNameExclusionExact(List.of("excluded"));
+
+    final var filter = new DefaultRecordFilter(configuration);
+
+    final var excluded = variableRecord("excluded");
+    final var other = variableRecord("other");
+
+    // when / then
+    assertThat(filter.acceptRecord(excluded))
+        .as("name 'excluded' should be rejected by exclusion rules")
+        .isFalse();
+    assertThat(filter.acceptRecord(other))
+        .as("name 'other' is not excluded and should be accepted")
+        .isTrue();
+  }
+
+  // ---------------------------------------------------------------------------
+  // helpers
+  // ---------------------------------------------------------------------------
+  @SuppressWarnings("unchecked")
+  private static Record<VariableRecordValue> variableRecord(final String name) {
+    final var record = (Record<VariableRecordValue>) mock(Record.class);
+    final var value = mock(VariableRecordValue.class);
+
+    when(record.getRecordType()).thenReturn(RecordType.EVENT);
+    when(record.getValueType()).thenReturn(ValueType.VARIABLE);
+    when(record.getBrokerVersion()).thenReturn("8.9.0"); // satisfies VariableNameFilterRecord
+    when(record.getValue()).thenReturn(value);
+    when(value.getName()).thenReturn(name);
+
+    return record;
   }
 }

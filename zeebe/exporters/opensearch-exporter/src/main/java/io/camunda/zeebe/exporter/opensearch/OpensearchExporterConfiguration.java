@@ -144,6 +144,11 @@ public class OpensearchExporterConfiguration implements FilterConfiguration {
     };
   }
 
+  @Override
+  public IndexConfig filterIndexConfig() {
+    return index;
+  }
+
   public boolean getIsIncludeEnabledRecords() {
     return includeEnabledRecords;
   }
@@ -152,7 +157,7 @@ public class OpensearchExporterConfiguration implements FilterConfiguration {
     this.includeEnabledRecords = includeEnabledRecords;
   }
 
-  public static class IndexConfiguration {
+  public static class IndexConfiguration implements FilterConfiguration.IndexConfig {
 
     public static final int DEFAULT_INDEX_TEMPLATE_PRIORITY = 20;
     // prefix for index and templates
@@ -348,6 +353,36 @@ public class OpensearchExporterConfiguration implements FilterConfiguration {
           + ", conditionalEvaluation="
           + conditionalEvaluation
           + '}';
+    }
+
+    @Override
+    public List<String> getVariableNameInclusionExact() {
+      return List.of();
+    }
+
+    @Override
+    public List<String> getVariableNameInclusionStartWith() {
+      return List.of();
+    }
+
+    @Override
+    public List<String> getVariableNameInclusionEndWith() {
+      return List.of();
+    }
+
+    @Override
+    public List<String> getVariableNameExclusionExact() {
+      return List.of();
+    }
+
+    @Override
+    public List<String> getVariableNameExclusionStartWith() {
+      return List.of();
+    }
+
+    @Override
+    public List<String> getVariableNameExclusionEndWith() {
+      return List.of();
     }
   }
 

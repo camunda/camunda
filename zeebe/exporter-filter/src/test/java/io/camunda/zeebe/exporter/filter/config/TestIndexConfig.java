@@ -7,57 +7,86 @@
  */
 package io.camunda.zeebe.exporter.filter.config;
 
-import io.camunda.zeebe.exporter.filter.CommonFilterConfiguration;
+import io.camunda.zeebe.exporter.filter.FilterConfiguration;
 import java.util.List;
 
 /**
- * Minimal {@link CommonFilterConfiguration.IndexConfig} implementation for tests. All variable-name
- * and variable-type filters are left as {@code null} to avoid influencing the value-type tests.
+ * Minimal {@link FilterConfiguration.IndexConfig} implementation for tests.
+ *
+ * <p>By default, all lists are empty (no name-based rules). Tests can override individual lists via
+ * the fluent setters.
  */
-final class TestIndexConfig implements CommonFilterConfiguration.IndexConfig {
+public final class TestIndexConfig implements FilterConfiguration.IndexConfig {
+
+  private List<String> inclusionExact = List.of();
+  private List<String> inclusionStartWith = List.of();
+  private List<String> inclusionEndWith = List.of();
+
+  private List<String> exclusionExact = List.of();
+  private List<String> exclusionStartWith = List.of();
+  private List<String> exclusionEndWith = List.of();
+
+  // --- fluent setters -------------------------------------------------------
+
+  public TestIndexConfig withVariableNameInclusionExact(final List<String> names) {
+    inclusionExact = names != null ? names : List.of();
+    return this;
+  }
+
+  public TestIndexConfig withVariableNameInclusionStartWith(final List<String> prefixes) {
+    inclusionStartWith = prefixes != null ? prefixes : List.of();
+    return this;
+  }
+
+  public TestIndexConfig withVariableNameInclusionEndWith(final List<String> suffixes) {
+    inclusionEndWith = suffixes != null ? suffixes : List.of();
+    return this;
+  }
+
+  public TestIndexConfig withVariableNameExclusionExact(final List<String> names) {
+    exclusionExact = names != null ? names : List.of();
+    return this;
+  }
+
+  public TestIndexConfig withVariableNameExclusionStartWith(final List<String> prefixes) {
+    exclusionStartWith = prefixes != null ? prefixes : List.of();
+    return this;
+  }
+
+  public TestIndexConfig withVariableNameExclusionEndWith(final List<String> suffixes) {
+    exclusionEndWith = suffixes != null ? suffixes : List.of();
+    return this;
+  }
+
+  // --- FilterConfiguration.IndexConfig -------------------------------------
 
   @Override
   public List<String> getVariableNameInclusionExact() {
-    return null;
+    return inclusionExact;
   }
 
   @Override
   public List<String> getVariableNameInclusionStartWith() {
-    return null;
+    return inclusionStartWith;
   }
 
   @Override
   public List<String> getVariableNameInclusionEndWith() {
-    return null;
+    return inclusionEndWith;
   }
 
   @Override
   public List<String> getVariableNameExclusionExact() {
-    return null;
+    return exclusionExact;
   }
 
   @Override
   public List<String> getVariableNameExclusionStartWith() {
-    return null;
+    return exclusionStartWith;
   }
 
   @Override
   public List<String> getVariableNameExclusionEndWith() {
-    return null;
-  }
-
-  @Override
-  public List<String> getVariableValueTypeInclusion() {
-    return null;
-  }
-
-  @Override
-  public List<String> getVariableValueTypeExclusion() {
-    return null;
-  }
-
-  @Override
-  public boolean isOptimizeModeEnabled() {
-    return false;
+    return exclusionEndWith;
   }
 }
