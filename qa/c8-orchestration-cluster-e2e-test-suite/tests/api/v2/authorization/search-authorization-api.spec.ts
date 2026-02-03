@@ -339,7 +339,7 @@ test.describe.parallel('Search Authorization API', () => {
       });
       await assertBadRequest(
         res,
-        "Unexpected value 'invalidField' for enum field 'field'. Use any of the following values: [ownerId, ownerType, resourceId, resourceType]",
+        "Unexpected value 'invalidField' for enum field 'field'. Use any of the following values: [ownerId, ownerType, resourceId, resourcePropertyName, resourceType]",
       );
     }).toPass(defaultAssertionOptions);
   });
