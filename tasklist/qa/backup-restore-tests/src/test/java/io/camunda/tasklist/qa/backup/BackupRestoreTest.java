@@ -7,8 +7,9 @@
  */
 package io.camunda.tasklist.qa.backup;
 
-import static io.camunda.tasklist.util.CollectionUtil.asMap;
-
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.json.jackson.JacksonJsonpMapper;
+import co.elastic.clients.transport.rest_client.RestClientTransport;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.tasklist.CommonUtils;
@@ -21,17 +22,10 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.List;
 import org.apache.http.HttpHost;
-import org.elasticsearch.action.admin.cluster.repositories.put.PutRepositoryRequest;
-import org.elasticsearch.action.admin.cluster.snapshots.restore.RestoreSnapshotRequest;
-import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.repositories.fs.FsRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch.snapshot.CreateRepositoryRequest;
@@ -131,10 +125,13 @@ public class BackupRestoreTest {
   private void startElsApps() throws IOException {
     testContainerUtil.startElasticsearch(testContext);
     testContainerUtil.checkElasticsearchHealth(testContext);
-    testContext.setEsClient(
-        new RestHighLevelClient(
-            RestClient.builder(
-                new HttpHost(testContext.getExternalElsHost(), testContext.getExternalElsPort()))));
+    final RestClient restClient =
+        RestClient.builder(
+                new HttpHost(testContext.getExternalElsHost(), testContext.getExternalElsPort()))
+            .build();
+    final RestClientTransport transport =
+        new RestClientTransport(restClient, new JacksonJsonpMapper(CommonUtils.OBJECT_MAPPER));
+    testContext.setEsClient(new ElasticsearchClient(transport));
     createElsSnapshotRepository(testContext);
 
     testContainerUtil.startStandaloneBroker(testContext);
@@ -148,7 +145,8 @@ public class BackupRestoreTest {
     final ApacheHttpClient5TransportBuilder builder =
         ApacheHttpClient5TransportBuilder.builder(host);
 
-    final JacksonJsonpMapper jsonpMapper = new JacksonJsonpMapper(CommonUtils.OBJECT_MAPPER);
+    final org.opensearch.client.json.jackson.JacksonJsonpMapper jsonpMapper =
+        new org.opensearch.client.json.jackson.JacksonJsonpMapper(CommonUtils.OBJECT_MAPPER);
     builder.setMapper(jsonpMapper);
 
     return new OpenSearchClient(builder.build());
@@ -192,8 +190,7 @@ public class BackupRestoreTest {
                 .getEsClient()
                 .snapshot()
                 .restore(
-                    new RestoreSnapshotRequest(REPOSITORY_NAME, snapshot).waitForCompletion(true),
-                    RequestOptions.DEFAULT);
+                    r -> r.repository(REPOSITORY_NAME).snapshot(snapshot).waitForCompletion(true));
           } catch (final IOException e) {
             throw new TasklistRuntimeException(
                 "Exception occurred while restoring the backup: " + e.getMessage(), e);
@@ -241,16 +238,10 @@ public class BackupRestoreTest {
 
   private void deleteElsIndices() {
     try {
-      testContext
-          .getEsClient()
-          .indices()
-          .delete(new DeleteIndexRequest("tasklist*"), RequestOptions.DEFAULT);
+      testContext.getEsClient().indices().delete(d -> d.index("tasklist*"));
       // we need to remove Zeebe indices as otherwise Tasklist will start importing data at once and
       // we won't be able to assert the older state of data (from backup)
-      testContext
-          .getEsClient()
-          .indices()
-          .delete(new DeleteIndexRequest(INDEX_PREFIX + "*"), RequestOptions.DEFAULT);
+      testContext.getEsClient().indices().delete(d -> d.index(INDEX_PREFIX + "*"));
       tasklistAPICaller.checkIndicesAreDeleted(testContext.getEsClient());
       LOGGER.info("************ Tasklist ElasticSearch indices deleted ************");
     } catch (final IOException e) {
@@ -261,14 +252,13 @@ public class BackupRestoreTest {
 
   private void createElsSnapshotRepository(final BackupRestoreTestContext testContext)
       throws IOException {
+    final var repository =
+        co.elastic.clients.elasticsearch.snapshot.Repository.of(
+            r -> r.fs(rb -> rb.settings(s -> s.location(REPOSITORY_NAME))));
     testContext
         .getEsClient()
         .snapshot()
-        .createRepository(
-            new PutRepositoryRequest(REPOSITORY_NAME)
-                .type(FsRepository.TYPE)
-                .settings(asMap("location", REPOSITORY_NAME)),
-            RequestOptions.DEFAULT);
+        .createRepository(b -> b.repository(repository).name(REPOSITORY_NAME));
   }
 
   private void createOsSnapshotRepository(final BackupRestoreTestContext testContext)
@@ -279,9 +269,7 @@ public class BackupRestoreTest {
         .createRepository(
             CreateRepositoryRequest.of(
                 r ->
-                    r.name(REPOSITORY_NAME)
-                        .type(FsRepository.TYPE)
-                        .settings(s -> s.location(REPOSITORY_NAME))));
+                    r.name(REPOSITORY_NAME).type("fs").settings(s -> s.location(REPOSITORY_NAME))));
   }
 
   private CamundaClient createCamundaClient(final URI grpcAddress) {

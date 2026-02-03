@@ -48,7 +48,7 @@ class FormStoreElasticSearchTest {
   @Mock private TaskTemplate taskTemplate = new TaskTemplate("test", true);
   @Mock private ProcessIndex processIndex = new ProcessIndex("test", true);
   @Mock private ElasticsearchTenantHelper tenantHelper;
-  @Mock private ElasticsearchClient es8Client;
+  @Mock private ElasticsearchClient esClient;
   @InjectMocks private FormStoreElasticSearch instance;
 
   @BeforeEach
@@ -63,19 +63,19 @@ class FormStoreElasticSearchTest {
     // given
     when(formIndex.getIndexName()).thenReturn(FormIndex.INDEX_NAME);
 
-    // Mock ES8 search response for embedded form lookup
-    final var es8Response = mock(SearchResponse.class);
-    final var es8HitsMetadata = mock(HitsMetadata.class);
-    final var es8TotalHits = mock(TotalHits.class);
+    // Mock search response for embedded form lookup
+    final var searchResponse = mock(SearchResponse.class);
+    final var hitsMetadata = mock(HitsMetadata.class);
+    final var totalHits = mock(TotalHits.class);
 
-    when(es8Client.search(any(SearchRequest.class), any(Class.class))).thenReturn(es8Response);
-    when(es8Response.hits()).thenReturn(es8HitsMetadata);
-    when(es8HitsMetadata.total()).thenReturn(es8TotalHits);
-    when(es8TotalHits.value()).thenReturn(0L);
+    when(esClient.search(any(SearchRequest.class), any(Class.class))).thenReturn(searchResponse);
+    when(searchResponse.hits()).thenReturn(hitsMetadata);
+    when(hitsMetadata.total()).thenReturn(totalHits);
+    when(totalHits.value()).thenReturn(0L);
 
-    // Mock ES8 count response for isFormAssociatedToTask and isFormAssociatedToProcess
+    // Mock ES count response for isFormAssociatedToTask and isFormAssociatedToProcess
     final var countResponse = mock(CountResponse.class);
-    when(es8Client.count(any(CountRequest.class))).thenReturn(countResponse);
+    when(esClient.count(any(CountRequest.class))).thenReturn(countResponse);
     when(countResponse.count()).thenReturn(0L);
 
     // when - then
@@ -86,10 +86,10 @@ class FormStoreElasticSearchTest {
 
   @Test
   void getFormWhenIOExceptionOccurred() throws IOException {
-    // given - Mock ES8 client to throw IOException
-    when(es8Client.search(any(SearchRequest.class), any(Class.class)))
+    // given - Mock client to throw IOException
+    when(esClient.search(any(SearchRequest.class), any(Class.class)))
         .thenThrow(new IOException("some error"));
-    when(es8Client.count(any(CountRequest.class))).thenThrow(new IOException("some error"));
+    when(esClient.count(any(CountRequest.class))).thenThrow(new IOException("some error"));
 
     // when - then
     assertThatThrownBy(() -> instance.getForm("id2", "processDefId2", null))
@@ -108,18 +108,18 @@ class FormStoreElasticSearchTest {
             .setFormId("bpmnId3")
             .setSchema("");
 
-    // Mock ES8 response
-    final var es8Response = mock(SearchResponse.class);
-    final var es8HitsMetadata = mock(HitsMetadata.class);
-    final var es8TotalHits = mock(TotalHits.class);
-    final var es8Hit = mock(Hit.class);
+    // Mock response
+    final var searchResponse = mock(SearchResponse.class);
+    final var hitsMetadata = mock(HitsMetadata.class);
+    final var totalHits = mock(TotalHits.class);
+    final var hit = mock(Hit.class);
 
-    when(es8Client.search(any(SearchRequest.class), any(Class.class))).thenReturn(es8Response);
-    when(es8Response.hits()).thenReturn(es8HitsMetadata);
-    when(es8HitsMetadata.total()).thenReturn(es8TotalHits);
-    when(es8TotalHits.value()).thenReturn(1L);
-    when(es8HitsMetadata.hits()).thenReturn(List.of(es8Hit));
-    when(es8Hit.source()).thenReturn(providedFormEntity);
+    when(esClient.search(any(SearchRequest.class), any(Class.class))).thenReturn(searchResponse);
+    when(searchResponse.hits()).thenReturn(hitsMetadata);
+    when(hitsMetadata.total()).thenReturn(totalHits);
+    when(totalHits.value()).thenReturn(1L);
+    when(hitsMetadata.hits()).thenReturn(List.of(hit));
+    when(hit.source()).thenReturn(providedFormEntity);
 
     // when
     final var result = instance.getForm("id3", "processDefId3", null);

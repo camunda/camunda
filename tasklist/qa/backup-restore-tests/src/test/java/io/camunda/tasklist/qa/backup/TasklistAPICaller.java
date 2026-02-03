@@ -11,6 +11,7 @@ import static io.camunda.tasklist.qa.backup.BackupRestoreTest.BACKUP_ID;
 import static io.camunda.tasklist.qa.backup.BackupRestoreTest.INDEX_PREFIX;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -33,9 +34,6 @@ import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.BiFunction;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.client.indices.GetIndexRequest;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -140,13 +138,8 @@ public class TasklistAPICaller {
       retryFor = {TasklistRuntimeException.class},
       maxAttempts = 10,
       backoff = @Backoff(delay = 2000))
-  public void checkIndicesAreDeleted(final RestHighLevelClient esClient) throws IOException {
-    final int count =
-        esClient
-            .indices()
-            .get(new GetIndexRequest(INDEX_PREFIX + "*"), RequestOptions.DEFAULT)
-            .getIndices()
-            .length;
+  public void checkIndicesAreDeleted(final ElasticsearchClient esClient) throws IOException {
+    final int count = esClient.indices().get(gir -> gir.index(INDEX_PREFIX + "*")).result().size();
     if (count > 0) {
       LOGGER.warn("ElasticSearch indices are not yet removed.");
       throw new TasklistRuntimeException("Indices are not yet deleted.");

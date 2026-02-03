@@ -38,15 +38,12 @@ import java.security.NoSuchAlgorithmException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
-import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLContext;
-import net.jodah.failsafe.Failsafe;
-import net.jodah.failsafe.RetryPolicy;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpRequestInterceptor;
 import org.apache.http.auth.AuthScope;
@@ -59,14 +56,8 @@ import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
 import org.apache.http.ssl.SSLContexts;
 import org.apache.http.ssl.TrustStrategy;
-import org.elasticsearch.ElasticsearchException;
-import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
-import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.client.RestHighLevelClientBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -83,60 +74,21 @@ public class ElasticsearchConnector {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchConnector.class);
 
-  private PluginRepository esClientRepository = new PluginRepository();
+  private final PluginRepository esClientRepository = new PluginRepository();
   @Autowired private TasklistProperties tasklistProperties;
-
-  @VisibleForTesting
-  public void setEsClientRepository(final PluginRepository esClientRepository) {
-    this.esClientRepository = esClientRepository;
-  }
 
   @VisibleForTesting
   public void setTasklistProperties(final TasklistProperties tasklistProperties) {
     this.tasklistProperties = tasklistProperties;
   }
 
-  @Bean(destroyMethod = "close")
-  public RestHighLevelClient tasklistEsClient() {
-    // some weird error when ELS sets available processors number for Netty - see
-    // https://discuss.elastic.co/t/elasticsearch-5-4-1-availableprocessors-is-already-set/88036/3
-    System.setProperty("es.set.netty.runtime.available.processors", "false");
+  @Bean
+  public ElasticsearchClient tasklistEsClient() {
     esClientRepository.load(tasklistProperties.getElasticsearch().getInterceptorPlugins());
     return createEsClient(tasklistProperties.getElasticsearch(), esClientRepository);
   }
 
-  protected RestHighLevelClient createEsClient(
-      final ElasticsearchProperties elsConfig, final PluginRepository pluginRepository) {
-    LOGGER.debug("Creating Elasticsearch connection...");
-    final RestClientBuilder restClientBuilder =
-        RestClient.builder(getHttpHost(elsConfig))
-            .setHttpClientConfigCallback(
-                httpClientBuilder ->
-                    configureHttpClient(
-                        httpClientBuilder, elsConfig, pluginRepository.asRequestInterceptor()));
-    if (elsConfig.getConnectTimeout() != null || elsConfig.getSocketTimeout() != null) {
-      restClientBuilder.setRequestConfigCallback(
-          configCallback -> setTimeouts(configCallback, elsConfig));
-    }
-    final RestHighLevelClient esClient =
-        new RestHighLevelClientBuilder(restClientBuilder.build())
-            .setApiCompatibilityMode(true)
-            .build();
-    if (!checkHealth(esClient)) {
-      LOGGER.warn("Elasticsearch cluster is not accessible");
-    } else {
-      LOGGER.debug("Elasticsearch connection was successfully created.");
-    }
-    return esClient;
-  }
-
-  @Bean
-  public ElasticsearchClient tasklistEs8Client() {
-    esClientRepository.load(tasklistProperties.getElasticsearch().getInterceptorPlugins());
-    return createEs8Client(tasklistProperties.getElasticsearch(), esClientRepository);
-  }
-
-  public ElasticsearchClient createEs8Client(
+  public ElasticsearchClient createEsClient(
       final ElasticsearchProperties elsConfig, final PluginRepository pluginRepository) {
     LOGGER.debug("Creating Elasticsearch connection...");
 
@@ -275,22 +227,6 @@ public class ElasticsearchConnector {
     return cert;
   }
 
-  public boolean checkHealth(final RestHighLevelClient esClient) {
-    final ElasticsearchProperties elsConfig = tasklistProperties.getElasticsearch();
-    if (!elsConfig.isHealthCheckEnabled()) {
-      LOGGER.debug("Elasticsearch health check is disabled");
-      return true;
-    }
-    final RetryPolicy<Boolean> retryPolicy = getConnectionRetryPolicy(elsConfig);
-    return Failsafe.with(retryPolicy)
-        .get(
-            () -> {
-              final ClusterHealthResponse clusterHealthResponse =
-                  esClient.cluster().health(new ClusterHealthRequest(), RequestOptions.DEFAULT);
-              return clusterHealthResponse.getClusterName().equals(elsConfig.getClusterName());
-            });
-  }
-
   boolean checkHealth(final ElasticsearchClient esClient) {
     final ElasticsearchProperties elsConfig = tasklistProperties.getElasticsearch();
     try {
@@ -314,24 +250,6 @@ public class ElasticsearchConnector {
     } catch (final Exception e) {
       throw new TasklistRuntimeException("Couldn't connect to Elasticsearch. Abort.", e);
     }
-  }
-
-  private RetryPolicy<Boolean> getConnectionRetryPolicy(final ElasticsearchProperties elsConfig) {
-    final String logMessage = String.format("connect to Elasticsearch at %s", elsConfig.getUrl());
-    return new RetryPolicy<Boolean>()
-        .handle(IOException.class, ElasticsearchException.class)
-        .withDelay(Duration.ofSeconds(3))
-        .withMaxAttempts(50)
-        .onRetry(
-            e ->
-                LOGGER.info(
-                    "Retrying #{} {} due to {}",
-                    e.getAttemptCount(),
-                    logMessage,
-                    e.getLastFailure()))
-        .onAbort(e -> LOGGER.error("Abort {} by {}", logMessage, e.getFailure()))
-        .onRetriesExceeded(
-            e -> LOGGER.error("Retries {} exceeded for {}", e.getAttemptCount(), logMessage));
   }
 
   private Builder setTimeouts(final Builder builder, final ElasticsearchProperties elsConfig) {

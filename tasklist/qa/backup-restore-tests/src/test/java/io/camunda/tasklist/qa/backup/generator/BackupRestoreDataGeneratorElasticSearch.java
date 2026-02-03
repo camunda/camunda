@@ -7,21 +7,15 @@
  */
 package io.camunda.tasklist.qa.backup.generator;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.ElasticsearchException;
+import co.elastic.clients.elasticsearch._types.Script;
+import co.elastic.clients.elasticsearch._types.ScriptLanguage;
+import co.elastic.clients.elasticsearch._types.query_dsl.MatchAllQuery;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.qa.backup.BackupRestoreTestContext;
 import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import java.io.IOException;
-import java.util.Collections;
-import org.elasticsearch.ElasticsearchException;
-import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.index.reindex.UpdateByQueryRequest;
-import org.elasticsearch.script.Script;
-import org.elasticsearch.script.ScriptType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Conditional;
@@ -34,7 +28,7 @@ public class BackupRestoreDataGeneratorElasticSearch extends AbstractBackupResto
   private static final Logger LOGGER =
       LoggerFactory.getLogger(BackupRestoreDataGeneratorElasticSearch.class);
 
-  private RestHighLevelClient esClient;
+  private ElasticsearchClient esClient;
 
   @Override
   protected void initClient(final BackupRestoreTestContext testContext) {
@@ -44,9 +38,7 @@ public class BackupRestoreDataGeneratorElasticSearch extends AbstractBackupResto
   @Override
   protected void refreshIndices() {
     try {
-      esClient
-          .indices()
-          .refresh(new RefreshRequest(indexPrefix + "-tasklist-*"), RequestOptions.DEFAULT);
+      esClient.indices().refresh(r -> r.index(indexPrefix + "-tasklist-*"));
     } catch (final IOException e) {
       LOGGER.error("Error in refreshing ElasticSearch indices", e);
     }
@@ -54,18 +46,15 @@ public class BackupRestoreDataGeneratorElasticSearch extends AbstractBackupResto
 
   @Override
   protected void claimAllTasks() {
-    final UpdateByQueryRequest updateRequest =
-        new UpdateByQueryRequest(getMainIndexNameFor(TaskTemplate.INDEX_NAME))
-            .setQuery(QueryBuilders.matchAllQuery())
-            .setScript(
-                new Script(
-                    ScriptType.INLINE,
-                    "painless",
-                    "ctx._source.assignee = 'demo'",
-                    Collections.emptyMap()))
-            .setRefresh(true);
+    final Script updateScript =
+        Script.of(s -> s.lang(ScriptLanguage.Painless).source("ctx._source.assignee = 'demo'"));
     try {
-      esClient.updateByQuery(updateRequest, RequestOptions.DEFAULT);
+      esClient.updateByQuery(
+          qr ->
+              qr.index(getMainIndexNameFor(TaskTemplate.INDEX_NAME))
+                  .query(new MatchAllQuery.Builder().build()._toQuery())
+                  .script(updateScript)
+                  .refresh(true));
     } catch (final ElasticsearchException | IOException e) {
       throw new RuntimeException(e);
     }
@@ -73,9 +62,6 @@ public class BackupRestoreDataGeneratorElasticSearch extends AbstractBackupResto
 
   @Override
   protected long countEntitiesForAlias(final String alias) throws IOException {
-    final SearchRequest searchRequest = new SearchRequest(alias);
-    searchRequest.source().size(1000);
-    final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
-    return searchResponse.getHits().getTotalHits().value;
+    return esClient.count(c -> c.index(alias)).count();
   }
 }
