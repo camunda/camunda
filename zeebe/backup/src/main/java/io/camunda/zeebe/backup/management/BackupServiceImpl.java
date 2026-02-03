@@ -202,7 +202,9 @@ final class BackupServiceImpl {
 
   private void confirmBackup(final InProgressBackup inProgressBackup) {
     final var checkpointId = inProgressBackup.id().checkpointId();
-    LOG.info("Confirming backup for checkpoint {}", checkpointId);
+    LOG.atDebug()
+        .addKeyValue("backup", inProgressBackup.id())
+        .log("Confirming backup for checkpoint");
     final var checkpointPosition = inProgressBackup.backupDescriptor().checkpointPosition();
     final var checkpointType = inProgressBackup.backupDescriptor().checkpointType();
     final var confirmationWritten =
@@ -226,7 +228,7 @@ final class BackupServiceImpl {
               .setMessage("Could not confirm backup")
               .log();
       case final Either.Right<WriteFailure, Long> position ->
-          LOG.atInfo()
+          LOG.atDebug()
               .addKeyValue("backup", inProgressBackup.id())
               .addKeyValue("position", position.value())
               .setMessage("Confirmed backup")
