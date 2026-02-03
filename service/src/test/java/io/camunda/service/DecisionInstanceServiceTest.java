@@ -10,76 +10,83 @@ package io.camunda.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.clients.DecisionInstanceSearchClient;
 import io.camunda.search.entities.DecisionInstanceEntity;
+import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.exception.ResourceAccessDeniedException;
 import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.authorization.Authorizations;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ForkJoinPool;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class DecisionInstanceServiceTest {
 
+  private static final String DECISION_INSTANCE_ID = "1-1";
+  private static final String DECISION_DEFINITION_KEY = "dd1";
+  private static final String NON_EXISTENT_ID = "non-existent";
+
   private DecisionInstanceServices services;
   private DecisionInstanceSearchClient client;
+  private BrokerClient brokerClient;
 
   @BeforeEach
-  public void before() {
+  void before() {
     client = mock(DecisionInstanceSearchClient.class);
     when(client.withSecurityContext(any())).thenReturn(client);
+
+    brokerClient = mock(BrokerClient.class);
+    mockSuccessfulBrokerResponse();
+
+    final var brokerRequestAuthorizationConverter = mock(BrokerRequestAuthorizationConverter.class);
+    when(brokerRequestAuthorizationConverter.convert(any())).thenReturn(null);
+
+    final var executorProvider = mock(ApiServicesExecutorProvider.class);
+    when(executorProvider.getExecutor()).thenReturn(ForkJoinPool.commonPool());
+
     services =
         new DecisionInstanceServices(
-            mock(BrokerClient.class),
+            brokerClient,
             mock(SecurityContextProvider.class),
             client,
-            null,
-            mock(ApiServicesExecutorProvider.class),
-            null);
+            mock(CamundaAuthentication.class),
+            executorProvider,
+            brokerRequestAuthorizationConverter);
   }
+
+  // --------------------------------------------------------------------------
+  // Search
+  // --------------------------------------------------------------------------
 
   @Test
   void shouldReturnDecisionInstances() {
     // given
-    final var result = mock(SearchQueryResult.class);
-    when(client.searchDecisionInstances(any())).thenReturn(result);
+    final var result = mockSearchResult();
 
-    final DecisionInstanceQuery searchQuery =
-        SearchQueryBuilders.decisionInstanceSearchQuery().build();
+    final DecisionInstanceQuery query = SearchQueryBuilders.decisionInstanceSearchQuery().build();
 
     // when
-    final SearchQueryResult<DecisionInstanceEntity> searchQueryResult =
-        services.search(searchQuery);
+    final var response = services.search(query);
 
     // then
-    assertThat(searchQueryResult).isEqualTo(result);
-  }
-
-  @Test
-  void shouldGetDecisionInstanceById() {
-    // given
-    final var decisionInstanceId = "1-1";
-    final var decisionDefinitionKey = "dd1";
-    final var decisionInstanceEntity = mock(DecisionInstanceEntity.class);
-    when(decisionInstanceEntity.decisionDefinitionId()).thenReturn(decisionDefinitionKey);
-    when(client.getDecisionInstance(any(String.class))).thenReturn(decisionInstanceEntity);
-
-    // when
-    services.getById(decisionInstanceId);
-
-    // then
-    verify(client).getDecisionInstance("1-1");
+    assertThat(response).isEqualTo(result);
   }
 
   @Test
@@ -107,26 +114,140 @@ class DecisionInstanceServiceTest {
                             r -> r.includeEvaluatedInputs(false).includeEvaluatedOutputs(false))));
   }
 
+  // --------------------------------------------------------------------------
+  // Get by ID
+  // --------------------------------------------------------------------------
+
+  @Test
+  void shouldGetDecisionInstanceById() {
+    // given
+    mockExistingDecisionInstance();
+
+    // when
+    services.getById(DECISION_INSTANCE_ID);
+
+    // then
+    verify(client).getDecisionInstance(DECISION_INSTANCE_ID);
+  }
+
   @Test
   void getByIdShouldReturnForbiddenForUnauthorizedDecisionDefinition() {
     // given
-    final var decisionInstanceId = "1-1";
-    final var decisionDefinitionKey = "dd1";
-    final var decisionInstanceEntity = mock(DecisionInstanceEntity.class);
-    when(decisionInstanceEntity.decisionDefinitionId()).thenReturn(decisionDefinitionKey);
-    when(client.getDecisionInstance(eq("1-1")))
-        .thenThrow(
-            new ResourceAccessDeniedException(Authorizations.DECISION_INSTANCE_READ_AUTHORIZATION));
+    mockUnauthorizedDecisionInstanceRead();
 
     // when
-    final ThrowingCallable executable = () -> services.getById(decisionInstanceId);
+    final ThrowingCallable executable = () -> services.getById(DECISION_INSTANCE_ID);
 
     // then
     final var exception =
         assertThatExceptionOfType(ServiceException.class).isThrownBy(executable).actual();
+
     assertThat(exception.getMessage())
         .isEqualTo(
             "Unauthorized to perform operation 'READ_DECISION_INSTANCE' on resource 'DECISION_DEFINITION'");
     assertThat(exception.getStatus()).isEqualTo(Status.FORBIDDEN);
+  }
+
+  // --------------------------------------------------------------------------
+  // Delete
+  // --------------------------------------------------------------------------
+
+  @Test
+  void shouldDeleteDecisionInstance() {
+    // given
+    mockExistingDecisionInstance();
+
+    // when
+    final var result = services.deleteDecisionInstance(DECISION_INSTANCE_ID, null);
+
+    // then
+    assertThat(result).isNotNull();
+    verify(brokerClient).sendRequest(any());
+  }
+
+  @Test
+  void shouldThrowExceptionWhenDecisionInstanceNotFoundDuringDeletion() {
+    // given
+    mockDecisionInstanceNotFound();
+
+    // when
+    final ThrowingCallable executable =
+        () -> services.deleteDecisionInstance(NON_EXISTENT_ID, null);
+
+    // then
+    final var exception =
+        assertThatExceptionOfType(ServiceException.class).isThrownBy(executable).actual();
+
+    assertThat(exception.getStatus()).isEqualTo(Status.NOT_FOUND);
+  }
+
+  @Test
+  void shouldThrowForbiddenExceptionWhenUnauthorizedToDeleteDecisionInstance() {
+    // given
+    mockExistingDecisionInstance();
+    mockBrokerForbidden();
+
+    // when
+    final ThrowingCallable executable =
+        () -> services.deleteDecisionInstance(DECISION_INSTANCE_ID, null).join();
+
+    // then
+    final var completionException =
+        assertThatExceptionOfType(java.util.concurrent.CompletionException.class)
+            .isThrownBy(executable)
+            .actual();
+
+    assertThat(completionException.getCause()).isInstanceOf(ServiceException.class);
+    final var exception = (ServiceException) completionException.getCause();
+
+    assertThat(exception.getMessage())
+        .contains(
+            "Unauthorized to perform operation 'DELETE_DECISION_INSTANCE' on resource 'DECISION_DEFINITION'");
+    assertThat(exception.getStatus()).isEqualTo(Status.INTERNAL);
+  }
+
+  // --------------------------------------------------------------------------
+  // Helper methods
+  // --------------------------------------------------------------------------
+
+  private SearchQueryResult<DecisionInstanceEntity> mockSearchResult() {
+    final var result = mock(SearchQueryResult.class);
+    when(client.searchDecisionInstances(any())).thenReturn(result);
+    return result;
+  }
+
+  private void mockExistingDecisionInstance() {
+    final var entity = mock(DecisionInstanceEntity.class);
+    when(entity.decisionDefinitionId()).thenReturn(DECISION_DEFINITION_KEY);
+    when(client.getDecisionInstance(DECISION_INSTANCE_ID)).thenReturn(entity);
+  }
+
+  private void mockUnauthorizedDecisionInstanceRead() {
+    when(client.getDecisionInstance(DECISION_INSTANCE_ID))
+        .thenThrow(
+            new ResourceAccessDeniedException(Authorizations.DECISION_INSTANCE_READ_AUTHORIZATION));
+  }
+
+  private void mockDecisionInstanceNotFound() {
+    when(client.getDecisionInstance(NON_EXISTENT_ID))
+        .thenThrow(
+            new CamundaSearchException(
+                "Decision instance not found", CamundaSearchException.Reason.NOT_FOUND));
+  }
+
+  private void mockSuccessfulBrokerResponse() {
+    final var record = mock(BatchOperationCreationRecord.class);
+    final var response = new BrokerResponse<>(record);
+
+    doReturn(CompletableFuture.completedFuture(response)).when(brokerClient).sendRequest(any());
+  }
+
+  private void mockBrokerForbidden() {
+    doReturn(
+            CompletableFuture.failedFuture(
+                new ResourceAccessDeniedException(
+                    Authorizations.DECISION_DEFINITION_DELETE_DECISION_INSTANCE_AUTHORIZATION)))
+        .when(brokerClient)
+        .sendRequest(any());
   }
 }
