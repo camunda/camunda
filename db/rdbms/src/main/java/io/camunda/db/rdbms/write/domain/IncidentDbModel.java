@@ -63,8 +63,8 @@ public record IncidentDbModel(
         .build();
   }
 
-  public IncidentDbModel truncateErrorMessage(final int sizeLimit, final Integer byteLimit) {
-    final var truncatedValue = TruncateUtil.truncateValue(errorMessage, sizeLimit, byteLimit);
+  public IncidentDbModel truncateErrorMessage(final int sizeLimit) {
+    final var truncatedValue = TruncateUtil.truncateValue(errorMessage, sizeLimit, null);
 
     if (truncatedValue.length() < errorMessage.length()) {
       LOG.warn(

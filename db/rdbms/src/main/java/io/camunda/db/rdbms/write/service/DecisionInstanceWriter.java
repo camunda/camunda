@@ -59,8 +59,7 @@ public class DecisionInstanceWriter extends ProcessInstanceDependant implements 
             processedInstance.decisionInstanceKey(),
             "io.camunda.db.rdbms.sql.DecisionInstanceMapper.insert",
             processedInstance.truncateErrorMessage(
-                vendorDatabaseProperties.errorMessageSize(),
-                vendorDatabaseProperties.charColumnMaxBytes())));
+                vendorDatabaseProperties.errorMessageSize())));
     if (processedInstance.evaluatedInputs() != null
         && !processedInstance.evaluatedInputs().isEmpty()) {
       executionQueue.executeInQueue(
@@ -70,8 +69,7 @@ public class DecisionInstanceWriter extends ProcessInstanceDependant implements 
               processedInstance.decisionInstanceKey(),
               "io.camunda.db.rdbms.sql.DecisionInstanceMapper.insertInput",
               processedInstance.truncateErrorMessage(
-                  vendorDatabaseProperties.errorMessageSize(),
-                  vendorDatabaseProperties.charColumnMaxBytes())));
+                  vendorDatabaseProperties.errorMessageSize())));
     }
     if (processedInstance.evaluatedOutputs() != null
         && !processedInstance.evaluatedOutputs().isEmpty()) {
@@ -82,8 +80,7 @@ public class DecisionInstanceWriter extends ProcessInstanceDependant implements 
               processedInstance.decisionInstanceKey(),
               "io.camunda.db.rdbms.sql.DecisionInstanceMapper.insertOutput",
               processedInstance.truncateErrorMessage(
-                  vendorDatabaseProperties.errorMessageSize(),
-                  vendorDatabaseProperties.charColumnMaxBytes())));
+                  vendorDatabaseProperties.errorMessageSize())));
     }
   }
 

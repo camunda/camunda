@@ -38,12 +38,11 @@ class VariableWriterTest {
 
   @Test
   void shouldCreateVariable() {
-    when(vendorDatabaseProperties.varcharSize()).thenReturn(1000);
-    when(vendorDatabaseProperties.charColumnMaxBytes()).thenReturn(4000);
+    when(vendorDatabaseProperties.variableValuePreviewSize()).thenReturn(1000);
 
     final var model = mock(VariableDbModel.class);
     final var truncatedModel = mock(VariableDbModel.class);
-    when(model.truncateValue(anyInt(), anyInt())).thenReturn(truncatedModel);
+    when(model.truncateValue(anyInt())).thenReturn(truncatedModel);
     when(model.variableKey()).thenReturn(123L);
 
     writer.create(model);
@@ -67,12 +66,11 @@ class VariableWriterTest {
 
   @Test
   void shouldUpdateVariable() {
-    when(vendorDatabaseProperties.varcharSize()).thenReturn(1000);
-    when(vendorDatabaseProperties.charColumnMaxBytes()).thenReturn(4000);
+    when(vendorDatabaseProperties.variableValuePreviewSize()).thenReturn(1000);
 
     final var model = mock(VariableDbModel.class);
     final var truncatedModel = mock(VariableDbModel.class);
-    when(model.truncateValue(anyInt(), anyInt())).thenReturn(truncatedModel);
+    when(model.truncateValue(anyInt())).thenReturn(truncatedModel);
     when(model.variableKey()).thenReturn(123L);
 
     writer.update(model);

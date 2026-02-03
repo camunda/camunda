@@ -41,8 +41,7 @@ public class JobWriter extends ProcessInstanceDependant implements RdbmsWriter {
   public void create(final JobDbModel job) {
     final var truncatedJob =
         job.truncateErrorMessage(
-            vendorDatabaseProperties.errorMessageSize(),
-            vendorDatabaseProperties.charColumnMaxBytes());
+            vendorDatabaseProperties.errorMessageSize());
 
     final var wasMerged =
         executionQueue.tryMergeWithExistingQueueItem(

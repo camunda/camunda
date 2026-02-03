@@ -12,12 +12,6 @@ import java.util.Properties;
 public class VendorDatabaseProperties {
 
   /**
-   * Optional property to limit the maximum size of string column in bytes, if required by the
-   * database vendor. If not set, no limit is applied.
-   */
-  private static final String CHAR_COLUMN_MAX_BYTES = "charColumn.maxBytes";
-
-  /**
    * Required property to specify the maximum size of varchar columns in characters for indexed
    * fields (e.g., all ID fields like processDefinitionId, formId, tenantId). This is limited by
    * database vendor index size constraints.
@@ -45,7 +39,6 @@ public class VendorDatabaseProperties {
 
   private final Properties properties;
   private final boolean disableFkBeforeTruncate;
-  private final Integer charColumnMaxBytes;
   private final int varcharIndexSize;
   private final int errorMessageSize;
   private final int treePathSize;
@@ -75,12 +68,6 @@ public class VendorDatabaseProperties {
     }
     variableValuePreviewSize =
         Integer.parseInt(properties.getProperty(VARIABLE_VALUE_PREVIEW_SIZE));
-
-    if (!properties.containsKey(CHAR_COLUMN_MAX_BYTES)) {
-      charColumnMaxBytes = null;
-    } else {
-      charColumnMaxBytes = Integer.parseInt(properties.getProperty(CHAR_COLUMN_MAX_BYTES));
-    }
 
     if (!properties.containsKey(DISABLE_FK_BEFORE_TRUNCATE)) {
       throw new IllegalArgumentException(
@@ -125,10 +112,6 @@ public class VendorDatabaseProperties {
    */
   public int variableValuePreviewSize() {
     return variableValuePreviewSize;
-  }
-
-  public Integer charColumnMaxBytes() {
-    return charColumnMaxBytes;
   }
 
   public boolean disableFkBeforeTruncate() {

@@ -46,13 +46,13 @@ public record ClusterVariableDbModel(
         .build();
   }
 
-  public ClusterVariableDbModel truncateValue(final int sizeLimit, final Integer byteLimit) {
+  public ClusterVariableDbModel truncateValue(final int sizeLimit) {
     var truncatedValue = value;
     String fullValue = null;
     var isPreview = false;
 
     if (type == ValueTypeEnum.STRING && value != null) {
-      truncatedValue = TruncateUtil.truncateValue(truncatedValue, sizeLimit, byteLimit);
+      truncatedValue = TruncateUtil.truncateValue(truncatedValue, sizeLimit, null);
 
       if (truncatedValue.length() < value.length()) {
         fullValue = value;

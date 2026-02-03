@@ -40,15 +40,13 @@ class JobWriterTest {
 
   @Test
   void shouldCreateJob() {
-    when(vendorDatabaseProperties.varcharSize()).thenReturn(5000);
-    when(vendorDatabaseProperties.charColumnMaxBytes()).thenReturn(20000);
     when(config.insertBatchingConfig()).thenReturn(insertBatchingConfig);
     when(insertBatchingConfig.jobInsertBatchSize()).thenReturn(1);
     when(executionQueue.tryMergeWithExistingQueueItem(any())).thenReturn(false);
 
     final var model = mock(JobDbModel.class);
     final var truncatedModel = mock(JobDbModel.class);
-    when(model.truncateErrorMessage(anyInt(), anyInt())).thenReturn(truncatedModel);
+    when(model.truncateErrorMessage(anyInt())).thenReturn(truncatedModel);
     when(model.jobKey()).thenReturn(123L);
 
     writer.create(model);
@@ -67,14 +65,13 @@ class JobWriterTest {
   @Test
   void shouldMergeJobInsertionWhenPossible() {
     when(vendorDatabaseProperties.errorMessageSize()).thenReturn(5000);
-    when(vendorDatabaseProperties.charColumnMaxBytes()).thenReturn(20000);
     when(config.insertBatchingConfig()).thenReturn(insertBatchingConfig);
     when(insertBatchingConfig.jobInsertBatchSize()).thenReturn(10);
     when(executionQueue.tryMergeWithExistingQueueItem(any())).thenReturn(true);
 
     final var model = mock(JobDbModel.class);
     final var truncatedModel = mock(JobDbModel.class);
-    when(model.truncateErrorMessage(anyInt(), anyInt())).thenReturn(truncatedModel);
+    when(model.truncateErrorMessage(anyInt())).thenReturn(truncatedModel);
     when(model.jobKey()).thenReturn(123L);
 
     writer.create(model);

@@ -37,9 +37,7 @@ public class VariableWriter extends ProcessInstanceDependant implements RdbmsWri
 
   public void create(final VariableDbModel variable) {
     final var truncatedVariable =
-        variable.truncateValue(
-            vendorDatabaseProperties.variableValuePreviewSize(),
-            vendorDatabaseProperties.charColumnMaxBytes());
+        variable.truncateValue(vendorDatabaseProperties.variableValuePreviewSize());
 
     final var wasMerged =
         executionQueue.tryMergeWithExistingQueueItem(
@@ -64,9 +62,7 @@ public class VariableWriter extends ProcessInstanceDependant implements RdbmsWri
             WriteStatementType.UPDATE,
             variable.variableKey(),
             "io.camunda.db.rdbms.sql.VariableMapper.update",
-            variable.truncateValue(
-                vendorDatabaseProperties.variableValuePreviewSize(),
-                vendorDatabaseProperties.charColumnMaxBytes())));
+            variable.truncateValue(vendorDatabaseProperties.variableValuePreviewSize())));
   }
 
   public void migrateToProcess(final long variableKey, final String processDefinitionId) {
