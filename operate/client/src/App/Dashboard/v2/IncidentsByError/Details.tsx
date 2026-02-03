@@ -37,8 +37,7 @@ const Details: React.FC<Props> = ({
     payload: {
       filter: {
         errorHashCode: incidentErrorHashCode,
-      },
-      sort: [{field: 'activeInstancesWithErrorCount', order: 'desc'}],
+      }
     },
   });
 
