@@ -209,6 +209,33 @@
         </executions>
       </plugin>
       <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>add-nullable-import</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <configuration>
+              <target>
+                <!-- Workaround for OpenAPI Generator 7.19.0 bug where @Nullable is used but import is missing -->
+                <!-- Add jakarta.annotation.Nullable import to generated files that use @Nullable -->
+                <replaceregexp match="^(package .+;)$" replace="\1${line.separator}${line.separator}import jakarta.annotation.Nullable;" flags="m" byline="false">
+                  <fileset dir="${project.build.directory}/generated-sources/openapi/src/main" includes="**/*.java">
+                    <contains text="@Nullable" casesensitive="yes"/>
+                    <not>
+                      <contains text="import jakarta.annotation.Nullable" casesensitive="yes"/>
+                    </not>
+                  </fileset>
+                </replaceregexp>
+              </target>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
         <groupId>com.diffplug.spotless</groupId>
         <artifactId>spotless-maven-plugin</artifactId>
         <executions>
