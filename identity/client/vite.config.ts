@@ -6,12 +6,16 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+/// <reference types="vitest" />
+/// <reference types="vite/client" />
 import { defineConfig, PluginOption, UserConfig } from "vite";
 import svgr from "vite-plugin-svgr";
 import react from "@vitejs/plugin-react";
 import license from "rollup-plugin-license";
 import path from "node:path";
 import sbom from "rollup-plugin-sbom";
+import { configDefaults } from "vitest/config";
+import { playwright } from "@vitest/browser-playwright";
 
 const outDir = "dist";
 const contextPath = process.env.CONTEXT_PATH ?? "";
@@ -30,6 +34,24 @@ const plugins: PluginOption[] = [
     include: "**/*.svg",
   }),
 ];
+
+function getReporters(): Pick<
+  NonNullable<UserConfig["test"]>,
+  "reporters" | "outputFile"
+> {
+  if (process.env.CI) {
+    return {
+      reporters: ["default", "junit", "github-actions"],
+      outputFile: {
+        junit: "TEST-unit.xml",
+      },
+    };
+  }
+
+  return {
+    reporters: ["default"],
+  };
+}
 
 // https://vitejs.dev/config/
 export default defineConfig(
@@ -69,6 +91,48 @@ export default defineConfig(
           changeOrigin: true,
         },
       },
+    },
+    test: {
+      globals: true,
+      restoreMocks: true,
+      mockReset: true,
+      unstubGlobals: true,
+      clearMocks: true,
+      resetMocks: true,
+      unstubEnvs: true,
+      ...getReporters(),
+      projects: [
+        {
+          extends: true,
+          test: {
+            name: "unit",
+            environment: "jsdom",
+            include: ["./src/**/*.{test,spec}.?(c|m)[jt]s?(x)"],
+            exclude: [
+              ...configDefaults.exclude,
+              "./src/**/*.browser.{test,spec}.?(c|m)[jt]s?(x)",
+            ],
+            setupFiles: ["./src/setupTests.tsx"],
+          },
+        },
+        {
+          extends: true,
+          test: {
+            name: "browser",
+            include: ["./src/**/*.browser.{test,spec}.?(c|m)[jt]s?(x)"],
+            setupFiles: ["./vitest.browser.setup.ts"],
+            browser: {
+              enabled: true,
+              provider: playwright(),
+              instances: [
+                {
+                  browser: "chromium",
+                },
+              ],
+            },
+          },
+        },
+      ],
     },
   }),
 );
