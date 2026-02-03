@@ -399,13 +399,17 @@ final class BackupServiceImpl {
                 .rangeMarkers(partitionId)
                 .whenCompleteAsync(
                     (markers, throwable) -> {
-                      LOG.atTrace()
-                          .addKeyValue("markers", markers::size)
-                          .setMessage("Retrieved range markers")
-                          .log();
                       if (throwable != null) {
+                        LOG.atError()
+                            .setMessage("Failed to retrieve range markers")
+                            .setCause(throwable)
+                            .log();
                         future.completeExceptionally(throwable);
                       } else {
+                        LOG.atTrace()
+                            .addKeyValue("markers", markers::size)
+                            .setMessage("Retrieved range markers")
+                            .log();
                         getStatusForRanges(
                             partitionId, BackupRanges.fromMarkers(markers), future, executor);
                       }
@@ -439,38 +443,46 @@ final class BackupServiceImpl {
               .setMessage("Resolved all backup statuses for ranges")
               .log();
           for (final var range : ranges) {
-            final var firstStatus = statuses.get(range.firstCheckpointId()).join();
-            final var lastStatus = statuses.get(range.lastCheckpointId()).join();
-            if (firstStatus.isEmpty() || lastStatus.isEmpty()) {
-              LOG.atWarn()
-                  .addKeyValue("range", range)
-                  .addKeyValue("firstStatus", firstStatus)
-                  .addKeyValue("lastStatus", lastStatus)
-                  .setMessage("Did not find backup status for checkpoints in range, skipping range")
-                  .log();
-              continue;
-            }
-            if (firstStatus.get().statusCode() != BackupStatusCode.COMPLETED
-                || lastStatus.get().statusCode() != BackupStatusCode.COMPLETED) {
-              LOG.atWarn()
-                  .addKeyValue("range", range)
-                  .addKeyValue("firstStatus", firstStatus)
-                  .addKeyValue("lastStatus", lastStatus)
-                  .setMessage("Backup status for range is not completed, skipping range")
-                  .log();
+            final var firstStatus = statuses.get(range.firstCheckpointId()).join().orElse(null);
+            final var lastStatus = statuses.get(range.lastCheckpointId()).join().orElse(null);
+            if (!isValidRange(range, firstStatus, lastStatus)) {
               continue;
             }
             result.add(
                 switch (range) {
                   case final Complete ignored ->
-                      new BackupRangeStatus.Complete(firstStatus.get(), lastStatus.get());
+                      new BackupRangeStatus.Complete(firstStatus, lastStatus);
                   case final Incomplete incomplete ->
                       new BackupRangeStatus.Incomplete(
-                          firstStatus.get(), lastStatus.get(), incomplete.missingCheckpoints());
+                          firstStatus, lastStatus, incomplete.deletedCheckpointIds());
                 });
           }
           future.complete(result);
         });
+  }
+
+  private static boolean isValidRange(
+      final BackupRange range, final BackupStatus firstStatus, final BackupStatus lastStatus) {
+    if (firstStatus == null || lastStatus == null) {
+      LOG.atWarn()
+          .addKeyValue("range", range)
+          .addKeyValue("firstStatus", firstStatus)
+          .addKeyValue("lastStatus", lastStatus)
+          .setMessage("Did not find backup status for checkpoints in range, skipping range")
+          .log();
+      return false;
+    }
+    if (firstStatus.statusCode() != BackupStatusCode.COMPLETED
+        || lastStatus.statusCode() != BackupStatusCode.COMPLETED) {
+      LOG.atWarn()
+          .addKeyValue("range", range)
+          .addKeyValue("firstStatus", firstStatus)
+          .addKeyValue("lastStatus", lastStatus)
+          .setMessage("Backup status for range is not completed, skipping range")
+          .log();
+      return false;
+    }
+    return true;
   }
 
   private Long2ObjectHashMap<ActorFuture<Optional<BackupStatus>>> getBackupStatusForAllRanges(
