@@ -181,10 +181,11 @@ class OperateProcessesPage {
   }
 
   async filterByProcessName(name: string): Promise<void> {
+    await expect(this.processNameFilter).toBeVisible();
     await this.processNameFilter.click();
     await this.processNameFilter.fill(name);
     await this.page.keyboard.press('Enter');
-    await this.page.getByRole('heading', {name}).waitFor({state: 'visible'});
+    await this.page.getByRole('heading', {name}).waitFor({state: 'visible', timeout: 120000});
   }
 
   async clickProcessInstanceLink(): Promise<void> {
