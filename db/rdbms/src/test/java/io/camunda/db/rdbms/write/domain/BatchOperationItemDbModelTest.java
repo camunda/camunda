@@ -19,20 +19,9 @@ class BatchOperationItemDbModelTest {
     final BatchOperationItemDbModel truncatedMessage =
         new BatchOperationItemDbModel(
                 "batchId", 123L, 456L, BatchOperationItemState.ACTIVE, null, "errorMessage")
-            .truncateErrorMessage(10, null);
+            .truncateErrorMessage(10);
 
     assertThat(truncatedMessage.errorMessage().length()).isEqualTo(10);
     assertThat(truncatedMessage.errorMessage()).isEqualTo("errorMessa");
-  }
-
-  @Test
-  void shouldTruncateErrorMessageBytes() {
-    final BatchOperationItemDbModel truncatedMessage =
-        new BatchOperationItemDbModel(
-                "batchId", 123L, 456L, BatchOperationItemState.ACTIVE, null, "ääääääääää")
-            .truncateErrorMessage(50, 5);
-
-    assertThat(truncatedMessage.errorMessage().length()).isEqualTo(2);
-    assertThat(truncatedMessage.errorMessage()).isEqualTo("ää");
   }
 }

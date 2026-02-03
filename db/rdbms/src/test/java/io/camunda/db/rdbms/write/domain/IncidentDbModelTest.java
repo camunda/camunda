@@ -26,7 +26,7 @@ class IncidentDbModelTest {
             .state(IncidentState.ACTIVE)
             .tenantId("tenantId")
             .build()
-            .truncateErrorMessage(10, null);
+            .truncateErrorMessage(10);
 
     assertThat(truncatedMessage.errorMessage().length()).isEqualTo(10);
 
@@ -41,23 +41,5 @@ class IncidentDbModelTest {
                 .state(IncidentState.ACTIVE)
                 .tenantId("tenantId")
                 .build());
-  }
-
-  @Test
-  void shouldTruncateErrorMessageBytes() {
-    final IncidentDbModel truncatedMessage =
-        new IncidentDbModel.Builder()
-            .incidentKey(123L)
-            .processInstanceKey(456L)
-            .rootProcessInstanceKey(654L)
-            .processDefinitionKey(789L)
-            .errorMessage("ääääääääää")
-            .state(IncidentState.ACTIVE)
-            .tenantId("tenantId")
-            .build()
-            .truncateErrorMessage(50, 5);
-
-    assertThat(truncatedMessage.errorMessage().length()).isEqualTo(2);
-    assertThat(truncatedMessage.errorMessage()).isEqualTo("ää");
   }
 }

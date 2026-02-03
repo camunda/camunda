@@ -32,32 +32,10 @@ class JobDbModelTest {
             .deadline(OffsetDateTime.now())
             .tenantId("tenantId")
             .build()
-            .truncateErrorMessage(10, null);
+            .truncateErrorMessage(10);
 
     assertThat(truncatedMessage.errorMessage().length()).isEqualTo(10);
     assertThat(truncatedMessage.errorMessage()).isEqualTo("errorMessa");
-  }
-
-  @Test
-  void shouldTruncateErrorMessageBytes() {
-    final JobDbModel truncatedMessage =
-        new Builder()
-            .errorMessage("ääääääääää")
-            .jobKey(1L)
-            .processInstanceKey(2L)
-            .processDefinitionKey(3L)
-            .elementInstanceKey(4L)
-            .elementId("elementId")
-            .type("type")
-            .retries(1)
-            .worker("worker")
-            .deadline(OffsetDateTime.now())
-            .tenantId("tenantId")
-            .build()
-            .truncateErrorMessage(99, 5);
-
-    assertThat(truncatedMessage.errorMessage().length()).isEqualTo(2);
-    assertThat(truncatedMessage.errorMessage()).isEqualTo("ää");
   }
 
   @Test
@@ -76,6 +54,6 @@ class JobDbModelTest {
             .tenantId("tenantId")
             .build();
 
-    assertThatCode(() -> jobDbModel.truncateErrorMessage(10, 5)).doesNotThrowAnyException();
+    assertThatCode(() -> jobDbModel.truncateErrorMessage(10)).doesNotThrowAnyException();
   }
 }

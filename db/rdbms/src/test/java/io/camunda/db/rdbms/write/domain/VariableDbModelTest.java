@@ -198,7 +198,7 @@ public class VariableDbModelTest {
             .rootProcessInstanceKey(4L)
             .tenantId("tenant1")
             .build()
-            .truncateValue(variableSizeThreshold, null);
+            .truncateValue(variableSizeThreshold);
 
     // then
     assertThat(model.variableKey()).isEqualTo(1L);
@@ -207,43 +207,6 @@ public class VariableDbModelTest {
     assertThat(model.doubleValue()).isNull();
     assertThat(model.longValue()).isNull();
     assertThat(model.value()).isEqualTo(largeValue.substring(0, variableSizeThreshold));
-    assertThat(model.fullValue()).isEqualTo(largeValue);
-    assertThat(model.isPreview()).isTrue();
-    assertThat(model.scopeKey()).isEqualTo(2L);
-    assertThat(model.processInstanceKey()).isEqualTo(3L);
-    assertThat(model.rootProcessInstanceKey()).isEqualTo(4L);
-    assertThat(model.tenantId()).isEqualTo("tenant1");
-  }
-
-  @Test
-  public void shouldSetCorrectTypeAndValueForLargeByteValue() {
-    // given
-    final int variableSizeThreshold = 10;
-    final int maxBytesThreshold = 10;
-    final String largeValue = "ä".repeat(maxBytesThreshold);
-    final VariableDbModel.VariableDbModelBuilder builder =
-        new VariableDbModel.VariableDbModelBuilder();
-
-    // when
-    final VariableDbModel model =
-        builder
-            .variableKey(1L)
-            .name("test")
-            .value(largeValue)
-            .scopeKey(2L)
-            .processInstanceKey(3L)
-            .rootProcessInstanceKey(4L)
-            .tenantId("tenant1")
-            .build()
-            .truncateValue(variableSizeThreshold, maxBytesThreshold);
-
-    // then
-    assertThat(model.variableKey()).isEqualTo(1L);
-    assertThat(model.name()).isEqualTo("test");
-    assertThat(model.type()).isEqualTo(ValueTypeEnum.STRING);
-    assertThat(model.doubleValue()).isNull();
-    assertThat(model.longValue()).isNull();
-    assertThat(model.value()).isEqualTo("äääää");
     assertThat(model.fullValue()).isEqualTo(largeValue);
     assertThat(model.isPreview()).isTrue();
     assertThat(model.scopeKey()).isEqualTo(2L);
