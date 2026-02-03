@@ -55,6 +55,7 @@ import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import io.camunda.webapps.schema.entities.ImportPositionEntity;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;
 import io.camunda.webapps.schema.entities.usertask.TaskJoinRelationship.TaskJoinRelationshipType;
+import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.retry.RetryDecorator;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -83,8 +84,21 @@ public class ElasticsearchAdapter implements TaskMigrationAdapter {
       final MigrationConfiguration migrationConfiguration,
       final ConnectConfiguration connectConfiguration,
       final RetentionConfiguration retentionConfiguration) {
+    this(
+        migrationConfiguration,
+        connectConfiguration,
+        retentionConfiguration,
+        new ElasticsearchConnector(connectConfiguration).createClient());
+  }
+
+  @VisibleForTesting
+  ElasticsearchAdapter(
+      final MigrationConfiguration migrationConfiguration,
+      final ConnectConfiguration connectConfiguration,
+      final RetentionConfiguration retentionConfiguration,
+      final ElasticsearchClient client) {
     this.migrationConfiguration = migrationConfiguration;
-    client = new ElasticsearchConnector(connectConfiguration).createClient();
+    this.client = client;
     retryDecorator =
         new RetryDecorator(migrationConfiguration.getRetry())
             .withRetryOnException(
@@ -215,6 +229,15 @@ public class ElasticsearchAdapter implements TaskMigrationAdapter {
                 })
             .toList();
 
+    if (tasksToUpdate.isEmpty()) {
+      return List.of();
+    }
+
+    final Set<Long> taskToUpdateKeys =
+        tasksToUpdate.stream()
+            .map(taskWithIndex -> taskWithIndex.task().getKey())
+            .collect(Collectors.toSet());
+
     final var sourceIndexSearchRequest =
         new SearchRequest.Builder()
             .index(legacyIndex.getFullQualifiedName())
@@ -226,13 +249,11 @@ public class ElasticsearchAdapter implements TaskMigrationAdapter {
                                 .terms(
                                     v ->
                                         v.value(
-                                            tasksToUpdate.stream()
-                                                .map(
-                                                    taskWithIndex ->
-                                                        FieldValue.of(
-                                                            taskWithIndex.task().getKey()))
+                                            taskToUpdateKeys.stream()
+                                                .map(FieldValue::of)
                                                 .toList())) // The list of values to match
                         ))
+            .size(taskToUpdateKeys.size())
             .build();
 
     final SearchResponse<TaskEntity> response;
