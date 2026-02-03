@@ -27,6 +27,8 @@ public interface FilterConfiguration {
 
   boolean shouldIndexRecordType(RecordType recordType);
 
+  IndexConfig filterIndexConfig();
+
   interface IndexConfig {
     List<String> getVariableNameInclusionExact();
 
