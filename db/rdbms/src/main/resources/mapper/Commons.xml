@@ -183,7 +183,8 @@
   <sql id="historyCleanup" databaseId="mssql">
     DELETE TOP (#{limit})
     FROM ${prefix}${tableName}
-    WHERE HISTORY_CLEANUP_DATE &lt; #{cleanupDate, jdbcType=TIMESTAMP}
+    WHERE PARTITION_ID = #{partitionId}
+      AND HISTORY_CLEANUP_DATE &lt; #{cleanupDate, jdbcType=TIMESTAMP}
   </sql>
   <!--
    Special handling for Oracle to delete using row identifiers.
