@@ -69,7 +69,6 @@ class HistoryCleanupServiceTest {
     usageMetricWriter = mock(UsageMetricWriter.class);
     usageMetricTUWriter = mock(UsageMetricTUWriter.class);
     auditLogWriter = mock(AuditLogWriter.class);
-
     when(processInstanceReader.selectExpiredRootProcessInstances(anyInt(), any(), anyInt()))
         .thenReturn(java.util.Collections.emptyList());
 
@@ -150,8 +149,7 @@ class HistoryCleanupServiceTest {
     when(auditLogWriter.cleanupHistory(anyInt(), any(), anyInt())).thenReturn(1);
 
     // dependent processes were also deleted
-    when(processInstanceWriter.deleteChildrenByRootProcessInstances(anyInt(), any(), anyInt()))
-        .thenReturn(1);
+    when(processInstanceWriter.deleteChildrenByRootProcessInstances(any(), anyInt())).thenReturn(1);
 
     // when
     final Duration nextCleanupInterval =
@@ -180,7 +178,7 @@ class HistoryCleanupServiceTest {
     verify(auditLogWriter).deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, 100);
     // PIs deleted since no child entities were found
     verify(processInstanceWriter)
-        .deleteChildrenByRootProcessInstances(PARTITION_ID, expiredProcessInstanceKeys, 100);
+        .deleteChildrenByRootProcessInstances(expiredProcessInstanceKeys, 100);
     verify(processInstanceWriter).deleteByKeys(expiredProcessInstanceKeys);
     verify(batchOperationWriter).cleanupHistory(CLEANUP_DATE, 100);
     verify(decisionInstanceWriter).cleanupHistory(PARTITION_ID, CLEANUP_DATE, 100);
@@ -229,7 +227,7 @@ class HistoryCleanupServiceTest {
     verify(auditLogWriter).deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, 100);
     // PIs NOT deleted because child entities were found
     verify(processInstanceWriter, Mockito.never())
-        .deleteChildrenByRootProcessInstances(anyInt(), any(), anyInt());
+        .deleteChildrenByRootProcessInstances(any(), anyInt());
     verify(processInstanceWriter, Mockito.never()).deleteByKeys(any());
     verify(batchOperationWriter).cleanupHistory(CLEANUP_DATE, 100);
   }
@@ -247,7 +245,7 @@ class HistoryCleanupServiceTest {
     when(batchOperationWriter.cleanupHistory(any(), anyInt())).thenReturn(1);
 
     // but dependent processes were not fully deleted (as batch size was hit)
-    when(processInstanceWriter.deleteChildrenByRootProcessInstances(anyInt(), any(), anyInt()))
+    when(processInstanceWriter.deleteChildrenByRootProcessInstances(any(), anyInt()))
         .thenReturn(100);
 
     // when
@@ -276,7 +274,7 @@ class HistoryCleanupServiceTest {
         .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, 100);
     verify(auditLogWriter).deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, 100);
     verify(processInstanceWriter)
-        .deleteChildrenByRootProcessInstances(PARTITION_ID, expiredProcessInstanceKeys, 100);
+        .deleteChildrenByRootProcessInstances(expiredProcessInstanceKeys, 100);
     // Root PIs NOT deleted because dependent process instance entities were found
     verify(processInstanceWriter, Mockito.never()).deleteByKeys(any());
     verify(batchOperationWriter).cleanupHistory(CLEANUP_DATE, 100);

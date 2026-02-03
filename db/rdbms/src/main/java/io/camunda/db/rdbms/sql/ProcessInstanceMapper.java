@@ -47,8 +47,7 @@ public interface ProcessInstanceMapper {
 
   int deleteChildrenByRootProcessInstances(DeleteChildrenByRootProcessInstancesDto dto);
 
-  record DeleteChildrenByRootProcessInstancesDto(
-      int partitionId, List<Long> rootProcessInstanceKeys, int limit) {}
+  record DeleteChildrenByRootProcessInstancesDto(List<Long> rootProcessInstanceKeys, int limit) {}
 
   record UpdateHistoryCleanupDateDto(
       List<Long> processInstanceKeys, OffsetDateTime historyCleanupDate)

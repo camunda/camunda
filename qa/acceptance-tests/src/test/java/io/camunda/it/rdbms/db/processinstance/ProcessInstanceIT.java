@@ -448,8 +448,7 @@ public class ProcessInstanceIT {
     final int deleted =
         rdbmsWriters
             .getProcessInstanceWriter()
-            .deleteChildrenByRootProcessInstances(
-                PARTITION_ID, List.of(rootProcessInstanceKey), 10);
+            .deleteChildrenByRootProcessInstances(List.of(rootProcessInstanceKey), 10);
 
     // then
     assertThat(deleted).isEqualTo(2);

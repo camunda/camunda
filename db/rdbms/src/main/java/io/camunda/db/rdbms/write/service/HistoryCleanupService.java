@@ -180,7 +180,7 @@ public class HistoryCleanupService {
         if (!anyDeletionHitBatchLimit) {
           deletedChildPIs =
               processInstanceWriter.deleteChildrenByRootProcessInstances(
-                  partitionId, expiredRootProcessInstanceKeys, cleanupBatchSize);
+                  expiredRootProcessInstanceKeys, cleanupBatchSize);
           totalChildEntitiesDeleted += deletedChildPIs;
           LOG.debug(
               "Deleted {} child process instances with no remaining dependents on partition {}",

@@ -482,8 +482,7 @@
   <delete id="deleteChildrenByRootProcessInstances">
     DELETE
     FROM ${prefix}PROCESS_INSTANCE
-    WHERE PARTITION_ID = #{partitionId}
-    AND ROOT_PROCESS_INSTANCE_KEY IN
+    WHERE ROOT_PROCESS_INSTANCE_KEY IN
     <foreach collection="rootProcessInstanceKeys" item="key" open="(" separator=", " close=")">
       #{key}
     </foreach>
@@ -493,8 +492,7 @@
   <delete id="deleteChildrenByRootProcessInstances" databaseId="mssql">
     DELETE TOP (#{limit})
     FROM ${prefix}PROCESS_INSTANCE
-    WHERE PARTITION_ID = #{partitionId}
-    AND ROOT_PROCESS_INSTANCE_KEY IN
+    WHERE ROOT_PROCESS_INSTANCE_KEY IN
     <foreach collection="rootProcessInstanceKeys" item="key" open="(" separator=", " close=")">
       #{key}
     </foreach>
@@ -510,8 +508,7 @@
     FROM ${prefix}PROCESS_INSTANCE t1
     WHERE PROCESS_INSTANCE_KEY IN (SELECT t2.PROCESS_INSTANCE_KEY
     FROM ${prefix}PROCESS_INSTANCE t2
-    WHERE t2.PARTITION_ID = #{partitionId}
-    AND t2.ROOT_PROCESS_INSTANCE_KEY IN (
+    WHERE t2.ROOT_PROCESS_INSTANCE_KEY IN (
     SELECT COLUMN_VALUE
     FROM XMLTABLE('/d/r'
     PASSING XMLTYPE(#{rootProcessInstanceKeys, typeHandler=io.camunda.db.rdbms.sql.typehandler.OracleXmlArrayTypeHandler})
@@ -530,8 +527,7 @@
     FROM ${prefix}PROCESS_INSTANCE t1
     USING (SELECT PROCESS_INSTANCE_KEY
     FROM ${prefix}PROCESS_INSTANCE
-    WHERE PARTITION_ID = #{partitionId}
-    AND ROOT_PROCESS_INSTANCE_KEY = ANY(#{rootProcessInstanceKeys, jdbcType=ARRAY, typeHandler=io.camunda.db.rdbms.sql.typehandler.PostgresLongListToArrayTypeHandler})
+    WHERE ROOT_PROCESS_INSTANCE_KEY = ANY(#{rootProcessInstanceKeys, jdbcType=ARRAY, typeHandler=io.camunda.db.rdbms.sql.typehandler.PostgresLongListToArrayTypeHandler})
     AND ROOT_PROCESS_INSTANCE_KEY != PROCESS_INSTANCE_KEY
     LIMIT #{limit}) t2
     WHERE t1.PROCESS_INSTANCE_KEY = t2.PROCESS_INSTANCE_KEY
