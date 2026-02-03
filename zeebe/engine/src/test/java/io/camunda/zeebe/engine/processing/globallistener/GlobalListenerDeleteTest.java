@@ -8,17 +8,26 @@
 package io.camunda.zeebe.engine.processing.globallistener;
 
 import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
+import static io.camunda.zeebe.protocol.record.value.AuthorizationScope.WILDCARD;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.UUID;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
 
 public class GlobalListenerDeleteTest {
 
-  @Rule public final EngineRule engine = EngineRule.singlePartition();
+  @Rule
+  public final EngineRule engine =
+      EngineRule.singlePartition()
+          .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true));
+
   @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
 
   @Test
@@ -55,5 +64,47 @@ public class GlobalListenerDeleteTest {
 
     // then
     assertThat(rejection).hasRejectionType(RejectionType.NOT_FOUND);
+  }
+
+  // Authorization tests
+
+  @Test
+  public void shouldBeAuthorizedToDeleteListenerWithCorrectPermission() {
+    engine.globalListener().withId("my-id").withType("my-type").withEventType("all").create();
+
+    final var username = createUserWithPermissions(PermissionType.DELETE_TASK_LISTENER);
+    engine.globalListener().withId("my-id").delete(username);
+  }
+
+  @Test
+  public void shouldNotBeAuthorizedToDeleteListenerWithoutCorrectPermission() {
+    engine.globalListener().withId("my-id").withType("my-type").withEventType("all").create();
+
+    final var username =
+        createUserWithPermissions(
+            PermissionType.CREATE_TASK_LISTENER, PermissionType.UPDATE_TASK_LISTENER);
+    final var rejection =
+        engine.globalListener().withId("my-id").expectRejection().delete(username);
+    assertThat(rejection).hasRejectionType(RejectionType.FORBIDDEN);
+  }
+
+  private String createUserWithoutPermissions() {
+    final var user = engine.user().newUser(UUID.randomUUID().toString()).create().getValue();
+    return user.getUsername();
+  }
+
+  private String createUserWithPermissions(final PermissionType... permissions) {
+    final var username = createUserWithoutPermissions();
+    engine
+        .authorization()
+        .newAuthorization()
+        .withPermissions(permissions)
+        .withOwnerId(username)
+        .withOwnerType(AuthorizationOwnerType.USER)
+        .withResourceType(AuthorizationResourceType.GLOBAL_LISTENER)
+        .withResourceMatcher(WILDCARD.getMatcher())
+        .withResourceId(WILDCARD.getResourceId())
+        .create();
+    return username;
   }
 }
