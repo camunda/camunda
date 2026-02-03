@@ -7,7 +7,6 @@
  */
 package io.camunda.optimize.rest;
 
-import static io.camunda.optimize.MetricEnum.REPORT_EVALUATION_TIME_METRIC;
 import static io.camunda.optimize.rest.constants.RestConstants.X_OPTIMIZE_CLIENT_LOCALE;
 import static io.camunda.optimize.rest.queryparam.QueryParamUtil.normalizeNullStringValue;
 import static io.camunda.optimize.rest.util.TimeZoneUtil.extractTimezone;
@@ -59,6 +58,7 @@ public class ReportRestService {
   private final ReportEvaluationService reportEvaluationService;
   private final SessionService sessionService;
   private final ReportRestMapper reportRestMapper;
+  private final Timer reportEvaluationTimer;
 
   public ReportRestService(
       final ReportService reportService,
@@ -69,6 +69,10 @@ public class ReportRestService {
     this.reportEvaluationService = reportEvaluationService;
     this.sessionService = sessionService;
     this.reportRestMapper = reportRestMapper;
+    this.reportEvaluationTimer =
+        Timer.builder("optimize.report.evaluationTime")
+            .description("Records the time spent evaluating report requests")
+            .register(Metrics.globalRegistry);
   }
 
   @PostMapping("/process/single")
@@ -168,12 +172,7 @@ public class ReportRestService {
             reportEvaluationFilter,
             PaginationDto.fromPaginationRequest(paginationRequestDto));
     final long took = System.currentTimeMillis() - startTime;
-    final Timer evaluationTimer =
-        Timer.builder(REPORT_EVALUATION_TIME_METRIC.getName())
-            .description(REPORT_EVALUATION_TIME_METRIC.getDescription())
-            .tag("reportId", reportId)
-            .register(Metrics.globalRegistry);
-    evaluationTimer.record(took, java.util.concurrent.TimeUnit.MILLISECONDS);
+    reportEvaluationTimer.record(took, java.util.concurrent.TimeUnit.MILLISECONDS);
     return reportRestMapper.mapToLocalizedEvaluationResponseDto(
         reportEvaluationResult, request.getHeader(X_OPTIMIZE_CLIENT_LOCALE));
   }
