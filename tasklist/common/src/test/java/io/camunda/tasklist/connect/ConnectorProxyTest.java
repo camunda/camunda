@@ -26,8 +26,6 @@ import io.camunda.tasklist.property.TasklistOpenSearchProperties;
 import io.camunda.tasklist.property.TasklistProperties;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.parallel.Execution;
@@ -196,12 +194,11 @@ class ConnectorProxyTest {
         esProperties.setHealthCheckEnabled(false);
         tasklistProperties.setElasticsearch(esProperties);
 
-        final var connector = Mockito.spy(new ElasticsearchConnector());
-        Mockito.doReturn(true).when(connector).checkHealth(Mockito.any(RestHighLevelClient.class));
+        final var connector = new ElasticsearchConnector();
         connector.setTasklistProperties(tasklistProperties);
         final var client = connector.createEsClient(esProperties, new PluginRepository());
 
-        assertThat(client.ping(RequestOptions.DEFAULT)).isTrue();
+        assertThat(client.ping().value()).isTrue();
       }
       case OPENSEARCH -> {
         final var tasklistProperties = new TasklistProperties();
