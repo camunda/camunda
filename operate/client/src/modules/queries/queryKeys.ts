@@ -155,7 +155,7 @@ const queryKeys = {
     },
     searchByScope: (
       payload: Pick<QueryElementInstancesRequestBody, 'page' | 'sort'> & {
-        elementInstanceScopeKey: string;
+        filter: {elementInstanceScopeKey: string};
       },
     ) => {
       return ['elementInstancesSearchByScope', ...Object.values(payload)];
