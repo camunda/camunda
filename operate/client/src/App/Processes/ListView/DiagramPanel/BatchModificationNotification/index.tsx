@@ -7,7 +7,7 @@
  */
 
 import {observer} from 'mobx-react';
-import {useInstancesCount} from 'modules/queries/processInstancesStatistics/useInstancesCount.ts';
+import {useInstancesCount} from 'modules/queries/processInstancesStatistics/useInstancesCount';
 import pluralSuffix from 'modules/utils/pluralSuffix';
 import {Container, InlineNotification, Button} from './styled';
 import {useProcessDefinitionKeyContext} from '../../processDefinitionKeyContext';
