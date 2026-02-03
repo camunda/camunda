@@ -10,7 +10,6 @@ package io.camunda.zeebe.restore;
 import io.camunda.application.MainSupport;
 import io.camunda.application.Profile;
 import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration;
-import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
@@ -19,6 +18,8 @@ import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.beans.RestoreProperties;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
+import io.camunda.zeebe.dynamic.nodeid.fs.DataDirectoryProvider;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.time.Instant;
@@ -66,19 +67,28 @@ public class RestoreApp implements ApplicationRunner {
 
   private final RestoreProperties restoreConfiguration;
   private final MeterRegistry meterRegistry;
+  private final PostRestoreAction postRestoreAction;
+  private final PreRestoreAction preRestoreAction;
 
   @Autowired
   public RestoreApp(
       final BrokerBasedProperties configuration,
       final BackupStore backupStore,
       final RestoreProperties restoreConfiguration,
-      final WorkingDirectory workingDirectory,
-      final MeterRegistry meterRegistry) {
+      final MeterRegistry meterRegistry,
+      final NodeIdProvider nodeIdProvider,
+      // DataDirectoryProvider is not used directly here but is needed to ensure the directory is
+      // set up already especially when using dynamic node ids.
+      final DataDirectoryProvider dataDirectoryProvider,
+      final PostRestoreAction postRestoreAction,
+      final PreRestoreAction preRestoreAction) {
     this.configuration = configuration;
     this.backupStore = backupStore;
     this.restoreConfiguration = restoreConfiguration;
     this.meterRegistry = meterRegistry;
-    configuration.init(workingDirectory.path().toAbsolutePath().toString());
+    this.postRestoreAction = postRestoreAction;
+    this.preRestoreAction = preRestoreAction;
+    configuration.getCluster().setNodeId(nodeIdProvider.currentNodeInstance().id());
   }
 
   public static void main(final String[] args) {
@@ -113,6 +123,7 @@ public class RestoreApp implements ApplicationRunner {
 
     final var restoreManager = new RestoreManager(configuration, backupStore, meterRegistry);
 
+    preRestoreAction.beforeRestore(configuration.getCluster().getNodeId());
     if (backupId != null) {
       LOG.info(
           "Starting to restore from backup {} with the following configuration: {}",
@@ -136,6 +147,8 @@ public class RestoreApp implements ApplicationRunner {
           restoreConfiguration.ignoreFilesInTarget());
       LOG.info("Successfully restored broker from backups in time range [{}, {}]", from, to);
     }
+
+    postRestoreAction.restored(configuration.getCluster().getNodeId());
   }
 
   private void validateParameters() {
@@ -164,5 +177,13 @@ public class RestoreApp implements ApplicationRunner {
       throw new IllegalArgumentException(
           "Invalid time range: --from (%s) must be before --to (%s)".formatted(from, to));
     }
+  }
+
+  public interface PreRestoreAction {
+    void beforeRestore(int nodeId) throws InterruptedException;
+  }
+
+  public interface PostRestoreAction {
+    void restored(int nodeId) throws InterruptedException;
   }
 }

@@ -5,56 +5,60 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.broker;
+package io.camunda.zeebe.restore;
 
 import static io.camunda.zeebe.broker.NodeIProviderConfigurationUtils.fromBrokerCopier;
 import static io.camunda.zeebe.broker.NodeIProviderConfigurationUtils.getNodeIdProvider;
 import static io.camunda.zeebe.broker.NodeIProviderConfigurationUtils.getS3NodeIdRepository;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.atomix.cluster.AtomixCluster;
-import io.camunda.application.commons.configuration.BrokerBasedConfiguration;
+import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.configuration.Cluster;
+import io.camunda.configuration.NodeIdProvider.S3;
 import io.camunda.configuration.UnifiedConfiguration;
+import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.zeebe.broker.system.BrokerDataDirectoryCopier;
 import io.camunda.zeebe.broker.system.configuration.DataCfg;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
+import io.camunda.zeebe.dynamic.nodeid.RestoreStatusManager;
 import io.camunda.zeebe.dynamic.nodeid.fs.ConfiguredDataDirectoryProvider;
 import io.camunda.zeebe.dynamic.nodeid.fs.DataDirectoryProvider;
 import io.camunda.zeebe.dynamic.nodeid.fs.NodeIdBasedDataDirectoryProvider;
 import io.camunda.zeebe.dynamic.nodeid.fs.VersionedNodeIdBasedDataDirectoryProvider;
 import io.camunda.zeebe.dynamic.nodeid.repository.NodeIdRepository;
 import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository;
+import io.camunda.zeebe.restore.RestoreApp.PostRestoreAction;
+import io.camunda.zeebe.restore.RestoreApp.PreRestoreAction;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.SpringApplication;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
-import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Profile;
 
 @Configuration(proxyBeanMethods = false)
-@Profile(value = {"broker"})
+@Profile(value = {"restore"})
 @DependsOn("unifiedConfigurationHelper")
-@Import(BrokerShutdownHelper.class)
-public class NodeIdProviderConfiguration {
-
-  private static final Logger LOG = LoggerFactory.getLogger(NodeIdProviderConfiguration.class);
+public class RestoreNodeIdProviderConfiguration {
+  private static final Logger LOG =
+      LoggerFactory.getLogger(RestoreNodeIdProviderConfiguration.class);
+  @Autowired private ApplicationContext appContext;
   private final Cluster cluster;
   private final boolean disableVersionedDirectory;
-  private final int versionedDirectoryRetentionCount;
   private final ObjectMapper objectMapper;
 
   @Autowired
-  public NodeIdProviderConfiguration(
+  public RestoreNodeIdProviderConfiguration(
       final UnifiedConfiguration configuration, final ObjectMapper objectMapper) {
     cluster = configuration.getCamunda().getCluster();
     final var primaryStorage = configuration.getCamunda().getData().getPrimaryStorage();
     disableVersionedDirectory = primaryStorage.disableVersionedDirectory();
-    versionedDirectoryRetentionCount = primaryStorage.getVersionedDirectoryRetentionCount();
     this.objectMapper = objectMapper;
   }
 
@@ -65,22 +69,52 @@ public class NodeIdProviderConfiguration {
   }
 
   @Bean
-  public NodeIdProvider nodeIdProvider(
-      final Optional<NodeIdRepository> nodeIdRepository,
-      final BrokerShutdownHelper shutdownHelper) {
+  public PreRestoreAction preRestoreAction(final Optional<NodeIdRepository> nodeIdRepository) {
+    return switch (cluster.getNodeIdProvider().getType()) {
+      case FIXED -> (ignore) -> {};
+      case S3 -> {
+        if (nodeIdRepository.isEmpty()) {
+          throw new IllegalStateException(
+              "PreRestoreAction configured to use S3: missing s3 node id repository");
+        }
+        final var restoreStatusManager = new RestoreStatusManager(nodeIdRepository.get());
+        yield ((nodeId) -> restoreStatusManager.initializeRestore());
+      }
+    };
+  }
+
+  @Bean
+  public PostRestoreAction postRestoreAction(final Optional<NodeIdRepository> nodeIdRepository) {
+    return switch (cluster.getNodeIdProvider().getType()) {
+      case FIXED -> (ignore) -> {};
+      case S3 -> {
+        if (nodeIdRepository.isEmpty()) {
+          throw new IllegalStateException(
+              "PostRestoreAction configured to use S3: missing s3 node id repository");
+        }
+        final var restoreStatusManager = new RestoreStatusManager(nodeIdRepository.get());
+        yield ((nodeId) -> {
+          restoreStatusManager.markNodeRestored(nodeId);
+          restoreStatusManager.waitForAllNodesRestored(cluster.getSize(), Duration.ofSeconds(10));
+        });
+      }
+    };
+  }
+
+  @Bean
+  public NodeIdProvider nodeIdProvider(final Optional<NodeIdRepository> nodeIdRepository) {
     return getNodeIdProvider(
-        LOG, cluster, nodeIdRepository, () -> shutdownHelper.initiateShutdown(1));
+        LOG, cluster, nodeIdRepository, () -> SpringApplication.exit(appContext, () -> 1));
   }
 
   @Bean
   public DataDirectoryProvider dataDirectoryProvider(
       final NodeIdProvider nodeIdProvider,
-      final NodeIdProviderReadinessAwaiter readinessAwaiter,
-      final BrokerBasedConfiguration brokerBasedConfiguration) {
+      final BrokerBasedProperties brokerBasedProperties,
+      final WorkingDirectory workingDirectory) {
 
-    if (!readinessAwaiter.isReady()) {
-      throw new IllegalStateException("NodeIdProvider is not ready");
-    }
+    // The working directory must be initialized before we initialize the data directory
+    brokerBasedProperties.init(workingDirectory.path().toAbsolutePath().toString());
 
     final var initializer =
         switch (cluster.getNodeIdProvider().getType()) {
@@ -88,48 +122,23 @@ public class NodeIdProviderConfiguration {
           case S3 -> {
             final var brokerCopier = new BrokerDataDirectoryCopier();
             final var nodeInstance = nodeIdProvider.currentNodeInstance();
-            final var previousNodeGracefullyShutdown =
-                nodeIdProvider.previousNodeGracefullyShutdown().join();
             yield disableVersionedDirectory
                 ? new NodeIdBasedDataDirectoryProvider(nodeInstance)
+                // We use the versioned provider, even though we expect the directory to be empty.
+                // If the directory is not empty, the new versioned directory will contain the
+                // previous version's data. This helps to handle this scenario consistently in the
+                // restore app if we are restoring to a node that had previous data.
+                // retention count does not matter, as we are creating a new directory for restore.
                 : new VersionedNodeIdBasedDataDirectoryProvider(
-                    objectMapper,
-                    nodeInstance,
-                    fromBrokerCopier(brokerCopier),
-                    previousNodeGracefullyShutdown,
-                    versionedDirectoryRetentionCount);
+                    objectMapper, nodeInstance, fromBrokerCopier(brokerCopier), true, 2);
           }
         };
 
-    final DataCfg data = brokerBasedConfiguration.config().getData();
+    final DataCfg data = brokerBasedProperties.getData();
     final var directory = Path.of(data.getDirectory());
     final var configuredDirectory = initializer.initialize(directory).join();
     data.setDirectory(configuredDirectory.toString());
 
     return initializer;
   }
-
-  @Bean
-  public NodeIdProviderReadinessAwaiter nodeIdProviderReadinessAwaiter(
-      final NodeIdProvider nodeIdProvider, final AtomixCluster atomixCluster) {
-    final var membershipService = atomixCluster.getMembershipService();
-    membershipService.addListener(
-        l -> {
-          switch (l.type()) {
-            case MEMBER_ADDED, MEMBER_REMOVED ->
-                nodeIdProvider.setMembers(membershipService.getMembers());
-            default -> {
-              // noop
-            }
-          }
-        });
-
-    // initialize current members
-    nodeIdProvider.setMembers(membershipService.getMembers());
-
-    final var isReady = nodeIdProvider.awaitReadiness().join();
-    return new NodeIdProviderReadinessAwaiter(isReady);
-  }
-
-  public record NodeIdProviderReadinessAwaiter(boolean isReady) {}
 }
