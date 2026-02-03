@@ -45,6 +45,8 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch.core.BulkRequest;
@@ -132,6 +134,30 @@ public class OpensearchEngineClientIT {
     SchemaTestUtil.validateMappings(
         createdTemplate.getFirst().indexTemplate().template().mappings(),
         template.getMappingsClasspathFilename());
+  }
+
+  @Test
+  void shouldSetRefreshIntervalFromConfigurationDuringIndexCreation() throws IOException {
+    final var index =
+        createTestIndexDescriptor("index_name" + ENGINE_CLIENT_TEST_MARKERS, "/mappings.json");
+
+    final var settings = new IndexConfiguration();
+    settings.setRefreshInterval("2s");
+    opensearchEngineClient.createIndex(index, settings);
+
+    final var indices =
+        openSearchClient.indices().get(req -> req.index(index.getFullQualifiedName()));
+
+    assertThat(indices.result().size()).isEqualTo(1);
+    assertThat(
+            indices
+                .result()
+                .get(index.getFullQualifiedName())
+                .settings()
+                .index()
+                .refreshInterval()
+                .time())
+        .isEqualTo("2s");
   }
 
   @Test
@@ -403,13 +429,13 @@ public class OpensearchEngineClientIT {
     verify(indicesSpy, never()).putIndexTemplate(any(PutIndexTemplateRequest.class));
   }
 
-  @Test
-  void shouldIssuePutIndexTemplateWhenSettingsChanged() throws IOException {
+  @ParameterizedTest
+  @MethodSource("changedTemplateConfiguration")
+  void shouldIssuePutIndexTemplateWhenSettingsChanged(final IndexConfiguration updated)
+      throws IOException {
     // given
     final var template = createTestTemplateDescriptor("template_change", "/mappings.json");
-    final var initialSettings = new IndexConfiguration();
-    initialSettings.setNumberOfReplicas(0);
-    initialSettings.setNumberOfShards(1);
+    final var initialSettings = indexConfiguration(0, 1, null);
 
     final var indicesSpy = spy(openSearchClient.indices());
     final var clientSpy = spy(openSearchClient);
@@ -419,15 +445,24 @@ public class OpensearchEngineClientIT {
     engineClient.createIndexTemplate(template, initialSettings, true);
     reset(indicesSpy); // ignore create
 
-    final var updated = new IndexConfiguration();
-    updated.setNumberOfReplicas(2); // change
-    updated.setNumberOfShards(1); // same
-
     // when
     engineClient.updateIndexTemplateSettings(template, updated);
 
     // then
     verify(indicesSpy, times(1)).putIndexTemplate(any(PutIndexTemplateRequest.class));
+  }
+
+  private static List<IndexConfiguration> changedTemplateConfiguration() {
+    return List.of(indexConfiguration(2, 1, null), indexConfiguration(0, 1, "2s"));
+  }
+
+  private static IndexConfiguration indexConfiguration(
+      final int replicas, final int shards, final String refreshInterval) {
+    final var config = new IndexConfiguration();
+    config.setNumberOfReplicas(replicas);
+    config.setNumberOfShards(shards);
+    config.setRefreshInterval(refreshInterval);
+    return config;
   }
 
   @Test
