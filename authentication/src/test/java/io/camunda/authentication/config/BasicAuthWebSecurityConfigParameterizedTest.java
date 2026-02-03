@@ -9,6 +9,7 @@ package io.camunda.authentication.config;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.service.ApiServicesExecutorProvider;
 import io.camunda.service.UserServices;
 import java.util.HashMap;
@@ -103,8 +104,16 @@ public class BasicAuthWebSecurityConfigParameterizedTest {
   @AutoConfigureWebMvc
   @ComponentScan(
       basePackages = {"io.camunda.authentication"},
-      excludeFilters = @ComponentScan.Filter(type = FilterType.REGEX, pattern = ".*Controller"))
+      excludeFilters = {
+        @ComponentScan.Filter(type = FilterType.REGEX, pattern = ".*Controller"),
+        @ComponentScan.Filter(type = FilterType.REGEX, pattern = ".*OidcFlowTestContext")
+      })
   public static class TestApplication {
+    @Bean
+    public ObjectMapper objectMapper() {
+      return new ObjectMapper();
+    }
+
     @Bean
     public UserServices userServices() {
       return new UserServices(
