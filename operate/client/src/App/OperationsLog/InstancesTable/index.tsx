@@ -103,6 +103,8 @@ const InstancesTable: React.FC = observer(() => {
     OperationsLogFilterField,
     OperationsLogFilters
   >(location.search, AUDIT_LOG_FILTER_FIELDS, []);
+  const selectedTenantId =
+    filterValues.tenant === 'all' ? undefined : filterValues.tenant;
   const {data: selectedProcessDefinition} = useSelectedProcessDefinition();
 
   const request: QueryAuditLogsRequestBody = useMemo(() => {
@@ -117,7 +119,7 @@ const InstancesTable: React.FC = observer(() => {
         category: {$neq: 'ADMIN'},
         processDefinitionKey: selectedProcessDefinition?.processDefinitionKey,
         processInstanceKey: filterValues.processInstanceKey,
-        tenantId: filterValues.tenant,
+        tenantId: selectedTenantId,
         operationType: filterValues.operationType
           ? {
               $in: filterValues.operationType
@@ -145,7 +147,12 @@ const InstancesTable: React.FC = observer(() => {
         actorId: filterValues.actorId,
       },
     };
-  }, [filterValues, selectedProcessDefinition?.processDefinitionKey, sort]);
+  }, [
+    filterValues,
+    selectedTenantId,
+    selectedProcessDefinition?.processDefinitionKey,
+    sort,
+  ]);
 
   const {
     data,
@@ -172,20 +179,10 @@ const InstancesTable: React.FC = observer(() => {
     },
   });
 
-  const operationProcessDefinitionIds = useMemo(() => {
-    const logs = data?.auditLogs
-      .filter(
-        (l) => l.entityType === 'PROCESS_INSTANCE' && !!l.processDefinitionId,
-      )
-      .map((l) => l.processDefinitionId!);
-
-    return Array.from(new Set(logs));
-  }, [data?.auditLogs]);
-
   const {
     data: processDefinitionNameMap,
     isLoading: isLoadingProcessDefinitionNames,
-  } = useProcessDefinitionNames(operationProcessDefinitionIds);
+  } = useProcessDefinitionNames(selectedTenantId);
 
   const [detailsModal, setDetailsModal] = useState<DetailsModalState>({
     isOpen: false,

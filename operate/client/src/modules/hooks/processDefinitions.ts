@@ -142,16 +142,10 @@ function useSelectedProcessDefinition() {
   });
 }
 
-function useProcessDefinitionNames(processDefinitionIds: string[]) {
+function useProcessDefinitionNames(tenantId?: string) {
   return useProcessDefinitionsSearch({
-    enabled: processDefinitionIds.length > 0,
     staleTime: 120_000,
-    payload: {
-      filter: {
-        isLatestVersion: true,
-        processDefinitionId: {$in: processDefinitionIds},
-      },
-    },
+    payload: {filter: {tenantId}},
     select: (definitions) => {
       return definitions.reduce<{[processDefinitionKey: string]: string}>(
         (map, def) => {
