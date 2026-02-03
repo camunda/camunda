@@ -95,6 +95,10 @@ public class MultiDbConfigurator {
     elasticsearchProperties.put("camunda.database.retention.minimumAge", "0s");
     elasticsearchProperties.put(CREATE_SCHEMA_PROPERTY, true);
 
+    // force shorter refresh interval so tests run faster
+    elasticsearchProperties.put(
+        "camunda.database.index.refreshIntervalByIndexName.list-view", "1s");
+
     testApplication.withAdditionalProperties(elasticsearchProperties);
 
     testApplication.withExporter(
@@ -215,6 +219,9 @@ public class MultiDbConfigurator {
     opensearchProperties.put("camunda.database.retention.minimumAge", "0s");
     opensearchProperties.put(CREATE_SCHEMA_PROPERTY, true);
     opensearchProperties.put("camunda.database.aws-enabled", isAws);
+
+    // force shorter refresh interval so tests run faster
+    opensearchProperties.put("camunda.database.index.refreshIntervalByIndexName.list-view", "1s");
 
     /* Unified Config */
     opensearchProperties.put("camunda.data.secondary-storage.opensearch.username", userName);
