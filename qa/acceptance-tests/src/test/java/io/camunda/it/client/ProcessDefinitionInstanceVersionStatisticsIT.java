@@ -58,6 +58,8 @@ public class ProcessDefinitionInstanceVersionStatisticsIT {
   public static void beforeAll(@Authenticated final CamundaClient adminClient)
       throws InterruptedException {
 
+    camundaClient = adminClient;
+
     createTenant(
         adminClient,
         TENANT_ID_1,
