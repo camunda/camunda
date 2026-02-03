@@ -16,9 +16,9 @@ import java.util.List;
 
 public class GlobalListenerCfg implements ConfigurationEntry {
 
-  private String id;
+  private String id = "";
   private List<String> eventTypes = new ArrayList<>();
-  private String type;
+  private String type = "";
   private String retries = String.valueOf(GlobalListenerRecord.DEFAULT_RETRIES);
   private boolean afterNonGlobal = false;
   private int priority = GlobalListenerRecord.DEFAULT_PRIORITY;

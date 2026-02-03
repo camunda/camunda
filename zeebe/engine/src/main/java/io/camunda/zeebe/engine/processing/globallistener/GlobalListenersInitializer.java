@@ -8,15 +8,14 @@
 package io.camunda.zeebe.engine.processing.globallistener;
 
 import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.GlobalListenerConfiguration;
 import io.camunda.zeebe.engine.GlobalListenersConfiguration;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.state.globallistener.GlobalListenersState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerBatchRecord;
-import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerRecord;
 import io.camunda.zeebe.protocol.record.intent.GlobalListenerBatchIntent;
-import io.camunda.zeebe.protocol.record.value.GlobalListenerSource;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import java.util.Objects;
@@ -80,17 +79,7 @@ public final class GlobalListenersInitializer implements StreamProcessorLifecycl
       final GlobalListenersConfiguration listeners) {
     final GlobalListenerBatchRecord record = new GlobalListenerBatchRecord();
     listeners.userTask().stream()
-        .map(
-            listener ->
-                new GlobalListenerRecord()
-                    .setId(listener.id())
-                    .setType(listener.type())
-                    .setEventTypes(listener.eventTypes())
-                    .setRetries(Integer.parseInt(listener.retries()))
-                    .setAfterNonGlobal(listener.afterNonGlobal())
-                    .setPriority(listener.priority())
-                    .setSource(GlobalListenerSource.CONFIGURATION)
-                    .setListenerType(listener.listenerType()))
+        .map(GlobalListenerConfiguration::toRecord)
         .forEach(record::addTaskListener);
     return record;
   }

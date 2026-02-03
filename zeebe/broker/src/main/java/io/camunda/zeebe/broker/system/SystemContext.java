@@ -46,10 +46,11 @@ import io.camunda.zeebe.broker.system.configuration.engine.GlobalListenerCfg;
 import io.camunda.zeebe.broker.system.configuration.engine.GlobalListenersCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.FixedPartitionCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
-import io.camunda.zeebe.engine.GlobalListenerConfiguration;
+import io.camunda.zeebe.engine.processing.globallistener.GlobalListenerValidator;
 import io.camunda.zeebe.engine.processing.identity.initialize.AuthorizationConfigurer;
 import io.camunda.zeebe.engine.processing.identity.initialize.TenantConfigurer;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerRecord;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.util.Either;
@@ -107,6 +108,7 @@ public final class SystemContext {
   private final JwtDecoder jwtDecoder;
   private final SearchClientsProxy searchClientsProxy;
   private final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter;
+  private final GlobalListenerValidator globalListenerValidator;
 
   public SystemContext(
       final Duration shutdownTimeout,
@@ -135,6 +137,7 @@ public final class SystemContext {
     this.jwtDecoder = jwtDecoder;
     this.searchClientsProxy = searchClientsProxy;
     this.brokerRequestAuthorizationConverter = brokerRequestAuthorizationConverter;
+    globalListenerValidator = new GlobalListenerValidator();
     initSystemContext();
   }
 
@@ -522,17 +525,42 @@ public final class SystemContext {
 
   private void validateListenersConfig(final GlobalListenersCfg listeners) {
     final String propertyLocation = "camunda.cluster.global-listeners.user-task";
-    final List<String> supportedEventTypes = GlobalListenerConfiguration.TASK_LISTENER_EVENT_TYPES;
     final List<GlobalListenerCfg> taskListeners = listeners.getUserTask();
 
     // Validate listeners and ignore invalid ones
     final List<GlobalListenerCfg> validListeners = new ArrayList<>();
     for (int i = 0; i < taskListeners.size(); i++) {
-      final GlobalListenerCfg listener = taskListeners.get(i);
+      final GlobalListenerCfg listenerCfg = taskListeners.get(i);
       final String propertyPrefix = String.format("%s.%d", propertyLocation, i);
 
+      // Check if retries actually contains a number
+      try {
+        if (Integer.parseInt(listenerCfg.getRetries()) <= 0) {
+          throw new NumberFormatException();
+        }
+      } catch (final NumberFormatException e) {
+        LOG.warn(
+            String.format(
+                "Invalid retries for global listener: '%s'; listener will be ignored [%s.retries]",
+                listenerCfg.getRetries(), propertyPrefix));
+        continue;
+      }
+
+      // Convert to record in order to use standard validation methods
+      final GlobalListenerRecord listenerRecord =
+          listenerCfg.createGlobalListenerConfiguration().toRecord();
+
+      // Check if id is present
+      if (globalListenerValidator.idProvided(listenerRecord).isLeft()) {
+        LOG.warn(
+            String.format(
+                "Missing id for global listener; listener will be ignored [%s.type]",
+                propertyPrefix));
+        continue;
+      }
+
       // Check if type is present
-      if (listener.getType() == null || listener.getType().isBlank()) {
+      if (globalListenerValidator.typeProvided(listenerRecord).isLeft()) {
         LOG.warn(
             String.format(
                 "Missing job type for global listener; listener will be ignored [%s.type]",
@@ -541,16 +569,17 @@ public final class SystemContext {
       }
 
       // Validate event types
+      // Note: the validator is not used directly because autocorrection is attempted here
       final var eventTypes = // consider event types in lowercase for validation
-          listener.getEventTypes().stream().map(String::toLowerCase).toList();
+          listenerRecord.getEventTypes().stream().map(String::toLowerCase).toList();
       final boolean containsAllEventsKeyword =
-          eventTypes.contains(GlobalListenerConfiguration.ALL_EVENT_TYPES);
+          eventTypes.contains(GlobalListenerRecord.ALL_EVENT_TYPES);
+
       final List<String> validEventTypes =
           eventTypes.stream()
               .filter( // check if provided event types have valid values
                   eventType -> {
-                    if (GlobalListenerConfiguration.ALL_EVENT_TYPES.equals(eventType)
-                        || supportedEventTypes.contains(eventType)) {
+                    if (globalListenerValidator.isValidEventType(listenerRecord, eventType)) {
                       return true;
                     } else {
                       LOG.warn(
@@ -562,14 +591,12 @@ public final class SystemContext {
                   })
               .filter(
                   eventType -> { // check if "all" is used alongside other event types
-                    if (!GlobalListenerConfiguration.ALL_EVENT_TYPES.equals(eventType)
+                    if (!GlobalListenerRecord.ALL_EVENT_TYPES.equals(eventType)
                         && containsAllEventsKeyword) {
                       LOG.warn(
                           String.format(
                               "Extra event type defined alongside '%s' will be ignored: '%s' [%s.eventTypes]",
-                              GlobalListenerConfiguration.ALL_EVENT_TYPES,
-                              eventType,
-                              propertyPrefix));
+                              GlobalListenerRecord.ALL_EVENT_TYPES, eventType, propertyPrefix));
                       return false;
                     }
                     return true;
@@ -599,21 +626,8 @@ public final class SystemContext {
         continue;
       }
 
-      listener.setEventTypes(uniqueEventTypes);
-
-      // Check if retries actually contains a number
-      try {
-        if (Integer.parseInt(listener.getRetries()) <= 0) {
-          throw new NumberFormatException();
-        }
-      } catch (final NumberFormatException e) {
-        LOG.warn(
-            String.format(
-                "Invalid retries for global listener: '%s'; listener will be ignored [%s.retries]",
-                listener.getRetries(), propertyPrefix));
-        continue;
-      }
-      validListeners.add(listener);
+      listenerCfg.setEventTypes(uniqueEventTypes);
+      validListeners.add(listenerCfg);
     }
 
     listeners.setUserTask(validListeners);
