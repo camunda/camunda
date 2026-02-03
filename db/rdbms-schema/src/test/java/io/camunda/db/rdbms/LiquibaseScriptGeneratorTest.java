@@ -21,7 +21,7 @@ class LiquibaseScriptGeneratorTest {
 
     // when
     final String sqlScript =
-        LiquibaseScriptGenerator.generateSqlScript("h2", "test.xml", "", 4000, 4000);
+        LiquibaseScriptGenerator.generateSqlScript("h2", "test.xml", "", 4000, 4000, 4000, 500);
 
     // then
     final var expected = Files.readString(Paths.get("src/test/resources/test.h2.sql"));
@@ -34,7 +34,7 @@ class LiquibaseScriptGeneratorTest {
 
     // when
     final String sqlScript =
-        LiquibaseScriptGenerator.generateSqlScript("h2", "test.xml", "C8_", 4000, 4000);
+        LiquibaseScriptGenerator.generateSqlScript("h2", "test.xml", "C8_", 4000, 4000, 4000, 500);
 
     // then
     final var expected = Files.readString(Paths.get("src/test/resources/test_prefix.h2.sql"));

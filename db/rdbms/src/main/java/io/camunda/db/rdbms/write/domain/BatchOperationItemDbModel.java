@@ -29,7 +29,7 @@ public record BatchOperationItemDbModel(
       return this;
     }
 
-    final var truncatedValue = TruncateUtil.truncateValue(errorMessage, sizeLimit, null);
+    final var truncatedValue = TruncateUtil.truncateValue(errorMessage, sizeLimit);
 
     if (truncatedValue != null && truncatedValue.length() < errorMessage.length()) {
       LOG.warn(

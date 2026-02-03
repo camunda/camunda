@@ -55,8 +55,7 @@ public record DecisionInstanceDbModel(
       return this;
     }
 
-    final var truncatedValue =
-        TruncateUtil.truncateValue(evaluationFailureMessage, sizeLimit, null);
+    final var truncatedValue = TruncateUtil.truncateValue(evaluationFailureMessage, sizeLimit);
 
     if (truncatedValue.length() < evaluationFailureMessage.length()) {
       LOG.warn(

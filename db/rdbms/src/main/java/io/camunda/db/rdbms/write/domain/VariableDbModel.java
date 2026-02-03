@@ -67,7 +67,7 @@ public record VariableDbModel(
     var isPreview = false;
 
     if (type == ValueTypeEnum.STRING && value != null) {
-      truncatedValue = TruncateUtil.truncateValue(truncatedValue, sizeLimit, null);
+      truncatedValue = TruncateUtil.truncateValue(truncatedValue, sizeLimit);
 
       if (truncatedValue.length() < value.length()) {
         fullValue = value;

@@ -64,7 +64,7 @@ public record IncidentDbModel(
   }
 
   public IncidentDbModel truncateErrorMessage(final int sizeLimit) {
-    final var truncatedValue = TruncateUtil.truncateValue(errorMessage, sizeLimit, null);
+    final var truncatedValue = TruncateUtil.truncateValue(errorMessage, sizeLimit);
 
     if (truncatedValue.length() < errorMessage.length()) {
       LOG.warn(
