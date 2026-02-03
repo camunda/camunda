@@ -15,6 +15,10 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+/**
+ * This migration is introduced to combat <a
+ * href="https://github.com/camunda/camunda/issues/44908">this bug</a>
+ */
 public class EnsureRetriableDeploymentDistributionMigration implements MigrationTask {
 
   @Override
