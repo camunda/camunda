@@ -157,7 +157,7 @@ public class OpensearchExporterConfiguration implements FilterConfiguration {
     this.includeEnabledRecords = includeEnabledRecords;
   }
 
-  public static class IndexConfiguration implements FilterConfiguration.IndexConfig {
+  public static class IndexConfiguration implements IndexConfig {
 
     public static final int DEFAULT_INDEX_TEMPLATE_PRIORITY = 20;
     // prefix for index and templates
@@ -236,6 +236,14 @@ public class OpensearchExporterConfiguration implements FilterConfiguration {
     private Integer numberOfReplicas = null;
     private int priority = DEFAULT_INDEX_TEMPLATE_PRIORITY;
 
+    // variable name filters
+    private final List<String> variableNameInclusionExact = new ArrayList<>();
+    private final List<String> variableNameInclusionStartWith = new ArrayList<>();
+    private final List<String> variableNameInclusionEndWith = new ArrayList<>();
+    private final List<String> variableNameExclusionExact = new ArrayList<>();
+    private final List<String> variableNameExclusionStartWith = new ArrayList<>();
+    private final List<String> variableNameExclusionEndWith = new ArrayList<>();
+
     public Integer getNumberOfShards() {
       return numberOfShards;
     }
@@ -258,6 +266,36 @@ public class OpensearchExporterConfiguration implements FilterConfiguration {
 
     public void setPriority(final int priority) {
       this.priority = priority;
+    }
+
+    @Override
+    public List<String> getVariableNameInclusionExact() {
+      return variableNameInclusionExact;
+    }
+
+    @Override
+    public List<String> getVariableNameInclusionStartWith() {
+      return variableNameInclusionStartWith;
+    }
+
+    @Override
+    public List<String> getVariableNameInclusionEndWith() {
+      return variableNameInclusionEndWith;
+    }
+
+    @Override
+    public List<String> getVariableNameExclusionExact() {
+      return variableNameExclusionExact;
+    }
+
+    @Override
+    public List<String> getVariableNameExclusionStartWith() {
+      return variableNameExclusionStartWith;
+    }
+
+    @Override
+    public List<String> getVariableNameExclusionEndWith() {
+      return variableNameExclusionEndWith;
     }
 
     @Override
@@ -352,37 +390,20 @@ public class OpensearchExporterConfiguration implements FilterConfiguration {
           + conditionalSubscription
           + ", conditionalEvaluation="
           + conditionalEvaluation
+          // variable name filters
+          + ", variableNameInclusionExact="
+          + variableNameInclusionExact
+          + ", variableNameInclusionStartWith="
+          + variableNameInclusionStartWith
+          + ", variableNameInclusionEndWith="
+          + variableNameInclusionEndWith
+          + ", variableNameExclusionExact="
+          + variableNameExclusionExact
+          + ", variableNameExclusionStartWith="
+          + variableNameExclusionStartWith
+          + ", variableNameExclusionEndWith="
+          + variableNameExclusionEndWith
           + '}';
-    }
-
-    @Override
-    public List<String> getVariableNameInclusionExact() {
-      return List.of();
-    }
-
-    @Override
-    public List<String> getVariableNameInclusionStartWith() {
-      return List.of();
-    }
-
-    @Override
-    public List<String> getVariableNameInclusionEndWith() {
-      return List.of();
-    }
-
-    @Override
-    public List<String> getVariableNameExclusionExact() {
-      return List.of();
-    }
-
-    @Override
-    public List<String> getVariableNameExclusionStartWith() {
-      return List.of();
-    }
-
-    @Override
-    public List<String> getVariableNameExclusionEndWith() {
-      return List.of();
     }
   }
 
