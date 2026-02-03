@@ -15,6 +15,7 @@ import {
   assertUnauthorizedRequest,
   assertNotFoundRequest,
   encode,
+  assertForbiddenRequest,
 } from '../../../../utils/http';
 import {defaultAssertionOptions} from '../../../../utils/constants';
 import {cleanupUsers} from '../../../../utils/usersCleanup';
@@ -27,6 +28,7 @@ import {
   expectAuthorizationCanBeFound,
   verifyAuthorizationFields,
   type Authorization,
+  grantUserResourceAuthorization,
 } from '@requestHelpers';
 import {CREATE_CUSTOM_AUTHORIZATION_BODY} from '../../../../utils/beans/requestBeans';
 import {waitForAssertion} from 'utils/waitForAssertion';
@@ -907,6 +909,90 @@ test.describe.parallel('Update Authorization API', () => {
         },
       );
       await assertInvalidArgument(authRes, 400, 'No permissionTypes provided.');
+    });
+  });
+
+  test('Update User Authorization - 403 Forbidden', async ({request}) => {
+    let user: {
+      username: string;
+      name: string;
+      email: string;
+      password: string;
+    };
+    let userWithResourcesAuthorizationToSendRequest: {
+      username: string;
+      name: string;
+      email: string;
+      password: string;
+    } = {} as {
+      username: string;
+      name: string;
+      email: string;
+      password: string;
+    };
+    let userAuthorizationKey: string;
+    let originalUserAuthorization: Authorization = {} as Authorization;
+    await test.step('Setup - Create user for authorization tests', async () => {
+      user = await createUser(request);
+      cleanups.push(async (request) => {
+        await cleanupUsers(request, [user.username]);
+      });
+
+      userWithResourcesAuthorizationToSendRequest = await createUser(request);
+      await grantUserResourceAuthorization(
+        request,
+        userWithResourcesAuthorizationToSendRequest,
+      );
+      cleanups.push(async (request) => {
+        await cleanupUsers(request, [
+          userWithResourcesAuthorizationToSendRequest.username,
+        ]);
+      });
+    });
+
+    await test.step('Setup - Grant user necessary authorizations', async () => {
+      const authorizationBody = CREATE_CUSTOM_AUTHORIZATION_BODY(
+        user.username,
+        'USER',
+        '*',
+        'ROLE',
+        ['READ'],
+      );
+      userAuthorizationKey = await createComponentAuthorization(
+        request,
+        authorizationBody,
+      );
+      originalUserAuthorization = authorizationBody;
+    });
+
+    const updatedUserAuthorization = {
+      ...originalUserAuthorization,
+      permissionTypes: ['READ', 'UPDATE'],
+    };
+
+    await test.step('Poll authorization', async () => {
+      await expectAuthorizationCanBeFound(request, userAuthorizationKey);
+    });
+
+    const token = encode(
+      `${userWithResourcesAuthorizationToSendRequest.username}:${userWithResourcesAuthorizationToSendRequest.password}`,
+    );
+    await test.step('Update user authorization to add UPDATE permission', async () => {
+      await expect(async () => {
+        const authRes = await request.put(
+          buildUrl(`/authorizations/${userAuthorizationKey}`),
+          {
+            headers: jsonHeaders(token), // overrides default demo:demo
+            data: {
+              ...updatedUserAuthorization,
+            },
+          },
+        );
+        await assertForbiddenRequest(
+          authRes,
+          "Command 'UPDATE' rejected with code 'FORBIDDEN': Insufficient permissions to perform operation 'UPDATE' on resource 'AUTHORIZATION'",
+        );
+      }).toPass(defaultAssertionOptions);
     });
   });
 });
