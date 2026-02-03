@@ -60,7 +60,7 @@
       <column name="NUM_INCIDENTS" type="SMALLINT"/>
       <column name="VERSION" type="SMALLINT"/>
       <column name="PARTITION_ID" type="NUMBER"/>
-      <column name="TREE_PATH" type="VARCHAR(${varcharSize})"/>
+      <column name="TREE_PATH" type="VARCHAR(${treePath.size})"/>
       <column name="HISTORY_CLEANUP_DATE" type="TIMESTAMP WITH TIME ZONE(3)"/>
     </createTable>
 
@@ -116,7 +116,7 @@
       <column name="VAR_NAME" type="VARCHAR(${varcharIndexSize})"/>
       <column name="DOUBLE_VALUE" type="DOUBLE"/>
       <column name="LONG_VALUE" type="BIGINT"/>
-      <column name="VAR_VALUE" type="VARCHAR(${varcharSize})"/>
+      <column name="VAR_VALUE" type="VARCHAR(${variableValue.previewSize})"/>
       <column name="VAR_FULL_VALUE" type="CLOB"/>
       <column name="TENANT_ID" type="VARCHAR(${varcharIndexSize})"/>
       <column name="IS_PREVIEW" type="BOOLEAN"/>
@@ -160,7 +160,7 @@
       <column name="STATE" type="VARCHAR(20)"/>
       <column name="START_DATE" type="TIMESTAMP WITH TIME ZONE(3)"/>
       <column name="END_DATE" type="TIMESTAMP WITH TIME ZONE(3)"/>
-      <column name="TREE_PATH" type="VARCHAR(${varcharSize})"/>
+      <column name="TREE_PATH" type="VARCHAR(${treePath.size})"/>
       <column name="TENANT_ID" type="VARCHAR(${varcharIndexSize})"/>
       <column name="INCIDENT_KEY" type="BIGINT"/>
       <column name="NUM_SUBPROCESS_INCIDENTS" type="SMALLINT"/>
@@ -281,12 +281,12 @@
       <column name="ROOT_PROCESS_INSTANCE_KEY" type="BIGINT"/>
       <column name="PROCESS_DEFINITION_ID" type="VARCHAR(${varcharIndexSize})"/>
       <column name="PROCESS_DEFINITION_KEY" type="BIGINT"/>
-      <column name="ERROR_MESSAGE" type="VARCHAR(${varcharSize})"/>
+      <column name="ERROR_MESSAGE" type="VARCHAR(${errorMessage.size})"/>
       <column name="ERROR_MESSAGE_HASH" type="INT"/>
       <column name="ERROR_TYPE" type="VARCHAR(100)"/>
       <column name="STATE" type="VARCHAR(20)"/>
       <column name="CREATION_DATE" type="TIMESTAMP WITH TIME ZONE(3)"/>
-      <column name="TREE_PATH" type="VARCHAR(${varcharSize})"/>
+      <column name="TREE_PATH" type="VARCHAR(${treePath.size})"/>
       <column name="TENANT_ID" type="VARCHAR(${varcharIndexSize})"/>
       <column name="JOB_KEY" type="BIGINT"/>
       <column name="PARTITION_ID" type="NUMBER"/>
@@ -369,7 +369,7 @@
       <column name="STATE" type="VARCHAR(255)"/>
       <column name="RESULT" type="VARCHAR(${varcharIndexSize})"/>
       <column name="EVALUATION_FAILURE" type="VARCHAR(${varcharIndexSize})"/>
-      <column name="EVALUATION_FAILURE_MESSAGE" type="VARCHAR(${varcharSize})"/>
+      <column name="EVALUATION_FAILURE_MESSAGE" type="VARCHAR(${errorMessage.size})"/>
       <column name="TENANT_ID" type="VARCHAR(${varcharIndexSize})"/>
       <column name="PARTITION_ID" type="NUMBER"/>
       <column name="HISTORY_CLEANUP_DATE" type="TIMESTAMP WITH TIME ZONE(3)"/>
@@ -633,7 +633,7 @@
       </column>
       <column name="PROCESS_INSTANCE_KEY" type="BIGINT"/>
       <column name="PROCESSED_DATE" type="TIMESTAMP WITH TIME ZONE(3)"/>
-      <column name="ERROR_MESSAGE" type="VARCHAR(${varcharSize})"/>
+      <column name="ERROR_MESSAGE" type="VARCHAR(${errorMessage.size})"/>
       <column name="STATE" type="VARCHAR(20)" defaultValue="ACTIVE"/>
     </createTable>
 
@@ -644,7 +644,7 @@
       </column>
       <column name="PARTITION_ID" type="NUMBER"/>
       <column name="TYPE" type="VARCHAR(255)"/>
-      <column name="MESSAGE" type="VARCHAR(${varcharSize})"/>
+      <column name="MESSAGE" type="VARCHAR(${errorMessage.size})"/>
     </createTable>
 
     <createIndex tableName="${prefix}BATCH_OPERATION_ERROR" indexName="${prefix}IDX_BATCH_OPERATION_ERROR_KEY">
@@ -678,7 +678,7 @@
       <column name="STATE" type="VARCHAR(20)"/>
       <column name="KIND" type="VARCHAR(50)"/>
       <column name="LISTENER_EVENT_TYPE" type="VARCHAR(50)"/>
-      <column name="ERROR_MESSAGE" type="VARCHAR(${varcharSize})"/>
+      <column name="ERROR_MESSAGE" type="VARCHAR(${errorMessage.size})"/>
       <column name="ERROR_CODE" type="VARCHAR(255)"/>
       <column name="DEADLINE" type="TIMESTAMP WITH TIME ZONE(3)"/>
       <column name="END_TIME" type="TIMESTAMP WITH TIME ZONE(3)"/>
@@ -891,7 +891,7 @@
       <column name="TYPE" type="VARCHAR(255)"/>
       <column name="DOUBLE_VALUE" type="DOUBLE"/>
       <column name="LONG_VALUE" type="BIGINT"/>
-      <column name="VAR_VALUE" type="VARCHAR(${varcharSize})"/>
+      <column name="VAR_VALUE" type="VARCHAR(${variableValue.previewSize})"/>
       <column name="VAR_FULL_VALUE" type="CLOB"/>
       <column name="IS_PREVIEW" type="BOOLEAN"/>
       <column name="TENANT_ID" type="VARCHAR(${varcharIndexSize})"/>
@@ -944,7 +944,7 @@
       <column name="TENANT_ID" type="VARCHAR(${varcharIndexSize})"/>
       <column name="TENANT_SCOPE" type="VARCHAR(50)"/>
       <column name="RESULT" type="VARCHAR(50)"/>
-      <column name="ANNOTATION" type="VARCHAR(${varcharSize})"/>
+      <column name="ANNOTATION" type="VARCHAR(${errorMessage.size})"/>
       <column name="CATEGORY" type="VARCHAR(50)"/>
       <column name="PROCESS_DEFINITION_ID" type="VARCHAR(${varcharIndexSize})"/>
       <column name="DECISION_REQUIREMENTS_ID" type="VARCHAR(${varcharIndexSize})"/>

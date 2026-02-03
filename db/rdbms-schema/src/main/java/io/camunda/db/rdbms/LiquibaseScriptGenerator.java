@@ -100,7 +100,9 @@ public class LiquibaseScriptGenerator {
             databaseType,
             changesetFile,
             prefix,
-            properties.varcharSize(),
+            properties.variableValuePreviewSize(),
+            properties.errorMessageSize(),
+            properties.treePathSize(),
             properties.varcharIndexSize());
 
     final String basedir = targetBaseDir + "/" + databaseType;
@@ -116,7 +118,9 @@ public class LiquibaseScriptGenerator {
       final String databaseType,
       final String changesetFile,
       final String prefix,
-      final int varcharSize,
+      final int variableValuePreviewSize,
+      final int errorMessageSize,
+      final int treePathSize,
       final int varcharIndexSize)
       throws LiquibaseException {
 
@@ -125,8 +129,10 @@ public class LiquibaseScriptGenerator {
     final Liquibase liquibase =
         new Liquibase(changesetFile, new ClassLoaderResourceAccessor(), database);
     liquibase.setChangeLogParameter("prefix", prefix);
-    liquibase.setChangeLogParameter("varcharSize", varcharSize);
-    liquibase.setChangeLogParameter("varcharIndexSize", varcharIndexSize);
+    liquibase.setChangeLogParameter("variableValue.previewSize", variableValuePreviewSize);
+    liquibase.setChangeLogParameter("errorMessage.size", errorMessageSize);
+    liquibase.setChangeLogParameter("treePath.size", treePathSize);
+    liquibase.setChangeLogParameter("varcharIndex.size", varcharIndexSize);
 
     final var changelog = liquibase.getDatabaseChangeLog();
 

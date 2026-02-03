@@ -34,7 +34,7 @@ public class ClusterVariableWriter implements RdbmsWriter {
             clusterVariable.id(),
             "io.camunda.db.rdbms.sql.ClusterVariableMapper.insert",
             clusterVariable.truncateValue(
-                vendorDatabaseProperties.varcharSize(),
+                vendorDatabaseProperties.variableValuePreviewSize(),
                 vendorDatabaseProperties.charColumnMaxBytes())));
   }
 

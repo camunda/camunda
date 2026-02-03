@@ -234,7 +234,7 @@ public class BatchOperationIT {
         .isCloseTo(NOW, new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
     assertThat(updatedItem.errorMessage()).isNotNull();
     assertThat(updatedItem.errorMessage().length())
-        .isEqualTo(vendorDatabaseProperties.varcharSize());
+        .isEqualTo(vendorDatabaseProperties.errorMessageSize());
   }
 
   @TestTemplate
@@ -624,7 +624,7 @@ public class BatchOperationIT {
             .filter(e -> e.partitionId() == 1)
             .findFirst()
             .orElseThrow();
-    assertThat(error.message().length()).isEqualTo(vendorDatabaseProperties.varcharSize());
+    assertThat(error.message().length()).isEqualTo(vendorDatabaseProperties.errorMessageSize());
   }
 
   @TestTemplate

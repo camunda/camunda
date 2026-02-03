@@ -270,7 +270,7 @@ public class DecisionInstanceIT {
 
     assertThat(actual).isNotNull();
     assertThat(actual.evaluationFailureMessage().length())
-        .isEqualTo(vendorDatabaseProperties.varcharSize());
+        .isEqualTo(vendorDatabaseProperties.errorMessageSize());
   }
 
   @TestTemplate

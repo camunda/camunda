@@ -18,39 +18,63 @@ public class VendorDatabaseProperties {
   private static final String CHAR_COLUMN_MAX_BYTES = "charColumn.maxBytes";
 
   /**
-   * Required property to specify the maximum size of varchar columns in characters for non-indexed
-   * fields (e.g., variable values, error messages, process definition names). This is used to
-   * truncate values for preview purposes or to respect database vendor limitations.
-   */
-  private static final String VARCHAR_SIZE = "varchar.size";
-
-  /**
    * Required property to specify the maximum size of varchar columns in characters for indexed
    * fields (e.g., all ID fields like processDefinitionId, formId, tenantId). This is limited by
    * database vendor index size constraints.
    */
   private static final String VARCHAR_INDEX_SIZE = "varcharIndex.size";
 
+  /**
+   * Required property to specify the size of an Incident's errorMessage in characters. Longer error
+   * messages will be truncated to this size.
+   */
+  private static final String ERROR_MESSAGE_SIZE = "errorMessage.size";
+
+  /**
+   * Required property to specify the size of the tree path in characters.
+   */
+  private static final String TREE_PATH_SIZE = "treePath.size";
+
+  /**
+   * Required property to specify the size of the variable value preview in characters. This is used
+   * to truncate variable values for preview purposes.
+   */
+  private static final String VARIABLE_VALUE_PREVIEW_SIZE = "variableValue.previewSize";
+
   private static final String DISABLE_FK_BEFORE_TRUNCATE = "disableFkBeforeTruncate";
 
   private final Properties properties;
   private final boolean disableFkBeforeTruncate;
   private final Integer charColumnMaxBytes;
-  private final int varcharSize;
   private final int varcharIndexSize;
+  private final int errorMessageSize;
+  private final int treePathSize;
+  private final int variableValuePreviewSize;
 
   public VendorDatabaseProperties(final Properties properties) {
     this.properties = properties;
-
-    if (!properties.containsKey(VARCHAR_SIZE)) {
-      throw new IllegalArgumentException("Property '" + VARCHAR_SIZE + "' is missing");
-    }
-    varcharSize = Integer.parseInt(properties.getProperty(VARCHAR_SIZE));
 
     if (!properties.containsKey(VARCHAR_INDEX_SIZE)) {
       throw new IllegalArgumentException("Property '" + VARCHAR_INDEX_SIZE + "' is missing");
     }
     varcharIndexSize = Integer.parseInt(properties.getProperty(VARCHAR_INDEX_SIZE));
+
+    if (!properties.containsKey(ERROR_MESSAGE_SIZE)) {
+      throw new IllegalArgumentException("Property '" + ERROR_MESSAGE_SIZE + "' is missing");
+    }
+    errorMessageSize = Integer.parseInt(properties.getProperty(ERROR_MESSAGE_SIZE));
+
+    if (!properties.containsKey(TREE_PATH_SIZE)) {
+      throw new IllegalArgumentException("Property '" + TREE_PATH_SIZE + "' is missing");
+    }
+    treePathSize = Integer.parseInt(properties.getProperty(TREE_PATH_SIZE));
+
+    if (!properties.containsKey(VARIABLE_VALUE_PREVIEW_SIZE)) {
+      throw new IllegalArgumentException(
+          "Property '" + VARIABLE_VALUE_PREVIEW_SIZE + "' is missing");
+    }
+    variableValuePreviewSize =
+        Integer.parseInt(properties.getProperty(VARIABLE_VALUE_PREVIEW_SIZE));
 
     if (!properties.containsKey(CHAR_COLUMN_MAX_BYTES)) {
       charColumnMaxBytes = null;
@@ -67,16 +91,6 @@ public class VendorDatabaseProperties {
   }
 
   /**
-   * Returns the maximum size of varchar columns in characters for non-indexed fields (e.g.,
-   * variable values, error messages, process definition names).
-   *
-   * @return the maximum varchar size
-   */
-  public int varcharSize() {
-    return varcharSize;
-  }
-
-  /**
    * Returns the maximum size of varchar columns in characters for indexed fields (e.g., all ID
    * fields like processDefinitionId, formId, tenantId).
    *
@@ -84,6 +98,33 @@ public class VendorDatabaseProperties {
    */
   public int varcharIndexSize() {
     return varcharIndexSize;
+  }
+
+  /**
+   * Returns the maximum size of error message columns in characters.
+   *
+   * @return the maximum error message size
+   */
+  public int errorMessageSize() {
+    return errorMessageSize;
+  }
+
+  /**
+   * Returns the maximum size of tree path columns in characters.
+   *
+   * @return the maximum tree path size
+   */
+  public int treePathSize() {
+    return treePathSize;
+  }
+
+  /**
+   * Returns the maximum size of variable value preview columns in characters.
+   *
+   * @return the maximum variable value preview size
+   */
+  public int variableValuePreviewSize() {
+    return variableValuePreviewSize;
   }
 
   public Integer charColumnMaxBytes() {

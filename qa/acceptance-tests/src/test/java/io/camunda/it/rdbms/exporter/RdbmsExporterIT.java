@@ -110,7 +110,9 @@ class RdbmsExporterIT {
       new VendorDatabaseProperties(
           new Properties() {
             {
-              setProperty("varchar.size", "100");
+              setProperty("variableValue.previewSize", "100");
+              setProperty("errorMessage.size", "100");
+              setProperty("treePath.size", "100");
               setProperty("varcharIndex.size", "50");
               setProperty("disableFkBeforeTruncate", "true");
             }
