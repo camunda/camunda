@@ -8,6 +8,7 @@
 package io.camunda.tasklist.zeebeimport;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.search.schema.SchemaManagerContainer;
 import io.camunda.tasklist.Metrics;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.webapps.schema.descriptors.index.TasklistImportPositionIndex;
@@ -50,10 +51,17 @@ public abstract class ImportPositionHolderAbstract implements ImportPositionHold
   @Qualifier("tasklistImportPositionUpdateThreadPoolExecutor")
   protected ThreadPoolTaskScheduler importPositionUpdateExecutor;
 
+  @Autowired private SchemaManagerContainer schemaManagerContainer;
+
   private final Map<String, Boolean> mostRecentProcessedImportPositions = new HashMap<>();
 
   @PostConstruct
   private void init() {
+    if (!schemaManagerContainer.isInitialized()) {
+      LOGGER.info(
+          "INIT: Skipping import position updater start - search engine schema not initialized (application may be shutting down).");
+      return;
+    }
     LOGGER.info("INIT: Start import position updater...");
     scheduleImportPositionUpdateTask();
   }

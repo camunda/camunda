@@ -9,6 +9,7 @@ package io.camunda.application.commons.search;
 
 import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.search.schema.SchemaManager;
+import io.camunda.search.schema.SchemaManagerContainer;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
 import io.camunda.search.schema.metrics.SchemaManagerMetrics;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
@@ -22,12 +23,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
 
-public class SearchEngineSchemaInitializer implements InitializingBean {
+public class SearchEngineSchemaInitializer implements InitializingBean, SchemaManagerContainer {
   private static final Logger LOGGER = LoggerFactory.getLogger(SearchEngineSchemaInitializer.class);
   private final SearchEngineConfiguration searchEngineConfiguration;
   private final SchemaManagerMetrics schemaManagerMetrics;
   private final boolean awaitSchemaInitialization;
   private final AtomicBoolean isShutdown = new AtomicBoolean(false);
+  private final AtomicBoolean initialized = new AtomicBoolean(false);
 
   public SearchEngineSchemaInitializer(
       final SearchEngineConfiguration searchEngineConfiguration,
@@ -58,9 +60,13 @@ public class SearchEngineSchemaInitializer implements InitializingBean {
       final CompletableFuture<Void> future, final ExecutorService executor) throws Exception {
     try {
       future.get();
+      initialized.set(true);
       LOGGER.info("Search engine schema initialization complete.");
     } catch (final InterruptedException ie) {
-      LOGGER.debug("Schema initialization task was interrupted.", ie);
+      LOGGER.debug(
+          "Schema initialization task was interrupted. Shutdown signal is caught={}",
+          isShutdown.get(),
+          ie);
       Thread.currentThread().interrupt();
     } catch (final Exception e) {
       if (isShutdown.get()) {
@@ -81,6 +87,7 @@ public class SearchEngineSchemaInitializer implements InitializingBean {
           if (error != null) {
             LOGGER.warn("Failed to initialize search engine schema", error);
           } else {
+            initialized.set(true);
             LOGGER.info("Search engine schema initialization complete.");
           }
           executor.close();
@@ -131,5 +138,16 @@ public class SearchEngineSchemaInitializer implements InitializingBean {
       LOGGER.debug("JVM is shutting down, cannot add the schema initializer shutdown hook", e);
       return false;
     }
+  }
+
+  /**
+   * Returns true if the schema initialization completed successfully. This can be used by dependent
+   * components to check if they should proceed with their initialization.
+   *
+   * @return true if schema initialization completed successfully, false otherwise
+   */
+  @Override
+  public boolean isInitialized() {
+    return initialized.get();
   }
 }

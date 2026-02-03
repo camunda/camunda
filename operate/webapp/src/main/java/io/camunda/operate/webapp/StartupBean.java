@@ -8,6 +8,7 @@
 package io.camunda.operate.webapp;
 
 import io.camunda.operate.webapp.zeebe.operation.OperationExecutor;
+import io.camunda.search.schema.SchemaManagerContainer;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,8 +26,15 @@ public class StartupBean {
 
   @Autowired private OperationExecutor operationExecutor;
 
+  @Autowired private SchemaManagerContainer schemaManagerContainer;
+
   @PostConstruct
   public void initApplication() {
+    if (!schemaManagerContainer.isInitialized()) {
+      LOGGER.info(
+          "INIT: Skipping operation executor start - search engine schema not initialized (application may be shutting down).");
+      return;
+    }
     LOGGER.info("INIT: Start operation executor...");
     operationExecutor.startExecuting();
     LOGGER.info("INIT: DONE");

@@ -10,6 +10,7 @@ package io.camunda.operate.zeebeimport;
 import io.camunda.operate.Metrics;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.store.ImportStore;
+import io.camunda.search.schema.SchemaManagerContainer;
 import io.camunda.webapps.schema.entities.ImportPositionEntity;
 import jakarta.annotation.PostConstruct;
 import java.io.IOException;
@@ -56,8 +57,15 @@ public class ImportPositionHolder {
 
   @Autowired private Metrics metrics;
 
+  @Autowired private SchemaManagerContainer schemaManagerContainer;
+
   @PostConstruct
   private void init() {
+    if (!schemaManagerContainer.isInitialized()) {
+      LOGGER.info(
+          "INIT: Skipping import position updater start - search engine schema not initialized (application may be shutting down).");
+      return;
+    }
     LOGGER.info("INIT: Start import position updater...");
     scheduleImportPositionUpdateTask();
   }
