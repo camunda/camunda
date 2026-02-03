@@ -191,6 +191,7 @@ public class AuditLogSearchClientIT {
                     auditLogResult.getEntityType() == AuditLogEntityTypeEnum.PROCESS_INSTANCE)
             .findFirst()
             .orElse(null);
+    assertThat(auditLog).isNotNull();
     assertThat(auditLogItems)
         .allMatch(
             auditLogResult ->
@@ -425,10 +426,9 @@ public class AuditLogSearchClientIT {
 
     // then - verify that audit logs are returned
     assertThat(auditLogItems.size()).isEqualTo(1);
-    assertThat(auditLogItems)
-        .allMatch(
-            auditLogResult ->
-                auditLogResult.getBatchOperationKey().equals(String.valueOf(batchOperationKey)));
+    final AuditLogResult item = auditLogItems.getFirst();
+    assertThat(item.getBatchOperationType()).isEqualTo(BatchOperationType.CANCEL_PROCESS_INSTANCE);
+    assertThat(item.getBatchOperationKey()).isEqualTo(String.valueOf(batchOperationKey));
     assertCommonAuditLogFields(
         auditLogItems.getFirst(),
         AuditLogEntityTypeEnum.BATCH,
@@ -447,9 +447,10 @@ public class AuditLogSearchClientIT {
         awaitAuditLogEntryWithFilters(client, f -> f.formKey(String.valueOf(formKey)));
 
     assertThat(auditLogItems.size()).isEqualTo(1);
-    assertThat(auditLogItems).isNotEmpty();
+    final var item = auditLogItems.getFirst();
+    assertThat(item.getFormKey()).isEqualTo(String.valueOf(formKey));
     assertCommonAuditLogFields(
-        auditLogItems.getFirst(),
+        item,
         AuditLogEntityTypeEnum.RESOURCE,
         AuditLogOperationTypeEnum.CREATE,
         AuditLogCategoryEnum.DEPLOYED_RESOURCES);
@@ -472,9 +473,10 @@ public class AuditLogSearchClientIT {
         awaitAuditLogEntryWithFilters(client, f -> f.resourceKey(String.valueOf(resourceKey)));
 
     assertThat(auditLogItems.size()).isEqualTo(1);
-    assertThat(auditLogItems).isNotEmpty();
+    final var item = auditLogItems.getFirst();
+    assertThat(item.getResourceKey()).isEqualTo(String.valueOf(resourceKey));
     assertCommonAuditLogFields(
-        auditLogItems.getFirst(),
+        item,
         AuditLogEntityTypeEnum.RESOURCE,
         AuditLogOperationTypeEnum.CREATE,
         AuditLogCategoryEnum.DEPLOYED_RESOURCES);
@@ -492,9 +494,10 @@ public class AuditLogSearchClientIT {
         awaitAuditLogEntryWithFilters(client, f -> f.deploymentKey(String.valueOf(deploymentKey)));
 
     assertThat(auditLogItems.size()).isEqualTo(1);
-    assertThat(auditLogItems).isNotEmpty();
+    final var item = auditLogItems.getFirst();
+    assertThat(item.getDeploymentKey()).isEqualTo(String.valueOf(deploymentKey));
     assertCommonAuditLogFields(
-        auditLogItems.getFirst(),
+        item,
         AuditLogEntityTypeEnum.RESOURCE,
         AuditLogOperationTypeEnum.CREATE,
         AuditLogCategoryEnum.DEPLOYED_RESOURCES);
