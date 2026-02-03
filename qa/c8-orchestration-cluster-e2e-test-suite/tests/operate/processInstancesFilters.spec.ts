@@ -146,11 +146,12 @@ test.describe('Process Instances Filters', () => {
       await operateFiltersPanelPage.displayOptionalFilter(
         'Process Instance Key(s)',
       );
-      await operateFiltersPanelPage.processInstanceKeysFilter.fill(
+      await operateFiltersPanelPage.fillProcessInstanceKeyFilter(
         `${orderProcessInstanceKey}, ${callActivityProcessInstanceKey}`,
       );
       await operateProcessesPage.clickProcessCompletedCheckbox();
     });
+
     await test.step('Add Variable Filter', async () => {
       await operateFiltersPanelPage.displayOptionalFilter('Variable');
       await operateFiltersPanelPage.fillVariableNameFilter('filtersTest');
