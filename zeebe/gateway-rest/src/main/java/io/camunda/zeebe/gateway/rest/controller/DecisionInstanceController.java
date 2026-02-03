@@ -7,18 +7,24 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
+import io.camunda.gateway.mapping.http.ResponseMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.protocol.model.DecisionInstanceGetQueryResult;
 import io.camunda.gateway.protocol.model.DecisionInstanceSearchQuery;
 import io.camunda.gateway.protocol.model.DecisionInstanceSearchQueryResult;
+import io.camunda.gateway.protocol.model.DeleteDecisionInstanceRequest;
 import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.DecisionInstanceServices;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
+import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
+import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -58,6 +64,22 @@ public class DecisionInstanceController {
     } catch (final Exception e) {
       return RestErrorMapper.mapErrorToResponse(e);
     }
+  }
+
+  @RequiresSecondaryStorage
+  @CamundaPostMapping(path = "/{decisionEvaluationInstanceKey}/deletion")
+  public CompletableFuture<ResponseEntity<Object>> deleteDecisionInstance(
+      @PathVariable("decisionEvaluationInstanceKey") final String decisionEvaluationInstanceKey,
+      @RequestBody(required = false) final DeleteDecisionInstanceRequest request) {
+    return RequestExecutor.executeServiceMethod(
+        () ->
+            decisionInstanceServices
+                .withAuthentication(authenticationProvider.getCamundaAuthentication())
+                .deleteDecisionInstance(
+                    decisionEvaluationInstanceKey,
+                    Objects.nonNull(request) ? request.getOperationReference() : null),
+        ResponseMapper::toBatchOperationCreatedWithResultResponse,
+        HttpStatus.OK);
   }
 
   private ResponseEntity<DecisionInstanceSearchQueryResult> search(
