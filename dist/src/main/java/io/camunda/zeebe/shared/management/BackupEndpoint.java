@@ -18,6 +18,7 @@ import io.camunda.zeebe.backup.client.api.BackupRequestHandler;
 import io.camunda.zeebe.backup.client.api.BackupStatus;
 import io.camunda.zeebe.backup.client.api.PartitionBackupStatus;
 import io.camunda.zeebe.backup.client.api.State;
+import io.camunda.zeebe.backup.common.CheckpointIdGenerator;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerErrorException;
 import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
@@ -51,7 +52,9 @@ public final class BackupEndpoint {
   @SuppressWarnings("unused") // used by Spring
   @Autowired
   public BackupEndpoint(final BrokerClient client, final BackupCfg backupCfg) {
-    this(new BackupRequestHandler(client, backupCfg.getOffset()), backupCfg);
+    this(
+        new BackupRequestHandler(client, new CheckpointIdGenerator(backupCfg.getOffset())),
+        backupCfg);
   }
 
   BackupEndpoint(final BackupApi api, final BackupCfg backupCfg) {

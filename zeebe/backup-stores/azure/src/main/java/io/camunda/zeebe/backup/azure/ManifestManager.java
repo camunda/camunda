@@ -37,6 +37,7 @@ import io.camunda.zeebe.backup.common.Manifest.StatusCode;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Collection;
+import java.util.Objects;
 import java.util.regex.Pattern;
 
 public final class ManifestManager {
@@ -215,6 +216,8 @@ public final class ManifestManager {
         .map(BlobItem::getName)
         .filter(path -> filterBlobsByWildcard(wildcard, path))
         .map(this::getManifestWithPath)
+        .filter(Objects::nonNull)
+        .filter(m -> wildcard.matches(m.id()))
         .toList();
   }
 

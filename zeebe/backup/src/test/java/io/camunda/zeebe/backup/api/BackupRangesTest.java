@@ -8,6 +8,7 @@
 package io.camunda.zeebe.backup.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatException;
 
 import java.util.List;
 import java.util.Set;
@@ -234,5 +235,89 @@ final class BackupRangesTest {
     // then
     assertThat(ranges)
         .containsExactly(new BackupRange.Complete(4, 6), new BackupRange.Complete(8, 9));
+  }
+
+  @Test
+  void completeRangeShouldContainIntervalWithinBounds() {
+    // given
+    final var range = new BackupRange.Complete(10, 20);
+
+    // then
+    assertThat(range.contains(new BackupRange.Interval(10, 20))).isTrue();
+    assertThat(range.contains(new BackupRange.Interval(11, 19))).isTrue();
+    assertThat(range.contains(new BackupRange.Interval(10, 15))).isTrue();
+    assertThat(range.contains(new BackupRange.Interval(15, 20))).isTrue();
+  }
+
+  @Test
+  void completeRangeShouldNotContainIntervalOutsideBounds() {
+    // given
+    final var range = new BackupRange.Complete(10, 20);
+
+    // then
+    assertThat(range.contains(new BackupRange.Interval(9, 20))).isFalse();
+    assertThat(range.contains(new BackupRange.Interval(10, 21))).isFalse();
+    assertThat(range.contains(new BackupRange.Interval(5, 25))).isFalse();
+    assertThat(range.contains(new BackupRange.Interval(1, 5))).isFalse();
+  }
+
+  @Test
+  void incompleteRangeShouldContainIntervalWithinBoundsAndNoDeletions() {
+    // given
+    final var range = new BackupRange.Incomplete(10, 20, Set.of(15L));
+
+    // then
+    assertThat(range.contains(new BackupRange.Interval(10, 14))).isTrue();
+    assertThat(range.contains(new BackupRange.Interval(16, 20))).isTrue();
+    assertThat(range.contains(new BackupRange.Interval(11, 13))).isTrue();
+  }
+
+  @Test
+  void incompleteRangeShouldNotContainIntervalWithDeletions() {
+    // given
+    final var range = new BackupRange.Incomplete(10, 20, Set.of(15L));
+
+    // then
+    assertThat(range.contains(new BackupRange.Interval(10, 20))).isFalse();
+    assertThat(range.contains(new BackupRange.Interval(14, 16))).isFalse();
+    assertThat(range.contains(new BackupRange.Interval(15, 15))).isFalse();
+    assertThat(range.contains(new BackupRange.Interval(10, 15))).isFalse();
+    assertThat(range.contains(new BackupRange.Interval(15, 20))).isFalse();
+  }
+
+  @Test
+  void incompleteRangeShouldNotContainIntervalOutsideBounds() {
+    // given
+    final var range = new BackupRange.Incomplete(10, 20, Set.of(15L));
+
+    // then
+    assertThat(range.contains(new BackupRange.Interval(9, 14))).isFalse();
+    assertThat(range.contains(new BackupRange.Interval(16, 21))).isFalse();
+    assertThat(range.contains(new BackupRange.Interval(5, 25))).isFalse();
+  }
+
+  @Test
+  void incompleteRangeShouldHandleMultipleDeletions() {
+    // given
+    final var range = new BackupRange.Incomplete(10, 30, Set.of(15L, 20L, 25L));
+
+    // then
+    assertThat(range.contains(new BackupRange.Interval(10, 14))).isTrue();
+    assertThat(range.contains(new BackupRange.Interval(16, 19))).isTrue();
+    assertThat(range.contains(new BackupRange.Interval(21, 24))).isTrue();
+    assertThat(range.contains(new BackupRange.Interval(26, 30))).isTrue();
+    assertThat(range.contains(new BackupRange.Interval(10, 15))).isFalse();
+    assertThat(range.contains(new BackupRange.Interval(15, 20))).isFalse();
+    assertThat(range.contains(new BackupRange.Interval(20, 25))).isFalse();
+    assertThat(range.contains(new BackupRange.Interval(10, 30))).isFalse();
+  }
+
+  @Test
+  void incompleteRangeMustHaveSomeDeletions() {
+    // when
+    assertThatException()
+        .isThrownBy(() -> new BackupRange.Incomplete(10, 20, Set.of()))
+        // then
+        .withMessageContaining("deletedCheckpointIds must not be empty");
   }
 }

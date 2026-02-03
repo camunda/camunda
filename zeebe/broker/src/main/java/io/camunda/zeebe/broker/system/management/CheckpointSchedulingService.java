@@ -13,6 +13,8 @@ import io.atomix.cluster.ClusterMembershipEventListener;
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.Member;
 import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.backup.client.api.BackupRequestHandler;
+import io.camunda.zeebe.backup.common.CheckpointIdGenerator;
 import io.camunda.zeebe.backup.schedule.CheckpointScheduler;
 import io.camunda.zeebe.backup.schedule.Schedule;
 import io.camunda.zeebe.backup.schedule.Schedule.IntervalSchedule;
@@ -32,10 +34,10 @@ public class CheckpointSchedulingService extends Actor implements ClusterMembers
 
   private final ClusterMembershipService membershipService;
   private final BackupCfg backupCfg;
-  private final BrokerClient brokerClient;
   private final ActorSchedulingService actorScheduler;
   private final MeterRegistry meterRegistry;
   private CheckpointScheduler checkpointScheduler;
+  private final BackupRequestHandler backupRequestHandler;
 
   public CheckpointSchedulingService(
       final ClusterMembershipService membershipService,
@@ -46,8 +48,9 @@ public class CheckpointSchedulingService extends Actor implements ClusterMembers
     this.membershipService = membershipService;
     this.actorScheduler = actorScheduler;
     this.backupCfg = backupCfg;
-    this.brokerClient = brokerClient;
     this.meterRegistry = meterRegistry;
+    backupRequestHandler =
+        new BackupRequestHandler(brokerClient, new CheckpointIdGenerator(backupCfg.getOffset()));
   }
 
   @Override
@@ -66,7 +69,8 @@ public class CheckpointSchedulingService extends Actor implements ClusterMembers
 
     if (checkpointSchedule != null || backupSchedule != null) {
       checkpointScheduler =
-          new CheckpointScheduler(checkpointSchedule, backupSchedule, brokerClient, meterRegistry);
+          new CheckpointScheduler(
+              checkpointSchedule, backupSchedule, backupRequestHandler, meterRegistry);
     }
   }
 

@@ -10,8 +10,16 @@ package io.camunda.zeebe.restore;
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.raft.partition.RaftPartition;
+import io.camunda.zeebe.backup.api.BackupIdentifier;
+import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
+import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern;
+import io.camunda.zeebe.backup.api.BackupRange;
+import io.camunda.zeebe.backup.api.BackupRange.Interval;
+import io.camunda.zeebe.backup.api.BackupRanges;
 import io.camunda.zeebe.backup.api.BackupStatus;
+import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
+import io.camunda.zeebe.backup.common.CheckpointIdGenerator;
 import io.camunda.zeebe.broker.partitioning.startup.RaftPartitionFactory;
 import io.camunda.zeebe.broker.partitioning.topology.PartitionDistribution;
 import io.camunda.zeebe.broker.partitioning.topology.StaticConfigurationGenerator;
@@ -35,7 +43,9 @@ import java.io.IOException;
 import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -43,6 +53,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
+import org.agrona.collections.MutableBoolean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,11 +62,14 @@ public class RestoreManager {
   private final BrokerCfg configuration;
   private final BackupStore backupStore;
   private final MeterRegistry meterRegistry;
+  private final CheckpointIdGenerator checkpointIdGenerator;
 
   public RestoreManager(
       final BrokerCfg configuration,
       final BackupStore backupStore,
       final MeterRegistry meterRegistry) {
+    checkpointIdGenerator =
+        new CheckpointIdGenerator(configuration.getData().getBackup().getOffset());
     this.configuration = configuration;
     this.backupStore = backupStore;
     this.meterRegistry = meterRegistry;
@@ -68,18 +82,55 @@ public class RestoreManager {
   }
 
   public void restore(
+      final Instant from,
+      final Instant to,
+      final boolean validateConfig,
+      final List<String> ignoreFilesInTarget)
+      throws IOException, ExecutionException, InterruptedException {
+    final var dataDirectory = Path.of(configuration.getData().getDirectory());
+
+    // Data folder is verified separately, so that we can fail fast rather than downloading
+    // backups and then verifying the data folder is not empty.
+    // Doing it as soon as possible shortens the time to find out about this, helping to achieve
+    // lower RTO
+    verifyDataFolderIsEmpty(dataDirectory, ignoreFilesInTarget);
+
+    final var wildCard =
+        BackupIdentifierWildcard.ofPattern(
+            CheckpointPattern.ofTimeRange(from, to, checkpointIdGenerator));
+    final var backups =
+        backupStore
+            .list(wildCard)
+            .thenApply(
+                b ->
+                    b.stream().filter(bs -> bs.statusCode() == BackupStatusCode.COMPLETED).toList())
+            .join();
+    final var backupIds =
+        backups.stream()
+            .map(BackupStatus::id)
+            .mapToLong(BackupIdentifier::checkpointId)
+            .distinct()
+            .sorted()
+            .toArray();
+    LOG.info("Completed backups in range [{},{}] are {}", from, to, backupIds);
+
+    if (backupIds.length == 0) {
+      throw new IllegalArgumentException("No backups found in range [" + from + "," + to + "]");
+    }
+
+    restore(backupIds, validateConfig, ignoreFilesInTarget);
+  }
+
+  public void restore(
       final long[] backupIds, final boolean validateConfig, final List<String> ignoreFilesInTarget)
       throws IOException, ExecutionException, InterruptedException {
     final var dataDirectory = Path.of(configuration.getData().getDirectory());
-    if (!dataFolderIsEmpty(dataDirectory, ignoreFilesInTarget)) {
-      LOG.error(
-          "Brokers's data directory {} is not empty. Aborting restore to avoid overwriting data. Please restart with a clean directory.",
-          dataDirectory);
-      throw new DirectoryNotEmptyException(dataDirectory.toString());
-    }
+
+    verifyDataFolderIsEmpty(dataDirectory, ignoreFilesInTarget);
+
+    verifyBackupIdsAreContinuous(backupIds);
 
     final var partitionsToRestore = collectPartitions();
-
     try (final var executor =
         Executors.newThreadPerTaskExecutor(
             Thread.ofVirtual().name("zeebe-restore-", 0).factory())) {
@@ -190,6 +241,49 @@ public class RestoreManager {
 
     return new InstrumentedRaftPartition(
         factory.createRaftPartition(metadata, partitionRegistry), partitionRegistry);
+  }
+
+  private void verifyBackupIdsAreContinuous(final long[] backupIds) {
+    final var partitionCount = configuration.getCluster().getPartitionsCount();
+
+    final MutableBoolean validBackupRange = new MutableBoolean(true);
+    if (backupIds.length > 1) {
+      final var minBackup = Arrays.stream(backupIds).min().orElseThrow();
+      final var maxBackup = Arrays.stream(backupIds).max().orElseThrow();
+
+      for (int partition = 1; partition <= partitionCount; partition++) {
+        final var ranges = BackupRanges.fromMarkers(backupStore.rangeMarkers(partition).join());
+        final var validRange =
+            ranges.stream().filter(r -> r.contains(new Interval(minBackup, maxBackup))).findFirst();
+
+        if (validRange.isEmpty()) {
+          final var completeRanges =
+              ranges.stream().filter(BackupRange.Complete.class::isInstance).toList();
+          LOG.error(
+              "Expected to find a continuous range of backups between {} and {} for partition {}. Complete ranges are the following: {}",
+              minBackup,
+              maxBackup,
+              partition,
+              completeRanges);
+          validBackupRange.set(false);
+        }
+      }
+    }
+
+    if (!validBackupRange.get()) {
+      LOG.error("Found one or more invalid backup ranges. Aborting restore.");
+      throw new IllegalStateException("Invalid backup ranges");
+    }
+  }
+
+  private void verifyDataFolderIsEmpty(
+      final Path dataDirectory, final List<String> ignoreFilesInTarget) throws IOException {
+    if (!dataFolderIsEmpty(dataDirectory, ignoreFilesInTarget)) {
+      LOG.error(
+          "Brokers's data directory {} is not empty. Aborting restore to avoid overwriting data. Please restart with a clean directory.",
+          dataDirectory);
+      throw new DirectoryNotEmptyException(dataDirectory.toString());
+    }
   }
 
   private boolean dataFolderIsEmpty(final Path dir, final List<String> ignoreFilesInTarget)

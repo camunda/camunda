@@ -16,6 +16,7 @@ import io.camunda.zeebe.backup.client.api.BackupRequestHandler;
 import io.camunda.zeebe.backup.client.api.BackupResponse;
 import io.camunda.zeebe.backup.client.api.BackupStatus;
 import io.camunda.zeebe.backup.client.api.State;
+import io.camunda.zeebe.backup.common.CheckpointIdGenerator;
 import io.camunda.zeebe.broker.client.api.BrokerErrorException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerError;
 import io.camunda.zeebe.broker.client.api.dto.BrokerErrorResponse;
@@ -37,7 +38,7 @@ public class BackupRequestHandlerTest extends GatewayTest {
 
   @Before
   public void setup() {
-    requestHandler = new BackupRequestHandler(brokerClient);
+    requestHandler = new BackupRequestHandler(brokerClient, new CheckpointIdGenerator());
   }
 
   @Test
