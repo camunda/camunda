@@ -140,13 +140,13 @@ const List: FC = () => {
       />
       <Grid condensed fullWidth>
         <ColumnRightPadding sm={4} md={3} lg={4} xlg={3}>
-          <Title>Operation</Title>
+          <Title>{t("operation")}</Title>
           <Stack gap={5}>
             <MultiSelect
               id="operationType"
               items={auditLogOperationTypeSchema.options}
-              titleText="Operation type"
-              label="Choose option(s)"
+              titleText={t("operationType")}
+              label={t("multiSelectLabel")}
               selectedItems={operationType ? operationType : []}
               itemToString={(selectedItem) => spaceAndCapitalize(selectedItem)}
               onChange={({ selectedItems }) => {
@@ -159,8 +159,8 @@ const List: FC = () => {
             <MultiSelect
               id="entityType"
               items={auditLogEntityTypeSchema.options}
-              titleText="Entity type"
-              label="Choose option(s)"
+              titleText={t("entityType")}
+              label={t("multiSelectLabel")}
               selectedItems={entityType ? entityType : []}
               itemToString={(selectedItem) => spaceAndCapitalize(selectedItem)}
               onChange={({ selectedItems }) => {
@@ -171,9 +171,9 @@ const List: FC = () => {
               size="sm"
             />
             <Dropdown
-              label="Choose option"
-              aria-label="Choose option"
-              titleText="Operations status"
+              label={t("selectLabel")}
+              aria-label={t("selectLabel")}
+              titleText={t("status")}
               id="result-field"
               onChange={({ selectedItem }) => {
                 setResult(
@@ -184,15 +184,19 @@ const List: FC = () => {
               }}
               items={["all", ...auditLogResultSchema.options]}
               itemToString={(item) =>
-                item === "all" ? "All" : item ? spaceAndCapitalize(item) : ""
+                item === "all"
+                  ? t("selectAll")
+                  : item
+                    ? spaceAndCapitalize(item)
+                    : ""
               }
               selectedItem={result}
               size="sm"
             />
             <TextInput
               id="actorId"
-              labelText="Actor"
-              placeholder="Username or client ID"
+              labelText={t("actor")}
+              placeholder={t("actorPlaceholder")}
               value={actor}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                 const value = e.target.value.trim();
@@ -201,7 +205,7 @@ const List: FC = () => {
               }}
               size="sm"
             />
-            <FormLabel>Timestamp</FormLabel>
+            <FormLabel>{t("time")}</FormLabel>
             <DatePickerWrapper>
               <DatePicker
                 datePickerType="range"
@@ -257,7 +261,7 @@ const List: FC = () => {
                   setTimestampRange({});
                 }}
               >
-                Reset filters
+                {t("reset")}
               </Button>
             </CenteredRow>
           </Stack>

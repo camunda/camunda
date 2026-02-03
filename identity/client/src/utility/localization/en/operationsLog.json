@@ -1,10 +1,17 @@
 {
   "operationsLog": "Operations log",
   "operation": "Operation",
+  "operationType": "Operation type",
   "entity": "Entity",
+  "entityType": "Entity type",
   "status": "Status",
   "appliedTo": "Applied to",
   "actor": "Actor",
+  "actorPlaceholder": "Username or client ID",
   "time": "Time",
-  "operationsLogCouldNotLoad": "Operations log could not be loaded"
+  "operationsLogCouldNotLoad": "Operations log could not be loaded",
+  "selectLabel": "Choose option",
+  "multiSelectLabel": "Choose option(s)",
+  "selectAll": "All",
+  "reset": "Reset filters"
 }
