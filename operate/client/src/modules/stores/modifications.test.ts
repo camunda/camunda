@@ -20,7 +20,9 @@ import {
   generateParentScopeIds,
 } from 'modules/utils/modifications';
 import {mockNestedSubProcessBusinessObjects} from 'modules/mocks/mockNestedSubProcessBusinessObjects';
-import * as api from 'modules/api/v2/processInstances/modifyProcessInstance';
+import {mockServer} from 'modules/mock-server/node';
+import {http} from 'msw';
+import {endpoints} from '@camunda/camunda-api-zod-schemas/8.9';
 
 type AddModificationPayload = Extract<
   FlowNodeModification['payload'],
@@ -923,11 +925,21 @@ describe('stores/modifications', () => {
       },
     });
 
-    const apiSpy = vi
-      .spyOn(api, 'modifyProcessInstance')
-      .mockResolvedValue(new Response());
     const successSpy = vi.fn();
     const errorSpy = vi.fn();
+    let requestBody = null;
+    mockServer.use(
+      http.post(
+        endpoints.modifyProcessInstance.getUrl({
+          processInstanceKey: 'some-process-instance-key',
+        }),
+        async ({request}) => {
+          requestBody = await request.json();
+          return Response.json(null, {status: 201});
+        },
+        {once: true},
+      ),
+    );
 
     await modificationsStore.applyModifications({
       processInstanceId: 'some-process-instance-key',
@@ -937,74 +949,67 @@ describe('stores/modifications', () => {
 
     expect(successSpy).toHaveBeenCalledOnce();
     expect(errorSpy).not.toHaveBeenCalled();
-    expect(apiSpy).toHaveBeenCalledExactlyOnceWith(
-      'some-process-instance-key',
-      {
-        activateInstructions: [
-          {
-            elementId: 'flow_node_0',
-            ancestorElementInstanceKey: undefined,
-            variableInstructions: [],
-          },
-          {
-            elementId: 'flow_node_1',
-            ancestorElementInstanceKey: undefined,
-            variableInstructions: [
-              {
-                variables: {name10: 'value10'},
-                scopeId: 'first-parent-scope',
-              },
-              {
-                variables: {name1: 'value1', name2: 'value2'},
-                scopeId: 'flow_node_1',
-              },
-            ],
-          },
-          {
-            elementId: 'flow_node_11',
-            ancestorElementInstanceKey: 'some-ancestor-instance-key',
-            variableInstructions: [],
-          },
-        ],
-        moveInstructions: [
-          {
-            sourceElementInstruction: {
-              sourceType: 'byId',
-              sourceElementId: 'flow_node_3',
+    expect(requestBody).toStrictEqual({
+      activateInstructions: [
+        {
+          elementId: 'flow_node_0',
+          variableInstructions: [],
+        },
+        {
+          elementId: 'flow_node_1',
+          variableInstructions: [
+            {
+              variables: {name10: 'value10'},
+              scopeId: 'first-parent-scope',
             },
-            targetElementId: 'flow_node_4',
-            ancestorScopeInstruction: undefined,
-            variableInstructions: [
-              {
-                variables: {name7: 'value7', name8: 'value8'},
-                scopeId: 'first-parent',
-              },
-              {
-                variables: {name9: 'value9'},
-                scopeId: 'third-parent',
-              },
-              {
-                variables: {name6: 'value6'},
-                scopeId: 'flow_node_4',
-              },
-            ],
-          },
-          {
-            sourceElementInstruction: {
-              sourceType: 'byKey',
-              sourceElementInstanceKey: 'some_instance_key_2',
+            {
+              variables: {name1: 'value1', name2: 'value2'},
+              scopeId: 'flow_node_1',
             },
-            targetElementId: 'flow_node_7',
-            ancestorScopeInstruction: undefined,
-            variableInstructions: [],
+          ],
+        },
+        {
+          elementId: 'flow_node_11',
+          ancestorElementInstanceKey: 'some-ancestor-instance-key',
+          variableInstructions: [],
+        },
+      ],
+      moveInstructions: [
+        {
+          sourceElementInstruction: {
+            sourceType: 'byId',
+            sourceElementId: 'flow_node_3',
           },
-        ],
-        terminateInstructions: [
-          {elementId: 'flow_node_2'},
-          {elementInstanceKey: 'some_instance_key'},
-        ],
-      },
-    );
+          targetElementId: 'flow_node_4',
+          variableInstructions: [
+            {
+              variables: {name7: 'value7', name8: 'value8'},
+              scopeId: 'first-parent',
+            },
+            {
+              variables: {name9: 'value9'},
+              scopeId: 'third-parent',
+            },
+            {
+              variables: {name6: 'value6'},
+              scopeId: 'flow_node_4',
+            },
+          ],
+        },
+        {
+          sourceElementInstruction: {
+            sourceType: 'byKey',
+            sourceElementInstanceKey: 'some_instance_key_2',
+          },
+          targetElementId: 'flow_node_7',
+          variableInstructions: [],
+        },
+      ],
+      terminateInstructions: [
+        {elementId: 'flow_node_2'},
+        {elementInstanceKey: 'some_instance_key'},
+      ],
+    });
   });
 
   it('should attach root variable modifications to an activate instruction', async () => {
@@ -1054,11 +1059,21 @@ describe('stores/modifications', () => {
       },
     });
 
-    const apiSpy = vi
-      .spyOn(api, 'modifyProcessInstance')
-      .mockResolvedValue(new Response());
     const successSpy = vi.fn();
     const errorSpy = vi.fn();
+    let requestBody = null;
+    mockServer.use(
+      http.post(
+        endpoints.modifyProcessInstance.getUrl({
+          processInstanceKey: 'some-process-instance-key',
+        }),
+        async ({request}) => {
+          requestBody = await request.json();
+          return Response.json(null, {status: 201});
+        },
+        {once: true},
+      ),
+    );
 
     await modificationsStore.applyModifications({
       processInstanceId: 'some-process-instance-key',
@@ -1068,22 +1083,18 @@ describe('stores/modifications', () => {
 
     expect(successSpy).toHaveBeenCalledOnce();
     expect(errorSpy).not.toHaveBeenCalled();
-    expect(apiSpy).toHaveBeenCalledExactlyOnceWith(
-      'some-process-instance-key',
-      {
-        activateInstructions: [
-          {
-            elementId: 'flow_node_0',
-            ancestorElementInstanceKey: undefined,
-            variableInstructions: [
-              {variables: {name1: 'value1', name2: 'value2-edited'}},
-            ],
-          },
-        ],
-        moveInstructions: [],
-        terminateInstructions: [],
-      },
-    );
+    expect(requestBody).toStrictEqual({
+      activateInstructions: [
+        {
+          elementId: 'flow_node_0',
+          variableInstructions: [
+            {variables: {name1: 'value1', name2: 'value2-edited'}},
+          ],
+        },
+      ],
+      moveInstructions: [],
+      terminateInstructions: [],
+    });
   });
 
   it('should attach root variable modifications to a move instruction', async () => {
@@ -1132,11 +1143,20 @@ describe('stores/modifications', () => {
       },
     });
 
-    const apiSpy = vi
-      .spyOn(api, 'modifyProcessInstance')
-      .mockResolvedValue(new Response());
     const successSpy = vi.fn();
     const errorSpy = vi.fn();
+    let requestBody = null;
+    mockServer.use(
+      http.post(
+        endpoints.modifyProcessInstance.getUrl({
+          processInstanceKey: 'some-process-instance-key',
+        }),
+        async ({request}) => {
+          requestBody = await request.json();
+          return Response.json(null, {status: 201});
+        },
+      ),
+    );
 
     await modificationsStore.applyModifications({
       processInstanceId: 'some-process-instance-key',
@@ -1146,26 +1166,22 @@ describe('stores/modifications', () => {
 
     expect(successSpy).toHaveBeenCalledOnce();
     expect(errorSpy).not.toHaveBeenCalled();
-    expect(apiSpy).toHaveBeenCalledExactlyOnceWith(
-      'some-process-instance-key',
-      {
-        activateInstructions: [],
-        moveInstructions: [
-          {
-            sourceElementInstruction: {
-              sourceType: 'byKey',
-              sourceElementInstanceKey: 'some_instance_key_2',
-            },
-            targetElementId: 'flow_node_7',
-            ancestorScopeInstruction: undefined,
-            variableInstructions: [
-              {variables: {name1: 'value1', name2: 'value2-edited'}},
-            ],
+    expect(requestBody).toStrictEqual({
+      activateInstructions: [],
+      moveInstructions: [
+        {
+          sourceElementInstruction: {
+            sourceType: 'byKey',
+            sourceElementInstanceKey: 'some_instance_key_2',
           },
-        ],
-        terminateInstructions: [],
-      },
-    );
+          targetElementId: 'flow_node_7',
+          variableInstructions: [
+            {variables: {name1: 'value1', name2: 'value2-edited'}},
+          ],
+        },
+      ],
+      terminateInstructions: [],
+    });
   });
 
   it('should fail if root variable modifications cannot be attached to an instruction', async () => {
@@ -1182,9 +1198,6 @@ describe('stores/modifications', () => {
       },
     });
 
-    const apiSpy = vi
-      .spyOn(api, 'modifyProcessInstance')
-      .mockResolvedValue(new Response());
     const successSpy = vi.fn();
     const errorSpy = vi.fn();
 
@@ -1195,7 +1208,6 @@ describe('stores/modifications', () => {
     });
 
     expect(successSpy).not.toHaveBeenCalled();
-    expect(apiSpy).not.toHaveBeenCalled();
     expect(errorSpy).toHaveBeenCalledExactlyOnceWith(400);
   });
 
