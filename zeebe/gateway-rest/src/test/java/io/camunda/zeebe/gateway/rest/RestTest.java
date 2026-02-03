@@ -10,6 +10,7 @@ package io.camunda.zeebe.gateway.rest;
 import io.camunda.zeebe.gateway.rest.config.JacksonConfig;
 import io.camunda.zeebe.gateway.rest.config.OpenApiConfigurer;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.webtestclient.autoconfigure.AutoConfigureWebTestClient;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -17,9 +18,10 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 
 @TestPropertySource(
     properties = {
-      "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration"
+      "spring.autoconfigure.exclude=org.springframework.boot.security.autoconfigure.SecurityAutoConfiguration"
     })
 @Import({JacksonConfig.class})
+@AutoConfigureWebTestClient
 public abstract class RestTest {
 
   @Autowired protected WebTestClient webClient;
