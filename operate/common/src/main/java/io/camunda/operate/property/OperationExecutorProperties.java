@@ -9,6 +9,16 @@ package io.camunda.operate.property;
 
 import java.util.UUID;
 
+/**
+ * @deprecated This class is deprecated and will be removed in version 8.10.
+ *     <p>It is not safe to remove this class yet because the Operation Executor is still required
+ *     to process any pending operation batches in the `operate-operation` index. Removing it now
+ *     could result in user-initiated operations remaining unprocessed after an upgrade, breaking
+ *     user-space and leaving operations stuck indefinitely. The class should only be removed once
+ *     it is guaranteed that no pending batches remain and all consumers have migrated to the V2
+ *     API. See https://github.com/camunda/camunda/issues/44958 for migration progress and details.
+ */
+@Deprecated(forRemoval = true, since = "8.10")
 public class OperationExecutorProperties {
 
   public static final int BATCH_SIZE_DEFAULT = 500;
@@ -46,7 +56,7 @@ public class OperationExecutorProperties {
     return batchSize;
   }
 
-  public void setBatchSize(int batchSize) {
+  public void setBatchSize(final int batchSize) {
     this.batchSize = batchSize;
   }
 
@@ -54,7 +64,7 @@ public class OperationExecutorProperties {
     return deletionBatchSize;
   }
 
-  public void setDeletionBatchSize(int deletionBatchSize) {
+  public void setDeletionBatchSize(final int deletionBatchSize) {
     this.deletionBatchSize = deletionBatchSize;
   }
 
@@ -62,7 +72,7 @@ public class OperationExecutorProperties {
     return workerId;
   }
 
-  public void setWorkerId(String workerId) {
+  public void setWorkerId(final String workerId) {
     this.workerId = workerId;
   }
 
@@ -70,7 +80,7 @@ public class OperationExecutorProperties {
     return lockTimeout;
   }
 
-  public void setLockTimeout(long lockTimeout) {
+  public void setLockTimeout(final long lockTimeout) {
     this.lockTimeout = lockTimeout;
   }
 
@@ -78,7 +88,7 @@ public class OperationExecutorProperties {
     return executorEnabled;
   }
 
-  public void setExecutorEnabled(boolean executorEnabled) {
+  public void setExecutorEnabled(final boolean executorEnabled) {
     this.executorEnabled = executorEnabled;
   }
 
@@ -86,7 +96,7 @@ public class OperationExecutorProperties {
     return threadsCount;
   }
 
-  public void setThreadsCount(int threadsCount) {
+  public void setThreadsCount(final int threadsCount) {
     this.threadsCount = threadsCount;
   }
 
@@ -94,7 +104,7 @@ public class OperationExecutorProperties {
     return queueSize;
   }
 
-  public void setQueueSize(int queueSize) {
+  public void setQueueSize(final int queueSize) {
     this.queueSize = queueSize;
   }
 }
