@@ -74,7 +74,7 @@ public class TaskStoreElasticSearch implements TaskStore {
           TaskState.CANCELED, TaskTemplate.COMPLETION_TIME);
 
   @Autowired
-  @Qualifier("tasklistEs8Client")
+  @Qualifier("tasklistEsClient")
   private ElasticsearchClient esClient;
 
   @Autowired private ElasticsearchTenantHelper tenantHelper;
