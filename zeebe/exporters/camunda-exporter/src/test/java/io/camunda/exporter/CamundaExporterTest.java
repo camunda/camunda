@@ -9,6 +9,7 @@ package io.camunda.exporter;
 
 import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.SoftAssertions.assertSoftly;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -19,6 +20,7 @@ import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.exporter.cache.ExporterEntityCacheProvider;
 import io.camunda.exporter.cache.form.CachedFormEntity;
 import io.camunda.exporter.config.ExporterConfiguration;
+import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.search.schema.SearchEngineClient;
 import io.camunda.search.test.utils.TestObjectMapper;
@@ -74,6 +76,48 @@ final class CamundaExporterTest {
   @AfterEach
   void tearDown() {
     mockedClientAdapterFactory.close();
+  }
+
+  @Test
+  void shouldHaveAllHandlerValueTypesRegisteredInExporterFilter() {
+    // given
+    final var config = new ExporterConfiguration();
+    // enable audit log and batch operation export to include their handlers
+    config.getAuditLog().setEnabled(true);
+    config.getBatchOperation().setExportItemsOnCreation(true);
+
+    final var provider = new DefaultExporterResourceProvider();
+    provider.init(
+        config,
+        mock(ExporterEntityCacheProvider.class),
+        new ExporterTestContext().setPartitionId(1),
+        new ExporterMetadata(TestObjectMapper.objectMapper()),
+        TestObjectMapper.objectMapper());
+
+    // when
+    final var handlers = provider.getExportHandlers();
+    final var handlerValueTypes =
+        handlers.stream().map(ExportHandler::getHandledValueType).distinct().toList();
+
+    // then
+    final var filter = new CamundaExporter.CamundaExporterRecordFilter();
+    assertSoftly(
+        softly -> {
+          for (final var valueType : handlerValueTypes) {
+            softly
+                .assertThat(filter.acceptValue(valueType))
+                .as(
+                    """
+                        ValueType '%s' is used by one or more handlers but not registered in 'CamundaExporter.CamundaExporterRecordFilter#VALUE_TYPES_2_EXPORT'.
+
+                        This will cause records of this type to be filtered out before reaching the handler,
+                        resulting in missing data in the search indices.
+
+                        Fix: Add 'ValueType.%s' to the 'VALUE_TYPES_2_EXPORT' Set in 'CamundaExporter.CamundaExporterRecordFilter'""",
+                    valueType, valueType.name())
+                .isTrue();
+          }
+        });
   }
 
   private static final class NoopExporterEntityCacheProvider
