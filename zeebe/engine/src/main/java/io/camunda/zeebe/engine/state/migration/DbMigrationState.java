@@ -526,4 +526,9 @@ public class DbMigrationState implements MutableMigrationState {
   public void migrateMissingPermissionsForAuthorizations() {
     permissionMigrationState.migrateMissingPermissionsForAuthorizations();
   }
+
+  @Override
+  public void ensureRetriableDeploymentDistributions() {
+    distributionState8dot7.ensureRetriableDeploymentDistributions();
+  }
 }
