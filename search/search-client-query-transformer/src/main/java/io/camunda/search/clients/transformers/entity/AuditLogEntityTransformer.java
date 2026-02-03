@@ -47,7 +47,10 @@ public class AuditLogEntityTransformer
         value.getDecisionEvaluationKey(),
         value.getDeploymentKey(),
         value.getFormKey(),
-        value.getResourceKey());
+        value.getResourceKey(),
+        mapEntityType(value.getRelatedEntityType()),
+        value.getRelatedEntityKey(),
+        value.getEntityDescription());
   }
 
   private AuditLogEntity.AuditLogEntityType mapEntityType(
