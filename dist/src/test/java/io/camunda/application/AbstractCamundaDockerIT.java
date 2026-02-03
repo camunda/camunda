@@ -149,8 +149,9 @@ public abstract class AbstractCamundaDockerIT {
         .withEnv("CAMUNDA_DATA_PRIMARYSTORAGE_DISK_FREESPACE_REPLICATION", "200MB")
         .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", "rdbms")
         .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_URL", url)
-        .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_USERNAME", "camunda")
-        .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_PASSWORD", "camunda")
+        .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_USERNAME", TestSearchContainers.CAMUNDA_USER)
+        .withEnv(
+            "CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_PASSWORD", TestSearchContainers.CAMUNDA_PASSWORD)
         .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_DATABASE_VENDOR_ID", vendorId)
         .withEnv(
             "ZEEBE_BROKER_EXPORTERS_RDBMS_CLASSNAME", "io.camunda.exporter.rdbms.RdbmsExporter")
