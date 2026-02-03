@@ -46,6 +46,9 @@ public record AuditLogDbModel(
     Long deploymentKey,
     Long formKey,
     Long resourceKey,
+    AuditLogEntity.AuditLogEntityType relatedEntityType,
+    String relatedEntityKey,
+    String entityDescription,
     int partitionId,
     OffsetDateTime historyCleanupDate)
     implements DbModel<AuditLogDbModel> {
@@ -88,6 +91,9 @@ public record AuditLogDbModel(
                 .deploymentKey(deploymentKey)
                 .formKey(formKey)
                 .resourceKey(resourceKey)
+                .relatedEntityType(relatedEntityType)
+                .relatedEntityKey(relatedEntityKey)
+                .entityDescription(entityDescription)
                 .partitionId(partitionId)
                 .historyCleanupDate(historyCleanupDate))
         .build();
@@ -126,6 +132,9 @@ public record AuditLogDbModel(
         .deploymentKey(deploymentKey)
         .formKey(formKey)
         .resourceKey(resourceKey)
+        .relatedEntityType(relatedEntityType)
+        .relatedEntityKey(relatedEntityKey)
+        .entityDescription(entityDescription)
         .partitionId(partitionId)
         .historyCleanupDate(historyCleanupDate);
   }
@@ -164,6 +173,9 @@ public record AuditLogDbModel(
     private Long deploymentKey;
     private Long formKey;
     private Long resourceKey;
+    private AuditLogEntity.AuditLogEntityType relatedEntityType;
+    private String relatedEntityKey;
+    private String entityDescription;
     private int partitionId;
     private OffsetDateTime historyCleanupDate;
 
@@ -329,6 +341,21 @@ public record AuditLogDbModel(
       return this;
     }
 
+    public Builder relatedEntityType(final AuditLogEntity.AuditLogEntityType relatedEntityType) {
+      this.relatedEntityType = relatedEntityType;
+      return this;
+    }
+
+    public Builder relatedEntityKey(final String relatedEntityKey) {
+      this.relatedEntityKey = relatedEntityKey;
+      return this;
+    }
+
+    public Builder entityDescription(final String entityDescription) {
+      this.entityDescription = entityDescription;
+      return this;
+    }
+
     public Builder partitionId(final int partitionId) {
       this.partitionId = partitionId;
       return this;
@@ -374,6 +401,9 @@ public record AuditLogDbModel(
           deploymentKey,
           formKey,
           resourceKey,
+          relatedEntityType,
+          relatedEntityKey,
+          entityDescription,
           partitionId,
           historyCleanupDate);
     }
