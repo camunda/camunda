@@ -130,7 +130,7 @@ jobs:
     name: "Send slack notification on fail"
     runs-on: ubuntu-latest
     needs: integration-tests
-    if: failure() && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))
+    if: (failure() || cancelled()) && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))
     timeout-minutes: 5
     permissions:
       contents: read
@@ -153,12 +153,12 @@ jobs:
         webhook-type: webhook-trigger
         # For posting a rich message using Block Kit
         payload: |
-          text: "AWS Aurora Manual/Scheduled Run Integration Tests failed"
+          text: "AWS Aurora Manual/Scheduled Run Integration Tests failed or were cancelled"
           blocks:
             - type: "section"
               text:
                 type: "mrkdwn"
-                text: "AWS Aurora Manual/Scheduled Run Integration Tests FAILED\n${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                text: "AWS Aurora Manual/Scheduled Run Integration Tests FAILED or WERE CANCELLED\n${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
       # Send metrics about CI health
     - name: Observe build status
       if: always()
