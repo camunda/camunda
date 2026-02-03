@@ -9,6 +9,7 @@ package io.camunda.zeebe.exporter.filter;
 
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
+import io.camunda.zeebe.util.SemanticVersion;
 import java.util.Collections;
 import java.util.List;
 
@@ -44,7 +45,7 @@ public final class VariableNameFilterRecord implements ExporterRecordFilter, Rec
   }
 
   @Override
-  public String minRecordVersion() {
-    return "8.9.0";
+  public SemanticVersion minRecordBrokerVersion() {
+    return SemanticVersion.parse("8.9.0").orElseThrow();
   }
 }

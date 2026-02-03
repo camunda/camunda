@@ -9,6 +9,7 @@ package io.camunda.zeebe.exporter.filter;
 
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import java.util.List;
 
 /**
  * Configuration for exporter record filtering.
@@ -25,4 +26,18 @@ public interface FilterConfiguration {
   boolean shouldIndexRequiredValueType(ValueType valueType);
 
   boolean shouldIndexRecordType(RecordType recordType);
+
+  interface IndexConfig {
+    List<String> getVariableNameInclusionExact();
+
+    List<String> getVariableNameInclusionStartWith();
+
+    List<String> getVariableNameInclusionEndWith();
+
+    List<String> getVariableNameExclusionExact();
+
+    List<String> getVariableNameExclusionStartWith();
+
+    List<String> getVariableNameExclusionEndWith();
+  }
 }
