@@ -17,10 +17,6 @@ import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
-@Component
-@DependsOn("searchEngineSchemaInitializer")
-@Profile({"!test", "test-executor"})
-@ConditionalOnRdbmsDisabled
 /**
  * @deprecated This class is deprecated and will be removed in version 8.10.
  *     <p>It is not safe to remove this class yet because the Operation Executor is still required
@@ -30,6 +26,10 @@ import org.springframework.stereotype.Component;
  *     it is guaranteed that no pending batches remain and all consumers have migrated to the V2
  *     API. See https://github.com/camunda/camunda/issues/44958 for migration progress and details.
  */
+@Component
+@DependsOn("searchEngineSchemaInitializer")
+@Profile({"!test", "test-executor"})
+@ConditionalOnRdbmsDisabled
 @Deprecated(forRemoval = true, since = "8.10")
 public class StartupBean {
 
