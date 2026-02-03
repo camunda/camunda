@@ -10,12 +10,15 @@ package io.camunda.db.rdbms.write.service;
 import io.camunda.db.rdbms.sql.FlowNodeInstanceMapper;
 import io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.EndFlowNodeDto;
 import io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.UpdateIncidentDto;
+import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.domain.FlowNodeInstanceDbModel;
 import io.camunda.db.rdbms.write.domain.FlowNodeInstanceDbModel.FlowNodeInstanceDbModelBuilder;
+import io.camunda.db.rdbms.write.queue.BatchInsertDto;
 import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
+import io.camunda.db.rdbms.write.queue.InsertFlowNodeInstanceMerger;
+import io.camunda.db.rdbms.write.queue.ListParameterUpsertMerger;
 import io.camunda.db.rdbms.write.queue.QueueItem;
-import io.camunda.db.rdbms.write.queue.UpsertMerger;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
 import java.time.OffsetDateTime;
@@ -24,21 +27,32 @@ import java.util.function.Function;
 public class FlowNodeInstanceWriter extends ProcessInstanceDependant implements RdbmsWriter {
 
   private final ExecutionQueue executionQueue;
+  private final RdbmsWriterConfig config;
 
   public FlowNodeInstanceWriter(
-      final ExecutionQueue executionQueue, final FlowNodeInstanceMapper mapper) {
+      final ExecutionQueue executionQueue,
+      final FlowNodeInstanceMapper mapper,
+      final RdbmsWriterConfig config) {
     super(mapper);
     this.executionQueue = executionQueue;
+    this.config = config;
   }
 
   public void create(final FlowNodeInstanceDbModel flowNode) {
-    executionQueue.executeInQueue(
-        new QueueItem(
-            ContextType.FLOW_NODE,
-            WriteStatementType.INSERT,
-            flowNode.flowNodeInstanceKey(),
-            "io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.insert",
-            flowNode));
+    final var wasMerged =
+        executionQueue.tryMergeWithExistingQueueItem(
+            new InsertFlowNodeInstanceMerger(
+                flowNode, config.insertBatchingConfig().flowNodeInsertBatchSize()));
+
+    if (!wasMerged) {
+      executionQueue.executeInQueue(
+          new QueueItem(
+              ContextType.FLOW_NODE,
+              WriteStatementType.INSERT,
+              flowNode.flowNodeInstanceKey(),
+              "io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.insert",
+              new BatchInsertDto<>(flowNode)));
+    }
   }
 
   public void update(final FlowNodeInstanceDbModel flowNode) {
@@ -126,7 +140,10 @@ public class FlowNodeInstanceWriter extends ProcessInstanceDependant implements 
       final Function<FlowNodeInstanceDbModelBuilder, FlowNodeInstanceDbModelBuilder>
           mergeFunction) {
     return executionQueue.tryMergeWithExistingQueueItem(
-        new UpsertMerger<>(
-            ContextType.FLOW_NODE, key, FlowNodeInstanceDbModel.class, mergeFunction));
+        new ListParameterUpsertMerger<>(
+            ContextType.FLOW_NODE,
+            key,
+            FlowNodeInstanceDbModel::flowNodeInstanceKey,
+            mergeFunction));
   }
 }

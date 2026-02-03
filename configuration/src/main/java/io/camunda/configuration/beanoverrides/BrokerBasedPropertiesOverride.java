@@ -904,6 +904,14 @@ public class BrokerBasedPropertiesOverride {
                         .getInsertBatching()
                         .setMaxVariableInsertBatchSize(
                             database.getInsertBatching().getMaxVariableInsertBatchSize());
+                    config
+                        .getInsertBatching()
+                        .setMaxJobInsertBatchSize(
+                            database.getInsertBatching().getMaxJobInsertBatchSize());
+                    config
+                        .getInsertBatching()
+                        .setMaxFlowNodeInsertBatchSize(
+                            database.getInsertBatching().getMaxFlowNodeInsertBatchSize());
                   }
                 })
             .toArgs());

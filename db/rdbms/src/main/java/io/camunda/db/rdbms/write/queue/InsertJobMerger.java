@@ -7,11 +7,11 @@
  */
 package io.camunda.db.rdbms.write.queue;
 
-import io.camunda.db.rdbms.write.domain.VariableDbModel;
+import io.camunda.db.rdbms.write.domain.JobDbModel;
 
-public class InsertVariableMerger extends BatchInsertMerger<VariableDbModel> {
+public class InsertJobMerger extends BatchInsertMerger<JobDbModel> {
 
-  public InsertVariableMerger(final VariableDbModel variable, final int maxBatchSize) {
-    super(ContextType.VARIABLE, variable, maxBatchSize);
+  public InsertJobMerger(final JobDbModel job, final int maxBatchSize) {
+    super(ContextType.JOB, job, maxBatchSize);
   }
 }

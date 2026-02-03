@@ -7,25 +7,15 @@
  */
 package io.camunda.db.rdbms.write.queue;
 
-import java.util.function.Function;
-
-class BatchInsertMerger<T extends BatchInsertDto<T, M>, M> implements QueueItemMerger {
+class BatchInsertMerger<M> implements QueueItemMerger {
 
   private final ContextType contextType;
-  private final Class<T> dtoClass;
-  private final Function<T, Integer> listSizeExtractor;
   private final M model;
   private final int maxBatchSize;
 
   protected BatchInsertMerger(
-      final ContextType contextType,
-      final Class<T> dtoClass,
-      final M model,
-      final Function<T, Integer> listSizeExtractor,
-      final int maxBatchSize) {
+      final ContextType contextType, final M model, final int maxBatchSize) {
     this.contextType = contextType;
-    this.dtoClass = dtoClass;
-    this.listSizeExtractor = listSizeExtractor;
     this.model = model;
     this.maxBatchSize = maxBatchSize;
   }
@@ -37,13 +27,15 @@ class BatchInsertMerger<T extends BatchInsertDto<T, M>, M> implements QueueItemM
     }
     return queueItem.contextType() == contextType
         && queueItem.statementType() == WriteStatementType.INSERT
-        && dtoClass.isInstance(queueItem.parameter())
-        && listSizeExtractor.apply(dtoClass.cast(queueItem.parameter())) < maxBatchSize;
+        && queueItem.parameter() instanceof BatchInsertDto
+        && ((BatchInsertDto<M>) queueItem.parameter()).dbModels().size() < maxBatchSize;
   }
 
   @Override
   public QueueItem merge(final QueueItem originalItem) {
     return originalItem.copy(
-        b -> b.parameter(dtoClass.cast(originalItem.parameter()).withAdditionalDbModel(model)));
+        b ->
+            b.parameter(
+                BatchInsertDto.class.cast(originalItem.parameter()).withAdditionalDbModel(model)));
   }
 }

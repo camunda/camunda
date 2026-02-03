@@ -9,11 +9,12 @@ package io.camunda.db.rdbms.sql;
 
 import io.camunda.db.rdbms.read.domain.JobDbQuery;
 import io.camunda.db.rdbms.write.domain.JobDbModel;
+import io.camunda.db.rdbms.write.queue.BatchInsertDto;
 import java.util.List;
 
 public interface JobMapper extends ProcessInstanceDependantMapper {
 
-  void insert(JobDbModel job);
+  void insert(BatchInsertDto<JobDbModel> dto);
 
   void update(JobDbModel job);
 

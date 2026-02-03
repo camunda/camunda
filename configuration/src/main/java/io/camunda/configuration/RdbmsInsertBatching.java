@@ -7,13 +7,13 @@
  */
 package io.camunda.configuration;
 
-import io.camunda.db.rdbms.write.RdbmsWriterConfig;
+import io.camunda.db.rdbms.write.RdbmsWriterConfig.InsertBatchingConfig;
 
 public class RdbmsInsertBatching {
-  private int maxVariableInsertBatchSize =
-      RdbmsWriterConfig.InsertBatchingConfig.DEFAULT_VARIABLE_INSERT_BATCH_SIZE;
-  private int maxAuditLogInsertBatchSize =
-      RdbmsWriterConfig.InsertBatchingConfig.DEFAULT_AUDIT_LOG_INSERT_BATCH_SIZE;
+  private int maxVariableInsertBatchSize = InsertBatchingConfig.DEFAULT_VARIABLE_INSERT_BATCH_SIZE;
+  private int maxAuditLogInsertBatchSize = InsertBatchingConfig.DEFAULT_AUDIT_LOG_INSERT_BATCH_SIZE;
+  private int maxJobInsertBatchSize = InsertBatchingConfig.DEFAULT_JOB_INSERT_BATCH_SIZE;
+  private int maxFlowNodeInsertBatchSize = InsertBatchingConfig.DEFAULT_FLOW_NODE_INSERT_BATCH_SIZE;
 
   public int getMaxVariableInsertBatchSize() {
     return maxVariableInsertBatchSize;
@@ -29,5 +29,21 @@ public class RdbmsInsertBatching {
 
   public void setMaxAuditLogInsertBatchSize(final int maxAuditLogInsertBatchSize) {
     this.maxAuditLogInsertBatchSize = maxAuditLogInsertBatchSize;
+  }
+
+  public int getMaxJobInsertBatchSize() {
+    return maxJobInsertBatchSize;
+  }
+
+  public void setMaxJobInsertBatchSize(final int maxJobInsertBatchSize) {
+    this.maxJobInsertBatchSize = maxJobInsertBatchSize;
+  }
+
+  public int getMaxFlowNodeInsertBatchSize() {
+    return maxFlowNodeInsertBatchSize;
+  }
+
+  public void setMaxFlowNodeInsertBatchSize(final int maxFlowNodeInsertBatchSize) {
+    this.maxFlowNodeInsertBatchSize = maxFlowNodeInsertBatchSize;
   }
 }

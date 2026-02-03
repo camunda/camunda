@@ -7,11 +7,12 @@
  */
 package io.camunda.db.rdbms.write.queue;
 
-import io.camunda.db.rdbms.write.domain.VariableDbModel;
+import io.camunda.db.rdbms.write.domain.FlowNodeInstanceDbModel;
 
-public class InsertVariableMerger extends BatchInsertMerger<VariableDbModel> {
+public class InsertFlowNodeInstanceMerger extends BatchInsertMerger<FlowNodeInstanceDbModel> {
 
-  public InsertVariableMerger(final VariableDbModel variable, final int maxBatchSize) {
-    super(ContextType.VARIABLE, variable, maxBatchSize);
+  public InsertFlowNodeInstanceMerger(
+      final FlowNodeInstanceDbModel flowNodeInstance, final int maxBatchSize) {
+    super(ContextType.FLOW_NODE, flowNodeInstance, maxBatchSize);
   }
 }

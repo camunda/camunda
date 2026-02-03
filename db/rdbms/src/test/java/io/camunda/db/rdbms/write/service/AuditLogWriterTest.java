@@ -13,9 +13,9 @@ import static org.mockito.Mockito.verify;
 
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.sql.AuditLogMapper;
-import io.camunda.db.rdbms.sql.AuditLogMapper.BatchInsertAuditLogsDto;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.domain.AuditLogDbModel;
+import io.camunda.db.rdbms.write.queue.BatchInsertDto;
 import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
@@ -48,10 +48,10 @@ class AuditLogWriterTest {
                         && queueItem
                             .statementId()
                             .equals("io.camunda.db.rdbms.sql.AuditLogMapper.insert")
-                        && queueItem.parameter() instanceof BatchInsertAuditLogsDto
-                        && ((BatchInsertAuditLogsDto) queueItem.parameter()).auditLogs().size() == 1
-                        && ((BatchInsertAuditLogsDto) queueItem.parameter())
-                            .auditLogs()
+                        && queueItem.parameter() instanceof BatchInsertDto
+                        && ((BatchInsertDto) queueItem.parameter()).dbModels().size() == 1
+                        && ((BatchInsertDto) queueItem.parameter())
+                            .dbModels()
                             .getFirst()
                             .equals(model)));
   }

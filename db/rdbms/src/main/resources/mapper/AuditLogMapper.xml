@@ -254,7 +254,7 @@
     </where>
   </sql>
 
-  <insert id="insert" parameterType="io.camunda.db.rdbms.sql.AuditLogMapper$BatchInsertAuditLogsDto">
+  <insert id="insert" parameterType="io.camunda.db.rdbms.write.queue.BatchInsertDto">
     INSERT INTO ${prefix}AUDIT_LOG (
       AUDIT_LOG_KEY,
       ENTITY_KEY,
@@ -292,7 +292,7 @@
       HISTORY_CLEANUP_DATE
     )
     VALUES
-    <foreach collection="auditLogs" item="auditLog" separator=",">
+    <foreach collection="dbModels" item="auditLog" separator=",">
       (
         #{auditLog.auditLogKey},
         #{auditLog.entityKey},

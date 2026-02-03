@@ -7,18 +7,11 @@
  */
 package io.camunda.db.rdbms.write.queue;
 
-import io.camunda.db.rdbms.sql.AuditLogMapper.BatchInsertAuditLogsDto;
 import io.camunda.db.rdbms.write.domain.AuditLogDbModel;
 
-public class InsertAuditLogMerger
-    extends BatchInsertMerger<BatchInsertAuditLogsDto, AuditLogDbModel> {
+public class InsertAuditLogMerger extends BatchInsertMerger<AuditLogDbModel> {
 
   public InsertAuditLogMerger(final AuditLogDbModel auditLog, final int maxBatchSize) {
-    super(
-        ContextType.AUDIT_LOG,
-        BatchInsertAuditLogsDto.class,
-        auditLog,
-        dto -> dto.auditLogs().size(),
-        maxBatchSize);
+    super(ContextType.AUDIT_LOG, auditLog, maxBatchSize);
   }
 }

@@ -117,7 +117,7 @@ public class RdbmsWriters {
     writers.put(DecisionRequirementsWriter.class, new DecisionRequirementsWriter(executionQueue));
     writers.put(
         FlowNodeInstanceWriter.class,
-        new FlowNodeInstanceWriter(executionQueue, flowNodeInstanceMapper));
+        new FlowNodeInstanceWriter(executionQueue, flowNodeInstanceMapper, config));
     writers.put(GroupWriter.class, new GroupWriter(executionQueue));
     writers.put(
         IncidentWriter.class,
@@ -146,7 +146,8 @@ public class RdbmsWriters {
             config,
             vendorDatabaseProperties));
     writers.put(
-        JobWriter.class, new JobWriter(executionQueue, jobMapper, vendorDatabaseProperties));
+        JobWriter.class,
+        new JobWriter(executionQueue, jobMapper, vendorDatabaseProperties, config));
     writers.put(JobMetricsBatchWriter.class, new JobMetricsBatchWriter(executionQueue));
     writers.put(
         SequenceFlowWriter.class, new SequenceFlowWriter(executionQueue, sequenceFlowMapper));
