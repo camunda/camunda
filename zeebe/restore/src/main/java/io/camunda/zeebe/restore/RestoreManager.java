@@ -14,11 +14,11 @@ import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern;
 import io.camunda.zeebe.backup.api.BackupRange;
-import io.camunda.zeebe.backup.api.BackupRange.Interval;
 import io.camunda.zeebe.backup.api.BackupRanges;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
+import io.camunda.zeebe.backup.api.Interval;
 import io.camunda.zeebe.backup.common.CheckpointIdGenerator;
 import io.camunda.zeebe.broker.partitioning.startup.RaftPartitionFactory;
 import io.camunda.zeebe.broker.partitioning.topology.PartitionDistribution;
@@ -254,7 +254,9 @@ public class RestoreManager {
       for (int partition = 1; partition <= partitionCount; partition++) {
         final var ranges = BackupRanges.fromMarkers(backupStore.rangeMarkers(partition).join());
         final var validRange =
-            ranges.stream().filter(r -> r.contains(new Interval(minBackup, maxBackup))).findFirst();
+            ranges.stream()
+                .filter(r -> r.contains(new Interval<>(minBackup, maxBackup)))
+                .findFirst();
 
         if (validRange.isEmpty()) {
           final var completeRanges =
