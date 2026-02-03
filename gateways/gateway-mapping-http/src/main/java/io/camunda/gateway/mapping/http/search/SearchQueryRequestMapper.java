@@ -504,6 +504,17 @@ public final class SearchQueryRequestMapper {
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::variableSearchQuery);
   }
 
+  public static Either<ProblemDetail, VariableQuery> toUserTaskVariableQuery(
+      final UserTaskVariableFilter filter,
+      final io.camunda.gateway.protocol.model.simple.SearchQueryPageRequest page,
+      final List<UserTaskVariableSearchQuerySortRequest> sort) {
+    return toUserTaskVariableQuery(
+        new UserTaskVariableSearchQueryRequest()
+            .filter(filter)
+            .page(SimpleSearchQueryMapper.toPageRequest(page))
+            .sort(sort == null ? List.of() : sort));
+  }
+
   public static Either<ProblemDetail, VariableQuery> toVariableQuery(
       final io.camunda.gateway.protocol.model.simple.VariableFilter filter,
       final io.camunda.gateway.protocol.model.simple.SearchQueryPageRequest page,

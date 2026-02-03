@@ -24,10 +24,10 @@ import io.camunda.gateway.mcp.mapper.CallToolResultMapper;
 import io.camunda.gateway.mcp.model.McpSearchQueryPageRequest;
 import io.camunda.gateway.mcp.model.McpUserTaskAssignmentRequest;
 import io.camunda.gateway.mcp.model.McpUserTaskFilter;
-import io.camunda.gateway.mcp.model.McpVariableFilter;
 import io.camunda.gateway.protocol.model.UserTaskAssignmentRequest;
 import io.camunda.gateway.protocol.model.UserTaskSearchQuerySortRequest;
-import io.camunda.gateway.protocol.model.VariableSearchQuerySortRequest;
+import io.camunda.gateway.protocol.model.UserTaskVariableFilter;
+import io.camunda.gateway.protocol.model.UserTaskVariableSearchQuerySortRequest;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.UserTaskServices;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
@@ -176,15 +176,16 @@ public class UserTaskTools {
           @Positive(message = USER_TASK_KEY_POSITIVE_MESSAGE)
           final Long userTaskKey,
       @McpToolParam(description = FILTER_DESCRIPTION, required = false)
-          final McpVariableFilter filter,
+          final UserTaskVariableFilter filter,
       @McpToolParam(description = SORT_DESCRIPTION, required = false)
-          final List<VariableSearchQuerySortRequest> sort,
+          final List<UserTaskVariableSearchQuerySortRequest> sort,
       @McpToolParam(description = PAGE_DESCRIPTION, required = false)
           final McpSearchQueryPageRequest page,
       @McpToolParam(description = TRUNCATE_VARIABLES_DESCRIPTION, required = false)
           final Boolean truncateValues) {
     try {
-      final var variableSearchQuery = SearchQueryRequestMapper.toVariableQuery(filter, page, sort);
+      final var variableSearchQuery =
+          SearchQueryRequestMapper.toUserTaskVariableQuery(filter, page, sort);
 
       if (variableSearchQuery.isLeft()) {
         return CallToolResultMapper.mapProblemToResult(variableSearchQuery.getLeft());
