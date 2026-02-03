@@ -175,19 +175,46 @@ jobs:
           HOTFIX_VERSION="${{ matrix.version }}-${{ needs.validate-inputs.outputs.support-ticket-id }}.${{ steps.get-sha.outputs.short-sha }}"
           echo "📋 Hotfix version: $HOTFIX_VERSION"
 
-          # Handle different version inheritance structures
-          if [[ "${{ matrix.component }}" == "optimize" && -f "optimize/pom.xml" ]] && ! grep -q "zeebe-parent" optimize/pom.xml; then
-            echo "🔧 Detected standalone optimize branch - updating optimize parent version..."
-            MVN_POM="optimize/pom.xml"
-          elif [[ -f "bom/pom.xml" ]]; then
-            echo "🔧 Updating version in BOM (parent and root will inherit automatically)..."
-            MVN_POM="bom/pom.xml"
+          # Update versions based on branch structure:
+          # - Unified branches (stable/8.8+, main): Have clients/java-deprecated
+          # - Dedicated branches (stable/optimize-8.6/8.7): No clients/java-deprecated
+          if [[ "${{ matrix.component }}" == "optimize" ]]; then
+            # For Optimize builds:
+            if [[ -d "clients/java-deprecated" ]]; then
+              # Unified branch (stable/8.8+): Update BOTH BOM and optimize/pom.xml
+              # BOM update: Zeebe modules get hotfix version
+              # optimize/pom.xml update: Optimize modules get hotfix version (separate parent hierarchy)
+              echo "🔧 Unified branch: updating BOM for Zeebe dependencies..."
+              ./mvnw versions:set -DnewVersion="$HOTFIX_VERSION" -DgenerateBackupPoms=false -f "bom/pom.xml"
+              
+              if [[ ! -f "optimize/pom.xml" ]]; then
+                echo "❌ ERROR: optimize/pom.xml not found"
+                exit 1
+              fi
+              echo "🔧 Unified branch: updating optimize/pom.xml for Optimize modules..."
+              ./mvnw versions:set -DnewVersion="$HOTFIX_VERSION" -DgenerateBackupPoms=false -f "optimize/pom.xml"
+              MVN_POM="optimize/pom.xml"
+            else
+              # Dedicated branch (stable/optimize-8.6/8.7): Update only optimize/pom.xml
+              # These branches use published Zeebe versions from Nexus
+              echo "🔧 Dedicated Optimize branch: updating optimize/pom.xml..."
+              if [[ ! -f "optimize/pom.xml" ]]; then
+                echo "❌ ERROR: optimize/pom.xml not found"
+                exit 1
+              fi
+              ./mvnw versions:set -DnewVersion="$HOTFIX_VERSION" -DgenerateBackupPoms=false -f "optimize/pom.xml"
+              MVN_POM="optimize/pom.xml"
+            fi
           else
-            echo "❌ ERROR: Neither optimize/pom.xml nor bom/pom.xml found"
-            exit 1
+            # For Zeebe/Operate/Tasklist/Camunda: always use BOM (unified branches only)
+            if [[ ! -f "bom/pom.xml" ]]; then
+              echo "❌ ERROR: bom/pom.xml not found"
+              exit 1
+            fi
+            echo "🔧 Updating BOM version (propagates to Zeebe modules)..."
+            ./mvnw versions:set -DnewVersion="$HOTFIX_VERSION" -DgenerateBackupPoms=false -f "bom/pom.xml"
+            MVN_POM="bom/pom.xml"
           fi
-
-          ./mvnw versions:set -DnewVersion="$HOTFIX_VERSION" -DgenerateBackupPoms=false -f "$MVN_POM"
 
           echo "✅ Project version updated to $HOTFIX_VERSION"
           echo "🔍 Verifying version change..."
@@ -219,9 +246,23 @@ jobs:
                 exit 1
               fi
               
-              # Build optimize-distro with runAssembly profile
-              # Required for stable/optimize-8.6 and 8.7 branches; harmless on main and stable branches
-              ./mvnw clean package -T1C -DskipTests -DskipChecks -PrunAssembly -am -pl optimize-distro
+              # Branch detection: clients/java-deprecated only exists on unified branches (stable/8.8+)
+              # Older branches (stable/optimize-8.6/8.7) have bom and clients/java but not java-deprecated
+              if [[ -d "clients/java-deprecated" ]]; then
+                # Unified branch (stable/8.8+): Pre-build Zeebe dependencies to make them available at hotfix version
+                # This ensures zeebe-client, search-client, etc. are installed locally
+                # Note: Building both java and java-deprecated to support legacy zeebe-client-java artifact ID
+                echo "📦 Unified branch: Building Zeebe dependencies first..."
+                ./mvnw clean install -T1C -DskipTests -DskipChecks -am -pl clients/java,clients/java-deprecated
+                
+                # Build optimize-distro with install goal (installs to local repo)
+                echo "📦 Building Optimize distribution..."
+                ./mvnw install -T1C -DskipTests -DskipChecks -PrunAssembly -am -pl optimize-distro
+              else
+                # Dedicated/older branch (stable/optimize-8.6/8.7): Use published Zeebe dependencies from Nexus
+                echo "📦 Dedicated Optimize branch: Building with published dependencies..."
+                ./mvnw clean package -T1C -DskipTests -DskipChecks -PrunAssembly -am -pl optimize-distro
+              fi
               ;;
             *)
               echo "❌ Unknown component: ${{ matrix.component }}"
