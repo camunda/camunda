@@ -207,10 +207,6 @@ public class PropertiesUtil {
         .collect(Collectors.toList());
   }
 
-  private static String readProperty(final Properties properties, final String key) {
-    return readProperty(properties, key, Function.identity());
-  }
-
   private static <T> T readProperty(
       final Properties properties, final String key, final Function<String, T> converter) {
 

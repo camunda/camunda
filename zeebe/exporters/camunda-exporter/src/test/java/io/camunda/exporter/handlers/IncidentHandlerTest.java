@@ -7,10 +7,6 @@
  */
 package io.camunda.exporter.handlers;
 
-import static io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor.POSITION;
-import static io.camunda.webapps.schema.descriptors.template.IncidentTemplate.BPMN_PROCESS_ID;
-import static io.camunda.webapps.schema.descriptors.template.IncidentTemplate.FLOW_NODE_ID;
-import static io.camunda.webapps.schema.descriptors.template.IncidentTemplate.PROCESS_DEFINITION_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -529,30 +525,6 @@ public class IncidentHandlerTest {
     assertThat(incidentEntity.getErrorType())
         .isEqualTo(
             io.camunda.webapps.schema.entities.incident.ErrorType.AD_HOC_SUB_PROCESS_NO_RETRIES);
-  }
-
-  private String concurrencyScriptMock() {
-    return String.format(
-        "if (ctx._source.%s == null || ctx._source.%s < params.%s) { "
-            + "ctx._source.%s = params.%s; " // position
-            + "if (params.%s != null) {"
-            + "   ctx._source.%s = params.%s; " // PROCESS_DEFINITION_KEY
-            + "   ctx._source.%s = params.%s; " // BPMN_PROCESS_ID
-            + "   ctx._source.%s = params.%s; " // FLOW_NODE_ID
-            + "}"
-            + "}",
-        POSITION,
-        POSITION,
-        POSITION,
-        POSITION,
-        POSITION,
-        PROCESS_DEFINITION_KEY,
-        PROCESS_DEFINITION_KEY,
-        PROCESS_DEFINITION_KEY,
-        BPMN_PROCESS_ID,
-        BPMN_PROCESS_ID,
-        FLOW_NODE_ID,
-        FLOW_NODE_ID);
   }
 
   private static void assertEntityFields(

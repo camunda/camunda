@@ -29,10 +29,6 @@ public final class RoundingUtil {
     }
   }
 
-  private static long round(final Double numberToRound) {
-    return Math.round(Math.log10(numberToRound));
-  }
-
   private static double roundUp(final Double numberToRound) {
     return Math.ceil(Math.log10(numberToRound));
   }

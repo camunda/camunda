@@ -19,10 +19,6 @@ import io.camunda.management.backups.StateCode;
 import io.camunda.management.backups.TakeBackupRuntimeResponse;
 import io.camunda.zeebe.backup.gcs.GcsBackupConfig;
 import io.camunda.zeebe.backup.gcs.GcsBackupStore;
-import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
-import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg.BackupStoreType;
-import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig;
-import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig.GcsBackupStoreAuth;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator;
 import io.camunda.zeebe.qa.util.cluster.TestClusterBuilder;
 import io.camunda.zeebe.qa.util.cluster.TestRestoreApp;
@@ -113,18 +109,6 @@ public class ClusteredBackupRestoreTest {
 
       assertThatNoException().isThrownBy(() -> restoreApp.start());
     }
-  }
-
-  private static void configureBackupStore(final BrokerCfg brokerCfg) {
-    final var backup = brokerCfg.getData().getBackup();
-
-    final var storeConfig = new GcsBackupStoreConfig();
-    storeConfig.setAuth(GcsBackupStoreAuth.NONE);
-    storeConfig.setBucketName(BUCKET_NAME);
-    storeConfig.setHost(GCS.externalEndpoint());
-
-    backup.setStore(BackupStoreType.GCS);
-    backup.setGcs(storeConfig);
   }
 
   private static void configureBackupStore(final Camunda config) {

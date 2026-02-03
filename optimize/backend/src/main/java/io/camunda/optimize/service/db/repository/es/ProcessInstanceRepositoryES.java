@@ -8,8 +8,6 @@
 package io.camunda.optimize.service.db.repository.es;
 
 import static io.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
-import static io.camunda.optimize.dto.optimize.ProcessInstanceConstants.ACTIVE_STATE;
-import static io.camunda.optimize.dto.optimize.ProcessInstanceConstants.SUSPENDED_STATE;
 import static io.camunda.optimize.service.db.DatabaseConstants.MAX_RESPONSE_SIZE_LIMIT;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.END_DATE;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.PROCESS_INSTANCE_ID;
@@ -28,7 +26,6 @@ import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.ImmutableMap;
 import io.camunda.optimize.dto.optimize.ImportRequestDto;
 import io.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import io.camunda.optimize.dto.optimize.query.PageResultDto;
@@ -267,12 +264,5 @@ class ProcessInstanceRepositoryES implements ProcessInstanceRepository {
     }
 
     return result;
-  }
-
-  private ImmutableMap<String, String> createUpdateStateScriptParamsMap(final String newState) {
-    return ImmutableMap.of(
-        "activeState", ACTIVE_STATE,
-        "suspendedState", SUSPENDED_STATE,
-        "newState", newState);
   }
 }

@@ -946,13 +946,6 @@ public class BrokerBasedPropertiesOverride {
     override.setExecutionMetricsExporterEnabled(metrics.isEnableExporterExecutionMetrics());
   }
 
-  private void setArgIfNotNull(
-      final Map<String, Object> args, final String breadcrumb, final Object value) {
-    if (value != null) {
-      setArg(args, breadcrumb, value);
-    }
-  }
-
   @SuppressWarnings("unchecked")
   private void setArg(final Map<String, Object> args, final String breadcrumb, final Object value) {
     final String[] keys = breadcrumb.split("\\.");

@@ -160,15 +160,6 @@ public class BackupServiceImplTest {
             "camunda_webapps_1_*_part_3_of_3");
   }
 
-  private void waitForAllTasks() {
-    try {
-      // wait for the executor to process all tasks
-      executor.submit(() -> {}).get();
-    } catch (final Exception ex) {
-      throw new RuntimeException(ex);
-    }
-  }
-
   private static class MockBackupRepository implements BackupRepository {
 
     SnapshotNameProvider snapshotNameProvider;

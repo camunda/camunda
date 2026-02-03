@@ -24,7 +24,9 @@ import io.camunda.operate.util.ZeebeTestUtil;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.time.Duration;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
@@ -557,27 +559,6 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
                       .join();
                   break;
               }
-            })
-        .name("operate")
-        .timeout(Duration.ofSeconds(JOB_WORKER_TIMEOUT))
-        .open();
-  }
-
-  private JobWorker progressFlightRegistrationDetermineWeight() {
-    return client
-        .newWorker()
-        .jobType("determineLuggageWeight")
-        .handler(
-            (jobClient, job) -> {
-              if (!canProgress(job.getProcessInstanceKey())) {
-                return;
-              }
-              jobClient
-                  .newCompleteCommand(job.getKey())
-                  .variables(
-                      "{\"luggageWeight\":" + (ThreadLocalRandom.current().nextInt(10) + 20) + "}")
-                  .send()
-                  .join();
             })
         .name("operate")
         .timeout(Duration.ofSeconds(JOB_WORKER_TIMEOUT))

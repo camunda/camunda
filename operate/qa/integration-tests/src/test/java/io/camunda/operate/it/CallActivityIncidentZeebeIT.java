@@ -16,8 +16,6 @@ import static io.camunda.operate.webapp.rest.dto.listview.ProcessInstanceStateDt
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import io.camunda.operate.qa.util.RestAPITestUtil;
-import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.operate.webapp.rest.ProcessInstanceRestService;
 import io.camunda.operate.webapp.rest.dto.ProcessInstanceCoreStatisticsDto;
@@ -192,14 +190,6 @@ public class CallActivityIncidentZeebeIT extends OperateZeebeAbstractIT {
         .filteredOn(i -> i.getFlowNodeId().equals(CALL_ACTIVITY_ID))
         .extracting("state")
         .containsOnly(FlowNodeStateDto.ACTIVE);
-  }
-
-  private ListViewQueryDto createGetAllProcessInstancesQuery(final Long... processDefinitionKeys) {
-    final ListViewQueryDto q = RestAPITestUtil.createGetAllProcessInstancesQuery();
-    if (processDefinitionKeys != null && processDefinitionKeys.length > 0) {
-      q.setProcessIds(CollectionUtil.toSafeListOfStrings(processDefinitionKeys));
-    }
-    return q;
   }
 
   private ListViewResponseDto getProcessInstanceList(final ListViewRequestDto request)

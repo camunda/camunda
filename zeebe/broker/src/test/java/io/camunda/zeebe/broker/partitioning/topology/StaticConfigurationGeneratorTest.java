@@ -130,8 +130,4 @@ fixed:
     final var actualDistribution = getDistribution(partitionDistribution);
     assertThat(actualDistribution).containsExactlyInAnyOrderEntriesOf(expectedDistribution);
   }
-
-  private static MemberId member(final int id) {
-    return MemberId.from(String.valueOf(id));
-  }
 }

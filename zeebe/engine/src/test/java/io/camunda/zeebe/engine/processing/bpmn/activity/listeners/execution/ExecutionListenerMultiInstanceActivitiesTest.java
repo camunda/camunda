@@ -11,7 +11,6 @@ import static io.camunda.zeebe.engine.processing.bpmn.activity.listeners.executi
 import static io.camunda.zeebe.engine.processing.bpmn.activity.listeners.execution.ExecutionListenerTest.PROCESS_ID;
 import static io.camunda.zeebe.engine.processing.bpmn.activity.listeners.execution.ExecutionListenerTest.SERVICE_TASK_TYPE;
 import static io.camunda.zeebe.engine.processing.bpmn.activity.listeners.execution.ExecutionListenerTest.START_EL_TYPE;
-import static io.camunda.zeebe.engine.processing.bpmn.activity.listeners.execution.ExecutionListenerTest.SUB_PROCESS_ID;
 import static io.camunda.zeebe.engine.processing.bpmn.activity.listeners.execution.ExecutionListenerTest.createProcessInstance;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.tuple;
@@ -66,12 +65,6 @@ public class ExecutionListenerMultiInstanceActivitiesTest {
 
     // then
     assertExecutionListenerEvents(processInstanceKey);
-  }
-
-  private static void createChildProcess() {
-    final var childProcess =
-        Bpmn.createExecutableProcess(SUB_PROCESS_ID).startEvent().manualTask().endEvent().done();
-    ENGINE.deployment().withXmlResource("child.xml", childProcess).deploy();
   }
 
   private BpmnModelInstance buildMainProcessModel(boolean sequential) {

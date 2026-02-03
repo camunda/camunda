@@ -205,29 +205,6 @@ public class GroupQueryTransformerTest extends AbstractTransformerTest {
                                         q -> q.term(t -> t.field("join").value("group"))))))));
   }
 
-  private SearchQuery generateSearchQueryForParent(final String parentId, final String memberType) {
-    return SearchQuery.of(
-        q ->
-            q.bool(
-                b ->
-                    b.must(
-                        List.of(
-                            SearchQuery.of(
-                                q1 -> q1.term(t -> t.field("memberType").value(memberType))),
-                            SearchQuery.of(
-                                q1 ->
-                                    q1.hasParent(
-                                        p ->
-                                            p.parentType("group")
-                                                .query(
-                                                    SearchQuery.of(
-                                                        q2 ->
-                                                            q2.term(
-                                                                t ->
-                                                                    t.field("groupId")
-                                                                        .value(parentId))))))))));
-  }
-
   @Test
   public void shouldApplyAuthorizationCheck() {
     // given

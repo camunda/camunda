@@ -14,7 +14,6 @@ import io.camunda.gateway.mapping.http.mapper.TenantMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.mapping.http.validator.TenantRequestValidator;
-import io.camunda.gateway.protocol.model.GroupSearchQueryResult;
 import io.camunda.gateway.protocol.model.MappingRuleSearchQueryRequest;
 import io.camunda.gateway.protocol.model.MappingRuleSearchQueryResult;
 import io.camunda.gateway.protocol.model.RoleSearchQueryRequest;
@@ -30,13 +29,10 @@ import io.camunda.gateway.protocol.model.TenantSearchQueryResult;
 import io.camunda.gateway.protocol.model.TenantUpdateRequest;
 import io.camunda.gateway.protocol.model.TenantUserSearchQueryRequest;
 import io.camunda.gateway.protocol.model.TenantUserSearchResult;
-import io.camunda.gateway.protocol.model.UserSearchResult;
-import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.MappingRuleQuery;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.TenantMemberQuery;
 import io.camunda.search.query.TenantQuery;
-import io.camunda.search.query.UserQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.validation.IdentifierValidator;
 import io.camunda.security.validation.TenantValidator;
@@ -59,7 +55,9 @@ import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
 
 @CamundaRestController
 @RequestMapping("/v2/tenants")
@@ -369,34 +367,6 @@ public class TenantController {
     }
   }
 
-  private ResponseEntity<UserSearchResult> searchUsersInTenant(
-      final String tenantId, final UserQuery userQuery) {
-    try {
-      final var composedUserQuery = buildUserQuery(tenantId, userQuery);
-      final var result =
-          userServices
-              .withAuthentication(authenticationProvider.getCamundaAuthentication())
-              .search(composedUserQuery);
-      return ResponseEntity.ok(SearchQueryResponseMapper.toUserSearchQueryResponse(result));
-    } catch (final Exception e) {
-      return mapErrorToResponse(e);
-    }
-  }
-
-  private ResponseEntity<GroupSearchQueryResult> searchGroupsInTenant(
-      final String tenantId, final GroupQuery groupQuery) {
-    try {
-      final var composedGroupQuery = buildGroupQuery(tenantId, groupQuery);
-      final var result =
-          groupServices
-              .withAuthentication(authenticationProvider.getCamundaAuthentication())
-              .search(composedGroupQuery);
-      return ResponseEntity.ok(SearchQueryResponseMapper.toGroupSearchQueryResponse(result));
-    } catch (final Exception e) {
-      return mapErrorToResponse(e);
-    }
-  }
-
   private ResponseEntity<RoleSearchQueryResult> searchRolesInTenant(
       final String tenantId, final RoleQuery roleQuery) {
     try {
@@ -422,18 +392,6 @@ public class TenantController {
       final String tenantId, final MappingRuleQuery mappingRuleQuery) {
     return mappingRuleQuery.toBuilder()
         .filter(mappingRuleQuery.filter().toBuilder().tenantId(tenantId).build())
-        .build();
-  }
-
-  private UserQuery buildUserQuery(final String tenantId, final UserQuery userQuery) {
-    return userQuery.toBuilder()
-        .filter(userQuery.filter().toBuilder().tenantId(tenantId).build())
-        .build();
-  }
-
-  private GroupQuery buildGroupQuery(final String tenantId, final GroupQuery groupQuery) {
-    return groupQuery.toBuilder()
-        .filter(groupQuery.filter().toBuilder().tenantId(tenantId).build())
         .build();
   }
 

@@ -128,10 +128,6 @@ public final class SnapshotMetrics {
     return snapshotTransferDuration.get(encodeBoolean(isBootstrap));
   }
 
-  private static boolean decodeBoolean(final int i) {
-    return i == 1;
-  }
-
   private static int encodeBoolean(final boolean b) {
     return b ? 1 : 0;
   }

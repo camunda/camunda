@@ -373,18 +373,6 @@ public final class CorrelateMessageTest {
         .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   }
 
-  private static void assertMessageIsNotCorrelated(
-      final Record<MessageCorrelationRecordValue> record) {
-    Assertions.assertThat(record)
-        .hasIntent(MessageCorrelationIntent.NOT_CORRELATED)
-        .hasRecordType(RecordType.EVENT)
-        .hasValueType(ValueType.MESSAGE_CORRELATION);
-    Assertions.assertThat(record.getValue())
-        .hasCorrelationKey(CORRELATION_KEY)
-        .hasName(MESSAGE_NAME)
-        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-  }
-
   private void deployProcessWithMessageStartEvent(final String processId) {
     engine
         .deployment()

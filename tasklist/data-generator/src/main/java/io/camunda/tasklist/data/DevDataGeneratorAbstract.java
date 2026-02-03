@@ -126,10 +126,6 @@ public abstract class DevDataGeneratorAbstract implements DataGenerator {
     startProcessInstance("twoUserTasks", null);
   }
 
-  private void startMultipleVersionsProcess() {
-    startProcessInstance("multipleVersions", null);
-  }
-
   private void startOrderProcess() {
     final float price1 = Math.round(random.nextFloat() * 100000) / 100;
     final float price2 = Math.round(random.nextFloat() * 10000) / 100;

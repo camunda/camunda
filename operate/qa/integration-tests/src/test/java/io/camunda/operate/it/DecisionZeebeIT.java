@@ -18,7 +18,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import io.camunda.operate.data.util.DecisionDataUtil;
-import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.operate.util.SearchTestRule;
 import io.camunda.operate.webapp.reader.DecisionReader;
@@ -147,9 +146,5 @@ public class DecisionZeebeIT extends OperateZeebeAbstractIT {
     assertThat(entity2.getId()).isEqualTo(entity1.getId());
     assertThat(entity2.getName()).isEqualTo(entity1.getName());
     assertThat(entity2.getDecisionId()).isEqualTo(entity1.getDecisionId());
-  }
-
-  private void createData() throws PersistenceException {
-    searchTestRule.persistOperateEntitiesNew(testDataUtil.createDecisionDefinitions());
   }
 }

@@ -24,13 +24,11 @@ import io.camunda.zeebe.protocol.impl.stream.job.ActivatedJobImpl;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
-import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.time.InstantSource;
 import java.util.Optional;
-import java.util.Set;
 import org.agrona.concurrent.UnsafeBuffer;
 
 /**
@@ -180,11 +178,5 @@ public class BpmnJobActivationBehavior {
                 .tenantId(ownerTenantId)
                 .build())
         .isRight(); // we only care if the job stream is authorized, not why it isn't
-  }
-
-  private boolean isAuthorizedForJob(
-      final JobRecord jobRecord, final Set<AuthorizationScope> authorizedProcessIds) {
-    return authorizedProcessIds.contains(AuthorizationScope.WILDCARD)
-        || authorizedProcessIds.contains(AuthorizationScope.id(jobRecord.getBpmnProcessId()));
   }
 }

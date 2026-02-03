@@ -251,11 +251,6 @@ final class IdentitySetupInitializerIT {
   }
 
   private void createBroker(
-      final boolean authorizationsEnabled, final int partitionCount, final Path tempDir) {
-    createBroker(authorizationsEnabled, partitionCount, tempDir, cfg -> {});
-  }
-
-  private void createBroker(
       final boolean authorizationsEnabled,
       final int partitionCount,
       final Consumer<CamundaSecurityProperties> securityCfg) {

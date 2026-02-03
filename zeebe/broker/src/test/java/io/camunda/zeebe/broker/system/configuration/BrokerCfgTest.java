@@ -630,12 +630,6 @@ public final class BrokerCfgTest {
     assertThat(networkCfg.getInternalApi().getHost()).isEqualTo(internal);
   }
 
-  private void assertAdvertisedHost(final String configFileName, final String host) {
-    final BrokerCfg brokerCfg = TestConfigReader.readConfig(configFileName, environment);
-    final NetworkCfg networkCfg = brokerCfg.getNetwork();
-    assertThat(networkCfg.getCommandApi().getAdvertisedAddress().getHostName()).isEqualTo(host);
-  }
-
   private void assertAdvertisedAddress(
       final String configFileName, final String host, final int port) {
     final BrokerCfg brokerCfg = TestConfigReader.readConfig(configFileName, environment);

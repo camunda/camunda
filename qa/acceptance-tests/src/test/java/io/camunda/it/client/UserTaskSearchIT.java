@@ -1463,17 +1463,4 @@ class UserTaskSearchIT {
               assertThat(resultComplete.items()).hasSize(1);
             });
   }
-
-  /**
-   * TODO: RDBMS returns the date as ISO String, there are ongoing discussion in which format the
-   * sort value should be returned for dates.
-   * https://camunda.slack.com/archives/C06UKS51QV9/p1738838925251429
-   */
-  private static String convertDateIfNeeded(final String millisOrIsoDate) {
-    if (millisOrIsoDate.contains("T")) {
-      return Long.toString(OffsetDateTime.parse(millisOrIsoDate).toInstant().toEpochMilli());
-    } else {
-      return millisOrIsoDate;
-    }
-  }
 }

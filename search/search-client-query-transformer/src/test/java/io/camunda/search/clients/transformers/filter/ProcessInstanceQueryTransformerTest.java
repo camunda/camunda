@@ -13,7 +13,6 @@ import io.camunda.search.clients.query.SearchBoolQuery;
 import io.camunda.search.clients.query.SearchHasChildQuery;
 import io.camunda.search.clients.query.SearchMatchNoneQuery;
 import io.camunda.search.clients.query.SearchMatchPhraseQuery;
-import io.camunda.search.clients.query.SearchMatchQuery;
 import io.camunda.search.clients.query.SearchQueryOption;
 import io.camunda.search.clients.query.SearchRangeQuery;
 import io.camunda.search.clients.query.SearchTermQuery;
@@ -680,19 +679,6 @@ public final class ProcessInstanceQueryTransformerTest extends AbstractTransform
             (searchTermQuery) -> {
               assertThat(searchTermQuery.field()).isEqualTo(expectedField);
               assertThat(searchTermQuery.value().stringValue()).isEqualTo(expectedValue);
-            });
-  }
-
-  private void assertIsSearchMatchQuery(
-      final SearchQueryOption searchQueryOption,
-      final String expectedField,
-      final String expectedValue) {
-    assertThat(searchQueryOption)
-        .isInstanceOfSatisfying(
-            SearchMatchQuery.class,
-            (searchMatchQuery) -> {
-              assertThat(searchMatchQuery.field()).isEqualTo(expectedField);
-              assertThat(searchMatchQuery.query()).isEqualTo(expectedValue);
             });
   }
 

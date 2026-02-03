@@ -8,16 +8,12 @@
 package io.camunda.optimize.service.db.repository.os;
 
 import static io.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
-import static io.camunda.optimize.dto.optimize.ProcessInstanceConstants.ACTIVE_STATE;
-import static io.camunda.optimize.dto.optimize.ProcessInstanceConstants.SUSPENDED_STATE;
 import static io.camunda.optimize.service.db.DatabaseConstants.MAX_RESPONSE_SIZE_LIMIT;
 import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.and;
 import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.exists;
-import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.json;
 import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.lt;
 import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.nested;
 import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.sourceInclude;
-import static io.camunda.optimize.service.db.os.writer.OpenSearchWriterUtil.createDefaultScriptWithPrimitiveParams;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.END_DATE;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.PROCESS_INSTANCE_ID;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.VARIABLES;
@@ -32,7 +28,6 @@ import io.camunda.optimize.dto.optimize.ImportRequestDto;
 import io.camunda.optimize.dto.optimize.query.PageResultDto;
 import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
 import io.camunda.optimize.service.db.repository.ProcessInstanceRepository;
-import io.camunda.optimize.service.db.repository.script.ProcessInstanceScriptFactory;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -42,12 +37,9 @@ import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
-import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch._types.OpenSearchException;
-import org.opensearch.client.opensearch._types.Script;
 import org.opensearch.client.opensearch._types.query_dsl.ChildScoreMode;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.BulkRequest;
@@ -262,23 +254,5 @@ class ProcessInstanceRepositoryOS implements ProcessInstanceRepository {
   private String scrollTimeout() {
     return format(
         "%ss", configurationService.getOpenSearchConfiguration().getScrollTimeoutInSeconds());
-  }
-
-  private Script createUpdateStateScript(final String newState) {
-    final Map<String, JsonData> scriptParameters = createUpdateStateScriptParamsMap(newState);
-    return createDefaultScriptWithPrimitiveParams(
-        ProcessInstanceScriptFactory.createInlineUpdateScript(), scriptParameters);
-  }
-
-  private Map<String, JsonData> createUpdateStateScriptParamsMap(final String newState) {
-    return Map.of(
-        "activeState", json(ACTIVE_STATE),
-        "suspendedState", json(SUSPENDED_STATE),
-        "newState", json(newState));
-  }
-
-  private String aliasForProcessDefinitionKey(final String processDefinitionKey) {
-    return indexNameService.getOptimizeIndexAliasForIndex(
-        getProcessInstanceIndexAliasName(processDefinitionKey));
   }
 }

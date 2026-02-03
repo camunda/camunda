@@ -71,21 +71,11 @@ import io.netty.resolver.dns.DnsNameResolverBuilder;
 import io.netty.resolver.dns.LoggingDnsQueryLifeCycleObserverFactory;
 import io.netty.util.concurrent.DefaultThreadFactory;
 import io.netty.util.concurrent.Future;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
-import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
-import java.security.UnrecoverableKeyException;
-import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -573,44 +563,6 @@ public final class NettyMessagingService implements ManagedMessagingService {
     } else {
       initNioTransport();
     }
-  }
-
-  private X509Certificate[] getCertificateChain(final File keyStoreFile, final String password)
-      throws CertificateException, KeyStoreException, IOException, NoSuchAlgorithmException {
-    final var keyStore = getKeyStore(keyStoreFile, password);
-
-    final String alias = keyStore.aliases().nextElement();
-    return Arrays.stream(keyStore.getCertificateChain(alias))
-        .map(X509Certificate.class::cast)
-        .toArray(X509Certificate[]::new);
-  }
-
-  private PrivateKey getPrivateKey(final File keyStoreFile, final String password)
-      throws CertificateException,
-          KeyStoreException,
-          IOException,
-          NoSuchAlgorithmException,
-          UnrecoverableKeyException {
-    final var keyStore = getKeyStore(keyStoreFile, password);
-
-    final String alias = keyStore.aliases().nextElement();
-    return (PrivateKey) keyStore.getKey(alias, password.toCharArray());
-  }
-
-  private KeyStore getKeyStore(final File keyStoreFile, final String password)
-      throws KeyStoreException {
-    final var keyStore = KeyStore.getInstance("PKCS12");
-    try {
-      keyStore.load(new FileInputStream(keyStoreFile), password.toCharArray());
-    } catch (final Exception e) {
-      throw new IllegalStateException(
-          String.format(
-              "Keystore failed to load file: %s, please ensure it is a valid PKCS12 keystore",
-              keyStoreFile.toPath()),
-          e);
-    }
-
-    return keyStore;
   }
 
   private void initEpollTransport() {

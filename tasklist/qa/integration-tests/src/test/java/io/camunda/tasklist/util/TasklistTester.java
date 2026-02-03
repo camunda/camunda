@@ -42,7 +42,6 @@ import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
 import javax.annotation.PostConstruct;
-import org.apache.commons.text.StringEscapeUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Scope;
@@ -506,13 +505,6 @@ public class TasklistTester {
       result.add(new VariableInputDTO().setName(variables[i]).setValue(variables[i + 1]));
     }
     return result;
-  }
-
-  private String variableAsGraphqlInput(final VariableInputDTO variable) {
-    return String.format(
-        VARIABLE_INPUT_PATTERN,
-        variable.getName(),
-        StringEscapeUtils.escapeJson(variable.getValue()));
   }
 
   public TasklistTester completeUserTaskInZeebe() {
