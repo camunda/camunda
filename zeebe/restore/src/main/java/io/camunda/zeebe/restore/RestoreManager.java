@@ -89,6 +89,10 @@ public class RestoreManager {
       throws IOException, ExecutionException, InterruptedException {
     final var dataDirectory = Path.of(configuration.getData().getDirectory());
 
+    // Data folder is verified separately, so that we can fail fast rather than downloading
+    // backups and then verifying the data folder is not empty.
+    // Doing it as soon as possible shortens the time to find out about this, helping to achieve
+    // lower RTO
     verifyDataFolderIsEmpty(dataDirectory, ignoreFilesInTarget);
 
     final var wildCard =
