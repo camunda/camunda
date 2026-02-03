@@ -262,10 +262,12 @@ public record RdbmsWriterConfig(
        * The maximum size of flow node instance insert batches.
        */
       int flowNodeInsertBatchSize) {
-    public static final int DEFAULT_VARIABLE_INSERT_BATCH_SIZE = 10;
-    public static final int DEFAULT_AUDIT_LOG_INSERT_BATCH_SIZE = 10;
-    public static final int DEFAULT_JOB_INSERT_BATCH_SIZE = 10;
-    public static final int DEFAULT_FLOW_NODE_INSERT_BATCH_SIZE = 10;
+
+    public static final int DEFAULT_VARIABLE_INSERT_BATCH_SIZE = 25;
+    // larger batch size for audit logs as they are written in larger volumes
+    public static final int DEFAULT_AUDIT_LOG_INSERT_BATCH_SIZE = 50;
+    public static final int DEFAULT_JOB_INSERT_BATCH_SIZE = 25;
+    public static final int DEFAULT_FLOW_NODE_INSERT_BATCH_SIZE = 25;
 
     public static InsertBatchingConfig.Builder builder() {
       return new InsertBatchingConfig.Builder();
