@@ -10,6 +10,11 @@ package io.camunda.search.schema;
 import static io.camunda.zeebe.test.util.testcontainers.TestSearchContainers.createDefeaultElasticsearchContainer;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import co.elastic.clients.elasticsearch._types.mapping.DynamicMapping;
+import io.camunda.search.connect.configuration.ConnectConfiguration;
+import io.camunda.search.connect.es.ElasticsearchConnector;
+import io.camunda.webapps.schema.descriptors.index.RoleIndex;
+import java.io.IOException;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
@@ -51,7 +56,6 @@ class SchemaManagerStartupIT {
   private final GenericContainer<?> camunda =
       new GenericContainer<>(CAMUNDA_TEST_IMAGE_NAME)
           .withLogConsumer(new Slf4jLogConsumer(LOG))
-          .withEnv("SPRING_PROFILES_ACTIVE", "broker,dev")
           // Unified Configuration: DB type
           .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", DB_TYPE_ELASTICSEARCH)
           .withEnv("CAMUNDA_DATABASE_TYPE", DB_TYPE_ELASTICSEARCH)
@@ -63,16 +67,12 @@ class SchemaManagerStartupIT {
           .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_URL", ELASTICSEARCH_URL)
           .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_URL", ELASTICSEARCH_URL)
           // ---
-          .withEnv("SPRING_PROFILES_ACTIVE", "broker")
           .withEnv("LOGGING_LEVEL_IO_CAMUNDA", "DEBUG")
           .withNetwork(Network.SHARED);
 
   @Container
   private final ElasticsearchContainer es =
       createDefeaultElasticsearchContainer()
-          // Enable security in ES for to trigger the retry logic as application does not have
-          // credentials
-          .withEnv("xpack.security.enabled", "true")
           .withNetwork(Network.SHARED)
           .withNetworkAliases("test-elasticsearch");
 
@@ -86,30 +86,54 @@ class SchemaManagerStartupIT {
   //   true is to test with embedded gateway enabled (sync schema startup)
   void shouldGracefullyShutdownWhenSchemaStartupStillRunning(
       final boolean waitForSchemaStartupBeforeShutdown, final boolean gatewayEnabled)
-      throws InterruptedException {
+      throws InterruptedException, IOException {
     // given
     final var shutdownLatch = new CountDownLatch(1);
 
-    camunda
-        .withEnv("ZEEBE_BROKER_GATEWAY_ENABLE", String.valueOf(gatewayEnabled))
-        .waitingFor(
-            new WaitStrategy() {
-              @Override
-              public void waitUntilReady(final WaitStrategyTarget waitStrategyTarget) {
-                // Wait until the application is shutdown
-                try {
-                  shutdownLatch.await(60, TimeUnit.SECONDS);
-                } catch (final InterruptedException e) {
-                  Thread.currentThread().interrupt();
-                  throw new RuntimeException("Interrupted while waiting for shutdown", e);
-                }
-              }
+    // create the role index with incorrect mapping to force the schema manager to retry
+    final ConnectConfiguration cfg = new ConnectConfiguration();
+    cfg.setUrl(es.getHttpHostAddress());
+    try (final var esClient = new ElasticsearchConnector(cfg).createClient()) {
+      esClient
+          .indices()
+          .create(
+              r ->
+                  r.index(new RoleIndex("", true).getFullQualifiedName())
+                      .mappings(
+                          m ->
+                              m.dynamic(DynamicMapping.Strict)
+                                  .properties("roleId", p -> p.long_(l -> l))));
+    }
 
-              @Override
-              public WaitStrategy withStartupTimeout(final Duration startupTimeout) {
-                return this;
-              }
-            });
+    if (gatewayEnabled) {
+      // enable embedded gateway and operate webapp
+      camunda
+          .withEnv("ZEEBE_BROKER_GATEWAY_ENABLE", "true")
+          .withEnv("SPRING_PROFILES_ACTIVE", "broker,operate,dev")
+          .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_HEALTHCHECK_ENABLED", "false");
+    } else {
+      camunda
+          .withEnv("ZEEBE_BROKER_GATEWAY_ENABLE", "false")
+          .withEnv("SPRING_PROFILES_ACTIVE", "broker,dev");
+    }
+    camunda.waitingFor(
+        new WaitStrategy() {
+          @Override
+          public void waitUntilReady(final WaitStrategyTarget waitStrategyTarget) {
+            // Wait until the application is shutdown
+            try {
+              shutdownLatch.await(60, TimeUnit.SECONDS);
+            } catch (final InterruptedException e) {
+              Thread.currentThread().interrupt();
+              throw new RuntimeException("Interrupted while waiting for shutdown", e);
+            }
+          }
+
+          @Override
+          public WaitStrategy withStartupTimeout(final Duration startupTimeout) {
+            return this;
+          }
+        });
     final var thread = Thread.ofVirtual().start(() -> camunda.start());
 
     final var logToWaitFor =
@@ -140,7 +164,8 @@ class SchemaManagerStartupIT {
                     .contains("io.camunda.zeebe.broker.system - Broker shut down"));
     assertThat(camunda.getLogs())
         .doesNotContain("Failed to start application")
-        .doesNotContain("BeanCreationException");
+        .doesNotContain("BeanCreationException")
+        .doesNotContain("Start operation executor");
   }
 
   @Test
@@ -148,6 +173,7 @@ class SchemaManagerStartupIT {
     // given
     camunda
         .withEnv("ZEEBE_BROKER_GATEWAY_ENABLE", "false")
+        .withEnv("SPRING_PROFILES_ACTIVE", "broker,dev")
         .withExposedPorts(MONITORING_PORT)
         .waitingFor(newDefaultWaitStrategy());
 
