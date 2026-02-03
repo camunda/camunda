@@ -70,6 +70,55 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
 
+  /decision-instances/{decisionEvaluationInstanceKey}/deletion:
+    post:
+      x-eventually-consistent: true
+      tags:
+        - Decision instance
+      operationId: deleteDecisionInstance
+      summary: Delete decision instance
+      description: Deletes a decision instance. Only instances that are completed or terminated can be deleted.
+      parameters:
+        - name: decisionEvaluationInstanceKey
+          in: path
+          required: true
+          description: The key of the decision instance to delete.
+          schema:
+            $ref: 'keys.yaml#/components/schemas/DecisionInstanceKey'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeleteDecisionInstanceRequest'
+      responses:
+        "200":
+          description: The operation to delete the decision instance was created.
+          content:
+            application/json:
+              schema:
+                $ref: 'batch-operations.yaml#/components/schemas/BatchOperationCreatedResult'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: The decision instance is not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "409":
+          description: The decision instance is not in a completed or terminated state and cannot be deleted.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+
 ## Schema definitions
 
 components:
@@ -180,6 +229,14 @@ components:
           description: The key of the root decision definition.
           allOf:
             - $ref: 'keys.yaml#/components/schemas/DecisionDefinitionKeyFilterProperty'
+
+    DeleteDecisionInstanceRequest:
+      type: object
+      nullable: true
+      additionalProperties: false
+      properties:
+        operationReference:
+          $ref: 'keys.yaml#/components/schemas/OperationReference'
 
     DecisionInstanceSearchQueryResult:
       type: object
