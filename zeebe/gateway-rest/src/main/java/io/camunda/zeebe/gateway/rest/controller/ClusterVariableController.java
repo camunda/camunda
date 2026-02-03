@@ -25,8 +25,8 @@ import io.camunda.service.ClusterVariableServices;
 import io.camunda.service.ClusterVariableServices.ClusterVariableRequest;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaDeleteMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
-import io.camunda.zeebe.gateway.rest.annotation.CamundaPatchMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
+import io.camunda.zeebe.gateway.rest.annotation.CamundaPutMapping;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
@@ -91,7 +91,7 @@ public class ClusterVariableController {
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::deleteTenantClusterVariable);
   }
 
-  @CamundaPatchMapping(path = "/global/{name}")
+  @CamundaPutMapping(path = "/global/{name}")
   public CompletableFuture<ResponseEntity<Object>> updateGlobalClusterVariable(
       @PathVariable("name") final String name,
       @RequestBody final UpdateClusterVariableRequest updateClusterVariableRequest) {
@@ -100,7 +100,7 @@ public class ClusterVariableController {
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::updateGlobalClusterVariable);
   }
 
-  @CamundaPatchMapping(path = "/tenants/{tenantId}/{name}")
+  @CamundaPutMapping(path = "/tenants/{tenantId}/{name}")
   public CompletableFuture<ResponseEntity<Object>> updateTenantClusterVariable(
       @PathVariable("tenantId") final String tenantId,
       @PathVariable("name") final String name,

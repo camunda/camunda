@@ -134,7 +134,7 @@ paths:
                 $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
-    patch:
+    put:
       operationId: updateGlobalClusterVariable
       x-eventually-consistent: false
       tags:
@@ -248,7 +248,7 @@ paths:
                 $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
-    patch:
+    put:
       operationId: updateTenantClusterVariable
       x-eventually-consistent: false
       tags:
