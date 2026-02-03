@@ -16,6 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
+import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.enums.AuditLogActorTypeEnum;
 import io.camunda.client.api.search.enums.AuditLogCategoryEnum;
 import io.camunda.client.api.search.enums.AuditLogEntityTypeEnum;
@@ -29,6 +30,7 @@ import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.time.Duration;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -140,7 +142,39 @@ public class AuditLogSearchClientIT {
   }
 
   @Test
-  void shouldSearchAuditLogByProcessDefinitionIdAndProcessDefinitionKey(
+  void shouldSearchAuditLogByProcessDefinitionId(
+      @Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
+    // given
+    final var processInstance = utils.getProcessInstances().getFirst();
+
+    // when
+    final var auditLogItems =
+        client
+            .newAuditLogSearchRequest()
+            .filter(fn -> fn.processDefinitionId(processInstance.getBpmnProcessId()))
+            .send()
+            .join();
+
+    // then
+    final var auditLog =
+        auditLogItems.items().stream()
+            .filter(
+                auditLogResult ->
+                    auditLogResult.getEntityType() == AuditLogEntityTypeEnum.PROCESS_INSTANCE)
+            .findFirst()
+            .orElse(null);
+    assertThat(auditLogItems.items()).isNotEmpty();
+    assertThat(auditLog).isNotNull();
+    assertThat(auditLog.getProcessDefinitionId()).isEqualTo(processInstance.getBpmnProcessId());
+    assertCommonAuditLogFields(
+        auditLog,
+        AuditLogEntityTypeEnum.PROCESS_INSTANCE,
+        AuditLogOperationTypeEnum.CREATE,
+        AuditLogCategoryEnum.DEPLOYED_RESOURCES);
+  }
+
+  @Test
+  void shouldSearchAuditLogByProcessDefinitionKey(
       @Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
     // given
     final var processInstance = utils.getProcessInstances().getFirst();
@@ -152,16 +186,21 @@ public class AuditLogSearchClientIT {
             .filter(
                 fn ->
                     fn.processDefinitionKey(
-                            String.valueOf(processInstance.getProcessDefinitionKey()))
-                        .processInstanceKey(
-                            String.valueOf(processInstance.getProcessInstanceKey())))
+                        String.valueOf(processInstance.getProcessDefinitionKey())))
             .send()
             .join();
 
     // then
-    final var auditLog = auditLogItems.items().getFirst();
-    assertThat(auditLogItems.items().size()).isEqualTo(1);
+    final var auditLog =
+        auditLogItems.items().stream()
+            .filter(
+                auditLogResult ->
+                    auditLogResult.getEntityType() == AuditLogEntityTypeEnum.PROCESS_INSTANCE)
+            .findFirst()
+            .orElse(null);
+    assertThat(auditLogItems.items()).isNotEmpty();
     assertThat(auditLog).isNotNull();
+    assertThat(auditLog.getProcessDefinitionId()).isEqualTo(processInstance.getBpmnProcessId());
     assertCommonAuditLogFields(
         auditLog,
         AuditLogEntityTypeEnum.PROCESS_INSTANCE,
@@ -170,28 +209,25 @@ public class AuditLogSearchClientIT {
   }
 
   @Test
-  void shouldSearchAuditLogByElementInstanceKeyAndUserTaskKey(
+  void shouldSearchAuditLogByElementInstanceKey(
       @Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
     // given
     final var userTask = utils.getUserTasks().getFirst();
-    final long userTaskKey = userTask.getUserTaskKey();
     final long elementInstanceKey = userTask.getElementInstanceKey();
 
     // when
     final var auditLogItems =
         client
             .newAuditLogSearchRequest()
-            .filter(
-                fn ->
-                    fn.userTaskKey(String.valueOf(userTaskKey))
-                        .elementInstanceKey(String.valueOf(elementInstanceKey)))
+            .filter(fn -> fn.elementInstanceKey(String.valueOf(elementInstanceKey)))
             .send()
             .join();
 
     // then
     final var auditLog = auditLogItems.items().getFirst();
-    assertThat(auditLogItems.items().size()).isEqualTo(1);
+    assertThat(auditLogItems.items()).isNotEmpty();
     assertThat(auditLog).isNotNull();
+    assertThat(auditLog.getElementInstanceKey()).isEqualTo(String.valueOf(elementInstanceKey));
     assertCommonAuditLogFields(
         auditLog,
         AuditLogEntityTypeEnum.USER_TASK,
@@ -200,7 +236,65 @@ public class AuditLogSearchClientIT {
   }
 
   @Test
-  void shouldSearchAuditLogWithDecisionRequirementsIdAndDecisionRequirementsKey(
+  void shouldSearchAuditLogByUserTaskKey(
+      @Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
+    // given
+    final var userTask = utils.getUserTasks().getFirst();
+    final long userTaskKey = userTask.getUserTaskKey();
+
+    // when
+    final var auditLogItems =
+        client
+            .newAuditLogSearchRequest()
+            .filter(fn -> fn.userTaskKey(String.valueOf(userTaskKey)))
+            .send()
+            .join();
+
+    // then
+    final var auditLog = auditLogItems.items().getFirst();
+    assertThat(auditLogItems.items()).isNotEmpty();
+    assertThat(auditLog).isNotNull();
+    assertThat(auditLog.getUserTaskKey()).isEqualTo(String.valueOf(userTaskKey));
+    assertCommonAuditLogFields(
+        auditLog,
+        AuditLogEntityTypeEnum.USER_TASK,
+        AuditLogOperationTypeEnum.ASSIGN,
+        AuditLogCategoryEnum.USER_TASKS);
+  }
+
+  @Test
+  void shouldSearchAuditLogByDecisionRequirementsId(
+      @Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
+    // when - deploy a decision (also deploys decision requirements)
+    final var deployment =
+        client
+            .newDeployResourceCommand()
+            .addResourceFromClasspath("decisions/decision_model.dmn")
+            .tenantId(TENANT_A)
+            .send()
+            .join();
+
+    final var decision = deployment.getDecisionRequirements().getFirst();
+
+    // then - wait for audit log entry and verify (decision requirements map to RESOURCE entity)
+    final var auditLogItems =
+        awaitAuditLogEntryWithFilters(
+            client,
+            f ->
+                f.operationType(AuditLogOperationTypeEnum.CREATE)
+                    .decisionRequirementsId(
+                        String.valueOf(decision.getDmnDecisionRequirementsId())));
+
+    assertThat(auditLogItems).isNotEmpty();
+    assertCommonAuditLogFields(
+        auditLogItems.getFirst(),
+        AuditLogEntityTypeEnum.RESOURCE,
+        AuditLogOperationTypeEnum.CREATE,
+        AuditLogCategoryEnum.DEPLOYED_RESOURCES);
+  }
+
+  @Test
+  void shouldSearchAuditLogByDecisionRequirementsKey(
       @Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
     // when - deploy a decision (also deploys decision requirements)
     final var deployment =
@@ -220,7 +314,6 @@ public class AuditLogSearchClientIT {
             client,
             f ->
                 f.operationType(AuditLogOperationTypeEnum.CREATE)
-                    .decisionRequirementsId(String.valueOf(decision.getDmnDecisionRequirementsId()))
                     .decisionRequirementsKey(String.valueOf(decisionRequirementsKey)));
 
     assertThat(auditLogItems).isNotEmpty();
@@ -232,7 +325,34 @@ public class AuditLogSearchClientIT {
   }
 
   @Test
-  void shouldSearchAuditLogsByDecisionDefinitionIdAndDecisionDefinitionKey(
+  void shouldSearchAuditLogByDecisionDefinitionId(
+      @Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
+    // when - deploy a decision
+    final var deployment =
+        client
+            .newDeployResourceCommand()
+            .addResourceFromClasspath("decisions/decision_model.dmn")
+            .tenantId(TENANT_A)
+            .send()
+            .join();
+
+    final var decision = deployment.getDecisions().getFirst();
+
+    // then - wait for audit log entry and verify
+    final var auditLogItems =
+        awaitAuditLogEntryWithFilters(
+            client, f -> f.decisionDefinitionId(decision.getDmnDecisionId()));
+
+    assertThat(auditLogItems).isNotEmpty();
+    assertCommonAuditLogFields(
+        auditLogItems.getFirst(),
+        AuditLogEntityTypeEnum.DECISION,
+        AuditLogOperationTypeEnum.CREATE,
+        AuditLogCategoryEnum.DEPLOYED_RESOURCES);
+  }
+
+  @Test
+  void shouldSearchAuditLogByDecisionDefinitionKey(
       @Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
     // when - deploy a decision
     final var deployment =
@@ -249,12 +369,8 @@ public class AuditLogSearchClientIT {
     // then - wait for audit log entry and verify
     final var auditLogItems =
         awaitAuditLogEntryWithFilters(
-            client,
-            f ->
-                f.decisionDefinitionKey(String.valueOf(decisionKey))
-                    .decisionDefinitionId(decision.getDmnDecisionId()));
+            client, f -> f.decisionDefinitionKey(String.valueOf(decisionKey)));
 
-    assertThat(auditLogItems.size()).isEqualTo(1);
     assertThat(auditLogItems).isNotEmpty();
     assertCommonAuditLogFields(
         auditLogItems.getFirst(),
@@ -375,6 +491,143 @@ public class AuditLogSearchClientIT {
   }
 
   @Test
+  void shouldSearchAuditLogWithActorAndProcessDefinitionKey(
+      @Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
+    // when
+    final ProcessInstanceEvent processInstance = utils.getProcessInstances().getFirst();
+
+    // then
+    final var auditLogItems =
+        awaitAuditLogEntryWithFilters(
+            client,
+            fn ->
+                fn.actorId(DEFAULT_USERNAME)
+                    .processDefinitionKey(
+                        String.valueOf(processInstance.getProcessDefinitionKey())));
+
+    final var auditLog = auditLogItems.getFirst();
+    assertThat(auditLog).isNotNull();
+    assertThat(auditLog.getProcessDefinitionKey())
+        .isEqualTo(String.valueOf(processInstance.getProcessDefinitionKey()));
+    assertCommonAuditLogFields(
+        auditLog,
+        AuditLogEntityTypeEnum.RESOURCE,
+        AuditLogOperationTypeEnum.CREATE,
+        AuditLogCategoryEnum.DEPLOYED_RESOURCES);
+  }
+
+  @Test
+  void shouldSearchAuditLogWithEntityTypeAndResult(
+      @Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
+    // when
+    final var auditLogItems =
+        awaitAuditLogEntryWithFilters(
+            client,
+            fn ->
+                fn.entityType(AuditLogEntityTypeEnum.PROCESS_INSTANCE)
+                    .result(AuditLogResultEnum.SUCCESS));
+
+    assertThat(
+            auditLogItems.stream()
+                .allMatch(
+                    auditLogResult ->
+                        auditLogResult.getEntityType() == AuditLogEntityTypeEnum.PROCESS_INSTANCE))
+        .isTrue();
+    assertThat(
+            auditLogItems.stream()
+                .allMatch(
+                    auditLogResult -> auditLogResult.getResult() == AuditLogResultEnum.SUCCESS))
+        .isTrue();
+  }
+
+  @Test
+  void shouldSearchAuditLogWithTenantAndCategory(
+      @Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
+    // when
+    final var auditLogItems =
+        awaitAuditLogEntryWithFilters(
+            client, fn -> fn.tenantId(TENANT_A).category(AuditLogCategoryEnum.USER_TASKS));
+
+    assertThat(
+            auditLogItems.stream()
+                .allMatch(auditLogResult -> auditLogResult.getTenantId().equals(TENANT_A)))
+        .isTrue();
+    assertThat(
+            auditLogItems.stream()
+                .allMatch(
+                    auditLogResult ->
+                        auditLogResult.getCategory() == AuditLogCategoryEnum.USER_TASKS))
+        .isTrue();
+  }
+
+  @Test
+  void shouldSearchAuditLogWithTimestampRangeAndDecisionDefinition(
+      @Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
+    // when
+    final var deployment =
+        client
+            .newDeployResourceCommand()
+            .addResourceFromClasspath("decisions/decision_model.dmn")
+            .tenantId(TENANT_A)
+            .send()
+            .join();
+
+    final var decision = deployment.getDecisions().getFirst();
+
+    final var auditLogItems =
+        awaitAuditLogEntryWithFilters(
+            adminClient,
+            filter ->
+                filter
+                    .timestamp(
+                        fn -> fn.lte(OffsetDateTime.now()).gte(OffsetDateTime.now().minusHours(1)))
+                    .decisionDefinitionKey(String.valueOf(decision.getDecisionKey())));
+
+    final var auditLog = auditLogItems.getFirst();
+    assertThat(auditLog).isNotNull();
+    assertThat(auditLog.getDecisionDefinitionKey())
+        .isEqualTo(String.valueOf(decision.getDecisionKey()));
+    assertThat(
+            OffsetDateTime.parse(auditLog.getTimestamp())
+                .isAfter(OffsetDateTime.now().minusHours(1)))
+        .isTrue();
+    assertCommonAuditLogFields(
+        auditLog,
+        AuditLogEntityTypeEnum.DECISION,
+        AuditLogOperationTypeEnum.CREATE,
+        AuditLogCategoryEnum.DEPLOYED_RESOURCES);
+  }
+
+  @Test
+  void shouldSearchAuditLogByUserTaskKeyAndActorId(
+      @Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
+    // given
+    final var userTask = utils.getUserTasks().getFirst();
+    final long userTaskKey = userTask.getUserTaskKey();
+
+    // when
+    final var auditLogItems =
+        client
+            .newAuditLogSearchRequest()
+            .filter(fn -> fn.userTaskKey(String.valueOf(userTaskKey)).actorId(DEFAULT_USERNAME))
+            .send()
+            .join();
+
+    // then
+    assertThat(auditLogItems.items()).isNotEmpty();
+    assertThat(
+            auditLogItems.items().stream()
+                .allMatch(
+                    auditLogResult ->
+                        auditLogResult.getUserTaskKey().equals(String.valueOf(userTaskKey))))
+        .isTrue();
+    assertThat(
+            auditLogItems.items().stream()
+                .allMatch(auditLogResult -> auditLogResult.getActorId().equals(DEFAULT_USERNAME)))
+        .isTrue();
+  }
+
+  @Test
   void shouldSearchUserTaskAuditLogByKey(
       @Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
     // given
@@ -404,7 +657,7 @@ public class AuditLogSearchClientIT {
     final var auditLogItems =
         client
             .newUserTaskAuditLogSearchRequest(userTask)
-            .filter(f -> f.actorId("demo"))
+            .filter(f -> f.actorId(DEFAULT_USERNAME))
             .send()
             .join();
 
