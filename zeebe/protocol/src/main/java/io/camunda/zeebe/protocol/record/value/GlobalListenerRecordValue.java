@@ -31,6 +31,11 @@ import org.immutables.value.Value;
 @ImmutableProtocol(builder = ImmutableGlobalListenerRecordValue.Builder.class)
 public interface GlobalListenerRecordValue extends RecordValue {
 
+  int DEFAULT_RETRIES = 3;
+  int DEFAULT_PRIORITY = 50;
+  GlobalListenerSource DEFAULT_SOURCE = GlobalListenerSource.CONFIGURATION;
+  GlobalListenerType DEFAULT_LISTENER_TYPE = GlobalListenerType.USER_TASK;
+
   /**
    * Returns the unique identifier of the global listener.
    *

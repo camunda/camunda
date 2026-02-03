@@ -31,9 +31,6 @@ import java.util.stream.StreamSupport;
 public final class GlobalListenerRecord extends UnifiedRecordValue
     implements GlobalListenerRecordValue {
 
-  public static final int DEFAULT_RETRIES = 3;
-  public static final int DEFAULT_PRIORITY = 50;
-
   public static final Comparator<GlobalListenerRecord> PRIORITY_COMPARATOR =
       Comparator.comparingInt(GlobalListenerRecord::getPriority)
           .reversed()
@@ -52,9 +49,9 @@ public final class GlobalListenerRecord extends UnifiedRecordValue
   private final BooleanProperty afterNonGlobalProp = new BooleanProperty("afterNonGlobal", false);
   private final IntegerProperty priorityProp = new IntegerProperty("priority", DEFAULT_PRIORITY);
   private final EnumProperty<GlobalListenerSource> sourceProp =
-      new EnumProperty<>("source", GlobalListenerSource.class, GlobalListenerSource.CONFIGURATION);
+      new EnumProperty<>("source", GlobalListenerSource.class, DEFAULT_SOURCE);
   private final EnumProperty<GlobalListenerType> listenerTypeProp =
-      new EnumProperty<>("listenerType", GlobalListenerType.class, GlobalListenerType.USER_TASK);
+      new EnumProperty<>("listenerType", GlobalListenerType.class, DEFAULT_LISTENER_TYPE);
 
   public GlobalListenerRecord() {
     super(8);
