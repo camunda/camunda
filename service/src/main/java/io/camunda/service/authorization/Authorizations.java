@@ -125,4 +125,8 @@ public abstract class Authorizations {
   public static final Authorization<ProcessInstanceEntity>
       PROCESS_DEFINITION_DELETE_PROCESS_INSTANCE_AUTHORIZATION =
           Authorization.of(a -> a.processDefinition().deleteProcessInstance());
+
+  public static final Authorization<DecisionInstanceEntity>
+      DECISION_DEFINITION_DELETE_DECISION_INSTANCE_AUTHORIZATION =
+          Authorization.of(a -> a.decisionDefinition().deleteDecisionInstance());
 }
