@@ -5,13 +5,13 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.db.rdbms.write.queue;
+package io.camunda.zeebe.exporter.filter;
 
-import io.camunda.db.rdbms.write.domain.JobDbModel;
+public record NameRule(Type type, String pattern) {
 
-public class InsertJobMerger extends BatchInsertMerger<JobDbModel> {
-
-  public InsertJobMerger(final JobDbModel job, final int maxBatchSize) {
-    super(ContextType.JOB, job, maxBatchSize);
+  public enum Type {
+    EXACT,
+    STARTS_WITH,
+    ENDS_WITH,
   }
 }
