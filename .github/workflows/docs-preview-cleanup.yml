@@ -53,7 +53,7 @@ jobs:
           echo ""
 
           # Get open PRs and extract preview directories
-          open_prs=$(gh pr list --state open --json number --jq '.[].number' | sort -n)
+          open_prs=$(gh pr list --state open --json number --jq '.[].number' --limit 500 | sort -n)
           cleaned_count=0
           
           echo "Open PRs: $(echo "$open_prs" | tr '\n' ' ')"
