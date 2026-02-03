@@ -10,10 +10,10 @@ package io.camunda.authentication.config;
 import io.camunda.security.configuration.SecurityConfiguration;
 import java.util.LinkedList;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
+import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
 import org.springframework.security.oauth2.core.OAuth2TokenValidator;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtTimestampValidator;
-import org.springframework.security.oauth2.jwt.JwtValidators;
 
 /**
  * A factory for creating {@link OAuth2TokenValidator} instances for validating {@link Jwt} tokens.
@@ -34,8 +34,9 @@ import org.springframework.security.oauth2.jwt.JwtValidators;
  *   <li>{@link ClusterValidator} – if SaaS configuration is present
  * </ul>
  *
- * <p>If no additional validators are required, the default validator from {@link
- * JwtValidators#createDefault()} is used.
+ * <p>If no additional validators are required, a {@link DelegatingOAuth2TokenValidator} with
+ * timestamp validation is used. Note: Type validation (JWT/at+jwt) is handled separately by the
+ * {@link OidcAccessTokenDecoderFactory}.
  */
 public class TokenValidatorFactory {
 
@@ -85,6 +86,6 @@ public class TokenValidatorFactory {
       validators.add(new ClusterValidator(securityConfiguration.getSaas().getClusterId()));
     }
 
-    return JwtValidators.createDefaultWithValidators(validators);
+    return new DelegatingOAuth2TokenValidator<>(validators);
   }
 }
