@@ -148,4 +148,14 @@ public final class DecisionInstanceServices
 
     return sendBrokerRequest(brokerRequest);
   }
+
+  public CompletableFuture<BatchOperationCreationRecord> deleteDecisionInstancesBatchOperation(
+      final DecisionInstanceFilter filter) {
+    final var brokerRequest =
+        new BrokerCreateBatchOperationRequest()
+            .setFilter(filter)
+            .setBatchOperationType(BatchOperationType.DELETE_DECISION_INSTANCE)
+            .setAuthentication(authentication);
+    return sendBrokerRequest(brokerRequest);
+  }
 }
