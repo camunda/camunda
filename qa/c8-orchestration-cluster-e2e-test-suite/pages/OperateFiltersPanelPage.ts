@@ -106,12 +106,12 @@ export class OperateFiltersPanelPage {
     this.startDateFilter = this.page.getByRole('textbox', {
       name: 'start date range',
     });
-    this.variableNameFilter = this.page.getByRole('textbox', {
-      name: 'name',
-    });
-    this.variableValueFilter = this.page.getByRole('textbox', {
-      name: 'value',
-    });
+    this.variableNameFilter = this.page.getByTestId(
+      'optional-filter-variable-name',
+    );
+    this.variableValueFilter = this.page.getByTestId(
+      'optional-filter-variable-value',
+    );
     this.multipleVariablesSwitch = this.page.getByText('multiple');
     this.moreFiltersButton = this.page.getByRole('button', {
       name: 'More Filters',
@@ -167,10 +167,10 @@ export class OperateFiltersPanelPage {
     await this.page.getByLabel(`Remove ${filterName} Filter`).click();
   }
 
-  async isOptionalFilterDisplayed(filterName: OptionalFilter): Promise<boolean> {
-    return await this.page
-      .getByLabel(filterName, {exact: true})
-      .isVisible();
+  async isOptionalFilterDisplayed(
+    filterName: OptionalFilter,
+  ): Promise<boolean> {
+    return await this.page.getByLabel(filterName, {exact: true}).isVisible();
   }
 
   async selectProcess(option: string) {
@@ -191,15 +191,22 @@ export class OperateFiltersPanelPage {
   }
 
   async fillVariableNameFilter(name: string) {
+    await expect(this.variableNameFilter).toBeVisible();
     await this.variableNameFilter.fill(name);
   }
 
   async fillVariableValueFilter(value: string) {
+    await expect(this.variableValueFilter).toBeVisible();
     await this.variableValueFilter.fill(value);
+    await expect(this.variableValueFilter).toHaveValue(value);
   }
 
   async fillProcessInstanceKeyFilter(processInstanceKey: string) {
+    await expect(this.processInstanceKeysFilter).toBeVisible();
     await this.processInstanceKeysFilter.fill(processInstanceKey);
+    await expect(this.processInstanceKeysFilter).toHaveValue(
+      processInstanceKey,
+    );
   }
 
   async fillParentProcessInstanceKeyFilter(parentProcessInstanceKey: string) {

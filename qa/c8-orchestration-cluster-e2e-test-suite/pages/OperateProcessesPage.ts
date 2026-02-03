@@ -10,6 +10,7 @@ import {Page, Locator, expect} from '@playwright/test';
 import {OperateDiagramPage} from './OperateDiagramPage';
 import {sleep} from '../utils/sleep';
 import {checkUpdateOnVersion} from 'utils/zeebeClient';
+import {waitForAssertion} from '../utils/waitForAssertion';
 
 class OperateProcessesPage {
   private page: Page;
@@ -56,6 +57,7 @@ class OperateProcessesPage {
   readonly processInstanceLinkByKey: (processInstanceKey: string) => Locator;
   readonly parentInstanceCell: (parentInstanceKey: string) => Locator;
   readonly versionCells: (version: string) => Locator;
+  readonly expandedPanel: Locator;
   readonly calledInstanceCell: (
     rowIndex?: number,
     cellIndex?: number,
@@ -66,9 +68,10 @@ class OperateProcessesPage {
     this.diagram = new OperateDiagramPage(page);
     this.processResultCount = page.getByTestId('result-count');
     this.resultsText = page.getByText('results');
-    this.processPageHeading = page
-      .getByTestId('expanded-panel')
-      .getByRole('heading', {name: 'Process'});
+    this.expandedPanel = page.getByTestId('expanded-panel');
+    this.processPageHeading = this.expandedPanel.getByRole('heading', {
+      name: 'Process',
+    });
     this.noMatchingInstancesMessage = page.getByText(
       'There are no Instances matching this filter set',
     );
@@ -183,8 +186,20 @@ class OperateProcessesPage {
   async filterByProcessName(name: string): Promise<void> {
     await this.processNameFilter.click();
     await this.processNameFilter.fill(name);
+    await expect(this.expandedPanel.getByText(name).first()).toBeVisible();
     await this.page.keyboard.press('Enter');
-    await this.page.getByRole('heading', {name}).waitFor({state: 'visible'});
+    await expect(this.processNameFilter).toHaveValue(name);
+    await waitForAssertion({
+      assertion: async () => {
+        await this.page
+          .getByRole('heading', {name})
+          .waitFor({state: 'visible'});
+      },
+      onFailure: async () => {
+        console.log('Filter not applied, retrying...');
+        await this.page.reload();
+      },
+    });
   }
 
   async clickProcessInstanceLink(): Promise<void> {

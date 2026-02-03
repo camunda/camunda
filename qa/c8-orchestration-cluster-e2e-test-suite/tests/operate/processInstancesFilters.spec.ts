@@ -12,6 +12,7 @@ import {deploy, createInstances, createSingleInstance} from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToApp} from '@pages/UtilitiesPage';
 import {waitForAssertion} from 'utils/waitForAssertion';
+import {sleep} from '../../utils/sleep';
 
 type ProcessInstance = {processInstanceKey: number};
 
@@ -146,11 +147,13 @@ test.describe('Process Instances Filters', () => {
       await operateFiltersPanelPage.displayOptionalFilter(
         'Process Instance Key(s)',
       );
-      await operateFiltersPanelPage.processInstanceKeysFilter.fill(
+      await operateFiltersPanelPage.fillProcessInstanceKeyFilter(
         `${orderProcessInstanceKey}, ${callActivityProcessInstanceKey}`,
       );
       await operateProcessesPage.clickProcessCompletedCheckbox();
+      await sleep(200);
     });
+
     await test.step('Add Variable Filter', async () => {
       await operateFiltersPanelPage.displayOptionalFilter('Variable');
       await operateFiltersPanelPage.fillVariableNameFilter('filtersTest');
