@@ -18,7 +18,7 @@ import {
   DescriptionTitle,
   DescriptionData,
   HeaderActions,
-} from 'App/Processes/ListView/DiagramPanel/DiagramHeader/styled';
+} from './styled';
 import {Paths} from 'modules/Routes';
 import {
   getProcessDefinitionName,
