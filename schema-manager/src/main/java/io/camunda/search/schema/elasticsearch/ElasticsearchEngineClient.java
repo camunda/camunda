@@ -529,6 +529,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
               utils.new SchemaSettingsAppender(templateFile)
                   .withNumberOfReplicas(settings.getNumberOfReplicas())
                   .withNumberOfShards(settings.getNumberOfShards())
+                  .withRefreshInterval(settings.getRefreshInterval())
                   .build());
       return PutIndexTemplateRequest.of(
           b ->
@@ -560,7 +561,8 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
       final var configuredSettings =
           utils.new SchemaSettingsAppender(templateFile)
               .withNumberOfShards(indexConfiguration.getNumberOfShards())
-              .withNumberOfReplicas(indexConfiguration.getNumberOfReplicas());
+              .withNumberOfReplicas(indexConfiguration.getNumberOfReplicas())
+              .withRefreshInterval(indexConfiguration.getRefreshInterval());
       final var configuredPriority =
           convertValue(indexConfiguration.getTemplatePriority(), Long::valueOf);
 
@@ -636,6 +638,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
               utils.new SchemaSettingsAppender(templateFile)
                   .withNumberOfReplicas(settings.getNumberOfReplicas())
                   .withNumberOfShards(settings.getNumberOfShards())
+                  .withRefreshInterval(settings.getRefreshInterval())
                   .build());
 
       return new CreateIndexRequest.Builder()

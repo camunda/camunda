@@ -536,6 +536,8 @@ public class SchemaManager implements CloseableSilently {
     settings.setNumberOfShards(templateShards);
     settings.setNumberOfReplicas(templateReplicas);
     settings.setTemplatePriority(config.index().getTemplatePriority());
+    final var refreshInterval = getRefreshIntervalFromConfig(indexName);
+    settings.setRefreshInterval(refreshInterval);
 
     return settings;
   }
@@ -545,6 +547,13 @@ public class SchemaManager implements CloseableSilently {
         .index()
         .getReplicasByIndexName()
         .getOrDefault(indexName, config.index().getNumberOfReplicas());
+  }
+
+  private String getRefreshIntervalFromConfig(final String indexName) {
+    return config
+        .index()
+        .getRefreshIntervalByIndexName()
+        .getOrDefault(indexName, config.index().getRefreshInterval());
   }
 
   private Map<IndexDescriptor, Collection<IndexMappingProperty>> validateIndices(

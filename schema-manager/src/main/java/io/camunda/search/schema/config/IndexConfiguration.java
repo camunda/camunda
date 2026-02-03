@@ -17,10 +17,12 @@ public class IndexConfiguration {
 
   private Integer numberOfShards = 1;
   private Integer numberOfReplicas = 1;
+  private String refreshInterval;
   private Integer templatePriority;
 
   private Map<String, Integer> replicasByIndexName = new HashMap<>();
   private Map<String, Integer> shardsByIndexName = new HashMap<>();
+  private Map<String, String> refreshIntervalByIndexName = new HashMap<>();
 
   private Integer variableSizeThreshold = DEFAULT_VARIABLE_SIZE_THRESHOLD;
 
@@ -90,6 +92,22 @@ public class IndexConfiguration {
     this.shardsByIndexName = shardsByIndexName;
   }
 
+  public String getRefreshInterval() {
+    return refreshInterval;
+  }
+
+  public void setRefreshInterval(final String refreshInterval) {
+    this.refreshInterval = refreshInterval;
+  }
+
+  public Map<String, String> getRefreshIntervalByIndexName() {
+    return refreshIntervalByIndexName;
+  }
+
+  public void setRefreshIntervalByIndexName(final Map<String, String> refreshIntervalByIndexName) {
+    this.refreshIntervalByIndexName = refreshIntervalByIndexName;
+  }
+
   @Override
   public int hashCode() {
     return Objects.hash(
@@ -100,7 +118,9 @@ public class IndexConfiguration {
         replicasByIndexName,
         shardsByIndexName,
         variableSizeThreshold,
-        shouldWaitForImporters);
+        shouldWaitForImporters,
+        refreshInterval,
+        refreshIntervalByIndexName);
   }
 
   @Override
@@ -116,7 +136,9 @@ public class IndexConfiguration {
         && Objects.equals(templatePriority, that.templatePriority)
         && Objects.equals(replicasByIndexName, that.replicasByIndexName)
         && Objects.equals(shardsByIndexName, that.shardsByIndexName)
-        && Objects.equals(variableSizeThreshold, that.variableSizeThreshold);
+        && Objects.equals(variableSizeThreshold, that.variableSizeThreshold)
+        && Objects.equals(refreshInterval, that.refreshInterval)
+        && Objects.equals(refreshIntervalByIndexName, that.refreshIntervalByIndexName);
   }
 
   @Override
@@ -136,6 +158,10 @@ public class IndexConfiguration {
         + variableSizeThreshold
         + ", zeebeIndexPrefix='"
         + zeebeIndexPrefix
+        + ", refreshInterval="
+        + refreshInterval
+        + ", refreshIntervalByIndexName="
+        + refreshIntervalByIndexName
         + '}';
   }
 }
