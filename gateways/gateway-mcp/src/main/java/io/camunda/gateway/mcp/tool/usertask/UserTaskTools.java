@@ -15,6 +15,7 @@ import static io.camunda.gateway.mcp.tool.ToolDescriptions.TRUNCATE_VARIABLES_DE
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.USER_TASK_KEY_DESCRIPTION;
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.USER_TASK_KEY_POSITIVE_MESSAGE;
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.VARIABLE_FILTER_FORMAT_NOTE;
+import static io.camunda.gateway.mcp.tool.ToolDescriptions.VARIABLE_VALUE_RETURN_FORMAT;
 
 import io.camunda.gateway.mapping.http.RequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
@@ -165,7 +166,10 @@ public class UserTaskTools {
 
   @McpTool(
       description =
-          "Search user task variables based on given criteria. " + EVENTUAL_CONSISTENCY_NOTE,
+          "Search user task variables based on given criteria. "
+              + VARIABLE_VALUE_RETURN_FORMAT
+              + " "
+              + EVENTUAL_CONSISTENCY_NOTE,
       annotations = @McpAnnotations(readOnlyHint = true))
   public CallToolResult searchUserTaskVariables(
       @McpToolParam(description = USER_TASK_KEY_DESCRIPTION)
@@ -186,7 +190,7 @@ public class UserTaskTools {
         return CallToolResultMapper.mapProblemToResult(variableSearchQuery.getLeft());
       }
 
-      final boolean shouldTruncate = truncateValues != Boolean.FALSE;
+      final boolean shouldTruncate = truncateValues == null || truncateValues;
       return CallToolResultMapper.from(
           SearchQueryResponseMapper.toVariableSearchQueryResponse(
               userTaskServices
