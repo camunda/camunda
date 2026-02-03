@@ -13,7 +13,6 @@ ARG BASE="hardened"
 ### Download wait-for-it.sh ###
 # hadolint ignore=DL3006,DL3007
 FROM alpine AS tools
-ARG TARGETARCH
 ARG WAITFORIT_CHECKSUM
 
 # hadolint ignore=DL4006,DL3018
@@ -32,7 +31,8 @@ FROM ${BASE_IMAGE}@${BASE_DIGEST} AS base-hardened
 # hadolint ignore=DL3006
 FROM ${BASE_IMAGE_PUBLIC}@${BASE_DIGEST_PUBLIC} AS base-public
 
-FROM base-${BASE} AS base
+# Prepare Optimize Distribution
+FROM base-${BASE} AS prepare
 WORKDIR /
 
 ARG VERSION=""
@@ -54,7 +54,8 @@ COPY ./optimize/docker/bin/optimize.sh ${BUILD_DIR}/optimize.sh
 RUN rm ${BUILD_DIR}/config/environment-config.yaml
 
 ##### FINAL IMAGE #####
-FROM ${BASE_IMAGE}@${BASE_DIGEST} AS app
+# hadolint ignore=DL3006
+FROM base-${BASE} AS app
 # leave unset to use the default value at the top of the file
 ARG VERSION=""
 ARG DATE=""
@@ -103,7 +104,7 @@ RUN addgroup -S -g 1001 camunda && \
     chown 1001:1001 /optimize
 
 COPY --from=tools --chown=1001:0 /wait-for-it.sh /usr/local/bin/wait-for-it.sh
-COPY --chown=1001:1001 --from=base /tmp/build .
+COPY --chown=1001:1001 --from=prepare /tmp/build .
 
 USER 1001:1001
 
