@@ -38,7 +38,7 @@ services:
       MARIADB_ROOT_PASSWORD: example
       MARIADB_DATABASE: camunda
       MARIADB_USER: camunda
-      MARIADB_PASSWORD: camunda
+      MARIADB_PASSWORD: camunda8.
     ports:
       - "3306:3306"
 

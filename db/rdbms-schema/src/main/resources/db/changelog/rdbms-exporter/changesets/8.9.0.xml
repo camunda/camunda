@@ -1058,15 +1058,15 @@
       <column name="START_TIME" type="TIMESTAMP WITH TIME ZONE(3)"/>
       <column name="END_TIME" type="TIMESTAMP WITH TIME ZONE(3)"/>
       <column name="INCOMPLETE_BATCH" type="BOOLEAN"/>
-      <column name="TENANT_ID" type="VARCHAR(${userCharColumnSize})"/>
+      <column name="TENANT_ID" type="VARCHAR(${varcharIndexSize})"/>
       <column name="FAILED_COUNT" type="INT"/>
       <column name="LAST_FAILED_AT" type="TIMESTAMP WITH TIME ZONE(3)"/>
       <column name="COMPLETED_COUNT" type="INT"/>
       <column name="LAST_COMPLETED_AT" type="TIMESTAMP WITH TIME ZONE(3)"/>
       <column name="CREATED_COUNT" type="INT"/>
       <column name="LAST_CREATED_AT" type="TIMESTAMP WITH TIME ZONE(3)"/>
-      <column name="JOB_TYPE" type="VARCHAR(${userCharColumnSize})"/>
-      <column name="WORKER" type="VARCHAR(${userCharColumnSize})"/>
+      <column name="JOB_TYPE" type="VARCHAR(${varcharIndexSize})"/>
+      <column name="WORKER" type="VARCHAR(${varcharIndexSize})"/>
     </createTable>
 
     <modifySql dbms="mariadb,mysql">

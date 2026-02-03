@@ -330,6 +330,6 @@ public class RdbmsWriters {
    * @return the error message size in characters
    */
   public int getErrorMessageSize() {
-    return vendorDatabaseProperties.errorMessageSize();
+    return vendorDatabaseProperties.varcharSize();
   }
 }
