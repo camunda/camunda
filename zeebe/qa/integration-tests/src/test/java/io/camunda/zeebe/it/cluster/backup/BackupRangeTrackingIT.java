@@ -175,7 +175,7 @@ final class BackupRangeTrackingIT {
             });
   }
 
-  void generateLoad() {
+  private void generateLoad() {
     try (final var client = cluster.newClientBuilder().build()) {
       client
           .newPublishMessageCommand()
