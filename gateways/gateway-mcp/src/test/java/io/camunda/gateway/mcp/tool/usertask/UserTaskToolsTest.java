@@ -380,6 +380,82 @@ class UserTaskToolsTest extends ToolsTest {
     }
 
     @Test
+    void shouldSearchUserTasksWithProcessInstanceVariablesFilter() {
+      // given
+      when(userTaskServices.search(any(UserTaskQuery.class)))
+          .thenReturn(USER_TASK_SEARCH_QUERY_RESULT);
+
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder()
+                  .name("searchUserTasks")
+                  .arguments(
+                      Map.of(
+                          "filter",
+                          Map.of(
+                              "processInstanceVariables",
+                              List.of(
+                                  Map.of("name", "status", "eq", "active"),
+                                  Map.of("name", "priority", "gt", 5)))))
+                  .build());
+
+      // then
+      assertThat(result.isError()).isFalse();
+
+      verify(userTaskServices).search(userTaskQueryCaptor.capture());
+      final UserTaskQuery capturedQuery = userTaskQueryCaptor.getValue();
+
+      assertThat(capturedQuery.filter().processInstanceVariablesOperations())
+          .hasSize(2)
+          .extracting(
+              op -> op.property().name(),
+              op -> op.property().eq(),
+              op -> op.property().gt())
+          .containsExactly(
+              tuple("status", "active", null),
+              tuple("priority", null, 5));
+    }
+
+    @Test
+    void shouldSearchUserTasksWithLocalVariablesFilter() {
+      // given
+      when(userTaskServices.search(any(UserTaskQuery.class)))
+          .thenReturn(USER_TASK_SEARCH_QUERY_RESULT);
+
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder()
+                  .name("searchUserTasks")
+                  .arguments(
+                      Map.of(
+                          "filter",
+                          Map.of(
+                              "localVariables",
+                              List.of(
+                                  Map.of("name", "formData", "eq", "submitted"),
+                                  Map.of("name", "attempts", "lt", 3)))))
+                  .build());
+
+      // then
+      assertThat(result.isError()).isFalse();
+
+      verify(userTaskServices).search(userTaskQueryCaptor.capture());
+      final UserTaskQuery capturedQuery = userTaskQueryCaptor.getValue();
+
+      assertThat(capturedQuery.filter().localVariablesOperations())
+          .hasSize(2)
+          .extracting(
+              op -> op.property().name(),
+              op -> op.property().eq(),
+              op -> op.property().lt())
+          .containsExactly(
+              tuple("formData", "submitted", null),
+              tuple("attempts", null, 3));
+    }
+
+    @Test
     void shouldIgnoreTenantIdCandidateGroupAndCandidateUserInFilter() {
       // given
       when(userTaskServices.search(any(UserTaskQuery.class)))
