@@ -319,8 +319,7 @@ public class VariableIT {
     final int deleted =
         rdbmsWriters
             .getVariableWriter()
-            .deleteRootProcessInstanceRelatedData(
-                PARTITION_ID, List.of(item2.rootProcessInstanceKey()), 10);
+            .deleteRootProcessInstanceRelatedData(List.of(item2.rootProcessInstanceKey()), 10);
 
     // then
     assertThat(deleted).isEqualTo(1);

@@ -77,9 +77,8 @@ public class HistoryDeletionServiceTest {
         .deleteRootProcessInstanceRelatedData(
             argThat(
                 dto ->
-                    dto.partitionId() == partitionId
-                        && dto.rootProcessInstanceKeys()
-                            .equals(List.of(processInstanceKey1, processInstanceKey2))));
+                    dto.rootProcessInstanceKeys()
+                        .equals(List.of(processInstanceKey1, processInstanceKey2))));
     verify(rdbmsWritersMock.getProcessInstanceWriter())
         .deleteByKeys(List.of(processInstanceKey1, processInstanceKey2));
     verify(rdbmsWritersMock.getHistoryDeletionWriter())

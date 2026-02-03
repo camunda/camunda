@@ -21,8 +21,8 @@ public abstract class RootProcessInstanceDependant {
   }
 
   public int deleteRootProcessInstanceRelatedData(
-      final int partitionId, final List<Long> rootProcessInstanceKeys, final int limit) {
+      final List<Long> rootProcessInstanceKeys, final int limit) {
     return rootProcessInstanceDependantMapper.deleteRootProcessInstanceRelatedData(
-        new DeleteRootProcessInstanceRelatedDataDto(partitionId, rootProcessInstanceKeys, limit));
+        new DeleteRootProcessInstanceRelatedDataDto(rootProcessInstanceKeys, limit));
   }
 }

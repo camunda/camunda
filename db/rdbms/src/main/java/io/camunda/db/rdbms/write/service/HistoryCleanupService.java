@@ -168,7 +168,7 @@ public class HistoryCleanupService {
           final var writer = entry.getValue();
           final var numDeleted =
               writer.deleteRootProcessInstanceRelatedData(
-                  partitionId, expiredRootProcessInstanceKeys, cleanupBatchSize);
+                  expiredRootProcessInstanceKeys, cleanupBatchSize);
           totalChildEntitiesDeleted += numDeleted;
           anyDeletionHitBatchLimit = anyDeletionHitBatchLimit || (numDeleted >= cleanupBatchSize);
           numDeletedRecords.put(entry.getKey(), numDeleted);
