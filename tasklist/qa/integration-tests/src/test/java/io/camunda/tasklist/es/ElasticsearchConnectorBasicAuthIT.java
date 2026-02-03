@@ -60,8 +60,8 @@ public class ElasticsearchConnectorBasicAuthIT extends TasklistIntegrationTest {
           .withExposedPorts(9200);
 
   @Autowired
-  @Qualifier("tasklistEs8Client")
-  ElasticsearchClient es8Client;
+  @Qualifier("tasklistEsClient")
+  ElasticsearchClient esClient;
 
   @BeforeAll
   static void beforeAll() {
@@ -75,7 +75,7 @@ public class ElasticsearchConnectorBasicAuthIT extends TasklistIntegrationTest {
 
   @Test
   public void canConnect() {
-    assertThat(es8Client).isNotNull();
+    assertThat(esClient).isNotNull();
   }
 
   static class ElasticsearchStarter
