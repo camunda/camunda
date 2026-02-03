@@ -47,7 +47,7 @@ public class CamundaOidcLogoutSuccessHandler extends OidcClientInitiatedLogoutSu
     // Break early if logout URL can't be constructed.
     // Usually means IdP didn't provide end session endpoint in its metadata.
     if (Objects.equals(baseLogoutUrl, getDefaultTargetUrl())) {
-      return null;
+      return baseLogoutUrl;
     }
 
     if (!(authentication instanceof final OAuth2AuthenticationToken oauth)) {

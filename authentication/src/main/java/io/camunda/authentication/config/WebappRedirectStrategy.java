@@ -17,6 +17,7 @@ import org.springframework.security.web.RedirectStrategy;
 
 public class WebappRedirectStrategy implements RedirectStrategy {
 
+  private static final String DEFAULT_REDIRECT_URL = "/";
   private final ObjectMapper objectMapper;
 
   public WebappRedirectStrategy(final ObjectMapper objectMapper) {
@@ -28,7 +29,7 @@ public class WebappRedirectStrategy implements RedirectStrategy {
       final HttpServletRequest request, final HttpServletResponse response, final String url)
       throws IOException {
 
-    if (url == null) {
+    if (url == null || DEFAULT_REDIRECT_URL.equals(url)) {
       response.setStatus(NO_CONTENT.value());
       return;
     }
