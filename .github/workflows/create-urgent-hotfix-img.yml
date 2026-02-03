@@ -52,7 +52,7 @@ env:
 jobs:
   validate-inputs:
     name: Validate Inputs
-    runs-on: ubuntu-latest
+    runs-on: gcp-core-2-default
     outputs:
       branch: ${{ steps.parse.outputs.branch }}
       commit: ${{ steps.parse.outputs.commit }}
@@ -171,22 +171,34 @@ jobs:
           echo "🔧 Setting project version to ${{ matrix.version }}..."
 
           # Create semver-compatible hotfix version: <version>-<ticket>.<sha>
-          # Format: 8.8.88-SUPPORT.12345.abc123 (dots instead of hyphens for semver compatibility)
+          # Format: 8.8.88-SUPPORT-12345.abc123 (ticket ID contains hyphen, then dot before SHA)
           HOTFIX_VERSION="${{ matrix.version }}-${{ needs.validate-inputs.outputs.support-ticket-id }}.${{ steps.get-sha.outputs.short-sha }}"
           echo "📋 Hotfix version: $HOTFIX_VERSION"
 
           # Handle different version inheritance structures
           if [[ "${{ matrix.component }}" == "optimize" && -f "optimize/pom.xml" ]] && ! grep -q "zeebe-parent" optimize/pom.xml; then
             echo "🔧 Detected standalone optimize branch - updating optimize parent version..."
-            ./mvnw versions:set -DnewVersion="$HOTFIX_VERSION" -DgenerateBackupPoms=false -f optimize/pom.xml
-          else
+            MVN_POM="optimize/pom.xml"
+          elif [[ -f "bom/pom.xml" ]]; then
             echo "🔧 Updating version in BOM (parent and root will inherit automatically)..."
-            ./mvnw versions:set -DnewVersion="$HOTFIX_VERSION" -DgenerateBackupPoms=false -f bom/pom.xml
+            MVN_POM="bom/pom.xml"
+          else
+            echo "❌ ERROR: Neither optimize/pom.xml nor bom/pom.xml found"
+            exit 1
           fi
+
+          ./mvnw versions:set -DnewVersion="$HOTFIX_VERSION" -DgenerateBackupPoms=false -f "$MVN_POM"
 
           echo "✅ Project version updated to $HOTFIX_VERSION"
           echo "🔍 Verifying version change..."
-          ./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout
+          EVALUATED_VERSION="$(./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout -f "$MVN_POM")"
+
+          if [[ "$EVALUATED_VERSION" != "$HOTFIX_VERSION" ]]; then
+            echo "❌ ERROR: Verified project version '$EVALUATED_VERSION' does not match expected hotfix version '$HOTFIX_VERSION'."
+            exit 1
+          fi
+
+          echo "✅ Verified project version: $EVALUATED_VERSION"
           
           # Store the hotfix version for later steps
           echo "hotfix-version=$HOTFIX_VERSION" >> "$GITHUB_OUTPUT"
@@ -257,7 +269,7 @@ jobs:
 
   summary:
     name: Build Summary
-    runs-on: ubuntu-latest
+    runs-on: gcp-core-2-default
     needs: [validate-inputs, build-images]
     if: always()
     steps:
