@@ -24,6 +24,12 @@ import io.camunda.zeebe.engine.state.migration.to_8_3.ProcessInstanceByProcessDe
 import io.camunda.zeebe.engine.state.migration.to_8_4.MultiTenancySignalSubscriptionStateMigration;
 import io.camunda.zeebe.engine.state.migration.to_8_5.ColumnFamilyPrefixCorrectionMigration;
 import io.camunda.zeebe.engine.state.migration.to_8_6.OrderedCommandDistributionMigration;
+<<<<<<< HEAD
+=======
+import io.camunda.zeebe.engine.state.migration.to_8_7.EnsureRetriableDeploymentDistributionMigration;
+import io.camunda.zeebe.engine.state.migration.to_8_7.IdempotentCommandDistributionMigration;
+import io.camunda.zeebe.engine.state.migration.to_8_8.PermissionStateCorrectionMigration;
+>>>>>>> f3e612fe (fix: ensure pending distributions that are not queued and/or are first in queue but not retriable are inserted in the CF)
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.stream.api.ClusterContext;
 import io.camunda.zeebe.util.VersionUtil;
@@ -58,7 +64,14 @@ public class DbMigratorImpl implements DbMigrator {
           new MultiTenancySignalSubscriptionStateMigration(),
           new JobBackoffRestoreMigration(),
           new RoutingInfoInitializationMigration(),
+<<<<<<< HEAD
           new OrderedCommandDistributionMigration());
+=======
+          new OrderedCommandDistributionMigration(),
+          new IdempotentCommandDistributionMigration(),
+          new EnsureRetriableDeploymentDistributionMigration(),
+          new PermissionStateCorrectionMigration());
+>>>>>>> f3e612fe (fix: ensure pending distributions that are not queued and/or are first in queue but not retriable are inserted in the CF)
   private static final Logger LOGGER =
       LoggerFactory.getLogger(DbMigratorImpl.class.getPackageName());
   // Be mindful of https://github.com/camunda/camunda/issues/7248. In particular, that issue

@@ -510,4 +510,22 @@ public class DbMigrationState implements MutableMigrationState {
   public void migrateOrderedCommandDistribution() {
     distributionState.migratePendingDistributionsToRetriableDistributions();
   }
+<<<<<<< HEAD
+=======
+
+  @Override
+  public void migrateIdempotentCommandDistribution() {
+    distributionState8dot7.migrateIdempotentCommandDistributions();
+  }
+
+  @Override
+  public void migrateMissingPermissionsForAuthorizations() {
+    permissionMigrationState.migrateMissingPermissionsForAuthorizations();
+  }
+
+  @Override
+  public void ensureRetriableDeploymentDistributions() {
+    distributionState8dot7.ensureRetriableDeploymentDistributions();
+  }
+>>>>>>> f3e612fe (fix: ensure pending distributions that are not queued and/or are first in queue but not retriable are inserted in the CF)
 }

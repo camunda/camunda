@@ -227,6 +227,15 @@ public class DbDistributionState implements MutableDistributionState {
   }
 
   @Override
+  public boolean hasQueuedDistribution(
+      final String queueId, final long distributionKey, final int partition) {
+    this.queueId.wrapString(queueId);
+    this.distributionKey.wrapLong(distributionKey);
+    partitionKey.wrapInt(partition);
+    return queuedCommandDistributionColumnFamily.exists(queuedDistributionKey);
+  }
+
+  @Override
   public boolean hasPendingDistribution(final long distributionKey, final int partition) {
     this.distributionKey.wrapLong(distributionKey);
     partitionKey.wrapInt(partition);

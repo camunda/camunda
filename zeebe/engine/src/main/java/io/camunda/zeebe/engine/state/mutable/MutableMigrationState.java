@@ -52,4 +52,13 @@ public interface MutableMigrationState extends MigrationState {
   void correctColumnFamilyPrefix();
 
   void migrateOrderedCommandDistribution();
+<<<<<<< HEAD
+=======
+
+  void migrateIdempotentCommandDistribution();
+
+  void migrateMissingPermissionsForAuthorizations();
+
+  void ensureRetriableDeploymentDistributions();
+>>>>>>> f3e612fe (fix: ensure pending distributions that are not queued and/or are first in queue but not retriable are inserted in the CF)
 }
