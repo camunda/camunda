@@ -120,19 +120,16 @@ public class AuditLogSearchClientIT {
     // when
     // look for tenant creation audit log as the entity key setter is overridden in transformer
     final var auditLogItems =
-        client
-            .newAuditLogSearchRequest()
-            .filter(
-                fn ->
-                    fn.entityKey(f -> f.in(tenantId))
-                        .entityType(f -> f.like("TENANT"))
-                        .operationType(AuditLogOperationTypeEnum.CREATE))
-            .send()
-            .join();
+        awaitAuditLogEntryWithFilters(
+            client,
+            fn ->
+                fn.entityKey(f -> f.in(tenantId))
+                    .entityType(f -> f.like("TENANT"))
+                    .operationType(AuditLogOperationTypeEnum.CREATE));
 
     // then
-    final var auditLog = auditLogItems.items().getFirst();
-    assertThat(auditLogItems.items().size()).isEqualTo(1);
+    final var auditLog = auditLogItems.getFirst();
+    assertThat(auditLogItems.size()).isEqualTo(1);
     assertThat(auditLog).isNotNull();
     assertCommonAuditLogFields(
         auditLog,
@@ -149,23 +146,22 @@ public class AuditLogSearchClientIT {
 
     // when
     final var auditLogItems =
-        client
-            .newAuditLogSearchRequest()
-            .filter(fn -> fn.processDefinitionId(processInstance.getBpmnProcessId()))
-            .send()
-            .join();
+        awaitAuditLogEntryWithFilters(
+            client, fn -> fn.processDefinitionId(processInstance.getBpmnProcessId()));
 
     // then
     final var auditLog =
-        auditLogItems.items().stream()
+        auditLogItems.stream()
             .filter(
                 auditLogResult ->
                     auditLogResult.getEntityType() == AuditLogEntityTypeEnum.PROCESS_INSTANCE)
             .findFirst()
             .orElse(null);
-    assertThat(auditLogItems.items()).isNotEmpty();
-    assertThat(auditLog).isNotNull();
-    assertThat(auditLog.getProcessDefinitionId()).isEqualTo(processInstance.getBpmnProcessId());
+    assertThat(auditLogItems).isNotEmpty();
+    assertThat(auditLogItems)
+        .allMatch(
+            auditLogResult ->
+                auditLogResult.getProcessDefinitionId().equals(processInstance.getBpmnProcessId()));
     assertCommonAuditLogFields(
         auditLog,
         AuditLogEntityTypeEnum.PROCESS_INSTANCE,
@@ -181,26 +177,24 @@ public class AuditLogSearchClientIT {
 
     // when
     final var auditLogItems =
-        client
-            .newAuditLogSearchRequest()
-            .filter(
-                fn ->
-                    fn.processDefinitionKey(
-                        String.valueOf(processInstance.getProcessDefinitionKey())))
-            .send()
-            .join();
+        awaitAuditLogEntryWithFilters(
+            client,
+            fn ->
+                fn.processDefinitionKey(String.valueOf(processInstance.getProcessDefinitionKey())));
 
     // then
+    assertThat(auditLogItems).isNotEmpty();
     final var auditLog =
-        auditLogItems.items().stream()
+        auditLogItems.stream()
             .filter(
                 auditLogResult ->
                     auditLogResult.getEntityType() == AuditLogEntityTypeEnum.PROCESS_INSTANCE)
             .findFirst()
             .orElse(null);
-    assertThat(auditLogItems.items()).isNotEmpty();
-    assertThat(auditLog).isNotNull();
-    assertThat(auditLog.getProcessDefinitionId()).isEqualTo(processInstance.getBpmnProcessId());
+    assertThat(auditLogItems)
+        .allMatch(
+            auditLogResult ->
+                auditLogResult.getProcessDefinitionId().equals(processInstance.getBpmnProcessId()));
     assertCommonAuditLogFields(
         auditLog,
         AuditLogEntityTypeEnum.PROCESS_INSTANCE,
@@ -217,17 +211,16 @@ public class AuditLogSearchClientIT {
 
     // when
     final var auditLogItems =
-        client
-            .newAuditLogSearchRequest()
-            .filter(fn -> fn.elementInstanceKey(String.valueOf(elementInstanceKey)))
-            .send()
-            .join();
+        awaitAuditLogEntryWithFilters(
+            client, fn -> fn.elementInstanceKey(String.valueOf(elementInstanceKey)));
 
     // then
-    final var auditLog = auditLogItems.items().getFirst();
-    assertThat(auditLogItems.items()).isNotEmpty();
-    assertThat(auditLog).isNotNull();
-    assertThat(auditLog.getElementInstanceKey()).isEqualTo(String.valueOf(elementInstanceKey));
+    assertThat(auditLogItems).isNotEmpty();
+    final var auditLog = auditLogItems.getFirst();
+    assertThat(auditLogItems)
+        .allMatch(
+            auditLogResult ->
+                auditLogResult.getElementInstanceKey().equals(String.valueOf(elementInstanceKey)));
     assertCommonAuditLogFields(
         auditLog,
         AuditLogEntityTypeEnum.USER_TASK,
@@ -244,17 +237,14 @@ public class AuditLogSearchClientIT {
 
     // when
     final var auditLogItems =
-        client
-            .newAuditLogSearchRequest()
-            .filter(fn -> fn.userTaskKey(String.valueOf(userTaskKey)))
-            .send()
-            .join();
+        awaitAuditLogEntryWithFilters(client, fn -> fn.userTaskKey(String.valueOf(userTaskKey)));
 
     // then
-    final var auditLog = auditLogItems.items().getFirst();
-    assertThat(auditLogItems.items()).isNotEmpty();
-    assertThat(auditLog).isNotNull();
-    assertThat(auditLog.getUserTaskKey()).isEqualTo(String.valueOf(userTaskKey));
+    assertThat(auditLogItems).isNotEmpty();
+    final var auditLog = auditLogItems.getFirst();
+    assertThat(auditLogItems)
+        .allMatch(
+            auditLogResult -> auditLogResult.getUserTaskKey().equals(String.valueOf(userTaskKey)));
     assertCommonAuditLogFields(
         auditLog,
         AuditLogEntityTypeEnum.USER_TASK,
@@ -286,6 +276,12 @@ public class AuditLogSearchClientIT {
                         String.valueOf(decision.getDmnDecisionRequirementsId())));
 
     assertThat(auditLogItems).isNotEmpty();
+    assertThat(auditLogItems)
+        .allMatch(
+            auditLogResult ->
+                auditLogResult
+                    .getDecisionRequirementsId()
+                    .equals(decision.getDmnDecisionRequirementsId()));
     assertCommonAuditLogFields(
         auditLogItems.getFirst(),
         AuditLogEntityTypeEnum.RESOURCE,
@@ -317,6 +313,12 @@ public class AuditLogSearchClientIT {
                     .decisionRequirementsKey(String.valueOf(decisionRequirementsKey)));
 
     assertThat(auditLogItems).isNotEmpty();
+    assertThat(auditLogItems)
+        .allMatch(
+            auditLogResult ->
+                auditLogResult
+                    .getDecisionRequirementsKey()
+                    .equals(String.valueOf(decisionRequirementsKey)));
     assertCommonAuditLogFields(
         auditLogItems.getFirst(),
         AuditLogEntityTypeEnum.RESOURCE,
@@ -344,6 +346,10 @@ public class AuditLogSearchClientIT {
             client, f -> f.decisionDefinitionId(decision.getDmnDecisionId()));
 
     assertThat(auditLogItems).isNotEmpty();
+    assertThat(auditLogItems)
+        .allMatch(
+            auditLogResult ->
+                auditLogResult.getDecisionDefinitionId().equals(decision.getDmnDecisionId()));
     assertCommonAuditLogFields(
         auditLogItems.getFirst(),
         AuditLogEntityTypeEnum.DECISION,
@@ -372,6 +378,10 @@ public class AuditLogSearchClientIT {
             client, f -> f.decisionDefinitionKey(String.valueOf(decisionKey)));
 
     assertThat(auditLogItems).isNotEmpty();
+    assertThat(auditLogItems)
+        .allMatch(
+            auditLogResult ->
+                auditLogResult.getDecisionDefinitionKey().equals(String.valueOf(decisionKey)));
     assertCommonAuditLogFields(
         auditLogItems.getFirst(),
         AuditLogEntityTypeEnum.DECISION,
@@ -410,17 +420,17 @@ public class AuditLogSearchClientIT {
 
     // when - search audit logs by batch operation type
     final var auditLogItems =
-        adminClient
-            .newAuditLogSearchRequest()
-            .filter(f -> f.batchOperationType(BatchOperationType.CANCEL_PROCESS_INSTANCE))
-            .send()
-            .join();
+        awaitAuditLogEntryWithFilters(
+            adminClient, f -> f.batchOperationType(BatchOperationType.CANCEL_PROCESS_INSTANCE));
 
     // then - verify that audit logs are returned
-    final var batchAuditLogs = auditLogItems.items();
-    assertThat(batchAuditLogs.size()).isEqualTo(1);
+    assertThat(auditLogItems.size()).isEqualTo(1);
+    assertThat(auditLogItems)
+        .allMatch(
+            auditLogResult ->
+                auditLogResult.getBatchOperationKey().equals(String.valueOf(batchOperationKey)));
     assertCommonAuditLogFields(
-        auditLogItems.items().getFirst(),
+        auditLogItems.getFirst(),
         AuditLogEntityTypeEnum.BATCH,
         AuditLogOperationTypeEnum.CREATE,
         AuditLogCategoryEnum.DEPLOYED_RESOURCES);
@@ -527,17 +537,12 @@ public class AuditLogSearchClientIT {
                 fn.entityType(AuditLogEntityTypeEnum.PROCESS_INSTANCE)
                     .result(AuditLogResultEnum.SUCCESS));
 
-    assertThat(
-            auditLogItems.stream()
-                .allMatch(
-                    auditLogResult ->
-                        auditLogResult.getEntityType() == AuditLogEntityTypeEnum.PROCESS_INSTANCE))
-        .isTrue();
-    assertThat(
-            auditLogItems.stream()
-                .allMatch(
-                    auditLogResult -> auditLogResult.getResult() == AuditLogResultEnum.SUCCESS))
-        .isTrue();
+    assertThat(auditLogItems)
+        .allMatch(
+            auditLogResult ->
+                auditLogResult.getEntityType() == AuditLogEntityTypeEnum.PROCESS_INSTANCE);
+    assertThat(auditLogItems)
+        .allMatch(auditLogResult -> auditLogResult.getResult() == AuditLogResultEnum.SUCCESS);
   }
 
   @Test
@@ -548,16 +553,11 @@ public class AuditLogSearchClientIT {
         awaitAuditLogEntryWithFilters(
             client, fn -> fn.tenantId(TENANT_A).category(AuditLogCategoryEnum.USER_TASKS));
 
-    assertThat(
-            auditLogItems.stream()
-                .allMatch(auditLogResult -> auditLogResult.getTenantId().equals(TENANT_A)))
-        .isTrue();
-    assertThat(
-            auditLogItems.stream()
-                .allMatch(
-                    auditLogResult ->
-                        auditLogResult.getCategory() == AuditLogCategoryEnum.USER_TASKS))
-        .isTrue();
+    assertThat(auditLogItems)
+        .allMatch(auditLogResult -> auditLogResult.getTenantId().equals(TENANT_A));
+    assertThat(auditLogItems)
+        .allMatch(
+            auditLogResult -> auditLogResult.getCategory() == AuditLogCategoryEnum.USER_TASKS);
   }
 
   @Test
@@ -607,24 +607,16 @@ public class AuditLogSearchClientIT {
 
     // when
     final var auditLogItems =
-        client
-            .newAuditLogSearchRequest()
-            .filter(fn -> fn.userTaskKey(String.valueOf(userTaskKey)).actorId(DEFAULT_USERNAME))
-            .send()
-            .join();
+        awaitAuditLogEntryWithFilters(
+            client, fn -> fn.userTaskKey(String.valueOf(userTaskKey)).actorId(DEFAULT_USERNAME));
 
     // then
-    assertThat(auditLogItems.items()).isNotEmpty();
-    assertThat(
-            auditLogItems.items().stream()
-                .allMatch(
-                    auditLogResult ->
-                        auditLogResult.getUserTaskKey().equals(String.valueOf(userTaskKey))))
-        .isTrue();
-    assertThat(
-            auditLogItems.items().stream()
-                .allMatch(auditLogResult -> auditLogResult.getActorId().equals(DEFAULT_USERNAME)))
-        .isTrue();
+    assertThat(auditLogItems).isNotEmpty();
+    assertThat(auditLogItems)
+        .allMatch(
+            auditLogResult -> auditLogResult.getUserTaskKey().equals(String.valueOf(userTaskKey)));
+    assertThat(auditLogItems)
+        .allMatch(auditLogResult -> auditLogResult.getActorId().equals(DEFAULT_USERNAME));
   }
 
   @Test
