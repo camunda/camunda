@@ -9,6 +9,7 @@ package io.camunda.exporter;
 
 import static io.camunda.exporter.DefaultExporterResourceProvider.PROCESS_DEFINITION_PARTITION;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.SoftAssertions.assertSoftly;
 import static org.mockito.Mockito.mock;
 
 import io.camunda.exporter.cache.ExporterEntityCacheProvider;
@@ -23,7 +24,10 @@ import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformerRegistry;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
+import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.ValueTypeMapping;
+import java.lang.reflect.ParameterizedType;
 import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.List;
@@ -182,6 +186,186 @@ public class DefaultExporterResourceProviderTest {
                 + expectedTransformers.size()
                 + " AuditLogHandler instances added by addAuditLogHandlers method")
         .hasSize(expectedTransformers.size());
+  }
+
+  /**
+   * Verifies that all `ExportHandlers` declare a `ValueType` in `getHandledValueType()` that
+   * matches their `RecordValue` type parameter according to `ValueTypeMapping`.
+   *
+   * @see ValueTypeMapping for the correct mapping between `RecordValue` types and `ValueTypes`.
+   */
+  @Test
+  void shouldHaveAllHandlersWithCorrectValueTypeMatchingRecordValueTypeParameter() {
+    // given
+    final var config = new ExporterConfiguration();
+    // enable audit log and batch operation export to include their handlers
+    config.getAuditLog().setEnabled(true);
+    config.getBatchOperation().setExportItemsOnCreation(true);
+
+    final var provider = new DefaultExporterResourceProvider();
+    provider.init(
+        config,
+        mock(ExporterEntityCacheProvider.class),
+        new ExporterTestContext().setPartitionId(PROCESS_DEFINITION_PARTITION),
+        new ExporterMetadata(TestObjectMapper.objectMapper()),
+        TestObjectMapper.objectMapper());
+
+    // when
+    final var handlers = provider.getExportHandlers();
+
+    // then
+    assertSoftly(
+        softly -> {
+          for (final var handler : handlers) {
+            final var handlerName = handler.getClass().getSimpleName();
+            final var recordValueType = retrieveRecordValueTypeParameterFrom(handler);
+
+            softly
+                .assertThat(recordValueType)
+                .as(
+                    """
+                    Handler '%s' could not determine RecordValue type parameter.
+
+                    Ensure the handler properly implements 'ExportHandler<T, R extends RecordValue>'
+                    with a concrete RecordValue type.""",
+                    handlerName)
+                .isNotNull();
+
+            if (recordValueType == null) {
+              continue;
+            }
+
+            final var expectedValueType = getExpectedValueType(recordValueType);
+            softly
+                .assertThat(expectedValueType)
+                .as(
+                    """
+                    Handler '%s' uses RecordValue type '%s' which has no mapping in ValueTypeMapping.
+
+                    This could indicate:
+                      - A missing mapping in ValueTypeMapping.java for this RecordValue type
+                      - The handler is using an invalid RecordValue type
+
+                    See ValueTypeMapping.java for valid RecordValue to ValueType mappings.""",
+                    handlerName, recordValueType.getSimpleName())
+                .isNotNull();
+
+            if (expectedValueType == null) {
+              continue;
+            }
+
+            final var actualValueType = handler.getHandledValueType();
+            softly
+                .assertThat(actualValueType)
+                .as(
+                    """
+                    Handler '%s' has mismatched ValueType configuration:
+                      - RecordValue type parameter: %s
+                      - Declared getHandledValueType(): %s
+                      - Expected ValueType: %s
+
+                    Fix: Change '%s#getHandledValueType()' to return 'ValueType.%s'
+                    See ValueTypeMapping.java for the correct mapping between RecordValue types and ValueTypes.""",
+                    handlerName,
+                    recordValueType.getSimpleName(),
+                    actualValueType,
+                    expectedValueType,
+                    handlerName,
+                    expectedValueType.name())
+                .isEqualTo(expectedValueType);
+          }
+        });
+  }
+
+  /**
+   * Retrieves the `RecordValue` type parameter `R` from an `ExportHandler<T, R extends
+   * RecordValue>`.
+   *
+   * <p>Special handling for `AuditLogHandler` to extract from the contained transformer.
+   */
+  @SuppressWarnings("unchecked")
+  private static Class<? extends RecordValue> retrieveRecordValueTypeParameterFrom(
+      final ExportHandler<?, ?> handler) {
+    // For AuditLogHandler, extract RecordValue from the transformer instance, because the handler
+    // itself uses generic RecordValue
+    if (handler instanceof AuditLogHandler<?> auditLogHandler) {
+      return findRecordValueTypeParameterFromClass(auditLogHandler.getTransformer().getClass());
+    }
+
+    // For regular handlers, extract from class hierarchy
+    return findRecordValueTypeParameterFromClass(handler.getClass());
+  }
+
+  /**
+   * Finds the concrete {@link RecordValue} type parameter from a class hierarchy.
+   *
+   * <p>This method traverses the class hierarchy (interfaces and superclasses) to find a concrete
+   * {@link RecordValue} subtype specified as a type argument. It handles several cases:
+   *
+   * <ul>
+   *   <li><b>Direct implementation:</b> {@code class JobHandler implements ExportHandler<JobEntity,
+   *       JobRecordValue>} -> returns {@code JobRecordValue.class}
+   *   <li><b>Abstract class extension:</b> {@code class Handler extends
+   *       AbstractHandler<IncidentRecordValue>} -> returns {@code IncidentRecordValue.class}
+   *   <li><b>Deep hierarchy:</b> Recursively searches parent classes when the type argument is not
+   *       directly visible
+   * </ul>
+   *
+   * @param clazz the class to inspect for {@link RecordValue} type parameters
+   * @return the concrete {@link RecordValue} subtype, or {@code null} if not found
+   */
+  @SuppressWarnings("unchecked")
+  private static Class<? extends RecordValue> findRecordValueTypeParameterFromClass(
+      final Class<?> clazz) {
+
+    if (clazz == null || clazz.equals(Object.class)) {
+      return null;
+    }
+
+    // Collect all parameterized types (interfaces + superclass)
+    final Stream<ParameterizedType> parameterizedTypes =
+        Stream.concat(
+                Arrays.stream(clazz.getGenericInterfaces()),
+                Stream.ofNullable(clazz.getGenericSuperclass()))
+            .filter(ParameterizedType.class::isInstance)
+            .map(ParameterizedType.class::cast);
+
+    // Find first RecordValue type argument
+    final var result =
+        parameterizedTypes
+            .flatMap(pt -> Arrays.stream(pt.getActualTypeArguments()))
+            .filter(Class.class::isInstance)
+            .map(Class.class::cast)
+            .filter(RecordValue.class::isAssignableFrom)
+            .filter(Class::isInterface)
+            .filter(c -> !c.equals(RecordValue.class))
+            .findFirst()
+            .orElse(null);
+
+    if (result != null) {
+      return (Class<? extends RecordValue>) result;
+    }
+
+    // Recurse into superclass
+    return findRecordValueTypeParameterFromClass(clazz.getSuperclass());
+  }
+
+  private static ValueType getExpectedValueType(
+      final Class<? extends RecordValue> recordValueClass) {
+    for (final ValueType valueType : ValueType.values()) {
+      if (valueType == ValueType.NULL_VAL || valueType == ValueType.SBE_UNKNOWN) {
+        continue;
+      }
+      try {
+        final var mapping = ValueTypeMapping.get(valueType);
+        if (mapping.getValueClass().equals(recordValueClass)) {
+          return valueType;
+        }
+      } catch (final IllegalArgumentException e) {
+        // ValueType not mapped, skip
+      }
+    }
+    return null;
   }
 
   static Stream<ExporterConfiguration> configProvider() {
