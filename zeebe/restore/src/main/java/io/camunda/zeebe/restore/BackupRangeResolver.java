@@ -7,8 +7,13 @@
  */
 package io.camunda.zeebe.restore;
 
+import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
+import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern;
 import io.camunda.zeebe.backup.api.BackupRange;
 import io.camunda.zeebe.backup.api.BackupStatus;
+import io.camunda.zeebe.backup.api.BackupStatusCode;
+import io.camunda.zeebe.backup.api.BackupStore;
+import io.camunda.zeebe.backup.api.Interval;
 import io.camunda.zeebe.util.Either;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -18,6 +23,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Pure, side-effect-free resolver for determining valid backup ranges for restore operations. All
@@ -25,8 +32,60 @@ import java.util.stream.Stream;
  */
 public final class BackupRangeResolver {
 
+  private static final Logger LOG = LoggerFactory.getLogger(BackupRangeResolver.class);
+
   private BackupRangeResolver() {
     // Utility class
+  }
+
+  public static BackupStatus toBackupStatus(
+      final BackupStore store, final int partitionId, final long checkpoint) {
+    final var wildcard =
+        BackupIdentifierWildcard.forPartition(partitionId, CheckpointPattern.of(checkpoint));
+    // TODO check if there's more than one
+    final var backup =
+        store.list(wildcard).join().stream().filter(BackupStatus::isCompleted).findFirst();
+    if (backup.isPresent()) {
+      return backup.get();
+    } else {
+      throw new BackupNotFoundException(checkpoint, partitionId);
+    }
+  }
+
+  public static Optional<Interval<BackupStatus>> findBackupsInRange(
+      final BackupStore store,
+      final Interval<Instant> interval,
+      final List<BackupRange> ranges,
+      final int partitionId) {
+    for (final var range : ranges.reversed()) {
+      if (range instanceof BackupRange.Complete(final Interval<Long> interval1)) {
+        final var statusInterval = interval1.map(c -> toBackupStatus(store, partitionId, c));
+        final var timeInterval = statusInterval.map(BackupStatus::createdOrThrow);
+        if (timeInterval.contains(interval)) {
+          return Optional.of(statusInterval);
+        }
+      }
+    }
+    return Optional.empty();
+  }
+
+  public static List<BackupStatus> findBackupsInInterval(
+      final BackupStore store,
+      final Interval<Instant> interval,
+      final Interval<BackupStatus> statusInterval,
+      final int partitionId) {
+    final var backups =
+        store
+            .list(
+                BackupIdentifierWildcard.forPartition(
+                    partitionId,
+                    CheckpointPattern.ofInterval(statusInterval.map(s -> s.id().checkpointId()))))
+            .join();
+
+    return backups.stream()
+        .filter(bs -> bs.statusCode() == BackupStatusCode.COMPLETED)
+        .filter(bs -> interval.contains(bs.createdOrThrow()))
+        .toList();
   }
 
   /** Find the backups before the given timestamp */

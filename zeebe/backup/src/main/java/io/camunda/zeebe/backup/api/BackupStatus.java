@@ -11,7 +11,7 @@ import java.time.Instant;
 import java.util.Optional;
 
 /** Represents the status of a backup. */
-public interface BackupStatus {
+public interface BackupStatus extends Comparable<BackupStatus> {
   BackupIdentifier id();
 
   Optional<BackupDescriptor> descriptor();
@@ -26,5 +26,16 @@ public interface BackupStatus {
 
   Optional<Instant> created();
 
+  default Instant createdOrThrow() {
+    return created()
+        .orElseThrow(
+            () -> new IllegalStateException("Backup %s missing created field".formatted(this)));
+  }
+
   Optional<Instant> lastModified();
+
+  @Override
+  default int compareTo(final BackupStatus backupStatus) {
+    return Long.compare(id().checkpointId(), backupStatus.id().checkpointId());
+  }
 }
