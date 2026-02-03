@@ -41,7 +41,10 @@ public record AuditLogEntity(
     Long decisionEvaluationKey,
     Long deploymentKey,
     Long formKey,
-    Long resourceKey)
+    Long resourceKey,
+    AuditLogEntityType relatedEntityType,
+    String relatedEntityKey,
+    String entityDescription)
     implements TenantOwnedEntity {
 
   @Override
@@ -79,6 +82,9 @@ public record AuditLogEntity(
     private Long deploymentKey;
     private Long formKey;
     private Long resourceKey;
+    private AuditLogEntityType relatedEntityType;
+    private String relatedEntityKey;
+    private String entityDescription;
 
     public Builder auditLogKey(final String auditLogKey) {
       this.auditLogKey = auditLogKey;
@@ -225,6 +231,21 @@ public record AuditLogEntity(
       return this;
     }
 
+    public Builder relatedEntityType(final AuditLogEntityType relatedEntityType) {
+      this.relatedEntityType = relatedEntityType;
+      return this;
+    }
+
+    public Builder relatedEntityKey(final String relatedEntityKey) {
+      this.relatedEntityKey = relatedEntityKey;
+      return this;
+    }
+
+    public Builder entityDescription(final String entityDescription) {
+      this.entityDescription = entityDescription;
+      return this;
+    }
+
     @Override
     public AuditLogEntity build() {
       return new AuditLogEntity(
@@ -256,7 +277,10 @@ public record AuditLogEntity(
           decisionEvaluationKey,
           deploymentKey,
           formKey,
-          resourceKey);
+          resourceKey,
+          relatedEntityType,
+          relatedEntityKey,
+          entityDescription);
     }
   }
 

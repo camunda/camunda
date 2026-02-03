@@ -123,6 +123,15 @@ public class AuditLogEntity extends AbstractExporterEntity<AuditLogEntity> {
   @SinceVersion(value = "8.9.0", requireDefault = false)
   private Long rootProcessInstanceKey;
 
+  @SinceVersion(value = "8.9.0", requireDefault = false)
+  private AuditLogEntityType relatedEntityType;
+
+  @SinceVersion(value = "8.9.0", requireDefault = false)
+  private String relatedEntityKey;
+
+  @SinceVersion(value = "8.9.0", requireDefault = false)
+  private String entityDescription;
+
   public String getEntityKey() {
     return entityKey;
   }
@@ -399,6 +408,33 @@ public class AuditLogEntity extends AbstractExporterEntity<AuditLogEntity> {
 
   public AuditLogEntity setRootProcessInstanceKey(final Long rootProcessInstanceKey) {
     this.rootProcessInstanceKey = rootProcessInstanceKey;
+    return this;
+  }
+
+  public AuditLogEntityType getRelatedEntityType() {
+    return relatedEntityType;
+  }
+
+  public AuditLogEntity setRelatedEntityType(final AuditLogEntityType relatedEntityType) {
+    this.relatedEntityType = relatedEntityType;
+    return this;
+  }
+
+  public String getRelatedEntityKey() {
+    return relatedEntityKey;
+  }
+
+  public AuditLogEntity setRelatedEntityKey(final String relatedEntityKey) {
+    this.relatedEntityKey = relatedEntityKey;
+    return this;
+  }
+
+  public String getEntityDescription() {
+    return entityDescription;
+  }
+
+  public AuditLogEntity setEntityDescription(final String entityDescription) {
+    this.entityDescription = entityDescription;
     return this;
   }
 }

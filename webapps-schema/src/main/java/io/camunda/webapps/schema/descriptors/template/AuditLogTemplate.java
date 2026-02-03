@@ -52,6 +52,9 @@ public class AuditLogTemplate extends AbstractTemplateDescriptor
   public static final String TIMESTAMP = "timestamp";
   public static final String USER_TASK_KEY = "userTaskKey";
   public static final String ROOT_PROCESS_INSTANCE_KEY = "rootProcessInstanceKey";
+  public static final String RELATED_ENTITY_TYPE = "relatedEntityType";
+  public static final String RELATED_ENTITY_KEY = "relatedEntityKey";
+  public static final String ENTITY_DESCRIPTION = "entityDescription";
 
   public static final EntityJoinRelationFactory<AuditLogJoinRelationshipType>
       JOIN_RELATION_FACTORY =
