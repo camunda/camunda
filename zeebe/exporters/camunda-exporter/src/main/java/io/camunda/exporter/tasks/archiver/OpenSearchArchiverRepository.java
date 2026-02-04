@@ -215,10 +215,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
         .thenComposeAsync(
             response ->
                 createBasicBatch(
-                    response,
-                    JobMetricsBatchTemplate.END_TIME,
-                    jobMetricsBatchTemplateDescriptor,
-                    config.getUsageMetricsRolloverInterval()),
+                    response, JobMetricsBatchTemplate.END_TIME, jobMetricsBatchTemplateDescriptor),
             executor);
   }
 
