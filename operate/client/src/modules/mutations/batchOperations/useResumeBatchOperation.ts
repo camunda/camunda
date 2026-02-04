@@ -22,11 +22,11 @@ function useResumeBatchOperation(options?: ResumeBatchOperationOptions) {
     mutationFn: async (batchOperationKey: string) => {
       const {response, error} = await resumeBatchOperation(batchOperationKey);
 
-      if (response !== null) {
-        return response;
+      if (error !== null) {
+        throw error;
       }
 
-      throw error;
+      return response;
     },
     onSuccess: (_, batchOperationKey) => {
       queryClient.invalidateQueries({
