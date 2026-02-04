@@ -23,6 +23,7 @@
       <validValue name="LIST">2</validValue>
       <validValue name="DELETE">3</validValue>
       <validValue name="QUERY_STATE">4</validValue>
+      <validValue name="QUERY_RANGES">5</validValue>
     </enum>
 
     <enum name="BackupStatusCode" encodingType="uint8">
@@ -38,6 +39,14 @@
       <type name="numInGroup" primitiveType="uint16"/>
       <type name="numGroups" primitiveType="uint16"/>
       <type name="numVarDataFields" primitiveType="uint16"/>
+    </composite>
+
+    <composite name="CheckpointInfo">
+      <type name="checkpointId"  primitiveType="int64"/>
+      <type name="firstLogPosition" primitiveType="uint64"/>
+      <type name="checkpointPosition" primitiveType="uint64"/>
+      <type name="checkpointType" primitiveType="uint8"/>
+      <type name="checkpointTimestamp" primitiveType="uint64"/>
     </composite>
 
   </types>
@@ -112,6 +121,16 @@
       <field name="checkpointTimestamp" id="5"  type="uint64"/>
     </group>
   </sbe:message>
-</sbe:messageSchema>
 
+  <sbe:message name="BackupRangesResponse" id="7">
+    <group name="ranges" id="1" dimensionType="largeGroupSizeEncoding">
+      <field name="partitionId" id="1" type="uint16"/>
+      <field name="first" id="2" type="CheckpointInfo"/>
+      <field name="last" id="3" type="CheckpointInfo"/>
+      <group name="missingCheckpoints" id="4" dimensionType="largeGroupSizeEncoding">
+        <field name="checkpointId" id="1" type="int64"/>
+      </group>
+    </group>
+  </sbe:message>
+</sbe:messageSchema>
 

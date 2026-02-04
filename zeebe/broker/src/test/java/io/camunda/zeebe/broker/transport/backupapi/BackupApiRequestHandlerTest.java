@@ -11,12 +11,14 @@ import static io.camunda.zeebe.backup.processing.state.CheckpointState.NO_CHECKP
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.backup.api.BackupManager;
+import io.camunda.zeebe.backup.api.BackupRangeStatus;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
@@ -26,6 +28,8 @@ import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.protocol.impl.encoding.BackupListResponse;
+import io.camunda.zeebe.protocol.impl.encoding.BackupRangesResponse;
+import io.camunda.zeebe.protocol.impl.encoding.BackupRangesResponse.CheckpointInfo;
 import io.camunda.zeebe.protocol.impl.encoding.BackupRequest;
 import io.camunda.zeebe.protocol.impl.encoding.BackupStatusResponse;
 import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse;
@@ -49,6 +53,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.IntStream;
 import org.agrona.ExpandableArrayBuffer;
@@ -63,6 +68,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 final class BackupApiRequestHandlerTest {
+
+  private static final Instant NOW = Instant.ofEpochMilli(Instant.now().toEpochMilli());
 
   @RegisterExtension
   ControlledActorSchedulerExtension scheduler = new ControlledActorSchedulerExtension();
@@ -89,6 +96,10 @@ final class BackupApiRequestHandlerTest {
 
     serverOutput = new ResponseReader();
     responseFuture = new CompletableFuture<>();
+
+    lenient()
+        .when(backupManager.getBackupRangeStatus())
+        .thenReturn(CompletableActorFuture.completed(List.of()));
   }
 
   @Test
@@ -522,6 +533,63 @@ final class BackupApiRequestHandlerTest {
     assertThat(responseFuture).succeedsWithin(Duration.ofMinutes(1)).matches(Either::isRight);
     assertThat(stateResponse.getCheckpointStates()).isEmpty();
     assertThat(stateResponse.getBackupStates()).isEmpty();
+  }
+
+  @Test
+  void shouldReturnBackupRanges() {
+    // given
+    final long checkpointId1 = 10;
+    final long checkpointId2 = 20;
+    final long checkpointId3 = 30;
+
+    final var status1 = createBackupStatus(checkpointId1);
+    final var status2 = createBackupStatus(checkpointId2);
+    final var status3 = createBackupStatus(checkpointId2);
+    final var status4 = createBackupStatus(checkpointId3);
+
+    final var range1 = new BackupRangeStatus.Complete(status1, status2);
+    final var range2 = new BackupRangeStatus.Incomplete(status3, status4, Set.of(25L));
+
+    when(backupManager.getBackupRangeStatus())
+        .thenReturn(CompletableActorFuture.completed(List.of(range1, range2)));
+
+    final var request =
+        new BackupRequest().setType(BackupRequestType.QUERY_RANGES).setPartitionId(1);
+
+    // when
+    final var rangesResponse = new BackupRangesResponse();
+    serverOutput.setResponseObject(rangesResponse);
+    handleRequest(request);
+
+    // then
+    assertThat(responseFuture).succeedsWithin(Duration.ofMillis(100)).matches(Either::isRight);
+    assertThat(rangesResponse.getRanges())
+        .containsExactlyInAnyOrder(
+            new BackupRangesResponse.PartitionBackupRange(
+                1, toCheckpointInfo(status1), toCheckpointInfo(status2), Set.of()),
+            new BackupRangesResponse.PartitionBackupRange(
+                1, toCheckpointInfo(status3), toCheckpointInfo(status4), Set.of(25L)));
+  }
+
+  private static BackupStatus createBackupStatus(final long checkpointId) {
+    return new BackupStatusImpl(
+        new BackupIdentifierImpl(1, 1, checkpointId),
+        Optional.of(
+            new BackupDescriptorImpl("s-id", 100, 3, "test", NOW, CheckpointType.MANUAL_BACKUP)),
+        io.camunda.zeebe.backup.api.BackupStatusCode.COMPLETED,
+        Optional.empty(),
+        Optional.of(NOW),
+        Optional.of(NOW));
+  }
+
+  private static CheckpointInfo toCheckpointInfo(final BackupStatus status) {
+    final var descriptor = status.descriptor().orElseThrow();
+    return new CheckpointInfo(
+        status.id().checkpointId(),
+        descriptor.firstLogPosition().orElse(-1L),
+        descriptor.checkpointPosition(),
+        descriptor.checkpointType(),
+        descriptor.checkpointTimestamp());
   }
 
   private void handleRequest(final BackupRequest request) {

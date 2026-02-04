@@ -68,6 +68,11 @@ public interface BackupManager {
   void createFailedBackup(
       final long checkpointId, BackupDescriptor backupDescriptor, String failureReason);
 
+  /**
+   * @return all backup ranges for the partition
+   */
+  ActorFuture<Collection<BackupRangeStatus>> getBackupRangeStatus();
+
   void extendRange(final long previousCheckpointId, final long newCheckpointId);
 
   void startNewRange(final long checkpointId);

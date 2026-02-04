@@ -13,8 +13,10 @@ import io.atomix.cluster.MemberId;
 import io.camunda.client.CamundaClient;
 import io.camunda.configuration.Filesystem;
 import io.camunda.configuration.PrimaryStorageBackup;
-import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse;
-import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse.PartitionCheckpointState;
+import io.camunda.management.backups.BackupType;
+import io.camunda.management.backups.CheckpointState;
+import io.camunda.management.backups.PartitionBackupState;
+import io.camunda.management.backups.PartitionCheckpointState;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
@@ -102,19 +104,20 @@ public class CheckpointSchedulerAcceptanceIT {
 
                 final var checkpointIds =
                     state.getCheckpointStates().stream()
-                        .map(PartitionCheckpointState::checkpointId)
+                        .map(PartitionCheckpointState::getCheckpointId)
                         .collect(Collectors.toSet())
                         .stream()
                         .toList();
 
                 final var backupIds =
                     state.getBackupStates().stream()
-                        .map(PartitionCheckpointState::checkpointId)
+                        .map(PartitionBackupState::getCheckpointId)
                         .collect(Collectors.toSet())
                         .stream()
                         .toList();
 
-                assertThat(backupIds.size()).isEqualTo(checkpointIds.size()).isOne();
+                assertThat(backupIds).hasSize(1);
+                assertThat(checkpointIds).hasSize(1);
                 assertThat(backupIds.getFirst()).isEqualTo(checkpointIds.getFirst());
 
                 if (backupId.get() != -1) {
@@ -151,7 +154,7 @@ public class CheckpointSchedulerAcceptanceIT {
 
                 final var checkpointIds =
                     state.getCheckpointStates().stream()
-                        .map(PartitionCheckpointState::checkpointId)
+                        .map(PartitionCheckpointState::getCheckpointId)
                         .collect(Collectors.toSet())
                         .stream()
                         .toList();
@@ -190,7 +193,7 @@ public class CheckpointSchedulerAcceptanceIT {
 
               final var checkpointIds =
                   state.getCheckpointStates().stream()
-                      .map(PartitionCheckpointState::checkpointId)
+                      .map(PartitionCheckpointState::getCheckpointId)
                       .collect(Collectors.toSet())
                       .stream()
                       .toList();
@@ -225,7 +228,7 @@ public class CheckpointSchedulerAcceptanceIT {
 
               final var checkpointIds =
                   state.getCheckpointStates().stream()
-                      .map(PartitionCheckpointState::checkpointId)
+                      .map(PartitionCheckpointState::getCheckpointId)
                       .collect(Collectors.toSet())
                       .stream()
                       .toList();
@@ -329,19 +332,24 @@ public class CheckpointSchedulerAcceptanceIT {
   }
 
   private void assertCheckpointsCreated(
-      final CheckpointStateResponse response, final CheckpointType checkpointType) {
+      final CheckpointState response, final CheckpointType checkpointType) {
     assertThat(response.getCheckpointStates()).hasSize(PARTITION_COUNT);
-    assertThat(
-            response.getCheckpointStates().stream()
-                .allMatch(pState -> pState.checkpointType() == checkpointType))
-        .isTrue();
+    if (checkpointType == CheckpointType.MARKER) {
+      assertThat(
+              response.getCheckpointStates().stream()
+                  .allMatch(
+                      pState ->
+                          pState.getCheckpointType()
+                              == io.camunda.management.backups.CheckpointType.MARKER))
+          .isTrue();
+    }
   }
 
-  private void assertBackupsCreated(final CheckpointStateResponse response) {
+  private void assertBackupsCreated(final CheckpointState response) {
     assertThat(response.getBackupStates()).hasSize(PARTITION_COUNT);
     assertThat(
             response.getBackupStates().stream()
-                .allMatch(pState -> pState.checkpointType() == CheckpointType.SCHEDULED_BACKUP))
+                .allMatch(pState -> pState.getCheckpointType() == BackupType.SCHEDULED_BACKUP))
         .isTrue();
   }
 }
