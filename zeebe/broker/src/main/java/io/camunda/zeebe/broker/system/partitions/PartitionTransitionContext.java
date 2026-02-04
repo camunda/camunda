@@ -160,4 +160,11 @@ public interface PartitionTransitionContext extends PartitionContext {
   boolean areMigrationsPerformed();
 
   ComponentTreeListener getComponentTreeListener();
+
+  io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService
+      getClusterConfigurationService();
+
+  void setClusterConfigurationService(
+      io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService
+          clusterConfigurationService);
 }

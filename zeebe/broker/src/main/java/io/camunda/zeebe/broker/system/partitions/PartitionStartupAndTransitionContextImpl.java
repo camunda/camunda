@@ -117,6 +117,8 @@ public class PartitionStartupAndTransitionContextImpl
   private MeterRegistry transitionMeterRegistry;
   private volatile boolean migrationsPerformed = false;
   private final SnapshotApiRequestHandler snapshotApiRequestHandler;
+  private io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService
+      clusterConfigurationService;
 
   public PartitionStartupAndTransitionContextImpl(
       final int nodeId,
@@ -605,6 +607,19 @@ public class PartitionStartupAndTransitionContextImpl
 
   public ExporterRepository getExporterRepository() {
     return exporterRepository;
+  }
+
+  @Override
+  public io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService
+      getClusterConfigurationService() {
+    return clusterConfigurationService;
+  }
+
+  @Override
+  public void setClusterConfigurationService(
+      final io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService
+          clusterConfigurationService) {
+    this.clusterConfigurationService = clusterConfigurationService;
   }
 
   @Override

@@ -91,6 +91,8 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   private boolean migrationsPerformed;
   private final ComponentTreeListener healthMetrics;
   private SnapshotCopy snapshotCopy;
+  private io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService
+      clusterConfigurationService;
 
   public TestPartitionTransitionContext() {
     transitionMeterRegistry = MicrometerUtil.wrap(startupMeterRegistry, PartitionKeyNames.tags(1));
@@ -375,6 +377,19 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   @Override
   public ComponentTreeListener getComponentTreeListener() {
     return healthMetrics;
+  }
+
+  @Override
+  public io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService
+      getClusterConfigurationService() {
+    return clusterConfigurationService;
+  }
+
+  @Override
+  public void setClusterConfigurationService(
+      final io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService
+          clusterConfigurationService) {
+    this.clusterConfigurationService = clusterConfigurationService;
   }
 
   public void setGatewayBrokerTransport(final AtomixServerTransport gatewayBrokerTransport) {

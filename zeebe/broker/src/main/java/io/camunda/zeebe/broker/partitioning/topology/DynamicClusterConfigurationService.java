@@ -128,6 +128,18 @@ public class DynamicClusterConfigurationService implements ClusterConfigurationS
   }
 
   @Override
+  public ActorFuture<ClusterConfiguration> getLatestClusterConfiguration() {
+    if (clusterConfigurationManagerService != null) {
+      return clusterConfigurationManagerService.getClusterTopology();
+    } else {
+      final CompletableActorFuture<ClusterConfiguration> future = new CompletableActorFuture<>();
+      future.completeExceptionally(
+          new IllegalStateException("ClusterConfigurationService is not started"));
+      return future;
+    }
+  }
+
+  @Override
   public ActorFuture<Void> closeAsync() {
     partitionDistribution = null;
     if (clusterConfigurationManagerService != null) {
