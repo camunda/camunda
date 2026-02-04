@@ -113,6 +113,75 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
             });
   }
 
+  static Stream<Arguments> provideNameOperations() {
+    return Stream.of(
+        nameOperationCase(
+            Operation.eq("myTask"), query -> assertSearchTermQuery(query, "name", "myTask")),
+        nameOperationCase(
+            Operation.neq("otherTask"),
+            query ->
+                assertThat(query)
+                    .isInstanceOfSatisfying(
+                        SearchBoolQuery.class,
+                        boolQuery ->
+                            assertThat(boolQuery.mustNot())
+                                .singleElement()
+                                .extracting(SearchQuery::queryOption)
+                                .satisfies(
+                                    mustNotQuery ->
+                                        assertSearchTermQuery(mustNotQuery, "name", "otherTask")))),
+        nameOperationCase(Operation.exists(true), query -> assertExistsQuery(query, "name")),
+        nameOperationCase(
+            Operation.exists(false),
+            query ->
+                assertThat(query)
+                    .isInstanceOfSatisfying(
+                        SearchBoolQuery.class,
+                        boolQuery ->
+                            assertThat(boolQuery.mustNot())
+                                .singleElement()
+                                .extracting(SearchQuery::queryOption)
+                                .satisfies(
+                                    mustNotQuery -> assertExistsQuery(mustNotQuery, "name")))),
+        nameOperationCase(
+            Operation.in("task1", "task2"),
+            query -> assertSearchTermsQuery(query, "name", "task1", "task2")),
+        nameOperationCase(
+            Operation.like("my*"),
+            query ->
+                assertThat(query)
+                    .isInstanceOfSatisfying(
+                        SearchWildcardQuery.class,
+                        wildcardQuery -> {
+                          assertThat(wildcardQuery.field()).isEqualTo("name");
+                          assertThat(wildcardQuery.value()).isEqualTo("my*");
+                        })));
+  }
+  private static Arguments nameOperationCase(
+      final Operation<String> operation, final Consumer<SearchQueryOption> queryAssertion) {
+    return Arguments.of(operation, queryAssertion);
+  }
+
+  @ParameterizedTest(name = "[{index}] should map {0}")
+  @MethodSource("provideNameOperations")
+  @DisplayName("Should transform name operations into correct search query")
+  void shouldTransformNameOperationsToSearchQuery(
+      final Operation<String> operation, final Consumer<SearchQueryOption> queryAssertion) {
+
+    // given
+    final var filter = FilterBuilders.userTask(f -> f.nameOperations(operation));
+
+    // when
+    final var searchRequest = transformQuery(filter);
+
+    // then
+    assertThat(searchRequest.queryOption())
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            boolQuery -> queryAssertion.accept(boolQuery.must().getFirst().queryOption()));
+  }
+
+
   static Stream<Arguments> provideStateOperations() {
     return Stream.of(
         stateOperationCase(
