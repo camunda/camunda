@@ -42,15 +42,16 @@ public interface ProcessInstanceRecordValue
   int getVersion();
 
   /**
-   * @return the key of the deployed process this instance belongs to.
-   */
-  long getProcessDefinitionKey();
-
-  /**
    * @return the key of the process instance
    */
   @Override
   long getProcessInstanceKey();
+
+  /**
+   * @return the key of the deployed process this instance belongs to.
+   */
+  @Override
+  long getProcessDefinitionKey();
 
   /**
    * @return the id of the current process element, or empty if the id is not specified.

@@ -158,18 +158,13 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
   }
 
   @Override
-  public long getProcessDefinitionKey() {
-    return processDefinitionKeyProp.getValue();
-  }
-
-  @Override
   public long getProcessInstanceKey() {
     return processInstanceKeyProp.getValue();
   }
 
-  public ProcessInstanceRecord setProcessInstanceKey(final long processInstanceKey) {
-    processInstanceKeyProp.setValue(processInstanceKey);
-    return this;
+  @Override
+  public long getProcessDefinitionKey() {
+    return processDefinitionKeyProp.getValue();
   }
 
   @Override
@@ -312,6 +307,11 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
 
   public ProcessInstanceRecord setProcessDefinitionKey(final long processDefinitionKey) {
     processDefinitionKeyProp.setValue(processDefinitionKey);
+    return this;
+  }
+
+  public ProcessInstanceRecord setProcessInstanceKey(final long processInstanceKey) {
+    processInstanceKeyProp.setValue(processInstanceKey);
     return this;
   }
 
