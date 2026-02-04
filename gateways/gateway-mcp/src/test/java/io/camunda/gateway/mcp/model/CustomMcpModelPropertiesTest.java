@@ -78,7 +78,30 @@ public class CustomMcpModelPropertiesTest {
         Arguments.argumentSet(
             "McpSearchQueryPageRequest",
             McpSearchQueryPageRequest.class,
-            Set.of("after", "before", "from", "limit")));
+            Set.of("after", "before", "from", "limit")),
+        Arguments.argumentSet(
+            "McpUserTaskFilter",
+            McpUserTaskFilter.class,
+            Set.of(
+                "assignee",
+                "completionDate",
+                "creationDate",
+                "dueDate",
+                "elementId",
+                "followUpDate",
+                "localVariables",
+                "name",
+                "priority",
+                "processDefinitionId",
+                "processDefinitionKey",
+                "processInstanceKey",
+                "processInstanceVariables",
+                "state",
+                "userTaskKey")),
+        Arguments.argumentSet(
+            "McpUserTaskAssignmentRequest",
+            McpUserTaskAssignmentRequest.class,
+            Set.of("action", "allowOverride")));
   }
 
   @ParameterizedTest
