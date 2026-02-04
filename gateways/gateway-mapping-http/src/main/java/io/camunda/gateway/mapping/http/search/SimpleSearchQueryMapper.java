@@ -382,7 +382,9 @@ public class SimpleSearchQueryMapper {
     if (simple == null) {
       return null;
     }
-    return new io.camunda.gateway.protocol.model.UserTaskVariableFilter().name(simple.getName());
+
+    return new io.camunda.gateway.protocol.model.UserTaskVariableFilter()
+        .name(getStringFilter(simple.getName()));
   }
 
   private static List<VariableValueFilterProperty> mapVariableValueFilterProperties(
