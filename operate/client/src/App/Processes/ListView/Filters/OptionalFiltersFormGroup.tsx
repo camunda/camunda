@@ -156,6 +156,7 @@ const OptionalFiltersFormGroup: React.FC<Props> = observer(
               ...('endDateAfter' in filters && 'endDateBefore' in filters
                 ? ['endDateRange']
                 : []),
+              ...(variableFilterStore.hasActiveFilters ? ['variable'] : []),
             ] as OptionalFilter[]),
           ]),
         );
