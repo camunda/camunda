@@ -21,6 +21,7 @@ import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.distribution.PersistedCommandDistribution;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.record.ValueType;
+import java.util.HashSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 
@@ -138,6 +139,45 @@ public class DbDistributionMigrationState8dot7 {
             } else {
               retriableDistributionColumnFamily.deleteExisting(distributionPartitionKey);
             }
+          }
+        });
+  }
+
+  public void ensureRetriableDeploymentDistributions() {
+    queueId.wrapString(DistributionQueue.DEPLOYMENT.getQueueId());
+    final var partitionsWithRetriableDistribution = new HashSet<Integer>();
+
+    pendingDistributionColumnFamily.forEach(
+        (compositeKey, nil) -> {
+          final var distributionKey = compositeKey.first().inner().getValue();
+          final var partitionId = compositeKey.second().getValue();
+          this.distributionKey.wrapLong(distributionKey);
+          partitionKey.wrapInt(partitionId);
+
+          final var persistedDistribution =
+              commandDistributionRecordColumnFamily.get(this.distributionKey);
+
+          final var valueType = persistedDistribution.getValueType();
+          final var isDeploymentOrDeletion =
+              valueType == ValueType.DEPLOYMENT || valueType == ValueType.RESOURCE_DELETION;
+          if (!isDeploymentOrDeletion) {
+            return;
+          }
+
+          final var isInQueuedCF =
+              queuedCommandDistributionColumnFamily.exists(queuedDistributionKey);
+          if (!isInQueuedCF) {
+            queuedCommandDistributionColumnFamily.insert(queuedDistributionKey, DbNil.INSTANCE);
+          }
+
+          final var isFirstInQueue = !partitionsWithRetriableDistribution.contains(partitionId);
+          if (isFirstInQueue) {
+            final var isInRetriableCF =
+                retriableDistributionColumnFamily.exists(distributionPartitionKey);
+            if (!isInRetriableCF) {
+              retriableDistributionColumnFamily.insert(distributionPartitionKey, DbNil.INSTANCE);
+            }
+            partitionsWithRetriableDistribution.add(partitionId);
           }
         });
   }
