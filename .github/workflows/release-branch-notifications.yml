@@ -35,6 +35,7 @@ jobs:
           PR_MERGED: ${{ github.event.pull_request.merged }}
           PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
           PR_LABEL: ${{ github.event.label.name }}
+          PUSH_AUTHOR: ${{ github.event.pusher.name }}
         run: |
           set -euo pipefail
 
@@ -52,7 +53,13 @@ jobs:
             fi
           elif [[ "$GITHUB_EVENT_NAME" == "push" ]]; then
             if [[ "$GITHUB_REF_NAME" =~ $RELEASE_REGEX ]]; then
-              VALID="true"
+              # Skip direct pushes from monorepo-release[bot]
+              if [[ "$PUSH_AUTHOR" == "monorepo-release[bot]" ]]; then
+                echo "ℹ️ Skipping notification for push from $PUSH_AUTHOR"
+                VALID="false"
+              else
+                VALID="true"
+              fi
             fi
           fi
 
@@ -90,7 +97,7 @@ jobs:
           REPO_URL: ${{ github.event.repository.html_url }}
         run: |
           set -euo pipefail
-          
+
           ACTION_TYPE=""
           BRANCH_NAME=""
           AUTHOR=""
@@ -121,7 +128,7 @@ jobs:
             if [[ -n "$HEAD_COMMIT_MSG" && "$HEAD_COMMIT_MSG" =~ ^Merge\ pull\ request\ #([0-9]+) ]]; then
               ACTION_TYPE="MERGE COMPLETED"
               PR_NUMBER="${BASH_REMATCH[1]}"
-              
+
               # Extract PR title from commit message if available
               # Merge commit format: "Merge pull request #123 from branch\n\nPR Title"
               if [[ "$HEAD_COMMIT_MSG" =~ $'\n\n'(.+) ]]; then
@@ -134,12 +141,12 @@ jobs:
               else
                 LINK_TEXT="Merged PR: #$PR_NUMBER"
               fi
-              
+
               LINK_URL="$REPO_URL/pull/$PR_NUMBER"
             else
               # This is a direct push
               ACTION_TYPE="DIRECT PUSH to release branch"
-              
+
               if [[ -n "$HEAD_COMMIT_SHA" ]]; then
                 COMMIT_MSG="$HEAD_COMMIT_MSG"
                 COMMIT_SHA="$HEAD_COMMIT_SHA"
@@ -159,7 +166,7 @@ jobs:
           if [[ -z "$ACTION_TYPE" || -z "$BRANCH_NAME" || -z "$AUTHOR" ]]; then
             echo "::error::Failed to extract required data from GitHub event"
             echo "::error::ACTION_TYPE: $ACTION_TYPE"
-            echo "::error::BRANCH_NAME: $BRANCH_NAME" 
+            echo "::error::BRANCH_NAME: $BRANCH_NAME"
             echo "::error::AUTHOR: $AUTHOR"
             exit 1
           fi
@@ -220,7 +227,7 @@ jobs:
                 },
                 {
                   "type": "section",
-                  "text": 
+                  "text":
                     {
                       "type": "mrkdwn",
                       "text": "🎯 *Repository:* ${{ github.repository }}"
