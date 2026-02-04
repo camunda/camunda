@@ -14,6 +14,8 @@ import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
+import io.micrometer.core.instrument.distribution.DistributionStatisticConfig;
+import java.time.Duration;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -50,9 +52,9 @@ import java.util.concurrent.atomic.AtomicLong;
 public final class StatefulGauge extends AbstractMeter implements Gauge {
 
   private final Gauge delegate;
-  private final AtomicLong state;
+  private final GaugeState state;
 
-  public StatefulGauge(final Gauge gauge, final AtomicLong state) {
+  public StatefulGauge(final Gauge gauge, final GaugeState state) {
     super(gauge.getId());
     delegate = gauge;
     this.state = state;
@@ -96,7 +98,7 @@ public final class StatefulGauge extends AbstractMeter implements Gauge {
   }
 
   @VisibleForTesting("convenience accessor to test state identity")
-  AtomicLong state() {
+  GaugeState state() {
     return state;
   }
 
@@ -110,8 +112,9 @@ public final class StatefulGauge extends AbstractMeter implements Gauge {
     return new Builder(name);
   }
 
-  static StatefulGauge registerAsGauge(final Meter.Id id, final MeterRegistry registry) {
-    final var state = new AtomicLong();
+  static StatefulGauge registerAsGauge(
+      final Meter.Id id, final Builder builder, final MeterRegistry registry) {
+    final var state = builder.state;
     final var gauge =
         Gauge.builder(id.getName(), state, StatefulGauge::longAsDouble)
             .description(id.getDescription())
@@ -122,7 +125,7 @@ public final class StatefulGauge extends AbstractMeter implements Gauge {
     return new StatefulGauge(gauge, state);
   }
 
-  private static double longAsDouble(final AtomicLong value) {
+  private static double longAsDouble(final GaugeState value) {
     return Double.longBitsToDouble(value.get());
   }
 
@@ -138,6 +141,7 @@ public final class StatefulGauge extends AbstractMeter implements Gauge {
     private Tags tags = Tags.empty();
     private String description;
     private String baseUnit;
+    private GaugeState state = GaugeState.from(new AtomicLong());
 
     private Builder(final String name) {
       this.name = name;
@@ -167,7 +171,7 @@ public final class StatefulGauge extends AbstractMeter implements Gauge {
      * @return The gauge builder with a single added tag.
      */
     public Builder tag(final String key, final String value) {
-      this.tags = this.tags.and(key, value);
+      tags = tags.and(key, value);
       return this;
     }
 
@@ -190,6 +194,39 @@ public final class StatefulGauge extends AbstractMeter implements Gauge {
      */
     public Builder baseUnit(final String unit) {
       baseUnit = unit;
+      return this;
+    }
+
+    /**
+     * Sets a default expiration for the gauge value. After the expiration time, the gauge will
+     * return zero when queried.
+     *
+     * <p>This is useful for gauges that track values that may become stale over time, such as
+     * resource usage metrics.
+     *
+     * <p>NB increment/decremetment operation are unsupported on expiring gauges.
+     *
+     * @return The gauge builder with expiration configured.
+     */
+    public Builder valueExpires() {
+      return valueExpires(DistributionStatisticConfig.DEFAULT.getExpiry(), 0.0);
+    }
+
+    /**
+     * Sets a custom expiration for the gauge value. After the expiration time, the gauge will
+     * return the provided value when queried.
+     *
+     * <p>This is useful for gauges that track values that may become stale over time, such as
+     * resource usage metrics.
+     *
+     * <p>NB increment/decremetment operation are unsupported on expiring gauges.
+     *
+     * @param expiration The duration after which the gauge value expires.
+     * @param valueWhenExpired The value to return when the gauge has expired.
+     * @return The gauge builder with expiration configured.
+     */
+    public Builder valueExpires(final Duration expiration, final double valueWhenExpired) {
+      state = GaugeState.expiring(expiration, Double.doubleToLongBits(valueWhenExpired));
       return this;
     }
 
@@ -218,11 +255,11 @@ public final class StatefulGauge extends AbstractMeter implements Gauge {
     private StatefulGauge register(final MeterRegistry registry, final Tags tags) {
       final var id = new Id(name, tags, baseUnit, description, Type.GAUGE);
 
-      if (registry instanceof StatefulMeterRegistry s) {
-        return s.registerIfNecessary(id);
+      if (registry instanceof final StatefulMeterRegistry s) {
+        return s.registerIfNecessary(id, this);
       }
 
-      return StatefulGauge.registerAsGauge(id, registry);
+      return StatefulGauge.registerAsGauge(id, this, registry);
     }
   }
 }
