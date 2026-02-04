@@ -27,7 +27,7 @@ public final class TestConfiguration implements FilterConfiguration {
   private final Map<ValueType, Boolean> requiredFlags = new EnumMap<>(ValueType.class);
   private final Map<RecordType, Boolean> recordTypeFlags = new EnumMap<>(RecordType.class);
 
-  private final IndexConfig indexConfig = new TestIndexConfig();
+  private final TestIndexConfig indexConfig = new TestIndexConfig();
 
   /** Mark a {@link ValueType} as normally indexed. */
   public TestConfiguration withIndexedValueType(final ValueType valueType) {
@@ -49,7 +49,7 @@ public final class TestConfiguration implements FilterConfiguration {
 
   /** Access to the underlying index config for tests that need to configure name rules. */
   public TestIndexConfig indexConfig() {
-    return (TestIndexConfig) indexConfig;
+    return indexConfig;
   }
 
   @Override
