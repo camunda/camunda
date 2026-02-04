@@ -24,6 +24,7 @@ import io.camunda.gateway.mcp.mapper.CallToolResultMapper;
 import io.camunda.gateway.mcp.model.McpSearchQueryPageRequest;
 import io.camunda.gateway.mcp.model.McpUserTaskAssignmentRequest;
 import io.camunda.gateway.mcp.model.McpUserTaskFilter;
+import io.camunda.gateway.protocol.model.UserTaskAssignmentRequest;
 import io.camunda.gateway.protocol.model.UserTaskSearchQuerySortRequest;
 import io.camunda.gateway.protocol.model.UserTaskVariableSearchQuerySortRequest;
 import io.camunda.gateway.protocol.model.simple.UserTaskVariableFilter;
@@ -117,8 +118,7 @@ public class UserTaskTools {
         return performUnassignment(userTaskKey);
       } else {
         // merge assignee root param with potential assignment options
-        io.camunda.gateway.protocol.model.UserTaskAssignmentRequest request =
-            new io.camunda.gateway.protocol.model.UserTaskAssignmentRequest().assignee(assignee);
+        UserTaskAssignmentRequest request = new UserTaskAssignmentRequest().assignee(assignee);
         if (assignmentOptions != null) {
           request =
               request
@@ -134,8 +134,7 @@ public class UserTaskTools {
   }
 
   private CallToolResult performAssignment(
-      final Long userTaskKey,
-      io.camunda.gateway.protocol.model.UserTaskAssignmentRequest request) {
+      final Long userTaskKey, UserTaskAssignmentRequest request) {
     final var mappedRequest = RequestMapper.toUserTaskAssignmentRequest(request, userTaskKey);
     if (mappedRequest.isLeft()) {
       return CallToolResultMapper.mapProblemToResult(mappedRequest.getLeft());
