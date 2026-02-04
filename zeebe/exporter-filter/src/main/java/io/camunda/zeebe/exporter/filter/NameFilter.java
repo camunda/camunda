@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.exporter.filter;
 
-import io.camunda.zeebe.exporter.filter.NameRule.Type;
+import io.camunda.zeebe.exporter.filter.NameFilterRule.Type;
 import java.util.List;
 import java.util.function.Predicate;
 
@@ -16,13 +16,12 @@ final class NameFilter {
   private final List<Predicate<String>> includePredicates;
   private final List<Predicate<String>> excludePredicates;
 
-  NameFilter(final List<NameRule> inclusionRules, final List<NameRule> exclusionRules) {
-
+  NameFilter(final List<NameFilterRule> inclusionRules, final List<NameFilterRule> exclusionRules) {
     includePredicates = toPredicates(inclusionRules);
     excludePredicates = toPredicates(exclusionRules);
   }
 
-  boolean test(final String name) {
+  boolean accept(final String name) {
     if (!includePredicates.isEmpty() && includePredicates.stream().noneMatch(p -> p.test(name))) {
       return false;
     }
@@ -30,11 +29,11 @@ final class NameFilter {
     return excludePredicates.isEmpty() || excludePredicates.stream().noneMatch(p -> p.test(name));
   }
 
-  private static List<Predicate<String>> toPredicates(final List<NameRule> rules) {
+  private static List<Predicate<String>> toPredicates(final List<NameFilterRule> rules) {
     return rules.stream().map(NameFilter::toPredicate).toList();
   }
 
-  private static Predicate<String> toPredicate(final NameRule rule) {
+  private static Predicate<String> toPredicate(final NameFilterRule rule) {
     final String pattern = rule.pattern();
 
     return switch (rule.type()) {

@@ -7,19 +7,19 @@
  */
 package io.camunda.zeebe.exporter.filter;
 
-import static io.camunda.zeebe.exporter.filter.VariableNameFilterRecord.parseRules;
+import static io.camunda.zeebe.exporter.filter.VariableNameFilter.parseRules;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import io.camunda.zeebe.exporter.filter.NameRule.Type;
+import io.camunda.zeebe.exporter.filter.NameFilterRule.Type;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
-final class VariableNameFilterRecordTest {
+final class VariableNameFilterTest {
 
   // ---------------------------------------------------------------------------
   // Record-type behavior
@@ -28,7 +28,7 @@ final class VariableNameFilterRecordTest {
   @Test
   void shouldAcceptNonVariableRecords() {
     // given
-    final var filter = new VariableNameFilterRecord(List.of(), List.of());
+    final var filter = new VariableNameFilter(List.of(), List.of());
     final Record<ProcessInstanceRecordValue> record = nonVariableRecord();
 
     // when
@@ -46,7 +46,7 @@ final class VariableNameFilterRecordTest {
   void shouldFilterVariableNamesUsingInclusionRules() {
     // given: only variables with exact name "foo" are allowed
     final var inclusionRules = parseRules(List.of("foo"), Type.EXACT);
-    final var filter = new VariableNameFilterRecord(inclusionRules, List.of());
+    final var filter = new VariableNameFilter(inclusionRules, List.of());
 
     final Record<VariableRecordValue> matchingRecord = variableRecord("foo");
     final Record<VariableRecordValue> nonMatchingRecord = variableRecord("bar");
@@ -68,7 +68,7 @@ final class VariableNameFilterRecordTest {
     final var inclusionRules = parseRules(List.of("biz_"), Type.STARTS_WITH);
     final var exclusionRules = parseRules(List.of("biz_debug"), Type.EXACT);
 
-    final var filter = new VariableNameFilterRecord(inclusionRules, exclusionRules);
+    final var filter = new VariableNameFilter(inclusionRules, exclusionRules);
 
     final Record<VariableRecordValue> allowed = variableRecord("biz_total");
     final Record<VariableRecordValue> excluded = variableRecord("biz_debug");
@@ -120,7 +120,7 @@ final class VariableNameFilterRecordTest {
 
   @Test
   void shouldExposeMinRecordBrokerVersion() {
-    final var filter = new VariableNameFilterRecord(List.of(), List.of());
+    final var filter = new VariableNameFilter(List.of(), List.of());
 
     assertThat(filter.minRecordBrokerVersion().toString()).isEqualTo("8.9.0");
   }

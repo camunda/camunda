@@ -7,10 +7,10 @@
  */
 package io.camunda.zeebe.exporter.filter;
 
-import static io.camunda.zeebe.exporter.filter.NameRule.Type.ENDS_WITH;
-import static io.camunda.zeebe.exporter.filter.NameRule.Type.EXACT;
-import static io.camunda.zeebe.exporter.filter.NameRule.Type.STARTS_WITH;
-import static io.camunda.zeebe.exporter.filter.VariableNameFilterRecord.parseRules;
+import static io.camunda.zeebe.exporter.filter.NameFilterRule.Type.ENDS_WITH;
+import static io.camunda.zeebe.exporter.filter.NameFilterRule.Type.EXACT;
+import static io.camunda.zeebe.exporter.filter.NameFilterRule.Type.STARTS_WITH;
+import static io.camunda.zeebe.exporter.filter.VariableNameFilter.parseRules;
 
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.protocol.record.Record;
@@ -39,22 +39,23 @@ public final class DefaultRecordFilter implements Context.RecordFilter {
     final var nameExclusionRules = getNameExclusionRules(index);
 
     final List<ExporterRecordFilter> filters =
-        new ArrayList<>(
-            List.of(new VariableNameFilterRecord(nameInclusionRules, nameExclusionRules)));
+        new ArrayList<>(List.of(new VariableNameFilter(nameInclusionRules, nameExclusionRules)));
 
     return List.copyOf(filters);
   }
 
-  private static List<NameRule> getNameInclusionRules(final FilterConfiguration.IndexConfig index) {
-    final List<NameRule> rules = new ArrayList<>();
+  private static List<NameFilterRule> getNameInclusionRules(
+      final FilterConfiguration.IndexConfig index) {
+    final List<NameFilterRule> rules = new ArrayList<>();
     rules.addAll(parseRules(index.getVariableNameInclusionExact(), EXACT));
     rules.addAll(parseRules(index.getVariableNameInclusionStartWith(), STARTS_WITH));
     rules.addAll(parseRules(index.getVariableNameInclusionEndWith(), ENDS_WITH));
     return List.copyOf(rules);
   }
 
-  private static List<NameRule> getNameExclusionRules(final FilterConfiguration.IndexConfig index) {
-    final List<NameRule> rules = new ArrayList<>();
+  private static List<NameFilterRule> getNameExclusionRules(
+      final FilterConfiguration.IndexConfig index) {
+    final List<NameFilterRule> rules = new ArrayList<>();
     rules.addAll(parseRules(index.getVariableNameExclusionExact(), EXACT));
     rules.addAll(parseRules(index.getVariableNameExclusionStartWith(), STARTS_WITH));
     rules.addAll(parseRules(index.getVariableNameExclusionEndWith(), ENDS_WITH));

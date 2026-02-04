@@ -13,12 +13,12 @@ import io.camunda.zeebe.util.SemanticVersion;
 import java.util.Collections;
 import java.util.List;
 
-public final class VariableNameFilterRecord implements ExporterRecordFilter, RecordVersionFilter {
+public final class VariableNameFilter implements ExporterRecordFilter, RecordVersionFilter {
 
   private final NameFilter nameFilter;
 
-  public VariableNameFilterRecord(
-      final List<NameRule> inclusionRules, final List<NameRule> exclusionRules) {
+  public VariableNameFilter(
+      final List<NameFilterRule> inclusionRules, final List<NameFilterRule> exclusionRules) {
     nameFilter = new NameFilter(inclusionRules, exclusionRules);
   }
 
@@ -28,10 +28,11 @@ public final class VariableNameFilterRecord implements ExporterRecordFilter, Rec
       return true;
     }
 
-    return nameFilter.test(variableRecordValue.getName());
+    return nameFilter.accept(variableRecordValue.getName());
   }
 
-  public static List<NameRule> parseRules(final List<String> rawList, final NameRule.Type type) {
+  public static List<NameFilterRule> parseRules(
+      final List<String> rawList, final NameFilterRule.Type type) {
 
     if (rawList == null) {
       return Collections.emptyList();
@@ -40,7 +41,7 @@ public final class VariableNameFilterRecord implements ExporterRecordFilter, Rec
     return rawList.stream()
         .map(String::trim)
         .filter(s -> !s.isEmpty())
-        .map(pattern -> new NameRule(type, pattern))
+        .map(pattern -> new NameFilterRule(type, pattern))
         .toList();
   }
 

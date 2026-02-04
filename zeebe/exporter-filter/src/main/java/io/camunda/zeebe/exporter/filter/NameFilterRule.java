@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.exporter.filter;
 
-public record NameRule(Type type, String pattern) {
+public record NameFilterRule(Type type, String pattern) {
 
   public enum Type {
     EXACT,
