@@ -22,6 +22,10 @@ public interface CamundaProcessTestRuntime extends AutoCloseable {
 
   void start();
 
+  default void restartConnectors() {
+    // noop
+  }
+
   URI getCamundaRestApiAddress();
 
   URI getCamundaGrpcApiAddress();

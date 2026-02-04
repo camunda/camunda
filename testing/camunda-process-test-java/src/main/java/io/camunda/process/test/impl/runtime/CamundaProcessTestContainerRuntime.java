@@ -189,6 +189,12 @@ public class CamundaProcessTestContainerRuntime
   }
 
   @Override
+  public void restartConnectors() {
+    connectorsContainer.stop();
+    connectorsContainer.start();
+  }
+
+  @Override
   public URI getCamundaRestApiAddress() {
     return getCamundaContainer().getRestApiAddress();
   }
