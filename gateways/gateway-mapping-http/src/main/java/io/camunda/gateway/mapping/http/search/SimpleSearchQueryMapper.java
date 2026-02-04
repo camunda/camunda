@@ -193,7 +193,7 @@ public class SimpleSearchQueryMapper {
 
     ofNullable(source.getVariables())
         .filter(not(List::isEmpty))
-        .map(SimpleSearchQueryMapper::convertVariableValueFilterProperties)
+        .map(SimpleSearchQueryMapper::mapVariableValueFilterProperties)
         .ifPresent(target::variables);
 
     ofNullable(source.getProcessInstanceKey())
@@ -363,10 +363,10 @@ public class SimpleSearchQueryMapper {
           .map(SimpleSearchQueryMapper::getDateTimeFilter)
           .ifPresent(filterModel::dueDate);
       ofNullable(filter.getProcessInstanceVariables())
-          .map(SimpleSearchQueryMapper::convertVariableValueFilterProperties)
+          .map(SimpleSearchQueryMapper::mapVariableValueFilterProperties)
           .ifPresent(filterModel::processInstanceVariables);
       ofNullable(filter.getLocalVariables())
-          .map(SimpleSearchQueryMapper::convertVariableValueFilterProperties)
+          .map(SimpleSearchQueryMapper::mapVariableValueFilterProperties)
           .ifPresent(filterModel::localVariables);
       ofNullable(filter.getUserTaskKey()).ifPresent(filterModel::userTaskKey);
       ofNullable(filter.getProcessDefinitionKey()).ifPresent(filterModel::processDefinitionKey);
@@ -385,7 +385,7 @@ public class SimpleSearchQueryMapper {
     return new io.camunda.gateway.protocol.model.UserTaskVariableFilter().name(simple.getName());
   }
 
-  private static List<VariableValueFilterProperty> convertVariableValueFilterProperties(
+  private static List<VariableValueFilterProperty> mapVariableValueFilterProperties(
       final List<io.camunda.gateway.protocol.model.simple.VariableValueFilterProperty>
           variableFilters) {
     if (variableFilters == null) {
