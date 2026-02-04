@@ -60,7 +60,6 @@ public class SearchEngineSchemaInitializer implements InitializingBean, SchemaMa
       final CompletableFuture<Void> future, final ExecutorService executor) throws Exception {
     try {
       future.get();
-      initialized.set(true);
       LOGGER.info("Search engine schema initialization complete.");
     } catch (final InterruptedException ie) {
       LOGGER.debug(
@@ -87,7 +86,6 @@ public class SearchEngineSchemaInitializer implements InitializingBean, SchemaMa
           if (error != null) {
             LOGGER.warn("Failed to initialize search engine schema", error);
           } else {
-            initialized.set(true);
             LOGGER.info("Search engine schema initialization complete.");
           }
           executor.close();
@@ -109,8 +107,9 @@ public class SearchEngineSchemaInitializer implements InitializingBean, SchemaMa
                     clientAdapter.objectMapper())
                 .withMetrics(schemaManagerMetrics)) {
       schemaManager.startup();
+      initialized.set(true);
     } catch (final IOException e) {
-      LOGGER.debug("Failed to create schema and/or close search client", e);
+      LOGGER.debug("Failed to close the search client", e);
     }
   }
 
