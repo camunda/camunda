@@ -12,12 +12,15 @@ import io.camunda.spring.utils.DatabaseTypeUtils;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.DefaultPropertiesPropertySource;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.core.env.Environment;
+import org.springframework.core.env.MapPropertySource;
 
 /**
  * Collects and configures the readiness group depending on which applications/profiles are
@@ -38,6 +41,9 @@ public class HealthConfigurationInitializer
   private static final String SPRING_PROBES_PROPERTY = "management.endpoint.health.probes.enabled";
   private static final String SPRING_READINESS_GROUP_PROPERTY =
       "management.endpoint.health.group.readiness.include";
+
+  @Value("camunda.mode")
+  private String camundaMode;
 
   @Override
   public void initialize(final ConfigurableApplicationContext context) {
@@ -65,6 +71,55 @@ public class HealthConfigurationInitializer
     // add or merges with the default property settings
     // that are added as last in the property sources
     DefaultPropertiesPropertySource.addOrMerge(propertyMap, propertySources);
+
+    // Gateway Properties
+
+    if (activeProfiles.contains(Profile.GATEWAY.getId())) {
+      environment
+          .getPropertySources()
+          .addFirst(
+              new MapPropertySource(
+                  "gatewayProperties",
+                  Map.of(
+                      "management.health.defaults.enabled", "true",
+                      "management.endpoint.health.group.startup.include", "gatewayStarted",
+                      "management.endpoint.health.group.startup.show-details", "never",
+                      "management.endpoint.health.group.liveness.include",
+                          "livenessGatewayClusterAwareness,livenessGatewayPartitionLeaderAwareness,livenessMemory",
+                      "management.endpoint.health.group.liveness.show-details", "always",
+                      "management.endpoint.health.status.order",
+                          "down,out-of-service,unknown,degraded,up")));
+
+      if (activeProfiles.contains(Profile.STANDALONE.getId())) {
+        environment
+            .getPropertySources()
+            .addFirst(
+                new MapPropertySource(
+                    "standaloneGatewayProperties",
+                    Map.of(
+                        "camunda.security.multiTenancy.checksEnabled",
+                        "${zeebe.gateway.multiTenancy.enabled:false}")));
+      }
+    }
+
+    // Broker Properties
+
+    if (activeProfiles.contains(Profile.BROKER.getId())) {
+      environment
+          .getPropertySources()
+          .addFirst(
+              new MapPropertySource(
+                  "brokerProperties",
+                  Map.of(
+                      "management.endpoint.health.cache.time-to-live", "1s",
+                      "management.endpoint.health.logging.slow-indicator-threshold", "10s",
+                      "management.endpoint.health.group.status.include", "brokerStatus",
+                      "management.endpoint.health.group.status.show-components", "never",
+                      "management.endpoint.health.group.status.show-details", "never",
+                      "management.endpoint.health.group.startup.include", "brokerStartup",
+                      "management.endpoint.health.group.startup.show-components", "never",
+                      "management.endpoint.health.group.startup.show-details", "never")));
+    }
   }
 
   protected boolean shouldEnableProbes(final List<String> activeProfiles) {

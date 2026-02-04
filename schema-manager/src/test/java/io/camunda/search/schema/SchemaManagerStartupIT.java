@@ -155,7 +155,7 @@ class SchemaManagerStartupIT {
     camunda.start();
 
     // then
-    assertThat(camunda.getLogs()).contains("Started StandaloneCamunda");
+    assertThat(camunda.getLogs()).contains("Started Camunda");
   }
 
   private WaitAllStrategy newDefaultWaitStrategy() {

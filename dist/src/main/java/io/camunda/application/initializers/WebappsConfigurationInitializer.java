@@ -9,6 +9,7 @@ package io.camunda.application.initializers;
 
 import static io.camunda.application.Profile.IDENTITY;
 import static io.camunda.application.Profile.OPERATE;
+import static io.camunda.application.Profile.STANDALONE;
 import static io.camunda.application.Profile.TASKLIST;
 import static io.camunda.authentication.config.AuthenticationProperties.METHOD;
 
@@ -16,6 +17,7 @@ import io.camunda.authentication.config.WebSecurityConfig;
 import io.camunda.security.entity.AuthenticationMethod;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 import org.springframework.boot.DefaultPropertiesPropertySource;
 import org.springframework.context.ApplicationContextInitializer;
@@ -53,6 +55,74 @@ public class WebappsConfigurationInitializer
       propertyMap.put(
           SERVER_SERVLET_SESSION_COOKIE_NAME_PROPERTY, WebSecurityConfig.SESSION_COOKIE);
       DefaultPropertiesPropertySource.addOrMerge(propertyMap, propertySources);
+    }
+
+    // Tasklist Properties
+
+    if (activeProfiles.contains(TASKLIST.getId())) {
+      DefaultPropertiesPropertySource.addOrMerge(
+          Map.of(
+              "spring.web.resources.add-mappings",
+              "true",
+              "spring.web.resources.static-locations",
+              "classpath:/META-INF/resources/tasklist/",
+              "spring.thymeleaf.check-template-location",
+              "true",
+              "spring.thymeleaf.prefix",
+              "classpath:/META-INF/resources/"),
+          propertySources);
+
+      if (activeProfiles.contains(STANDALONE.getId())) {
+        DefaultPropertiesPropertySource.addOrMerge(
+            Map.of(
+                "camunda.security.authorizations.enabled",
+                "${camunda.tasklist.identity.resourcePermissionsEnabled:false}",
+                "camunda.security.multiTenancy.checksEnabled",
+                "${camunda.tasklist.multiTenancy.enabled:false}"),
+            propertySources);
+      }
+    }
+
+    // Operate Properties
+
+    if (activeProfiles.contains(OPERATE.getId())) {
+      DefaultPropertiesPropertySource.addOrMerge(
+          Map.of(
+              "spring.web.resources.add-mappings",
+              "true",
+              "spring.web.resources.static-locations",
+              "classpath:/META-INF/resources/operate/",
+              "spring.thymeleaf.check-template-location",
+              "true",
+              "spring.thymeleaf.prefix",
+              "classpath:/META-INF/resources/"),
+          propertySources);
+
+      if (activeProfiles.contains(STANDALONE.getId())) {
+        DefaultPropertiesPropertySource.addOrMerge(
+            Map.of(
+                "camunda.security.authorizations.enabled",
+                "${camunda.operate.identity.resourcePermissionsEnabled:false}",
+                "camunda.security.multiTenancy.checksEnabled",
+                "${camunda.operate.multiTenancy.enabled:false}"),
+            propertySources);
+      }
+    }
+
+    // Identity Properties
+
+    if (activeProfiles.contains(IDENTITY.getId())) {
+      DefaultPropertiesPropertySource.addOrMerge(
+          Map.of(
+              "spring.web.resources.add-mappings",
+              "true",
+              "spring.web.resources.static-locations",
+              "classpath:/META-INF/resources/identity/",
+              "spring.thymeleaf.check-template-location",
+              "true",
+              "spring.thymeleaf.prefix",
+              "classpath:/META-INF/resources/"),
+          propertySources);
     }
   }
 

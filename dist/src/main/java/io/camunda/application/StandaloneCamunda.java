@@ -86,6 +86,7 @@ public class StandaloneCamunda {
             // Default properties are only used, if not overridden by any other config
             .properties(defaultProperties)
             .initializers(
+                /* TODO: Do we need to load all of these for all the modes? */
                 new DefaultAuthenticationInitializer(),
                 new HealthConfigurationInitializer(),
                 new WebappsConfigurationInitializer(),
