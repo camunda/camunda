@@ -24,10 +24,9 @@ import io.camunda.gateway.mcp.mapper.CallToolResultMapper;
 import io.camunda.gateway.mcp.model.McpSearchQueryPageRequest;
 import io.camunda.gateway.mcp.model.McpUserTaskAssignmentRequest;
 import io.camunda.gateway.mcp.model.McpUserTaskFilter;
-import io.camunda.gateway.protocol.model.simple.UserTaskAssignmentRequest;
-import io.camunda.gateway.protocol.model.simple.UserTaskSearchQuerySortRequest;
+import io.camunda.gateway.protocol.model.UserTaskSearchQuerySortRequest;
+import io.camunda.gateway.protocol.model.UserTaskVariableSearchQuerySortRequest;
 import io.camunda.gateway.protocol.model.simple.UserTaskVariableFilter;
-import io.camunda.gateway.protocol.model.simple.UserTaskVariableSearchQuerySortRequest;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.UserTaskServices;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
@@ -118,7 +117,8 @@ public class UserTaskTools {
         return performUnassignment(userTaskKey);
       } else {
         // merge assignee root param with potential assignment options
-        UserTaskAssignmentRequest request = new UserTaskAssignmentRequest().assignee(assignee);
+        io.camunda.gateway.protocol.model.UserTaskAssignmentRequest request =
+            new io.camunda.gateway.protocol.model.UserTaskAssignmentRequest().assignee(assignee);
         if (assignmentOptions != null) {
           request =
               request
@@ -126,14 +126,7 @@ public class UserTaskTools {
                   .action(assignmentOptions.getAction());
         }
 
-        // Convert simple model to advanced model
-        final var advancedRequest =
-            new io.camunda.gateway.protocol.model.UserTaskAssignmentRequest()
-                .assignee(request.getAssignee())
-                .allowOverride(request.getAllowOverride())
-                .action(request.getAction());
-
-        return performAssignment(userTaskKey, advancedRequest);
+        return performAssignment(userTaskKey, request);
       }
     } catch (final Exception e) {
       return CallToolResultMapper.mapErrorToResult(e);

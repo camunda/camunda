@@ -422,29 +422,6 @@ public class SimpleSearchQueryMapper {
     return filterModel;
   }
 
-  public static io.camunda.gateway.protocol.model.UserTaskSearchQuerySortRequest
-      toUserTaskSearchQuerySortRequest(
-          final io.camunda.gateway.protocol.model.simple.UserTaskSearchQuerySortRequest simple) {
-    if (simple == null) {
-      return null;
-    }
-    return new io.camunda.gateway.protocol.model.UserTaskSearchQuerySortRequest()
-        .field(simple.getField())
-        .order(simple.getOrder());
-  }
-
-  public static io.camunda.gateway.protocol.model.UserTaskVariableSearchQuerySortRequest
-      toUserTaskVariableSearchQuerySortRequest(
-          final io.camunda.gateway.protocol.model.simple.UserTaskVariableSearchQuerySortRequest
-              simple) {
-    if (simple == null) {
-      return null;
-    }
-    return new io.camunda.gateway.protocol.model.UserTaskVariableSearchQuerySortRequest()
-        .field(simple.getField())
-        .order(simple.getOrder());
-  }
-
   public static io.camunda.gateway.protocol.model.UserTaskVariableFilter
       toUserTaskVariableFilter(
           final io.camunda.gateway.protocol.model.simple.UserTaskVariableFilter simple) {

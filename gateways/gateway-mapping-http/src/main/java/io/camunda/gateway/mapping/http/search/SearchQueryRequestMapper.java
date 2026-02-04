@@ -462,17 +462,12 @@ public final class SearchQueryRequestMapper {
   public static Either<ProblemDetail, UserTaskQuery> toUserTaskQuery(
       final io.camunda.gateway.protocol.model.simple.UserTaskFilter filter,
       final io.camunda.gateway.protocol.model.simple.SearchQueryPageRequest page,
-      final List<io.camunda.gateway.protocol.model.simple.UserTaskSearchQuerySortRequest> sort) {
+      final List<UserTaskSearchQuerySortRequest> sort) {
     return toUserTaskQuery(
         new UserTaskSearchQuery()
             .filter(SimpleSearchQueryMapper.toUserTaskFilter(filter))
             .page(SimpleSearchQueryMapper.toPageRequest(page))
-            .sort(
-                sort == null
-                    ? List.of()
-                    : sort.stream()
-                        .map(SimpleSearchQueryMapper::toUserTaskSearchQuerySortRequest)
-                        .toList()));
+            .sort(sort));
   }
 
   public static Either<ProblemDetail, UserTaskQuery> toUserTaskQuery(
@@ -492,6 +487,17 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, VariableQuery> toUserTaskVariableQuery(
+      final io.camunda.gateway.protocol.model.simple.UserTaskVariableFilter filter,
+      final io.camunda.gateway.protocol.model.simple.SearchQueryPageRequest page,
+      final List<UserTaskVariableSearchQuerySortRequest> sort) {
+    return toUserTaskVariableQuery(
+        new UserTaskVariableSearchQueryRequest()
+            .filter(SimpleSearchQueryMapper.toUserTaskVariableFilter(filter))
+            .page(SimpleSearchQueryMapper.toPageRequest(page))
+            .sort(sort));
+  }
+
+  public static Either<ProblemDetail, VariableQuery> toUserTaskVariableQuery(
       final UserTaskVariableSearchQueryRequest request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.variableSearchQuery().build());
@@ -507,23 +513,6 @@ public final class SearchQueryRequestMapper {
             SearchQuerySortRequestMapper::applyUserTaskVariableSortField);
 
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::variableSearchQuery);
-  }
-
-  public static Either<ProblemDetail, VariableQuery> toUserTaskVariableQuery(
-      final io.camunda.gateway.protocol.model.simple.UserTaskVariableFilter filter,
-      final io.camunda.gateway.protocol.model.simple.SearchQueryPageRequest page,
-      final List<io.camunda.gateway.protocol.model.simple.UserTaskVariableSearchQuerySortRequest>
-          sort) {
-    return toUserTaskVariableQuery(
-        new UserTaskVariableSearchQueryRequest()
-            .filter(SimpleSearchQueryMapper.toUserTaskVariableFilter(filter))
-            .page(SimpleSearchQueryMapper.toPageRequest(page))
-            .sort(
-                sort == null
-                    ? List.of()
-                    : sort.stream()
-                        .map(SimpleSearchQueryMapper::toUserTaskVariableSearchQuerySortRequest)
-                        .toList()));
   }
 
   public static Either<ProblemDetail, VariableQuery> toVariableQuery(
