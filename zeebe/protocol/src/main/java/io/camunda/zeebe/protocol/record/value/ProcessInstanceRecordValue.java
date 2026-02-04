@@ -193,4 +193,16 @@ public interface ProcessInstanceRecordValue
    * @return the key of the root process instance, or {@code -1} if not set
    */
   long getRootProcessInstanceKey();
+
+  /**
+   * Returns the business id associated with this process instance. The business id is an immutable,
+   * user-defined string identifier that can be used to uniquely identify a process instance within
+   * the scope of a process definition.
+   *
+   * <p>The business id is set only on root process instances and remains immutable throughout the
+   * instance's lifecycle. It can be used to enforce idempotency when creating process instances.
+   *
+   * @return the business id, or an empty string if not set
+   */
+  String getBusinessId();
 }

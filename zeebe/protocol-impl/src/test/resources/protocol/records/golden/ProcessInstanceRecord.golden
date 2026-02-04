@@ -58,6 +58,7 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
   public static final StringValue TAGS_KEY = new StringValue("tags");
   public static final StringValue ROOT_PROCESS_INSTANCE_KEY =
       new StringValue("rootProcessInstanceKey");
+  public static final StringValue BUSINESS_ID_KEY = new StringValue("businessId");
 
   private final StringProperty bpmnProcessIdProp = new StringProperty(BPMN_PROCESS_ID_KEY, "");
   private final IntegerProperty versionProp = new IntegerProperty(VERSION_KEY, -1);
@@ -96,8 +97,10 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
   private final LongProperty rootProcessInstanceKeyProp =
       new LongProperty(ROOT_PROCESS_INSTANCE_KEY, -1L);
 
+  private final StringProperty businessIdProp = new StringProperty(BUSINESS_ID_KEY, "");
+
   public ProcessInstanceRecord() {
-    super(16);
+    super(17);
     declareProperty(bpmnElementTypeProp)
         .declareProperty(elementIdProp)
         .declareProperty(bpmnProcessIdProp)
@@ -113,7 +116,8 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
         .declareProperty(processDefinitionPathProp)
         .declareProperty(callingElementPathProp)
         .declareProperty(tagsProp)
-        .declareProperty(rootProcessInstanceKeyProp);
+        .declareProperty(rootProcessInstanceKeyProp)
+        .declareProperty(businessIdProp);
   }
 
   public void wrap(final ProcessInstanceRecord record) {
@@ -129,6 +133,7 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
     parentElementInstanceKeyProp.setValue(record.getParentElementInstanceKey());
     tenantIdProp.setValue(record.getTenantId());
     rootProcessInstanceKeyProp.setValue(record.getRootProcessInstanceKey());
+    businessIdProp.setValue(record.getBusinessId());
   }
 
   @JsonIgnore
@@ -362,6 +367,21 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
 
   public ProcessInstanceRecord setTenantId(final String tenantId) {
     tenantIdProp.setValue(tenantId);
+    return this;
+  }
+
+  @Override
+  public String getBusinessId() {
+    return bufferAsString(businessIdProp.getValue());
+  }
+
+  public ProcessInstanceRecord setBusinessId(final String businessId) {
+    businessIdProp.setValue(businessId);
+    return this;
+  }
+
+  public ProcessInstanceRecord setBusinessId(final DirectBuffer businessId) {
+    businessIdProp.setValue(businessId);
     return this;
   }
 }

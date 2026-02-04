@@ -127,6 +127,11 @@ public class ZeebeProcessInstanceDataDto implements ProcessInstanceRecordValue {
     return -1L; // not used in Optimize
   }
 
+  @Override
+  public String getBusinessId() {
+    return "";
+  }
+
   public void setParentElementInstanceKey(final long parentElementInstanceKey) {
     this.parentElementInstanceKey = parentElementInstanceKey;
   }

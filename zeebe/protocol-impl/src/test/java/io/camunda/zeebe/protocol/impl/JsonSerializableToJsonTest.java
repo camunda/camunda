@@ -1911,6 +1911,7 @@ final class JsonSerializableToJsonTest {
               final var processDefinitionPath = List.of(101L, 102L);
               final var callingElementPath = List.of(12345, 67890);
               final var rootProcessInstanceKey = 9999L;
+              final var businessId = "business-id-123";
 
               return new ProcessInstanceRecord()
                   .setElementId(elementId)
@@ -1927,7 +1928,8 @@ final class JsonSerializableToJsonTest {
                   .setProcessDefinitionPath(processDefinitionPath)
                   .setCallingElementPath(callingElementPath)
                   .setTags(Set.of("tag1", "tag2"))
-                  .setRootProcessInstanceKey(rootProcessInstanceKey);
+                  .setRootProcessInstanceKey(rootProcessInstanceKey)
+                  .setBusinessId(businessId);
             },
         """
                 {
@@ -1946,7 +1948,8 @@ final class JsonSerializableToJsonTest {
                   "processDefinitionPath": [101, 102],
                   "callingElementPath": [12345, 67890],
                   "tags": ["tag1", "tag2"],
-                  "rootProcessInstanceKey": 9999
+                  "rootProcessInstanceKey": 9999,
+                  "businessId": "business-id-123"
                 }
                 """
       },
@@ -1976,7 +1979,8 @@ final class JsonSerializableToJsonTest {
                   "processDefinitionPath": [],
                   "callingElementPath": [],
                   "tags": [],
-                  "rootProcessInstanceKey": -1
+                  "rootProcessInstanceKey": -1,
+                  "businessId": ""
                 }
                 """
       },
