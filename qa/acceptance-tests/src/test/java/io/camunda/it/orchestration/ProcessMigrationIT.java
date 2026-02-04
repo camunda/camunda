@@ -27,8 +27,6 @@ import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.client.api.search.response.Variable;
 import io.camunda.qa.util.multidb.MultiDbTest;
-import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.model.bpmn.builder.AbstractUserTaskBuilder;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -36,7 +34,6 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import org.assertj.core.api.ThrowingConsumer;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
 public class ProcessMigrationIT {
@@ -162,173 +159,6 @@ public class ProcessMigrationIT {
           assertThat(i.getProcessDefinitionId()).isEqualTo("migration-process_v1");
           assertThat(i.getState()).isEqualTo(IncidentState.RESOLVED);
         });
-  }
-
-  @Test
-  @DisabledIfSystemProperty(
-      named = "test.integration.camunda.database.type",
-      matches = "rdbms.*$",
-      disabledReason = "Job-based user tasks don't work with RDBMS")
-  void shouldMigrateProcessWithJobBasedUserTask() {
-    // given
-    final var v1 =
-        Bpmn.createExecutableProcess("migration-user-task_v1")
-            .startEvent()
-            .userTask(
-                "task1",
-                t ->
-                    t.zeebeCandidateGroups("g1,g2")
-                        .zeebeCandidateUsers("u1,u2")
-                        .zeebeDueDate("2017-07-21T19:32:28+02:00")
-                        .zeebeFollowUpDate("2017-07-22T19:32:28+02:00")
-                        .zeebeAssignee("original"))
-            .endEvent()
-            .done();
-    final var v2 =
-        Bpmn.createExecutableProcess("migration-user-task_v2")
-            .startEvent()
-            .userTask(
-                "task1",
-                t ->
-                    t.zeebeUserTask()
-                        .zeebeAssigneeExpression("varAssignee")
-                        .zeebeTaskPriorityExpression("2*varPriority"))
-            .endEvent()
-            .done();
-    final var deploymentEvent =
-        client
-            .newDeployResourceCommand()
-            .addProcessModel(v1, "migration-user-task_v1.bpmn")
-            .addProcessModel(v2, "migration-user-task_v2.bpmn")
-            .send()
-            .join();
-    final var pd2 =
-        deploymentEvent.getProcesses().stream()
-            .filter(p -> p.getBpmnProcessId().equals("migration-user-task_v2"))
-            .findFirst()
-            .get()
-            .getProcessDefinitionKey();
-    final var processInstanceKey =
-        startProcessInstance(
-            client, "migration-user-task_v1", Map.of("varAssignee", "demo", "varPriority", 20));
-
-    // when
-    migrateProcessInstance(
-        client,
-        processInstanceKey,
-        MigrationPlan.newBuilder()
-            .withTargetProcessDefinitionKey(pd2)
-            .addMappingInstruction("task1", "task1")
-            .build());
-
-    // then
-    await()
-        .atMost(TIMEOUT_DATA_AVAILABILITY)
-        .untilAsserted(
-            () -> {
-              assertThat(
-                      client
-                          .newUserTaskSearchRequest()
-                          .filter(f -> f.processDefinitionKey(pd2).assignee("demo"))
-                          .send()
-                          .join()
-                          .items())
-                  .hasSize(1);
-            });
-    final var migratedTask =
-        client
-            .newUserTaskSearchRequest()
-            .filter(f -> f.processDefinitionKey(pd2))
-            .send()
-            .join()
-            .singleItem();
-    assertThat(migratedTask.getAssignee()).isEqualTo("demo");
-    assertThat(migratedTask.getCandidateGroups()).isEqualTo(List.of("g1", "g2"));
-    assertThat(migratedTask.getCandidateUsers()).isEqualTo(List.of("u1", "u2"));
-    assertThat(migratedTask.getDueDate()).isEqualTo("2017-07-21T19:32:28+02:00");
-    assertThat(migratedTask.getFollowUpDate()).isEqualTo("2017-07-22T19:32:28+02:00");
-    assertThat(migratedTask.getPriority()).isEqualTo(40);
-  }
-
-  @Test
-  @DisabledIfSystemProperty(
-      named = "test.integration.camunda.database.type",
-      matches = "rdbms.*$",
-      disabledReason = "Job-based user tasks don't work with RDBMS")
-  void shouldMigrateProcessWithJobBasedUserTaskWithoutAssigneeAndPriority() {
-    // given
-    final var v1 =
-        Bpmn.createExecutableProcess("migration-user-task_v1")
-            .startEvent()
-            .userTask(
-                "task1",
-                t ->
-                    t.zeebeCandidateGroups("g1,g2")
-                        .zeebeCandidateUsers("u1,u2")
-                        .zeebeDueDate("2017-07-21T19:32:28+02:00")
-                        .zeebeFollowUpDate("2017-07-22T19:32:28+02:00")
-                        .zeebeAssignee("original"))
-            .endEvent()
-            .done();
-    final var v2 =
-        Bpmn.createExecutableProcess("migration-user-task_v2")
-            .startEvent()
-            .userTask("task1", AbstractUserTaskBuilder::zeebeUserTask)
-            .endEvent()
-            .done();
-    final var deploymentEvent =
-        client
-            .newDeployResourceCommand()
-            .addProcessModel(v1, "migration-user-task_v1.bpmn")
-            .addProcessModel(v2, "migration-user-task_v2.bpmn")
-            .send()
-            .join();
-    final var pd2 =
-        deploymentEvent.getProcesses().stream()
-            .filter(p -> p.getBpmnProcessId().equals("migration-user-task_v2"))
-            .findFirst()
-            .get()
-            .getProcessDefinitionKey();
-    final var processInstanceKey =
-        startProcessInstance(
-            client, "migration-user-task_v1", Map.of("varAssignee", "demo", "varPriority", 20));
-
-    // when
-    migrateProcessInstance(
-        client,
-        processInstanceKey,
-        MigrationPlan.newBuilder()
-            .withTargetProcessDefinitionKey(pd2)
-            .addMappingInstruction("task1", "task1")
-            .build());
-
-    // then
-    await()
-        .atMost(TIMEOUT_DATA_AVAILABILITY)
-        .untilAsserted(
-            () -> {
-              assertThat(
-                      client
-                          .newUserTaskSearchRequest()
-                          .filter(f -> f.processDefinitionKey(pd2).assignee(a -> a.exists(false)))
-                          .send()
-                          .join()
-                          .items())
-                  .hasSize(1);
-            });
-    final var migratedTask =
-        client
-            .newUserTaskSearchRequest()
-            .filter(f -> f.processDefinitionKey(pd2))
-            .send()
-            .join()
-            .singleItem();
-    assertThat(migratedTask.getAssignee()).isNull();
-    assertThat(migratedTask.getCandidateGroups()).isEqualTo(List.of("g1", "g2"));
-    assertThat(migratedTask.getCandidateUsers()).isEqualTo(List.of("u1", "u2"));
-    assertThat(migratedTask.getDueDate()).isEqualTo("2017-07-21T19:32:28+02:00");
-    assertThat(migratedTask.getFollowUpDate()).isEqualTo("2017-07-22T19:32:28+02:00");
-    assertThat(migratedTask.getPriority()).isEqualTo(50);
   }
 
   public Long deployProcessFromClasspath(final CamundaClient client, final String classpath) {

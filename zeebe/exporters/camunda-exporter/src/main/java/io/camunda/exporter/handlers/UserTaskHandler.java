@@ -56,7 +56,7 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
           UserTaskIntent.COMPLETION_DENIED);
   private static final String UNMAPPED_USER_TASK_ATTRIBUTE_WARNING =
       "Attribute update not mapped while importing ZEEBE_USER_TASKS: {}";
-
+  private static final String RECREATE_WITH_NULL = "NULL";
   private final String indexName;
   private final ExporterEntityCache<String, CachedFormEntity> formCache;
   private final ExporterEntityCache<Long, CachedProcessEntity> processCache;
@@ -200,12 +200,20 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
         if (entity.getFormId() != null) {
           updateFields.put(TaskTemplate.FORM_ID, entity.getFormId());
         }
-        if (entity.getFormKey() != null) {
-          updateFields.put(TaskTemplate.FORM_KEY, entity.getFormKey());
-        }
         if (entity.getFormVersion() != null) {
           updateFields.put(TaskTemplate.FORM_VERSION, entity.getFormVersion());
         }
+        if (entity.getExternalFormReference() != null) {
+          updateFields.put(TaskTemplate.EXTERNAL_FORM_REFERENCE, entity.getExternalFormReference());
+        }
+      }
+    }
+    if (entity.getFormKey() != null) {
+      if (entity.getFormKey().equals(RECREATE_WITH_NULL)) {
+        entity.setFormKey(null);
+        updateFields.put(TaskTemplate.FORM_KEY, null);
+      } else {
+        updateFields.put(TaskTemplate.FORM_KEY, entity.getFormKey());
       }
     }
     if (entity.getFlowNodeBpmnId() != null) {
@@ -230,7 +238,8 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
 
   private void createTaskEntity(final TaskEntity entity, final Record<UserTaskRecordValue> record) {
     final var taskValue = record.getValue();
-    final var formKey = taskValue.getFormKey() > 0 ? String.valueOf(taskValue.getFormKey()) : null;
+    final var formKey =
+        taskValue.getFormKey() > 0 ? String.valueOf(taskValue.getFormKey()) : RECREATE_WITH_NULL;
 
     entity
         .setImplementation(TaskImplementation.ZEEBE_USER_TASK)
