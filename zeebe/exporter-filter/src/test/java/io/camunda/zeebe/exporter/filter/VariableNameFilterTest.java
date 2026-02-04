@@ -16,6 +16,7 @@ import io.camunda.zeebe.exporter.filter.NameFilterRule.Type;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
+import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -38,8 +39,33 @@ final class VariableNameFilterTest {
     assertThat(accepted).isTrue();
   }
 
+  @Test
+  void shouldAcceptNullRecord() {
+    // given
+    final var filter = new VariableNameFilter(List.of(), List.of());
+
+    // when
+    final boolean accepted = filter.accept(null);
+
+    // then
+    assertThat(accepted).isTrue();
+  }
+
+  @Test
+  void shouldAcceptVariableRecordWithNullName() {
+    // given
+    final var filter = new VariableNameFilter(List.of(), List.of());
+    final Record<VariableRecordValue> recordWithNullName = variableRecord(null);
+
+    // when
+    final boolean accepted = filter.accept(recordWithNullName);
+
+    // then
+    assertThat(accepted).isTrue();
+  }
+
   // ---------------------------------------------------------------------------
-  // Inclusion rules
+  // Inclusion/Exclusion rules
   // ---------------------------------------------------------------------------
 
   @Test
@@ -110,6 +136,20 @@ final class VariableNameFilterTest {
 
     // then
     assertThat(rules).hasSize(2).allSatisfy(rule -> assertThat(rule.type()).isEqualTo(Type.EXACT));
+    assertThat(rules.get(0).pattern()).isEqualTo("foo");
+    assertThat(rules.get(1).pattern()).isEqualTo("bar");
+  }
+
+  @Test
+  void parseRulesShouldIgnoreNullEntries() {
+    // given
+    final var raw = Arrays.asList(null, "foo", " ", null, "bar");
+
+    // when
+    final var rules = parseRules(raw, Type.EXACT);
+
+    // then
+    assertThat(rules).hasSize(2);
     assertThat(rules.get(0).pattern()).isEqualTo("foo");
     assertThat(rules.get(1).pattern()).isEqualTo("bar");
   }

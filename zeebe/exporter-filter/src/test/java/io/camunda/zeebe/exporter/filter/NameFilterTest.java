@@ -9,6 +9,8 @@ package io.camunda.zeebe.exporter.filter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -154,5 +156,41 @@ final class NameFilterTest {
     // when / then
     assertThat(filter.accept("allowed")).isTrue();
     assertThat(filter.accept("forbidden")).isFalse();
+  }
+
+  // ------- null-handling tests -------
+
+  @Test
+  void shouldAcceptNullName() {
+    // given
+    final var filter = new NameFilter(List.of(), List.of());
+
+    // when / then
+    assertThat(filter.accept(null)).isTrue();
+  }
+
+  @Test
+  void shouldHandleNullInclusionAndExclusionLists() {
+    // given
+    final var filter = new NameFilter(null, null);
+
+    // when / then
+    // With no rules at all, non-null names are accepted
+    assertThat(filter.accept("foo")).isTrue();
+    assertThat(filter.accept("bar")).isTrue();
+  }
+
+  @Test
+  void shouldIgnoreNullRulesInLists() {
+    // given: lists containing null entries must not cause NPE
+    final var validRule = new NameFilterRule(NameFilterRule.Type.EXACT, "foo");
+    final var inclusionRules = Arrays.asList(null, validRule);
+    final var exclusionRules = Collections.singletonList((NameFilterRule) null);
+
+    final var filter = new NameFilter(inclusionRules, exclusionRules);
+
+    // when / then
+    assertThat(filter.accept("foo")).isTrue();
+    assertThat(filter.accept("bar")).isFalse();
   }
 }

@@ -12,6 +12,7 @@ import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.util.SemanticVersion;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 public final class VariableNameFilter implements ExporterRecordFilter, RecordVersionFilter {
 
@@ -24,6 +25,10 @@ public final class VariableNameFilter implements ExporterRecordFilter, RecordVer
 
   @Override
   public boolean accept(final Record<?> record) {
+    if (record == null) {
+      return true;
+    }
+
     if (!(record.getValue() instanceof final VariableRecordValue variableRecordValue)) {
       return true;
     }
@@ -34,11 +39,12 @@ public final class VariableNameFilter implements ExporterRecordFilter, RecordVer
   public static List<NameFilterRule> parseRules(
       final List<String> rawList, final NameFilterRule.Type type) {
 
-    if (rawList == null) {
+    if (rawList == null || rawList.isEmpty()) {
       return Collections.emptyList();
     }
 
     return rawList.stream()
+        .filter(Objects::nonNull)
         .map(String::trim)
         .filter(s -> !s.isEmpty())
         .map(pattern -> new NameFilterRule(type, pattern))

@@ -7,7 +7,27 @@
  */
 package io.camunda.zeebe.exporter.filter;
 
+import java.util.Objects;
+
+/**
+ * A single name filter rule.
+ *
+ * <p>Contract:
+ *
+ * <ul>
+ *   <li>{@code type} must not be {@code null}
+ *   <li>{@code pattern} must not be {@code null} or blank
+ * </ul>
+ */
 public record NameFilterRule(Type type, String pattern) {
+
+  public NameFilterRule {
+    Objects.requireNonNull(type, "type must not be null");
+
+    if (pattern == null || pattern.isBlank()) {
+      throw new IllegalArgumentException("pattern must not be null or blank");
+    }
+  }
 
   public enum Type {
     EXACT,

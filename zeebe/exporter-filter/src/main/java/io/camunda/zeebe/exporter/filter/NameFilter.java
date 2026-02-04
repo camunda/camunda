@@ -9,6 +9,7 @@ package io.camunda.zeebe.exporter.filter;
 
 import io.camunda.zeebe.exporter.filter.NameFilterRule.Type;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Predicate;
 
 final class NameFilter {
@@ -22,6 +23,10 @@ final class NameFilter {
   }
 
   boolean accept(final String name) {
+    if (name == null) {
+      return true;
+    }
+
     if (!includePredicates.isEmpty() && includePredicates.stream().noneMatch(p -> p.test(name))) {
       return false;
     }
@@ -30,7 +35,10 @@ final class NameFilter {
   }
 
   private static List<Predicate<String>> toPredicates(final List<NameFilterRule> rules) {
-    return rules.stream().map(NameFilter::toPredicate).toList();
+    if (rules == null || rules.isEmpty()) {
+      return List.of();
+    }
+    return rules.stream().filter(Objects::nonNull).map(NameFilter::toPredicate).toList();
   }
 
   private static Predicate<String> toPredicate(final NameFilterRule rule) {
