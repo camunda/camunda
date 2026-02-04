@@ -7,24 +7,26 @@
  */
 package io.camunda.search.clients.reader;
 
+import io.camunda.search.aggregation.result.GlobalJobStatisticsAggregationResult;
 import io.camunda.search.clients.SearchClientBasedQueryExecutor;
-import io.camunda.search.entities.JobEntity;
-import io.camunda.search.query.JobQuery;
-import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.entities.GlobalJobStatisticsEntity;
+import io.camunda.search.query.GlobalJobStatisticsQuery;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 
-public class JobDocumentReader extends DocumentBasedReader implements JobReader {
+public class JobMetricsBatchDocumentReader extends DocumentBasedReader
+    implements JobMetricsBatchReader {
 
-  public JobDocumentReader(
+  public JobMetricsBatchDocumentReader(
       final SearchClientBasedQueryExecutor executor, final IndexDescriptor indexDescriptor) {
     super(executor, indexDescriptor);
   }
 
   @Override
-  public SearchQueryResult<JobEntity> search(
-      final JobQuery query, final ResourceAccessChecks resourceAccessChecks) {
+  public GlobalJobStatisticsEntity getGlobalJobStatistics(
+      final GlobalJobStatisticsQuery query, final ResourceAccessChecks resourceAccessChecks) {
     return getSearchExecutor()
-        .search(query, io.camunda.webapps.schema.entities.JobEntity.class, resourceAccessChecks);
+        .aggregate(query, GlobalJobStatisticsAggregationResult.class, resourceAccessChecks)
+        .entity();
   }
 }

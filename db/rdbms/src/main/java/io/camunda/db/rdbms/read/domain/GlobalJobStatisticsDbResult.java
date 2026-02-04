@@ -5,9 +5,15 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.search.clients.reader;
+package io.camunda.db.rdbms.read.domain;
 
-import io.camunda.search.entities.JobEntity;
-import io.camunda.search.query.JobQuery;
+import java.time.OffsetDateTime;
 
-public interface JobReader extends SearchEntityReader<JobEntity, JobQuery> {}
+public record GlobalJobStatisticsDbResult(
+    Long createdCount,
+    OffsetDateTime lastCreatedAt,
+    Long completedCount,
+    OffsetDateTime lastCompletedAt,
+    Long failedCount,
+    OffsetDateTime lastFailedAt,
+    Boolean incompleteBatch) {}

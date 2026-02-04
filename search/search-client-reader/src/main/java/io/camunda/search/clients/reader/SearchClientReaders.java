@@ -21,6 +21,7 @@ public record SearchClientReaders(
     GroupMemberReader groupMemberReader,
     IncidentReader incidentReader,
     JobReader jobReader,
+    JobMetricsBatchReader jobMetricsBatchReader,
     MappingRuleReader mappingRuleReader,
     MessageSubscriptionReader messageSubscriptionReader,
     ProcessDefinitionMessageSubscriptionStatisticsReader

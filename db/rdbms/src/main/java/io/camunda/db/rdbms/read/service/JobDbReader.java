@@ -12,9 +12,7 @@ import io.camunda.db.rdbms.read.mapper.JobEntityMapper;
 import io.camunda.db.rdbms.sql.JobMapper;
 import io.camunda.db.rdbms.sql.columns.JobSearchColumn;
 import io.camunda.search.clients.reader.JobReader;
-import io.camunda.search.entities.GlobalJobStatisticsEntity;
 import io.camunda.search.entities.JobEntity;
-import io.camunda.search.query.GlobalJobStatisticsQuery;
 import io.camunda.search.query.JobQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.reader.ResourceAccessChecks;
@@ -76,11 +74,5 @@ public class JobDbReader extends AbstractEntityReader<JobEntity> implements JobR
 
   public SearchQueryResult<JobEntity> search(final JobQuery query) {
     return search(query, ResourceAccessChecks.disabled());
-  }
-
-  @Override
-  public GlobalJobStatisticsEntity getGlobalJobStatistics(
-      final GlobalJobStatisticsQuery query, final ResourceAccessChecks resourceAccessChecks) {
-    throw new UnsupportedOperationException("Not implemented yet");
   }
 }
