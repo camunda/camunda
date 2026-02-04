@@ -38,7 +38,10 @@ import {CellAppliedTo} from './CellAppliedTo';
 import {CellOperationType} from './CellOperationType';
 import {CellResult} from './CellResult';
 import {CellComment} from './CellComment';
-import {processesStore} from 'modules/stores/processes/processes.list';
+import {
+  useProcessDefinitionNames,
+  useSelectedProcessDefinition,
+} from 'modules/hooks/processDefinitions';
 import {
   auditLogEntityTypeSchema,
   auditLogOperationTypeSchema,
@@ -100,11 +103,9 @@ const InstancesTable: React.FC = observer(() => {
     OperationsLogFilterField,
     OperationsLogFilters
   >(location.search, AUDIT_LOG_FILTER_FIELDS, []);
-  const processDefinitionKey = processesStore.getProcessId({
-    process: filterValues.process,
-    tenant: filterValues.tenant,
-    version: filterValues.version,
-  });
+  const selectedTenantId =
+    filterValues.tenant === 'all' ? undefined : filterValues.tenant;
+  const {data: selectedProcessDefinition} = useSelectedProcessDefinition();
 
   const request: QueryAuditLogsRequestBody = useMemo(() => {
     return {
@@ -116,9 +117,9 @@ const InstancesTable: React.FC = observer(() => {
       ],
       filter: {
         category: {$neq: 'ADMIN'},
-        processDefinitionKey: processDefinitionKey,
+        processDefinitionKey: selectedProcessDefinition?.processDefinitionKey,
         processInstanceKey: filterValues.processInstanceKey,
-        tenantId: filterValues.tenant,
+        tenantId: selectedTenantId,
         operationType: filterValues.operationType
           ? {
               $in: filterValues.operationType
@@ -146,7 +147,12 @@ const InstancesTable: React.FC = observer(() => {
         actorId: filterValues.actorId,
       },
     };
-  }, [filterValues, processDefinitionKey, sort]);
+  }, [
+    filterValues,
+    selectedTenantId,
+    selectedProcessDefinition?.processDefinitionKey,
+    sort,
+  ]);
 
   const {
     data,
@@ -173,6 +179,11 @@ const InstancesTable: React.FC = observer(() => {
     },
   });
 
+  const {
+    data: processDefinitionNameMap,
+    isLoading: isLoadingProcessDefinitionNames,
+  } = useProcessDefinitionNames(selectedTenantId);
+
   const [detailsModal, setDetailsModal] = useState<DetailsModalState>({
     isOpen: false,
   });
@@ -198,16 +209,25 @@ const InstancesTable: React.FC = observer(() => {
         entityType: spaceAndCapitalize(item.entityType),
         operationType: <CellOperationType item={item} />,
         result: <CellResult item={item} />,
-        appliedTo: <CellAppliedTo item={item} />,
+        appliedTo: (
+          <CellAppliedTo
+            item={item}
+            processDefinitionName={
+              item.processDefinitionKey
+                ? processDefinitionNameMap?.[item.processDefinitionKey]
+                : undefined
+            }
+          />
+        ),
         user: item.actorId,
         timestamp: formatDate(item.timestamp),
         comment: <CellComment item={item} setDetailsModal={setDetailsModal} />,
       })) || [],
-    [data],
+    [data, processDefinitionNameMap],
   );
 
   const getTableState = () => {
-    if (isLoading) {
+    if (isLoading || isLoadingProcessDefinitionNames) {
       return 'loading';
     } else if (error) {
       return 'error';

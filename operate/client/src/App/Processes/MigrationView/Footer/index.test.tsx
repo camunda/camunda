@@ -164,9 +164,7 @@ describe('Footer', () => {
   });
 
   it('should track confirm button click', async () => {
-    processInstanceMigrationStore.setBatchOperationQuery({
-      active: true,
-    });
+    processInstanceMigrationStore.setBatchOperationQuery({});
     processInstanceMigrationStore.setTargetProcessDefinitionKey('test-key');
 
     const {user} = render(<Footer />, {wrapper: Wrapper});
@@ -188,7 +186,6 @@ describe('Footer', () => {
     vi.useFakeTimers({shouldAdvanceTime: true});
 
     processInstanceMigrationStore.setBatchOperationQuery({
-      active: true,
       ids: ['1', '2'],
     });
     processInstanceMigrationStore.setTargetProcessDefinitionKey(

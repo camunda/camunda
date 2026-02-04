@@ -13,7 +13,6 @@ import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {mockQueryAuditLogs} from 'modules/mocks/api/v2/auditLogs/queryAuditLogs';
 import {notificationsStore} from 'modules/stores/notifications';
-import {processesStore} from 'modules/stores/processes/processes.list';
 import {mockSearchProcessDefinitions} from 'modules/mocks/api/v2/processDefinitions/searchProcessDefinitions';
 
 vi.mock('modules/stores/notifications', () => ({
@@ -45,7 +44,7 @@ describe('OperationsLog InstancesTable', () => {
     mockSearchProcessDefinitions().withSuccess({
       items: [
         {
-          processDefinitionKey: '123',
+          processDefinitionKey: '123456',
           processDefinitionId: 'process1',
           name: 'Test Process',
           version: 1,
@@ -55,10 +54,6 @@ describe('OperationsLog InstancesTable', () => {
       ],
       page: {totalItems: 1},
     });
-  });
-
-  afterEach(() => {
-    processesStore.reset();
   });
 
   it('should render operations log header', () => {
@@ -302,6 +297,7 @@ describe('OperationsLog InstancesTable', () => {
           actorType: 'USER',
           category: 'DEPLOYED_RESOURCES',
           processDefinitionId: 'process1',
+          processDefinitionKey: '123456',
         },
       ],
       page: {totalItems: 1},
@@ -314,6 +310,7 @@ describe('OperationsLog InstancesTable', () => {
     expect(
       await screen.findByRole('link', {name: 'View process instance 999'}),
     ).toBeInTheDocument();
+    expect(await screen.findByText('Test Process')).toBeInTheDocument();
     expect(
       screen.getByRole('link', {name: 'View process instance 999'}),
     ).toHaveAttribute('href', '/processes/999');

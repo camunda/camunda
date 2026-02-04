@@ -13,12 +13,9 @@ import {InstancesTableWrapper} from './InstancesTable/InstancesTableWrapper';
 import {DiagramPanel} from './DiagramPanel';
 import {observer} from 'mobx-react';
 import {useEffect} from 'react';
-import {processesStore} from 'modules/stores/processes/processes.list';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
-import {deleteSearchParams} from 'modules/utils/filter';
-import {useLocation, useNavigate, type Location} from 'react-router-dom';
+import {useLocation, type Location} from 'react-router-dom';
 import {PAGE_TITLE} from 'modules/constants';
-import {notificationsStore} from 'modules/stores/notifications';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {ProcessDefinitionKeyContext} from './processDefinitionKeyContext';
 import {SelectedProcessDefinitionContext} from './selectedProcessDefinitionContext';
@@ -27,42 +24,33 @@ import {variableFilterStore} from 'modules/stores/variableFilter';
 import {reaction} from 'mobx';
 import {tracking} from 'modules/tracking';
 import {useSelectedProcessDefinition} from 'modules/hooks/processDefinitions';
-
-type LocationType = Omit<Location, 'state'> & {
-  state: {refreshContent?: boolean};
-};
+import {useQueryClient} from '@tanstack/react-query';
+import {queryKeys} from 'modules/queries/queryKeys';
 
 const ListView: React.FC = observer(() => {
-  const location = useLocation() as LocationType;
-  const navigate = useNavigate();
+  const location = useLocation() as Location<{refreshContent?: boolean}>;
+  const client = useQueryClient();
+
   const {getFilters} = useFilters();
-
   const filters = getFilters();
-
-  const {process, tenant} = filters;
-  const {
-    state: {status: processesStatus},
-  } = processesStore;
   const filtersJSON = JSON.stringify(filters);
 
   useEffect(() => {
-    if (
-      processesStore.state.status !== 'initial' &&
-      location.state?.refreshContent
-    ) {
-      processesStore.fetchProcesses();
+    if (location.state?.refreshContent) {
+      client.refetchQueries({
+        queryKey: queryKeys.processDefinitions.search(),
+        type: 'active',
+      });
     }
-  }, [location.state]);
+  }, [location.state, client]);
 
   useEffect(() => {
     processInstancesSelectionStore.init();
-    processesStore.fetchProcesses();
 
     document.title = PAGE_TITLE.INSTANCES;
 
     return () => {
       processInstancesSelectionStore.reset();
-      processesStore.reset();
     };
   }, []);
 
@@ -74,36 +62,15 @@ const ListView: React.FC = observer(() => {
     const disposer = reaction(
       () => variableFilterStore.state.variable,
       () => {
-        if (processesStatus === 'fetched') {
-          tracking.track({
-            eventName: 'process-instances-filtered',
-            filterName: 'variable',
-            multipleValues: variableFilterStore.state.isInMultipleMode,
-          });
-        }
+        tracking.track({
+          eventName: 'process-instances-filtered',
+          filterName: 'variable',
+          multipleValues: variableFilterStore.state.isInMultipleMode,
+        });
       },
     );
     return disposer;
-  }, [processesStatus]);
-
-  useEffect(() => {
-    if (processesStatus === 'fetched') {
-      if (
-        process !== undefined &&
-        processesStore.getProcess({
-          bpmnProcessId: process,
-          tenantId: tenant,
-        }) === undefined
-      ) {
-        navigate(deleteSearchParams(location, ['process', 'version']));
-        notificationsStore.displayNotification({
-          kind: 'error',
-          title: 'Process could not be found',
-          isDismissable: true,
-        });
-      }
-    }
-  }, [process, tenant, navigate, processesStatus, location]);
+  }, []);
 
   const {data: selectedProcessDefinition} = useSelectedProcessDefinition();
 

@@ -142,6 +142,22 @@ function useSelectedProcessDefinition() {
   });
 }
 
+function useProcessDefinitionNames(tenantId?: string) {
+  return useProcessDefinitionsSearch({
+    staleTime: 120_000,
+    payload: {filter: {tenantId}},
+    select: (definitions) => {
+      return definitions.reduce<{[processDefinitionKey: string]: string}>(
+        (map, def) => {
+          map[def.processDefinitionKey] = getProcessDefinitionName(def);
+          return map;
+        },
+        {},
+      );
+    },
+  });
+}
+
 function useProcessDefinitionsSearchFilter() {
   const [searchParams] = useSearchParams();
   return useMemo(
@@ -159,4 +175,5 @@ export {
   useProcessDefinitionVersions,
   useProcessDefinitionSelection,
   useSelectedProcessDefinition,
+  useProcessDefinitionNames,
 };

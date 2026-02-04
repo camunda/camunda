@@ -24,7 +24,6 @@ import {
 import isEqual from 'lodash/isEqual';
 import {observer} from 'mobx-react';
 import {TenantField} from 'modules/components/TenantField';
-import {processesStore} from 'modules/stores/processes/processes.list';
 import {getFilters} from 'modules/utils/filter/getProcessInstanceFilters';
 import {
   AUDIT_LOG_FILTER_FIELDS,
@@ -112,11 +111,9 @@ const Filters: React.FC = observer(() => {
                       <Title>Tenant</Title>
                       <Stack gap={5}>
                         <TenantField
-                          onChange={(selectedItem) => {
+                          onChange={() => {
                             form.change('process', undefined);
                             form.change('version', undefined);
-
-                            processesStore.fetchProcesses(selectedItem);
                           }}
                         />
                       </Stack>

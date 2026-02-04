@@ -12,7 +12,6 @@ import {MigrateAlt} from '@carbon/react/icons';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 import {ModalStateManager} from 'modules/components/ModalStateManager';
-import {getProcessInstancesRequestFilters} from 'modules/utils/filter';
 import {ListItem} from './styled';
 import {tracking} from 'modules/tracking';
 import {batchModificationStore} from 'modules/stores/batchModification';
@@ -20,6 +19,7 @@ import {HelperModal} from 'modules/components/HelperModal';
 import {getStateLocally} from 'modules/utils/localStorage';
 import {useListViewXml} from 'modules/queries/processDefinitions/useListViewXml';
 import {useSelectedProcessDefinitionContext} from '../../../selectedProcessDefinitionContext';
+import {variableFilterStore} from 'modules/stores/variableFilter';
 
 const localStorageKey = 'hideMigrationHelperModal';
 
@@ -62,18 +62,14 @@ const MigrateAction: React.FC = observer(() => {
       selectedProcessDefinition?.processDefinitionKey,
     );
 
-    const requestFilterParameters = {
-      ...getProcessInstancesRequestFilters(),
-      ids: selectionMode === 'INCLUDE' ? selectedProcessInstanceIds : [],
-      excludeIds: selectionMode === 'EXCLUDE' ? excludedProcessInstanceIds : [],
-    };
-
     processInstanceMigrationStore.setSelectedInstancesCount(
       processInstancesSelectionStore.selectedProcessInstanceCount,
     );
-    processInstanceMigrationStore.setBatchOperationQuery(
-      requestFilterParameters,
-    );
+    processInstanceMigrationStore.setBatchOperationQuery({
+      variable: variableFilterStore.variableWithValidatedValues,
+      ids: selectionMode === 'INCLUDE' ? selectedProcessInstanceIds : [],
+      excludeIds: selectionMode === 'EXCLUDE' ? excludedProcessInstanceIds : [],
+    });
     processInstanceMigrationStore.enable();
 
     tracking.track({

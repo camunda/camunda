@@ -6,12 +6,14 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {useEffect} from 'react';
 import {useSearchParams} from 'react-router-dom';
 import {observer} from 'mobx-react';
 import {Section} from './styled';
 import {DiagramShell} from 'modules/components/DiagramShell';
 import {Diagram} from 'modules/components/Diagram';
 import {diagramOverlaysStore} from 'modules/stores/diagramOverlays';
+import {notificationsStore} from 'modules/stores/notifications';
 import {StateOverlay} from 'modules/components/StateOverlay';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {isMoveModificationTarget} from 'modules/bpmn-js/utils/isMoveModificationTarget';
@@ -46,6 +48,7 @@ const DiagramPanel: React.FC = observer(() => {
 
   const {
     data: definitionSelection = {kind: 'no-match'},
+    status: definitionSelectionStatus,
     isLoading: isDefinitionSelectionLoading,
     isEnabled: isDefinitionSelectionEnabled,
     isError: isDefinitionSelectionError,
@@ -58,6 +61,24 @@ const DiagramPanel: React.FC = observer(() => {
     definitionSelection.kind !== 'no-match'
       ? getProcessDefinitionName(definitionSelection.definition)
       : 'Process';
+
+  useEffect(() => {
+    if (
+      definitionSelectionStatus === 'success' &&
+      definitionSelection.kind === 'no-match'
+    ) {
+      setSearchParams((p) => {
+        p.delete('process');
+        p.delete('version');
+        return p;
+      });
+      notificationsStore.displayNotification({
+        kind: 'error',
+        title: 'Process could not be found',
+        isDismissable: true,
+      });
+    }
+  }, [definitionSelection, definitionSelectionStatus, setSearchParams]);
 
   const statisticsOverlays = diagramOverlaysStore.state.overlays.filter(
     ({type}) => type.match(/^statistics/) !== null,
