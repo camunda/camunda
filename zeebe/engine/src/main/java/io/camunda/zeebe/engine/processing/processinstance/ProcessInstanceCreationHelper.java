@@ -21,6 +21,7 @@ import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCh
 import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
+import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
@@ -50,6 +51,8 @@ public class ProcessInstanceCreationHelper {
       "Expected to find process definition with key '%d', but none found";
   private static final String ERROR_MESSAGE_NO_NONE_START_EVENT =
       "Expected to create instance of process with none start event, but there is no such event";
+  private static final String ERROR_MESSAGE_BUSINESS_ID_ALREADY_EXISTS =
+      "Expected to create instance of process with business id '%s', but an instance with this business id already exists for process definition key '%d'";
   private static final Set<BpmnElementType> UNSUPPORTED_ELEMENT_TYPES =
       Set.of(
           BpmnElementType.START_EVENT,
@@ -62,13 +65,16 @@ public class ProcessInstanceCreationHelper {
   private final ProcessState processState;
   private final VariableBehavior variableBehavior;
   private final ElementActivationBehavior elementActivationBehavior;
+  private final ElementInstanceState elementInstanceState;
 
   public ProcessInstanceCreationHelper(
       final ProcessState processState,
+      final ElementInstanceState elementInstanceState,
       final AuthorizationCheckBehavior authCheckBehavior,
       final BpmnBehaviors bpmnBehaviors) {
-    this.authCheckBehavior = authCheckBehavior;
     this.processState = processState;
+    this.elementInstanceState = elementInstanceState;
+    this.authCheckBehavior = authCheckBehavior;
     variableBehavior = bpmnBehaviors.variableBehavior();
     elementActivationBehavior = bpmnBehaviors.elementActivationBehavior();
   }
@@ -186,6 +192,7 @@ public class ProcessInstanceCreationHelper {
     final var process = deployedProcess.getProcess();
     final var startInstructions = command.startInstructions();
     final var tags = command.getTags();
+    final var businessId = command.getBusinessId();
 
     return validateHasNoneStartEventOrStartInstructions(process, startInstructions)
         .flatMap(valid -> validateElementsExist(process, startInstructions))
@@ -195,6 +202,10 @@ public class ProcessInstanceCreationHelper {
         .flatMap(
             valid -> validateElementNotBelongingToEventBasedGateway(process, startInstructions))
         .flatMap(valid -> validateTags(tags))
+        .flatMap(
+            valid ->
+                validateBusinessIdUniqueness(
+                    businessId, deployedProcess.getKey(), command.getTenantId()))
         .map(valid -> deployedProcess);
   }
 
@@ -407,6 +418,29 @@ public class ProcessInstanceCreationHelper {
               RejectionType.INVALID_ARGUMENT,
               "Expected to create instance of process with tags, but the tags '%s' are invalid. %s"
                   .formatted(String.join("', '", invalidTags), TagUtil.TAG_FORMAT_DESCRIPTION)));
+    }
+
+    return VALID;
+  }
+
+  private Either<Rejection, ?> validateBusinessIdUniqueness(
+      final String businessId, final long processDefinitionKey, final String tenantId) {
+    // If no business id is provided, skip validation
+    if (businessId == null || businessId.isEmpty()) {
+      return VALID;
+    }
+
+    // Check if a process instance with this business id already exists
+    final long existingProcessInstanceKey =
+        elementInstanceState.getRootProcessInstanceKeyByBusinessId(
+            businessId, processDefinitionKey, tenantId);
+
+    if (existingProcessInstanceKey != -1) {
+      return Either.left(
+          new Rejection(
+              RejectionType.ALREADY_EXISTS,
+              String.format(
+                  ERROR_MESSAGE_BUSINESS_ID_ALREADY_EXISTS, businessId, processDefinitionKey)));
     }
 
     return VALID;

@@ -31,14 +31,14 @@ import java.util.List;
 import java.util.stream.IntStream;
 
 /** Applies state changes for `ProcessInstance:Element_Activating` */
-final class ProcessInstanceElementActivatingV2Applier
+final class ProcessInstanceElementActivatingApplier
     implements TypedEventApplier<ProcessInstanceIntent, ProcessInstanceRecord> {
 
   private final MutableElementInstanceState elementInstanceState;
   private final ProcessState processState;
   private final MutableEventScopeInstanceState eventScopeInstanceState;
 
-  public ProcessInstanceElementActivatingV2Applier(
+  public ProcessInstanceElementActivatingApplier(
       final MutableElementInstanceState elementInstanceState,
       final ProcessState processState,
       final MutableEventScopeInstanceState eventScopeInstanceState) {
@@ -140,9 +140,6 @@ final class ProcessInstanceElementActivatingV2Applier
         elementInstance.setProcessDepth(parentProcessInstance.getProcessDepth() + 1);
         elementInstanceState.updateInstance(elementInstance);
       }
-    } else {
-      // insert business id index for root process instances
-      insertBusinessIdIndex(value);
     }
   }
 
@@ -317,21 +314,6 @@ final class ProcessInstanceElementActivatingV2Applier
       // executable elements without events
       eventScopeInstanceState.createInstance(
           elementInstanceKey, Collections.emptySet(), Collections.emptySet());
-    }
-  }
-
-  /**
-   * Inserts the business id index for root process instances. This maps the business id to the
-   * process instance key, scoped by process definition key and tenant id.
-   */
-  private void insertBusinessIdIndex(final ProcessInstanceRecord value) {
-    final var businessId = value.getBusinessId();
-    if (!businessId.isEmpty()) {
-      elementInstanceState.insertProcessInstanceKeyByBusinessId(
-          businessId,
-          value.getProcessDefinitionKey(),
-          value.getTenantId(),
-          value.getProcessInstanceKey());
     }
   }
 }

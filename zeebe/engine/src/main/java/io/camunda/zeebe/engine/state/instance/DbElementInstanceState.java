@@ -77,6 +77,16 @@ public final class DbElementInstanceState implements MutableElementInstanceState
   private final RuntimeInstructions runtimeInstructions;
   private final ColumnFamily<DbLong, RuntimeInstructions> runtimeInstructionsByProcessInstanceKey;
 
+  // Business ID indexing: [businessId | processDefinitionKey | tenantId] => processInstanceKey
+  private final DbString businessId = new DbString();
+  private final DbString tenantId = new DbString();
+  private final DbCompositeKey<DbString, DbLong> businessIdAndProcessDefinitionKey;
+  private final DbCompositeKey<DbCompositeKey<DbString, DbLong>, DbString>
+      businessIdProcessDefinitionAndTenantKey;
+  private final DbLong processInstanceKeyByBusinessId = new DbLong();
+  private final ColumnFamily<DbCompositeKey<DbCompositeKey<DbString, DbLong>, DbString>, DbLong>
+      rootProcessInstanceKeyByBusinessIdColumnFamily;
+
   public DbElementInstanceState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
       final TransactionContext transactionContext,
@@ -146,6 +156,17 @@ public final class DbElementInstanceState implements MutableElementInstanceState
             transactionContext,
             elementInstanceKey,
             runtimeInstructions);
+
+    // Initialize business id column family
+    businessIdAndProcessDefinitionKey = new DbCompositeKey<>(businessId, processDefinitionKey);
+    businessIdProcessDefinitionAndTenantKey =
+        new DbCompositeKey<>(businessIdAndProcessDefinitionKey, tenantId);
+    rootProcessInstanceKeyByBusinessIdColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.ROOT_PROCESS_INSTANCE_KEY_BY_BUSINESS_ID,
+            transactionContext,
+            businessIdProcessDefinitionAndTenantKey,
+            processInstanceKeyByBusinessId);
   }
 
   @Override
@@ -337,6 +358,25 @@ public final class DbElementInstanceState implements MutableElementInstanceState
   }
 
   @Override
+  public void insertProcessInstanceKeyByBusinessId(
+      final String businessId,
+      final long processDefinitionKey,
+      final String tenantId,
+      final long processInstanceKey) {
+    if (businessId == null || businessId.isEmpty()) {
+      return;
+    }
+
+    this.businessId.wrapString(businessId);
+    this.processDefinitionKey.wrapLong(processDefinitionKey);
+    this.tenantId.wrapString(tenantId);
+    processInstanceKeyByBusinessId.wrapLong(processInstanceKey);
+
+    rootProcessInstanceKeyByBusinessIdColumnFamily.insert(
+        businessIdProcessDefinitionAndTenantKey, processInstanceKeyByBusinessId);
+  }
+
+  @Override
   public ElementInstance getInstance(final long key) {
     elementInstanceKey.wrapLong(key);
     return elementInstanceColumnFamily.get(elementInstanceKey, ElementInstance::new);
@@ -510,6 +550,22 @@ public final class DbElementInstanceState implements MutableElementInstanceState
     return instructions.getRuntimeInstructions().stream()
         .filter(instruction -> instruction.getAfterElementId().equals(elementId))
         .toList();
+  }
+
+  @Override
+  public long getRootProcessInstanceKeyByBusinessId(
+      final String businessId, final long processDefinitionKey, final String tenantId) {
+    if (businessId == null || businessId.isEmpty()) {
+      return -1;
+    }
+
+    this.businessId.wrapString(businessId);
+    this.processDefinitionKey.wrapLong(processDefinitionKey);
+    this.tenantId.wrapString(tenantId);
+
+    final var processInstanceKey =
+        rootProcessInstanceKeyByBusinessIdColumnFamily.get(businessIdProcessDefinitionAndTenantKey);
+    return processInstanceKey != null ? processInstanceKey.getValue() : -1;
   }
 
   private void removeNumberOfTakenSequenceFlows(final long flowScopeKey) {
