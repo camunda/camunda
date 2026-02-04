@@ -923,15 +923,6 @@ public class JobControllerTest extends RestControllerTest {
 
     when(jobServices.getGlobalStatistics(any())).thenReturn(statisticsEntity);
 
-    final var request =
-        """
-            {
-              "filter": {
-                "from": "2024-07-28T15:51:28.071Z",
-                "to": "2024-07-29T15:51:28.071Z"
-              }
-            }""";
-
     final var expectedResponse =
         """
             {
@@ -952,11 +943,11 @@ public class JobControllerTest extends RestControllerTest {
 
     // when/then
     webClient
-        .post()
-        .uri(JOBS_BASE_URL + "/statistics/global")
+        .get()
+        .uri(
+            JOBS_BASE_URL
+                + "/statistics/global?from=2024-07-28T15:51:28.071Z&to=2024-07-29T15:51:28.071Z")
         .accept(MediaType.APPLICATION_JSON)
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(request)
         .exchange()
         .expectStatus()
         .isOk()
@@ -967,13 +958,12 @@ public class JobControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldRejectGlobalJobStatisticsWithEmptyBody() {
+  void shouldRejectGlobalJobStatisticsWithMissingParams() {
     // when/then
     webClient
-        .post()
+        .get()
         .uri(JOBS_BASE_URL + "/statistics/global")
         .accept(MediaType.APPLICATION_JSON)
-        .contentType(MediaType.APPLICATION_JSON)
         .exchange()
         .expectStatus()
         .isBadRequest();
@@ -982,23 +972,12 @@ public class JobControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldRejectGlobalJobStatisticsWithMissingFromAndTo() {
-    // given
-    final var request =
-        """
-            {
-              "filter": {
-                "jobType": "some-job-type"
-              }
-            }""";
-
+  void shouldRejectGlobalJobStatisticsWithMissingTo() {
     // when/then
     webClient
-        .post()
-        .uri(JOBS_BASE_URL + "/statistics/global")
+        .get()
+        .uri(JOBS_BASE_URL + "/statistics/global?from=2024-07-28T15:51:28.071Z")
         .accept(MediaType.APPLICATION_JSON)
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(request)
         .exchange()
         .expectStatus()
         .isBadRequest();

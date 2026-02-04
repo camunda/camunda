@@ -2,7 +2,7 @@
 
 paths:
   /jobs/statistics/global:
-    post:
+    get:
       x-eventually-consistent: true
       tags:
         - Job
@@ -10,12 +10,32 @@ paths:
       summary: Global job statistics
       description: |
         Returns global aggregated counts for jobs. Optionally filter by the creation time window and/or jobType.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/GlobalJobStatisticsQuery'
+      parameters:
+        - name: from
+          in: query
+          required: true
+          description: |
+            Start of the time window to filter metrics. ISO 8601 date-time format.
+          schema:
+            type: string
+            format: date-time
+          example: "2024-07-28T15:51:28.071Z"
+        - name: to
+          in: query
+          required: true
+          description: |
+            End of the time window to filter metrics. ISO 8601 date-time format.
+          schema:
+            type: string
+            format: date-time
+          example: "2024-07-29T15:51:28.071Z"
+        - name: jobType
+          in: query
+          required: false
+          description: Optional job type to limit the aggregation to a single job type.
+          schema:
+            type: string
+          example: "fetch-customer-data"
       responses:
         "200":
           description: Global job metrics
@@ -36,39 +56,6 @@ paths:
 
 components:
   schemas:
-    GlobalJobStatisticsQuery:
-      type: object
-      additionalProperties: false
-      required:
-        - filter
-      properties:
-        filter:
-          $ref: '#/components/schemas/GlobalJobStatisticsFilter'
-
-    GlobalJobStatisticsFilter:
-      description: Filters for global job statistics query.
-      type: object
-      additionalProperties: false
-      required:
-        - from
-        - to
-      properties:
-        from:
-          description: |
-            Start of the time window to filter metrics. ISO 8601 date-time format.
-          type: string
-          format: date-time
-          example: "2024-07-28T15:51:28.071Z"
-        to:
-          description: |
-            End of the time window to filter metrics. ISO 8601 date-time format.
-          type: string
-          format: date-time
-          example: "2024-07-29T15:51:28.071Z"
-        jobType:
-          description: Optional job type to limit the aggregation to a single job type.
-          type: string
-          example: "fetch-customer-data"
 
     GlobalJobStatisticsQueryResult:
       description: Global job statistics query result.

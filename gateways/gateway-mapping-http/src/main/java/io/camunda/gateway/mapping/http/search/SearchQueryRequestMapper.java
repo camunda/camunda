@@ -56,6 +56,7 @@ import io.camunda.search.query.VariableQuery;
 import io.camunda.search.sort.SortOption;
 import io.camunda.search.sort.SortOptionBuilders;
 import io.camunda.zeebe.util.Either;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
@@ -110,11 +111,9 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, io.camunda.search.query.GlobalJobStatisticsQuery>
-      toGlobalJobStatisticsQuery(final GlobalJobStatisticsQuery request) {
-    if (request == null) {
-      return Either.right(SearchQueryBuilders.globalJobStatisticsSearchQuery().build());
-    }
-    final var filter = SearchQueryFilterMapper.toGlobalJobStatisticsFilter(request.getFilter());
+      toGlobalJobStatisticsQuery(
+          final OffsetDateTime from, final OffsetDateTime to, final String jobType) {
+    final var filter = SearchQueryFilterMapper.toGlobalJobStatisticsFilter(from, to, jobType);
 
     if (filter.isLeft()) {
       final var problem = RequestValidator.createProblemDetail(filter.getLeft());

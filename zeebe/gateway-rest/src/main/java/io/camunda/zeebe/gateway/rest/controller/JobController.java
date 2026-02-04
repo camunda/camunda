@@ -16,7 +16,6 @@ import io.camunda.gateway.mapping.http.RequestMapper.FailJobRequest;
 import io.camunda.gateway.mapping.http.RequestMapper.UpdateJobRequest;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
-import io.camunda.gateway.protocol.model.GlobalJobStatisticsQuery;
 import io.camunda.gateway.protocol.model.GlobalJobStatisticsQueryResult;
 import io.camunda.gateway.protocol.model.JobActivationRequest;
 import io.camunda.gateway.protocol.model.JobActivationResult;
@@ -31,16 +30,19 @@ import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.JobServices;
 import io.camunda.service.JobServices.ActivateJobsRequest;
+import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPatchMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
+import java.time.OffsetDateTime;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 @CamundaRestController
 @RequestMapping("/v2/jobs")
@@ -107,10 +109,12 @@ public class JobController {
   }
 
   @RequiresSecondaryStorage
-  @CamundaPostMapping(path = "/statistics/global")
+  @CamundaGetMapping(path = "/statistics/global")
   public ResponseEntity<GlobalJobStatisticsQueryResult> getGlobalJobStatistics(
-      @RequestBody final GlobalJobStatisticsQuery request) {
-    return SearchQueryRequestMapper.toGlobalJobStatisticsQuery(request)
+      @RequestParam final OffsetDateTime from,
+      @RequestParam final OffsetDateTime to,
+      @RequestParam(required = false) final String jobType) {
+    return SearchQueryRequestMapper.toGlobalJobStatisticsQuery(from, to, jobType)
         .fold(RestErrorMapper::mapProblemToResponse, this::getGlobalStatistics);
   }
 
