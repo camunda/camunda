@@ -1,0 +1,128 @@
+# This action collects annotations from unsuccessful GitHub Actions jobs and posts them as a PR comment
+#
+# owner: @camunda/monorepo-devops-team
+---
+name: Post CI Failure Reasons
+
+description: Collects job annotations from unsuccessful GitHub Actions jobs in the current Unified CI workflow run and posts them as a self-updating PR comment (on pull requests)
+
+inputs:
+  github_token:
+    description: 'GitHub token for API access (needs actions:read, checks:read, and pull-requests:write)'
+    required: true
+  has_failures:
+    description: 'Whether there are any failures or cancellations in the workflow'
+    required: false
+    default: 'false'
+
+runs:
+  using: composite
+  steps:
+    - name: Find existing CI failure analysis PR comment
+      if: github.event_name == 'pull_request'
+      id: find-comment
+      uses: peter-evans/find-comment@v3
+      with:
+        issue-number: ${{ github.event.pull_request.number }}
+        body-includes: "<!-- ci-failure-analysis -->"
+
+    - name: Delete outdated CI failure analysis comment on success
+      if: github.event_name == 'pull_request' && inputs.has_failures == 'false' && steps.find-comment.outputs.comment-id != ''
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github_token }}
+      run: |
+        echo "✅ All CI checks passed - deleting outdated failure analysis comment"
+        gh api \
+          --method DELETE \
+          -H "Accept: application/vnd.github+json" \
+          -H "X-GitHub-Api-Version: 2022-11-28" \
+          "/repos/${{ github.repository }}/issues/comments/${{ steps.find-comment.outputs.comment-id }}"
+
+    - name: Collect job annotations from unsuccessful jobs
+      if: inputs.has_failures == 'true'
+      id: collect-annotations
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github_token }}
+      run: |
+        set +e  # Don't fail the script on errors
+
+        # Create output file for PR comment
+        COMMENT_FILE="annotations-comment.md"
+
+        echo "<!-- ci-failure-analysis -->" > "$COMMENT_FILE"
+        echo -e "## 🔍 CI Failure Analysis\n\n" | tee -a "$COMMENT_FILE"
+        echo -e "GHA workflow run: [#${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})\n\n" | tee -a "$COMMENT_FILE"
+
+        # Get all jobs from the current workflow run
+        JOBS_JSON=$(gh api \
+          -H "Accept: application/vnd.github+json" \
+          -H "X-GitHub-Api-Version: 2022-11-28" \
+          "/repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/jobs?per_page=100")
+
+        # Filter unsuccessful jobs (failure, cancelled)
+        UNSUCCESSFUL_JOBS=$(echo "$JOBS_JSON" | jq -r '.jobs[] | select(.conclusion == "failure" or .conclusion == "cancelled") | .id')
+
+        if [ -z "$UNSUCCESSFUL_JOBS" ]; then
+          echo "ℹ️ No unsuccessful jobs found." | tee -a "$COMMENT_FILE"
+          echo "comment-file=$COMMENT_FILE" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+
+        JOB_COUNT=$(echo "$UNSUCCESSFUL_JOBS" | wc -l)
+        echo "Found **${JOB_COUNT}** unsuccessful job(s)" | tee -a "$COMMENT_FILE"
+        echo "" | tee -a "$COMMENT_FILE"
+
+        # Collect annotations for each unsuccessful job
+        for JOB_ID in $UNSUCCESSFUL_JOBS; do
+          JOB_INFO=$(echo "$JOBS_JSON" | jq -r ".jobs[] | select(.id == $JOB_ID)")
+          JOB_NAME=$(echo "$JOB_INFO" | jq -r '.name')
+          JOB_CONCLUSION=$(echo "$JOB_INFO" | jq -r '.conclusion')
+          JOB_URL=$(echo "$JOB_INFO" | jq -r '.html_url')
+
+          echo "### 📋 GHA job: \`$JOB_NAME\` (${JOB_CONCLUSION})" | tee -a "$COMMENT_FILE"
+          echo "🔗 [View job logs]($JOB_URL)" | tee -a "$COMMENT_FILE"
+          echo "" | tee -a "$COMMENT_FILE"
+
+          # Get annotations for this job
+          ANNOTATIONS=$(gh api \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "/repos/${{ github.repository }}/check-runs/$JOB_ID/annotations?per_page=100")
+
+          ANNOTATION_COUNT=$(echo "$ANNOTATIONS" | jq '. | length')
+
+          if [ "$ANNOTATION_COUNT" -eq 0 ]; then
+            echo "No GHA annotations found for this job." | tee -a "$COMMENT_FILE"
+            echo "" | tee -a "$COMMENT_FILE"
+          else
+            echo "Found $ANNOTATION_COUNT GHA annotation(s):" | tee -a "$COMMENT_FILE"
+            echo "" | tee -a "$COMMENT_FILE"
+
+            # Format annotations for display
+            echo "$ANNOTATIONS" | jq -r '.[] | "- **\(.annotation_level | ascii_upcase)**: \(.message)"' | tee -a "$COMMENT_FILE"
+
+            echo "" | tee -a "$COMMENT_FILE"
+          fi
+
+          echo "---" | tee -a "$COMMENT_FILE"
+          echo "" | tee -a "$COMMENT_FILE"
+        done
+
+        echo "" | tee -a "$COMMENT_FILE"
+        echo "_Last updated: $(date -u '+%Y-%m-%d %H:%M:%S UTC')_" | tee -a "$COMMENT_FILE"
+
+        # Set output for next step
+        echo "comment-file=$COMMENT_FILE" >> "$GITHUB_OUTPUT"
+
+        exit 0  # Don't fail the step
+
+    - name: Upsert CI failure analysis PR comment
+      if: github.event_name == 'pull_request' && inputs.has_failures == 'true' && steps.collect-annotations.outputs.comment-file != ''
+      uses: peter-evans/create-or-update-comment@v5
+      with:
+        comment-id: ${{ steps.find-comment.outputs.comment-id }}
+        issue-number: ${{ github.event.pull_request.number }}
+        body-path: ${{ steps.collect-annotations.outputs.comment-file }}
+        edit-mode: replace
