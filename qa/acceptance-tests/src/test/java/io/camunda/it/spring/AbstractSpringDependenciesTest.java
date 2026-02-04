@@ -18,6 +18,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.web.client.RestTemplate;
 
 abstract class AbstractSpringDependenciesTest {
@@ -39,7 +40,7 @@ abstract class AbstractSpringDependenciesTest {
     queue.add(List.of(start));
     while (!queue.isEmpty()) {
       final var path = queue.poll();
-      final var last = path.get(path.size() - 1);
+      final var last = path.getLast();
 
       if (last.equals(target)) {
         return path;
@@ -61,11 +62,15 @@ abstract class AbstractSpringDependenciesTest {
   }
 
   void fetchBeansGraph(final URI actuatorBeansURI) {
-    final var response = new RestTemplate().getForEntity(actuatorBeansURI, JsonNode.class);
+    final var restTemplate = new RestTemplate();
+    // this is needed to allow parsing to JsonNode
+    restTemplate.getMessageConverters().addFirst(new MappingJackson2HttpMessageConverter());
+
+    final var response = restTemplate.getForEntity(actuatorBeansURI, JsonNode.class);
     final JsonNode beans = response.getBody().get("contexts").elements().next().get("beans");
     beans
-        .fields()
-        .forEachRemaining(
+        .properties()
+        .forEach(
             entry -> {
               final String beanName = entry.getKey();
               final JsonNode deps = entry.getValue().get("dependencies");

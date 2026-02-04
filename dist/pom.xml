@@ -1008,6 +1008,7 @@
 
             <!-- Needed for Spring Actuators, and REST API -->
             <dependency>org.springframework.boot:spring-boot-starter-web</dependency>
+            <dependency>org.springframework.boot:spring-boot-jackson2</dependency>
             <dependency>org.openapitools:jackson-databind-nullable</dependency>
             <dependency>jakarta.servlet:jakarta.servlet-api</dependency>
 
