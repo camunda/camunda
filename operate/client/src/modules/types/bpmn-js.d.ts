@@ -21,12 +21,10 @@ declare module 'bpmn-moddle' {
     rootElement: BusinessObject;
   };
 
-  class BpmnModdle {
+  export class BpmnModdle {
     constructor();
     fromXML(xml: string, definitions: string): Promise<DiagramModel>;
   }
-
-  export default BpmnModdle;
 }
 
 declare module 'bpmn-js/lib/NavigatedViewer' {
