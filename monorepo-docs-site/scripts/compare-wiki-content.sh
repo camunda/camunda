@@ -17,12 +17,23 @@ DOCS_FILE="${2:-../docs/monorepo-docs/development-guide.md}"  # Your docs file
 echo -e "${BLUE}🔄 Fetching current wiki content for: ${CYAN}$WIKI_PAGE${NC}"
 
 # Download wiki content
-WIKI_TEMP="/tmp/current-wiki-${WIKI_PAGE}.md"
-curl -s "https://raw.githubusercontent.com/wiki/camunda/camunda/${WIKI_PAGE}.md" -o "$WIKI_TEMP"
+# Sanitize wiki page name for safe filename (replace invalid chars with underscore)
+SAFE_WIKI_NAME="${WIKI_PAGE//[^a-zA-Z0-9_-]/_}"
+WIKI_TEMP=$(mktemp "/tmp/wiki-${SAFE_WIKI_NAME}-XXXXXX.md")
+echo -e "${YELLOW}📥 Downloading from: ${CYAN}https://raw.githubusercontent.com/wiki/camunda/camunda/${WIKI_PAGE}.md${NC}"
 
-if [ ! -f "$WIKI_TEMP" ] || [ ! -s "$WIKI_TEMP" ]; then
-    echo -e "${RED}❌ Failed to download wiki content. Check the wiki page name.${NC}"
-    echo -e "${YELLOW}💡 Try URL encoding special characters (e.g., & becomes %26)${NC}"
+if ! curl -f -s "https://raw.githubusercontent.com/wiki/camunda/camunda/${WIKI_PAGE}.md" -o "$WIKI_TEMP"; then
+    echo -e "${RED}❌ Failed to download wiki content. Possible issues:${NC}"
+    echo -e "${YELLOW}  • Wiki page doesn't exist: ${WIKI_PAGE}${NC}"
+    echo -e "${YELLOW}  • Special characters need URL encoding (& → %26)${NC}"
+    echo -e "${YELLOW}  • Network connectivity issues${NC}"
+    echo -e "${YELLOW}💡 Try visiting the URL in your browser to verify it exists${NC}"
+    exit 1
+fi
+
+if [ ! -s "$WIKI_TEMP" ]; then
+    echo -e "${RED}❌ Downloaded file is empty${NC}"
+    rm -f "$WIKI_TEMP"
     exit 1
 fi
 
@@ -39,35 +50,38 @@ if [ ! -f "$DOCS_FILE" ]; then
 fi
 
 # Skip frontmatter when comparing (first 4 lines typically)
-DOCS_TEMP="/tmp/docs-content-only.md"
+DOCS_TEMP=$(mktemp "/tmp/docs-content-XXXXXX.md")
 tail -n +5 "$DOCS_FILE" > "$DOCS_TEMP"
 
 echo -e "${YELLOW}--- DIFFERENCES (colored diff) ---${NC}"
 
-# Use diff with color output if available, otherwise fall back to regular diff
-if command -v colordiff &> /dev/null; then
-    # Use colordiff if available
-    colordiff -u "$WIKI_TEMP" "$DOCS_TEMP" || echo -e "${GREEN}✅ Files are identical!${NC}"
-elif diff --color=always --help &> /dev/null; then
-    # Use diff with color if supported
-    diff --color=always -u "$WIKI_TEMP" "$DOCS_TEMP" || echo -e "${GREEN}✅ Files are identical!${NC}"
-else
-    # Fall back to regular diff with manual coloring
-    diff -u "$WIKI_TEMP" "$DOCS_TEMP" | while IFS= read -r line; do
-        case "$line" in
-            "+++"*) echo -e "${BLUE}$line${NC}" ;;
-            "---"*) echo -e "${BLUE}$line${NC}" ;;
-            "@@"*) echo -e "${CYAN}$line${NC}" ;;
-            "+"*) echo -e "${GREEN}$line${NC}" ;;
-            "-"*) echo -e "${RED}$line${NC}" ;;
-            *) echo "$line" ;;
-        esac
-    done || echo -e "${GREEN}✅ Files are identical!${NC}"
+# Check for colordiff, install if needed
+if ! command -v colordiff &> /dev/null; then
+    echo -e "${YELLOW}📦 Installing colordiff for better output...${NC}"
+    if command -v apt-get &> /dev/null; then
+        sudo apt-get install -y colordiff
+    elif command -v brew &> /dev/null; then
+        brew install colordiff
+    elif command -v yum &> /dev/null; then
+        sudo yum install -y colordiff
+    else
+        echo -e "${RED}❌ Cannot install colordiff automatically. Please install it manually:${NC}"
+        echo -e "${CYAN}  - Ubuntu/Debian: sudo apt-get install colordiff${NC}"
+        echo -e "${CYAN}  - macOS: brew install colordiff${NC}"
+        echo -e "${CYAN}  - RHEL/CentOS: sudo yum install colordiff${NC}"
+        exit 1
+    fi
 fi
 
-echo ""
-echo -e "${YELLOW}💡 For side-by-side comparison in VS Code:${NC}"
-echo -e "${CYAN}code --diff $WIKI_TEMP $DOCS_FILE${NC}"
+# Use colordiff for clean, colored output
+DIFF_EXIT_CODE=0
+colordiff -u "$WIKI_TEMP" "$DOCS_TEMP" || DIFF_EXIT_CODE=$?
+
+case $DIFF_EXIT_CODE in
+    0) echo -e "${GREEN}✅ Files are identical!${NC}" ;;
+    1) echo -e "${YELLOW}📝 Differences found above${NC}" ;;
+    *) echo -e "${RED}❌ Error occurred during comparison${NC}" ;;
+esac
 
 # Cleanup
 rm -f "$WIKI_TEMP" "$DOCS_TEMP"
