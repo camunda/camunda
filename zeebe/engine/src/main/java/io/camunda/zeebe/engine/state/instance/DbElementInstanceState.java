@@ -33,6 +33,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.MutableInteger;
@@ -416,6 +417,17 @@ public final class DbElementInstanceState implements MutableElementInstanceState
       final long startAtKey,
       final BiFunction<Long, ElementInstance, Boolean> visitor) {
     forEachChild(parentKey, startAtKey, visitor, (elementInstance) -> true);
+  }
+
+  @Override
+  public void forEachChildKey(final long parentKey, final Function<Long, Boolean> visitor) {
+    this.parentKey.inner().wrapLong(parentKey);
+    parentChildColumnFamily.whileEqualPrefix(
+        this.parentKey,
+        (key, ignore) -> {
+          final var childKey = key.second().inner();
+          return visitor.apply(childKey.getValue());
+        });
   }
 
   @Override

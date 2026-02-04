@@ -526,16 +526,6 @@ public final class CatchEventBehavior {
         commandWriter.appendFollowUpCommand(
             subscriptionKey, ConditionalSubscriptionIntent.TRIGGER, subscriptionRecord);
       }
-    } else {
-      // log and ignore evaluation failures
-      // conditional events are re-evaluated on variable changes
-      LOG.debug(
-          "Failed to evaluate condition on conditional event subscription creation for "
-              + "catch event with id '{}' in element instance with key '{}' and scope key '{}': {}",
-          subscriptionRecord.getCatchEventId(),
-          subscriptionRecord.getElementInstanceKey(),
-          scopeKey,
-          evaluation.getLeft().getMessage());
     }
   }
 
