@@ -43,7 +43,7 @@ import org.springframework.stereotype.Component;
 @Component
 @Configuration
 @ConditionalOnRdbmsDisabled
-@Deprecated(forRemoval = true, since = "8.10")
+@Deprecated(forRemoval = true, since = "8.9")
 public class OperationExecutor extends Thread {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(OperationExecutor.class);

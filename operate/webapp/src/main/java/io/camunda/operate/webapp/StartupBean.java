@@ -30,7 +30,7 @@ import org.springframework.stereotype.Component;
 @DependsOn("searchEngineSchemaInitializer")
 @Profile({"!test", "test-executor"})
 @ConditionalOnRdbmsDisabled
-@Deprecated(forRemoval = true, since = "8.10")
+@Deprecated(forRemoval = true, since = "8.9")
 public class StartupBean {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(StartupBean.class);

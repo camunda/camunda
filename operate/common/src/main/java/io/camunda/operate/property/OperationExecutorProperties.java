@@ -18,7 +18,7 @@ import java.util.UUID;
  *     it is guaranteed that no pending batches remain and all consumers have migrated to the V2
  *     API. See https://github.com/camunda/camunda/issues/44958 for migration progress and details.
  */
-@Deprecated(forRemoval = true, since = "8.10")
+@Deprecated(forRemoval = true, since = "8.9")
 public class OperationExecutorProperties {
 
   public static final int BATCH_SIZE_DEFAULT = 500;
