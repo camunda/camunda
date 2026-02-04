@@ -39,6 +39,16 @@ public interface DistributionState {
   boolean hasRetriableDistribution(long distributionKey, int partition);
 
   /**
+   * Returns whether a specific distribution for a specific partition is queued.
+   *
+   * @param queueId the id of the queue
+   * @param distributionKey the key of the distribution that may be queued
+   * @param partition the id of the partition for which the distribution might be queued
+   * @return {@code true} if the specific queued distribution exists, otherwise {@code false}.
+   */
+  boolean hasQueuedDistribution(String queueId, long distributionKey, int partition);
+
+  /**
    * Returns whether a specific distribution for a specific partition is pending.
    *
    * @param distributionKey the key of the distribution that may be pending
