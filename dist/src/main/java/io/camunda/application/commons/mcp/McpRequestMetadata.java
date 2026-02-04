@@ -9,9 +9,20 @@ package io.camunda.application.commons.mcp;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+/**
+ * Metadata of an MCP request.
+ *
+ * @param method the MCP method, e.g., "tools/list" or "tools/call"
+ * @param params the MCP request parameters
+ */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record McpRequestMetadata(String method, McpRequestParams params) {
 
+  /**
+   * Parameters of an MCP request.
+   *
+   * @param name the name of the tool or resource
+   */
   @JsonIgnoreProperties(ignoreUnknown = true)
   record McpRequestParams(String name) {}
 }

@@ -18,7 +18,10 @@ import org.springframework.http.server.observation.ServerRequestObservationConte
 import org.springframework.lang.NonNull;
 import org.springframework.web.util.ContentCachingRequestWrapper;
 
-/** Extends the default convention to add custom low cardinality key values for MCP requests. */
+/**
+ * Extends the default server request observation convention to add MCP-specific data to the URI tag
+ * in server request metrics.
+ */
 public class McpServerRequestObservationConvention
     extends DefaultServerRequestObservationConvention {
 
@@ -37,6 +40,7 @@ public class McpServerRequestObservationConvention
     this.objectMapper = objectMapper;
   }
 
+  /** Extends the default low cardinality key values to include MCP-specific URI information. */
   @Override
   public @NonNull KeyValues getLowCardinalityKeyValues(
       final @NonNull ServerRequestObservationContext context) {

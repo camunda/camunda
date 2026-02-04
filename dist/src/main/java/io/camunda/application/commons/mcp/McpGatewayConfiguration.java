@@ -30,6 +30,12 @@ import org.springframework.web.util.ContentCachingRequestWrapper;
 @ConditionalOnMcpGatewayEnabled
 public class McpGatewayConfiguration {
 
+  /**
+   * Custom ServerRequestObservationConvention for MCP requests to include relevant metrics tags. If
+   * we need to customize metrics for MCP requests, we can do so in this class. If we want to extend
+   * or modify the default behavior for other requests, too, we can create a more generic
+   * implementation.
+   */
   @Bean
   public ServerRequestObservationConvention mcpRequestObservationConvention(
       final ObservationProperties observationProperties, final ObjectMapper objectMapper) {
@@ -37,6 +43,11 @@ public class McpGatewayConfiguration {
         observationProperties.getHttp().getServer().getRequests().getName(), objectMapper);
   }
 
+  /**
+   * Filter that wraps incoming MCP requests in a ContentCachingRequestWrapper to allow multiple
+   * reads of the request body. This is necessary because metrics observation and downstream
+   * processing read the request body multiple times.
+   */
   @Bean
   public FilterRegistrationBean<OncePerRequestFilter> mcpContentCachingFilter() {
     final FilterRegistrationBean<OncePerRequestFilter> registrationBean =
