@@ -1,20 +1,20 @@
-# Monorepo DevOps Collaboration Guidelines
+# Collaboration Guidelines
 
-These are our baseline expectations.
+Guidelines for collaborating on CI/CD, build automation, release processes, and monorepo infrastructure. These practices help ensure smooth collaboration across all teams.
 
 ## Core Principles
 
-* **You own your domain workflows** – Monorepo DevOps supports, but doesn't take over domain-specific CI/CD logic.
+* **You own your domain workflows** – Teams are encouraged to design their own CI/CD logic with support from the Monorepo DevOps team when needed.
 * **Accountability follows ownership** – The requesting team owns results, failures, and communication.
-* **No surprises** – Involve Monorepo DevOps before you promise timelines, blocking behavior, or release changes.
-* **Release changes require alignment** – Any change to the Monorepo release train must be explicitly discussed and written down.
+* **No surprises** – Reach out to the Monorepo DevOps team before promising timelines, blocking behavior, or release changes.
+* **Release changes require alignment** – Any change to the monorepo release train must be explicitly discussed and written down.
 * **Clarity first** – Vague or underspecified requests will pause until scope, ownership, and impact are clear.
 
 💰 **Golden rule: Heads-up early → decide together → own independently.**
 
 👉 Heads-up early, decide together, own independently.
 
-## When to Involve Monorepo DevOps
+## When to Reach Out for Support
 
 ### ✅ Must Involve (Required)
 
@@ -32,7 +32,7 @@ These are our baseline expectations.
 * Performance-sensitive changes
 * Cross-team dependency workflows
 
-✋ **When in Doubt: Ask early in #ask-monorepo-devops. A 5-minute chat can save hours.**
+✋ **When in Doubt: Ask early in #ask-monorepo-devops. The Monorepo DevOps team is here to help! A 5-minute chat can save hours.**
 
 ## Heads-Up Pattern (Start Here) 📣
 
@@ -73,37 +73,35 @@ Use this to make requests scoping-friendly and reviewable.
 ### Timeline & Coordination
 
 * **Timeline:** Target v2.1 in ~3 weeks
-* **Questions for Monorepo DevOps:** Best way to hook into the existing Monorepo release process?
+* **Questions for Monorepo DevOps team:** Best way to hook into the existing monorepo release process?
 
 ## Code Review, Integration & Independence 💻
 
-### What Monorepo DevOps Reviews
+### When the Monorepo DevOps Team Reviews
 
 * Shared CI infrastructure/templates changes
 * Release orchestration/train behavior changes
 * Integration points that affect cadence, artifacts, or shared patterns
 * Performance/reliability risks
-* Loop us in for scoping + review via [#epo-reviews](https://camunda.slack.com/archives/C090HGYE5T2) when it could affect release cadence or shared CI patterns.
+* Loop in the Monorepo DevOps team for scoping + review via [#epo-reviews](https://camunda.slack.com/archives/C090HGYE5T2) when it could affect release cadence or shared CI patterns.
 
-### Enabling Independent Ownership 🏅
-
-You're encouraged to:
+### All Teams Are Encouraged To 🏅
 
 * Design and evolve your own CI/CD workflows
-* Use existing Monorepo patterns and integration points
+* Use existing monorepo patterns and integration points
 * Communicate results and reasoning clearly in Slack / issues
 * Iterate independently as long as you don't:
   * Change shared infrastructure
   * Change release train behavior
   * Impact other teams without coordination
 
-When any of those become true → loop in Monorepo DevOps.
+When any of those become true → reach out to the Monorepo DevOps team for collaboration.
 
 ## Quick Reference
 
-### Emergency Contacts
+### Support Contacts
 
-* Slack: [#ask-monorepo-devops](https://camunda.slack.com/archives/C08NZ7E9ZT2)
+* Slack: [#ask-monorepo-devops](https://camunda.slack.com/archives/C08NZ7E9ZT2) (Monorepo DevOps team)
 * Escalation: Engineering manager – see [Monorepo DevOps Team page](https://confluence.camunda.com/spaces/HAN/pages/277021448/Monorepo+DevOps+Team) for current EM/DRI details.
 
 ### Key Documentation

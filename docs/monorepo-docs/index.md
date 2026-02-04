@@ -6,15 +6,15 @@ Welcome to the developer documentation for the Camunda platform and orchestratio
 
 This site contains comprehensive documentation for the Camunda platform development and deployment:
 
-### DevOps Collaboration
+### Collaboration
 
-**[DevOps Collaboration](./monorepo-devops-collaboration)** - Guidelines for efficient collaboration with the Monorepo DevOps team including:
+**[Collaboration guidelines](./collaboration-guidelines)** - Guidelines for collaborating on CI/CD, releases, and monorepo infrastructure. All teams are welcome to contribute and improve these processes:
 
-- Core principles and ownership boundaries
-- When and how to involve DevOps
+- Core collaboration principles and ownership boundaries
+- When and how to reach out to the Monorepo DevOps team for support
 - Heads-Up Pattern for scoping and requests
 - Code review and integration expectations
-- Independent ownership and maintenance guidelines
+- How all teams can independently own and maintain their workflows
 
 ### CI & Automation
 
