@@ -70,16 +70,16 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
 
-  /decision-instances/{decisionEvaluationInstanceKey}/deletion:
+  /decision-instances/{decisionInstanceKey}/deletion:
     post:
       x-eventually-consistent: true
       tags:
         - Decision instance
       operationId: deleteDecisionInstance
       summary: Delete decision instance
-      description: Deletes a decision instance. Only instances that are completed or terminated can be deleted.
+      description: Delete all associated decision evaluations based on provided key.
       parameters:
-        - name: decisionEvaluationInstanceKey
+        - name: decisionInstanceKey
           in: path
           required: true
           description: The key of the decision instance to delete.
@@ -104,12 +104,6 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/Forbidden'
         "404":
           description: The decision instance is not found.
-          content:
-            application/problem+json:
-              schema:
-                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
-        "409":
-          description: The decision instance is not in a completed or terminated state and cannot be deleted.
           content:
             application/problem+json:
               schema:
