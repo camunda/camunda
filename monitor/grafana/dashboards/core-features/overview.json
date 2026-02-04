@@ -2633,7 +2633,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "Highest-requested API endpoints based on request rate",
+          "description": "Highest-requested MCP endpoints based on request rate",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -2925,7 +2925,7 @@
               "refId": "Latency (avg)"
             }
           ],
-          "title": "Search Latency MCP (top 10)",
+          "title": "Average Latency MCP (top 10)",
           "transformations": [
             {
               "id": "organize",
