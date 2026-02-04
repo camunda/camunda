@@ -12,6 +12,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.clients.SearchClientsProxy;
+import io.camunda.search.filter.DecisionInstanceFilter;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
@@ -127,6 +128,26 @@ class ItemProviderFactoryTest {
     assertThat(itemProvider).isInstanceOf(ProcessInstanceItemProvider.class);
 
     final var usedFilter = ((ProcessInstanceItemProvider) itemProvider).getFilter();
+    assertThat(usedFilter.partitionId()).isEqualTo(1);
+  }
+
+  @Test
+  void shouldSetFiltersForDeleteDecisionInstance() {
+    // Arrange
+    final var filter = new DecisionInstanceFilter.Builder().build();
+    final var batchOperation = mock(PersistedBatchOperation.class);
+    when(batchOperation.getBatchOperationType())
+        .thenReturn(BatchOperationType.DELETE_DECISION_INSTANCE);
+    when(batchOperation.getEntityFilter(DecisionInstanceFilter.class)).thenReturn(filter);
+
+    // Act
+    final var itemProvider = factory.fromBatchOperation(batchOperation);
+
+    // Assert
+    assertThat(itemProvider).isNotNull();
+    assertThat(itemProvider).isInstanceOf(DecisionInstanceItemProvider.class);
+
+    final var usedFilter = ((DecisionInstanceItemProvider) itemProvider).getFilter();
     assertThat(usedFilter.partitionId()).isEqualTo(1);
   }
 }
