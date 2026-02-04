@@ -8,7 +8,6 @@
 package io.camunda.search.es.transformers.aggregator;
 
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
-import co.elastic.clients.elasticsearch._types.aggregations.AggregationBuilders;
 import io.camunda.search.clients.aggregator.SearchMaxAggregator;
 import io.camunda.search.es.transformers.ElasticsearchTransformers;
 
@@ -21,9 +20,7 @@ public final class SearchMaxAggregatorTransformer
 
   @Override
   public Aggregation apply(final SearchMaxAggregator value) {
-    final var maxAggregation = AggregationBuilders.max().field(value.field()).build();
-
-    final var builder = new Aggregation.Builder().max(maxAggregation);
+    final var builder = new Aggregation.Builder().max(m -> m.field(value.field()));
     applySubAggregations(builder, value);
     return builder.build();
   }

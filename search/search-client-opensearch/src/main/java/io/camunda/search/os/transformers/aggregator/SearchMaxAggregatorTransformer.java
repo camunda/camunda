@@ -10,7 +10,6 @@ package io.camunda.search.os.transformers.aggregator;
 import io.camunda.search.clients.aggregator.SearchMaxAggregator;
 import io.camunda.search.os.transformers.OpensearchTransformers;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
-import org.opensearch.client.opensearch._types.aggregations.AggregationBuilders;
 
 public class SearchMaxAggregatorTransformer
     extends AggregatorTransformer<SearchMaxAggregator, Aggregation> {
@@ -21,9 +20,7 @@ public class SearchMaxAggregatorTransformer
 
   @Override
   public Aggregation apply(final SearchMaxAggregator value) {
-    final var maxAggregation = AggregationBuilders.max().field(value.field()).build();
-
-    final var builder = new Aggregation.Builder().max(maxAggregation);
+    final var builder = new Aggregation.Builder().max(m -> m.field(value.field()));
     applySubAggregations(builder, value);
     return builder.build();
   }
