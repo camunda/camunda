@@ -15,6 +15,8 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.or;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
+import static io.camunda.search.clients.query.SearchQueryBuilders.term;
+import static io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor.PARTITION_ID;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.DECISION_DEFINITION_ID;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.DECISION_ID;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.DECISION_NAME;
@@ -73,6 +75,11 @@ public final class DecisionInstanceFilterTransformer
     queries.addAll(
         getRootDecisionDefinitionKeysQuery(filter.rootDecisionDefinitionKeyOperations()));
     ofNullable(getTenantIdsQuery(filter.tenantIds())).ifPresent(queries::add);
+
+    if (filter.partitionId() != null) {
+      queries.add(term(PARTITION_ID, filter.partitionId()));
+    }
+
     return and(queries);
   }
 
