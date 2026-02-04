@@ -50,8 +50,8 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 @ContextConfiguration(classes = {VariableTools.class})
 class VariableToolsTest extends ToolsTest {
 
-  public static final String TRUNCATED_VALUE = "\\\"Lorem ipsum";
-  public static final String FULL_VALUE = "\\\"Lorem ipsum dolor sit amet\\\"";
+  static final String TRUNCATED_VALUE = "\\\"Lorem ipsum";
+  static final String FULL_VALUE = "\\\"Lorem ipsum dolor sit amet\\\"";
 
   static final VariableEntity VARIABLE_ENTITY =
       new VariableEntity(
