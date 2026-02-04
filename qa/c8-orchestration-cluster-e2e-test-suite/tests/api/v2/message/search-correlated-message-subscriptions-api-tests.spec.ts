@@ -401,7 +401,9 @@ test.describe.serial('Correlated Message Subscriptions API Tests', () => {
     await assertUnauthorizedRequest(res);
   });
 
-  test('Search Message Subscriptions - Forbidden search - 200 Empty Results', async ({request}) => {
+  test('Search Message Subscriptions - Forbidden search - 200 Empty Results', async ({
+    request,
+  }) => {
     let userWithResourcesAuthorizationToSendRequest: {
       username: string;
       name: string;
@@ -448,5 +450,46 @@ test.describe.serial('Correlated Message Subscriptions API Tests', () => {
         expect(json.page.totalItems).toBe(0);
       }).toPass(defaultAssertionOptions);
     });
+  });
+
+  // Skiped due to bug 39372: https://github.com/camunda/camunda/issues/39372
+  test.skip('Search Message Subscriptions - Negative pagination - 400 Bad Request', async ({
+    request,
+  }) => {
+    await expect(async () => {
+      const res = await request.post(
+        buildUrl(CORRELATED_MESSAGE_SUBSCRIPTION_SEARCH_ENDPOINT),
+        {
+          headers: jsonHeaders(),
+          data: {
+            page: {
+              limit: -5,
+            },
+          },
+        },
+      );
+      await assertBadRequest(res, /page\.(from|limit)/i);
+    }).toPass(defaultAssertionOptions);
+  });
+
+  test('Search Message Subscriptions - Pagination 0', async ({request}) => {
+    await expect(async () => {
+      const res = await request.post(
+        buildUrl(CORRELATED_MESSAGE_SUBSCRIPTION_SEARCH_ENDPOINT),
+        {
+          headers: jsonHeaders(),
+          data: {
+            page: {
+              limit: 0,
+            },
+          },
+        },
+      );
+      expect(res.status()).toBe(200);
+      const json = await res.json();
+      assertRequiredFields(json, paginatedResponseFields);
+      expect(json.items.length).toBe(0);
+      expect(json.page.totalItems).toBeGreaterThanOrEqual(1);
+    }).toPass(defaultAssertionOptions);
   });
 });
