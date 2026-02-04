@@ -31,10 +31,10 @@ import org.springframework.web.util.ContentCachingRequestWrapper;
 public class McpGatewayConfiguration {
 
   /**
-   * Custom ServerRequestObservationConvention for MCP requests to include relevant metrics tags. If
-   * we need to customize metrics for MCP requests, we can do so in this class. If we want to extend
-   * or modify the default behavior for other requests, too, we can create a more generic
-   * implementation.
+   * Custom ServerRequestObservationConvention for <bold>all</bold> server requests. This customizes
+   * metrics for MCP requests only. Other requests are not affected but still processed by this
+   * convention. If we want to extend or modify the default behavior for other requests, too, we
+   * should create a more generic implementation.
    */
   @Bean
   public ServerRequestObservationConvention mcpRequestObservationConvention(

@@ -20,7 +20,8 @@ import org.springframework.web.util.ContentCachingRequestWrapper;
 
 /**
  * Extends the default server request observation convention to add MCP-specific data to the URI tag
- * in server request metrics.
+ * in server request metrics. This only applies to requests to the "/mcp" endpoint. Other requests
+ * are not affected.
  */
 public class McpServerRequestObservationConvention
     extends DefaultServerRequestObservationConvention {
