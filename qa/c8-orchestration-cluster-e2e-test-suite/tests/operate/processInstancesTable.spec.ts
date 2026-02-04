@@ -54,7 +54,7 @@ test.beforeAll(async () => {
   const createdInstances = await createInstances(
     'instancesTableProcessForInfiniteScroll',
     1,
-    300,
+    350,
   );
   scrollingInstances = createdInstances.map((instance) => ({
     processInstanceKey: Number(instance.processInstanceKey),
@@ -276,7 +276,7 @@ test.describe('Process Instances Table', () => {
       await operateFiltersPanelPage.selectVersion('1');
       await waitForAssertion({
         assertion: async () => {
-          await expect(page.getByText('300 results')).toBeVisible();
+          await expect(page.getByText('350 results')).toBeVisible();
         },
         onFailure: async () => {
           await page.reload();
@@ -319,19 +319,38 @@ test.describe('Process Instances Table', () => {
       await expect
         .poll(() => instanceRows.nth(199).innerText())
         .toContain(descendingInstanceIds[199].toString());
-      await page
-        .getByRole('row', {name: `Instance ${descendingInstanceIds[199]}`})
-        .scrollIntoViewIfNeeded();
-      await expect(instanceRows).toHaveCount(200);
     });
 
     await test.step('Scroll to 250th instance', async () => {
+      await page
+        .getByRole('row', {name: `Instance ${descendingInstanceIds[199]}`})
+        .scrollIntoViewIfNeeded();
+      await sleep(500);
+      await expect(instanceRows).toHaveCount(250);
+
+      await expect
+        .poll(() => instanceRows.nth(0).innerText())
+        .toContain(descendingInstanceIds[0].toString());
+
+      await expect
+        .poll(() => instanceRows.nth(249).innerText())
+        .toContain(descendingInstanceIds[249].toString());
+    });
+
+    await test.step('Scroll to 300th instance', async () => {
+      await page
+        .getByRole('row', {name: `Instance ${descendingInstanceIds[249]}`})
+        .scrollIntoViewIfNeeded();
+      await sleep(500);
+      await expect(instanceRows).toHaveCount(250);
+
       await expect
         .poll(() => instanceRows.nth(0).innerText())
         .toContain(descendingInstanceIds[50].toString());
+
       await expect
-        .poll(() => instanceRows.nth(199).innerText())
-        .toContain(descendingInstanceIds[249].toString());
+        .poll(() => instanceRows.nth(249).innerText())
+        .toContain(descendingInstanceIds[299].toString());
     });
   });
 });

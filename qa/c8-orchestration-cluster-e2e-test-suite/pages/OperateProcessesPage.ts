@@ -62,6 +62,8 @@ class OperateProcessesPage {
     rowIndex?: number,
     cellIndex?: number,
   ) => Locator;
+  readonly batchOperationStartedMessage: (batchOperationType: 'Resolve Incident' | 'Retry' | 'Cancel Process Instance') => Locator;
+  readonly processCouldntBeFoundMessage: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -181,6 +183,9 @@ class OperateProcessesPage {
         .nth(rowIndex)
         .getByRole('cell')
         .nth(cellIndex);
+    this.batchOperationStartedMessage = (batchOperationType: 'Resolve Incident' | 'Retry' | 'Cancel Process Instance') =>
+      page.getByText(`Batch operation \"${batchOperationType}\" has been started`);
+    this.processCouldntBeFoundMessage = this.page.getByRole('status').getByText('Process could not be found');
   }
 
   async filterByProcessName(name: string): Promise<void> {
@@ -269,7 +274,7 @@ class OperateProcessesPage {
   }
 
   getCanceledIcon(processInstanceKey: string): Locator {
-    return this.page.getByTestId(`CANCELED-icon-${processInstanceKey}`);
+    return this.page.getByTestId(`TERMINATED-icon-${processInstanceKey}`);
   }
 
   getRetryInstanceButton(processInstanceKey: string): Locator {

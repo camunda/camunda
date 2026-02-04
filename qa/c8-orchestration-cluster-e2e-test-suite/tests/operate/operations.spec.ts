@@ -150,18 +150,7 @@ test.describe('Operations', () => {
       await operateProcessesPage.applyButton.click();
       await sleep(1000);
 
-      await waitForAssertion({
-        assertion: async () => {
-          await expect
-            .poll(async () => {
-              return operateProcessesPage.scheduledOperationsIcons.count();
-            })
-            .toBe(instances.length);
-        },
-        onFailure: async () => {
-          await page.reload();
-        },
-      });
+      await expect(operateProcessesPage.batchOperationStartedMessage('Resolve Incident')).toBeVisible({timeout: 60000});
     });
 
     await test.step('Cancel all instances', async () => {
@@ -172,6 +161,8 @@ test.describe('Operations', () => {
 
       await operateProcessesPage.clickProcessIncidentsCheckbox();
       await operateProcessesPage.clickProcessCanceledCheckbox();
+
+      await expect(operateProcessesPage.batchOperationStartedMessage('Cancel Process Instance')).toBeVisible({timeout: 60000});
 
       await waitForAssertion({
         assertion: async () => {

@@ -47,7 +47,8 @@ test.describe('Process Instance Modifications', () => {
     await captureFailureVideo(page, testInfo);
   });
 
-  test('Should apply/remove edit variable modifications', async ({
+  // skipped due to update described in issue 41143: https://github.com/camunda/camunda/issues/41143
+  test.skip('Should apply/remove edit variable modifications', async ({
     operateProcessInstancePage,
   }) => {
     await test.step('Navigate to process instance', async () => {
