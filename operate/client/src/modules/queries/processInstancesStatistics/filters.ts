@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelectionV2';
+import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 
 const getSelectedProcessInstancesFilter = () => {

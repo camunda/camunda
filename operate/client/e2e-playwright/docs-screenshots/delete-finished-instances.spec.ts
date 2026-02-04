@@ -13,7 +13,6 @@ import {
   mockBatchOperations,
   mockResponses as mockProcessesResponses,
   mockNewDeleteOperation,
-  mockProcessInstances,
   mockFinishedOrderProcessInstances,
   mockStatisticsV2,
   mockProcessDefinitions,
@@ -68,7 +67,7 @@ test.describe('delete finished instances', () => {
     const deleteInstanceButton = page
       .getByRole('row', {
         name: new RegExp(
-          `view instance ${mockFinishedOrderProcessInstances.processInstances[0]?.id}`,
+          `view instance ${mockFinishedOrderProcessInstances.items[0]?.processInstanceKey}`,
           'i',
         ),
       })
@@ -95,9 +94,10 @@ test.describe('delete finished instances', () => {
     processesPage: {filtersPanel},
   }) => {
     const processInstancesMock = {
-      totalCount: mockFinishedOrderProcessInstances.totalCount - 1,
-      processInstances:
-        mockFinishedOrderProcessInstances.processInstances.slice(1),
+      page: {
+        totalItems: mockFinishedOrderProcessInstances.page.totalItems - 1,
+      },
+      items: mockFinishedOrderProcessInstances.items.slice(1),
     };
 
     await page.route(
@@ -136,7 +136,7 @@ test.describe('delete finished instances', () => {
     const processInstanceKeyCell = page
       .getByRole('row', {
         name: new RegExp(
-          `view instance ${processInstancesMock.processInstances[0]?.id}`,
+          `view instance ${processInstancesMock.items[0]?.processInstanceKey}`,
           'i',
         ),
       })
@@ -246,15 +246,7 @@ test.describe('delete finished instances', () => {
         });
       }
 
-      if (route.request().url().includes('/api/process-instances')) {
-        return route.fulfill({
-          status: 200,
-          body: JSON.stringify(mockProcessInstances),
-          headers: {
-            'content-type': 'application/json',
-          },
-        });
-      }
+      route.continue();
     });
 
     await expect(

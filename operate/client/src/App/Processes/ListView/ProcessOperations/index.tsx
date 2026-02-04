@@ -6,43 +6,54 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useEffect, useState} from 'react';
+import {useState} from 'react';
 import {DangerButton} from 'modules/components/OperationItem/DangerButton';
 import {OperationItems} from 'modules/components/OperationItems';
 import {DeleteButtonContainer} from 'modules/components/DeleteDefinition/styled';
 import {InlineLoading, Link, ListItem, Stack} from '@carbon/react';
 import {DeleteDefinitionModal} from 'modules/components/DeleteDefinitionModal';
-import {operationsStore} from 'modules/stores/operations';
 import {StructuredList} from 'modules/components/StructuredList';
 import {UnorderedList} from 'modules/components/DeleteDefinitionModal/Warning/styled';
 import {notificationsStore} from 'modules/stores/notifications';
 import {handleOperationError} from 'modules/utils/notifications';
 import {tracking} from 'modules/tracking';
 import {observer} from 'mobx-react';
-import {processInstancesStore} from 'modules/stores/processInstances';
+import {useRunningInstancesCount} from 'modules/queries/processInstance/useRunningInstancesCount';
+import {useDeleteResource} from 'modules/mutations/resource/useDeleteResource';
 
 type Props = {
-  processDefinitionId: string;
+  processDefinitionKey: string;
   processName: string;
-  processVersion: string;
+  processVersion: number;
 };
 
 const ProcessOperations: React.FC<Props> = observer(
-  ({processDefinitionId, processName, processVersion}) => {
+  ({processDefinitionKey, processName, processVersion}) => {
     const [isDeleteModalVisible, setIsDeleteModalVisible] =
       useState<boolean>(false);
 
-    const [isOperationRunning, setIsOperationRunning] = useState(false);
-    const {runningInstancesCount} = processInstancesStore.state;
+    const {data: runningInstancesCount} = useRunningInstancesCount({
+      processDefinitionKey,
+    });
 
-    useEffect(() => {
-      processInstancesStore.fetchRunningInstancesCount();
+    const deleteResourceMutation = useDeleteResource(
+      processDefinitionKey,
+      {deleteHistory: true},
+      {
+        onSuccess: () => {
+          notificationsStore.displayNotification({
+            kind: 'success',
+            title: 'Operation created',
+            isDismissable: true,
+          });
+        },
+        onError: (error) => {
+          handleOperationError(error?.response?.status);
+        },
+      },
+    );
 
-      return () => {
-        setIsOperationRunning(false);
-        processInstancesStore.setRunningInstancesCount(-1);
-      };
-    }, [processDefinitionId]);
+    const isOperationRunning = deleteResourceMutation.isPending;
 
     return (
       <>
@@ -53,17 +64,19 @@ const ProcessOperations: React.FC<Props> = observer(
           <OperationItems>
             <DangerButton
               title={
-                runningInstancesCount > 0
+                (runningInstancesCount ?? 0) > 0
                   ? 'Only process definitions without running instances can be deleted.'
                   : `Delete Process Definition "${processName} - Version ${processVersion}"`
               }
               type="DELETE"
-              disabled={isOperationRunning || runningInstancesCount !== 0}
+              disabled={
+                isOperationRunning || (runningInstancesCount ?? 0) !== 0
+              }
               onClick={() => {
                 tracking.track({
                   eventName: 'definition-deletion-button',
                   resource: 'process',
-                  version: processVersion,
+                  version: processVersion.toString(),
                 });
 
                 setIsDeleteModalVisible(true);
@@ -82,7 +95,7 @@ const ProcessOperations: React.FC<Props> = observer(
             <Stack gap={6}>
               <UnorderedList nested>
                 <ListItem>
-                  All the deleted process definition’s finished process
+                  All the deleted process definition's finished process
                   instances will be deleted from the application.
                 </ListItem>
                 <ListItem>
@@ -123,31 +136,15 @@ const ProcessOperations: React.FC<Props> = observer(
           }
           onClose={() => setIsDeleteModalVisible(false)}
           onDelete={() => {
-            setIsOperationRunning(true);
             setIsDeleteModalVisible(false);
 
             tracking.track({
               eventName: 'definition-deletion-confirmation',
               resource: 'process',
-              version: processVersion,
+              version: processVersion.toString(),
             });
 
-            operationsStore.applyDeleteProcessDefinitionOperation({
-              processDefinitionId,
-              onSuccess: () => {
-                setIsOperationRunning(false);
-
-                notificationsStore.displayNotification({
-                  kind: 'success',
-                  title: 'Operation created',
-                  isDismissable: true,
-                });
-              },
-              onError: (statusCode: number) => {
-                setIsOperationRunning(false);
-                handleOperationError(statusCode);
-              },
-            });
+            deleteResourceMutation.mutate();
           }}
         />
       </>

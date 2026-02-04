@@ -50,6 +50,22 @@ test.describe('process instance migration', () => {
           page: {totalItems: 1},
         },
         processInstances: mockOrderProcessInstancesWithFailedOperations,
+        batchOperationItems: {
+          items: Array(3)
+            .fill(0)
+            .map((_, index) => ({
+              batchOperationKey: '653ed5e6-49ed-4675-85bf-2c54a94d8180',
+              itemKey: `failed-item-${index}`,
+              processInstanceKey: `22517998139543${index
+                .toString()
+                .padStart(2, '0')}`,
+              state: 'FAILED' as const,
+              processedDate: '2023-09-29T16:23:14.000+0000',
+              errorMessage: 'Unable to process operation',
+              operationType: 'MIGRATE_PROCESS_INSTANCE' as const,
+            })),
+          page: {totalItems: 3},
+        },
         statisticsV2: {
           items: [
             {
