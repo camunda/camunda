@@ -14,7 +14,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import org.springframework.boot.actuate.autoconfigure.observation.ObservationProperties;
+import org.springframework.boot.micrometer.observation.autoconfigure.ObservationProperties;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -61,7 +61,7 @@ public class McpGatewayConfiguration {
               final @NonNull HttpServletResponse response,
               final @NonNull FilterChain filterChain)
               throws ServletException, IOException {
-            filterChain.doFilter(new ContentCachingRequestWrapper(request), response);
+            filterChain.doFilter(new ContentCachingRequestWrapper(request, 0), response);
           }
         });
     registrationBean.addUrlPatterns("/mcp/*");
