@@ -22,36 +22,22 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
-import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
-import org.apache.hc.client5.http.classic.methods.HttpPost;
-import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
-import org.apache.hc.client5.http.impl.classic.HttpClients;
-import org.apache.hc.core5.http.ContentType;
-import org.apache.hc.core5.http.HttpResponse;
-import org.apache.hc.core5.http.io.entity.HttpEntities;
-import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 /*
- * This test is a combination of the ConnectorsIT and the ExtensionIT to ensure
- * that the new multi-tenancy configuration works with and without the connectors container.
+ * This test ensures that the new multitenancy configuration works as expected.
  */
 @SpringBootTest(
     classes = {CamundaSpringProcessMultiTenancyTestListenerIT.class},
     properties = {
       "io.camunda.process.test.multi-tenancy-enabled=true",
-      "io.camunda.process.test.connectors-enabled=true",
-      "io.camunda.process.test.connectors-secrets.CONNECTORS_URL=http://connectors:8080/actuator/health/readiness"
     })
 @CamundaSpringProcessTest
 public class CamundaSpringProcessMultiTenancyTestListenerIT {
-
-  // The ID is part of the connector configuration in the BPMN element
-  private static final String INBOUND_CONNECTOR_ID = "941c5492-ab2b-4305-aa18-ac86991ff4ca";
 
   @Autowired private CamundaClient client;
   @Autowired private CamundaProcessTestContext processTestContext;
@@ -126,56 +112,5 @@ public class CamundaSpringProcessMultiTenancyTestListenerIT {
 
     assertThat(Duration.between(timeBefore, timeAfter))
         .isCloseTo(timerDuration, Duration.ofSeconds(10));
-  }
-
-  @Test
-  void shouldInvokeInAndOutboundConnectors() throws IOException {
-    // given
-    client
-        .newDeployResourceCommand()
-        .addResourceFromClasspath("connector-process.bpmn")
-        .send()
-        .join();
-
-    // when
-    final ProcessInstanceEvent processInstance =
-        client
-            .newCreateInstanceCommand()
-            .bpmnProcessId("connector-process")
-            .latestVersion()
-            .variable("key", "key-1")
-            .send()
-            .join();
-
-    // then: outbound connector is invoked
-    CamundaAssert.assertThatProcessInstance(processInstance)
-        .isActive()
-        .hasCompletedElements(byName("Get connectors readiness status"))
-        .hasVariable("health", "UP");
-
-    // when: invoke the inbound connector
-    final String inboundAddress =
-        processTestContext.getConnectorsAddress() + "/inbound/" + INBOUND_CONNECTOR_ID;
-    final HttpPost request = new HttpPost(inboundAddress);
-    final String requestBody = "{\"key\":\"key-1\"}";
-    request.setEntity(HttpEntities.create(requestBody, ContentType.APPLICATION_JSON));
-
-    try (final CloseableHttpClient httpClient = HttpClients.createDefault()) {
-      Awaitility.await()
-          .atMost(Duration.ofSeconds(10))
-          .pollInterval(Duration.ofMillis(100))
-          .untilAsserted(
-              () -> {
-                final Integer responseCode = httpClient.execute(request, HttpResponse::getCode);
-                assertThat(responseCode)
-                    .describedAs("Expect invoking the inbound connector successfully")
-                    .isEqualTo(200);
-              });
-    }
-
-    // then
-    CamundaAssert.assertThatProcessInstance(processInstance)
-        .isCompleted()
-        .hasCompletedElements(byName("Wait for HTTP POST request"));
   }
 }
