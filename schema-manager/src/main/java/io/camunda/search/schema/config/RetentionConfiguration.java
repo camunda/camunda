@@ -22,7 +22,25 @@ public class RetentionConfiguration {
   private String policyName = DEFAULT_RETENTION_POLICY_NAME;
   private String usageMetricsMinimumAge = DEFAULT_USAGE_METRICS_MINIMUM_AGE;
   private String usageMetricsPolicyName = DEFAULT_USAGE_METRICS_POLICY_NAME;
+  private String jobMetricsBatchMinimumAge = DEFAULT_RETENTION_MINIMUM_AGE;
+  private String jobMetricsBatchPolicyName = DEFAULT_RETENTION_POLICY_NAME;
   private Duration applyPolicyJobInterval = DEFAULT_APPLY_POLICY_JOB_INTERVAL;
+
+  public String getJobMetricsBatchMinimumAge() {
+    return jobMetricsBatchMinimumAge;
+  }
+
+  public void setJobMetricsBatchMinimumAge(final String jobMetricsBatchMinimumAge) {
+    this.jobMetricsBatchMinimumAge = jobMetricsBatchMinimumAge;
+  }
+
+  public String getJobMetricsBatchPolicyName() {
+    return jobMetricsBatchPolicyName;
+  }
+
+  public void setJobMetricsBatchPolicyName(final String jobMetricsBatchPolicyName) {
+    this.jobMetricsBatchPolicyName = jobMetricsBatchPolicyName;
+  }
 
   public boolean isEnabled() {
     return enabled;

@@ -20,6 +20,7 @@ import io.camunda.exporter.tasks.archiver.ApplyRolloverPeriodJob;
 import io.camunda.exporter.tasks.archiver.ArchiverRepository;
 import io.camunda.exporter.tasks.archiver.BatchOperationArchiverJob;
 import io.camunda.exporter.tasks.archiver.ElasticsearchArchiverRepository;
+import io.camunda.exporter.tasks.archiver.JobBatchMetricsArchiverJob;
 import io.camunda.exporter.tasks.archiver.OpenSearchArchiverRepository;
 import io.camunda.exporter.tasks.archiver.ProcessInstanceArchiverJob;
 import io.camunda.exporter.tasks.archiver.ProcessInstanceToBeArchivedCountJob;
@@ -46,6 +47,7 @@ import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.IncidentTemplate;
+import io.camunda.webapps.schema.descriptors.template.JobMetricsBatchTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.PostImporterQueueTemplate;
@@ -248,6 +250,7 @@ public final class BackgroundTaskManagerFactory {
     }
     tasks.add(buildUsageMetricsArchiverJob());
     tasks.add(buildUsageMetricsTUArchiverJob());
+    tasks.add(buildJobBatchMetricsArchiverJob());
     tasks.add(buildStandaloneDecisionArchiverJob());
     if (partitionId == START_PARTITION_ID) {
       tasks.add(buildBatchOperationArchiverJob());
@@ -372,6 +375,16 @@ public final class BackgroundTaskManagerFactory {
         new UsageMetricTUArchiverJob(
             archiverRepository,
             resourceProvider.getIndexTemplateDescriptor(UsageMetricTUTemplate.class),
+            metrics,
+            logger,
+            executor));
+  }
+
+  private ReschedulingTask buildJobBatchMetricsArchiverJob() {
+    return buildReschedulingArchiverTask(
+        new JobBatchMetricsArchiverJob(
+            archiverRepository,
+            resourceProvider.getIndexTemplateDescriptor(JobMetricsBatchTemplate.class),
             metrics,
             logger,
             executor));

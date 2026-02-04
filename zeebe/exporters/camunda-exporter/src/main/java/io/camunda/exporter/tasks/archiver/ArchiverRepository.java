@@ -11,6 +11,7 @@ import io.camunda.exporter.tasks.archiver.ArchiveBatch.BasicArchiveBatch;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.ProcessInstanceArchiveBatch;
 import io.camunda.search.schema.config.RetentionConfiguration;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import io.camunda.webapps.schema.descriptors.template.JobMetricsBatchTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
 import java.util.List;
@@ -27,7 +28,8 @@ public interface ArchiverRepository extends AutoCloseable {
   Map<String, Function<RetentionConfiguration, String>> INDEX_TO_RETENTION_POLICY_FIELD =
       Map.of(
           UsageMetricTemplate.INDEX_NAME, RetentionConfiguration::getUsageMetricsPolicyName,
-          UsageMetricTUTemplate.INDEX_NAME, RetentionConfiguration::getUsageMetricsPolicyName);
+          UsageMetricTUTemplate.INDEX_NAME, RetentionConfiguration::getUsageMetricsPolicyName,
+          JobMetricsBatchTemplate.INDEX_NAME, RetentionConfiguration::getJobMetricsBatchPolicyName);
 
   CompletableFuture<ProcessInstanceArchiveBatch> getProcessInstancesNextBatch();
 
@@ -36,6 +38,8 @@ public interface ArchiverRepository extends AutoCloseable {
   CompletableFuture<BasicArchiveBatch> getUsageMetricTUNextBatch();
 
   CompletableFuture<BasicArchiveBatch> getUsageMetricNextBatch();
+
+  CompletableFuture<BasicArchiveBatch> getJobBatchMetricsNextBatch();
 
   CompletableFuture<BasicArchiveBatch> getStandaloneDecisionNextBatch();
 

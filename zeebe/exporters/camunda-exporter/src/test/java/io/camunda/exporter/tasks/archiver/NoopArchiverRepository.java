@@ -39,6 +39,12 @@ public class NoopArchiverRepository implements ArchiverRepository {
   }
 
   @Override
+  public CompletableFuture<ArchiveBatch.BasicArchiveBatch> getJobBatchMetricsNextBatch() {
+    return CompletableFuture.completedFuture(
+        new ArchiveBatch.BasicArchiveBatch("2024-01-01", List.of()));
+  }
+
+  @Override
   public CompletableFuture<ArchiveBatch.BasicArchiveBatch> getStandaloneDecisionNextBatch() {
     return CompletableFuture.completedFuture(
         new ArchiveBatch.BasicArchiveBatch("2024-01-01", List.of()));
