@@ -14,7 +14,7 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -44,11 +44,12 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-@ExtendWith(SpringExtension.class)
+@ExtendWith({SpringExtension.class, MockitoExtension.class})
 @SpringBootTest(classes = {BackupEndpointStandalone.class})
 public abstract sealed class BackupControllerTest {
 
@@ -84,14 +85,14 @@ public abstract sealed class BackupControllerTest {
 
   @BeforeEach
   public void setup() {
-    when(backupProperties.repositoryName()).thenReturn("repo-1");
+    lenient().when(backupProperties.repositoryName()).thenReturn("repo-1");
   }
 
   private void mockErrorWith(final Exception e) {
-    when(backupService.getBackupState(anyLong())).thenThrow(e);
-    when(backupService.getBackups(anyBoolean(), any())).thenThrow(e);
-    when(backupService.takeBackup(any())).thenThrow(e);
-    doThrow(e).when(backupService).deleteBackup(any());
+    lenient().when(backupService.getBackupState(anyLong())).thenThrow(e);
+    lenient().when(backupService.getBackups(anyBoolean(), any())).thenThrow(e);
+    lenient().when(backupService.takeBackup(any())).thenThrow(e);
+    lenient().doThrow(e).when(backupService).deleteBackup(any());
   }
 
   private void mockResourceNotFound() {
