@@ -74,7 +74,7 @@ public interface BackupAcceptance {
         .hasSize(2)
         .extracting(BackupInfo::getBackupId, BackupInfo::getState)
         .containsExactly(
-            Tuple.tuple(1L, StateCode.COMPLETED), Tuple.tuple(2L, StateCode.COMPLETED));
+            Tuple.tuple(2L, StateCode.COMPLETED), Tuple.tuple(1L, StateCode.COMPLETED));
   }
 
   @Test
@@ -101,7 +101,7 @@ public interface BackupAcceptance {
         .hasSize(2)
         .extracting(BackupInfo::getBackupId, BackupInfo::getState)
         .containsExactly(
-            Tuple.tuple(100L, StateCode.COMPLETED), Tuple.tuple(105L, StateCode.COMPLETED));
+            Tuple.tuple(105L, StateCode.COMPLETED), Tuple.tuple(100L, StateCode.COMPLETED));
   }
 
   @Test

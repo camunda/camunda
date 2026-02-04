@@ -310,11 +310,11 @@ public class BackupRequestHandlerTest extends GatewayTest {
     // then
     assertThat(future).succeedsWithin(Duration.ofMillis(500));
     final var backups = future.toCompletableFuture().join();
-    assertThat(backups).hasSize(2).extracting(BackupStatus::backupId).containsExactly(1L, 2L);
+    assertThat(backups).hasSize(2).extracting(BackupStatus::backupId).containsExactly(2L, 1L);
 
     assertThat(backups)
         .extracting(BackupStatus::status)
-        .containsExactly(State.INCOMPLETE, State.COMPLETED);
+        .containsExactly(State.COMPLETED, State.INCOMPLETE);
   }
 
   @Test
@@ -341,11 +341,11 @@ public class BackupRequestHandlerTest extends GatewayTest {
     // then
     assertThat(future).succeedsWithin(Duration.ofMillis(500));
     final var backups = future.toCompletableFuture().join();
-    assertThat(backups).hasSize(2).extracting(BackupStatus::backupId).containsExactly(1L, 2L);
+    assertThat(backups).hasSize(2).extracting(BackupStatus::backupId).containsExactly(2L, 1L);
 
     assertThat(backups)
         .extracting(BackupStatus::status)
-        .containsExactly(State.COMPLETED, State.IN_PROGRESS);
+        .containsExactly(State.IN_PROGRESS, State.COMPLETED);
   }
 
   @Test

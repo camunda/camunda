@@ -273,6 +273,7 @@ public final class BackupRequestHandler implements BackupApi {
                           })
                       .toList());
             })
+        .sorted(Comparator.comparingLong(BackupStatus::backupId).reversed())
         .toList();
   }
 
