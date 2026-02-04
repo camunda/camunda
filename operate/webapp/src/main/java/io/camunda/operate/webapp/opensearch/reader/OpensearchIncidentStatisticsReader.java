@@ -115,7 +115,7 @@ public class OpensearchIncidentStatisticsReader implements IncidentStatisticsRea
     final var errorMessage =
         topHitsAggregation(List.of(IncidentTemplate.ERROR_MSG, IncidentTemplate.ERROR_MSG_HASH), 1);
     final var groupByErrorMessageHash =
-        termAggregation(IncidentTemplate.ERROR_MSG_HASH, TERMS_AGG_SIZE);
+        termAggregation(IncidentTemplate.ERROR_MSG_HASH, termsAggSize);
 
     final var searchRequestBuilder =
         searchRequestBuilder(incidentTemplate, ONLY_RUNTIME)
