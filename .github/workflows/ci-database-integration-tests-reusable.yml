@@ -51,7 +51,7 @@ jobs:
     name: "${{inputs.database-type}}"
     permissions: { }  # GITHUB_TOKEN unused in this job
     timeout-minutes: 20
-    runs-on: gcp-perf-core-8-default
+    runs-on: gcp-perf-core-16-default
     env:
       ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
       IMAGE_VERSION: ${{inputs.database-image-version}}
