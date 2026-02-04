@@ -1357,6 +1357,7 @@ jobs:
       - docker-checks
       - elasticsearch-history-tests
       - elasticsearch-integration-tests
+      - elasticsearch9-integration-tests
       - general-unit-tests
       - h2-history-tests
       - identity-frontend-tests
