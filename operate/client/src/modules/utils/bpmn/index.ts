@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {BpmnModdle} from 'bpmn-moddle';
+import BpmnModdle from 'bpmn-moddle';
 
 const moddle = new BpmnModdle();
 
