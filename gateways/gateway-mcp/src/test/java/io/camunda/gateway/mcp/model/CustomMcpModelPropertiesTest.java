@@ -88,6 +88,7 @@ public class CustomMcpModelPropertiesTest {
                 "creationDate",
                 "dueDate",
                 "elementId",
+                "elementInstanceKey",
                 "followUpDate",
                 "localVariables",
                 "name",
@@ -97,7 +98,8 @@ public class CustomMcpModelPropertiesTest {
                 "processInstanceKey",
                 "processInstanceVariables",
                 "state",
-                "userTaskKey")),
+                "userTaskKey",
+                "tags")),
         Arguments.argumentSet(
             "McpUserTaskAssignmentRequest",
             McpUserTaskAssignmentRequest.class,
