@@ -9,6 +9,7 @@ package io.camunda.zeebe.protocol.impl.record.value.globallistener;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.BooleanProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
@@ -22,19 +23,23 @@ import io.camunda.zeebe.protocol.record.value.GlobalListenerType;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 public final class GlobalListenerRecord extends UnifiedRecordValue
     implements GlobalListenerRecordValue {
 
-  public static final int DEFAULT_RETRIES = 3;
-  public static final int DEFAULT_PRIORITY = 50;
-
   public static final Comparator<GlobalListenerRecord> PRIORITY_COMPARATOR =
       Comparator.comparingInt(GlobalListenerRecord::getPriority)
           .reversed()
           .thenComparing(GlobalListenerRecord::getId);
+
+  public static final String ALL_EVENT_TYPES = "all";
+  // Set of all possible task listener event types as strings, to be used while validating records
+  public static final Set<String> TASK_LISTENER_EVENT_TYPES =
+      Stream.of(ZeebeTaskListenerEventType.values()).map(Enum::name).collect(Collectors.toSet());
 
   private final StringProperty idProp = new StringProperty("id", "");
   private final StringProperty typeProp = new StringProperty("type", "");
@@ -44,9 +49,9 @@ public final class GlobalListenerRecord extends UnifiedRecordValue
   private final BooleanProperty afterNonGlobalProp = new BooleanProperty("afterNonGlobal", false);
   private final IntegerProperty priorityProp = new IntegerProperty("priority", DEFAULT_PRIORITY);
   private final EnumProperty<GlobalListenerSource> sourceProp =
-      new EnumProperty<>("source", GlobalListenerSource.class, GlobalListenerSource.CONFIGURATION);
+      new EnumProperty<>("source", GlobalListenerSource.class, DEFAULT_SOURCE);
   private final EnumProperty<GlobalListenerType> listenerTypeProp =
-      new EnumProperty<>("listenerType", GlobalListenerType.class, GlobalListenerType.USER_TASK);
+      new EnumProperty<>("listenerType", GlobalListenerType.class, DEFAULT_LISTENER_TYPE);
 
   public GlobalListenerRecord() {
     super(8);

@@ -101,13 +101,31 @@ public final class GlobalListenerClient {
     return expectation.apply(position, GlobalListenerIntent.CREATED);
   }
 
+  public Record<GlobalListenerRecordValue> create(final String username) {
+    final long position =
+        writer.writeCommand(GlobalListenerIntent.CREATE, username, globalListenerRecord);
+    return expectation.apply(position, GlobalListenerIntent.CREATED);
+  }
+
   public Record<GlobalListenerRecordValue> update() {
     final long position = writer.writeCommand(GlobalListenerIntent.UPDATE, globalListenerRecord);
     return expectation.apply(position, GlobalListenerIntent.UPDATED);
   }
 
+  public Record<GlobalListenerRecordValue> update(final String username) {
+    final long position =
+        writer.writeCommand(GlobalListenerIntent.UPDATE, username, globalListenerRecord);
+    return expectation.apply(position, GlobalListenerIntent.UPDATED);
+  }
+
   public Record<GlobalListenerRecordValue> delete() {
     final long position = writer.writeCommand(GlobalListenerIntent.DELETE, globalListenerRecord);
+    return expectation.apply(position, GlobalListenerIntent.DELETED);
+  }
+
+  public Record<GlobalListenerRecordValue> delete(final String username) {
+    final long position =
+        writer.writeCommand(GlobalListenerIntent.DELETE, username, globalListenerRecord);
     return expectation.apply(position, GlobalListenerIntent.DELETED);
   }
 }
