@@ -14,9 +14,8 @@ import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
+import io.camunda.zeebe.exporter.filter.DefaultRecordFilter;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.RecordType;
-import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.util.SemanticVersion;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
@@ -69,7 +68,7 @@ public class ElasticsearchExporter implements Exporter {
     validate(configuration);
     pluginRepository.load(configuration.getInterceptorPlugins());
 
-    context.setFilter(new ElasticsearchRecordFilter(configuration));
+    context.setFilter(new DefaultRecordFilter(configuration));
     registry = context.getMeterRegistry();
   }
 
@@ -264,7 +263,7 @@ public class ElasticsearchExporter implements Exporter {
   /**
    * Determine whether a record should be exported or not. For Camunda 8.8 we require Optimize
    * records to be exported, or if the configuration explicitly enables the export of all records
-   * {@link ElasticsearchExporterConfiguration#includeEnabledRecords}. For past versions, we
+   * {@link ElasticsearchExporterConfiguration#getIsIncludeEnabledRecords()}. For past versions, we
    * continue to export all records.
    *
    * @param record The record to check
@@ -287,24 +286,5 @@ public class ElasticsearchExporter implements Exporter {
                     "Unsupported record broker version: ["
                         + version
                         + "] Must be a semantic version."));
-  }
-
-  private static class ElasticsearchRecordFilter implements Context.RecordFilter {
-
-    private final ElasticsearchExporterConfiguration configuration;
-
-    ElasticsearchRecordFilter(final ElasticsearchExporterConfiguration configuration) {
-      this.configuration = configuration;
-    }
-
-    @Override
-    public boolean acceptType(final RecordType recordType) {
-      return configuration.shouldIndexRecordType(recordType);
-    }
-
-    @Override
-    public boolean acceptValue(final ValueType valueType) {
-      return configuration.shouldIndexValueType(valueType);
-    }
   }
 }
