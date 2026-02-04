@@ -414,7 +414,7 @@ jobs:
             -H "Authorization: Bearer $GITHUB_TOKEN" \
             https://api.github.com/repos/camunda/c8-cross-component-e2e-tests/dispatches \
             -d '{
-                  "event_type": "run-saas-generation-smoke",
+                  "event_type": "run-saas-generation-smoke-mono",
                   "client_payload": {
                       "source_repo": "${{ github.repository }}",
                       "source_sha": "${{ github.sha }}",
@@ -452,7 +452,7 @@ jobs:
           echo "Waiting for E2E workflow to complete in camunda/c8-cross-component-e2e-tests triggered after $TRIGGER_TIME"
 
           TARGET_REPO="camunda/c8-cross-component-e2e-tests"
-          WORKFLOW_FILE="playwright_saas_pr_trigger_monorepo_8_9.yml"
+          WORKFLOW_FILE="playwright_saas_pr_trigger_monorepo.yml"
 
           # Wait up to 40 min (80 x 30s)
           for _ in {1..80}; do
