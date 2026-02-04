@@ -35,7 +35,7 @@ import org.opensearch.client.opensearch._types.analysis.TruncateTokenFilter;
 import org.opensearch.client.opensearch.indices.IndexSettings;
 import org.opensearch.client.opensearch.indices.IndexSettingsAnalysis;
 import org.opensearch.client.opensearch.indices.IndexSettingsMapping;
-import org.opensearch.client.opensearch.indices.IndexSettingsMappingLimit;
+import org.opensearch.client.opensearch.indices.IndexSettingsMappingLimitNestedObjects;
 import org.springframework.context.annotation.Conditional;
 
 @Conditional(OpenSearchCondition.class)
@@ -76,12 +76,11 @@ public class OpenSearchIndexSettingsBuilder {
             new Time.Builder()
                 .time(configurationService.getOpenSearchConfiguration().getRefreshInterval())
                 .build())
-        .numberOfReplicas(
-            String.valueOf(configurationService.getOpenSearchConfiguration().getNumberOfReplicas()))
+        .numberOfReplicas(configurationService.getOpenSearchConfiguration().getNumberOfReplicas())
         .mapping(
             new IndexSettingsMapping.Builder()
                 .nestedObjects(
-                    new IndexSettingsMappingLimit.Builder()
+                    new IndexSettingsMappingLimitNestedObjects.Builder()
                         .limit(
                             (long)
                                 configurationService
@@ -131,7 +130,7 @@ public class OpenSearchIndexSettingsBuilder {
                                     TokenChar.Punctuation,
                                     TokenChar.Symbol))
                             .build()
-                            ._toTokenizerDefinition())
+                            .toTokenizerDefinition())
                     .build())
             .filter(
                 IS_PRESENT_FILTER,

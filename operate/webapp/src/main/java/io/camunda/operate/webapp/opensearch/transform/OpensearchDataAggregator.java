@@ -114,6 +114,6 @@ public class OpensearchDataAggregator extends DataAggregator {
                                 failedOperationQuery,
                                 BatchOperationTemplate.COMPLETED_OPERATIONS_COUNT,
                                 completedOperationQuery))
-                        ._toAggregation())));
+                        .toAggregation())));
   }
 }

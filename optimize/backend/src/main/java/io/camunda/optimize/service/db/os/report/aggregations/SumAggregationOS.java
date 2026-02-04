@@ -40,6 +40,6 @@ public class SumAggregationOS extends AggregationStrategyOS {
     final SumAggregation.Builder builder = new SumAggregation.Builder().script(script);
     AggregationResultMappingUtil.firstField(fields).ifPresent(builder::field);
     return Pair.of(
-        createAggregationName(customIdentifier, SUM_AGGREGATION), builder.build()._toAggregation());
+        createAggregationName(customIdentifier, SUM_AGGREGATION), builder.build().toAggregation());
   }
 }

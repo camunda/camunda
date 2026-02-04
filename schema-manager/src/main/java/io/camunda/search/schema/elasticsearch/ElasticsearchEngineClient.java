@@ -486,8 +486,8 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
           deserializeJson(
               IndexTemplateMapping._DESERIALIZER,
               utils.new SchemaSettingsAppender(templateFile)
-                  .withNumberOfReplicas(settings.getNumberOfReplicas())
-                  .withNumberOfShards(settings.getNumberOfShards())
+                  .withNumberOfReplicas(settings.getNumberOfReplicas().toString())
+                  .withNumberOfShards(settings.getNumberOfShards().toString())
                   .withRefreshInterval(settings.getRefreshInterval())
                   .build());
       return PutIndexTemplateRequest.of(
@@ -519,8 +519,8 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
       final var currentTemplate = getIndexTemplateState(indexTemplateDescriptor);
       final var configuredSettings =
           utils.new SchemaSettingsAppender(templateFile)
-              .withNumberOfShards(indexConfiguration.getNumberOfShards())
-              .withNumberOfReplicas(indexConfiguration.getNumberOfReplicas())
+              .withNumberOfShards(indexConfiguration.getNumberOfShards().toString())
+              .withNumberOfReplicas(indexConfiguration.getNumberOfReplicas().toString())
               .withRefreshInterval(indexConfiguration.getRefreshInterval());
       final var configuredPriority =
           convertValue(indexConfiguration.getTemplatePriority(), Long::valueOf);
@@ -595,8 +595,8 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
           deserializeJson(
               IndexTemplateMapping._DESERIALIZER,
               utils.new SchemaSettingsAppender(templateFile)
-                  .withNumberOfReplicas(settings.getNumberOfReplicas())
-                  .withNumberOfShards(settings.getNumberOfShards())
+                  .withNumberOfReplicas(settings.getNumberOfReplicas().toString())
+                  .withNumberOfShards(settings.getNumberOfShards().toString())
                   .withRefreshInterval(settings.getRefreshInterval())
                   .build());
 

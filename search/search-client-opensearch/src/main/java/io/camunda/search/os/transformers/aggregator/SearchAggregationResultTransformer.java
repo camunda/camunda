@@ -24,6 +24,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import org.opensearch.client.json.JsonData;
+import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
 import org.opensearch.client.opensearch._types.aggregations.CardinalityAggregate;
 import org.opensearch.client.opensearch._types.aggregations.CompositeAggregate;
@@ -70,7 +71,10 @@ public class SearchAggregationResultTransformer<T>
 
   private AggregationResult transformSingleMetricAggregate(
       final SingleMetricAggregateBase aggregate) {
-    return new Builder().docCount((long) aggregate.value()).build();
+    if (aggregate.value() == null) {
+      return new Builder().docCount(0L).build();
+    }
+    return new Builder().docCount(Math.round(aggregate.value())).build();
   }
 
   private SearchTopHitsAggregator findTopHitsAggregatorRecursively(
@@ -139,7 +143,7 @@ public class SearchAggregationResultTransformer<T>
                 switch (bucket) {
                   case final StringTermsBucket b -> b.key();
                   case final LongTermsBucket b ->
-                      b.keyAsString() != null ? b.keyAsString() : String.valueOf(b.key());
+                      b.keyAsString() != null ? b.keyAsString() : String.valueOf(b.key().signed());
                   case final CompositeBucket b ->
                       b.key().values().stream()
                           .map(SearchAggregationResultTransformer::fieldValueToString)
@@ -174,8 +178,8 @@ public class SearchAggregationResultTransformer<T>
     return null;
   }
 
-  private static String fieldValueToString(final JsonData fieldValue) {
-    return fieldValue.to(String.class);
+  private static String fieldValueToString(final FieldValue fieldValue) {
+    return String.valueOf(fieldValue._get());
   }
 
   private Map<String, AggregationResult> transformAggregation(

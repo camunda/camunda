@@ -28,6 +28,10 @@ extraEnvs:
 
 opensearchJavaOpts: "-Xms1024m -Xmx1024m"
 
+sysctlInit:
+  enabled: true
+sysctlVmMaxMapCount: 262144
+
 resources:
   requests:
     cpu: 3

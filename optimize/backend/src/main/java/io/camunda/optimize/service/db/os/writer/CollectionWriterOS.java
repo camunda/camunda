@@ -83,7 +83,7 @@ public class CollectionWriterOS implements CollectionWriter {
             id, collection.getName());
     final UpdateResponse updateResponse = osClient.update(request, errorMessage);
 
-    if (updateResponse.shards().failed().intValue() > 0) {
+    if (updateResponse.shards().failed() > 0) {
       LOG.error(
           "Was not able to update collection with id [{}] and name [{}].",
           id,
@@ -346,7 +346,7 @@ public class CollectionWriterOS implements CollectionWriter {
 
     final UpdateResponse updateResponse = osClient.update(request, errorMessage);
 
-    if (updateResponse.shards().failed().intValue() > 0) {
+    if (updateResponse.shards().failed() > 0) {
       final String message = String.format(errorMessage, collectionId);
       LOG.error(message, collectionId);
       throw new OptimizeRuntimeException(message);

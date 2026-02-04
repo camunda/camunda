@@ -68,6 +68,11 @@
     </dependency>
 
     <dependency>
+      <groupId>org.apache.httpcomponents.core5</groupId>
+      <artifactId>httpcore5</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
     </dependency>
@@ -230,6 +235,7 @@
         <configuration>
           <ignoredNonTestScopedDependencies>
             <ignoredNonTestScopedDependency>com.fasterxml.jackson.core:jackson-core</ignoredNonTestScopedDependency>
+            <ignoredNonTestScopedDependency>org.apache.httpcomponents.core5:httpcore5</ignoredNonTestScopedDependency>
           </ignoredNonTestScopedDependencies>
           <ignoredUnusedDeclaredDependencies>
             <!-- This dependency is indirectly used by the awssk auth plugin. It requires these

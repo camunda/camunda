@@ -14,15 +14,17 @@ import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Predicate;
 import net.jodah.failsafe.Failsafe;
 import net.jodah.failsafe.RetryPolicy;
 import net.jodah.failsafe.function.CheckedSupplier;
 import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch._types.BulkByScrollFailure;
+import org.opensearch.client.opensearch._types.ErrorCause;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch.tasks.GetTasksResponse;
-import org.opensearch.client.opensearch.tasks.Info;
+import org.opensearch.client.opensearch.tasks.TaskInfo;
+import org.opensearch.client.opensearch.tasks.TaskResponse;
 import org.slf4j.Logger;
 
 public abstract class OpenSearchRetryOperation extends OpenSearchSyncOperation {
@@ -98,8 +100,8 @@ public abstract class OpenSearchRetryOperation extends OpenSearchSyncOperation {
     return openSearchClient.tasks().get(t -> t.taskId(id));
   }
 
-  protected Map<String, Info> tasksWithActions(final List<String> actions) throws IOException {
-    return openSearchClient.tasks().list(l -> l.actions(actions)).tasks();
+  protected List<TaskInfo> tasksWithActions(final List<String> actions) throws IOException {
+    return openSearchClient.tasks().list(l -> l.actions(actions)).tasks().groupedByNone();
   }
 
   protected GetTasksResponse waitTaskCompletion(final String taskId) {
@@ -137,8 +139,12 @@ public abstract class OpenSearchRetryOperation extends OpenSearchSyncOperation {
   }
 
   private void checkForFailures(final GetTasksResponse taskResponse) {
-    if (taskResponse.response().failures() != null) {
-      throw new OptimizeRuntimeException(taskResponse.response().failures().get(0));
+    final TaskResponse response = taskResponse.response();
+    if (response != null && !response.failures().isEmpty()) {
+      final List<BulkByScrollFailure> failures = response.failures();
+      final ErrorCause reason = failures.getFirst().reason();
+      final ErrorCause cause = failures.getFirst().cause();
+      throw new OptimizeRuntimeException(reason != null ? reason.reason() : cause.reason());
     }
   }
 
