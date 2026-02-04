@@ -8,7 +8,6 @@
 package io.camunda.application;
 
 import static io.camunda.application.ModeTestUtils.assertPortOpen;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.GenericContainer;
@@ -19,7 +18,7 @@ public class AllInOneModeDockerIT extends AbstractCamundaDockerIT {
   private static final String STARTUP_LOG_MESSAGE = "Started Camunda using mode: ALL-IN-ONE";
 
   @Test
-  void test_allInOneModeExposesCorrectPortsAndHealthEndpoint() throws Exception {
+  void testAllInOneModeExposesCorrectPortsAndHealthEndpoint() throws Exception {
     /* create and start Elasticsearch container */
 
     final ElasticsearchContainer elasticsearchContainer =
@@ -36,7 +35,7 @@ public class AllInOneModeDockerIT extends AbstractCamundaDockerIT {
     /* --- logs assertions --- */
 
     final String logs = camundaContainer.getLogs();
-    assertTrue(
+    org.junit.jupiter.api.Assertions.assertTrue(
         logs.contains(STARTUP_LOG_MESSAGE),
         "Expected startup log message not found in container logs.");
 

@@ -8,7 +8,6 @@
 package io.camunda.application;
 
 import static io.camunda.application.ModeTestUtils.assertPortOpen;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
@@ -21,7 +20,7 @@ public class GatewayModeDockerIT extends AbstractCamundaDockerIT {
   private static final String STARTUP_LOG_MESSAGE = "Started Camunda using mode: GATEWAY";
 
   @Test
-  void test_gatewayModeExposesCorrectPortsAndHealthEndpoint() throws Exception {
+  void testGatewayModeExposesCorrectPortsAndHealthEndpoint() throws Exception {
     /* create and start Elasticsearch container */
 
     final ElasticsearchContainer elasticsearchContainer =
@@ -45,7 +44,7 @@ public class GatewayModeDockerIT extends AbstractCamundaDockerIT {
     /* --- logs assertions --- */
 
     final String logs = camundaContainer.getLogs();
-    assertTrue(
+    org.junit.jupiter.api.Assertions.assertTrue(
         logs.contains(STARTUP_LOG_MESSAGE),
         "Expected startup log message not found in container logs.");
 
