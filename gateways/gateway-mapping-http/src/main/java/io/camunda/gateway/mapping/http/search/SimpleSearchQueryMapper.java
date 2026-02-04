@@ -377,6 +377,14 @@ public class SimpleSearchQueryMapper {
     return filterModel;
   }
 
+  public static io.camunda.gateway.protocol.model.UserTaskVariableFilter toUserTaskVariableFilter(
+      final io.camunda.gateway.protocol.model.simple.UserTaskVariableFilter simple) {
+    if (simple == null) {
+      return null;
+    }
+    return new io.camunda.gateway.protocol.model.UserTaskVariableFilter().name(simple.getName());
+  }
+
   private static List<VariableValueFilterProperty> convertVariableValueFilterProperties(
       final List<io.camunda.gateway.protocol.model.simple.VariableValueFilterProperty>
           variableFilters) {
@@ -420,15 +428,5 @@ public class SimpleSearchQueryMapper {
       filterModel.$lt(value.to());
     }
     return filterModel;
-  }
-
-  public static io.camunda.gateway.protocol.model.UserTaskVariableFilter
-      toUserTaskVariableFilter(
-          final io.camunda.gateway.protocol.model.simple.UserTaskVariableFilter simple) {
-    if (simple == null) {
-      return null;
-    }
-    return new io.camunda.gateway.protocol.model.UserTaskVariableFilter()
-        .name(simple.getName());
   }
 }
