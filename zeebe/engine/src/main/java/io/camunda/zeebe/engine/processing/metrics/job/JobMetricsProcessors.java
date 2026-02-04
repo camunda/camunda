@@ -25,6 +25,9 @@ public class JobMetricsProcessors {
       final Writers writers,
       final KeyGenerator keyGenerator,
       final InstantSource clock) {
+    if (!config.isJobMetricsExportEnabled()) {
+      return;
+    }
     typedRecordProcessors
         .onCommand(
             ValueType.JOB_METRICS_BATCH,
