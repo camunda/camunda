@@ -309,7 +309,7 @@ public class AdminApiRequestHandler
                           currentMemberId,
                           partitionId,
                           primaryMember.get());
-                      raftPartition.stepDown();
+                      raftPartition.stepDownForLeaderBalancing();
                     } else {
                       LOG.debug(
                           "Node {} is primary for partition {}, not stepping down",

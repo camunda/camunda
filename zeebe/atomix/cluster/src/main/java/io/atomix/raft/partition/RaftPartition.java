@@ -250,6 +250,16 @@ public final class RaftPartition implements Partition, HealthMonitorable {
   }
 
   public CompletableFuture<Void> stepDown() {
+    return server.stepDown();
+  }
+
+  /**
+   * Step down for leader balancing. Only steps down if priority election is enabled.
+   *
+   * @return a future that completes when the step down is complete, or completes immediately if
+   *     priority election is not enabled or server is not available
+   */
+  public CompletableFuture<Void> stepDownForLeaderBalancing() {
     if (server != null && config.isPriorityElectionEnabled()) {
       return server.stepDown();
     } else {

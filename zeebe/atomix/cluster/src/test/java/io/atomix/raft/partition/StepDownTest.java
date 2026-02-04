@@ -49,7 +49,7 @@ final class StepDownTest {
     FieldUtils.writeField(partition, "server", mockRaftPartitionServer, true);
 
     // when
-    partition.stepDown();
+    partition.stepDownForLeaderBalancing();
 
     // then
     verify(mockRaftPartitionServer).stepDown();
@@ -71,7 +71,7 @@ final class StepDownTest {
     FieldUtils.writeField(partition, "server", mockRaftPartitionServer, true);
 
     // when
-    partition.stepDown();
+    partition.stepDownForLeaderBalancing();
 
     // then
     verify(mockRaftPartitionServer, never()).stepDown();
@@ -89,9 +89,33 @@ final class StepDownTest {
     // server is null by default
 
     // when
-    final var result = partition.stepDown();
+    final var result = partition.stepDownForLeaderBalancing();
 
     // then - should complete successfully without doing anything
     assertThat(result).isCompletedWithValue(null);
+  }
+
+  @Test
+  void shouldAlwaysStepDownWhenCallingStepDown(@TempDir final Path tempDir)
+      throws IllegalAccessException {
+    // given
+    final var partitionId = new PartitionId("group", 1);
+    final var metadata = new PartitionMetadata(partitionId, Set.of(), Map.of(), 1, null);
+
+    final var raftPartitionConfig = new RaftPartitionConfig();
+    raftPartitionConfig.setPriorityElectionEnabled(false); // even when priority election disabled
+    final var partition =
+        new RaftPartition(metadata, raftPartitionConfig, tempDir.toFile(), meterRegistry);
+    final var mockRaftPartitionServer = Mockito.mock(RaftPartitionServer.class);
+    when(mockRaftPartitionServer.stepDown()).thenReturn(CompletableFuture.completedFuture(null));
+
+    // To avoid having to start a server, just mock one.
+    FieldUtils.writeField(partition, "server", mockRaftPartitionServer, true);
+
+    // when
+    partition.stepDown();
+
+    // then - stepDown should always call server.stepDown() regardless of priority election
+    verify(mockRaftPartitionServer).stepDown();
   }
 }
