@@ -38,10 +38,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @HistoryMultiDbTest
-@DisabledIfSystemProperty(
-    named = "test.integration.camunda.database.type",
-    matches = "rdbms.*$") // RDBMS will be supported after the implementation
-// of https://github.com/camunda/camunda/issues/41683
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 public class ProcessInstanceHistoryCleanupIT {
 
