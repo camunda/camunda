@@ -100,7 +100,11 @@ describe('Interaction with other fields during validation', () => {
     expect(screen.getByText(ERRORS.ids)).toBeInTheDocument();
   });
 
-  it('validation for Variable Value field should not affect other fields validation errors', async () => {
+  // Variable validation tests have been removed because the variable filter
+  // now uses a modal (VariableFilterModal) with its own validation logic.
+  // Variable validation is tested in VariableFilterModal.test.tsx.
+
+  it('adding variable filter should not affect other fields validation errors', async () => {
     const {user} = render(<Filters />, {
       wrapper: getWrapper(),
     });
@@ -114,48 +118,11 @@ describe('Interaction with other fields during validation', () => {
     expect(await screen.findByText(ERRORS.ids)).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', {name: 'More Filters'}));
-    await user.click(screen.getByText('Variable'));
-    await user.type(screen.getByLabelText(/value/i), 'a');
+    await user.click(screen.getByText('Variables'));
 
+    // Adding the variable filter should not clear the instance IDs error
     expect(screen.getByText(ERRORS.ids)).toBeInTheDocument();
-
-    vi.runOnlyPendingTimers();
-
-    expect(
-      await screen.findByText('Name has to be filled'),
-    ).toBeInTheDocument();
-
-    expect(await screen.findByText('Value has to be JSON')).toBeInTheDocument();
-
-    expect(screen.getByText(ERRORS.ids)).toBeInTheDocument();
-  });
-
-  it('validation for Variable Name field should not affect other fields validation errors', async () => {
-    const {user} = render(<Filters />, {
-      wrapper: getWrapper(),
-    });
-
-    await user.click(screen.getByRole('button', {name: 'More Filters'}));
-    await user.click(screen.getByText('Process Instance Key(s)'));
-    await user.type(screen.getByLabelText(/^process instance key\(s\)$/i), '1');
-
-    vi.runOnlyPendingTimers();
-
-    expect(await screen.findByText(ERRORS.ids)).toBeInTheDocument();
-
-    await user.click(screen.getByRole('button', {name: 'More Filters'}));
-    await user.click(screen.getByText('Variable'));
-    await user.type(screen.getByTestId('optional-filter-variable-name'), 'a');
-
-    expect(screen.getByText(ERRORS.ids)).toBeInTheDocument();
-
-    vi.runOnlyPendingTimers();
-
-    expect(
-      await screen.findByText('Value has to be filled'),
-    ).toBeInTheDocument();
-
-    expect(screen.getByText(ERRORS.ids)).toBeInTheDocument();
+    expect(screen.getByTestId('variable-filter-input')).toBeInTheDocument();
   });
 
   it('validation for Process, Version and Flow Node fields should not affect other fields validation errors', async () => {
