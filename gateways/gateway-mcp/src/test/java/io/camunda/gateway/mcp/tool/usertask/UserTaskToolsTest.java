@@ -29,6 +29,7 @@ import io.camunda.search.entities.UserTaskEntity.UserTaskState;
 import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.Operator;
+import io.camunda.search.filter.UntypedOperation;
 import io.camunda.search.filter.UserTaskFilter;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
@@ -396,8 +397,8 @@ class UserTaskToolsTest extends ToolsTest {
                           Map.of(
                               "processInstanceVariables",
                               List.of(
-                                  Map.of("name", "status", "eq", "active"),
-                                  Map.of("name", "priority", "gt", 5)))))
+                                  Map.of("name", "status", "value", "active"),
+                                  Map.of("name", "priority", "value", "high")))))
                   .build());
 
       // then
@@ -406,15 +407,21 @@ class UserTaskToolsTest extends ToolsTest {
       verify(userTaskServices).search(userTaskQueryCaptor.capture());
       final UserTaskQuery capturedQuery = userTaskQueryCaptor.getValue();
 
-      assertThat(capturedQuery.filter().processInstanceVariablesOperations())
+      assertThat(capturedQuery.filter().processInstanceVariableFilter())
           .hasSize(2)
-          .extracting(
-              op -> op.property().name(),
-              op -> op.property().eq(),
-              op -> op.property().gt())
-          .containsExactly(
-              tuple("status", "active", null),
-              tuple("priority", null, 5));
+          .satisfiesExactlyInAnyOrder(
+              filter -> {
+                assertThat(filter.name()).isEqualTo("status");
+                assertThat(filter.valueOperations())
+                    .extracting(UntypedOperation::operator, UntypedOperation::value)
+                    .containsExactly(tuple(Operator.EQUALS, "active"));
+              },
+              filter -> {
+                assertThat(filter.name()).isEqualTo("priority");
+                assertThat(filter.valueOperations())
+                    .extracting(UntypedOperation::operator, UntypedOperation::value)
+                    .containsExactly(tuple(Operator.EQUALS, "high"));
+              });
     }
 
     @Test
@@ -434,8 +441,8 @@ class UserTaskToolsTest extends ToolsTest {
                           Map.of(
                               "localVariables",
                               List.of(
-                                  Map.of("name", "formData", "eq", "submitted"),
-                                  Map.of("name", "attempts", "lt", 3)))))
+                                  Map.of("name", "status", "value", "active"),
+                                  Map.of("name", "priority", "value", "high")))))
                   .build());
 
       // then
@@ -444,15 +451,21 @@ class UserTaskToolsTest extends ToolsTest {
       verify(userTaskServices).search(userTaskQueryCaptor.capture());
       final UserTaskQuery capturedQuery = userTaskQueryCaptor.getValue();
 
-      assertThat(capturedQuery.filter().localVariablesOperations())
+      assertThat(capturedQuery.filter().localVariableFilters())
           .hasSize(2)
-          .extracting(
-              op -> op.property().name(),
-              op -> op.property().eq(),
-              op -> op.property().lt())
-          .containsExactly(
-              tuple("formData", "submitted", null),
-              tuple("attempts", null, 3));
+          .satisfiesExactlyInAnyOrder(
+              filter -> {
+                assertThat(filter.name()).isEqualTo("status");
+                assertThat(filter.valueOperations())
+                    .extracting(UntypedOperation::operator, UntypedOperation::value)
+                    .containsExactly(tuple(Operator.EQUALS, "active"));
+              },
+              filter -> {
+                assertThat(filter.name()).isEqualTo("priority");
+                assertThat(filter.valueOperations())
+                    .extracting(UntypedOperation::operator, UntypedOperation::value)
+                    .containsExactly(tuple(Operator.EQUALS, "high"));
+              });
     }
 
     @Test
