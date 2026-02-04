@@ -17,6 +17,7 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.*;
 
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
+import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.ConversionUtils;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.webapp.reader.ProcessReader;
@@ -78,6 +79,8 @@ public class IncidentStatisticsReader extends AbstractReader
 
   @Autowired private PermissionsService permissionsService;
 
+  @Autowired private OperateProperties operateProperties;
+
   @Override
   public Set<IncidentsByProcessGroupStatisticsDto> getProcessAndIncidentsStatistics() {
     final QueryBuilder pisWithReadPermissionQuery =
@@ -93,6 +96,8 @@ public class IncidentStatisticsReader extends AbstractReader
     final Set<IncidentsByErrorMsgStatisticsDto> result =
         new TreeSet<>(IncidentsByErrorMsgStatisticsDto.COMPARATOR);
 
+    final int termsAggSize = operateProperties.getMaxIncidentSearchGroups();
+
     final Map<Long, ProcessEntity> processes =
         processReader.getProcessesWithFields(
             ProcessIndex.KEY,
@@ -104,7 +109,7 @@ public class IncidentStatisticsReader extends AbstractReader
     final TermsAggregationBuilder aggregation =
         terms(GROUP_BY_ERROR_MESSAGE_HASH)
             .field(IncidentTemplate.ERROR_MSG_HASH)
-            .size(ElasticsearchUtil.TERMS_AGG_SIZE)
+            .size(termsAggSize)
             .subAggregation(
                 topHits(ERROR_MESSAGE)
                     .size(1)
@@ -114,7 +119,7 @@ public class IncidentStatisticsReader extends AbstractReader
             .subAggregation(
                 terms(GROUP_BY_PROCESS_KEYS)
                     .field(IncidentTemplate.PROCESS_DEFINITION_KEY)
-                    .size(ElasticsearchUtil.TERMS_AGG_SIZE)
+                    .size(termsAggSize)
                     .subAggregation(
                         cardinality(UNIQ_PROCESS_INSTANCES)
                             .field(IncidentTemplate.PROCESS_INSTANCE_KEY)));
