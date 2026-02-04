@@ -47,6 +47,7 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
   private static final StringValue TAGS_KEY = new StringValue("tags");
   private static final StringValue ROOT_PROCESS_INSTANCE_KEY_KEY =
       new StringValue("rootProcessInstanceKey");
+  private static final StringValue BUSINESS_ID_KEY = new StringValue("businessId");
 
   private final StringProperty bpmnProcessIdProperty = new StringProperty(BPMN_PROCESS_ID_KEY, "");
   private final LongProperty processDefinitionKeyProperty =
@@ -70,9 +71,10 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
       new ArrayProperty<>(TAGS_KEY, StringValue::new);
   private final LongProperty rootProcessInstanceKeyProperty =
       new LongProperty(ROOT_PROCESS_INSTANCE_KEY_KEY, -1);
+  private final StringProperty businessIdProperty = new StringProperty(BUSINESS_ID_KEY, "");
 
   public ProcessInstanceCreationRecord() {
-    super(11);
+    super(12);
     declareProperty(bpmnProcessIdProperty)
         .declareProperty(processDefinitionKeyProperty)
         .declareProperty(processInstanceKeyProperty)
@@ -83,7 +85,8 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
         .declareProperty(runtimeInstructionsProperty)
         .declareProperty(tenantIdProperty)
         .declareProperty(tagsProperty)
-        .declareProperty(rootProcessInstanceKeyProperty);
+        .declareProperty(rootProcessInstanceKeyProperty)
+        .declareProperty(businessIdProperty);
   }
 
   @Override
@@ -159,6 +162,21 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
   public ProcessInstanceCreationRecord setRootProcessInstanceKey(
       final long rootProcessInstanceKey) {
     rootProcessInstanceKeyProperty.setValue(rootProcessInstanceKey);
+    return this;
+  }
+
+  @Override
+  public String getBusinessId() {
+    return bufferAsString(businessIdProperty.getValue());
+  }
+
+  public ProcessInstanceCreationRecord setBusinessId(final String businessId) {
+    businessIdProperty.setValue(businessId);
+    return this;
+  }
+
+  public ProcessInstanceCreationRecord setBusinessId(final DirectBuffer businessId) {
+    businessIdProperty.setValue(businessId);
     return this;
   }
 
@@ -261,5 +279,10 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
   public ProcessInstanceCreationRecord setTenantId(final String tenantId) {
     tenantIdProperty.setValue(tenantId);
     return this;
+  }
+
+  @JsonIgnore
+  public DirectBuffer getBusinessIdBuffer() {
+    return businessIdProperty.getValue();
   }
 }
