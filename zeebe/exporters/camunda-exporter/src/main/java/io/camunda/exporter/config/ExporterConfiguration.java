@@ -221,9 +221,8 @@ public class ExporterConfiguration {
 
   public static class HistoryConfiguration {
     private boolean processInstanceEnabled = true;
-    // TODO once all entities are set with rootProcessInstanceKey, set the default to PI_HIERARCHY
     private ProcessInstanceRetentionMode processInstanceRetentionMode =
-        ProcessInstanceRetentionMode.PI;
+        ProcessInstanceRetentionMode.PI_HIERARCHY;
     private String elsRolloverDateFormat = "date";
     private String rolloverInterval = "1d";
     private String usageMetricsRolloverInterval = "1M";
