@@ -380,7 +380,7 @@ public class SimpleSearchQueryMapper {
   public static io.camunda.gateway.protocol.model.UserTaskVariableFilter toUserTaskVariableFilter(
       final io.camunda.gateway.protocol.model.simple.UserTaskVariableFilter simple) {
     if (simple == null) {
-      return null;
+      return new io.camunda.gateway.protocol.model.UserTaskVariableFilter();
     }
 
     return new io.camunda.gateway.protocol.model.UserTaskVariableFilter()
