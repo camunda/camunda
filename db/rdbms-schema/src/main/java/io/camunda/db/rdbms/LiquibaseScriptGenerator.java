@@ -98,7 +98,14 @@ public class LiquibaseScriptGenerator {
     final var properties = VendorDatabasePropertiesLoader.load(databaseType);
 
     final var sqlScript =
-        generateSqlScript(databaseType, changesetFile, prefix, properties.userCharColumnSize());
+        generateSqlScript(
+            databaseType,
+            changesetFile,
+            prefix,
+            properties.variableValuePreviewSize(),
+            properties.errorMessageSize(),
+            properties.treePathSize(),
+            properties.varcharIndexSize());
 
     final String basedir = targetBaseDir + "/" + databaseType;
     Files.createDirectories(Paths.get(basedir));
@@ -113,7 +120,10 @@ public class LiquibaseScriptGenerator {
       final String databaseType,
       final String changesetFile,
       final String prefix,
-      final int userCharColumnSize)
+      final int variableValuePreviewSize,
+      final int errorMessageSize,
+      final int treePathSize,
+      final int varcharIndexSize)
       throws LiquibaseException {
 
     final var database = DatabaseFactory.getInstance().getDatabase(databaseType);
@@ -121,7 +131,10 @@ public class LiquibaseScriptGenerator {
     final Liquibase liquibase =
         new Liquibase(changesetFile, new ClassLoaderResourceAccessor(), database);
     liquibase.setChangeLogParameter("prefix", prefix);
-    liquibase.setChangeLogParameter("userCharColumnSize", userCharColumnSize);
+    liquibase.setChangeLogParameter("variableValue.previewSize", variableValuePreviewSize);
+    liquibase.setChangeLogParameter("errorMessage.size", errorMessageSize);
+    liquibase.setChangeLogParameter("treePath.size", treePathSize);
+    liquibase.setChangeLogParameter("varcharIndex.size", varcharIndexSize);
 
     final var changelog = liquibase.getDatabaseChangeLog();
 

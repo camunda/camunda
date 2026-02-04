@@ -59,16 +59,15 @@ public record VariableDbModel(
    * (optional) byte size limit, if the byte size exceeds the specified limit.
    *
    * @param sizeLimit the maximum number of characters allowed for the variable value
-   * @param byteLimit the maximum number of bytes allowed for the variable value
    * @return a new VariableDbModel with the truncated value
    */
-  public VariableDbModel truncateValue(final int sizeLimit, final Integer byteLimit) {
+  public VariableDbModel truncateValue(final int sizeLimit) {
     var truncatedValue = value;
     String fullValue = null;
     var isPreview = false;
 
     if (type == ValueTypeEnum.STRING && value != null) {
-      truncatedValue = TruncateUtil.truncateValue(truncatedValue, sizeLimit, byteLimit);
+      truncatedValue = TruncateUtil.truncateValue(truncatedValue, sizeLimit);
 
       if (truncatedValue.length() < value.length()) {
         fullValue = value;

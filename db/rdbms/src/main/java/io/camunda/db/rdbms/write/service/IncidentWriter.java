@@ -44,9 +44,7 @@ public class IncidentWriter extends ProcessInstanceDependant implements RdbmsWri
             WriteStatementType.INSERT,
             incident.incidentKey(),
             "io.camunda.db.rdbms.sql.IncidentMapper.insert",
-            incident.truncateErrorMessage(
-                vendorDatabaseProperties.errorMessageSize(),
-                vendorDatabaseProperties.charColumnMaxBytes())));
+            incident.truncateErrorMessage(vendorDatabaseProperties.errorMessageSize())));
   }
 
   public void update(final IncidentDbModel incident) {
@@ -56,9 +54,7 @@ public class IncidentWriter extends ProcessInstanceDependant implements RdbmsWri
             WriteStatementType.UPDATE,
             incident.incidentKey(),
             "io.camunda.db.rdbms.sql.IncidentMapper.update",
-            incident.truncateErrorMessage(
-                vendorDatabaseProperties.errorMessageSize(),
-                vendorDatabaseProperties.charColumnMaxBytes())));
+            incident.truncateErrorMessage(vendorDatabaseProperties.errorMessageSize())));
   }
 
   public void resolve(final Long incidentKey) {

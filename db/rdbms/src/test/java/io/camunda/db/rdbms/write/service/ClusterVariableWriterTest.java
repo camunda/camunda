@@ -32,11 +32,10 @@ class ClusterVariableWriterTest {
   @Test
   void shouldCreateClusterVariable() {
     when(vendorDatabaseProperties.variableValuePreviewSize()).thenReturn(1000);
-    when(vendorDatabaseProperties.charColumnMaxBytes()).thenReturn(4000);
 
     final var model = mock(ClusterVariableDbModel.class);
     final var truncatedModel = mock(ClusterVariableDbModel.class);
-    when(model.truncateValue(anyInt(), anyInt())).thenReturn(truncatedModel);
+    when(model.truncateValue(anyInt())).thenReturn(truncatedModel);
     when(model.id()).thenReturn("var1");
 
     writer.create(model);

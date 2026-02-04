@@ -12,10 +12,11 @@ import java.util.Properties;
 public class VendorDatabaseProperties {
 
   /**
-   * Required property to specify the size of the variable value preview in characters. This is used
-   * to truncate variable values for preview purposes.
+   * Required property to specify the maximum size of varchar columns in characters for indexed
+   * fields (e.g., all ID fields like processDefinitionId, formId, tenantId). This is limited by
+   * database vendor index size constraints.
    */
-  private static final String VARIABLE_VALUE_PREVIEW_SIZE = "variableValue.previewSize";
+  private static final String VARCHAR_INDEX_SIZE = "varcharIndex.size";
 
   /**
    * Required property to specify the size of an Incident's errorMessage in characters. Longer error
@@ -24,29 +25,42 @@ public class VendorDatabaseProperties {
   private static final String ERROR_MESSAGE_SIZE = "errorMessage.size";
 
   /**
-   * Optional property to limit the maximum size of string column in bytes, if required by the
-   * database vendor. If not set, no limit is applied.
+   * Required property to specify the size of the tree path in characters.
    */
-  private static final String CHAR_COLUMN_MAX_BYTES = "charColumn.maxBytes";
+  private static final String TREE_PATH_SIZE = "treePath.size";
 
   /**
-   * Optional property to limit the maximum size of string column in bytes, if required by the
-   * database vendor. If not set, no limit is applied.
+   * Required property to specify the size of the variable value preview in characters. This is used
+   * to truncate variable values for preview purposes.
    */
-  private static final String USER_CHAR_COLUMN_SIZE = "userCharColumn.size";
+  private static final String VARIABLE_VALUE_PREVIEW_SIZE = "variableValue.previewSize";
 
   private static final String DISABLE_FK_BEFORE_TRUNCATE = "disableFkBeforeTruncate";
 
   private final Properties properties;
-
-  private final int variableValuePreviewSize;
   private final boolean disableFkBeforeTruncate;
-  private final Integer charColumnMaxBytes;
-  private final int userCharColumnSize;
+  private final int varcharIndexSize;
   private final int errorMessageSize;
+  private final int treePathSize;
+  private final int variableValuePreviewSize;
 
   public VendorDatabaseProperties(final Properties properties) {
     this.properties = properties;
+
+    if (!properties.containsKey(VARCHAR_INDEX_SIZE)) {
+      throw new IllegalArgumentException("Property '" + VARCHAR_INDEX_SIZE + "' is missing");
+    }
+    varcharIndexSize = Integer.parseInt(properties.getProperty(VARCHAR_INDEX_SIZE));
+
+    if (!properties.containsKey(ERROR_MESSAGE_SIZE)) {
+      throw new IllegalArgumentException("Property '" + ERROR_MESSAGE_SIZE + "' is missing");
+    }
+    errorMessageSize = Integer.parseInt(properties.getProperty(ERROR_MESSAGE_SIZE));
+
+    if (!properties.containsKey(TREE_PATH_SIZE)) {
+      throw new IllegalArgumentException("Property '" + TREE_PATH_SIZE + "' is missing");
+    }
+    treePathSize = Integer.parseInt(properties.getProperty(TREE_PATH_SIZE));
 
     if (!properties.containsKey(VARIABLE_VALUE_PREVIEW_SIZE)) {
       throw new IllegalArgumentException(
@@ -54,22 +68,6 @@ public class VendorDatabaseProperties {
     }
     variableValuePreviewSize =
         Integer.parseInt(properties.getProperty(VARIABLE_VALUE_PREVIEW_SIZE));
-
-    if (!properties.containsKey(USER_CHAR_COLUMN_SIZE)) {
-      throw new IllegalArgumentException("Property '" + USER_CHAR_COLUMN_SIZE + "' is missing");
-    }
-    errorMessageSize = Integer.parseInt(properties.getProperty(ERROR_MESSAGE_SIZE));
-
-    if (!properties.containsKey(ERROR_MESSAGE_SIZE)) {
-      throw new IllegalArgumentException("Property '" + ERROR_MESSAGE_SIZE + "' is missing");
-    }
-    userCharColumnSize = Integer.parseInt(properties.getProperty(USER_CHAR_COLUMN_SIZE));
-
-    if (!properties.containsKey(CHAR_COLUMN_MAX_BYTES)) {
-      charColumnMaxBytes = null;
-    } else {
-      charColumnMaxBytes = Integer.parseInt(properties.getProperty(CHAR_COLUMN_MAX_BYTES));
-    }
 
     if (!properties.containsKey(DISABLE_FK_BEFORE_TRUNCATE)) {
       throw new IllegalArgumentException(
@@ -79,20 +77,41 @@ public class VendorDatabaseProperties {
         Boolean.parseBoolean(properties.getProperty(DISABLE_FK_BEFORE_TRUNCATE));
   }
 
-  public int variableValuePreviewSize() {
-    return variableValuePreviewSize;
+  /**
+   * Returns the maximum size of varchar columns in characters for indexed fields (e.g., all ID
+   * fields like processDefinitionId, formId, tenantId).
+   *
+   * @return the maximum indexed varchar size
+   */
+  public int varcharIndexSize() {
+    return varcharIndexSize;
   }
 
-  public int userCharColumnSize() {
-    return userCharColumnSize;
-  }
-
+  /**
+   * Returns the maximum size of error message columns in characters.
+   *
+   * @return the maximum error message size
+   */
   public int errorMessageSize() {
     return errorMessageSize;
   }
 
-  public Integer charColumnMaxBytes() {
-    return charColumnMaxBytes;
+  /**
+   * Returns the maximum size of tree path columns in characters.
+   *
+   * @return the maximum tree path size
+   */
+  public int treePathSize() {
+    return treePathSize;
+  }
+
+  /**
+   * Returns the maximum size of variable value preview columns in characters.
+   *
+   * @return the maximum variable value preview size
+   */
+  public int variableValuePreviewSize() {
+    return variableValuePreviewSize;
   }
 
   public boolean disableFkBeforeTruncate() {

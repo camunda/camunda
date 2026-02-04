@@ -50,14 +50,12 @@ public record DecisionInstanceDbModel(
     return fn.apply(new Builder()).build();
   }
 
-  public DecisionInstanceDbModel truncateErrorMessage(
-      final int sizeLimit, final Integer byteLimit) {
+  public DecisionInstanceDbModel truncateErrorMessage(final int sizeLimit) {
     if (evaluationFailureMessage == null) {
       return this;
     }
 
-    final var truncatedValue =
-        TruncateUtil.truncateValue(evaluationFailureMessage, sizeLimit, byteLimit);
+    final var truncatedValue = TruncateUtil.truncateValue(evaluationFailureMessage, sizeLimit);
 
     if (truncatedValue.length() < evaluationFailureMessage.length()) {
       LOG.warn(

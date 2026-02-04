@@ -80,13 +80,12 @@ public interface BatchOperationMapper extends HistoryCleanupMapper {
   record BatchOperationErrorDto(Integer partitionId, String type, String message) {
     public static final Logger LOG = LoggerFactory.getLogger(BatchOperationErrorDto.class);
 
-    public BatchOperationErrorDto truncateErrorMessage(
-        final int sizeLimit, final Integer byteLimit) {
+    public BatchOperationErrorDto truncateErrorMessage(final int sizeLimit) {
       if (message == null) {
         return this;
       }
 
-      final var truncatedValue = TruncateUtil.truncateValue(message, sizeLimit, byteLimit);
+      final var truncatedValue = TruncateUtil.truncateValue(message, sizeLimit);
 
       if (truncatedValue.length() < message.length()) {
         LOG.warn(

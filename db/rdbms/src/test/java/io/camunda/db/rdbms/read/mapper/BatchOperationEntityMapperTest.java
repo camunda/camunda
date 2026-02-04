@@ -93,18 +93,9 @@ class BatchOperationEntityMapperTest {
   @Test
   void shouldTruncateBatchOperationErrorMessageWithLargeValue() {
     final var truncatedMessage =
-        new BatchOperationErrorDto(1, "errorType", "errorMessage").truncateErrorMessage(10, null);
+        new BatchOperationErrorDto(1, "errorType", "errorMessage").truncateErrorMessage(10);
 
     assertThat(truncatedMessage.message().length()).isEqualTo(10);
     assertThat(truncatedMessage.message()).isEqualTo("errorMessa");
-  }
-
-  @Test
-  void shouldTruncateBatchOperationErrorMessageWithLargeBytes() {
-    final var truncatedMessage =
-        new BatchOperationErrorDto(1, "errorType", "ääääääääää").truncateErrorMessage(50, 5);
-
-    assertThat(truncatedMessage.message().length()).isEqualTo(2);
-    assertThat(truncatedMessage.message()).isEqualTo("ää");
   }
 }

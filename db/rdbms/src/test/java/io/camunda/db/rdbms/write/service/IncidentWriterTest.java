@@ -37,11 +37,10 @@ class IncidentWriterTest {
   @Test
   void shouldCreateIncident() {
     when(vendorDatabaseProperties.errorMessageSize()).thenReturn(5000);
-    when(vendorDatabaseProperties.charColumnMaxBytes()).thenReturn(20000);
 
     final var model = mock(IncidentDbModel.class);
     final var truncatedModel = mock(IncidentDbModel.class);
-    when(model.truncateErrorMessage(anyInt(), anyInt())).thenReturn(truncatedModel);
+    when(model.truncateErrorMessage(anyInt())).thenReturn(truncatedModel);
     when(model.incidentKey()).thenReturn(123L);
 
     writer.create(model);
@@ -60,11 +59,10 @@ class IncidentWriterTest {
   @Test
   void shouldUpdateIncident() {
     when(vendorDatabaseProperties.errorMessageSize()).thenReturn(5000);
-    when(vendorDatabaseProperties.charColumnMaxBytes()).thenReturn(20000);
 
     final var model = mock(IncidentDbModel.class);
     final var truncatedModel = mock(IncidentDbModel.class);
-    when(model.truncateErrorMessage(anyInt(), anyInt())).thenReturn(truncatedModel);
+    when(model.truncateErrorMessage(anyInt())).thenReturn(truncatedModel);
     when(model.incidentKey()).thenReturn(123L);
 
     writer.update(model);

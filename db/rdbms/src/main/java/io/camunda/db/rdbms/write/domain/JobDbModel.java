@@ -113,12 +113,12 @@ public class JobDbModel implements Copyable<JobDbModel> {
     return copyFunction.apply(toBuilder()).build();
   }
 
-  public JobDbModel truncateErrorMessage(final int sizeLimit, final Integer byteLimit) {
+  public JobDbModel truncateErrorMessage(final int sizeLimit) {
     if (errorMessage == null) {
       return this;
     }
 
-    final var truncatedValue = TruncateUtil.truncateValue(errorMessage, sizeLimit, byteLimit);
+    final var truncatedValue = TruncateUtil.truncateValue(errorMessage, sizeLimit);
 
     if (truncatedValue.length() < errorMessage.length()) {
       LOG.warn(

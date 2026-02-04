@@ -37,37 +37,10 @@ class DecisionInstanceDbModelTest {
             .decisionRequirementsKey(6L)
             .decisionRequirementsId("decisionRequirementsId")
             .build()
-            .truncateErrorMessage(10, null);
+            .truncateErrorMessage(10);
 
     assertThat(truncatedMessage.evaluationFailureMessage().length()).isEqualTo(10);
     assertThat(truncatedMessage.evaluationFailureMessage()).isEqualTo("errorMessa");
-  }
-
-  @Test
-  void shouldTruncateErrorMessageBytes() {
-    final DecisionInstanceDbModel truncatedMessage =
-        new DecisionInstanceDbModel.Builder()
-            .decisionInstanceId("decisionInstanceId")
-            .decisionInstanceKey(1L)
-            .state(DecisionInstanceState.EVALUATED)
-            .evaluationDate(OffsetDateTime.now())
-            .evaluationFailure("evaluationFailure")
-            .evaluationFailureMessage("ääääääääää")
-            .result("result")
-            .flowNodeInstanceKey(2L)
-            .flowNodeId("flowNodeId")
-            .processInstanceKey(3L)
-            .processDefinitionKey(4L)
-            .processDefinitionId("processDefinitionId")
-            .decisionDefinitionKey(5L)
-            .decisionDefinitionId("decisionDefinitionId")
-            .decisionRequirementsKey(6L)
-            .decisionRequirementsId("decisionRequirementsId")
-            .build()
-            .truncateErrorMessage(99, 5);
-
-    assertThat(truncatedMessage.evaluationFailureMessage().length()).isEqualTo(2);
-    assertThat(truncatedMessage.evaluationFailureMessage()).isEqualTo("ää");
   }
 
   @Test
@@ -92,7 +65,7 @@ class DecisionInstanceDbModelTest {
             .decisionRequirementsId("decisionRequirementsId")
             .build();
 
-    assertThatCode(() -> decisionInstanceDbModel.truncateErrorMessage(10, 5))
+    assertThatCode(() -> decisionInstanceDbModel.truncateErrorMessage(10))
         .doesNotThrowAnyException();
   }
 }

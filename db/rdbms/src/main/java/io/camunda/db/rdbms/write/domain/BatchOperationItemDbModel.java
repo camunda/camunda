@@ -24,13 +24,12 @@ public record BatchOperationItemDbModel(
 
   private static final Logger LOG = getLogger(BatchOperationItemDbModel.class);
 
-  public BatchOperationItemDbModel truncateErrorMessage(
-      final int sizeLimit, final Integer byteLimit) {
+  public BatchOperationItemDbModel truncateErrorMessage(final int sizeLimit) {
     if (errorMessage == null) {
       return this;
     }
 
-    final var truncatedValue = TruncateUtil.truncateValue(errorMessage, sizeLimit, byteLimit);
+    final var truncatedValue = TruncateUtil.truncateValue(errorMessage, sizeLimit);
 
     if (truncatedValue != null && truncatedValue.length() < errorMessage.length()) {
       LOG.warn(

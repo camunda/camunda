@@ -88,11 +88,19 @@ public class MyBatisConfiguration {
     moduleConfig.setDatabaseChangeLogTable(trimmedPrefix + "DATABASECHANGELOG");
     moduleConfig.setDatabaseChangeLogLockTable(trimmedPrefix + "DATABASECHANGELOGLOCK");
     moduleConfig.setParameters(
-        Map.of(
-            "prefix",
-            trimmedPrefix,
-            "userCharColumnSize",
-            Integer.toString(vendorDatabaseProperties.userCharColumnSize())));
+        Map.ofEntries(
+            Map.entry("prefix", trimmedPrefix),
+            Map.entry(
+                "varcharIndex.size",
+                Integer.toString(vendorDatabaseProperties.varcharIndexSize())),
+            Map.entry(
+                "errorMessage.size",
+                Integer.toString(vendorDatabaseProperties.errorMessageSize())),
+            Map.entry(
+                "treePath.size", Integer.toString(vendorDatabaseProperties.treePathSize())),
+            Map.entry(
+                "variableValue.previewSize",
+                Integer.toString(vendorDatabaseProperties.variableValuePreviewSize()))));
     // changelog file located in src/main/resources directly in the module
     moduleConfig.setChangeLog("db/changelog/rdbms-exporter/changelog-master.xml");
 
