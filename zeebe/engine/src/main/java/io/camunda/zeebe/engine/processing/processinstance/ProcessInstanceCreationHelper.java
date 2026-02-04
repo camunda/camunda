@@ -92,7 +92,10 @@ public class ProcessInstanceCreationHelper {
   }
 
   public ProcessInstanceRecord initProcessInstanceRecord(
-      final DeployedProcess process, final long processInstanceKey, final Set<String> tags) {
+      final DeployedProcess process,
+      final long processInstanceKey,
+      final Set<String> tags,
+      final String businessId) {
     return new ProcessInstanceRecord()
         .setBpmnProcessId(process.getBpmnProcessId())
         .setVersion(process.getVersion())
@@ -103,7 +106,8 @@ public class ProcessInstanceCreationHelper {
         .setElementId(process.getProcess().getId())
         .setFlowScopeKey(-1)
         .setTenantId(process.getTenantId())
-        .setTags(tags);
+        .setTags(tags)
+        .setBusinessId(businessId);
   }
 
   private Either<Rejection, DeployedProcess> getProcess(

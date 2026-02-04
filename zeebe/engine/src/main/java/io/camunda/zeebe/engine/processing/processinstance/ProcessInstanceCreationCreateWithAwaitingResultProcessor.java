@@ -101,7 +101,8 @@ public final class ProcessInstanceCreationCreateWithAwaitingResultProcessor
     final var record = command.getValue();
 
     final var processInstance =
-        helper.initProcessInstanceRecord(process, processInstanceKey, record.getTags());
+        helper.initProcessInstanceRecord(
+            process, processInstanceKey, record.getTags(), record.getBusinessId());
 
     helper.setVariablesFromDocument(processInstance, record.getVariablesBuffer());
 
