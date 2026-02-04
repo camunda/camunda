@@ -32,6 +32,7 @@ import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
@@ -40,6 +41,14 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 public class DefaultExporterResourceProviderTest {
+
+  /**
+   * Cache for reverse lookup: RecordValue class -> ValueType. Built once from {@link
+   * ValueTypeMapping} to avoid repeated iteration.
+   */
+  private static final Map<Class<? extends RecordValue>, ValueType> RECORD_VALUE_TO_VALUE_TYPE =
+      buildRecordValueToValueTypeMap();
+
   @ParameterizedTest
   @MethodSource("configProvider")
   void shouldHaveCorrectFullQualifiedNamesForIndexAndTemplates(final ExporterConfiguration config) {
@@ -352,20 +361,7 @@ public class DefaultExporterResourceProviderTest {
 
   private static ValueType getExpectedValueType(
       final Class<? extends RecordValue> recordValueClass) {
-    for (final ValueType valueType : ValueType.values()) {
-      if (valueType == ValueType.NULL_VAL || valueType == ValueType.SBE_UNKNOWN) {
-        continue;
-      }
-      try {
-        final var mapping = ValueTypeMapping.get(valueType);
-        if (mapping.getValueClass().equals(recordValueClass)) {
-          return valueType;
-        }
-      } catch (final IllegalArgumentException e) {
-        // ValueType not mapped, skip
-      }
-    }
-    return null;
+    return RECORD_VALUE_TO_VALUE_TYPE.get(recordValueClass);
   }
 
   static Stream<ExporterConfiguration> configProvider() {
@@ -433,5 +429,12 @@ public class DefaultExporterResourceProviderTest {
     return Stream.of(
         Arguments.arguments(PROCESS_DEFINITION_PARTITION, allTransformers),
         Arguments.arguments(2, allPartitionTransformers));
+  }
+
+  private static Map<Class<? extends RecordValue>, ValueType> buildRecordValueToValueTypeMap() {
+    return ValueTypeMapping.getAcceptedValueTypes().stream()
+        .collect(
+            Collectors.toUnmodifiableMap(
+                valueType -> ValueTypeMapping.get(valueType).getValueClass(), Function.identity()));
   }
 }
