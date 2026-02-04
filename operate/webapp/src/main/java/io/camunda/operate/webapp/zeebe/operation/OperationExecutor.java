@@ -31,9 +31,19 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 
+/**
+ * @deprecated This class is deprecated and will be removed in version 8.10.
+ *     <p>It is not safe to remove this class yet because the Operation Executor is still required
+ *     to process any pending operation batches in the `operate-operation` index. Removing it now
+ *     could result in user-initiated operations remaining unprocessed after an upgrade, breaking
+ *     user-space and leaving operations stuck indefinitely. The class should only be removed once
+ *     it is guaranteed that no pending batches remain and all consumers have migrated to the V2
+ *     API. See https://github.com/camunda/camunda/issues/44958 for migration progress and details.
+ */
 @Component
 @Configuration
 @ConditionalOnRdbmsDisabled
+@Deprecated(forRemoval = true, since = "8.9")
 public class OperationExecutor extends Thread {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(OperationExecutor.class);
