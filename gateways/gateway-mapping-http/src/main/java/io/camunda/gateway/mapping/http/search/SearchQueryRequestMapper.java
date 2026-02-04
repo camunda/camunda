@@ -467,7 +467,7 @@ public final class SearchQueryRequestMapper {
         new UserTaskSearchQuery()
             .filter(SimpleSearchQueryMapper.toUserTaskFilter(filter))
             .page(SimpleSearchQueryMapper.toPageRequest(page))
-            .sort(sort));
+            .sort(sort == null ? List.of() : sort));
   }
 
   public static Either<ProblemDetail, UserTaskQuery> toUserTaskQuery(
@@ -494,7 +494,7 @@ public final class SearchQueryRequestMapper {
         new UserTaskVariableSearchQueryRequest()
             .filter(SimpleSearchQueryMapper.toUserTaskVariableFilter(filter))
             .page(SimpleSearchQueryMapper.toPageRequest(page))
-            .sort(sort));
+            .sort(sort == null ? List.of() : sort));
   }
 
   public static Either<ProblemDetail, VariableQuery> toUserTaskVariableQuery(
