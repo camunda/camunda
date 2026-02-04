@@ -8,7 +8,7 @@
 package io.camunda.application.commons.mcp;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.application.commons.metrics.ServerRequestObservationConfiguration.LowCardinalityKeyValuesMapper;
+import io.camunda.application.commons.metrics.ServerRequestObservationConfiguration.ServerRequestLowCardinalityKeyValuesMapper;
 import io.camunda.gateway.mcp.ConditionalOnMcpGatewayEnabled;
 import io.micrometer.common.KeyValue;
 import io.micrometer.common.KeyValues;
@@ -33,10 +33,13 @@ public class McpGatewayConfiguration {
   public static final KeyValues MCP_BASE_URI_VALUE = KeyValues.of(KeyValue.of(KEY_URI, URI_MCP));
 
   @Bean
-  public LowCardinalityKeyValuesMapper lowCardinalityKeyValuesProvider(
+  public ServerRequestLowCardinalityKeyValuesMapper lowCardinalityKeyValuesProvider(
       final ObjectMapper objectMapper) {
     return context -> {
       final HttpServletRequest carrier = context.getCarrier();
+      if (carrier == null) {
+        return KeyValues.empty();
+      }
 
       if (!URI_MCP.equals(carrier.getServletPath())) {
         // don't adjust the URI tag value

@@ -16,8 +16,10 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.function.Function;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.Ordered;
 import org.springframework.http.server.observation.DefaultServerRequestObservationConvention;
 import org.springframework.http.server.observation.ServerRequestObservationContext;
 import org.springframework.http.server.observation.ServerRequestObservationConvention;
@@ -30,27 +32,33 @@ import org.springframework.web.util.ContentCachingRequestWrapper;
 public class ServerRequestObservationConfiguration {
 
   @Bean
-  public ServerHttpObservationFilter serverHttpObservationFilter(
+  public FilterRegistrationBean<ServerHttpObservationFilter> serverHttpObservationFilter(
       final ObservationRegistry observationRegistry,
       final ServerRequestObservationConvention customRequestObservationConvention) {
-    // return the common request observation filter but wrap the request in a
-    // ContentCachingRequestWrapper to be able to read the body multiple times
-    return new ServerHttpObservationFilter(
-        observationRegistry, customRequestObservationConvention) {
-      @Override
-      protected void doFilterInternal(
-          final @NonNull HttpServletRequest request,
-          final @NonNull HttpServletResponse response,
-          final @NonNull FilterChain filterChain)
-          throws ServletException, IOException {
-        super.doFilterInternal(new ContentCachingRequestWrapper(request), response, filterChain);
-      }
-    };
+    // Match Spring Boot's WebMvcObservationAutoConfiguration behavior
+    // but wrap the request in a ContentCachingRequestWrapper to read the body multiple times
+    final var filter =
+        new ServerHttpObservationFilter(observationRegistry, customRequestObservationConvention) {
+          @Override
+          protected void doFilterInternal(
+              final @NonNull HttpServletRequest request,
+              final @NonNull HttpServletResponse response,
+              final @NonNull FilterChain filterChain)
+              throws ServletException, IOException {
+            super.doFilterInternal(
+                new ContentCachingRequestWrapper(request), response, filterChain);
+          }
+        };
+
+    final var registration = new FilterRegistrationBean<>(filter);
+    registration.setOrder(Ordered.HIGHEST_PRECEDENCE + 1);
+    registration.setName("serverHttpObservationFilter");
+    return registration;
   }
 
   @Bean
   public ServerRequestObservationConvention customRequestObservationConvention(
-      final LowCardinalityKeyValuesMapper lowCardinalityKeyValuesMapper) {
+      final ServerRequestLowCardinalityKeyValuesMapper lowCardinalityKeyValuesMapper) {
     // extend the default convention to add custom low cardinality key values
     return new DefaultServerRequestObservationConvention() {
       @Override
@@ -63,6 +71,6 @@ public class ServerRequestObservationConfiguration {
     };
   }
 
-  public interface LowCardinalityKeyValuesMapper
+  public interface ServerRequestLowCardinalityKeyValuesMapper
       extends Function<ServerRequestObservationContext, KeyValues> {}
 }
