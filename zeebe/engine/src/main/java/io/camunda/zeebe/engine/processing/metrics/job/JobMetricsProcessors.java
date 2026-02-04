@@ -25,6 +25,15 @@ public class JobMetricsProcessors {
       final Writers writers,
       final KeyGenerator keyGenerator,
       final InstantSource clock) {
+    // When job metrics export is disabled, we intentionally do not register the export processor.
+    // `JobMetricsBatchIntent.EXPORT` is an internal command produced by Zeebe (via
+    // JobMetricsCheckerScheduler),
+    // not a client-facing API. With export disabled, no job metrics are collected, so "exporting"
+    // would only
+    // generate EXPORT/EXPORTED log stream traffic with empty payloads.
+    // By skipping the processor registration we also avoid creating JobMetricsCheckerScheduler
+    // altogether,
+    // eliminating unnecessary scheduled work and log writes.
     if (!config.isJobMetricsExportEnabled()) {
       return;
     }

@@ -19,7 +19,7 @@ import java.util.List;
  * are empty or return default values, effectively disabling the collection and export of job
  * metrics without impacting the rest of the system.
  */
-public class DbJobMetricsNoopState implements MutableJobMetricsState {
+public class NoopJobMetricsState implements MutableJobMetricsState {
 
   /** No-op: does not increment any metric counter. */
   @Override
