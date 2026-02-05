@@ -65,14 +65,4 @@ import java.lang.annotation.Target;
 @Target(ElementType.PARAMETER)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-public @interface McpToolParams {
-
-  /**
-   * Whether the request body is required.
-   *
-   * <p>Default is {@code true}, meaning the tool requires at least some input parameters.
-   *
-   * @return true if the request body is required, false otherwise
-   */
-  boolean required() default true;
-}
+public @interface McpToolParams {}

@@ -81,9 +81,6 @@ public class CamundaJsonSchemaGenerator {
   private static final Map<Method, String> METHOD_SCHEMA_CACHE =
       new ConcurrentReferenceHashMap<>(256);
 
-  private static final Map<Class<?>, String> CLASS_SCHEMA_CACHE =
-      new ConcurrentReferenceHashMap<>(256);
-
   private static final Map<Type, String> TYPE_SCHEMA_CACHE = new ConcurrentReferenceHashMap<>(256);
 
   /*
@@ -227,16 +224,6 @@ public class CamundaJsonSchemaGenerator {
     return schema.toPrettyString();
   }
 
-  public static String generateFromClass(final Class<?> clazz) {
-    Assert.notNull(clazz, "clazz cannot be null");
-    return CLASS_SCHEMA_CACHE.computeIfAbsent(
-        clazz, CamundaJsonSchemaGenerator::internalGenerateFromClass);
-  }
-
-  private static String internalGenerateFromClass(final Class<?> clazz) {
-    return TYPE_SCHEMA_GENERATOR.generateSchema(clazz).toPrettyString();
-  }
-
   public static String generateFromType(final Type type) {
     Assert.notNull(type, "type cannot be null");
     return TYPE_SCHEMA_CACHE.computeIfAbsent(
@@ -245,17 +232,6 @@ public class CamundaJsonSchemaGenerator {
 
   private static String internalGenerateFromType(final Type type) {
     return TYPE_SCHEMA_GENERATOR.generateSchema(type).toPrettyString();
-  }
-
-  /**
-   * Check if a method has a CallToolRequest parameter.
-   *
-   * @param method The method to check
-   * @return true if the method has a CallToolRequest parameter, false otherwise
-   */
-  public static boolean hasCallToolRequestParameter(final Method method) {
-    return Arrays.stream(method.getParameterTypes())
-        .anyMatch(type -> CallToolRequest.class.isAssignableFrom(type));
   }
 
   private static boolean isMethodParameterRequired(final Method method, final int index) {
