@@ -320,6 +320,11 @@ In addition to the standard steps above, recent minor releases have surfaced sev
 - **Change of source branch**
   - For 8.8 minor release the source branch `stable/8.8` based on `release-8.8.0-alpha8`
   - Currently  an automated script decides the source branch for the release type, in case of change in future release process, the code needs to be adjusted [here](https://github.com/camunda/zeebe-engineering-processes/blob/main/src/main/resources/release/decide_dev_version_and_is_latest_for_release.bpmn#L39)
+- **Optimize Previous Version Management (8.9+)**
+  - Starting with 8.9, Optimize is included in the monorepo release process (`includeOptimize=true`).
+  - **Manual Step Required:** Before performing a minor release that includes Optimize, the `project.previousVersion` property in `optimize/pom.xml` must be manually updated to reflect the previous minor version (e.g., for 8.9.0 release, set `project.previousVersion` to `8.8.0`).
+  - The release workflow includes validation to catch incorrect or missing `project.previousVersion` values, but the initial update must be done manually.
+  - **Action:** Monitor completion of [issue #40258](https://github.com/camunda/camunda/issues/40258) to automate this step and eliminate the manual requirement.
 
 ## Troubleshooting
 
