@@ -8,8 +8,14 @@
 package io.camunda.zeebe.shared.management;
 
 import io.camunda.management.backups.BackupInfo;
+import io.camunda.management.backups.BackupType;
+import io.camunda.management.backups.CheckpointState;
+import io.camunda.management.backups.CheckpointType;
 import io.camunda.management.backups.Error;
 import io.camunda.management.backups.PartitionBackupInfo;
+import io.camunda.management.backups.PartitionBackupRange;
+import io.camunda.management.backups.PartitionBackupState;
+import io.camunda.management.backups.PartitionCheckpointState;
 import io.camunda.management.backups.StateCode;
 import io.camunda.management.backups.TakeBackupRuntimeResponse;
 import io.camunda.zeebe.backup.client.api.BackupAlreadyExistException;
@@ -18,17 +24,21 @@ import io.camunda.zeebe.backup.client.api.BackupRequestHandler;
 import io.camunda.zeebe.backup.client.api.BackupStatus;
 import io.camunda.zeebe.backup.client.api.PartitionBackupStatus;
 import io.camunda.zeebe.backup.client.api.State;
+import io.camunda.zeebe.backup.common.CheckpointIdGenerator;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerErrorException;
 import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg;
 import io.camunda.zeebe.gateway.admin.IncompleteTopologyException;
+import io.camunda.zeebe.protocol.impl.encoding.BackupRangesResponse;
+import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse;
 import io.camunda.zeebe.protocol.management.BackupStatusCode;
 import io.netty.channel.ConnectTimeoutException;
 import java.net.ConnectException;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
+import java.util.Comparator;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.TimeoutException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,7 +61,9 @@ public final class BackupEndpoint {
   @SuppressWarnings("unused") // used by Spring
   @Autowired
   public BackupEndpoint(final BrokerClient client, final BackupCfg backupCfg) {
-    this(new BackupRequestHandler(client, backupCfg.getOffset()), backupCfg);
+    this(
+        new BackupRequestHandler(client, new CheckpointIdGenerator(backupCfg.getOffset())),
+        backupCfg);
   }
 
   BackupEndpoint(final BackupApi api, final BackupCfg backupCfg) {
@@ -140,11 +152,83 @@ public final class BackupEndpoint {
 
   private WebEndpointResponse<?> state() {
     try {
-      final var checkpointState = api.getCheckpointState().toCompletableFuture().join();
-      return new WebEndpointResponse<>(checkpointState);
+      final var checkpointStateFuture = api.getCheckpointState().toCompletableFuture();
+      final var rangesFuture = api.getBackupRanges().toCompletableFuture();
+      final var checkpointState = checkpointStateFuture.join();
+      final var ranges = rangesFuture.join();
+      return new WebEndpointResponse<>(toCheckpointState(checkpointState, ranges));
     } catch (final Exception e) {
       return mapErrorResponse(e);
     }
+  }
+
+  private CheckpointState toCheckpointState(
+      final CheckpointStateResponse checkpointState, final BackupRangesResponse ranges) {
+    final var response = new CheckpointState();
+    response.setCheckpointStates(
+        checkpointState.getCheckpointStates().stream()
+            .map(this::toCheckpointState)
+            .sorted(Comparator.comparingInt(PartitionCheckpointState::getPartitionId))
+            .toList());
+    response.setBackupStates(
+        checkpointState.getBackupStates().stream()
+            .map(this::toBackupState)
+            .sorted(Comparator.comparingInt(PartitionBackupState::getPartitionId))
+            .toList());
+    response.setRanges(
+        ranges.getRanges().stream()
+            .map(this::toRange)
+            .sorted(Comparator.comparingInt(PartitionBackupRange::getPartitionId))
+            .toList());
+    return response;
+  }
+
+  private PartitionCheckpointState toCheckpointState(
+      final CheckpointStateResponse.PartitionCheckpointState state) {
+    final var response = new PartitionCheckpointState();
+    response.setPartitionId(state.partitionId());
+    response.setCheckpointId(state.checkpointId());
+    response.setCheckpointPosition(state.checkpointPosition());
+    response.setCheckpointTimestamp(state.checkpointTimestamp());
+    response.setCheckpointType(toCheckpointType(state.checkpointType()));
+    return response;
+  }
+
+  private PartitionBackupState toBackupState(
+      final CheckpointStateResponse.PartitionCheckpointState state) {
+    final var response = new PartitionBackupState();
+    response.setPartitionId(state.partitionId());
+    response.setCheckpointId(state.checkpointId());
+    response.setCheckpointPosition(state.checkpointPosition());
+    response.setCheckpointTimestamp(state.checkpointTimestamp());
+    response.setCheckpointType(toBackupType(state.checkpointType()));
+    return response;
+  }
+
+  private PartitionBackupRange toRange(final BackupRangesResponse.PartitionBackupRange range) {
+    final var response = new PartitionBackupRange();
+    response.setPartitionId(range.partitionId());
+    response.setStart(range.first() == null ? null : range.first().checkpointId());
+    response.setEnd(range.last() == null ? null : range.last().checkpointId());
+    response.setMissingCheckpoints(range.missingCheckpoints().stream().toList());
+    return response;
+  }
+
+  private CheckpointType toCheckpointType(
+      final io.camunda.zeebe.protocol.record.value.management.CheckpointType checkpointType) {
+    if (checkpointType == io.camunda.zeebe.protocol.record.value.management.CheckpointType.MARKER) {
+      return CheckpointType.MARKER;
+    }
+    return null;
+  }
+
+  private BackupType toBackupType(
+      final io.camunda.zeebe.protocol.record.value.management.CheckpointType checkpointType) {
+    return switch (checkpointType) {
+      case MANUAL_BACKUP -> BackupType.MANUAL_BACKUP;
+      case SCHEDULED_BACKUP -> BackupType.SCHEDULED_BACKUP;
+      case MARKER -> null;
+    };
   }
 
   private WebEndpointResponse<?> status(final long id) {

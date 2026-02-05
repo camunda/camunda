@@ -23,6 +23,12 @@ import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/
 import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations/queryBatchOperationItems';
 import {parseDiagramXML} from 'modules/utils/bpmn';
 import {businessObjectsParser} from 'modules/queries/processDefinitions/useBusinessObjects';
+import {mockServer} from 'modules/mock-server/node';
+import {http, HttpResponse} from 'msw';
+import {
+  endpoints,
+  queryElementInstancesRequestBodySchema,
+} from '@camunda/camunda-api-zod-schemas/8.8';
 
 const diagramModel = await parseDiagramXML(adHocSubProcessInnerInstance);
 const businessObjects = businessObjectsParser({diagramModel});
@@ -111,8 +117,32 @@ describe('ElementInstancesTree - Ad Hoc Sub Process Inner Instance', () => {
       await screen.findByText('Ad Hoc Inner Subprocess Test'),
     ).toBeInTheDocument();
 
-    mockSearchElementInstances().withSuccess(
-      adHocSubProcessInnerInstanceElementInstances.level2,
+    mockServer.use(
+      http.post(
+        endpoints.queryElementInstances.getUrl(),
+        async ({request}) => {
+          const body = await request.json();
+          const result = queryElementInstancesRequestBodySchema.safeParse(body);
+
+          if (
+            !result.success ||
+            result.data?.filter?.elementInstanceScopeKey !== 'inner-1'
+          ) {
+            return HttpResponse.json(
+              {
+                error:
+                  'Invalid payload: elementInstanceScopeKey must be in filter',
+              },
+              {status: 400},
+            );
+          }
+
+          return HttpResponse.json(
+            adHocSubProcessInnerInstanceElementInstances.level2,
+          );
+        },
+        {once: true},
+      ),
     );
     await user.click(screen.getByText('Ad Hoc Inner Subprocess Test'));
 
@@ -131,6 +161,8 @@ describe('ElementInstancesTree - Ad Hoc Sub Process Inner Instance', () => {
         }),
       );
     });
+
+    expect(notificationsStore.notifications).toEqual([]);
   });
 
   it('should display warning notification when inner instance has no children', async () => {
@@ -149,9 +181,49 @@ describe('ElementInstancesTree - Ad Hoc Sub Process Inner Instance', () => {
       await screen.findByText('Ad Hoc Inner Subprocess Test'),
     ).toBeInTheDocument();
 
-    mockSearchElementInstances().withSuccess(
-      adHocSubProcessInnerInstanceElementInstances.emptyLevel,
+    mockSearchElementInstances().withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
+
+    await user.click(
+      await screen.findByLabelText('Ad Hoc Sub Process Inner Instance', {
+        selector: "[aria-expanded='false']",
+      }),
     );
+
+    await waitFor(() => {
+      expect(notificationsStore.notifications).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            kind: 'warning',
+            title:
+              'No child instances found for Ad Hoc Sub Process Inner Instance',
+          }),
+        ]),
+      );
+    });
+
+    expect(flowNodeSelectionStore.state.selection).toEqual(originalSelection);
+  });
+
+  it('should display warning notification when fetching first child fails', async () => {
+    const {user} = render(
+      <ElementInstancesTree
+        processInstance={mockAdHocSubProcessInnerInstanceProcessInstance}
+        businessObjects={businessObjects}
+      />,
+      {
+        wrapper: Wrapper,
+      },
+    );
+    const originalSelection = flowNodeSelectionStore.state.selection;
+
+    expect(
+      await screen.findByText('Ad Hoc Inner Subprocess Test'),
+    ).toBeInTheDocument();
+
+    mockSearchElementInstances().withNetworkError();
 
     await user.click(
       await screen.findByLabelText('Ad Hoc Sub Process Inner Instance', {

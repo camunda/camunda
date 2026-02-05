@@ -158,13 +158,6 @@ public abstract class AbstractCCSMIT extends AbstractIT {
     return embeddedOptimizeExtension.getConfigurationService().getConfiguredZeebe().getName();
   }
 
-  protected void waitUntilMinimumDataExportedCount(
-      final int minExportedEventCount,
-      final String indexName,
-      final TermsQueryContainer boolQueryBuilder) {
-    waitUntilMinimumDataExportedCount(minExportedEventCount, indexName, boolQueryBuilder, 15);
-  }
-
   protected void waitUntilMinimumProcessInstanceEventsExportedCount(
       final int minExportedEventCount) {
     waitUntilMinimumDataExportedCount(
@@ -188,7 +181,7 @@ public abstract class AbstractCCSMIT extends AbstractIT {
 
   protected void waitUntilRecordMatchingQueryExported(
       final long minRecordCount, final String indexName, final TermsQueryContainer boolQuery) {
-    waitUntilMinimumDataExportedCount(minRecordCount, indexName, boolQuery, 10);
+    waitUntilMinimumDataExportedCount(minRecordCount, indexName, boolQuery);
   }
 
   protected void waitUntilInstanceRecordWithElementIdExported(final String instanceElementId) {
@@ -271,21 +264,18 @@ public abstract class AbstractCCSMIT extends AbstractIT {
   }
 
   protected void waitUntilMinimumDataExportedCount(
-      final long minimumCount,
-      final String indexName,
-      final TermsQueryContainer queryContainer,
-      final long countTimeoutInSeconds) {
+      final long minimumCount, final String indexName, final TermsQueryContainer queryContainer) {
     final String expectedIndex = zeebeExtension.getZeebeRecordPrefix() + "-" + indexName;
     Awaitility.given()
         .ignoreExceptions()
-        .timeout(30, TimeUnit.SECONDS)
+        .timeout(60, TimeUnit.SECONDS)
         .untilAsserted(
             () ->
                 assertThat(databaseIntegrationTestExtension.zeebeIndexExists(expectedIndex))
                     .isTrue());
     Awaitility.given()
         .ignoreExceptions()
-        .timeout(countTimeoutInSeconds, TimeUnit.SECONDS)
+        .timeout(60, TimeUnit.SECONDS)
         .untilAsserted(
             () ->
                 assertThat(
@@ -406,6 +396,6 @@ public abstract class AbstractCCSMIT extends AbstractIT {
         elementType.name());
     query.addTermQuery(ZeebeProcessInstanceRecordDto.Fields.intent, intent.name().toUpperCase());
     waitUntilMinimumDataExportedCount(
-        1, DatabaseConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME, query, 10);
+        1, DatabaseConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME, query);
   }
 }

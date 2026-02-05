@@ -40,6 +40,7 @@ on:
       - "operate/**"
       - "tasklist/**"
       - "identity/**"
+      - "optimize/**"
 
 # Cancel in-progress runs when a new commit is pushed to the same PR
 concurrency:
@@ -98,7 +99,21 @@ jobs:
              "bmudric",
              "Ben-Sheppard",
              "ana-vinogradova-camunda",
-             "mrm1st3r"]'
+             "mrm1st3r",
+             "sbuettner",
+             "nikonovd",
+             "phoinixi",
+             "johnBgood",
+             "maff",
+             "mathias-vandaele",
+             "mathieu-stennier",
+             "mdii",
+             "chillleader",
+             "reiballa",
+             "vringar",
+             "ztefanie",
+             "yhaskell",
+             "shtishiv"]'
           ), github.actor) &&
        !contains(github.event.pull_request.labels.*.name, 'skip-always-green'))
     steps:

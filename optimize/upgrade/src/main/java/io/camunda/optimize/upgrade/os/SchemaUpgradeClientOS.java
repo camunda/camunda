@@ -57,11 +57,10 @@ import org.opensearch.client.opensearch.indices.IndexSettings.Builder;
 import org.opensearch.client.opensearch.indices.UpdateAliasesRequest;
 import org.opensearch.client.opensearch.indices.get_alias.IndexAliases;
 import org.opensearch.client.opensearch.indices.update_aliases.Action;
-import org.opensearch.client.opensearch.tasks.Info;
 import org.opensearch.client.opensearch.tasks.ListRequest;
 import org.opensearch.client.opensearch.tasks.ListResponse;
-import org.opensearch.client.opensearch.tasks.State;
 import org.opensearch.client.opensearch.tasks.TaskExecutingNode;
+import org.opensearch.client.opensearch.tasks.TaskInfo;
 import org.slf4j.Logger;
 
 public class SchemaUpgradeClientOS
@@ -308,7 +307,7 @@ public class SchemaUpgradeClientOS
             UpdateByQueryRequest.of(
                 u ->
                     u.index(aliasName)
-                        .refresh(true)
+                        .refresh(Refresh.True)
                         .waitForCompletion(false)
                         .query(queryWrapper.osQuery())
                         .script(QueryDSL.script(updateScript, parameters)));
@@ -330,7 +329,8 @@ public class SchemaUpgradeClientOS
     final Supplier<DeleteByQueryRequest> deleteByQueryRequestSupplier =
         () ->
             DeleteByQueryRequest.of(
-                d -> d.index(aliasName).waitForCompletion(false).refresh(true).query(query));
+                d ->
+                    d.index(aliasName).waitForCompletion(false).refresh(Refresh.True).query(query));
 
     waitForOrSubmitNewTask(
         "deleteBy" + aliasName,
@@ -396,11 +396,11 @@ public class SchemaUpgradeClientOS
   private <T extends RequestBase> void waitForOrSubmitNewTask(
       final String identifier,
       final T request,
-      final Function<T, Optional<Info>> getPendingTaskFunction,
+      final Function<T, Optional<TaskInfo>> getPendingTaskFunction,
       final Function<T, String> submitNewTaskFunction) {
     String taskId;
     // if the task wasn't completed previously, try to get the pending task to resume waiting for
-    final Optional<Info> pendingTask = getPendingTaskFunction.apply(request);
+    final Optional<TaskInfo> pendingTask = getPendingTaskFunction.apply(request);
     if (pendingTask.isEmpty()) {
       taskId = submitNewTaskFunction.apply(request);
     } else {
@@ -423,26 +423,26 @@ public class SchemaUpgradeClientOS
     waitUntilTaskIsFinished(taskId, identifier);
   }
 
-  private Optional<Info> getPendingReindexTask(final ReindexRequest reindexRequest) {
+  private Optional<TaskInfo> getPendingReindexTask(final ReindexRequest reindexRequest) {
     return getPendingTask(reindexRequest, "indices:data/write/reindex");
   }
 
-  private Optional<Info> getPendingUpdateTask(final UpdateByQueryRequest updateByQueryRequest) {
+  private Optional<TaskInfo> getPendingUpdateTask(final UpdateByQueryRequest updateByQueryRequest) {
     return getPendingTask(updateByQueryRequest, "indices:data/write/update/byquery");
   }
 
-  private Optional<Info> getPendingDeleteTask(final DeleteByQueryRequest deleteByQueryRequest) {
+  private Optional<TaskInfo> getPendingDeleteTask(final DeleteByQueryRequest deleteByQueryRequest) {
     return getPendingTask(deleteByQueryRequest, "indices:data/write/delete/byquery");
   }
 
-  private <T extends RequestBase> Optional<Info> getPendingTask(
+  private <T extends RequestBase> Optional<TaskInfo> getPendingTask(
       final T request, final String taskAction) {
     try {
       final ListResponse tasksResponse =
           databaseClient.getTaskList(
               ListRequest.of(l -> l.detailed(true).waitForCompletion(false).actions(taskAction)));
 
-      if (tasksResponse.tasks() == null || tasksResponse.tasks().isEmpty()) {
+      if (tasksResponse.tasks() == null || tasksResponse.tasks().groupedByNone().isEmpty()) {
         for (final TaskExecutingNode value : tasksResponse.nodes().values()) {
           if (request instanceof final ReindexRequest reindexRequest) {
             return value.tasks().values().stream()
@@ -454,8 +454,7 @@ public class SchemaUpgradeClientOS
                                 createReIndexRequestDescription(
                                     reindexRequest.source().index(),
                                     reindexRequest.dest().index())))
-                .findAny()
-                .map(SchemaUpgradeClientOS::convertStateToInfo);
+                .findAny();
           }
         }
         LOG.debug("No pending task found for description matching [{}].", request.toString());
@@ -469,7 +468,7 @@ public class SchemaUpgradeClientOS
       } else {
         matchingDescription = request.toString();
       }
-      return tasksResponse.tasks().values().stream()
+      return tasksResponse.tasks().groupedByNone().stream()
           .filter(
               taskInfo ->
                   taskInfo.description() != null
@@ -487,7 +486,7 @@ public class SchemaUpgradeClientOS
     return new ReindexRequest.Builder()
         .source(s -> s.index(sourceIndexName).query(query))
         .dest(d -> d.index(targetIndexName))
-        .refresh(true);
+        .refresh(Refresh.True);
   }
 
   private String submitReindexTask(final ReindexRequest reindexRequest) {
@@ -512,26 +511,6 @@ public class SchemaUpgradeClientOS
     } catch (final IOException ex) {
       throw new UpgradeRuntimeException("Could not submit delete task");
     }
-  }
-
-  private static Info convertStateToInfo(final State state) {
-    if (state == null) {
-      return null;
-    }
-
-    return new Info.Builder()
-        .action(state.action())
-        .cancellable(state.cancellable())
-        .description(state.description())
-        .headers(state.headers())
-        .id(state.id())
-        .node(state.node())
-        .runningTimeInNanos(state.runningTimeInNanos())
-        .startTimeInMillis(state.startTimeInMillis())
-        .status(state.status())
-        .type(state.type())
-        .parentTaskId(state.parentTaskId())
-        .build();
   }
 
   public ObjectMapper getObjectMapper() {

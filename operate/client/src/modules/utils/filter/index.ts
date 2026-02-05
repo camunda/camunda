@@ -7,12 +7,8 @@
  */
 
 import {parse, isValid} from 'date-fns';
-import {processesStore} from 'modules/stores/processes/processes.list';
 import {getSearchString} from 'modules/utils/getSearchString';
 import type {Location} from 'react-router-dom';
-import {getValidVariableValues} from './getValidVariableValues';
-import {variableFilterStore} from 'modules/stores/variableFilter';
-import {generateProcessKey} from '../generateProcessKey';
 import {getProcessInstanceFilters} from './getProcessInstanceFilters';
 import {
   PROCESS_INSTANCE_FILTER_FIELDS,
@@ -86,170 +82,6 @@ function parseFilterTime(value: string) {
     const parsedDate = parse(value, 'HH:mm:ss', new Date());
     return isValid(parsedDate) ? parsedDate : undefined;
   }
-}
-
-function getProcessIds({
-  process,
-  processVersion,
-  tenant,
-}: {
-  process: string;
-  processVersion: string;
-  tenant?: string;
-}) {
-  if (processVersion === 'all') {
-    return (
-      processesStore.versionsByProcessAndTenant?.[
-        generateProcessKey(process, tenant)
-      ]?.map(({id}) => id) ?? []
-    );
-  }
-
-  return (
-    processesStore.versionsByProcessAndTenant?.[
-      generateProcessKey(process, tenant)
-    ]
-      ?.filter(({version}) => version === parseInt(processVersion))
-      ?.map(({id}) => id) ?? []
-  );
-}
-
-function getProcessInstancesRequestFilters(): RequestFilters {
-  const {variable} = variableFilterStore.state;
-
-  const filters = {
-    ...getProcessInstanceFilters(getSearchString()),
-    variableName: variable?.name,
-    variableValues: variable?.values,
-  };
-
-  return Object.entries(filters).reduce<RequestFilters>(
-    (accumulator, [key, value]): RequestFilters => {
-      if (value === undefined) {
-        return accumulator;
-      }
-
-      if (typeof value === 'boolean') {
-        if (['active', 'incidents'].includes(key)) {
-          return {
-            ...accumulator,
-            [key]: value,
-            ...(value === true ? {running: true} : {}),
-          };
-        }
-
-        if (['canceled', 'completed'].includes(key)) {
-          return {
-            ...accumulator,
-            [key]: value,
-            ...(value === true ? {finished: true} : {}),
-          };
-        }
-
-        if (key === 'retriesLeft' && value === true) {
-          return {...accumulator, retriesLeft: true};
-        }
-      } else if (typeof value === 'number') {
-        if (key === 'incidentErrorHashCode') {
-          return {...accumulator, incidentErrorHashCode: value};
-        }
-      } else {
-        if (key === 'errorMessage') {
-          return {
-            ...accumulator,
-            errorMessage: value,
-          };
-        }
-
-        if (key === 'flowNodeId') {
-          return {
-            ...accumulator,
-            activityId: value,
-          };
-        }
-
-        if (key === 'operationId') {
-          return {
-            ...accumulator,
-            batchOperationId: value,
-          };
-        }
-
-        if (key === 'ids') {
-          return {
-            ...accumulator,
-            ids: parseIds(value),
-          };
-        }
-
-        if (key === 'parentInstanceId') {
-          return {...accumulator, parentInstanceId: value};
-        }
-
-        if (
-          key === 'version' &&
-          filters.process !== undefined &&
-          value !== undefined
-        ) {
-          const processIds = getProcessIds({
-            process: filters.process,
-            processVersion: value,
-            tenant: filters.tenant,
-          });
-
-          if (processIds.length > 0) {
-            return {
-              ...accumulator,
-              processIds,
-            };
-          }
-        }
-
-        if (
-          (key === 'variableName' || key === 'variableValues') &&
-          filters.variableName !== undefined &&
-          filters.variableValues !== undefined
-        ) {
-          const values =
-            getValidVariableValues(filters.variableValues)?.map((value) =>
-              JSON.stringify(value),
-            ) ?? [];
-
-          return {
-            ...accumulator,
-            variable: {
-              name: filters.variableName,
-              values,
-            },
-          };
-        }
-
-        if (
-          [
-            'startDateAfter',
-            'startDateBefore',
-            'endDateAfter',
-            'endDateBefore',
-          ].includes(key)
-        ) {
-          return {
-            ...accumulator,
-            [key]: value,
-          };
-        }
-
-        if (key === 'tenant' && value !== 'all') {
-          return {
-            ...accumulator,
-            tenantId: value,
-          };
-        }
-      }
-
-      return accumulator;
-    },
-    {},
-  );
 }
 
 function updateFiltersSearchString<Filters extends object>(
@@ -346,7 +178,6 @@ export {
   getProcessInstanceFilters,
   parseIds,
   parseFilterTime,
-  getProcessInstancesRequestFilters,
   updateFiltersSearchString,
   updateProcessFiltersSearchString,
   deleteSearchParams,

@@ -12,6 +12,7 @@ import io.camunda.db.rdbms.sql.AuditLogMapper;
 import io.camunda.db.rdbms.sql.HistoryCleanupMapper;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.domain.AuditLogDbModel;
+import io.camunda.db.rdbms.write.queue.BatchInsertDto;
 import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.InsertAuditLogMerger;
@@ -65,9 +66,7 @@ public class AuditLogWriter extends ProcessInstanceDependant implements RdbmsWri
               WriteStatementType.INSERT,
               finalAuditLog.auditLogKey(),
               "io.camunda.db.rdbms.sql.AuditLogMapper.insert",
-              new AuditLogMapper.BatchInsertAuditLogsDto.Builder()
-                  .auditLog(finalAuditLog)
-                  .build()));
+              new BatchInsertDto<>(finalAuditLog)));
     }
   }
 

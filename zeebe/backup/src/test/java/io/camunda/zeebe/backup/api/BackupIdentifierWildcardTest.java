@@ -14,10 +14,17 @@ import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern.Any;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern.Exact;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern.Prefix;
+import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern.TimeRange;
 import io.camunda.zeebe.backup.common.BackupIdentifierWildcardImpl;
+import io.camunda.zeebe.backup.common.CheckpointIdGenerator;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Optional;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 class BackupIdentifierWildcardTest {
@@ -182,5 +189,182 @@ class BackupIdentifierWildcardTest {
   @ValueSource(strings = {"", "  "})
   void prefixCheckpointPatternShouldThrowExceptionForEmptyPrefix(final String prefix) {
     assertThatThrownBy(() -> new Prefix(prefix)).isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
+  void timeRangeCheckpointPatternShouldReturnRegex() {
+    final var generator = new CheckpointIdGenerator(0L);
+    final Instant fromTimestamp = Instant.ofEpochMilli(1700000000000L); // Nov 14, 2023
+    final Instant toTimestamp = Instant.ofEpochMilli(1700999999999L); // Nov 26, 2023
+    final var pattern = CheckpointPattern.ofTimeRange(fromTimestamp, toTimestamp, generator);
+    assertThat(pattern.asRegex()).isEqualTo("1700\\d*");
+  }
+
+  @Test
+  void ofTimeRangeShouldCreatePrefixPatternWithoutOffset() {
+    // given
+    final var generator = new CheckpointIdGenerator(0L);
+    final Instant fromTimestamp = Instant.ofEpochMilli(1700000000000L); // Nov 14, 2023
+    final Instant toTimestamp = Instant.ofEpochMilli(1700999999999L); // Nov 26, 2023
+
+    // when
+    final var pattern = CheckpointPattern.ofTimeRange(fromTimestamp, toTimestamp, generator);
+
+    // then
+    assertThat(pattern).isInstanceOf(TimeRange.class);
+    assertThat(pattern.pattern()).isEqualTo(new Prefix("1700"));
+    assertThat(pattern.matches(1700000000000L)).isTrue();
+    assertThat(pattern.matches(1700500000000L)).isTrue();
+    assertThat(pattern.matches(1700999999999L)).isTrue();
+    assertThat(pattern.matches(1699999999999L)).isFalse();
+    assertThat(pattern.matches(1701000000000L)).isFalse();
+  }
+
+  @Test
+  void ofTimeRangeShouldCreatePrefixPatternWithOffset() {
+    // given
+    // Offset is used to avoid generating new backup IDs in the legacy range.
+    // Legacy backup IDs were encoded as datetime strings (e.g., 20251011095523 for 2025-10-11
+    // 09:55:23).
+    // The offset is set to the last legacy backup ID to ensure new backups have higher IDs.
+    final long offset = 20251011095523L; // Last legacy backup ID
+    final var generator = new CheckpointIdGenerator(offset);
+
+    // Typical use case: 1 day range (86400000 milliseconds = 24 hours)
+    final Instant fromTimestamp = Instant.ofEpochMilli(1700000000000L); // Nov 14, 2023 22:13:20 UTC
+    final Instant toTimestamp =
+        Instant.ofEpochMilli(1700086400000L); // Nov 15, 2023 22:13:20 UTC (1 day later)
+    final long fromCheckpoint = generator.fromTimestamp(fromTimestamp.toEpochMilli());
+    final long toCheckpoint = generator.fromTimestamp(toTimestamp.toEpochMilli());
+    final var dayInMillis = Duration.ofDays(1).toMillis();
+
+    // when
+    final var pattern = CheckpointPattern.ofTimeRange(fromTimestamp, toTimestamp, generator);
+
+    // then - should create prefix pattern based on common prefix of adjusted timestamps
+    assertThat(pattern).isInstanceOf(TimeRange.class);
+    assertThat(pattern.pattern()).isEqualTo(CheckpointPattern.of("219510*"));
+    assertThat(pattern.matches(fromCheckpoint)).isTrue();
+    assertThat(pattern.matches(toCheckpoint)).isTrue();
+    assertThat(pattern.matches(fromCheckpoint + 10 * dayInMillis)).isFalse();
+    assertThat(pattern.matches(toCheckpoint + 10 * dayInMillis)).isFalse();
+  }
+
+  @Test
+  void ofTimeRangeShouldCreateAnyPatternWhenNoCommonPrefix() {
+    // given
+    final var generator = new CheckpointIdGenerator(0L);
+    final Instant fromTimestamp = Instant.ofEpochMilli(1000000000000L); // Sept 8, 2001
+    final Instant toTimestamp = Instant.ofEpochMilli(9000000000000L); // Nov 20, 2255
+
+    // when
+    final var pattern = CheckpointPattern.ofTimeRange(fromTimestamp, toTimestamp, generator);
+
+    // then
+    assertThat(pattern.pattern()).isInstanceOf(Any.class);
+    assertThat(pattern.matches(1000000000000L)).isTrue();
+    assertThat(pattern.matches(9000000000000L)).isTrue();
+    assertThat(pattern.matches(5000000000000L)).isTrue();
+    assertThat(pattern.matches(9000000000001L)).isFalse();
+  }
+
+  @Test
+  void ofTimeRangeShouldThrowExceptionForNegativeFromTimestamp() {
+    // given
+    final var generator = new CheckpointIdGenerator(0L);
+
+    // when/then
+    assertThatThrownBy(
+            () ->
+                CheckpointPattern.ofTimeRange(
+                    Instant.ofEpochMilli(-1L), Instant.ofEpochMilli(1000L), generator))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("Expected 'from' to be non-negative");
+  }
+
+  @Test
+  void ofTimeRangeShouldThrowExceptionForNegativeToTimestamp() {
+    // given
+    final var generator = new CheckpointIdGenerator(0L);
+
+    // when/then
+    assertThatThrownBy(
+            () ->
+                CheckpointPattern.ofTimeRange(
+                    Instant.ofEpochMilli(1000L), Instant.ofEpochMilli(-1L), generator))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("Expected 'to' to be non-negative");
+  }
+
+  @Test
+  void ofTimeRangeShouldThrowExceptionWhenFromIsGreaterThanTo() {
+    // given
+    final var generator = new CheckpointIdGenerator(0L);
+
+    // when/then
+    assertThatThrownBy(
+            () ->
+                CheckpointPattern.ofTimeRange(
+                    Instant.ofEpochMilli(2000L), Instant.ofEpochMilli(1000L), generator))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("Expected 'from' to be <= 'to'");
+  }
+
+  @Test
+  void ofTimeRangeShouldHandleSameFromAndToTimestamp() {
+    // given
+    final var generator = new CheckpointIdGenerator(0L);
+    final Instant timestamp = Instant.ofEpochMilli(1700000000000L);
+
+    // when
+    final var pattern = CheckpointPattern.ofTimeRange(timestamp, timestamp, generator);
+
+    // then
+    assertThat(pattern)
+        .isEqualTo(
+            new TimeRange(
+                new Exact(1700000000000L),
+                generator.fromTimestamp(timestamp.toEpochMilli()),
+                generator.fromTimestamp(timestamp.toEpochMilli())));
+    assertThat(pattern.matches(1700000000000L)).isTrue();
+    assertThat(pattern.matches(1700000000001L)).isFalse();
+    assertThat(pattern.matches(1699999999999L)).isFalse();
+  }
+
+  @ParameterizedTest
+  @MethodSource("provideLongestCommonPrefixTestCases")
+  void longestCommonPrefixShouldReturnCorrectPattern(
+      final String[] ids, final CheckpointPattern expectedPattern) {
+    // when
+    final var result = CheckpointPattern.longestCommonPrefix(ids);
+
+    // then
+    assertThat(result).isEqualTo(expectedPattern);
+  }
+
+  static Stream<Arguments> provideLongestCommonPrefixTestCases() {
+    return Stream.of(
+        // Two strings with common prefix
+        Arguments.of(new String[] {"1700000000000", "1700999999999"}, new Prefix("1700")),
+        // Two strings with no common prefix
+        Arguments.of(new String[] {"1000000000000", "9000000000000"}, new Any()),
+        // Multiple strings with common prefix
+        Arguments.of(new String[] {"123456", "123789", "123000"}, new Prefix("123")),
+        // Multiple strings with no common prefix
+        Arguments.of(new String[] {"100", "200", "300"}, new Any()),
+        // All identical strings
+        Arguments.of(new String[] {"12345", "12345", "12345"}, new Exact(12345)),
+        // Single string
+        Arguments.of(new String[] {"12345"}, new Exact(12345)),
+        // Empty array
+        Arguments.of(new String[] {}, new Any()),
+        // null
+        Arguments.of(null, new Any()),
+        // Three strings with varying common prefix
+        Arguments.of(new String[] {"219510", "219599", "219512"}, new Prefix("2195")),
+        // Strings with different lengths but common prefix
+        Arguments.of(new String[] {"1234", "12345678"}, new Prefix("1234")),
+        // Two strings where one is prefix of another
+        Arguments.of(new String[] {"123", "123456"}, new Prefix("123")));
   }
 }

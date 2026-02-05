@@ -460,6 +460,15 @@ public abstract class AbstractFlowNodeBuilder<
     }
   }
 
+  public <T extends SubProcessBuilder> T moveToSubProcess(final String identifier) {
+    final ModelElementInstance instance = modelInstance.getModelElementById(identifier);
+    if (instance instanceof SubProcess) {
+      return (T) ((SubProcess) instance).builder();
+    } else {
+      throw new BpmnModelException("SubProcess not found for id " + identifier);
+    }
+  }
+
   public AbstractFlowNodeBuilder<?, ?> connectTo(final String identifier) {
     final ModelElementInstance target = modelInstance.getModelElementById(identifier);
     if (target == null) {

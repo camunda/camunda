@@ -143,6 +143,12 @@
           <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
         </foreach>
       </if>
+      <if test="filter.batchOperationTypeOperations != null and !filter.batchOperationTypeOperations.isEmpty()">
+        <foreach collection="filter.batchOperationTypeOperations" item="operation">
+          AND BATCH_OPERATION_TYPE
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
       <if test="filter.timestampOperations != null and !filter.timestampOperations.isEmpty()">
         <foreach collection="filter.timestampOperations" item="operation">
           AND TIMESTAMP
@@ -203,6 +209,24 @@
           <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
         </foreach>
       </if>
+      <if test="filter.decisionRequirementsIdOperations != null and !filter.decisionRequirementsIdOperations.isEmpty()">
+        <foreach collection="filter.decisionRequirementsIdOperations" item="operation">
+          AND DECISION_REQUIREMENTS_ID
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.decisionRequirementsKeyOperations != null and !filter.decisionRequirementsKeyOperations.isEmpty()">
+        <foreach collection="filter.decisionRequirementsKeyOperations" item="operation">
+          AND DECISION_REQUIREMENTS_KEY
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.decisionDefinitionIdOperations != null and !filter.decisionDefinitionIdOperations.isEmpty()">
+        <foreach collection="filter.decisionDefinitionIdOperations" item="operation">
+          AND DECISION_DEFINITION_ID
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
       <if test="filter.decisionDefinitionKeyOperations != null and !filter.decisionDefinitionKeyOperations.isEmpty()">
         <foreach collection="filter.decisionDefinitionKeyOperations" item="operation">
           AND DECISION_DEFINITION_KEY
@@ -254,7 +278,7 @@
     </where>
   </sql>
 
-  <insert id="insert" parameterType="io.camunda.db.rdbms.sql.AuditLogMapper$BatchInsertAuditLogsDto">
+  <insert id="insert" parameterType="io.camunda.db.rdbms.write.queue.BatchInsertDto">
     INSERT INTO ${prefix}AUDIT_LOG (
       AUDIT_LOG_KEY,
       ENTITY_KEY,
@@ -292,7 +316,7 @@
       HISTORY_CLEANUP_DATE
     )
     VALUES
-    <foreach collection="auditLogs" item="auditLog" separator=",">
+    <foreach collection="dbModels" item="auditLog" separator=",">
       (
         #{auditLog.auditLogKey},
         #{auditLog.entityKey},

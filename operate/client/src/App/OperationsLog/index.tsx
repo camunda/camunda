@@ -7,34 +7,30 @@
  */
 
 import {useEffect} from 'react';
-import {useLocation} from 'react-router-dom';
-import {processesStore} from 'modules/stores/processes/processes.list';
+import {useLocation, type Location} from 'react-router-dom';
 import {PAGE_TITLE} from 'modules/constants';
 import {Filters} from './Filters';
 import {InstancesTable} from './InstancesTable';
 import {Container} from './styled';
 import {observer} from 'mobx-react';
+import {useQueryClient} from '@tanstack/react-query';
+import {queryKeys} from 'modules/queries/queryKeys';
 
 const OperationsLog: React.FC = observer(() => {
-  const location = useLocation();
+  const location = useLocation() as Location<{refreshContent?: boolean}>;
+  const client = useQueryClient();
 
   useEffect(() => {
-    if (
-      processesStore.state.status !== 'initial' &&
-      location.state?.refreshContent
-    ) {
-      processesStore.fetchProcesses();
+    if (location.state?.refreshContent) {
+      client.refetchQueries({
+        queryKey: queryKeys.processDefinitions.search(),
+        type: 'active',
+      });
     }
-  }, [location.state]);
+  }, [location.state, client]);
 
   useEffect(() => {
-    processesStore.fetchProcesses();
-
     document.title = PAGE_TITLE.AUDIT_LOG;
-
-    return () => {
-      processesStore.reset();
-    };
   }, []);
 
   return (

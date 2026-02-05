@@ -118,7 +118,7 @@ public class BackupReaderOS extends AbstractBackupReader {
   }
 
   private static SnapshotInfoDto toSnapshotInfoDto(final SnapshotInfo snapshotInfo) {
-    final long startTimeMillis = Long.parseLong(snapshotInfo.startTimeInMillis());
+    final long startTimeMillis = snapshotInfo.startTimeInMillis();
     final List<String> shardFailures =
         snapshotInfo.shards().failures().stream().map(ShardFailure::toString).toList();
     return new SnapshotInfoDto(

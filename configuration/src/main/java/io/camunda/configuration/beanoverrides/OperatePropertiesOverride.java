@@ -82,6 +82,7 @@ public class OperatePropertiesOverride {
       final OperateProperties override, final SecondaryStorage database) {
     override.setDatabase(DatabaseType.Elasticsearch);
     override.getElasticsearch().setUrl(database.getElasticsearch().getUrl());
+    override.getElasticsearch().setUrls(database.getElasticsearch().getUrls());
     override.getElasticsearch().setUsername(database.getElasticsearch().getUsername());
     override.getElasticsearch().setPassword(database.getElasticsearch().getPassword());
     override.getElasticsearch().setClusterName(database.getElasticsearch().getClusterName());
@@ -112,6 +113,7 @@ public class OperatePropertiesOverride {
       final OperateProperties override, final SecondaryStorage database) {
     override.setDatabase(DatabaseType.Opensearch);
     override.getOpensearch().setUrl(database.getOpensearch().getUrl());
+    override.getOpensearch().setUrls(database.getOpensearch().getUrls());
     override.getOpensearch().setUsername(database.getOpensearch().getUsername());
     override.getOpensearch().setPassword(database.getOpensearch().getPassword());
     override.getOpensearch().setClusterName(database.getOpensearch().getClusterName());

@@ -20,7 +20,10 @@ import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {createInstance, createvariable} from 'modules/testUtils';
-import {modificationsStore} from 'modules/stores/modifications';
+import {
+  modificationsStore,
+  type FlowNodeModification,
+} from 'modules/stores/modifications';
 import {singleInstanceMetadata} from 'modules/mocks/metadata';
 import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
 import {useEffect, act} from 'react';
@@ -35,6 +38,25 @@ import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.8';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
 import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
+
+/**
+ * Variables can only be added and modified in the root if a pending add/move token modification exists.
+ * Tests need to queue this modification first, before they can make changes to the root variables.
+ */
+const INITIAL_ADD_MODIFICATION: FlowNodeModification = {
+  type: 'token',
+  payload: {
+    affectedTokenCount: 1,
+    flowNode: {
+      id: 'flow_node_0',
+      name: 'flow node 0',
+    },
+    operation: 'ADD_TOKEN',
+    parentScopeIds: {},
+    scopeId: 'random-scope-id-0',
+    visibleAffectedTokenCount: 1,
+  },
+};
 
 const editLastNewVariableName = async (
   user: UserEvent,
@@ -160,6 +182,7 @@ describe('New Variable Modifications', () => {
     mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
     vi.useFakeTimers({shouldAdvanceTime: true});
     modificationsStore.enableModificationMode();
+    modificationsStore.addModification(INITIAL_ADD_MODIFICATION);
 
     const {user} = render(
       <VariablePanel setListenerTabVisibility={vi.fn()} />,
@@ -177,7 +200,7 @@ describe('New Variable Modifications', () => {
     await user.click(screen.getByTestId('new-variable-value'));
     await user.tab();
     expect(screen.getByRole('button', {name: /add variable/i})).toBeDisabled();
-    expect(modificationsStore.state.modifications.length).toBe(0);
+    expect(modificationsStore.state.modifications.length).toBe(1);
 
     vi.clearAllTimers();
     vi.useRealTimers();
@@ -191,6 +214,7 @@ describe('New Variable Modifications', () => {
     vi.useFakeTimers({shouldAdvanceTime: true});
 
     modificationsStore.enableModificationMode();
+    modificationsStore.addModification(INITIAL_ADD_MODIFICATION);
 
     const {user} = render(
       <VariablePanel setListenerTabVisibility={vi.fn()} />,
@@ -209,7 +233,7 @@ describe('New Variable Modifications', () => {
     expect(
       await screen.findByText(/Name has to be filled/i),
     ).toBeInTheDocument();
-    expect(modificationsStore.state.modifications.length).toBe(0);
+    expect(modificationsStore.state.modifications.length).toBe(1);
 
     vi.clearAllTimers();
     vi.useRealTimers();
@@ -218,6 +242,7 @@ describe('New Variable Modifications', () => {
   it('should not create add variable modification if name field is duplicate', async () => {
     vi.useFakeTimers({shouldAdvanceTime: true});
     modificationsStore.enableModificationMode();
+    modificationsStore.addModification(INITIAL_ADD_MODIFICATION);
     mockFetchProcessInstanceDeprecated().withSuccess(
       mockProcessInstanceDeprecated,
     );
@@ -266,6 +291,7 @@ describe('New Variable Modifications', () => {
     await editLastNewVariableName(user, 'test2');
 
     expect(modificationsStore.state.modifications).toEqual([
+      INITIAL_ADD_MODIFICATION,
       {
         payload: {
           flowNodeName: 'someProcessName',
@@ -286,6 +312,7 @@ describe('New Variable Modifications', () => {
       await screen.findByText(/Name should be unique/i),
     ).toBeInTheDocument();
     expect(modificationsStore.state.modifications).toEqual([
+      INITIAL_ADD_MODIFICATION,
       {
         payload: {
           flowNodeName: 'someProcessName',
@@ -330,6 +357,7 @@ describe('New Variable Modifications', () => {
 
     vi.useFakeTimers({shouldAdvanceTime: true});
     modificationsStore.enableModificationMode();
+    modificationsStore.addModification(INITIAL_ADD_MODIFICATION);
 
     const {user} = render(
       <VariablePanel setListenerTabVisibility={vi.fn()} />,
@@ -349,12 +377,12 @@ describe('New Variable Modifications', () => {
     expect(
       await screen.findByText(/Value has to be filled/i),
     ).toBeInTheDocument();
-    expect(modificationsStore.state.modifications.length).toBe(0);
+    expect(modificationsStore.state.modifications.length).toBe(1);
     await editLastNewVariableValue(user, 'invalid value');
     expect(
       await screen.findByText(/Value has to be JSON/i),
     ).toBeInTheDocument();
-    expect(modificationsStore.state.modifications.length).toBe(0);
+    expect(modificationsStore.state.modifications.length).toBe(1);
 
     vi.clearAllTimers();
     vi.useRealTimers();
@@ -368,6 +396,7 @@ describe('New Variable Modifications', () => {
     vi.useFakeTimers({shouldAdvanceTime: true});
 
     modificationsStore.enableModificationMode();
+    modificationsStore.addModification(INITIAL_ADD_MODIFICATION);
 
     const {user} = render(
       <>
@@ -388,6 +417,7 @@ describe('New Variable Modifications', () => {
 
     expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled();
     expect(modificationsStore.state.modifications).toEqual([
+      INITIAL_ADD_MODIFICATION,
       {
         payload: {
           flowNodeName: 'someProcessName',
@@ -407,6 +437,7 @@ describe('New Variable Modifications', () => {
     await user.tab();
 
     expect(modificationsStore.state.modifications).toEqual([
+      INITIAL_ADD_MODIFICATION,
       {
         payload: {
           flowNodeName: 'someProcessName',
@@ -423,6 +454,7 @@ describe('New Variable Modifications', () => {
     await editLastNewVariableName(user, '-updated');
 
     expect(modificationsStore.state.modifications).toEqual([
+      INITIAL_ADD_MODIFICATION,
       {
         payload: {
           flowNodeName: 'someProcessName',
@@ -459,6 +491,7 @@ describe('New Variable Modifications', () => {
 
     await editLastNewVariableValue(user, '678');
     expect(modificationsStore.state.modifications).toEqual([
+      INITIAL_ADD_MODIFICATION,
       {
         payload: {
           flowNodeName: 'someProcessName',
@@ -507,6 +540,7 @@ describe('New Variable Modifications', () => {
     await user.click(screen.getByRole('button', {name: 'Undo'}));
 
     expect(modificationsStore.state.modifications).toEqual([
+      INITIAL_ADD_MODIFICATION,
       {
         payload: {
           flowNodeName: 'someProcessName',
@@ -552,6 +586,7 @@ describe('New Variable Modifications', () => {
     mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
     vi.useFakeTimers({shouldAdvanceTime: true});
     modificationsStore.enableModificationMode();
+    modificationsStore.addModification(INITIAL_ADD_MODIFICATION);
 
     const {user} = render(
       <VariablePanel setListenerTabVisibility={vi.fn()} />,
@@ -577,6 +612,7 @@ describe('New Variable Modifications', () => {
     await editLastNewVariableValue(user, '12345');
 
     expect(modificationsStore.state.modifications).toEqual([
+      INITIAL_ADD_MODIFICATION,
       {
         payload: {
           flowNodeName: 'someProcessName',
@@ -607,6 +643,7 @@ describe('New Variable Modifications', () => {
   it('should be able to remove the first added variable modification after switching between flow node instances', async () => {
     vi.useFakeTimers({shouldAdvanceTime: true});
     modificationsStore.enableModificationMode();
+    modificationsStore.addModification(INITIAL_ADD_MODIFICATION);
 
     mockFetchProcessInstanceDeprecated().withSuccess(
       mockProcessInstanceDeprecated,

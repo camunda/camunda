@@ -9,7 +9,7 @@
 import {useQuery} from '@tanstack/react-query';
 import {fetchProcessDefinitionStatistics} from 'modules/api/v2/processDefinitions/fetchProcessDefinitionStatistics';
 import type {GetProcessDefinitionInstanceStatisticsRequestBody} from '@camunda/camunda-api-zod-schemas/8.8';
-import {queryKeys} from '../queryKeys.ts';
+import {queryKeys} from '../queryKeys';
 
 type UseProcessDefinitionStatisticsOptions = {
   payload?: GetProcessDefinitionInstanceStatisticsRequestBody;

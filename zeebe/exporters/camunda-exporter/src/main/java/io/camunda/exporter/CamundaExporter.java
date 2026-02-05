@@ -346,7 +346,7 @@ public class CamundaExporter implements Exporter {
     controller.updateLastExportedRecordPosition(lastPosition, serialized);
   }
 
-  private record CamundaExporterRecordFilter() implements RecordFilter {
+  record CamundaExporterRecordFilter() implements RecordFilter {
     private static final Set<ValueType> VALUE_TYPES_2_EXPORT =
         Set.of(
             USER,

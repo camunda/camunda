@@ -223,6 +223,8 @@ public class ExporterConfiguration {
             InsertBatchingConfig.builder()
                 .auditLogInsertBatchSize(insertBatching.getMaxAuditLogInsertBatchSize())
                 .variableInsertBatchSize(insertBatching.getMaxVariableInsertBatchSize())
+                .jobInsertBatchSize(insertBatching.getMaxJobInsertBatchSize())
+                .flowNodeInsertBatchSize(insertBatching.getMaxFlowNodeInsertBatchSize())
                 .build())
         .build();
   }
@@ -277,6 +279,10 @@ public class ExporterConfiguration {
         RdbmsWriterConfig.InsertBatchingConfig.DEFAULT_VARIABLE_INSERT_BATCH_SIZE;
     private int maxAuditLogInsertBatchSize =
         RdbmsWriterConfig.InsertBatchingConfig.DEFAULT_AUDIT_LOG_INSERT_BATCH_SIZE;
+    private int maxJobInsertBatchSize =
+        RdbmsWriterConfig.InsertBatchingConfig.DEFAULT_JOB_INSERT_BATCH_SIZE;
+    private int maxFlowNodeInsertBatchSize =
+        RdbmsWriterConfig.InsertBatchingConfig.DEFAULT_FLOW_NODE_INSERT_BATCH_SIZE;
 
     public int getMaxVariableInsertBatchSize() {
       return maxVariableInsertBatchSize;
@@ -294,6 +300,22 @@ public class ExporterConfiguration {
       this.maxAuditLogInsertBatchSize = maxAuditLogInsertBatchSize;
     }
 
+    public int getMaxJobInsertBatchSize() {
+      return maxJobInsertBatchSize;
+    }
+
+    public void setMaxJobInsertBatchSize(final int maxJobInsertBatchSize) {
+      this.maxJobInsertBatchSize = maxJobInsertBatchSize;
+    }
+
+    public int getMaxFlowNodeInsertBatchSize() {
+      return maxFlowNodeInsertBatchSize;
+    }
+
+    public void setMaxFlowNodeInsertBatchSize(final int maxFlowNodeInsertBatchSize) {
+      this.maxFlowNodeInsertBatchSize = maxFlowNodeInsertBatchSize;
+    }
+
     public List<String> validate() {
       final List<String> errors = new ArrayList<>();
 
@@ -309,6 +331,20 @@ public class ExporterConfiguration {
             String.format(
                 "insertBatching.maxAuditLogInsertBatchSize must be greater than 0 but was %d",
                 maxAuditLogInsertBatchSize));
+      }
+
+      if (maxJobInsertBatchSize < 1) {
+        errors.add(
+            String.format(
+                "insertBatching.maxJobInsertBatchSize must be greater than 0 but was %d",
+                maxJobInsertBatchSize));
+      }
+
+      if (maxFlowNodeInsertBatchSize < 1) {
+        errors.add(
+            String.format(
+                "insertBatching.maxFlowNodeInsertBatchSize must be greater than 0 but was %d",
+                maxFlowNodeInsertBatchSize));
       }
 
       return errors;

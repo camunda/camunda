@@ -22,11 +22,11 @@ function useSuspendBatchOperation(options?: SuspendBatchOperationOptions) {
     mutationFn: async (batchOperationKey: string) => {
       const {response, error} = await suspendBatchOperation(batchOperationKey);
 
-      if (response !== null) {
-        return response;
+      if (error !== null) {
+        throw error;
       }
 
-      throw error;
+      return response;
     },
     onSuccess: (_, batchOperationKey) => {
       queryClient.invalidateQueries({

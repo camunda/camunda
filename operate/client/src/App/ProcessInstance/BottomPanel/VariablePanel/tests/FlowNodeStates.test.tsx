@@ -37,7 +37,6 @@ import {
   selectFlowNode,
 } from 'modules/utils/flowNodeSelection';
 import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
-import {MOCK_TIMESTAMP} from 'modules/utils/date/__mocks__/formatDate';
 import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
 
 vi.mock('modules/stores/notifications', () => ({
@@ -93,22 +92,6 @@ describe('VariablePanel', () => {
     const mockProcessInstanceDeprecated = createInstance();
 
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
-    mockFetchProcessInstance().withSuccess(mockProcessInstance);
-    mockFetchProcessInstance().withSuccess(mockProcessInstance);
-    mockFetchProcessInstance().withSuccess(mockProcessInstance);
-    mockFetchProcessInstance().withSuccess(mockProcessInstance);
-    mockFetchProcessInstanceDeprecated().withSuccess(
-      mockProcessInstanceDeprecated,
-    );
-    mockFetchProcessInstanceDeprecated().withSuccess(
-      mockProcessInstanceDeprecated,
-    );
-    mockFetchProcessInstanceDeprecated().withSuccess(
-      mockProcessInstanceDeprecated,
-    );
-    mockFetchProcessInstanceDeprecated().withSuccess(
-      mockProcessInstanceDeprecated,
-    );
     mockFetchProcessInstanceDeprecated().withSuccess(
       mockProcessInstanceDeprecated,
     );
@@ -133,51 +116,11 @@ describe('VariablePanel', () => {
     mockFetchFlownodeInstancesStatistics().withSuccess({
       items: statistics,
     });
-    mockFetchFlownodeInstancesStatistics().withSuccess({
-      items: statistics,
-    });
-    mockFetchFlownodeInstancesStatistics().withSuccess({
-      items: statistics,
-    });
-
-    // Add extra mockSearchVariables calls to handle requests with ADD_TOKEN scope IDs
-    mockSearchVariables().withSuccess({
-      items: [],
-      page: {
-        totalItems: 0,
-      },
-    });
-    mockSearchVariables().withSuccess({
-      items: [],
-      page: {
-        totalItems: 0,
-      },
-    });
-    mockSearchVariables().withSuccess({
-      items: [],
-      page: {
-        totalItems: 0,
-      },
-    });
-    mockSearchVariables().withSuccess({
-      items: [],
-      page: {
-        totalItems: 0,
-      },
-    });
-    mockSearchVariables().withSuccess({
-      items: [],
-      page: {
-        totalItems: 0,
-      },
-    });
 
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
     mockFetchProcessDefinitionXml().withSuccess(
       mockProcessWithInputOutputMappingsXML,
     );
-    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
-    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
     mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
     mockSearchVariables().withSuccess({
       items: [createvariable()],
@@ -225,9 +168,6 @@ describe('VariablePanel', () => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
     });
     expect(await screen.findByText('testVariableName')).toBeInTheDocument();
-    expect(
-      await screen.findByRole('button', {name: /add variable/i}),
-    ).toBeInTheDocument();
 
     mockSearchVariables().withSuccess({
       items: [],
@@ -322,7 +262,7 @@ describe('VariablePanel', () => {
       instanceMetadata: {
         ...singleInstanceMetadata.instanceMetadata!,
         endDate: null,
-        startDate: MOCK_TIMESTAMP,
+        startDate: '2018-12-12 00:00:00',
       },
     });
 
@@ -362,8 +302,8 @@ describe('VariablePanel', () => {
     ).toBeInTheDocument();
 
     expect(
-      screen.getByRole('button', {name: /add variable/i}),
-    ).toBeInTheDocument();
+      screen.queryByRole('button', {name: /add variable/i}),
+    ).not.toBeInTheDocument();
 
     mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
 
@@ -418,11 +358,6 @@ describe('VariablePanel', () => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
     });
     expect(await screen.findByText('testVariableName')).toBeInTheDocument();
-
-    expect(
-      await screen.findByRole('button', {name: /add variable/i}),
-    ).toBeInTheDocument();
-    expect(screen.getByText('testVariableName')).toBeInTheDocument();
 
     mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
     act(() => {
@@ -654,9 +589,6 @@ describe('VariablePanel', () => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
     });
     expect(await screen.findByText('testVariableName')).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', {name: /add variable/i}),
-    ).toBeInTheDocument();
 
     mockSearchVariables().withSuccess({
       items: [],

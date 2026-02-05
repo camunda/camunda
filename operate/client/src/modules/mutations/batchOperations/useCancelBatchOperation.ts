@@ -22,11 +22,11 @@ function useCancelBatchOperation(options?: CancelBatchOperationOptions) {
     mutationFn: async (batchOperationKey: string) => {
       const {response, error} = await cancelBatchOperation(batchOperationKey);
 
-      if (response !== null) {
-        return response;
+      if (error !== null) {
+        throw error;
       }
 
-      throw error;
+      return response;
     },
     onSuccess: (_, batchOperationKey) => {
       queryClient.invalidateQueries({

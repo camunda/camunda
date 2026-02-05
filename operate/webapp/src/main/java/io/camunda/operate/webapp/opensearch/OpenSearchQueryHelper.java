@@ -265,7 +265,7 @@ public class OpenSearchQueryHelper {
       }
       rangeQueryBuilder.format(operateProperties.getOpensearch().getOsDateFormat());
 
-      return rangeQueryBuilder.build()._toQuery();
+      return rangeQueryBuilder.build().toQuery();
     }
     return null;
   }

@@ -182,6 +182,7 @@ describe('buildMutationRequestBody', () => {
       filter: {
         elementId: {$eq: 'taskA'},
         state: {$eq: 'ACTIVE'},
+        hasIncident: false,
       },
     });
   });
@@ -214,6 +215,7 @@ describe('buildMutationRequestBody', () => {
         hasRetriesLeft: true,
         incidentErrorHashCode: 37136123613781,
         state: {$eq: 'ACTIVE'},
+        hasIncident: false,
       },
     });
   });
@@ -236,6 +238,7 @@ describe('buildMutationRequestBody', () => {
         elementId: {$eq: 'taskA'},
         processDefinitionId: {$eq: 'orderProcess'},
         state: {$eq: 'ACTIVE'},
+        hasIncident: false,
       },
     });
   });
@@ -261,6 +264,7 @@ describe('buildMutationRequestBody', () => {
           $lt: '2020-01-02T00:00:00.000Z',
         },
         state: {$eq: 'ACTIVE'},
+        hasIncident: false,
       },
     });
 
@@ -279,6 +283,7 @@ describe('buildMutationRequestBody', () => {
           $gt: '2020-01-01T00:00:00.000Z',
         },
         state: {$eq: 'ACTIVE'},
+        hasIncident: false,
       },
     });
 
@@ -297,6 +302,7 @@ describe('buildMutationRequestBody', () => {
           $lt: '2020-01-02T00:00:00.000Z',
         },
         state: {$eq: 'ACTIVE'},
+        hasIncident: false,
       },
     });
   });
@@ -322,6 +328,7 @@ describe('buildMutationRequestBody', () => {
           $lt: '2020-01-02T00:00:00.000Z',
         },
         state: {$eq: 'ACTIVE'},
+        hasIncident: false,
       },
     });
 
@@ -340,6 +347,7 @@ describe('buildMutationRequestBody', () => {
           $gt: '2020-01-01T00:00:00.000Z',
         },
         state: {$eq: 'ACTIVE'},
+        hasIncident: false,
       },
     });
 
@@ -358,6 +366,7 @@ describe('buildMutationRequestBody', () => {
           $lt: '2020-01-02T00:00:00.000Z',
         },
         state: {$eq: 'ACTIVE'},
+        hasIncident: false,
       },
     });
   });
@@ -381,6 +390,7 @@ describe('buildMutationRequestBody', () => {
       filter: {
         variables: [{name: 'foo', value: {$in: ['"a"', '"b"']}}],
         state: {$eq: 'ACTIVE'},
+        hasIncident: false,
       },
     });
   });
@@ -398,6 +408,7 @@ describe('buildMutationRequestBody', () => {
     expect(both).toEqual({
       filter: {
         state: {$in: ['COMPLETED', 'TERMINATED']},
+        hasIncident: false,
       },
     });
 
@@ -412,6 +423,7 @@ describe('buildMutationRequestBody', () => {
     expect(onlyCompleted).toEqual({
       filter: {
         state: {$eq: 'COMPLETED'},
+        hasIncident: false,
       },
     });
 
@@ -426,6 +438,7 @@ describe('buildMutationRequestBody', () => {
     expect(onlyCanceled).toEqual({
       filter: {
         state: {$eq: 'TERMINATED'},
+        hasIncident: false,
       },
     });
   });
@@ -462,6 +475,7 @@ describe('buildMutationRequestBody', () => {
     expect(body).toEqual({
       filter: {
         state: {$eq: 'ACTIVE'},
+        hasIncident: false,
         variables: [
           {
             name: 'status',
@@ -490,6 +504,7 @@ describe('buildMutationRequestBody', () => {
     expect(body).toEqual({
       filter: {
         state: {$eq: 'ACTIVE'},
+        hasIncident: false,
         variables: [
           {
             name: 'status',
@@ -513,6 +528,7 @@ describe('buildMutationRequestBody', () => {
 
     expect(body).toEqual({
       filter: {
+        hasIncident: false,
         state: {$eq: 'ACTIVE'},
         elementId: {$eq: 'taskA'},
         processDefinitionKey: '2837942984928642',

@@ -48,6 +48,7 @@ test.describe('migration view', () => {
         processDefinitions: mockProcessDefinitions,
         batchOperations: mockBatchOperations,
         processInstances: mockProcessInstances,
+        batchOperationItems: {items: [], page: {totalItems: 0}},
         statisticsV2: mockStatisticsV2,
         processXml: openFile(
           './e2e-playwright/mocks/resources/LotsOfTasks.bpmn',

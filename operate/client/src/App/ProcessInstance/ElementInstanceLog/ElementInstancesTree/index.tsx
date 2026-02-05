@@ -553,7 +553,7 @@ const FoldableElementInstancesNode: React.FC<FoldableElementInstancesNodeProps> 
       } = useElementInstanceHistoryTree();
       const {refetch: fetchFirstChild} = useSearchElementInstancesByScope(
         {
-          elementInstanceScopeKey: scopeKey,
+          filter: {elementInstanceScopeKey: scopeKey},
           page: {limit: 1, from: 0},
           sort: [{field: 'startDate', order: 'asc'}],
         },

@@ -11,9 +11,7 @@ import {render, screen, waitFor} from 'modules/testing-library';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
-import {processesStore} from 'modules/stores/processes/processes.list';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
-import {processInstancesStore} from 'modules/stores/processInstances';
 import {mockMe} from 'modules/mocks/api/v2/me';
 import {mockSearchProcessDefinitions} from 'modules/mocks/api/v2/processDefinitions/searchProcessDefinitions';
 import {mockQueryAuditLogs} from 'modules/mocks/api/v2/auditLogs/queryAuditLogs';
@@ -61,8 +59,6 @@ describe('OperationsLog', () => {
   });
 
   afterEach(() => {
-    processesStore.reset();
-    processInstancesStore.reset();
     processInstancesSelectionStore.reset();
   });
 

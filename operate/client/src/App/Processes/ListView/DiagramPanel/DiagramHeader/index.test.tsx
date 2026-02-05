@@ -6,34 +6,49 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {MemoryRouter} from 'react-router-dom';
 import {render, screen} from 'modules/testing-library';
 import {DiagramHeader} from '.';
-import {QueryClientProvider} from '@tanstack/react-query';
-import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
-
-const mockQueryClient = getMockQueryClient();
+import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import {MemoryRouter} from 'react-router-dom';
+import {mockSearchProcessInstances} from 'modules/mocks/api/v2/processInstances/searchProcessInstances';
+import {searchResult} from 'modules/testUtils';
+import type {ProcessDefinitionSelection} from 'modules/hooks/processDefinitions';
 
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   return (
-    <QueryClientProvider client={mockQueryClient}>
-      <MemoryRouter>{children}</MemoryRouter>
-    </QueryClientProvider>
+    <MemoryRouter>
+      <QueryClientProvider client={new QueryClient()}>
+        {children}
+      </QueryClientProvider>
+    </MemoryRouter>
   );
 };
 
+const singleVersionSelection: ProcessDefinitionSelection = {
+  kind: 'single-version',
+  definition: {
+    processDefinitionId: 'MyProcess',
+    processDefinitionKey: '123',
+    name: 'My Process',
+    version: 1,
+    versionTag: 'MyVersionTag',
+    hasStartForm: false,
+    tenantId: '<default>',
+  },
+};
+
+const noMatchSelection: ProcessDefinitionSelection = {
+  kind: 'no-match',
+};
+
 describe('DiagramHeader', () => {
+  beforeEach(() => {
+    mockSearchProcessInstances().withSuccess(searchResult([]));
+  });
+
   it('should render header with full data', async () => {
     render(
-      <DiagramHeader
-        processDetails={{
-          processName: 'My Process',
-          bpmnProcessId: 'MyProcess',
-          version: '1',
-          versionTag: 'MyVersionTag',
-        }}
-        processDefinitionId=""
-      />,
+      <DiagramHeader processDefinitionSelection={singleVersionSelection} />,
       {wrapper: Wrapper},
     );
 
@@ -47,21 +62,28 @@ describe('DiagramHeader', () => {
     expect(screen.getByText(/^MyVersionTag$/i)).toBeInTheDocument();
 
     expect(
-      screen.getByRole('button', {name: /delete process definition/i}),
+      await screen.findByRole('button', {name: /delete process definition/i}),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByRole('button', {name: /view batch operations/i}),
     ).toBeInTheDocument();
   });
 
   it('should render header without version tag', async () => {
     render(
       <DiagramHeader
-        processDetails={{
-          processName: 'My Process',
-          bpmnProcessId: 'MyProcess',
-          version: '1',
+        processDefinitionSelection={{
+          ...singleVersionSelection,
+          definition: {
+            ...singleVersionSelection.definition,
+            versionTag: undefined,
+          },
         }}
-        processDefinitionId=""
       />,
-      {wrapper: Wrapper},
+      {
+        wrapper: Wrapper,
+      },
     );
 
     expect(screen.getByText(/^process name$/i)).toBeInTheDocument();
@@ -73,20 +95,18 @@ describe('DiagramHeader', () => {
     expect(screen.queryByText(/^version tag$/i)).not.toBeInTheDocument();
 
     expect(
-      screen.getByRole('button', {name: /delete process definition/i}),
+      await screen.findByRole('button', {name: /delete process definition/i}),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByRole('button', {name: /view batch operations/i}),
     ).toBeInTheDocument();
   });
 
   it('should render header without data', async () => {
-    render(
-      <DiagramHeader
-        processDetails={{
-          processName: 'My Process',
-        }}
-        processDefinitionId=""
-      />,
-      {wrapper: Wrapper},
-    );
+    render(<DiagramHeader processDefinitionSelection={noMatchSelection} />, {
+      wrapper: Wrapper,
+    });
 
     expect(screen.queryByText(/^process name$/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/^process id$/i)).not.toBeInTheDocument();
@@ -94,5 +114,57 @@ describe('DiagramHeader', () => {
     expect(
       screen.queryByRole('button', {name: /delete process definition/i}),
     ).not.toBeInTheDocument();
+
+    // View batch operations button should always be present
+    expect(
+      screen.getByRole('button', {name: /view batch operations/i}),
+    ).toBeInTheDocument();
+  });
+
+  it('should disable delete button when running instances count is greater than 0', async () => {
+    mockSearchProcessInstances().withSuccess({
+      items: [],
+      page: {totalItems: 5},
+    });
+
+    render(
+      <DiagramHeader processDefinitionSelection={singleVersionSelection} />,
+      {wrapper: Wrapper},
+    );
+
+    const deleteButton = await screen.findByRole('button', {
+      name: /only process definitions without running instances can be deleted/i,
+    });
+    expect(deleteButton).toBeInTheDocument();
+    expect(deleteButton).toBeDisabled();
+    expect(deleteButton).toHaveAttribute(
+      'title',
+      'Only process definitions without running instances can be deleted.',
+    );
+
+    expect(
+      screen.getByRole('button', {name: /view batch operations/i}),
+    ).toBeInTheDocument();
+  });
+
+  it('should enable delete button when running instances count is 0', async () => {
+    render(
+      <DiagramHeader processDefinitionSelection={singleVersionSelection} />,
+      {wrapper: Wrapper},
+    );
+
+    const deleteButton = await screen.findByRole('button', {
+      name: /delete process definition/i,
+    });
+    expect(deleteButton).toBeInTheDocument();
+    expect(deleteButton).not.toBeDisabled();
+    expect(deleteButton).toHaveAttribute(
+      'title',
+      'Delete Process Definition "My Process - Version 1"',
+    );
+
+    expect(
+      screen.getByRole('button', {name: /view batch operations/i}),
+    ).toBeInTheDocument();
   });
 });

@@ -10,9 +10,8 @@ import {createAddVariableModification} from 'modules/mocks/modifications';
 import {modificationsStore} from 'modules/stores/modifications';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {render, screen, waitFor} from 'modules/testing-library';
-import {createBatchOperation, createInstance} from 'modules/testUtils';
+import {createInstance} from 'modules/testUtils';
 import {ModificationSummaryModal} from './index';
-import {mockModify} from 'modules/mocks/api/processInstances/modify';
 import {open} from 'modules/mocks/diagrams';
 import {useEffect, act} from 'react';
 import {notificationsStore} from 'modules/stores/notifications';
@@ -27,6 +26,7 @@ import {cancelAllTokens} from 'modules/utils/modifications';
 import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.8';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchCallHierarchy} from 'modules/mocks/api/v2/processInstances/fetchCallHierarchy';
+import {mockModifyProcessInstance} from 'modules/mocks/api/v2/processInstances/modifyProcessInstance';
 
 vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -559,9 +559,7 @@ describe('Modification Summary Modal', () => {
     modificationsStore.enableModificationMode();
     const mockOnClose = vi.fn();
 
-    mockModify().withSuccess(
-      createBatchOperation({type: 'MODIFY_PROCESS_INSTANCE'}),
-    );
+    mockModifyProcessInstance().withSuccess(null);
 
     modificationsStore.addModification({
       type: 'token',
@@ -602,7 +600,7 @@ describe('Modification Summary Modal', () => {
     modificationsStore.enableModificationMode();
     const mockOnClose = vi.fn();
 
-    mockModify().withServerError();
+    mockModifyProcessInstance().withServerError();
 
     modificationsStore.addModification({
       type: 'token',
@@ -644,7 +642,7 @@ describe('Modification Summary Modal', () => {
     modificationsStore.enableModificationMode();
     const mockOnClose = vi.fn();
 
-    mockModify().withServerError(403);
+    mockModifyProcessInstance().withServerError(403);
 
     modificationsStore.addModification({
       type: 'token',

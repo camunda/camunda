@@ -7,18 +7,11 @@
  */
 package io.camunda.db.rdbms.write.queue;
 
-import io.camunda.db.rdbms.sql.VariableMapper.BatchInsertVariablesDto;
 import io.camunda.db.rdbms.write.domain.VariableDbModel;
 
-public class InsertVariableMerger
-    extends BatchInsertMerger<BatchInsertVariablesDto, VariableDbModel> {
+public class InsertVariableMerger extends BatchInsertMerger<VariableDbModel> {
 
   public InsertVariableMerger(final VariableDbModel variable, final int maxBatchSize) {
-    super(
-        ContextType.VARIABLE,
-        BatchInsertVariablesDto.class,
-        variable,
-        dto -> dto.variables().size(),
-        maxBatchSize);
+    super(ContextType.VARIABLE, variable, maxBatchSize);
   }
 }

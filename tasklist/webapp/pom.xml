@@ -402,6 +402,7 @@
             <dep>jakarta.servlet:jakarta.servlet-api</dep>
             <dep>jakarta.annotation:jakarta.annotation-api</dep>
             <dep>org.springframework:spring-aspects</dep>
+            <dep>org.elasticsearch:elasticsearch</dep>
           </ignoredUnusedDeclaredDependencies>
           <ignoredNonTestScopedDependencies>
             <dependency>com.fasterxml.jackson.datatype:jackson-datatype-jdk8</dependency>

@@ -9,14 +9,14 @@
 import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.9/audit-log';
 import {formatBatchTitle} from 'modules/utils/operationsLog';
 import {Link} from 'modules/components/Link';
-import {processesStore} from 'modules/stores/processes/processes.list';
 import {Paths} from 'modules/Routes';
 
 type Props = {
   item: AuditLog;
+  processDefinitionName?: string;
 };
 
-const CellAppliedTo: React.FC<Props> = ({item}) => {
+const CellAppliedTo: React.FC<Props> = ({item, processDefinitionName}) => {
   if (!item) {
     return null;
   }
@@ -50,13 +50,7 @@ const CellAppliedTo: React.FC<Props> = ({item}) => {
     case 'PROCESS_INSTANCE':
       return (
         <>
-          <div>
-            {
-              processesStore.getProcess({
-                bpmnProcessId: item.processDefinitionId,
-              })?.name
-            }
-          </div>
+          <div>{processDefinitionName}</div>
           <div>
             <Link
               to={Paths.processInstance(item.entityKey)}

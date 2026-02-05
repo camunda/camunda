@@ -10,6 +10,7 @@ package io.camunda.application.commons.mcp;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.application.commons.service.CamundaServicesConfiguration;
 import io.camunda.application.initializers.McpGatewayInitializer;
 import io.camunda.gateway.mcp.tool.cluster.ClusterTools;
@@ -21,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.actuate.autoconfigure.observation.ObservationProperties;
 import org.springframework.boot.test.context.runner.WebApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.annotation.AnnotatedElementUtils;
@@ -34,6 +36,7 @@ class McpGatewayConfigurationTest {
         new WebApplicationContextRunner()
             .withInitializer(new McpGatewayInitializer())
             .withBean(MultiTenancyConfiguration.class, MultiTenancyConfiguration::new)
+            .withBean(ObservationProperties.class, ObservationProperties::new)
             .withUserConfiguration(McpGatewayConfiguration.class);
 
     final List<Class<?>> mockBeans = new ArrayList<>();
@@ -45,6 +48,9 @@ class McpGatewayConfigurationTest {
         .filter(method -> AnnotatedElementUtils.hasAnnotation(method, Bean.class))
         .map(Method::getReturnType)
         .forEach(mockBeans::add);
+
+    // add mocks needed for McpGatewayConfiguration
+    mockBeans.add(ObjectMapper.class);
 
     for (final Class<?> mockedBean : mockBeans) {
       runner = addMockedBean(runner, mockedBean);
@@ -59,26 +65,26 @@ class McpGatewayConfigurationTest {
   }
 
   @Test
-  public void doesNotIncludeMcpToolComponentsByDefault() {
+  void doesNotIncludeMcpToolComponentsByDefault() {
     contextRunner().run(context -> assertThat(context).doesNotHaveBean(TEST_TOOL_BEAN_CLASS));
   }
 
   @Test
-  public void includesMcpToolComponentsWhenEnabled() {
+  void includesMcpToolComponentsWhenEnabled() {
     contextRunner()
         .withPropertyValues("camunda.mcp.enabled=true")
         .run(context -> assertThat(context).hasSingleBean(TEST_TOOL_BEAN_CLASS));
   }
 
   @Test
-  public void doesNotIncludeMcpToolComponentsWhenDisabled() {
+  void doesNotIncludeMcpToolComponentsWhenDisabled() {
     contextRunner()
         .withPropertyValues("camunda.mcp.enabled=false")
         .run(context -> assertThat(context).doesNotHaveBean(TEST_TOOL_BEAN_CLASS));
   }
 
   @Test
-  public void doesNotIncludeMcpToolComponentsWhenBrokerGatewayIsDisabled() {
+  void doesNotIncludeMcpToolComponentsWhenBrokerGatewayIsDisabled() {
     contextRunner()
         .withPropertyValues("zeebe.broker.gateway.enable=false", "camunda.mcp.enabled=true")
         .run(context -> assertThat(context).doesNotHaveBean(TEST_TOOL_BEAN_CLASS));

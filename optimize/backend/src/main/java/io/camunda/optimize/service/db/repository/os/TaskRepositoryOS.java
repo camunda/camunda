@@ -18,10 +18,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import org.opensearch.client.opensearch._types.ErrorCause;
 import org.opensearch.client.opensearch.tasks.GetTasksResponse;
-import org.opensearch.client.opensearch.tasks.Info;
 import org.opensearch.client.opensearch.tasks.Status;
+import org.opensearch.client.opensearch.tasks.TaskInfo;
+import org.opensearch.client.opensearch.tasks.TaskInfoBase;
 import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -39,19 +41,22 @@ public class TaskRepositoryOS extends TaskRepository {
 
   @Override
   public List<TaskProgressInfo> tasksProgress(final String action) {
-    return osClient
-        .getRichOpenSearchClient()
-        .task()
-        .tasksWithActions(List.of(action))
-        .entrySet()
-        .stream()
-        .filter(taskInfo -> "bulk-by-scroll".equals(taskInfo.getValue().type()))
-        .map(taskInfo -> taskInfo.getValue().status())
+    return osClient.getRichOpenSearchClient().task().tasksWithActions(List.of(action)).stream()
+        .filter(taskInfo -> "bulk-by-scroll".equals(taskInfo.type()))
+        .map(TaskInfoBase::status)
+        .filter(Objects::nonNull)
         .map(
             status ->
                 new TaskProgressInfo(
                     getProgress(status), status.total(), getProcessedTasksCount(status)))
         .toList();
+  }
+
+  @Override
+  public TaskResponse getTaskResponse(final String taskId) throws IOException {
+    final GetTasksResponse taskResponse =
+        osClient.getRichOpenSearchClient().task().taskWithRetries(taskId);
+    return createTaskResponseFromGetTasksResponse(taskResponse);
   }
 
   private static long getProcessedTasksCount(final Status status) {
@@ -65,18 +70,11 @@ public class TaskRepositoryOS extends TaskRepository {
         : 0;
   }
 
-  @Override
-  public TaskResponse getTaskResponse(final String taskId) throws IOException {
-    final GetTasksResponse taskResponse =
-        osClient.getRichOpenSearchClient().task().taskWithRetries(taskId);
-    return createTaskResponseFromGetTasksResponse(taskResponse);
-  }
-
   private TaskResponse createTaskResponseFromGetTasksResponse(
       final GetTasksResponse getTasksResponse) {
     final boolean completed = getTasksResponse.completed();
 
-    final Info taskInfo = getTasksResponse.task();
+    final TaskInfo taskInfo = getTasksResponse.task();
     TaskResponse.Status status = null;
     if (taskInfo.status() != null) {
       status =

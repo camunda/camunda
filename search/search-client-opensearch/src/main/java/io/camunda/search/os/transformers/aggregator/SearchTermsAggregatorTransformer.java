@@ -13,6 +13,7 @@ import io.camunda.search.sort.SortOption.FieldSorting;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.opensearch.client.opensearch._types.ScriptLanguage;
 import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
 import org.opensearch.client.opensearch._types.aggregations.AggregationBuilders;
@@ -45,6 +46,7 @@ public final class SearchTermsAggregatorTransformer
                             in -> {
                               final var inline = in.source(script);
                               return Optional.ofNullable(value.lang())
+                                  .map(lang -> ScriptLanguage.builder().custom(lang).build())
                                   .map(inline::lang)
                                   .orElse(inline);
                             })));

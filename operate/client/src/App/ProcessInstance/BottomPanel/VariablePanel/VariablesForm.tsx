@@ -8,7 +8,6 @@
 
 import {computed} from 'mobx';
 import {observer} from 'mobx-react';
-import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {modificationsStore} from 'modules/stores/modifications';
 import {type VariableFormValues} from 'modules/types/variables';
@@ -17,24 +16,16 @@ import {type FormRenderProps} from 'react-final-form';
 
 import {AddVariableButton, Form, VariablesContainer} from './styled';
 import {Variables} from '../Variables';
-import {useWillAllFlowNodesBeCanceled} from 'modules/hooks/modifications';
 import {
-  useHasPendingCancelOrMoveModification,
   useIsPlaceholderSelected,
   useIsRootNodeSelected,
 } from 'modules/hooks/flowNodeSelection';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
-import {
-  IS_ELEMENT_SELECTION_V2,
-  IS_INSTANCE_MODIFICATION_V2,
-} from 'modules/feature-flags';
+import {IS_ELEMENT_SELECTION_V2} from 'modules/feature-flags';
 import {hasPendingAddOrMoveModification} from 'modules/utils/modifications';
 
 const VariablesForm: React.FC<FormRenderProps<VariableFormValues>> = observer(
   ({handleSubmit, form, values}) => {
-    const willAllFlowNodesBeCanceled = useWillAllFlowNodesBeCanceled();
-    const hasPendingCancelOrMoveModification =
-      useHasPendingCancelOrMoveModification();
     const isPlaceholderSelected = useIsPlaceholderSelected();
     const isRootNodeSelected = useIsRootNodeSelected();
     const hasEmptyNewVariable = (values?: VariableFormValues) =>
@@ -47,31 +38,18 @@ const VariablesForm: React.FC<FormRenderProps<VariableFormValues>> = observer(
 
     const {isModificationModeEnabled} = modificationsStore;
 
-    const {selectedElementId, resolvedElementInstance} =
-      useProcessInstanceElementSelection();
+    const {selectedElementId} = useProcessInstanceElementSelection();
 
     const isVariableModificationAllowed = computed(() => {
       if (!isModificationModeEnabled || selectedElementId === null) {
         return false;
       }
 
-      if (IS_INSTANCE_MODIFICATION_V2) {
-        if (isRootNodeSelected) {
-          return hasPendingAddOrMoveModification();
-        }
-
-        return isPlaceholderSelected;
-      }
-
       if (isRootNodeSelected) {
-        return !willAllFlowNodesBeCanceled;
+        return hasPendingAddOrMoveModification();
       }
 
-      return (
-        isPlaceholderSelected ||
-        (resolvedElementInstance?.state === 'ACTIVE' &&
-          !hasPendingCancelOrMoveModification)
-      );
+      return isPlaceholderSelected;
     });
 
     const isVariableModificationAllowedV1 = computed(() => {
@@ -82,23 +60,11 @@ const VariablesForm: React.FC<FormRenderProps<VariableFormValues>> = observer(
         return false;
       }
 
-      if (IS_INSTANCE_MODIFICATION_V2) {
-        if (isRootNodeSelected) {
-          return hasPendingAddOrMoveModification();
-        }
-
-        return isPlaceholderSelected;
-      }
-
       if (isRootNodeSelected) {
-        return !willAllFlowNodesBeCanceled;
+        return hasPendingAddOrMoveModification();
       }
 
-      return (
-        isPlaceholderSelected ||
-        (flowNodeMetaDataStore.isSelectedInstanceRunning &&
-          !hasPendingCancelOrMoveModification)
-      );
+      return isPlaceholderSelected;
     });
 
     const isModificationAllowed = IS_ELEMENT_SELECTION_V2

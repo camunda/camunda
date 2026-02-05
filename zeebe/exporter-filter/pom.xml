@@ -19,6 +19,16 @@
       <artifactId>zeebe-protocol</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-util</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+    </dependency>
+
     <!-- testing -->
     <dependency>
       <groupId>org.junit.jupiter</groupId>
@@ -37,6 +47,12 @@
       <artifactId>mockito-core</artifactId>
       <scope>test</scope>
     </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-exporter-api</artifactId>
+    </dependency>
+
   </dependencies>
 
 </project>
