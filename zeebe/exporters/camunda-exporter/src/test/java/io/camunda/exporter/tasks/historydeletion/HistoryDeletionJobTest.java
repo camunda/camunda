@@ -45,7 +45,6 @@ final class HistoryDeletionJobTest {
   private HistoryDeletionIndex historyDeletionIndex;
   private ListViewTemplate listViewTemplate;
   private ProcessIndex processIndex;
-  private AuditLogTemplate auditLogTemplate;
 
   @BeforeEach
   void setUp() {
@@ -60,7 +59,6 @@ final class HistoryDeletionJobTest {
     historyDeletionIndex = resourceProvider.getIndexDescriptor(HistoryDeletionIndex.class);
     listViewTemplate = resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class);
     processIndex = resourceProvider.getIndexDescriptor(ProcessIndex.class);
-    auditLogTemplate = resourceProvider.getIndexTemplateDescriptor(AuditLogTemplate.class);
     job = new HistoryDeletionJob(dependants, executor, repository, LOGGER, resourceProvider);
   }
 
@@ -108,6 +106,7 @@ final class HistoryDeletionJobTest {
     // then
     dependants.stream()
         .filter(t -> !(t instanceof OperationTemplate))
+        .filter(t -> !(t instanceof AuditLogTemplate))
         .forEach(
             dependant ->
                 verify(repository)
@@ -146,6 +145,7 @@ final class HistoryDeletionJobTest {
     // then
     dependants.stream()
         .filter(t -> !(t instanceof OperationTemplate))
+        .filter(t -> !(t instanceof AuditLogTemplate))
         .forEach(
             dependant ->
                 verify(repository)
@@ -188,6 +188,7 @@ final class HistoryDeletionJobTest {
     // then
     dependants.stream()
         .filter(t -> !(t instanceof OperationTemplate))
+        .filter(t -> !(t instanceof AuditLogTemplate))
         .forEach(
             dependant ->
                 verify(repository)
@@ -216,8 +217,6 @@ final class HistoryDeletionJobTest {
             .setPartitionId(1);
     when(repository.getNextBatch())
         .thenReturn(CompletableFuture.completedFuture(new HistoryDeletionBatch(List.of(entity))));
-    when(repository.deleteDocumentsByField(anyString(), anyString(), anyList()))
-        .thenReturn(CompletableFuture.completedFuture(List.of()));
     when(repository.deleteDocumentsById(anyString(), anyList()))
         .thenReturn(CompletableFuture.completedFuture(0));
 
@@ -226,40 +225,10 @@ final class HistoryDeletionJobTest {
 
     // then Process Definition is deleted
     verify(repository, atMostOnce())
-        .deleteDocumentsByField(
-            auditLogTemplate.getIndexPattern(),
-            AuditLogTemplate.PROCESS_DEFINITION_KEY,
-            List.of(entity.getResourceKey()));
-    verify(repository, atMostOnce())
         .deleteDocumentsById(
             processIndex.getFullQualifiedName(), List.of(String.valueOf(entity.getResourceKey())));
     verify(repository, atMostOnce())
         .deleteDocumentsById(historyDeletionIndex.getFullQualifiedName(), List.of(entity.getId()));
-  }
-
-  @Test
-  void shouldNotDeleteProcessDefinitionIfAuditLogDeletionFailed() {
-    // given
-    final var entity =
-        new HistoryDeletionEntity()
-            .setId("id")
-            .setResourceKey(1L)
-            .setResourceType(HistoryDeletionType.PROCESS_DEFINITION)
-            .setBatchOperationKey(2L)
-            .setPartitionId(1);
-    when(repository.getNextBatch())
-        .thenReturn(CompletableFuture.completedFuture(new HistoryDeletionBatch(List.of(entity))));
-    when(repository.deleteDocumentsByField(anyString(), anyString(), anyList()))
-        .thenReturn(CompletableFuture.failedFuture(new RuntimeException("Failed deleting")));
-
-    // when
-    job.execute().exceptionally(ex -> 0).toCompletableFuture().join();
-
-    // then
-    verify(repository, never())
-        .deleteDocumentsById(
-            processIndex.getFullQualifiedName(), List.of(String.valueOf(entity.getResourceKey())));
-    verify(repository, never()).deleteDocumentsById(any(), any());
   }
 
   @Test
@@ -274,8 +243,6 @@ final class HistoryDeletionJobTest {
             .setPartitionId(1);
     when(repository.getNextBatch())
         .thenReturn(CompletableFuture.completedFuture(new HistoryDeletionBatch(List.of(entity))));
-    when(repository.deleteDocumentsByField(anyString(), anyString(), anyList()))
-        .thenReturn(CompletableFuture.completedFuture(List.of()));
     when(repository.deleteDocumentsById(eq(processIndex.getFullQualifiedName()), any()))
         .thenReturn(CompletableFuture.failedFuture(new RuntimeException("Failed deleting")));
 
@@ -283,11 +250,6 @@ final class HistoryDeletionJobTest {
     job.execute().exceptionally(ex -> 0).toCompletableFuture().join();
 
     // then
-    verify(repository, atMostOnce())
-        .deleteDocumentsByField(
-            auditLogTemplate.getIndexPattern(),
-            AuditLogTemplate.PROCESS_DEFINITION_KEY,
-            List.of(entity.getResourceKey()));
     verify(repository, atMostOnce())
         .deleteDocumentsById(
             processIndex.getFullQualifiedName(), List.of(String.valueOf(entity.getResourceKey())));
