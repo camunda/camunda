@@ -493,7 +493,7 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
-  elasticsearch-integration-tests:
+  elasticsearch8-integration-tests:
     name: "Database Integration Tests / Elasticsearch"
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     needs: [ detect-changes ]
@@ -1356,7 +1356,7 @@ jobs:
       - detect-changes
       - docker-checks
       - elasticsearch-history-tests
-      - elasticsearch-integration-tests
+      - elasticsearch8-integration-tests
       - elasticsearch9-integration-tests
       - general-unit-tests
       - h2-history-tests
