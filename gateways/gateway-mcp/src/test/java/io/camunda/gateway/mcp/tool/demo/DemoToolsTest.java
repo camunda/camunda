@@ -10,7 +10,7 @@ package io.camunda.gateway.mcp.tool.demo;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.gateway.mcp.schema.CamundaJsonSchemaGenerator;
+import io.camunda.gateway.mcp.config.CamundaJsonSchemaGenerator;
 import io.camunda.gateway.mcp.tool.ToolsTest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;

@@ -5,9 +5,9 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.gateway.mcp.callback;
+package io.camunda.gateway.mcp.config;
 
-import io.camunda.gateway.mcp.annotation.McpRequestBody;
+import io.camunda.gateway.mcp.config.McpRequestBody;
 import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;

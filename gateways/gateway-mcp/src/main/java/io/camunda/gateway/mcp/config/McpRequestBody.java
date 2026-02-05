@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.gateway.mcp.annotation;
+package io.camunda.gateway.mcp.config;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;

@@ -19,7 +19,7 @@
  * This copy will be customized in Phase 2 to generate inline schemas without $defs.
  */
 
-package io.camunda.gateway.mcp.schema;
+package io.camunda.gateway.mcp.config;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
@@ -34,7 +34,7 @@ import com.github.victools.jsonschema.generator.SchemaVersion;
 import com.github.victools.jsonschema.module.jackson.JacksonModule;
 import com.github.victools.jsonschema.module.jackson.JacksonOption;
 import com.github.victools.jsonschema.module.swagger2.Swagger2Module;
-import io.camunda.gateway.mcp.annotation.McpRequestBody;
+import io.camunda.gateway.mcp.config.McpRequestBody;
 import io.modelcontextprotocol.server.McpAsyncServerExchange;
 import io.modelcontextprotocol.server.McpSyncServerExchange;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;

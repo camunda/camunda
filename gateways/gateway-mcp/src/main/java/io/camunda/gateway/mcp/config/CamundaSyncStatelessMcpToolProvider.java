@@ -5,10 +5,10 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.gateway.mcp.provider;
+package io.camunda.gateway.mcp.config;
 
-import io.camunda.gateway.mcp.annotation.McpRequestBody;
-import io.camunda.gateway.mcp.schema.CamundaJsonSchemaGenerator;
+import io.camunda.gateway.mcp.config.McpRequestBody;
+import io.camunda.gateway.mcp.config.CamundaJsonSchemaGenerator;
 import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.server.McpStatelessServerFeatures.SyncToolSpecification;
 import io.modelcontextprotocol.spec.McpSchema;
@@ -156,8 +156,7 @@ public class CamundaSyncStatelessMcpToolProvider extends AbstractMcpToolProvider
 
                             BiFunction<McpTransportContext, CallToolRequest, CallToolResult>
                                 methodCallback =
-                                    new io.camunda.gateway.mcp.callback
-                                        .CamundaSyncStatelessMcpToolMethodCallback(
+                                    new CamundaSyncStatelessMcpToolMethodCallback(
                                         returnMode,
                                         mcpToolMethod,
                                         toolObject,

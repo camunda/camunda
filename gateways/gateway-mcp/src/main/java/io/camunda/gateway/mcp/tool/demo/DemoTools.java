@@ -7,7 +7,7 @@
  */
 package io.camunda.gateway.mcp.tool.demo;
 
-import io.camunda.gateway.mcp.annotation.McpRequestBody;
+import io.camunda.gateway.mcp.config.McpRequestBody;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import jakarta.validation.Valid;
 import org.springaicommunity.mcp.annotation.McpTool;
