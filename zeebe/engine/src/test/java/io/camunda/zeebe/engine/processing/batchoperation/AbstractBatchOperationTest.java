@@ -389,8 +389,11 @@ abstract class AbstractBatchOperationTest {
         .getBatchOperationKey();
   }
 
-  protected DecisionInstanceEntity fakeDecisionInstanceEntity(final long decisionInstanceKey) {
-    return new DecisionInstanceEntity.Builder().decisionInstanceKey(decisionInstanceKey).build();
+  protected DecisionInstanceEntity fakeDecisionInstanceEntity(final long itemKey) {
+    return new DecisionInstanceEntity.Builder()
+        .decisionInstanceKey(itemKey)
+        .processInstanceKey(itemKey)
+        .build();
   }
 
   protected UserRecordValue createUser() {

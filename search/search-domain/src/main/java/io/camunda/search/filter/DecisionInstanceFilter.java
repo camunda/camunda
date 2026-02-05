@@ -36,12 +36,33 @@ public record DecisionInstanceFilter(
     List<Integer> decisionDefinitionVersions,
     List<DecisionDefinitionType> decisionTypes,
     List<Operation<Long>> rootDecisionDefinitionKeyOperations,
-    List<String> tenantIds)
+    List<String> tenantIds,
+    Integer partitionId)
     implements FilterBase {
 
   public static DecisionInstanceFilter of(
       final Function<DecisionInstanceFilter.Builder, ObjectBuilder<DecisionInstanceFilter>> fn) {
     return FilterBuilders.decisionInstance(fn);
+  }
+
+  public Builder toBuilder() {
+    return new Builder()
+        .decisionInstanceKeys(decisionInstanceKeys)
+        .decisionInstanceIdOperations(decisionInstanceIdOperations)
+        .stateOperations(stateOperations)
+        .evaluationDateOperations(evaluationDateOperations)
+        .evaluationFailures(evaluationFailures)
+        .processDefinitionKeys(processDefinitionKeys)
+        .processInstanceKeys(processInstanceKeys)
+        .flowNodeInstanceKeyOperations(flowNodeInstanceKeyOperations)
+        .decisionDefinitionKeyOperations(decisionDefinitionKeyOperations)
+        .decisionDefinitionIds(decisionDefinitionIds)
+        .decisionDefinitionNames(decisionDefinitionNames)
+        .decisionDefinitionVersions(decisionDefinitionVersions)
+        .decisionTypes(decisionTypes)
+        .rootDecisionDefinitionKeyOperations(rootDecisionDefinitionKeyOperations)
+        .tenantIds(tenantIds)
+        .partitionId(partitionId);
   }
 
   public static final class Builder implements ObjectBuilder<DecisionInstanceFilter> {
@@ -61,6 +82,7 @@ public record DecisionInstanceFilter(
     private List<DecisionDefinitionType> decisionTypes;
     private List<Operation<Long>> rootDecisionDefinitionKeyOperations;
     private List<String> tenantIds;
+    private Integer partitionId;
 
     public Builder decisionInstanceKeys(final List<Long> values) {
       decisionInstanceKeys = addValuesToList(decisionInstanceKeys, values);
@@ -232,6 +254,11 @@ public record DecisionInstanceFilter(
       return tenantIds(collectValuesAsList(values));
     }
 
+    public Builder partitionId(final Integer value) {
+      partitionId = value;
+      return this;
+    }
+
     @Override
     public DecisionInstanceFilter build() {
       return new DecisionInstanceFilter(
@@ -249,7 +276,8 @@ public record DecisionInstanceFilter(
           Objects.requireNonNullElse(decisionDefinitionVersions, Collections.emptyList()),
           Objects.requireNonNullElse(decisionTypes, Collections.emptyList()),
           Objects.requireNonNullElse(rootDecisionDefinitionKeyOperations, Collections.emptyList()),
-          Objects.requireNonNullElse(tenantIds, Collections.emptyList()));
+          Objects.requireNonNullElse(tenantIds, Collections.emptyList()),
+          partitionId);
     }
   }
 }

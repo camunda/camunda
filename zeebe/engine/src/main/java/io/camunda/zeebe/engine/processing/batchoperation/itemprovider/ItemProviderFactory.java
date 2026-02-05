@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.batchoperation.itemprovider;
 
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
+import io.camunda.search.filter.DecisionInstanceFilter;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.security.auth.CamundaAuthentication;
@@ -52,7 +53,10 @@ public class ItemProviderFactory {
           forDeleteProcessInstance(
               batchOperation.getEntityFilter(ProcessInstanceFilter.class),
               batchOperation.getAuthentication());
-      case DELETE_DECISION_INSTANCE -> forDeleteDecisionInstance();
+      case DELETE_DECISION_INSTANCE ->
+          forDeleteDecisionInstance(
+              batchOperation.getEntityFilter(DecisionInstanceFilter.class),
+              batchOperation.getAuthentication());
     };
   }
 
@@ -114,13 +118,12 @@ public class ItemProviderFactory {
         authentication);
   }
 
-  private ItemProvider forDeleteDecisionInstance() {
-    // Fake implementation - real implementation will be added in a future issue
-    return new ItemProvider() {
-      @Override
-      public ItemPage fetchItemPage(final String cursor, final int pageSize) {
-        return new ItemPage(java.util.Collections.emptyList(), null, 0, true);
-      }
-    };
+  private ItemProvider forDeleteDecisionInstance(
+      final DecisionInstanceFilter filter, final CamundaAuthentication authentication) {
+    return new DecisionInstanceItemProvider(
+        searchClientsProxy,
+        metrics,
+        filter.toBuilder().partitionId(partitionId).build(),
+        authentication);
   }
 }

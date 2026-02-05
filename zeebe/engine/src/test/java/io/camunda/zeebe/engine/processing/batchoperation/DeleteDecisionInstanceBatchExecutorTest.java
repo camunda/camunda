@@ -9,9 +9,12 @@ package io.camunda.zeebe.engine.processing.batchoperation;
 
 import static io.camunda.zeebe.auth.Authorization.AUTHORIZED_USERNAME;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.tuple;
 
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
+import io.camunda.zeebe.protocol.record.intent.HistoryDeletionIntent;
+import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.List;
 import java.util.Map;
@@ -51,21 +54,16 @@ public final class DeleteDecisionInstanceBatchExecutorTest extends AbstractBatch
         createDeleteDecisionInstanceBatchOperation(List.of(decisionKey), claims);
 
     // then verify history deletion
-    // TODO uncomment this assertion when the DELETE command gets appended
-    // https://github.com/camunda/camunda/issues/42400
-    //
-    // assertThat(RecordingExporter.historyDeletionRecords().withResourceKey(decisionKey).limit(2))
-    //        .hasSize(2)
-    //        .extracting(
-    //            Record::getIntent,
-    //            r -> r.getValue().getResourceKey(),
-    //            r -> r.getValue().getResourceType())
-    //        .containsExactly(
-    //            tuple(HistoryDeletionIntent.DELETE, decisionKey,
-    // HistoryDeletionType.DECISION_INSTANCE),
-    //            tuple(
-    //                HistoryDeletionIntent.DELETED, decisionKey,
-    // HistoryDeletionType.DECISION_INSTANCE));
+    assertThat(RecordingExporter.historyDeletionRecords().withResourceKey(decisionKey).limit(2))
+        .hasSize(2)
+        .extracting(
+            Record::getIntent,
+            r -> r.getValue().getResourceKey(),
+            r -> r.getValue().getResourceType())
+        .containsExactly(
+            tuple(HistoryDeletionIntent.DELETE, decisionKey, HistoryDeletionType.DECISION_INSTANCE),
+            tuple(
+                HistoryDeletionIntent.DELETED, decisionKey, HistoryDeletionType.DECISION_INSTANCE));
 
     // then verify batch operation completed
     assertThat(
