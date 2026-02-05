@@ -9,8 +9,12 @@
 import {VARIABLE_NAME_DOT_ESCAPE_CHAR} from './constants';
 
 const getVariableFieldName = (variableNameWithPrefix: string) => {
+<<<<<<< HEAD:tasklist/client/src/common/tasks/variables-editor/getVariableFieldName.tsx
   const nameWithoutPrefix = variableNameWithPrefix.substring(1);
   return nameWithoutPrefix.replaceAll(VARIABLE_NAME_DOT_ESCAPE_CHAR, '.');
+=======
+  return decodeURIComponent(variableNameWithPrefix.substring(1));
+>>>>>>> c857b356 (fix: variable form when variables have dots in the name):tasklist/client/src/Tasks/Task/Variables/getVariableFieldName.tsx
 };
 
 const getNewVariablePrefix = (variableName: string) => {

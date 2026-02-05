@@ -15,6 +15,7 @@ describe('getVariableFieldName', () => {
   it('should get variable field name', () => {
     expect(getVariableFieldName('#someVariableName')).toBe('someVariableName');
   });
+<<<<<<< HEAD:tasklist/client/src/common/tasks/variables-editor/getVariableFieldName.test.tsx
 
   it('should unescape dots in variable names', () => {
     expect(getVariableFieldName('#some___DOT___variable___DOT___name')).toBe(
@@ -22,6 +23,11 @@ describe('getVariableFieldName', () => {
     );
   });
 
+=======
+  it('should decode variable field name with dots', () => {
+    expect(getVariableFieldName('#a%2Eb')).toBe('a.b');
+  });
+>>>>>>> c857b356 (fix: variable form when variables have dots in the name):tasklist/client/src/Tasks/Task/Variables/getVariableFieldName.test.tsx
   it('should get new variable prefix', () => {
     expect(getNewVariablePrefix('newVariables[0].name')).toBe(
       'newVariables[0]',

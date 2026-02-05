@@ -23,6 +23,20 @@ const variables: Variable[] = [
     previewValue: '"yes"',
     isValueTruncated: false,
   },
+  {
+    id: '0003',
+    name: 'a.b',
+    value: '"old"',
+    previewValue: '"old"',
+    isValueTruncated: false,
+  },
+  {
+    id: '0004',
+    name: 'a.b.c',
+    value: '"old"',
+    previewValue: '"old"',
+    isValueTruncated: false,
+  },
 ];
 
 const dynamicFormVariables: Variable[] = [
