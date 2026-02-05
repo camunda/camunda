@@ -802,18 +802,18 @@ public class WebSecurityConfig {
       final var oidcUserService = new OidcUserService();
       oidcUserService.setOauth2UserService(oauthUserService);
 
-      // see DefaultOauth2UserService#setRestOperations for the minimum handlers/converters required
-      final var restOperations = new RestTemplate();
-      restOperations.setErrorHandler(new OAuth2ErrorResponseErrorHandler());
+      // see DefaultOAuth2UserService#setRestOperations for the minimum handlers/converters required
+      final var restTemplate = new RestTemplate();
+      restTemplate.setErrorHandler(new OAuth2ErrorResponseErrorHandler());
 
-      // instrument them so we can see additional external requests
-      restOperations.setObservationConvention(
+      // instrument user service requests so we can track them via metrics
+      restTemplate.setObservationConvention(
           new CustomDefaultClientRequestObservationConvention(
               CAMUNDA_AUTHENTICATION_OBSERVATION_NAME,
               CAMUNDA_AUTHENTICATION_OBSERVATION_DOMAIN_IDENTITY_TAGS));
-      restOperations.setObservationRegistry(observationRegistry);
+      restTemplate.setObservationRegistry(observationRegistry);
 
-      oauthUserService.setRestOperations(restOperations);
+      oauthUserService.setRestOperations(restTemplate);
       return oidcUserService;
     }
 
