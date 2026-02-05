@@ -44,8 +44,6 @@ import io.camunda.service.TenantServices;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageDisabled;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
 import io.micrometer.common.KeyValues;
-import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.micrometer.observation.ObservationRegistry;
 import jakarta.annotation.PostConstruct;
 import jakarta.servlet.FilterChain;
@@ -61,6 +59,7 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointRequest;
 import org.springframework.boot.actuate.logging.LoggersEndpoint;
 import org.springframework.context.annotation.Bean;
@@ -611,11 +610,6 @@ public class WebSecurityConfig {
     }
 
     @Bean
-    public MeterRegistry meterRegistry() {
-      return new SimpleMeterRegistry();
-    }
-
-    @Bean
     public TokenClaimsConverter tokenClaimsConverter(
         final SecurityConfiguration securityConfiguration,
         final MembershipService membershipService) {
@@ -760,11 +754,11 @@ public class WebSecurityConfig {
     public OidcTokenEndpointCustomizer oidcTokenEndpointCustomizer(
         final OidcAuthenticationConfigurationRepository oidcAuthenticationConfigurationRepository,
         final AssertionJwkProvider assertionJwkProvider,
-        final ObservationRegistry observationRegistry) {
+        final ObjectProvider<ObservationRegistry> observationRegistry) {
       return new OidcTokenEndpointCustomizer(
           oidcAuthenticationConfigurationRepository,
           assertionJwkProvider,
-          restClient(observationRegistry));
+          restClient(observationRegistry.getIfAvailable(() -> ObservationRegistry.NOOP)));
     }
 
     @Bean
@@ -772,14 +766,15 @@ public class WebSecurityConfig {
         final ClientRegistrationRepository registrations,
         final OAuth2AuthorizedClientRepository authorizedClientRepository,
         final AssertionJwkProvider assertionJwkProvider,
-        final ObservationRegistry observationRegistry) {
+        final ObjectProvider<ObservationRegistry> observationRegistry) {
 
       final var manager =
           new DefaultOAuth2AuthorizedClientManager(registrations, authorizedClientRepository);
 
       // we build a refresh token flow client manually to add support for private_key_jwt
       final var refreshClient = new RestClientRefreshTokenTokenResponseClient();
-      refreshClient.setRestClient(restClient(observationRegistry));
+      refreshClient.setRestClient(
+          restClient(observationRegistry.getIfAvailable(() -> ObservationRegistry.NOOP)));
       final var assertionConverter =
           new NimbusJwtClientAuthenticationParametersConverter<OAuth2RefreshTokenGrantRequest>(
               registration -> assertionJwkProvider.createJwk(registration.getRegistrationId()));
@@ -797,7 +792,8 @@ public class WebSecurityConfig {
     }
 
     @Bean
-    public OidcUserService oidcUserService(final ObservationRegistry observationRegistry) {
+    public OidcUserService oidcUserService(
+        final ObjectProvider<ObservationRegistry> observationRegistry) {
       final var oauthUserService = new DefaultOAuth2UserService();
       final var oidcUserService = new OidcUserService();
       oidcUserService.setOauth2UserService(oauthUserService);
@@ -811,7 +807,8 @@ public class WebSecurityConfig {
           new CustomDefaultClientRequestObservationConvention(
               CAMUNDA_AUTHENTICATION_OBSERVATION_NAME,
               CAMUNDA_AUTHENTICATION_OBSERVATION_DOMAIN_IDENTITY_TAGS));
-      restTemplate.setObservationRegistry(observationRegistry);
+      restTemplate.setObservationRegistry(
+          observationRegistry.getIfAvailable(() -> ObservationRegistry.NOOP));
 
       oauthUserService.setRestOperations(restTemplate);
       return oidcUserService;
