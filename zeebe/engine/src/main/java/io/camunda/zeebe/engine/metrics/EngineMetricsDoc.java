@@ -141,6 +141,36 @@ public enum EngineMetricsDoc implements ExtendedMeterDocumentation {
     }
   },
 
+  /** Number of currently active root process instances */
+  ACTIVE_ROOT_PROCESS_INSTANCES {
+    private static final KeyName[] KEY_NAMES = new KeyName[] {EngineKeyNames.ORGANIZATION_ID};
+
+    @Override
+    public String getDescription() {
+      return "Number of currently active root process instances";
+    }
+
+    @Override
+    public String getName() {
+      return "zeebe.active.instances.total";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.GAUGE;
+    }
+
+    @Override
+    public KeyName[] getKeyNames() {
+      return KEY_NAMES;
+    }
+
+    @Override
+    public KeyName[] getAdditionalKeyNames() {
+      return PartitionKeyNames.values();
+    }
+  },
+
   /** Number of banned instances */
   BANNED_INSTANCES {
     @Override
