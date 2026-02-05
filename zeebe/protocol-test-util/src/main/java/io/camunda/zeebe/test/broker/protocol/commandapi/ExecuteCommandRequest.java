@@ -130,20 +130,14 @@ public final class ExecuteCommandRequest implements ClientRequest {
   }
 
   @Override
-  public void write(final MutableDirectBuffer buffer, final int offset) {
-    messageHeaderEncoder
-        .wrap(buffer, offset)
-        .schemaId(requestEncoder.sbeSchemaId())
-        .templateId(requestEncoder.sbeTemplateId())
-        .blockLength(requestEncoder.sbeBlockLength())
-        .version(requestEncoder.sbeSchemaVersion());
-
+  public int write(final MutableDirectBuffer buffer, final int offset) {
     requestEncoder
-        .wrap(buffer, offset + messageHeaderEncoder.encodedLength())
+        .wrapAndApplyHeader(buffer, offset, messageHeaderEncoder)
         .partitionId(partitionId)
         .key(key)
         .valueType(valueType)
         .intent(intent.value())
         .putValue(encodedCmd, 0, encodedCmd.length);
+    return requestEncoder.encodedLength() + messageHeaderEncoder.encodedLength();
   }
 }

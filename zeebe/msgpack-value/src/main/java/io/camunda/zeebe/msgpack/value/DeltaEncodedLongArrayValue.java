@@ -62,16 +62,17 @@ public final class DeltaEncodedLongArrayValue extends BaseValue {
   }
 
   @Override
-  public void write(final MsgPackWriter writer) {
-    writer.writeArrayHeader(values.length);
+  public int write(final MsgPackWriter writer) {
+    int written = writer.writeArrayHeader(values.length);
 
     for (int i = 0; i < values.length; i++) {
       if (i == 0) {
-        writer.writeInteger(values[i]);
+        written += writer.writeInteger(values[i]);
       } else {
-        writer.writeInteger(values[i] - values[i - 1]);
+        written += writer.writeInteger(values[i] - values[i - 1]);
       }
     }
+    return written;
   }
 
   @Override
@@ -91,7 +92,7 @@ public final class DeltaEncodedLongArrayValue extends BaseValue {
 
   @Override
   public int getEncodedLength() {
-    final int header = MsgPackWriter.getEncodedArrayHeaderLenght(values.length);
+    final int header = MsgPackWriter.getEncodedArrayHeaderLength(values.length);
     int data = 0;
     for (int i = 0; i < values.length; i++) {
       if (i == 0) {

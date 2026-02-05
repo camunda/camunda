@@ -21,8 +21,9 @@ public final class DirectBufferWriter implements BufferWriter {
   }
 
   @Override
-  public void write(final MutableDirectBuffer writeBuffer, final int writeOffset) {
+  public int write(final MutableDirectBuffer writeBuffer, final int writeOffset) {
     writeBuffer.putBytes(writeOffset, buffer, offset, length);
+    return length;
   }
 
   public DirectBufferWriter wrap(final DirectBuffer buffer, final int offset, final int length) {

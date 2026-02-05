@@ -775,8 +775,9 @@ public final class EngineRule extends ExternalResource {
     }
 
     @Override
-    public void write(final MutableDirectBuffer buffer, final int offset) {
+    public int write(final MutableDirectBuffer buffer, final int offset) {
       buffer.putBytes(offset, genericBuffer, 0, genericBuffer.capacity());
+      return buffer.capacity();
     }
 
     public DirectBuffer getDirectBuffer() {

@@ -22,6 +22,9 @@ public class ObjectValue extends BaseValue {
 
   private final StringValue decodedKey = new StringValue();
 
+  // msgpack serialized size
+  private int serializedSize = -1;
+
   /**
    * Creates a new ObjectValue
    *
@@ -39,6 +42,7 @@ public class ObjectValue extends BaseValue {
 
   @Override
   public void reset() {
+    serializedSize = -1;
     for (int i = 0; i < declaredProperties.size(); ++i) {
       final BaseProperty<? extends BaseValue> prop = declaredProperties.get(i);
       prop.reset();
@@ -85,16 +89,24 @@ public class ObjectValue extends BaseValue {
    * write all the values.
    */
   @Override
-  public void write(final MsgPackWriter writer) {
+  public int write(final MsgPackWriter writer) {
     final int size = declaredProperties.size() + undeclaredProperties.size();
 
-    writer.writeMapHeader(size);
-    write(writer, declaredProperties);
-    write(writer, undeclaredProperties);
+    try {
+      int written = writer.writeMapHeader(size);
+      written += write(writer, declaredProperties);
+      written += write(writer, undeclaredProperties);
+      serializedSize = written;
+      return written;
+    } catch (final Exception e) {
+      serializedSize = -1;
+      throw e;
+    }
   }
 
   @Override
   public void read(final MsgPackReader reader) {
+    serializedSize = -1;
     final int mapSize = reader.readMapHeader();
 
     for (int i = 0; i < mapSize; ++i) {
@@ -133,9 +145,12 @@ public class ObjectValue extends BaseValue {
 
   @Override
   public int getEncodedLength() {
+    if (serializedSize > 0) {
+      return serializedSize;
+    }
     final int size = declaredProperties.size() + undeclaredProperties.size();
 
-    int length = MsgPackWriter.getEncodedMapHeaderLenght(size);
+    int length = MsgPackWriter.getEncodedMapHeaderLength(size);
     length += getEncodedLength(declaredProperties);
     length += getEncodedLength(undeclaredProperties);
 
@@ -178,12 +193,14 @@ public class ObjectValue extends BaseValue {
     }
   }
 
-  private <T extends BaseProperty<?>> void write(
+  private <T extends BaseProperty<?>> int write(
       final MsgPackWriter writer, final List<T> properties) {
+    int written = 0;
     for (int i = 0; i < properties.size(); ++i) {
       final BaseProperty<? extends BaseValue> prop = properties.get(i);
-      prop.write(writer);
+      written += prop.write(writer);
     }
+    return written;
   }
 
   /**
