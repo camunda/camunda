@@ -86,7 +86,7 @@ public class HistoryDeletionJob implements BackgroundTask {
 
     final var deleteProcessInstancesAndDefinitionsFuture =
         deleteProcessInstances(batch)
-            .thenCompose(ids -> deleteProcessDefinitions(batch, ids))
+            .thenCompose(ids -> deleteProcessDefinitions(batch, ids).exceptionally(ex -> ids))
             .exceptionally(ex -> List.of())
             .toCompletableFuture();
 
