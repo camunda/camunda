@@ -78,7 +78,6 @@ jobs:
         run: |
           # Get all version tags (format: 8.x.y)
           ALL_TAGS=$(git tag -l '[0-9]*.[0-9]*.[0-9]*' | sort -V)
-          TAG_COUNT=$(echo "$ALL_TAGS" | wc -l | tr -d ' ')
 
           STABLE_VERSION="${{ steps.branch-info.outputs.stable-version }}"
           IS_MAIN="${{ steps.branch-info.outputs.is-main }}"
@@ -102,8 +101,6 @@ jobs:
               if [[ "$tag" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
                 TAG_MAJOR="${BASH_REMATCH[1]}"
                 TAG_MINOR="${BASH_REMATCH[2]}"
-                TAG_PATCH="${BASH_REMATCH[3]}"
-                TAG_MINOR_VERSION="$TAG_MAJOR.$TAG_MINOR"
 
                 # Compare versions
                 IFS='.' read -r STABLE_MAJOR STABLE_MINOR <<< "$STABLE_VERSION"
@@ -127,7 +124,7 @@ jobs:
         id: create-lists
         shell: bash
         run: |
-          FILTERED_TAGS=$(cat /tmp/filtered_tags.txt | grep -v '^$' || true)
+          FILTERED_TAGS=$(grep -v '^$' /tmp/filtered_tags.txt || true)
           POM_VERSION="${{ steps.pom-version.outputs.pom-version }}"
           IS_MAIN="${{ steps.branch-info.outputs.is-main }}"
 
@@ -168,7 +165,6 @@ jobs:
           fi
 
           echo "$CLIENT_LIST" > /tmp/client_list.txt
-          CLIENT_TOTAL=$(grep -c -v '^$' /tmp/client_list.txt || echo "0")
           echo "CLIENT_LIST:"
           cat /tmp/client_list.txt
 
@@ -206,7 +202,6 @@ jobs:
           fi
 
           echo "$SERVER_LIST" > /tmp/server_list.txt
-          SERVER_TOTAL=$(grep -c -v '^$' /tmp/server_list.txt || echo "0")
           echo "SERVER_LIST:"
           cat /tmp/server_list.txt
 
@@ -248,7 +243,7 @@ jobs:
             echo "matrix=$MATRIX_JSON" >> "$GITHUB_OUTPUT"
           elif [[ -n "$CLIENT_VERSION" ]]; then
             echo "Manual trigger: Testing client version $CLIENT_VERSION against all servers"
-            SERVER_LIST=$(cat /tmp/server_list.txt | grep -v '^$')
+            SERVER_LIST=$(grep -v '^$' /tmp/server_list.txt)
             MATRIX_ITEMS="[]"
             for server in $SERVER_LIST; do
               MATRIX_ITEMS=$(echo "$MATRIX_ITEMS" | jq -c '. += [{"client": "'"$CLIENT_VERSION"'", "server": "'"$server"'"}]')
@@ -257,7 +252,7 @@ jobs:
             echo "matrix=$MATRIX_JSON" >> "$GITHUB_OUTPUT"
           elif [[ -n "$SERVER_VERSION" ]]; then
             echo "Manual trigger: Testing server version $SERVER_VERSION with all clients"
-            CLIENT_LIST=$(cat /tmp/client_list.txt | grep -v '^$')
+            CLIENT_LIST=$(grep -v '^$' /tmp/client_list.txt)
             MATRIX_ITEMS="[]"
             for client in $CLIENT_LIST; do
               MATRIX_ITEMS=$(echo "$MATRIX_ITEMS" | jq -c '. += [{"client": "'"$client"'", "server": "'"$SERVER_VERSION"'"}]')
@@ -265,8 +260,8 @@ jobs:
             MATRIX_JSON=$(jq -nc --argjson items "$MATRIX_ITEMS" '{"include": $items}')
             echo "matrix=$MATRIX_JSON" >> "$GITHUB_OUTPUT"
           else
-            CLIENT_LIST=$(cat /tmp/client_list.txt | grep -v '^$')
-            SERVER_LIST=$(cat /tmp/server_list.txt | grep -v '^$')
+            CLIENT_LIST=$(grep -v '^$' /tmp/client_list.txt)
+            SERVER_LIST=$(grep -v '^$' /tmp/server_list.txt)
             SKIP_CACHE="${{ inputs.skip_cache }}"
 
             MATRIX_ITEMS="[]"
@@ -362,6 +357,7 @@ jobs:
         uses: ./.github/actions/observe-build-status
         with:
           build_status: ${{ job.status }}
+          job_name: run-compatibility-tests (client=${{ matrix.client }}, server=${{ matrix.server }})
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
