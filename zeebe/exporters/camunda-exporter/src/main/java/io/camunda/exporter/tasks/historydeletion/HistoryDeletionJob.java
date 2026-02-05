@@ -134,10 +134,10 @@ public class HistoryDeletionJob implements BackgroundTask {
    * @return A future containing the list of history-deletion IDs that were processed
    */
   private CompletionStage<List<String>> deleteProcessDefinitions(
-      final HistoryDeletionBatch batch, final List<String> processInstanceDeletionIds) {
+      final HistoryDeletionBatch batch, final List<String> deletedResourceIds) {
     final var processDefinitions = batch.getResourceKeys(HistoryDeletionType.PROCESS_DEFINITION);
     if (processDefinitions.isEmpty()) {
-      return CompletableFuture.completedFuture(processInstanceDeletionIds);
+      return CompletableFuture.completedFuture(deletedResourceIds);
     }
 
     return deleterRepository
@@ -146,7 +146,7 @@ public class HistoryDeletionJob implements BackgroundTask {
             processDefinitions.stream().map(Object::toString).toList())
         .thenApply(
             ignored -> {
-              final var ids = new ArrayList<>(processInstanceDeletionIds);
+              final var ids = new ArrayList<>(deletedResourceIds);
               ids.addAll(batch.getHistoryDeletionIds(HistoryDeletionType.PROCESS_DEFINITION));
               return ids;
             });
