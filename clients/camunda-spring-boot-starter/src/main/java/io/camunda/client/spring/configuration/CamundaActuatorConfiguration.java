@@ -24,6 +24,7 @@ import io.camunda.client.metrics.MicrometerJobWorkerMetricsFactory;
 import io.camunda.client.metrics.MicrometerMetricsRecorder;
 import io.camunda.client.spring.actuator.CamundaClientHealthIndicator;
 import io.camunda.client.spring.actuator.JobWorkerController;
+import io.camunda.client.spring.actuator.JobWorkerInvocationController;
 import io.camunda.client.spring.configuration.condition.ConditionalOnCamundaClientEnabled;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.boot.actuate.autoconfigure.endpoint.EndpointAutoConfiguration;
@@ -46,6 +47,12 @@ public class CamundaActuatorConfiguration {
   @Bean
   public JobWorkerController jobWorkerController(final JobWorkerManager jobWorkerManager) {
     return new JobWorkerController(jobWorkerManager);
+  }
+
+  @Bean
+  public JobWorkerInvocationController jobWorkerInvocationController(
+      final CamundaClient camundaClient, final JobWorkerManager jobWorkerManager) {
+    return new JobWorkerInvocationController(camundaClient, jobWorkerManager);
   }
 
   @Bean
