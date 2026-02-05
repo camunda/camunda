@@ -19,8 +19,8 @@ package io.atomix.raft.partition.impl;
 import com.google.common.base.Preconditions;
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
-import io.atomix.primitive.partition.PartitionId;
 import io.atomix.raft.metrics.RaftRequestMetrics;
+import io.atomix.raft.partition.RaftPartition;
 import io.atomix.raft.protocol.AppendRequest;
 import io.atomix.raft.protocol.AppendResponse;
 import io.atomix.raft.protocol.ConfigureRequest;
@@ -64,7 +64,7 @@ public class RaftServerCommunicator implements RaftServerProtocol {
   private final boolean sendViaDefaultContext;
 
   public RaftServerCommunicator(
-      final PartitionId partitionId,
+      final RaftPartition partition,
       final Serializer serializer,
       final ClusterCommunicationService clusterCommunicator,
       final Duration requestTimeout,
@@ -73,9 +73,12 @@ public class RaftServerCommunicator implements RaftServerProtocol {
       final MeterRegistry meterRegistry,
       final boolean sendViaDefaultContext) {
     this.sendViaDefaultContext = sendViaDefaultContext;
-    final var prefix = "%s-partition-%d".formatted(partitionId.group(), partitionId.id());
+    final var prefix = partition.name();
     context = new RaftMessageContext(prefix);
-    defaultContext = new RaftMessageContext("default-partition-%d".formatted(partitionId.id()));
+
+    final var defaultPrefix =
+        RaftPartition.PARTITION_NAME_FORMAT.formatted("default", partition.id().id());
+    defaultContext = new RaftMessageContext(defaultPrefix);
 
     this.serializer = Preconditions.checkNotNull(serializer, "serializer cannot be null");
     this.clusterCommunicator =
