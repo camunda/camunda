@@ -228,7 +228,8 @@ class DecisionInstanceServiceTest {
   void shouldDeleteProcessInstanceBatchOperationWithResult() {
     // given
     final var filter =
-        FilterBuilders.decisionInstance(b -> b.decisionDefinitionIds("test-process-definition-id"));
+        FilterBuilders.decisionInstance(
+            b -> b.decisionDefinitionIds("test-decision-definition-id"));
 
     final long batchOperationKey = 123L;
     final var record = new BatchOperationCreationRecord();
@@ -251,8 +252,9 @@ class DecisionInstanceServiceTest {
     final var enrichedRecord = captor.getValue().getRequestWriter();
 
     assertThat(
-        MsgPackConverter.convertToObject(
-            enrichedRecord.getAuthenticationBuffer(), CamundaAuthentication.class))
+            MsgPackConverter.convertToObject(
+                enrichedRecord.getAuthenticationBuffer(), CamundaAuthentication.class))
         .isEqualTo(authentication);
+    assertThat(enrichedRecord.getEntityFilter()).contains("test-decision-definition-id");
   }
 }
