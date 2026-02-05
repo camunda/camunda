@@ -63,7 +63,21 @@ public class StateModificationArchTest {
            * requester and is never read during process execution or replay. The process behaves
            * identically whether this metadata exists or not.
            */
-          "io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCreationCreateWithAwaitingResultProcessor.createProcessInstance");
+          "io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCreationCreateWithAwaitingResultProcessor.createProcessInstance",
+
+          /*
+           * State mutating methods calling other mutating state methods:
+           *
+           * PRINCIPLE: It's acceptable for mutating state methods to call other mutating state
+           * methods to maintain consistency between tightly coupled data. However, read methods
+           * should NEVER call mutating methods.
+           *
+           * RECOMMENDATION: Structure the logic so that event appliers orchestrate these calls
+           * instead of having state methods call each other directly. This makes the state
+           * transitions more explicit and easier to understand.
+           */
+          "io.camunda.zeebe.engine.state.instance.DbElementInstanceState.createInstance",
+          "io.camunda.zeebe.engine.state.instance.DbElementInstanceState.removeInstance");
 
   /**
    * Identifies methods that directly modify state.
@@ -154,7 +168,9 @@ public class StateModificationArchTest {
               """
                   State modifications must go through event appliers to maintain the event sourcing pattern (ZEP004).
                   This ensures deterministic replay and consistency across replicas.
-                  If you need to modify state, either:
-                   1. Create an appropriate event and event applier, or
-                   2. Document and whitelist your exception in StateModificationArchTest.WHITELISTED_METHODS""");
+                  If you need to modify state:
+                   1. PREFERRED: Create an appropriate event and event applier
+                   2. ONLY if a mutating state method needs to call another mutating state method for tightly
+                      coupled data consistency, document and whitelist in StateModificationArchTest.WHITELISTED_METHODS
+                  Note: Whitelisting should NOT be used to bypass the event sourcing pattern from processors or behavior classes.""");
 }
