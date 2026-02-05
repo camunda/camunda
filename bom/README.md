@@ -1,12 +1,11 @@
-# Zeebe BOM
+# Camunda BOM
 
-The Bill of Materials (BOM) is the recommended way for third-party projects to import Zeebe
+The Bill of Materials (BOM) is the recommended way for third-party projects to import Camunda
 dependencies. It bundles dependencies that we consider consumable.
 
 These dependencies receive special attention from the team when it comes to backwards compatibility.
 The team will try to maintain backwards compatibility for these libraries, but this does not mean
-that we guarantee it. For our official backwards compatibility guarantees, please refer to the
-[Public API documentation](https://docs.camunda.io/docs/apis-clients/public-api/).
+that we guarantee it.
 
 ## Usage
 
@@ -18,7 +17,7 @@ section of your pom.
     <dependencies>
       <dependency>
         <groupId>io.camunda</groupId>
-        <artifactId>zeebe-bom</artifactId>
+        <artifactId>camunda-bom</artifactId>
         <version>X.Y.Z</version>
         <scope>import</scope>
         <type>pom</type>

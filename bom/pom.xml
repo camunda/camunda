@@ -12,14 +12,14 @@
   </parent>
 
   <groupId>io.camunda</groupId>
-  <artifactId>zeebe-bom</artifactId>
+  <artifactId>camunda-bom</artifactId>
   <version>8.9.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
-  <name>Zeebe BOM</name>
+  <name>Camunda BOM</name>
   <description>${project.name}</description>
-  <url>http://zeebe.io/</url>
-  <inceptionYear>2017</inceptionYear>
+  <url>http://camunda.com/</url>
+  <inceptionYear>2025</inceptionYear>
 
   <scm>
     <connection>scm:git:git@github.com:camunda/camunda.git</connection>
