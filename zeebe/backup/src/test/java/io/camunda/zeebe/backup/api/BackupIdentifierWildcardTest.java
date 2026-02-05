@@ -14,7 +14,7 @@ import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern.Any;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern.Exact;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern.Prefix;
-import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern.TimeRange;
+import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern.Range;
 import io.camunda.zeebe.backup.common.BackupIdentifierWildcardImpl;
 import io.camunda.zeebe.backup.common.CheckpointIdGenerator;
 import java.time.Duration;
@@ -211,7 +211,7 @@ class BackupIdentifierWildcardTest {
     final var pattern = CheckpointPattern.ofTimeRange(fromTimestamp, toTimestamp, generator);
 
     // then
-    assertThat(pattern).isInstanceOf(TimeRange.class);
+    assertThat(pattern).isInstanceOf(Range.class);
     assertThat(pattern.pattern()).isEqualTo(new Prefix("1700"));
     assertThat(pattern.matches(1700000000000L)).isTrue();
     assertThat(pattern.matches(1700500000000L)).isTrue();
@@ -242,7 +242,7 @@ class BackupIdentifierWildcardTest {
     final var pattern = CheckpointPattern.ofTimeRange(fromTimestamp, toTimestamp, generator);
 
     // then - should create prefix pattern based on common prefix of adjusted timestamps
-    assertThat(pattern).isInstanceOf(TimeRange.class);
+    assertThat(pattern).isInstanceOf(Range.class);
     assertThat(pattern.pattern()).isEqualTo(CheckpointPattern.of("219510*"));
     assertThat(pattern.matches(fromCheckpoint)).isTrue();
     assertThat(pattern.matches(toCheckpoint)).isTrue();
@@ -322,7 +322,7 @@ class BackupIdentifierWildcardTest {
     // then
     assertThat(pattern)
         .isEqualTo(
-            new TimeRange(
+            new Range(
                 new Exact(1700000000000L),
                 generator.fromTimestamp(timestamp.toEpochMilli()),
                 generator.fromTimestamp(timestamp.toEpochMilli())));

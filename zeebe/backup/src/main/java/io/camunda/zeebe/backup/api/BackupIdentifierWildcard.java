@@ -167,6 +167,18 @@ public interface BackupIdentifierWildcard {
       }
     }
 
+    static CheckpointPattern.Range ofInterval(final Interval<Long> checkpointIdInterval) {
+      // Find the common prefix between checkpoint IDs
+      final var fromStr = String.valueOf(checkpointIdInterval.start());
+      final var toStr = String.valueOf(checkpointIdInterval.end());
+
+      final var commonPrefixPattern = longestCommonPrefix(fromStr, toStr);
+
+      // Use the common prefix to create a TimeRange pattern
+      return new Range(
+          commonPrefixPattern, checkpointIdInterval.start(), checkpointIdInterval.end());
+    }
+
     /**
      * Creates a CheckpointPattern that matches checkpoint IDs within a timestamp range. Uses a
      * CheckpointIdGenerator to convert raw timestamps to checkpoint IDs (applying the configured
@@ -177,7 +189,7 @@ public interface BackupIdentifierWildcard {
      * @param generator the CheckpointIdGenerator used to convert timestamps to checkpoint IDs
      * @return a CheckpointPattern (Prefix or Any) that matches checkpoints in the given range
      */
-    static CheckpointPattern.TimeRange ofTimeRange(
+    static Range ofTimeRange(
         final Instant from, final Instant to, final CheckpointIdGenerator generator) {
 
       if (from.toEpochMilli() < 0) {
@@ -197,14 +209,7 @@ public interface BackupIdentifierWildcard {
       final long fromCheckpointId = generator.fromTimestamp(from.toEpochMilli());
       final long toCheckpointId = generator.fromTimestamp(to.toEpochMilli());
 
-      // Find the common prefix between checkpoint IDs
-      final var fromStr = String.valueOf(fromCheckpointId);
-      final var toStr = String.valueOf(toCheckpointId);
-
-      final var commonPrefixPattern = longestCommonPrefix(fromStr, toStr);
-
-      // Use the common prefix to create a TimeRange pattern
-      return new TimeRange(commonPrefixPattern, fromCheckpointId, toCheckpointId);
+      return ofInterval(new Interval<>(fromCheckpointId, toCheckpointId));
     }
 
     record Any() implements CheckpointPattern {
@@ -250,7 +255,7 @@ public interface BackupIdentifierWildcard {
       }
     }
 
-    record TimeRange(CheckpointPattern pattern, long checkpointStart, long checkpointEnd)
+    record Range(CheckpointPattern pattern, long checkpointStart, long checkpointEnd)
         implements CheckpointPattern {
 
       @Override
