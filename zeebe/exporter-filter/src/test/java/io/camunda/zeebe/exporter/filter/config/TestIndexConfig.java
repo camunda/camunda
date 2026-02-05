@@ -26,6 +26,9 @@ public final class TestIndexConfig implements FilterConfiguration.IndexConfig {
   private List<String> exclusionStartWith = List.of();
   private List<String> exclusionEndWith = List.of();
 
+  private List<String> variableValueTypeInclusion = List.of();
+  private List<String> variableValueTypeExclusion = List.of();
+
   // --- fluent setters -------------------------------------------------------
 
   public TestIndexConfig withVariableNameInclusionExact(final List<String> names) {
@@ -55,6 +58,16 @@ public final class TestIndexConfig implements FilterConfiguration.IndexConfig {
 
   public TestIndexConfig withVariableNameExclusionEndWith(final List<String> suffixes) {
     exclusionEndWith = suffixes != null ? suffixes : List.of();
+    return this;
+  }
+
+  public TestIndexConfig withVariableValueTypeInclusion(final List<String> typeInclusion) {
+    variableValueTypeInclusion = typeInclusion != null ? typeInclusion : List.of();
+    return this;
+  }
+
+  public TestIndexConfig withVariableValueTypeExclusion(final List<String> typeExclusion) {
+    variableValueTypeExclusion = typeExclusion != null ? typeExclusion : List.of();
     return this;
   }
 
@@ -88,5 +101,15 @@ public final class TestIndexConfig implements FilterConfiguration.IndexConfig {
   @Override
   public List<String> getVariableNameExclusionEndWith() {
     return exclusionEndWith;
+  }
+
+  @Override
+  public List<String> getVariableValueTypeInclusion() {
+    return variableValueTypeInclusion;
+  }
+
+  @Override
+  public List<String> getVariableValueTypeExclusion() {
+    return variableValueTypeExclusion;
   }
 }
