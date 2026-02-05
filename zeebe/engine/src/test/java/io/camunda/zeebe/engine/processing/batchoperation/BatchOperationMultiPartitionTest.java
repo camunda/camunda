@@ -10,8 +10,17 @@ package io.camunda.zeebe.engine.processing.batchoperation;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.tuple;
 
+import io.camunda.search.clients.SearchClientsProxy;
+import io.camunda.search.clients.impl.NoopSearchClientsProxy;
+import io.camunda.search.entities.ProcessInstanceEntity;
+import io.camunda.search.filter.ProcessInstanceFilter.Builder;
+import io.camunda.search.query.ProcessInstanceQuery;
+import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
@@ -25,11 +34,15 @@ import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
-import java.time.Duration;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 public final class BatchOperationMultiPartitionTest {
   private static final int PARTITION_COUNT = 3;
@@ -39,12 +52,17 @@ public final class BatchOperationMultiPartitionTest {
       new RecordingExporterTestWatcher();
 
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
+  private final FakeSearchClientsProxy searchClientsProxy = new FakeSearchClientsProxy();
+  private final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter =
+      Mockito.mock(BrokerRequestAuthorizationConverter.class);
 
   @Rule
   public final EngineRule engine =
       EngineRule.multiplePartition(PARTITION_COUNT)
-          .withEngineConfig(
-              config -> config.setBatchOperationSchedulerInterval(Duration.ofDays(1)));
+          //          .withEngineConfig(config ->
+          // config.setBatchOperationSchedulerInterval(Duration.ofDays(1)))
+          .withSearchClientsProxy(searchClientsProxy)
+          .withBrokerRequestAuthorizationConverter(brokerRequestAuthorizationConverter);
 
   @Test
   public void shouldCreateOnAllPartitions() {
@@ -56,7 +74,9 @@ public final class BatchOperationMultiPartitionTest {
         engine
             .batchOperation()
             .newCreation(BatchOperationType.CANCEL_PROCESS_INSTANCE)
-            .withFilter(new UnsafeBuffer("{\"hasIncident\": false}".getBytes()))
+            .withFilter(
+                new UnsafeBuffer(
+                    MsgPackConverter.convertToMsgPack(new Builder().hasIncident(false).build())))
             .create()
             .getValue()
             .getBatchOperationKey();
@@ -81,25 +101,23 @@ public final class BatchOperationMultiPartitionTest {
   @Test
   public void shouldCompleteOnAllPartitions() {
     // given
+    searchClientsProxy.registerProcessInstance(Protocol.encodePartitionId(1, 123L));
+    searchClientsProxy.registerProcessInstance(Protocol.encodePartitionId(2, 234L));
+    searchClientsProxy.registerProcessInstance(Protocol.encodePartitionId(3, 345L));
+
+    // when
     final long batchOperationKey =
         engine
             .batchOperation()
             .newCreation(BatchOperationType.CANCEL_PROCESS_INSTANCE)
-            .withFilter(new UnsafeBuffer("{\"hasIncident\": false}".getBytes()))
+            .withFilter(
+                new UnsafeBuffer(
+                    MsgPackConverter.convertToMsgPack(new Builder().hasIncident(false).build())))
             .create()
             .getValue()
             .getBatchOperationKey();
 
-    // when
-    for (int i = 1; i <= PARTITION_COUNT; i++) {
-      engine
-          .batchOperation()
-          .newExecution()
-          .onPartition(i)
-          .withBatchOperationKey(batchOperationKey)
-          .execute();
-    }
-
+    // then
     assertThat(
             RecordingExporter.batchOperationPartitionLifecycleRecords()
                 .withBatchOperationKey(batchOperationKey)
@@ -481,5 +499,43 @@ public final class BatchOperationMultiPartitionTest {
     return r.getValue() instanceof CommandDistributionRecordValue
         ? ((CommandDistributionRecordValue) r.getValue()).getPartitionId()
         : r.getPartitionId();
+  }
+
+  private static class FakeSearchClientsProxy extends NoopSearchClientsProxy
+      implements SearchClientsProxy {
+
+    private final Map<Integer, ProcessInstanceEntity> mapping = new HashMap<>();
+
+    public void registerProcessInstance(final long processInstanceKey) {
+      final int partitionId = Protocol.decodePartitionId(processInstanceKey);
+      mapping.put(
+          partitionId,
+          new ProcessInstanceEntity(
+              processInstanceKey,
+              null,
+              null,
+              null,
+              -1,
+              null,
+              -1L,
+              -1L,
+              -1L,
+              null,
+              null,
+              null,
+              false,
+              null,
+              null,
+              Set.of()));
+    }
+
+    @Override
+    public SearchQueryResult<ProcessInstanceEntity> searchProcessInstances(
+        final ProcessInstanceQuery query) {
+      return new SearchQueryResult.Builder<ProcessInstanceEntity>()
+          .items(List.of(mapping.get(1)))
+          .total(1)
+          .build();
+    }
   }
 }
