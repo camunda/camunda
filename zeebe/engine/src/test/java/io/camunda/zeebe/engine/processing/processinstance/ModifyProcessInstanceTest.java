@@ -2187,7 +2187,7 @@ public class ModifyProcessInstanceTest {
                         mi.parallel()
                             .zeebeInputCollectionExpression("=for i in 1..5 return i")
                             .multiInstanceDone())
-                .userTask("B")
+                .userTask("B", u -> u.zeebeAssignee("foo"))
                 .zeebeUserTask()
                 .endEvent()
                 .done())
@@ -2201,6 +2201,7 @@ public class ModifyProcessInstanceTest {
         .modification()
         .moveElements("A", "B")
         .modify();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
 
     // then only the multi-instance parent creates a new token at the target
     assertThat(
@@ -2210,7 +2211,7 @@ public class ModifyProcessInstanceTest {
                     ProcessInstanceIntent.ELEMENT_ACTIVATED)
                 .withProcessInstanceKey(processInstanceKey)
                 .withElementIdIn("A", "B")
-                .limit(13L))
+                .limitToProcessInstanceTerminated())
         .extracting(
             r ->
                 tuple(
@@ -2230,7 +2231,110 @@ public class ModifyProcessInstanceTest {
             tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_TERMINATED),
             tuple(
                 BpmnElementType.MULTI_INSTANCE_BODY, "A", ProcessInstanceIntent.ELEMENT_TERMINATED),
-            tuple(BpmnElementType.USER_TASK, "B", ProcessInstanceIntent.ELEMENT_ACTIVATED));
+            tuple(BpmnElementType.USER_TASK, "B", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "B", ProcessInstanceIntent.ELEMENT_TERMINATED));
+  }
+
+  @Test
+  public void shouldMoveAllMultiInstanceElementsOutOfSubprocessByIds() {
+    // given a multi-instance sub-process with a user task
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .subProcess("subProcess")
+                .multiInstance(
+                    mi ->
+                        mi.parallel()
+                            .zeebeInputCollectionExpression("=for i in 1..5 return i")
+                            .multiInstanceDone())
+                .embeddedSubProcess()
+                .startEvent()
+                .userTask("A")
+                .zeebeUserTask()
+                .endEvent()
+                .subProcessDone()
+                .userTask("B")
+                .zeebeUserTask()
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .moveElements("A", "B")
+        .modify();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
+
+    // then only the multi-instance parent creates a new token at the target
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withIntents(
+                    ProcessInstanceIntent.ELEMENT_TERMINATED,
+                    ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementIdIn("subProcess", "A", "B")
+                .limitToProcessInstanceTerminated())
+        .extracting(
+            r ->
+                tuple(
+                    r.getValue().getBpmnElementType(), r.getValue().getElementId(), r.getIntent()))
+        .containsExactly(
+            tuple(
+                BpmnElementType.MULTI_INSTANCE_BODY,
+                "subProcess",
+                ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(
+                BpmnElementType.SUB_PROCESS, "subProcess", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(
+                BpmnElementType.SUB_PROCESS, "subProcess", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(
+                BpmnElementType.SUB_PROCESS, "subProcess", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(
+                BpmnElementType.SUB_PROCESS, "subProcess", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(
+                BpmnElementType.SUB_PROCESS, "subProcess", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(
+                BpmnElementType.SUB_PROCESS,
+                "subProcess",
+                ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(
+                BpmnElementType.SUB_PROCESS,
+                "subProcess",
+                ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(
+                BpmnElementType.SUB_PROCESS,
+                "subProcess",
+                ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(
+                BpmnElementType.SUB_PROCESS,
+                "subProcess",
+                ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(
+                BpmnElementType.SUB_PROCESS,
+                "subProcess",
+                ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(
+                BpmnElementType.MULTI_INSTANCE_BODY,
+                "subProcess",
+                ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.USER_TASK, "B", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "B", ProcessInstanceIntent.ELEMENT_TERMINATED));
   }
 
   @Test
@@ -2269,6 +2373,7 @@ public class ModifyProcessInstanceTest {
         .modification()
         .moveElements("A", "B")
         .modify();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
 
     // then both multi-instance parents create a new token at the target
     assertThat(
@@ -2278,7 +2383,7 @@ public class ModifyProcessInstanceTest {
                     ProcessInstanceIntent.ELEMENT_ACTIVATED)
                 .withProcessInstanceKey(processInstanceKey)
                 .withElementIdIn("A", "B")
-                .limit(26L))
+                .limitToProcessInstanceTerminated())
         .extracting(
             r ->
                 tuple(
@@ -2313,7 +2418,9 @@ public class ModifyProcessInstanceTest {
             tuple(
                 BpmnElementType.MULTI_INSTANCE_BODY, "A", ProcessInstanceIntent.ELEMENT_TERMINATED),
             tuple(BpmnElementType.USER_TASK, "B", ProcessInstanceIntent.ELEMENT_ACTIVATED),
-            tuple(BpmnElementType.USER_TASK, "B", ProcessInstanceIntent.ELEMENT_ACTIVATED));
+            tuple(BpmnElementType.USER_TASK, "B", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "B", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.USER_TASK, "B", ProcessInstanceIntent.ELEMENT_TERMINATED));
   }
 
   @Test
