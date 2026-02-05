@@ -8,14 +8,14 @@
 
 /*
  * This file is a 1:1 copy of org.springaicommunity.mcp.method.tool.utils.JsonSchemaGenerator
- * 
+ *
  * Original source:
  * https://github.com/spring-projects-experimental/spring-ai-mcp
  * org.springaicommunity.mcp.method.tool.utils.JsonSchemaGenerator
- * 
+ *
  * License: Apache License, Version 2.0
  * Copyright 2025-2025 the original author or authors.
- * 
+ *
  * This copy will be customized in Phase 2 to generate inline schemas without $defs.
  */
 
@@ -94,7 +94,8 @@ public class CamundaJsonSchemaGenerator {
     Module springAiSchemaModule =
         PROPERTY_REQUIRED_BY_DEFAULT
             ? new SpringAiSchemaModule()
-            : new SpringAiSchemaModule(SpringAiSchemaModule.Option.PROPERTY_REQUIRED_FALSE_BY_DEFAULT);
+            : new SpringAiSchemaModule(
+                SpringAiSchemaModule.Option.PROPERTY_REQUIRED_FALSE_BY_DEFAULT);
 
     SchemaGeneratorConfigBuilder schemaGeneratorConfigBuilder =
         new SchemaGeneratorConfigBuilder(SchemaVersion.DRAFT_2020_12, OptionPreset.PLAIN_JSON)
@@ -188,8 +189,7 @@ public class CamundaJsonSchemaGenerator {
       }
 
       // Handle @McpRequestBody - unwrap DTO fields to root level
-      if (parameter.isAnnotationPresent(
-          io.camunda.gateway.mcp.annotation.McpRequestBody.class)) {
+      if (parameter.isAnnotationPresent(io.camunda.gateway.mcp.annotation.McpRequestBody.class)) {
         // Generate schema for the DTO type and merge its properties at root level
         ObjectNode dtoSchema = SUBTYPE_SCHEMA_GENERATOR.generateSchema(parameterType);
 

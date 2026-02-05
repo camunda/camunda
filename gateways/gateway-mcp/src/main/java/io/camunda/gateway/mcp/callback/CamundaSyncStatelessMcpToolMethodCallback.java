@@ -11,7 +11,6 @@ import io.camunda.gateway.mcp.annotation.McpRequestBody;
 import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
-import java.lang.reflect.Type;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.stream.Stream;
@@ -58,7 +57,8 @@ public class CamundaSyncStatelessMcpToolMethodCallback
   }
 
   @Override
-  public CallToolResult apply(McpTransportContext mcpTransportContext, CallToolRequest callToolRequest) {
+  public CallToolResult apply(
+      McpTransportContext mcpTransportContext, CallToolRequest callToolRequest) {
     validateSyncRequest(callToolRequest);
 
     try {

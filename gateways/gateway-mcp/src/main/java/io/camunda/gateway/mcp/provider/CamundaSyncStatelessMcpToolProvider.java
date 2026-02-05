@@ -22,17 +22,15 @@ import org.slf4j.LoggerFactory;
 import org.springaicommunity.mcp.McpPredicates;
 import org.springaicommunity.mcp.annotation.McpTool;
 import org.springaicommunity.mcp.method.tool.ReturnMode;
-import org.springaicommunity.mcp.method.tool.SyncStatelessMcpToolMethodCallback;
 import org.springaicommunity.mcp.method.tool.utils.ClassUtils;
 import org.springaicommunity.mcp.provider.tool.AbstractMcpToolProvider;
 
 /**
  * Camunda-specific provider for synchronous stateless MCP tool methods.
  *
- * <p>This provider extends the standard MCP tool provider to use {@link
- * CamundaJsonSchemaGenerator} for generating JSON schemas. This allows Camunda to customize schema
- * generation (e.g., inline schemas without $defs) while maintaining compatibility with the MCP
- * specification.
+ * <p>This provider extends the standard MCP tool provider to use {@link CamundaJsonSchemaGenerator}
+ * for generating JSON schemas. This allows Camunda to customize schema generation (e.g., inline
+ * schemas without $defs) while maintaining compatibility with the MCP specification.
  */
 public class CamundaSyncStatelessMcpToolProvider extends AbstractMcpToolProvider {
 
@@ -141,7 +139,7 @@ public class CamundaSyncStatelessMcpToolProvider extends AbstractMcpToolProvider
                               BiFunction<McpTransportContext, CallToolRequest, CallToolResult>
                                   methodCallback =
                                       new io.camunda.gateway.mcp.callback
-                                              .CamundaSyncStatelessMcpToolMethodCallback(
+                                          .CamundaSyncStatelessMcpToolMethodCallback(
                                           returnMode,
                                           mcpToolMethod,
                                           toolObject,
