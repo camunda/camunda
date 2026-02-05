@@ -25,9 +25,9 @@ import org.springframework.test.context.ContextConfiguration;
 /**
  * Test suite for DemoTools demonstrating @McpToolParams functionality.
  *
- * <p>This test class validates that the @McpToolParams annotation correctly unwraps DTO
- * parameters to root-level schema properties, and that bean validation annotations on DTO fields
- * are properly enforced.
+ * <p>This test class validates that the @McpToolParams annotation correctly unwraps DTO parameters
+ * to root-level schema properties, and that bean validation annotations on DTO fields are properly
+ * enforced.
  */
 @ContextConfiguration(classes = {DemoTools.class})
 class DemoToolsTest extends ToolsTest {
@@ -46,16 +46,21 @@ class DemoToolsTest extends ToolsTest {
                   .name("createTask")
                   .arguments(
                       Map.of(
-                          "taskName", "Deploy Application",
-                          "priority", "high",
-                          "metadata", Map.of("assignee", "John", "dueDate", "2026-02-10"),
-                          "urgent", true))
+                          "taskName",
+                          "Deploy Application",
+                          "priority",
+                          "high",
+                          "metadata",
+                          Map.of("assignee", "John", "dueDate", "2026-02-10"),
+                          "urgent",
+                          true))
                   .build());
 
       // then
       if (result.isError()) {
         System.out.println("ERROR: " + result.content());
-        if (result.content() != null && !result.content().isEmpty()
+        if (result.content() != null
+            && !result.content().isEmpty()
             && result.content().get(0) instanceof TextContent tc) {
           System.out.println("ERROR TEXT: " + tc.text());
         }
@@ -196,10 +201,14 @@ class DemoToolsTest extends ToolsTest {
                   .name("createTaskOldWay")
                   .arguments(
                       Map.of(
-                          "taskName", "Traditional Task",
-                          "priority", "high",
-                          "metadata", Map.of("key", "value"),
-                          "urgent", true))
+                          "taskName",
+                          "Traditional Task",
+                          "priority",
+                          "high",
+                          "metadata",
+                          Map.of("key", "value"),
+                          "urgent",
+                          true))
                   .build());
 
       // then

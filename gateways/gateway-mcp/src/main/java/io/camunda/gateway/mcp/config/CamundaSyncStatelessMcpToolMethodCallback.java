@@ -7,7 +7,6 @@
  */
 package io.camunda.gateway.mcp.config;
 
-import io.camunda.gateway.mcp.config.McpToolParams;
 import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
@@ -28,9 +27,9 @@ import org.springaicommunity.mcp.method.tool.ReturnMode;
 /**
  * Camunda-specific callback for synchronous stateless MCP tool methods.
  *
- * <p>Extends the abstract callback to support {@link McpToolParams} annotation, which allows
- * method parameters annotated with {@code @McpToolParams} to be deserialized from the entire tool
- * input arguments map.
+ * <p>Extends the abstract callback to support {@link McpToolParams} annotation, which allows method
+ * parameters annotated with {@code @McpToolParams} to be deserialized from the entire tool input
+ * arguments map.
  */
 public class CamundaSyncStatelessMcpToolMethodCallback
     extends AbstractSyncMcpToolMethodCallback<McpTransportContext, McpSyncRequestContext>

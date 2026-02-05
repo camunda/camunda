@@ -7,8 +7,6 @@
  */
 package io.camunda.gateway.mcp.config;
 
-import io.camunda.gateway.mcp.config.McpToolParams;
-import io.camunda.gateway.mcp.config.CamundaJsonSchemaGenerator;
 import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.server.McpStatelessServerFeatures.SyncToolSpecification;
 import io.modelcontextprotocol.spec.McpSchema;

@@ -49,10 +49,10 @@ import java.lang.annotation.Target;
  *
  * <h3>Validation:</h3>
  *
- * <p><b>Important:</b> Parameters annotated with {@code @McpToolParams} must also be annotated
- * with {@code @Valid} to enable bean validation via Spring's {@code @Validated} proxy. Bean
- * validation annotations on the DTO's fields (e.g., {@code @NotNull}, {@code @Pattern}) will be
- * enforced during invocation.
+ * <p><b>Important:</b> Parameters annotated with {@code @McpToolParams} must also be annotated with
+ * {@code @Valid} to enable bean validation via Spring's {@code @Validated} proxy. Bean validation
+ * annotations on the DTO's fields (e.g., {@code @NotNull}, {@code @Pattern}) will be enforced
+ * during invocation.
  *
  * <h3>Limitations:</h3>
  *

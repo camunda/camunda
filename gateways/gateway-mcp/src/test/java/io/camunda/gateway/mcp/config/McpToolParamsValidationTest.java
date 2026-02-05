@@ -2,7 +2,6 @@ package io.camunda.gateway.mcp.config;
 
 import static org.assertj.core.api.Assertions.*;
 
-import io.camunda.gateway.mcp.config.McpToolParams;
 import io.camunda.gateway.mcp.tool.demo.CreateTaskRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import jakarta.validation.Valid;
@@ -27,8 +26,7 @@ class McpToolParamsValidationTest {
   static class InvalidMixedParameters {
     @McpTool
     public CallToolResult invalidMethod(
-        @McpToolParams CreateTaskRequest request, 
-        @Valid CreateTaskRequest other) {
+        @McpToolParams CreateTaskRequest request, @Valid CreateTaskRequest other) {
       return null;
     }
   }
@@ -38,8 +36,7 @@ class McpToolParamsValidationTest {
   static class ValidWithSimpleType {
     @McpTool
     public CallToolResult validMethod(
-        @McpToolParams CreateTaskRequest request,
-        String simpleParam) {
+        @McpToolParams CreateTaskRequest request, String simpleParam) {
       return null;
     }
   }
@@ -47,30 +44,32 @@ class McpToolParamsValidationTest {
   @Test
   void shouldAcceptSingleRequestBodyParameter() {
     // Should not throw
-    assertThatCode(() -> 
-        new CamundaSyncStatelessMcpToolProvider(List.of(new ValidSingleRequestBody()))
-            .getToolSpecifications()
-    ).doesNotThrowAnyException();
+    assertThatCode(
+            () ->
+                new CamundaSyncStatelessMcpToolProvider(List.of(new ValidSingleRequestBody()))
+                    .getToolSpecifications())
+        .doesNotThrowAnyException();
   }
 
   @Test
   void shouldAcceptRequestBodyWithSimpleParameters() {
     // Should not throw
-    assertThatCode(() -> 
-        new CamundaSyncStatelessMcpToolProvider(List.of(new ValidWithSimpleType()))
-            .getToolSpecifications()
-    ).doesNotThrowAnyException();
+    assertThatCode(
+            () ->
+                new CamundaSyncStatelessMcpToolProvider(List.of(new ValidWithSimpleType()))
+                    .getToolSpecifications())
+        .doesNotThrowAnyException();
   }
 
   @Test
   void shouldRejectMixedRequestBodyAndValidParameters() {
-    assertThatThrownBy(() -> 
-        new CamundaSyncStatelessMcpToolProvider(List.of(new InvalidMixedParameters()))
-            .getToolSpecifications()
-    )
-    .isInstanceOf(IllegalStateException.class)
-    .hasMessageContaining("mixes @McpToolParams with complex parameter")
-    .hasMessageContaining("invalidMethod");
+    assertThatThrownBy(
+            () ->
+                new CamundaSyncStatelessMcpToolProvider(List.of(new InvalidMixedParameters()))
+                    .getToolSpecifications())
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("mixes @McpToolParams with complex parameter")
+        .hasMessageContaining("invalidMethod");
   }
 
   // Valid usage: @McpToolParams with validated primitive
@@ -88,9 +87,10 @@ class McpToolParamsValidationTest {
   @Test
   void shouldAcceptRequestBodyWithValidatedPrimitives() {
     // @NotBlank/@Min on primitives are allowed (not the same as @Valid on objects)
-    assertThatCode(() -> 
-        new CamundaSyncStatelessMcpToolProvider(List.of(new ValidWithValidatedPrimitive()))
-            .getToolSpecifications()
-    ).doesNotThrowAnyException();
+    assertThatCode(
+            () ->
+                new CamundaSyncStatelessMcpToolProvider(List.of(new ValidWithValidatedPrimitive()))
+                    .getToolSpecifications())
+        .doesNotThrowAnyException();
   }
 }

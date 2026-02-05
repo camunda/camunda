@@ -8,7 +8,6 @@
 package io.camunda.gateway.mcp.config;
 
 import io.camunda.gateway.mcp.ConditionalOnMcpGatewayEnabled;
-import io.camunda.gateway.mcp.config.CamundaSyncStatelessMcpToolProvider;
 import io.modelcontextprotocol.server.McpStatelessServerFeatures;
 import io.modelcontextprotocol.server.McpStatelessServerFeatures.SyncToolSpecification;
 import java.util.List;
