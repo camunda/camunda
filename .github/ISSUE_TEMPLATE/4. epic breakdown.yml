@@ -42,40 +42,6 @@ body:
     validations:
       required: false
   - type: textarea
-    id: breakdown
-    attributes:
-      label: Breakdown
-      description:
-    validations:
-      required: false
-  - type: textarea
-    id: backend
-    attributes:
-      label: Backend
-      description: Add all related backend issues here.
-      value: |
-        - [ ] #<issue-number>
-        - [ ] ...
-    validations:
-      required: false
-  - type: textarea
-    id: frontend
-    attributes:
-      label: Frontend
-      description: Add all related frontend issues here.
-      value: |
-        - [ ] #<issue-number>
-        - [ ] ...
-    validations:
-      required: false
-  - type: textarea
-    id: documentation
-    attributes:
-      label: Documentation
-      description: Tasks that require writing / modifying documentation
-    validations:
-      required: false
-  - type: textarea
     id: additional
     attributes:
       label: Additional information
