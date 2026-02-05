@@ -6,29 +6,25 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {
-  DocumentationLink,
-  ActionableNotificationStyles,
-  NotificationWrapper,
-} from './styled';
+import {Callout, Link, Tile} from '@carbon/react';
 
 const EmbeddedFormWarningNotification: React.FC = () => {
   return (
-    <NotificationWrapper>
-      <ActionableNotificationStyles
+    <Tile>
+      <Callout
         kind="warning"
         subtitle="Embedded forms in the source user tasks will be replaced by the form defined in the target element."
         lowContrast
-        hideCloseButton
       >
-        <DocumentationLink
+        <Link
+          aria-describedby="documentation-link"
           href="https://docs.camunda.io/docs/components/concepts/process-instance-migration/#migrate-job-worker-user-tasks-to-camunda-user-tasks"
           target="_blank"
         >
           Learn more about migration of user task with embedded forms
-        </DocumentationLink>
-      </ActionableNotificationStyles>
-    </NotificationWrapper>
+        </Link>
+      </Callout>
+    </Tile>
   );
 };
 
