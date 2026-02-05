@@ -9,11 +9,11 @@ package io.camunda.configuration;
 
 public class Webapp {
 
-  /* internal state */
+  /* --- internal state --- */
 
   private String name;
 
-  /* config fields */
+  /* --- config fields --- */
 
   /** Whether the webapp is enabled or not. This also affects the webapp API. */
   private boolean enabled = true;
