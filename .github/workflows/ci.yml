@@ -681,8 +681,8 @@ jobs:
             name: "Zeebe Exporter Modules"
             maven-modules: ${{ needs.setup-tests.outputs.ZEEBE_IT_EXPORTER_MODULES }}
             maven-build-threads: 2
-            maven-test-fork-count: 7
-            runs-on: gcp-perf-core-16-longrunning
+            maven-test-fork-count: 3
+            runs-on: gcp-core-32-default
             docker-repository: localhost:5000/camunda/zeebe
             docker-file: Dockerfile
             owner: "DataLayer"
