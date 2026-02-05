@@ -64,6 +64,7 @@ final class JobWorkerMetricsTest {
         poller,
         streamer,
         delay -> delay,
+        delay -> delay,
         metrics,
         executor);
   }

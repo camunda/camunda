@@ -187,8 +187,8 @@ public interface JobWorkerBuilderStep1 {
     /**
      * Sets the backoff supplier. The supplier is called to determine the retry delay after each
      * failed request; the worker then waits until the returned delay has elapsed before sending the
-     * next request. Note that this is used <strong>only</strong> for the polling mechanism -
-     * failures in the {@link JobHandler} should be handled there, and retried there if need be.
+     * next request. Note that this is used <strong>only</strong> when activating jobs - failures in
+     * the {@link JobHandler} should be handled there, and retried there if need be.
      *
      * <p>By default, the supplier uses exponential back off, with an upper bound of 5 seconds. The
      * exponential backoff can be easily configured using {@link
@@ -198,6 +198,23 @@ public interface JobWorkerBuilderStep1 {
      * @return the builder for this worker
      */
     JobWorkerBuilderStep3 backoffSupplier(BackoffSupplier backoffSupplier);
+
+    /**
+     * Sets the job activation backoff supplier to be used when polling yields no jobs, when
+     * streaming is enabled. The supplier is called to determine the backoff delay after a
+     * successful poll request with no activated jobs when job streaming is enabled; the worker then
+     * waits until the returned delay has elapsed before sending the next poll request.
+     *
+     * <p>Note, this is used <strong>only</strong> when streaming is enabled.
+     *
+     * <p>By default, the supplier uses exponential back off, with an upper bound of 1 minute. The
+     * exponential backoff can be easily configured using {@link
+     * BackoffSupplier#newBackoffBuilder()}.
+     *
+     * @param streamNoJobsBackoffSupplier supplies the backoff delay after a successful poll request
+     * @return the builder for this worker
+     */
+    JobWorkerBuilderStep3 streamNoJobsBackoffSupplier(BackoffSupplier streamNoJobsBackoffSupplier);
 
     /**
      * Opt-in feature flag to enable job streaming. If set as enabled, the job worker will use a mix
