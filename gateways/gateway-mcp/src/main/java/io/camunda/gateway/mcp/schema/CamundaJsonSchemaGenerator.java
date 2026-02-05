@@ -103,7 +103,7 @@ public class CamundaJsonSchemaGenerator {
             .with(springAiSchemaModule)
             .with(Option.EXTRA_OPEN_API_FORMAT_VALUES)
             .with(Option.STANDARD_FORMATS)
-            .with(Option.PLAIN_DEFINITION_KEYS);
+            .with(Option.INLINE_ALL_SCHEMAS);
 
     SchemaGeneratorConfig typeSchemaGeneratorConfig = schemaGeneratorConfigBuilder.build();
     TYPE_SCHEMA_GENERATOR = new SchemaGenerator(typeSchemaGeneratorConfig);
