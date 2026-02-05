@@ -45,6 +45,7 @@ const useElementInstancesSearch = (params: UseElementInstancesSearchParams) => {
       }
       throw error;
     },
+    staleTime: 10000,
     enabled,
   });
 };

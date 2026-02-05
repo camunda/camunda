@@ -43,16 +43,11 @@ import {getFlowNodeName} from 'modules/utils/flowNodes';
 import {getParentElement} from 'modules/bpmn-js/utils/getParentElement';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
-import {useEffect} from 'react';
 
 type Props = {
   selectedFlowNodeRef?: SVGSVGElement;
   diagramCanvasRef?: React.RefObject<HTMLDivElement | null>;
 };
-
-// Module-level cache to track completed initial loads per element.
-// Persists across component re-mounts (e.g., when Popover repositions).
-const elementLoadingStateCache: Record<string, boolean> = {};
 
 const ModificationDropdown: React.FC<Props> = observer(
   ({selectedFlowNodeRef, diagramCanvasRef}) => {
@@ -64,20 +59,15 @@ const ModificationDropdown: React.FC<Props> = observer(
       resolvedElementInstance,
       clearSelection,
     } = useProcessInstanceElementSelection();
-
     const {data: businessObjects} = useBusinessObjects();
-    const {
-      data: selectedElementRunningInstancesCount,
-      isFetching: isFetchingRunningCount,
-    } = useTotalRunningInstancesForFlowNode(selectedElementId ?? undefined);
+    const {data: selectedElementRunningInstancesCount} =
+      useTotalRunningInstancesForFlowNode(selectedElementId ?? undefined);
     const {data: totalRunningInstancesVisible} =
       useTotalRunningInstancesVisibleForFlowNode(
         selectedElementId ?? undefined,
       );
-    const {
-      data: totalRunningInstancesByFlowNode,
-      isFetching: isFetchingByFlowNode,
-    } = useTotalRunningInstancesByFlowNode();
+    const {data: totalRunningInstancesByFlowNode} =
+      useTotalRunningInstancesByFlowNode();
 
     const availableModifications = useAvailableModifications({
       runningElementInstanceCount: selectedElementRunningInstancesCount ?? 0,
@@ -93,32 +83,6 @@ const ModificationDropdown: React.FC<Props> = observer(
     const {data: processDefinitionData} = useProcessInstanceXml({
       processDefinitionKey,
     });
-
-    const elementKey = selectedElementId ?? 'null';
-    const hasCompletedInitialLoad =
-      elementLoadingStateCache[elementKey] ?? false;
-
-    // Mark inital load as complete when all queries finish
-    useEffect(() => {
-      if (
-        !isFetchingElement &&
-        !isFetchingByFlowNode &&
-        !isFetchingRunningCount &&
-        !hasCompletedInitialLoad
-      ) {
-        elementLoadingStateCache[elementKey] = true;
-      }
-    }, [
-      isFetchingElement,
-      isFetchingByFlowNode,
-      isFetchingRunningCount,
-      hasCompletedInitialLoad,
-      elementKey,
-    ]);
-
-    const isInitiallyLoading =
-      !hasCompletedInitialLoad &&
-      (isFetchingElement || isFetchingByFlowNode || isFetchingRunningCount);
 
     if (
       selectedElementId === null ||
@@ -144,7 +108,7 @@ const ModificationDropdown: React.FC<Props> = observer(
           <Title>Flow Node Modifications</Title>
           <Stack gap={4}>
             {(() => {
-              if (isInitiallyLoading) {
+              if (isFetchingElement) {
                 return <InlineLoading data-testid="dropdown-spinner" />;
               }
               if (!canBeModified) {
