@@ -108,7 +108,8 @@ public class DecisionInstanceSpecificFilterIT {
                     .rootDecisionDefinitionKey(rootDecisionDefinitionKey)
                     .evaluationFailure("failure-42")
                     .tenantId("unique-tenant-42")
-                    .result("result-42")));
+                    .result("result-42")
+                    .partitionId(1)));
 
     final var searchResult =
         decisionInstanceReader.search(
@@ -146,6 +147,7 @@ public class DecisionInstanceSpecificFilterIT {
         DecisionInstanceFilter.of(b -> b.evaluationDateOperations(Operation.lte(THEN))),
         DecisionInstanceFilter.of(b -> b.rootDecisionDefinitionKeys(200L)),
         DecisionInstanceFilter.of(b -> b.rootDecisionDefinitionKeyOperations(Operation.eq(200L))),
-        DecisionInstanceFilter.of(b -> b.tenantIds("unique-tenant-42", "foo")));
+        DecisionInstanceFilter.of(b -> b.tenantIds("unique-tenant-42", "foo")),
+        DecisionInstanceFilter.of(b -> b.partitionId(1)));
   }
 }
