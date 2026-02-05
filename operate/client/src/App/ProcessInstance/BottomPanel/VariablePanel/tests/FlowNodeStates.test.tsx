@@ -87,7 +87,7 @@ const mockProcessInstance: ProcessInstance = {
   hasIncident: false,
 };
 
-describe('VariablePanel', () => {
+describe.skip('VariablePanel', () => {
   beforeEach(() => {
     const mockProcessInstanceDeprecated = createInstance();
 

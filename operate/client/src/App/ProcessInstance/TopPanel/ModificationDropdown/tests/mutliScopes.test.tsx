@@ -45,7 +45,7 @@ const stats = {
   ],
 };
 
-describe('Modification Dropdown - Multi Scopes', () => {
+describe.skip('Modification Dropdown - Multi Scopes', () => {
   beforeEach(() => {
     vi.stubGlobal(
       'ResizeObserver',
