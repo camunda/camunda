@@ -812,13 +812,13 @@ const BatchOperationDetails: React.FC = () => {
                   })()}
                 </SummaryTile>
 
-                <SummaryTile label="Start time">
+                <SummaryTile label="Start date">
                   <span style={{fontWeight: 500}}>
                     {formatDate(operation.startTime)}
                   </span>
                 </SummaryTile>
 
-                <SummaryTile label="End time">
+                <SummaryTile label="End date">
                   <span style={{fontWeight: 500}}>
                     {operation.endTime ? formatDate(operation.endTime) : '-'}
                   </span>

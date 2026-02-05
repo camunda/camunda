@@ -18,8 +18,11 @@ import {
   TableBody,
   TableCell,
   Dropdown,
+  CodeSnippet,
+  Tooltip,
 } from '@carbon/react';
-import {Information} from '@carbon/react/icons';
+import {Information, CheckmarkOutline, Error} from '@carbon/react/icons';
+import {User, Api, Bot} from '@carbon/icons-react';
 import {formatDate} from 'modules/utils/date';
 import {DetailsModal} from './DetailsModal';
 import {mockOperationLog} from './mocks';
@@ -29,7 +32,6 @@ import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusiness
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {EmptyMessage} from 'modules/components/EmptyMessage';
 import {EmptyMessageContainer} from '../styled';
-import {StatusIndicator} from 'App/AuditLog/StatusIndicator';
 
 type DetailsModalState = {
   open: boolean;
@@ -72,6 +74,70 @@ const OperationsLogTable: React.FC = observer(() => {
       .join(' ');
   };
 
+  // Convert display name to username format (e.g., "Michael Scott" -> "michael-scott")
+  // If already in username format (no spaces, lowercase), return as is
+  const formatUsername = (user: string): string => {
+    if (!user) {
+      return user;
+    }
+    
+    // If it contains spaces or capital letters, it's likely a display name
+    // Convert to username format: lowercase and replace spaces with hyphens
+    if (/\s/.test(user) || /[A-Z]/.test(user)) {
+      return user
+        .toLowerCase()
+        .trim()
+        .replace(/\s+/g, '-') // Replace spaces with hyphens
+        .replace(/[^a-z0-9-]/g, ''); // Remove special characters except hyphens
+    }
+    
+    // Already in username format, return as is
+    return user;
+  };
+
+  // Determine actor type and return appropriate icon
+  const getActorType = (user: string): 'user' | 'client' | 'agent' => {
+    if (!user) return 'user';
+    
+    const lowerUser = user.toLowerCase();
+    
+    // Check for AI agent indicators
+    if (
+      lowerUser.includes('ai') ||
+      lowerUser.includes('agent') ||
+      lowerUser.includes('bot') ||
+      lowerUser.includes('robot') ||
+      lowerUser.includes('assistant')
+    ) {
+      return 'agent';
+    }
+    
+    // Check for API client indicators
+    if (
+      lowerUser.includes('api') ||
+      lowerUser.includes('client') ||
+      lowerUser.includes('service') ||
+      lowerUser.includes('-client') ||
+      lowerUser.endsWith('client')
+    ) {
+      return 'client';
+    }
+    
+    // Default to user
+    return 'user';
+  };
+
+  const getActorIcon = (actorType: 'user' | 'client' | 'agent') => {
+    switch (actorType) {
+      case 'client':
+        return Api;
+      case 'agent':
+        return Bot;
+      default:
+        return User;
+    }
+  };
+
   const formatOperationState = (state: string) => {
     return state
       .split('_')
@@ -80,10 +146,11 @@ const OperationsLogTable: React.FC = observer(() => {
   };
 
   const headers = [
+    {key: 'operationState', header: '', width: '48px'},
     {key: 'operationType', header: 'Operation'},
-    {key: 'operationState', header: 'Status'},
+    {key: 'property', header: 'Property'},
     {key: 'user', header: 'Actor'},
-    {key: 'startTimestamp', header: 'Time'},
+    {key: 'startTimestamp', header: 'Date'},
     {key: 'actions', header: ' '},
   ];
 
@@ -99,15 +166,73 @@ const OperationsLogTable: React.FC = observer(() => {
               (entry: MockAuditLogEntry) => entry.details?.userTask !== undefined,
             )
           : []
-      ).map((entry: MockAuditLogEntry) => ({
-        id: entry.id,
-        operationType: formatOperationType(entry.operationType),
-        operationState: formatOperationState(entry.operationState),
-        user: entry.user,
-        startTimestamp: formatDate(entry.startTimestamp),
-        startTimestampRaw: entry.startTimestamp,
-        entry: entry,
-      })) || [],
+      ).map((entry: MockAuditLogEntry) => {
+        // Determine property display for variable operations
+        let propertyDisplay: React.ReactNode = '-';
+        if (
+          entry.operationType === 'ADD_VARIABLE' ||
+          entry.operationType === 'UPDATE_VARIABLE'
+        ) {
+          const variableName = entry.details?.variable?.name;
+          if (variableName) {
+            propertyDisplay = (
+              <div>
+                <div
+                  style={{
+                    fontSize: 'var(--cds-label-01-font-size)',
+                    lineHeight: 'var(--cds-label-01-line-height)',
+                    color: 'var(--cds-text-secondary)',
+                  }}
+                >
+                  Variable name
+                </div>
+                {variableName}
+              </div>
+            );
+          }
+        }
+
+        return {
+          id: entry.id,
+          operationType: formatOperationType(entry.operationType),
+          operationState: entry.operationState,
+          property: propertyDisplay,
+          user: entry.user ? (() => {
+            const actorType = getActorType(entry.user);
+            const getActorTypeLabel = (type: 'user' | 'client' | 'agent') => {
+              switch (type) {
+                case 'client':
+                  return 'API client';
+                case 'agent':
+                  return 'AI agent';
+                default:
+                  return 'User';
+              }
+            };
+            const icon = actorType === 'user' ? <User size={16} /> : actorType === 'client' ? <Api size={16} /> : <Bot size={16} />;
+            return (
+              <div style={{display: 'flex', alignItems: 'center', gap: 'var(--cds-spacing-03)'}}>
+                <Tooltip align="top" description={getActorTypeLabel(actorType)}>
+                  <div style={{color: 'var(--cds-icon-secondary)', flexShrink: 0, display: 'flex', alignItems: 'center', cursor: 'pointer'}}>
+                    {icon}
+                  </div>
+                </Tooltip>
+                <CodeSnippet
+                  type="inline"
+                  title="Click to copy"
+                  aria-label="Click to copy"
+                  feedback="Copied to clipboard"
+                >
+                  {formatUsername(entry.user)}
+                </CodeSnippet>
+              </div>
+            );
+          })() : '-',
+          startTimestamp: formatDate(entry.startTimestamp),
+          startTimestampRaw: entry.startTimestamp,
+          entry: entry,
+        };
+      }) || [],
     [isRootNodeSelected, isUserTaskSelected],
   );
 
@@ -135,7 +260,14 @@ const OperationsLogTable: React.FC = observer(() => {
 
   return (
     <>
+      <style>{`
+        .operations-log-table .cds--popover[role='tooltip'] .cds--popover-content {
+          padding-top: var(--cds-spacing-02);
+          padding-bottom: var(--cds-spacing-02);
+        }
+      `}</style>
       <div
+        className="operations-log-table"
         style={{
           height: '100%',
           overflow: 'auto',
@@ -179,13 +311,16 @@ const OperationsLogTable: React.FC = observer(() => {
                   {headers.map((header) => {
                     const {key, ...headerProps} = getHeaderProps({
                       header,
-                      isSortable: header.key !== 'actions',
+                      isSortable: header.key !== 'actions' && header.key !== 'operationState' && header.key !== 'property',
                     });
+                    const headerStyle = 
+                      header.key === 'actions' ? {width: '72px'} :
+                      header.key === 'operationState' ? {width: '40px', minWidth: '40px', maxWidth: '40px', padding: '0 var(--cds-spacing-03)'} : {};
                     return (
                       <TableHeader
                         {...headerProps}
                         key={key}
-                        style={header.key === 'actions' ? {width: '72px'} : {}}
+                        style={headerStyle}
                       >
                         {header.header}
                       </TableHeader>
@@ -202,9 +337,17 @@ const OperationsLogTable: React.FC = observer(() => {
                     <TableRow {...rowProps} key={key}>
                       {row.cells.map((cell) => {
                         if (cell.info.header === 'operationState') {
+                          if (!rowData) {
+                            return <TableCell key={cell.id} style={{width: '32px', minWidth: '32px', maxWidth: '32px', padding: '0 var(--cds-spacing-03)'}}>-</TableCell>;
+                          }
+                          const isSuccess = rowData.entry.operationState === 'success';
+                          const Icon = isSuccess ? CheckmarkOutline : Error;
+                          const color = isSuccess
+                            ? 'var(--cds-support-success)'
+                            : 'var(--cds-support-error)';
                           return (
-                            <TableCell key={cell.id}>
-                              {rowData && <StatusIndicator status={rowData.entry.operationState} />}
+                            <TableCell key={cell.id} style={{width: '40px', minWidth: '40px', maxWidth: '40px', padding: '0 var(--cds-spacing-04)'}}>
+                              <Icon size={16} style={{color}} />
                             </TableCell>
                           );
                         }

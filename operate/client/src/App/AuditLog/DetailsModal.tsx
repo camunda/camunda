@@ -104,7 +104,7 @@ const Title: React.FC<{children: React.ReactNode}> = ({children}) => (
 );
 
 const Subtitle: React.FC<{children: React.ReactNode}> = ({children}) => (
-  <h5 style={{fontWeight: 600, marginBottom: 'var(--cds-spacing-03)'}}>{children}</h5>
+  <h6 style={{fontWeight: 600, marginBottom: 'var(--cds-spacing-03)'}}>{children}</h6>
 );
 
 type Props = {
@@ -173,6 +173,27 @@ const DetailsModal: React.FC<Props> = ({open, onClose, entry}) => {
       .join(' ');
   };
 
+  // Convert display name to username format (e.g., "Michael Scott" -> "michael-scott")
+  // If already in username format (no spaces, lowercase), return as is
+  const formatUsername = (user: string): string => {
+    if (!user) {
+      return user;
+    }
+    
+    // If it contains spaces or capital letters, it's likely a display name
+    // Convert to username format: lowercase and replace spaces with hyphens
+    if (/\s/.test(user) || /[A-Z]/.test(user)) {
+      return user
+        .toLowerCase()
+        .trim()
+        .replace(/\s+/g, '-') // Replace spaces with hyphens
+        .replace(/[^a-z0-9-]/g, ''); // Remove special characters except hyphens
+    }
+    
+    // Already in username format, return as is
+    return user;
+  };
+
 
   const renderDetails = () => {
     let detailsContent: React.ReactNode = null;
@@ -221,7 +242,7 @@ const DetailsModal: React.FC<Props> = ({open, onClose, entry}) => {
 
     return (
       <div>
-        <Subtitle>Operation changes:</Subtitle>
+        <Subtitle>Operation changes</Subtitle>
         {detailsContent}
       </div>
     );
@@ -238,7 +259,6 @@ const DetailsModal: React.FC<Props> = ({open, onClose, entry}) => {
             alignItems: 'center',
           }}
         >
-          <span>Multiple process instances</span>
           <CodeSnippet
             type="inline"
             title={"Batch operation key / Click to copy"}
@@ -247,6 +267,7 @@ const DetailsModal: React.FC<Props> = ({open, onClose, entry}) => {
           >
             {entry.batchOperationId}
           </CodeSnippet>
+          <span style={{fontStyle: 'italic'}}>Multiple process instances</span>
           <Button
             kind="ghost"
             size="sm"
@@ -289,7 +310,6 @@ const DetailsModal: React.FC<Props> = ({open, onClose, entry}) => {
           >
             {entry.processDefinitionName && (
               <>
-                <span>{entry.processDefinitionName}</span>
                 <CodeSnippet
                   type="inline"
                   title={"Resource key / Click to copy"}
@@ -298,6 +318,7 @@ const DetailsModal: React.FC<Props> = ({open, onClose, entry}) => {
                 >
                   {resourceKey}
                 </CodeSnippet>
+                <span style={{fontStyle: 'italic'}}>{entry.processDefinitionName}</span>
                 {!isDelete && !isForm && (
                   <Button
                     kind="ghost"
@@ -448,7 +469,18 @@ const DetailsModal: React.FC<Props> = ({open, onClose, entry}) => {
                       Actor
                     </div>
                   </FirstColumn>
-                  <StructuredListCell>{entry.user}</StructuredListCell>
+                    <StructuredListCell>
+                      {entry.user ? (
+                        <CodeSnippet
+                          type="inline"
+                          title="Click to copy"
+                          aria-label="Click to copy"
+                          feedback="Copied to clipboard"
+                        >
+                          {formatUsername(entry.user)}
+                        </CodeSnippet>
+                      ) : '-'}
+                    </StructuredListCell>
                 </VerticallyAlignedRow>
                 <VerticallyAlignedRow>
                   <FirstColumn noWrap>
@@ -460,7 +492,7 @@ const DetailsModal: React.FC<Props> = ({open, onClose, entry}) => {
                       }}
                     >
                       <EventSchedule />
-                      Time
+                      Date
                     </div>
                   </FirstColumn>
                   <StructuredListCell>
@@ -472,7 +504,7 @@ const DetailsModal: React.FC<Props> = ({open, onClose, entry}) => {
             {entry.operationState === 'fail' && entry.errorMessage && (
               <InlineNotification
                 kind="error"
-                title="Error message:"
+                title=""
                 subtitle={entry.errorMessage}
                 hideCloseButton
                 lowContrast

@@ -121,7 +121,7 @@ const Title = styled.h4`
   margin-bottom: var(--cds-spacing-03);
 `;
 
-const Subtitle = styled.h5`
+const Subtitle = styled.h6`
   margin-bottom: var(--cds-spacing-03);
 `;
 

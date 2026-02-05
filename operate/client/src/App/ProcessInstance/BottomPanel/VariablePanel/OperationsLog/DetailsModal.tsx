@@ -177,7 +177,7 @@ const DetailsModal: React.FC<Props> = ({open, onClose, entry}) => {
 
     return (
       <div>
-        <Subtitle>Operation changes:</Subtitle>
+        <Subtitle>Operation changes</Subtitle>
         {detailsContent}
       </div>
     );
@@ -262,7 +262,7 @@ const DetailsModal: React.FC<Props> = ({open, onClose, entry}) => {
                       }}
                     >
                       <EventSchedule />
-                      Time
+                      Date
                     </div>
                   </FirstColumn>
                   <StructuredListCell>

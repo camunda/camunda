@@ -451,4 +451,173 @@ export const mockAuditLogEntries: MockAuditLogEntry[] = [
       },
     },
   },
+  // Add variable - Payment Process
+  {
+    id: 'add-var-2',
+    processDefinitionName: 'Payment Process',
+    processDefinitionVersion: 2,
+    processInstanceKey: '2251799813685261',
+    processInstanceState: 'ACTIVE',
+    tenantId: '<default>',
+    operationType: 'ADD_VARIABLE',
+    operationEntity: 'PROCESS_INSTANCE',
+    operationState: 'success',
+    startTimestamp: '2024-01-10T15:20:00.000+0000',
+    endTimestamp: '2024-01-10T15:20:01.000+0000',
+    user: 'payment-service-client',
+    details: {
+      variable: {
+        name: 'paymentAmount',
+        newValue: 1250.50,
+        scope: {
+          id: 'paymentProcess',
+          name: 'Payment Process',
+        },
+      },
+    },
+  },
+  // Update variable - Claims Process
+  {
+    id: 'update-var-1',
+    processDefinitionName: 'Claims Process',
+    processDefinitionVersion: 1,
+    processInstanceKey: '2251799813685262',
+    processInstanceState: 'ACTIVE',
+    tenantId: 'tenant-a',
+    operationType: 'UPDATE_VARIABLE',
+    operationEntity: 'PROCESS_INSTANCE',
+    operationState: 'success',
+    startTimestamp: '2024-01-10T12:45:00.000+0000',
+    endTimestamp: '2024-01-10T12:45:01.000+0000',
+    user: 'claims-handler',
+    details: {
+      variable: {
+        name: 'claimStatus',
+        oldValue: 'submitted',
+        newValue: 'under_review',
+        scope: {
+          id: 'claimsProcess',
+          name: 'Claims Process',
+        },
+      },
+    },
+  },
+  // Add variable - Failed
+  {
+    id: 'add-var-fail-1',
+    processDefinitionName: 'Order Process',
+    processDefinitionVersion: 2,
+    processInstanceKey: '2251799813685263',
+    processInstanceState: 'ACTIVE',
+    tenantId: '<default>',
+    operationType: 'ADD_VARIABLE',
+    operationEntity: 'PROCESS_INSTANCE',
+    operationState: 'fail',
+    startTimestamp: '2024-01-09T10:15:00.000+0000',
+    endTimestamp: '2024-01-09T10:15:01.000+0000',
+    user: 'order-service-client',
+  },
+  // AI Agent example - Add variable
+  {
+    id: 'ai-agent-add-var-1',
+    processDefinitionName: 'Order Process',
+    processDefinitionVersion: 1,
+    processInstanceKey: '2251799813685299',
+    processInstanceState: 'ACTIVE',
+    tenantId: '<default>',
+    operationType: 'ADD_VARIABLE',
+    operationEntity: 'PROCESS_INSTANCE',
+    operationState: 'success',
+    startTimestamp: '2024-01-14T16:20:00.000+0000',
+    endTimestamp: '2024-01-14T16:20:01.000+0000',
+    user: 'AI Assistant Bot',
+    details: {
+      variable: {
+        name: 'recommendation',
+        newValue: 'Approved',
+        scope: {
+          id: 'orderReview',
+          name: 'Order Review',
+        },
+      },
+    },
+  },
+  // AI Agent example - Update variable
+  {
+    id: 'ai-agent-update-var-1',
+    processDefinitionName: 'Claims Process',
+    processDefinitionVersion: 2,
+    processInstanceKey: '2251799813685300',
+    processInstanceState: 'ACTIVE',
+    tenantId: '<default>',
+    operationType: 'UPDATE_VARIABLE',
+    operationEntity: 'PROCESS_INSTANCE',
+    operationState: 'success',
+    startTimestamp: '2024-01-14T15:10:00.000+0000',
+    endTimestamp: '2024-01-14T15:10:01.000+0000',
+    user: 'AI Agent',
+    details: {
+      variable: {
+        name: 'riskScore',
+        oldValue: 0.3,
+        newValue: 0.15,
+        scope: {
+          id: 'riskAssessment',
+          name: 'Risk Assessment',
+        },
+      },
+    },
+  },
+  // AI Agent example - Modify process instance
+  {
+    id: 'ai-agent-modify-1',
+    processDefinitionName: 'Payment Process',
+    processDefinitionVersion: 2,
+    processInstanceKey: '2251799813685301',
+    processInstanceState: 'ACTIVE',
+    tenantId: '<default>',
+    operationType: 'MODIFY_PROCESS_INSTANCE',
+    operationEntity: 'PROCESS_INSTANCE',
+    operationState: 'success',
+    startTimestamp: '2024-01-14T14:00:00.000+0000',
+    endTimestamp: '2024-01-14T14:02:30.000+0000',
+    user: 'Robot Assistant',
+    errorMessage: 'Failed to add variable: Variable name contains invalid characters.',
+    details: {
+      variable: {
+        name: 'orderItems',
+        newValue: ['item1', 'item2'],
+        scope: {
+          id: 'orderProcess',
+          name: 'Order Process',
+        },
+      },
+    },
+  },
+  // Update variable - Fulfillment Process
+  {
+    id: 'update-var-2',
+    processDefinitionName: 'Fulfillment Process',
+    processDefinitionVersion: 1,
+    processInstanceKey: '2251799813685264',
+    processInstanceState: 'ACTIVE',
+    tenantId: '<default>',
+    operationType: 'UPDATE_VARIABLE',
+    operationEntity: 'PROCESS_INSTANCE',
+    operationState: 'success',
+    startTimestamp: '2024-01-09T08:30:00.000+0000',
+    endTimestamp: '2024-01-09T08:30:01.000+0000',
+    user: 'fulfillment-service',
+    details: {
+      variable: {
+        name: 'shippingAddress',
+        oldValue: '123 Old Street',
+        newValue: '456 New Avenue',
+        scope: {
+          id: 'fulfillmentProcess',
+          name: 'Fulfillment Process',
+        },
+      },
+    },
+  },
 ];

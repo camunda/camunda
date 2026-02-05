@@ -507,4 +507,53 @@ export const mockOperationLog: MockAuditLogEntry[] = [
     startTimestamp: new Date(Date.now() - 65000).toISOString(),
     user: 'John Doe',
   },
+  // AI Agent examples
+  {
+    id: 'ai-1',
+    processDefinitionName: 'Order Process',
+    processDefinitionVersion: 1,
+    processInstanceKey: '123',
+    tenantId: 'default',
+    operationType: 'ADD_VARIABLE',
+    operationState: 'success',
+    startTimestamp: new Date(Date.now() - 75000).toISOString(),
+    user: 'AI Assistant Bot',
+    details: {
+      variable: {
+        name: 'aiRecommendation',
+        newValue: 'Approved',
+        scope: {id: 'orderReview', name: 'Order Review'},
+      },
+    },
+  },
+  {
+    id: 'ai-2',
+    processDefinitionName: 'Order Process',
+    processDefinitionVersion: 1,
+    processInstanceKey: '123',
+    tenantId: 'default',
+    operationType: 'UPDATE_VARIABLE',
+    operationState: 'success',
+    startTimestamp: new Date(Date.now() - 80000).toISOString(),
+    user: 'AI Agent',
+    details: {
+      variable: {
+        name: 'riskScore',
+        oldValue: 0.3,
+        newValue: 0.15,
+        scope: {id: 'riskAssessment', name: 'Risk Assessment'},
+      },
+    },
+  },
+  {
+    id: 'ai-3',
+    processDefinitionName: 'Order Process',
+    processDefinitionVersion: 1,
+    processInstanceKey: '123',
+    tenantId: 'default',
+    operationType: 'MODIFY_PROCESS_INSTANCE',
+    operationState: 'success',
+    startTimestamp: new Date(Date.now() - 85000).toISOString(),
+    user: 'Robot Assistant',
+  },
 ];

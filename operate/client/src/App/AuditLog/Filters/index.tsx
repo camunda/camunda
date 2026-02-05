@@ -501,8 +501,8 @@ const AuditLogFilters: React.FC<AuditLogFiltersProps> = observer(
             />
             <DateTimeRangeField
               id="start-date-range"
-              label="Start date range"
-              modalTitle="Filter operations by start date"
+              label="Date range"
+              modalTitle="Filter operations by date"
               fromDateTime={filters.startDateFrom}
               toDateTime={filters.startDateTo}
               onChange={(from, to) => {
@@ -510,20 +510,6 @@ const AuditLogFilters: React.FC<AuditLogFiltersProps> = observer(
                   ...filters,
                   startDateFrom: from,
                   startDateTo: to,
-                });
-              }}
-            />
-            <DateTimeRangeField
-              id="end-date-range"
-              label="End date range"
-              modalTitle="Filter operations by end date"
-              fromDateTime={filters.endDateFrom}
-              toDateTime={filters.endDateTo}
-              onChange={(from, to) => {
-                onFiltersChange({
-                  ...filters,
-                  endDateFrom: from,
-                  endDateTo: to,
                 });
               }}
             />

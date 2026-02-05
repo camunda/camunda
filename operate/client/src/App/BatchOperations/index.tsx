@@ -202,7 +202,7 @@ const BatchOperations: React.FC = () => {
     {key: 'state', header: 'Batch state', sortKey: 'state'},
     {key: 'items', header: 'Items'},
     {key: 'appliedBy', header: 'Actor', sortKey: 'appliedBy'},
-    {key: 'startTime', header: 'Start time', sortKey: 'startTime'},
+    {key: 'startTime', header: 'Start date', sortKey: 'startTime'},
     {key: 'operations', header: ''},
   ];
 

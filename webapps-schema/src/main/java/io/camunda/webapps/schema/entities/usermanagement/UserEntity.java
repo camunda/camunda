@@ -8,11 +8,15 @@
 package io.camunda.webapps.schema.entities.usermanagement;
 
 import io.camunda.webapps.schema.entities.AbstractExporterEntity;
+import io.camunda.webapps.schema.entities.SinceVersion;
 
 public class UserEntity extends AbstractExporterEntity<UserEntity> {
 
   public static final String DEFAULT_TENANT_IDENTIFIER = "<default>";
+
+  @SinceVersion(value = "8.9.0", nullable = true)
   private String id;
+
   private Long key;
   private String username;
   private String name;

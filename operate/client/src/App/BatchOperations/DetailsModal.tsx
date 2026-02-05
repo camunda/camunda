@@ -207,7 +207,7 @@ const DetailsModal: React.FC<Props> = ({open, onClose, operation}) => {
                       }}
                     >
                       <EventSchedule />
-                      Start time
+                      Start date
                     </div>
                   </FirstColumn>
                   <StructuredListCell>
@@ -225,7 +225,7 @@ const DetailsModal: React.FC<Props> = ({open, onClose, operation}) => {
                         }}
                       >
                         <EventSchedule />
-                        End time
+                        End date
                       </div>
                     </FirstColumn>
                     <StructuredListCell>
@@ -255,7 +255,7 @@ const DetailsModal: React.FC<Props> = ({open, onClose, operation}) => {
             {operation.state === 'FAILED' && operation.errorMessage && (
               <InlineNotification
                 kind="error"
-                title="Error message:"
+                title=""
                 subtitle={operation.errorMessage}
                 hideCloseButton
                 lowContrast

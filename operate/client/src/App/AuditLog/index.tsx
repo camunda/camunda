@@ -8,7 +8,7 @@
 
 import {useState, useMemo, useEffect} from 'react';
 import {useLocation, useNavigate} from 'react-router-dom';
-import {Link, Pagination, Button} from '@carbon/react';
+import {Link, Pagination, Button, CodeSnippet, Tooltip} from '@carbon/react';
 import {AuditLogFilters} from './Filters';
 import {
   type AuditLogSearchFilters,
@@ -22,7 +22,8 @@ import {SortableTable} from 'modules/components/SortableTable';
 import {formatDate} from 'modules/utils/date';
 import {getSortParams} from 'modules/utils/filter';
 import {PAGE_TITLE} from 'modules/constants';
-import {Information} from '@carbon/react/icons';
+import {Information, CheckmarkOutline, Error} from '@carbon/react/icons';
+import {User, Api, Bot} from '@carbon/icons-react';
 import {DetailsModal} from './DetailsModal';
 import {StatusIndicator} from './StatusIndicator';
 import type {MockAuditLogEntry} from 'modules/mocks/auditLog';
@@ -227,14 +228,58 @@ const AuditLog: React.FC = () => {
     return user;
   };
 
+  // Determine actor type and return appropriate icon
+  const getActorType = (user: string): 'user' | 'client' | 'agent' => {
+    if (!user) return 'user';
+    
+    const lowerUser = user.toLowerCase();
+    
+    // Check for AI agent indicators
+    if (
+      lowerUser.includes('ai') ||
+      lowerUser.includes('agent') ||
+      lowerUser.includes('bot') ||
+      lowerUser.includes('robot') ||
+      lowerUser.includes('assistant')
+    ) {
+      return 'agent';
+    }
+    
+    // Check for API client indicators
+    if (
+      lowerUser.includes('api') ||
+      lowerUser.includes('client') ||
+      lowerUser.includes('service') ||
+      lowerUser.includes('-client') ||
+      lowerUser.endsWith('client')
+    ) {
+      return 'client';
+    }
+    
+    // Default to user
+    return 'user';
+  };
+
+  const getActorIcon = (actorType: 'user' | 'client' | 'agent') => {
+    switch (actorType) {
+      case 'client':
+        return Api;
+      case 'agent':
+        return Bot;
+      default:
+        return User;
+    }
+  };
+
 
   const headers = [
+    {key: 'operationState', header: '', width: '48px', isDisabled: true},
     {key: 'operationType', header: 'Operation type'},
-    {key: 'operationEntity', header: 'Entity'},
-    {key: 'processes', header: 'Reference'},
-    {key: 'operationState', header: 'Status'},
+    {key: 'operationEntity', header: 'Entity type'},
+    {key: 'processes', header: 'Reference to entity'},
+    {key: 'property', header: 'Property'},
     {key: 'user', header: 'Actor'},
-    {key: 'startTimestamp', header: 'Time'},
+    {key: 'startTimestamp', header: 'Date'},
     {key: 'actions', header: ' '},
   ];
 
@@ -250,7 +295,6 @@ const AuditLog: React.FC = () => {
           // For batch operations, show "Batch operation" text and batch key as link
           processesDisplay = (
             <div>
-              <div>Multiple process instances</div>
               {mockEntry.batchOperationId && (
                 <Link
                   href="#"
@@ -262,6 +306,7 @@ const AuditLog: React.FC = () => {
                   {mockEntry.batchOperationId}
                 </Link>
               )}
+              <div style={{fontStyle: 'italic'}}>Multiple process instances</div>
             </div>
           );
         } else if (
@@ -276,7 +321,6 @@ const AuditLog: React.FC = () => {
           
           processesDisplay = (
             <div>
-              <div>{entry.processDefinitionName}</div>
               {resourceKey && (
                 isForm || isDelete ? (
                   <div
@@ -299,13 +343,13 @@ const AuditLog: React.FC = () => {
                   </Link>
                 )
               )}
+              <div style={{fontStyle: 'italic'}}>{entry.processDefinitionName}</div>
             </div>
           );
         } else if (entry.processDefinitionName) {
           // For single operations, show process name with instance key as link
           processesDisplay = (
             <div>
-              <div>{entry.processDefinitionName}</div>
               {entry.processInstanceKey && (
                 <Link
                   href="#"
@@ -317,10 +361,36 @@ const AuditLog: React.FC = () => {
                   {entry.processInstanceKey}
                 </Link>
               )}
+              <div style={{fontStyle: 'italic'}}>{entry.processDefinitionName}</div>
             </div>
           );
         } else {
           processesDisplay = '-';
+        }
+
+        // Determine property display
+        let propertyDisplay: React.ReactNode = '-';
+        if (
+          entry.operationType === 'ADD_VARIABLE' ||
+          entry.operationType === 'UPDATE_VARIABLE'
+        ) {
+          const variableName = mockEntry.details?.variable?.name;
+          if (variableName) {
+            propertyDisplay = (
+              <div>
+                <div
+                  style={{
+                    fontSize: 'var(--cds-label-01-font-size)',
+                    lineHeight: 'var(--cds-label-01-line-height)',
+                    color: 'var(--cds-text-secondary)',
+                  }}
+                >
+                  Variable name
+                </div>
+                  {variableName}
+              </div>
+            );
+          }
         }
 
         return {
@@ -336,9 +406,47 @@ const AuditLog: React.FC = () => {
             </div>
           ),
           operationEntity: formatOperationEntity(resolveOperationEntity(mockEntry)),
-          operationState: <StatusIndicator status={entry.operationState} />,
+          operationState: (() => {
+            const isSuccess = entry.operationState === 'success';
+            const Icon = isSuccess ? CheckmarkOutline : Error;
+            const color = isSuccess
+              ? 'var(--cds-support-success)'
+              : 'var(--cds-support-error)';
+            return <Icon size={16} style={{color}} />;
+          })(),
           processes: processesDisplay,
-          user: formatUsername(entry.user),
+          property: propertyDisplay,
+          user: entry.user ? (() => {
+            const actorType = getActorType(entry.user);
+            const getActorTypeLabel = (type: 'user' | 'client' | 'agent') => {
+              switch (type) {
+                case 'client':
+                  return 'API client';
+                case 'agent':
+                  return 'AI agent';
+                default:
+                  return 'User';
+              }
+            };
+            const icon = actorType === 'user' ? <User size={16} /> : actorType === 'client' ? <Api size={16} /> : <Bot size={16} />;
+            return (
+              <div style={{display: 'flex', alignItems: 'center', gap: 'var(--cds-spacing-03)'}}>
+                <Tooltip align="top" description={getActorTypeLabel(actorType)}>
+                  <div style={{color: 'var(--cds-icon-secondary)', flexShrink: 0, display: 'flex', alignItems: 'center', cursor: 'pointer'}}>
+                    {icon}
+                  </div>
+                </Tooltip>
+                <CodeSnippet
+                  type="inline"
+                  title="Click to copy"
+                  aria-label="Click to copy"
+                  feedback="Copied to clipboard"
+                >
+                  {formatUsername(entry.user)}
+                </CodeSnippet>
+              </div>
+            );
+          })() : '-',
           startTimestamp: formatDate(entry.startTimestamp),
           actions:
             entry.operationState === 'fail' ||
@@ -351,6 +459,8 @@ const AuditLog: React.FC = () => {
                 renderIcon={Information}
                 onClick={() => openDetailsModal(mockEntry)}
                 iconDescription="View details"
+                tooltipAlignment="center"
+                tooltipPosition="left"
               />
             ) : null,
           entry: mockEntry,
@@ -478,14 +588,18 @@ const AuditLog: React.FC = () => {
                 z-index: 1;
                 background-color: var(--cds-layer);
               }
+              .audit-log-table-container .cds--popover[role='tooltip'] .cds--popover-content {
+                padding-top: var(--cds-spacing-02);
+                padding-bottom: var(--cds-spacing-02);
+              }
             `}</style>
             <SortableTable
               state={isLoading ? 'skeleton' : error ? 'error' : 'content'}
               headerColumns={headers}
               rows={sortedRows}
               onSort={(clickedSortKey) => {
-                // Don't allow sorting on actions column
-                if (clickedSortKey === 'actions') {
+                // Don't allow sorting on actions or operationState columns
+                if (clickedSortKey === 'actions' || clickedSortKey === 'operationState') {
                   return;
                 }
 
