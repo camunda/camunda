@@ -8,7 +8,6 @@
 package io.camunda.zeebe.backup.retention;
 
 import io.camunda.zeebe.util.CloseableSilently;
-import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Instant;
@@ -22,14 +21,16 @@ public class RetentionMetrics implements CloseableSilently {
   static final String EARLIEST_BACKUP_ID = NAMESPACE + ".earliest.backup.id";
 
   private final MeterRegistry meterRegistry;
-  private Counter backupsDeletedCounter;
-  private Counter rangesDeletedCounter;
+  private Gauge backupsDeletedGauge;
+  private Gauge rangesDeletedGauge;
   private Gauge lastExecutionGauge;
   private Gauge nextExecutionGauge;
   private Gauge earliestBackupGauge;
   private long lastExecutionTimestamp = 0L;
   private long nextExecutionTimestamp = 0L;
   private long earliestBackupId = 0L;
+  private long backupsDeleted = 0L;
+  private long rangesDeleted = 0L;
 
   public RetentionMetrics(final MeterRegistry meterRegistry) {
     this.meterRegistry = meterRegistry;
@@ -51,13 +52,13 @@ public class RetentionMetrics implements CloseableSilently {
             .description("The ID of the earliest backup retained")
             .register(meterRegistry);
 
-    backupsDeletedCounter =
-        Counter.builder(BACKUPS_DELETED_ROUND)
+    backupsDeletedGauge =
+        Gauge.builder(BACKUPS_DELETED_ROUND, () -> backupsDeleted)
             .description("Number of backups deleted in the last retention round")
             .register(meterRegistry);
 
-    rangesDeletedCounter =
-        Counter.builder(RANGES_DELETED_ROUND)
+    rangesDeletedGauge =
+        Gauge.builder(RANGES_DELETED_ROUND, () -> rangesDeleted)
             .description("Number of ranges deleted in the last retention round")
             .register(meterRegistry);
   }
@@ -74,12 +75,12 @@ public class RetentionMetrics implements CloseableSilently {
     earliestBackupId = backupId;
   }
 
-  public void incrementBackupsDeleted(final long count) {
-    backupsDeletedCounter.increment(count);
+  public void recordBackupsDeleted(final long deletedBackupsCount) {
+    backupsDeleted = deletedBackupsCount;
   }
 
-  public void incrementRangesDeleted(final long count) {
-    rangesDeletedCounter.increment(count);
+  public void recordRangesDeleted(final long rangesDeletedCount) {
+    rangesDeleted = rangesDeletedCount;
   }
 
   @Override
@@ -87,7 +88,7 @@ public class RetentionMetrics implements CloseableSilently {
     meterRegistry.remove(lastExecutionGauge);
     meterRegistry.remove(nextExecutionGauge);
     meterRegistry.remove(earliestBackupGauge);
-    meterRegistry.remove(backupsDeletedCounter);
-    meterRegistry.remove(rangesDeletedCounter);
+    meterRegistry.remove(backupsDeletedGauge);
+    meterRegistry.remove(rangesDeletedGauge);
   }
 }

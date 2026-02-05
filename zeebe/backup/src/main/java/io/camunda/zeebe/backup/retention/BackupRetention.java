@@ -306,7 +306,7 @@ public class BackupRetention extends Actor {
             .toArray(CompletableFuture[]::new);
 
     CompletableFuture.allOf(futures)
-        .thenAccept(ignore -> metrics.incrementRangesDeleted(context.deletableRangeMarkers.size()))
+        .thenAccept(ignore -> metrics.recordRangesDeleted(context.deletableRangeMarkers.size()))
         .thenApply(v -> context)
         .thenAccept(future::complete);
     return future;
@@ -327,7 +327,7 @@ public class BackupRetention extends Actor {
             .toArray(CompletableFuture[]::new);
 
     CompletableFuture.allOf(futures)
-        .thenAccept(ignore -> metrics.incrementBackupsDeleted(context.deletableRangeMarkers.size()))
+        .thenAccept(ignore -> metrics.recordBackupsDeleted(context.deletableBackups().size()))
         .thenAccept(future::complete);
     return future;
   }
