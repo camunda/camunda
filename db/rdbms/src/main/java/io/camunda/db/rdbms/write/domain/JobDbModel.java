@@ -29,9 +29,9 @@ public class JobDbModel implements Copyable<JobDbModel> {
   private JobKind kind;
   private ListenerEventType listenerEventType;
   private Integer retries;
-  private Boolean isDenied;
+  private boolean isDenied;
   private String deniedReason;
-  private Boolean hasFailedWithRetriesLeft;
+  private boolean hasFailedWithRetriesLeft;
   private String errorCode;
   private String errorMessage;
   private String serializedCustomHeaders;
@@ -61,9 +61,9 @@ public class JobDbModel implements Copyable<JobDbModel> {
       final JobKind kind,
       final ListenerEventType listenerEventType,
       final Integer retries,
-      final Boolean isDenied,
+      final boolean isDenied,
       final String deniedReason,
-      final Boolean hasFailedWithRetriesLeft,
+      final boolean hasFailedWithRetriesLeft,
       final String errorCode,
       final String errorMessage,
       final Map<String, String> customHeaders,
@@ -209,11 +209,11 @@ public class JobDbModel implements Copyable<JobDbModel> {
     this.retries = retries;
   }
 
-  public Boolean isDenied() {
+  public boolean isDenied() {
     return isDenied;
   }
 
-  public void isDenied(final Boolean isDenied) {
+  public void isDenied(final boolean isDenied) {
     this.isDenied = isDenied;
   }
 
@@ -225,11 +225,11 @@ public class JobDbModel implements Copyable<JobDbModel> {
     this.deniedReason = deniedReason;
   }
 
-  public Boolean hasFailedWithRetriesLeft() {
+  public boolean hasFailedWithRetriesLeft() {
     return hasFailedWithRetriesLeft;
   }
 
-  public void hasFailedWithRetriesLeft(final Boolean hasFailedWithRetriesLeft) {
+  public void hasFailedWithRetriesLeft(final boolean hasFailedWithRetriesLeft) {
     this.hasFailedWithRetriesLeft = hasFailedWithRetriesLeft;
   }
 
@@ -396,9 +396,9 @@ public class JobDbModel implements Copyable<JobDbModel> {
     private JobKind kind;
     private ListenerEventType listenerEventType;
     private Integer retries;
-    private Boolean isDenied;
+    private boolean isDenied;
     private String deniedReason;
-    private Boolean hasFailedWithRetriesLeft;
+    private boolean hasFailedWithRetriesLeft;
     private String errorCode;
     private String errorMessage;
     private Map<String, String> customHeaders;
@@ -450,7 +450,7 @@ public class JobDbModel implements Copyable<JobDbModel> {
       return this;
     }
 
-    public Builder isDenied(final Boolean isDenied) {
+    public Builder isDenied(final boolean isDenied) {
       this.isDenied = isDenied;
       return this;
     }
@@ -460,7 +460,7 @@ public class JobDbModel implements Copyable<JobDbModel> {
       return this;
     }
 
-    public Builder hasFailedWithRetriesLeft(final Boolean hasFailedWithRetriesLeft) {
+    public Builder hasFailedWithRetriesLeft(final boolean hasFailedWithRetriesLeft) {
       this.hasFailedWithRetriesLeft = hasFailedWithRetriesLeft;
       return this;
     }

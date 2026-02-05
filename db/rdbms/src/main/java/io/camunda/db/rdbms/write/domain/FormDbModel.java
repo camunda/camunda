@@ -11,7 +11,7 @@ import io.camunda.util.ObjectBuilder;
 import java.util.function.Function;
 
 public record FormDbModel(
-    Long formKey, String tenantId, String formId, String schema, Long version, Boolean isDeleted)
+    Long formKey, String tenantId, String formId, String schema, Long version, boolean isDeleted)
     implements DbModel<FormDbModel> {
 
   @Override
@@ -36,7 +36,7 @@ public record FormDbModel(
     private String formId;
     private String schema;
     private Long version;
-    private Boolean isDeleted;
+    private boolean isDeleted;
 
     public FormDbModelBuilder() {}
 
@@ -65,7 +65,7 @@ public record FormDbModel(
       return this;
     }
 
-    public FormDbModelBuilder isDeleted(final Boolean isDeleted) {
+    public FormDbModelBuilder isDeleted(final boolean isDeleted) {
       this.isDeleted = isDeleted;
       return this;
     }

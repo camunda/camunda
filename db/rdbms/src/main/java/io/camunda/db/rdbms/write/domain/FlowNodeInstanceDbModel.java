@@ -29,7 +29,7 @@ public record FlowNodeInstanceDbModel(
     FlowNodeState state,
     Long incidentKey,
     Long numSubprocessIncidents,
-    Boolean hasIncident,
+    boolean hasIncident,
     String tenantId,
     Integer partitionId)
     implements Copyable<FlowNodeInstanceDbModel> {
@@ -80,7 +80,7 @@ public record FlowNodeInstanceDbModel(
     private FlowNodeState state;
     private Long incidentKey;
     private Long numSubprocessIncidents = 0L;
-    private Boolean hasIncident;
+    private boolean hasIncident;
     private String tenantId;
     private int partitionId;
 
@@ -164,7 +164,7 @@ public record FlowNodeInstanceDbModel(
       return this;
     }
 
-    public FlowNodeInstanceDbModelBuilder hasIncident(final Boolean hasIncident) {
+    public FlowNodeInstanceDbModelBuilder hasIncident(final boolean hasIncident) {
       this.hasIncident = hasIncident;
       return this;
     }
