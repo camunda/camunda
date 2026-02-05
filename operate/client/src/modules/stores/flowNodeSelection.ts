@@ -215,5 +215,6 @@ class FlowNodeSelection {
   };
 }
 
+/** @deprecated Do not use this store! Use useProcessInstanceElementSelection instead. */
 export const flowNodeSelectionStore = new FlowNodeSelection();
 export type {Selection};

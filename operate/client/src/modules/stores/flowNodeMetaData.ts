@@ -66,4 +66,5 @@ class FlowNodeMetaData extends NetworkReconnectionHandler {
   }
 }
 
+/** @deprecated Do not use this store! Use useProcessInstanceElementSelection instead. */
 export const flowNodeMetaDataStore = new FlowNodeMetaData();
