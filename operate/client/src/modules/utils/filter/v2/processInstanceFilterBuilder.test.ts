@@ -108,9 +108,8 @@ describe('buildProcessInstanceFilter', () => {
   });
 
   it('parses and stringifies variable values from URL format', () => {
-    const filters: ProcessInstanceFilters = {
-      variableName: 'orderId',
-      variableValues: '123,"test",true',
+    const filters: RequestFilters = {
+      variable: {name: 'orderId', values: ['123', '"test"', 'true']},
     };
     const result = buildProcessInstanceFilter(filters);
 

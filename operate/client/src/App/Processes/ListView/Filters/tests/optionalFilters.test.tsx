@@ -59,9 +59,7 @@ describe('Optional Filters', () => {
     await user.click(screen.getByRole('button', {name: /^more filters$/i}));
 
     await user.click(screen.getByTestId('optional-filter-menuitem-variable'));
-    expect(
-      screen.getByTestId('variable-filter-input'),
-    ).toBeInTheDocument();
+    expect(screen.getByTestId('variable-filter-input')).toBeInTheDocument();
     await user.click(screen.getByRole('button', {name: /^more filters$/i}));
     expect(
       screen.queryByTestId('optional-filter-menuitem-variable'),

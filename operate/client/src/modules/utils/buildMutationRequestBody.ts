@@ -50,7 +50,8 @@ const buildMutationRequestBody = ({
   }
 
   if (variableConditions && variableConditions.length > 0) {
-    const apiVariables = convertVariableConditionsToApiFormat(variableConditions);
+    const apiVariables =
+      convertVariableConditionsToApiFormat(variableConditions);
     if (apiVariables.length > 0) {
       filter = {
         ...filter,

@@ -50,7 +50,9 @@ const VariableFilterRow: React.FC<Props> = ({
     });
   };
 
-  const handleOperatorChange = (selectedItem: VariableFilterOperator | null) => {
+  const handleOperatorChange = (
+    selectedItem: VariableFilterOperator | null,
+  ) => {
     const newOperator = selectedItem ?? 'equals';
     const operatorConfig = VARIABLE_FILTER_OPERATORS.find(
       (op) => op.id === newOperator,

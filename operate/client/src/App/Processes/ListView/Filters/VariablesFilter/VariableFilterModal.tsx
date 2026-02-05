@@ -91,8 +91,12 @@ const VariableFilterModal: React.FC<Props> = ({
   const handleApply = () => {
     // Filter out invalid conditions before passing to parent
     const validConditions = conditions.filter((c) => {
-      if (!c.name.trim()) return false;
-      if (c.operator === 'exists' || c.operator === 'doesNotExist') return true;
+      if (!c.name.trim()) {
+        return false;
+      }
+      if (c.operator === 'exists' || c.operator === 'doesNotExist') {
+        return true;
+      }
       return c.value.trim() !== '';
     });
 

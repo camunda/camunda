@@ -217,7 +217,13 @@ function updateProcessInstancesFilterSearchString(
  */
 type VariableFilterValue =
   | string
-  | {$eq?: string; $neq?: string; $exists?: boolean; $in?: string[]; $like?: string};
+  | {
+      $eq?: string;
+      $neq?: string;
+      $exists?: boolean;
+      $in?: string[];
+      $like?: string;
+    };
 
 /**
  * Internal type representing a single variable filter condition in V2 API format.
@@ -245,8 +251,12 @@ function convertVariableConditionsToApiFormat(
   return conditions
     .filter((c) => {
       // Filter out invalid conditions
-      if (!c.name.trim()) return false;
-      if (c.operator === 'exists' || c.operator === 'doesNotExist') return true;
+      if (!c.name.trim()) {
+        return false;
+      }
+      if (c.operator === 'exists' || c.operator === 'doesNotExist') {
+        return true;
+      }
       return c.value.trim() !== '';
     })
     .map((condition) => {
@@ -278,7 +288,10 @@ function convertVariableConditionsToApiFormat(
         case 'oneOf': {
           const parsed = getValidVariableValues(value) ?? [];
           const jsonValues = parsed.map((v) => JSON.stringify(v));
-          return {name, value: {$in: jsonValues.length > 0 ? jsonValues : [value]}};
+          return {
+            name,
+            value: {$in: jsonValues.length > 0 ? jsonValues : [value]},
+          };
         }
         default:
           return {name, value};

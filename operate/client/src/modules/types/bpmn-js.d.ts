@@ -21,7 +21,7 @@ declare module 'bpmn-moddle' {
     rootElement: BusinessObject;
   };
 
-  export class BpmnModdle {
+  export default class BpmnModdle {
     constructor();
     fromXML(xml: string, definitions: string): Promise<DiagramModel>;
   }

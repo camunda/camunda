@@ -13,16 +13,14 @@ import {type VariableFilterCondition} from './constants';
 describe('VariableFilterModal', () => {
   it('should render modal with one empty condition when open', () => {
     render(
-      <VariableFilterModal
-        isOpen={true}
-        onClose={vi.fn()}
-        onApply={vi.fn()}
-      />,
+      <VariableFilterModal isOpen={true} onClose={vi.fn()} onApply={vi.fn()} />,
     );
 
     expect(screen.getByTestId('variable-filter-modal')).toBeInTheDocument();
     expect(screen.getByText('Filter by variables')).toBeInTheDocument();
-    expect(screen.getByText('Results will match all conditions.')).toBeInTheDocument();
+    expect(
+      screen.getByText('Results will match all conditions.'),
+    ).toBeInTheDocument();
 
     // given one row, the delete button should not be visible
     expect(screen.queryByLabelText('Remove condition')).not.toBeInTheDocument();
@@ -68,11 +66,7 @@ describe('VariableFilterModal', () => {
 
   it('should add a new condition row when Add is clicked', async () => {
     const {user} = render(
-      <VariableFilterModal
-        isOpen={true}
-        onClose={vi.fn()}
-        onApply={vi.fn()}
-      />,
+      <VariableFilterModal isOpen={true} onClose={vi.fn()} onApply={vi.fn()} />,
     );
 
     await user.click(screen.getByTestId('add-variable-filter-button'));
@@ -110,26 +104,16 @@ describe('VariableFilterModal', () => {
 
   it('should disable Apply when all conditions are empty', () => {
     render(
-      <VariableFilterModal
-        isOpen={true}
-        onClose={vi.fn()}
-        onApply={vi.fn()}
-      />,
+      <VariableFilterModal isOpen={true} onClose={vi.fn()} onApply={vi.fn()} />,
     );
 
     const modal = screen.getByTestId('variable-filter-modal');
-    expect(
-      within(modal).getByRole('button', {name: /apply/i}),
-    ).toBeDisabled();
+    expect(within(modal).getByRole('button', {name: /apply/i})).toBeDisabled();
   });
 
   it('should enable Apply when a condition has name and value', async () => {
     const {user} = render(
-      <VariableFilterModal
-        isOpen={true}
-        onClose={vi.fn()}
-        onApply={vi.fn()}
-      />,
+      <VariableFilterModal isOpen={true} onClose={vi.fn()} onApply={vi.fn()} />,
     );
 
     const nameInput = screen.getByPlaceholderText('Variable name');
@@ -139,9 +123,7 @@ describe('VariableFilterModal', () => {
     await user.type(valueInput, '"active"');
 
     const modal = screen.getByTestId('variable-filter-modal');
-    expect(
-      within(modal).getByRole('button', {name: /apply/i}),
-    ).toBeEnabled();
+    expect(within(modal).getByRole('button', {name: /apply/i})).toBeEnabled();
   });
 
   it('should enable Apply for exists operator with only name filled', async () => {
@@ -159,9 +141,7 @@ describe('VariableFilterModal', () => {
     );
 
     const modal = screen.getByTestId('variable-filter-modal');
-    expect(
-      within(modal).getByRole('button', {name: /apply/i}),
-    ).toBeEnabled();
+    expect(within(modal).getByRole('button', {name: /apply/i})).toBeEnabled();
   });
 
   it('should call onApply with valid conditions only', async () => {
@@ -181,9 +161,7 @@ describe('VariableFilterModal', () => {
     );
 
     const modal = screen.getByTestId('variable-filter-modal');
-    await user.click(
-      within(modal).getByRole('button', {name: /apply/i}),
-    );
+    await user.click(within(modal).getByRole('button', {name: /apply/i}));
 
     expect(onApply).toHaveBeenCalledWith([
       {id: '1', name: 'status', operator: 'equals', value: '"active"'},
@@ -194,17 +172,11 @@ describe('VariableFilterModal', () => {
     const onClose = vi.fn();
 
     const {user} = render(
-      <VariableFilterModal
-        isOpen={true}
-        onClose={onClose}
-        onApply={vi.fn()}
-      />,
+      <VariableFilterModal isOpen={true} onClose={onClose} onApply={vi.fn()} />,
     );
 
     const modal = screen.getByTestId('variable-filter-modal');
-    await user.click(
-      within(modal).getByRole('button', {name: /cancel/i}),
-    );
+    await user.click(within(modal).getByRole('button', {name: /cancel/i}));
 
     expect(onClose).toHaveBeenCalledTimes(1);
   });
@@ -226,9 +198,7 @@ describe('VariableFilterModal', () => {
     );
 
     const modal = screen.getByTestId('variable-filter-modal');
-    await user.click(
-      within(modal).getByRole('button', {name: /apply/i}),
-    );
+    await user.click(within(modal).getByRole('button', {name: /apply/i}));
 
     // given: first condition has whitespace-only name, should be filtered out
     expect(onApply).toHaveBeenCalledWith([

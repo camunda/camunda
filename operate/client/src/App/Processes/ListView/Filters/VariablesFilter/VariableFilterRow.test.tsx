@@ -81,10 +81,7 @@ describe('VariableFilterRow', () => {
       />,
     );
 
-    await user.type(
-      screen.getByTestId('variable-filter-value-test-1'),
-      '"a"',
-    );
+    await user.type(screen.getByTestId('variable-filter-value-test-1'), '"a"');
 
     expect(onChange).toHaveBeenCalled();
   });
@@ -144,9 +141,7 @@ describe('VariableFilterRow', () => {
       />,
     );
 
-    await user.click(
-      screen.getByTestId('delete-variable-filter-test-1'),
-    );
+    await user.click(screen.getByTestId('delete-variable-filter-test-1'));
 
     expect(onDelete).toHaveBeenCalledTimes(1);
   });
@@ -183,9 +178,7 @@ describe('VariableFilterRow', () => {
       />,
     );
 
-    await user.click(
-      screen.getByRole('button', {name: /open json editor/i}),
-    );
+    await user.click(screen.getByRole('button', {name: /open json editor/i}));
 
     expect(screen.getByRole('dialog')).toBeInTheDocument();
   });

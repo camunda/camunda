@@ -12,7 +12,10 @@ import {Edit} from '@carbon/react/icons';
 import {IconTextInput} from 'modules/components/IconInput';
 import {variableFilterStore} from 'modules/stores/variableFilter';
 import {VariableFilterModal} from './VariableFilterModal';
-import {type VariableFilterCondition, VARIABLE_FILTER_OPERATORS} from './constants';
+import {
+  type VariableFilterCondition,
+  VARIABLE_FILTER_OPERATORS,
+} from './constants';
 
 interface Props {
   isModalOpen: boolean;
@@ -47,7 +50,10 @@ const VariableFilter: React.FC<Props> = observer(
       );
       const operatorLabel = operatorConfig?.label ?? condition.operator;
 
-      if (condition.operator === 'exists' || condition.operator === 'doesNotExist') {
+      if (
+        condition.operator === 'exists' ||
+        condition.operator === 'doesNotExist'
+      ) {
         return `${condition.name} ${operatorLabel}`;
       }
 
@@ -97,5 +103,7 @@ const VariableFilter: React.FC<Props> = observer(
 export {VariableFilter};
 export {VariableFilterModal} from './VariableFilterModal';
 export {VariableFilterRow} from './VariableFilterRow';
-export type {VariableFilterCondition, VariableFilterOperator} from './constants';
-export {VARIABLE_FILTER_OPERATORS, MOCK_VARIABLE_NAMES} from './constants';
+export type {
+  VariableFilterCondition,
+  VariableFilterOperator,
+} from './constants';

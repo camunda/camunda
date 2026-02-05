@@ -7,7 +7,11 @@
  */
 
 import styled from 'styled-components';
-import {Stack, IconButton as BaseIconButton, Modal as BaseModal} from '@carbon/react';
+import {
+  Stack,
+  IconButton as BaseIconButton,
+  Modal as BaseModal,
+} from '@carbon/react';
 import {styles} from '@carbon/elements';
 
 const Modal = styled(BaseModal)`

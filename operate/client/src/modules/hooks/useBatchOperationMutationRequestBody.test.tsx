@@ -141,11 +141,15 @@ describe('useBatchOperationMutationRequestBody', () => {
     });
   });
 
-  it('should include multiple variable values', () => {
-    variableFilterStore.setVariable({
-      name: 'testVar',
-      values: '"value1", "value2", "value3"',
-    });
+  it('should include multiple variable conditions', () => {
+    variableFilterStore.setConditions([
+      {
+        id: '1',
+        name: 'testVar',
+        operator: 'oneOf',
+        value: '"value1", "value2", "value3"',
+      },
+    ]);
 
     const {result} = renderHook(() => useBatchOperationMutationRequestBody(), {
       wrapper: getWrapper(),
