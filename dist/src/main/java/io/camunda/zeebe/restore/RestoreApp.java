@@ -124,27 +124,29 @@ public class RestoreApp implements ApplicationRunner {
           restoreConfiguration.ignoreFilesInTarget());
       LOG.info("Successfully restored broker from backup {}", backupId);
     } else {
-      final var toWasProvided = to != null;
-      final var toTime = to != null ? to : Instant.now();
-      LOG.info(
-          "Starting to restore from backups in time range [{}, {}] with the following configuration: {}",
-          from,
-          toTime,
-          restoreConfiguration);
-      if (toWasProvided) {
+      if (to != null) {
+        LOG.info(
+            "Starting to restore from backups in time range [{}, {}] with the following configuration: {}",
+            from,
+            to,
+            restoreConfiguration);
         restoreManager.restore(
             from,
-            toTime,
+            to,
             restoreConfiguration.validateConfig(),
             restoreConfiguration.ignoreFilesInTarget());
+        LOG.info("Successfully restored broker from backups in time range [{}, {}]", from, to);
       } else {
-        restoreManager.restoreToLatest(
+        LOG.info(
+            "Starting to restore from backups starting at {} (restore as much as possible from complete range) with the following configuration: {}",
             from,
-            toTime,
+            restoreConfiguration);
+        restoreManager.restoreFromCompleteRange(
+            from,
             restoreConfiguration.validateConfig(),
             restoreConfiguration.ignoreFilesInTarget());
+        LOG.info("Successfully restored broker from backups starting at {}", from);
       }
-      LOG.info("Successfully restored broker from backups in time range [{}, {}]", from, toTime);
     }
   }
 
