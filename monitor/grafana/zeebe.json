@@ -23612,6 +23612,184 @@
           ],
           "title": "Current Checkpoint ID",
           "type": "stat"
+        },
+        {
+          "id": 707,
+          "type": "stat",
+          "title": "Retention last execution",
+          "description": "The amount of backups and ranges deleted by the retention mechanism during it's last execution.",
+          "gridPos": {
+            "h": 9,
+            "w": 6,
+            "x": 12,
+            "y": 1011
+          },
+          "fieldConfig": {
+            "defaults": {
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "color": {
+                "mode": "fixed",
+                "fixedColor": "green"
+              },
+              "unit": "none"
+            },
+            "overrides": []
+          },
+          "pluginVersion": "12.3.1",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "expr": "camunda_backup_retention_backups_deleted_round",
+              "interval": "",
+              "legendFormat": "Backups deleted",
+              "refId": "A",
+              "editorMode": "code",
+              "range": true
+            },
+            {
+              "refId": "B",
+              "expr": "camunda_backup_retention_ranges_deleted_round",
+              "range": true,
+              "instant": false,
+              "datasource": {
+                "uid": "${DS_PROMETHEUS}",
+                "type": "prometheus"
+              },
+              "hide": false,
+              "editorMode": "builder",
+              "legendFormat": "Ranges deleted"
+            },
+            {
+              "refId": "C",
+              "expr": "camunda_backup_retention_earliest_backup_id",
+              "range": true,
+              "instant": false,
+              "datasource": {
+                "uid": "${DS_PROMETHEUS}",
+                "type": "prometheus"
+              },
+              "hide": false,
+              "editorMode": "builder",
+              "legendFormat": "Earliest backup"
+            }
+          ],
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "options": {
+            "reduceOptions": {
+              "values": false,
+              "calcs": [
+                "last"
+              ],
+              "fields": ""
+            },
+            "orientation": "auto",
+            "textMode": "value_and_name",
+            "wideLayout": true,
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "center",
+            "showPercentChange": false,
+            "percentChangeColorMode": "standard"
+          }
+        },
+        {
+          "id": 708,
+          "type": "stat",
+          "title": "Retention schedule",
+          "description": "Retention mechanism scheduled execution information",
+          "gridPos": {
+            "h": 9,
+            "w": 6,
+            "x": 18,
+            "y": 1011
+          },
+          "fieldConfig": {
+            "defaults": {
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "color": {
+                "mode": "fixed",
+                "fixedColor": "green"
+              },
+              "unit": "dateTimeAsIsoNoDateIfToday",
+              "fieldMinMax": false
+            },
+            "overrides": []
+          },
+          "pluginVersion": "12.3.1",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "expr": "camunda_backup_retention_last_execution_millis",
+              "interval": "",
+              "legendFormat": "Last retention execution",
+              "refId": "A",
+              "editorMode": "code",
+              "range": true,
+              "instant": false,
+              "exemplar": false
+            },
+            {
+              "refId": "B",
+              "expr": "camunda_backup_retention_next_execution_millis",
+              "range": true,
+              "instant": false,
+              "datasource": {
+                "uid": "${DS_PROMETHEUS}",
+                "type": "prometheus"
+              },
+              "hide": false,
+              "editorMode": "builder",
+              "legendFormat": "Next retention execution"
+            }
+          ],
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "options": {
+            "reduceOptions": {
+              "values": false,
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": ""
+            },
+            "orientation": "horizontal",
+            "textMode": "value_and_name",
+            "wideLayout": false,
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "center",
+            "showPercentChange": false,
+            "percentChangeColorMode": "standard"
+          }
         }
       ],
       "title": "Backups",
