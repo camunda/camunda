@@ -11,6 +11,8 @@ import io.camunda.zeebe.util.CloseableSilently;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Instant;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class RetentionMetrics implements CloseableSilently {
   static final String NAMESPACE = "camunda.backup.retention";
@@ -19,76 +21,105 @@ public class RetentionMetrics implements CloseableSilently {
   static final String BACKUPS_DELETED_ROUND = NAMESPACE + ".backups.deleted.round";
   static final String RANGES_DELETED_ROUND = NAMESPACE + ".ranges.deleted.round";
   static final String EARLIEST_BACKUP_ID = NAMESPACE + ".earliest.backup.id";
+  static final String PARTITION_TAG = "partition";
 
   private final MeterRegistry meterRegistry;
-  private Gauge backupsDeletedGauge;
-  private Gauge rangesDeletedGauge;
+  private final Map<Integer, PartitionMetrics> partitionMetrics = new ConcurrentHashMap<>();
   private Gauge lastExecutionGauge;
   private Gauge nextExecutionGauge;
-  private Gauge earliestBackupGauge;
-  private long lastExecutionTimestamp = 0L;
-  private long nextExecutionTimestamp = 0L;
-  private long earliestBackupId = 0L;
-  private long backupsDeleted = 0L;
-  private long rangesDeleted = 0L;
+  private long lastExecution = 0L;
+  private long nextExecution = 0L;
 
   public RetentionMetrics(final MeterRegistry meterRegistry) {
     this.meterRegistry = meterRegistry;
   }
 
+  public PartitionMetrics forPartition(final int partitionId) {
+    return partitionMetrics.computeIfAbsent(
+        partitionId,
+        id -> {
+          final PartitionMetrics metrics = new PartitionMetrics();
+          registerPartitionGauges(id, metrics);
+          return metrics;
+        });
+  }
+
   public void register() {
     lastExecutionGauge =
-        Gauge.builder(RETENTION_LAST_EXECUTION, () -> lastExecutionTimestamp)
+        Gauge.builder(RETENTION_LAST_EXECUTION, () -> lastExecution)
             .description("Timestamp in milliseconds of the last retention execution")
             .register(meterRegistry);
 
     nextExecutionGauge =
-        Gauge.builder(RETENTION_NEXT_EXECUTION, () -> nextExecutionTimestamp)
+        Gauge.builder(RETENTION_NEXT_EXECUTION, () -> nextExecution)
             .description("Timestamp in milliseconds of the next retention execution")
             .register(meterRegistry);
-
-    earliestBackupGauge =
-        Gauge.builder(EARLIEST_BACKUP_ID, () -> earliestBackupId)
-            .description("The ID of the earliest backup retained")
-            .register(meterRegistry);
-
-    backupsDeletedGauge =
-        Gauge.builder(BACKUPS_DELETED_ROUND, () -> backupsDeleted)
-            .description("Number of backups deleted in the last retention round")
-            .register(meterRegistry);
-
-    rangesDeletedGauge =
-        Gauge.builder(RANGES_DELETED_ROUND, () -> rangesDeleted)
-            .description("Number of ranges deleted in the last retention round")
-            .register(meterRegistry);
   }
 
-  public void recordLastExecution(final Instant timestamp) {
-    lastExecutionTimestamp = timestamp.toEpochMilli();
-  }
+  private void registerPartitionGauges(final int partitionId, final PartitionMetrics metrics) {
+    final String partition = String.valueOf(partitionId);
 
-  public void recordNextExecution(final Instant timestamp) {
-    nextExecutionTimestamp = timestamp.toEpochMilli();
-  }
+    Gauge.builder(EARLIEST_BACKUP_ID, () -> metrics.earliestBackupId)
+        .description("The ID of the earliest backup retained")
+        .tag(PARTITION_TAG, partition)
+        .register(meterRegistry);
 
-  public void recordEarliestBackupId(final long backupId) {
-    earliestBackupId = backupId;
-  }
+    Gauge.builder(BACKUPS_DELETED_ROUND, () -> metrics.backupsDeleted)
+        .description("Number of backups deleted in the last retention round")
+        .tag(PARTITION_TAG, partition)
+        .register(meterRegistry);
 
-  public void recordBackupsDeleted(final long deletedBackupsCount) {
-    backupsDeleted = deletedBackupsCount;
-  }
-
-  public void recordRangesDeleted(final long rangesDeletedCount) {
-    rangesDeleted = rangesDeletedCount;
+    Gauge.builder(RANGES_DELETED_ROUND, () -> metrics.rangesDeleted)
+        .description("Number of ranges deleted in the last retention round")
+        .tag(PARTITION_TAG, partition)
+        .register(meterRegistry);
   }
 
   @Override
   public void close() {
     meterRegistry.remove(lastExecutionGauge);
     meterRegistry.remove(nextExecutionGauge);
-    meterRegistry.remove(earliestBackupGauge);
-    meterRegistry.remove(backupsDeletedGauge);
-    meterRegistry.remove(rangesDeletedGauge);
+    partitionMetrics.keySet().forEach(this::removePartition);
+  }
+
+  public void removePartition(final int partitionId) {
+    partitionMetrics.remove(partitionId);
+    final String partition = String.valueOf(partitionId);
+    safeRemoveGauge(EARLIEST_BACKUP_ID, partition);
+    safeRemoveGauge(BACKUPS_DELETED_ROUND, partition);
+    safeRemoveGauge(RANGES_DELETED_ROUND, partition);
+  }
+
+  private void safeRemoveGauge(final String metricName, final String partition) {
+    final var gauge = meterRegistry.find(metricName).tag(PARTITION_TAG, partition).gauge();
+    if (gauge != null) {
+      meterRegistry.remove(gauge);
+    }
+  }
+
+  public void recordLastExecution(final Instant lastExecution) {
+    this.lastExecution = lastExecution.toEpochMilli();
+  }
+
+  public void recordNextExecution(final Instant nextExecution) {
+    this.nextExecution = nextExecution.toEpochMilli();
+  }
+
+  public static class PartitionMetrics {
+    private long earliestBackupId = 0L;
+    private long backupsDeleted = 0L;
+    private long rangesDeleted = 0L;
+
+    public void setEarliestBackupId(final long id) {
+      earliestBackupId = id;
+    }
+
+    public void setBackupsDeleted(final long count) {
+      backupsDeleted = count;
+    }
+
+    public void setRangesDeleted(final long count) {
+      rangesDeleted = count;
+    }
   }
 }

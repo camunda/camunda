@@ -23651,16 +23651,16 @@
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
-              "expr": "camunda_backup_retention_backups_deleted_round",
+              "expr": "camunda_backup_retention_backups_deleted_round{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}",
               "interval": "",
-              "legendFormat": "Backups deleted",
+              "legendFormat": "Backups deleted - {{partition}}",
               "refId": "A",
               "editorMode": "code",
               "range": true
             },
             {
               "refId": "B",
-              "expr": "camunda_backup_retention_ranges_deleted_round",
+              "expr": "camunda_backup_retention_ranges_deleted_round{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}",
               "range": true,
               "instant": false,
               "datasource": {
@@ -23669,11 +23669,11 @@
               },
               "hide": false,
               "editorMode": "builder",
-              "legendFormat": "Ranges deleted"
+              "legendFormat": "Ranges deleted - p{{partition}}"
             },
             {
               "refId": "C",
-              "expr": "camunda_backup_retention_earliest_backup_id",
+              "expr": "camunda_backup_retention_earliest_backup_id{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}",
               "range": true,
               "instant": false,
               "datasource": {
@@ -23682,7 +23682,7 @@
               },
               "hide": false,
               "editorMode": "builder",
-              "legendFormat": "Earliest backup"
+              "legendFormat": "Earliest backup - p{{partition}}"
             }
           ],
           "datasource": {

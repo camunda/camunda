@@ -261,7 +261,6 @@ public class BackupRetention extends Actor {
 
   private CompletableActorFuture<RetentionContext> resetRangeStart(final RetentionContext context) {
     final CompletableActorFuture<RetentionContext> future = new CompletableActorFuture<>();
-    metrics.recordEarliestBackupId(context.earliestBackupInNewRange);
     if (shouldResetMarker(context)) {
       final var marker = context.previousStartMarker.get();
       LOG.debug(
@@ -273,7 +272,11 @@ public class BackupRetention extends Actor {
           .storeRangeMarker(
               context.partitionId, new BackupRangeMarker.Start(context.earliestBackupInNewRange))
           .thenCompose(ignore -> backupStore.deleteRangeMarker(context.partitionId, marker))
-          .thenAccept(ignore -> metrics.recordEarliestBackupId(context.earliestBackupInNewRange))
+          .thenAccept(
+              ignore ->
+                  metrics
+                      .forPartition(context.partitionId)
+                      .setEarliestBackupId(context.earliestBackupInNewRange))
           .thenApply(v -> context)
           .thenAccept(future::complete);
     } else {
@@ -306,7 +309,11 @@ public class BackupRetention extends Actor {
             .toArray(CompletableFuture[]::new);
 
     CompletableFuture.allOf(futures)
-        .thenAccept(ignore -> metrics.recordRangesDeleted(context.deletableRangeMarkers.size()))
+        .thenAccept(
+            ignore ->
+                metrics
+                    .forPartition(context.partitionId)
+                    .setRangesDeleted(context.deletableRangeMarkers.size()))
         .thenApply(v -> context)
         .thenAccept(future::complete);
     return future;
@@ -327,7 +334,11 @@ public class BackupRetention extends Actor {
             .toArray(CompletableFuture[]::new);
 
     CompletableFuture.allOf(futures)
-        .thenAccept(ignore -> metrics.recordBackupsDeleted(context.deletableBackups().size()))
+        .thenAccept(
+            ignore ->
+                metrics
+                    .forPartition(context.partitionId)
+                    .setBackupsDeleted(context.deletableBackups().size()))
         .thenAccept(future::complete);
     return future;
   }

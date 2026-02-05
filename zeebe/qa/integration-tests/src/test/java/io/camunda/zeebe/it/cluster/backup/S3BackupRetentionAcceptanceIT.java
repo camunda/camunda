@@ -49,6 +49,7 @@ public class S3BackupRetentionAcceptanceIT implements BackupRetentionAcceptance 
 
   private BackupStore backupStore;
   private S3AsyncClient client;
+
   @TestZeebe(autoStart = false)
   private final TestCluster cluster =
       TestCluster.builder()
