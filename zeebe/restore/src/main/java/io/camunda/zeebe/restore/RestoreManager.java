@@ -112,13 +112,115 @@ public class RestoreManager {
       final Instant from,
       final Instant to,
       final boolean validateConfig,
-      final List<String> ignoreFilesInTarget) {
+      final List<String> ignoreFilesInTarget)
+      throws IOException, ExecutionException, InterruptedException {
+    final var interval = new Interval<>(from, to);
+    final var partitionCount = configuration.getCluster().getPartitionsCount();
+
+    // Step 1: Get backup ranges from the store for each partition
+    final var rangesByPartition = new ConcurrentHashMap<Integer, BackupRange>();
     final var backupsByPartition = new ConcurrentHashMap<Integer, List<BackupStatus>>();
-    for (int partition = 1;
-        partition <= configuration.getCluster().getPartitionsCount();
-        partition++) {
-      final var ranges = backupStore.rangeMarkers(partition).join();
+
+    for (int partition = 1; partition <= partitionCount; partition++) {
+      final var rangeMarkers = backupStore.rangeMarkers(partition).join();
+      final var ranges = new ArrayList<>(BackupRanges.fromMarkers(rangeMarkers));
+
+      // Step 2: Find the right backup range using findBackupsInRange
+      final var statusInterval =
+          BackupRangeResolver.findBackupsInRange(backupStore, interval, ranges, partition);
+
+      if (statusInterval.isEmpty()) {
+        throw new IllegalArgumentException(
+            "No backup range found for partition "
+                + partition
+                + " in interval ["
+                + from
+                + ","
+                + to
+                + "]");
+      }
+
+      // Step 3: Find the actual backups in the interval using findBackupsInInterval
+      final var backups =
+          BackupRangeResolver.findBackupsInInterval(
+              backupStore, interval, statusInterval.get(), partition);
+
+      backupsByPartition.put(partition, backups);
+
+      // Store the range for validation
+      for (final var range : ranges) {
+        if (range instanceof final BackupRange.Complete complete) {
+          if (complete.interval().contains(statusInterval.get().start().id().checkpointId())
+              && complete.interval().contains(statusInterval.get().end().id().checkpointId())) {
+            rangesByPartition.put(partition, range);
+            break;
+          }
+        }
+      }
     }
+
+    // Step 4: Find valid safe points for each partition using RDBMS exported positions
+    final var safeStartByPartition = new ConcurrentHashMap<Integer, Long>();
+    for (int partition = 1; partition <= partitionCount; partition++) {
+      final var positionModel = exporterPositionMapper.findOne(partition);
+      if (positionModel == null || positionModel.lastExportedPosition() == null) {
+        throw new IllegalArgumentException(
+            "No exported position found for partition " + partition + " in RDBMS");
+      }
+
+      final var exportedPosition = positionModel.lastExportedPosition();
+      final var backups = backupsByPartition.get(partition);
+
+      final var safeStart = BackupRangeResolver.findSafeStartCheckpoint(exportedPosition, backups);
+
+      if (safeStart.isEmpty()) {
+        throw new IllegalArgumentException(
+            "No safe start checkpoint found for partition "
+                + partition
+                + " with exported position "
+                + exportedPosition);
+      }
+
+      safeStartByPartition.put(partition, safeStart.get());
+    }
+
+    // Step 5: Determine the global checkpoint (the latest checkpoint in the interval)
+    final var globalCheckpointId =
+        backupsByPartition.values().stream()
+            .flatMap(List::stream)
+            .mapToLong(bs -> bs.id().checkpointId())
+            .max()
+            .orElseThrow(() -> new IllegalArgumentException("No backups found in any partition"));
+
+    // Step 6: Validate checkpoint reachability using validateGlobalCheckpointReachability
+    final var validationResult =
+        BackupRangeResolver.validateGlobalCheckpointReachability(
+            globalCheckpointId,
+            safeStartByPartition,
+            backupsByPartition.entrySet().stream()
+                .collect(
+                    Collectors.toMap(
+                        java.util.Map.Entry::getKey,
+                        e -> (java.util.Collection<BackupStatus>) e.getValue())),
+            rangesByPartition);
+
+    if (validationResult.isLeft()) {
+      throw new IllegalStateException("Validation failed: " + validationResult.getLeft());
+    }
+
+    // Step 7: Collect all backup IDs to restore
+    final var backupIds =
+        backupsByPartition.values().stream()
+            .flatMap(List::stream)
+            .mapToLong(bs -> bs.id().checkpointId())
+            .distinct()
+            .sorted()
+            .toArray();
+
+    LOG.info("Restoring RDBMS backups in range [{},{}] with backup IDs {}", from, to, backupIds);
+
+    // Step 8: Call the generic restore function
+    restore(backupIds, validateConfig, ignoreFilesInTarget);
   }
 
   public void restoreTimeRange(
