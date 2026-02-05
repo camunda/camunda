@@ -12,6 +12,8 @@ import static io.camunda.authentication.controller.PostLogoutController.POST_LOG
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.Objects;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.client.oidc.web.logout.OidcClientInitiatedLogoutSuccessHandler;
@@ -35,6 +37,7 @@ import org.springframework.web.util.UriComponentsBuilder;
  */
 public class CamundaOidcLogoutSuccessHandler extends OidcClientInitiatedLogoutSuccessHandler {
 
+  private static final Logger LOG = LoggerFactory.getLogger(CamundaOidcLogoutSuccessHandler.class);
   private final ClientRegistrationRepository clientRegistrationRepository;
 
   public CamundaOidcLogoutSuccessHandler(
@@ -59,10 +62,17 @@ public class CamundaOidcLogoutSuccessHandler extends OidcClientInitiatedLogoutSu
     // Break early if logout URL can't be constructed.
     // Usually means IdP didn't provide end session endpoint in its metadata.
     if (Objects.equals(baseLogoutUrl, getDefaultTargetUrl())) {
+      LOG.trace(
+          "Unable to determine end-session endpoint for OIDC logout. "
+              + "Falling back to default logout URL without logout hint.");
       return baseLogoutUrl;
     }
 
     if (!(authentication instanceof final OAuth2AuthenticationToken oauth)) {
+      LOG.trace(
+          "Authentication is not of type OAuth2AuthenticationToken: {} "
+              + "Falling back to default logout URL without logout hint.",
+          authentication);
       return baseLogoutUrl;
     }
 
@@ -71,15 +81,26 @@ public class CamundaOidcLogoutSuccessHandler extends OidcClientInitiatedLogoutSu
         clientRegistrationRepository.findByRegistrationId(registrationId);
 
     if (clientRegistration == null) {
+      LOG.trace(
+          "No client registration found for id '{}'. "
+              + "Falling back to default logout URL without logout hint.",
+          registrationId);
       return baseLogoutUrl;
     }
 
     if (!(oauth.getPrincipal() instanceof final OidcUser oidcUser)) {
+      LOG.trace(
+          "Principal is not of type OidcUser: {}. "
+              + "Falling back to default logout URL without logout hint.",
+          oauth.getPrincipal());
       return baseLogoutUrl;
     }
 
     final String logoutHint = oidcUser.getClaim("login_hint");
     if (logoutHint == null) {
+      LOG.trace(
+          "No 'login_hint' claim found in OIDC user. "
+              + "Falling back to default logout URL without logout hint.");
       return baseLogoutUrl;
     }
 

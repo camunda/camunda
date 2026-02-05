@@ -9,6 +9,8 @@ package io.camunda.authentication.controller;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public class PostLogoutController {
 
   public static final String POST_LOGOUT_REDIRECT_ATTRIBUTE = "postLogoutRedirect";
+  private static final Logger LOG = LoggerFactory.getLogger(PostLogoutController.class);
   private static final String DEFAULT_REDIRECT_PATH = "/";
 
   @GetMapping()
@@ -35,6 +38,9 @@ public class PostLogoutController {
     }
 
     if (redirect == null || redirect.isBlank()) {
+      LOG.trace(
+          "No post-logout redirect URL found in session, falling back to default: {}",
+          DEFAULT_REDIRECT_PATH);
       redirect = DEFAULT_REDIRECT_PATH;
     }
     return "redirect:" + redirect;
