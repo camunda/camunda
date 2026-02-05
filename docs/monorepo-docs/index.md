@@ -1,10 +1,15 @@
-# Camunda Platform Documentation
+# Camunda Platform Developer Documentation
 
 Welcome to the developer documentation for the Camunda platform and orchestration cluster.
 
-## Documentation
+## Documentation for developers of Camunda 8
 
-This site contains comprehensive documentation for the Camunda platform development and deployment:
+This site contains comprehensive documentation for developers of Camunda 8's development, CI, and release process:
+
+:::tip
+If you're looking for product documentation about Camunda 8, check out https://docs.camunda.io.
+There you'll find anything to get started using Camunda 8, best practices, and reference documentation.
+:::
 
 ### Collaboration
 
