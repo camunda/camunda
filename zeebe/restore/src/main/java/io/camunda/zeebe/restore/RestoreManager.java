@@ -198,12 +198,12 @@ public class RestoreManager {
         BackupIdentifierWildcard.CheckpointPattern.longestCommonPrefix(
             String.valueOf(fromCheckpointId), String.valueOf(rangeEnd));
 
-    // Query each partition separately with the interval pattern to minimize object storage queries
-    final var backupIds = new ArrayList<Long>();
+    // Query each partition in parallel with the interval pattern to minimize object storage queries
+    final var partitionQueries = new ArrayList<CompletableFuture<List<Long>>>();
     for (int partition = 1; partition <= partitionCount; partition++) {
       final var wildCard =
           BackupIdentifierWildcard.forPartition(partition, checkpointPattern);
-      final var partitionBackups =
+      final var partitionQuery =
           backupStore
               .list(wildCard)
               .thenApply(
@@ -215,13 +215,22 @@ public class RestoreManager {
                                   bs.id().checkpointId() >= fromCheckpointId
                                       && bs.id().checkpointId() <= rangeEnd)
                           .map(bs -> bs.id().checkpointId())
-                          .toList())
-              .join();
-      backupIds.addAll(partitionBackups);
+                          .toList());
+      partitionQueries.add(partitionQuery);
     }
 
+    // Wait for all partition queries to complete and collect the results
     final var backupIdsArray =
-        backupIds.stream().distinct().sorted().mapToLong(Long::longValue).toArray();
+        CompletableFuture.allOf(partitionQueries.toArray(new CompletableFuture[0]))
+            .thenApply(
+                ignored ->
+                    partitionQueries.stream()
+                        .flatMap(query -> query.join().stream())
+                        .distinct()
+                        .sorted()
+                        .mapToLong(Long::longValue)
+                        .toArray())
+            .join();
 
     LOG.info(
         "Restoring {} backups from checkpoint {} to {} (range [{}, {}])",
