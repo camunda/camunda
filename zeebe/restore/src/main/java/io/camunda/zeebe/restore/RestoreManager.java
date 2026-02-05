@@ -34,6 +34,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.UpdateRoutingState;
 import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
+import io.camunda.zeebe.restore.BackupRangeResolver.RestoreInformationPerPartition;
 import io.camunda.zeebe.restore.PartitionRestoreService.BackupValidator;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.VisibleForTesting;
@@ -48,6 +49,7 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -122,48 +124,10 @@ public class RestoreManager {
     final var partitionCount = configuration.getCluster().getPartitionsCount();
 
     // Step 1: Get backup ranges from the store for each partition
-    final var rangesByPartition = new ConcurrentHashMap<Integer, BackupRange>();
-    final var backupsByPartition = new ConcurrentHashMap<Integer, List<BackupStatus>>();
+    final var infoByPartition = new ConcurrentHashMap<Integer, RestoreInformationPerPartition>();
 
     for (int partition = 1; partition <= partitionCount; partition++) {
-      final var rangeMarkers = backupStore.rangeMarkers(partition).join();
-      final var ranges = new ArrayList<>(BackupRanges.fromMarkers(rangeMarkers));
-
-      // Step 2: Find the right backup range using findBackupsInRange
-      final var statusInterval = rangeResolver.findBackupsInRange(interval, ranges, partition);
-
-      if (statusInterval.isEmpty()) {
-        throw new IllegalArgumentException(
-            "No backup range found for partition "
-                + partition
-                + " in interval ["
-                + from
-                + ","
-                + to
-                + "]");
-      }
-
-      // Step 3: Find the actual backups in the interval using findBackupsInInterval
-      final var backups =
-          rangeResolver.findBackupsInInterval(interval, statusInterval.get(), partition);
-
-      backupsByPartition.put(partition, backups);
-
-      // Store the range for validation
-      for (final var range : ranges) {
-        if (range instanceof final BackupRange.Complete complete) {
-          if (complete.interval().contains(statusInterval.get().start().id().checkpointId())
-              && complete.interval().contains(statusInterval.get().end().id().checkpointId())) {
-            rangesByPartition.put(partition, range);
-            break;
-          }
-        }
-      }
-    }
-
-    // Step 4: Find valid safe points for each partition using RDBMS exported positions
-    final var safeStartByPartition = new ConcurrentHashMap<Integer, Long>();
-    for (int partition = 1; partition <= partitionCount; partition++) {
+      // Step 4: Find valid safe points for each partition using RDBMS exported positions
       final var positionModel = exporterPositionMapper.findOne(partition);
       if (positionModel == null || positionModel.lastExportedPosition() == null) {
         throw new IllegalArgumentException(
@@ -171,50 +135,44 @@ public class RestoreManager {
       }
 
       final var exportedPosition = positionModel.lastExportedPosition();
-      final var backups = backupsByPartition.get(partition);
-
-      final var safeStart = BackupRangeResolver.findSafeStartCheckpoint(exportedPosition, backups);
-
-      if (safeStart.isEmpty()) {
-        throw new IllegalArgumentException(
-            "No safe start checkpoint found for partition "
-                + partition
-                + " with exported position "
-                + exportedPosition);
-      }
-
-      safeStartByPartition.put(partition, safeStart.get());
+      final var restoreInfo =
+          rangeResolver.getInformationPerPartition(partition, from, to, exportedPosition);
+      infoByPartition.put(partition, restoreInfo);
     }
 
     // Step 5: Determine the global checkpoint (the latest checkpoint in the interval)
-    final var globalCheckpointId =
-        backupsByPartition.values().stream()
-            .flatMap(List::stream)
+    final var checkpoints =
+        infoByPartition.values().stream()
+            .map(RestoreInformationPerPartition::backupStatuses)
+            .flatMap(Collection::stream)
             .mapToLong(bs -> bs.id().checkpointId())
+            .toArray();
+
+    final var globalCheckpointId =
+        Arrays.stream(checkpoints)
             .max()
             .orElseThrow(() -> new IllegalArgumentException("No backups found in any partition"));
 
     // Step 6: Validate checkpoint reachability using validateGlobalCheckpointReachability
+    final var backupsByPartition =
+        infoByPartition.entrySet().stream()
+            .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().backupStatuses()));
+    final var safeStartBypartition =
+        infoByPartition.entrySet().stream()
+            .collect(Collectors.toMap(Entry::getKey, e -> e.getValue().safeStart()));
+    final var rangesByPartition =
+        infoByPartition.entrySet().stream()
+            .collect(Collectors.toMap(Entry::getKey, e -> e.getValue().completRange()));
     final var validationResult =
         BackupRangeResolver.validateGlobalCheckpointReachability(
-            globalCheckpointId,
-            safeStartByPartition,
-            backupsByPartition.entrySet().stream()
-                .collect(Collectors.toMap(Map.Entry::getKey, Entry::getValue)),
-            rangesByPartition);
+            globalCheckpointId, safeStartBypartition, backupsByPartition, rangesByPartition);
 
     if (validationResult.isLeft()) {
       throw new IllegalStateException("Validation failed: " + validationResult.getLeft());
     }
 
     // Step 7: Collect all backup IDs to restore
-    final var backupIds =
-        backupsByPartition.values().stream()
-            .flatMap(List::stream)
-            .mapToLong(bs -> bs.id().checkpointId())
-            .distinct()
-            .sorted()
-            .toArray();
+    final var backupIds = Arrays.stream(checkpoints).distinct().sorted().toArray();
 
     LOG.info("Restoring RDBMS backups in range [{},{}] with backup IDs {}", from, to, backupIds);
 

@@ -10,11 +10,14 @@ package io.camunda.zeebe.restore;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern;
 import io.camunda.zeebe.backup.api.BackupRange;
+import io.camunda.zeebe.backup.api.BackupRange.Complete;
+import io.camunda.zeebe.backup.api.BackupRanges;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.api.Interval;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.collection.Tuple;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -22,6 +25,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.SequencedCollection;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,6 +43,43 @@ public final class BackupRangeResolver {
     this.store = store;
   }
 
+  public RestoreInformationPerPartition getInformationPerPartition(
+      final int partition, final Instant from, final Instant to, final long lastExportedPosition) {
+    final var interval = new Interval<>(from, to);
+    final var rangeMarkers = store.rangeMarkers(partition).join();
+    final var ranges = BackupRanges.fromMarkers(rangeMarkers);
+
+    final int finalPartition = partition;
+    final var statusInterval =
+        findBackupsInRange(interval, ranges, partition)
+            .orElseThrow(
+                () ->
+                    new IllegalArgumentException(
+                        "No backup range found for partition "
+                            + finalPartition
+                            + " in interval ["
+                            + interval.start()
+                            + ","
+                            + interval.end()
+                            + "]"));
+
+    final var backups = findBackupsInInterval(interval, statusInterval.getRight(), finalPartition);
+
+    // Step 4: Find valid safe points for each partition using RDBMS exported positions
+
+    final var safeStart =
+        BackupRangeResolver.findSafeStartCheckpoint(lastExportedPosition, backups)
+            .orElseThrow(
+                () ->
+                    new IllegalArgumentException(
+                        "No safe start checkpoint found for partition "
+                            + finalPartition
+                            + " with exported position "
+                            + lastExportedPosition));
+
+    return new RestoreInformationPerPartition(safeStart, statusInterval.getLeft(), backups);
+  }
+
   public BackupStatus toBackupStatus(final int partitionId, final long checkpoint) {
     final var wildcard =
         BackupIdentifierWildcard.forPartition(partitionId, CheckpointPattern.of(checkpoint));
@@ -52,14 +93,19 @@ public final class BackupRangeResolver {
     }
   }
 
-  public Optional<Interval<BackupStatus>> findBackupsInRange(
-      final Interval<Instant> interval, final List<BackupRange> ranges, final int partitionId) {
+  public Optional<Tuple<Complete, Interval<BackupStatus>>> findBackupsInRange(
+      final Interval<Instant> interval,
+      final SequencedCollection<BackupRange> ranges,
+      final int partitionId) {
+    // ranges are ordered chronologically, so we start from the latest one, going backwards in time
     for (final var range : ranges.reversed()) {
-      if (range instanceof BackupRange.Complete(final Interval<Long> completeInterval)) {
-        final var statusInterval = completeInterval.map(c -> toBackupStatus(partitionId, c));
-        final var timeInterval = statusInterval.map(BackupStatus::createdOrThrow);
+      if (range instanceof final BackupRange.Complete completeRange) {
+        // get the BackupStatuses from the store
+        final Interval<BackupStatus> statusInterval =
+            completeRange.interval().map(c -> toBackupStatus(partitionId, c));
+        final Interval<Instant> timeInterval = statusInterval.map(BackupStatus::createdOrThrow);
         if (timeInterval.contains(interval)) {
-          return Optional.of(statusInterval);
+          return Optional.of(new Tuple<>(completeRange, statusInterval));
         }
       }
     }
@@ -161,7 +207,7 @@ public final class BackupRangeResolver {
   public static Either<String, Void> validateGlobalCheckpointReachability(
       final long globalCheckpointId,
       final Map<Integer, Long> safeStartByPartition,
-      final Map<Integer, Collection<BackupStatus>> backupsByPartition,
+      final Map<Integer, SequencedCollection<BackupStatus>> backupsByPartition,
       final Map<Integer, BackupRange> rangesByPartition) {
 
     if (safeStartByPartition.isEmpty()) {
@@ -185,18 +231,24 @@ public final class BackupRangeResolver {
         .toList();
   }
 
+  record RestoreInformationPerPartition(
+      int partition,
+      long safeStart,
+      BackupRange completRange,
+      SequencedCollection<BackupStatus> backupStatuses) {}
+
   /** Logic for validating that all partitions can reach the global checkpoint. */
   private static final class ReachabilityValidator {
     private final long globalCheckpointId;
     private final Map<Integer, Long> safeStartByPartition;
-    private final Map<Integer, Collection<BackupStatus>> backupsByPartition;
+    private final Map<Integer, SequencedCollection<BackupStatus>> backupsByPartition;
     private final Map<Integer, BackupRange> rangesByPartition;
     private final List<String> failures = new ArrayList<>();
 
     private ReachabilityValidator(
         final long globalCheckpointId,
         final Map<Integer, Long> safeStartByPartition,
-        final Map<Integer, Collection<BackupStatus>> backupsByPartition,
+        final Map<Integer, SequencedCollection<BackupStatus>> backupsByPartition,
         final Map<Integer, BackupRange> rangesByPartition) {
       this.globalCheckpointId = globalCheckpointId;
       this.safeStartByPartition = safeStartByPartition;
