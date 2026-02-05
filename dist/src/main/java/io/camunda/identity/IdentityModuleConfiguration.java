@@ -8,6 +8,7 @@
 package io.camunda.identity;
 
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGenerator;
@@ -19,4 +20,9 @@ import org.springframework.context.annotation.Profile;
     nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
 @Profile("identity")
 @ConditionalOnSecondaryStorageEnabled
+@ConditionalOnProperty(
+    name = "camunda.webapps.identity.enabled",
+    havingValue = "true",
+    matchIfMissing = true
+)
 public class IdentityModuleConfiguration {}
