@@ -106,7 +106,7 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-build-tools</artifactId>
-      <version>8.8.9</version>
+      <version>8.8.10</version>
       <scope>test</scope>
     </dependency>
     <dependency>
