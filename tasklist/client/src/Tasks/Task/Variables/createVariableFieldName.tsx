@@ -7,7 +7,7 @@
  */
 
 const createVariableFieldName = (name: string) => {
-  return `#${name}`;
+  return `#${encodeURIComponent(name).replace(/\./g, '%2E')}`;
 };
 
 const createNewVariableFieldName = (prefix: string, suffix: string) => {
