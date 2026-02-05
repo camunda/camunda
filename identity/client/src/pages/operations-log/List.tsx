@@ -7,6 +7,8 @@
  */
 
 import { FC, useCallback, useMemo } from "react";
+import { CodeSnippet, IconButton } from "@carbon/react";
+import { Information } from "@carbon/react/icons";
 import useTranslate from "src/utility/localization";
 import Page, { PageHeader } from "src/components/layout/Page";
 import EntityList from "src/components/entityList";
@@ -25,6 +27,14 @@ const ORDER_MAP: Record<SortConfig["order"], AuditLogSort["order"]> = {
   DESC: "desc",
 };
 
+const OWNER_TYPES = ["User", "Role", "Group", "Application"];
+const RESOURCE_TYPES = ["Component", "Tenant", "User task", "Resource", "System", "Batch"];
+
+const pickBySeed = (seed: string, options: string[]) => {
+  const hash = seed.split("").reduce((sum, char) => sum + char.charCodeAt(0), 0);
+  return options[hash % options.length];
+};
+
 const List: FC = () => {
   const { t } = useTranslate("operationsLog");
   const { t: tComponents } = useTranslate();
@@ -35,7 +45,7 @@ const List: FC = () => {
     setPageNumber,
     setPageSize,
     setSort: setPaginationSort,
-  } = usePagination();
+  } = usePagination({ pageNumber: 1, pageSize: 20 });
 
   const transformedSort = useMemo((): AuditLogSort[] => {
     if (!pageParams.sort || pageParams.sort.length === 0) {
@@ -85,11 +95,32 @@ const List: FC = () => {
             id: log.auditLogKey,
             operationType: (
               <OperationLogName>
-                {spaceAndCapitalize(log.operationType)}{" "}
-                {spaceAndCapitalize(log.entityType)}
+                {spaceAndCapitalize(log.operationType)}
               </OperationLogName>
             ),
             entityType: spaceAndCapitalize(log.entityType),
+            appliedTo: (
+              <CodeSnippet type="inline">{log.entityKey}</CodeSnippet>
+            ),
+            property:
+              log.entityType === "AUTHORIZATION" ? (
+                <div>
+                  <div>
+                    <span style={{ color: "var(--cds-text-helper)" }}>
+                      Owner type:
+                    </span>{" "}
+                    {pickBySeed(`${log.auditLogKey}-owner`, OWNER_TYPES)}
+                  </div>
+                  <div>
+                    <span style={{ color: "var(--cds-text-helper)" }}>
+                      Resource type:
+                    </span>{" "}
+                    {pickBySeed(`${log.auditLogKey}-resource`, RESOURCE_TYPES)}
+                  </div>
+                </div>
+              ) : (
+                "–"
+              ),
             result: (
               <OperationLogName>
                 {log.result === "SUCCESS" ? (
@@ -100,18 +131,28 @@ const List: FC = () => {
                 {spaceAndCapitalize(log.result)}
               </OperationLogName>
             ),
-            appliedTo: log.entityKey,
             actorId: log.actorId,
             timestamp: new Date(log.timestamp).toLocaleString(),
+            info: (
+              <IconButton
+                kind="ghost"
+                size="sm"
+                label="View details"
+              >
+                <Information size={16} />
+              </IconButton>
+            ),
           })) || []
         }
         headers={[
-          { header: t("operation"), key: "operationType", isSortable: true },
+          { header: t("Operation type"), key: "operationType", isSortable: true },
           { header: t("entity"), key: "entityType", isSortable: true },
-          { header: t("status"), key: "result" },
-          { header: t("appliedTo"), key: "appliedTo" },
+          { header: t("Reference"), key: "appliedTo" },
+          { header: t("Properties"), key: "property" },
+          { header: t("status"), key: "result", isSortable: true },
           { header: t("actor"), key: "actorId", isSortable: true },
           { header: t("time"), key: "timestamp", isSortable: true },
+          { header: "", key: "info" },
         ]}
         loading={loading}
         setSort={handleSort}

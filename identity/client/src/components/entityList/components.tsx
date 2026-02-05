@@ -20,4 +20,25 @@ export const StyledTableContainer = styled(TableContainer)`
   .cds--skeleton {
     padding: 0;
   }
+
+  &.no-header .cds--data-table-header {
+    display: none !important;
+  }
+
+  .cds--data-table-container,
+  .cds--data-table-content {
+    overflow: visible;
+  }
+
+  .cds--data-table thead {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+  }
+
+  .cds--data-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+  }
 `;

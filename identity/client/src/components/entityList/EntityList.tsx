@@ -119,7 +119,7 @@ type EntityListProps<D extends EntityData> = {
 };
 
 const MAX_ICON_ACTIONS = 2;
-const PAGESIZES = [10, 20, 30, 40, 50];
+const PAGESIZES = [20, 30, 40, 50, 100];
 
 const EntityList = <D extends EntityData>({
   title,
@@ -182,20 +182,25 @@ const EntityList = <D extends EntityData>({
   const selectedLength =
     (batchSelection && data?.filter(batchSelection.isSelected).length) || 0;
 
+  const hasDescription = description || documentationPath;
+  const descriptionContent = hasDescription ? (
+    <>
+      {description && <p>{description}</p>}
+      {documentationPath && (
+        <DocumentationLink path={documentationPath}>
+          {t("Learn more")}
+        </DocumentationLink>
+      )}
+    </>
+  ) : undefined;
+
+  const hasHeader = title || hasDescription;
   const tableContainerProps = isInsideModal
     ? { $compact: true }
     : {
-        title,
-        description: (
-          <>
-            {description && <p>{description}</p>}
-            {documentationPath && (
-              <DocumentationLink path={documentationPath}>
-                {t("Learn more")}
-              </DocumentationLink>
-            )}
-          </>
-        ),
+        ...(title && { title }),
+        ...(descriptionContent && { description: descriptionContent }),
+        ...(!hasHeader && { className: "no-header" }),
       };
 
   return (
@@ -210,26 +215,28 @@ const EntityList = <D extends EntityData>({
       {({ rows, getHeaderProps, getToolbarProps, getTableProps }) => (
         <StyledTableContainer {...tableContainerProps}>
           <>
-            <TableToolbar {...getToolbarProps()}>
-              <TableToolbarContent>
-                {searchKey && (
-                  <SearchBar
-                    searchKey={searchKey}
-                    searchPlaceholder={searchPlaceholder}
-                    onSearch={setSearch}
-                  />
-                )}
-                {addEntityLabel && (
-                  <Button
-                    renderIcon={Add}
-                    onClick={onAddEntity}
-                    disabled={addEntityDisabled}
-                  >
-                    {addEntityLabel}
-                  </Button>
-                )}
-              </TableToolbarContent>
-            </TableToolbar>
+            {(searchKey || addEntityLabel) && (
+              <TableToolbar {...getToolbarProps()}>
+                <TableToolbarContent>
+                  {searchKey && (
+                    <SearchBar
+                      searchKey={searchKey}
+                      searchPlaceholder={searchPlaceholder}
+                      onSearch={setSearch}
+                    />
+                  )}
+                  {addEntityLabel && (
+                    <Button
+                      renderIcon={Add}
+                      onClick={onAddEntity}
+                      disabled={addEntityDisabled}
+                    >
+                      {addEntityLabel}
+                    </Button>
+                  )}
+                </TableToolbarContent>
+              </TableToolbar>
+            )}
             {loading && (
               <DataTableSkeleton
                 columnCount={headers.length}
