@@ -19,12 +19,8 @@ import io.camunda.security.auth.SecurityContext;
 import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.stream.Collectors;
-import org.slf4j.Logger;
 
 public class DecisionInstanceItemProvider implements ItemProvider {
-
-  private static final Logger LOG =
-      org.slf4j.LoggerFactory.getLogger(DecisionInstanceItemProvider.class);
 
   private final SearchClientsProxy searchClientsProxy;
   private final BatchOperationMetrics metrics;
@@ -65,7 +61,7 @@ public class DecisionInstanceItemProvider implements ItemProvider {
 
     return new ItemPage(
         result.items().stream()
-            .map(di -> new Item(di.decisionInstanceKey(), di.decisionInstanceKey()))
+            .map(di -> new Item(di.decisionInstanceKey(), di.processInstanceKey()))
             .collect(Collectors.toList()),
         result.endCursor(),
         result.total(),
