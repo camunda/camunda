@@ -40,7 +40,7 @@ Use `AuthorizationConditions.anyOf()` when multiple authorization paths exist:
 ```java
 AuthorizationCondition condition = AuthorizationConditions.anyOf(
     directAuthorization,
-    transitiveAuthorization.withCondition(predicate),
+    transitiveAuthorization.withCondition(al -> al.processDefinitionId() != null),
     anotherConditionalAuthorization
 );
 ```

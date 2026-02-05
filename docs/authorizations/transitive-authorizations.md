@@ -1,6 +1,6 @@
 # Transitive Authorizations
 
-The transitive flag is a technical optimization flag that controls how wildcard permissions are handled during search operations. It enables cross-resource authorization patterns where one resource type's permissions are used to authorize queries on a related resource type.
+The transitive flag is a technical optimization flag that controls how wildcard permissions are handled during search operations.
 
 ## Overview
 
