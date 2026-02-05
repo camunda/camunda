@@ -140,7 +140,8 @@ public class CamundaSyncStatelessMcpToolProvider extends AbstractMcpToolProvider
 
                               BiFunction<McpTransportContext, CallToolRequest, CallToolResult>
                                   methodCallback =
-                                      new SyncStatelessMcpToolMethodCallback(
+                                      new io.camunda.gateway.mcp.callback
+                                              .CamundaSyncStatelessMcpToolMethodCallback(
                                           returnMode,
                                           mcpToolMethod,
                                           toolObject,

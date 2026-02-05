@@ -187,6 +187,28 @@ public class CamundaJsonSchemaGenerator {
         continue;
       }
 
+      // Handle @McpRequestBody - unwrap DTO fields to root level
+      if (parameter.isAnnotationPresent(
+          io.camunda.gateway.mcp.annotation.McpRequestBody.class)) {
+        // Generate schema for the DTO type and merge its properties at root level
+        ObjectNode dtoSchema = SUBTYPE_SCHEMA_GENERATOR.generateSchema(parameterType);
+
+        // Extract properties from DTO schema
+        if (dtoSchema.has("properties") && dtoSchema.get("properties").isObject()) {
+          ObjectNode dtoProperties = (ObjectNode) dtoSchema.get("properties");
+          dtoProperties
+              .fields()
+              .forEachRemaining(entry -> properties.set(entry.getKey(), entry.getValue()));
+        }
+
+        // Extract required fields from DTO schema
+        if (dtoSchema.has("required") && dtoSchema.get("required").isArray()) {
+          dtoSchema.get("required").forEach(requiredField -> required.add(requiredField.asText()));
+        }
+
+        continue; // Skip standard parameter handling
+      }
+
       if (isMethodParameterRequired(method, i)) {
         required.add(parameterName);
       }
