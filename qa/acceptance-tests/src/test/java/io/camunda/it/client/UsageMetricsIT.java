@@ -33,7 +33,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
-@CompatibilityTest(enableMultiTenancy = true, envVars = {"ZEEBE_BROKER_EXPERIMENTAL_ENGINE_USAGEMETRICS_EXPORTINTERVAL=PT2S"})
+@CompatibilityTest(
+    enableMultiTenancy = true,
+    envVars = {"ZEEBE_BROKER_EXPERIMENTAL_ENGINE_USAGEMETRICS_EXPORTINTERVAL=PT2S"})
 @DisabledIfSystemProperty(
     named = "test.integration.camunda.database.type",
     matches = "AWS_OS") // test is flaky on AWS OS

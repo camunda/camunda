@@ -18,20 +18,11 @@ import io.camunda.client.api.command.ProblemException;
 import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.test.util.Strings;
-import io.camunda.zeebe.util.Either;
-import io.camunda.zeebe.util.collection.Tuple;
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.time.Duration;
-import java.util.Base64;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Test;
-import org.springframework.http.HttpStatus;
 
 @MultiDbTest
 @CompatibilityTest()
@@ -306,7 +297,12 @@ public class RolesByTenantIT {
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
-              final var response = camundaClient.newTenantsSearchRequest().filter(tenantFilter -> tenantFilter.tenantId(tenantId)).send().join();
+              final var response =
+                  camundaClient
+                      .newTenantsSearchRequest()
+                      .filter(tenantFilter -> tenantFilter.tenantId(tenantId))
+                      .send()
+                      .join();
               assertThat(response).isNotNull();
             });
   }

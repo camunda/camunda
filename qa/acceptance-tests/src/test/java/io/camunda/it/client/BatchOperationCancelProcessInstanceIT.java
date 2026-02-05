@@ -22,7 +22,6 @@ import io.camunda.client.api.response.Process;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.enums.BatchOperationItemState;
 import io.camunda.client.api.search.response.BatchOperationItems.BatchOperationItem;
-import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import java.lang.reflect.Method;
 import java.util.ArrayList;

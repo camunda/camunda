@@ -35,7 +35,6 @@ import io.camunda.client.api.search.sort.BatchOperationItemSort;
 import io.camunda.client.api.search.sort.BatchOperationSort;
 import io.camunda.client.impl.search.filter.ProcessInstanceFilterImpl;
 import io.camunda.qa.util.auth.Authenticated;
-import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.security.configuration.InitializationConfiguration;
@@ -77,7 +76,8 @@ public class BatchOperationSearchIT {
   @BeforeAll
   public static void beforeAll(
       final TestInfo testInfo, @Authenticated final CamundaClient camundaClient) {
-    testScopeId = UUID.randomUUID().toString();
+    testScopeId =
+        testInfo.getTestMethod().map(Method::toString).orElse(UUID.randomUUID().toString());
 
     deployProcessAndWaitForIt(camundaClient, "process/service_tasks_v1.bpmn")
         .getProcessDefinitionKey();
