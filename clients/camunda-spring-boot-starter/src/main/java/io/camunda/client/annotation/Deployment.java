@@ -15,8 +15,10 @@
  */
 package io.camunda.client.annotation;
 
+import io.camunda.client.annotation.Deployment.Deployments;
 import java.lang.annotation.*;
 
+@Repeatable(Deployments.class)
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
@@ -25,4 +27,12 @@ public @interface Deployment {
   String[] resources() default {};
 
   String tenantId() default "";
+
+  @Documented
+  @Inherited
+  @Retention(RetentionPolicy.RUNTIME)
+  @Target(ElementType.TYPE)
+  public @interface Deployments {
+    Deployment[] value();
+  }
 }
