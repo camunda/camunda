@@ -177,10 +177,23 @@ jobs:
           
           # Extract current release version components (e.g., 8.9.0 -> major=8, minor=9)
           RELEASE_VERSION="${{ inputs.releaseVersion }}"
-          [[ "${RELEASE_VERSION}" =~ ^([0-9]+)\.([0-9]+)\.0$ ]]
+          if ! [[ "${RELEASE_VERSION}" =~ ^([0-9]+)\.([0-9]+)\.0$ ]]; then
+            echo "❌ FAILED: Release version '${RELEASE_VERSION}' does not match expected pattern X.Y.0"
+            echo "This should not happen due to workflow conditionals. Please check the release version format."
+            exit 1
+          fi
           
           MAJOR="${BASH_REMATCH[1]}"
           MINOR="${BASH_REMATCH[2]}"
+          
+          # Handle edge case for X.0.0 releases
+          if [[ "${MINOR}" -eq 0 ]]; then
+            echo "❌ FAILED: Cannot validate previousVersion for X.0.0 releases"
+            echo "Release version '${RELEASE_VERSION}' is a major release (X.0.0)"
+            echo "There is no previous minor version to validate against."
+            echo "This validation only applies to minor releases (X.Y.0 where Y > 0)."
+            exit 1
+          fi
           
           # Calculate expected previous version (e.g., 8.9.0 -> expected previous is 8.8.0)
           EXPECTED_PREVIOUS_MINOR=$((MINOR - 1))
