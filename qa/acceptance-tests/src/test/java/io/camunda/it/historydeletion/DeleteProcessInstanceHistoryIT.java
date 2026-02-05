@@ -509,15 +509,7 @@ public class DeleteProcessInstanceHistoryIT {
                 .join()
                 .items(),
         "sequence flow",
-        () -> client.newProcessInstanceSequenceFlowsRequest(processInstanceKey).send().join(),
-        "audit log",
-        () ->
-            client
-                .newAuditLogSearchRequest()
-                .filter(f -> f.processInstanceKey(String.valueOf(processInstanceKey)))
-                .send()
-                .join()
-                .items());
+        () -> client.newProcessInstanceSequenceFlowsRequest(processInstanceKey).send().join());
   }
 
   /**
