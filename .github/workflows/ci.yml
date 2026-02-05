@@ -493,7 +493,7 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
-  elasticsearch-integration-tests:
+  elasticsearch8-integration-tests:
     name: "Database Integration Tests / Elasticsearch"
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     needs: [ detect-changes ]
@@ -502,6 +502,17 @@ jobs:
     with:
       database-type: "elasticsearch"
       database-image-version: "8.18.4"
+      it-database-type: "es"
+
+  elasticsearch9-integration-tests:
+    name: "Database Integration Tests / Elasticsearch 9"
+    if: needs.detect-changes.outputs.java-code-changes == 'true'
+    needs: [ detect-changes ]
+    uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
+    secrets: inherit
+    with:
+      database-type: "elasticsearch"
+      database-image-version: "9.2.4"
       it-database-type: "es"
 
   opensearch-integration-tests:
@@ -1065,7 +1076,8 @@ jobs:
     needs:
       - archunit-tests
       - docker-checks
-      - elasticsearch-integration-tests
+      - elasticsearch8-integration-tests
+      - elasticsearch9-integration-tests
       - general-unit-tests
       - integration-tests
       - opensearch-integration-tests
@@ -1095,8 +1107,10 @@ jobs:
         with:
           general-unit-tests-result: ${{ needs.general-unit-tests.result }}
           general-unit-tests-flaky: ${{ needs.general-unit-tests.outputs.flakyTests }}
-          elasticsearch-tests-result: ${{ needs.elasticsearch-integration-tests.result }}
-          elasticsearch-tests-flaky: ${{ needs.elasticsearch-integration-tests.outputs.flakyTests }}
+          elasticsearch8-tests-result: ${{ needs.elasticsearch8-integration-tests.result }}
+          elasticsearch8-tests-flaky: ${{ needs.elasticsearch8-integration-tests.outputs.flakyTests }}
+          elasticsearch9-tests-result: ${{ needs.elasticsearch9-integration-tests.result }}
+          elasticsearch9-tests-flaky: ${{ needs.elasticsearch9-integration-tests.outputs.flakyTests }}
           opensearch-tests-result: ${{ needs.opensearch-integration-tests.result }}
           opensearch-tests-flaky: ${{ needs.opensearch-integration-tests.outputs.flakyTests }}
           rdbms-h2-tests-result: ${{ needs.rdbms-h2-integration-tests.result }}
@@ -1345,7 +1359,8 @@ jobs:
       - detect-changes
       - docker-checks
       - elasticsearch-history-tests
-      - elasticsearch-integration-tests
+      - elasticsearch8-integration-tests
+      - elasticsearch9-integration-tests
       - general-unit-tests
       - h2-history-tests
       - identity-frontend-tests
