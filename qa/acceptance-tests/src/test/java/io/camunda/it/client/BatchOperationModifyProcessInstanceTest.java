@@ -51,7 +51,6 @@ import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
-@CompatibilityTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 public class BatchOperationModifyProcessInstanceTest {
 
