@@ -134,6 +134,8 @@ paths:
     $ref: 'decision-instances.yaml#/paths/~1decision-instances~1search'
   /decision-instances/{decisionEvaluationInstanceKey}:
     $ref: 'decision-instances.yaml#/paths/~1decision-instances~1{decisionEvaluationInstanceKey}'
+  /decision-instances/{decisionInstanceKey}/deletion:
+    $ref: 'decision-instances.yaml#/paths/~1decision-instances~1{decisionInstanceKey}~1deletion'
 
   # Decision requirements endpoints
   /decision-requirements/search:

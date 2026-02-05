@@ -24,6 +24,7 @@ import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.U
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.USER_TASK;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationScope.WILDCARD;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.CREATE_PROCESS_INSTANCE;
+import static io.camunda.zeebe.protocol.record.value.PermissionType.DELETE_DECISION_INSTANCE;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.DELETE_PROCESS_INSTANCE;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.READ;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_DECISION_DEFINITION;
@@ -265,6 +266,10 @@ public record Authorization<T>(
 
     public Builder<T> deleteProcessInstance() {
       return permissionType(DELETE_PROCESS_INSTANCE);
+    }
+
+    public Builder<T> deleteDecisionInstance() {
+      return permissionType(DELETE_DECISION_INSTANCE);
     }
 
     public Builder<T> batchOperation() {
