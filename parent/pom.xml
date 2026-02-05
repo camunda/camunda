@@ -1035,6 +1035,14 @@
       </dependency>
 
       <dependency>
+        <groupId>io.rest-assured</groupId>
+        <artifactId>rest-assured-bom</artifactId>
+        <version>${version.rest-assured}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
+      <dependency>
         <groupId>org.springframework</groupId>
         <artifactId>spring-framework-bom</artifactId>
         <version>${version.spring}</version>
@@ -1427,12 +1435,6 @@
         <artifactId>reflections</artifactId>
         <version>${version.reflections}</version>
         <scope>test</scope>
-      </dependency>
-
-      <dependency>
-        <groupId>io.rest-assured</groupId>
-        <artifactId>rest-assured</artifactId>
-        <version>${version.rest-assured}</version>
       </dependency>
 
       <dependency>
