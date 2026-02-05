@@ -150,7 +150,7 @@ public interface BackupRetentionAcceptance {
                   .as("End range marker for partition %d should be present", partitionId)
                   .isPresent();
               AssertionsForClassTypes.assertThat(endMarker.get().checkpointId())
-                  .as("Start range marker for partition %d should be updated", partitionId)
+                  .as("End range marker for partition %d should be greater than start", partitionId)
                   .isGreaterThan(newStartBackupId);
             });
   }
