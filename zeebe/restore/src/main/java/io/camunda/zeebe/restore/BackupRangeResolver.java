@@ -33,13 +33,13 @@ import org.slf4j.LoggerFactory;
 public final class BackupRangeResolver {
 
   private static final Logger LOG = LoggerFactory.getLogger(BackupRangeResolver.class);
+  private final BackupStore store;
 
-  private BackupRangeResolver() {
-    // Utility class
+  public BackupRangeResolver(final BackupStore store) {
+    this.store = store;
   }
 
-  public static BackupStatus toBackupStatus(
-      final BackupStore store, final int partitionId, final long checkpoint) {
+  public BackupStatus toBackupStatus(final int partitionId, final long checkpoint) {
     final var wildcard =
         BackupIdentifierWildcard.forPartition(partitionId, CheckpointPattern.of(checkpoint));
     // TODO check if there's more than one
@@ -52,14 +52,11 @@ public final class BackupRangeResolver {
     }
   }
 
-  public static Optional<Interval<BackupStatus>> findBackupsInRange(
-      final BackupStore store,
-      final Interval<Instant> interval,
-      final List<BackupRange> ranges,
-      final int partitionId) {
+  public Optional<Interval<BackupStatus>> findBackupsInRange(
+      final Interval<Instant> interval, final List<BackupRange> ranges, final int partitionId) {
     for (final var range : ranges.reversed()) {
-      if (range instanceof BackupRange.Complete(final Interval<Long> interval1)) {
-        final var statusInterval = interval1.map(c -> toBackupStatus(store, partitionId, c));
+      if (range instanceof BackupRange.Complete(final Interval<Long> completeInterval)) {
+        final var statusInterval = completeInterval.map(c -> toBackupStatus(partitionId, c));
         final var timeInterval = statusInterval.map(BackupStatus::createdOrThrow);
         if (timeInterval.contains(interval)) {
           return Optional.of(statusInterval);
@@ -69,8 +66,7 @@ public final class BackupRangeResolver {
     return Optional.empty();
   }
 
-  public static List<BackupStatus> findBackupsInInterval(
-      final BackupStore store,
+  public List<BackupStatus> findBackupsInInterval(
       final Interval<Instant> interval,
       final Interval<BackupStatus> statusInterval,
       final int partitionId) {

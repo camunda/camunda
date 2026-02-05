@@ -49,6 +49,8 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -64,6 +66,7 @@ public class RestoreManager {
   private static final Logger LOG = LoggerFactory.getLogger(RestoreManager.class);
   private final BrokerCfg configuration;
   private final BackupStore backupStore;
+  private final BackupRangeResolver rangeResolver;
   private final MeterRegistry meterRegistry;
   private final CheckpointIdGenerator checkpointIdGenerator;
   private final ExporterPositionMapper exporterPositionMapper;
@@ -85,6 +88,7 @@ public class RestoreManager {
         new CheckpointIdGenerator(configuration.getData().getBackup().getOffset());
     this.configuration = configuration;
     this.backupStore = backupStore;
+    rangeResolver = new BackupRangeResolver(backupStore);
     this.exporterPositionMapper = exporterPositionMapper;
     this.meterRegistry = meterRegistry;
   }
@@ -126,8 +130,7 @@ public class RestoreManager {
       final var ranges = new ArrayList<>(BackupRanges.fromMarkers(rangeMarkers));
 
       // Step 2: Find the right backup range using findBackupsInRange
-      final var statusInterval =
-          BackupRangeResolver.findBackupsInRange(backupStore, interval, ranges, partition);
+      final var statusInterval = rangeResolver.findBackupsInRange(interval, ranges, partition);
 
       if (statusInterval.isEmpty()) {
         throw new IllegalArgumentException(
@@ -142,8 +145,7 @@ public class RestoreManager {
 
       // Step 3: Find the actual backups in the interval using findBackupsInInterval
       final var backups =
-          BackupRangeResolver.findBackupsInInterval(
-              backupStore, interval, statusInterval.get(), partition);
+          rangeResolver.findBackupsInInterval(interval, statusInterval.get(), partition);
 
       backupsByPartition.put(partition, backups);
 
@@ -198,10 +200,7 @@ public class RestoreManager {
             globalCheckpointId,
             safeStartByPartition,
             backupsByPartition.entrySet().stream()
-                .collect(
-                    Collectors.toMap(
-                        java.util.Map.Entry::getKey,
-                        e -> (java.util.Collection<BackupStatus>) e.getValue())),
+                .collect(Collectors.toMap(Map.Entry::getKey, Entry::getValue)),
             rangesByPartition);
 
     if (validationResult.isLeft()) {
