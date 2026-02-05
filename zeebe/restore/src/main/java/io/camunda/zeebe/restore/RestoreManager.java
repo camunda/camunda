@@ -87,6 +87,30 @@ public class RestoreManager {
       final boolean validateConfig,
       final List<String> ignoreFilesInTarget)
       throws IOException, ExecutionException, InterruptedException {
+    restore(from, to, false, validateConfig, ignoreFilesInTarget);
+  }
+
+  /**
+   * Restores from the given time to the latest available backup. This is used when the --to
+   * parameter is not provided, which means the cluster is shutdown and we should verify that the
+   * latest BackupRange is complete.
+   */
+  public void restoreToLatest(
+      final Instant from,
+      final Instant to,
+      final boolean validateConfig,
+      final List<String> ignoreFilesInTarget)
+      throws IOException, ExecutionException, InterruptedException {
+    restore(from, to, true, validateConfig, ignoreFilesInTarget);
+  }
+
+  private void restore(
+      final Instant from,
+      final Instant to,
+      final boolean toIsImplicit,
+      final boolean validateConfig,
+      final List<String> ignoreFilesInTarget)
+      throws IOException, ExecutionException, InterruptedException {
     final var dataDirectory = Path.of(configuration.getData().getDirectory());
 
     // Data folder is verified separately, so that we can fail fast rather than downloading
@@ -118,17 +142,26 @@ public class RestoreManager {
       throw new IllegalArgumentException("No backups found in range [" + from + "," + to + "]");
     }
 
-    restore(backupIds, validateConfig, ignoreFilesInTarget);
+    restore(backupIds, toIsImplicit, validateConfig, ignoreFilesInTarget);
   }
 
   public void restore(
       final long[] backupIds, final boolean validateConfig, final List<String> ignoreFilesInTarget)
       throws IOException, ExecutionException, InterruptedException {
+    restore(backupIds, false, validateConfig, ignoreFilesInTarget);
+  }
+
+  private void restore(
+      final long[] backupIds,
+      final boolean toIsImplicit,
+      final boolean validateConfig,
+      final List<String> ignoreFilesInTarget)
+      throws IOException, ExecutionException, InterruptedException {
     final var dataDirectory = Path.of(configuration.getData().getDirectory());
 
     verifyDataFolderIsEmpty(dataDirectory, ignoreFilesInTarget);
 
-    verifyBackupIdsAreContinuous(backupIds);
+    verifyBackupIdsAreContinuous(backupIds, toIsImplicit);
 
     final var partitionsToRestore = collectPartitions();
     try (final var executor =
@@ -243,7 +276,7 @@ public class RestoreManager {
         factory.createRaftPartition(metadata, partitionRegistry), partitionRegistry);
   }
 
-  private void verifyBackupIdsAreContinuous(final long[] backupIds) {
+  private void verifyBackupIdsAreContinuous(final long[] backupIds, final boolean toIsImplicit) {
     final var partitionCount = configuration.getCluster().getPartitionsCount();
 
     final MutableBoolean validBackupRange = new MutableBoolean(true);
@@ -253,21 +286,60 @@ public class RestoreManager {
 
       for (int partition = 1; partition <= partitionCount; partition++) {
         final var ranges = BackupRanges.fromMarkers(backupStore.rangeMarkers(partition).join());
-        final var validRange =
-            ranges.stream()
-                .filter(r -> r.contains(new Interval<>(minBackup, maxBackup)))
-                .findFirst();
 
-        if (validRange.isEmpty()) {
-          final var completeRanges =
-              ranges.stream().filter(BackupRange.Complete.class::isInstance).toList();
-          LOG.error(
-              "Expected to find a continuous range of backups between {} and {} for partition {}. Complete ranges are the following: {}",
-              minBackup,
-              maxBackup,
-              partition,
-              completeRanges);
-          validBackupRange.set(false);
+        if (toIsImplicit) {
+          // When 'to' is implicit (i.e., Instant.now()), the cluster is shutdown during restore.
+          // There cannot be any valid complete range that contains 'now'.
+          // Instead, we verify that the latest BackupRange is complete and ends at or after
+          // maxBackup.
+          if (ranges.isEmpty()) {
+            LOG.error(
+                "Expected to find at least one backup range for partition {}, but found none",
+                partition);
+            validBackupRange.set(false);
+          } else {
+            final var latestRange = ranges.getLast();
+            if (!(latestRange instanceof BackupRange.Complete)) {
+              LOG.error(
+                  "Expected the latest backup range for partition {} to be complete, but it is incomplete: {}",
+                  partition,
+                  latestRange);
+              validBackupRange.set(false);
+            } else if (latestRange.lastCheckpointId() < maxBackup) {
+              LOG.error(
+                  "Expected the latest backup range for partition {} to end at or after {}, but it ends at {}",
+                  partition,
+                  maxBackup,
+                  latestRange.lastCheckpointId());
+              validBackupRange.set(false);
+            } else if (!latestRange.contains(new Interval<>(minBackup, maxBackup))) {
+              LOG.error(
+                  "Expected the latest backup range for partition {} to contain the interval [{}, {}], but it doesn't: {}",
+                  partition,
+                  minBackup,
+                  maxBackup,
+                  latestRange);
+              validBackupRange.set(false);
+            }
+          }
+        } else {
+          // When 'to' is explicit, we expect to find a complete range that contains the interval
+          final var validRange =
+              ranges.stream()
+                  .filter(r -> r.contains(new Interval<>(minBackup, maxBackup)))
+                  .findFirst();
+
+          if (validRange.isEmpty()) {
+            final var completeRanges =
+                ranges.stream().filter(BackupRange.Complete.class::isInstance).toList();
+            LOG.error(
+                "Expected to find a continuous range of backups between {} and {} for partition {}. Complete ranges are the following: {}",
+                minBackup,
+                maxBackup,
+                partition,
+                completeRanges);
+            validBackupRange.set(false);
+          }
         }
       }
     }
