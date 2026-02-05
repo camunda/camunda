@@ -63,11 +63,11 @@ class DecisionInstanceItemProviderTest {
         new SearchQueryResult.Builder<DecisionInstanceEntity>()
             .items(
                 List.of(
-                    createDecisionInstanceEntity(1L, "1-1"),
-                    createDecisionInstanceEntity(2L, "2-1"),
-                    createDecisionInstanceEntity(3L, "3-1"),
-                    createDecisionInstanceEntity(4L, "4-1"),
-                    createDecisionInstanceEntity(5L, "5-1")))
+                    createDecisionInstanceEntity(1L),
+                    createDecisionInstanceEntity(2L),
+                    createDecisionInstanceEntity(3L),
+                    createDecisionInstanceEntity(4L),
+                    createDecisionInstanceEntity(5L)))
             .total(5)
             .endCursor("5")
             .build();
@@ -114,9 +114,9 @@ class DecisionInstanceItemProviderTest {
         new SearchQueryResult.Builder<DecisionInstanceEntity>()
             .items(
                 List.of(
-                    createDecisionInstanceEntity(1L, "1"),
-                    createDecisionInstanceEntity(2L, "2"),
-                    createDecisionInstanceEntity(3L, "3")))
+                    createDecisionInstanceEntity(1L),
+                    createDecisionInstanceEntity(2L),
+                    createDecisionInstanceEntity(3L)))
             .total(3)
             .endCursor("3")
             .build();
@@ -134,11 +134,9 @@ class DecisionInstanceItemProviderTest {
     assertThat(resultPage.items().get(2).itemKey()).isEqualTo(3L);
   }
 
-  private DecisionInstanceEntity createDecisionInstanceEntity(
-      final long decisionInstanceKey, final String decisionInstanceId) {
+  private DecisionInstanceEntity createDecisionInstanceEntity(final long decisionInstanceKey) {
     return Instancio.of(DecisionInstanceEntity.class)
         .set(field(DecisionInstanceEntity::decisionInstanceKey), decisionInstanceKey)
-        .set(field(DecisionInstanceEntity::decisionInstanceId), decisionInstanceId)
         .create();
   }
 }
