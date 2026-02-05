@@ -95,7 +95,7 @@ final class DefaultRecordFilterTest {
             .withIndexedRecordType(RecordType.EVENT)
             .withIndexedValueType(ValueType.VARIABLE);
 
-    configuration.testIndexConfig().withVariableNameInclusionExact(List.of("included"));
+    configuration.filterIndexConfig().withVariableNameInclusionExact(List.of("included"));
 
     final var filter = new DefaultRecordFilter(configuration);
 
@@ -117,7 +117,7 @@ final class DefaultRecordFilterTest {
 
     // No inclusion rules -> all variable names are included by default,
     // but we explicitly exclude the exact name "excluded".
-    configuration.testIndexConfig().withVariableNameExclusionExact(List.of("excluded"));
+    configuration.filterIndexConfig().withVariableNameExclusionExact(List.of("excluded"));
 
     final var filter = new DefaultRecordFilter(configuration);
 
@@ -141,7 +141,7 @@ final class DefaultRecordFilterTest {
             .withIndexedRecordType(RecordType.EVENT)
             .withIndexedValueType(ValueType.VARIABLE);
 
-    configuration.testIndexConfig().withVariableNameInclusionStartWith(List.of("incl"));
+    configuration.filterIndexConfig().withVariableNameInclusionStartWith(List.of("incl"));
 
     final var filter = new DefaultRecordFilter(configuration);
 
@@ -161,7 +161,7 @@ final class DefaultRecordFilterTest {
             .withIndexedRecordType(RecordType.EVENT)
             .withIndexedValueType(ValueType.VARIABLE);
 
-    configuration.testIndexConfig().withVariableNameInclusionEndWith(List.of("_suffix"));
+    configuration.filterIndexConfig().withVariableNameInclusionEndWith(List.of("_suffix"));
 
     final var filter = new DefaultRecordFilter(configuration);
 
@@ -183,7 +183,7 @@ final class DefaultRecordFilterTest {
 
     // No inclusion rules -> all variable names are included by default,
     // but we explicitly exclude names starting with "secret_".
-    configuration.testIndexConfig().withVariableNameExclusionStartWith(List.of("secret_"));
+    configuration.filterIndexConfig().withVariableNameExclusionStartWith(List.of("secret_"));
 
     final var filter = new DefaultRecordFilter(configuration);
 
@@ -209,7 +209,7 @@ final class DefaultRecordFilterTest {
 
     // No inclusion rules -> all variable names are included by default,
     // but we explicitly exclude names ending with "_tmp".
-    configuration.testIndexConfig().withVariableNameExclusionEndWith(List.of("_tmp"));
+    configuration.filterIndexConfig().withVariableNameExclusionEndWith(List.of("_tmp"));
 
     final var excluded = variableRecord("value_tmp");
     final var other = variableRecord("value");
@@ -225,19 +225,116 @@ final class DefaultRecordFilterTest {
         .isTrue();
   }
 
+  @Test
+  void shouldApplyVariableValueTypeInclusionFromTestConfiguration() {
+    // given
+    final var configuration =
+        new TestConfiguration()
+            .withIndexedRecordType(RecordType.EVENT)
+            .withIndexedValueType(ValueType.VARIABLE);
+
+    // Only STRING variables should be included
+    configuration.filterIndexConfig().withVariableValueTypeInclusion(List.of("STRING"));
+
+    final var filter = new DefaultRecordFilter(configuration);
+
+    // JSON string -> STRING
+    final var stringVar = variableRecord("v_string", "\"foo\"");
+    // JSON number -> DOUBLE
+    final var numberVar = variableRecord("v_number", "42");
+
+    // when / then
+    assertThat(filter.acceptRecord(stringVar))
+        .as("STRING variable should be accepted by inclusion type filter")
+        .isTrue();
+    assertThat(filter.acceptRecord(numberVar))
+        .as("non-STRING variable should be rejected by inclusion type filter")
+        .isFalse();
+  }
+
+  @Test
+  void shouldApplyVariableValueTypeExclusionFromTestConfiguration() {
+    // given
+    final var configuration =
+        new TestConfiguration()
+            .withIndexedRecordType(RecordType.EVENT)
+            .withIndexedValueType(ValueType.VARIABLE);
+
+    // Exclude DOUBLE variables
+    configuration.filterIndexConfig().withVariableValueTypeExclusion(List.of("NUMBER"));
+
+    final var filter = new DefaultRecordFilter(configuration);
+
+    // JSON string -> STRING
+    final var stringVar = variableRecord("v_string", "\"foo\"");
+    // JSON number -> DOUBLE
+    final var numberVar = variableRecord("v_number", "42");
+
+    // when / then
+    assertThat(filter.acceptRecord(numberVar))
+        .as("DOUBLE variable should be rejected by exclusion type filter")
+        .isFalse();
+    assertThat(filter.acceptRecord(stringVar))
+        .as("non-DOUBLE variable should be accepted by exclusion type filter")
+        .isTrue();
+  }
+
+  @Test
+  void shouldNotApplyVariableNameFilterWhenNoNameRulesConfigured() {
+    // given
+    final var configuration =
+        new TestConfiguration()
+            .withIndexedRecordType(RecordType.EVENT)
+            .withIndexedValueType(ValueType.VARIABLE);
+
+    final var filter = new DefaultRecordFilter(configuration);
+
+    final var record1 = variableRecord("anyName");
+
+    // when / then
+    assertThat(filter.acceptRecord(record1))
+        .as("Without name inclusion/exclusion rules, all variable names should be accepted")
+        .isTrue();
+  }
+
+  @Test
+  void shouldNotApplyVariableValueTypeFilterWhenNoTypeRulesConfigured() {
+    // given
+    final var configuration =
+        new TestConfiguration()
+            .withIndexedRecordType(RecordType.EVENT)
+            .withIndexedValueType(ValueType.VARIABLE);
+
+    final var filter = new DefaultRecordFilter(configuration);
+
+    final var stringVar = variableRecord("v_string", "\"foo\"");
+
+    // when / then
+    assertThat(filter.acceptRecord(stringVar))
+        .as("Without type inclusion/exclusion rules, STRING variables should be accepted")
+        .isTrue();
+  }
+
   // ---------------------------------------------------------------------------
   // helpers
   // ---------------------------------------------------------------------------
-  @SuppressWarnings("unchecked")
   private static Record<VariableRecordValue> variableRecord(final String name) {
-    final var record = (Record<VariableRecordValue>) mock(Record.class);
+    return variableRecord(name, null);
+  }
+
+  @SuppressWarnings("unchecked")
+  private static Record<VariableRecordValue> variableRecord(
+      final String name, final String rawValue) {
+
+    final Record<VariableRecordValue> record = (Record<VariableRecordValue>) mock(Record.class);
     final var value = mock(VariableRecordValue.class);
 
     when(record.getRecordType()).thenReturn(RecordType.EVENT);
     when(record.getValueType()).thenReturn(ValueType.VARIABLE);
-    when(record.getBrokerVersion()).thenReturn("8.9.0"); // satisfies VariableNameFilterRecord
+    when(record.getBrokerVersion()).thenReturn("8.9.0");
     when(record.getValue()).thenReturn(value);
     when(value.getName()).thenReturn(name);
+    when(value.getValue()).thenReturn(rawValue);
 
     return record;
   }
