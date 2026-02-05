@@ -117,7 +117,7 @@ jobs:
         continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
-          job_name: "database-integration-tests/${{ inputs.database-type }}${{ inputs.job-name-suffix }}""
+          job_name: "database-integration-tests/${{ inputs.database-type }}${{ inputs.job-name-suffix }}"
           build_status: ${{ job.status }}
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
           user_description: "General"

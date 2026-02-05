@@ -514,6 +514,7 @@ jobs:
       database-type: "elasticsearch"
       database-image-version: "9.2.4"
       it-database-type: "es"
+      job-name-suffix: "9"
 
   opensearch-integration-tests:
     name: "Database Integration Tests / Opensearch"
