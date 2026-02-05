@@ -35,6 +35,12 @@
       <version>3.1.12</version>
     </dependency>
 
+    <!-- this is necessary. Dependency:analyze error suppressed -->
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-layout-template-json</artifactId>
+    </dependency>
+
     <!-- Optimize dependencies -->
     <dependency>
       <groupId>io.camunda.optimize</groupId>
