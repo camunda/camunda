@@ -60,6 +60,9 @@ public class RoleConfigurer implements EntityInitializationConfigurer<Configured
   }
 
   private RoleRecord mapToRecord(final ConfiguredRole role) {
-    return new RoleRecord().setName(role.name()).setDescription(role.description());
+    return new RoleRecord()
+        .setRoleId(role.roleId())
+        .setName(role.name())
+        .setDescription(role.description());
   }
 }
