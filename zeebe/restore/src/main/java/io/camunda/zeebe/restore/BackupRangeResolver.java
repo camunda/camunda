@@ -43,7 +43,7 @@ public final class BackupRangeResolver {
     this.store = store;
   }
 
-  public RestoreInformationPerPartition getInformationPerPartition(
+  public PartitionRestoreInfo getInformationPerPartition(
       final int partition, final Instant from, final Instant to, final long lastExportedPosition) {
     final var interval = new Interval<>(from, to);
     final var rangeMarkers = store.rangeMarkers(partition).join();
@@ -77,7 +77,7 @@ public final class BackupRangeResolver {
                             + " with exported position "
                             + lastExportedPosition));
 
-    return new RestoreInformationPerPartition(safeStart, statusInterval.getLeft(), backups);
+    return new PartitionRestoreInfo(partition, safeStart, statusInterval.getLeft(), backups);
   }
 
   public BackupStatus toBackupStatus(final int partitionId, final long checkpoint) {
@@ -231,7 +231,7 @@ public final class BackupRangeResolver {
         .toList();
   }
 
-  record RestoreInformationPerPartition(
+  record PartitionRestoreInfo(
       int partition,
       long safeStart,
       BackupRange completRange,

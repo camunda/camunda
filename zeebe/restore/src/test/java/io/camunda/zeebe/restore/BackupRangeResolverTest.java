@@ -19,11 +19,11 @@ import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupStatusImpl;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import java.time.Instant;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalLong;
+import java.util.SequencedCollection;
 import java.util.Set;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -143,7 +143,7 @@ final class BackupRangeResolverTest {
 
       // All nodes have backups for their partitions
       // needed due to lack of covariance
-      final Map<Integer, Collection<BackupStatus>> backupsByNodePartition =
+      final Map<Integer, SequencedCollection<BackupStatus>> backupsByNodePartition =
           Map.of(1, completeBackupList, 2, completeBackupList, 3, completeBackupList);
 
       final Map<Integer, BackupRange> rangesByPartition =
@@ -168,7 +168,7 @@ final class BackupRangeResolverTest {
       final var safeStartByPartition = Map.of(1, 100L, 2, 100L, 3, 110L); // partition 3 lags
 
       // needed due to lack of covariance
-      final Map<Integer, Collection<BackupStatus>> backupsByPartition =
+      final Map<Integer, SequencedCollection<BackupStatus>> backupsByPartition =
           Map.of(
               1, List.of(),
               2, List.of(),
@@ -199,7 +199,7 @@ final class BackupRangeResolverTest {
       final var safeStartByPartition = Map.of(1, 100L, 2, 100L, 3, 100L);
 
       // needed due to lack of covariance
-      final Map<Integer, Collection<BackupStatus>> backupsByNodePartition =
+      final Map<Integer, SequencedCollection<BackupStatus>> backupsByNodePartition =
           Map.of(
               1, List.of(),
               2, List.of(),
@@ -247,7 +247,7 @@ final class BackupRangeResolverTest {
               new CheckpointSpec(100, 2000),
               new CheckpointSpec(105, 2050));
 
-      final Map<Integer, Collection<BackupStatus>> backupsByNodePartition =
+      final Map<Integer, SequencedCollection<BackupStatus>> backupsByNodePartition =
           Map.of(
               1, node0Backups,
               2, node1Backups);
@@ -285,7 +285,8 @@ final class BackupRangeResolverTest {
               new CheckpointSpec(2000, 3000),
               new CheckpointSpec(2100, 3500));
 
-      final Map<Integer, Collection<BackupStatus>> backupsByNodePartition = Map.of(1, backups);
+      final Map<Integer, SequencedCollection<BackupStatus>> backupsByNodePartition =
+          Map.of(1, backups);
 
       final Map<Integer, BackupRange> rangesByPartition =
           Map.of(1, new BackupRange.Complete(1950, 2100));
@@ -317,7 +318,8 @@ final class BackupRangeResolverTest {
               new CheckpointSpec(2000, 3000),
               new CheckpointSpec(2050, 3500));
 
-      final Map<Integer, Collection<BackupStatus>> backupsByNodePartition = Map.of(1, backups);
+      final Map<Integer, SequencedCollection<BackupStatus>> backupsByNodePartition =
+          Map.of(1, backups);
 
       final Map<Integer, BackupRange> rangesByPartition =
           Map.of(1, new BackupRange.Complete(1900, 2050));
@@ -347,7 +349,8 @@ final class BackupRangeResolverTest {
               new CheckpointSpec(2000, 3000),
               new CheckpointSpec(2100, 3500));
 
-      final Map<Integer, Collection<BackupStatus>> backupsByNodePartition = Map.of(1, backups);
+      final Map<Integer, SequencedCollection<BackupStatus>> backupsByNodePartition =
+          Map.of(1, backups);
 
       final Map<Integer, BackupRange> rangesByPartition =
           Map.of(1, new BackupRange.Complete(1900, 2100));
@@ -378,7 +381,8 @@ final class BackupRangeResolverTest {
               new CheckpointSpec(2100, 3500),
               new CheckpointSpec(2200, 4000));
 
-      final Map<Integer, Collection<BackupStatus>> backupsByNodePartition = Map.of(1, backups);
+      final Map<Integer, SequencedCollection<BackupStatus>> backupsByNodePartition =
+          Map.of(1, backups);
 
       final Map<Integer, BackupRange> rangesByPartition =
           Map.of(1, new BackupRange.Complete(1800, 2200));
@@ -414,7 +418,7 @@ final class BackupRangeResolverTest {
               new CheckpointSpec(2050, 3200),
               new CheckpointSpec(2100, 3700));
 
-      final Map<Integer, Collection<BackupStatus>> backupsByNodePartition =
+      final Map<Integer, SequencedCollection<BackupStatus>> backupsByNodePartition =
           Map.of(
               1, node0Backups,
               2, node1Backups);
@@ -444,7 +448,8 @@ final class BackupRangeResolverTest {
       final var backups =
           createContiguousBackups(new CheckpointSpec(1900, 2500), new CheckpointSpec(2100, 3500));
 
-      final Map<Integer, Collection<BackupStatus>> backupsByNodePartition = Map.of(1, backups);
+      final Map<Integer, SequencedCollection<BackupStatus>> backupsByNodePartition =
+          Map.of(1, backups);
 
       final Map<Integer, BackupRange> rangesByPartition =
           Map.of(1, new BackupRange.Complete(1900, 2100));
@@ -469,7 +474,8 @@ final class BackupRangeResolverTest {
 
       final var backups = createContiguousBackups(new CheckpointSpec(2000, 3000));
 
-      final Map<Integer, Collection<BackupStatus>> backupsByNodePartition = Map.of(1, backups);
+      final Map<Integer, SequencedCollection<BackupStatus>> backupsByNodePartition =
+          Map.of(1, backups);
 
       final Map<Integer, BackupRange> rangesByPartition =
           Map.of(1, new BackupRange.Complete(2000, 2000));
@@ -513,7 +519,7 @@ final class BackupRangeResolverTest {
               new CheckpointSpec(2000, 3000),
               new CheckpointSpec(2100, 3500));
 
-      final Map<Integer, Collection<BackupStatus>> backupsByPartition =
+      final Map<Integer, SequencedCollection<BackupStatus>> backupsByPartition =
           Map.of(
               1, p1Backups,
               2, p2Backups,
@@ -586,7 +592,7 @@ final class BackupRangeResolverTest {
               new CheckpointSpec(2100, 4500));
 
       // Each node backs up each partition (full replication)
-      final Map<Integer, Collection<BackupStatus>> backupsByPartition =
+      final Map<Integer, SequencedCollection<BackupStatus>> backupsByPartition =
           Map.of(
               1, p1Backups,
               2, p2Backups,
