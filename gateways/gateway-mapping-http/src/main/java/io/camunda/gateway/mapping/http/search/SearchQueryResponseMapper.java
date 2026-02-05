@@ -1435,7 +1435,10 @@ public final class SearchQueryResponseMapper {
         .decisionRequirementsKey(KeyUtil.keyToString(auditLog.decisionRequirementsKey()))
         .decisionDefinitionId(auditLog.decisionDefinitionId())
         .decisionDefinitionKey(KeyUtil.keyToString(auditLog.decisionDefinitionKey()))
-        .decisionEvaluationKey(KeyUtil.keyToString(auditLog.decisionEvaluationKey()));
+        .decisionEvaluationKey(KeyUtil.keyToString(auditLog.decisionEvaluationKey()))
+        .deploymentKey(KeyUtil.keyToString(auditLog.deploymentKey()))
+        .formKey(KeyUtil.keyToString(auditLog.formKey()))
+        .resourceKey(KeyUtil.keyToString(auditLog.resourceKey()));
   }
 
   private static ProcessInstanceStateEnum toProtocolState(
