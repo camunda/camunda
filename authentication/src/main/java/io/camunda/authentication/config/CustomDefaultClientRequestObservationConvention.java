@@ -50,8 +50,9 @@ public class CustomDefaultClientRequestObservationConvention
       return super.uri(context);
     }
 
-    final var uri = context.getCarrier().getURI();
-    if (uri != null) {
+    final var carrier = context.getCarrier();
+    if (carrier != null) {
+      final var uri = context.getCarrier().getURI();
       final var path = uri.getPath();
       if (path != null) {
         return KeyValue.of(LowCardinalityKeyNames.URI, (path.startsWith("/") ? path : "/" + path));
