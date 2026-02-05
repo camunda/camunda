@@ -4,13 +4,24 @@
 name: Camunda Compatibility Tests
 
 on:
-  push:
-    branches:
-      - 'nicpuppa/41916-client-workflow'  # Test branch for workflow development
   schedule:
     # Runs at 02:00 every day https://crontab.guru/#0_2_*_*_*
     - cron: '0 2 * * *'
   workflow_dispatch:
+    inputs:
+      client_version:
+        description: 'Client version to test (e.g., 8.8.0 or 8.9.0-SNAPSHOT). Leave empty to test all versions.'
+        required: false
+        type: string
+      server_version:
+        description: 'Server version to test (e.g., 8.8.0 or 8.9.0-SNAPSHOT). Leave empty to test all versions.'
+        required: false
+        type: string
+      skip_cache:
+        description: 'Skip version cache and retest all combinations'
+        required: false
+        type: boolean
+        default: false
     # To trigger manually
 
 permissions: {}
@@ -35,26 +46,18 @@ jobs:
         shell: bash
         run: |
           BRANCH_NAME="${GITHUB_REF#refs/heads/}"
-          echo "DEBUG: Detected branch: $BRANCH_NAME"
           echo "branch-name=$BRANCH_NAME" >> "$GITHUB_OUTPUT"
 
           if [[ "$BRANCH_NAME" == "main" ]]; then
-            echo "DEBUG: Running on main branch"
             echo "is-main=true" >> "$GITHUB_OUTPUT"
             echo "stable-version=" >> "$GITHUB_OUTPUT"
           else
-            echo "DEBUG: Running on non-main branch"
             echo "is-main=false" >> "$GITHUB_OUTPUT"
             # Extract version from stable/8.x branch name
             if [[ "$BRANCH_NAME" =~ ^stable/([0-9]+\.[0-9]+)$ ]]; then
               STABLE_VERSION="${BASH_REMATCH[1]}"
-              echo "DEBUG: Extracted stable version: $STABLE_VERSION"
               echo "stable-version=$STABLE_VERSION" >> "$GITHUB_OUTPUT"
             else
-              echo "DEBUG: Branch does not match stable/x.y pattern, treating as test branch"
-              # For test branches, use a default version for testing (latest stable)
-              ## TODO: remove
-              DEFAULT_STABLE="8.8"
               echo "DEBUG: Using default stable version for testing: $DEFAULT_STABLE"
               echo "stable-version=$DEFAULT_STABLE" >> "$GITHUB_OUTPUT"
             fi
@@ -76,20 +79,15 @@ jobs:
           # Get all version tags (format: 8.x.y)
           ALL_TAGS=$(git tag -l '[0-9]*.[0-9]*.[0-9]*' | sort -V)
           TAG_COUNT=$(echo "$ALL_TAGS" | wc -l | tr -d ' ')
-          echo "DEBUG: Found $TAG_COUNT total version tags"
-          echo "DEBUG: Latest 5 tags: $(echo "$ALL_TAGS" | tail -5 | tr '\n' ' ')"
 
           STABLE_VERSION="${{ steps.branch-info.outputs.stable-version }}"
           IS_MAIN="${{ steps.branch-info.outputs.is-main }}"
-          echo "DEBUG: STABLE_VERSION=$STABLE_VERSION, IS_MAIN=$IS_MAIN"
 
           if [[ "$IS_MAIN" == "true" ]]; then
             # On main, use only the snapshot version from pom as the tag
-            echo "DEBUG: Main branch - no git tags will be used, only snapshot from pom.xml"
             FILTERED_TAGS=""
           else
             # Filter tags >= stable version (e.g., >= 8.8.0)
-            echo "DEBUG: Filtering tags >= $STABLE_VERSION"
             FILTERED_TAGS=""
             SKIPPED_COUNT=0
             FILTERED_COUNT=0
@@ -117,14 +115,11 @@ jobs:
                 fi
               fi
             done
-            echo "DEBUG: Skipped $SKIPPED_COUNT pre-release tags"
-            echo "DEBUG: Filtered $FILTERED_COUNT tags matching >= $STABLE_VERSION"
           fi
 
           # Save filtered tags
           echo "$FILTERED_TAGS" > /tmp/filtered_tags.txt
           FILTERED_COUNT=$(echo "$FILTERED_TAGS" | grep -c -v '^$' || echo "0")
-          echo "DEBUG: Filtered to $FILTERED_COUNT tags"
           echo "Filtered tags:"
           cat /tmp/filtered_tags.txt
 
@@ -135,11 +130,9 @@ jobs:
           FILTERED_TAGS=$(cat /tmp/filtered_tags.txt | grep -v '^$' || true)
           POM_VERSION="${{ steps.pom-version.outputs.pom-version }}"
           IS_MAIN="${{ steps.branch-info.outputs.is-main }}"
-          echo "DEBUG: POM_VERSION=$POM_VERSION, IS_MAIN=$IS_MAIN"
 
           # Calculate next minor snapshot version from latest tag
           LATEST_TAG=$(echo "$FILTERED_TAGS" | tail -n1)
-          echo "DEBUG: Latest tag: $LATEST_TAG"
           if [[ -n "$LATEST_TAG" ]] && [[ "$LATEST_TAG" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
             TAG_MAJOR="${BASH_REMATCH[1]}"
             TAG_MINOR="${BASH_REMATCH[2]}"
@@ -150,7 +143,6 @@ jobs:
             # Fallback: derive from pom version
             if [[ "$POM_VERSION" =~ ^([0-9]+)\.([0-9]+)\. ]]; then
               NEXT_SNAPSHOT="$POM_VERSION"
-              echo "DEBUG: Using POM version as snapshot: $NEXT_SNAPSHOT"
             else
               echo "::error::Cannot determine snapshot version"
               exit 1
@@ -158,10 +150,8 @@ jobs:
           fi
 
           echo "next-snapshot=$NEXT_SNAPSHOT" >> "$GITHUB_OUTPUT"
-          echo "DEBUG: Next snapshot version: $NEXT_SNAPSHOT"
 
           # Create CLIENT_LIST: all versions + snapshot (if not on main)
-          echo "DEBUG: Creating CLIENT_LIST..."
           CLIENT_LIST=""
           CLIENT_COUNT=0
           if [[ -n "$FILTERED_TAGS" ]]; then
@@ -170,24 +160,19 @@ jobs:
               CLIENT_COUNT=$((CLIENT_COUNT + 1))
             done
           fi
-          echo "DEBUG: Added $CLIENT_COUNT versions to CLIENT_LIST"
 
           if [[ "$IS_MAIN" != "true" ]]; then
             CLIENT_LIST+="$NEXT_SNAPSHOT"$'\n'
-            echo "DEBUG: Added snapshot version to CLIENT_LIST: $NEXT_SNAPSHOT"
           else
-            echo "DEBUG: On main, using only snapshot: $NEXT_SNAPSHOT"
             CLIENT_LIST="$NEXT_SNAPSHOT"$'\n'
           fi
 
           echo "$CLIENT_LIST" > /tmp/client_list.txt
           CLIENT_TOTAL=$(grep -c -v '^$' /tmp/client_list.txt || echo "0")
-          echo "DEBUG: CLIENT_LIST has $CLIENT_TOTAL total versions"
           echo "CLIENT_LIST:"
           cat /tmp/client_list.txt
 
           # Create SERVER_LIST: versions from next minor onwards + snapshot (if not on main)
-          echo "DEBUG: Creating SERVER_LIST..."
           SERVER_LIST=""
           STABLE_VERSION="${{ steps.branch-info.outputs.stable-version }}"
 
@@ -195,7 +180,6 @@ jobs:
             # Parse stable version to get next minor
             IFS='.' read -r STABLE_MAJOR STABLE_MINOR <<< "$STABLE_VERSION"
             NEXT_MINOR=$((STABLE_MINOR + 1))
-            echo "DEBUG: SERVER_LIST starts from version $STABLE_MAJOR.$NEXT_MINOR.x onwards"
 
             SERVER_COUNT=0
             if [[ -n "$FILTERED_TAGS" ]]; then
@@ -212,21 +196,17 @@ jobs:
                 fi
               done
             fi
-            echo "DEBUG: Added $SERVER_COUNT versions to SERVER_LIST"
           else
             # On main, SERVER_LIST same as CLIENT_LIST
-            echo "DEBUG: On main/test branch, SERVER_LIST = CLIENT_LIST"
             SERVER_LIST="$CLIENT_LIST"
           fi
 
           if [[ "$IS_MAIN" != "true" ]]; then
             SERVER_LIST+="$NEXT_SNAPSHOT"$'\n'
-            echo "DEBUG: Added snapshot version to SERVER_LIST: $NEXT_SNAPSHOT"
           fi
 
           echo "$SERVER_LIST" > /tmp/server_list.txt
           SERVER_TOTAL=$(grep -c -v '^$' /tmp/server_list.txt || echo "0")
-          echo "DEBUG: SERVER_LIST has $SERVER_TOTAL total versions"
           echo "SERVER_LIST:"
           cat /tmp/server_list.txt
 
@@ -244,8 +224,10 @@ jobs:
         run: |
           mkdir -p /tmp/compatibility-state
 
-          # Load previously tested combinations if artifact exists
-          if [[ -f /tmp/compatibility-state-download/tested-combinations.txt ]]; then
+          if [[ "${{ inputs.skip_cache }}" == "true" ]]; then
+            touch /tmp/compatibility-state/tested-combinations.txt
+            echo "Skipping cache - will test all combinations"
+          elif [[ -f /tmp/compatibility-state-download/tested-combinations.txt ]]; then
             cp /tmp/compatibility-state-download/tested-combinations.txt /tmp/compatibility-state/tested-combinations.txt
             echo "Loaded $(wc -l < /tmp/compatibility-state/tested-combinations.txt) previously tested combinations"
           else
@@ -257,46 +239,65 @@ jobs:
         id: create-matrix
         shell: bash
         run: |
-          CLIENT_LIST=$(cat /tmp/client_list.txt | grep -v '^$')
-          SERVER_LIST=$(cat /tmp/server_list.txt | grep -v '^$')
-          NEXT_SNAPSHOT="${{ steps.create-lists.outputs.next-snapshot }}"
-          IS_MAIN="${{ steps.branch-info.outputs.is-main }}"
+          CLIENT_VERSION="${{ inputs.client_version }}"
+          SERVER_VERSION="${{ inputs.server_version }}"
 
-          CLIENT_COUNT=$(echo "$CLIENT_LIST" | wc -l)
-          SERVER_COUNT=$(echo "$SERVER_LIST" | wc -l)
-          POTENTIAL_COMBOS=$((CLIENT_COUNT * SERVER_COUNT))
-          echo "DEBUG: Creating matrix with $CLIENT_COUNT clients × $SERVER_COUNT servers = $POTENTIAL_COMBOS potential combinations"
-
-          # Create matrix combinations
-          MATRIX_ITEMS="[]"
-          ADDED_COUNT=0
-          SKIPPED_COUNT=0
-
-          for client in $CLIENT_LIST; do
+          if [[ -n "$CLIENT_VERSION" ]] && [[ -n "$SERVER_VERSION" ]]; then
+            echo "Manual trigger: Testing specific versions - Client: $CLIENT_VERSION, Server: $SERVER_VERSION"
+            MATRIX_JSON=$(jq -nc --arg client "$CLIENT_VERSION" --arg server "$SERVER_VERSION" '{"include": [{"client": $client, "server": $server}]}')
+            echo "matrix=$MATRIX_JSON" >> "$GITHUB_OUTPUT"
+          elif [[ -n "$CLIENT_VERSION" ]]; then
+            echo "Manual trigger: Testing client version $CLIENT_VERSION against all servers"
+            SERVER_LIST=$(cat /tmp/server_list.txt | grep -v '^$')
+            MATRIX_ITEMS="[]"
             for server in $SERVER_LIST; do
-              # Skip if combination already tested (unless server is snapshot)
-              COMBO="$client-$server"
-              if grep -q "^$COMBO$" /tmp/compatibility-state/tested-combinations.txt 2>/dev/null; then
-                # Always run if server is snapshot
-                if [[ "$server" != *"-SNAPSHOT" ]]; then
-                  echo "DEBUG: Skipping already tested: $COMBO"
-                  SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
-                  continue
-                fi
-              fi
-
-              # Add to matrix
-              echo "DEBUG: Adding to matrix: $COMBO"
-              MATRIX_ITEMS=$(echo "$MATRIX_ITEMS" | jq -c '. += [{"client": "'"$client"'", "server": "'"$server"'"}]')
-              ADDED_COUNT=$((ADDED_COUNT + 1))
+              MATRIX_ITEMS=$(echo "$MATRIX_ITEMS" | jq -c '. += [{"client": "'"$CLIENT_VERSION"'", "server": "'"$server"'"}]')
             done
-          done
+            MATRIX_JSON=$(jq -nc --argjson items "$MATRIX_ITEMS" '{"include": $items}')
+            echo "matrix=$MATRIX_JSON" >> "$GITHUB_OUTPUT"
+          elif [[ -n "$SERVER_VERSION" ]]; then
+            echo "Manual trigger: Testing server version $SERVER_VERSION with all clients"
+            CLIENT_LIST=$(cat /tmp/client_list.txt | grep -v '^$')
+            MATRIX_ITEMS="[]"
+            for client in $CLIENT_LIST; do
+              MATRIX_ITEMS=$(echo "$MATRIX_ITEMS" | jq -c '. += [{"client": "'"$client"'", "server": "'"$SERVER_VERSION"'"}]')
+            done
+            MATRIX_JSON=$(jq -nc --argjson items "$MATRIX_ITEMS" '{"include": $items}')
+            echo "matrix=$MATRIX_JSON" >> "$GITHUB_OUTPUT"
+          else
+            CLIENT_LIST=$(cat /tmp/client_list.txt | grep -v '^$')
+            SERVER_LIST=$(cat /tmp/server_list.txt | grep -v '^$')
+            SKIP_CACHE="${{ inputs.skip_cache }}"
 
-          echo "DEBUG: Matrix contains $ADDED_COUNT combinations (skipped $SKIPPED_COUNT already tested)"
-          MATRIX_JSON=$(jq -nc --argjson items "$MATRIX_ITEMS" '{"include": $items}')
-          echo "matrix=$MATRIX_JSON" >> "$GITHUB_OUTPUT"
-          echo "Generated matrix:"
-          echo "$MATRIX_JSON" | jq '.'
+            MATRIX_ITEMS="[]"
+            ADDED_COUNT=0
+            SKIPPED_COUNT=0
+
+            for client in $CLIENT_LIST; do
+              for server in $SERVER_LIST; do
+                COMBO="$client-$server"
+
+                # Skip if combination already tested (unless skip_cache is true or server is snapshot)
+                if [[ "$SKIP_CACHE" != "true" ]]; then
+                  if grep -q "^$COMBO$" /tmp/compatibility-state/tested-combinations.txt 2>/dev/null; then
+                    if [[ "$server" != *"-SNAPSHOT" ]]; then
+                      SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
+                      continue
+                    fi
+                  fi
+                fi
+
+                MATRIX_ITEMS=$(echo "$MATRIX_ITEMS" | jq -c '. += [{"client": "'"$client"'", "server": "'"$server"'"}]')
+                ADDED_COUNT=$((ADDED_COUNT + 1))
+              done
+            done
+
+            echo "Matrix contains $ADDED_COUNT combinations (skipped $SKIPPED_COUNT already tested)"
+            MATRIX_JSON=$(jq -nc --argjson items "$MATRIX_ITEMS" '{"include": $items}')
+            echo "matrix=$MATRIX_JSON" >> "$GITHUB_OUTPUT"
+            echo "Generated matrix:"
+            echo "$MATRIX_JSON" | jq '.'
+          fi
 
   run-compatibility-tests:
     name: Test ${{ matrix.client }} -> ${{ matrix.server }}
@@ -417,39 +418,39 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
-#  notify-failure:
-#    name: Notify on failure
-#    runs-on: ubuntu-latest
-#    timeout-minutes: 5
-#    needs: [prepare-versions, run-compatibility-tests]
-#    if: always() && (contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled'))
-#    permissions: {}
-#    steps:
-#      - uses: actions/checkout@v6
-#      - name: Notify failure
-#        uses: slackapi/slack-github-action@v2.1.1
-#        if: env.SLACK_CAMUNDA_EX_CI_WEBHOOK != ''
-#        env:
-#          SLACK_CAMUNDA_EX_CI_WEBHOOK: ${{ secrets.SLACK_CAMUNDA_EX_CI_WEBHOOK }}
-#        with:
-#          webhook: ${{ secrets.SLACK_CAMUNDA_EX_CI_WEBHOOK }}
-#          webhook-type: incoming-webhook
-#          payload: |
-#            {
-#              "blocks": [
-#                {
-#                  "type": "section",
-#                  "text": {
-#                    "type": "mrkdwn",
-#                    "text": ":alarm: *Camunda Client Compatibility Tests Failed*"
-#                  }
-#                },
-#                {
-#                  "type": "section",
-#                  "text": {
-#                    "type": "mrkdwn",
-#                    "text": "Branch: `${{ github.ref_name }}`\nPlease check: https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}"
-#                  }
-#                }
-#              ]
-#            }
+  notify-failure:
+    name: Notify on failure
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [prepare-versions, run-compatibility-tests]
+    if: always() && (contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled'))
+    permissions: {}
+    steps:
+      - uses: actions/checkout@v6
+      - name: Notify failure
+        uses: slackapi/slack-github-action@v2.1.1
+        if: env.SLACK_CAMUNDA_EX_CI_WEBHOOK != ''
+        env:
+          SLACK_CAMUNDA_EX_CI_WEBHOOK: ${{ secrets.SLACK_CAMUNDA_EX_CI_WEBHOOK }}
+        with:
+          webhook: ${{ secrets.SLACK_CAMUNDA_EX_CI_WEBHOOK }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ":alarm: *Camunda Client Compatibility Tests Failed*"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "Branch: `${{ github.ref_name }}`\nPlease check: https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}"
+                  }
+                }
+              ]
+            }
