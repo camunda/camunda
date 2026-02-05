@@ -7,14 +7,13 @@
  */
 package io.camunda.zeebe.engine.state.instance;
 
-import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.engine.state.ObjectDbValue;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue.ProcessInstanceCreationRuntimeInstructionValue;
 import java.util.List;
 import java.util.stream.StreamSupport;
 
-public class RuntimeInstructions extends UnpackedObject implements DbValue {
+public class RuntimeInstructions extends ObjectDbValue {
 
   private final ArrayProperty<RuntimeInstructionValue> runtimeInstructions =
       new ArrayProperty<>("instructions", RuntimeInstructionValue::new);

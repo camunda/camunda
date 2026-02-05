@@ -7,14 +7,13 @@
  */
 package io.camunda.zeebe.engine.state.group;
 
-import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.engine.state.ObjectDbValue;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 
-public class PersistedGroup extends UnpackedObject implements DbValue {
+public class PersistedGroup extends ObjectDbValue {
 
   private final LongProperty groupKeyProp = new LongProperty("groupKey");
   private final StringProperty groupIdProp = new StringProperty("groupId");

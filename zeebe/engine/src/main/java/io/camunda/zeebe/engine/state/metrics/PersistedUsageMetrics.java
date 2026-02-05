@@ -7,8 +7,7 @@
  */
 package io.camunda.zeebe.engine.state.metrics;
 
-import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.engine.state.ObjectDbValue;
 import io.camunda.zeebe.msgpack.property.DocumentProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
@@ -18,7 +17,7 @@ import java.util.Map;
 import java.util.Set;
 import org.agrona.DirectBuffer;
 
-public class PersistedUsageMetrics extends UnpackedObject implements DbValue {
+public class PersistedUsageMetrics extends ObjectDbValue {
 
   public static final int TIME_NOT_SET = -1;
 
@@ -122,7 +121,8 @@ public class PersistedUsageMetrics extends UnpackedObject implements DbValue {
   public PersistedUsageMetrics close(final long time) {
     final var bucket = new PersistedUsageMetrics();
     bucket.copyFrom(this);
-    // Ensure the fromTime is set. This can happen if metrics were recorded before the first
+    // Ensure the fromTime is set. This can happen if metrics were recorded before
+    // the first
     // applier.
     if (getFromTime() == TIME_NOT_SET) {
       bucket.setFromTime(time);

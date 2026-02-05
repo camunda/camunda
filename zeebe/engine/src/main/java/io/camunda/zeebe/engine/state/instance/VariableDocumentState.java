@@ -7,13 +7,12 @@
  */
 package io.camunda.zeebe.engine.state.instance;
 
-import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.engine.state.ObjectDbValue;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 
-public class VariableDocumentState extends UnpackedObject implements DbValue {
+public class VariableDocumentState extends ObjectDbValue {
 
   private final LongProperty variableDocumentKeyProp = new LongProperty("variableDocumentKey", -1);
   private final ObjectProperty<VariableDocumentRecord> recordProp =

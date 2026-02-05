@@ -35,22 +35,13 @@ public final class ErrorResponseWriter<R> extends AbstractMessageBuilder<R> {
   }
 
   @Override
-  public void write(final MutableDirectBuffer buffer, int offset) {
-    // protocol header
-    headerEncoder
-        .wrap(buffer, offset)
-        .blockLength(bodyEncoder.sbeBlockLength())
-        .templateId(bodyEncoder.sbeTemplateId())
-        .schemaId(bodyEncoder.sbeSchemaId())
-        .version(bodyEncoder.sbeSchemaVersion());
-
-    offset += headerEncoder.encodedLength();
-
+  public int write(final MutableDirectBuffer buffer, final int offset) {
     // protocol message
     bodyEncoder
-        .wrap(buffer, offset)
+        .wrapAndApplyHeader(buffer, offset, headerEncoder)
         .errorCode(errorCode)
         .putErrorData(errorData, 0, errorData.length);
+    return bodyEncoder.encodedLength() + headerEncoder.encodedLength();
   }
 
   @Override

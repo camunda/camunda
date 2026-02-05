@@ -7,8 +7,7 @@
  */
 package io.camunda.zeebe.engine.state.distribution;
 
-import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.engine.state.ObjectDbValue;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
@@ -21,7 +20,7 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Optional;
 
-public class PersistedCommandDistribution extends UnpackedObject implements DbValue {
+public class PersistedCommandDistribution extends ObjectDbValue {
 
   private final StringProperty queueIdProperty = new StringProperty("queueId", "");
   private final EnumProperty<ValueType> valueTypeProperty =

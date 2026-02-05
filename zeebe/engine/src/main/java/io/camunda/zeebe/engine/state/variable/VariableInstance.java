@@ -7,13 +7,12 @@
  */
 package io.camunda.zeebe.engine.state.variable;
 
-import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.engine.state.ObjectDbValue;
 import io.camunda.zeebe.msgpack.property.BinaryProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import org.agrona.DirectBuffer;
 
-public final class VariableInstance extends UnpackedObject implements DbValue {
+public final class VariableInstance extends ObjectDbValue {
 
   private final LongProperty keyProp = new LongProperty("key");
   private final BinaryProperty valueProp = new BinaryProperty("value");

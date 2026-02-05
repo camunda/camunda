@@ -7,9 +7,8 @@
  */
 package io.camunda.zeebe.engine.state.instance;
 
-import io.camunda.zeebe.db.DbValue;
+import io.camunda.zeebe.engine.state.ObjectDbValue;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
-import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
@@ -36,7 +35,7 @@ import java.util.Objects;
  * intermediate state tracks the new assignee, which can be applied after the task listener
  * completes.
  */
-public class UserTaskIntermediateStateValue extends UnpackedObject implements DbValue {
+public class UserTaskIntermediateStateValue extends ObjectDbValue {
 
   private final ObjectProperty<UserTaskRecord> recordProp =
       new ObjectProperty<>("userTaskRecord", new UserTaskRecord());

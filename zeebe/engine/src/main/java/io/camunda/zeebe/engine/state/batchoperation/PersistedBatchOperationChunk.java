@@ -7,8 +7,7 @@
  */
 package io.camunda.zeebe.engine.state.batchoperation;
 
-import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.engine.state.ObjectDbValue;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.value.LongValue;
@@ -16,7 +15,7 @@ import java.util.List;
 import java.util.Set;
 
 /** Represents a chunk of itemKeys of a batch operation that is persisted in the database. */
-public class PersistedBatchOperationChunk extends UnpackedObject implements DbValue {
+public class PersistedBatchOperationChunk extends ObjectDbValue {
 
   /** The key of the chunk. This key os unique just for the batch operation it belongs to. */
   private final LongProperty keyProp = new LongProperty("key");

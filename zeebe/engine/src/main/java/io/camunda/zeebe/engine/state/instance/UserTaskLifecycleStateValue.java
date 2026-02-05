@@ -7,12 +7,11 @@
  */
 package io.camunda.zeebe.engine.state.instance;
 
-import io.camunda.zeebe.db.DbValue;
+import io.camunda.zeebe.engine.state.ObjectDbValue;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
-import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 
-public class UserTaskLifecycleStateValue extends UnpackedObject implements DbValue {
+public class UserTaskLifecycleStateValue extends ObjectDbValue {
 
   private final EnumProperty<LifecycleState> lifecycleStateProp =
       new EnumProperty<>("userTaskLifecycleState", LifecycleState.class);

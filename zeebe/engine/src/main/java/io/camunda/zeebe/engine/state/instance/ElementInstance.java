@@ -7,10 +7,9 @@
  */
 package io.camunda.zeebe.engine.state.instance;
 
-import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.engine.processing.bpmn.ProcessInstanceLifecycle;
+import io.camunda.zeebe.engine.state.ObjectDbValue;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
-import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.BooleanProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
@@ -24,7 +23,7 @@ import java.util.Iterator;
 import java.util.List;
 import org.agrona.DirectBuffer;
 
-public final class ElementInstance extends UnpackedObject implements DbValue {
+public final class ElementInstance extends ObjectDbValue {
 
   // Static StringValue keys to avoid memory waste
   private static final StringValue PARENT_KEY = new StringValue("parentKey");
@@ -280,10 +279,10 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
       activeSequenceFlowsProp.decrement();
       // This should never happen, but we should fix this in a better way
       // https://github.com/camunda/camunda/issues/9528
-      //    if (decrement < 0) {
-      //      throw new IllegalStateException(
-      //          "Not expected to have an active sequence flow count lower then zero!");
-      //    }
+      // if (decrement < 0) {
+      // throw new IllegalStateException(
+      // "Not expected to have an active sequence flow count lower then zero!");
+      // }
     }
   }
 

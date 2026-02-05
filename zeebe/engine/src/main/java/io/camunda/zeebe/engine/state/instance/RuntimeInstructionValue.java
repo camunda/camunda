@@ -7,14 +7,13 @@
  */
 package io.camunda.zeebe.engine.state.instance;
 
-import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.engine.state.ObjectDbValue;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.record.value.RuntimeInstructionType;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 
-public final class RuntimeInstructionValue extends UnpackedObject implements DbValue {
+public final class RuntimeInstructionValue extends ObjectDbValue {
 
   private final StringProperty afterElementIdProp = new StringProperty("afterElementId", "");
   private final EnumProperty<RuntimeInstructionType> typeProp =

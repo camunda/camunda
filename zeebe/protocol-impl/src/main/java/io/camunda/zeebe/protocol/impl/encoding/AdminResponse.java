@@ -33,8 +33,9 @@ public class AdminResponse implements BufferReader, BufferWriter {
   }
 
   @Override
-  public void write(final MutableDirectBuffer buffer, final int offset) {
+  public int write(final MutableDirectBuffer buffer, final int offset) {
     bodyEncoder.wrapAndApplyHeader(buffer, offset, headerEncoder);
+    return getLength();
   }
 
   public byte[] getPayload() {

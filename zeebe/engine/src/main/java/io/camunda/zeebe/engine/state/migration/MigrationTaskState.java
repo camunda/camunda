@@ -7,11 +7,10 @@
  */
 package io.camunda.zeebe.engine.state.migration;
 
-import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.engine.state.ObjectDbValue;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 
-public final class MigrationTaskState extends UnpackedObject implements DbValue {
+public final class MigrationTaskState extends ObjectDbValue {
 
   private final EnumProperty<State> stateProp =
       new EnumProperty<>("state", State.class, State.NOT_STARTED);
