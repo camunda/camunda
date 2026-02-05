@@ -117,6 +117,9 @@ public class ModesAndProfilesProcessor implements SpringApplicationRunListener {
   }
 
   private String getMode() {
+    // NOTE: This listener happens before the initialization of the context, hence we cannot simply
+    //  wire the UnifiedConfiguration object in here, as it is not created yet. We need to use
+    //  the environment directly to read the property.
     return environment.getProperty(CAMUNDA_MODE_PROPERTY);
   }
 
