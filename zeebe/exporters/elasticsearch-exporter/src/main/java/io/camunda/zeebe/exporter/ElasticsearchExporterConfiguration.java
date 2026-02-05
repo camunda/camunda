@@ -145,6 +145,11 @@ public class ElasticsearchExporterConfiguration implements FilterConfiguration {
     };
   }
 
+  @Override
+  public IndexConfig filterIndexConfig() {
+    return index;
+  }
+
   public boolean getIsIncludeEnabledRecords() {
     return includeEnabledRecords;
   }
@@ -153,7 +158,7 @@ public class ElasticsearchExporterConfiguration implements FilterConfiguration {
     this.includeEnabledRecords = includeEnabledRecords;
   }
 
-  public static class IndexConfiguration {
+  public static class IndexConfiguration implements IndexConfig {
 
     private static final int DEFAULT_INDEX_TEMPLATE_PRIORITY = 20;
     // prefix for index and templates
@@ -240,6 +245,14 @@ public class ElasticsearchExporterConfiguration implements FilterConfiguration {
     private Integer numberOfReplicas = null;
     private int templatePriority = DEFAULT_INDEX_TEMPLATE_PRIORITY;
 
+    // variable name filters
+    private final List<String> variableNameInclusionExact = new ArrayList<>();
+    private final List<String> variableNameInclusionStartWith = new ArrayList<>();
+    private final List<String> variableNameInclusionEndWith = new ArrayList<>();
+    private final List<String> variableNameExclusionExact = new ArrayList<>();
+    private final List<String> variableNameExclusionStartWith = new ArrayList<>();
+    private final List<String> variableNameExclusionEndWith = new ArrayList<>();
+
     public Integer getNumberOfShards() {
       return numberOfShards;
     }
@@ -262,6 +275,36 @@ public class ElasticsearchExporterConfiguration implements FilterConfiguration {
 
     public void setTemplatePriority(final int templatePriority) {
       this.templatePriority = templatePriority;
+    }
+
+    @Override
+    public List<String> getVariableNameInclusionExact() {
+      return variableNameInclusionExact;
+    }
+
+    @Override
+    public List<String> getVariableNameInclusionStartWith() {
+      return variableNameInclusionStartWith;
+    }
+
+    @Override
+    public List<String> getVariableNameInclusionEndWith() {
+      return variableNameInclusionEndWith;
+    }
+
+    @Override
+    public List<String> getVariableNameExclusionExact() {
+      return variableNameExclusionExact;
+    }
+
+    @Override
+    public List<String> getVariableNameExclusionStartWith() {
+      return variableNameExclusionStartWith;
+    }
+
+    @Override
+    public List<String> getVariableNameExclusionEndWith() {
+      return variableNameExclusionEndWith;
     }
 
     @Override
@@ -358,6 +401,19 @@ public class ElasticsearchExporterConfiguration implements FilterConfiguration {
           + conditionalSubscription
           + ", conditionalEvaluation="
           + conditionalEvaluation
+          // variable name filters
+          + ", variableNameInclusionExact="
+          + variableNameInclusionExact
+          + ", variableNameInclusionStartWith="
+          + variableNameInclusionStartWith
+          + ", variableNameInclusionEndWith="
+          + variableNameInclusionEndWith
+          + ", variableNameExclusionExact="
+          + variableNameExclusionExact
+          + ", variableNameExclusionStartWith="
+          + variableNameExclusionStartWith
+          + ", variableNameExclusionEndWith="
+          + variableNameExclusionEndWith
           + '}';
     }
   }
