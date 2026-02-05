@@ -237,12 +237,16 @@ public class OpensearchExporterConfiguration implements FilterConfiguration {
     private int priority = DEFAULT_INDEX_TEMPLATE_PRIORITY;
 
     // variable name filters
-    private final List<String> variableNameInclusionExact = new ArrayList<>();
-    private final List<String> variableNameInclusionStartWith = new ArrayList<>();
-    private final List<String> variableNameInclusionEndWith = new ArrayList<>();
-    private final List<String> variableNameExclusionExact = new ArrayList<>();
-    private final List<String> variableNameExclusionStartWith = new ArrayList<>();
-    private final List<String> variableNameExclusionEndWith = new ArrayList<>();
+    private List<String> variableNameInclusionExact = new ArrayList<>();
+    private List<String> variableNameInclusionStartWith = new ArrayList<>();
+    private List<String> variableNameInclusionEndWith = new ArrayList<>();
+    private List<String> variableNameExclusionExact = new ArrayList<>();
+    private List<String> variableNameExclusionStartWith = new ArrayList<>();
+    private List<String> variableNameExclusionEndWith = new ArrayList<>();
+
+    // variable value type filters
+    private List<String> variableValueTypeInclusion = new ArrayList<>();
+    private List<String> variableValueTypeExclusion = new ArrayList<>();
 
     public Integer getNumberOfShards() {
       return numberOfShards;
@@ -275,27 +279,71 @@ public class OpensearchExporterConfiguration implements FilterConfiguration {
 
     @Override
     public List<String> getVariableNameInclusionStartWith() {
-      return variableNameInclusionStartWith;
+      return List.copyOf(variableNameInclusionStartWith);
     }
 
     @Override
     public List<String> getVariableNameInclusionEndWith() {
-      return variableNameInclusionEndWith;
+      return List.copyOf(variableNameInclusionEndWith);
     }
 
     @Override
     public List<String> getVariableNameExclusionExact() {
-      return variableNameExclusionExact;
+      return List.copyOf(variableNameExclusionExact);
     }
 
     @Override
     public List<String> getVariableNameExclusionStartWith() {
-      return variableNameExclusionStartWith;
+      return List.copyOf(variableNameExclusionStartWith);
     }
 
     @Override
     public List<String> getVariableNameExclusionEndWith() {
-      return variableNameExclusionEndWith;
+      return List.copyOf(variableNameExclusionEndWith);
+    }
+
+    @Override
+    public List<String> getVariableValueTypeInclusion() {
+      return List.copyOf(variableValueTypeInclusion);
+    }
+
+    @Override
+    public List<String> getVariableValueTypeExclusion() {
+      return List.copyOf(variableValueTypeExclusion);
+    }
+
+    public void setVariableValueTypeExclusion(final List<String> variableValueTypeExclusion) {
+      this.variableValueTypeExclusion = variableValueTypeExclusion;
+    }
+
+    public void setVariableValueTypeInclusion(final List<String> variableValueTypeInclusion) {
+      this.variableValueTypeInclusion = variableValueTypeInclusion;
+    }
+
+    public void setVariableNameExclusionEndWith(final List<String> variableNameExclusionEndWith) {
+      this.variableNameExclusionEndWith = variableNameExclusionEndWith;
+    }
+
+    public void setVariableNameExclusionStartWith(
+        final List<String> variableNameExclusionStartWith) {
+      this.variableNameExclusionStartWith = variableNameExclusionStartWith;
+    }
+
+    public void setVariableNameExclusionExact(final List<String> variableNameExclusionExact) {
+      this.variableNameExclusionExact = variableNameExclusionExact;
+    }
+
+    public void setVariableNameInclusionEndWith(final List<String> variableNameInclusionEndWith) {
+      this.variableNameInclusionEndWith = variableNameInclusionEndWith;
+    }
+
+    public void setVariableNameInclusionStartWith(
+        final List<String> variableNameInclusionStartWith) {
+      this.variableNameInclusionStartWith = variableNameInclusionStartWith;
+    }
+
+    public void setVariableNameInclusionExact(final List<String> variableNameInclusionExact) {
+      this.variableNameInclusionExact = variableNameInclusionExact;
     }
 
     @Override
@@ -403,6 +451,10 @@ public class OpensearchExporterConfiguration implements FilterConfiguration {
           + variableNameExclusionStartWith
           + ", variableNameExclusionEndWith="
           + variableNameExclusionEndWith
+          + ", variableValueTypeInclusion="
+          + variableValueTypeInclusion
+          + ", variableValueTypeExclusion="
+          + variableValueTypeExclusion
           + '}';
     }
   }
