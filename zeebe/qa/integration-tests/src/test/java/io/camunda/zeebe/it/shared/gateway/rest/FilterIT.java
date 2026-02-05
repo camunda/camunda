@@ -43,6 +43,7 @@ public class FilterIT {
                 secondFilter.setClassName(DisableUserTasksTestFilter.class.getName());
 
                 testGateway
+                    .withUnauthenticatedAccess()
                     .unifiedConfig()
                     .getApi()
                     .getRest()
