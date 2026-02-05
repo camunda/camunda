@@ -548,6 +548,7 @@ jobs:
       it-database-type: "es"
       maven-profiles: "history"
       test-type-label: "History"
+      job-name-suffix: "-history"
 
   opensearch-history-tests:
     name: "History Integration Tests / Opensearch"
@@ -561,6 +562,7 @@ jobs:
       it-database-type: "os"
       maven-profiles: "history"
       test-type-label: "History"
+      job-name-suffix: "-history"
 
   h2-history-tests:
     name: "History Integration Tests / H2"
@@ -573,6 +575,7 @@ jobs:
       it-database-type: "rdbms_h2"
       maven-profiles: "history"
       test-type-label: "History"
+      job-name-suffix: "-history"
 
   rdbms-integration-tests:
     if: needs.detect-changes.outputs.rdbms-integration-tests == 'true'

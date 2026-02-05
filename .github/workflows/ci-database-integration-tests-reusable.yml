@@ -30,6 +30,11 @@ on:
         type: string
         default: "Database"
         description: Label for the test type used in artifact names and job descriptions (e.g., "Database", "History").
+      job-name-suffix:
+        required: false
+        type: string
+        default: ""
+        description: Suffix for job_name (to help differentiate metrics for different jobs).
       notify-slack-on-failure:
         required: false
         type: boolean
@@ -112,7 +117,7 @@ jobs:
         continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
-          job_name: "database-integration-tests/${{ inputs.database-type }}"
+          job_name: "database-integration-tests/${{ inputs.database-type }}${{ inputs.job-name-suffix }}""
           build_status: ${{ job.status }}
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
           user_description: "General"
