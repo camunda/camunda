@@ -8,11 +8,11 @@
 package io.camunda.gateway.mcp.config;
 
 import io.camunda.gateway.mcp.ConditionalOnMcpGatewayEnabled;
+import io.camunda.gateway.mcp.provider.CamundaSyncStatelessMcpToolProvider;
 import io.modelcontextprotocol.server.McpStatelessServerFeatures;
 import io.modelcontextprotocol.server.McpStatelessServerFeatures.SyncToolSpecification;
 import java.util.List;
 import org.springaicommunity.mcp.annotation.McpTool;
-import org.springframework.ai.mcp.annotation.spring.SyncMcpAnnotationProviders;
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerStatelessAutoConfiguration.EnabledStatelessServerCondition;
 import org.springframework.ai.mcp.server.common.autoconfigure.StatelessToolCallbackConverterAutoConfiguration.ToolCallbackConverterCondition;
 import org.springframework.ai.mcp.server.common.autoconfigure.annotations.McpServerAnnotationScannerAutoConfiguration;
@@ -31,8 +31,9 @@ public class CamundaMcpServerToolSpecificationsAutoConfiguration {
       ServerMcpAnnotatedBeans beansWithMcpMethodAnnotations) {
     List<Object> beansByAnnotation =
         beansWithMcpMethodAnnotations.getBeansByAnnotation(McpTool.class);
+    // Use Camunda's custom provider with CamundaJsonSchemaGenerator
     List<McpStatelessServerFeatures.SyncToolSpecification> syncToolSpecifications =
-        SyncMcpAnnotationProviders.statelessToolSpecifications(beansByAnnotation);
+        new CamundaSyncStatelessMcpToolProvider(beansByAnnotation).getToolSpecifications();
     return syncToolSpecifications;
   }
 }
