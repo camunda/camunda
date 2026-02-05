@@ -38,9 +38,7 @@ import {
 } from "@carbon/react";
 import {
   AuditLogEntityType,
-  auditLogEntityTypeSchema,
   AuditLogOperationType,
-  auditLogOperationTypeSchema,
   AuditLogResult,
   auditLogResultSchema,
 } from "@camunda/camunda-api-zod-schemas/8.9";
@@ -68,6 +66,23 @@ const ORDER_MAP: Record<SortConfig["order"], AuditLogSort["order"]> = {
   ASC: "asc",
   DESC: "desc",
 };
+
+const ALLOWED_OPERATION_TYPES: AuditLogOperationType[] = [
+  "CREATE",
+  "ASSIGN",
+  "UNASSIGN",
+  "DELETE",
+  "UPDATE",
+] as const;
+
+const ALLOWED_ENTITY_TYPES: AuditLogEntityType[] = [
+  "AUTHORIZATION",
+  "ROLE",
+  "USER",
+  "GROUP",
+  "MAPPING_RULE",
+  "TENANT",
+] as const;
 
 const List: FC = () => {
   const { t } = useTranslate("operationsLog");
@@ -164,7 +179,7 @@ const List: FC = () => {
               <Heading>{t("operation")}</Heading>
               <MultiSelect
                 id="operationType"
-                items={auditLogOperationTypeSchema.options}
+                items={ALLOWED_OPERATION_TYPES}
                 titleText={t("operationType")}
                 label={t("multiSelectLabel")}
                 selectedItems={operationType ? operationType : []}
@@ -180,7 +195,7 @@ const List: FC = () => {
               />
               <MultiSelect
                 id="entityType"
-                items={auditLogEntityTypeSchema.options}
+                items={ALLOWED_ENTITY_TYPES}
                 titleText={t("entityType")}
                 label={t("multiSelectLabel")}
                 selectedItems={entityType ? entityType : []}
