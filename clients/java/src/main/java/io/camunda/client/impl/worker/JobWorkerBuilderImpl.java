@@ -44,7 +44,7 @@ public final class JobWorkerBuilderImpl
 
   public static final BackoffSupplier DEFAULT_BACKOFF_SUPPLIER =
       BackoffSupplier.newBackoffBuilder().build();
-  public static final BackoffSupplier DEFAULT_STREAM_BACKOFF_SUPPLIER =
+  public static final BackoffSupplier DEFAULT_STREAM_NO_JOBS_BACKOFF_SUPPLIER =
       BackoffSupplier.newBackoffBuilder().maxDelay(Duration.ofMinutes(1).toMillis()).build();
   public static final Duration DEFAULT_STREAMING_TIMEOUT = Duration.ofHours(8);
   private final JobClient jobClient;
@@ -62,7 +62,7 @@ public final class JobWorkerBuilderImpl
   private final List<String> defaultTenantIds;
   private final List<String> customTenantIds;
   private BackoffSupplier backoffSupplier;
-  private BackoffSupplier streamBackoffSupplier;
+  private BackoffSupplier streamNoJobsBackoffSupplier;
   private boolean enableStreaming;
   private Duration streamingTimeout;
   private JobWorkerMetrics metrics = JobWorkerMetrics.noop();
@@ -89,7 +89,7 @@ public final class JobWorkerBuilderImpl
     jobExceptionHandler = configuration.getDefaultJobWorkerExceptionHandler();
     customTenantIds = new ArrayList<>();
     backoffSupplier = DEFAULT_BACKOFF_SUPPLIER;
-    streamBackoffSupplier = DEFAULT_STREAM_BACKOFF_SUPPLIER;
+    streamNoJobsBackoffSupplier = DEFAULT_STREAM_NO_JOBS_BACKOFF_SUPPLIER;
     streamingTimeout = DEFAULT_STREAMING_TIMEOUT;
   }
 
@@ -158,8 +158,9 @@ public final class JobWorkerBuilderImpl
   }
 
   @Override
-  public JobWorkerBuilderStep3 streamBackoffSupplier(final BackoffSupplier streamBackoffSupplier) {
-    this.streamBackoffSupplier = streamBackoffSupplier;
+  public JobWorkerBuilderStep3 streamNoJobsBackoffSupplier(
+      final BackoffSupplier streamNoJobsBackoffSupplier) {
+    this.streamNoJobsBackoffSupplier = streamNoJobsBackoffSupplier;
     return this;
   }
 
@@ -241,7 +242,7 @@ public final class JobWorkerBuilderImpl
             jobPoller,
             jobStreamer,
             backoffSupplier,
-            streamBackoffSupplier,
+            streamNoJobsBackoffSupplier,
             metrics,
             jobExecutor);
     closeables.add(jobWorker);

@@ -72,7 +72,7 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
   private final long initialPollInterval;
   private final JobStreamer jobStreamer;
   private final BackoffSupplier backoffSupplier;
-  private final BackoffSupplier streamBackoffSupplier;
+  private final BackoffSupplier streamNoJobsBackoffSupplier;
   private final JobWorkerMetrics metrics;
 
   // state synchronization
@@ -91,7 +91,7 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
       final JobPoller jobPoller,
       final JobStreamer jobStreamer,
       final BackoffSupplier backoffSupplier,
-      final BackoffSupplier streamBackoffSupplier,
+      final BackoffSupplier streamNoJobsBackoffSupplier,
       final JobWorkerMetrics metrics,
       final Executor jobExecutor) {
     this.maxJobsActive = maxJobsActive;
@@ -104,7 +104,7 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
     this.jobStreamer = jobStreamer;
     initialPollInterval = pollInterval.toMillis();
     this.backoffSupplier = backoffSupplier;
-    this.streamBackoffSupplier = streamBackoffSupplier;
+    this.streamNoJobsBackoffSupplier = streamNoJobsBackoffSupplier;
     this.metrics = metrics;
 
     claimableJobPoller = new AtomicReference<>(jobPoller);
@@ -209,7 +209,7 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
     if (jobStreamer.isOpen() && activatedJobs == 0) {
       // to keep polling requests to a minimum, if streaming is enabled, and the response is empty,
       // we back off on poll success responses.
-      backoff(jobPoller, streamBackoffSupplier);
+      backoff(jobPoller, streamNoJobsBackoffSupplier);
       LOG.trace("No jobs to activate via polling, will backoff and poll in {}", pollInterval);
     } else {
       pollInterval = initialPollInterval;

@@ -200,19 +200,21 @@ public interface JobWorkerBuilderStep1 {
     JobWorkerBuilderStep3 backoffSupplier(BackoffSupplier backoffSupplier);
 
     /**
-     * Sets the stream backoff supplier. The supplier is called to determine the backoff delay after
-     * a successful poll request when job streaming is enabled; the worker then waits until the
-     * returned delay has elapsed before sending the next poll request. Note that this is used
-     * <strong>only</strong> when streaming is enabled.
+     * Sets the job activation backoff supplier to be used when polling yields no jobs, when
+     * streaming is enabled. The supplier is called to determine the backoff delay after a
+     * successful poll request with no activated jobs when job streaming is enabled; the worker then
+     * waits until the returned delay has elapsed before sending the next poll request.
+     *
+     * <p>Note, this is used <strong>only</strong> when streaming is enabled.
      *
      * <p>By default, the supplier uses exponential back off, with an upper bound of 1 minute. The
      * exponential backoff can be easily configured using {@link
      * BackoffSupplier#newBackoffBuilder()}.
      *
-     * @param streamBackoffSupplier supplies the backoff delay after a successful poll request
+     * @param streamNoJobsBackoffSupplier supplies the backoff delay after a successful poll request
      * @return the builder for this worker
      */
-    JobWorkerBuilderStep3 streamBackoffSupplier(BackoffSupplier streamBackoffSupplier);
+    JobWorkerBuilderStep3 streamNoJobsBackoffSupplier(BackoffSupplier streamNoJobsBackoffSupplier);
 
     /**
      * Opt-in feature flag to enable job streaming. If set as enabled, the job worker will use a mix
