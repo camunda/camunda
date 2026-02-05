@@ -45,12 +45,21 @@ import {
   auditLogResultSchema,
 } from "@camunda/camunda-api-zod-schemas/8.9";
 import useDebounce from "react-debounced";
+import { useForm } from "react-hook-form";
 
 type AuditLogSort = { field: string; order: "asc" | "desc" };
 
 type DateRange = {
   from?: string;
   to?: string;
+};
+
+type Filters = {
+  operationType: AuditLogOperationType[];
+  entityType: AuditLogEntityType[];
+  result: AuditLogResult | "all";
+  actor: string;
+  timestampRange: DateRange;
 };
 
 const DEFAULT_SORT: AuditLogSort[] = [{ field: "timestamp", order: "desc" }];
@@ -64,15 +73,24 @@ const List: FC = () => {
   const { t } = useTranslate("operationsLog");
   const { t: tComponents } = useTranslate();
 
-  const [operationType, setOperationType] = useState<AuditLogOperationType[]>(
-    [],
-  );
-  const [entityType, setEntityType] = useState<AuditLogEntityType[]>([]);
-  const [result, setResult] = useState<AuditLogResult | "all">("all");
+  const { watch, setValue, reset } = useForm<Filters>({
+    defaultValues: {
+      operationType: [],
+      entityType: [],
+      result: "all",
+      actor: "",
+      timestampRange: {},
+    },
+  });
+
+  const operationType = watch("operationType");
+  const entityType = watch("entityType");
+  const result = watch("result");
+  const actor = watch("actor");
+  const timestampRange = watch("timestampRange");
+
   const debounce = useDebounce();
-  const [actor, setActor] = useState<string>("");
   const [debouncedActor, setDebouncedActor] = useState<string>();
-  const [timestampRange, setTimestampRange] = useState<DateRange>({});
 
   const {
     pageParams,
@@ -155,7 +173,7 @@ const List: FC = () => {
                 }
                 onChange={({ selectedItems }) => {
                   if (selectedItems !== null) {
-                    setOperationType(selectedItems);
+                    setValue("operationType", selectedItems);
                   }
                 }}
                 size="sm"
@@ -171,7 +189,7 @@ const List: FC = () => {
                 }
                 onChange={({ selectedItems }) => {
                   if (selectedItems !== null) {
-                    setEntityType(selectedItems);
+                    setValue("entityType", selectedItems);
                   }
                 }}
                 size="sm"
@@ -182,7 +200,8 @@ const List: FC = () => {
                 titleText={t("status")}
                 id="result-field"
                 onChange={({ selectedItem }) => {
-                  setResult(
+                  setValue(
+                    "result",
                     !selectedItem || selectedItem === "all"
                       ? "all"
                       : auditLogResultSchema.parse(selectedItem),
@@ -206,7 +225,7 @@ const List: FC = () => {
                 value={actor}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                   const value = e.target.value.trim();
-                  setActor(value);
+                  setValue("actor", value);
                   debounce(() => setDebouncedActor(value ? value : undefined));
                 }}
                 size="sm"
@@ -219,7 +238,7 @@ const List: FC = () => {
                   value={[timestampRange.from ?? "", timestampRange.to ?? ""]}
                   onChange={(dates) => {
                     const [from, to] = dates;
-                    setTimestampRange({
+                    setValue("timestampRange", {
                       from: from ? from.toISOString() : undefined,
                       to: to ? to.toISOString() : undefined,
                     });
@@ -259,12 +278,14 @@ const List: FC = () => {
                   }
                   type="reset"
                   onClick={() => {
-                    setOperationType([]);
-                    setEntityType([]);
-                    setResult("all");
-                    setActor("");
+                    reset({
+                      operationType: [],
+                      entityType: [],
+                      result: "all",
+                      actor: "",
+                      timestampRange: {},
+                    });
                     setDebouncedActor(undefined);
-                    setTimestampRange({});
                   }}
                 >
                   {t("reset")}
