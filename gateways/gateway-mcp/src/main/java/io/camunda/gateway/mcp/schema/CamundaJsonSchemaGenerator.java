@@ -34,12 +34,14 @@ import com.github.victools.jsonschema.generator.SchemaVersion;
 import com.github.victools.jsonschema.module.jackson.JacksonModule;
 import com.github.victools.jsonschema.module.jackson.JacksonOption;
 import com.github.victools.jsonschema.module.swagger2.Swagger2Module;
+import io.camunda.gateway.mcp.annotation.McpRequestBody;
 import io.modelcontextprotocol.server.McpAsyncServerExchange;
 import io.modelcontextprotocol.server.McpSyncServerExchange;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.util.Assert;
 import io.modelcontextprotocol.util.Utils;
 import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.media.Schema.RequiredMode;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.Type;
@@ -189,7 +191,7 @@ public class CamundaJsonSchemaGenerator {
       }
 
       // Handle @McpRequestBody - unwrap DTO fields to root level
-      if (parameter.isAnnotationPresent(io.camunda.gateway.mcp.annotation.McpRequestBody.class)) {
+      if (parameter.isAnnotationPresent(McpRequestBody.class)) {
         // Generate schema for the DTO type and merge its properties at root level
         ObjectNode dtoSchema = SUBTYPE_SCHEMA_GENERATOR.generateSchema(parameterType);
 
@@ -272,8 +274,8 @@ public class CamundaJsonSchemaGenerator {
 
     var schemaAnnotation = parameter.getAnnotation(Schema.class);
     if (schemaAnnotation != null) {
-      return schemaAnnotation.requiredMode() == Schema.RequiredMode.REQUIRED
-          || schemaAnnotation.requiredMode() == Schema.RequiredMode.AUTO
+      return schemaAnnotation.requiredMode() == RequiredMode.REQUIRED
+          || schemaAnnotation.requiredMode() == RequiredMode.AUTO
           || schemaAnnotation.required();
     }
 

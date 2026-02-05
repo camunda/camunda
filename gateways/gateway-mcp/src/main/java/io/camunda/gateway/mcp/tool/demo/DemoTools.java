@@ -9,6 +9,7 @@ package io.camunda.gateway.mcp.tool.demo;
 
 import io.camunda.gateway.mcp.annotation.McpRequestBody;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
+import jakarta.validation.Valid;
 import org.springaicommunity.mcp.annotation.McpTool;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
@@ -35,7 +36,7 @@ public class DemoTools {
           Demo tool for creating a task. This tool uses @McpRequestBody to unwrap the request DTO.
           All fields (taskName, priority, metadata, urgent) are exposed as flat parameters in the schema.
           """)
-  public CallToolResult createTask(@McpRequestBody CreateTaskRequest request) {
+  public CallToolResult createTask(@McpRequestBody @Valid CreateTaskRequest request) {
     // Log what we received to verify deserialization worked
     String message =
         String.format(

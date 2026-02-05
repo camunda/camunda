@@ -16,3 +16,10 @@ spring:
           prompt: false
           resource: false
           tool: true
+  autoconfigure:
+    exclude:
+      - org.springframework.ai.mcp.server.common.autoconfigure.annotations.StatelessServerSpecificationFactoryAutoConfiguration
+
+camunda:
+  mcp:
+    enabled: true

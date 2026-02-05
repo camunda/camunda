@@ -11,88 +11,259 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.gateway.mcp.schema.CamundaJsonSchemaGenerator;
+import io.camunda.gateway.mcp.tool.ToolsTest;
+import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
+import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
+import io.modelcontextprotocol.spec.McpSchema.TextContent;
 import java.lang.reflect.Method;
 import java.util.Map;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.ContextConfiguration;
 
-/** Tests for the demo @McpRequestBody tool. */
-class DemoToolsTest {
+/**
+ * Test suite for DemoTools demonstrating @McpRequestBody functionality.
+ *
+ * <p>This test class validates that the @McpRequestBody annotation correctly unwraps DTO
+ * parameters to root-level schema properties, and that bean validation annotations on DTO fields
+ * are properly enforced.
+ */
+@ContextConfiguration(classes = {DemoTools.class})
+class DemoToolsTest extends ToolsTest {
 
-  private final ObjectMapper objectMapper = new ObjectMapper();
+  @Autowired private ObjectMapper objectMapper;
 
-  @Test
-  void shouldGenerateFlatSchemaForMcpRequestBodyParameter() throws Exception {
-    // Given: Method with @McpRequestBody parameter
-    Method method = DemoTools.class.getMethod("createTask", CreateTaskRequest.class);
+  @Nested
+  class CreateTask {
 
-    // When: Generate schema
-    String schemaJson = CamundaJsonSchemaGenerator.generateForMethodInput(method);
-    Map<String, Object> schema = objectMapper.readValue(schemaJson, Map.class);
+    @Test
+    void shouldCreateTaskWithMcpRequestBody() {
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder()
+                  .name("createTask")
+                  .arguments(
+                      Map.of(
+                          "taskName", "Deploy Application",
+                          "priority", "high",
+                          "metadata", Map.of("assignee", "John", "dueDate", "2026-02-10"),
+                          "urgent", true))
+                  .build());
 
-    // Then: Schema has flat properties (not nested under "request")
-    assertThat(schema).containsKey("properties");
-    Map<String, Object> properties = (Map<String, Object>) schema.get("properties");
+      // then
+      if (result.isError()) {
+        System.out.println("ERROR: " + result.content());
+        if (result.content() != null && !result.content().isEmpty()
+            && result.content().get(0) instanceof TextContent tc) {
+          System.out.println("ERROR TEXT: " + tc.text());
+        }
+      }
+      assertThat(result.isError()).isFalse();
+      assertThat(result.content())
+          .hasSize(1)
+          .first()
+          .isInstanceOfSatisfying(
+              TextContent.class,
+              textContent -> {
+                assertThat(textContent.text()).contains("Deploy Application");
+                assertThat(textContent.text()).contains("high");
+                assertThat(textContent.text()).contains("true");
+              });
+    }
 
-    // Verify all DTO fields are at root level
-    assertThat(properties).containsKeys("taskName", "priority", "metadata", "urgent");
+    @Test
+    void shouldFailCreateTaskWhenTaskNameIsBlank() {
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder()
+                  .name("createTask")
+                  .arguments(
+                      Map.of(
+                          "taskName", "",
+                          "priority", "high",
+                          "urgent", false))
+                  .build());
 
-    // Verify NO $defs section (inline schemas)
-    assertThat(schema).doesNotContainKey("$defs");
-    assertThat(schema).doesNotContainKey("definitions");
+      // then
+      assertThat(result.isError()).isTrue();
+      assertThat(result.structuredContent()).isNull();
+      assertThat(result.content())
+          .hasSize(1)
+          .first()
+          .isInstanceOfSatisfying(
+              TextContent.class,
+              textContent ->
+                  assertThat(textContent.text())
+                      .containsIgnoringCase("taskName")
+                      .containsAnyOf("must not be blank", "blank"));
+    }
 
-    // Note: required fields come from Jackson annotations on DTO
-    // (in this case, @NotBlank, @NotNull are from bean validation, not Jackson required)
+    @Test
+    void shouldFailCreateTaskWhenPriorityIsInvalid() {
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder()
+                  .name("createTask")
+                  .arguments(
+                      Map.of(
+                          "taskName", "Test Task",
+                          "priority", "super-duper-high",
+                          "urgent", false))
+                  .build());
+
+      // then
+      assertThat(result.isError()).isTrue();
+      assertThat(result.structuredContent()).isNull();
+      assertThat(result.content())
+          .hasSize(1)
+          .first()
+          .isInstanceOfSatisfying(
+              TextContent.class,
+              textContent ->
+                  assertThat(textContent.text())
+                      .containsIgnoringCase("priority")
+                      .containsAnyOf("lowercase", "must match", "pattern"));
+    }
+
+    @Test
+    void shouldCreateTaskWithOptionalMetadata() {
+      // when: metadata is optional and not provided
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder()
+                  .name("createTask")
+                  .arguments(
+                      Map.of(
+                          "taskName", "Quick Task",
+                          "priority", "medium",
+                          "urgent", false))
+                  .build());
+
+      // then
+      assertThat(result.isError()).isFalse();
+      assertThat(result.content())
+          .hasSize(1)
+          .first()
+          .isInstanceOfSatisfying(
+              TextContent.class,
+              textContent -> {
+                assertThat(textContent.text()).contains("Quick Task");
+                assertThat(textContent.text()).contains("medium");
+              });
+    }
+
+    @Test
+    void shouldCreateTaskWithDefaultUrgentValue() {
+      // when: urgent is optional (defaults to false in DTO)
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder()
+                  .name("createTask")
+                  .arguments(
+                      Map.of(
+                          "taskName", "Background Task",
+                          "priority", "low"))
+                  .build());
+
+      // then
+      assertThat(result.isError()).isFalse();
+      assertThat(result.content())
+          .hasSize(1)
+          .first()
+          .isInstanceOfSatisfying(
+              TextContent.class,
+              textContent -> {
+                assertThat(textContent.text()).contains("Background Task");
+                assertThat(textContent.text()).contains("low");
+                assertThat(textContent.text()).contains("false");
+              });
+    }
   }
 
-  @Test
-  void shouldGenerateSameSchemaForOldWayComparison() throws Exception {
-    // Given: Both methods (new @McpRequestBody vs old @McpToolParam)
-    Method newWay = DemoTools.class.getMethod("createTask", CreateTaskRequest.class);
-    Method oldWay =
-        DemoTools.class.getMethod(
-            "createTaskOldWay", String.class, String.class, Map.class, Boolean.class);
+  @Nested
+  class CreateTaskOldWay {
 
-    // When: Generate schemas for both
-    String newWaySchema = CamundaJsonSchemaGenerator.generateForMethodInput(newWay);
-    String oldWaySchema = CamundaJsonSchemaGenerator.generateForMethodInput(oldWay);
+    @Test
+    void shouldCreateTaskUsingTraditionalParameters() {
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder()
+                  .name("createTaskOldWay")
+                  .arguments(
+                      Map.of(
+                          "taskName", "Traditional Task",
+                          "priority", "high",
+                          "metadata", Map.of("key", "value"),
+                          "urgent", true))
+                  .build());
 
-    Map<String, Object> newWayMap = objectMapper.readValue(newWaySchema, Map.class);
-    Map<String, Object> oldWayMap = objectMapper.readValue(oldWaySchema, Map.class);
-
-    // Then: Both should have same root-level properties
-    Map<String, Object> newWayProps = (Map<String, Object>) newWayMap.get("properties");
-    Map<String, Object> oldWayProps = (Map<String, Object>) oldWayMap.get("properties");
-
-    assertThat(newWayProps.keySet())
-        .containsExactlyInAnyOrder("taskName", "priority", "metadata", "urgent");
-    assertThat(oldWayProps.keySet())
-        .containsExactlyInAnyOrder("taskName", "priority", "metadata", "urgent");
-
-    // Note: Required fields may differ between approaches (DTO bean validation vs
-    // @McpToolParam.required)
-    // As long as properties are the same, the schemas are equivalent for our purposes
+      // then
+      assertThat(result.isError()).isFalse();
+      assertThat(result.content())
+          .hasSize(1)
+          .first()
+          .isInstanceOfSatisfying(
+              TextContent.class,
+              textContent -> {
+                assertThat(textContent.text()).contains("Traditional Task");
+                assertThat(textContent.text()).contains("high");
+                assertThat(textContent.text()).contains("true");
+              });
+    }
   }
 
-  @Test
-  void shouldInvokeToolWithMcpRequestBody() {
-    // Given: Demo tool
-    DemoTools demoTools = new DemoTools();
-    CreateTaskRequest request =
-        new CreateTaskRequest("Test task", "high", Map.of("key", "value"), true);
+  @Nested
+  class SchemaGeneration {
 
-    // When: Invoke tool
-    var result = demoTools.createTask(request);
+    @Test
+    void shouldGenerateFlatSchemaForMcpRequestBodyParameter() throws Exception {
+      // Given: Method with @McpRequestBody parameter
+      final Method method = DemoTools.class.getMethod("createTask", CreateTaskRequest.class);
 
-    // Then: Result contains expected data
-    assertThat(result).isNotNull();
-    assertThat(result.content()).isNotEmpty();
+      // When: Generate schema
+      final String schemaJson = CamundaJsonSchemaGenerator.generateForMethodInput(method);
+      final Map<String, Object> schema = objectMapper.readValue(schemaJson, Map.class);
 
-    var content = result.content().getFirst();
-    assertThat(content).isInstanceOf(io.modelcontextprotocol.spec.McpSchema.TextContent.class);
+      // Then: Schema has flat properties (not nested under "request")
+      assertThat(schema).containsKey("properties");
+      final Map<String, Object> properties = (Map<String, Object>) schema.get("properties");
 
-    var textContent = (io.modelcontextprotocol.spec.McpSchema.TextContent) content;
-    assertThat(textContent.text()).contains("Test task");
-    assertThat(textContent.text()).contains("high");
-    assertThat(textContent.text()).contains("true");
+      // Verify all DTO fields are at root level
+      assertThat(properties).containsKeys("taskName", "priority", "metadata", "urgent");
+
+      // Verify NO $defs section (inline schemas)
+      assertThat(schema).doesNotContainKey("$defs");
+      assertThat(schema).doesNotContainKey("definitions");
+    }
+
+    @Test
+    void shouldGenerateSamePropertiesForBothApproaches() throws Exception {
+      // Given: Two methods with different parameter styles
+      final Method newWay = DemoTools.class.getMethod("createTask", CreateTaskRequest.class);
+      final Method oldWay =
+          DemoTools.class.getMethod(
+              "createTaskOldWay", String.class, String.class, Map.class, Boolean.class);
+
+      // When: Generate schemas for both
+      final String newWaySchema = CamundaJsonSchemaGenerator.generateForMethodInput(newWay);
+      final String oldWaySchema = CamundaJsonSchemaGenerator.generateForMethodInput(oldWay);
+
+      final Map<String, Object> newWayMap = objectMapper.readValue(newWaySchema, Map.class);
+      final Map<String, Object> oldWayMap = objectMapper.readValue(oldWaySchema, Map.class);
+
+      // Then: Both should have same root-level properties
+      final Map<String, Object> newWayProps = (Map<String, Object>) newWayMap.get("properties");
+      final Map<String, Object> oldWayProps = (Map<String, Object>) oldWayMap.get("properties");
+
+      assertThat(newWayProps.keySet())
+          .containsExactlyInAnyOrder("taskName", "priority", "metadata", "urgent");
+      assertThat(oldWayProps.keySet())
+          .containsExactlyInAnyOrder("taskName", "priority", "metadata", "urgent");
+    }
   }
 }

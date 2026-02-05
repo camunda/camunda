@@ -35,10 +35,9 @@ public class CreateTaskRequest {
   @JsonProperty("metadata")
   private Map<String, Object> metadata;
 
-  @NotNull
-  @Schema(description = "Whether the task is urgent", example = "false")
+  @Schema(description = "Whether the task is urgent (defaults to false)", example = "false")
   @JsonProperty("urgent")
-  private Boolean urgent;
+  private Boolean urgent = false;
 
   public CreateTaskRequest() {}
 
