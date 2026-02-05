@@ -54,7 +54,10 @@
       <groupId>io.camunda</groupId>
       <artifactId>camunda-client-java</artifactId>
     </dependency>
-
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-schema-manager</artifactId>
+    </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-security-core</artifactId>

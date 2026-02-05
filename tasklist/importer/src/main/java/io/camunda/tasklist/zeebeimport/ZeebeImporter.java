@@ -7,6 +7,7 @@
  */
 package io.camunda.tasklist.zeebeimport;
 
+import io.camunda.search.schema.SchemaManagerContainer;
 import io.camunda.tasklist.property.TasklistProperties;
 import jakarta.annotation.PostConstruct;
 import java.util.Collection;
@@ -35,9 +36,16 @@ public class ZeebeImporter {
   @Qualifier("tasklistRecordsReaderThreadPoolExecutor")
   private ThreadPoolTaskScheduler readersExecutor;
 
+  @Autowired private SchemaManagerContainer schemaManagerContainer;
+
   @PostConstruct
   public void startImportingData() {
     if (tasklistProperties.getImporter().isStartLoadingDataOnStartup()) {
+      if (!schemaManagerContainer.isInitialized()) {
+        LOGGER.info(
+            "INIT: Skipping data import - search engine schema not initialized (application may be shutting down).");
+        return;
+      }
       scheduleReaders();
     }
   }

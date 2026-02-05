@@ -37,6 +37,11 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>camunda-schema-manager</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>operate-importer-8_7</artifactId>
       <scope>runtime</scope>
     </dependency>

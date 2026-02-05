@@ -9,6 +9,7 @@ package io.camunda.operate.zeebeimport;
 
 import io.camunda.operate.Metrics;
 import io.camunda.operate.property.OperateProperties;
+import io.camunda.search.schema.SchemaManagerContainer;
 import jakarta.annotation.PostConstruct;
 import java.util.Collection;
 import org.slf4j.Logger;
@@ -37,9 +38,16 @@ public class ZeebeImporter {
 
   @Autowired private Metrics metrics;
 
+  @Autowired private SchemaManagerContainer schemaManagerContainer;
+
   @PostConstruct
   public void startImportingData() {
     if (operateProperties.getImporter().isStartLoadingDataOnStartup()) {
+      if (!schemaManagerContainer.isInitialized()) {
+        LOGGER.info(
+            "INIT: Skipping data import - search engine schema not initialized (application may be shutting down).");
+        return;
+      }
       scheduleReaders();
     }
   }
