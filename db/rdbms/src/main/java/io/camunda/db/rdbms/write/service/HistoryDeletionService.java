@@ -87,6 +87,7 @@ public class HistoryDeletionService {
 
     final var allProcessInstanceDependantDataDeleted =
         rdbmsWriters.getProcessInstanceDependantWriters().stream()
+            .filter(dependant -> !(dependant instanceof AuditLogWriter))
             .allMatch(
                 dependant -> {
                   final var limit = config.dependentRowLimit();
@@ -117,19 +118,6 @@ public class HistoryDeletionService {
             .toList();
 
     if (processDefinitionKeys.isEmpty()) {
-      return List.of();
-    }
-
-    final var amountOfRowsDeleted =
-        rdbmsWriters
-            .getAuditLogWriter()
-            .deleteProcessDefinitionRelatedData(processDefinitionKeys, config.dependentRowLimit());
-
-    if (amountOfRowsDeleted >= config.dependentRowLimit()) {
-      LOG.debug(
-          "Not all process definition dependant data is deleted. Deleted {} rows. Skipping deletion of process definitions: {}",
-          amountOfRowsDeleted,
-          processDefinitionKeys);
       return List.of();
     }
 
