@@ -179,7 +179,7 @@ final class RestoreManagerTest {
           new BackupIdentifierImpl(0, 2, checkpointId), timestamp, 2);
     }
 
-    // Setup range markers for both partitions: complete range from checkpoint 0 to 4
+    // Setup range markers for both partitions: complete range covering all checkpoints
     backupStore.storeRangeMarker(1, new BackupRangeMarker.Start(checkpointIds[0])).join();
     backupStore.storeRangeMarker(1, new BackupRangeMarker.End(checkpointIds[4])).join();
     backupStore.storeRangeMarker(2, new BackupRangeMarker.Start(checkpointIds[0])).join();
@@ -188,10 +188,10 @@ final class RestoreManagerTest {
     final var restoreManager =
         new RestoreManager(configuration, backupStore, new SimpleMeterRegistry());
 
-    // when - restoring from checkpoint 2 (middle of the range) without specifying 'to'
-    final var from = baseTime.plusSeconds(3 * 60); // timestamp for checkpoint 2
+    // when - restoring from a checkpoint in the middle of the range without specifying 'to'
+    final var from = baseTime.plusSeconds(3 * 60); // timestamp corresponding to checkpointIds[2]
 
-    // then - should succeed and restore checkpoints 2, 3, 4 from the complete range
+    // then - should succeed and restore all checkpoints from that point to the end of the range
     restoreManager.restoreFromCompleteRange(from, false, List.of());
   }
 
@@ -218,8 +218,8 @@ final class RestoreManagerTest {
           new BackupIdentifierImpl(0, 2, checkpointId), timestamp, 2);
     }
 
-    // Setup range markers for both partitions: complete range from checkpoint 0 to 2
-    // This means checkpoint 3 and 4 are not in a complete range
+    // Setup range markers for both partitions: complete range from first to third checkpoint
+    // This means the fourth and fifth checkpoints are not in a complete range
     backupStore.storeRangeMarker(1, new BackupRangeMarker.Start(checkpointIds[0])).join();
     backupStore.storeRangeMarker(1, new BackupRangeMarker.End(checkpointIds[2])).join();
     backupStore.storeRangeMarker(2, new BackupRangeMarker.Start(checkpointIds[0])).join();
@@ -228,10 +228,10 @@ final class RestoreManagerTest {
     final var restoreManager =
         new RestoreManager(configuration, backupStore, new SimpleMeterRegistry());
 
-    // when - trying to restore from checkpoint 3 (outside the complete range)
-    final var from = baseTime.plusSeconds(4 * 60); // timestamp for checkpoint 3
+    // when - trying to restore from a checkpoint outside the complete range
+    final var from = baseTime.plusSeconds(4 * 60); // timestamp corresponding to checkpointIds[3]
 
-    // then - should fail because checkpoint 3 is not in a complete range
+    // then - should fail because checkpointIds[3] is not in a complete range
     assertThatThrownBy(() -> restoreManager.restoreFromCompleteRange(from, false, List.of()))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("No complete backup range found containing checkpoint");
@@ -260,19 +260,19 @@ final class RestoreManagerTest {
           new BackupIdentifierImpl(0, 2, checkpointId), timestamp, 2);
     }
 
-    // Setup range markers for partition 1: complete range from checkpoint 0 to 4
+    // Setup range markers for partition 1: complete range covering all checkpoints
     backupStore.storeRangeMarker(1, new BackupRangeMarker.Start(checkpointIds[0])).join();
     backupStore.storeRangeMarker(1, new BackupRangeMarker.End(checkpointIds[4])).join();
 
-    // Setup range markers for partition 2: complete range from checkpoint 0 to 3 (different end)
+    // Setup range markers for partition 2: complete range ending earlier
     backupStore.storeRangeMarker(2, new BackupRangeMarker.Start(checkpointIds[0])).join();
     backupStore.storeRangeMarker(2, new BackupRangeMarker.End(checkpointIds[3])).join();
 
     final var restoreManager =
         new RestoreManager(configuration, backupStore, new SimpleMeterRegistry());
 
-    // when - trying to restore from checkpoint 1
-    final var from = baseTime.plusSeconds(2 * 60); // timestamp for checkpoint 1
+    // when - trying to restore from a checkpoint that exists in both ranges
+    final var from = baseTime.plusSeconds(2 * 60); // timestamp corresponding to checkpointIds[1]
 
     // then - should fail because partitions have different complete ranges
     assertThatThrownBy(() -> restoreManager.restoreFromCompleteRange(from, false, List.of()))
