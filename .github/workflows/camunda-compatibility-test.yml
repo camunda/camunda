@@ -26,6 +26,10 @@ on:
 
 permissions: {}
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   prepare-versions:
     name: Prepare Version Matrix
@@ -43,7 +47,6 @@ jobs:
 
       - name: Get branch information
         id: branch-info
-        shell: bash
         run: |
           BRANCH_NAME="${GITHUB_REF#refs/heads/}"
           echo "branch-name=$BRANCH_NAME" >> "$GITHUB_OUTPUT"
@@ -65,7 +68,6 @@ jobs:
 
       - name: Get current version from pom.xml
         id: pom-version
-        shell: bash
         run: |
           # Extract version from root pom.xml
           POM_VERSION=$(./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout)
@@ -74,7 +76,6 @@ jobs:
 
       - name: Get versions from git tags
         id: get-versions
-        shell: bash
         run: |
           # Get all version tags (format: 8.x.y)
           ALL_TAGS=$(git tag -l '[0-9]*.[0-9]*.[0-9]*' | sort -V)
@@ -122,7 +123,6 @@ jobs:
 
       - name: Create version lists
         id: create-lists
-        shell: bash
         run: |
           FILTERED_TAGS=$(grep -v '^$' /tmp/filtered_tags.txt || true)
           POM_VERSION="${{ steps.pom-version.outputs.pom-version }}"
@@ -215,7 +215,6 @@ jobs:
 
       - name: Load tested combinations
         id: load-tested
-        shell: bash
         run: |
           mkdir -p /tmp/compatibility-state
 
@@ -232,7 +231,6 @@ jobs:
 
       - name: Create version matrix
         id: create-matrix
-        shell: bash
         run: |
           CLIENT_VERSION="${{ inputs.client_version }}"
           SERVER_VERSION="${{ inputs.server_version }}"
@@ -294,6 +292,16 @@ jobs:
             echo "$MATRIX_JSON" | jq '.'
           fi
 
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
   run-compatibility-tests:
     name: Test ${{ matrix.client }} -> ${{ matrix.server }}
     needs: prepare-versions
@@ -338,7 +346,6 @@ jobs:
 
       - name: Record tested combination
         if: success()
-        shell: bash
         run: |
           mkdir -p compatibility-test-results
           echo "${{ matrix.client }}-${{ matrix.server }}" >> compatibility-test-results/tested.txt
@@ -381,7 +388,6 @@ jobs:
           merge-multiple: true
 
       - name: Merge tested combinations
-        shell: bash
         run: |
           mkdir -p compatibility-state
           touch compatibility-state/tested-combinations.txt
@@ -450,3 +456,13 @@ jobs:
                 }
               ]
             }
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
