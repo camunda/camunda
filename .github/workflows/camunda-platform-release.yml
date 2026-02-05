@@ -160,6 +160,51 @@ jobs:
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      # NOTE:
+      # - This step validates that Optimize's project.previousVersion in optimize/pom.xml
+      #   has been set correctly based on the current release version.
+      # - For GA minor releases (e.g., 8.9.0), previousVersion should be set to the
+      #   previous minor version (e.g., 8.8.0).
+      # - Long-term, this manual step should disappear once
+      #   https://github.com/camunda/camunda/issues/40258 is implemented and
+      #   the backend no longer depends on project.previousVersion.
+      - name: Validate Optimize Previous Version
+        if: ${{ inputs.includeOptimize && !inputs.dryRun && !contains(inputs.releaseVersion, '-') && endsWith(inputs.releaseVersion, '.0') }}
+        run: |
+          set -euo pipefail
+          
+          echo "=== Validating Optimize project.previousVersion ==="
+          
+          # Extract current release version components (e.g., 8.9.0 -> major=8, minor=9)
+          RELEASE_VERSION="${{ inputs.releaseVersion }}"
+          [[ "${RELEASE_VERSION}" =~ ^([0-9]+)\.([0-9]+)\.0$ ]]
+          
+          MAJOR="${BASH_REMATCH[1]}"
+          MINOR="${BASH_REMATCH[2]}"
+          
+          # Calculate expected previous version (e.g., 8.9.0 -> expected previous is 8.8.0)
+          EXPECTED_PREVIOUS_MINOR=$((MINOR - 1))
+          EXPECTED_PREVIOUS_VERSION="${MAJOR}.${EXPECTED_PREVIOUS_MINOR}.0"
+          
+          # Extract actual previous version from optimize/pom.xml
+          ACTUAL_PREVIOUS_VERSION=$(./mvnw -f optimize/pom.xml help:evaluate -Dexpression=project.previousVersion -q -DforceStdout 2>/dev/null || echo "")
+          
+          # Validation checks
+          if [[ -z "${ACTUAL_PREVIOUS_VERSION}" ]]; then
+            echo "❌ FAILED: project.previousVersion missing from optimize/pom.xml"
+            echo "Update it before release. See: https://github.com/camunda/camunda/issues/40258"
+            exit 1
+          fi
+          
+          if [[ "${ACTUAL_PREVIOUS_VERSION}" != "${EXPECTED_PREVIOUS_VERSION}" ]]; then
+            echo "❌ FAILED: project.previousVersion not set correctly"
+            echo "Expected: ${EXPECTED_PREVIOUS_VERSION}"
+            echo "Actual:   ${ACTUAL_PREVIOUS_VERSION}"
+            echo "Update it before release. See: https://github.com/camunda/camunda/issues/40258"
+            exit 1
+          fi
+          
+          echo "✅ PASSED: project.previousVersion correctly set to ${ACTUAL_PREVIOUS_VERSION}"
       - name: Maven Prepare Release
         id: maven-prepare-release
         run: |
