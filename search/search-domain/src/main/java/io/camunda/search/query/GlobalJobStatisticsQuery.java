@@ -7,6 +7,7 @@
  */
 package io.camunda.search.query;
 
+import io.camunda.search.aggregation.AggregationBase;
 import io.camunda.search.aggregation.GlobalJobStatisticsAggregation;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.GlobalJobStatisticsFilter;
@@ -29,6 +30,11 @@ public record GlobalJobStatisticsQuery(GlobalJobStatisticsFilter filter)
   @Override
   public SortOption sort() {
     return NoSort.NO_SORT;
+  }
+
+  @Override
+  public AggregationBase aggregation() {
+    return new GlobalJobStatisticsAggregation();
   }
 
   @Override

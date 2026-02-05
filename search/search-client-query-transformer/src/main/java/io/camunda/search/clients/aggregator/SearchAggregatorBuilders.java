@@ -29,6 +29,14 @@ public final class SearchAggregatorBuilders {
     return sum().name(name).field(field).build();
   }
 
+  public static SearchMaxAggregator.Builder max() {
+    return new SearchMaxAggregator.Builder();
+  }
+
+  public static SearchMaxAggregator max(final String name, final String field) {
+    return max().name(name).field(field).build();
+  }
+
   public static SearchParentAggregator.Builder parent() {
     return new SearchParentAggregator.Builder();
   }

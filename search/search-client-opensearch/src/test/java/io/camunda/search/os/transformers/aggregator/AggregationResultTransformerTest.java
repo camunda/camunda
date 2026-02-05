@@ -64,6 +64,34 @@ public class AggregationResultTransformerTest {
         Arguments.arguments(
             "{'filter#agg1': {'doc_count': 4, 'children#agg2': {'doc_count': 4}}}",
             "{'agg1':{'docCount':4,'aggregations':{'agg2':{'docCount':4}}}}"),
+        // sum aggregation
+        Arguments.arguments(
+            "{'sum#totalCount': {'value': 42.0}}", "{'totalCount':{'docCount':42}}"),
+        // max aggregation
+        Arguments.arguments(
+            "{'max#maxValue': {'value': 1234567890.0}}", "{'maxValue':{'docCount':1234567890}}"),
+        // filter with sum and max sub-aggregations
+        Arguments.arguments(
+            """
+            {
+              "filter#created": {
+                "doc_count": 10,
+                "sum#count": {"value": 100.0},
+                "max#lastUpdatedAt": {"value": 1706800000000.0}
+              }
+            }
+            """,
+            """
+            {
+              "created": {
+                "docCount": 10,
+                "aggregations": {
+                  "lastUpdatedAt": {"docCount": 1706800000000},
+                  "count": {"docCount": 100}
+                }
+              }
+            }
+            """),
         // multiple nested aggregations
         Arguments.arguments(
             """

@@ -202,6 +202,7 @@ public class SearchAggregationResultTransformer<T>
             case Composite -> res = transformMultiBucketAggregate(aggregate.composite());
             case TopHits -> res = transformTopHitsAggregate(key, aggregate.topHits());
             case Sum -> res = transformSingleMetricAggregate(aggregate.sum());
+            case Max -> res = transformSingleMetricAggregate(aggregate.max());
             case Cardinality -> res = transformCardinalityAggregate(aggregate.cardinality());
             default ->
                 throw new IllegalStateException(
