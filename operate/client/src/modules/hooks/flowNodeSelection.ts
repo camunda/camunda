@@ -128,15 +128,6 @@ const useHasRunningOrFinishedTokens = () => {
   );
 };
 
-/**
- * @deprecated Consider avoiding it or use useProcessInstanceElementSelection().hasSelection
- */
-const useIsRootNodeSelected = () => {
-  const {hasSelection} = useProcessInstanceElementSelection();
-
-  return !hasSelection;
-};
-
 const useNewTokenCountForSelectedNode = () => {
   const modificationsByFlowNode = useModificationsByFlowNode();
   const {selectedElementId} = useProcessInstanceElementSelection();
@@ -166,19 +157,6 @@ const useIsPlaceholderSelected = () => {
   );
 };
 
-/**
- * @deprecated
- * will be migrated to useProcessInstanceElementSelection
- */
-const useRootNode = () => {
-  const {data: processInstance} = useProcessInstance();
-
-  return {
-    flowNodeInstanceId: processInstance?.processInstanceKey,
-    isMultiInstance: false,
-  };
-};
-
 const useSelectedFlowNodeName = () => {
   const {data: processInstance} = useProcessInstance();
   const {data: businessObjects} = useBusinessObjects();
@@ -199,9 +177,7 @@ export {
   useHasPendingCancelOrMoveModification,
   useHasRunningOrFinishedTokens,
   useIsPlaceholderSelected,
-  useIsRootNodeSelected,
   useNewTokenCountForSelectedNode,
-  useRootNode,
   useSelectedFlowNodeName,
   useClearSelectionOnModificationUndo,
 };

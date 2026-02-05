@@ -20,7 +20,6 @@ import {Footer} from './Footer';
 import {Skeleton} from './Skeleton';
 import {useNewScopeKeyForElement} from 'modules/hooks/modifications';
 import {useIsProcessInstanceRunning} from 'modules/queries/processInstance/useIsProcessInstanceRunning';
-import {useIsRootNodeSelected} from 'modules/hooks/flowNodeSelection';
 import {useVariables} from 'modules/queries/variables/useVariables';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 import {useVariableScopeKey} from 'modules/hooks/variables';
@@ -34,11 +33,10 @@ type FooterVariant = React.ComponentProps<typeof Footer>['variant'];
 const Variables: React.FC<Props> = observer(
   ({isVariableModificationAllowed = false}) => {
     const {displayStatus} = useVariables();
-    const {selectedElementId, resolvedElementInstance} =
+    const {selectedElementId, resolvedElementInstance, hasSelection} =
       useProcessInstanceElementSelection();
     const newScopeKeyForElement = useNewScopeKeyForElement(selectedElementId);
     const {data: isProcessInstanceRunning} = useIsProcessInstanceRunning();
-    const isRootNodeSelected = useIsRootNodeSelected();
     const [footerVariant, setFooterVariant] =
       useState<FooterVariant>('initial');
 
@@ -85,10 +83,7 @@ const Variables: React.FC<Props> = observer(
         return;
       }
 
-      if (
-        !isViewMode ||
-        (!isRootNodeSelected && !isSelectedElementInstanceRunning)
-      ) {
+      if (!isViewMode || (hasSelection && !isSelectedElementInstanceRunning)) {
         setFooterVariant('disabled');
         return;
       }
@@ -98,7 +93,7 @@ const Variables: React.FC<Props> = observer(
       isProcessInstanceRunning,
       initialValues,
       isViewMode,
-      isRootNodeSelected,
+      hasSelection,
       resolvedElementInstance?.state,
     ]);
 

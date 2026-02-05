@@ -14,16 +14,14 @@ import {generateUniqueID} from 'modules/utils/generateUniqueID';
 import {type FormRenderProps} from 'react-final-form';
 import {AddVariableButton, Form, VariablesContainer} from './styled';
 import {Variables} from '../Variables';
-import {
-  useIsPlaceholderSelected,
-  useIsRootNodeSelected,
-} from 'modules/hooks/flowNodeSelection';
+import {useIsPlaceholderSelected} from 'modules/hooks/flowNodeSelection';
+import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 import {hasPendingAddOrMoveModification} from 'modules/utils/modifications';
 
 const VariablesForm: React.FC<FormRenderProps<VariableFormValues>> = observer(
   ({handleSubmit, form, values}) => {
     const isPlaceholderSelected = useIsPlaceholderSelected();
-    const isRootNodeSelected = useIsRootNodeSelected();
+    const {hasSelection} = useProcessInstanceElementSelection();
     const hasEmptyNewVariable = (values?: VariableFormValues) =>
       values?.newVariables?.some(
         (variable) =>
@@ -32,13 +30,11 @@ const VariablesForm: React.FC<FormRenderProps<VariableFormValues>> = observer(
           variable.value === undefined,
       );
 
-    const {isModificationModeEnabled} = modificationsStore;
-
     const isVariableModificationAllowed = computed(() => {
       switch (true) {
-        case !isModificationModeEnabled:
+        case !modificationsStore.isModificationModeEnabled:
           return false;
-        case isRootNodeSelected:
+        case !hasSelection:
           return hasPendingAddOrMoveModification();
         default:
           return isPlaceholderSelected;

@@ -11,7 +11,6 @@ import {modificationsStore} from 'modules/stores/modifications';
 import {
   useHasRunningOrFinishedTokens,
   useIsPlaceholderSelected,
-  useIsRootNodeSelected,
   useNewTokenCountForSelectedNode,
 } from './flowNodeSelection';
 import {useHasMultipleInstances} from './flowNodeMetadata';
@@ -22,10 +21,10 @@ import {useElementSelectionInstanceKey} from './useElementSelectionInstanceKey';
 const useHasNoContent = () => {
   const newTokenCountForSelectedNode = useNewTokenCountForSelectedNode();
   const hasRunningOrFinishedTokens = useHasRunningOrFinishedTokens();
-  const isRootNodeSelected = useIsRootNodeSelected();
+  const {hasSelection} = useProcessInstanceElementSelection();
 
   return (
-    !isRootNodeSelected &&
+    hasSelection &&
     !hasRunningOrFinishedTokens &&
     newTokenCountForSelectedNode === 0
   );
