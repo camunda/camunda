@@ -578,6 +578,22 @@ If the CI change matches one of the following:
   * fixes incorrect information that would mislead AI agents or developers working on stable versions
   * adds new knowledge about practices, tools, or procedures that apply to stable branch development
   * corrects build, test, or development instructions that affect stable branch workflows
+
+### Documentation-specific backporting (monorepo-docs/* folders)
+
+When touching `monorepo-docs/*` folders, use these guidelines:
+
+**DO backport:**
+- Critical error corrections in docs
+- Security-related documentation updates  
+- Fixes preventing user confusion about that specific version
+
+**DON'T backport:**
+- New feature documentation
+- Reorganization/restructuring changes
+- Style/formatting improvements
+
+**Rationale:** Documentation in stable branches serves as AI context for developers working on that specific version. Only backport changes that fix critical errors or security issues, while avoiding feature additions that don't exist in that release.
 * is a new CI job for new product feature or test cases: backport **only if** the product feature is backported
 * is a new CI feature: backport **only if** required in the ticket
 * is related to an `on: schedule` GHA workflow: **no need** to backport, only works on `main`
