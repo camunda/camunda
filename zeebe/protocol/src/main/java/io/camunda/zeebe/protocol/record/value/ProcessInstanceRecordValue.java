@@ -206,6 +206,7 @@ public interface ProcessInstanceRecordValue
    * <p>It can be used to enforce idempotency when creating process instances.
    *
    * @return the business id, or an empty string if not set
+   * @since 8.9
    */
   String getBusinessId();
 }
