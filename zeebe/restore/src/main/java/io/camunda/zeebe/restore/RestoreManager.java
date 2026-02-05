@@ -192,44 +192,51 @@ public class RestoreManager {
         fromCheckpointId,
         from);
 
-    // List all backups in the complete range, starting from fromCheckpointId
-    final var wildCard = BackupIdentifierWildcard.ofPattern(CheckpointPattern.ALL);
-    final var backups =
-        backupStore
-            .list(wildCard)
-            .thenApply(
-                b ->
-                    b.stream()
-                        .filter(bs -> bs.statusCode() == BackupStatusCode.COMPLETED)
-                        .filter(
-                            bs ->
-                                bs.id().checkpointId() >= fromCheckpointId
-                                    && bs.id().checkpointId() <= rangeEnd)
-                        .toList())
-            .join();
+    // Create a checkpoint pattern for the interval [fromCheckpointId, rangeEnd]
+    // This optimizes the query by using a common prefix instead of querying all backups
+    final var checkpointPattern =
+        BackupIdentifierWildcard.CheckpointPattern.longestCommonPrefix(
+            String.valueOf(fromCheckpointId), String.valueOf(rangeEnd));
 
-    final var backupIds =
-        backups.stream()
-            .map(BackupStatus::id)
-            .mapToLong(BackupIdentifier::checkpointId)
-            .distinct()
-            .sorted()
-            .toArray();
+    // Query each partition separately with the interval pattern to minimize object storage queries
+    final var backupIds = new ArrayList<Long>();
+    for (int partition = 1; partition <= partitionCount; partition++) {
+      final var wildCard =
+          BackupIdentifierWildcard.forPartition(partition, checkpointPattern);
+      final var partitionBackups =
+          backupStore
+              .list(wildCard)
+              .thenApply(
+                  b ->
+                      b.stream()
+                          .filter(bs -> bs.statusCode() == BackupStatusCode.COMPLETED)
+                          .filter(
+                              bs ->
+                                  bs.id().checkpointId() >= fromCheckpointId
+                                      && bs.id().checkpointId() <= rangeEnd)
+                          .map(bs -> bs.id().checkpointId())
+                          .toList())
+              .join();
+      backupIds.addAll(partitionBackups);
+    }
+
+    final var backupIdsArray =
+        backupIds.stream().distinct().sorted().mapToLong(Long::longValue).toArray();
 
     LOG.info(
         "Restoring {} backups from checkpoint {} to {} (range [{}, {}])",
-        backupIds.length,
+        backupIdsArray.length,
         fromCheckpointId,
         rangeEnd,
         rangeStart,
         rangeEnd);
 
-    if (backupIds.length == 0) {
+    if (backupIdsArray.length == 0) {
       throw new IllegalArgumentException(
           "No completed backups found in range [%d, %d]".formatted(fromCheckpointId, rangeEnd));
     }
 
-    restore(backupIds, false, validateConfig, ignoreFilesInTarget);
+    restore(backupIdsArray, false, validateConfig, ignoreFilesInTarget);
   }
 
   public void restore(
