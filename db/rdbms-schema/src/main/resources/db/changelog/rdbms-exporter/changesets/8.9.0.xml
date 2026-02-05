@@ -1079,4 +1079,19 @@
     </modifySql>
   </changeSet>
 
+  <changeSet id="create_audit_log_element_instance_key_index" author="camunda">
+    <!-- Index for ELEMENT_INSTANCE_KEY - optimizes querying for the Operate PI detailed view,
+         when a single process element is selected -->
+    <createIndex tableName="${prefix}AUDIT_LOG" indexName="${prefix}IDX_AUDIT_LOG_EI_KEY">
+      <column name="ELEMENT_INSTANCE_KEY"/>
+    </createIndex>
+  </changeSet>
+
+  <changeSet id="create_audit_log_user_task_key_index" author="camunda">
+    <!-- Index for USER_TASK_KEY - optimizes querying for the Tasklist history view -->
+    <createIndex tableName="${prefix}AUDIT_LOG" indexName="${prefix}IDX_AUDIT_LOG_UT_KEY">
+      <column name="USER_TASK_KEY"/>
+    </createIndex>
+  </changeSet>
+
 </databaseChangeLog>
