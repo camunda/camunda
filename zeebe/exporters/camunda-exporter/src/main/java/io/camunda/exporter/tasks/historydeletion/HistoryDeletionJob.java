@@ -84,10 +84,24 @@ public class HistoryDeletionJob implements BackgroundTask {
       return CompletableFuture.completedFuture(0);
     }
 
-    return deleteProcessInstances(batch)
-        .thenCompose(ids -> deleteProcessDefinitions(batch, ids))
-        .thenCompose(ids -> deleteDecisionInstances(batch, ids))
-        .thenCompose(this::deleteFromHistoryDeletionIndex);
+    final var deleteProcessInstancesAndDefinitionsFuture =
+        deleteProcessInstances(batch)
+            .thenCompose(ids -> deleteProcessDefinitions(batch, ids))
+            .exceptionally(ex -> List.of())
+            .toCompletableFuture();
+
+    final var deleteDecisionInstancesFuture =
+        deleteDecisionInstances(batch).exceptionally(ex -> List.of()).toCompletableFuture();
+
+    return CompletableFuture.allOf(
+            deleteProcessInstancesAndDefinitionsFuture, deleteDecisionInstancesFuture)
+        .thenCompose(
+            ignored -> {
+              final var deletedResources = new ArrayList<String>();
+              deletedResources.addAll(deleteProcessInstancesAndDefinitionsFuture.join());
+              deletedResources.addAll(deleteDecisionInstancesFuture.join());
+              return deleteFromHistoryDeletionIndex(deletedResources);
+            });
   }
 
   /**
@@ -163,11 +177,10 @@ public class HistoryDeletionJob implements BackgroundTask {
    * @param batch The batch of entities to delete
    * @return A future containing the list of history-deletion IDs that were processed
    */
-  private CompletionStage<List<String>> deleteDecisionInstances(
-      final HistoryDeletionBatch batch, final List<String> deletedResourceIds) {
+  private CompletionStage<List<String>> deleteDecisionInstances(final HistoryDeletionBatch batch) {
     final var decisionInstances = batch.getResourceKeys(HistoryDeletionType.DECISION_INSTANCE);
     if (decisionInstances.isEmpty()) {
-      return CompletableFuture.completedFuture(deletedResourceIds);
+      return CompletableFuture.completedFuture(List.of());
     }
 
     return deleterRepository
@@ -175,12 +188,7 @@ public class HistoryDeletionJob implements BackgroundTask {
             decisionInstanceTemplate.getIndexPattern(),
             DecisionInstanceTemplate.KEY,
             decisionInstances)
-        .thenApply(
-            ignored -> {
-              final var ids = new ArrayList<>(deletedResourceIds);
-              ids.addAll(batch.getHistoryDeletionIds(HistoryDeletionType.DECISION_INSTANCE));
-              return ids;
-            });
+        .thenApply(ignored -> batch.getHistoryDeletionIds(HistoryDeletionType.DECISION_INSTANCE));
   }
 
   private CompletionStage<Integer> deleteFromHistoryDeletionIndex(final List<String> ids) {
