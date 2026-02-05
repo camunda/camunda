@@ -85,6 +85,12 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     // Initialize unified config with test-friendly defaults
     initializeUnifiedConfigDefaults();
 
+    // this is required to prevent default spring boot 4.0 security setup to kick in
+    withProperty(
+        "spring.autoconfigure.exclude",
+        "org.springframework.boot.security.autoconfigure.web.servlet.ServletWebSecurityAutoConfiguration,"
+            + "org.springframework.boot.security.autoconfigure.actuate.web.servlet.ManagementWebSecurityAutoConfiguration");
+
     //noinspection resource
     withBean("camunda", unifiedConfig, Camunda.class).withAdditionalProfile(Profile.BROKER);
 
