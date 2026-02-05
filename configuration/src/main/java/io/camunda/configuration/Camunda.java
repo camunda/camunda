@@ -27,6 +27,7 @@ public class Camunda {
   @NestedConfigurationProperty private Monitoring monitoring = new Monitoring();
   @NestedConfigurationProperty private Security security = new Security();
   @NestedConfigurationProperty private Expression expression = new Expression();
+  @NestedConfigurationProperty private Webapps webapps = new Webapps();
 
   public Cluster getCluster() {
     return cluster;
