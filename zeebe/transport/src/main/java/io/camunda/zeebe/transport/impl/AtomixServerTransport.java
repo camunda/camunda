@@ -26,7 +26,7 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
 
   private static final Logger LOG = Loggers.TRANSPORT_LOGGER;
   private static final String API_TOPIC_FORMAT = "%s-api-%d";
-  private static final String ERROR_MSG_MISSING_PARTITON_MAP =
+  private static final String ERROR_MSG_MISSING_PARTITION_MAP =
       "Node already unsubscribed from partition %d, this can only happen when atomix does not cleanly remove its handlers.";
 
   private final Int2ObjectHashMap<Long2ObjectHashMap<CompletableFuture<byte[]>>>
@@ -115,7 +115,7 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
           final long requestId = requestIdGenerator.nextId();
           final var requestMap = partitionsRequestMap.get(partitionId);
           if (requestMap == null) {
-            final var errorMsg = String.format(ERROR_MSG_MISSING_PARTITON_MAP, partitionId);
+            final var errorMsg = String.format(ERROR_MSG_MISSING_PARTITION_MAP, partitionId);
             LOG.trace(errorMsg);
             completableFuture.completeExceptionally(new IllegalStateException(errorMsg));
             return;
