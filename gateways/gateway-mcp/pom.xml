@@ -86,6 +86,23 @@
       <artifactId>swagger-annotations-jakarta</artifactId>
     </dependency>
 
+    <!-- JSON Schema generation (victools) -->
+    <dependency>
+      <groupId>com.github.victools</groupId>
+      <artifactId>jsonschema-generator</artifactId>
+      <version>4.38.0</version>
+    </dependency>
+    <dependency>
+      <groupId>com.github.victools</groupId>
+      <artifactId>jsonschema-module-jackson</artifactId>
+      <version>4.38.0</version>
+    </dependency>
+    <dependency>
+      <groupId>com.github.victools</groupId>
+      <artifactId>jsonschema-module-swagger-2</artifactId>
+      <version>4.38.0</version>
+    </dependency>
+
     <!-- utilities -->
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -153,7 +170,6 @@
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-databind</artifactId>
-      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.agrona</groupId>
