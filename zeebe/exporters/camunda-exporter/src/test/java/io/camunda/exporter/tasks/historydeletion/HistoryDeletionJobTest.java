@@ -23,6 +23,7 @@ import io.camunda.webapps.schema.descriptors.ProcessInstanceDependant;
 import io.camunda.webapps.schema.descriptors.index.HistoryDeletionIndex;
 import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.template.AuditLogTemplate;
+import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import io.camunda.webapps.schema.entities.HistoryDeletionEntity;
@@ -45,6 +46,7 @@ final class HistoryDeletionJobTest {
   private HistoryDeletionIndex historyDeletionIndex;
   private ListViewTemplate listViewTemplate;
   private ProcessIndex processIndex;
+  private DecisionInstanceTemplate decisionInstanceTemplate;
 
   @BeforeEach
   void setUp() {
@@ -59,6 +61,8 @@ final class HistoryDeletionJobTest {
     historyDeletionIndex = resourceProvider.getIndexDescriptor(HistoryDeletionIndex.class);
     listViewTemplate = resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class);
     processIndex = resourceProvider.getIndexDescriptor(ProcessIndex.class);
+    decisionInstanceTemplate =
+        resourceProvider.getIndexTemplateDescriptor(DecisionInstanceTemplate.class);
     job = new HistoryDeletionJob(dependants, executor, repository, LOGGER, resourceProvider);
   }
 
@@ -290,5 +294,44 @@ final class HistoryDeletionJobTest {
 
     // then
     verify(repository, never()).deleteDocumentsById(any(), any());
+  }
+
+  @Test
+  void shouldDeleteDecisionInstanceHistory() {
+    // given
+    final var entity1 =
+        new HistoryDeletionEntity()
+            .setId("id1")
+            .setResourceKey(1L)
+            .setResourceType(HistoryDeletionType.DECISION_INSTANCE)
+            .setBatchOperationKey(2L)
+            .setPartitionId(1);
+    final var entity2 =
+        new HistoryDeletionEntity()
+            .setId("id2")
+            .setResourceKey(2L)
+            .setResourceType(HistoryDeletionType.DECISION_INSTANCE)
+            .setBatchOperationKey(2L)
+            .setPartitionId(1);
+    when(repository.getNextBatch())
+        .thenReturn(
+            CompletableFuture.completedFuture(new HistoryDeletionBatch(List.of(entity1, entity2))));
+    when(repository.deleteDocumentsByField(anyString(), anyString(), anyList()))
+        .thenReturn(CompletableFuture.completedFuture(List.of()));
+    when(repository.deleteDocumentsById(anyString(), anyList()))
+        .thenReturn(CompletableFuture.completedFuture(0));
+
+    // when
+    job.execute().toCompletableFuture().join();
+
+    // then
+    verify(repository)
+        .deleteDocumentsByField(
+            decisionInstanceTemplate.getIndexPattern(),
+            DecisionInstanceTemplate.KEY,
+            List.of(entity1.getResourceKey(), entity2.getResourceKey()));
+    verify(repository)
+        .deleteDocumentsById(
+            historyDeletionIndex.getFullQualifiedName(), List.of(entity1.getId(), entity2.getId()));
   }
 }
