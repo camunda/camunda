@@ -1,10 +1,12 @@
-# Authorization Layer Documentation
+# Gateway Authorization Layer Documentation
 
-> **Note:** This documentation serves as the central reference for Camunda's identity and authorization features. While currently focused on conditional and transitive authorizations, this document will expand to cover all authorization and identity-related features in the future.
+> **Note:** This documentation covers the authorization layer used by Camunda's REST API gateway for resource access control. The **engine authorization checks** (used for command processing in the workflow engine) work differently and are not covered here. While currently focused on conditional and transitive authorizations, this document will expand to cover all gateway authorization and identity-related features in the future.
 
 ## Overview
 
-Camunda's authorization layer provides fine-grained access control for resources within the platform. The authorization system supports standard resource-based permissions as well as advanced features like **conditional authorizations** and **transitive authorizations** that enable more sophisticated access control patterns.
+Camunda's gateway authorization layer provides fine-grained access control for resources accessed through the REST API. This authorization system operates at the gateway level and supports standard resource-based permissions as well as advanced features like **conditional authorizations** and **transitive authorizations** that enable more sophisticated access control patterns.
+
+**Important:** This authorization layer is distinct from the engine's authorization checks. The gateway authorization layer handles query filtering and resource access control for REST API operations, while the engine performs separate authorization checks for command processing (e.g., job completion, message correlation, process deployment).
 
 ## Core Concepts
 
