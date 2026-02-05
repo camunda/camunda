@@ -123,7 +123,7 @@ final class TemplateReaderTest {
         .containsExactlyEntriesOf(Map.of("alias", Collections.emptyMap()));
     assertThat(template.priority()).isEqualTo(20);
     assertThat(template.template().settings())
-        .containsEntry("number_of_shards", 1)
+        .containsEntry("number_of_shards", 3)
         .containsEntry("number_of_replicas", 0)
         .containsEntry("index.queries.cache.enabled", false);
   }
@@ -156,5 +156,49 @@ final class TemplateReaderTest {
 
     // then
     assertThat(template.template().settings()).containsEntry("index.lifecycle.name", "auto-trash");
+  }
+
+  @Test
+  void shouldUseThreeShardsForHighTrafficIndices() {
+    // given - high traffic value types that should have 3 shards for better load distribution
+    final var highTrafficValueTypes =
+        new ValueType[] {
+          ValueType.PROCESS_INSTANCE,
+          ValueType.JOB,
+          ValueType.USER_TASK,
+          ValueType.VARIABLE,
+          ValueType.INCIDENT,
+          ValueType.MESSAGE,
+          ValueType.MESSAGE_SUBSCRIPTION,
+          ValueType.DECISION_EVALUATION,
+          ValueType.TIMER,
+          ValueType.GLOBAL_LISTENER,
+          ValueType.GLOBAL_LISTENER_BATCH
+        };
+
+    // when/then - verify each high traffic type uses 3 shards
+    for (final var valueType : highTrafficValueTypes) {
+      final var template = templateReader.readIndexTemplate(valueType, "searchPattern", "alias");
+      assertThat(template.template().settings())
+          .as("High traffic value type %s should use 3 shards for load distribution", valueType)
+          .containsEntry("number_of_shards", 3);
+    }
+  }
+
+  @Test
+  void shouldUseOneShardForLowTrafficIndices() {
+    // given - low traffic value types that can use 1 shard
+    final var lowTrafficValueTypes =
+        new ValueType[] {
+          ValueType.DEPLOYMENT, ValueType.DECISION, ValueType.ERROR, ValueType.SIGNAL
+        };
+
+    // when/then - verify each low traffic type uses 1 shard
+    for (final var valueType : lowTrafficValueTypes) {
+      final var template = templateReader.readIndexTemplate(valueType, "searchPattern", "alias");
+      assertThat(template.template().settings())
+          .as("Low traffic value type %s should use 1 shard to minimize resource usage", valueType)
+          .containsEntry("number_of_shards", 1);
+    }
   }
 }
