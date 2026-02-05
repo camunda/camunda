@@ -154,25 +154,11 @@ test.describe('Process Instances Filters', () => {
       await sleep(200);
     });
 
-    await test.step('Add Variable Filter', async () => {
+    await test.step('Add Variable Filter with single value', async () => {
       await operateFiltersPanelPage.displayOptionalFilter('Variable');
       await operateFiltersPanelPage.fillVariableNameFilter('filtersTest');
       await operateFiltersPanelPage.fillVariableValueFilter('123');
-    });
-
-    await test.step('Open json editor modal and check content', async () => {
-      await operateFiltersPanelPage.clickJsonEditorModal();
-      await expect(
-        operateFiltersPanelPage.dialogEditVariableValueText,
-      ).toBeVisible();
-      await expect(
-        operateFiltersPanelPage.variableEditorDialog.getByText('123'),
-      ).toBeVisible();
-    });
-
-    await test.step('Close modal', async () => {
-      await operateFiltersPanelPage.closeModalWithCancel();
-      await expect(operateFiltersPanelPage.variableEditorDialog).toBeHidden();
+      await operateFiltersPanelPage.applyVariableFilter();
     });
 
     await test.step('Check that process instances table is filtered correctly', async () => {
@@ -185,6 +171,7 @@ test.describe('Process Instances Filters', () => {
           await operateFiltersPanelPage.displayOptionalFilter('Variable');
           await operateFiltersPanelPage.fillVariableNameFilter('filtersTest');
           await operateFiltersPanelPage.fillVariableValueFilter('123');
+          await operateFiltersPanelPage.applyVariableFilter();
         },
       });
       await expect(
@@ -203,28 +190,14 @@ test.describe('Process Instances Filters', () => {
       ).toBeHidden();
     });
 
-    await test.step('Switch to multiple mode and add multiple variables', async () => {
-      await operateFiltersPanelPage.clickMultipleVariablesSwitch();
-      await operateFiltersPanelPage.variableNameFilter.fill('filtersTest');
-      await operateFiltersPanelPage.variableValueFilter.fill('123, 456');
+    await test.step('Update filter to use oneOf operator for multiple values', async () => {
+      await operateFiltersPanelPage.fillVariableNameFilter('filtersTest');
+      await operateFiltersPanelPage.selectVariableOperator('is one of');
+      await operateFiltersPanelPage.fillVariableValueFilter('[123, 456]');
+      await operateFiltersPanelPage.applyVariableFilter();
     });
 
-    await test.step('Open editor modal and check content', async () => {
-      await operateFiltersPanelPage.clickJsonEditorModal();
-      await expect(
-        operateFiltersPanelPage.dialogEditMultipleVariableValueText,
-      ).toBeVisible();
-      await expect(
-        operateFiltersPanelPage.variableEditorDialog.getByText('123, 456'),
-      ).toBeVisible();
-    });
-
-    await test.step('Close modal', async () => {
-      await operateFiltersPanelPage.closeModalWithCancel();
-      await expect(operateFiltersPanelPage.variableEditorDialog).toBeHidden();
-    });
-
-    await test.step('Check that process instances table is filtered correctly', async () => {
+    await test.step('Check that process instances table shows both results', async () => {
       await expect(page.getByText('2 results')).toBeVisible({timeout: 60000});
       await expect(
         operateProcessesPage.processInstancesTable.getByText(
