@@ -8,6 +8,8 @@
 package io.camunda.exporter.tasks.archiver;
 
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.ProcessInstanceArchiveBatch;
+import io.camunda.exporter.tasks.archiver.ArchiveBatch.ProcessInstanceBatchSizes;
+import io.camunda.webapps.schema.descriptors.ProcessInstanceDependant;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -18,6 +20,13 @@ public class NoopArchiverRepository implements ArchiverRepository {
   public CompletableFuture<ProcessInstanceArchiveBatch> getProcessInstancesNextBatch() {
     return CompletableFuture.completedFuture(
         new ArchiveBatch.ProcessInstanceArchiveBatch("2024-01-01", List.of(), List.of()));
+  }
+
+  @Override
+  public CompletableFuture<ProcessInstanceBatchSizes> getProcessInstancesBatchSizes(
+      final ProcessInstanceArchiveBatch batch,
+      final List<ProcessInstanceDependant> dependentIndexes) {
+    return null;
   }
 
   @Override
