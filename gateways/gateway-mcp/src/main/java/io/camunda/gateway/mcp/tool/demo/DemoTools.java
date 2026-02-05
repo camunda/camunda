@@ -7,7 +7,7 @@
  */
 package io.camunda.gateway.mcp.tool.demo;
 
-import io.camunda.gateway.mcp.config.McpRequestBody;
+import io.camunda.gateway.mcp.config.McpToolParams;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import jakarta.validation.Valid;
 import org.springaicommunity.mcp.annotation.McpTool;
@@ -15,9 +15,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 
 /**
- * Demo tool to test @McpRequestBody annotation.
+ * Demo tool to test @McpToolParams annotation.
  *
- * <p>This tool demonstrates how to use @McpRequestBody to unwrap a DTO's fields into individual
+ * <p>This tool demonstrates how to use @McpToolParams to unwrap a DTO's fields into individual
  * root-level parameters in the MCP tool schema.
  */
 @Component
@@ -25,7 +25,7 @@ import org.springframework.validation.annotation.Validated;
 public class DemoTools {
 
   /**
-   * Demo tool using @McpRequestBody.
+   * Demo tool using @McpToolParams.
    *
    * <p>The MCP schema will expose taskName, priority, metadata, and urgent as individual root-level
    * properties, NOT nested under a "request" property.
@@ -33,10 +33,10 @@ public class DemoTools {
   @McpTool(
       description =
           """
-          Demo tool for creating a task. This tool uses @McpRequestBody to unwrap the request DTO.
+          Demo tool for creating a task. This tool uses @McpToolParams to unwrap the request DTO.
           All fields (taskName, priority, metadata, urgent) are exposed as flat parameters in the schema.
           """)
-  public CallToolResult createTask(@McpRequestBody @Valid CreateTaskRequest request) {
+  public CallToolResult createTask(@McpToolParams @Valid CreateTaskRequest request) {
     // Log what we received to verify deserialization worked
     String message =
         String.format(

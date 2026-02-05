@@ -7,7 +7,7 @@
  */
 package io.camunda.gateway.mcp.config;
 
-import io.camunda.gateway.mcp.config.McpRequestBody;
+import io.camunda.gateway.mcp.config.McpToolParams;
 import io.camunda.gateway.mcp.config.CamundaJsonSchemaGenerator;
 import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.server.McpStatelessServerFeatures.SyncToolSpecification;
@@ -79,8 +79,8 @@ public class CamundaSyncStatelessMcpToolProvider extends AbstractMcpToolProvider
                       .sorted((m1, m2) -> m1.getName().compareTo(m2.getName()))
                       .map(
                           mcpToolMethod -> {
-                            // Validate @McpRequestBody usage
-                            validateMcpRequestBodyUsage(mcpToolMethod);
+                            // Validate @McpToolParams usage
+                            validateMcpToolParamsUsage(mcpToolMethod);
 
                             var toolJavaAnnotation = this.doGetMcpToolAnnotation(mcpToolMethod);
 
@@ -183,43 +183,43 @@ public class CamundaSyncStatelessMcpToolProvider extends AbstractMcpToolProvider
   }
 
   /**
-   * Validates that @McpRequestBody is used correctly.
+   * Validates that @McpToolParams is used correctly.
    *
    * <p>Enforces the constraint: a method can have EITHER individual @McpToolParam parameters OR a
-   * single @McpRequestBody parameter, but not both complex types.
+   * single @McpToolParams parameter, but not both complex types.
    *
    * <p>Allowed patterns:
    *
    * <ul>
-   *   <li>✅ Single @McpRequestBody parameter (optionally with MCP framework types)
-   *   <li>✅ Multiple individual parameters without @McpRequestBody
-   *   <li>❌ @McpRequestBody mixed with @Valid object parameters
+   *   <li>✅ Single @McpToolParams parameter (optionally with MCP framework types)
+   *   <li>✅ Multiple individual parameters without @McpToolParams
+   *   <li>❌ @McpToolParams mixed with @Valid object parameters
    * </ul>
    *
    * @param method the tool method to validate
-   * @throws IllegalStateException if @McpRequestBody is mixed with other complex parameters
+   * @throws IllegalStateException if @McpToolParams is mixed with other complex parameters
    */
-  private void validateMcpRequestBodyUsage(Method method) {
+  private void validateMcpToolParamsUsage(Method method) {
     Parameter[] params = method.getParameters();
 
-    // Find @McpRequestBody parameter if any
+    // Find @McpToolParams parameter if any
     Parameter requestBodyParam = null;
     for (Parameter param : params) {
-      if (param.isAnnotationPresent(McpRequestBody.class)) {
+      if (param.isAnnotationPresent(McpToolParams.class)) {
         requestBodyParam = param;
         break;
       }
     }
 
-    // If no @McpRequestBody, no validation needed
+    // If no @McpToolParams, no validation needed
     if (requestBodyParam == null) {
       return;
     }
 
-    // If @McpRequestBody exists, check other parameters
+    // If @McpToolParams exists, check other parameters
     for (Parameter param : params) {
       if (param == requestBodyParam) {
-        continue; // Skip the @McpRequestBody parameter itself
+        continue; // Skip the @McpToolParams parameter itself
       }
 
       Class<?> paramType = param.getType();
@@ -244,10 +244,10 @@ public class CamundaSyncStatelessMcpToolProvider extends AbstractMcpToolProvider
       if (isComplexObject) {
         throw new IllegalStateException(
             String.format(
-                "Method '%s.%s' mixes @McpRequestBody with complex parameter '%s' (type: %s). "
-                    + "When using @McpRequestBody, other parameters must be simple types (primitives, String) "
+                "Method '%s.%s' mixes @McpToolParams with complex parameter '%s' (type: %s). "
+                    + "When using @McpToolParams, other parameters must be simple types (primitives, String) "
                     + "or MCP framework types (McpSyncRequestContext, CallToolRequest, etc.). "
-                    + "Use either individual @McpToolParam parameters OR a single @McpRequestBody, not both.",
+                    + "Use either individual @McpToolParam parameters OR a single @McpToolParams, not both.",
                 method.getDeclaringClass().getSimpleName(),
                 method.getName(),
                 param.getName(),

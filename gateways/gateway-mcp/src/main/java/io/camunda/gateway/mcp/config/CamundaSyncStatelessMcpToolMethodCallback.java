@@ -7,7 +7,7 @@
  */
 package io.camunda.gateway.mcp.config;
 
-import io.camunda.gateway.mcp.config.McpRequestBody;
+import io.camunda.gateway.mcp.config.McpToolParams;
 import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
@@ -28,8 +28,8 @@ import org.springaicommunity.mcp.method.tool.ReturnMode;
 /**
  * Camunda-specific callback for synchronous stateless MCP tool methods.
  *
- * <p>Extends the abstract callback to support {@link McpRequestBody} annotation, which allows
- * method parameters annotated with {@code @McpRequestBody} to be deserialized from the entire tool
+ * <p>Extends the abstract callback to support {@link McpToolParams} annotation, which allows
+ * method parameters annotated with {@code @McpToolParams} to be deserialized from the entire tool
  * input arguments map.
  */
 public class CamundaSyncStatelessMcpToolMethodCallback
@@ -65,16 +65,16 @@ public class CamundaSyncStatelessMcpToolMethodCallback
   /**
    * Cleans up validation property paths by removing internal method and parameter names.
    *
-   * <p>Uses actual method metadata to determine if a parameter has @McpRequestBody annotation,
+   * <p>Uses actual method metadata to determine if a parameter has @McpToolParams annotation,
    * making this approach robust regardless of parameter naming or nesting depth.
    *
    * <p>Examples:
    *
    * <ul>
-   *   <li>"createTask.request.taskName" → "taskName" (if param at index 1 has @McpRequestBody)
+   *   <li>"createTask.request.taskName" → "taskName" (if param at index 1 has @McpToolParams)
    *   <li>"createTask.request.a.b.c.d" → "a.b.c.d" (deep nesting works)
    *   <li>"createTask.myDto.field" → "field" (any param name works)
-   *   <li>"createTask.instruction.key" → "instruction.key" (standard param without @McpRequestBody)
+   *   <li>"createTask.instruction.key" → "instruction.key" (standard param without @McpToolParams)
    * </ul>
    *
    * @param propertyPath the validation property path to clean
@@ -94,17 +94,17 @@ public class CamundaSyncStatelessMcpToolMethodCallback
 
     String paramName = parts[1];
 
-    // Check all parameters to see if any has @McpRequestBody
+    // Check all parameters to see if any has @McpToolParams
     // We can't rely on parameter name matching since Java doesn't always preserve names
-    // Instead, check if ANY parameter has @McpRequestBody and assume the property path refers to it
-    // This is safe because validation paths for @McpRequestBody will have 3+ parts
+    // Instead, check if ANY parameter has @McpToolParams and assume the property path refers to it
+    // This is safe because validation paths for @McpToolParams will have 3+ parts
     // (method.param.field)
     boolean hasRequestBodyParam =
         Stream.of(toolMethod.getParameters())
-            .anyMatch(p -> p.isAnnotationPresent(McpRequestBody.class));
+            .anyMatch(p -> p.isAnnotationPresent(McpToolParams.class));
 
     if (hasRequestBodyParam && parts.length >= 3) {
-      // If method has @McpRequestBody parameter and path has 3+ parts, assume this is it
+      // If method has @McpToolParams parameter and path has 3+ parts, assume this is it
       // Remove method name AND parameter name
       // "methodName.paramName.field..." → "field..."
       return String.join(".", Arrays.copyOfRange(parts, 2, parts.length));
@@ -177,8 +177,8 @@ public class CamundaSyncStatelessMcpToolMethodCallback
     return Stream.of(this.toolMethod.getParameters())
         .map(
             parameter -> {
-              // Check for @McpRequestBody - deserialize entire input map into DTO
-              if (parameter.isAnnotationPresent(McpRequestBody.class)) {
+              // Check for @McpToolParams - deserialize entire input map into DTO
+              if (parameter.isAnnotationPresent(McpToolParams.class)) {
                 // Use parent's buildTypedArgument to convert the entire arguments map into the DTO
                 // type
                 // Spring's @Validated proxy will validate this if the parameter has @Valid

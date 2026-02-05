@@ -2,7 +2,7 @@ package io.camunda.gateway.mcp.config;
 
 import static org.assertj.core.api.Assertions.*;
 
-import io.camunda.gateway.mcp.config.McpRequestBody;
+import io.camunda.gateway.mcp.config.McpToolParams;
 import io.camunda.gateway.mcp.tool.demo.CreateTaskRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import jakarta.validation.Valid;
@@ -11,34 +11,34 @@ import org.junit.jupiter.api.Test;
 import org.springaicommunity.mcp.annotation.McpTool;
 import org.springframework.stereotype.Component;
 
-class McpRequestBodyValidationTest {
+class McpToolParamsValidationTest {
 
-  // Valid usage: @McpRequestBody alone
+  // Valid usage: @McpToolParams alone
   @Component
   static class ValidSingleRequestBody {
     @McpTool
-    public CallToolResult validMethod(@McpRequestBody CreateTaskRequest request) {
+    public CallToolResult validMethod(@McpToolParams CreateTaskRequest request) {
       return null;
     }
   }
 
-  // Invalid usage: @McpRequestBody mixed with @Valid object
+  // Invalid usage: @McpToolParams mixed with @Valid object
   @Component
   static class InvalidMixedParameters {
     @McpTool
     public CallToolResult invalidMethod(
-        @McpRequestBody CreateTaskRequest request, 
+        @McpToolParams CreateTaskRequest request, 
         @Valid CreateTaskRequest other) {
       return null;
     }
   }
 
-  // Valid usage: @McpRequestBody with simple type
+  // Valid usage: @McpToolParams with simple type
   @Component
   static class ValidWithSimpleType {
     @McpTool
     public CallToolResult validMethod(
-        @McpRequestBody CreateTaskRequest request,
+        @McpToolParams CreateTaskRequest request,
         String simpleParam) {
       return null;
     }
@@ -69,16 +69,16 @@ class McpRequestBodyValidationTest {
             .getToolSpecifications()
     )
     .isInstanceOf(IllegalStateException.class)
-    .hasMessageContaining("mixes @McpRequestBody with complex parameter")
+    .hasMessageContaining("mixes @McpToolParams with complex parameter")
     .hasMessageContaining("invalidMethod");
   }
 
-  // Valid usage: @McpRequestBody with validated primitive
+  // Valid usage: @McpToolParams with validated primitive
   @Component
   static class ValidWithValidatedPrimitive {
     @McpTool
     public CallToolResult validMethod(
-        @McpRequestBody CreateTaskRequest request,
+        @McpToolParams CreateTaskRequest request,
         @jakarta.validation.constraints.NotBlank String name,
         @jakarta.validation.constraints.Min(1) int count) {
       return null;

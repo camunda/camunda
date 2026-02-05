@@ -15,7 +15,7 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import java.util.Map;
 
-/** Demo DTO to test @McpRequestBody annotation. */
+/** Demo DTO to test @McpToolParams annotation. */
 @Schema(description = "Demo request for creating a task")
 public class CreateTaskRequest {
 

@@ -23,9 +23,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 
 /**
- * Test suite for DemoTools demonstrating @McpRequestBody functionality.
+ * Test suite for DemoTools demonstrating @McpToolParams functionality.
  *
- * <p>This test class validates that the @McpRequestBody annotation correctly unwraps DTO
+ * <p>This test class validates that the @McpToolParams annotation correctly unwraps DTO
  * parameters to root-level schema properties, and that bean validation annotations on DTO fields
  * are properly enforced.
  */
@@ -38,7 +38,7 @@ class DemoToolsTest extends ToolsTest {
   class CreateTask {
 
     @Test
-    void shouldCreateTaskWithMcpRequestBody() {
+    void shouldCreateTaskWithMcpToolParams() {
       // when
       final CallToolResult result =
           mcpClient.callTool(
@@ -221,8 +221,8 @@ class DemoToolsTest extends ToolsTest {
   class SchemaGeneration {
 
     @Test
-    void shouldGenerateFlatSchemaForMcpRequestBodyParameter() throws Exception {
-      // Given: Method with @McpRequestBody parameter
+    void shouldGenerateFlatSchemaForMcpToolParamsParameter() throws Exception {
+      // Given: Method with @McpToolParams parameter
       final Method method = DemoTools.class.getMethod("createTask", CreateTaskRequest.class);
 
       // When: Generate schema

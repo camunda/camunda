@@ -34,7 +34,7 @@ import com.github.victools.jsonschema.generator.SchemaVersion;
 import com.github.victools.jsonschema.module.jackson.JacksonModule;
 import com.github.victools.jsonschema.module.jackson.JacksonOption;
 import com.github.victools.jsonschema.module.swagger2.Swagger2Module;
-import io.camunda.gateway.mcp.config.McpRequestBody;
+import io.camunda.gateway.mcp.config.McpToolParams;
 import io.modelcontextprotocol.server.McpAsyncServerExchange;
 import io.modelcontextprotocol.server.McpSyncServerExchange;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
@@ -190,8 +190,8 @@ public class CamundaJsonSchemaGenerator {
         continue;
       }
 
-      // Handle @McpRequestBody - unwrap DTO fields to root level
-      if (parameter.isAnnotationPresent(McpRequestBody.class)) {
+      // Handle @McpToolParams - unwrap DTO fields to root level
+      if (parameter.isAnnotationPresent(McpToolParams.class)) {
         // Generate schema for the DTO type and merge its properties at root level
         ObjectNode dtoSchema = SUBTYPE_SCHEMA_GENERATOR.generateSchema(parameterType);
 
