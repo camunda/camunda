@@ -56,10 +56,11 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
+import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.agrona.collections.MutableBoolean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -124,21 +125,24 @@ public class RestoreManager {
     final var partitionCount = configuration.getCluster().getPartitionsCount();
 
     // Step 1: Get backup ranges from the store for each partition
-    final var infoByPartition = new ConcurrentHashMap<Integer, RestoreInformationPerPartition>();
+    final var infoByPartition =
+        IntStream.range(1, partitionCount + 1)
+            .parallel()
+            .mapToObj(
+                partition -> {
+                  final var positionModel = exporterPositionMapper.findOne(partition);
+                  if (positionModel == null || positionModel.lastExportedPosition() == null) {
+                    throw new IllegalArgumentException(
+                        "No exported position found for partition " + partition + " in RDBMS");
+                  }
 
-    for (int partition = 1; partition <= partitionCount; partition++) {
-      // Step 4: Find valid safe points for each partition using RDBMS exported positions
-      final var positionModel = exporterPositionMapper.findOne(partition);
-      if (positionModel == null || positionModel.lastExportedPosition() == null) {
-        throw new IllegalArgumentException(
-            "No exported position found for partition " + partition + " in RDBMS");
-      }
-
-      final var exportedPosition = positionModel.lastExportedPosition();
-      final var restoreInfo =
-          rangeResolver.getInformationPerPartition(partition, from, to, exportedPosition);
-      infoByPartition.put(partition, restoreInfo);
-    }
+                  final var exportedPosition = positionModel.lastExportedPosition();
+                  return rangeResolver.getInformationPerPartition(
+                      partition, from, to, exportedPosition);
+                })
+            .collect(
+                Collectors.toConcurrentMap(
+                    RestoreInformationPerPartition::partition, Function.identity()));
 
     // Step 5: Determine the global checkpoint (the latest checkpoint in the interval)
     final var checkpoints =
