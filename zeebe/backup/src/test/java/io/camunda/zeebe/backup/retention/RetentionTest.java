@@ -14,8 +14,8 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -52,6 +52,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 public class RetentionTest {
 
+  private static final int[] DEFAULT_BACKUP_OFFSETS = {360, 300, 290, 130, 110, 20, 10};
+
   @RegisterExtension
   public final ControlledActorSchedulerExtension actorScheduler =
       new ControlledActorSchedulerExtension();
@@ -63,14 +65,7 @@ public class RetentionTest {
 
   @BeforeEach
   void setUp() {
-    backupRetention =
-        new BackupRetention(
-            backupStore,
-            new IntervalSchedule(Duration.ofSeconds(10)),
-            Duration.ofMinutes(2),
-            0,
-            topologyManager,
-            new SimpleMeterRegistry());
+    backupRetention = createBackupRetention();
 
     doReturn(clusterState).when(topologyManager).getTopology();
     doReturn(List.of(1)).when(clusterState).getPartitions();
@@ -93,57 +88,19 @@ public class RetentionTest {
   void shouldPerformAllActionsSinglePartition() {
     // given
     final var now = actorScheduler.getClock().instant();
-    final BackupStatus backup1 = backup(now.minusSeconds(360));
-    final BackupStatus backup2 = backup(now.minusSeconds(300));
-    final BackupStatus backup3 = backup(now.minusSeconds(290));
-    final BackupStatus backup4 = backup(now.minusSeconds(130));
-    final BackupStatus backup5 = backup(now.minusSeconds(110));
-    final BackupStatus backup6 = backup(now.minusSeconds(20));
-    final BackupStatus backup7 = backup(now.minusSeconds(10));
+    final List<BackupStatus> backups = createDefaultBackups(1, 1, now);
+    final List<BackupRangeMarker> ranges = createDefaultRangeMarkers(now);
 
-    final List<BackupRangeMarker> ranges =
-        List.of(
-            new Start(now.minusSeconds(360).toEpochMilli()),
-            new End(now.minusSeconds(290).toEpochMilli()),
-            new Start(now.minusSeconds(130).toEpochMilli()),
-            new End(now.minusSeconds(20).toEpochMilli()),
-            new Start(now.minusSeconds(10).toEpochMilli()),
-            new End(now.minusSeconds(10).toEpochMilli()));
-
-    when(backupStore.list(any()))
-        .thenReturn(
-            CompletableFuture.completedFuture(
-                List.of(backup1, backup2, backup3, backup4, backup5, backup6, backup7)));
-
+    when(backupStore.list(any())).thenReturn(CompletableFuture.completedFuture(backups));
     when(backupStore.rangeMarkers(1)).thenReturn(CompletableFuture.completedFuture(ranges));
 
     // when
-    actorScheduler.submitActor(backupRetention);
-    actorScheduler.workUntilDone();
-    actorScheduler.updateClock(Duration.ofSeconds(10));
-    actorScheduler.workUntilDone();
+    runRetentionCycle();
 
     // then
-    verify(backupStore).delete(backup1.id());
-    verify(backupStore).delete(backup2.id());
-    verify(backupStore).delete(backup3.id());
-    verify(backupStore).delete(backup4.id());
-    verify(backupStore)
-        .storeRangeMarker(
-            eq(1),
-            argThat(
-                marker ->
-                    marker.checkpointId() == backup5.id().checkpointId()
-                        && marker instanceof Start));
-
-    verify(backupStore, atLeast(1))
-        .deleteRangeMarker(
-            eq(1),
-            argThat(
-                marker ->
-                    marker.checkpointId() == backup4.id().checkpointId()
-                        && marker instanceof Start));
-
+    verifyBackupsDeleted(backups.subList(0, 4));
+    verifyRangeMarkerStored(1, backups.get(4));
+    verifyRangeMarkerDeleted(1, backups.get(3));
     verify(backupStore).deleteRangeMarker(eq(1), argThat(c -> c.equals(ranges.getFirst())));
     verify(backupStore).deleteRangeMarker(eq(1), argThat(c -> c.equals(ranges.get(1))));
   }
@@ -152,176 +109,47 @@ public class RetentionTest {
   void shouldPerformAllActionsSinglePartitionWithoutCreatedDate() {
     // given
     final var now = actorScheduler.getClock().instant();
-    final BackupStatus backup1 = backupNoCreatedDate(1, 1, now.minusSeconds(360));
-    final BackupStatus backup2 = backupNoCreatedDate(1, 1, now.minusSeconds(300));
-    final BackupStatus backup3 = backupNoCreatedDate(1, 1, now.minusSeconds(290));
-    final BackupStatus backup4 = backupNoCreatedDate(1, 1, now.minusSeconds(130));
-    final BackupStatus backup5 = backupNoCreatedDate(1, 1, now.minusSeconds(110));
-    final BackupStatus backup6 = backupNoCreatedDate(1, 1, now.minusSeconds(20));
-    final BackupStatus backup7 = backupNoCreatedDate(1, 1, now.minusSeconds(10));
+    final List<BackupStatus> backups = createDefaultBackupsNoCreatedDate(1, 1, now);
+    final List<BackupRangeMarker> ranges = createDefaultRangeMarkers(now);
 
-    final List<BackupRangeMarker> ranges =
-        List.of(
-            new Start(now.minusSeconds(360).toEpochMilli()),
-            new End(now.minusSeconds(290).toEpochMilli()),
-            new Start(now.minusSeconds(130).toEpochMilli()),
-            new End(now.minusSeconds(20).toEpochMilli()),
-            new Start(now.minusSeconds(10).toEpochMilli()),
-            new End(now.minusSeconds(10).toEpochMilli()));
-
-    when(backupStore.list(any()))
-        .thenReturn(
-            CompletableFuture.completedFuture(
-                List.of(backup1, backup2, backup3, backup4, backup5, backup6, backup7)));
-
+    when(backupStore.list(any())).thenReturn(CompletableFuture.completedFuture(backups));
     when(backupStore.rangeMarkers(1)).thenReturn(CompletableFuture.completedFuture(ranges));
 
     // when
-    actorScheduler.submitActor(backupRetention);
-    actorScheduler.workUntilDone();
-    actorScheduler.updateClock(Duration.ofSeconds(10));
-    actorScheduler.workUntilDone();
+    runRetentionCycle();
 
     // then
-    verify(backupStore).delete(backup1.id());
-    verify(backupStore).delete(backup2.id());
-    verify(backupStore).delete(backup3.id());
-    verify(backupStore).delete(backup4.id());
-
-    verify(backupStore)
-        .storeRangeMarker(
-            eq(1),
-            argThat(
-                marker ->
-                    marker.checkpointId() == backup5.id().checkpointId()
-                        && marker instanceof Start));
-
-    verify(backupStore, atLeast(1))
-        .deleteRangeMarker(
-            eq(1),
-            argThat(
-                marker ->
-                    marker.checkpointId() == backup4.id().checkpointId()
-                        && marker instanceof Start));
+    verifyBackupsDeleted(backups.subList(0, 4));
+    verifyRangeMarkerStored(1, backups.get(4));
+    verifyRangeMarkerDeleted(1, backups.get(3));
   }
 
   @Test
   void shouldPerformAllActionsMultiPartition() {
     // given
-    reset(clusterState);
-    doReturn(List.of(1, 2, 3)).when(clusterState).getPartitions();
-    backupRetention =
-        new BackupRetention(
-            backupStore,
-            new IntervalSchedule(Duration.ofSeconds(10)),
-            Duration.ofMinutes(2),
-            0,
-            topologyManager,
-            new SimpleMeterRegistry());
+    setupMultiPartition(List.of(1, 2, 3));
     final var now = actorScheduler.getClock().instant();
-    final Map<Integer, List<BackupStatus>> backupsPerPartition = new HashMap<>();
-    for (int i = 1; i <= 3; i++) {
-      final BackupStatus backup1 = backup(i, 1, now.minusSeconds(360));
-      final BackupStatus backup2 = backup(i, 1, now.minusSeconds(300));
-      final BackupStatus backup3 = backup(i, 1, now.minusSeconds(290));
-      final BackupStatus backup4 = backup(i, 1, now.minusSeconds(130));
-      final BackupStatus backup5 = backup(i, 1, now.minusSeconds(110));
-      final BackupStatus backup6 = backup(i, 1, now.minusSeconds(20));
-      final BackupStatus backup7 = backup(i, 1, now.minusSeconds(10));
-      backupsPerPartition.put(
-          i, List.of(backup1, backup2, backup3, backup4, backup5, backup6, backup7));
-    }
+    final Map<Integer, List<BackupStatus>> backupsPerPartition =
+        createBackupsForPartitions(List.of(1, 2, 3), now);
+    final List<BackupRangeMarker> ranges = createDefaultRangeMarkers(now);
 
-    final List<BackupRangeMarker> ranges =
-        List.of(
-            new Start(now.minusSeconds(360).toEpochMilli()),
-            new End(now.minusSeconds(290).toEpochMilli()),
-            new Start(now.minusSeconds(130).toEpochMilli()),
-            new End(now.minusSeconds(20).toEpochMilli()),
-            new Start(now.minusSeconds(10).toEpochMilli()),
-            new End(now.minusSeconds(10).toEpochMilli()));
-
-    doReturn(CompletableFuture.completedFuture(backupsPerPartition.get(1)))
-        .when(backupStore)
-        .list(argThat(id -> id.partitionId().get() == 1));
-    doReturn(CompletableFuture.completedFuture(backupsPerPartition.get(2)))
-        .when(backupStore)
-        .list(argThat(id -> id.partitionId().get() == 2));
-    doReturn(CompletableFuture.completedFuture(backupsPerPartition.get(3)))
-        .when(backupStore)
-        .list(argThat(id -> id.partitionId().get() == 3));
-
+    setupBackupStoreListForPartitions(backupsPerPartition);
     when(backupStore.rangeMarkers(anyInt())).thenReturn(CompletableFuture.completedFuture(ranges));
 
     // when
-    actorScheduler.submitActor(backupRetention);
-    actorScheduler.workUntilDone();
-    actorScheduler.updateClock(Duration.ofSeconds(10));
-    actorScheduler.workUntilDone();
+    runRetentionCycle();
 
     // then
     backupsPerPartition.forEach(
-        (key, value) ->
-            value
-                .subList(0, 4)
-                .forEach(
-                    backup -> verify(backupStore).delete(argThat(id -> id.equals(backup.id())))));
+        (partition, backups) -> verifyBackupsDeleted(backups.subList(0, 4)));
 
-    verify(backupStore)
-        .storeRangeMarker(
-            eq(1),
-            argThat(
-                marker ->
-                    marker.checkpointId() == backupsPerPartition.get(1).get(4).id().checkpointId()
-                        && marker instanceof Start));
-    verify(backupStore)
-        .storeRangeMarker(
-            eq(2),
-            argThat(
-                marker ->
-                    marker.checkpointId() == backupsPerPartition.get(2).get(4).id().checkpointId()
-                        && marker instanceof Start));
-
-    verify(backupStore)
-        .storeRangeMarker(
-            eq(3),
-            argThat(
-                marker ->
-                    marker.checkpointId() == backupsPerPartition.get(3).get(4).id().checkpointId()
-                        && marker instanceof Start));
-
-    verify(backupStore).deleteRangeMarker(eq(1), argThat(c -> c.equals(ranges.getFirst())));
-    verify(backupStore).deleteRangeMarker(eq(1), argThat(c -> c.equals(ranges.get(1))));
-
-    verify(backupStore).deleteRangeMarker(eq(2), argThat(c -> c.equals(ranges.getFirst())));
-    verify(backupStore).deleteRangeMarker(eq(2), argThat(c -> c.equals(ranges.get(1))));
-
-    verify(backupStore).deleteRangeMarker(eq(3), argThat(c -> c.equals(ranges.getFirst())));
-    verify(backupStore).deleteRangeMarker(eq(3), argThat(c -> c.equals(ranges.get(1))));
-
-    verify(backupStore, atLeast(1))
-        .deleteRangeMarker(
-            eq(1),
-            argThat(
-                marker ->
-                    marker.checkpointId() == backupsPerPartition.get(1).get(3).id().checkpointId()
-                        && marker instanceof Start));
-
-    verify(backupStore, atLeast(1))
-        .deleteRangeMarker(
-            eq(2),
-            argThat(
-                marker ->
-                    marker.checkpointId() == backupsPerPartition.get(1).get(3).id().checkpointId()
-                        && marker instanceof Start));
-
-    verify(backupStore, atLeast(1))
-        .deleteRangeMarker(
-            eq(3),
-            argThat(
-                marker ->
-                    marker.checkpointId() == backupsPerPartition.get(1).get(3).id().checkpointId()
-                        && marker instanceof Start));
+    for (int partition = 1; partition <= 3; partition++) {
+      verifyRangeMarkerStored(partition, backupsPerPartition.get(partition).get(4));
+      verify(backupStore)
+          .deleteRangeMarker(eq(partition), argThat(c -> c.equals(ranges.getFirst())));
+      verify(backupStore).deleteRangeMarker(eq(partition), argThat(c -> c.equals(ranges.get(1))));
+      verifyRangeMarkerDeleted(partition, backupsPerPartition.get(1).get(3));
+    }
   }
 
   @Test
@@ -344,21 +172,12 @@ public class RetentionTest {
                     new Start(now.minusSeconds(130).toEpochMilli()))));
 
     // when
-    actorScheduler.submitActor(backupRetention);
-    actorScheduler.workUntilDone();
-    actorScheduler.updateClock(Duration.ofSeconds(10));
-    actorScheduler.workUntilDone();
+    runRetentionCycle();
 
     // then
     verify(backupStore).delete(backup1.id());
     verify(backupStore).delete(backup2.id());
-    verify(backupStore)
-        .storeRangeMarker(
-            eq(1),
-            argThat(
-                marker ->
-                    marker.checkpointId() == backup3.id().checkpointId()
-                        && marker instanceof Start));
+    verifyRangeMarkerStored(1, backup3);
 
     verify(backupStore, atLeast(1))
         .deleteRangeMarker(
@@ -394,16 +213,12 @@ public class RetentionTest {
         .deleteRangeMarker(anyInt(), any());
 
     // when
-    actorScheduler.submitActor(backupRetention);
-    actorScheduler.workUntilDone();
-    actorScheduler.updateClock(Duration.ofSeconds(10));
-    actorScheduler.workUntilDone();
+    runRetentionCycle();
 
     // then
     verify(backupStore).delete(backup1.id());
     verify(backupStore).delete(backup2.id());
-    verify(backupStore, times(0)).storeRangeMarker(eq(1), any());
-
+    verify(backupStore, never()).storeRangeMarker(eq(1), any());
     verify(backupStore).deleteRangeMarker(eq(1), argThat(c -> c.equals(ranges.getFirst())));
     verify(backupStore).deleteRangeMarker(eq(1), argThat(c -> c.equals(ranges.get(1))));
   }
@@ -415,17 +230,106 @@ public class RetentionTest {
     when(backupStore.list(any())).thenReturn(CompletableFuture.completedFuture(List.of()));
 
     // when
+    runRetentionCycle();
+
+    // then
+    verify(backupStore).list(any());
+    verifyNoBackupStoreModifications();
+  }
+
+  private BackupRetention createBackupRetention() {
+    return new BackupRetention(
+        backupStore,
+        new IntervalSchedule(Duration.ofSeconds(10)),
+        Duration.ofMinutes(2),
+        0,
+        topologyManager,
+        new SimpleMeterRegistry());
+  }
+
+  private void setupMultiPartition(final List<Integer> partitions) {
+    reset(clusterState);
+    doReturn(partitions).when(clusterState).getPartitions();
+    backupRetention = createBackupRetention();
+  }
+
+  private void runRetentionCycle() {
     actorScheduler.submitActor(backupRetention);
     actorScheduler.workUntilDone();
     actorScheduler.updateClock(Duration.ofSeconds(10));
     actorScheduler.workUntilDone();
+  }
 
-    // then
-    verify(backupStore).list(any());
-    verify(backupStore, times(0)).deleteRangeMarker(anyInt(), any());
-    verify(backupStore, times(0)).delete(any());
-    verify(backupStore, times(0)).storeRangeMarker(anyInt(), any());
-    verify(backupStore, times(0)).deleteRangeMarker(anyInt(), any());
+  private List<BackupStatus> createDefaultBackups(
+      final int partition, final int nodeId, final Instant now) {
+    return java.util.Arrays.stream(DEFAULT_BACKUP_OFFSETS)
+        .mapToObj(offset -> backup(partition, nodeId, now.minusSeconds(offset)))
+        .toList();
+  }
+
+  private List<BackupStatus> createDefaultBackupsNoCreatedDate(
+      final int partition, final int nodeId, final Instant now) {
+    return java.util.Arrays.stream(DEFAULT_BACKUP_OFFSETS)
+        .mapToObj(offset -> backupNoCreatedDate(partition, nodeId, now.minusSeconds(offset)))
+        .toList();
+  }
+
+  private List<BackupRangeMarker> createDefaultRangeMarkers(final Instant now) {
+    return List.of(
+        new Start(now.minusSeconds(360).toEpochMilli()),
+        new End(now.minusSeconds(290).toEpochMilli()),
+        new Start(now.minusSeconds(130).toEpochMilli()),
+        new End(now.minusSeconds(20).toEpochMilli()),
+        new Start(now.minusSeconds(10).toEpochMilli()),
+        new End(now.minusSeconds(10).toEpochMilli()));
+  }
+
+  private Map<Integer, List<BackupStatus>> createBackupsForPartitions(
+      final List<Integer> partitions, final Instant now) {
+    final Map<Integer, List<BackupStatus>> backupsPerPartition = new HashMap<>();
+    for (final int partition : partitions) {
+      backupsPerPartition.put(partition, createDefaultBackups(partition, 1, now));
+    }
+    return backupsPerPartition;
+  }
+
+  private void setupBackupStoreListForPartitions(
+      final Map<Integer, List<BackupStatus>> backupsPerPartition) {
+    backupsPerPartition.forEach(
+        (partition, backups) ->
+            doReturn(CompletableFuture.completedFuture(backups))
+                .when(backupStore)
+                .list(argThat(id -> id.partitionId().get() == partition)));
+  }
+
+  private void verifyBackupsDeleted(final List<BackupStatus> backups) {
+    backups.forEach(backup -> verify(backupStore).delete(argThat(id -> id.equals(backup.id()))));
+  }
+
+  private void verifyRangeMarkerStored(final int partition, final BackupStatus backup) {
+    verify(backupStore)
+        .storeRangeMarker(
+            eq(partition),
+            argThat(
+                marker ->
+                    marker.checkpointId() == backup.id().checkpointId()
+                        && marker instanceof Start));
+  }
+
+  private void verifyRangeMarkerDeleted(final int partition, final BackupStatus backup) {
+    verify(backupStore, atLeast(1))
+        .deleteRangeMarker(
+            eq(partition),
+            argThat(
+                marker ->
+                    marker.checkpointId() == backup.id().checkpointId()
+                        && marker instanceof Start));
+  }
+
+  private void verifyNoBackupStoreModifications() {
+    verify(backupStore, never()).deleteRangeMarker(anyInt(), any());
+    verify(backupStore, never()).delete(any());
+    verify(backupStore, never()).storeRangeMarker(anyInt(), any());
   }
 
   private BackupStatus backup(final Instant timestamp) {
@@ -466,20 +370,13 @@ public class RetentionTest {
               CompletableFuture.failedFuture(new RuntimeException("Failed to list backups")));
 
       // when
-      actorScheduler.submitActor(backupRetention);
-      actorScheduler.workUntilDone();
-      actorScheduler.updateClock(Duration.ofSeconds(10));
-      actorScheduler.workUntilDone();
+      runRetentionCycle();
 
       // then
       actorScheduler.updateClock(Duration.ofSeconds(10));
       actorScheduler.workUntilDone();
-      verify(backupStore, times(2)).list(any());
-
-      verify(backupStore, times(0)).deleteRangeMarker(anyInt(), any());
-      verify(backupStore, times(0)).delete(any());
-      verify(backupStore, times(0)).storeRangeMarker(anyInt(), any());
-      verify(backupStore, times(0)).deleteRangeMarker(anyInt(), any());
+      verify(backupStore, org.mockito.Mockito.times(2)).list(any());
+      verifyNoBackupStoreModifications();
     }
 
     @Test
@@ -492,59 +389,23 @@ public class RetentionTest {
               CompletableFuture.failedFuture(new RuntimeException("Failed to list markers")));
 
       // when
-      actorScheduler.submitActor(backupRetention);
-      actorScheduler.workUntilDone();
-      actorScheduler.updateClock(Duration.ofSeconds(10));
-      actorScheduler.workUntilDone();
+      runRetentionCycle();
 
       // then
       actorScheduler.updateClock(Duration.ofSeconds(10));
       actorScheduler.workUntilDone();
-      verify(backupStore, times(2)).list(any());
-
-      verify(backupStore, times(0)).deleteRangeMarker(anyInt(), any());
-      verify(backupStore, times(0)).delete(any());
-      verify(backupStore, times(0)).storeRangeMarker(anyInt(), any());
-      verify(backupStore, times(0)).deleteRangeMarker(anyInt(), any());
+      verify(backupStore, org.mockito.Mockito.times(2)).list(any());
+      verifyNoBackupStoreModifications();
     }
 
     @Test
     void shouldPerformAllActionOnOnePartition() {
       // given
-      reset(clusterState);
-      doReturn(List.of(1, 2)).when(clusterState).getPartitions();
-
-      backupRetention =
-          new BackupRetention(
-              backupStore,
-              new IntervalSchedule(Duration.ofSeconds(10)),
-              Duration.ofMinutes(2),
-              0,
-              topologyManager,
-              new SimpleMeterRegistry());
-
+      setupMultiPartition(List.of(1, 2));
       final var now = actorScheduler.getClock().instant();
-      final Map<Integer, List<BackupStatus>> backupsPerPartition = new HashMap<>();
-      for (int i = 1; i <= 2; i++) {
-        final BackupStatus backup1 = backup(i, 1, now.minusSeconds(360));
-        final BackupStatus backup2 = backup(i, 1, now.minusSeconds(300));
-        final BackupStatus backup3 = backup(i, 1, now.minusSeconds(290));
-        final BackupStatus backup4 = backup(i, 1, now.minusSeconds(130));
-        final BackupStatus backup5 = backup(i, 1, now.minusSeconds(110));
-        final BackupStatus backup6 = backup(i, 1, now.minusSeconds(20));
-        final BackupStatus backup7 = backup(i, 1, now.minusSeconds(10));
-        backupsPerPartition.put(
-            i, List.of(backup1, backup2, backup3, backup4, backup5, backup6, backup7));
-      }
-
-      final List<BackupRangeMarker> ranges =
-          List.of(
-              new Start(now.minusSeconds(360).toEpochMilli()),
-              new End(now.minusSeconds(290).toEpochMilli()),
-              new Start(now.minusSeconds(130).toEpochMilli()),
-              new End(now.minusSeconds(20).toEpochMilli()),
-              new Start(now.minusSeconds(10).toEpochMilli()),
-              new End(now.minusSeconds(10).toEpochMilli()));
+      final Map<Integer, List<BackupStatus>> backupsPerPartition =
+          createBackupsForPartitions(List.of(1, 2), now);
+      final List<BackupRangeMarker> ranges = createDefaultRangeMarkers(now);
 
       doReturn(CompletableFuture.completedFuture(backupsPerPartition.get(1)))
           .when(backupStore)
@@ -560,50 +421,25 @@ public class RetentionTest {
           .thenReturn(CompletableFuture.completedFuture(ranges));
 
       // when
-      actorScheduler.submitActor(backupRetention);
-      actorScheduler.workUntilDone();
-      actorScheduler.updateClock(Duration.ofSeconds(10));
-      actorScheduler.workUntilDone();
+      runRetentionCycle();
 
       // then
-
-      backupsPerPartition
-          .get(1)
-          .subList(0, 4)
-          .forEach(backup -> verify(backupStore).delete(argThat(id -> id.equals(backup.id()))));
+      verifyBackupsDeleted(backupsPerPartition.get(1).subList(0, 4));
 
       backupsPerPartition
           .get(2)
           .subList(0, 4)
           .forEach(
-              backup ->
-                  verify(backupStore, times(0)).delete(argThat(id -> id.equals(backup.id()))));
+              backup -> verify(backupStore, never()).delete(argThat(id -> id.equals(backup.id()))));
 
-      verify(backupStore)
-          .storeRangeMarker(
-              eq(1),
-              argThat(
-                  marker ->
-                      marker.checkpointId() == backupsPerPartition.get(1).get(4).id().checkpointId()
-                          && marker instanceof Start));
-
-      verify(backupStore, times(0)).storeRangeMarker(eq(2), any());
+      verifyRangeMarkerStored(1, backupsPerPartition.get(1).get(4));
+      verify(backupStore, never()).storeRangeMarker(eq(2), any());
 
       verify(backupStore).deleteRangeMarker(eq(1), argThat(c -> c.equals(ranges.getFirst())));
       verify(backupStore).deleteRangeMarker(eq(1), argThat(c -> c.equals(ranges.get(1))));
+      verify(backupStore, never()).deleteRangeMarker(eq(2), any());
 
-      verify(backupStore, times(0)).deleteRangeMarker(eq(2), any());
-      verify(backupStore, times(0)).deleteRangeMarker(eq(2), any());
-
-      verify(backupStore, atLeast(1))
-          .deleteRangeMarker(
-              eq(1),
-              argThat(
-                  marker ->
-                      marker.checkpointId() == backupsPerPartition.get(1).get(3).id().checkpointId()
-                          && marker instanceof Start));
-
-      verify(backupStore, times(0)).deleteRangeMarker(eq(2), any());
+      verifyRangeMarkerDeleted(1, backupsPerPartition.get(1).get(3));
     }
   }
 }
