@@ -297,6 +297,43 @@ final class HistoryDeletionJobTest {
   }
 
   @Test
+  void shouldDeletePIsFromDeletionIndexIfProcessDefinitionDeletionFailed() {
+    // given
+    final var processInstanceEntity =
+        new HistoryDeletionEntity()
+            .setId("id1")
+            .setResourceKey(1L)
+            .setResourceType(HistoryDeletionType.PROCESS_INSTANCE)
+            .setBatchOperationKey(2L)
+            .setPartitionId(1);
+    final var processDefinitionEntity =
+        new HistoryDeletionEntity()
+            .setId("id2")
+            .setResourceKey(2L)
+            .setResourceType(HistoryDeletionType.PROCESS_DEFINITION)
+            .setBatchOperationKey(2L)
+            .setPartitionId(1);
+    when(repository.getNextBatch())
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                new HistoryDeletionBatch(List.of(processInstanceEntity, processDefinitionEntity))));
+    when(repository.deleteDocumentsById(anyString(), anyList()))
+        .thenReturn(CompletableFuture.completedFuture(0));
+    when(repository.deleteDocumentsByField(anyString(), anyString(), anyList()))
+        .thenReturn(CompletableFuture.completedFuture(List.of()));
+    when(repository.deleteDocumentsById(eq(processIndex.getFullQualifiedName()), anyList()))
+        .thenReturn(CompletableFuture.failedFuture(new RuntimeException("Failed deleting")));
+
+    // when
+    job.execute().toCompletableFuture().join();
+
+    // then
+    verify(repository)
+        .deleteDocumentsById(
+            historyDeletionIndex.getFullQualifiedName(), List.of(processInstanceEntity.getId()));
+  }
+
+  @Test
   void shouldDeleteDecisionInstanceHistory() {
     // given
     final var entity1 =
@@ -402,5 +439,52 @@ final class HistoryDeletionJobTest {
     verify(repository)
         .deleteDocumentsById(
             historyDeletionIndex.getFullQualifiedName(), List.of(decisionInstanceEntity.getId()));
+  }
+
+  @Test
+  void shouldDeletePIsAndDIsFromDeletionIndexIfProcessDefinitionDeletionFailed() {
+    // given
+    final var processInstanceEntity =
+        new HistoryDeletionEntity()
+            .setId("id1")
+            .setResourceKey(1L)
+            .setResourceType(HistoryDeletionType.PROCESS_INSTANCE)
+            .setBatchOperationKey(2L)
+            .setPartitionId(1);
+    final var processDefinitionEntity =
+        new HistoryDeletionEntity()
+            .setId("id2")
+            .setResourceKey(2L)
+            .setResourceType(HistoryDeletionType.PROCESS_DEFINITION)
+            .setBatchOperationKey(2L)
+            .setPartitionId(1);
+    final var decisionInstanceEntity =
+        new HistoryDeletionEntity()
+            .setId("id3")
+            .setResourceKey(3L)
+            .setResourceType(HistoryDeletionType.DECISION_INSTANCE)
+            .setBatchOperationKey(2L)
+            .setPartitionId(1);
+    when(repository.getNextBatch())
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                new HistoryDeletionBatch(
+                    List.of(
+                        processInstanceEntity, processDefinitionEntity, decisionInstanceEntity))));
+    when(repository.deleteDocumentsById(anyString(), anyList()))
+        .thenReturn(CompletableFuture.completedFuture(0));
+    when(repository.deleteDocumentsByField(anyString(), anyString(), anyList()))
+        .thenReturn(CompletableFuture.completedFuture(List.of()));
+    when(repository.deleteDocumentsById(eq(processIndex.getFullQualifiedName()), anyList()))
+        .thenReturn(CompletableFuture.failedFuture(new RuntimeException("Failed deleting")));
+
+    // when
+    job.execute().toCompletableFuture().join();
+
+    // then
+    verify(repository)
+        .deleteDocumentsById(
+            historyDeletionIndex.getFullQualifiedName(),
+            List.of(processInstanceEntity.getId(), decisionInstanceEntity.getId()));
   }
 }
