@@ -7,6 +7,7 @@
  */
 package io.camunda.service;
 
+import static io.camunda.search.exception.ErrorMessages.ERROR_ENTITY_BY_KEY_NOT_FOUND;
 import static io.camunda.search.query.SearchQueryBuilders.decisionInstanceSearchQuery;
 import static io.camunda.security.auth.Authorization.withAuthorization;
 import static io.camunda.service.authorization.Authorizations.DECISION_DEFINITION_DELETE_DECISION_INSTANCE_AUTHORIZATION;
@@ -102,17 +103,36 @@ public final class DecisionInstanceServices
                 .getDecisionInstance(decisionInstanceId));
   }
 
+  /**
+   * Deletes a decision instance and all associated decision evaluations.
+   *
+   * @param decisionInstanceKey the key of the decision instance to delete
+   * @param operationReference optional operation reference for tracking
+   * @return a CompletableFuture containing the batch operation creation record
+   * @throws CamundaSearchException if no decision instance with the given key exists
+   */
   public CompletableFuture<BatchOperationCreationRecord> deleteDecisionInstance(
-      final String decisionInstanceId, final Long operationReference) {
+      final long decisionInstanceKey, final Long operationReference) {
 
     // make sure decision instance exists before deletion, otherwise return not found
-    final var decisionInstance = getById(decisionInstanceId);
+    final var searchResult =
+        search(
+            decisionInstanceSearchQuery(
+                q -> q.filter(f -> f.decisionInstanceKeys(decisionInstanceKey))));
+
+    if (searchResult.items().isEmpty()) {
+      throw new CamundaSearchException(
+          ERROR_ENTITY_BY_KEY_NOT_FOUND.formatted("Decision Instance", decisionInstanceKey),
+          CamundaSearchException.Reason.NOT_FOUND);
+    }
+
+    final var decisionInstance = searchResult.items().getFirst();
 
     final var brokerRequest =
         new BrokerCreateBatchOperationRequest()
             .setFilter(
                 new DecisionInstanceFilter.Builder()
-                    .decisionInstanceIds(decisionInstanceId)
+                    .decisionInstanceKeys(decisionInstanceKey)
                     .build())
             .setBatchOperationType(BatchOperationType.DELETE_DECISION_INSTANCE)
             .setAuthentication(authentication)

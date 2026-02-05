@@ -7,10 +7,12 @@
  */
 package io.camunda.service;
 
+import static io.camunda.search.exception.ErrorMessages.ERROR_ENTITY_BY_KEY_NOT_FOUND;
+import static io.camunda.search.query.SearchQueryBuilders.decisionInstanceSearchQuery;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.instancio.Select.field;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -18,6 +20,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.search.clients.DecisionInstanceSearchClient;
 import io.camunda.search.entities.DecisionInstanceEntity;
 import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.search.exception.CamundaSearchException.Reason;
 import io.camunda.search.exception.ResourceAccessDeniedException;
 import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.SearchQueryBuilders;
@@ -30,43 +33,49 @@ import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateBatchOperationRequest;
+import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
+import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ForkJoinPool;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
+import org.instancio.Instancio;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 class DecisionInstanceServiceTest {
 
+  private static final Long DECISION_INSTANCE_KEY = 1L;
+  private static final Long NON_EXISTENT_KEY = 999L;
   private static final String DECISION_INSTANCE_ID = "1-1";
   private static final String DECISION_DEFINITION_KEY = "dd1";
-  private static final String NON_EXISTENT_ID = "non-existent";
 
   private DecisionInstanceServices services;
   private DecisionInstanceSearchClient client;
+  private SecurityContextProvider securityContextProvider;
+  private CamundaAuthentication authentication;
   private BrokerClient brokerClient;
+  private ApiServicesExecutorProvider executorProvider;
+  private BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter;
 
   @BeforeEach
   void before() {
     client = mock(DecisionInstanceSearchClient.class);
+    authentication = CamundaAuthentication.none();
     when(client.withSecurityContext(any())).thenReturn(client);
-
+    securityContextProvider = mock(SecurityContextProvider.class);
     brokerClient = mock(BrokerClient.class);
-    mockSuccessfulBrokerResponse();
-
-    final var brokerRequestAuthorizationConverter = mock(BrokerRequestAuthorizationConverter.class);
-    when(brokerRequestAuthorizationConverter.convert(any())).thenReturn(null);
-
-    final var executorProvider = mock(ApiServicesExecutorProvider.class);
+    executorProvider = mock(ApiServicesExecutorProvider.class);
     when(executorProvider.getExecutor()).thenReturn(ForkJoinPool.commonPool());
-
+    brokerRequestAuthorizationConverter = mock(BrokerRequestAuthorizationConverter.class);
     services =
         new DecisionInstanceServices(
             brokerClient,
-            mock(SecurityContextProvider.class),
+            securityContextProvider,
             client,
-            mock(CamundaAuthentication.class),
+            authentication,
             executorProvider,
             brokerRequestAuthorizationConverter);
   }
@@ -78,8 +87,8 @@ class DecisionInstanceServiceTest {
   @Test
   void shouldReturnDecisionInstances() {
     // given
-    final var result = mockSearchResult();
-
+    final var result = mock(SearchQueryResult.class);
+    when(client.searchDecisionInstances(any())).thenReturn(result);
     final DecisionInstanceQuery query = SearchQueryBuilders.decisionInstanceSearchQuery().build();
 
     // when
@@ -114,6 +123,30 @@ class DecisionInstanceServiceTest {
                             r -> r.includeEvaluatedInputs(false).includeEvaluatedOutputs(false))));
   }
 
+  @Test
+  void shouldSearchByDecisionInstanceKeyShouldReturnForbiddenForUnauthorizedDecisionDefinition() {
+    // given
+    when(client.searchDecisionInstances(any(DecisionInstanceQuery.class)))
+        .thenThrow(
+            new ResourceAccessDeniedException(Authorizations.DECISION_INSTANCE_READ_AUTHORIZATION));
+
+    // when
+    final ThrowingCallable executable =
+        () ->
+            services.search(
+                decisionInstanceSearchQuery(
+                    q -> q.filter(f -> f.decisionInstanceKeys(DECISION_INSTANCE_KEY))));
+
+    // then
+    final var exception =
+        (ServiceException)
+            assertThatThrownBy(executable).isInstanceOf(ServiceException.class).actual();
+    assertThat(exception.getMessage())
+        .isEqualTo(
+            "Unauthorized to perform operation 'READ_DECISION_INSTANCE' on resource 'DECISION_DEFINITION'");
+    assertThat(exception.getStatus()).isEqualTo(Status.FORBIDDEN);
+  }
+
   // --------------------------------------------------------------------------
   // Get by ID
   // --------------------------------------------------------------------------
@@ -121,31 +154,18 @@ class DecisionInstanceServiceTest {
   @Test
   void shouldGetDecisionInstanceById() {
     // given
-    mockExistingDecisionInstance();
+    final var entity =
+        Instancio.of(DecisionInstanceEntity.class)
+            .set(field(DecisionInstanceEntity::decisionInstanceId), DECISION_INSTANCE_ID)
+            .create();
+    when(client.getDecisionInstance(DECISION_INSTANCE_ID)).thenReturn(entity);
 
     // when
-    services.getById(DECISION_INSTANCE_ID);
+    final var result = services.getById(DECISION_INSTANCE_ID);
 
     // then
     verify(client).getDecisionInstance(DECISION_INSTANCE_ID);
-  }
-
-  @Test
-  void getByIdShouldReturnForbiddenForUnauthorizedDecisionDefinition() {
-    // given
-    mockUnauthorizedDecisionInstanceRead();
-
-    // when
-    final ThrowingCallable executable = () -> services.getById(DECISION_INSTANCE_ID);
-
-    // then
-    final var exception =
-        assertThatExceptionOfType(ServiceException.class).isThrownBy(executable).actual();
-
-    assertThat(exception.getMessage())
-        .isEqualTo(
-            "Unauthorized to perform operation 'READ_DECISION_INSTANCE' on resource 'DECISION_DEFINITION'");
-    assertThat(exception.getStatus()).isEqualTo(Status.FORBIDDEN);
+    assertThat(result.decisionInstanceId()).isEqualTo(DECISION_INSTANCE_ID);
   }
 
   // --------------------------------------------------------------------------
@@ -155,99 +175,51 @@ class DecisionInstanceServiceTest {
   @Test
   void shouldDeleteDecisionInstance() {
     // given
-    mockExistingDecisionInstance();
+    final long batchOperationKey = 1L;
+    final var record = new BatchOperationCreationRecord();
+    record.setBatchOperationKey(batchOperationKey);
+    record.setBatchOperationType(BatchOperationType.DELETE_DECISION_INSTANCE);
 
-    // when
-    final var result = services.deleteDecisionInstance(DECISION_INSTANCE_ID, null);
-
-    // then
-    assertThat(result).isNotNull();
-    verify(brokerClient).sendRequest(any());
-  }
-
-  @Test
-  void shouldThrowExceptionWhenDecisionInstanceNotFoundDuringDeletion() {
-    // given
-    mockDecisionInstanceNotFound();
-
-    // when
-    final ThrowingCallable executable =
-        () -> services.deleteDecisionInstance(NON_EXISTENT_ID, null);
-
-    // then
-    final var exception =
-        assertThatExceptionOfType(ServiceException.class).isThrownBy(executable).actual();
-
-    assertThat(exception.getStatus()).isEqualTo(Status.NOT_FOUND);
-  }
-
-  @Test
-  void shouldThrowForbiddenExceptionWhenUnauthorizedToDeleteDecisionInstance() {
-    // given
-    mockExistingDecisionInstance();
-    mockBrokerForbidden();
-
-    // when
-    final ThrowingCallable executable =
-        () -> services.deleteDecisionInstance(DECISION_INSTANCE_ID, null).join();
-
-    // then
-    final var completionException =
-        assertThatExceptionOfType(java.util.concurrent.CompletionException.class)
-            .isThrownBy(executable)
-            .actual();
-
-    assertThat(completionException.getCause()).isInstanceOf(ServiceException.class);
-    final var exception = (ServiceException) completionException.getCause();
-
-    assertThat(exception.getMessage())
-        .contains(
-            "Unauthorized to perform operation 'DELETE_DECISION_INSTANCE' on resource 'DECISION_DEFINITION'");
-    assertThat(exception.getStatus()).isEqualTo(Status.INTERNAL);
-  }
-
-  // --------------------------------------------------------------------------
-  // Helper methods
-  // --------------------------------------------------------------------------
-
-  private SearchQueryResult<DecisionInstanceEntity> mockSearchResult() {
-    final var result = mock(SearchQueryResult.class);
-    when(client.searchDecisionInstances(any())).thenReturn(result);
-    return result;
-  }
-
-  private void mockExistingDecisionInstance() {
     final var entity = mock(DecisionInstanceEntity.class);
     when(entity.decisionDefinitionId()).thenReturn(DECISION_DEFINITION_KEY);
-    when(client.getDecisionInstance(DECISION_INSTANCE_ID)).thenReturn(entity);
+
+    final var result = mock(SearchQueryResult.class);
+    when(result.items()).thenReturn(java.util.List.of(entity));
+    when(client.searchDecisionInstances(any(DecisionInstanceQuery.class))).thenReturn(result);
+
+    final var captor = ArgumentCaptor.forClass(BrokerCreateBatchOperationRequest.class);
+    when(brokerClient.sendRequest(captor.capture()))
+        .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(record)));
+
+    // when
+    final var deleteResult = services.deleteDecisionInstance(DECISION_INSTANCE_KEY, null).join();
+
+    // then
+    assertThat(deleteResult.getBatchOperationKey()).isEqualTo(batchOperationKey);
+    assertThat(deleteResult.getBatchOperationType())
+        .isEqualTo(BatchOperationType.DELETE_DECISION_INSTANCE);
+
+    // and our request got enriched
+    final var enrichedRecord = captor.getValue().getRequestWriter();
+
+    assertThat(
+            MsgPackConverter.convertToObject(
+                enrichedRecord.getAuthenticationBuffer(), CamundaAuthentication.class))
+        .isEqualTo(authentication);
   }
 
-  private void mockUnauthorizedDecisionInstanceRead() {
-    when(client.getDecisionInstance(DECISION_INSTANCE_ID))
-        .thenThrow(
-            new ResourceAccessDeniedException(Authorizations.DECISION_INSTANCE_READ_AUTHORIZATION));
-  }
-
-  private void mockDecisionInstanceNotFound() {
-    when(client.getDecisionInstance(NON_EXISTENT_ID))
+  @Test
+  void shouldNotDeleteDecisionInstance() {
+    // given
+    when(client.searchDecisionInstances(any(DecisionInstanceQuery.class)))
         .thenThrow(
             new CamundaSearchException(
-                "Decision instance not found", CamundaSearchException.Reason.NOT_FOUND));
-  }
+                ERROR_ENTITY_BY_KEY_NOT_FOUND.formatted("Decision Instance", NON_EXISTENT_KEY),
+                Reason.NOT_FOUND));
 
-  private void mockSuccessfulBrokerResponse() {
-    final var record = mock(BatchOperationCreationRecord.class);
-    final var response = new BrokerResponse<>(record);
-
-    doReturn(CompletableFuture.completedFuture(response)).when(brokerClient).sendRequest(any());
-  }
-
-  private void mockBrokerForbidden() {
-    doReturn(
-            CompletableFuture.failedFuture(
-                new ResourceAccessDeniedException(
-                    Authorizations.DECISION_DEFINITION_DELETE_DECISION_INSTANCE_AUTHORIZATION)))
-        .when(brokerClient)
-        .sendRequest(any());
+    // when/then
+    assertThatThrownBy(() -> services.deleteDecisionInstance(NON_EXISTENT_KEY, null).join())
+        .isInstanceOf(ServiceException.class)
+        .hasMessage("Decision Instance with key '" + NON_EXISTENT_KEY + "' not found");
   }
 }
