@@ -58,7 +58,6 @@ public class ReportRestService {
   private final ReportEvaluationService reportEvaluationService;
   private final SessionService sessionService;
   private final ReportRestMapper reportRestMapper;
-  private final Timer reportEvaluationTimer;
 
   public ReportRestService(
       final ReportService reportService,
@@ -69,10 +68,6 @@ public class ReportRestService {
     this.reportEvaluationService = reportEvaluationService;
     this.sessionService = sessionService;
     this.reportRestMapper = reportRestMapper;
-    this.reportEvaluationTimer =
-        Timer.builder("optimize.report.evaluationTime")
-            .description("Records the time spent evaluating report requests")
-            .register(Metrics.globalRegistry);
   }
 
   @PostMapping("/process/single")
@@ -163,7 +158,6 @@ public class ReportRestService {
       final HttpServletRequest request) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
     final ZoneId timezone = extractTimezone(request);
-    final long startTime = System.currentTimeMillis();
     final AuthorizedReportEvaluationResult reportEvaluationResult =
         reportEvaluationService.evaluateSavedReportWithAdditionalFilters(
             userId,
@@ -171,8 +165,6 @@ public class ReportRestService {
             reportId,
             reportEvaluationFilter,
             PaginationDto.fromPaginationRequest(paginationRequestDto));
-    final long took = System.currentTimeMillis() - startTime;
-    reportEvaluationTimer.record(took, java.util.concurrent.TimeUnit.MILLISECONDS);
     return reportRestMapper.mapToLocalizedEvaluationResponseDto(
         reportEvaluationResult, request.getHeader(X_OPTIMIZE_CLIENT_LOCALE));
   }
