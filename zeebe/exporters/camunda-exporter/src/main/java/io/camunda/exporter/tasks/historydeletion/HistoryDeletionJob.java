@@ -13,6 +13,7 @@ import io.camunda.webapps.schema.descriptors.ProcessInstanceDependant;
 import io.camunda.webapps.schema.descriptors.index.HistoryDeletionIndex;
 import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.template.AuditLogTemplate;
+import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
@@ -41,6 +42,7 @@ public class HistoryDeletionJob implements BackgroundTask {
   private final HistoryDeletionIndex historyDeletionIndex;
   private final ListViewTemplate listViewTemplate;
   private final ProcessIndex processIndex;
+  private final DecisionInstanceTemplate decisionInstanceTemplate;
 
   public HistoryDeletionJob(
       final List<ProcessInstanceDependant> processInstanceDependants,
@@ -58,6 +60,8 @@ public class HistoryDeletionJob implements BackgroundTask {
     historyDeletionIndex = resourceProvider.getIndexDescriptor(HistoryDeletionIndex.class);
     listViewTemplate = resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class);
     processIndex = resourceProvider.getIndexDescriptor(ProcessIndex.class);
+    decisionInstanceTemplate =
+        resourceProvider.getIndexTemplateDescriptor(DecisionInstanceTemplate.class);
   }
 
   @Override
@@ -82,6 +86,7 @@ public class HistoryDeletionJob implements BackgroundTask {
 
     return deleteProcessInstances(batch)
         .thenCompose(ids -> deleteProcessDefinitions(batch, ids))
+        .thenCompose(ids -> deleteDecisionInstances(batch, ids))
         .thenCompose(this::deleteFromHistoryDeletionIndex);
   }
 
@@ -148,6 +153,32 @@ public class HistoryDeletionJob implements BackgroundTask {
             ignored -> {
               final var ids = new ArrayList<>(deletedResourceIds);
               ids.addAll(batch.getHistoryDeletionIds(HistoryDeletionType.PROCESS_DEFINITION));
+              return ids;
+            });
+  }
+
+  /**
+   * This method will delete a batch of decision instances.
+   *
+   * @param batch The batch of entities to delete
+   * @return A future containing the list of history-deletion IDs that were processed
+   */
+  private CompletionStage<List<String>> deleteDecisionInstances(
+      final HistoryDeletionBatch batch, final List<String> deletedResourceIds) {
+    final var decisionInstances = batch.getResourceKeys(HistoryDeletionType.DECISION_INSTANCE);
+    if (decisionInstances.isEmpty()) {
+      return CompletableFuture.completedFuture(deletedResourceIds);
+    }
+
+    return deleterRepository
+        .deleteDocumentsByField(
+            decisionInstanceTemplate.getIndexPattern(),
+            DecisionInstanceTemplate.KEY,
+            decisionInstances)
+        .thenApply(
+            ignored -> {
+              final var ids = new ArrayList<>(deletedResourceIds);
+              ids.addAll(batch.getHistoryDeletionIds(HistoryDeletionType.DECISION_INSTANCE));
               return ids;
             });
   }
