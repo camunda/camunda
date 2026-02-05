@@ -213,15 +213,13 @@ public class PublicApiRestService {
     settingsService.setSettings(settings);
   }
 
-  // Public API for getting the query time of a report evaluation
+  // Undocumented API for getting the query time of a report evaluation
   @PostMapping("/{id}/evaluate")
   public AuthorizedReportEvaluationResponseDto evaluateReportByIdWithFilters(
       @PathVariable("id") final String reportId,
       @Valid final PaginationRequestDto paginationRequestDto,
       @RequestBody final AdditionalProcessReportEvaluationFilterDto reportEvaluationFilter,
       final HttpServletRequest request) {
-    // Public API uses M2M token authentication (handled at security layer)
-    // Uses PlainReportEvaluationHandler internally which skips user-based authorization
     final ZoneId timezone = extractTimezone(request);
     final AuthorizedReportEvaluationResult reportEvaluationResult =
         reportEvaluationService.evaluateSavedReportWithAdditionalFilters(
