@@ -42,6 +42,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -452,5 +453,157 @@ public class RetentionTest {
         null,
         Optional.empty(),
         null);
+  }
+
+  @Nested
+  class ErrorHandling {
+    @Test
+    void actorShouldNotHangOnBackupListingFailure() {
+      // given
+      reset(backupStore);
+      when(backupStore.list(any()))
+          .thenReturn(
+              CompletableFuture.failedFuture(new RuntimeException("Failed to list backups")));
+
+      // when
+      actorScheduler.submitActor(backupRetention);
+      actorScheduler.workUntilDone();
+      actorScheduler.updateClock(Duration.ofSeconds(10));
+      actorScheduler.workUntilDone();
+
+      // then
+      actorScheduler.updateClock(Duration.ofSeconds(10));
+      actorScheduler.workUntilDone();
+      verify(backupStore, times(2)).list(any());
+
+      verify(backupStore, times(0)).deleteRangeMarker(anyInt(), any());
+      verify(backupStore, times(0)).delete(any());
+      verify(backupStore, times(0)).storeRangeMarker(anyInt(), any());
+      verify(backupStore, times(0)).deleteRangeMarker(anyInt(), any());
+    }
+
+    @Test
+    void actorShouldNotHangOnMarkerListingFailure() {
+      // given
+      reset(backupStore);
+      when(backupStore.list(any())).thenReturn(CompletableFuture.completedFuture(List.of()));
+      when(backupStore.rangeMarkers(anyInt()))
+          .thenReturn(
+              CompletableFuture.failedFuture(new RuntimeException("Failed to list markers")));
+
+      // when
+      actorScheduler.submitActor(backupRetention);
+      actorScheduler.workUntilDone();
+      actorScheduler.updateClock(Duration.ofSeconds(10));
+      actorScheduler.workUntilDone();
+
+      // then
+      actorScheduler.updateClock(Duration.ofSeconds(10));
+      actorScheduler.workUntilDone();
+      verify(backupStore, times(2)).list(any());
+
+      verify(backupStore, times(0)).deleteRangeMarker(anyInt(), any());
+      verify(backupStore, times(0)).delete(any());
+      verify(backupStore, times(0)).storeRangeMarker(anyInt(), any());
+      verify(backupStore, times(0)).deleteRangeMarker(anyInt(), any());
+    }
+
+    @Test
+    void shouldPerformAllActionOnOnePartition() {
+      // given
+      reset(clusterState);
+      doReturn(List.of(1, 2)).when(clusterState).getPartitions();
+
+      backupRetention =
+          new BackupRetention(
+              backupStore,
+              new IntervalSchedule(Duration.ofSeconds(10)),
+              Duration.ofMinutes(2),
+              0,
+              topologyManager,
+              new SimpleMeterRegistry());
+
+      final var now = actorScheduler.getClock().instant();
+      final Map<Integer, List<BackupStatus>> backupsPerPartition = new HashMap<>();
+      for (int i = 1; i <= 2; i++) {
+        final BackupStatus backup1 = backup(i, 1, now.minusSeconds(360));
+        final BackupStatus backup2 = backup(i, 1, now.minusSeconds(300));
+        final BackupStatus backup3 = backup(i, 1, now.minusSeconds(290));
+        final BackupStatus backup4 = backup(i, 1, now.minusSeconds(130));
+        final BackupStatus backup5 = backup(i, 1, now.minusSeconds(110));
+        final BackupStatus backup6 = backup(i, 1, now.minusSeconds(20));
+        final BackupStatus backup7 = backup(i, 1, now.minusSeconds(10));
+        backupsPerPartition.put(
+            i, List.of(backup1, backup2, backup3, backup4, backup5, backup6, backup7));
+      }
+
+      final List<BackupRangeMarker> ranges =
+          List.of(
+              new Start(now.minusSeconds(360).toEpochMilli()),
+              new End(now.minusSeconds(290).toEpochMilli()),
+              new Start(now.minusSeconds(130).toEpochMilli()),
+              new End(now.minusSeconds(20).toEpochMilli()),
+              new Start(now.minusSeconds(10).toEpochMilli()),
+              new End(now.minusSeconds(10).toEpochMilli()));
+
+      doReturn(CompletableFuture.completedFuture(backupsPerPartition.get(1)))
+          .when(backupStore)
+          .list(argThat(id -> id.partitionId().get() == 1));
+
+      doReturn(
+              CompletableFuture.failedFuture(
+                  new RuntimeException("Failed to list backups for partition 2")))
+          .when(backupStore)
+          .list(argThat(id -> id.partitionId().get() == 2));
+
+      when(backupStore.rangeMarkers(anyInt()))
+          .thenReturn(CompletableFuture.completedFuture(ranges));
+
+      // when
+      actorScheduler.submitActor(backupRetention);
+      actorScheduler.workUntilDone();
+      actorScheduler.updateClock(Duration.ofSeconds(10));
+      actorScheduler.workUntilDone();
+
+      // then
+
+      backupsPerPartition
+          .get(1)
+          .subList(0, 4)
+          .forEach(backup -> verify(backupStore).delete(argThat(id -> id.equals(backup.id()))));
+
+      backupsPerPartition
+          .get(2)
+          .subList(0, 4)
+          .forEach(
+              backup ->
+                  verify(backupStore, times(0)).delete(argThat(id -> id.equals(backup.id()))));
+
+      verify(backupStore)
+          .storeRangeMarker(
+              eq(1),
+              argThat(
+                  marker ->
+                      marker.checkpointId() == backupsPerPartition.get(1).get(4).id().checkpointId()
+                          && marker instanceof Start));
+
+      verify(backupStore, times(0)).storeRangeMarker(eq(2), any());
+
+      verify(backupStore).deleteRangeMarker(eq(1), argThat(c -> c.equals(ranges.getFirst())));
+      verify(backupStore).deleteRangeMarker(eq(1), argThat(c -> c.equals(ranges.get(1))));
+
+      verify(backupStore, times(0)).deleteRangeMarker(eq(2), any());
+      verify(backupStore, times(0)).deleteRangeMarker(eq(2), any());
+
+      verify(backupStore, atLeast(1))
+          .deleteRangeMarker(
+              eq(1),
+              argThat(
+                  marker ->
+                      marker.checkpointId() == backupsPerPartition.get(1).get(3).id().checkpointId()
+                          && marker instanceof Start));
+
+      verify(backupStore, times(0)).deleteRangeMarker(eq(2), any());
+    }
   }
 }

@@ -21,6 +21,7 @@ import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.ActorFutureCollector;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
@@ -163,12 +164,17 @@ public class BackupRetention extends Actor {
                         .thenApply(this::logContext, this)
                         .andThen(this::resetRangeStart, this)
                         .andThen(this::deleteMarkers, this)
-                        .thenApply(this::deleteBackups, this)
-                        .toCompletableFuture())
-            .toArray(CompletableFuture[]::new);
+                        .thenApply(this::deleteBackups, this))
+            .collect(new ActorFutureCollector<>(this));
 
-    CompletableFuture.allOf(partitionFutures).thenAccept(v -> retentionFuture.complete(null));
-
+    partitionFutures.onComplete(
+        (futures, error) -> {
+          if (error != null) {
+            retentionFuture.completeExceptionally(error);
+          } else {
+            retentionFuture.complete(null);
+          }
+        });
     return retentionFuture;
   }
 
@@ -202,7 +208,12 @@ public class BackupRetention extends Actor {
     backupStore
         .list(identifier)
         .thenApply(backups -> backups.stream().sorted(BACKUP_STATUS_COMPARATOR).toList())
-        .thenAccept(requestFuture::complete);
+        .thenAccept(requestFuture::complete)
+        .exceptionally(
+            throwable -> {
+              requestFuture.completeExceptionally(throwable);
+              return null;
+            });
     return requestFuture;
   }
 
@@ -211,7 +222,12 @@ public class BackupRetention extends Actor {
     backupStore
         .rangeMarkers(partitionId)
         .thenApply(markers -> markers.stream().sorted(BackupRanges.MARKER_ORDERING).toList())
-        .thenAccept(requestFuture::complete);
+        .thenAccept(requestFuture::complete)
+        .exceptionally(
+            throwable -> {
+              requestFuture.completeExceptionally(throwable);
+              return null;
+            });
     return requestFuture;
   }
 
@@ -278,7 +294,18 @@ public class BackupRetention extends Actor {
                       .forPartition(context.partitionId)
                       .setEarliestBackupId(context.earliestBackupInNewRange))
           .thenApply(v -> context)
-          .thenAccept(future::complete);
+          .thenAccept(future::complete)
+          .exceptionally(
+              throwable -> {
+                LOG.debug(
+                    "Failed to reset range start marker for partition {}. Marker: {}, new checkpoint id: {}",
+                    context.partitionId,
+                    marker,
+                    context.earliestBackupInNewRange,
+                    throwable);
+                future.completeExceptionally(throwable);
+                return null;
+              });
     } else {
       future.complete(context);
     }
@@ -315,7 +342,17 @@ public class BackupRetention extends Actor {
                     .forPartition(context.partitionId)
                     .setRangesDeleted(context.deletableRangeMarkers.size()))
         .thenApply(v -> context)
-        .thenAccept(future::complete);
+        .thenAccept(future::complete)
+        .exceptionally(
+            throwable -> {
+              LOG.debug(
+                  "Failed to delete range markers for partition {}. Markers: {}",
+                  context.partitionId,
+                  context.deletableRangeMarkers,
+                  throwable);
+              future.completeExceptionally(throwable);
+              return null;
+            });
     return future;
   }
 
@@ -339,7 +376,17 @@ public class BackupRetention extends Actor {
                 metrics
                     .forPartition(context.partitionId)
                     .setBackupsDeleted(context.deletableBackups().size()))
-        .thenAccept(future::complete);
+        .thenAccept(future::complete)
+        .exceptionally(
+            throwable -> {
+              LOG.error(
+                  "Failed to delete backups for partition {}. Backups: {}",
+                  context.partitionId,
+                  context.deletableBackups,
+                  throwable);
+              future.completeExceptionally(throwable);
+              return null;
+            });
     return future;
   }
 
@@ -355,11 +402,7 @@ public class BackupRetention extends Actor {
         final List<BackupIdentifier> deletableBackups,
         final long earliestBackupInNewRange) {
       return new RetentionContext(
-          deletableBackups,
-          earliestBackupInNewRange,
-          Optional.empty(),
-          new ArrayList<>(),
-          partitionId);
+          deletableBackups, earliestBackupInNewRange, Optional.empty(), null, partitionId);
     }
 
     RetentionContext withRangeMarkerContext(
