@@ -122,7 +122,6 @@ paths:
       summary: Delete decision instances (batch)
       description: |
         Delete multiple decision instances. This will delete the historic data from secondary storage.
-        Only decision instances in a final state (COMPLETED or TERMINATED) can be deleted.
         This is done asynchronously, the progress can be tracked using the batchOperationKey from the response and the batch operation status endpoint (/batch-operations/{batchOperationKey}).
       requestBody:
         required: true
