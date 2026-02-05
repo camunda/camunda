@@ -9,6 +9,8 @@ package io.camunda.it.tasklist;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.application.Profile;
 import io.camunda.qa.util.cluster.TestRestOperateClient;
 import io.camunda.qa.util.cluster.TestRestTasklistClient;
@@ -18,6 +20,7 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
+import java.net.http.HttpResponse;
 import java.time.Duration;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,6 +42,8 @@ public class TasklistCreateProcessInstanceIT {
   @TestZeebe
   private TestStandaloneCamunda standaloneCamunda =
       new TestStandaloneCamunda().withAdditionalProfile(Profile.DEFAULT_AUTH_PROFILE);
+
+  private final ObjectMapper mapper = new ObjectMapper();
 
   @BeforeEach
   public void beforeAll() {
@@ -65,7 +70,7 @@ public class TasklistCreateProcessInstanceIT {
     // then
     assertThat(response).isNotNull();
     assertThat(response.statusCode()).isEqualTo(200);
-    ensureProcessInstanceCreated(PROCESS_ID);
+    ensureProcessInstanceCreated(PROCESS_ID, response);
   }
 
   @Test
@@ -76,7 +81,7 @@ public class TasklistCreateProcessInstanceIT {
     // then
     assertThat(response).isNotNull();
     assertThat(response.statusCode()).isEqualTo(200);
-    ensureProcessInstanceCreated(PROCESS_ID);
+    ensureProcessInstanceCreated(PROCESS_ID, response);
   }
 
   private void deployResource(final ZeebeClient zeebeClient) {
@@ -98,7 +103,9 @@ public class TasklistCreateProcessInstanceIT {
             });
   }
 
-  private void ensureProcessInstanceCreated(final String processDefinitionId) {
+  private void ensureProcessInstanceCreated(
+      final String processDefinitionId, final HttpResponse<String> response) {
+    final ProcessInstance processInstance = processInstanceFromResponse(response);
     Awaitility.await(
             "should have started process instance with id %s".formatted(processDefinitionId))
         .atMost(Duration.ofSeconds(15))
@@ -108,9 +115,19 @@ public class TasklistCreateProcessInstanceIT {
               final var result =
                   operateRestClient
                       .withAuthentication(TEST_USER_NAME, TEST_USER_PASSWORD)
-                      .getProcessInstanceWith(PROCESS_ID);
+                      .getProcessInstanceWith(processInstance.id());
               assertThat(result.isRight()).isTrue();
               assertThat(result.get().processInstances()).hasSize(1);
             });
   }
+
+  private ProcessInstance processInstanceFromResponse(final HttpResponse<String> response) {
+    try {
+      return mapper.readValue(response.body(), ProcessInstance.class);
+    } catch (final JsonProcessingException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  record ProcessInstance(long id) {}
 }
