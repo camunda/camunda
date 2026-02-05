@@ -65,7 +65,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointRequest;
 import org.springframework.boot.actuate.logging.LoggersEndpoint;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -862,28 +861,19 @@ public class WebSecurityConfig {
 
     @Bean
     @ConditionalOnSecondaryStorageEnabled
-    @ConditionalOnProperty(
-        prefix = OidcAuthenticationConfiguration.PREFIX,
-        name = "idp-logout-enabled",
-        havingValue = "true",
-        matchIfMissing = true)
     public LogoutSuccessHandler oidcLogoutSuccessHandler(
         final WebappRedirectStrategy redirectStrategy,
-        final ClientRegistrationRepository repository) {
+        final ClientRegistrationRepository repository,
+        final SecurityConfiguration config) {
+      final var oidcConfig = config.getAuthentication().getOidc();
+      if (!oidcConfig.isIdpLogoutEnabled()) {
+        return new NoContentResponseHandler();
+      }
+
       final var handler = new CamundaOidcLogoutSuccessHandler(repository);
       handler.setPostLogoutRedirectUri("{baseUrl}/post-logout");
       handler.setRedirectStrategy(redirectStrategy);
       return handler;
-    }
-
-    @Bean
-    @ConditionalOnSecondaryStorageEnabled
-    @ConditionalOnProperty(
-        prefix = OidcAuthenticationConfiguration.PREFIX,
-        name = "idp-logout-enabled",
-        havingValue = "false")
-    public LogoutSuccessHandler noContentLogoutSuccessHandler() {
-      return new NoContentResponseHandler();
     }
 
     @Bean
