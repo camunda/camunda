@@ -66,18 +66,26 @@ class VariableFilter {
     return this.state.conditions.length > 0;
   }
 
+  /**
+   * Backward-compatible getter that derives a single {name, values} variable
+   * from the first "equals" condition. Used by the migration flow.
+   */
   get variableWithValidatedValues() {
-    if (!this.state.variable) {
+    const equalsCondition = this.state.conditions.find(
+      (c) => c.operator === 'equals' && c.name.trim() !== '',
+    );
+
+    if (!equalsCondition) {
       return undefined;
     }
 
     const values =
-      getValidVariableValues(this.state.variable.values)?.map((value) =>
+      getValidVariableValues(equalsCondition.value)?.map((value) =>
         JSON.stringify(value),
       ) ?? [];
 
     return {
-      name: this.state.variable.name,
+      name: equalsCondition.name,
       values,
     };
   }

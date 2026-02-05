@@ -60,12 +60,12 @@ const ListView: React.FC = observer(() => {
 
   useEffect(() => {
     const disposer = reaction(
-      () => variableFilterStore.state.variable,
+      () => variableFilterStore.state.conditions,
       () => {
         tracking.track({
           eventName: 'process-instances-filtered',
           filterName: 'variable',
-          multipleValues: variableFilterStore.state.isInMultipleMode,
+          multipleValues: variableFilterStore.state.conditions.length > 1,
         });
       },
     );

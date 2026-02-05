@@ -28,7 +28,6 @@ function useProcessInstancesSearchFilter(conditions?: VariableCondition[]) {
       return filter;
     }
 
-
     if (conditions && conditions.length > 0) {
       const apiVariables = convertVariableConditionsToApiFormat(conditions);
       if (apiVariables.length > 0) {
