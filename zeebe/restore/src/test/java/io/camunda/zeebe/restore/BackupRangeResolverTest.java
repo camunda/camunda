@@ -8,16 +8,22 @@
 package io.camunda.zeebe.restore;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupDescriptor;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupRange;
+import io.camunda.zeebe.backup.api.BackupRangeMarker;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
+import io.camunda.zeebe.backup.api.NamedFileSet;
 import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupStatusImpl;
+import io.camunda.zeebe.backup.common.NamedFileSetImpl;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -25,6 +31,7 @@ import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.SequencedCollection;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -702,6 +709,276 @@ final class BackupRangeResolverTest {
 
       // then
       assertThat(result).isEmpty();
+    }
+  }
+
+  @Nested
+  class GetInformationPerPartition {
+
+    private static final int PARTITION_ID = 1;
+    private static final int NODE_ID = 0;
+    private static final int PARTITION_COUNT = 3;
+
+    private TestBackupStore store;
+    private BackupRangeResolver resolver;
+
+    private void setupStore() {
+      store = new TestBackupStore();
+      resolver = new BackupRangeResolver(store);
+    }
+
+    @Test
+    void shouldReturnPartitionRestoreInfoWhenValidDataExists() {
+      // given
+      setupStore();
+
+      final var timestamp1 = Instant.parse("2026-01-20T10:00:00Z");
+      final var timestamp2 = timestamp1.plus(Duration.ofHours(1));
+      final var timestamp3 = timestamp1.plus(Duration.ofHours(2));
+
+      // Add range markers (Start at checkpoint 100, End at checkpoint 300)
+      store.storeRangeMarker(PARTITION_ID, new BackupRangeMarker.Start(100L));
+      store.storeRangeMarker(PARTITION_ID, new BackupRangeMarker.End(300L));
+
+      // Add backups with timestamps and checkpoint positions
+      store.addBackup(PARTITION_ID, 100L, 1000L, timestamp1);
+      store.addBackup(PARTITION_ID, 200L, 2000L, timestamp2);
+      store.addBackup(PARTITION_ID, 300L, 3000L, timestamp3);
+
+      // Time interval that covers all backups
+      final var from = Instant.parse("2026-01-20T10:30:00Z");
+      final var to = Instant.parse("2026-01-20T12:00:00Z");
+
+      // Exported position that makes checkpoint 200 the safe start (position <= 2500)
+      final var lastExportedPosition = 2500L;
+
+      // when
+      final var result =
+          resolver.getInformationPerPartition(PARTITION_ID, from, to, lastExportedPosition);
+
+      // then
+      assertThat(result.partition()).isEqualTo(PARTITION_ID);
+      assertThat(result.safeStart()).isEqualTo(200L);
+      assertThat(result.completRange()).isInstanceOf(BackupRange.Complete.class);
+      // we should extend the range to make sure to use the first backup as well.
+      assertThat(result.backupStatuses()).hasSize(3);
+    }
+
+    @Test
+    void shouldThrowWhenNoBackupRangeFoundForPartition() {
+      // given
+      setupStore();
+
+      // No range markers added - empty ranges
+      final var from = Instant.parse("2026-01-20T09:00:00Z");
+      final var to = Instant.parse("2026-01-20T13:00:00Z");
+      final var lastExportedPosition = 2500L;
+
+      // when/then
+      assertThatThrownBy(
+              () ->
+                  resolver.getInformationPerPartition(PARTITION_ID, from, to, lastExportedPosition))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("No backup range found for partition " + PARTITION_ID);
+    }
+
+    @Test
+    void shouldThrowWhenNoSafeStartCheckpointFound() {
+      // given
+      setupStore();
+
+      final var timestamp1 = Instant.parse("2026-01-20T10:00:00Z");
+      final var timestamp2 = Instant.parse("2026-01-20T11:00:00Z");
+
+      // Add range markers
+      store.storeRangeMarker(PARTITION_ID, new BackupRangeMarker.Start(100L));
+      store.storeRangeMarker(PARTITION_ID, new BackupRangeMarker.End(200L));
+
+      // Add backups
+      store.addBackup(PARTITION_ID, 100L, 1000L, timestamp1);
+      store.addBackup(PARTITION_ID, 200L, 2000L, timestamp2);
+
+      // Time interval that covers all backups
+      final var from = Instant.parse("2026-01-20T09:00:00Z");
+      final var to = Instant.parse("2026-01-20T13:00:00Z");
+
+      // Exported position that is too low - no backup has checkpointPosition <= 500
+      final var lastExportedPosition = 500L;
+
+      // when/then
+      assertThatThrownBy(
+              () ->
+                  resolver.getInformationPerPartition(PARTITION_ID, from, to, lastExportedPosition))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("No safe start checkpoint found for partition " + PARTITION_ID);
+    }
+
+    @Test
+    void shouldThrowWhenTimeIntervalNotCoveredByRange() {
+      // given
+      setupStore();
+
+      final var timestamp1 = Instant.parse("2026-01-20T10:00:00Z");
+      final var timestamp2 = Instant.parse("2026-01-20T11:00:00Z");
+
+      // Add range markers
+      store.storeRangeMarker(PARTITION_ID, new BackupRangeMarker.Start(100L));
+      store.storeRangeMarker(PARTITION_ID, new BackupRangeMarker.End(200L));
+
+      // Add backups
+      store.addBackup(PARTITION_ID, 100L, 1000L, timestamp1);
+      store.addBackup(PARTITION_ID, 200L, 2000L, timestamp2);
+
+      // Time interval that starts before the first backup
+      final var from = Instant.parse("2026-01-20T08:00:00Z");
+      final var to = Instant.parse("2026-01-20T09:00:00Z");
+
+      final var lastExportedPosition = 2500L;
+
+      // when/then
+      assertThatThrownBy(
+              () ->
+                  resolver.getInformationPerPartition(PARTITION_ID, from, to, lastExportedPosition))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("No backup range found for partition " + PARTITION_ID);
+    }
+
+    /** Simple test BackupStore implementation for testing getInformationPerPartition */
+    private static class TestBackupStore implements io.camunda.zeebe.backup.api.BackupStore {
+      private final Map<BackupIdentifier, Backup> backups =
+          new java.util.concurrent.ConcurrentHashMap<>();
+      private final Map<Integer, java.util.Collection<BackupRangeMarker>> rangeMarkersByPartition =
+          new java.util.concurrent.ConcurrentHashMap<>();
+
+      void addBackup(
+          final int partitionId,
+          final long checkpointId,
+          final long checkpointPosition,
+          final Instant timestamp) {
+        final BackupIdentifier id = new BackupIdentifierImpl(NODE_ID, partitionId, checkpointId);
+        final BackupDescriptor descriptor =
+            new BackupDescriptorImpl(
+                checkpointPosition,
+                PARTITION_COUNT,
+                "8.7.0",
+                timestamp,
+                CheckpointType.SCHEDULED_BACKUP);
+        final Backup backup = new TestBackup(id, descriptor);
+        backups.put(id, backup);
+      }
+
+      @Override
+      public CompletableFuture<Void> save(final Backup backup) {
+        backups.put(backup.id(), backup);
+        return CompletableFuture.completedFuture(null);
+      }
+
+      @Override
+      public CompletableFuture<BackupStatus> getStatus(final BackupIdentifier id) {
+        final var backup = backups.get(id);
+        if (backup != null) {
+          return CompletableFuture.completedFuture(
+              new BackupStatusImpl(
+                  id,
+                  Optional.of(backup.descriptor()),
+                  BackupStatusCode.COMPLETED,
+                  Optional.empty(),
+                  Optional.of(backup.descriptor().checkpointTimestamp()),
+                  Optional.of(backup.descriptor().checkpointTimestamp())));
+        }
+        return CompletableFuture.completedFuture(
+            new BackupStatusImpl(
+                id,
+                Optional.empty(),
+                BackupStatusCode.DOES_NOT_EXIST,
+                Optional.empty(),
+                Optional.empty(),
+                Optional.empty()));
+      }
+
+      @Override
+      public CompletableFuture<java.util.Collection<BackupStatus>> list(
+          final io.camunda.zeebe.backup.api.BackupIdentifierWildcard wildcard) {
+        final var matchingBackups =
+            backups.values().stream()
+                .filter(backup -> wildcard.matches(backup.id()))
+                .map(
+                    backup ->
+                        (BackupStatus)
+                            new BackupStatusImpl(
+                                backup.id(),
+                                Optional.of(backup.descriptor()),
+                                BackupStatusCode.COMPLETED,
+                                Optional.empty(),
+                                Optional.of(backup.descriptor().checkpointTimestamp()),
+                                Optional.of(backup.descriptor().checkpointTimestamp())))
+                .toList();
+        return CompletableFuture.completedFuture(matchingBackups);
+      }
+
+      @Override
+      public CompletableFuture<Void> delete(final BackupIdentifier id) {
+        return CompletableFuture.completedFuture(null);
+      }
+
+      @Override
+      public CompletableFuture<Backup> restore(
+          final BackupIdentifier id, final java.nio.file.Path targetFolder) {
+        return CompletableFuture.completedFuture(backups.get(id));
+      }
+
+      @Override
+      public CompletableFuture<BackupStatusCode> markFailed(
+          final BackupIdentifier id, final String failureReason) {
+        return CompletableFuture.completedFuture(BackupStatusCode.FAILED);
+      }
+
+      @Override
+      public CompletableFuture<java.util.Collection<BackupRangeMarker>> rangeMarkers(
+          final int partitionId) {
+        return CompletableFuture.completedFuture(
+            rangeMarkersByPartition.getOrDefault(partitionId, List.of()));
+      }
+
+      @Override
+      public CompletableFuture<Void> storeRangeMarker(
+          final int partitionId, final BackupRangeMarker marker) {
+        rangeMarkersByPartition.compute(
+            partitionId,
+            (k, v) -> {
+              if (v == null) {
+                return new java.util.ArrayList<>(List.of(marker));
+              }
+              final var markers = new java.util.ArrayList<>(v);
+              markers.add(marker);
+              return markers;
+            });
+        return CompletableFuture.completedFuture(null);
+      }
+
+      @Override
+      public CompletableFuture<Void> deleteRangeMarker(
+          final int partitionId, final BackupRangeMarker marker) {
+        return CompletableFuture.completedFuture(null);
+      }
+
+      @Override
+      public CompletableFuture<Void> closeAsync() {
+        return CompletableFuture.completedFuture(null);
+      }
+    }
+
+    /** Simple Backup implementation for testing */
+    private record TestBackup(BackupIdentifier id, BackupDescriptor descriptor) implements Backup {
+      @Override
+      public NamedFileSet snapshot() {
+        return new NamedFileSetImpl(Map.of());
+      }
+
+      @Override
+      public NamedFileSet segments() {
+        return new NamedFileSetImpl(Map.of());
+      }
     }
   }
 }
