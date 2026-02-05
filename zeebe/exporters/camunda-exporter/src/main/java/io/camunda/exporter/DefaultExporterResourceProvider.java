@@ -174,199 +174,302 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
         new ExporterEntityCacheImpl<>(
             configuration.getBatchOperationCache().getMaxCacheSize(),
             entityCacheProvider.getBatchOperationCacheLoader(
-                indexDescriptors.get(BatchOperationTemplate.class).getFullQualifiedName()),
+                indexDescriptors
+                    .get(BatchOperationTemplate.class)
+                    .getShardedFullQualifiedName(partitionId)),
             new CaffeineCacheStatsCounter(NAMESPACE, "batchOperation", meterRegistry));
 
     processCache =
         new ExporterEntityCacheImpl<>(
             configuration.getProcessCache().getMaxCacheSize(),
             entityCacheProvider.getProcessCacheLoader(
-                indexDescriptors.get(ProcessIndex.class).getFullQualifiedName()),
+                indexDescriptors.get(ProcessIndex.class).getShardedFullQualifiedName(partitionId)),
             new CaffeineCacheStatsCounter(NAMESPACE, "process", meterRegistry));
 
     decisionRequirementsCache =
         new ExporterEntityCacheImpl<>(
             configuration.getDecisionRequirementsCache().getMaxCacheSize(),
             entityCacheProvider.getDecisionRequirementsCacheLoader(
-                indexDescriptors.get(DecisionRequirementsIndex.class).getFullQualifiedName()),
+                indexDescriptors
+                    .get(DecisionRequirementsIndex.class)
+                    .getShardedFullQualifiedName(partitionId)),
             new CaffeineCacheStatsCounter(NAMESPACE, "decisionRequirements", meterRegistry));
 
     formCache =
         new ExporterEntityCacheImpl<>(
             configuration.getFormCache().getMaxCacheSize(),
             entityCacheProvider.getFormCacheLoader(
-                indexDescriptors.get(FormIndex.class).getFullQualifiedName()),
+                indexDescriptors.get(FormIndex.class).getShardedFullQualifiedName(partitionId)),
             new CaffeineCacheStatsCounter(NAMESPACE, "form", meterRegistry));
 
     exportHandlers = new LinkedHashSet<>();
     exportHandlers.addAll(
         ImmutableSet.of(
             new RoleCreateUpdateHandler(
-                indexDescriptors.get(RoleIndex.class).getFullQualifiedName()),
-            new RoleDeletedHandler(indexDescriptors.get(RoleIndex.class).getFullQualifiedName()),
+                indexDescriptors.get(RoleIndex.class).getShardedFullQualifiedName(partitionId)),
+            new RoleDeletedHandler(
+                indexDescriptors.get(RoleIndex.class).getShardedFullQualifiedName(partitionId)),
             new RoleMemberAddedHandler(
-                indexDescriptors.get(RoleIndex.class).getFullQualifiedName()),
+                indexDescriptors.get(RoleIndex.class).getShardedFullQualifiedName(partitionId)),
             new RoleMemberRemovedHandler(
-                indexDescriptors.get(RoleIndex.class).getFullQualifiedName()),
+                indexDescriptors.get(RoleIndex.class).getShardedFullQualifiedName(partitionId)),
             new UserCreatedUpdatedHandler(
-                indexDescriptors.get(UserIndex.class).getFullQualifiedName()),
-            new UserDeletedHandler(indexDescriptors.get(UserIndex.class).getFullQualifiedName()),
+                indexDescriptors.get(UserIndex.class).getShardedFullQualifiedName(partitionId)),
+            new UserDeletedHandler(
+                indexDescriptors.get(UserIndex.class).getShardedFullQualifiedName(partitionId)),
             new AuthorizationCreatedUpdatedHandler(
-                indexDescriptors.get(AuthorizationIndex.class).getFullQualifiedName()),
+                indexDescriptors
+                    .get(AuthorizationIndex.class)
+                    .getShardedFullQualifiedName(partitionId)),
             new AuthorizationDeletedHandler(
-                indexDescriptors.get(AuthorizationIndex.class).getFullQualifiedName()),
+                indexDescriptors
+                    .get(AuthorizationIndex.class)
+                    .getShardedFullQualifiedName(partitionId)),
             new TenantCreateUpdateHandler(
-                indexDescriptors.get(TenantIndex.class).getFullQualifiedName()),
+                indexDescriptors.get(TenantIndex.class).getShardedFullQualifiedName(partitionId)),
             new TenantDeletedHandler(
-                indexDescriptors.get(TenantIndex.class).getFullQualifiedName()),
+                indexDescriptors.get(TenantIndex.class).getShardedFullQualifiedName(partitionId)),
             new TenantEntityAddedHandler(
-                indexDescriptors.get(TenantIndex.class).getFullQualifiedName()),
+                indexDescriptors.get(TenantIndex.class).getShardedFullQualifiedName(partitionId)),
             new TenantEntityRemovedHandler(
-                indexDescriptors.get(TenantIndex.class).getFullQualifiedName()),
+                indexDescriptors.get(TenantIndex.class).getShardedFullQualifiedName(partitionId)),
             new GroupCreatedUpdatedHandler(
-                indexDescriptors.get(GroupIndex.class).getFullQualifiedName()),
+                indexDescriptors.get(GroupIndex.class).getShardedFullQualifiedName(partitionId)),
             new GroupEntityAddedHandler(
-                indexDescriptors.get(GroupIndex.class).getFullQualifiedName()),
+                indexDescriptors.get(GroupIndex.class).getShardedFullQualifiedName(partitionId)),
             new GroupEntityRemovedHandler(
-                indexDescriptors.get(GroupIndex.class).getFullQualifiedName()),
-            new GroupDeletedHandler(indexDescriptors.get(GroupIndex.class).getFullQualifiedName()),
+                indexDescriptors.get(GroupIndex.class).getShardedFullQualifiedName(partitionId)),
+            new GroupDeletedHandler(
+                indexDescriptors.get(GroupIndex.class).getShardedFullQualifiedName(partitionId)),
             new DecisionHandler(
-                indexDescriptors.get(DecisionIndex.class).getFullQualifiedName(),
+                indexDescriptors.get(DecisionIndex.class).getShardedFullQualifiedName(partitionId),
                 decisionRequirementsCache),
             new ListViewProcessInstanceFromProcessInstanceHandler(
-                indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName(), processCache),
+                indexDescriptors
+                    .get(ListViewTemplate.class)
+                    .getShardedFullQualifiedName(partitionId),
+                processCache),
             new ListViewFlowNodeFromIncidentHandler(
-                indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName()),
+                indexDescriptors
+                    .get(ListViewTemplate.class)
+                    .getShardedFullQualifiedName(partitionId)),
             new ListViewFlowNodeFromJobHandler(
-                indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName()),
+                indexDescriptors
+                    .get(ListViewTemplate.class)
+                    .getShardedFullQualifiedName(partitionId)),
             new ListViewFlowNodeFromProcessInstanceHandler(
-                indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName()),
+                indexDescriptors
+                    .get(ListViewTemplate.class)
+                    .getShardedFullQualifiedName(partitionId)),
             new ListViewVariableFromVariableHandler(
-                indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName()),
+                indexDescriptors
+                    .get(ListViewTemplate.class)
+                    .getShardedFullQualifiedName(partitionId)),
             new ClusterVariableCreatedHandler(
-                indexDescriptors.get(ClusterVariableIndex.class).getFullQualifiedName(),
+                indexDescriptors
+                    .get(ClusterVariableIndex.class)
+                    .getShardedFullQualifiedName(partitionId),
                 configuration.getIndex().getVariableSizeThreshold()),
             new ClusterVariableDeletedHandler(
-                indexDescriptors.get(ClusterVariableIndex.class).getFullQualifiedName()),
+                indexDescriptors
+                    .get(ClusterVariableIndex.class)
+                    .getShardedFullQualifiedName(partitionId)),
             new VariableHandler(
-                indexDescriptors.get(VariableTemplate.class).getFullQualifiedName(),
+                indexDescriptors
+                    .get(VariableTemplate.class)
+                    .getShardedFullQualifiedName(partitionId),
                 configuration.getIndex().getVariableSizeThreshold()),
             new DecisionRequirementsHandler(
-                indexDescriptors.get(DecisionRequirementsIndex.class).getFullQualifiedName(),
+                indexDescriptors
+                    .get(DecisionRequirementsIndex.class)
+                    .getShardedFullQualifiedName(partitionId),
                 decisionRequirementsCache),
             new PostImporterQueueFromIncidentHandler(
-                indexDescriptors.get(PostImporterQueueTemplate.class).getFullQualifiedName()),
+                indexDescriptors
+                    .get(PostImporterQueueTemplate.class)
+                    .getShardedFullQualifiedName(partitionId)),
             new FlowNodeInstanceFromIncidentHandler(
-                indexDescriptors.get(FlowNodeInstanceTemplate.class).getFullQualifiedName()),
+                indexDescriptors
+                    .get(FlowNodeInstanceTemplate.class)
+                    .getShardedFullQualifiedName(partitionId)),
             new FlowNodeInstanceFromProcessInstanceHandler(
-                indexDescriptors.get(FlowNodeInstanceTemplate.class).getFullQualifiedName(),
+                indexDescriptors
+                    .get(FlowNodeInstanceTemplate.class)
+                    .getShardedFullQualifiedName(partitionId),
                 processCache),
             new IncidentHandler(
-                indexDescriptors.get(IncidentTemplate.class).getFullQualifiedName(), processCache),
+                indexDescriptors
+                    .get(IncidentTemplate.class)
+                    .getShardedFullQualifiedName(partitionId),
+                processCache),
             new SequenceFlowHandler(
-                indexDescriptors.get(SequenceFlowTemplate.class).getFullQualifiedName()),
+                indexDescriptors
+                    .get(SequenceFlowTemplate.class)
+                    .getShardedFullQualifiedName(partitionId)),
             new SequenceFlowDeletedHandler(
-                indexDescriptors.get(SequenceFlowTemplate.class).getFullQualifiedName()),
+                indexDescriptors
+                    .get(SequenceFlowTemplate.class)
+                    .getShardedFullQualifiedName(partitionId)),
             new DecisionEvaluationHandler(
-                indexDescriptors.get(DecisionInstanceTemplate.class).getFullQualifiedName()),
+                indexDescriptors
+                    .get(DecisionInstanceTemplate.class)
+                    .getShardedFullQualifiedName(partitionId)),
             new ProcessHandler(
-                indexDescriptors.get(ProcessIndex.class).getFullQualifiedName(), processCache),
-            new EmbeddedFormHandler(indexDescriptors.get(FormIndex.class).getFullQualifiedName()),
+                indexDescriptors.get(ProcessIndex.class).getShardedFullQualifiedName(partitionId),
+                processCache),
+            new EmbeddedFormHandler(
+                indexDescriptors.get(FormIndex.class).getShardedFullQualifiedName(partitionId)),
             new FormHandler(
-                indexDescriptors.get(FormIndex.class).getFullQualifiedName(), formCache),
+                indexDescriptors.get(FormIndex.class).getShardedFullQualifiedName(partitionId),
+                formCache),
             new HistoryDeletionDeletedHandler(
-                indexDescriptors.get(HistoryDeletionIndex.class).getFullQualifiedName()),
+                indexDescriptors
+                    .get(HistoryDeletionIndex.class)
+                    .getShardedFullQualifiedName(partitionId)),
             new MessageSubscriptionFromProcessMessageSubscriptionHandler(
-                indexDescriptors.get(MessageSubscriptionTemplate.class).getFullQualifiedName(),
+                indexDescriptors
+                    .get(MessageSubscriptionTemplate.class)
+                    .getShardedFullQualifiedName(partitionId),
                 exporterMetadata),
             new UserTaskHandler(
-                indexDescriptors.get(TaskTemplate.class).getFullQualifiedName(),
+                indexDescriptors.get(TaskTemplate.class).getShardedFullQualifiedName(partitionId),
                 formCache,
                 processCache,
                 exporterMetadata),
             new UserTaskJobBasedHandler(
-                indexDescriptors.get(TaskTemplate.class).getFullQualifiedName(),
+                indexDescriptors.get(TaskTemplate.class).getShardedFullQualifiedName(partitionId),
                 formCache,
                 processCache,
                 exporterMetadata,
                 objectMapper),
             new UserTaskProcessInstanceHandler(
-                indexDescriptors.get(TaskTemplate.class).getFullQualifiedName()),
+                indexDescriptors.get(TaskTemplate.class).getShardedFullQualifiedName(partitionId)),
             new UserTaskVariableHandler(
-                indexDescriptors.get(TaskTemplate.class).getFullQualifiedName(),
+                indexDescriptors.get(TaskTemplate.class).getShardedFullQualifiedName(partitionId),
                 configuration.getIndex().getVariableSizeThreshold()),
             new UserTaskCompletionVariableHandler(
-                indexDescriptors.get(SnapshotTaskVariableTemplate.class).getFullQualifiedName(),
+                indexDescriptors
+                    .get(SnapshotTaskVariableTemplate.class)
+                    .getShardedFullQualifiedName(partitionId),
                 configuration.getIndex().getVariableSizeThreshold(),
                 objectMapper),
             new OperationFromProcessInstanceHandler(
-                indexDescriptors.get(OperationTemplate.class).getFullQualifiedName()),
+                indexDescriptors
+                    .get(OperationTemplate.class)
+                    .getShardedFullQualifiedName(partitionId)),
             new OperationFromVariableDocumentHandler(
-                indexDescriptors.get(OperationTemplate.class).getFullQualifiedName()),
+                indexDescriptors
+                    .get(OperationTemplate.class)
+                    .getShardedFullQualifiedName(partitionId)),
             new OperationFromIncidentHandler(
-                indexDescriptors.get(OperationTemplate.class).getFullQualifiedName()),
+                indexDescriptors
+                    .get(OperationTemplate.class)
+                    .getShardedFullQualifiedName(partitionId)),
             new OperationFromHistoryDeletionHandler(
-                indexDescriptors.get(OperationTemplate.class).getFullQualifiedName()),
+                indexDescriptors
+                    .get(OperationTemplate.class)
+                    .getShardedFullQualifiedName(partitionId)),
             new MappingRuleCreatedUpdatedHandler(
-                indexDescriptors.get(MappingRuleIndex.class).getFullQualifiedName()),
+                indexDescriptors
+                    .get(MappingRuleIndex.class)
+                    .getShardedFullQualifiedName(partitionId)),
             new MappingRuleDeletedHandler(
-                indexDescriptors.get(MappingRuleIndex.class).getFullQualifiedName()),
-            new JobHandler(indexDescriptors.get(JobTemplate.class).getFullQualifiedName()),
+                indexDescriptors
+                    .get(MappingRuleIndex.class)
+                    .getShardedFullQualifiedName(partitionId)),
+            new JobHandler(
+                indexDescriptors.get(JobTemplate.class).getShardedFullQualifiedName(partitionId)),
             new MigratedVariableHandler(
-                indexDescriptors.get(VariableTemplate.class).getFullQualifiedName()),
+                indexDescriptors
+                    .get(VariableTemplate.class)
+                    .getShardedFullQualifiedName(partitionId)),
             // Batch Operation Handler
             new BatchOperationCreatedHandler(
-                indexDescriptors.get(BatchOperationTemplate.class).getFullQualifiedName(),
+                indexDescriptors
+                    .get(BatchOperationTemplate.class)
+                    .getShardedFullQualifiedName(partitionId),
                 batchOperationCache),
             new BatchOperationInitializedHandler(
-                indexDescriptors.get(BatchOperationTemplate.class).getFullQualifiedName()),
+                indexDescriptors
+                    .get(BatchOperationTemplate.class)
+                    .getShardedFullQualifiedName(partitionId)),
             new BatchOperationLifecycleManagementHandler(
-                indexDescriptors.get(BatchOperationTemplate.class).getFullQualifiedName()),
+                indexDescriptors
+                    .get(BatchOperationTemplate.class)
+                    .getShardedFullQualifiedName(partitionId)),
             new BatchOperationChunkCreatedHandler(
-                indexDescriptors.get(BatchOperationTemplate.class).getFullQualifiedName()),
+                indexDescriptors
+                    .get(BatchOperationTemplate.class)
+                    .getShardedFullQualifiedName(partitionId)),
             new ProcessInstanceCancellationOperationHandler(
-                indexDescriptors.get(OperationTemplate.class).getFullQualifiedName(),
+                indexDescriptors
+                    .get(OperationTemplate.class)
+                    .getShardedFullQualifiedName(partitionId),
                 batchOperationCache),
             new ProcessInstanceMigrationOperationHandler(
-                indexDescriptors.get(OperationTemplate.class).getFullQualifiedName(),
+                indexDescriptors
+                    .get(OperationTemplate.class)
+                    .getShardedFullQualifiedName(partitionId),
                 batchOperationCache),
             new ProcessInstanceModificationOperationHandler(
-                indexDescriptors.get(OperationTemplate.class).getFullQualifiedName(),
+                indexDescriptors
+                    .get(OperationTemplate.class)
+                    .getShardedFullQualifiedName(partitionId),
                 batchOperationCache),
             new ResolveIncidentOperationHandler(
-                indexDescriptors.get(OperationTemplate.class).getFullQualifiedName(),
+                indexDescriptors
+                    .get(OperationTemplate.class)
+                    .getShardedFullQualifiedName(partitionId),
                 batchOperationCache),
             new ProcessInstanceHistoryDeletionOperationHandler(
-                indexDescriptors.get(OperationTemplate.class).getFullQualifiedName(),
+                indexDescriptors
+                    .get(OperationTemplate.class)
+                    .getShardedFullQualifiedName(partitionId),
                 batchOperationCache),
             new ProcessDefinitionHistoryDeletionOperationHandler(
-                indexDescriptors.get(OperationTemplate.class).getFullQualifiedName(),
+                indexDescriptors
+                    .get(OperationTemplate.class)
+                    .getShardedFullQualifiedName(partitionId),
                 batchOperationCache),
             new ListViewFromProcessInstanceCancellationOperationHandler(
-                indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName(),
+                indexDescriptors
+                    .get(ListViewTemplate.class)
+                    .getShardedFullQualifiedName(partitionId),
                 batchOperationCache),
             new ListViewFromProcessInstanceMigrationOperationHandler(
-                indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName(),
+                indexDescriptors
+                    .get(ListViewTemplate.class)
+                    .getShardedFullQualifiedName(partitionId),
                 batchOperationCache),
             new ListViewFromProcessInstanceModificationOperationHandler(
-                indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName(),
+                indexDescriptors
+                    .get(ListViewTemplate.class)
+                    .getShardedFullQualifiedName(partitionId),
                 batchOperationCache),
             new ListViewFromIncidentResolutionOperationHandler(
-                indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName(),
+                indexDescriptors
+                    .get(ListViewTemplate.class)
+                    .getShardedFullQualifiedName(partitionId),
                 batchOperationCache),
             new UsageMetricExportedHandler(
-                indexDescriptors.get(UsageMetricTemplate.class).getFullQualifiedName(),
-                indexDescriptors.get(UsageMetricTUTemplate.class).getFullQualifiedName()),
+                indexDescriptors
+                    .get(UsageMetricTemplate.class)
+                    .getShardedFullQualifiedName(partitionId),
+                indexDescriptors
+                    .get(UsageMetricTUTemplate.class)
+                    .getShardedFullQualifiedName(partitionId)),
             new JobBatchMetricsExportedHandler(
-                indexDescriptors.get(JobMetricsBatchTemplate.class).getFullQualifiedName()),
+                indexDescriptors
+                    .get(JobMetricsBatchTemplate.class)
+                    .getShardedFullQualifiedName(partitionId)),
             new CorrelatedMessageSubscriptionFromMessageStartEventSubscriptionHandler(
                 indexDescriptors
                     .get(CorrelatedMessageSubscriptionTemplate.class)
-                    .getFullQualifiedName()),
+                    .getShardedFullQualifiedName(partitionId)),
             new CorrelatedMessageSubscriptionFromProcessMessageSubscriptionHandler(
                 indexDescriptors
                     .get(CorrelatedMessageSubscriptionTemplate.class)
-                    .getFullQualifiedName())));
+                    .getShardedFullQualifiedName(partitionId))));
 
     if (configuration.getAuditLog().isEnabled()) {
       addAuditLogHandlers(configuration.getAuditLog(), partitionId);
@@ -376,16 +479,20 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
       // only add this handler when the items are exported on creation
       exportHandlers.add(
           new BatchOperationChunkCreatedItemHandler(
-              indexDescriptors.get(OperationTemplate.class).getFullQualifiedName(),
+              indexDescriptors
+                  .get(OperationTemplate.class)
+                  .getShardedFullQualifiedName(partitionId),
               batchOperationCache));
       exportHandlers.add(
           new ListViewFromChunkItemHandler(
-              indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName()));
+              indexDescriptors
+                  .get(ListViewTemplate.class)
+                  .getShardedFullQualifiedName(partitionId)));
     }
 
     indicesWithCustomErrorHandlers =
         Map.of(
-            indexDescriptors.get(OperationTemplate.class).getFullQualifiedName(),
+            indexDescriptors.get(OperationTemplate.class).getShardedFullQualifiedName(partitionId),
             ErrorHandlers.IGNORE_DOCUMENT_DOES_NOT_EXIST);
   }
 
@@ -471,7 +578,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
   }
 
   private void addAuditLogHandlers(final AuditLogConfiguration auditLog, final int partitionId) {
-    final var indexName = (indexDescriptors.get(AuditLogTemplate.class).getFullQualifiedName());
+    final var indexName =
+        (indexDescriptors.get(AuditLogTemplate.class).getShardedFullQualifiedName(partitionId));
     final var auditLogBuilder = AuditLogHandler.builder(indexName, auditLog);
 
     if (partitionId == PROCESS_DEFINITION_PARTITION) {

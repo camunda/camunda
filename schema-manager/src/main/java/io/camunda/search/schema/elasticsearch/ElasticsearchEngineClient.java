@@ -8,6 +8,7 @@
 package io.camunda.search.schema.elasticsearch;
 
 import static io.camunda.search.schema.utils.SearchEngineClientUtils.convertValue;
+import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.AcknowledgedResponse;
@@ -84,13 +85,25 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
   @Override
   public void createIndex(
       final IndexDescriptor indexDescriptor, final IndexConfiguration settings) {
-    final CreateIndexRequest request = createIndexRequest(indexDescriptor, settings);
+    createIndex(START_PARTITION_ID, indexDescriptor, settings);
+  }
+
+  @Override
+  public void createIndex(
+      final int partitionId,
+      final IndexDescriptor indexDescriptor,
+      final IndexConfiguration settings) {
+    final CreateIndexRequest request = createIndexRequest(partitionId, indexDescriptor, settings);
     try {
       client.indices().create(request);
-      LOG.debug("Index [{}] was successfully created", indexDescriptor.getFullQualifiedName());
+      LOG.debug(
+          "Index [{}] was successfully created",
+          indexDescriptor.getShardedFullQualifiedName(partitionId));
     } catch (final IOException ioe) {
       final var errMsg =
-          String.format("Index [%s] was not created", indexDescriptor.getFullQualifiedName());
+          String.format(
+              "Index [%s] was not created",
+              indexDescriptor.getShardedFullQualifiedName(partitionId));
       LOG.error(errMsg, ioe);
       throw new SearchEngineException(errMsg, ioe);
     } catch (final ElasticsearchException elsEx) {
@@ -100,13 +113,15 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
         final var warnMsg =
             String.format(
                 "Expected to create index [%s], but already exist. Will continue, likely was created by a different instance.",
-                indexDescriptor.getFullQualifiedName());
+                indexDescriptor.getShardedFullQualifiedName(partitionId));
         LOG.debug(warnMsg, elsEx);
         return;
       }
 
       final var errMsg =
-          String.format("Index [%s] was not created", indexDescriptor.getFullQualifiedName());
+          String.format(
+              "Index [%s] was not created",
+              indexDescriptor.getShardedFullQualifiedName(partitionId));
       LOG.error(errMsg, elsEx);
       throw new SearchEngineException(errMsg, elsEx);
     }
@@ -147,15 +162,21 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
 
   @Override
   public void putMapping(
-      final IndexDescriptor indexDescriptor, final Collection<IndexMappingProperty> newProperties) {
+      final int partitionId,
+      final IndexDescriptor indexDescriptor,
+      final Collection<IndexMappingProperty> newProperties) {
     final PutMappingRequest request = putMappingRequest(indexDescriptor, newProperties);
 
     try {
       client.indices().putMapping(request);
-      LOG.debug("Mapping in [{}] was successfully updated", indexDescriptor.getFullQualifiedName());
+      LOG.debug(
+          "Mapping in [{}] was successfully updated",
+          indexDescriptor.getShardedFullQualifiedName(partitionId));
     } catch (final IOException | ElasticsearchException e) {
       final var errMsg =
-          String.format("Mapping in [%s] was NOT updated", indexDescriptor.getFullQualifiedName());
+          String.format(
+              "Mapping in [%s] was NOT updated",
+              indexDescriptor.getShardedFullQualifiedName(partitionId));
       LOG.error(errMsg, e);
       throw new SearchEngineException(errMsg, e);
     }
@@ -587,7 +608,9 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
   }
 
   private CreateIndexRequest createIndexRequest(
-      final IndexDescriptor indexDescriptor, final IndexConfiguration settings) {
+      final int partitionId,
+      final IndexDescriptor indexDescriptor,
+      final IndexConfiguration settings) {
     try (final var templateFile =
         getResourceAsStream(indexDescriptor.getMappingsClasspathFilename())) {
 
@@ -601,7 +624,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
                   .build());
 
       return new CreateIndexRequest.Builder()
-          .index(indexDescriptor.getFullQualifiedName())
+          .index(indexDescriptor.getShardedFullQualifiedName(partitionId))
           .aliases(indexDescriptor.getAlias(), a -> a.isWriteIndex(false))
           .mappings(templateFields.mappings())
           .settings(templateFields.settings())

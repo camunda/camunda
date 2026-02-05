@@ -54,6 +54,7 @@ import io.camunda.search.schema.SchemaManager;
 import io.camunda.search.schema.SearchEngineClient;
 import io.camunda.search.schema.config.SchemaManagerConfiguration;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
+import io.camunda.search.schema.exceptions.IncompatibleVersionException;
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.ExporterException;
@@ -64,6 +65,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.util.VisibleForTesting;
+import io.camunda.zeebe.util.retry.RetryDecorator;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
@@ -88,6 +90,7 @@ public class CamundaExporter implements Exporter {
   private SearchEngineClient searchEngineClient;
   private int partitionId;
   private Context context;
+  private long lastFlushTimestamp = 0L;
 
   public CamundaExporter() {
     // the metadata will be initialized on open
@@ -127,14 +130,25 @@ public class CamundaExporter implements Exporter {
 
       try (final var schemaManager = createSchemaManager()) {
         if (!schemaManager.isSchemaReadyForUse()) {
-          throw new ExporterException("Schema is not ready for use");
+          schemaManager.startup();
         }
+
+        new RetryDecorator()
+            .withRetryOnException(e -> !(e instanceof IncompatibleVersionException))
+            .decorate(
+                "Check if schema ready for use",
+                () -> {
+                  if (!schemaManager.isSchemaReadyForUse()) {
+                    throw new ExporterException(
+                        "The Schema for partition:" + partitionId + " is not ready for use");
+                  }
+                });
       }
 
       writer = createBatchWriter();
       controller.readMetadata().ifPresent(metadata::deserialize);
       taskManager.start();
-      scheduleDelayedFlush();
+      scheduleDelayedFlush(System.currentTimeMillis());
 
       LOG.info("Exporter opened");
     } catch (final Exception e) {
@@ -273,6 +287,8 @@ public class CamundaExporter implements Exporter {
   private SchemaManager createSchemaManager() {
     final var schemaManagerConfiguration = new SchemaManagerConfiguration();
     schemaManagerConfiguration.setCreateSchema(configuration.isCreateSchema());
+    schemaManagerConfiguration.setPartitionId(context.getPartitionId());
+
     return new SchemaManager(
         searchEngineClient,
         provider.getIndexDescriptors(),
@@ -305,19 +321,29 @@ public class CamundaExporter implements Exporter {
     return builder.build();
   }
 
-  private void scheduleDelayedFlush() {
-    controller.scheduleCancellableTask(
-        Duration.ofSeconds(configuration.getBulk().getDelay()), this::flushAndReschedule);
+  private void scheduleDelayedFlush(final long now) {
+    long delta = configuration.getBulk().getDelay();
+    if (lastFlushTimestamp > 0) {
+      delta =
+          Math.min(
+              configuration.getBulk().getDelay() * 1000L - (now - lastFlushTimestamp),
+              configuration.getBulk().getDelay() * 1000L);
+    }
+
+    controller.scheduleCancellableTask(Duration.ofMillis(delta), this::flushAndReschedule);
   }
 
   private void flushAndReschedule() {
+    final var now = System.currentTimeMillis();
     try {
-      flush();
-      updateLastExportedPosition(lastPosition);
+      if (now - lastFlushTimestamp >= configuration.getBulk().getDelay() * 1000L) {
+        flush();
+        updateLastExportedPosition(lastPosition);
+      }
     } catch (final Exception e) {
       LOG.warn("Unexpected exception occurred on periodically flushing bulk, will retry later.", e);
     }
-    scheduleDelayedFlush();
+    scheduleDelayedFlush(now);
   }
 
   private void flush() {
@@ -339,6 +365,8 @@ public class CamundaExporter implements Exporter {
     // Update the record counters only after the flush was successful. If the synchronous flush
     // fails then the exporter will be invoked with the same record again.
     updateLastExportedPosition(lastPosition);
+
+    lastFlushTimestamp = System.currentTimeMillis();
   }
 
   private void updateLastExportedPosition(final long lastPosition) {

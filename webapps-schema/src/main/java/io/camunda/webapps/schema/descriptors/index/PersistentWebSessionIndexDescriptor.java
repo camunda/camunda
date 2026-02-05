@@ -28,6 +28,11 @@ public class PersistentWebSessionIndexDescriptor extends AbstractIndexDescriptor
   }
 
   @Override
+  public String getShardedFullQualifiedName(final int partitionId) {
+    return super.getFullQualifiedName();
+  }
+
+  @Override
   public String getVersion() {
     return INDEX_VERSION;
   }

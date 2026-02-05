@@ -170,7 +170,7 @@ public class OpensearchEngineClientIT {
     newProperties.add(new IndexMappingProperty("age", Map.of("type", "integer")));
 
     // when
-    opensearchEngineClient.putMapping(descriptor, newProperties);
+    opensearchEngineClient.putMapping(1, descriptor, newProperties);
 
     // then
     final var indices =

@@ -8,6 +8,7 @@
 package io.camunda.search.schema.opensearch;
 
 import static io.camunda.search.schema.utils.SearchEngineClientUtils.convertValue;
+import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -98,6 +99,14 @@ public class OpensearchEngineClient implements SearchEngineClient {
   @Override
   public void createIndex(
       final IndexDescriptor indexDescriptor, final IndexConfiguration settings) {
+    createIndex(START_PARTITION_ID, indexDescriptor, settings);
+  }
+
+  @Override
+  public void createIndex(
+      final int partitionId,
+      final IndexDescriptor indexDescriptor,
+      final IndexConfiguration settings) {
     final CreateIndexRequest request = createIndexRequest(indexDescriptor, settings);
 
     try {
@@ -163,7 +172,9 @@ public class OpensearchEngineClient implements SearchEngineClient {
 
   @Override
   public void putMapping(
-      final IndexDescriptor indexDescriptor, final Collection<IndexMappingProperty> newProperties) {
+      final int partitionId,
+      final IndexDescriptor indexDescriptor,
+      final Collection<IndexMappingProperty> newProperties) {
     final PutMappingRequest request = putMappingRequest(indexDescriptor, newProperties);
 
     try {

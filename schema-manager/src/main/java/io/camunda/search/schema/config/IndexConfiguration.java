@@ -7,6 +7,8 @@
  */
 package io.camunda.search.schema.config;
 
+import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -14,6 +16,7 @@ import java.util.Objects;
 public class IndexConfiguration {
   public static final int DEFAULT_VARIABLE_SIZE_THRESHOLD = 8191;
 
+  private int partitionId = START_PARTITION_ID;
   private Integer numberOfShards = 1;
   private Integer numberOfReplicas = 1;
   private String refreshInterval;
@@ -24,6 +27,14 @@ public class IndexConfiguration {
   private Map<String, String> refreshIntervalByIndexName = new HashMap<>();
 
   private Integer variableSizeThreshold = DEFAULT_VARIABLE_SIZE_THRESHOLD;
+
+  public int getPartitionId() {
+    return partitionId;
+  }
+
+  public void setPartitionId(final int partitionId) {
+    this.partitionId = partitionId;
+  }
 
   public Integer getNumberOfShards() {
     return numberOfShards;
