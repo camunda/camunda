@@ -13,11 +13,13 @@ import static io.camunda.zeebe.exporter.filter.NameFilterRule.Type.STARTS_WITH;
 import static io.camunda.zeebe.exporter.filter.VariableNameFilter.parseRules;
 
 import io.camunda.zeebe.exporter.api.context.Context;
+import io.camunda.zeebe.exporter.filter.VariableTypeFilter.VariableValueType;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 public final class DefaultRecordFilter implements Context.RecordFilter {
 
@@ -35,10 +37,26 @@ public final class DefaultRecordFilter implements Context.RecordFilter {
 
     final var index = configuration.filterIndexConfig();
 
-    final var nameInclusionRules = getVariableNameInclusionRules(index);
-    final var nameExclusionRules = getVariableNameExclusionRules(index);
+    final var variableNameInclusionRules = getVariableNameInclusionRules(index);
+    final var variableNameExclusionRules = getVariableNameExclusionRules(index);
 
-    return List.of(new VariableNameFilter(nameInclusionRules, nameExclusionRules));
+    final Set<VariableValueType> valueTypeInclusion =
+        VariableTypeFilter.parseTypes(index.getVariableValueTypeInclusion());
+    final Set<VariableTypeFilter.VariableValueType> valueTypeExclusion =
+        VariableTypeFilter.parseTypes(index.getVariableValueTypeExclusion());
+
+    final List<ExporterRecordFilter> filters = new ArrayList<>();
+
+    // Just add if there are any rules configured
+    if (!variableNameInclusionRules.isEmpty() || !variableNameExclusionRules.isEmpty()) {
+      filters.add(new VariableNameFilter(variableNameInclusionRules, variableNameExclusionRules));
+    }
+
+    if (!valueTypeInclusion.isEmpty() || !valueTypeExclusion.isEmpty()) {
+      filters.add(new VariableTypeFilter(valueTypeInclusion, valueTypeExclusion));
+    }
+
+    return List.copyOf(filters);
   }
 
   private static List<NameFilterRule> getVariableNameInclusionRules(
