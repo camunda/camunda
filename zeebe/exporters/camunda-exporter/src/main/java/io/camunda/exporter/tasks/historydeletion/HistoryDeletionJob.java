@@ -41,7 +41,6 @@ public class HistoryDeletionJob implements BackgroundTask {
   private final HistoryDeletionIndex historyDeletionIndex;
   private final ListViewTemplate listViewTemplate;
   private final ProcessIndex processIndex;
-  private final AuditLogTemplate auditLogTemplate;
 
   public HistoryDeletionJob(
       final List<ProcessInstanceDependant> processInstanceDependants,
@@ -59,7 +58,6 @@ public class HistoryDeletionJob implements BackgroundTask {
     historyDeletionIndex = resourceProvider.getIndexDescriptor(HistoryDeletionIndex.class);
     listViewTemplate = resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class);
     processIndex = resourceProvider.getIndexDescriptor(ProcessIndex.class);
-    auditLogTemplate = resourceProvider.getIndexTemplateDescriptor(AuditLogTemplate.class);
   }
 
   @Override
@@ -107,6 +105,7 @@ public class HistoryDeletionJob implements BackgroundTask {
     final var deletionFutures =
         processInstanceDependants.stream()
             .filter(t -> !(t instanceof OperationTemplate))
+            .filter(t -> !(t instanceof AuditLogTemplate))
             .map(
                 dependant -> {
                   final var dependentSourceIdx = dependant.getFullQualifiedName() + "*";
@@ -128,12 +127,8 @@ public class HistoryDeletionJob implements BackgroundTask {
   }
 
   /**
-   * This method will delete a batch of process definitions in two steps:
-   *
-   * <ol>
-   *   <li>It deletes the process definition related data from the audit logs
-   *   <li>It deletes the process definitions from the process index
-   * </ol>
+   * This method will delete a batch of process definitions by deleting the process definitions from
+   * the process index
    *
    * @param batch The batch of entities to delete
    * @return A future containing the list of history-deletion IDs that were processed
@@ -146,15 +141,9 @@ public class HistoryDeletionJob implements BackgroundTask {
     }
 
     return deleterRepository
-        .deleteDocumentsByField(
-            auditLogTemplate.getIndexPattern(),
-            AuditLogTemplate.PROCESS_DEFINITION_KEY,
-            processDefinitions)
-        .thenCompose(
-            ignored ->
-                deleterRepository.deleteDocumentsById(
-                    processIndex.getFullQualifiedName(),
-                    processDefinitions.stream().map(Object::toString).toList()))
+        .deleteDocumentsById(
+            processIndex.getFullQualifiedName(),
+            processDefinitions.stream().map(Object::toString).toList())
         .thenApply(
             ignored -> {
               final var ids = new ArrayList<>(processInstanceDeletionIds);
