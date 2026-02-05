@@ -104,7 +104,7 @@
     <version.zeebe-test-container>3.6.9</version.zeebe-test-container>
     <version.feel-scala>1.20.0</version.feel-scala>
     <version.dmn-scala>1.11.0</version.dmn-scala>
-    <version.rest-assured>5.5.7</version.rest-assured>
+    <version.rest-assured>6.0.0</version.rest-assured>
     <version.spring>6.2.15</version.spring>
     <version.spring-security>6.5.7</version.spring-security>
     <version.spring-boot>3.5.10</version.spring-boot>
@@ -1035,6 +1035,14 @@
       </dependency>
 
       <dependency>
+        <groupId>io.rest-assured</groupId>
+        <artifactId>rest-assured-bom</artifactId>
+        <version>${version.rest-assured}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
+      <dependency>
         <groupId>org.springframework</groupId>
         <artifactId>spring-framework-bom</artifactId>
         <version>${version.spring}</version>
@@ -1427,12 +1435,6 @@
         <artifactId>reflections</artifactId>
         <version>${version.reflections}</version>
         <scope>test</scope>
-      </dependency>
-
-      <dependency>
-        <groupId>io.rest-assured</groupId>
-        <artifactId>rest-assured</artifactId>
-        <version>${version.rest-assured}</version>
       </dependency>
 
       <dependency>
