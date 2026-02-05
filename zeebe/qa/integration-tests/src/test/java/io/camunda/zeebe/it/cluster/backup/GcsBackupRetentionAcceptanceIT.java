@@ -27,6 +27,7 @@ import java.util.function.Consumer;
 import java.util.stream.IntStream;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.exception.UncheckedException;
+import org.junit.jupiter.api.AfterEach;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -59,6 +60,13 @@ public class GcsBackupRetentionAcceptanceIT implements BackupRetentionAcceptance
                   node.withProperty("zeebe.clock.controlled", true)
                       .withProperty("management.endpoints.web.exposure.include", "*"))
           .build();
+
+  @AfterEach
+  public void tearDown() throws Exception {
+    if (client != null) {
+      client.close();
+    }
+  }
 
   @Override
   public TestCluster getTestCluster() {
@@ -114,9 +122,7 @@ public class GcsBackupRetentionAcceptanceIT implements BackupRetentionAcceptance
                           final var prefix =
                               "%s/contents/%d/%d/%d"
                                   .formatted(basePath, partitionId, backupId, brokerId);
-                          final var blobs =
-                              client.list(
-                                  BUCKET_NAME, BlobListOption.prefix(basePath + "/" + prefix));
+                          final var blobs = client.list(BUCKET_NAME, BlobListOption.prefix(prefix));
                           assertThat(blobs.streamAll().count()).isZero();
                         }));
   }

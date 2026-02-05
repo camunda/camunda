@@ -27,6 +27,7 @@ import java.util.function.Consumer;
 import java.util.stream.IntStream;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -48,7 +49,6 @@ public class S3BackupRetentionAcceptanceIT implements BackupRetentionAcceptance 
 
   private BackupStore backupStore;
   private S3AsyncClient client;
-
   @TestZeebe(autoStart = false)
   private final TestCluster cluster =
       TestCluster.builder()
@@ -62,6 +62,13 @@ public class S3BackupRetentionAcceptanceIT implements BackupRetentionAcceptance 
                   node.withProperty("zeebe.clock.controlled", true)
                       .withProperty("management.endpoints.web.exposure.include", "*"))
           .build();
+
+  @AfterEach
+  public void tearDown() {
+    if (client != null) {
+      client.close();
+    }
+  }
 
   @Override
   public TestCluster getTestCluster() {

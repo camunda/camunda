@@ -256,12 +256,6 @@ public class RetentionTest {
                 .subList(0, 4)
                 .forEach(
                     backup -> verify(backupStore).delete(argThat(id -> id.equals(backup.id())))));
-    /*    verify(backupStore)
-        .delete(backupsPerPartition.get(1).subList(0, 4).stream().map(BackupStatus::id).toList());
-    verify(backupStore)
-        .delete(backupsPerPartition.get(2).subList(0, 4).stream().map(BackupStatus::id).toList());
-    verify(backupStore)
-        .delete(backupsPerPartition.get(3).subList(0, 4).stream().map(BackupStatus::id).toList());*/
 
     verify(backupStore)
         .storeRangeMarker(
@@ -318,15 +312,6 @@ public class RetentionTest {
                 marker ->
                     marker.checkpointId() == backupsPerPartition.get(1).get(3).id().checkpointId()
                         && marker instanceof Start));
-
-    /*    verify(backupStore)
-        .deleteRangeMarker(eq(1), argThat(c -> c.containsAll(ranges.subList(0, 2))));
-
-    verify(backupStore)
-        .deleteRangeMarkers(eq(2), argThat(c -> c.containsAll(ranges.subList(0, 2))));
-
-    verify(backupStore)
-        .deleteRangeMarkers(eq(3), argThat(c -> c.containsAll(ranges.subList(0, 2))));*/
   }
 
   @Test
