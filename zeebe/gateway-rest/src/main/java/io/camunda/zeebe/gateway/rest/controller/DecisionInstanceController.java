@@ -67,16 +67,16 @@ public class DecisionInstanceController {
   }
 
   @RequiresSecondaryStorage
-  @CamundaPostMapping(path = "/{decisionEvaluationInstanceKey}/deletion")
+  @CamundaPostMapping(path = "/{decisionInstanceKey}/deletion")
   public CompletableFuture<ResponseEntity<Object>> deleteDecisionInstance(
-      @PathVariable("decisionEvaluationInstanceKey") final String decisionEvaluationInstanceKey,
+      @PathVariable("decisionInstanceKey") final long decisionInstanceKey,
       @RequestBody(required = false) final DeleteDecisionInstanceRequest request) {
     return RequestExecutor.executeServiceMethod(
         () ->
             decisionInstanceServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .deleteDecisionInstance(
-                    decisionEvaluationInstanceKey,
+                    decisionInstanceKey,
                     Objects.nonNull(request) ? request.getOperationReference() : null),
         ResponseMapper::toBatchOperationCreatedWithResultResponse,
         HttpStatus.OK);

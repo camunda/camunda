@@ -29,7 +29,7 @@ import org.springframework.test.json.JsonCompareMode;
 public class DecisionInstanceControllerTest extends RestControllerTest {
 
   static final String DECISION_INSTANCES_BASE_URL = "/v2/decision-instances";
-  static final String DELETE_DECISION_URL = DECISION_INSTANCES_BASE_URL + "/%s/deletion";
+  static final String DELETE_DECISION_URL = DECISION_INSTANCES_BASE_URL + "/%d/deletion";
 
   @MockitoBean private DecisionInstanceServices decisionInstanceServices;
   @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
@@ -49,7 +49,7 @@ public class DecisionInstanceControllerTest extends RestControllerTest {
     record.setBatchOperationKey(123L);
     record.setBatchOperationType(BatchOperationType.DELETE_DECISION_INSTANCE);
 
-    when(decisionInstanceServices.deleteDecisionInstance("1-1", 123L))
+    when(decisionInstanceServices.deleteDecisionInstance(1L, 123L))
         .thenReturn(CompletableFuture.completedFuture(record));
 
     final var request =
@@ -61,7 +61,7 @@ public class DecisionInstanceControllerTest extends RestControllerTest {
     // when / then
     webClient
         .post()
-        .uri(DELETE_DECISION_URL.formatted("1-1"))
+        .uri(DELETE_DECISION_URL.formatted(1L))
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(request)
@@ -77,7 +77,7 @@ public class DecisionInstanceControllerTest extends RestControllerTest {
         """,
             JsonCompareMode.STRICT);
 
-    verify(decisionInstanceServices).deleteDecisionInstance("1-1", 123L);
+    verify(decisionInstanceServices).deleteDecisionInstance(1L, 123L);
   }
 
   @Test
@@ -87,13 +87,13 @@ public class DecisionInstanceControllerTest extends RestControllerTest {
     record.setBatchOperationKey(456L);
     record.setBatchOperationType(BatchOperationType.DELETE_DECISION_INSTANCE);
 
-    when(decisionInstanceServices.deleteDecisionInstance("2-2", null))
+    when(decisionInstanceServices.deleteDecisionInstance(2L, null))
         .thenReturn(CompletableFuture.completedFuture(record));
 
     // when / then
     webClient
         .post()
-        .uri(DELETE_DECISION_URL.formatted("2-2"))
+        .uri(DELETE_DECISION_URL.formatted(2L))
         .accept(MediaType.APPLICATION_JSON)
         .exchange()
         .expectStatus()
@@ -107,7 +107,7 @@ public class DecisionInstanceControllerTest extends RestControllerTest {
         """,
             JsonCompareMode.STRICT);
 
-    verify(decisionInstanceServices).deleteDecisionInstance("2-2", null);
+    verify(decisionInstanceServices).deleteDecisionInstance(2L, null);
   }
 
   @Test
@@ -117,7 +117,7 @@ public class DecisionInstanceControllerTest extends RestControllerTest {
     record.setBatchOperationKey(789L);
     record.setBatchOperationType(BatchOperationType.DELETE_DECISION_INSTANCE);
 
-    when(decisionInstanceServices.deleteDecisionInstance("3-3", null))
+    when(decisionInstanceServices.deleteDecisionInstance(3L, null))
         .thenReturn(CompletableFuture.completedFuture(record));
 
     final var request =
@@ -127,7 +127,7 @@ public class DecisionInstanceControllerTest extends RestControllerTest {
     // when / then
     webClient
         .post()
-        .uri(DELETE_DECISION_URL.formatted("3-3"))
+        .uri(DELETE_DECISION_URL.formatted(3L))
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(request)
@@ -143,13 +143,13 @@ public class DecisionInstanceControllerTest extends RestControllerTest {
         """,
             JsonCompareMode.STRICT);
 
-    verify(decisionInstanceServices).deleteDecisionInstance("3-3", null);
+    verify(decisionInstanceServices).deleteDecisionInstance(3L, null);
   }
 
   @Test
   void shouldRejectDeleteDecisionInstanceOnDecisionInstanceNotFound() {
     // given
-    when(decisionInstanceServices.deleteDecisionInstance("999-999", null))
+    when(decisionInstanceServices.deleteDecisionInstance(999L, null))
         .thenReturn(
             CompletableFuture.failedFuture(
                 new io.camunda.service.exception.ServiceException(
@@ -165,12 +165,12 @@ public class DecisionInstanceControllerTest extends RestControllerTest {
                 "detail": "Decision Instance with key '999-999' not found",
                 "instance": "%s"
             }"""
-            .formatted(DELETE_DECISION_URL.formatted("999-999"));
+            .formatted(DELETE_DECISION_URL.formatted(999L));
 
     // when / then
     webClient
         .post()
-        .uri(DELETE_DECISION_URL.formatted("999-999"))
+        .uri(DELETE_DECISION_URL.formatted(999L))
         .accept(MediaType.APPLICATION_JSON)
         .exchange()
         .expectStatus()
@@ -180,13 +180,13 @@ public class DecisionInstanceControllerTest extends RestControllerTest {
         .expectBody()
         .json(expectedBody, JsonCompareMode.STRICT);
 
-    verify(decisionInstanceServices).deleteDecisionInstance("999-999", null);
+    verify(decisionInstanceServices).deleteDecisionInstance(999L, null);
   }
 
   @Test
   void shouldRejectDeleteDecisionInstanceOnForbidden() {
     // given
-    when(decisionInstanceServices.deleteDecisionInstance("4-4", null))
+    when(decisionInstanceServices.deleteDecisionInstance(4L, null))
         .thenReturn(
             CompletableFuture.failedFuture(
                 new io.camunda.service.exception.ServiceException(
@@ -202,12 +202,12 @@ public class DecisionInstanceControllerTest extends RestControllerTest {
                 "detail": "Unauthorized to perform operation 'DELETE_DECISION_INSTANCE' on resource 'DECISION_DEFINITION'",
                 "instance": "%s"
             }"""
-            .formatted(DELETE_DECISION_URL.formatted("4-4"));
+            .formatted(DELETE_DECISION_URL.formatted(4L));
 
     // when / then
     webClient
         .post()
-        .uri(DELETE_DECISION_URL.formatted("4-4"))
+        .uri(DELETE_DECISION_URL.formatted(4L))
         .accept(MediaType.APPLICATION_JSON)
         .exchange()
         .expectStatus()
@@ -217,43 +217,6 @@ public class DecisionInstanceControllerTest extends RestControllerTest {
         .expectBody()
         .json(expectedBody, JsonCompareMode.STRICT);
 
-    verify(decisionInstanceServices).deleteDecisionInstance("4-4", null);
-  }
-
-  @Test
-  void shouldRejectDeleteDecisionInstanceOnConflict() {
-    // given
-    when(decisionInstanceServices.deleteDecisionInstance("5-5", null))
-        .thenReturn(
-            CompletableFuture.failedFuture(
-                new io.camunda.service.exception.ServiceException(
-                    "Decision Instance with key '5-5' is not in a completed or terminated state and cannot be deleted",
-                    io.camunda.service.exception.ServiceException.Status.INVALID_STATE)));
-
-    final var expectedBody =
-        """
-            {
-                "type": "about:blank",
-                "title": "INVALID_STATE",
-                "status": 409,
-                "detail": "Decision Instance with key '5-5' is not in a completed or terminated state and cannot be deleted",
-                "instance": "%s"
-            }"""
-            .formatted(DELETE_DECISION_URL.formatted("5-5"));
-
-    // when / then
-    webClient
-        .post()
-        .uri(DELETE_DECISION_URL.formatted("5-5"))
-        .accept(MediaType.APPLICATION_JSON)
-        .exchange()
-        .expectStatus()
-        .isEqualTo(409)
-        .expectHeader()
-        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
-        .expectBody()
-        .json(expectedBody, JsonCompareMode.STRICT);
-
-    verify(decisionInstanceServices).deleteDecisionInstance("5-5", null);
+    verify(decisionInstanceServices).deleteDecisionInstance(4L, null);
   }
 }
