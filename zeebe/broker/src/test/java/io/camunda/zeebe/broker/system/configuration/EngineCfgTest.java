@@ -47,6 +47,18 @@ final class EngineCfgTest {
         .isEqualTo(EngineConfiguration.DEFAULT_COMMAND_REDISTRIBUTION_INTERVAL);
     assertThat(configuration.getCommandRedistributionMaxBackoff())
         .isEqualTo(EngineConfiguration.DEFAULT_COMMAND_REDISTRIBUTION_MAX_BACKOFF_DURATION);
+    assertThat(configuration.getJobMetricsExportInterval())
+        .isEqualTo(EngineConfiguration.DEFAULT_JOB_METRICS_EXPORT_INTERVAL);
+    assertThat(configuration.isJobMetricsExportEnabled())
+        .isEqualTo(EngineConfiguration.DEFAULT_JOB_METRICS_EXPORT_ENABLED);
+    assertThat(configuration.getMaxWorkerNameLength())
+        .isEqualTo(EngineConfiguration.DEFAULT_MAX_WORKER_NAME_LENGTH);
+    assertThat(configuration.getMaxJobTypeLength())
+        .isEqualTo(EngineConfiguration.DEFAULT_MAX_JOB_TYPE_LENGTH);
+    assertThat(configuration.getMaxTenantIdLength())
+        .isEqualTo(EngineConfiguration.DEFAULT_MAX_TENANT_ID_LENGTH);
+    assertThat(configuration.getMaxUniqueJobMetricsKeys())
+        .isEqualTo(EngineConfiguration.DEFAULT_MAX_UNIQUE_JOB_METRICS_KEYS);
     assertThat(configuration.getGlobalListeners().userTask()).isEmpty();
     assertThat(configuration.getExpressionEvaluationTimeout()).isEqualTo(Duration.ofSeconds(5));
   }
@@ -71,6 +83,12 @@ final class EngineCfgTest {
     assertThat(configuration.getCommandRedistributionInterval()).isEqualTo(Duration.ofSeconds(60));
     assertThat(configuration.getCommandRedistributionMaxBackoff())
         .isEqualTo(Duration.ofMinutes(20));
+    assertThat(configuration.getJobMetricsExportInterval()).isEqualTo(Duration.ofMinutes(10));
+    assertThat(configuration.isJobMetricsExportEnabled()).isFalse();
+    assertThat(configuration.getMaxWorkerNameLength()).isEqualTo(50);
+    assertThat(configuration.getMaxJobTypeLength()).isEqualTo(75);
+    assertThat(configuration.getMaxTenantIdLength()).isEqualTo(20);
+    assertThat(configuration.getMaxUniqueJobMetricsKeys()).isEqualTo(5000);
     assertThat(configuration.getGlobalListeners().userTask()).hasSize(2);
     final var taskListeners = configuration.getGlobalListeners().userTask();
     assertListenerCfg(

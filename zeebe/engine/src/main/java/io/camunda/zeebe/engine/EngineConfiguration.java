@@ -37,6 +37,7 @@ public final class EngineConfiguration {
   public static final int DEFAULT_MAX_JOB_TYPE_LENGTH = 100;
   public static final int DEFAULT_MAX_TENANT_ID_LENGTH = 30;
   public static final int DEFAULT_MAX_UNIQUE_JOB_METRICS_KEYS = 9500;
+  public static final boolean DEFAULT_JOB_METRICS_EXPORT_ENABLED = true;
 
   public static final Duration DEFAULT_BATCH_OPERATION_SCHEDULER_INTERVAL = Duration.ofSeconds(1);
   // reasonable size of a chunk record to avoid too many or too large records
@@ -90,6 +91,7 @@ public final class EngineConfiguration {
       DEFAULT_BATCH_OPERATION_QUERY_RETRY_BACKOFF_FACTOR;
   private Duration usageMetricsExportInterval = DEFAULT_USAGE_METRICS_EXPORT_INTERVAL;
   private Duration jobMetricsExportInterval = DEFAULT_JOB_METRICS_EXPORT_INTERVAL;
+  private boolean jobMetricsExportEnabled = DEFAULT_JOB_METRICS_EXPORT_ENABLED;
   private boolean commandDistributionPaused = DEFAULT_COMMAND_DISTRIBUTION_PAUSED;
   private Duration commandRedistributionInterval = DEFAULT_COMMAND_REDISTRIBUTION_INTERVAL;
   private Duration commandRedistributionMaxBackoff =
@@ -322,6 +324,15 @@ public final class EngineConfiguration {
 
   public EngineConfiguration setJobMetricsExportInterval(final Duration jobMetricsExportInterval) {
     this.jobMetricsExportInterval = jobMetricsExportInterval;
+    return this;
+  }
+
+  public boolean isJobMetricsExportEnabled() {
+    return jobMetricsExportEnabled;
+  }
+
+  public EngineConfiguration setJobMetricsExportEnabled(final boolean jobMetricsExportEnabled) {
+    this.jobMetricsExportEnabled = jobMetricsExportEnabled;
     return this;
   }
 

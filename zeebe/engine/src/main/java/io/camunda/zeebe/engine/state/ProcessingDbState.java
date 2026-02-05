@@ -41,6 +41,7 @@ import io.camunda.zeebe.engine.state.instance.DbJobState;
 import io.camunda.zeebe.engine.state.instance.DbTimerInstanceState;
 import io.camunda.zeebe.engine.state.instance.DbUserTaskState;
 import io.camunda.zeebe.engine.state.jobmetrics.DbJobMetricsState;
+import io.camunda.zeebe.engine.state.jobmetrics.NoopJobMetricsState;
 import io.camunda.zeebe.engine.state.message.DbMessageCorrelationState;
 import io.camunda.zeebe.engine.state.message.DbMessageStartEventSubscriptionState;
 import io.camunda.zeebe.engine.state.message.DbMessageState;
@@ -208,7 +209,11 @@ public class ProcessingDbState implements MutableProcessingState {
     conditionalSubscriptionState = new DbConditionalSubscriptionState(zeebeDb, transactionContext);
     this.transientProcessMessageSubscriptionState = transientProcessMessageSubscriptionState;
     globalListenersState = new DbGlobalListenersState(zeebeDb, transactionContext);
-    jobMetricsState = new DbJobMetricsState(zeebeDb, transactionContext, clock, config);
+    if (config.isJobMetricsExportEnabled()) {
+      jobMetricsState = new DbJobMetricsState(zeebeDb, transactionContext, clock, config);
+    } else {
+      jobMetricsState = new NoopJobMetricsState();
+    }
   }
 
   @Override

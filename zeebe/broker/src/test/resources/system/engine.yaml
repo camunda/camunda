@@ -12,6 +12,13 @@ zeebe:
         jobs:
           timeoutCheckerPollingInterval: 15s
           timeoutCheckerBatchLimit: 1000
+        jobMetrics:
+          exportInterval: 10m
+          enabled: false
+          maxWorkerNameLength: 50
+          maxJobTypeLength: 75
+          maxTenantIdLength: 20
+          maxUniqueKeys: 5000
         validators:
           resultsOutputMaxSize: 2000
         distribution:
