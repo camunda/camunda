@@ -104,11 +104,6 @@ const useModifiableFlowNodes = () => {
   const appendableFlowNodes = useAppendableFlowNodes();
   const cancellableFlowNodes = useCancellableFlowNodes();
 
-  // disable all flownodes while ancestor selection is required
-  if (modificationsStore.state.status === 'requires-ancestor-selection') {
-    return [];
-  }
-
   if (modificationsStore.state.status === 'moving-token') {
     return appendableFlowNodes.filter(
       (flowNodeId) =>
