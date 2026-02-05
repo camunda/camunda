@@ -24,7 +24,7 @@ public final class EngineConfiguration {
   public static final int DEFAULT_FORM_CACHE_CAPACITY = 1000;
   public static final int DEFAULT_PROCESS_CACHE_CAPACITY = 1000;
   public static final int DEFAULT_AUTHORIZATIONS_CACHE_CAPACITY = 1000;
-  public static final Duration DEFAULT_AUTHORIZATIONS_CACHE_TTL = Duration.ofSeconds(30);
+  public static final Duration DEFAULT_AUTHORIZATIONS_CACHE_TTL = Duration.ofSeconds(10);
   public static final Duration DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL = Duration.ofSeconds(1);
   public static final int DEFAULT_JOBS_TIMEOUT_CHECKER_BATCH_LIMIT = Integer.MAX_VALUE;
   public static final int DEFAULT_VALIDATORS_RESULTS_OUTPUT_MAX_SIZE = 12 * 1024;

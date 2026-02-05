@@ -25,6 +25,7 @@ import io.camunda.zeebe.engine.processing.identity.authorization.property.Resour
 import io.camunda.zeebe.engine.processing.identity.authorization.property.UserTaskAuthorizationProperties;
 import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.engine.state.appliers.AuthorizationCreatedApplier;
+import io.camunda.zeebe.engine.state.appliers.AuthorizationDeletedApplier;
 import io.camunda.zeebe.engine.state.appliers.GroupCreatedApplier;
 import io.camunda.zeebe.engine.state.appliers.GroupEntityAddedApplier;
 import io.camunda.zeebe.engine.state.appliers.MappingRuleCreatedApplier;
@@ -55,6 +56,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -69,6 +71,7 @@ final class AuthorizationCheckBehaviorTest {
   private UserCreatedApplier userCreatedApplier;
   private MappingRuleCreatedApplier mappingRuleCreatedApplier;
   private AuthorizationCreatedApplier authorizationCreatedApplier;
+  private AuthorizationDeletedApplier authorizationDeletedApplier;
   private GroupCreatedApplier groupCreatedApplier;
   private GroupEntityAddedApplier groupEntityAddedApplier;
   private RoleCreatedApplier roleCreatedApplier;
@@ -90,6 +93,8 @@ final class AuthorizationCheckBehaviorTest {
         new MappingRuleCreatedApplier(processingState.getMappingRuleState());
     authorizationCreatedApplier =
         new AuthorizationCreatedApplier(processingState.getAuthorizationState());
+    authorizationDeletedApplier =
+        new AuthorizationDeletedApplier(processingState.getAuthorizationState());
     groupCreatedApplier = new GroupCreatedApplier(processingState.getGroupState());
     groupEntityAddedApplier = new GroupEntityAddedApplier(processingState);
     roleCreatedApplier = new RoleCreatedApplier(processingState.getRoleState());
@@ -1490,14 +1495,14 @@ final class AuthorizationCheckBehaviorTest {
   }
 
   @Test
-  void shouldExpireAuthorizationCacheAfterConfiguredTtl() throws InterruptedException {
+  void shouldExpireAuthorizationCacheAfterConfiguredTtl() {
     // given: authorizations enabled and a very short cache TTL
     final var securityConfig = new SecurityConfiguration();
     final var authConfig = new AuthorizationsConfiguration();
     authConfig.setEnabled(true);
     securityConfig.setAuthorizations(authConfig);
 
-    final var config = new EngineConfiguration().setAuthorizationsCacheTtl(Duration.ofMillis(1));
+    final var config = new EngineConfiguration().setAuthorizationsCacheTtl(Duration.ofSeconds(1));
     authorizationCheckBehavior =
         new AuthorizationCheckBehavior(processingState, securityConfig, config);
 
@@ -1519,18 +1524,34 @@ final class AuthorizationCheckBehaviorTest {
     assertThat(authorizationCheckBehavior.isAuthorized(request).isRight()).isFalse();
 
     // grant the required permission in state so a recompute should allow
-    addPermission(
-        user.getUsername(),
-        AuthorizationOwnerType.USER,
-        resourceType,
-        permissionType,
-        AuthorizationScope.of(resourceId));
+    final var authorizationKey =
+        addPermission(
+            user.getUsername(),
+            AuthorizationOwnerType.USER,
+            resourceType,
+            permissionType,
+            AuthorizationScope.of(resourceId));
 
-    // Guava's expireAfterAccess is based on real time; wait past TTL to force cache reload
-    Thread.sleep(2);
+    // the request is still denied immediately after grant as the previous check cached a denial
+    assertThat(authorizationCheckBehavior.isAuthorized(request).isRight()).isFalse();
 
-    // then: subsequent check recomputes after TTL and succeeds
+    // Guava's expireAfterWrite is based on real time; wait past TTL to force cache reload
+    // cache re-computed with added permission after TTL expires.
+    // Because Awaitility polls every 100 millis, the test will fail with a timeout if the check can
+    // be artificially kept in the same result status by continuous calls in the TTL window.
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(5))
+        .pollInterval(Duration.ofMillis(100))
+        .until(() -> authorizationCheckBehavior.isAuthorized(request).isRight());
+
+    // the permission is removed and the request is still allowed due to caching
+    removePermission(authorizationKey);
     assertThat(authorizationCheckBehavior.isAuthorized(request).isRight()).isTrue();
+
+    // after the TTL expires again, the cache is re-computed to a denial as there is no permission
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(5))
+        .until(() -> authorizationCheckBehavior.isAuthorized(request).isLeft());
   }
 
   private TypedRecord<?> mockCommandWithMappingRule(
@@ -1602,19 +1623,33 @@ final class AuthorizationCheckBehaviorTest {
       final PermissionType permissionType,
       final AuthorizationScope... authorizationScopes) {
     for (final AuthorizationScope authorizationScope : authorizationScopes) {
-      final var authorizationKey = random.nextLong();
-      final var authorization =
-          new AuthorizationRecord()
-              .setAuthorizationKey(authorizationKey)
-              .setOwnerId(ownerId)
-              .setOwnerType(ownerType)
-              .setResourceMatcher(authorizationScope.getMatcher())
-              .setResourceId(authorizationScope.getResourceId())
-              .setResourcePropertyName(authorizationScope.getResourcePropertyName())
-              .setResourceType(resourceType)
-              .setPermissionTypes(Set.of(permissionType));
-      authorizationCreatedApplier.applyState(authorizationKey, authorization);
+      addPermission(ownerId, ownerType, resourceType, permissionType, authorizationScope);
     }
+  }
+
+  private long addPermission(
+      final String ownerId,
+      final AuthorizationOwnerType ownerType,
+      final AuthorizationResourceType resourceType,
+      final PermissionType permissionType,
+      final AuthorizationScope authorizationScope) {
+    final var authorizationKey = random.nextLong();
+    final var authorization =
+        new AuthorizationRecord()
+            .setAuthorizationKey(authorizationKey)
+            .setOwnerId(ownerId)
+            .setOwnerType(ownerType)
+            .setResourceMatcher(authorizationScope.getMatcher())
+            .setResourceId(authorizationScope.getResourceId())
+            .setResourcePropertyName(authorizationScope.getResourcePropertyName())
+            .setResourceType(resourceType)
+            .setPermissionTypes(Set.of(permissionType));
+    authorizationCreatedApplier.applyState(authorizationKey, authorization);
+    return authorizationKey;
+  }
+
+  private void removePermission(final long authorizationKey) {
+    authorizationDeletedApplier.applyState(authorizationKey, null);
   }
 
   private TypedRecord<?> mockCommand(final String username) {
