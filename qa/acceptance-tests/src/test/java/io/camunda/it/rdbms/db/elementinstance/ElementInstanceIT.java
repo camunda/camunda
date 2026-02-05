@@ -307,14 +307,12 @@ public class ElementInstanceIT {
   }
 
   @TestTemplate
-  public void shouldDeleteProcessInstanceRelatedData(
+  public void shouldDeleteRootProcessInstanceRelatedData(
       final CamundaRdbmsTestApplication testApplication) {
     // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final FlowNodeInstanceDbReader reader = rdbmsService.getFlowNodeInstanceReader();
-
-    final var cleanupDate = NOW.minusDays(1);
 
     final var definition =
         ProcessDefinitionFixtures.createAndSaveProcessDefinition(rdbmsWriters, b -> b);
@@ -332,8 +330,7 @@ public class ElementInstanceIT {
     final int deleted =
         rdbmsWriters
             .getFlowNodeInstanceWriter()
-            .deleteProcessInstanceRelatedData(
-                PARTITION_ID, List.of(item2.processInstanceKey()), 10);
+            .deleteRootProcessInstanceRelatedData(List.of(item2.rootProcessInstanceKey()), 10);
 
     // then
     assertThat(deleted).isEqualTo(1);

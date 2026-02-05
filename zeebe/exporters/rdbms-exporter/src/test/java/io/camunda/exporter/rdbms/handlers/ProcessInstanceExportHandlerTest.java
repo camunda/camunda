@@ -7,15 +7,19 @@
  */
 package io.camunda.exporter.rdbms.handlers;
 
+import static io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+import io.camunda.db.rdbms.write.service.HistoryCleanupService;
+import io.camunda.db.rdbms.write.service.ProcessInstanceWriter;
 import io.camunda.exporter.rdbms.utils.TreePath;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.camunda.zeebe.exporter.common.utils.ProcessCacheUtil;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -23,6 +27,11 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 class ProcessInstanceExportHandlerTest {
+  private static final long ROOT_PROCESS_INSTANCE_KEY = 1L;
+  private static final long SUB_PROCESS_INSTANCE_KEY = 2L;
+
+  private final ProcessInstanceWriter processInstanceWriter = mock(ProcessInstanceWriter.class);
+  private final HistoryCleanupService historyCleanupService = mock(HistoryCleanupService.class);
   private ProcessInstanceExportHandler handler;
 
   @BeforeEach
@@ -30,7 +39,9 @@ class ProcessInstanceExportHandlerTest {
   void setUp() {
     final ExporterEntityCache<Long, CachedProcessEntity> processCache =
         mock(ExporterEntityCache.class);
-    handler = new ProcessInstanceExportHandler(null, null, processCache, 10);
+    handler =
+        new ProcessInstanceExportHandler(
+            processInstanceWriter, historyCleanupService, processCache, 10);
   }
 
   @Test
@@ -93,15 +104,80 @@ class ProcessInstanceExportHandlerTest {
     assertThat(path.toTruncatedString()).isNotEmpty();
   }
 
+  @Test
+  void shouldScheduleHistoryCleanupForCompletedRootProcessInstance() {
+    // given
+    final var record = TestRecordFactory.rootProcess(ProcessInstanceIntent.ELEMENT_COMPLETED);
+    // when
+    handler.export(record);
+    // then
+    verify(processInstanceWriter)
+        .finish(eq(ROOT_PROCESS_INSTANCE_KEY), eq(ProcessInstanceState.COMPLETED), any());
+    verify(historyCleanupService)
+        .scheduleProcessForHistoryCleanup(eq(ROOT_PROCESS_INSTANCE_KEY), any());
+  }
+
+  @Test
+  void shouldScheduleHistoryCleanupForTerminatedRootProcessInstance() {
+    // given
+    final var record = TestRecordFactory.rootProcess(ProcessInstanceIntent.ELEMENT_TERMINATED);
+    // when
+    handler.export(record);
+    // then
+    verify(processInstanceWriter)
+        .finish(eq(ROOT_PROCESS_INSTANCE_KEY), eq(ProcessInstanceState.CANCELED), any());
+    verify(historyCleanupService)
+        .scheduleProcessForHistoryCleanup(eq(ROOT_PROCESS_INSTANCE_KEY), any());
+  }
+
+  @Test
+  void shouldNotScheduleHistoryCleanupForCompletedNonRootProcessInstance() {
+    // given
+    final var record = TestRecordFactory.subProcess(ProcessInstanceIntent.ELEMENT_COMPLETED);
+    // when
+    handler.export(record);
+    // then
+    verify(processInstanceWriter)
+        .finish(eq(SUB_PROCESS_INSTANCE_KEY), eq(ProcessInstanceState.COMPLETED), any());
+    verifyNoInteractions(historyCleanupService);
+  }
+
+  @Test
+  void shouldNotScheduleHistoryCleanupForTerminatedNonRootProcessInstance() {
+    // given
+    final var record = TestRecordFactory.subProcess(ProcessInstanceIntent.ELEMENT_TERMINATED);
+    // when
+    handler.export(record);
+    // then
+    verify(processInstanceWriter)
+        .finish(eq(SUB_PROCESS_INSTANCE_KEY), eq(ProcessInstanceState.CANCELED), any());
+    verifyNoInteractions(historyCleanupService);
+  }
+
   // Helper factory for test records
   static class TestRecordFactory {
     static Record<ProcessInstanceRecordValue> simpleProcess() {
+      return rootProcess(ProcessInstanceIntent.ELEMENT_ACTIVATED);
+    }
+
+    static Record<ProcessInstanceRecordValue> rootProcess(final ProcessInstanceIntent intent) {
       final var value = mock(ProcessInstanceRecordValue.class);
       when(value.getElementInstancePath()).thenReturn(List.of(List.of(1L)));
       when(value.getProcessDefinitionPath()).thenReturn(List.of(10L));
       when(value.getCallingElementPath()).thenReturn(List.of(0));
-      when(value.getProcessInstanceKey()).thenReturn(1L);
-      return mockRecord(value);
+      when(value.getProcessInstanceKey()).thenReturn(ROOT_PROCESS_INSTANCE_KEY);
+      when(value.getRootProcessInstanceKey()).thenReturn(ROOT_PROCESS_INSTANCE_KEY);
+      return mockRecord(value, intent);
+    }
+
+    static Record<ProcessInstanceRecordValue> subProcess(final ProcessInstanceIntent intent) {
+      final var value = mock(ProcessInstanceRecordValue.class);
+      when(value.getElementInstancePath()).thenReturn(List.of(List.of(1L)));
+      when(value.getProcessDefinitionPath()).thenReturn(List.of(10L));
+      when(value.getCallingElementPath()).thenReturn(List.of(0));
+      when(value.getProcessInstanceKey()).thenReturn(SUB_PROCESS_INSTANCE_KEY);
+      when(value.getRootProcessInstanceKey()).thenReturn(ROOT_PROCESS_INSTANCE_KEY);
+      return mockRecord(value, intent);
     }
 
     static Record<ProcessInstanceRecordValue> recursiveProcess() {
@@ -123,9 +199,16 @@ class ProcessInstanceExportHandlerTest {
     @SuppressWarnings("unchecked")
     private static Record<ProcessInstanceRecordValue> mockRecord(
         final ProcessInstanceRecordValue value) {
+      return mockRecord(value, ProcessInstanceIntent.ELEMENT_ACTIVATED);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Record<ProcessInstanceRecordValue> mockRecord(
+        final ProcessInstanceRecordValue value, final ProcessInstanceIntent intent) {
       final var record = mock(Record.class);
       when(record.getValue()).thenReturn(value);
       when(record.getKey()).thenReturn(42L);
+      when(record.getIntent()).thenReturn(intent);
       return record;
     }
   }

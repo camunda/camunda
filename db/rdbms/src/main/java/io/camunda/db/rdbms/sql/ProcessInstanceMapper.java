@@ -41,9 +41,13 @@ public interface ProcessInstanceMapper {
 
   int deleteByKeys(List<Long> processInstanceKeys);
 
-  List<Long> selectExpiredProcessInstances(SelectExpiredProcessInstancesDto dto);
+  List<Long> selectExpiredRootProcessInstances(SelectExpiredRootProcessInstancesDto dto);
 
   int updateHistoryCleanupDate(UpdateHistoryCleanupDateDto dto);
+
+  int deleteChildrenByRootProcessInstances(DeleteChildrenByRootProcessInstancesDto dto);
+
+  record DeleteChildrenByRootProcessInstancesDto(List<Long> rootProcessInstanceKeys, int limit) {}
 
   record UpdateHistoryCleanupDateDto(
       List<Long> processInstanceKeys, OffsetDateTime historyCleanupDate)
@@ -97,6 +101,6 @@ public interface ProcessInstanceMapper {
       ProcessInstanceEntity.ProcessInstanceState state,
       OffsetDateTime endDate) {}
 
-  record SelectExpiredProcessInstancesDto(
+  record SelectExpiredRootProcessInstancesDto(
       int partitionId, OffsetDateTime cleanupDate, DbQueryPage page) {}
 }

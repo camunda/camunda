@@ -39,6 +39,11 @@
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>camunda-search-client-reader</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>webapps-schema</artifactId>
       <scope>test</scope>
     </dependency>

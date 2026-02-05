@@ -189,10 +189,10 @@
               #{partitionId});
   </insert>
 
-  <delete id="deleteProcessInstanceRelatedData">
+  <delete id="deleteRootProcessInstanceRelatedData">
     <bind name="tableName" value="'SEQUENCE_FLOW'"/>
     <bind name="primaryKeyColumn" value="''"/>
-    <include refid="io.camunda.db.rdbms.sql.Commons.processInstanceHistoryDeletion"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.rootProcessInstanceHistoryDeletion"/>
   </delete>
 
   <delete id="delete" parameterType="io.camunda.db.rdbms.write.domain.SequenceFlowDbModel">

@@ -69,29 +69,24 @@ class HistoryCleanupServiceTest {
     usageMetricWriter = mock(UsageMetricWriter.class);
     usageMetricTUWriter = mock(UsageMetricTUWriter.class);
     auditLogWriter = mock(AuditLogWriter.class);
-
-    // Mock selectExpiredProcessInstances to return empty list by default
-    when(processInstanceReader.selectExpiredProcessInstances(anyInt(), any(), anyInt()))
+    when(processInstanceReader.selectExpiredRootProcessInstances(anyInt(), any(), anyInt()))
         .thenReturn(java.util.Collections.emptyList());
 
-    // Mock deleteProcessInstanceRelatedData methods
-    when(flowNodeInstanceWriter.deleteProcessInstanceRelatedData(anyInt(), any(), anyInt()))
+    when(flowNodeInstanceWriter.deleteRootProcessInstanceRelatedData(any(), anyInt()))
         .thenReturn(0);
-    when(incidentWriter.deleteProcessInstanceRelatedData(anyInt(), any(), anyInt())).thenReturn(0);
-    when(userTaskWriter.deleteProcessInstanceRelatedData(anyInt(), any(), anyInt())).thenReturn(0);
-    when(variableInstanceWriter.deleteProcessInstanceRelatedData(anyInt(), any(), anyInt()))
+    when(incidentWriter.deleteRootProcessInstanceRelatedData(any(), anyInt())).thenReturn(0);
+    when(userTaskWriter.deleteRootProcessInstanceRelatedData(any(), anyInt())).thenReturn(0);
+    when(variableInstanceWriter.deleteRootProcessInstanceRelatedData(any(), anyInt()))
         .thenReturn(0);
-    when(decisionInstanceWriter.deleteProcessInstanceRelatedData(anyInt(), any(), anyInt()))
+    when(decisionInstanceWriter.deleteRootProcessInstanceRelatedData(any(), anyInt()))
         .thenReturn(0);
-    when(jobWriter.deleteProcessInstanceRelatedData(anyInt(), any(), anyInt())).thenReturn(0);
-    when(sequenceFlowWriter.deleteProcessInstanceRelatedData(anyInt(), any(), anyInt()))
+    when(jobWriter.deleteRootProcessInstanceRelatedData(any(), anyInt())).thenReturn(0);
+    when(sequenceFlowWriter.deleteRootProcessInstanceRelatedData(any(), anyInt())).thenReturn(0);
+    when(messageSubscriptionWriter.deleteRootProcessInstanceRelatedData(any(), anyInt()))
         .thenReturn(0);
-    when(messageSubscriptionWriter.deleteProcessInstanceRelatedData(anyInt(), any(), anyInt()))
+    when(correlatedMessageSubscriptionWriter.deleteRootProcessInstanceRelatedData(any(), anyInt()))
         .thenReturn(0);
-    when(correlatedMessageSubscriptionWriter.deleteProcessInstanceRelatedData(
-            anyInt(), any(), anyInt()))
-        .thenReturn(0);
-    when(auditLogWriter.deleteProcessInstanceRelatedData(anyInt(), any(), anyInt())).thenReturn(0);
+    when(auditLogWriter.deleteRootProcessInstanceRelatedData(any(), anyInt())).thenReturn(0);
 
     when(batchOperationWriter.cleanupHistory(any(), anyInt())).thenReturn(0);
     when(usageMetricWriter.cleanupMetrics(anyInt(), any(), anyInt())).thenReturn(0);
@@ -142,30 +137,19 @@ class HistoryCleanupServiceTest {
   void testFirstCleanupHistory() {
     // given
     final List<Long> expiredProcessInstanceKeys = java.util.List.of(1L, 2L, 3L);
-    when(processInstanceReader.selectExpiredProcessInstances(anyInt(), any(), anyInt()))
+    when(processInstanceReader.selectExpiredRootProcessInstances(anyInt(), any(), anyInt()))
         .thenReturn(expiredProcessInstanceKeys);
-    // All child entities already deleted (return 0), so PIs can be deleted
-    when(flowNodeInstanceWriter.deleteProcessInstanceRelatedData(anyInt(), any(), anyInt()))
-        .thenReturn(0);
-    when(incidentWriter.deleteProcessInstanceRelatedData(anyInt(), any(), anyInt())).thenReturn(0);
-    when(userTaskWriter.deleteProcessInstanceRelatedData(anyInt(), any(), anyInt())).thenReturn(0);
-    when(variableInstanceWriter.deleteProcessInstanceRelatedData(anyInt(), any(), anyInt()))
-        .thenReturn(0);
-    when(decisionInstanceWriter.deleteProcessInstanceRelatedData(anyInt(), any(), anyInt()))
-        .thenReturn(0);
-    when(jobWriter.deleteProcessInstanceRelatedData(anyInt(), any(), anyInt())).thenReturn(0);
-    when(sequenceFlowWriter.deleteProcessInstanceRelatedData(anyInt(), any(), anyInt()))
-        .thenReturn(0);
-    when(messageSubscriptionWriter.deleteProcessInstanceRelatedData(anyInt(), any(), anyInt()))
-        .thenReturn(0);
-    when(correlatedMessageSubscriptionWriter.deleteProcessInstanceRelatedData(
-            anyInt(), any(), anyInt()))
-        .thenReturn(0);
-    when(auditLogWriter.deleteProcessInstanceRelatedData(anyInt(), any(), anyInt())).thenReturn(0);
+    // All child delete less than batch size, which means they were all deleted
+    when(flowNodeInstanceWriter.deleteRootProcessInstanceRelatedData(any(), anyInt()))
+        .thenReturn(2);
+
     when(processInstanceWriter.deleteByKeys(any())).thenReturn(3);
     when(batchOperationWriter.cleanupHistory(any(), anyInt())).thenReturn(1);
     when(decisionInstanceWriter.cleanupHistory(anyInt(), any(), anyInt())).thenReturn(2);
     when(auditLogWriter.cleanupHistory(anyInt(), any(), anyInt())).thenReturn(1);
+
+    // dependent processes were also deleted
+    when(processInstanceWriter.deleteChildrenByRootProcessInstances(any(), anyInt())).thenReturn(1);
 
     // when
     final Duration nextCleanupInterval =
@@ -173,29 +157,28 @@ class HistoryCleanupServiceTest {
 
     // then
     assertThat(nextCleanupInterval).isEqualTo(Duration.ofHours(1));
-    verify(processInstanceReader).selectExpiredProcessInstances(PARTITION_ID, CLEANUP_DATE, 100);
+    verify(processInstanceReader)
+        .selectExpiredRootProcessInstances(PARTITION_ID, CLEANUP_DATE, 100);
     // Each writer called once per cleanup cycle
     verify(flowNodeInstanceWriter)
-        .deleteProcessInstanceRelatedData(PARTITION_ID, expiredProcessInstanceKeys, 100);
-    verify(incidentWriter)
-        .deleteProcessInstanceRelatedData(PARTITION_ID, expiredProcessInstanceKeys, 100);
-    verify(userTaskWriter)
-        .deleteProcessInstanceRelatedData(PARTITION_ID, expiredProcessInstanceKeys, 100);
+        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, 100);
+    verify(incidentWriter).deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, 100);
+    verify(userTaskWriter).deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, 100);
     verify(variableInstanceWriter)
-        .deleteProcessInstanceRelatedData(PARTITION_ID, expiredProcessInstanceKeys, 100);
+        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, 100);
     verify(decisionInstanceWriter)
-        .deleteProcessInstanceRelatedData(PARTITION_ID, expiredProcessInstanceKeys, 100);
-    verify(jobWriter)
-        .deleteProcessInstanceRelatedData(PARTITION_ID, expiredProcessInstanceKeys, 100);
+        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, 100);
+    verify(jobWriter).deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, 100);
     verify(sequenceFlowWriter)
-        .deleteProcessInstanceRelatedData(PARTITION_ID, expiredProcessInstanceKeys, 100);
+        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, 100);
     verify(messageSubscriptionWriter)
-        .deleteProcessInstanceRelatedData(PARTITION_ID, expiredProcessInstanceKeys, 100);
+        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, 100);
     verify(correlatedMessageSubscriptionWriter)
-        .deleteProcessInstanceRelatedData(PARTITION_ID, expiredProcessInstanceKeys, 100);
-    verify(auditLogWriter)
-        .deleteProcessInstanceRelatedData(PARTITION_ID, expiredProcessInstanceKeys, 100);
+        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, 100);
+    verify(auditLogWriter).deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, 100);
     // PIs deleted since no child entities were found
+    verify(processInstanceWriter)
+        .deleteChildrenByRootProcessInstances(expiredProcessInstanceKeys, 100);
     verify(processInstanceWriter).deleteByKeys(expiredProcessInstanceKeys);
     verify(batchOperationWriter).cleanupHistory(CLEANUP_DATE, 100);
     verify(decisionInstanceWriter).cleanupHistory(PARTITION_ID, CLEANUP_DATE, 100);
@@ -206,26 +189,15 @@ class HistoryCleanupServiceTest {
   void testCleanupHistoryWithRemainingDependents() {
     // given - PIs with remaining child entities (won't be deleted in this cycle)
     final List<Long> expiredProcessInstanceKeys = java.util.List.of(1L, 2L, 3L);
-    when(processInstanceReader.selectExpiredProcessInstances(anyInt(), any(), anyInt()))
+    when(processInstanceReader.selectExpiredRootProcessInstances(anyInt(), any(), anyInt()))
         .thenReturn(expiredProcessInstanceKeys);
-    // Some child entities still exist and are deleted
-    when(flowNodeInstanceWriter.deleteProcessInstanceRelatedData(anyInt(), any(), anyInt()))
+    // Some child entities might still exist as the batch size was hit
+    when(flowNodeInstanceWriter.deleteRootProcessInstanceRelatedData(any(), anyInt()))
         .thenReturn(10);
-    when(incidentWriter.deleteProcessInstanceRelatedData(anyInt(), any(), anyInt())).thenReturn(5);
-    when(userTaskWriter.deleteProcessInstanceRelatedData(anyInt(), any(), anyInt())).thenReturn(0);
-    when(variableInstanceWriter.deleteProcessInstanceRelatedData(anyInt(), any(), anyInt()))
+    when(incidentWriter.deleteRootProcessInstanceRelatedData(any(), anyInt())).thenReturn(5);
+    when(variableInstanceWriter.deleteRootProcessInstanceRelatedData(any(), anyInt()))
         .thenReturn(100);
-    when(decisionInstanceWriter.deleteProcessInstanceRelatedData(anyInt(), any(), anyInt()))
-        .thenReturn(0);
-    when(jobWriter.deleteProcessInstanceRelatedData(anyInt(), any(), anyInt())).thenReturn(0);
-    when(sequenceFlowWriter.deleteProcessInstanceRelatedData(anyInt(), any(), anyInt()))
-        .thenReturn(0);
-    when(messageSubscriptionWriter.deleteProcessInstanceRelatedData(anyInt(), any(), anyInt()))
-        .thenReturn(0);
-    when(correlatedMessageSubscriptionWriter.deleteProcessInstanceRelatedData(
-            anyInt(), any(), anyInt()))
-        .thenReturn(0);
-    when(auditLogWriter.deleteProcessInstanceRelatedData(anyInt(), any(), anyInt())).thenReturn(0);
+
     when(batchOperationWriter.cleanupHistory(any(), anyInt())).thenReturn(1);
 
     // when
@@ -234,29 +206,76 @@ class HistoryCleanupServiceTest {
 
     // then
     assertThat(nextCleanupInterval).isEqualTo(Duration.ofHours(1));
-    verify(processInstanceReader).selectExpiredProcessInstances(PARTITION_ID, CLEANUP_DATE, 100);
+    verify(processInstanceReader)
+        .selectExpiredRootProcessInstances(PARTITION_ID, CLEANUP_DATE, 100);
     // Each writer called once
     verify(flowNodeInstanceWriter)
-        .deleteProcessInstanceRelatedData(PARTITION_ID, expiredProcessInstanceKeys, 100);
-    verify(incidentWriter)
-        .deleteProcessInstanceRelatedData(PARTITION_ID, expiredProcessInstanceKeys, 100);
-    verify(userTaskWriter)
-        .deleteProcessInstanceRelatedData(PARTITION_ID, expiredProcessInstanceKeys, 100);
+        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, 100);
+    verify(incidentWriter).deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, 100);
+    verify(userTaskWriter).deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, 100);
     verify(variableInstanceWriter)
-        .deleteProcessInstanceRelatedData(PARTITION_ID, expiredProcessInstanceKeys, 100);
+        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, 100);
     verify(decisionInstanceWriter)
-        .deleteProcessInstanceRelatedData(PARTITION_ID, expiredProcessInstanceKeys, 100);
-    verify(jobWriter)
-        .deleteProcessInstanceRelatedData(PARTITION_ID, expiredProcessInstanceKeys, 100);
+        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, 100);
+    verify(jobWriter).deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, 100);
     verify(sequenceFlowWriter)
-        .deleteProcessInstanceRelatedData(PARTITION_ID, expiredProcessInstanceKeys, 100);
+        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, 100);
     verify(messageSubscriptionWriter)
-        .deleteProcessInstanceRelatedData(PARTITION_ID, expiredProcessInstanceKeys, 100);
+        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, 100);
     verify(correlatedMessageSubscriptionWriter)
-        .deleteProcessInstanceRelatedData(PARTITION_ID, expiredProcessInstanceKeys, 100);
-    verify(auditLogWriter)
-        .deleteProcessInstanceRelatedData(PARTITION_ID, expiredProcessInstanceKeys, 100);
+        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, 100);
+    verify(auditLogWriter).deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, 100);
     // PIs NOT deleted because child entities were found
+    verify(processInstanceWriter, Mockito.never())
+        .deleteChildrenByRootProcessInstances(any(), anyInt());
+    verify(processInstanceWriter, Mockito.never()).deleteByKeys(any());
+    verify(batchOperationWriter).cleanupHistory(CLEANUP_DATE, 100);
+  }
+
+  @Test
+  void testCleanupHistoryWithRemainingDependentProcesses() {
+    // given - PIs with remaining child entities (won't be deleted in this cycle)
+    final List<Long> expiredProcessInstanceKeys = java.util.List.of(1L, 2L, 3L);
+    when(processInstanceReader.selectExpiredRootProcessInstances(anyInt(), any(), anyInt()))
+        .thenReturn(expiredProcessInstanceKeys);
+    // All non-process child entities were deleted this time
+    when(flowNodeInstanceWriter.deleteRootProcessInstanceRelatedData(any(), anyInt()))
+        .thenReturn(1);
+
+    when(batchOperationWriter.cleanupHistory(any(), anyInt())).thenReturn(1);
+
+    // but dependent processes were not fully deleted (as batch size was hit)
+    when(processInstanceWriter.deleteChildrenByRootProcessInstances(any(), anyInt()))
+        .thenReturn(100);
+
+    // when
+    final Duration nextCleanupInterval =
+        historyCleanupService.cleanupHistory(PARTITION_ID, CLEANUP_DATE);
+
+    // then
+    assertThat(nextCleanupInterval).isEqualTo(Duration.ofHours(1));
+    verify(processInstanceReader)
+        .selectExpiredRootProcessInstances(PARTITION_ID, CLEANUP_DATE, 100);
+    // Each writer called once
+    verify(flowNodeInstanceWriter)
+        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, 100);
+    verify(incidentWriter).deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, 100);
+    verify(userTaskWriter).deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, 100);
+    verify(variableInstanceWriter)
+        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, 100);
+    verify(decisionInstanceWriter)
+        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, 100);
+    verify(jobWriter).deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, 100);
+    verify(sequenceFlowWriter)
+        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, 100);
+    verify(messageSubscriptionWriter)
+        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, 100);
+    verify(correlatedMessageSubscriptionWriter)
+        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, 100);
+    verify(auditLogWriter).deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, 100);
+    verify(processInstanceWriter)
+        .deleteChildrenByRootProcessInstances(expiredProcessInstanceKeys, 100);
+    // Root PIs NOT deleted because dependent process instance entities were found
     verify(processInstanceWriter, Mockito.never()).deleteByKeys(any());
     verify(batchOperationWriter).cleanupHistory(CLEANUP_DATE, 100);
   }
@@ -407,8 +426,8 @@ class HistoryCleanupServiceTest {
 
   @Test
   void testCleanupStandaloneDecisionInstances() {
-    // given - no expired process instances, but standalone decision instances exist
-    when(processInstanceReader.selectExpiredProcessInstances(anyInt(), any(), anyInt()))
+    // given - no expired root process instances, but standalone decision instances exist
+    when(processInstanceReader.selectExpiredRootProcessInstances(anyInt(), any(), anyInt()))
         .thenReturn(java.util.Collections.emptyList());
     when(batchOperationWriter.cleanupHistory(any(), anyInt())).thenReturn(0);
     when(decisionInstanceWriter.cleanupHistory(anyInt(), any(), anyInt())).thenReturn(5);

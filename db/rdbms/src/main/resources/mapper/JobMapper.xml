@@ -285,10 +285,10 @@
     WHERE JOB_KEY = #{jobKey}
   </update>
 
-  <delete id="deleteProcessInstanceRelatedData">
+  <delete id="deleteRootProcessInstanceRelatedData">
     <bind name="tableName" value="'JOB'"/>
     <bind name="primaryKeyColumn" value="'JOB_KEY'"/>
-    <include refid="io.camunda.db.rdbms.sql.Commons.processInstanceHistoryDeletion"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.rootProcessInstanceHistoryDeletion"/>
   </delete>
 
 </mapper>

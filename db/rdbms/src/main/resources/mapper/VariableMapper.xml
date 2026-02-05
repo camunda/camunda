@@ -160,10 +160,10 @@
       WHERE VAR_KEY = #{variableKey}
   </update>
 
-  <delete id="deleteProcessInstanceRelatedData">
+  <delete id="deleteRootProcessInstanceRelatedData">
     <bind name="tableName" value="'VARIABLE'"/>
     <bind name="primaryKeyColumn" value="'VAR_KEY'"/>
-    <include refid="io.camunda.db.rdbms.sql.Commons.processInstanceHistoryDeletion"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.rootProcessInstanceHistoryDeletion"/>
   </delete>
 
   <update id="migrateToProcess" parameterType="java.util.Map">

@@ -20,7 +20,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.db.rdbms.read.service.HistoryDeletionDbReader;
 import io.camunda.db.rdbms.read.service.ProcessInstanceDbReader;
-import io.camunda.db.rdbms.sql.ProcessInstanceDependantMapper;
+import io.camunda.db.rdbms.sql.RootProcessInstanceDependantMapper;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig.HistoryDeletionConfig;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.HistoryDeletionDbModel;
@@ -65,7 +65,7 @@ public class HistoryDeletionServiceTest {
             List.of(
                 createModel(processInstanceKey1, partitionId),
                 createModel(processInstanceKey2, partitionId)));
-    final var mapperMock = mock(ProcessInstanceDependantMapper.class);
+    final var mapperMock = mock(RootProcessInstanceDependantMapper.class);
     when(rdbmsWritersMock.getProcessInstanceDependantWriters())
         .thenReturn(List.of(new TestProcessInstanceDependantWriter(mapperMock)));
 
@@ -74,12 +74,11 @@ public class HistoryDeletionServiceTest {
 
     // then
     verify(mapperMock)
-        .deleteProcessInstanceRelatedData(
+        .deleteRootProcessInstanceRelatedData(
             argThat(
                 dto ->
-                    dto.partitionId() == partitionId
-                        && dto.processInstanceKeys()
-                            .equals(List.of(processInstanceKey1, processInstanceKey2))));
+                    dto.rootProcessInstanceKeys()
+                        .equals(List.of(processInstanceKey1, processInstanceKey2))));
     verify(rdbmsWritersMock.getProcessInstanceWriter())
         .deleteByKeys(List.of(processInstanceKey1, processInstanceKey2));
     verify(rdbmsWritersMock.getHistoryDeletionWriter())
@@ -90,7 +89,7 @@ public class HistoryDeletionServiceTest {
   void shouldNotDeleteWhenBatchIsEmpty() {
     // given
     when(historyDeletionDbReaderMock.getNextBatch(anyInt(), anyInt())).thenReturn(List.of());
-    final var mapperMock = mock(ProcessInstanceDependantMapper.class);
+    final var mapperMock = mock(RootProcessInstanceDependantMapper.class);
     when(rdbmsWritersMock.getProcessInstanceDependantWriters())
         .thenReturn(List.of(new TestProcessInstanceDependantWriter(mapperMock)));
 
@@ -98,7 +97,7 @@ public class HistoryDeletionServiceTest {
     historyDeletionService.deleteHistory(1);
 
     // then
-    verify(mapperMock, never()).deleteProcessInstanceRelatedData(any());
+    verify(mapperMock, never()).deleteRootProcessInstanceRelatedData(any());
     verify(rdbmsWritersMock.getProcessInstanceWriter(), never()).deleteByKeys(anyList());
     verify(rdbmsWritersMock.getHistoryDeletionWriter(), never()).deleteByResourceKeys(anyList());
   }
@@ -110,10 +109,10 @@ public class HistoryDeletionServiceTest {
     final var processInstanceKey = 1L;
     when(historyDeletionDbReaderMock.getNextBatch(anyInt(), anyInt()))
         .thenReturn(List.of(createModel(processInstanceKey, partitionId)));
-    final var mapperMock = mock(ProcessInstanceDependantMapper.class);
+    final var mapperMock = mock(RootProcessInstanceDependantMapper.class);
     when(rdbmsWritersMock.getProcessInstanceDependantWriters())
         .thenReturn(List.of(new TestProcessInstanceDependantWriter(mapperMock)));
-    when(mapperMock.deleteProcessInstanceRelatedData(any()))
+    when(mapperMock.deleteRootProcessInstanceRelatedData(any()))
         .thenReturn(10000); // not all dependant data deleted
 
     // when
@@ -239,10 +238,10 @@ public class HistoryDeletionServiceTest {
         processDefinitionKey, HistoryDeletionTypeDbModel.PROCESS_DEFINITION, 2L, partitionId);
   }
 
-  private static class TestProcessInstanceDependantWriter extends ProcessInstanceDependant {
+  private static class TestProcessInstanceDependantWriter extends RootProcessInstanceDependant {
     public TestProcessInstanceDependantWriter(
-        final ProcessInstanceDependantMapper processInstanceDependantMapper) {
-      super(processInstanceDependantMapper);
+        final RootProcessInstanceDependantMapper rootProcessInstanceDependantMapper) {
+      super(rootProcessInstanceDependantMapper);
     }
   }
 }

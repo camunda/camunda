@@ -1466,7 +1466,7 @@ public class UserTaskIT {
   }
 
   @TestTemplate
-  public void shouldDeleteProcessInstanceRelatedData(
+  public void shouldDeleteRootProcessInstanceRelatedData(
       final CamundaRdbmsTestApplication testApplication) {
     // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -1489,8 +1489,7 @@ public class UserTaskIT {
     final int deleted =
         rdbmsWriters
             .getUserTaskWriter()
-            .deleteProcessInstanceRelatedData(
-                PARTITION_ID, List.of(item2.processInstanceKey()), 10);
+            .deleteRootProcessInstanceRelatedData(List.of(item2.rootProcessInstanceKey()), 10);
 
     // then
     assertThat(deleted).isEqualTo(1);

@@ -220,10 +220,10 @@
     WHERE INCIDENT_KEY = #{incidentKey}
   </update>
 
-  <delete id="deleteProcessInstanceRelatedData">
+  <delete id="deleteRootProcessInstanceRelatedData">
     <bind name="tableName" value="'INCIDENT'"/>
     <bind name="primaryKeyColumn" value="'INCIDENT_KEY'"/>
-    <include refid="io.camunda.db.rdbms.sql.Commons.processInstanceHistoryDeletion"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.rootProcessInstanceHistoryDeletion"/>
   </delete>
 
   <select id="processInstanceStatisticsByErrorCount" parameterType="io.camunda.db.rdbms.read.domain.IncidentProcessInstanceStatisticsByErrorDbQuery"

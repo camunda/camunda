@@ -41,19 +41,12 @@ public class HistoryCleanupService {
 
   private final ProcessInstanceWriter processInstanceWriter;
   private final ProcessInstanceDbReader processInstanceReader;
-  private final IncidentWriter incidentWriter;
-  private final FlowNodeInstanceWriter flowNodeInstanceWriter;
-  private final UserTaskWriter userTaskWriter;
-  private final VariableWriter variableInstanceWriter;
   private final DecisionInstanceWriter decisionInstanceWriter;
-  private final JobWriter jobWriter;
-  private final SequenceFlowWriter sequenceFlowWriter;
   private final BatchOperationWriter batchOperationWriter;
-  private final MessageSubscriptionWriter messageSubscriptionWriter;
-  private final CorrelatedMessageSubscriptionWriter correlatedMessageSubscriptionWriter;
   private final UsageMetricWriter usageMetricWriter;
   private final UsageMetricTUWriter usageMetricTUWriter;
   private final AuditLogWriter auditLogWriter;
+  private final Map<String, RootProcessInstanceDependant> rootProcessInstanceDependentChildWriters;
 
   private final Map<Integer, Duration> lastCleanupInterval = new HashMap<>();
 
@@ -82,20 +75,27 @@ public class HistoryCleanupService {
     processInstanceBatchSize = config.history().historyCleanupProcessInstanceBatchSize();
     processInstanceWriter = rdbmsWriters.getProcessInstanceWriter();
     this.processInstanceReader = processInstanceReader;
-    incidentWriter = rdbmsWriters.getIncidentWriter();
-    flowNodeInstanceWriter = rdbmsWriters.getFlowNodeInstanceWriter();
-    userTaskWriter = rdbmsWriters.getUserTaskWriter();
-    variableInstanceWriter = rdbmsWriters.getVariableWriter();
-    decisionInstanceWriter = rdbmsWriters.getDecisionInstanceWriter();
-    jobWriter = rdbmsWriters.getJobWriter();
-    sequenceFlowWriter = rdbmsWriters.getSequenceFlowWriter();
-    batchOperationWriter = rdbmsWriters.getBatchOperationWriter();
-    messageSubscriptionWriter = rdbmsWriters.getMessageSubscriptionWriter();
-    correlatedMessageSubscriptionWriter = rdbmsWriters.getCorrelatedMessageSubscriptionWriter();
     metrics = rdbmsWriters.getMetrics();
+    decisionInstanceWriter = rdbmsWriters.getDecisionInstanceWriter();
+    batchOperationWriter = rdbmsWriters.getBatchOperationWriter();
     usageMetricWriter = rdbmsWriters.getUsageMetricWriter();
     usageMetricTUWriter = rdbmsWriters.getUsageMetricTUWriter();
     auditLogWriter = rdbmsWriters.getAuditLogWriter();
+
+    rootProcessInstanceDependentChildWriters =
+        Map.ofEntries(
+            Map.entry("flowNodeInstance", rdbmsWriters.getFlowNodeInstanceWriter()),
+            Map.entry("incident", rdbmsWriters.getIncidentWriter()),
+            Map.entry("userTask", rdbmsWriters.getUserTaskWriter()),
+            Map.entry("variable", rdbmsWriters.getVariableWriter()),
+            Map.entry("decisionInstance", rdbmsWriters.getDecisionInstanceWriter()),
+            Map.entry("job", rdbmsWriters.getJobWriter()),
+            Map.entry("sequenceFlow", rdbmsWriters.getSequenceFlowWriter()),
+            Map.entry("messageSubscription", rdbmsWriters.getMessageSubscriptionWriter()),
+            Map.entry(
+                "correlatedMessageSubscription",
+                rdbmsWriters.getCorrelatedMessageSubscriptionWriter()),
+            Map.entry("auditLog", rdbmsWriters.getAuditLogWriter()));
   }
 
   public void scheduleProcessForHistoryCleanup(
@@ -106,7 +106,8 @@ public class HistoryCleanupService {
         "Scheduling process instance cleanup for key {} at {}",
         processInstanceKey,
         historyCleanupDate);
-    // Only update the process instance record itself (single row update)
+    // Only update the process instance record itself (single row update) if it is a root process
+    // instance
     // Child entities will be deleted by the cleanup job using the PI's cleanup date
     processInstanceWriter.scheduleForHistoryCleanup(processInstanceKey, historyCleanupDate);
   }
@@ -147,85 +148,61 @@ public class HistoryCleanupService {
 
       // Query expired process instances (bounded by processInstanceBatchSize)
       // This is kept small to avoid Oracle IN-clause limit (1000) when passing
-      // PI keys to deleteProcessInstanceRelatedData()
-      final List<Long> expiredProcessInstanceKeys =
-          processInstanceReader.selectExpiredProcessInstances(
+      // PI keys to deleteRootProcessInstanceRelatedData()
+      final List<Long> expiredRootProcessInstanceKeys =
+          processInstanceReader.selectExpiredRootProcessInstances(
               partitionId, cleanupDate, processInstanceBatchSize);
 
-      if (!expiredProcessInstanceKeys.isEmpty()) {
+      if (!expiredRootProcessInstanceKeys.isEmpty()) {
         LOG.debug(
-            "Found {} expired process instances for cleanup on partition {}",
-            expiredProcessInstanceKeys.size(),
+            "Found {} expired root process instances for cleanup on partition {}",
+            expiredRootProcessInstanceKeys.size(),
             partitionId);
 
         // Delete up to batchSize child entities for all expired PIs
         // If any child entities remain, the PI won't be deleted and will be retried in next cycle
         // This keeps each cleanup cycle bounded and simple
-        numDeletedRecords.put(
-            "flowNodeInstance",
-            flowNodeInstanceWriter.deleteProcessInstanceRelatedData(
-                partitionId, expiredProcessInstanceKeys, cleanupBatchSize));
-        numDeletedRecords.put(
-            "incident",
-            incidentWriter.deleteProcessInstanceRelatedData(
-                partitionId, expiredProcessInstanceKeys, cleanupBatchSize));
-        numDeletedRecords.put(
-            "userTask",
-            userTaskWriter.deleteProcessInstanceRelatedData(
-                partitionId, expiredProcessInstanceKeys, cleanupBatchSize));
-        numDeletedRecords.put(
-            "variable",
-            variableInstanceWriter.deleteProcessInstanceRelatedData(
-                partitionId, expiredProcessInstanceKeys, cleanupBatchSize));
-        numDeletedRecords.put(
-            "decisionInstance",
-            decisionInstanceWriter.deleteProcessInstanceRelatedData(
-                partitionId, expiredProcessInstanceKeys, cleanupBatchSize));
-        numDeletedRecords.put(
-            "job",
-            jobWriter.deleteProcessInstanceRelatedData(
-                partitionId, expiredProcessInstanceKeys, cleanupBatchSize));
-        numDeletedRecords.put(
-            "sequenceFlow",
-            sequenceFlowWriter.deleteProcessInstanceRelatedData(
-                partitionId, expiredProcessInstanceKeys, cleanupBatchSize));
-        numDeletedRecords.put(
-            "messageSubscription",
-            messageSubscriptionWriter.deleteProcessInstanceRelatedData(
-                partitionId, expiredProcessInstanceKeys, cleanupBatchSize));
-        numDeletedRecords.put(
-            "correlatedMessageSubscription",
-            correlatedMessageSubscriptionWriter.deleteProcessInstanceRelatedData(
-                partitionId, expiredProcessInstanceKeys, cleanupBatchSize));
-        numDeletedRecords.put(
-            "auditLog",
-            auditLogWriter.deleteProcessInstanceRelatedData(
-                partitionId, expiredProcessInstanceKeys, cleanupBatchSize));
-
-        // Calculate total child entities deleted - if any deletion hit the batch size limit,
-        // there might be more to delete. Otherwise, we can assume all children are gone.
-
-        final boolean anyDeletionHitBatchLimit =
-            numDeletedRecords.values().stream().anyMatch(num -> num >= cleanupBatchSize);
-        final int totalChildEntitiesDeleted =
-            numDeletedRecords.values().stream().mapToInt(Integer::intValue).sum();
+        int totalChildEntitiesDeleted = 0;
+        boolean anyDeletionHitBatchLimit = false;
+        for (final var entry : rootProcessInstanceDependentChildWriters.entrySet()) {
+          final var writer = entry.getValue();
+          final var numDeleted =
+              writer.deleteRootProcessInstanceRelatedData(
+                  expiredRootProcessInstanceKeys, cleanupBatchSize);
+          totalChildEntitiesDeleted += numDeleted;
+          anyDeletionHitBatchLimit = anyDeletionHitBatchLimit || (numDeleted >= cleanupBatchSize);
+          numDeletedRecords.put(entry.getKey(), numDeleted);
+        }
 
         // Only delete PIs if we're confident all children are gone:
-        // - No child entities were deleted in this cycle, OR
-        // - Some were deleted but none hit the batch limit (meaning all remaining were deleted)
-        if (totalChildEntitiesDeleted == 0 || !anyDeletionHitBatchLimit) {
-          final int deletedPIs = processInstanceWriter.deleteByKeys(expiredProcessInstanceKeys);
-          numDeletedRecords.put("processInstance", deletedPIs);
+        // as long as no entity deletion hit the batch limit, we can be sure all children are gone
+        int deletedChildPIs = 0;
+        if (!anyDeletionHitBatchLimit) {
+          deletedChildPIs =
+              processInstanceWriter.deleteChildrenByRootProcessInstances(
+                  expiredRootProcessInstanceKeys, cleanupBatchSize);
+          totalChildEntitiesDeleted += deletedChildPIs;
           LOG.debug(
-              "Deleted {} process instances with no remaining dependents on partition {}",
-              deletedPIs,
+              "Deleted {} child process instances with no remaining dependents on partition {}",
+              deletedChildPIs,
+              partitionId);
+          numDeletedRecords.put("childProcessInstance", deletedChildPIs);
+        }
+        // Only delete Root PIs if we're confident all related PIs and their children are gone
+        if (!anyDeletionHitBatchLimit && deletedChildPIs < cleanupBatchSize) {
+          final int deletedRPIs =
+              processInstanceWriter.deleteByKeys(expiredRootProcessInstanceKeys);
+          numDeletedRecords.put("rootProcessInstance", deletedRPIs);
+          LOG.debug(
+              "Deleted {} root process instances with no remaining dependents on partition {}",
+              deletedRPIs,
               partitionId);
         } else {
           LOG.debug(
-              "Deleted {} child entities for {} process instances on partition {}. "
-                  + "Process instances will be retried in next cleanup cycle.",
+              "Deleted {} child entities for {} root process instances on partition {}. "
+                  + "Root process instances will be retried in next cleanup cycle.",
               totalChildEntitiesDeleted,
-              expiredProcessInstanceKeys.size(),
+              expiredRootProcessInstanceKeys.size(),
               partitionId);
         }
       }

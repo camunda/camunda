@@ -458,6 +458,7 @@
     <foreach collection="processInstanceKeys" item="key" open="(" separator="," close=")">
       #{key}
     </foreach>
+    AND ROOT_PROCESS_INSTANCE_KEY = PROCESS_INSTANCE_KEY
   </update>
 
   <delete id="deleteByKeys">
@@ -468,13 +469,68 @@
     </foreach>
   </delete>
 
-  <select id="selectExpiredProcessInstances" resultType="java.lang.Long">
+  <select id="selectExpiredRootProcessInstances" resultType="java.lang.Long">
     SELECT PROCESS_INSTANCE_KEY
     FROM ${prefix}PROCESS_INSTANCE
     WHERE PARTITION_ID = #{partitionId}
       AND HISTORY_CLEANUP_DATE &lt; #{cleanupDate}
+      AND ROOT_PROCESS_INSTANCE_KEY = PROCESS_INSTANCE_KEY
     ORDER BY HISTORY_CLEANUP_DATE
     ${keysetPaging.limit}
   </select>
+
+  <delete id="deleteChildrenByRootProcessInstances">
+    DELETE
+    FROM ${prefix}PROCESS_INSTANCE
+    WHERE ROOT_PROCESS_INSTANCE_KEY IN
+    <foreach collection="rootProcessInstanceKeys" item="key" open="(" separator=", " close=")">
+      #{key}
+    </foreach>
+    AND ROOT_PROCESS_INSTANCE_KEY != PROCESS_INSTANCE_KEY
+    LIMIT #{limit}
+  </delete>
+  <delete id="deleteChildrenByRootProcessInstances" databaseId="mssql">
+    DELETE TOP (#{limit})
+    FROM ${prefix}PROCESS_INSTANCE
+    WHERE ROOT_PROCESS_INSTANCE_KEY IN
+    <foreach collection="rootProcessInstanceKeys" item="key" open="(" separator=", " close=")">
+      #{key}
+    </foreach>
+    AND ROOT_PROCESS_INSTANCE_KEY != PROCESS_INSTANCE_KEY
+  </delete>
+  <!--
+    Special handling for Oracle to delete using row identifiers.
+    We also do not use an IN clause to select the process instance keys,
+    but use XMLTABLE to handle large lists of keys. Oracle has a natural limit of 1000 elements per IN clause.
+  -->
+  <delete id="deleteChildrenByRootProcessInstances" databaseId="oracle">
+    DELETE
+    FROM ${prefix}PROCESS_INSTANCE t1
+    WHERE PROCESS_INSTANCE_KEY IN (SELECT t2.PROCESS_INSTANCE_KEY
+    FROM ${prefix}PROCESS_INSTANCE t2
+    WHERE t2.ROOT_PROCESS_INSTANCE_KEY IN (
+    SELECT COLUMN_VALUE
+    FROM XMLTABLE('/d/r'
+    PASSING XMLTYPE(#{rootProcessInstanceKeys, typeHandler=io.camunda.db.rdbms.sql.typehandler.OracleXmlArrayTypeHandler})
+    COLUMNS COLUMN_VALUE NUMBER PATH 'text()')
+    )
+    AND t2.ROOT_PROCESS_INSTANCE_KEY != t2.PROCESS_INSTANCE_KEY
+    AND ROWNUM &lt;= #{limit})
+  </delete>
+
+  <!--
+    Special handling for PostgreSQL to delete using ctid or a specified primary key column.
+    This avoids issues with large IN clauses by using ANY with an array parameter.
+    -->
+  <delete id="deleteChildrenByRootProcessInstances" databaseId="postgresql">
+    DELETE
+    FROM ${prefix}PROCESS_INSTANCE t1
+    USING (SELECT PROCESS_INSTANCE_KEY
+    FROM ${prefix}PROCESS_INSTANCE
+    WHERE ROOT_PROCESS_INSTANCE_KEY = ANY(#{rootProcessInstanceKeys, jdbcType=ARRAY, typeHandler=io.camunda.db.rdbms.sql.typehandler.PostgresLongListToArrayTypeHandler})
+    AND ROOT_PROCESS_INSTANCE_KEY != PROCESS_INSTANCE_KEY
+    LIMIT #{limit}) t2
+    WHERE t1.PROCESS_INSTANCE_KEY = t2.PROCESS_INSTANCE_KEY
+  </delete>
 
 </mapper>

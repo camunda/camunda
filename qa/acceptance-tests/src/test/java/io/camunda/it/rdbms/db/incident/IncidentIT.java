@@ -284,14 +284,12 @@ public class IncidentIT {
   }
 
   @TestTemplate
-  public void shouldDeleteProcessInstanceRelatedData(
+  public void shouldDeleteRootProcessInstanceRelatedData(
       final CamundaRdbmsTestApplication testApplication) {
     // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final IncidentDbReader reader = rdbmsService.getIncidentReader();
-
-    final var cleanupDate = NOW.minusDays(1);
 
     final var definition =
         ProcessDefinitionFixtures.createAndSaveProcessDefinition(rdbmsWriters, b -> b);
@@ -309,8 +307,7 @@ public class IncidentIT {
     final int deleted =
         rdbmsWriters
             .getIncidentWriter()
-            .deleteProcessInstanceRelatedData(
-                PARTITION_ID, List.of(item2.processInstanceKey()), 10);
+            .deleteRootProcessInstanceRelatedData(List.of(item2.rootProcessInstanceKey()), 10);
 
     // then
     assertThat(deleted).isEqualTo(1);

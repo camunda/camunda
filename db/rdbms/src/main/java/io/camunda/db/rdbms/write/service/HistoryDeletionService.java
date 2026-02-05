@@ -91,8 +91,7 @@ public class HistoryDeletionService {
                 dependant -> {
                   final var limit = config.dependentRowLimit();
                   final var deletedRows =
-                      dependant.deleteProcessInstanceRelatedData(
-                          partitionId, processInstanceKeys, limit);
+                      dependant.deleteRootProcessInstanceRelatedData(processInstanceKeys, limit);
                   return deletedRows < limit;
                 });
 
