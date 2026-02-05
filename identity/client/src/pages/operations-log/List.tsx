@@ -19,7 +19,6 @@ import {
   SuccessIcon,
   ErrorIcon,
   Grid,
-  Title,
   ColumnRightPadding,
   CenteredRow,
   DatePickerWrapper,
@@ -31,7 +30,9 @@ import {
   DatePickerInput,
   Dropdown,
   FormLabel,
+  Heading,
   MultiSelect,
+  Section,
   Stack,
   TextInput,
 } from "@carbon/react";
@@ -140,131 +141,137 @@ const List: FC = () => {
       />
       <Grid condensed fullWidth>
         <ColumnRightPadding sm={4} md={3} lg={4} xlg={3}>
-          <Title>{t("operation")}</Title>
-          <Stack gap={5}>
-            <MultiSelect
-              id="operationType"
-              items={auditLogOperationTypeSchema.options}
-              titleText={t("operationType")}
-              label={t("multiSelectLabel")}
-              selectedItems={operationType ? operationType : []}
-              itemToString={(selectedItem) => spaceAndCapitalize(selectedItem)}
-              onChange={({ selectedItems }) => {
-                if (selectedItems !== null) {
-                  setOperationType(selectedItems);
+          <Section level={4}>
+            <Stack gap={5}>
+              <Heading>{t("operation")}</Heading>
+              <MultiSelect
+                id="operationType"
+                items={auditLogOperationTypeSchema.options}
+                titleText={t("operationType")}
+                label={t("multiSelectLabel")}
+                selectedItems={operationType ? operationType : []}
+                itemToString={(selectedItem) =>
+                  spaceAndCapitalize(selectedItem)
                 }
-              }}
-              size="sm"
-            />
-            <MultiSelect
-              id="entityType"
-              items={auditLogEntityTypeSchema.options}
-              titleText={t("entityType")}
-              label={t("multiSelectLabel")}
-              selectedItems={entityType ? entityType : []}
-              itemToString={(selectedItem) => spaceAndCapitalize(selectedItem)}
-              onChange={({ selectedItems }) => {
-                if (selectedItems !== null) {
-                  setEntityType(selectedItems);
-                }
-              }}
-              size="sm"
-            />
-            <Dropdown
-              label={t("selectLabel")}
-              aria-label={t("selectLabel")}
-              titleText={t("status")}
-              id="result-field"
-              onChange={({ selectedItem }) => {
-                setResult(
-                  !selectedItem || selectedItem === "all"
-                    ? "all"
-                    : auditLogResultSchema.parse(selectedItem),
-                );
-              }}
-              items={["all", ...auditLogResultSchema.options]}
-              itemToString={(item) =>
-                item === "all"
-                  ? t("selectAll")
-                  : item
-                    ? spaceAndCapitalize(item)
-                    : ""
-              }
-              selectedItem={result}
-              size="sm"
-            />
-            <TextInput
-              id="actorId"
-              labelText={t("actor")}
-              placeholder={t("actorPlaceholder")}
-              value={actor}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                const value = e.target.value.trim();
-                setActor(value);
-                debounce(() => setDebouncedActor(value ? value : undefined));
-              }}
-              size="sm"
-            />
-            <FormLabel>{t("time")}</FormLabel>
-            <DatePickerWrapper>
-              <DatePicker
-                datePickerType="range"
-                dateFormat="Y-m-d"
-                value={[timestampRange.from ?? "", timestampRange.to ?? ""]}
-                onChange={(dates) => {
-                  const [from, to] = dates;
-                  setTimestampRange({
-                    from: from ? from.toISOString() : undefined,
-                    to: to ? to.toISOString() : undefined,
-                  });
+                onChange={({ selectedItems }) => {
+                  if (selectedItems !== null) {
+                    setOperationType(selectedItems);
+                  }
                 }}
-              >
-                <DatePickerInput
-                  id="date-picker1"
-                  labelText="From"
-                  placeholder="YYYY-MM-DD"
-                  hideLabel
-                  size="sm"
-                  // @ts-expect-error - autoComplete is not in type definition but supported by underlying input
-                  autoComplete="off"
-                />
-                <DatePickerInput
-                  id="date-picker2"
-                  labelText="To"
-                  placeholder="YYYY-MM-DD"
-                  hideLabel
-                  size="sm"
-                  // @ts-expect-error - autoComplete is not in type definition but supported by underlying input
-                  autoComplete="off"
-                />
-              </DatePicker>
-            </DatePickerWrapper>
-            <CenteredRow>
-              <Button
-                kind="ghost"
                 size="sm"
-                disabled={
-                  operationType.length === 0 &&
-                  entityType.length === 0 &&
-                  result === "all" &&
-                  !actor &&
-                  !timestampRange.from &&
-                  !timestampRange.to
+              />
+              <MultiSelect
+                id="entityType"
+                items={auditLogEntityTypeSchema.options}
+                titleText={t("entityType")}
+                label={t("multiSelectLabel")}
+                selectedItems={entityType ? entityType : []}
+                itemToString={(selectedItem) =>
+                  spaceAndCapitalize(selectedItem)
                 }
-                type="reset"
-                onClick={() => {
-                  setOperationType([]);
-                  setEntityType([]);
-                  setResult("all");
-                  setActor("");
-                  setDebouncedActor(undefined);
-                  setTimestampRange({});
+                onChange={({ selectedItems }) => {
+                  if (selectedItems !== null) {
+                    setEntityType(selectedItems);
+                  }
                 }}
-              >
-                {t("reset")}
-              </Button>
-            </CenteredRow>
-          </Stack>
+                size="sm"
+              />
+              <Dropdown
+                label={t("selectLabel")}
+                aria-label={t("selectLabel")}
+                titleText={t("status")}
+                id="result-field"
+                onChange={({ selectedItem }) => {
+                  setResult(
+                    !selectedItem || selectedItem === "all"
+                      ? "all"
+                      : auditLogResultSchema.parse(selectedItem),
+                  );
+                }}
+                items={["all", ...auditLogResultSchema.options]}
+                itemToString={(item) =>
+                  item === "all"
+                    ? t("selectAll")
+                    : item
+                      ? spaceAndCapitalize(item)
+                      : ""
+                }
+                selectedItem={result}
+                size="sm"
+              />
+              <TextInput
+                id="actorId"
+                labelText={t("actor")}
+                placeholder={t("actorPlaceholder")}
+                value={actor}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                  const value = e.target.value.trim();
+                  setActor(value);
+                  debounce(() => setDebouncedActor(value ? value : undefined));
+                }}
+                size="sm"
+              />
+              <FormLabel>{t("time")}</FormLabel>
+              <DatePickerWrapper>
+                <DatePicker
+                  datePickerType="range"
+                  dateFormat="Y-m-d"
+                  value={[timestampRange.from ?? "", timestampRange.to ?? ""]}
+                  onChange={(dates) => {
+                    const [from, to] = dates;
+                    setTimestampRange({
+                      from: from ? from.toISOString() : undefined,
+                      to: to ? to.toISOString() : undefined,
+                    });
+                  }}
+                >
+                  <DatePickerInput
+                    id="date-picker1"
+                    labelText="From"
+                    placeholder="YYYY-MM-DD"
+                    hideLabel
+                    size="sm"
+                    // @ts-expect-error - autoComplete is not in type definition but supported by underlying input
+                    autoComplete="off"
+                  />
+                  <DatePickerInput
+                    id="date-picker2"
+                    labelText="To"
+                    placeholder="YYYY-MM-DD"
+                    hideLabel
+                    size="sm"
+                    // @ts-expect-error - autoComplete is not in type definition but supported by underlying input
+                    autoComplete="off"
+                  />
+                </DatePicker>
+              </DatePickerWrapper>
+              <CenteredRow>
+                <Button
+                  kind="ghost"
+                  size="sm"
+                  disabled={
+                    operationType.length === 0 &&
+                    entityType.length === 0 &&
+                    result === "all" &&
+                    !actor &&
+                    !timestampRange.from &&
+                    !timestampRange.to
+                  }
+                  type="reset"
+                  onClick={() => {
+                    setOperationType([]);
+                    setEntityType([]);
+                    setResult("all");
+                    setActor("");
+                    setDebouncedActor(undefined);
+                    setTimestampRange({});
+                  }}
+                >
+                  {t("reset")}
+                </Button>
+              </CenteredRow>
+            </Stack>
+          </Section>
         </ColumnRightPadding>
         <Column sm={4} md={5} lg={12} xlg={13}>
           <EntityList

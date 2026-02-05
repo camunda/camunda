@@ -12,7 +12,6 @@ import {
   ErrorFilled as BaseErrorFilled,
 } from "@carbon/react/icons";
 import { Column, Grid as CarbonGrid } from "@carbon/react";
-import { heading01, spacing05 } from "@carbon/elements";
 
 const OperationLogName = styled.div`
   display: flex;
@@ -34,11 +33,6 @@ const Grid = styled(CarbonGrid)`
 
 const ColumnRightPadding = styled(Column)`
   margin-right: var(--cds-spacing-05);
-`;
-
-const Title = styled.h3`
-  ${heading01};
-  padding-bottom: ${spacing05};
 `;
 
 const CenteredRow = styled.div`
@@ -74,7 +68,6 @@ export {
   ErrorIcon,
   Grid,
   ColumnRightPadding,
-  Title,
   CenteredRow,
   DatePickerWrapper,
 };
