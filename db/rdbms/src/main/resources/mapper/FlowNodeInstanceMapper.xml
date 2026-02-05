@@ -181,7 +181,7 @@
       <arg column="STATE" javaType="io.camunda.search.entities.FlowNodeInstanceEntity$FlowNodeState"/>
       <arg column="INCIDENT_KEY" javaType="java.lang.Long"/>
       <arg column="NUM_SUBPROCESS_INCIDENTS" javaType="java.lang.Long"/>
-      <arg column="HAS_INCIDENT" javaType="java.lang.Boolean"/>
+      <arg column="HAS_INCIDENT" javaType="boolean"/>
       <arg column="TENANT_ID" javaType="java.lang.String"/>
       <arg column="PARTITION_ID" javaType="java.lang.Integer"/>
     </constructor>

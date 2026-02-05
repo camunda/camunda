@@ -237,11 +237,11 @@
     <result column="CUSTOM_HEADERS" property="serializedCustomHeaders" javaType="java.lang.String" />
     <result column="KIND" property="kind" javaType="io.camunda.search.entities.JobEntity$JobKind" />
     <result column="ELEMENT_ID" property="elementId" javaType="java.lang.String" />
-    <result column="IS_DENIED" property="isDenied" javaType="java.lang.Boolean" />
+    <result column="IS_DENIED" property="isDenied" javaType="boolean" />
     <result column="DENIED_REASON" property="deniedReason" javaType="java.lang.String" />
     <result column="LISTENER_EVENT_TYPE" property="listenerEventType" javaType="io.camunda.search.entities.JobEntity$ListenerEventType" />
     <result column="DEADLINE" property="deadline" javaType="java.time.OffsetDateTime" />
-    <result column="HAS_FAILED_WITH_RETRIES_LEFT" property="hasFailedWithRetriesLeft" javaType="java.lang.Boolean" />
+    <result column="HAS_FAILED_WITH_RETRIES_LEFT" property="hasFailedWithRetriesLeft" javaType="boolean" />
     <result column="CREATION_TIME" property="creationTime" javaType="java.time.OffsetDateTime" />
     <result column="LAST_UPDATE_TIME" property="lastUpdateTime" javaType="java.time.OffsetDateTime" />
   </resultMap>
