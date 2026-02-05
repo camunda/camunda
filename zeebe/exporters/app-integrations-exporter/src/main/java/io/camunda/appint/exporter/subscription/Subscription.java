@@ -122,7 +122,7 @@ public class Subscription<T> {
     } catch (final Exception e) {
       if (continueOnError) {
         lastPosition = batch.flush();
-        log.debug("Failed to send records. Continuing with last position: {}.", lastPosition, e);
+        log.warn("Failed to send records. Continuing with last position: {}.", lastPosition, e);
       } else {
         throw new RuntimeException(e);
       }
