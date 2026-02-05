@@ -1,3 +1,10 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
 package io.camunda.gateway.mcp.config;
 
 import static org.assertj.core.api.Assertions.*;
@@ -11,35 +18,6 @@ import org.springaicommunity.mcp.annotation.McpTool;
 import org.springframework.stereotype.Component;
 
 class McpToolParamsValidationTest {
-
-  // Valid usage: @McpToolParams alone
-  @Component
-  static class ValidSingleRequestBody {
-    @McpTool
-    public CallToolResult validMethod(@McpToolParams CreateTaskRequest request) {
-      return null;
-    }
-  }
-
-  // Invalid usage: @McpToolParams mixed with @Valid object
-  @Component
-  static class InvalidMixedParameters {
-    @McpTool
-    public CallToolResult invalidMethod(
-        @McpToolParams CreateTaskRequest request, @Valid CreateTaskRequest other) {
-      return null;
-    }
-  }
-
-  // Valid usage: @McpToolParams with simple type
-  @Component
-  static class ValidWithSimpleType {
-    @McpTool
-    public CallToolResult validMethod(
-        @McpToolParams CreateTaskRequest request, String simpleParam) {
-      return null;
-    }
-  }
 
   @Test
   void shouldAcceptSingleRequestBodyParameter() {
@@ -72,18 +50,6 @@ class McpToolParamsValidationTest {
         .hasMessageContaining("invalidMethod");
   }
 
-  // Valid usage: @McpToolParams with validated primitive
-  @Component
-  static class ValidWithValidatedPrimitive {
-    @McpTool
-    public CallToolResult validMethod(
-        @McpToolParams CreateTaskRequest request,
-        @jakarta.validation.constraints.NotBlank String name,
-        @jakarta.validation.constraints.Min(1) int count) {
-      return null;
-    }
-  }
-
   @Test
   void shouldAcceptRequestBodyWithValidatedPrimitives() {
     // @NotBlank/@Min on primitives are allowed (not the same as @Valid on objects)
@@ -92,5 +58,46 @@ class McpToolParamsValidationTest {
                 new CamundaSyncStatelessMcpToolProvider(List.of(new ValidWithValidatedPrimitive()))
                     .getToolSpecifications())
         .doesNotThrowAnyException();
+  }
+
+  // Valid usage: @McpToolParams alone
+  @Component
+  static class ValidSingleRequestBody {
+    @McpTool
+    public CallToolResult validMethod(@McpToolParams final CreateTaskRequest request) {
+      return null;
+    }
+  }
+
+  // Invalid usage: @McpToolParams mixed with @Valid object
+  @Component
+  static class InvalidMixedParameters {
+    @McpTool
+    public CallToolResult invalidMethod(
+        @McpToolParams final CreateTaskRequest request, @Valid final CreateTaskRequest other) {
+      return null;
+    }
+  }
+
+  // Valid usage: @McpToolParams with simple type
+  @Component
+  static class ValidWithSimpleType {
+    @McpTool
+    public CallToolResult validMethod(
+        @McpToolParams final CreateTaskRequest request, final String simpleParam) {
+      return null;
+    }
+  }
+
+  // Valid usage: @McpToolParams with validated primitive
+  @Component
+  static class ValidWithValidatedPrimitive {
+    @McpTool
+    public CallToolResult validMethod(
+        @McpToolParams final CreateTaskRequest request,
+        @jakarta.validation.constraints.NotBlank final String name,
+        @jakarta.validation.constraints.Min(1) final int count) {
+      return null;
+    }
   }
 }

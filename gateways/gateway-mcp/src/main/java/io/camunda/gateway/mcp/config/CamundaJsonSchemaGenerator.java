@@ -78,27 +78,27 @@ public class CamundaJsonSchemaGenerator {
 
   private static final SchemaGenerator SUBTYPE_SCHEMA_GENERATOR;
 
-  private static final Map<Method, String> methodSchemaCache =
+  private static final Map<Method, String> METHOD_SCHEMA_CACHE =
       new ConcurrentReferenceHashMap<>(256);
 
-  private static final Map<Class<?>, String> classSchemaCache =
+  private static final Map<Class<?>, String> CLASS_SCHEMA_CACHE =
       new ConcurrentReferenceHashMap<>(256);
 
-  private static final Map<Type, String> typeSchemaCache = new ConcurrentReferenceHashMap<>(256);
+  private static final Map<Type, String> TYPE_SCHEMA_CACHE = new ConcurrentReferenceHashMap<>(256);
 
   /*
    * Initialize JSON Schema generators.
    */
   static {
-    Module jacksonModule = new JacksonModule(JacksonOption.RESPECT_JSONPROPERTY_REQUIRED);
-    Module openApiModule = new Swagger2Module();
-    Module springAiSchemaModule =
+    final Module jacksonModule = new JacksonModule(JacksonOption.RESPECT_JSONPROPERTY_REQUIRED);
+    final Module openApiModule = new Swagger2Module();
+    final Module springAiSchemaModule =
         PROPERTY_REQUIRED_BY_DEFAULT
             ? new SpringAiSchemaModule()
             : new SpringAiSchemaModule(
                 SpringAiSchemaModule.Option.PROPERTY_REQUIRED_FALSE_BY_DEFAULT);
 
-    SchemaGeneratorConfigBuilder schemaGeneratorConfigBuilder =
+    final SchemaGeneratorConfigBuilder schemaGeneratorConfigBuilder =
         new SchemaGeneratorConfigBuilder(SchemaVersion.DRAFT_2020_12, OptionPreset.PLAIN_JSON)
             .with(jacksonModule)
             .with(openApiModule)
@@ -107,23 +107,23 @@ public class CamundaJsonSchemaGenerator {
             .with(Option.STANDARD_FORMATS)
             .with(Option.INLINE_ALL_SCHEMAS);
 
-    SchemaGeneratorConfig typeSchemaGeneratorConfig = schemaGeneratorConfigBuilder.build();
+    final SchemaGeneratorConfig typeSchemaGeneratorConfig = schemaGeneratorConfigBuilder.build();
     TYPE_SCHEMA_GENERATOR = new SchemaGenerator(typeSchemaGeneratorConfig);
 
-    SchemaGeneratorConfig subtypeSchemaGeneratorConfig =
+    final SchemaGeneratorConfig subtypeSchemaGeneratorConfig =
         schemaGeneratorConfigBuilder.without(Option.SCHEMA_VERSION_INDICATOR).build();
     SUBTYPE_SCHEMA_GENERATOR = new SchemaGenerator(subtypeSchemaGeneratorConfig);
   }
 
-  public static String generateForMethodInput(Method method) {
+  public static String generateForMethodInput(final Method method) {
     Assert.notNull(method, "method cannot be null");
-    return methodSchemaCache.computeIfAbsent(
+    return METHOD_SCHEMA_CACHE.computeIfAbsent(
         method, CamundaJsonSchemaGenerator::internalGenerateFromMethodArguments);
   }
 
-  private static String internalGenerateFromMethodArguments(Method method) {
+  private static String internalGenerateFromMethodArguments(final Method method) {
     // Check if method has CallToolRequest parameter
-    boolean hasCallToolRequestParam =
+    final boolean hasCallToolRequestParam =
         Arrays.stream(method.getParameterTypes())
             .anyMatch(type -> CallToolRequest.class.isAssignableFrom(type));
 
@@ -132,11 +132,11 @@ public class CamundaJsonSchemaGenerator {
       // Check if there are other parameters besides CallToolRequest, exchange
       // types,
       // @McpProgressToken annotated parameters, and McpMeta parameters
-      boolean hasOtherParams =
+      final boolean hasOtherParams =
           Arrays.stream(method.getParameters())
               .anyMatch(
                   param -> {
-                    Class<?> type = param.getType();
+                    final Class<?> type = param.getType();
                     return !McpSyncRequestContext.class.isAssignableFrom(type)
                         && !McpAsyncRequestContext.class.isAssignableFrom(type)
                         && !CallToolRequest.class.isAssignableFrom(type)
@@ -148,7 +148,7 @@ public class CamundaJsonSchemaGenerator {
 
       // If only CallToolRequest (and possibly exchange), return empty schema
       if (!hasOtherParams) {
-        ObjectNode schema = JsonParser.getObjectMapper().createObjectNode();
+        final ObjectNode schema = JsonParser.getObjectMapper().createObjectNode();
         schema.put("type", "object");
         schema.putObject("properties");
         schema.putArray("required");
@@ -156,17 +156,17 @@ public class CamundaJsonSchemaGenerator {
       }
     }
 
-    ObjectNode schema = JsonParser.getObjectMapper().createObjectNode();
+    final ObjectNode schema = JsonParser.getObjectMapper().createObjectNode();
     schema.put("$schema", SchemaVersion.DRAFT_2020_12.getIdentifier());
     schema.put("type", "object");
 
-    ObjectNode properties = schema.putObject("properties");
-    List<String> required = new ArrayList<>();
+    final ObjectNode properties = schema.putObject("properties");
+    final List<String> required = new ArrayList<>();
 
     for (int i = 0; i < method.getParameterCount(); i++) {
-      Parameter parameter = method.getParameters()[i];
-      String parameterName = parameter.getName();
-      Type parameterType = method.getGenericParameterTypes()[i];
+      final Parameter parameter = method.getParameters()[i];
+      final String parameterName = parameter.getName();
+      final Type parameterType = method.getGenericParameterTypes()[i];
 
       // Skip parameters annotated with @McpProgressToken
       if (parameter.isAnnotationPresent(McpProgressToken.class)) {
@@ -174,13 +174,13 @@ public class CamundaJsonSchemaGenerator {
       }
 
       // Skip McpMeta parameters
-      if (parameterType instanceof Class<?> parameterClass
+      if (parameterType instanceof final Class<?> parameterClass
           && McpMeta.class.isAssignableFrom(parameterClass)) {
         continue;
       }
 
       // Skip special parameter types
-      if (parameterType instanceof Class<?> parameterClass
+      if (parameterType instanceof final Class<?> parameterClass
           && (ClassUtils.isAssignable(McpSyncRequestContext.class, parameterClass)
               || ClassUtils.isAssignable(McpAsyncRequestContext.class, parameterClass)
               || ClassUtils.isAssignable(McpSyncServerExchange.class, parameterClass)
@@ -192,11 +192,11 @@ public class CamundaJsonSchemaGenerator {
       // Handle @McpToolParams - unwrap DTO fields to root level
       if (parameter.isAnnotationPresent(McpToolParams.class)) {
         // Generate schema for the DTO type and merge its properties at root level
-        ObjectNode dtoSchema = SUBTYPE_SCHEMA_GENERATOR.generateSchema(parameterType);
+        final ObjectNode dtoSchema = SUBTYPE_SCHEMA_GENERATOR.generateSchema(parameterType);
 
         // Extract properties from DTO schema
         if (dtoSchema.has("properties") && dtoSchema.get("properties").isObject()) {
-          ObjectNode dtoProperties = (ObjectNode) dtoSchema.get("properties");
+          final ObjectNode dtoProperties = (ObjectNode) dtoSchema.get("properties");
           dtoProperties
               .fields()
               .forEachRemaining(entry -> properties.set(entry.getKey(), entry.getValue()));
@@ -213,37 +213,37 @@ public class CamundaJsonSchemaGenerator {
       if (isMethodParameterRequired(method, i)) {
         required.add(parameterName);
       }
-      ObjectNode parameterNode = SUBTYPE_SCHEMA_GENERATOR.generateSchema(parameterType);
-      String parameterDescription = getMethodParameterDescription(method, i);
+      final ObjectNode parameterNode = SUBTYPE_SCHEMA_GENERATOR.generateSchema(parameterType);
+      final String parameterDescription = getMethodParameterDescription(method, i);
       if (Utils.hasText(parameterDescription)) {
         parameterNode.put("description", parameterDescription);
       }
       properties.set(parameterName, parameterNode);
     }
 
-    var requiredArray = schema.putArray("required");
+    final var requiredArray = schema.putArray("required");
     required.forEach(requiredArray::add);
 
     return schema.toPrettyString();
   }
 
-  public static String generateFromClass(Class<?> clazz) {
+  public static String generateFromClass(final Class<?> clazz) {
     Assert.notNull(clazz, "clazz cannot be null");
-    return classSchemaCache.computeIfAbsent(
+    return CLASS_SCHEMA_CACHE.computeIfAbsent(
         clazz, CamundaJsonSchemaGenerator::internalGenerateFromClass);
   }
 
-  private static String internalGenerateFromClass(Class<?> clazz) {
+  private static String internalGenerateFromClass(final Class<?> clazz) {
     return TYPE_SCHEMA_GENERATOR.generateSchema(clazz).toPrettyString();
   }
 
-  public static String generateFromType(Type type) {
+  public static String generateFromType(final Type type) {
     Assert.notNull(type, "type cannot be null");
-    return typeSchemaCache.computeIfAbsent(
+    return TYPE_SCHEMA_CACHE.computeIfAbsent(
         type, CamundaJsonSchemaGenerator::internalGenerateFromType);
   }
 
-  private static String internalGenerateFromType(Type type) {
+  private static String internalGenerateFromType(final Type type) {
     return TYPE_SCHEMA_GENERATOR.generateSchema(type).toPrettyString();
   }
 
@@ -253,32 +253,32 @@ public class CamundaJsonSchemaGenerator {
    * @param method The method to check
    * @return true if the method has a CallToolRequest parameter, false otherwise
    */
-  public static boolean hasCallToolRequestParameter(Method method) {
+  public static boolean hasCallToolRequestParameter(final Method method) {
     return Arrays.stream(method.getParameterTypes())
         .anyMatch(type -> CallToolRequest.class.isAssignableFrom(type));
   }
 
-  private static boolean isMethodParameterRequired(Method method, int index) {
-    Parameter parameter = method.getParameters()[index];
+  private static boolean isMethodParameterRequired(final Method method, final int index) {
+    final Parameter parameter = method.getParameters()[index];
 
-    var toolParamAnnotation = parameter.getAnnotation(McpToolParam.class);
+    final var toolParamAnnotation = parameter.getAnnotation(McpToolParam.class);
     if (toolParamAnnotation != null) {
       return toolParamAnnotation.required();
     }
 
-    var propertyAnnotation = parameter.getAnnotation(JsonProperty.class);
+    final var propertyAnnotation = parameter.getAnnotation(JsonProperty.class);
     if (propertyAnnotation != null) {
       return propertyAnnotation.required();
     }
 
-    var schemaAnnotation = parameter.getAnnotation(Schema.class);
+    final var schemaAnnotation = parameter.getAnnotation(Schema.class);
     if (schemaAnnotation != null) {
       return schemaAnnotation.requiredMode() == RequiredMode.REQUIRED
           || schemaAnnotation.requiredMode() == RequiredMode.AUTO
           || schemaAnnotation.required();
     }
 
-    var nullableAnnotation = parameter.getAnnotation(Nullable.class);
+    final var nullableAnnotation = parameter.getAnnotation(Nullable.class);
     if (nullableAnnotation != null) {
       return false;
     }
@@ -286,20 +286,20 @@ public class CamundaJsonSchemaGenerator {
     return PROPERTY_REQUIRED_BY_DEFAULT;
   }
 
-  private static String getMethodParameterDescription(Method method, int index) {
-    Parameter parameter = method.getParameters()[index];
+  private static String getMethodParameterDescription(final Method method, final int index) {
+    final Parameter parameter = method.getParameters()[index];
 
-    var toolParamAnnotation = parameter.getAnnotation(McpToolParam.class);
+    final var toolParamAnnotation = parameter.getAnnotation(McpToolParam.class);
     if (toolParamAnnotation != null && Utils.hasText(toolParamAnnotation.description())) {
       return toolParamAnnotation.description();
     }
 
-    var jacksonAnnotation = parameter.getAnnotation(JsonPropertyDescription.class);
+    final var jacksonAnnotation = parameter.getAnnotation(JsonPropertyDescription.class);
     if (jacksonAnnotation != null && Utils.hasText(jacksonAnnotation.value())) {
       return jacksonAnnotation.value();
     }
 
-    var schemaAnnotation = parameter.getAnnotation(Schema.class);
+    final var schemaAnnotation = parameter.getAnnotation(Schema.class);
     if (schemaAnnotation != null && Utils.hasText(schemaAnnotation.description())) {
       return schemaAnnotation.description();
     }

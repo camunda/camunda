@@ -11,6 +11,7 @@ import io.camunda.gateway.mcp.config.McpToolParams;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import jakarta.validation.Valid;
 import org.springaicommunity.mcp.annotation.McpTool;
+import org.springaicommunity.mcp.annotation.McpToolParam;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 
@@ -36,9 +37,9 @@ public class DemoTools {
           Demo tool for creating a task. This tool uses @McpToolParams to unwrap the request DTO.
           All fields (taskName, priority, metadata, urgent) are exposed as flat parameters in the schema.
           """)
-  public CallToolResult createTask(@McpToolParams @Valid CreateTaskRequest request) {
+  public CallToolResult createTask(@McpToolParams @Valid final CreateTaskRequest request) {
     // Log what we received to verify deserialization worked
-    String message =
+    final String message =
         String.format(
             "✅ Task created successfully!\n"
                 + "  Name: %s\n"
@@ -65,24 +66,13 @@ public class DemoTools {
           This is the old way - notice how the method signature has many individual parameters.
           """)
   public CallToolResult createTaskOldWay(
-      @org.springaicommunity.mcp.annotation.McpToolParam(
-              description = "The name of the task",
-              required = true)
-          String taskName,
-      @org.springaicommunity.mcp.annotation.McpToolParam(
-              description = "Priority of the task",
-              required = true)
-          String priority,
-      @org.springaicommunity.mcp.annotation.McpToolParam(
-              description = "Optional metadata",
-              required = false)
-          java.util.Map<String, Object> metadata,
-      @org.springaicommunity.mcp.annotation.McpToolParam(
-              description = "Whether urgent",
-              required = true)
-          Boolean urgent) {
+      @McpToolParam(description = "The name of the task", required = true) final String taskName,
+      @McpToolParam(description = "Priority of the task", required = true) final String priority,
+      @McpToolParam(description = "Optional metadata", required = false)
+          final java.util.Map<String, Object> metadata,
+      @McpToolParam(description = "Whether urgent", required = true) final Boolean urgent) {
 
-    String message =
+    final String message =
         String.format(
             "✅ Task created (old way)!\n"
                 + "  Name: %s\n"

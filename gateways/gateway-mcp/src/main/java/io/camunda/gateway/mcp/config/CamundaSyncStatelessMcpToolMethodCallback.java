@@ -36,29 +36,22 @@ public class CamundaSyncStatelessMcpToolMethodCallback
     implements BiFunction<McpTransportContext, CallToolRequest, CallToolResult> {
 
   public CamundaSyncStatelessMcpToolMethodCallback(
-      ReturnMode returnMode, Method toolMethod, Object toolObject) {
+      final ReturnMode returnMode, final Method toolMethod, final Object toolObject) {
     super(returnMode, toolMethod, toolObject, Exception.class);
   }
 
   public CamundaSyncStatelessMcpToolMethodCallback(
-      ReturnMode returnMode,
-      Method toolMethod,
-      Object toolObject,
-      Class<? extends Throwable> toolCallExceptionClass) {
+      final ReturnMode returnMode,
+      final Method toolMethod,
+      final Object toolObject,
+      final Class<? extends Throwable> toolCallExceptionClass) {
     super(returnMode, toolMethod, toolObject, toolCallExceptionClass);
   }
 
   @Override
-  protected boolean isExchangeOrContextType(Class<?> paramType) {
+  protected boolean isExchangeOrContextType(final Class<?> paramType) {
     return McpTransportContext.class.isAssignableFrom(paramType)
         || McpSyncRequestContext.class.isAssignableFrom(paramType);
-  }
-
-  @Override
-  protected McpSyncRequestContext createRequestContext(
-      McpTransportContext exchange, CallToolRequest request) {
-    throw new UnsupportedOperationException(
-        "Stateless tool methods do not support McpSyncRequestContext parameter.");
   }
 
   /**
@@ -79,8 +72,8 @@ public class CamundaSyncStatelessMcpToolMethodCallback
    * @param propertyPath the validation property path to clean
    * @return cleaned property path suitable for user-facing error messages
    */
-  private String cleanPropertyPath(String propertyPath) {
-    String[] parts = propertyPath.split("\\.");
+  private String cleanPropertyPath(final String propertyPath) {
+    final String[] parts = propertyPath.split("\\.");
 
     if (parts.length <= 1) {
       return propertyPath; // No dots, return as-is
@@ -91,14 +84,14 @@ public class CamundaSyncStatelessMcpToolMethodCallback
     // set)
     // parts[2+] = nested field path (if any)
 
-    String paramName = parts[1];
+    final String paramName = parts[1];
 
     // Check all parameters to see if any has @McpToolParams
     // We can't rely on parameter name matching since Java doesn't always preserve names
     // Instead, check if ANY parameter has @McpToolParams and assume the property path refers to it
     // This is safe because validation paths for @McpToolParams will have 3+ parts
     // (method.param.field)
-    boolean hasRequestBodyParam =
+    final boolean hasRequestBodyParam =
         Stream.of(toolMethod.getParameters())
             .anyMatch(p -> p.isAnnotationPresent(McpToolParams.class));
 
@@ -117,23 +110,22 @@ public class CamundaSyncStatelessMcpToolMethodCallback
 
   @Override
   public CallToolResult apply(
-      McpTransportContext mcpTransportContext, CallToolRequest callToolRequest) {
+      final McpTransportContext mcpTransportContext, final CallToolRequest callToolRequest) {
     validateSyncRequest(callToolRequest);
 
     try {
       // Build arguments for the method call
-      Object[] args =
-          this.buildMethodArguments(
-              mcpTransportContext, callToolRequest.arguments(), callToolRequest);
+      final Object[] args =
+          buildMethodArguments(mcpTransportContext, callToolRequest.arguments(), callToolRequest);
 
       // Invoke the method
-      Object result = this.callMethod(args);
+      final Object result = callMethod(args);
 
       // Return the processed result
-      return this.processResult(result);
-    } catch (ConstraintViolationException e) {
+      return processResult(result);
+    } catch (final ConstraintViolationException e) {
       // Reformat validation error messages to remove internal parameter names
-      String reformattedMessage =
+      final String reformattedMessage =
           e.getConstraintViolations().stream()
               .map(
                   violation ->
@@ -142,13 +134,13 @@ public class CamundaSyncStatelessMcpToolMethodCallback
                           + violation.getMessage())
               .collect(Collectors.joining(", "));
 
-      return this.createSyncErrorResult(new IllegalArgumentException(reformattedMessage));
-    } catch (Exception e) {
+      return createSyncErrorResult(new IllegalArgumentException(reformattedMessage));
+    } catch (final Exception e) {
       // Check if the exception wraps a ConstraintViolationException
-      Throwable cause = e.getCause();
-      if (cause instanceof ConstraintViolationException cve) {
+      final Throwable cause = e.getCause();
+      if (cause instanceof final ConstraintViolationException cve) {
         // Reformat validation error messages to remove internal parameter names
-        String reformattedMessage =
+        final String reformattedMessage =
             cve.getConstraintViolations().stream()
                 .map(
                     violation ->
@@ -157,11 +149,11 @@ public class CamundaSyncStatelessMcpToolMethodCallback
                             + violation.getMessage())
                 .collect(Collectors.joining(", "));
 
-        return this.createSyncErrorResult(new IllegalArgumentException(reformattedMessage));
+        return createSyncErrorResult(new IllegalArgumentException(reformattedMessage));
       }
 
-      if (this.toolCallExceptionClass.isInstance(e)) {
-        return this.createSyncErrorResult(e);
+      if (toolCallExceptionClass.isInstance(e)) {
+        return createSyncErrorResult(e);
       }
       throw e;
     }
@@ -169,11 +161,11 @@ public class CamundaSyncStatelessMcpToolMethodCallback
 
   @Override
   protected Object[] buildMethodArguments(
-      McpTransportContext exchangeOrContext,
-      Map<String, Object> toolInputArguments,
-      CallToolRequest request) {
+      final McpTransportContext exchangeOrContext,
+      final Map<String, Object> toolInputArguments,
+      final CallToolRequest request) {
 
-    return Stream.of(this.toolMethod.getParameters())
+    return Stream.of(toolMethod.getParameters())
         .map(
             parameter -> {
               // Check for @McpToolParams - deserialize entire input map into DTO
@@ -187,7 +179,7 @@ public class CamundaSyncStatelessMcpToolMethodCallback
               // Check for context types
               if (McpSyncRequestContext.class.isAssignableFrom(parameter.getType())
                   || McpAsyncRequestContext.class.isAssignableFrom(parameter.getType())) {
-                return this.createRequestContext(exchangeOrContext, request);
+                return createRequestContext(exchangeOrContext, request);
               }
 
               // Check for @McpProgressToken
@@ -211,9 +203,16 @@ public class CamundaSyncStatelessMcpToolMethodCallback
               }
 
               // Standard parameter - look up by name and deserialize
-              Object rawArgument = toolInputArguments.get(parameter.getName());
+              final Object rawArgument = toolInputArguments.get(parameter.getName());
               return buildTypedArgument(rawArgument, parameter.getParameterizedType());
             })
         .toArray();
+  }
+
+  @Override
+  protected McpSyncRequestContext createRequestContext(
+      final McpTransportContext exchange, final CallToolRequest request) {
+    throw new UnsupportedOperationException(
+        "Stateless tool methods do not support McpSyncRequestContext parameter.");
   }
 }

@@ -41,7 +41,7 @@ import org.springframework.aop.support.AopUtils;
  */
 public class CamundaSyncStatelessMcpToolProvider extends AbstractMcpToolProvider {
 
-  private static final Logger logger =
+  private static final Logger LOGGER =
       LoggerFactory.getLogger(CamundaSyncStatelessMcpToolProvider.class);
 
   /**
@@ -49,7 +49,7 @@ public class CamundaSyncStatelessMcpToolProvider extends AbstractMcpToolProvider
    *
    * @param toolObjects the objects containing methods annotated with {@link McpTool}
    */
-  public CamundaSyncStatelessMcpToolProvider(List<Object> toolObjects) {
+  public CamundaSyncStatelessMcpToolProvider(final List<Object> toolObjects) {
     super(toolObjects);
   }
 
@@ -59,13 +59,13 @@ public class CamundaSyncStatelessMcpToolProvider extends AbstractMcpToolProvider
    * @return the list of stateless tool specifications
    */
   public List<SyncToolSpecification> getToolSpecifications() {
-    List<SyncToolSpecification> toolSpecs =
-        this.toolObjects.stream()
+    final List<SyncToolSpecification> toolSpecs =
+        toolObjects.stream()
             .map(
                 toolObject -> {
                   // Unwrap CGLIB/JDK proxies to get the actual target class for annotation
                   // detection
-                  Class<?> targetClass =
+                  final Class<?> targetClass =
                       AopUtils.isAopProxy(toolObject)
                           ? AopUtils.getTargetClass(toolObject)
                           : toolObject.getClass();
@@ -80,30 +80,30 @@ public class CamundaSyncStatelessMcpToolProvider extends AbstractMcpToolProvider
                             // Validate @McpToolParams usage
                             validateMcpToolParamsUsage(mcpToolMethod);
 
-                            var toolJavaAnnotation = this.doGetMcpToolAnnotation(mcpToolMethod);
+                            final var toolJavaAnnotation = doGetMcpToolAnnotation(mcpToolMethod);
 
-                            String toolName =
+                            final String toolName =
                                 Utils.hasText(toolJavaAnnotation.name())
                                     ? toolJavaAnnotation.name()
                                     : mcpToolMethod.getName();
 
-                            String toolDescription = toolJavaAnnotation.description();
+                            final String toolDescription = toolJavaAnnotation.description();
 
                             // Use CamundaJsonSchemaGenerator instead of default
-                            String inputSchema =
+                            final String inputSchema =
                                 CamundaJsonSchemaGenerator.generateForMethodInput(mcpToolMethod);
 
-                            var toolBuilder =
+                            final var toolBuilder =
                                 McpSchema.Tool.builder()
                                     .name(toolName)
                                     .description(toolDescription)
-                                    .inputSchema(this.getJsonMapper(), inputSchema);
+                                    .inputSchema(getJsonMapper(), inputSchema);
 
                             var title = toolJavaAnnotation.title();
 
                             // Tool annotations
                             if (toolJavaAnnotation.annotations() != null) {
-                              var toolAnnotations = toolJavaAnnotation.annotations();
+                              final var toolAnnotations = toolJavaAnnotation.annotations();
                               toolBuilder.annotations(
                                   new McpSchema.ToolAnnotations(
                                       toolAnnotations.title(),
@@ -124,7 +124,7 @@ public class CamundaSyncStatelessMcpToolProvider extends AbstractMcpToolProvider
                             toolBuilder.title(title);
 
                             // Generate Output Schema from the method return type.
-                            Class<?> methodReturnType = mcpToolMethod.getReturnType();
+                            final Class<?> methodReturnType = mcpToolMethod.getReturnType();
                             if (toolJavaAnnotation.generateOutputSchema()
                                 && methodReturnType != null
                                 && methodReturnType != CallToolResult.class
@@ -135,16 +135,16 @@ public class CamundaSyncStatelessMcpToolProvider extends AbstractMcpToolProvider
 
                               // Use CamundaJsonSchemaGenerator for output schema
                               toolBuilder.outputSchema(
-                                  this.getJsonMapper(),
+                                  getJsonMapper(),
                                   CamundaJsonSchemaGenerator.generateFromType(
                                       mcpToolMethod.getGenericReturnType()));
                             }
 
-                            var tool = toolBuilder.build();
+                            final var tool = toolBuilder.build();
 
-                            boolean useStructuredOutput = tool.outputSchema() != null;
+                            final boolean useStructuredOutput = tool.outputSchema() != null;
 
-                            ReturnMode returnMode =
+                            final ReturnMode returnMode =
                                 useStructuredOutput
                                     ? ReturnMode.STRUCTURED
                                     : (methodReturnType == Void.TYPE
@@ -152,15 +152,15 @@ public class CamundaSyncStatelessMcpToolProvider extends AbstractMcpToolProvider
                                         ? ReturnMode.VOID
                                         : ReturnMode.TEXT);
 
-                            BiFunction<McpTransportContext, CallToolRequest, CallToolResult>
+                            final BiFunction<McpTransportContext, CallToolRequest, CallToolResult>
                                 methodCallback =
                                     new CamundaSyncStatelessMcpToolMethodCallback(
                                         returnMode,
                                         mcpToolMethod,
                                         toolObject,
-                                        this.doGetToolCallException());
+                                        doGetToolCallException());
 
-                            var toolSpec =
+                            final var toolSpec =
                                 SyncToolSpecification.builder()
                                     .tool(tool)
                                     .callHandler(methodCallback)
@@ -174,7 +174,7 @@ public class CamundaSyncStatelessMcpToolProvider extends AbstractMcpToolProvider
             .toList();
 
     if (toolSpecs.isEmpty()) {
-      logger.warn("No tool methods found in the provided tool objects: {}", this.toolObjects);
+      LOGGER.warn("No tool methods found in the provided tool objects: {}", toolObjects);
     }
 
     return toolSpecs;
@@ -197,12 +197,12 @@ public class CamundaSyncStatelessMcpToolProvider extends AbstractMcpToolProvider
    * @param method the tool method to validate
    * @throws IllegalStateException if @McpToolParams is mixed with other complex parameters
    */
-  private void validateMcpToolParamsUsage(Method method) {
-    Parameter[] params = method.getParameters();
+  private void validateMcpToolParamsUsage(final Method method) {
+    final Parameter[] params = method.getParameters();
 
     // Find @McpToolParams parameter if any
     Parameter requestBodyParam = null;
-    for (Parameter param : params) {
+    for (final Parameter param : params) {
       if (param.isAnnotationPresent(McpToolParams.class)) {
         requestBodyParam = param;
         break;
@@ -215,12 +215,12 @@ public class CamundaSyncStatelessMcpToolProvider extends AbstractMcpToolProvider
     }
 
     // If @McpToolParams exists, check other parameters
-    for (Parameter param : params) {
+    for (final Parameter param : params) {
       if (param == requestBodyParam) {
         continue; // Skip the @McpToolParams parameter itself
       }
 
-      Class<?> paramType = param.getType();
+      final Class<?> paramType = param.getType();
 
       // Allow MCP framework types
       if (McpSyncRequestContext.class.isAssignableFrom(paramType)
@@ -233,7 +233,7 @@ public class CamundaSyncStatelessMcpToolProvider extends AbstractMcpToolProvider
       }
 
       // Check if this is a complex object (has @Valid or is not a simple type)
-      boolean isComplexObject =
+      final boolean isComplexObject =
           param.isAnnotationPresent(Valid.class)
               || (!ClassUtils.isSimpleValueType(paramType)
                   && !paramType.isPrimitive()

@@ -27,11 +27,11 @@ public class CamundaMcpServerToolSpecificationsAutoConfiguration {
 
   @Bean
   public List<SyncToolSpecification> mcpGatewayToolSpecifications(
-      ServerMcpAnnotatedBeans beansWithMcpMethodAnnotations) {
-    List<Object> beansByAnnotation =
+      final ServerMcpAnnotatedBeans beansWithMcpMethodAnnotations) {
+    final List<Object> beansByAnnotation =
         beansWithMcpMethodAnnotations.getBeansByAnnotation(McpTool.class);
     // Use Camunda's custom provider with CamundaJsonSchemaGenerator
-    List<McpStatelessServerFeatures.SyncToolSpecification> syncToolSpecifications =
+    final List<McpStatelessServerFeatures.SyncToolSpecification> syncToolSpecifications =
         new CamundaSyncStatelessMcpToolProvider(beansByAnnotation).getToolSpecifications();
     return syncToolSpecifications;
   }
