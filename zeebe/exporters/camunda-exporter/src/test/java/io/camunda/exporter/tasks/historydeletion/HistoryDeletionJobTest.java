@@ -356,4 +356,51 @@ final class HistoryDeletionJobTest {
     // then
     verify(repository, never()).deleteDocumentsById(any(), any());
   }
+
+  @Test
+  void shouldDeleteDecisionInstancesIfProcessInstanceDeletionFailed() {
+    // given
+    final var processInstanceEntity =
+        new HistoryDeletionEntity()
+            .setId("id1")
+            .setResourceKey(1L)
+            .setResourceType(HistoryDeletionType.PROCESS_INSTANCE)
+            .setBatchOperationKey(2L)
+            .setPartitionId(1);
+    final var decisionInstanceEntity =
+        new HistoryDeletionEntity()
+            .setId("id2")
+            .setResourceKey(2L)
+            .setResourceType(HistoryDeletionType.DECISION_INSTANCE)
+            .setBatchOperationKey(2L)
+            .setPartitionId(1);
+    when(repository.getNextBatch())
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                new HistoryDeletionBatch(List.of(processInstanceEntity, decisionInstanceEntity))));
+    when(repository.deleteDocumentsByField(anyString(), anyString(), anyList()))
+        .thenReturn(CompletableFuture.completedFuture(List.of()));
+    when(repository.deleteDocumentsByField(
+            listViewTemplate.getIndexPattern(),
+            ListViewTemplate.PROCESS_INSTANCE_KEY,
+            List.of(processInstanceEntity.getResourceKey())))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new RuntimeException("Failed deleting process instance")));
+    when(repository.deleteDocumentsById(anyString(), anyList()))
+        .thenReturn(CompletableFuture.completedFuture(0));
+
+    // when
+    job.execute().exceptionally(ex -> 0).toCompletableFuture().join();
+
+    // then
+    verify(repository)
+        .deleteDocumentsByField(
+            decisionInstanceTemplate.getIndexPattern(),
+            DecisionInstanceTemplate.KEY,
+            List.of(decisionInstanceEntity.getResourceKey()));
+    verify(repository)
+        .deleteDocumentsById(
+            historyDeletionIndex.getFullQualifiedName(), List.of(decisionInstanceEntity.getId()));
+  }
 }
