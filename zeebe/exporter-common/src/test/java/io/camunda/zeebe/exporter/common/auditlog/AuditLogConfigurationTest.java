@@ -43,8 +43,15 @@ class AuditLogConfigurationTest {
 
     assertThat(config.getUser()).isNotNull();
     assertThat(config.getClient()).isNotNull();
-    assertThat(config.getUser().getCategories()).isNotEmpty();
-    assertThat(config.getClient().getCategories()).isNotEmpty();
+    assertThat(config.getUser().getCategories())
+        .as("User categories should include all categories by default")
+        .containsExactlyInAnyOrder(
+            AuditLogOperationCategory.DEPLOYED_RESOURCES,
+            AuditLogOperationCategory.USER_TASKS,
+            AuditLogOperationCategory.ADMIN);
+    assertThat(config.getClient().getCategories())
+        .as("Client categories should be empty by default (opt-in logging)")
+        .isEmpty();
   }
 
   @Test
@@ -219,7 +226,7 @@ class AuditLogConfigurationTest {
   class ActorAuditLogConfigurationTest {
     @Test
     void shouldHaveDefaultCategories() {
-      final var config = new ActorAuditLogConfiguration();
+      final var config = ActorAuditLogConfiguration.logAll();
 
       assertThat(config.getCategories())
           .containsExactlyInAnyOrder(
@@ -230,7 +237,7 @@ class AuditLogConfigurationTest {
 
     @Test
     void shouldNotHaveDefaultExcludes() {
-      final var config = new ActorAuditLogConfiguration();
+      final var config = ActorAuditLogConfiguration.logAll();
 
       assertThat(config.getExcludes()).isEmpty();
     }

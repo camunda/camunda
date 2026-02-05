@@ -16,12 +16,24 @@ import java.util.Set;
  * for both user and client audit logging.
  */
 public class AuditLogEntry {
-  private Set<AuditLogOperationCategory> categories =
-      Set.of(
-          AuditLogOperationCategory.DEPLOYED_RESOURCES,
-          AuditLogOperationCategory.USER_TASKS,
-          AuditLogOperationCategory.ADMIN);
-  private Set<AuditLogEntityType> excludes = Set.of(); // e.g. AuditLogEntityType.VARIABLE
+  private Set<AuditLogOperationCategory> categories = Set.of();
+  private Set<AuditLogEntityType> excludes = Set.of();
+
+  /** Creates an AuditLogEntry with all audit log operation categories enabled. */
+  public static AuditLogEntry logAll() {
+    final var entry = new AuditLogEntry();
+    entry.setCategories(
+        Set.of(
+            AuditLogOperationCategory.DEPLOYED_RESOURCES,
+            AuditLogOperationCategory.USER_TASKS,
+            AuditLogOperationCategory.ADMIN));
+    return entry;
+  }
+
+  /** Creates an AuditLogEntry with no categories enabled (opt-in logging). */
+  public static AuditLogEntry logNone() {
+    return new AuditLogEntry();
+  }
 
   public Set<AuditLogOperationCategory> getCategories() {
     return categories;

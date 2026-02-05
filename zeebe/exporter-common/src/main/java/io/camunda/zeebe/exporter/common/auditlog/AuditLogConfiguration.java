@@ -15,8 +15,8 @@ public final class AuditLogConfiguration implements AuditLogCheck {
 
   private boolean enabled = true;
 
-  private ActorAuditLogConfiguration user = new ActorAuditLogConfiguration();
-  private ActorAuditLogConfiguration client = new ActorAuditLogConfiguration();
+  private ActorAuditLogConfiguration user = ActorAuditLogConfiguration.logAll();
+  private ActorAuditLogConfiguration client = ActorAuditLogConfiguration.logNone();
 
   public ActorAuditLogConfiguration getUser() {
     return user;
@@ -77,12 +77,24 @@ public final class AuditLogConfiguration implements AuditLogCheck {
 
   public static final class ActorAuditLogConfiguration implements AuditLogCheck {
 
-    private Set<AuditLogOperationCategory> categories =
-        Set.of(
-            AuditLogOperationCategory.ADMIN,
-            AuditLogOperationCategory.DEPLOYED_RESOURCES,
-            AuditLogOperationCategory.USER_TASKS);
+    private Set<AuditLogOperationCategory> categories = Set.of();
     private Set<AuditLogEntityType> excludes = Set.of();
+
+    /** Creates an ActorAuditLogConfiguration with all audit log operation categories enabled. */
+    public static ActorAuditLogConfiguration logAll() {
+      final var config = new ActorAuditLogConfiguration();
+      config.setCategories(
+          Set.of(
+              AuditLogOperationCategory.ADMIN,
+              AuditLogOperationCategory.DEPLOYED_RESOURCES,
+              AuditLogOperationCategory.USER_TASKS));
+      return config;
+    }
+
+    /** Creates an ActorAuditLogConfiguration with no categories enabled (opt-in logging). */
+    public static ActorAuditLogConfiguration logNone() {
+      return new ActorAuditLogConfiguration();
+    }
 
     @Override
     public boolean isEnabled(final AuditLogInfo auditLog) {
