@@ -13,14 +13,18 @@ import static org.mockito.Mockito.spy;
 
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.util.ControlledTestExporter;
+import io.camunda.zeebe.broker.system.partitions.PartitionMessagingService;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executor;
+import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.awaitility.Awaitility;
@@ -30,7 +34,12 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
+@RunWith(Parameterized.class)
 public final class ExporterDirectorDistributionTest {
 
   private static final String EXPORTER_ID_1 = "exporter-1";
@@ -43,14 +52,10 @@ public final class ExporterDirectorDistributionTest {
 
   private static final Duration DISTRIBUTION_INTERVAL = Duration.ofSeconds(15);
 
-  private final SimplePartitionMessageService simplePartitionMessageService =
+  private static final SimplePartitionMessageService simplePartitionMessageService =
       new SimplePartitionMessageService();
 
-  @Rule
-  public final ExporterRule activeExporters =
-      ExporterRule.activeExporter()
-          .withPartitionMessageService(simplePartitionMessageService)
-          .withDistributionInterval(DISTRIBUTION_INTERVAL);
+  @Rule @Parameter public ExporterRule activeExporters;
 
   @Rule
   public final ExporterRule passiveExporters =
@@ -58,6 +63,23 @@ public final class ExporterDirectorDistributionTest {
 
   private final List<ControlledTestExporter> exporters = new ArrayList<>();
   private final List<ExporterDescriptor> exporterDescriptors = new ArrayList<>();
+
+  @Parameters(name = "{index}: {0}")
+  public static Object[][] activeExporters() {
+    return new Object[][] {
+      new Object[] {
+        ExporterRule.activeExporter()
+            .withPartitionMessageService(simplePartitionMessageService)
+            .withDistributionInterval(DISTRIBUTION_INTERVAL)
+      },
+      new Object[] {
+        ExporterRule.activeExporter()
+            .withPartitionMessageService(
+                new DefaultPrefixedMessageService(simplePartitionMessageService))
+            .withDistributionInterval(DISTRIBUTION_INTERVAL)
+      }
+    };
+  }
 
   @Before
   public void init() {
@@ -198,6 +220,26 @@ public final class ExporterDirectorDistributionTest {
     @Override
     public void conditionEvaluated(final EvaluatedCondition<Void> condition) {
       clock.addTime(DISTRIBUTION_INTERVAL);
+    }
+  }
+
+  private record DefaultPrefixedMessageService(PartitionMessagingService delegate)
+      implements PartitionMessagingService {
+
+    @Override
+    public void subscribe(
+        final String subject, final Consumer<ByteBuffer> consumer, final Executor executor) {
+      delegate.subscribe(subject, consumer, executor);
+    }
+
+    @Override
+    public void broadcast(final String subject, final ByteBuffer payload) {
+      delegate.broadcast("%s-%s".formatted("default", subject), payload);
+    }
+
+    @Override
+    public void unsubscribe(final String subject) {
+      delegate.unsubscribe(subject);
     }
   }
 }

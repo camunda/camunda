@@ -40,6 +40,7 @@ public class ExporterStateDistributionTest {
 
     // then
     assertThat(partitionMessagingService.consumers).containsKey("topic");
+    assertThat(partitionMessagingService.consumers).containsKey("default-topic");
   }
 
   @Test

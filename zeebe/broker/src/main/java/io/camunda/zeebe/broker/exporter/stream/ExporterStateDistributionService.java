@@ -38,6 +38,8 @@ public class ExporterStateDistributionService implements AutoCloseable {
 
   public void subscribeForExporterState(final Executor executor) {
     partitionMessagingService.subscribe(exporterStateTopic, this::storeExporterState, executor);
+    partitionMessagingService.subscribe(
+        "%s-%s".formatted("default", exporterStateTopic), this::storeExporterState, executor);
   }
 
   private void storeExporterState(final ByteBuffer byteBuffer) {
@@ -60,5 +62,6 @@ public class ExporterStateDistributionService implements AutoCloseable {
   @Override
   public void close() {
     partitionMessagingService.unsubscribe(exporterStateTopic);
+    partitionMessagingService.unsubscribe("%s-%s".formatted("default", exporterStateTopic));
   }
 }
