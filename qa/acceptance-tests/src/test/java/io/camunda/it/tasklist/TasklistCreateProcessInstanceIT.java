@@ -9,6 +9,8 @@ package io.camunda.it.tasklist;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.cluster.TestRestTasklistClient;
@@ -16,6 +18,7 @@ import io.camunda.qa.util.cluster.TestRestTasklistClient.CreateProcessInstanceVa
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.security.entity.AuthenticationMethod;
+import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.List;
 import org.awaitility.Awaitility;
@@ -28,10 +31,8 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms.*$")
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 public class TasklistCreateProcessInstanceIT {
-
   private static final String PROCESS_ID = "startedByForm";
   @AutoClose private static TestRestTasklistClient tasklistRestClient;
-
   private static CamundaClient camundaClient;
 
   @MultiDbTestApplication
@@ -39,6 +40,8 @@ public class TasklistCreateProcessInstanceIT {
       new TestCamundaApplication()
           .withAuthenticationMethod(AuthenticationMethod.BASIC)
           .withUnauthenticatedAccess();
+
+  private final ObjectMapper mapper = new ObjectMapper();
 
   @BeforeAll
   public static void beforeAll() {
@@ -63,7 +66,7 @@ public class TasklistCreateProcessInstanceIT {
     // then
     assertThat(response).isNotNull();
     assertThat(response.statusCode()).isEqualTo(200);
-    ensureProcessInstanceCreated(camundaClient, PROCESS_ID);
+    ensureProcessInstanceCreated(camundaClient, PROCESS_ID, response);
   }
 
   @Test
@@ -81,7 +84,7 @@ public class TasklistCreateProcessInstanceIT {
     // then
     assertThat(response).isNotNull();
     assertThat(response.statusCode()).isEqualTo(200);
-    ensureProcessInstanceCreated(camundaClient, PROCESS_ID);
+    ensureProcessInstanceCreated(camundaClient, PROCESS_ID, response);
   }
 
   private static void deployResource(final CamundaClient camundaClient) {
@@ -110,7 +113,10 @@ public class TasklistCreateProcessInstanceIT {
   }
 
   private void ensureProcessInstanceCreated(
-      final CamundaClient camundaClient, final String processDefinitionId) {
+      final CamundaClient camundaClient,
+      final String processDefinitionId,
+      final HttpResponse<String> response) {
+    final ProcessInstance processInstance = processInstanceFromResponse(response);
     Awaitility.await(
             "should have started process instance with id %s".formatted(processDefinitionId))
         .atMost(Duration.ofSeconds(15))
@@ -120,10 +126,23 @@ public class TasklistCreateProcessInstanceIT {
               final var result =
                   camundaClient
                       .newProcessInstanceSearchRequest()
-                      .filter(f -> f.processDefinitionId(processDefinitionId))
+                      .filter(
+                          f ->
+                              f.processDefinitionId(processDefinitionId)
+                                  .processInstanceKey(processInstance.id()))
                       .send()
                       .join();
               assertThat(result.items()).hasSize(1);
             });
   }
+
+  private ProcessInstance processInstanceFromResponse(final HttpResponse<String> response) {
+    try {
+      return mapper.readValue(response.body(), ProcessInstance.class);
+    } catch (final JsonProcessingException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  record ProcessInstance(long id) {}
 }
