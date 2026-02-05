@@ -34,7 +34,7 @@ public class RetentionMetrics implements CloseableSilently {
     this.meterRegistry = meterRegistry;
   }
 
-  public PartitionMetrics forPartition(final int partitionId) {
+  PartitionMetrics forPartition(final int partitionId) {
     return partitionMetrics.computeIfAbsent(
         partitionId,
         id -> {
@@ -105,20 +105,20 @@ public class RetentionMetrics implements CloseableSilently {
     this.nextExecution = nextExecution.toEpochMilli();
   }
 
-  public static class PartitionMetrics {
+  static class PartitionMetrics {
     private long earliestBackupId = 0L;
     private long backupsDeleted = 0L;
     private long rangesDeleted = 0L;
 
-    public void setEarliestBackupId(final long id) {
+    void setEarliestBackupId(final long id) {
       earliestBackupId = id;
     }
 
-    public void setBackupsDeleted(final long count) {
+    void setBackupsDeleted(final long count) {
       backupsDeleted = count;
     }
 
-    public void setRangesDeleted(final long count) {
+    void setRangesDeleted(final long count) {
       rangesDeleted = count;
     }
   }

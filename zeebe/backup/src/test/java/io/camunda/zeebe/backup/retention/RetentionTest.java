@@ -28,6 +28,8 @@ import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupStatusImpl;
 import io.camunda.zeebe.backup.schedule.Schedule.IntervalSchedule;
+import io.camunda.zeebe.broker.client.api.BrokerClusterState;
+import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
 import io.camunda.zeebe.util.VersionUtil;
@@ -54,6 +56,8 @@ public class RetentionTest {
       new ControlledActorSchedulerExtension();
 
   @Mock private BackupStore backupStore;
+  @Mock private BrokerTopologyManager topologyManager;
+  @Mock private BrokerClusterState clusterState;
   private BackupRetention backupRetention;
 
   @BeforeEach
@@ -64,8 +68,11 @@ public class RetentionTest {
             new IntervalSchedule(Duration.ofSeconds(10)),
             Duration.ofMinutes(2),
             0,
-            () -> 1,
+            topologyManager,
             new SimpleMeterRegistry());
+
+    doReturn(clusterState).when(topologyManager).getTopology();
+    doReturn(List.of(1)).when(clusterState).getPartitions();
 
     doReturn(CompletableFuture.completedFuture(null)).when(backupStore).delete(any());
     doReturn(CompletableFuture.completedFuture(null))
@@ -200,13 +207,15 @@ public class RetentionTest {
   @Test
   void shouldPerformAllActionsMultiPartition() {
     // given
+    reset(clusterState);
+    doReturn(List.of(1, 2, 3)).when(clusterState).getPartitions();
     backupRetention =
         new BackupRetention(
             backupStore,
             new IntervalSchedule(Duration.ofSeconds(10)),
             Duration.ofMinutes(2),
             0,
-            () -> 3,
+            topologyManager,
             new SimpleMeterRegistry());
     final var now = actorScheduler.getClock().instant();
     final Map<Integer, List<BackupStatus>> backupsPerPartition = new HashMap<>();

@@ -17,6 +17,7 @@ import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.common.BackupIdentifierWildcardImpl;
 import io.camunda.zeebe.backup.common.CheckpointIdGenerator;
 import io.camunda.zeebe.backup.schedule.Schedule;
+import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -30,8 +31,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Supplier;
-import java.util.stream.IntStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -95,7 +94,7 @@ public class BackupRetention extends Actor {
   private final BackupStore backupStore;
   private final Schedule retentionSchedule;
   private final Duration retentionWindow;
-  private final Supplier<Integer> partitionsSupplier;
+  private final BrokerTopologyManager topologyManager;
   private final RetentionMetrics metrics;
   private final CheckpointIdGenerator checkpointIdGenerator;
 
@@ -104,13 +103,13 @@ public class BackupRetention extends Actor {
       final Schedule retentionSchedule,
       final Duration retentionWindow,
       final long checkpointOffset,
-      final Supplier<Integer> partitionsSupplier,
+      final BrokerTopologyManager topologyManager,
       final MeterRegistry meterRegistry) {
     metrics = new RetentionMetrics(meterRegistry);
     this.backupStore = backupStore;
     this.retentionSchedule = retentionSchedule;
     this.retentionWindow = retentionWindow;
-    this.partitionsSupplier = partitionsSupplier;
+    this.topologyManager = topologyManager;
     checkpointIdGenerator = new CheckpointIdGenerator(ActorClock.current(), checkpointOffset);
   }
 
@@ -155,9 +154,9 @@ public class BackupRetention extends Actor {
     final var window = now - retentionWindow.toMillis();
     final ActorFuture<Void> retentionFuture = createFuture();
     final var partitionFutures =
-        IntStream.rangeClosed(1, partitionsSupplier.get())
+        topologyManager.getTopology().getPartitions().stream()
             .parallel()
-            .mapToObj(partitionId -> createRetentionContext(partitionId, window))
+            .map(partitionId -> createRetentionContext(partitionId, window))
             .map(
                 future ->
                     future

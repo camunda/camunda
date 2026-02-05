@@ -50,7 +50,7 @@ public class CheckpointSchedulingService extends Actor implements ClusterMembers
   private final BackupCfg backupCfg;
   private final ActorSchedulingService actorScheduler;
   private final MeterRegistry meterRegistry;
-  private final PartitionManager partitionManager;
+  private final BrokerClient brokerClient;
   private CheckpointScheduler checkpointScheduler;
   private final BackupRequestHandler backupRequestHandler;
   private BackupRetention backupRetentionJob;
@@ -66,9 +66,9 @@ public class CheckpointSchedulingService extends Actor implements ClusterMembers
     this.actorScheduler = actorScheduler;
     this.backupCfg = backupCfg;
     this.meterRegistry = meterRegistry;
+    this.brokerClient = brokerClient;
     backupRequestHandler =
         new BackupRequestHandler(brokerClient, new CheckpointIdGenerator(backupCfg.getOffset()));
-    this.partitionManager = partitionManager;
   }
 
   @Override
@@ -95,7 +95,7 @@ public class CheckpointSchedulingService extends Actor implements ClusterMembers
               retentionCfg.getCleanupSchedule(),
               retentionCfg.getWindow(),
               backupCfg.getOffset(),
-              () -> partitionManager.getZeebePartitions().size(),
+              brokerClient.getTopologyManager(),
               meterRegistry);
       LOG.info(
           "Backup retention initialized with cleanup schedule {}",
