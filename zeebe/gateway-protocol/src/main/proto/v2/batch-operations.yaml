@@ -467,6 +467,20 @@ components:
           description: the error message from the engine in case of a failed operation.
           type: string
 
+    DecisionInstanceDeletionBatchOperationRequest:
+      type: object
+      additionalProperties: false
+      description: The decision instance filter that defines which decision instances should be deleted.
+      properties:
+        filter:
+          allOf:
+            - $ref: 'decision-instances.yaml#/components/schemas/DecisionInstanceFilter'
+          description: The decision instance filter.
+        operationReference:
+          $ref: 'keys.yaml#/components/schemas/OperationReference'
+      required:
+        - filter
+
     ProcessInstanceCancellationBatchOperationRequest:
       type: object
       additionalProperties: false

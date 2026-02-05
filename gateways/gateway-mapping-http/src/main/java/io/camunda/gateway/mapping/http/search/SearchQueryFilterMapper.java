@@ -454,6 +454,17 @@ public class SearchQueryFilterMapper {
     return toProcessInstanceFilter(filter);
   }
 
+  public static Either<List<String>, DecisionInstanceFilter> toRequiredDecisionInstanceFilter(
+      final io.camunda.gateway.protocol.model.DecisionInstanceFilter filter) {
+    if (filter == null) {
+      return Either.left(List.of(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("filter")));
+    }
+    if (filter.equals(SearchQueryRequestMapper.EMPTY_DECISION_INSTANCE_FILTER)) {
+      return Either.left(List.of(ERROR_MESSAGE_AT_LEAST_ONE_FIELD.formatted("filter criteria")));
+    }
+    return Either.right(toDecisionInstanceFilter(filter));
+  }
+
   public static Either<List<String>, ProcessInstanceFilter> toProcessInstanceFilter(
       final io.camunda.gateway.protocol.model.ProcessInstanceFilter filter) {
     final List<String> validationErrors = new ArrayList<>();

@@ -7,9 +7,11 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
+import io.camunda.gateway.mapping.http.RequestMapper;
 import io.camunda.gateway.mapping.http.ResponseMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
+import io.camunda.gateway.protocol.model.DecisionInstanceDeletionBatchOperationRequest;
 import io.camunda.gateway.protocol.model.DecisionInstanceGetQueryResult;
 import io.camunda.gateway.protocol.model.DecisionInstanceSearchQuery;
 import io.camunda.gateway.protocol.model.DecisionInstanceSearchQueryResult;
@@ -82,6 +84,14 @@ public class DecisionInstanceController {
         HttpStatus.OK);
   }
 
+  @RequiresSecondaryStorage
+  @CamundaPostMapping(path = "/deletion")
+  public CompletableFuture<ResponseEntity<Object>> deleteDecisionInstancesBatchOperation(
+      @RequestBody final DecisionInstanceDeletionBatchOperationRequest request) {
+    return RequestMapper.toRequiredDecisionInstanceFilter(request.getFilter())
+        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::batchOperationDeletion);
+  }
+
   private ResponseEntity<DecisionInstanceSearchQueryResult> search(
       final DecisionInstanceQuery query) {
     try {
@@ -94,5 +104,16 @@ public class DecisionInstanceController {
     } catch (final Exception e) {
       return RestErrorMapper.mapErrorToResponse(e);
     }
+  }
+
+  private CompletableFuture<ResponseEntity<Object>> batchOperationDeletion(
+      final io.camunda.search.filter.DecisionInstanceFilter filter) {
+    return RequestExecutor.executeServiceMethod(
+        () ->
+            decisionInstanceServices
+                .withAuthentication(authenticationProvider.getCamundaAuthentication())
+                .deleteDecisionInstancesBatchOperation(filter),
+        ResponseMapper::toBatchOperationCreatedWithResultResponse,
+        HttpStatus.OK);
   }
 }

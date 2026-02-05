@@ -11,6 +11,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.search.filter.DecisionInstanceFilter;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.DecisionInstanceServices;
@@ -218,5 +219,142 @@ public class DecisionInstanceControllerTest extends RestControllerTest {
         .json(expectedBody, JsonCompareMode.STRICT);
 
     verify(decisionInstanceServices).deleteDecisionInstance(4L, null);
+  }
+
+  @Test
+  void shouldDeleteDecisionInstanceBatchOperation() {
+    // given
+    final var record = new BatchOperationCreationRecord();
+    record.setBatchOperationKey(123L);
+    record.setBatchOperationType(BatchOperationType.DELETE_DECISION_INSTANCE);
+
+    when(decisionInstanceServices.deleteDecisionInstancesBatchOperation(
+            any(DecisionInstanceFilter.class)))
+        .thenReturn(CompletableFuture.completedFuture(record));
+
+    final var request =
+        """
+            {
+              "filter":
+               {
+                  "decisionDefinitionId": "test-decision-definition-id"
+                }
+            }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/decision-instances/deletion")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(
+            """
+          {"batchOperationKey":"123","batchOperationType":"DELETE_DECISION_INSTANCE"}
+        """,
+            JsonCompareMode.STRICT);
+
+    verify(decisionInstanceServices)
+        .deleteDecisionInstancesBatchOperation(any(DecisionInstanceFilter.class));
+  }
+
+  @Test
+  void shouldRejectDeleteDecisionInstanceBatchOperationWithNoRequestBody() {
+    // given
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"Bad Request",
+                "status":400,
+                "detail":"Required request body is missing",
+                "instance":"/v2/decision-instances/deletion"
+             }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/decision-instances/deletion")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldRejectDeleteDecisionInstanceBatchOperationWithEmptyRequestBody() {
+    // given
+    final var request = "{}";
+
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"No filter provided.",
+                "instance":"/v2/decision-instances/deletion"
+             }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/decision-instances/deletion")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldRejectDeleteDecisionInstanceBatchOperationWithEmptyFilter() {
+    // given
+    final var request =
+        """
+        {
+          "filter": {}
+        }""";
+
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"At least one of filter criteria is required.",
+                "instance":"/v2/decision-instances/deletion"
+             }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/decision-instances/deletion")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
   }
 }

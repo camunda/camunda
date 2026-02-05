@@ -113,6 +113,44 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
 
+  /decision-instances/deletion:
+    post:
+      x-eventually-consistent: true
+      tags:
+        - Decision instance
+      operationId: deleteDecisionInstancesBatchOperation
+      summary: Delete decision instances (batch)
+      description: |
+        Delete multiple decision instances. This will delete the historic data from secondary storage.
+        This is done asynchronously, the progress can be tracked using the batchOperationKey from the response and the batch operation status endpoint (/batch-operations/{batchOperationKey}).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: 'batch-operations.yaml#/components/schemas/DecisionInstanceDeletionBatchOperationRequest'
+      responses:
+        "200":
+          description: The batch operation request was created.
+          content:
+            application/json:
+              schema:
+                $ref: 'batch-operations.yaml#/components/schemas/BatchOperationCreatedResult'
+        "400":
+          description: >
+            The decision instance batch operation failed.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+
 ## Schema definitions
 
 components:
