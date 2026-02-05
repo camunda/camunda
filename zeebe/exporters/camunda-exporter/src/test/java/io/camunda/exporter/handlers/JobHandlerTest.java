@@ -525,12 +525,4 @@ final class JobHandlerTest {
   private Record<JobRecordValue> generateRecord(final JobIntent intent) {
     return factory.generateRecord(ValueType.JOB, r -> r.withIntent(intent));
   }
-
-  private void assertShouldHandleRecord(final Record<JobRecordValue> record) {
-    assertThat(underTest.handlesRecord(record)).isTrue();
-  }
-
-  private void assertShouldNotHandleRecord(final Record<JobRecordValue> record) {
-    assertThat(underTest.handlesRecord(record)).isFalse();
-  }
 }
