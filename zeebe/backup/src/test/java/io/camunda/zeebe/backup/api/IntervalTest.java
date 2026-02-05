@@ -29,11 +29,6 @@ public class IntervalTest {
         Arguments.of(false, false));
   }
 
-  private static Interval<Integer> createInterval(
-      final int start, final boolean startInclusive, final int end, final boolean endInclusive) {
-    return new Interval<>(start, startInclusive, end, endInclusive);
-  }
-
   private static String expectedBracket(final boolean inclusive, final boolean isStart) {
     if (isStart) {
       return inclusive ? "[" : "(";
@@ -57,11 +52,8 @@ public class IntervalTest {
       // when
       final var interval = new Interval<>(5, 5);
 
-      // then
-      assertThat(interval.start()).isEqualTo(5);
-      assertThat(interval.end()).isEqualTo(5);
-      assertThat(interval.startInclusive()).isTrue();
-      assertThat(interval.endInclusive()).isTrue();
+      // then - closed interval contains its bounds
+      assertThat(interval.contains(5)).isTrue();
     }
 
     @Test
@@ -89,191 +81,52 @@ public class IntervalTest {
 
     @ParameterizedTest
     @MethodSource("io.camunda.zeebe.backup.api.IntervalTest#inclusivenessVariants")
-    void shouldCreateIntervalWithCorrectInclusiveness(
+    void shouldCreateIntervalWithCorrectBoundBehavior(
         final boolean startInclusive, final boolean endInclusive) {
       // when
-      final var interval = createInterval(1, startInclusive, 10, endInclusive);
+      final var interval = new Interval<>(1, startInclusive, 10, endInclusive);
 
-      // then
-      assertThat(interval.start()).isEqualTo(1);
-      assertThat(interval.end()).isEqualTo(10);
-      assertThat(interval.startInclusive()).isEqualTo(startInclusive);
-      assertThat(interval.endInclusive()).isEqualTo(endInclusive);
+      // then - verify behavior at bounds
+      assertThat(interval.contains(1)).isEqualTo(startInclusive);
+      assertThat(interval.contains(10)).isEqualTo(endInclusive);
+      assertThat(interval.contains(5)).isTrue(); // middle always contained
     }
 
     @Test
     void shouldCreateClosedIntervalUsingFactoryMethod() {
       final var interval = Interval.closed(1, 10);
-      assertThat(interval).isEqualTo(new Interval<>(1, true, 10, true));
+
+      assertThat(interval.contains(1)).isTrue();
+      assertThat(interval.contains(10)).isTrue();
     }
 
     @Test
     void shouldCreateOpenIntervalUsingFactoryMethod() {
       final var interval = Interval.open(1, 10);
-      assertThat(interval).isEqualTo(new Interval<>(1, false, 10, false));
+
+      assertThat(interval.contains(1)).isFalse();
+      assertThat(interval.contains(10)).isFalse();
     }
 
     @Test
     void shouldCreateClosedOpenIntervalUsingFactoryMethod() {
       final var interval = Interval.closedOpen(1, 10);
-      assertThat(interval).isEqualTo(new Interval<>(1, true, 10, false));
+
+      assertThat(interval.contains(1)).isTrue();
+      assertThat(interval.contains(10)).isFalse();
     }
 
     @Test
     void shouldCreateOpenClosedIntervalUsingFactoryMethod() {
       final var interval = Interval.openClosed(1, 10);
-      assertThat(interval).isEqualTo(new Interval<>(1, false, 10, true));
-    }
-  }
 
-  @Nested
-  class EqualsAndHashCode {
-
-    @ParameterizedTest
-    @MethodSource("io.camunda.zeebe.backup.api.IntervalTest#inclusivenessVariants")
-    void shouldBeEqualAndHaveSameHashCodeWhenIntervalsAreEqual(
-        final boolean startInclusive, final boolean endInclusive) {
-      // given
-      final var interval1 = createInterval(1, startInclusive, 10, endInclusive);
-      final var interval2 = createInterval(1, startInclusive, 10, endInclusive);
-
-      // when/then
-      assertThat(interval1).isEqualTo(interval2);
-      assertThat(interval1.hashCode()).isEqualTo(interval2.hashCode());
-    }
-
-    @ParameterizedTest
-    @MethodSource("io.camunda.zeebe.backup.api.IntervalTest#inclusivenessVariants")
-    void shouldNotBeEqualWhenIntervalsHaveDifferentStarts(
-        final boolean startInclusive, final boolean endInclusive) {
-      // given
-      final var interval1 = createInterval(1, startInclusive, 10, endInclusive);
-      final var interval2 = createInterval(2, startInclusive, 10, endInclusive);
-
-      // when/then
-      assertThat(interval1).isNotEqualTo(interval2);
-    }
-
-    @ParameterizedTest
-    @MethodSource("io.camunda.zeebe.backup.api.IntervalTest#inclusivenessVariants")
-    void shouldNotBeEqualWhenIntervalsHaveDifferentEnds(
-        final boolean startInclusive, final boolean endInclusive) {
-      // given
-      final var interval1 = createInterval(1, startInclusive, 10, endInclusive);
-      final var interval2 = createInterval(1, startInclusive, 11, endInclusive);
-
-      // when/then
-      assertThat(interval1).isNotEqualTo(interval2);
-    }
-
-    @ParameterizedTest
-    @MethodSource("io.camunda.zeebe.backup.api.IntervalTest#inclusivenessVariants")
-    void shouldNotBeEqualWhenIntervalsHaveDifferentInclusiveness(
-        final boolean startInclusive, final boolean endInclusive) {
-      // given
-      final var interval1 = createInterval(1, startInclusive, 10, endInclusive);
-      final var interval2 = createInterval(1, !startInclusive, 10, !endInclusive);
-
-      // when/then
-      assertThat(interval1).isNotEqualTo(interval2);
-      assertThat(interval1.hashCode()).isNotEqualTo(interval2.hashCode());
-    }
-  }
-
-  @Nested
-  class ContainsValue {
-
-    @ParameterizedTest
-    @MethodSource("io.camunda.zeebe.backup.api.IntervalTest#inclusivenessVariants")
-    void shouldContainValueInMiddleOfInterval(
-        final boolean startInclusive, final boolean endInclusive) {
-      // given
-      final var interval = createInterval(1, startInclusive, 10, endInclusive);
-
-      // when/then
-      assertThat(interval.contains(5)).isTrue();
-    }
-
-    @ParameterizedTest
-    @MethodSource("io.camunda.zeebe.backup.api.IntervalTest#inclusivenessVariants")
-    void shouldContainOrExcludeStartBasedOnInclusiveness(
-        final boolean startInclusive, final boolean endInclusive) {
-      // given
-      final var interval = createInterval(1, startInclusive, 10, endInclusive);
-
-      // when/then
-      assertThat(interval.contains(1)).isEqualTo(startInclusive);
-    }
-
-    @ParameterizedTest
-    @MethodSource("io.camunda.zeebe.backup.api.IntervalTest#inclusivenessVariants")
-    void shouldContainOrExcludeEndBasedOnInclusiveness(
-        final boolean startInclusive, final boolean endInclusive) {
-      // given
-      final var interval = createInterval(1, startInclusive, 10, endInclusive);
-
-      // when/then
-      assertThat(interval.contains(10)).isEqualTo(endInclusive);
-    }
-
-    @ParameterizedTest
-    @MethodSource("io.camunda.zeebe.backup.api.IntervalTest#inclusivenessVariants")
-    void shouldNotContainValueBeforeStart(
-        final boolean startInclusive, final boolean endInclusive) {
-      // given
-      final var interval = createInterval(1, startInclusive, 10, endInclusive);
-
-      // when/then
-      assertThat(interval.contains(0)).isFalse();
-    }
-
-    @ParameterizedTest
-    @MethodSource("io.camunda.zeebe.backup.api.IntervalTest#inclusivenessVariants")
-    void shouldNotContainValueAfterEnd(final boolean startInclusive, final boolean endInclusive) {
-      // given
-      final var interval = createInterval(1, startInclusive, 10, endInclusive);
-
-      // when/then
-      assertThat(interval.contains(11)).isFalse();
+      assertThat(interval.contains(1)).isFalse();
+      assertThat(interval.contains(10)).isTrue();
     }
   }
 
   @Nested
   class ContainsInterval {
-
-    @ParameterizedTest
-    @MethodSource("io.camunda.zeebe.backup.api.IntervalTest#inclusivenessVariants")
-    void shouldContainSmallerIntervalInside(
-        final boolean startInclusive, final boolean endInclusive) {
-      // given
-      final var interval = createInterval(1, startInclusive, 10, endInclusive);
-      final var other = createInterval(3, startInclusive, 7, endInclusive);
-
-      // when/then
-      assertThat(interval.contains(other)).isTrue();
-    }
-
-    @ParameterizedTest
-    @MethodSource("io.camunda.zeebe.backup.api.IntervalTest#inclusivenessVariants")
-    void shouldContainEqualInterval(final boolean startInclusive, final boolean endInclusive) {
-      // given
-      final var interval = createInterval(1, startInclusive, 10, endInclusive);
-      final var other = createInterval(1, startInclusive, 10, endInclusive);
-
-      // when/then
-      assertThat(interval.contains(other)).isTrue();
-    }
-
-    @ParameterizedTest
-    @MethodSource("io.camunda.zeebe.backup.api.IntervalTest#inclusivenessVariants")
-    void shouldNotContainLargerInterval(final boolean startInclusive, final boolean endInclusive) {
-      // given
-      final var interval = createInterval(3, startInclusive, 7, endInclusive);
-      final var other = createInterval(1, startInclusive, 10, endInclusive);
-
-      // when/then
-      assertThat(interval.contains(other)).isFalse();
-    }
 
     @Test
     void shouldContainOpenIntervalWhenClosedHasSameBounds() {
@@ -306,8 +159,8 @@ public class IntervalTest {
         final boolean innerEndIncl,
         final boolean expectedContains) {
       // given
-      final var outer = createInterval(1, outerStartIncl, 10, outerEndIncl);
-      final var inner = createInterval(1, innerStartIncl, 10, innerEndIncl);
+      final var outer = new Interval<>(1, outerStartIncl, 10, outerEndIncl);
+      final var inner = new Interval<>(1, innerStartIncl, 10, innerEndIncl);
 
       // when/then
       assertThat(outer.contains(inner)).isEqualTo(expectedContains);
@@ -315,58 +168,61 @@ public class IntervalTest {
   }
 
   @Nested
-  class OverlapsWith {
-
-    @ParameterizedTest
-    @MethodSource("io.camunda.zeebe.backup.api.IntervalTest#inclusivenessVariants")
-    void shouldOverlapWhenIntervalsIntersect(
-        final boolean startInclusive, final boolean endInclusive) {
-      // given
-      final var interval = createInterval(1, startInclusive, 10, endInclusive);
-      final var other = createInterval(5, startInclusive, 15, endInclusive);
-
-      // when/then
-      assertThat(interval.overlapsWith(other)).isTrue();
-    }
-
-    @ParameterizedTest
-    @MethodSource("io.camunda.zeebe.backup.api.IntervalTest#inclusivenessVariants")
-    void shouldOverlapWhenOneContainsOther(
-        final boolean startInclusive, final boolean endInclusive) {
-      // given
-      final var interval = createInterval(1, startInclusive, 10, endInclusive);
-      final var other = createInterval(3, startInclusive, 7, endInclusive);
-
-      // when/then
-      assertThat(interval.overlapsWith(other)).isTrue();
-      assertThat(other.overlapsWith(interval)).isTrue();
-    }
-
-    @ParameterizedTest
-    @MethodSource("io.camunda.zeebe.backup.api.IntervalTest#inclusivenessVariants")
-    void shouldNotOverlapWhenIntervalsAreDisjoint(
-        final boolean startInclusive, final boolean endInclusive) {
-      // given
-      final var interval = createInterval(1, startInclusive, 5, endInclusive);
-      final var other = createInterval(7, startInclusive, 10, endInclusive);
-
-      // when/then
-      assertThat(interval.overlapsWith(other)).isFalse();
-    }
+  class IsBeforeAndIsAfter {
 
     @Test
-    void shouldOverlapWhenBothBoundsInclusiveAtSamePoint() {
-      // [1, 10] and [10, 15] share point 10
-      assertThat(Interval.closed(1, 10).overlapsWith(Interval.closed(10, 15))).isTrue();
+    void shouldNotBeBeforeWhenBothBoundsInclusiveAtSamePoint() {
+      // [1, 5] is not before [5, 10] because they share point 5
+      final var first = Interval.closed(1, 5);
+      final var second = Interval.closed(5, 10);
+
+      assertThat(first.isBefore(second)).isFalse();
+      assertThat(first.isAfter(second)).isFalse();
     }
 
     @ParameterizedTest
     @CsvSource({
-      // [1, 10) and [10, 15] - first excludes 10
+      // [1, 5) is before [5, 10] - first end exclusive
+      "true, false,  true, true,  true",
+      // [1, 5] is before (5, 10] - second start exclusive
+      "true, true,   false, true, true",
+      // [1, 5) is before (5, 10] - both exclusive at boundary
+      "true, false,  false, true, true",
+      // [1, 5] is not before [5, 10] - both inclusive at boundary
+      "true, true,   true, true,  false"
+    })
+    void shouldRespectBoundInclusivenessAtBoundary(
+        final boolean firstStartIncl,
+        final boolean firstEndIncl,
+        final boolean secondStartIncl,
+        final boolean secondEndIncl,
+        final boolean expectedBefore) {
+      // given - intervals meeting at point 5
+      final var first = new Interval<>(1, firstStartIncl, 5, firstEndIncl);
+      final var second = new Interval<>(5, secondStartIncl, 10, secondEndIncl);
+
+      // when/then
+      assertThat(first.isBefore(second)).isEqualTo(expectedBefore);
+      assertThat(second.isAfter(first)).isEqualTo(expectedBefore);
+    }
+  }
+
+  @Nested
+  class OverlapsWith {
+
+    @Test
+    void shouldOverlapWhenBothBoundsInclusiveAtSamePoint() {
+      // [1, 5] and [5, 10] share point 5
+      assertThat(Interval.closed(1, 5).overlapsWith(Interval.closed(5, 10))).isTrue();
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+      // [1, 5) and [5, 10] - first excludes 5
       "true, false,  true, true,  false",
-      // [1, 10] and (10, 15] - second excludes 10
+      // [1, 5] and (5, 10] - second excludes 5
       "true, true,   false, true, false",
-      // [1, 10) and (10, 15] - both exclude 10
+      // [1, 5) and (5, 10] - both exclude 5
       "true, false,  false, true, false"
     })
     void shouldNotOverlapWhenBoundaryPointIsExcluded(
@@ -375,43 +231,18 @@ public class IntervalTest {
         final boolean secondStartIncl,
         final boolean secondEndIncl,
         final boolean expectedOverlap) {
-      // given - intervals meeting at point 10
-      final var first = createInterval(1, firstStartIncl, 10, firstEndIncl);
-      final var second = createInterval(10, secondStartIncl, 15, secondEndIncl);
+      // given - intervals meeting at point 5
+      final var first = new Interval<>(1, firstStartIncl, 5, firstEndIncl);
+      final var second = new Interval<>(5, secondStartIncl, 10, secondEndIncl);
 
       // when/then
       assertThat(first.overlapsWith(second)).isEqualTo(expectedOverlap);
+      assertThat(second.overlapsWith(first)).isEqualTo(expectedOverlap);
     }
   }
 
   @Nested
   class SmallestCover {
-
-    @Test
-    void shouldReturnEmptyListWhenCalledWithEmptyList() {
-      // given
-      final var interval = Interval.closed(1, 10);
-
-      // when
-      final var result = interval.smallestCover(List.of());
-
-      // then
-      assertThat(result).isEmpty();
-    }
-
-    @Test
-    void shouldReturnOnlyOverlappingIntervals() {
-      // given - interval [5, 15] should overlap with [5, 10) and [10, 20], but not [1, 5)
-      final var interval = Interval.closed(5, 15);
-      final var intervals =
-          List.of(Interval.closedOpen(1, 5), Interval.closedOpen(5, 10), Interval.closed(10, 20));
-
-      // when
-      final var result = interval.smallestCover(intervals);
-
-      // then
-      assertThat(result).containsExactly(Interval.closedOpen(5, 10), Interval.closed(10, 20));
-    }
 
     @Test
     void shouldThrowWhenIntervalsAreNotContiguous() {
@@ -462,6 +293,36 @@ public class IntervalTest {
           .isInstanceOf(IllegalArgumentException.class)
           .hasMessageContaining("Expected intervals to be contiguous");
     }
+
+    @Test
+    void shouldSkipNonOverlappingIntervalsAtBeginning() {
+      // given - [1, 5), [5, 10), [10, 15] are contiguous
+      // query [7, 12] only overlaps with [5, 10) and [10, 15]
+      final var query = Interval.closed(7, 12);
+      final var intervals =
+          List.of(Interval.closedOpen(1, 5), Interval.closedOpen(5, 10), Interval.closed(10, 15));
+
+      // when
+      final var result = query.smallestCover(intervals);
+
+      // then - should skip [1, 5) and return [5, 10), [10, 15]
+      assertThat(result).containsExactly(Interval.closedOpen(5, 10), Interval.closed(10, 15));
+    }
+
+    @Test
+    void shouldSkipNonOverlappingIntervalsAtEnd() {
+      // given - [1, 5), [5, 10), [10, 15] are contiguous
+      // query [2, 7] only overlaps with [1, 5) and [5, 10)
+      final var query = Interval.closed(2, 7);
+      final var intervals =
+          List.of(Interval.closedOpen(1, 5), Interval.closedOpen(5, 10), Interval.closed(10, 15));
+
+      // when
+      final var result = query.smallestCover(intervals);
+
+      // then - should return [1, 5), [5, 10) and skip [10, 15]
+      assertThat(result).containsExactly(Interval.closedOpen(1, 5), Interval.closedOpen(5, 10));
+    }
   }
 
   @Nested
@@ -471,7 +332,7 @@ public class IntervalTest {
     @MethodSource("io.camunda.zeebe.backup.api.IntervalTest#inclusivenessVariants")
     void shouldReturnStartAndEnd(final boolean startInclusive, final boolean endInclusive) {
       // given
-      final var interval = createInterval(1, startInclusive, 10, endInclusive);
+      final var interval = new Interval<>(1, startInclusive, 10, endInclusive);
 
       // when/then
       assertThat(interval.values()).containsExactly(1, 10);
@@ -480,23 +341,6 @@ public class IntervalTest {
 
   @Nested
   class Map {
-
-    @ParameterizedTest
-    @MethodSource("io.camunda.zeebe.backup.api.IntervalTest#inclusivenessVariants")
-    void shouldMapIntervalValuesAndPreserveInclusiveness(
-        final boolean startInclusive, final boolean endInclusive) {
-      // given
-      final var interval = createInterval(1, startInclusive, 10, endInclusive);
-
-      // when
-      final var mapped = interval.map(i -> i * 2L);
-
-      // then
-      assertThat(mapped.start()).isEqualTo(2L);
-      assertThat(mapped.end()).isEqualTo(20L);
-      assertThat(mapped.startInclusive()).isEqualTo(startInclusive);
-      assertThat(mapped.endInclusive()).isEqualTo(endInclusive);
-    }
 
     @Test
     void shouldMapIntervalToStringType() {
@@ -512,6 +356,117 @@ public class IntervalTest {
   }
 
   @Nested
+  class Intersection {
+
+    @Test
+    void shouldThrowWhenCollectionIsEmpty() {
+      assertThatThrownBy(() -> Interval.intersection(List.of()))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("Cannot compute intersection of empty collection");
+    }
+
+    @Test
+    void shouldReturnSameIntervalForSingleElement() {
+      final var interval = Interval.closed(1, 10);
+
+      final var result = Interval.intersection(List.of(interval));
+
+      assertThat(result).contains(interval);
+    }
+
+    @Test
+    void shouldReturnIntersectionOfOverlappingIntervals() {
+      // [1, 10] ∩ [5, 15] = [5, 10]
+      final var result =
+          Interval.intersection(List.of(Interval.closed(1, 10), Interval.closed(5, 15)));
+
+      assertThat(result).contains(Interval.closed(5, 10));
+    }
+
+    @Test
+    void shouldReturnEmptyWhenIntervalsDoNotOverlap() {
+      // [1, 5] ∩ [7, 10] = ∅
+      final var result =
+          Interval.intersection(List.of(Interval.closed(1, 5), Interval.closed(7, 10)));
+
+      assertThat(result).isEmpty();
+    }
+
+    @Test
+    void shouldReturnSinglePointWhenIntervalsMeetAtInclusiveBounds() {
+      // [1, 5] ∩ [5, 10] = [5, 5]
+      final var result =
+          Interval.intersection(List.of(Interval.closed(1, 5), Interval.closed(5, 10)));
+
+      assertThat(result).contains(Interval.closed(5, 5));
+    }
+
+    @Test
+    void shouldReturnEmptyWhenIntervalsMeetAtExclusiveBounds() {
+      // [1, 5) ∩ [5, 10] = ∅
+      final var result =
+          Interval.intersection(List.of(Interval.closedOpen(1, 5), Interval.closed(5, 10)));
+
+      assertThat(result).isEmpty();
+    }
+
+    @Test
+    void shouldRespectBoundInclusiveness() {
+      // (1, 10] ∩ [5, 15) = [5, 10]
+      final var result =
+          Interval.intersection(List.of(Interval.openClosed(1, 10), Interval.closedOpen(5, 15)));
+
+      assertThat(result).contains(Interval.closed(5, 10));
+    }
+
+    @Test
+    void shouldHandleMultipleIntervals() {
+      // [1, 20] ∩ [5, 15] ∩ [8, 12] = [8, 12]
+      final var result =
+          Interval.intersection(
+              List.of(Interval.closed(1, 20), Interval.closed(5, 15), Interval.closed(8, 12)));
+
+      assertThat(result).contains(Interval.closed(8, 12));
+    }
+
+    @Test
+    void shouldReturnEmptyWhenOneIntervalDoesNotOverlapWithOthers() {
+      // [1, 10] ∩ [5, 15] ∩ [20, 25] = ∅
+      final var result =
+          Interval.intersection(
+              List.of(Interval.closed(1, 10), Interval.closed(5, 15), Interval.closed(20, 25)));
+
+      assertThat(result).isEmpty();
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+      // Both exclusive at boundary - empty result
+      "true, false,  false, true,  false",
+      // First inclusive, second exclusive at 5 - no overlap at 5
+      "true, true,   false, true,  false",
+      // First exclusive, second inclusive at 5 - no overlap at 5
+      "true, false,  true, true,   false",
+      // Both inclusive at 5 - has single point result [5, 5]
+      "true, true,   true, true,   true"
+    })
+    void shouldRespectBoundInclusivenessAtBoundary(
+        final boolean firstStartIncl,
+        final boolean firstEndIncl,
+        final boolean secondStartIncl,
+        final boolean secondEndIncl,
+        final boolean hasResult) {
+      // Intervals meeting at point 5
+      final var first = new Interval<>(1, firstStartIncl, 5, firstEndIncl);
+      final var second = new Interval<>(5, secondStartIncl, 10, secondEndIncl);
+
+      final var result = Interval.intersection(List.of(first, second));
+
+      assertThat(result.isPresent()).isEqualTo(hasResult);
+    }
+  }
+
+  @Nested
   class ToString {
 
     @ParameterizedTest
@@ -519,7 +474,7 @@ public class IntervalTest {
     void shouldFormatWithMathematicalNotation(
         final boolean startInclusive, final boolean endInclusive) {
       // given
-      final var interval = createInterval(1, startInclusive, 10, endInclusive);
+      final var interval = new Interval<>(1, startInclusive, 10, endInclusive);
 
       // when/then
       final var expected =

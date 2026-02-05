@@ -129,23 +129,27 @@ public record Interval<T extends Comparable<T>>(
 
   /**
    * @param other interval to check
+   * @return true if this interval is entirely before the other (no overlap)
+   */
+  public boolean isBefore(final Interval<T> other) {
+    final var comparison = end.compareTo(other.start);
+    return comparison < 0 || (comparison == 0 && (!endInclusive || !other.startInclusive));
+  }
+
+  /**
+   * @param other interval to check
+   * @return true if this interval is entirely after the other (no overlap)
+   */
+  public boolean isAfter(final Interval<T> other) {
+    return other.isBefore(this);
+  }
+
+  /**
+   * @param other interval to check
    * @return true if this interval overlaps with the other interval
    */
   public boolean overlapsWith(final Interval<T> other) {
-    // Two intervals overlap if neither is entirely before the other
-    // this.end vs other.start
-    final var thisEndVsOtherStart = end.compareTo(other.start);
-    final var noOverlapThisBefore =
-        thisEndVsOtherStart < 0
-            || (thisEndVsOtherStart == 0 && (!endInclusive || !other.startInclusive));
-
-    // other.end vs this.start
-    final var otherEndVsThisStart = other.end.compareTo(start);
-    final var noOverlapOtherBefore =
-        otherEndVsThisStart < 0
-            || (otherEndVsThisStart == 0 && (!other.endInclusive || !startInclusive));
-
-    return !noOverlapThisBefore && !noOverlapOtherBefore;
+    return !isBefore(other) && !isAfter(other);
   }
 
   /**
@@ -157,20 +161,19 @@ public record Interval<T extends Comparable<T>>(
    */
   public SequencedCollection<Interval<T>> smallestCover(
       final SequencedCollection<Interval<T>> intervals) {
-    if (intervals.isEmpty()) {
-      return List.of();
-    }
     final var result = new ArrayList<Interval<T>>();
+    Interval<T> previousInterval = null;
     var i = 0;
     for (final var interval : intervals) {
-      if (!result.isEmpty() && !areContiguous(result.getLast(), interval)) {
+      if (previousInterval != null && !areContiguous(previousInterval, interval)) {
         throw new IllegalArgumentException(
             "Expected intervals to be contiguous, but interval at index %d is %s, interval at index %d is %s"
-                .formatted(i - 1, result.getLast(), i, interval));
+                .formatted(i - 1, previousInterval, i, interval));
       }
       if (interval.overlapsWith(this)) {
         result.add(interval);
       }
+      previousInterval = interval;
       i++;
     }
     return result;
@@ -230,19 +233,17 @@ public record Interval<T extends Comparable<T>>(
   }
 
   /**
-   * Checks if two intervals are contiguous (share a boundary point).
+   * Checks if two intervals are contiguous (meet at a boundary point without gap).
    *
    * @return true if the intervals are contiguous
    */
   private static <T extends Comparable<T>> boolean areContiguous(
       final Interval<T> first, final Interval<T> second) {
-    final var comparison = first.end.compareTo(second.start);
-    if (comparison != 0) {
-      return false;
-    }
-    // At the boundary, exactly one should be inclusive to avoid gaps or overlaps
-    // For contiguity: [a, b] and [b, c] or [a, b) and [b, c] or [a, b] and (b, c] are valid
-    // But [a, b) and (b, c] would have a gap at b
-    return first.endInclusive || second.startInclusive;
+    // Contiguous means end == start and at least one bound is inclusive (no gap)
+    // [a, b] and [b, c] - both inclusive, contiguous (overlap at b is ok)
+    // [a, b) and [b, c] - first exclusive, second inclusive, contiguous
+    // [a, b] and (b, c] - first inclusive, second exclusive, contiguous
+    // [a, b) and (b, c] - both exclusive, NOT contiguous (gap at b)
+    return first.end.compareTo(second.start) == 0 && (first.endInclusive || second.startInclusive);
   }
 }
