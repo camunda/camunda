@@ -334,4 +334,26 @@ final class HistoryDeletionJobTest {
         .deleteDocumentsById(
             historyDeletionIndex.getFullQualifiedName(), List.of(entity1.getId(), entity2.getId()));
   }
+
+  @Test
+  void shouldNotDeleteFromDeletionIndexIfDecisionInstanceDeletionFailed() {
+    // given
+    final var entity =
+        new HistoryDeletionEntity()
+            .setId("id1")
+            .setResourceKey(1L)
+            .setResourceType(HistoryDeletionType.DECISION_INSTANCE)
+            .setBatchOperationKey(2L)
+            .setPartitionId(1);
+    when(repository.getNextBatch())
+        .thenReturn(CompletableFuture.completedFuture(new HistoryDeletionBatch(List.of(entity))));
+    when(repository.deleteDocumentsByField(anyString(), anyString(), anyList()))
+        .thenReturn(CompletableFuture.failedFuture(new RuntimeException("Failed deleting")));
+
+    // when
+    job.execute().exceptionally(ex -> 0).toCompletableFuture().join();
+
+    // then
+    verify(repository, never()).deleteDocumentsById(any(), any());
+  }
 }
