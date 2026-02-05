@@ -21,6 +21,18 @@ import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.security.web.util.UrlUtils;
 import org.springframework.web.util.UriComponentsBuilder;
 
+/**
+ * {@link OidcClientInitiatedLogoutSuccessHandler} customization that:
+ *
+ * <ul>
+ *   <li>Stores a validated {@code Referer} header as the post-logout redirect URI, so the
+ *       application can navigate back to the originating page after IdP logout.
+ *   <li>Propagates the OIDC user claim {@code login_hint} as a {@code logout_hint} query parameter
+ *       to the provider's end-session endpoint when available.
+ * </ul>
+ *
+ * <p>The post-logout redirect URL is only accepted when it points back to the same application.
+ */
 public class CamundaOidcLogoutSuccessHandler extends OidcClientInitiatedLogoutSuccessHandler {
 
   private final ClientRegistrationRepository clientRegistrationRepository;
