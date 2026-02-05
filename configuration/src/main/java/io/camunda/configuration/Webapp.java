@@ -15,15 +15,12 @@ public class Webapp {
 
   /* config fields */
 
-  /**
-   * Whether the webapp is enabled or not. This also affects the webapp API.
-   */
+  /** Whether the webapp is enabled or not. This also affects the webapp API. */
   private boolean enabled = true;
 
   /**
-   * Whether the webapp UI is enabled or not.
-   * If false, the webapp API will still be available, but the webapp itself will
-   * not be accessible with a web browser.
+   * Whether the webapp UI is enabled or not. If false, the webapp API will still be available, but
+   * the webapp itself will not be accessible with a web browser.
    */
   private boolean uiEnabled = true;
 

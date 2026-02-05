@@ -12,19 +12,13 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
 public class Webapps {
   private static final String PREFIX = "camunda.webapps";
 
-  /**
-   * Configuration for the Tasklist webapp.
-   */
+  /** Configuration for the Tasklist webapp. */
   @NestedConfigurationProperty private Webapp tasklist = new Webapp("tasklist");
 
-  /**
-   * Configuration for the Operate webapp.
-   */
+  /** Configuration for the Operate webapp. */
   @NestedConfigurationProperty private Webapp operate = new Webapp("operate");
 
-  /**
-   * Configuration for the Identity webapp.
-   */
+  /** Configuration for the Identity webapp. */
   @NestedConfigurationProperty private Webapp identity = new Webapp("identity");
 
   public Webapp getTasklist() {
