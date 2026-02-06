@@ -215,10 +215,10 @@
           separator=", ">#{value}
         </foreach>
       </if>
-      <if test="filter.names != null and !filter.names.isEmpty()">
-        AND ut.NAME IN
-        <foreach close=")" collection="filter.names" item="value" open="("
-          separator=", ">#{value}
+      <if test="filter.nameOperations != null and !filter.nameOperations.isEmpty()">
+        <foreach collection="filter.nameOperations" item="operation">
+          AND ut.NAME
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
         </foreach>
       </if>
       <if test="filter.elementInstanceKeys != null and !filter.elementInstanceKeys.isEmpty()">
