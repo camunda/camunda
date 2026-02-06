@@ -14,7 +14,7 @@ import java.util.Objects;
 public class IndexConfiguration {
   public static final int DEFAULT_VARIABLE_SIZE_THRESHOLD = 8191;
 
-  private Integer numberOfShards = 1;
+  private Integer numberOfShards = 3;
   private Integer numberOfReplicas = 1;
   private String refreshInterval;
   private Integer templatePriority;

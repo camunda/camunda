@@ -36,7 +36,7 @@ public abstract class DocumentBasedSecondaryStorageDatabase
   private Duration connectionTimeout;
 
   /** How many shards Elasticsearch uses for all Tasklist indices. */
-  private int numberOfShards = 1;
+  private int numberOfShards = 3;
 
   /** How many replicas Elasticsearch uses for all indices. */
   private int numberOfReplicas = 0;

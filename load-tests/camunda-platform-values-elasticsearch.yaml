@@ -18,8 +18,6 @@ orchestration:
     application.yml: |
       zeebe.gateway.monitoring.enabled: "true"
       zeebe.gateway.threads.managementThreads: "1"
-      zeebe.broker.experimental.consistencyChecks.enablePreconditions: "true"
-      zeebe.broker.experimental.consistencyChecks.enableForeignKeyChecks: "true"
       zeebe.broker.executionMetricsExporterEnabled: "true"
       zeebe.broker.data.disk.freeSpace.processing: "3GB"
       zeebe.broker.data.disk.freeSpace.replication: "2GB"
@@ -74,10 +72,10 @@ elasticsearch:
       accessModes: ["ReadWriteOnce"]
     resources:
       requests:
-        cpu: 3
-        memory: 3Gi
+        cpu: 5
+        memory: 8Gi
       limits:
-        cpu: 3
-        memory: 6Gi
+        cpu: 5
+        memory: 8Gi
   extraConfig:
     logger.org.elasticsearch.deprecation: "OFF"
