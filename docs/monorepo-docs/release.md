@@ -320,6 +320,15 @@ In addition to the standard steps above, recent minor releases have surfaced sev
 - **Change of source branch**
   - For 8.8 minor release the source branch `stable/8.8` based on `release-8.8.0-alpha8`
   - Currently  an automated script decides the source branch for the release type, in case of change in future release process, the code needs to be adjusted [here](https://github.com/camunda/zeebe-engineering-processes/blob/main/src/main/resources/release/decide_dev_version_and_is_latest_for_release.bpmn#L39)
+- **Optimize Previous Version Management (8.9+)**
+  - Starting with 8.9, Optimize is included in the monorepo release process (`includeOptimize=true`).
+
+> [!WARNING]
+> - **Manual Step Required:** Two manual updates are needed:
+> 1. Before cutting a new stable branch (performing the first minor release X.Y.0), set `project.previousVersion` to the previous minor version (e.g., for 8.9.0 release, set to `8.8.0`).
+> 2. After cutting the stable branch, bump `project.previousVersion` on main to prepare for the next minor version line (e.g., after 8.9.0 release, update main to `8.9.0` for future 8.10.x alphas).
+> - The release workflow validates `project.previousVersion` for minor releases (X.Y.0) when cutting stable branches, and should also validate that main has been properly updated when releasing new alpha versions for the next minor line.
+> - **Action:** Monitor completion of [issue #40258](https://github.com/camunda/camunda/issues/40258) to automate this step and eliminate the manual requirement.
 
 ## Troubleshooting
 
