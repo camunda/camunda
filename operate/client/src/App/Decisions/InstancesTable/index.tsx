@@ -7,7 +7,7 @@
  */
 
 import {PanelHeader} from 'modules/components/PanelHeader';
-import {SortableTable} from 'modules/components/SortableTable';
+import {PaginatedSortableTable} from 'modules/components/PaginatedSortableTable';
 import {StateIcon} from 'modules/components/StateIcon';
 import {formatDate} from 'modules/utils/date';
 import {Container, DecisionName} from './styled';
@@ -20,9 +20,6 @@ import {
   useDecisionInstancesSearchFilter,
   useDecisionInstancesSearchSort,
 } from 'modules/hooks/decisionInstancesSearch';
-
-const ROW_HEIGHT = 34;
-const SMOOTH_SCROLL_STEP_SIZE = 5 * ROW_HEIGHT;
 
 const InstancesTable: React.FC = observer(() => {
   const filter = useDecisionInstancesSearchFilter();
@@ -93,20 +90,9 @@ const InstancesTable: React.FC = observer(() => {
         title="Decision Instances"
         count={filteredDecisionInstancesCount}
       />
-      <SortableTable
+      <PaginatedSortableTable
         state={getTableState()}
         emptyMessage={getEmptyListMessage()}
-        onVerticalScrollStartReach={async (scrollDown) => {
-          if (hasPreviousPage && !isFetchingPreviousPage) {
-            await fetchPreviousPage();
-            scrollDown(SMOOTH_SCROLL_STEP_SIZE);
-          }
-        }}
-        onVerticalScrollEndReach={() => {
-          if (hasNextPage && !isFetchingNextPage) {
-            fetchNextPage();
-          }
-        }}
         rows={decisionInstances.map(
           ({
             decisionEvaluationInstanceKey,
@@ -198,6 +184,14 @@ const InstancesTable: React.FC = observer(() => {
             key: 'processInstanceKey',
           },
         ]}
+        pagination={{
+          hasPreviousPage,
+          hasNextPage,
+          isFetchingPreviousPage,
+          isFetchingNextPage,
+          fetchPreviousPage,
+          fetchNextPage,
+        }}
       />
     </Container>
   );

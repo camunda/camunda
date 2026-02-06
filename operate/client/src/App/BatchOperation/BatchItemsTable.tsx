@@ -7,7 +7,7 @@
  */
 
 import {useMemo, useCallback} from 'react';
-import {SortableTable} from 'modules/components/SortableTable';
+import {PaginatedSortableTable} from 'modules/components/PaginatedSortableTable';
 import {useBatchOperationItems} from 'modules/queries/batch-operations/useBatchOperationItems';
 import {BatchStateIndicator} from 'App/BatchOperations/BatchStateIndicator';
 import {formatDate} from 'modules/utils/date';
@@ -32,6 +32,8 @@ export const BatchItemsTable: React.FC<Props> = ({
     status,
     isFetching,
     isFetched,
+    hasPreviousPage,
+    fetchPreviousPage,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
@@ -91,19 +93,22 @@ export const BatchItemsTable: React.FC<Props> = ({
   return (
     <>
       {totalItems > 0 && <strong>{totalItems} Items</strong>}
-      <SortableTable
+      <PaginatedSortableTable
         batchOperationId={batchOperationKey}
         state={getTableState()}
         rows={rows}
         headerColumns={TABLE_HEADERS}
         rowOperationError={rowOperationError}
-        onVerticalScrollEndReach={() => {
-          if (hasNextPage && !isFetchingNextPage) {
-            fetchNextPage();
-          }
-        }}
         emptyMessage={{message: 'No items found'}}
         stickyHeader
+        pagination={{
+          hasPreviousPage,
+          hasNextPage,
+          isFetchingPreviousPage,
+          isFetchingNextPage,
+          fetchPreviousPage,
+          fetchNextPage,
+        }}
       />
     </>
   );

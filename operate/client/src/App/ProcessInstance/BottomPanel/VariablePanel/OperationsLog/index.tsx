@@ -16,7 +16,7 @@ import {
   auditLogSortFieldEnum,
 } from '@camunda/camunda-api-zod-schemas/8.9/audit-log';
 import {Container, OperationLogName} from './styled';
-import {SortableTable} from 'modules/components/SortableTable';
+import {PaginatedSortableTable} from 'modules/components/PaginatedSortableTable';
 import {getSortParams} from 'modules/utils/filter';
 import {useLocation} from 'react-router-dom';
 import {Information} from '@carbon/react/icons';
@@ -38,9 +38,6 @@ import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstan
 type Props = {
   isVisible: boolean;
 };
-
-const ROW_HEIGHT = 46;
-const SMOOTH_SCROLL_STEP_SIZE = 5 * ROW_HEIGHT;
 
 const headerColumns = [
   {
@@ -198,24 +195,21 @@ const OperationsLog: React.FC<Props> = observer(({isVisible}) => {
 
   return (
     <Container>
-      <SortableTable
+      <PaginatedSortableTable
         state={getTableState()}
         rows={rows}
         emptyMessage={{
           message: 'No operations found for this instance',
         }}
-        onVerticalScrollStartReach={async (scrollDown) => {
-          if (hasPreviousPage && !isFetchingPreviousPage) {
-            await fetchPreviousPage();
-            scrollDown(SMOOTH_SCROLL_STEP_SIZE);
-          }
-        }}
-        onVerticalScrollEndReach={() => {
-          if (hasNextPage && !isFetchingNextPage) {
-            fetchNextPage();
-          }
-        }}
         headerColumns={headerColumns}
+        pagination={{
+          hasPreviousPage,
+          hasNextPage,
+          isFetchingPreviousPage,
+          isFetchingNextPage,
+          fetchPreviousPage,
+          fetchNextPage,
+        }}
       />
       {detailsModal.auditLog && (
         <DetailsModal
