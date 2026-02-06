@@ -26,7 +26,7 @@ import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
 
 @MultiDbTest
-@CompatibilityTest
+@CompatibilityTest(envVars = {"CAMUNDA_EXPRESSION_TIMEOUT=PT0.3S"})
 public class ExpressionEvaluationIT {
 
   private static CamundaClient camundaClient;

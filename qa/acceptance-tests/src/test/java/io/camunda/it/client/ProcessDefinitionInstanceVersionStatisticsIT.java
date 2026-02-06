@@ -39,7 +39,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 @MultiDbTest
-@CompatibilityTest
+@CompatibilityTest(enableAuthorization = true, enableMultiTenancy = true)
 public class ProcessDefinitionInstanceVersionStatisticsIT {
 
   private static final String TENANT_ID_1 = "tenant1";
@@ -57,6 +57,8 @@ public class ProcessDefinitionInstanceVersionStatisticsIT {
   @BeforeAll
   public static void beforeAll(@Authenticated final CamundaClient adminClient)
       throws InterruptedException {
+
+    camundaClient = adminClient;
 
     createTenant(
         adminClient,

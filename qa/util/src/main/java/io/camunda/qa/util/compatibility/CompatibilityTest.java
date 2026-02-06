@@ -79,4 +79,21 @@ public @interface CompatibilityTest {
    * @return if true, then multi-tenancy will be enabled in the Camunda cluster.
    */
   boolean enableMultiTenancy() default false;
+
+  /**
+   * Additional environment variables to set on the Camunda container. Each entry should be in the
+   * format "KEY=VALUE".
+   *
+   * <p>Example:
+   *
+   * <pre>{@code
+   * @CompatibilityTest(envVars = {
+   *   "CAMUNDA_EXPRESSION_TIMEOUT=PT0.3S",
+   *   "CAMUNDA_SOME_OTHER_CONFIG=value"
+   * })
+   * }</pre>
+   *
+   * @return array of environment variable assignments in "KEY=VALUE" format
+   */
+  String[] envVars() default {};
 }

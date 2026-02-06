@@ -35,7 +35,6 @@ import io.camunda.client.api.search.sort.BatchOperationItemSort;
 import io.camunda.client.api.search.sort.BatchOperationSort;
 import io.camunda.client.impl.search.filter.ProcessInstanceFilterImpl;
 import io.camunda.qa.util.auth.Authenticated;
-import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.security.configuration.InitializationConfiguration;
@@ -59,7 +58,6 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 @MultiDbTest
-@CompatibilityTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 public class BatchOperationSearchIT {
 
