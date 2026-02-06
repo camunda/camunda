@@ -320,9 +320,15 @@ public class RaftPartitionServer implements HealthMonitorable {
   private RaftServerCommunicator createServerProtocol() {
     final var legacySubjects = createLegacySubjects();
     final var engineSubjects = createEngineSubjects();
+
+    final var receivingSubjects =
+        config.isEnableLegacyRaftServerReceiver()
+            ? List.of(legacySubjects, engineSubjects)
+            : List.of(engineSubjects);
+
     return new RaftServerCommunicator(
         legacySubjects,
-        List.of(legacySubjects, engineSubjects),
+        receivingSubjects,
         Serializer.using(RaftNamespaces.RAFT_PROTOCOL),
         clusterCommunicator,
         requestTimeout,
@@ -336,7 +342,8 @@ public class RaftPartitionServer implements HealthMonitorable {
   }
 
   private RaftMessageContext createEngineSubjects() {
-    final var enginePrefix = PARTITION_NAME_FORMAT.formatted("default", partition.id().id());
+    final var engineName = config.getEngineName();
+    final var enginePrefix = PARTITION_NAME_FORMAT.formatted(engineName, partition.id().id());
     return new RaftMessageContext(enginePrefix);
   }
 

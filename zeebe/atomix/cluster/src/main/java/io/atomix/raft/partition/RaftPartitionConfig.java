@@ -30,6 +30,8 @@ public class RaftPartitionConfig {
   private static final int DEFAULT_MIN_STEP_DOWN_FAILURE_COUNT = 3;
   private static final Duration DEFAULT_MAX_QUORUM_RESPONSE_TIMEOUT = Duration.ofSeconds(0);
   private static final int DEFAULT_SNAPSHOT_REPLICATION_THRESHOLD = 100;
+  private static final String DEFAULT_ENGINE_NAME = "default";
+  private static final boolean DEFAULT_ENABLE_LEGACY_RAFT_SERVER_RECEIVER = true;
 
   private Duration electionTimeout = DEFAULT_ELECTION_TIMEOUT;
   private Duration heartbeatInterval = DEFAULT_HEARTBEAT_INTERVAL;
@@ -45,6 +47,8 @@ public class RaftPartitionConfig {
   private EntryValidator entryValidator;
   private Duration configurationChangeTimeout;
   private int snapshotChunkSize;
+  private String engineName = DEFAULT_ENGINE_NAME;
+  private boolean enableLegacyRaftServerReceiver = DEFAULT_ENABLE_LEGACY_RAFT_SERVER_RECEIVER;
 
   /**
    * Returns the Raft leader election timeout.
@@ -209,6 +213,22 @@ public class RaftPartitionConfig {
     this.entryValidator = entryValidator;
   }
 
+  public String getEngineName() {
+    return engineName;
+  }
+
+  public void setEngineName(final String engineName) {
+    this.engineName = engineName;
+  }
+
+  public boolean isEnableLegacyRaftServerReceiver() {
+    return enableLegacyRaftServerReceiver;
+  }
+
+  public void setEnableLegacyRaftServerReceiver(final boolean enableLegacyRaftServerReceiver) {
+    this.enableLegacyRaftServerReceiver = enableLegacyRaftServerReceiver;
+  }
+
   @Override
   public String toString() {
     return "RaftPartitionConfig{"
@@ -236,6 +256,11 @@ public class RaftPartitionConfig {
         + maxQuorumResponseTimeout
         + ", preferSnapshotReplicationThreshold="
         + preferSnapshotReplicationThreshold
+        + minStepDownFailureCount
+        + ", engineName="
+        + engineName
+        + ", enableLegacyRaftServerReceiver="
+        + enableLegacyRaftServerReceiver
         + '}';
   }
 }
