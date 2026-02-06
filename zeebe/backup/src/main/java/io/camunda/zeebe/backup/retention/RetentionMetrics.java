@@ -79,22 +79,9 @@ public class RetentionMetrics implements CloseableSilently {
   public void close() {
     meterRegistry.remove(lastExecutionGauge);
     meterRegistry.remove(nextExecutionGauge);
-    partitionMetrics.keySet().forEach(this::removePartition);
-  }
-
-  public void removePartition(final int partitionId) {
-    partitionMetrics.remove(partitionId);
-    final String partition = String.valueOf(partitionId);
-    safeRemoveGauge(EARLIEST_BACKUP_ID, partition);
-    safeRemoveGauge(BACKUPS_DELETED_ROUND, partition);
-    safeRemoveGauge(RANGES_DELETED_ROUND, partition);
-  }
-
-  private void safeRemoveGauge(final String metricName, final String partition) {
-    final var gauge = meterRegistry.find(metricName).tag(PARTITION_TAG, partition).gauge();
-    if (gauge != null) {
-      meterRegistry.remove(gauge);
-    }
+    meterRegistry.find(EARLIEST_BACKUP_ID).gauges().forEach(meterRegistry::remove);
+    meterRegistry.find(BACKUPS_DELETED_ROUND).gauges().forEach(meterRegistry::remove);
+    meterRegistry.find(RANGES_DELETED_ROUND).gauges().forEach(meterRegistry::remove);
   }
 
   public void recordLastExecution(final Instant lastExecution) {
