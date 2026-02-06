@@ -8,16 +8,21 @@
 
 import {OverflowMenu, OverflowMenuItem, Button} from '@carbon/react';
 import {Pause, Play} from '@carbon/react/icons';
-import type {BatchOperationState} from '@camunda/camunda-api-zod-schemas/8.8/batch-operation';
+import type {
+  BatchOperationState,
+  BatchOperationType,
+} from '@camunda/camunda-api-zod-schemas/8.8/batch-operation';
 import {useSuspendBatchOperation} from 'modules/mutations/batchOperations/useSuspendBatchOperation';
 import {useResumeBatchOperation} from 'modules/mutations/batchOperations/useResumeBatchOperation';
 import {useCancelBatchOperation} from 'modules/mutations/batchOperations/useCancelBatchOperation';
 import {ActionsContainer} from './styled';
 import {handleOperationError} from 'modules/utils/notifications';
+import {tracking} from 'modules/tracking';
 
 type Props = {
   batchOperationKey: string;
   batchOperationState: BatchOperationState;
+  batchOperationType: BatchOperationType;
 };
 
 type OperationAction = 'SUSPEND' | 'RESUME' | 'CANCEL';
@@ -35,6 +40,7 @@ const ACTIONS_BY_STATE: Record<BatchOperationState, OperationAction[]> = {
 const OperationsActions: React.FC<Props> = ({
   batchOperationKey,
   batchOperationState,
+  batchOperationType,
 }) => {
   const suspendMutation = useSuspendBatchOperation({
     onError: (error) => {
@@ -61,6 +67,11 @@ const OperationsActions: React.FC<Props> = ({
           kind="tertiary"
           renderIcon={Pause}
           onClick={() => {
+            tracking.track({
+              eventName: 'batch-operation-suspended',
+              batchOperationType,
+              batchOperationState,
+            });
             suspendMutation.mutate(batchOperationKey);
           }}
           disabled={suspendMutation.isPending}
@@ -73,6 +84,11 @@ const OperationsActions: React.FC<Props> = ({
           kind="tertiary"
           renderIcon={Play}
           onClick={() => {
+            tracking.track({
+              eventName: 'batch-operation-resumed',
+              batchOperationType,
+              batchOperationState,
+            });
             resumeMutation.mutate(batchOperationKey);
           }}
           disabled={resumeMutation.isPending}
@@ -85,7 +101,14 @@ const OperationsActions: React.FC<Props> = ({
           <OverflowMenuItem
             itemText="Cancel"
             isDelete
-            onClick={() => cancelMutation.mutate(batchOperationKey)}
+            onClick={() => {
+              tracking.track({
+                eventName: 'batch-operation-canceled',
+                batchOperationType,
+                batchOperationState,
+              });
+              cancelMutation.mutate(batchOperationKey);
+            }}
             disabled={cancelMutation.isPending}
           />
         </OverflowMenu>
