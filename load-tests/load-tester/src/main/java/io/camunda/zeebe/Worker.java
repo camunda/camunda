@@ -37,7 +37,7 @@ public class Worker extends App {
   @Override
   public void run() {
     final String jobType = "performance-testing-job";
-    final long completionDelay = 500L; // give some time to construct nested scopes
+    final long completionDelay = 1000L; // give some time to construct nested scopes
     final boolean isStreamEnabled = workerCfg.isStreamEnabled();
     final var variables = readVariables(workerCfg.getPayloadPath());
     final BlockingQueue<Future<?>> requestFutures = new ArrayBlockingQueue<>(10_000);
