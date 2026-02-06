@@ -38,6 +38,7 @@ import io.camunda.zeebe.restore.BackupRangeResolver.PartitionRestoreInfo;
 import io.camunda.zeebe.restore.PartitionRestoreService.BackupValidator;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.VisibleForTesting;
+import io.camunda.zeebe.util.concurrency.FuturesUtil;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil.PartitionKeyNames;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -49,14 +50,12 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
@@ -123,75 +122,25 @@ public class RestoreManager {
       throws IOException, ExecutionException, InterruptedException {
     final var partitionCount = configuration.getCluster().getPartitionsCount();
 
-    final var infoByPartition =
-        new ConcurrentHashMap<Integer, PartitionRestoreInfo>(partitionCount);
-    // Get backup ranges from the store for each partition
-    try (final var virtualExecutor = Executors.newVirtualThreadPerTaskExecutor()) {
-      final var futures =
-          IntStream.range(1, partitionCount + 1)
-              .mapToObj(
-                  partition ->
-                      virtualExecutor.submit(
-                          () -> {
-                            final var positionModel = exporterPositionMapper.findOne(partition);
-                            if (positionModel == null
-                                || positionModel.lastExportedPosition() == null) {
-                              throw new IllegalArgumentException(
-                                  "No exported position found for partition "
-                                      + partition
-                                      + " in RDBMS");
-                            }
-
-                            final var exportedPosition = positionModel.lastExportedPosition();
-                            return rangeResolver.getInformationPerPartition(
-                                partition, from, to, exportedPosition);
-                          }))
-              .toList();
-      for (final var future : futures) {
-        final var info = future.get();
-        infoByPartition.put(info.partition(), info);
-      }
-    }
-
-    final var checkpoints =
-        infoByPartition.values().stream()
-            .map(PartitionRestoreInfo::backupStatuses)
-            .flatMap(Collection::stream)
-            .mapToLong(bs -> bs.id().checkpointId())
-            .toArray();
-
-    // Determine the global checkpoint (the latest checkpoint in the interval)
-    final var globalCheckpointId =
-        Arrays.stream(checkpoints)
-            .max()
-            .orElseThrow(() -> new IllegalArgumentException("No backups found in any partition"));
-
-    final var backupsByPartition =
-        infoByPartition.entrySet().stream()
-            .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().backupStatuses()));
-    final var safeStartByPartition =
-        infoByPartition.entrySet().stream()
-            .collect(Collectors.toMap(Entry::getKey, e -> e.getValue().safeStart()));
-    final var rangesByPartition =
-        infoByPartition.entrySet().stream()
-            .collect(Collectors.toMap(Entry::getKey, e -> e.getValue().completRange()));
+    final var restoreInfos = getRestoreInfoForAllPartitions(from, to, partitionCount).join();
 
     // Step 6: Validate checkpoint reachability using validateGlobalCheckpointReachability
-    final var validationResult =
-        BackupRangeResolver.validateGlobalCheckpointReachability(
-            globalCheckpointId, safeStartByPartition, backupsByPartition, rangesByPartition);
+    final var validator = new BackupRangeResolver.ReachabilityValidator(restoreInfos);
 
-    if (validationResult.isLeft()) {
-      throw new IllegalStateException("Validation failed: " + validationResult.getLeft());
-    }
+    validator.validate();
+    final var globalCheckpointId = validator.getGlobalCheckpointId();
 
-    // Collect all backup IDs to restore
-    final var backupIds = Arrays.stream(checkpoints).distinct().sorted().toArray();
+    // Get per-partition backup IDs from the validator
+    // Each partition may have different backups, but all must reach globalCheckpointId
+    final var backupIdsByPartition = validator.getBackupIdsByPartition();
 
-    LOG.info("Restoring RDBMS backups in range [{},{}] with backup IDs {}", from, to, backupIds);
+    LOG.info(
+        "Restoring RDBMS backups in range [{},{}] to global checkpoint {}",
+        from,
+        to,
+        globalCheckpointId);
 
-    // Step 8: Call the generic restore function
-    restore(backupIds, validateConfig, ignoreFilesInTarget);
+    restore(backupIdsByPartition, validateConfig, ignoreFilesInTarget);
   }
 
   public void restoreTimeRange(
@@ -237,11 +186,43 @@ public class RestoreManager {
   public void restore(
       final long[] backupIds, final boolean validateConfig, final List<String> ignoreFilesInTarget)
       throws IOException, ExecutionException, InterruptedException {
+    restore(toBackupIdsByPartition(backupIds), validateConfig, ignoreFilesInTarget);
+  }
+
+  /**
+   * Converts a common array of backup IDs to a map where each partition uses the same backup IDs.
+   *
+   * @param backupIds the backup IDs to use for all partitions
+   * @return a map from partition ID to backup IDs
+   */
+  private Map<Integer, long[]> toBackupIdsByPartition(final long[] backupIds) {
+    final var partitionCount = configuration.getCluster().getPartitionsCount();
+    return IntStream.rangeClosed(1, partitionCount)
+        .boxed()
+        .collect(Collectors.toMap(partition -> partition, partition -> backupIds));
+  }
+
+  /**
+   * Restores partitions from backups, where each partition may restore from different backup IDs.
+   *
+   * <p>This is useful when partitions have different safe start checkpoints based on their exported
+   * positions, but all need to reach the same global checkpoint.
+   *
+   * @param backupIdsByPartition map from partition ID to the backup IDs to restore for that
+   *     partition
+   * @param validateConfig whether to validate the backup configuration
+   * @param ignoreFilesInTarget files to ignore when checking if the data directory is empty
+   */
+  public void restore(
+      final Map<Integer, long[]> backupIdsByPartition,
+      final boolean validateConfig,
+      final List<String> ignoreFilesInTarget)
+      throws IOException, ExecutionException, InterruptedException {
     final var dataDirectory = Path.of(configuration.getData().getDirectory());
 
     verifyDataFolderIsEmpty(dataDirectory, ignoreFilesInTarget);
 
-    verifyBackupIdsAreContinuous(backupIds);
+    verifyBackupIdsAreContinuous(backupIdsByPartition);
 
     final var partitionsToRestore = collectPartitions();
     try (final var executor =
@@ -249,6 +230,12 @@ public class RestoreManager {
             Thread.ofVirtual().name("zeebe-restore-", 0).factory())) {
       final var tasks = new ArrayList<Callable<Void>>(partitionsToRestore.size());
       for (final var partition : partitionsToRestore) {
+        final var partitionId = partition.partition().id().id();
+        final var backupIds = backupIdsByPartition.get(partitionId);
+        if (backupIds == null || backupIds.length == 0) {
+          throw new IllegalArgumentException(
+              "No backup IDs provided for partition " + partitionId);
+        }
         tasks.add(
             () -> {
               restorePartition(partition, backupIds, validateConfig);
@@ -356,15 +343,17 @@ public class RestoreManager {
         factory.createRaftPartition(metadata, partitionRegistry), partitionRegistry);
   }
 
-  private void verifyBackupIdsAreContinuous(final long[] backupIds) {
-    final var partitionCount = configuration.getCluster().getPartitionsCount();
-
+  private void verifyBackupIdsAreContinuous(final Map<Integer, long[]> backupIdsByPartition) {
     final MutableBoolean validBackupRange = new MutableBoolean(true);
-    if (backupIds.length > 1) {
-      final var minBackup = Arrays.stream(backupIds).min().orElseThrow();
-      final var maxBackup = Arrays.stream(backupIds).max().orElseThrow();
 
-      for (int partition = 1; partition <= partitionCount; partition++) {
+    for (final var entry : backupIdsByPartition.entrySet()) {
+      final var partition = entry.getKey();
+      final var backupIds = entry.getValue();
+
+      if (backupIds.length > 1) {
+        final var minBackup = Arrays.stream(backupIds).min().orElseThrow();
+        final var maxBackup = Arrays.stream(backupIds).max().orElseThrow();
+
         final var ranges = BackupRanges.fromMarkers(backupStore.rangeMarkers(partition).join());
         final var validRange =
             ranges.stream()
@@ -413,6 +402,33 @@ public class RestoreManager {
           .filter(path -> ignoreFilesInTarget.stream().noneMatch(path::endsWith))
           .findFirst()
           .isEmpty();
+    }
+  }
+
+  /**
+   * @return the {@link PartitionRestoreInfo} for each partition in parallel, using a Virtual Thread
+   *     per task
+   */
+  private CompletableFuture<List<PartitionRestoreInfo>> getRestoreInfoForAllPartitions(
+      final Instant from, final Instant to, final int partitionCount) {
+    // Get backup ranges from the store for each partition
+    try (final var virtualExecutor = Executors.newVirtualThreadPerTaskExecutor()) {
+      return FuturesUtil.parTraverse(
+          IntStream.range(1, partitionCount + 1).boxed().toList(),
+          partition ->
+              CompletableFuture.supplyAsync(
+                  () -> {
+                    final var positionModel = exporterPositionMapper.findOne(partition);
+                    if (positionModel == null || positionModel.lastExportedPosition() == null) {
+                      throw new IllegalArgumentException(
+                          "No exported position found for partition " + partition + " in RDBMS");
+                    }
+
+                    final var exportedPosition = positionModel.lastExportedPosition();
+                    return rangeResolver.getInformationPerPartition(
+                        partition, from, to, exportedPosition);
+                  },
+                  virtualExecutor));
     }
   }
 

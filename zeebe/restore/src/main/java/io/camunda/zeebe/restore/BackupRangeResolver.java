@@ -216,10 +216,10 @@ public final class BackupRangeResolver {
 
   /** Logic for validating that all partitions can reach the global checkpoint. */
   public static final class ReachabilityValidator {
+
     private final long globalCheckpointId;
     private final Map<Integer, PartitionRestoreInfo> restoreInfoByPartition;
     private final List<String> failures = new ArrayList<>();
-
     public ReachabilityValidator(final Collection<PartitionRestoreInfo> restoreInfos) {
       if (restoreInfos.isEmpty()) {
         throw new IllegalStateException(
@@ -230,6 +230,39 @@ public final class BackupRangeResolver {
       restoreInfoByPartition =
           restoreInfos.stream()
               .collect(Collectors.toMap(PartitionRestoreInfo::partition, Function.identity()));
+    }
+
+    public long getGlobalCheckpointId() {
+      return globalCheckpointId;
+    }
+
+    public List<String> getFailures() {
+      return failures;
+    }
+
+    /**
+     * Returns the backup IDs to restore for each partition.
+     *
+     * <p>For each partition, this returns a sorted array of checkpoint IDs that are within the
+     * range [safeStart, globalCheckpointId]. Each partition may have different backup IDs based on
+     * its safe start position, but all must reach the global checkpoint.
+     *
+     * @return map from partition ID to sorted array of backup checkpoint IDs
+     */
+    public Map<Integer, long[]> getBackupIdsByPartition() {
+      return restoreInfoByPartition.entrySet().stream()
+          .collect(
+              Collectors.toMap(
+                  Map.Entry::getKey,
+                  entry -> {
+                    final var info = entry.getValue();
+                    return info.backupStatuses().stream()
+                        .map(bs -> bs.id().checkpointId())
+                        .filter(id -> id >= info.safeStart() && id <= globalCheckpointId)
+                        .sorted()
+                        .mapToLong(Long::longValue)
+                        .toArray();
+                  }));
     }
 
     /**
