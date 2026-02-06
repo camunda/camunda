@@ -53,8 +53,13 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+<<<<<<< HEAD
 import java.util.Optional;
+=======
+import java.util.Map;
+>>>>>>> 9908632e (fix: lastHistoricalArchiverDate state collision causes incorrect archiving)
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import javax.annotation.WillCloseWhenClosed;
 import org.slf4j.Logger;
@@ -74,7 +79,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
   private final IndexTemplateDescriptor decisionInstanceTemplateDescriptor;
   private final Collection<IndexTemplateDescriptor> allTemplatesDescriptors;
   private final CamundaExporterMetrics metrics;
-  private String lastHistoricalArchiverDate = null;
+  private final Map<String, String> lastHistoricalArchiverDates = new ConcurrentHashMap<>();
   private final Cache<String, String> lifeCyclePolicyApplied;
 
   public ElasticsearchArchiverRepository(
@@ -417,6 +422,8 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
     }
 
     final String endDate = hits.getFirst().fields().get(field).toJson().asJsonArray().getString(0);
+    final String templateIndexName = templateDescriptor.getIndexName();
+    final String lastHistoricalArchiverDate = lastHistoricalArchiverDates.get(templateIndexName);
 
     final CompletableFuture<String> dateFuture =
         (lastHistoricalArchiverDate == null)
@@ -426,9 +433,11 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
 
     return dateFuture.thenApply(
         date -> {
-          lastHistoricalArchiverDate =
+          final String nextArchiverDate =
               DateOfArchivedDocumentsUtil.calculateDateOfArchiveIndexForBatch(
                   endDate, date, rolloverInterval, config.getElsRolloverDateFormat());
+
+          lastHistoricalArchiverDates.put(templateIndexName, nextArchiverDate);
 
           final var ids =
               hits.stream()
@@ -443,7 +452,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
                   .map(Hit::id)
                   .toList();
 
-          return new ArchiveBatch(lastHistoricalArchiverDate, ids);
+          return new ArchiveBatch(nextArchiverDate, ids);
         });
   }
 
