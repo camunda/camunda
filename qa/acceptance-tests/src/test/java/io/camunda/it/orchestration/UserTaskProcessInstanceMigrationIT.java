@@ -15,7 +15,11 @@ import static org.awaitility.Awaitility.await;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.MigrationPlan;
 import io.camunda.client.api.search.response.UserTask;
+import io.camunda.qa.util.cluster.TestCamundaApplication;
+import io.camunda.qa.util.cluster.TestRestTasklistClient;
 import io.camunda.qa.util.multidb.MultiDbTest;
+import io.camunda.qa.util.multidb.MultiDbTestApplication;
+import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskSearchResponse;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.AbstractUserTaskBuilder;
@@ -24,6 +28,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.AutoClose;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -36,13 +42,34 @@ import org.junit.jupiter.params.provider.MethodSource;
     disabledReason = "Job-based user tasks don't work with RDBMS")
 public class UserTaskProcessInstanceMigrationIT {
 
+  @MultiDbTestApplication
+  static final TestCamundaApplication STANDALONE_CAMUNDA =
+      new TestCamundaApplication().withAuthorizationsDisabled();
+
   private static CamundaClient client;
+  @AutoClose private static TestRestTasklistClient tasklistClient;
 
   private static final String FROM_PROCESS_ID = "migration-user-task_v1";
   private static final String TO_PROCESS_ID = "migration-user-task_v2";
   private static final String TASK_ID = "task1";
   private static final String EXAMPLE_DUE_DATE = "2017-07-21T19:32:28+02:00";
   private static final String EXAMPLE_FOLLOW_UP_DATE = "2017-07-22T19:32:28+02:00";
+
+  private static long formKey;
+
+  @BeforeAll
+  static void setup(final CamundaClient camundaClient) {
+    tasklistClient = STANDALONE_CAMUNDA.newTasklistClient();
+    formKey =
+        client
+            .newDeployResourceCommand()
+            .addResourceStringUtf8(getForm("linkedform"), "linkedForm.form")
+            .send()
+            .join()
+            .getForm()
+            .getFirst()
+            .getFormKey();
+  }
 
   @ParameterizedTest
   @MethodSource("migrationTestCases")
@@ -80,10 +107,10 @@ public class UserTaskProcessInstanceMigrationIT {
             .getProcessDefinitionKey();
     final var processInstanceKey =
         startProcessInstance(
-                client,
-                FROM_PROCESS_ID,
-                Map.of("varAssignee", "demo", "varPriority", 20)) // TODO variables?
+                client, FROM_PROCESS_ID, Map.of("varAssignee", "demo", "varPriority", 20))
             .getProcessInstanceKey();
+    // wait for task to be exported - use V1 because V2 does not return job worker user tasks
+    waitForTaskExported(processInstanceKey);
 
     // when
     migrateProcessInstance(
@@ -102,7 +129,12 @@ public class UserTaskProcessInstanceMigrationIT {
               assertThat(
                       client
                           .newUserTaskSearchRequest()
-                          .filter(f -> f.processDefinitionKey(pd2).bpmnProcessId(TO_PROCESS_ID))
+                          .filter(
+                              f ->
+                                  f.processDefinitionKey(pd2)
+                                      .bpmnProcessId(TO_PROCESS_ID)
+                                      .processInstanceKey(processInstanceKey))
+                          // right task
                           .send()
                           .join()
                           .items())
@@ -111,7 +143,11 @@ public class UserTaskProcessInstanceMigrationIT {
     final UserTask migratedTask =
         client
             .newUserTaskSearchRequest()
-            .filter(f -> f.processDefinitionKey(pd2))
+            .filter(
+                f ->
+                    f.processDefinitionKey(pd2)
+                        .bpmnProcessId(TO_PROCESS_ID)
+                        .processInstanceKey(processInstanceKey))
             .send()
             .join()
             .singleItem();
@@ -128,14 +164,14 @@ public class UserTaskProcessInstanceMigrationIT {
 
   static Stream<Arguments> migrationTestCases() {
     // Test case with assignee and priority expressions
-    final Consumer<UserTaskBuilder> from1 =
+    final Consumer<UserTaskBuilder> fromPriorityAndAssignee =
         t ->
             t.zeebeCandidateGroups("g1,g2")
                 .zeebeCandidateUsers("u1,u2")
                 .zeebeDueDate(EXAMPLE_DUE_DATE)
                 .zeebeFollowUpDate(EXAMPLE_FOLLOW_UP_DATE)
                 .zeebeAssignee("original");
-    final Consumer<UserTaskBuilder> to1 =
+    final Consumer<UserTaskBuilder> toPriorityAndAssignee =
         t ->
             t.zeebeUserTask()
                 .zeebeAssigneeExpression("varAssignee")
@@ -156,7 +192,7 @@ public class UserTaskProcessInstanceMigrationIT {
     final Consumer<UserTaskBuilder> fromEmbeddedForm =
         t ->
             t.zeebeCandidateGroups("g1,g2")
-                .zeebeUserTaskForm("{}")
+                .zeebeUserTaskForm(getForm("testform"))
                 .zeebeCandidateUsers("u1,u2")
                 .zeebeDueDate(EXAMPLE_DUE_DATE)
                 .zeebeFollowUpDate(EXAMPLE_FOLLOW_UP_DATE)
@@ -167,8 +203,19 @@ public class UserTaskProcessInstanceMigrationIT {
                 .zeebeAssigneeExpression("varAssignee")
                 .zeebeExternalFormReference("localhost:8080//example.form");
 
+    // Test case migrating from embedded form to internal form
+    final Consumer<UserTaskBuilder> toInternalForm =
+        t ->
+            t.zeebeUserTask()
+                .zeebeAssignee("targetAssignee")
+                .zeebeTaskPriority("10")
+                .zeebeFormId("linkedform");
+
     return Stream.of(
-        Arguments.of(from1, to1, new ExpectedUserTask("demo", 40, null, null)),
+        Arguments.of(
+            fromPriorityAndAssignee,
+            toPriorityAndAssignee,
+            new ExpectedUserTask("demo", 40, null, null)),
         Arguments.of(
             fromWithoutAssigneeAndPriority,
             toWithoutAssigneeAndPriority,
@@ -176,7 +223,28 @@ public class UserTaskProcessInstanceMigrationIT {
         Arguments.of(
             fromEmbeddedForm,
             toExternalForm,
-            new ExpectedUserTask("demo", 50, "localhost:8080//example.form", null)));
+            new ExpectedUserTask("demo", 50, "localhost:8080//example.form", null)),
+        Arguments.of(
+            fromEmbeddedForm,
+            toInternalForm,
+            new ExpectedUserTask("targetAssignee", 10, null, formKey)));
+  }
+
+  private static String getForm(final String formId) {
+    return "{\n"
+        + "  \"components\": [],\n"
+        + "  \"type\": \"default\",\n"
+        + "  \"id\": \""
+        + formId
+        + "\",\n"
+        + "  \"executionPlatform\": \"Camunda Cloud\",\n"
+        + "  \"executionPlatformVersion\": \"8.7.0\",\n"
+        + "  \"exporter\": {\n"
+        + "    \"name\": \"Camunda Modeler\",\n"
+        + "    \"version\": \"5.38.1\"\n"
+        + "  },\n"
+        + "  \"schemaVersion\": 19\n"
+        + "}";
   }
 
   private void migrateProcessInstance(
@@ -188,6 +256,18 @@ public class UserTaskProcessInstanceMigrationIT {
         .migrationPlan(migrationPlan)
         .send()
         .join();
+  }
+
+  private void waitForTaskExported(final Long processInstanceKey) {
+    await()
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .untilAsserted(
+            () -> {
+              final TaskSearchResponse[] tasks =
+                  tasklistClient.searchAndParseTasks(processInstanceKey);
+              assertThat(tasks).hasSize(1);
+              assertThat(tasks[0].getProcessInstanceKey()).isEqualTo(processInstanceKey.toString());
+            });
   }
 
   record ExpectedUserTask(

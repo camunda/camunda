@@ -56,7 +56,7 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
           UserTaskIntent.COMPLETION_DENIED);
   private static final String UNMAPPED_USER_TASK_ATTRIBUTE_WARNING =
       "Attribute update not mapped while importing ZEEBE_USER_TASKS: {}";
-  private static final String RECREATE_WITH_NULL = "NULL";
+  private static final String FORM_KEY_NULL = "NULL";
   private final String indexName;
   private final ExporterEntityCache<String, CachedFormEntity> formCache;
   private final ExporterEntityCache<Long, CachedProcessEntity> processCache;
@@ -209,7 +209,7 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
       }
     }
     if (entity.getFormKey() != null) {
-      if (entity.getFormKey().equals(RECREATE_WITH_NULL)) {
+      if (entity.getFormKey().equals(FORM_KEY_NULL)) {
         entity.setFormKey(null);
         updateFields.put(TaskTemplate.FORM_KEY, null);
       } else {
@@ -239,7 +239,7 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
   private void createTaskEntity(final TaskEntity entity, final Record<UserTaskRecordValue> record) {
     final var taskValue = record.getValue();
     final var formKey =
-        taskValue.getFormKey() > 0 ? String.valueOf(taskValue.getFormKey()) : RECREATE_WITH_NULL;
+        taskValue.getFormKey() > 0 ? String.valueOf(taskValue.getFormKey()) : FORM_KEY_NULL;
 
     entity
         .setImplementation(TaskImplementation.ZEEBE_USER_TASK)
