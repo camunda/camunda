@@ -201,6 +201,28 @@ public class HistoryDeletionServiceTest {
     assertThat(interval2).isEqualTo(Duration.ofSeconds(1));
   }
 
+  @Test
+  void shouldDeleteDecisionInstanceHistory() {
+    // given
+    final var partitionId = 1;
+    final var decisionInstanceKey1 = 1L;
+    final var decisionInstanceKey2 = 2L;
+    when(historyDeletionDbReaderMock.getNextBatch(anyInt(), anyInt()))
+        .thenReturn(
+            List.of(
+                createDecisionInstanceModel(decisionInstanceKey1, partitionId),
+                createDecisionInstanceModel(decisionInstanceKey2, partitionId)));
+
+    // when
+    historyDeletionService.deleteHistory(partitionId);
+
+    // then
+    verify(rdbmsWritersMock.getDecisionInstanceWriter())
+        .deleteByKeys(List.of(decisionInstanceKey1, decisionInstanceKey2));
+    verify(rdbmsWritersMock.getHistoryDeletionWriter())
+        .deleteByResourceKeys(List.of(decisionInstanceKey1, decisionInstanceKey2));
+  }
+
   private static HistoryDeletionDbModel createModel(
       final long processInstanceKey, final int partitionId) {
     return new HistoryDeletionDbModel(
@@ -211,6 +233,12 @@ public class HistoryDeletionServiceTest {
       final long processDefinitionKey, final int partitionId) {
     return new HistoryDeletionDbModel(
         processDefinitionKey, HistoryDeletionTypeDbModel.PROCESS_DEFINITION, 2L, partitionId);
+  }
+
+  private static HistoryDeletionDbModel createDecisionInstanceModel(
+      final long decisionInstanceKey, final int partitionId) {
+    return new HistoryDeletionDbModel(
+        decisionInstanceKey, HistoryDeletionTypeDbModel.DECISION_INSTANCE, 2L, partitionId);
   }
 
   private static class TestProcessInstanceDependantWriter extends RootProcessInstanceDependant {
