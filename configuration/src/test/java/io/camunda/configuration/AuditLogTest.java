@@ -37,12 +37,8 @@ class AuditLogTest {
     final AuditLog auditLog = new AuditLog();
 
     assertThat(auditLog.getClient().getCategories())
-        .as("All categories should be enabled for client by default")
-        .isEqualTo(
-            Set.of(
-                AuditLogOperationCategory.DEPLOYED_RESOURCES,
-                AuditLogOperationCategory.USER_TASKS,
-                AuditLogOperationCategory.ADMIN));
+        .as("Client categories should be empty by default (opt-in logging)")
+        .isEmpty();
     assertThat(auditLog.getClient().getExcludes())
         .as("No excludes should be set for client by default")
         .isEmpty();

@@ -14,8 +14,8 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
 public class AuditLog {
   private boolean enabled = true;
 
-  @NestedConfigurationProperty private AuditLogEntry user = new AuditLogEntry();
-  @NestedConfigurationProperty private AuditLogEntry client = new AuditLogEntry();
+  @NestedConfigurationProperty private AuditLogEntry user = AuditLogEntry.logAll();
+  @NestedConfigurationProperty private AuditLogEntry client = AuditLogEntry.logNone();
 
   public boolean isEnabled() {
     return enabled;
