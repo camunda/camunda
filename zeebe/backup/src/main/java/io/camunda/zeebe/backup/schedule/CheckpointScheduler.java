@@ -8,7 +8,6 @@
 package io.camunda.zeebe.backup.schedule;
 
 import io.camunda.zeebe.backup.client.api.BackupRequestHandler;
-import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse;
 import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse.PartitionCheckpointState;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.scheduler.Actor;
@@ -137,22 +136,18 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
    */
   private ActorFuture<CheckpointState> acquireEarliestState() {
     final ActorFuture<CheckpointState> future = createFuture();
-    final ActorFuture<CheckpointStateResponse> requestFuture = createFuture();
-
-    runOnCompletion(
-        requestFuture,
-        (response, error) -> {
-          if (error != null) {
-            future.completeExceptionally(error);
-          }
-          final Instant minCheckpointTimestamp =
-              minFromState(response.getCheckpointStates(), checkpointSchedule);
-          final Instant minBackupTimestamp =
-              minFromState(response.getBackupStates(), backupSchedule);
-          future.complete(new CheckpointState(minCheckpointTimestamp, minBackupTimestamp));
-        });
-
-    backupRequestHandler.getCheckpointState().thenAccept(requestFuture::complete);
+    backupRequestHandler
+        .getCheckpointState()
+        .thenApplyAsync(
+            response -> {
+              final Instant minCheckpointTimestamp =
+                  minFromState(response.getCheckpointStates(), checkpointSchedule);
+              final Instant minBackupTimestamp =
+                  minFromState(response.getBackupStates(), backupSchedule);
+              return new CheckpointState(minCheckpointTimestamp, minBackupTimestamp);
+            },
+            this)
+        .whenCompleteAsync(future, this);
     return future;
   }
 

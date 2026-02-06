@@ -428,6 +428,33 @@ public class CheckpointScheduleTest {
   }
 
   @Test
+  void shouldRetryOnGetCheckpointStateError() {
+    // given
+    final var now = actorScheduler.getClock().getCurrentTime();
+    checkpointScheduler =
+        createScheduler(new Schedule.IntervalSchedule(Duration.ofSeconds(60)), null);
+
+    // First call fails, second call succeeds
+    when(backupRequestHandler.getCheckpointState())
+        .thenReturn(CompletableFuture.failedStage(new RuntimeException("Expected error")))
+        .thenReturn(CompletableFuture.completedStage(checkpointState(now.toEpochMilli(), 0L)));
+
+    // when
+    actorScheduler.submitActor(checkpointScheduler);
+    actorScheduler.workUntilDone(); // Should handle error and schedule backoff
+
+    // then
+    verify(backupRequestHandler, times(1)).getCheckpointState();
+
+    // Move clock past initial backoff (1s)
+    actorScheduler.updateClock(Duration.ofSeconds(2));
+    actorScheduler.workUntilDone();
+
+    // Should have retried
+    verify(backupRequestHandler, times(2)).getCheckpointState();
+  }
+
+  @Test
   void shouldRetryWhenCheckpointingFailed() {
     // given
     final var now = actorScheduler.getClock().getCurrentTime();
