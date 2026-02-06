@@ -713,6 +713,16 @@ public final class TestHelper {
                     .doesNotContain(tenantToBeDeleted));
   }
 
+  public static void waitForProcesses(
+      final CamundaClient camundaClient,
+      final Consumer<ProcessDefinitionFilter> fn,
+      final int expectedProcessDefinitions) {
+    waitForItemsPaginated(
+        "should wait until processes are available",
+        expectedProcessDefinitions,
+        page -> camundaClient.newProcessDefinitionSearchRequest().filter(fn).page(page).execute());
+  }
+
   public static void waitForProcessesToBeDeployed(
       final CamundaClient camundaClient, final int expectedProcessDefinitions) {
     waitForItemsPaginated(
