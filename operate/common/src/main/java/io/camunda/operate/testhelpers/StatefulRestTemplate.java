@@ -95,6 +95,12 @@ public class StatefulRestTemplate extends RestTemplate {
   }
 
   @Override
+  public <T> T postForObject(final URI url, final Object request, final Class<T> responseType)
+      throws RestClientException {
+    return postForEntity(url, request, responseType).getBody();
+  }
+
+  @Override
   public <T> ResponseEntity<T> postForEntity(
       final URI url, final Object request, final Class<T> responseType) throws RestClientException {
     final RequestEntity<Object> requestEntity =

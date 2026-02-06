@@ -26,6 +26,7 @@ import org.springframework.http.*;
 import org.springframework.http.client.support.BasicAuthenticationInterceptor;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 /**
@@ -64,6 +65,22 @@ public class StatefulRestTemplate extends RestTemplate {
     final var interceptors = new ArrayList<>(super.getInterceptors());
     interceptors.add(new BasicAuthenticationInterceptor(USERNAME, PASSWORD));
     super.setInterceptors(interceptors);
+  }
+
+  @Override
+  public <T> T postForObject(final URI url, final Object request, final Class<T> responseType)
+      throws RestClientException {
+    return postForEntity(url, request, responseType).getBody();
+  }
+
+  @Override
+  public <T> ResponseEntity<T> postForEntity(
+      final URI url, final Object request, final Class<T> responseType) throws RestClientException {
+    final RequestEntity<Object> requestEntity =
+        RequestEntity.method(HttpMethod.POST, url)
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(request);
+    return exchange(requestEntity, responseType);
   }
 
   public HttpClient getHttpClient() {

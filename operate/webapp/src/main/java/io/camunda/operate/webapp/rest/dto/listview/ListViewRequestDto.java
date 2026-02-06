@@ -7,6 +7,7 @@
  */
 package io.camunda.operate.webapp.rest.dto.listview;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import io.camunda.operate.webapp.rest.dto.PaginatedQuery;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -15,6 +16,7 @@ import java.util.Objects;
 import java.util.Set;
 
 @Schema(description = "Process instances request")
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class ListViewRequestDto extends PaginatedQuery<ListViewRequestDto> {
 
   public static final String SORT_BY_ID = "id";
