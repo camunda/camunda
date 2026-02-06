@@ -10,7 +10,6 @@ package io.camunda.gateway.mcp.tool.process.instance;
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.EVENTUAL_CONSISTENCY_NOTE;
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.FILTER_DESCRIPTION;
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.PAGE_DESCRIPTION;
-import static io.camunda.gateway.mcp.tool.ToolDescriptions.PROCESS_DEFINITION_KEY_DESCRIPTION;
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.PROCESS_INSTANCE_KEY_POSITIVE_MESSAGE;
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.SORT_DESCRIPTION;
 
@@ -19,7 +18,9 @@ import io.camunda.gateway.mapping.http.SimpleRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.mcp.config.tool.CamundaMcpTool;
+import io.camunda.gateway.mcp.config.tool.McpToolParams;
 import io.camunda.gateway.mcp.mapper.CallToolResultMapper;
+import io.camunda.gateway.mcp.model.McpProcessInstanceCreationInstruction;
 import io.camunda.gateway.mcp.model.McpProcessInstanceFilter;
 import io.camunda.gateway.mcp.model.McpSearchQueryPageRequest;
 import io.camunda.gateway.protocol.model.ProcessInstanceSearchQuerySortRequest;
@@ -28,14 +29,10 @@ import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.ProcessInstanceServices;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Pattern;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
-import jakarta.validation.constraints.Size;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import org.springaicommunity.mcp.annotation.McpTool.McpAnnotations;
 import org.springaicommunity.mcp.annotation.McpToolParam;
 import org.springframework.stereotype.Component;
@@ -115,54 +112,21 @@ public class ProcessInstanceTools {
           `mcp-tool:<uniqueId>` which can be used to search for the started process instance in case
           of timeouts.""")
   public CallToolResult createProcessInstance(
-      @McpToolParam(description = PROCESS_DEFINITION_KEY_DESCRIPTION, required = false)
-          final String processDefinitionKey,
-      @McpToolParam(
-              description =
-                  "The BPMN process id of the process definition to start an instance of.",
-              required = false)
-          @Pattern(regexp = "^[a-zA-Z_][a-zA-Z0-9_\\-.]*$")
-          @Size(min = 1)
-          final String processDefinitionId,
-      @McpToolParam(
-              description =
-                  "The version of the process. By default, the latest version of the process is used. Can only be used in combination with processDefinitionId.",
-              required = false)
-          final Integer processDefinitionVersion,
-      @McpToolParam(
-              description =
-                  "Set of variables to instantiate in the root variable scope of the process instance. Can include nested/complex objects. Which variables to set depends on the process definition.",
-              required = false)
-          final Map<@NotBlank String, Object> variables,
-      @McpToolParam(
-              description =
-                  "Wait for the process instance to complete. If the process instance does not complete within request timeout limits, the waiting will time out and the tool will return a 504 response status. Use the unique tag you added to query process instance status. Disabled by default.",
-              required = false)
-          final Boolean awaitCompletion,
-      @McpToolParam(
-              description =
-                  "List of variables by name to be included in the response when awaitCompletion is set to true. If empty, all visible variables in the root scope will be returned.",
-              required = false)
-          final List<@NotBlank String> fetchVariables,
-      @McpToolParam(
-              description =
-                  "List of tags to apply to the process instance. Tags must start with a letter, followed by letters, digits, or the special characters `_`, `-`, `:`, or `.`; length ≤ 100.",
-              required = false)
-          final Set<
-                  @Pattern(regexp = "^[A-Za-z][A-Za-z0-9_\\-:.]{0,99}$") @Size(min = 1, max = 100)
-                  String>
-              tags) {
+      @McpToolParams @Valid final McpProcessInstanceCreationInstruction creationInstruction) {
     try {
       final var instruction =
           new ProcessInstanceCreationInstruction()
-              .processDefinitionKey(processDefinitionKey)
-              .processDefinitionId(processDefinitionId)
-              .processDefinitionVersion(processDefinitionVersion)
-              .awaitCompletion(awaitCompletion != null && awaitCompletion);
+              .processDefinitionKey(creationInstruction.processDefinitionKey())
+              .processDefinitionId(creationInstruction.processDefinitionId())
+              .processDefinitionVersion(creationInstruction.processDefinitionVersion())
+              .awaitCompletion(
+                  creationInstruction.awaitCompletion() != null
+                      && creationInstruction.awaitCompletion());
 
-      Optional.ofNullable(variables).ifPresent(instruction::variables);
-      Optional.ofNullable(fetchVariables).ifPresent(instruction::fetchVariables);
-      Optional.ofNullable(tags).ifPresent(instruction::tags);
+      Optional.ofNullable(creationInstruction.variables()).ifPresent(instruction::variables);
+      Optional.ofNullable(creationInstruction.fetchVariables())
+          .ifPresent(instruction::fetchVariables);
+      Optional.ofNullable(creationInstruction.tags()).ifPresent(instruction::tags);
 
       final var request =
           SimpleRequestMapper.toCreateProcessInstance(
@@ -175,7 +139,7 @@ public class ProcessInstanceTools {
           processInstanceServices.withAuthentication(
               authenticationProvider.getCamundaAuthentication());
 
-      if (Boolean.TRUE.equals(awaitCompletion)) {
+      if (instruction.getAwaitCompletion()) {
         return CallToolResultMapper.from(
             authenticatedServices.createProcessInstanceWithResult(request.get()),
             ResponseMapper::toCreateProcessInstanceWithResultResponse);

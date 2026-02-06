@@ -94,23 +94,9 @@
           "filter": {
             "type": "object",
             "properties": {
-              "creationTime": {
-                "type": "object",
-                "properties": {
-                  "from": {
-                    "type": "string",
-                    "description": "Filter from this time (inclusive). RFC 3339 format (e.g., '2024-12-17T10:30:00Z' or '2024-12-17T10:30:00+01:00')."
-                  },
-                  "to": {
-                    "type": "string",
-                    "description": "Filter up to this time (exclusive). RFC 3339 format (e.g., '2024-12-17T10:30:00Z' or '2024-12-17T10:30:00+01:00')."
-                  }
-                },
-                "description": "Date of incident creation."
-              },
-              "elementId": {
+              "processDefinitionId": {
                 "type": "string",
-                "description": "The element ID associated to this incident."
+                "description": "The process definition ID associated to this incident."
               },
               "errorType": {
                 "type": "string",
@@ -134,17 +120,23 @@
                 ],
                 "description": "Incident error type with a defined set of values."
               },
-              "processDefinitionId": {
+              "elementId": {
                 "type": "string",
-                "description": "The process definition ID associated to this incident."
+                "description": "The element ID associated to this incident."
               },
-              "processDefinitionKey": {
-                "type": "string",
-                "description": "The process definition key associated to this incident."
-              },
-              "processInstanceKey": {
-                "type": "string",
-                "description": "The process instance key associated to this incident."
+              "creationTime": {
+                "type": "object",
+                "properties": {
+                  "from": {
+                    "type": "string",
+                    "description": "Filter from this time (inclusive). RFC 3339 format (e.g., '2024-12-17T10:30:00Z' or '2024-12-17T10:30:00+01:00')."
+                  },
+                  "to": {
+                    "type": "string",
+                    "description": "Filter up to this time (exclusive). RFC 3339 format (e.g., '2024-12-17T10:30:00Z' or '2024-12-17T10:30:00+01:00')."
+                  }
+                },
+                "description": "Date of incident creation."
               },
               "state": {
                 "type": "string",
@@ -155,6 +147,14 @@
                   "RESOLVED"
                 ],
                 "description": "State of this incident with a defined set of values."
+              },
+              "processDefinitionKey": {
+                "type": "string",
+                "description": "The process definition key associated to this incident."
+              },
+              "processInstanceKey": {
+                "type": "string",
+                "description": "The process instance key associated to this incident."
               }
             },
             "description": "Filter search by the given fields"
@@ -199,6 +199,16 @@
           "page": {
             "type": "object",
             "properties": {
+              "limit": {
+                "type": "integer",
+                "format": "int32",
+                "description": "The maximum number of items to return in one request."
+              },
+              "from": {
+                "type": "integer",
+                "format": "int32",
+                "description": "The index of items to start searching from."
+              },
               "after": {
                 "type": "string",
                 "description": "Use the `endCursor` value from the previous response to fetch the next page of results."
@@ -206,16 +216,6 @@
               "before": {
                 "type": "string",
                 "description": "Use the `startCursor` value from the previous response to fetch the previous page of results."
-              },
-              "from": {
-                "type": "integer",
-                "format": "int32",
-                "description": "The index of items to start searching from."
-              },
-              "limit": {
-                "type": "integer",
-                "format": "int32",
-                "description": "The maximum number of items to return in one request."
               }
             },
             "description": "Pagination criteria"
@@ -291,25 +291,13 @@
           "filter": {
             "type": "object",
             "properties": {
-              "hasStartForm": {
-                "type": "boolean",
-                "description": "Indicates whether the start event of the process has an associated Form Key."
-              },
-              "isLatestVersion": {
-                "type": "boolean",
-                "description": "Whether to only return the latest version of each process definition. When using this filter, pagination functionality is limited, you can only paginate forward using `after` and `limit`. The response contains no `startCursor` in the `page`, and requests ignore the `from` and `before` in the `page`. "
-              },
               "name": {
                 "type": "string",
                 "description": "Name of this process definition."
               },
-              "processDefinitionId": {
-                "type": "string",
-                "description": "Process definition ID of this process definition."
-              },
-              "processDefinitionKey": {
-                "type": "string",
-                "description": "The key for this process definition."
+              "isLatestVersion": {
+                "type": "boolean",
+                "description": "Whether to only return the latest version of each process definition. When using this filter, pagination functionality is limited, you can only paginate forward using `after` and `limit`. The response contains no `startCursor` in the `page`, and requests ignore the `from` and `before` in the `page`. "
               },
               "resourceName": {
                 "type": "string",
@@ -323,6 +311,18 @@
               "versionTag": {
                 "type": "string",
                 "description": "Version tag of this process definition."
+              },
+              "processDefinitionId": {
+                "type": "string",
+                "description": "Process definition ID of this process definition."
+              },
+              "processDefinitionKey": {
+                "type": "string",
+                "description": "The key for this process definition."
+              },
+              "hasStartForm": {
+                "type": "boolean",
+                "description": "Indicates whether the start event of the process has an associated Form Key."
               }
             },
             "description": "Filter search by the given fields"
@@ -362,6 +362,16 @@
           "page": {
             "type": "object",
             "properties": {
+              "limit": {
+                "type": "integer",
+                "format": "int32",
+                "description": "The maximum number of items to return in one request."
+              },
+              "from": {
+                "type": "integer",
+                "format": "int32",
+                "description": "The index of items to start searching from."
+              },
               "after": {
                 "type": "string",
                 "description": "Use the `endCursor` value from the previous response to fetch the next page of results."
@@ -369,16 +379,6 @@
               "before": {
                 "type": "string",
                 "description": "Use the `startCursor` value from the previous response to fetch the previous page of results."
-              },
-              "from": {
-                "type": "integer",
-                "format": "int32",
-                "description": "The index of items to start searching from."
-              },
-              "limit": {
-                "type": "integer",
-                "format": "int32",
-                "description": "The maximum number of items to return in one request."
               }
             },
             "description": "Pagination criteria"
@@ -423,18 +423,20 @@
             "description": "Wait for the process instance to complete. If the process instance does not complete within request timeout limits, the waiting will time out and the tool will return a 504 response status. Use the unique tag you added to query process instance status. Disabled by default."
           },
           "fetchVariables": {
+            "description": "List of variables by name to be included in the response when awaitCompletion is set to true. If empty, all visible variables in the root scope will be returned.",
             "type": "array",
             "items": {
-              "type": "string"
-            },
-            "description": "List of variables by name to be included in the response when awaitCompletion is set to true. If empty, all visible variables in the root scope will be returned."
+              "type": "string",
+              "description": "List of variables by name to be included in the response when awaitCompletion is set to true. If empty, all visible variables in the root scope will be returned."
+            }
           },
           "tags": {
+            "description": "List of tags to apply to the process instance. Tags must start with a letter, followed by letters, digits, or the special characters `_`, `-`, `:`, or `.`; length ≤ 100.",
             "type": "array",
             "items": {
-              "type": "string"
-            },
-            "description": "List of tags to apply to the process instance. Tags must start with a letter, followed by letters, digits, or the special characters `_`, `-`, `:`, or `.`; length ≤ 100."
+              "type": "string",
+              "description": "List of tags to apply to the process instance. Tags must start with a letter, followed by letters, digits, or the special characters `_`, `-`, `:`, or `.`; length ≤ 100."
+            }
           }
         },
         "required": []
@@ -482,45 +484,6 @@
           "filter": {
             "type": "object",
             "properties": {
-              "endDate": {
-                "type": "object",
-                "properties": {
-                  "from": {
-                    "type": "string",
-                    "description": "Filter from this time (inclusive). RFC 3339 format (e.g., '2024-12-17T10:30:00Z' or '2024-12-17T10:30:00+01:00')."
-                  },
-                  "to": {
-                    "type": "string",
-                    "description": "Filter up to this time (exclusive). RFC 3339 format (e.g., '2024-12-17T10:30:00Z' or '2024-12-17T10:30:00+01:00')."
-                  }
-                },
-                "description": "The end date."
-              },
-              "hasIncident": {
-                "type": "boolean",
-                "description": "Whether this process instance has a related incident or not."
-              },
-              "processDefinitionId": {
-                "type": "string",
-                "description": "The process definition id."
-              },
-              "processDefinitionKey": {
-                "type": "string",
-                "description": "The process definition key."
-              },
-              "processDefinitionName": {
-                "type": "string",
-                "description": "The process definition name."
-              },
-              "processDefinitionVersion": {
-                "type": "integer",
-                "format": "int32",
-                "description": "The process definition version."
-              },
-              "processInstanceKey": {
-                "type": "string",
-                "description": "The key of this process instance."
-              },
               "startDate": {
                 "type": "object",
                 "properties": {
@@ -535,6 +498,20 @@
                 },
                 "description": "The start date."
               },
+              "endDate": {
+                "type": "object",
+                "properties": {
+                  "from": {
+                    "type": "string",
+                    "description": "Filter from this time (inclusive). RFC 3339 format (e.g., '2024-12-17T10:30:00Z' or '2024-12-17T10:30:00+01:00')."
+                  },
+                  "to": {
+                    "type": "string",
+                    "description": "Filter up to this time (exclusive). RFC 3339 format (e.g., '2024-12-17T10:30:00Z' or '2024-12-17T10:30:00+01:00')."
+                  }
+                },
+                "description": "The end date."
+              },
               "state": {
                 "type": "string",
                 "enum": [
@@ -544,12 +521,9 @@
                 ],
                 "description": "The process instance state."
               },
-              "tags": {
-                "description": "List of tags. Tags need to start with a letter; then alphanumerics, `_`, `-`, `:`, or `.`; length ≤ 100.",
-                "type": "array",
-                "items": {
-                  "type": "string"
-                }
+              "hasIncident": {
+                "type": "boolean",
+                "description": "Whether this process instance has a related incident or not."
               },
               "variables": {
                 "description": "The process instance variables.",
@@ -571,6 +545,34 @@
                     "value"
                   ]
                 }
+              },
+              "processInstanceKey": {
+                "type": "string",
+                "description": "The key of this process instance."
+              },
+              "tags": {
+                "description": "List of tags. Tags need to start with a letter; then alphanumerics, `_`, `-`, `:`, or `.`; length ≤ 100.",
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "processDefinitionId": {
+                "type": "string",
+                "description": "The process definition id."
+              },
+              "processDefinitionName": {
+                "type": "string",
+                "description": "The process definition name."
+              },
+              "processDefinitionVersion": {
+                "type": "integer",
+                "format": "int32",
+                "description": "The process definition version."
+              },
+              "processDefinitionKey": {
+                "type": "string",
+                "description": "The process definition key."
               }
             },
             "description": "Filter search by the given fields"
@@ -616,6 +618,16 @@
           "page": {
             "type": "object",
             "properties": {
+              "limit": {
+                "type": "integer",
+                "format": "int32",
+                "description": "The maximum number of items to return in one request."
+              },
+              "from": {
+                "type": "integer",
+                "format": "int32",
+                "description": "The index of items to start searching from."
+              },
               "after": {
                 "type": "string",
                 "description": "Use the `endCursor` value from the previous response to fetch the next page of results."
@@ -623,16 +635,6 @@
               "before": {
                 "type": "string",
                 "description": "Use the `startCursor` value from the previous response to fetch the previous page of results."
-              },
-              "from": {
-                "type": "integer",
-                "format": "int32",
-                "description": "The index of items to start searching from."
-              },
-              "limit": {
-                "type": "integer",
-                "format": "int32",
-                "description": "The maximum number of items to return in one request."
               }
             },
             "description": "Pagination criteria"
@@ -667,13 +669,13 @@
           "assignmentOptions": {
             "type": "object",
             "properties": {
-              "action": {
-                "type": "string",
-                "description": "A custom action value that will be accessible from user task events resulting from this endpoint invocation. If not provided, it will default to \"assign\". "
-              },
               "allowOverride": {
                 "type": "boolean",
                 "description": "By default, the task is reassigned if it was already assigned. Set this to `false` to return an error in such cases. The task must then first be unassigned to be assigned again. Use this when you have users picking from group task queues to prevent race conditions. "
+              },
+              "action": {
+                "type": "string",
+                "description": "A custom action value that will be accessible from user task events resulting from this endpoint invocation. If not provided, it will default to \"assign\". "
               }
             },
             "description": "Assignment options."
@@ -772,6 +774,16 @@
           "page": {
             "type": "object",
             "properties": {
+              "limit": {
+                "type": "integer",
+                "format": "int32",
+                "description": "The maximum number of items to return in one request."
+              },
+              "from": {
+                "type": "integer",
+                "format": "int32",
+                "description": "The index of items to start searching from."
+              },
               "after": {
                 "type": "string",
                 "description": "Use the `endCursor` value from the previous response to fetch the next page of results."
@@ -779,16 +791,6 @@
               "before": {
                 "type": "string",
                 "description": "Use the `startCursor` value from the previous response to fetch the previous page of results."
-              },
-              "from": {
-                "type": "integer",
-                "format": "int32",
-                "description": "The index of items to start searching from."
-              },
-              "limit": {
-                "type": "integer",
-                "format": "int32",
-                "description": "The maximum number of items to return in one request."
               }
             },
             "description": "Pagination criteria"
@@ -820,23 +822,41 @@
           "filter": {
             "type": "object",
             "properties": {
+              "state": {
+                "type": "string",
+                "enum": [
+                  "CREATING",
+                  "CREATED",
+                  "ASSIGNING",
+                  "UPDATING",
+                  "COMPLETING",
+                  "COMPLETED",
+                  "CANCELING",
+                  "CANCELED",
+                  "FAILED"
+                ],
+                "description": "The user task state."
+              },
               "assignee": {
                 "type": "string",
                 "description": "The assignee of the user task."
               },
-              "completionDate": {
-                "type": "object",
-                "properties": {
-                  "from": {
-                    "type": "string",
-                    "description": "Filter from this time (inclusive). RFC 3339 format (e.g., '2024-12-17T10:30:00Z' or '2024-12-17T10:30:00+01:00')."
-                  },
-                  "to": {
-                    "type": "string",
-                    "description": "Filter up to this time (exclusive). RFC 3339 format (e.g., '2024-12-17T10:30:00Z' or '2024-12-17T10:30:00+01:00')."
-                  }
-                },
-                "description": "The user task completion date."
+              "priority": {
+                "type": "integer",
+                "format": "int32",
+                "description": "The priority of the user task."
+              },
+              "elementId": {
+                "type": "string",
+                "description": "The element ID of the user task."
+              },
+              "name": {
+                "type": "string",
+                "description": "The task name. This only works for data created with 8.8 and onwards. Instances from prior versions don't contain this data and cannot be found. "
+              },
+              "processDefinitionId": {
+                "type": "string",
+                "description": "The ID of the process definition."
               },
               "creationDate": {
                 "type": "object",
@@ -852,7 +872,7 @@
                 },
                 "description": "The user task creation date."
               },
-              "dueDate": {
+              "completionDate": {
                 "type": "object",
                 "properties": {
                   "from": {
@@ -864,15 +884,7 @@
                     "description": "Filter up to this time (exclusive). RFC 3339 format (e.g., '2024-12-17T10:30:00Z' or '2024-12-17T10:30:00+01:00')."
                   }
                 },
-                "description": "The user task due date."
-              },
-              "elementId": {
-                "type": "string",
-                "description": "The element ID of the user task."
-              },
-              "elementInstanceKey": {
-                "type": "string",
-                "description": "The key of the element instance."
+                "description": "The user task completion date."
               },
               "followUpDate": {
                 "type": "object",
@@ -888,46 +900,19 @@
                 },
                 "description": "The user task follow-up date."
               },
-              "localVariables": {
-                "type": "array",
-                "items": {
-                  "type": "object",
-                  "properties": {
-                    "name": {
-                      "type": "string",
-                      "description": "Name of the variable."
-                    },
-                    "value": {
-                      "type": "string",
-                      "description": "The value of the variable."
-                    }
+              "dueDate": {
+                "type": "object",
+                "properties": {
+                  "from": {
+                    "type": "string",
+                    "description": "Filter from this time (inclusive). RFC 3339 format (e.g., '2024-12-17T10:30:00Z' or '2024-12-17T10:30:00+01:00')."
                   },
-                  "required": [
-                    "name",
-                    "value"
-                  ]
-                }
-              },
-              "name": {
-                "type": "string",
-                "description": "The task name. This only works for data created with 8.8 and onwards. Instances from prior versions don't contain this data and cannot be found. "
-              },
-              "priority": {
-                "type": "integer",
-                "format": "int32",
-                "description": "The priority of the user task."
-              },
-              "processDefinitionId": {
-                "type": "string",
-                "description": "The ID of the process definition."
-              },
-              "processDefinitionKey": {
-                "type": "string",
-                "description": "The key of the process definition."
-              },
-              "processInstanceKey": {
-                "type": "string",
-                "description": "The key of the process instance."
+                  "to": {
+                    "type": "string",
+                    "description": "Filter up to this time (exclusive). RFC 3339 format (e.g., '2024-12-17T10:30:00Z' or '2024-12-17T10:30:00+01:00')."
+                  }
+                },
+                "description": "The user task due date."
               },
               "processInstanceVariables": {
                 "type": "array",
@@ -949,20 +934,41 @@
                   ]
                 }
               },
-              "state": {
+              "localVariables": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "description": "Name of the variable."
+                    },
+                    "value": {
+                      "type": "string",
+                      "description": "The value of the variable."
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "value"
+                  ]
+                }
+              },
+              "userTaskKey": {
                 "type": "string",
-                "enum": [
-                  "CREATING",
-                  "CREATED",
-                  "ASSIGNING",
-                  "UPDATING",
-                  "COMPLETING",
-                  "COMPLETED",
-                  "CANCELING",
-                  "CANCELED",
-                  "FAILED"
-                ],
-                "description": "The user task state."
+                "description": "The key for this user task."
+              },
+              "processDefinitionKey": {
+                "type": "string",
+                "description": "The key of the process definition."
+              },
+              "processInstanceKey": {
+                "type": "string",
+                "description": "The key of the process instance."
+              },
+              "elementInstanceKey": {
+                "type": "string",
+                "description": "The key of the element instance."
               },
               "tags": {
                 "description": "List of tags. Tags need to start with a letter; then alphanumerics, `_`, `-`, `:`, or `.`; length ≤ 100.",
@@ -970,10 +976,6 @@
                 "items": {
                   "type": "string"
                 }
-              },
-              "userTaskKey": {
-                "type": "string",
-                "description": "The key for this user task."
               }
             },
             "description": "Filter search by the given fields"
@@ -1012,6 +1014,16 @@
           "page": {
             "type": "object",
             "properties": {
+              "limit": {
+                "type": "integer",
+                "format": "int32",
+                "description": "The maximum number of items to return in one request."
+              },
+              "from": {
+                "type": "integer",
+                "format": "int32",
+                "description": "The index of items to start searching from."
+              },
               "after": {
                 "type": "string",
                 "description": "Use the `endCursor` value from the previous response to fetch the next page of results."
@@ -1019,16 +1031,6 @@
               "before": {
                 "type": "string",
                 "description": "Use the `startCursor` value from the previous response to fetch the previous page of results."
-              },
-              "from": {
-                "type": "integer",
-                "format": "int32",
-                "description": "The index of items to start searching from."
-              },
-              "limit": {
-                "type": "integer",
-                "format": "int32",
-                "description": "The maximum number of items to return in one request."
               }
             },
             "description": "Pagination criteria"
@@ -1078,29 +1080,29 @@
           "filter": {
             "type": "object",
             "properties": {
-              "isTruncated": {
-                "type": "boolean",
-                "description": "Whether the value is truncated or not."
-              },
               "name": {
                 "type": "string",
                 "description": "Name of the variable."
-              },
-              "processInstanceKey": {
-                "type": "string",
-                "description": "The key of the process instance of this variable."
-              },
-              "scopeKey": {
-                "type": "string",
-                "description": "The key of the scope of this variable."
               },
               "value": {
                 "type": "string",
                 "description": "Variable values in filters need to be in serialized JSON format. Example string value: `\\\"myValue\\\"`. Example nested JSON value: `{\\\"myVar\\\":\\\"myValue\\\"}`."
               },
+              "isTruncated": {
+                "type": "boolean",
+                "description": "Whether the value is truncated or not."
+              },
               "variableKey": {
                 "type": "string",
                 "description": "The key for this variable."
+              },
+              "scopeKey": {
+                "type": "string",
+                "description": "The key of the scope of this variable."
+              },
+              "processInstanceKey": {
+                "type": "string",
+                "description": "The key of the process instance of this variable."
               }
             },
             "description": "Filter search by the given fields"
@@ -1139,6 +1141,16 @@
           "page": {
             "type": "object",
             "properties": {
+              "limit": {
+                "type": "integer",
+                "format": "int32",
+                "description": "The maximum number of items to return in one request."
+              },
+              "from": {
+                "type": "integer",
+                "format": "int32",
+                "description": "The index of items to start searching from."
+              },
               "after": {
                 "type": "string",
                 "description": "Use the `endCursor` value from the previous response to fetch the next page of results."
@@ -1146,16 +1158,6 @@
               "before": {
                 "type": "string",
                 "description": "Use the `startCursor` value from the previous response to fetch the previous page of results."
-              },
-              "from": {
-                "type": "integer",
-                "format": "int32",
-                "description": "The index of items to start searching from."
-              },
-              "limit": {
-                "type": "integer",
-                "format": "int32",
-                "description": "The maximum number of items to return in one request."
               }
             },
             "description": "Pagination criteria"

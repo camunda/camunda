@@ -175,7 +175,7 @@ class VariableToolsTest extends ToolsTest {
               TextContent.class,
               textContent ->
                   assertThat(textContent.text())
-                      .contains("Variable key must be a positive number."));
+                      .isEqualTo("variableKey: Variable key must be a positive number."));
     }
   }
 

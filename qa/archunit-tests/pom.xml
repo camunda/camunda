@@ -97,6 +97,7 @@
             <dep>org.springframework:spring-web</dep>
             <dep>org.opensearch.client:opensearch-java</dep>
             <dep>com.fasterxml.jackson.core:jackson-databind</dep>
+            <dep>jakarta.validation:jakarta.validation-api</dep>
             <dep>org.springaicommunity:mcp-annotations</dep>
           </ignoredUsedUndeclaredDependencies>
         </configuration>

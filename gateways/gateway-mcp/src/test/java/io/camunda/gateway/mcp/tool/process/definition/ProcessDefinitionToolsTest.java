@@ -135,7 +135,8 @@ class ProcessDefinitionToolsTest extends ToolsTest {
               TextContent.class,
               textContent ->
                   assertThat(textContent.text())
-                      .contains("Process definition key must be a positive number."));
+                      .isEqualTo(
+                          "processDefinitionKey: Process definition key must be a positive number."));
     }
   }
 
