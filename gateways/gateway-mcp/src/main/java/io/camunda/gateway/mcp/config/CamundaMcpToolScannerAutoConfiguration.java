@@ -8,12 +8,17 @@
 package io.camunda.gateway.mcp.config;
 
 import io.camunda.gateway.mcp.ConditionalOnMcpGatewayEnabled;
+import io.camunda.gateway.mcp.config.tool.CamundaMcpTool;
+import java.lang.annotation.Annotation;
+import java.util.Set;
+import org.springframework.ai.mcp.annotation.spring.scan.AbstractAnnotatedMethodBeanPostProcessor;
+import org.springframework.ai.mcp.annotation.spring.scan.AbstractMcpAnnotatedBeans;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 
 /**
- * Auto-configuration for scanning beans annotated with {@link CamundaMcpTool}.
+ * Autoconfiguration for scanning beans annotated with {@link CamundaMcpTool}.
  *
  * <p>This configuration registers:
  *
@@ -40,6 +45,18 @@ public class CamundaMcpToolScannerAutoConfiguration {
   @ConditionalOnMissingBean
   public static CamundaMcpToolBeanPostProcessor camundaMcpToolBeanPostProcessor(
       final CamundaMcpToolAnnotatedBeans registry) {
-    return new CamundaMcpToolBeanPostProcessor(registry);
+    return new CamundaMcpToolBeanPostProcessor(registry, Set.of(CamundaMcpTool.class));
+  }
+
+  public static class CamundaMcpToolAnnotatedBeans extends AbstractMcpAnnotatedBeans {}
+
+  public static class CamundaMcpToolBeanPostProcessor
+      extends AbstractAnnotatedMethodBeanPostProcessor {
+
+    public CamundaMcpToolBeanPostProcessor(
+        final CamundaMcpToolAnnotatedBeans registry,
+        final Set<Class<? extends Annotation>> targetAnnotations) {
+      super(registry, targetAnnotations);
+    }
   }
 }

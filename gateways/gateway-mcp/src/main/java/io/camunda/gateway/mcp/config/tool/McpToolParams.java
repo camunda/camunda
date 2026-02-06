@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.gateway.mcp.config;
+package io.camunda.gateway.mcp.config.tool;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
@@ -20,7 +20,7 @@ import java.lang.annotation.Target;
  * the tool's JSON schema, its properties are unwrapped and included directly at the root level of
  * the input schema.
  *
- * <p>This is useful for tools that want to use a DTO for type safety and validation, but present a
+ * <p>This is useful for tools that want to use a DTO for type safety and validation but present a
  * flatter, more user-friendly schema to MCP clients.
  *
  * <h3>Example Usage:</h3>
@@ -46,13 +46,6 @@ import java.lang.annotation.Target;
  *   }
  * }
  * }</pre>
- *
- * <h3>Validation:</h3>
- *
- * <p><b>Important:</b> Parameters annotated with {@code @McpToolParams} must also be annotated with
- * {@code @Valid} to enable bean validation via Spring's {@code @Validated} proxy. Bean validation
- * annotations on the DTO's fields (e.g., {@code @NotNull}, {@code @Pattern}) will be enforced
- * during invocation.
  *
  * <h3>Limitations:</h3>
  *

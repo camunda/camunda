@@ -18,7 +18,7 @@ import io.camunda.gateway.mapping.http.ResponseMapper;
 import io.camunda.gateway.mapping.http.SimpleRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
-import io.camunda.gateway.mcp.config.CamundaMcpTool;
+import io.camunda.gateway.mcp.config.tool.CamundaMcpTool;
 import io.camunda.gateway.mcp.mapper.CallToolResultMapper;
 import io.camunda.gateway.mcp.model.McpProcessInstanceFilter;
 import io.camunda.gateway.mcp.model.McpSearchQueryPageRequest;
@@ -36,7 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import org.springaicommunity.mcp.annotation.McpTool;
+import org.springaicommunity.mcp.annotation.McpTool.McpAnnotations;
 import org.springaicommunity.mcp.annotation.McpToolParam;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
@@ -60,7 +60,7 @@ public class ProcessInstanceTools {
 
   @CamundaMcpTool(
       description = "Search for process instances. " + EVENTUAL_CONSISTENCY_NOTE,
-      annotations = @McpTool.McpAnnotations(readOnlyHint = true))
+      annotations = @McpAnnotations(readOnlyHint = true))
   public CallToolResult searchProcessInstances(
       @McpToolParam(description = FILTER_DESCRIPTION, required = false)
           final McpProcessInstanceFilter filter,
@@ -86,7 +86,7 @@ public class ProcessInstanceTools {
 
   @CamundaMcpTool(
       description = "Get process instance by key. " + EVENTUAL_CONSISTENCY_NOTE,
-      annotations = @McpTool.McpAnnotations(readOnlyHint = true))
+      annotations = @McpAnnotations(readOnlyHint = true))
   public CallToolResult getProcessInstance(
       @McpToolParam(
               description =

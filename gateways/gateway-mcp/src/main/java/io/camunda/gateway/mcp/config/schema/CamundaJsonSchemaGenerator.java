@@ -6,20 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-/*
- * This file is a 1:1 copy of org.springaicommunity.mcp.method.tool.utils.JsonSchemaGenerator
- *
- * Original source:
- * https://github.com/spring-projects-experimental/spring-ai-mcp
- * org.springaicommunity.mcp.method.tool.utils.JsonSchemaGenerator
- *
- * License: Apache License, Version 2.0
- * Copyright 2025-2025 the original author or authors.
- *
- * This copy will be customized in Phase 2 to generate inline schemas without $defs.
- */
-
-package io.camunda.gateway.mcp.config;
+package io.camunda.gateway.mcp.config.schema;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
@@ -34,6 +21,7 @@ import com.github.victools.jsonschema.generator.SchemaVersion;
 import com.github.victools.jsonschema.module.jackson.JacksonModule;
 import com.github.victools.jsonschema.module.jackson.JacksonOption;
 import com.github.victools.jsonschema.module.swagger2.Swagger2Module;
+import io.camunda.gateway.mcp.config.tool.McpToolParams;
 import io.modelcontextprotocol.server.McpAsyncServerExchange;
 import io.modelcontextprotocol.server.McpSyncServerExchange;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;

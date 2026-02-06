@@ -9,6 +9,9 @@ package io.camunda.gateway.mcp.config;
 
 import static org.assertj.core.api.Assertions.*;
 
+import io.camunda.gateway.mcp.config.tool.CamundaMcpTool;
+import io.camunda.gateway.mcp.config.tool.CamundaSyncStatelessMcpToolProvider;
+import io.camunda.gateway.mcp.config.tool.McpToolParams;
 import io.camunda.gateway.mcp.tool.demo.CreateTaskRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import jakarta.validation.Valid;

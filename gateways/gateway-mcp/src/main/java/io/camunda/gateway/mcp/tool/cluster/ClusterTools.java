@@ -8,12 +8,12 @@
 package io.camunda.gateway.mcp.tool.cluster;
 
 import io.camunda.gateway.mapping.http.ResponseMapper;
-import io.camunda.gateway.mcp.config.CamundaMcpTool;
+import io.camunda.gateway.mcp.config.tool.CamundaMcpTool;
 import io.camunda.gateway.mcp.mapper.CallToolResultMapper;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.TopologyServices;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
-import org.springaicommunity.mcp.annotation.McpTool;
+import org.springaicommunity.mcp.annotation.McpTool.McpAnnotations;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -32,7 +32,7 @@ public class ClusterTools {
   @CamundaMcpTool(
       description =
           "Checks the health status of the cluster by verifying if there's at least one partition with a healthy leader.",
-      annotations = @McpTool.McpAnnotations(readOnlyHint = true))
+      annotations = @McpAnnotations(readOnlyHint = true))
   public CallToolResult getClusterStatus() {
     return CallToolResultMapper.fromPrimitive(
         topologyServices
@@ -43,7 +43,7 @@ public class ClusterTools {
 
   @CamundaMcpTool(
       description = "Obtains the current topology of the cluster the gateway is part of.",
-      annotations = @McpTool.McpAnnotations(readOnlyHint = true))
+      annotations = @McpAnnotations(readOnlyHint = true))
   public CallToolResult getTopology() {
     return CallToolResultMapper.from(
         topologyServices

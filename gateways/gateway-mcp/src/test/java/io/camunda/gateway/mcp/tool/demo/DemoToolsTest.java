@@ -10,7 +10,7 @@ package io.camunda.gateway.mcp.tool.demo;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.gateway.mcp.config.CamundaJsonSchemaGenerator;
+import io.camunda.gateway.mcp.config.schema.CamundaJsonSchemaGenerator;
 import io.camunda.gateway.mcp.tool.ToolsTest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
@@ -61,7 +61,7 @@ class DemoToolsTest extends ToolsTest {
         System.out.println("ERROR: " + result.content());
         if (result.content() != null
             && !result.content().isEmpty()
-            && result.content().get(0) instanceof TextContent tc) {
+            && result.content().get(0) instanceof final TextContent tc) {
           System.out.println("ERROR TEXT: " + tc.text());
         }
       }

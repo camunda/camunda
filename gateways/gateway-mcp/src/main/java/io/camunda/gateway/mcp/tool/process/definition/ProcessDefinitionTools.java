@@ -16,7 +16,7 @@ import static io.camunda.gateway.mcp.tool.ToolDescriptions.SORT_DESCRIPTION;
 
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
-import io.camunda.gateway.mcp.config.CamundaMcpTool;
+import io.camunda.gateway.mcp.config.tool.CamundaMcpTool;
 import io.camunda.gateway.mcp.mapper.CallToolResultMapper;
 import io.camunda.gateway.mcp.model.McpProcessDefinitionFilter;
 import io.camunda.gateway.mcp.model.McpSearchQueryPageRequest;
@@ -28,7 +28,7 @@ import io.camunda.service.exception.ServiceException.Status;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import jakarta.validation.constraints.Positive;
 import java.util.List;
-import org.springaicommunity.mcp.annotation.McpTool;
+import org.springaicommunity.mcp.annotation.McpTool.McpAnnotations;
 import org.springaicommunity.mcp.annotation.McpToolParam;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
@@ -49,7 +49,7 @@ public class ProcessDefinitionTools {
 
   @CamundaMcpTool(
       description = "Search for process definitions. " + EVENTUAL_CONSISTENCY_NOTE,
-      annotations = @McpTool.McpAnnotations(readOnlyHint = true))
+      annotations = @McpAnnotations(readOnlyHint = true))
   public CallToolResult searchProcessDefinitions(
       @McpToolParam(description = FILTER_DESCRIPTION, required = false)
           final McpProcessDefinitionFilter filter,
@@ -75,7 +75,7 @@ public class ProcessDefinitionTools {
 
   @CamundaMcpTool(
       description = "Get process definition by key. " + EVENTUAL_CONSISTENCY_NOTE,
-      annotations = @McpTool.McpAnnotations(readOnlyHint = true))
+      annotations = @McpAnnotations(readOnlyHint = true))
   public CallToolResult getProcessDefinition(
       @McpToolParam(description = PROCESS_DEFINITION_KEY_DESCRIPTION)
           @Positive(message = PROCESS_DEFINITION_KEY_POSITIVE_MESSAGE)
@@ -93,7 +93,7 @@ public class ProcessDefinitionTools {
 
   @CamundaMcpTool(
       description = "Get the BPMN XML of a process definition by key. " + EVENTUAL_CONSISTENCY_NOTE,
-      annotations = @McpTool.McpAnnotations(readOnlyHint = true))
+      annotations = @McpAnnotations(readOnlyHint = true))
   public CallToolResult getProcessDefinitionXml(
       @McpToolParam(description = PROCESS_DEFINITION_KEY_DESCRIPTION)
           @Positive(message = PROCESS_DEFINITION_KEY_POSITIVE_MESSAGE)

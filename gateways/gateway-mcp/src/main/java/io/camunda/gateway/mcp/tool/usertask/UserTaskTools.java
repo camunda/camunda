@@ -20,7 +20,7 @@ import static io.camunda.gateway.mcp.tool.ToolDescriptions.VARIABLE_VALUE_RETURN
 import io.camunda.gateway.mapping.http.RequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
-import io.camunda.gateway.mcp.config.CamundaMcpTool;
+import io.camunda.gateway.mcp.config.tool.CamundaMcpTool;
 import io.camunda.gateway.mcp.mapper.CallToolResultMapper;
 import io.camunda.gateway.mcp.model.McpSearchQueryPageRequest;
 import io.camunda.gateway.mcp.model.McpUserTaskAssignmentRequest;
@@ -34,7 +34,7 @@ import io.camunda.service.UserTaskServices;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import jakarta.validation.constraints.Positive;
 import java.util.List;
-import org.springaicommunity.mcp.annotation.McpTool;
+import org.springaicommunity.mcp.annotation.McpTool.McpAnnotations;
 import org.springaicommunity.mcp.annotation.McpToolParam;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
@@ -56,7 +56,7 @@ public class UserTaskTools {
   @CamundaMcpTool(
       description =
           "Search for user tasks. " + VARIABLE_FILTER_FORMAT_NOTE + " " + EVENTUAL_CONSISTENCY_NOTE,
-      annotations = @McpTool.McpAnnotations(readOnlyHint = true))
+      annotations = @McpAnnotations(readOnlyHint = true))
   public CallToolResult searchUserTasks(
       @McpToolParam(description = FILTER_DESCRIPTION, required = false)
           final McpUserTaskFilter filter,
@@ -83,7 +83,7 @@ public class UserTaskTools {
 
   @CamundaMcpTool(
       description = "Get user task by key. " + EVENTUAL_CONSISTENCY_NOTE,
-      annotations = @McpTool.McpAnnotations(readOnlyHint = true))
+      annotations = @McpAnnotations(readOnlyHint = true))
   public CallToolResult getUserTask(
       @McpToolParam(description = USER_TASK_KEY_DESCRIPTION)
           @Positive(message = USER_TASK_KEY_POSITIVE_MESSAGE)
@@ -134,7 +134,7 @@ public class UserTaskTools {
   }
 
   private CallToolResult performAssignment(
-      final Long userTaskKey, UserTaskAssignmentRequest request) {
+      final Long userTaskKey, final UserTaskAssignmentRequest request) {
     final var mappedRequest = RequestMapper.toUserTaskAssignmentRequest(request, userTaskKey);
     if (mappedRequest.isLeft()) {
       return CallToolResultMapper.mapProblemToResult(mappedRequest.getLeft());
@@ -170,7 +170,7 @@ public class UserTaskTools {
               + VARIABLE_VALUE_RETURN_FORMAT
               + " "
               + EVENTUAL_CONSISTENCY_NOTE,
-      annotations = @McpTool.McpAnnotations(readOnlyHint = true))
+      annotations = @McpAnnotations(readOnlyHint = true))
   public CallToolResult searchUserTaskVariables(
       @McpToolParam(description = USER_TASK_KEY_DESCRIPTION)
           @Positive(message = USER_TASK_KEY_POSITIVE_MESSAGE)

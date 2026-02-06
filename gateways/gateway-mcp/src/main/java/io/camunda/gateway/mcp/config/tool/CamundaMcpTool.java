@@ -5,30 +5,20 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.gateway.mcp.config;
+package io.camunda.gateway.mcp.config.tool;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import org.springaicommunity.mcp.annotation.McpTool;
+import org.springaicommunity.mcp.annotation.McpTool.McpAnnotations;
 
 /**
  * Marks a method as an MCP tool.
  *
- * <p>This is Camunda's custom tool annotation that is functionally equivalent to Spring AI's
- * {@code @McpTool} but allows Camunda to control tool registration independently without relying on
- * Spring AI's autoconfig exclusions.
- *
- * <p>Example:
- *
- * <pre>{@code
- * @CamundaMcpTool(
- *     description = "Search for process instances.",
- *     annotations = @McpTool.McpAnnotations(readOnlyHint = true))
- * public CallToolResult searchProcessInstances(...) { ... }
- * }</pre>
+ * <p>This is our custom tool annotation that is functionally equivalent to Spring AI's
+ * {@code @McpTool} but allows to control schema generation and output handling individually.
  */
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
@@ -58,12 +48,11 @@ public @interface CamundaMcpTool {
   String title() default "";
 
   /**
-   * MCP protocol annotations providing hints about the tool's behavior. Reuses Spring AI's {@link
-   * McpTool.McpAnnotations} to avoid duplication.
+   * MCP protocol annotations providing hints about the tool's behavior.
    *
    * @return the tool annotations
    */
-  McpTool.McpAnnotations annotations() default @McpTool.McpAnnotations;
+  McpAnnotations annotations() default @McpAnnotations;
 
   /**
    * Whether to generate output schema for the tool's return type.
