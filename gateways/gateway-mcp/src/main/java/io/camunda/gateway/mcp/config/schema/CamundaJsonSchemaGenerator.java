@@ -102,13 +102,19 @@ public class CamundaJsonSchemaGenerator {
             : new SpringAiSchemaModule(
                 SpringAiSchemaModule.Option.PROPERTY_REQUIRED_FALSE_BY_DEFAULT);
 
-    return new SchemaGeneratorConfigBuilder(SchemaVersion.DRAFT_2020_12, OptionPreset.PLAIN_JSON)
-        .with(jacksonModule)
-        .with(openApiModule)
-        .with(springAiSchemaModule)
-        .with(Option.EXTRA_OPEN_API_FORMAT_VALUES)
-        .with(Option.STANDARD_FORMATS)
-        .with(Option.INLINE_ALL_SCHEMAS);
+    final var builder =
+        new SchemaGeneratorConfigBuilder(SchemaVersion.DRAFT_2020_12, OptionPreset.PLAIN_JSON)
+            .with(jacksonModule)
+            .with(openApiModule)
+            .with(springAiSchemaModule)
+            .with(Option.EXTRA_OPEN_API_FORMAT_VALUES)
+            .with(Option.STANDARD_FORMATS)
+            .with(Option.INLINE_ALL_SCHEMAS);
+
+    // serialize properties in the order they are defined, not alphabetically
+    builder.forTypesInGeneral().withPropertySorter((a, b) -> 0);
+
+    return builder;
   }
 
   public String generateForMethodInput(final Method method) {
