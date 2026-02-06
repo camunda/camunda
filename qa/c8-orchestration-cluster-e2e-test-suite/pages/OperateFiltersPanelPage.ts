@@ -303,4 +303,9 @@ export class OperateFiltersPanelPage {
   async clickCanceledInstancesCheckbox(): Promise<void> {
     await this.canceledInstancesCheckbox.click({ timeout: 60000 });
   }
+
+  async clickLabel(): Promise<void> {
+    await this.page.locator('label')
+      .filter({ hasText: 'Completed' }).click();
+  }
 }

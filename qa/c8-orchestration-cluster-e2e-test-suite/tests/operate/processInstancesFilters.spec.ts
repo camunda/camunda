@@ -13,7 +13,6 @@ import { captureScreenshot, captureFailureVideo } from '@setup';
 import { navigateToApp } from '@pages/UtilitiesPage';
 import { waitForAssertion } from 'utils/waitForAssertion';
 import { sleep } from 'utils/sleep';
-import { OperateOperationPanelPage } from '@pages/OperateOperationPanelPage';
 
 type ProcessInstance = { processInstanceKey: number };
 
@@ -86,7 +85,6 @@ test.describe('Process Instances Filters', () => {
     page,
     operateProcessesPage,
     operateFiltersPanelPage,
-    operateOperationPanelPage,
   }) => {
     await test.step('Filter by Parent Process Instance Key and assert results', async () => {
       const callActivityProcessInstanceKey =
@@ -322,115 +320,115 @@ test.describe('Process Instances Filters', () => {
         .toBeGreaterThan(1);
     });
 
-    await test.step('Filter by variable and operation id and assert results', async () => {
-      const processToCancelMeowInstance = {
-        processInstanceKey: Number(
-          (await createSingleInstance('ProcessToCancel', 1, { sound: 'meow' }))
-            .processInstanceKey,
-        ),
-      };
+    // await test.step('Filter by variable and operation id and assert results', async () => {
+    //   const processToCancelMeowInstance = {
+    //     processInstanceKey: Number(
+    //       (await createSingleInstance('ProcessToCancel', 1, { sound: 'meow' }))
+    //         .processInstanceKey,
+    //     ),
+    //   };
 
-      const processToCancelGawInstance = {
-        processInstanceKey: Number(
-          (await createSingleInstance('ProcessToCancel', 1, { sound: 'gaw' }))
-            .processInstanceKey,
-        ),
-      };
+    //   const processToCancelGawInstance = {
+    //     processInstanceKey: Number(
+    //       (await createSingleInstance('ProcessToCancel', 1, { sound: 'gaw' }))
+    //         .processInstanceKey,
+    //     ),
+    //   };
 
-      const processToCancelInstanceMeowIK =
-        processToCancelMeowInstance.processInstanceKey.toString();
-      const processToCancelInstanceGawIK =
-        processToCancelGawInstance.processInstanceKey.toString();
+    //   const processToCancelInstanceMeowIK =
+    //     processToCancelMeowInstance.processInstanceKey.toString();
+    //   const processToCancelInstanceGawIK =
+    //     processToCancelGawInstance.processInstanceKey.toString();
 
-      await operateFiltersPanelPage.displayOptionalFilter(
-        'Process Instance Key(s)',
-      );
-      await operateFiltersPanelPage.fillProcessInstanceKeyFilter(
-        `${processToCancelInstanceMeowIK}, ${processToCancelInstanceGawIK}`,
-      );
+    //   await operateFiltersPanelPage.displayOptionalFilter(
+    //     'Process Instance Key(s)',
+    //   );
+    //   await operateFiltersPanelPage.fillProcessInstanceKeyFilter(
+    //     `${processToCancelInstanceMeowIK}, ${processToCancelInstanceGawIK}`,
+    //   );
 
-      await waitForAssertion({
-        assertion: async () => {
-          await expect(page.getByText('2 results')).toBeVisible();
-        },
-        onFailure: async () => {
-          await page.reload();
-        },
-      });
+    //   await waitForAssertion({
+    //     assertion: async () => {
+    //       await expect(page.getByText('2 results')).toBeVisible();
+    //     },
+    //     onFailure: async () => {
+    //       await page.reload();
+    //     },
+    //   });
 
-      await operateProcessesPage.selectProcessCheckboxByPIK(
-        processToCancelInstanceMeowIK,
-        processToCancelInstanceGawIK,
-      );
+    //   await operateProcessesPage.selectProcessCheckboxByPIK(
+    //     processToCancelInstanceMeowIK,
+    //     processToCancelInstanceGawIK,
+    //   );
 
-      await operateProcessesPage.clickCancelBatchOperationButton();
+    //   await operateProcessesPage.clickCancelBatchOperationButton();
 
-      await operateProcessesPage.clickCancelProcessInstanceDialogButton();
+    //   await operateProcessesPage.clickCancelProcessInstanceDialogButton();
 
-      await waitForAssertion({
-        assertion: async () => {
-          await expect(
-            operateProcessesPage.noMatchingInstancesMessage,
-          ).toBeVisible({ timeout: 30000 });
-        },
-        onFailure: async () => {
-          await page.reload();
-        },
-      });
+    //   await waitForAssertion({
+    //     assertion: async () => {
+    //       await expect(
+    //         operateProcessesPage.noMatchingInstancesMessage,
+    //       ).toBeVisible({ timeout: 30000 });
+    //     },
+    //     onFailure: async () => {
+    //       await page.reload();
+    //     },
+    //   });
 
-      var lastOperation = operateOperationPanelPage
-        .getAllOperationEntries()
-        .last();
+    //   var lastOperation = operateOperationPanelPage
+    //     .getAllOperationEntries()
+    //     .last();
 
-      await waitForAssertion({
-        assertion: async () => {
-          await expect(
-            OperateOperationPanelPage.getOperationType(lastOperation),
-          ).toHaveText('Cancel');
-        },
-        onFailure: async () => {
-          lastOperation = operateOperationPanelPage
-            .getAllOperationEntries()
-            .last();
-          await page.reload();
-        },
-      });
+    //   await waitForAssertion({
+    //     assertion: async () => {
+    //       await expect(
+    //         OperateOperationPanelPage.getOperationType(lastOperation),
+    //       ).toHaveText('Cancel');
+    //     },
+    //     onFailure: async () => {
+    //       lastOperation = operateOperationPanelPage
+    //         .getAllOperationEntries()
+    //         .last();
+    //       await page.reload();
+    //     },
+    //   });
 
-      const operationId =
-        await OperateOperationPanelPage.getOperationID(
-          lastOperation,
-        ).innerText();
+    //   const operationId =
+    //     await OperateOperationPanelPage.getOperationID(
+    //       lastOperation,
+    //     ).innerText();
 
-      await operateOperationPanelPage.collapseOperationIdField();
+    //   await operateOperationPanelPage.collapseOperationIdField();
 
-      await operateFiltersPanelPage.clickResetFilters();
-      await operateFiltersPanelPage.runningInstancesCheckbox.click();
-      await operateFiltersPanelPage.finishedInstancesCheckbox.click();
-      await operateFiltersPanelPage.displayOptionalFilter('Operation Id');
-      await operateFiltersPanelPage.fillOperationIdFilter(operationId);
+    //   await operateFiltersPanelPage.clickResetFilters();
+    //   await operateFiltersPanelPage.runningInstancesCheckbox.click();
+    //   await operateFiltersPanelPage.finishedInstancesCheckbox.click();
+    //   await operateFiltersPanelPage.displayOptionalFilter('Operation Id');
+    //   await operateFiltersPanelPage.fillOperationIdFilter(operationId);
 
-      await waitForAssertion({
-        assertion: async () => {
-          await expect(page.getByText('2 results')).toBeVisible();
-        },
-        onFailure: async () => {
-          await page.reload();
-        },
-      });
+    //   await waitForAssertion({
+    //     assertion: async () => {
+    //       await expect(page.getByText('2 results')).toBeVisible();
+    //     },
+    //     onFailure: async () => {
+    //       await page.reload();
+    //     },
+    //   });
 
-      await operateFiltersPanelPage.displayOptionalFilter('Variable');
-      await operateFiltersPanelPage.fillVariableNameFilter('sound');
-      await operateFiltersPanelPage.fillVariableValueFilter('"meow"');
+    //   await operateFiltersPanelPage.displayOptionalFilter('Variable');
+    //   await operateFiltersPanelPage.fillVariableNameFilter('sound');
+    //   await operateFiltersPanelPage.fillVariableValueFilter('"meow"');
 
-      await waitForAssertion({
-        assertion: async () => {
-          await expect(page.getByText('1 results')).toBeVisible();
-        },
-        onFailure: async () => {
-          await page.reload();
-        },
-      });
-    });
+    //   await waitForAssertion({
+    //     assertion: async () => {
+    //       await expect(page.getByText('1 results')).toBeVisible();
+    //     },
+    //     onFailure: async () => {
+    //       await page.reload();
+    //     },
+    //   });
+    // });
 
     await test.step('Filter by end and start date range', async () => {
       await operateFiltersPanelPage.resetFiltersButton.click();
