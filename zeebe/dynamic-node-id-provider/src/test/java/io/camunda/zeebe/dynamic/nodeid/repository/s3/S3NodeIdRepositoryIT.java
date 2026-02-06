@@ -42,7 +42,7 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 
 @Testcontainers
-public class S3NodeIdRepositoryIT {
+class S3NodeIdRepositoryIT {
 
   private static final Duration EXPIRY_DURATION = Duration.ofSeconds(5);
 
@@ -59,7 +59,7 @@ public class S3NodeIdRepositoryIT {
   private ControlledInstantSource clock;
 
   @BeforeAll
-  public static void setUpAll() {
+  static void setUpAll() {
     client =
         S3NodeIdRepository.buildClient(
             new S3ClientConfig(
@@ -69,7 +69,7 @@ public class S3NodeIdRepositoryIT {
   }
 
   @BeforeEach
-  public void setUp() {
+  void setUp() {
     final var bucketName = UUID.randomUUID().toString();
     taskId = UUID.randomUUID().toString();
     config = new Config(bucketName, EXPIRY_DURATION, Duration.ofMinutes(2));
@@ -77,7 +77,7 @@ public class S3NodeIdRepositoryIT {
   }
 
   @Test
-  public void shouldInitializeAllFiles() {
+  void shouldInitializeAllFiles() {
     // given
     repository = fixed(Clock.systemUTC().millis());
 
@@ -93,7 +93,7 @@ public class S3NodeIdRepositoryIT {
   }
 
   @Test
-  public void shouldAcquireFirstLease() {
+  void shouldAcquireFirstLease() {
     // given
     repository = fixed(Clock.systemUTC().millis());
     repository.initialize(2);
@@ -119,7 +119,7 @@ public class S3NodeIdRepositoryIT {
   }
 
   @Test
-  public void shouldAcquireOneLeaseWhenEtagMatches() {
+  void shouldAcquireOneLeaseWhenEtagMatches() {
     // given
     final var now = Clock.systemUTC().millis();
     repository = fixed(now);
@@ -154,7 +154,7 @@ public class S3NodeIdRepositoryIT {
   }
 
   @Test
-  public void shouldNotAcquireAnExpiredLease() {
+  void shouldNotAcquireAnExpiredLease() {
     // given
     final var now = Clock.systemUTC().millis();
     repository = fixed(now);
@@ -173,7 +173,7 @@ public class S3NodeIdRepositoryIT {
   }
 
   @Test
-  public void shouldNotAcquireOneLeaseWhenETagMismatch() {
+  void shouldNotAcquireOneLeaseWhenETagMismatch() {
     // given
     final var now = Clock.systemUTC().millis();
     repository = fixed(now);
@@ -191,7 +191,7 @@ public class S3NodeIdRepositoryIT {
   }
 
   @Test
-  public void shouldReleaseALeaseCorrectly() {
+  void shouldReleaseALeaseCorrectly() {
     // given
     final var now = Clock.systemUTC().millis();
     repository = fixed(now);
@@ -212,7 +212,7 @@ public class S3NodeIdRepositoryIT {
   }
 
   @Test
-  public void shouldCloseS3Client() throws Exception {
+  void shouldCloseS3Client() throws Exception {
     // given
     final var clientMock = Mockito.mock(S3Client.class);
     repository = new S3NodeIdRepository(clientMock, config, Clock.systemUTC(), true);
@@ -224,26 +224,28 @@ public class S3NodeIdRepositoryIT {
   }
 
   @Test
-  public void shouldReturnNullWhenRestoreStatusNotInitialized() {
+  void shouldReturnNullWhenRestoreStatusNotInitialized() {
     // given
+    final long restoreId = 123L;
     repository = fixed(Clock.systemUTC().millis());
 
     // when
-    final var restoreStatus = repository.getRestoreStatus();
+    final var restoreStatus = repository.getRestoreStatus(restoreId);
 
     // then
     assertThat(restoreStatus).isNull();
   }
 
   @Test
-  public void shouldUpdateAndGetRestoreStatus() {
+  void shouldUpdateAndGetRestoreStatus() {
     // given
+    final long restoreId = 123L;
     repository = fixed(Clock.systemUTC().millis());
-    final var restoreStatus = new RestoreStatus(Set.of());
+    final var restoreStatus = new RestoreStatus(restoreId, Set.of());
 
     // when
     repository.updateRestoreStatus(restoreStatus, null);
-    final var storedRestoreStatus = repository.getRestoreStatus();
+    final var storedRestoreStatus = repository.getRestoreStatus(restoreId);
 
     // then
     assertThat(storedRestoreStatus).isNotNull();
@@ -252,17 +254,18 @@ public class S3NodeIdRepositoryIT {
   }
 
   @Test
-  public void shouldUpdateRestoreStatusWithRestoredNodes() {
+  void shouldUpdateRestoreStatusWithRestoredNodes() {
     // given
+    final long restoreId = 123L;
     repository = fixed(Clock.systemUTC().millis());
-    final var initialStatus = new RestoreStatus(Set.of());
+    final var initialStatus = new RestoreStatus(restoreId, Set.of());
     repository.updateRestoreStatus(initialStatus, null);
-    final var storedInitial = repository.getRestoreStatus();
+    final var storedInitial = repository.getRestoreStatus(restoreId);
 
     // when
-    final var updatedStatus = new RestoreStatus(Set.of(0, 1));
+    final var updatedStatus = new RestoreStatus(restoreId, Set.of(0, 1));
     repository.updateRestoreStatus(updatedStatus, storedInitial.etag());
-    final var storedUpdated = repository.getRestoreStatus();
+    final var storedUpdated = repository.getRestoreStatus(restoreId);
 
     // then
     assertThat(storedUpdated).isNotNull();
@@ -271,17 +274,40 @@ public class S3NodeIdRepositoryIT {
   }
 
   @Test
-  public void shouldFailToUpdateRestoreStatusWhenEtagMismatch() {
+  void shouldFailToUpdateRestoreStatusWhenEtagMismatch() {
     // given
+    final long restoreId = 123L;
     repository = fixed(Clock.systemUTC().millis());
-    final var initialStatus = new RestoreStatus(Set.of());
+    final var initialStatus = new RestoreStatus(restoreId, Set.of());
     repository.updateRestoreStatus(initialStatus, null);
 
     // when/then
-    final var updatedStatus = new RestoreStatus(Set.of(0));
+    final var updatedStatus = new RestoreStatus(restoreId, Set.of(0));
     assertThatThrownBy(() -> repository.updateRestoreStatus(updatedStatus, "invalid-etag"))
         .isInstanceOf(S3Exception.class)
         .hasMessageContaining("At least one of the pre-conditions you specified did not hold");
+  }
+
+  @Test
+  void shouldGetAndUpdateMultipleRestoreId() {
+    // given
+    final long restoreId1 = 123L;
+    final long restoreId2 = 456L;
+    repository = fixed(Clock.systemUTC().millis());
+    final var status1 = new RestoreStatus(restoreId1, Set.of(1));
+    final var status2 = new RestoreStatus(restoreId2, Set.of(2));
+    repository.updateRestoreStatus(status1, null);
+    repository.updateRestoreStatus(status2, null);
+
+    // when
+    final var storedStatus1 = repository.getRestoreStatus(restoreId1);
+    final var storedStatus2 = repository.getRestoreStatus(restoreId2);
+
+    // then
+    assertThat(storedStatus1).isNotNull();
+    assertThat(storedStatus1.restoreStatus()).isEqualTo(status1);
+    assertThat(storedStatus2).isNotNull();
+    assertThat(storedStatus2.restoreStatus()).isEqualTo(status2);
   }
 
   private S3NodeIdRepository fixed(final long time) {

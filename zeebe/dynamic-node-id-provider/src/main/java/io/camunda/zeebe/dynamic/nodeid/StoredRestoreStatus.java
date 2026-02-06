@@ -16,7 +16,7 @@ import java.util.Set;
  * A record that holds the restore status. The etag is used for conflict detection during updates.
  */
 public record StoredRestoreStatus(RestoreStatus restoreStatus, String etag) {
-  public record RestoreStatus(Set<Integer> restoredNodes) {
+  public record RestoreStatus(long restoreId, Set<Integer> restoredNodes) {
 
     public byte[] toJsonBytes(final ObjectMapper objectMapper) {
       try {

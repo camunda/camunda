@@ -77,7 +77,7 @@ public class RestoreNodeIdProviderConfiguration {
               "PreRestoreAction configured to use S3: missing s3 node id repository");
         }
         final var restoreStatusManager = new RestoreStatusManager(nodeIdRepository.get());
-        yield ((restoreId, nodeId) -> restoreStatusManager.initializeRestore());
+        yield ((restoreId, nodeId) -> restoreStatusManager.initializeRestore(restoreId));
       }
     };
   }
@@ -93,8 +93,9 @@ public class RestoreNodeIdProviderConfiguration {
         }
         final var restoreStatusManager = new RestoreStatusManager(nodeIdRepository.get());
         yield ((restoreId, nodeId) -> {
-          restoreStatusManager.markNodeRestored(nodeId);
-          restoreStatusManager.waitForAllNodesRestored(cluster.getSize(), Duration.ofSeconds(10));
+          restoreStatusManager.markNodeRestored(restoreId, nodeId);
+          restoreStatusManager.waitForAllNodesRestored(
+              restoreId, cluster.getSize(), Duration.ofSeconds(10));
         });
       }
     };

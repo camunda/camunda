@@ -30,10 +30,10 @@ public class RestoreStatusManager {
   }
 
   /** Initializes restore. If a restore object already exists, does nothing. */
-  public void initializeRestore() throws InterruptedException {
+  public void initializeRestore(final long restoreId) throws InterruptedException {
     while (true) {
       try {
-        final var existingStatus = repository.getRestoreStatus();
+        final var existingStatus = repository.getRestoreStatus(restoreId);
         if (existingStatus != null) {
           LOG.debug("Restore status is already initialized {}", existingStatus.restoreStatus());
           return;
@@ -42,7 +42,7 @@ public class RestoreStatusManager {
         LOG.debug("Error checking existing restore status, proceeding with initialization", e);
       }
 
-      final var initialStatus = new RestoreStatus(Set.of());
+      final var initialStatus = new RestoreStatus(restoreId, Set.of());
       try {
         repository.updateRestoreStatus(initialStatus, null);
         LOG.info("Initialized restore status: {}", initialStatus);
@@ -59,19 +59,29 @@ public class RestoreStatusManager {
    * Updates the restore status by marking the given node ID as completed. Retries on concurrent
    * update conflicts.
    *
+   * @param restoreId the restore ID to update
    * @param nodeId the node ID that completed restore
    */
-  public void markNodeRestored(final int nodeId) throws InterruptedException {
+  public void markNodeRestored(final long restoreId, final int nodeId) throws InterruptedException {
 
     // retry forever
     while (true) {
       try {
-        final var storedStatus = repository.getRestoreStatus();
+        final var storedStatus = repository.getRestoreStatus(restoreId);
         if (storedStatus == null) {
           throw new IllegalStateException("Restore status not initialized");
         }
 
         final var currentStatus = storedStatus.restoreStatus();
+
+        if (currentStatus.restoreId() != restoreId) {
+          throw new IllegalStateException(
+              "Mismatching restore ID. Expected: "
+                  + restoreId
+                  + ", but got: "
+                  + currentStatus.restoreId());
+        }
+
         if (currentStatus.restoredNodes().contains(nodeId)) {
           LOG.debug("Node {} already marked as restored", nodeId);
           return;
@@ -80,7 +90,7 @@ public class RestoreStatusManager {
         final var updatedCompletedNodes = new HashSet<>(currentStatus.restoredNodes());
         updatedCompletedNodes.add(nodeId);
 
-        final var updatedStatus = new RestoreStatus(updatedCompletedNodes);
+        final var updatedStatus = new RestoreStatus(restoreId, updatedCompletedNodes);
 
         repository.updateRestoreStatus(updatedStatus, storedStatus.etag());
         LOG.info("Marked node {} as restored", nodeId);
@@ -101,17 +111,28 @@ public class RestoreStatusManager {
    * @throws InterruptedException if interrupted while waiting
    * @throws IllegalStateException if timeout is reached or restore status is not initialized
    */
-  public void waitForAllNodesRestored(final int clusterSize, final Duration pollInterval)
+  public void waitForAllNodesRestored(
+      final long restoreId, final int clusterSize, final Duration pollInterval)
       throws InterruptedException {
     final var expectedNodeIds = IntStream.range(0, clusterSize).boxed().collect(Collectors.toSet());
 
     while (true) {
-      final var storedStatus = repository.getRestoreStatus();
+      final var storedStatus = repository.getRestoreStatus(restoreId);
       if (storedStatus == null) {
         throw new IllegalStateException("Restore status not initialized");
       }
 
-      final var completedNodeIds = storedStatus.restoreStatus().restoredNodes();
+      final var currentStatus = storedStatus.restoreStatus();
+
+      if (currentStatus.restoreId() != restoreId) {
+        throw new IllegalStateException(
+            "Mismatching restore ID. Expected: "
+                + restoreId
+                + ", but got: "
+                + currentStatus.restoreId());
+      }
+
+      final var completedNodeIds = currentStatus.restoredNodes();
       if (completedNodeIds.containsAll(expectedNodeIds)) {
         LOG.info("All {} nodes have completed restore", clusterSize);
         return;
