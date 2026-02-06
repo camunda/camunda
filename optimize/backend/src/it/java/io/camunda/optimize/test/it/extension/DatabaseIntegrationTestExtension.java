@@ -210,11 +210,6 @@ public class DatabaseIntegrationTestExtension implements BeforeEachCallback, Aft
     databaseTestService.insertTestDocuments(amount, indexName, documentContentAsJson);
   }
 
-  public void performLowLevelBulkRequest(
-      final String methodName, final String endpoint, final String bulkPayload) throws IOException {
-    databaseTestService.performLowLevelBulkRequest(methodName, endpoint, bulkPayload);
-  }
-
   public void initSchema(final DatabaseSchemaManager schemaManager) {
     databaseTestService.initSchema(schemaManager);
   }

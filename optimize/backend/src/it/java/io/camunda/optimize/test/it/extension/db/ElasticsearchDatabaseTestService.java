@@ -123,10 +123,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.http.HttpEntity;
-import org.apache.http.entity.ContentType;
-import org.apache.http.nio.entity.NStringEntity;
-import org.elasticsearch.client.Request;
 import org.mockserver.integration.ClientAndServer;
 import org.slf4j.Logger;
 
@@ -976,15 +972,6 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
                   return r;
                 }));
     getOptimizeElasticClient().refresh(indexName);
-  }
-
-  @Override
-  public void performLowLevelBulkRequest(
-      final String methodName, final String endpoint, final String bulkPayload) throws IOException {
-    final HttpEntity entity = new NStringEntity(bulkPayload, ContentType.APPLICATION_JSON);
-    final Request request = new Request(methodName, endpoint);
-    request.setEntity(entity);
-    getOptimizeElasticClient().performRequest(request);
   }
 
   @Override

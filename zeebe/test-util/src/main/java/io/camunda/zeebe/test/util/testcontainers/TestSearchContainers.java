@@ -32,11 +32,7 @@ public final class TestSearchContainers {
                   org.elasticsearch.client.RestClient.class.getPackage().getImplementationVersion(),
                   "8.16.0"));
   private static final DockerImageName OPENSEARCH_IMAGE =
-      DockerImageName.parse("opensearchproject/opensearch")
-          .withTag(
-              Objects.requireNonNullElse(
-                  org.opensearch.client.RestClient.class.getPackage().getImplementationVersion(),
-                  "2.19.0"));
+      DockerImageName.parse("opensearchproject/opensearch").withTag("2.17.0");
   private static final DockerImageName POSTGRES_IMAGE =
       DockerImageName.parse("postgres").withTag("15.3-alpine");
   private static final DockerImageName MARIADB_IMAGE =
@@ -50,17 +46,14 @@ public final class TestSearchContainers {
   private TestSearchContainers() {}
 
   /**
-   * Returns an OpenSearch container pointing at the same version as the {@link
-   * org.opensearch.client.RestClient}.
-   *
-   * <p>The container is configured to use 512m of heap and 512m of direct memory. This is required
-   * because OpenSearch, by default, will grab all the RAM available otherwise.
+   * Returns an OpenSearch container configured to use 1024mb of heap and 512mb of direct memory.
+   * This is required because OpenSearch, by default, will grab all the RAM available otherwise.
    *
    * <p>Additionally, security is explicitly disabled to avoid having tons of warning printed out.
    */
   public static OpenSearchContainer<?> createDefaultOpensearchContainer() {
     return new OpenSearchContainer<>(OPENSEARCH_IMAGE)
-        .withEnv("OPENSEARCH_JAVA_OPTS", "-Xms512m -Xmx512m -XX:MaxDirectMemorySize=536870912")
+        .withEnv("OPENSEARCH_JAVA_OPTS", "-Xms1024m -Xmx1024m -XX:MaxDirectMemorySize=536870912")
         .withEnv("action.destructive_requires_name", "false")
         .withEnv("action.auto_create_index", "true");
   }

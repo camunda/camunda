@@ -69,7 +69,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
-import org.apache.http.client.methods.HttpPost;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -276,17 +275,6 @@ public abstract class AbstractUpgradeIT {
     } catch (final IOException e) {
       throw new OptimizeIntegrationTestException(e);
     }
-  }
-
-  protected void executeBulk(final String bulkPayloadFilePath) {
-    final String bulkPayload = UpgradeUtil.readClasspathFileAsString(bulkPayloadFilePath);
-    try {
-      databaseIntegrationTestExtension.performLowLevelBulkRequest(
-          HttpPost.METHOD_NAME, "/_bulk", bulkPayload);
-    } catch (final IOException e) {
-      throw new OptimizeIntegrationTestException(e);
-    }
-    getPrefixAwareClient().refresh("*");
   }
 
   protected String getIndexNameWithVersion(final IndexMappingCreator testIndexV1) {

@@ -193,13 +193,6 @@
       <version>${version.guava}</version>
       <scope>provided</scope>
     </dependency>
-
-    <dependency>
-      <groupId>org.opensearch.client</groupId>
-      <artifactId>opensearch-rest-client</artifactId>
-      <version>${version.opensearch}</version>
-      <scope>runtime</scope>
-    </dependency>
   </dependencies>
 
   <build>
