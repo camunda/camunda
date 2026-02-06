@@ -1,54 +1,20 @@
-###
-# @no-cookie-jar
-# @name login
-POST {{ZEEBE_REST_ADDRESS_LOCAL}}/login?username=demo&password=demo
-Content-Type: application/json
-Accept: application/json
+### Get Bearer token
+# @name get-bearer-token
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/auth/realms/camunda-platform/protocol/openid-connect/token
+Content-Type: application/x-www-form-urlencoded
+
+    client_id=demo
+    &client_secret=demo
+    &grant_type=client_credentials
+
 
 > {%
-  client.test("Login should succeed and set cookies", function () {
-    client.assert(response.status === 204, "Login should succeed");
-
-    const setCookieHeaders = response.headers.valuesOf("Set-Cookie");
-    if (setCookieHeaders && setCookieHeaders.length > 0) {
-      let sessionCookie = null;
-      let csrfCookie = null;
-
-      setCookieHeaders.forEach(cookie => {
-        if (cookie.includes("camunda-session")) {
-          sessionCookie = cookie.split(';')[0].split('=')[1];
-        }
-        if (cookie.includes("X-CSRF-TOKEN")) {
-          csrfCookie = cookie.split(';')[0].split('=')[1];
-        }
-      });
-
-      if (sessionCookie) {
-        client.global.set("session_cookie", sessionCookie);
-        console.log("Session cookie: " + sessionCookie);
-      }
-      if (csrfCookie) {
-        client.global.set("csrf_cookie", csrfCookie);
-        console.log("CSRF cookie: " + csrfCookie);
-      }
-    }
+  client.test("Get token should be successful", function () {
+    client.assert(response.status === 200, "Expected 200, got " + response.status);
+    client.global.set("TOKEN", response.body.access_token)
   });
 %}
 
-###
-# @name test-get-x-csrf-token-header
-GET {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/authentication/me
-Accept: application/json
-Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
-
-> {%
-  client.test("Authentication request should succeed and return CSRF token", function () {
-    client.assert(response.status === 200, "Response status is not 200");
-    client.assert(response.headers.valueOf("x-csrf-token"), "CSRF token header is missing");
-    client.global.set("csrf_token", response.headers.valueOf("x-csrf-token"));
-    console.log("CSRF Token from header: " + client.global.get("csrf_token"));
-  });
-%}
 
 ###
 # @name deploy-process-diagram
@@ -56,12 +22,16 @@ Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
   import {wait} from "../js/wait"
   wait(1)
 %}
-POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/deployments
-Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
-X-CSRF-TOKEN: {{csrf_token}}
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/core/v2/deployments
+Authorization: Bearer {{TOKEN}}
 Accept: application/json
 Content-Type: multipart/form-data; boundary=boundary123
 
+--boundary123
+Content-Disposition: form-data; name="tenantId"
+Content-Type: application/json
+
+<default>
 --boundary123
 Content-Disposition: form-data; name="resources"; filename="User Task Test Process.bpmn"
 Content-Type: application/octet-stream
@@ -101,9 +71,8 @@ Content-Type: application/octet-stream
   import {wait} from "../js/wait"
   wait(1)
 %}
-POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/process-definitions/search
-Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
-X-CSRF-TOKEN: {{csrf_token}}
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/core/v2/process-definitions/search
+Authorization: Bearer {{TOKEN}}
 Content-Type: application/json
 Accept: application/json
 
@@ -132,9 +101,8 @@ Accept: application/json
   import {wait} from "../js/wait"
   wait(2)
 %}
-GET {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/process-definitions/{{PROCESS_DEFINITION_KEY}}
-Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
-X-CSRF-TOKEN: {{csrf_token}}
+GET {{ZEEBE_REST_ADDRESS_LOCAL}}/core/v2/process-definitions/{{PROCESS_DEFINITION_KEY}}
+Authorization: Bearer {{TOKEN}}
 Content-Type: application/json
 Accept: application/json
 
@@ -150,9 +118,8 @@ Accept: application/json
   import {wait} from "../js/wait"
   wait(2)
 %}
-GET {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/process-definitions/{{PROCESS_DEFINITION_KEY}}/xml
-Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
-X-CSRF-TOKEN: {{csrf_token}}
+GET {{ZEEBE_REST_ADDRESS_LOCAL}}/core/v2/process-definitions/{{PROCESS_DEFINITION_KEY}}/xml
+Authorization: Bearer {{TOKEN}}
 Content-Type: application/json
 Accept: text/xml
 
@@ -168,9 +135,8 @@ Accept: text/xml
   import {wait} from "../js/wait"
   wait(2)
 %}
-GET {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/process-definitions/{{PROCESS_DEFINITION_KEY}}/form
-Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
-X-CSRF-TOKEN: {{csrf_token}}
+GET {{ZEEBE_REST_ADDRESS_LOCAL}}/core/v2/process-definitions/{{PROCESS_DEFINITION_KEY}}/form
+Authorization: Bearer {{TOKEN}}
 Content-Type: application/json
 Accept: application/json
 
@@ -182,15 +148,15 @@ Accept: application/json
 
 ###
 # @name create-process-instance
-POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/process-instances
-Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
-X-CSRF-TOKEN: {{csrf_token}}
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/core/v2/process-instances
+Authorization: Bearer {{TOKEN}}
 Content-Type: application/json
 Accept: application/json
 
 {
   "processDefinitionKey": "{{PROCESS_DEFINITION_KEY}}",
-  "variables": {}
+  "variables": {},
+  "tenantId": "<default>"
 }
 
 > {%
@@ -214,9 +180,8 @@ let expectedDefinitionKey = client.global.get("PROCESS_DEFINITION_KEY");
   import {wait} from "../js/wait"
   wait(4)
 %}
-POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/process-definitions/{{PROCESS_DEFINITION_KEY}}/statistics/element-instances
-Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
-X-CSRF-TOKEN: {{csrf_token}}
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/core/v2/process-definitions/{{PROCESS_DEFINITION_KEY}}/statistics/element-instances
+Authorization: Bearer {{TOKEN}}
 Content-Type: application/json
 Accept: application/json
 
@@ -232,9 +197,8 @@ Accept: application/json
 
 ###
 # @name get-process-instance
-GET {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/process-instances/{{PROCESS_INSTANCE_KEY}}
-Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
-X-CSRF-TOKEN: {{csrf_token}}
+GET {{ZEEBE_REST_ADDRESS_LOCAL}}/core/v2/process-instances/{{PROCESS_INSTANCE_KEY}}
+Authorization: Bearer {{TOKEN}}
 Content-Type: application/json
 Accept: application/json
 
@@ -255,9 +219,8 @@ Accept: application/json
 
 ###
 # @name get-process-instance-sequence-flows
-GET {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/process-instances/{{PROCESS_INSTANCE_KEY}}/sequence-flows
-Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
-X-CSRF-TOKEN: {{csrf_token}}
+GET {{ZEEBE_REST_ADDRESS_LOCAL}}/core/v2/process-instances/{{PROCESS_INSTANCE_KEY}}/sequence-flows
+Authorization: Bearer {{TOKEN}}
 Content-Type: application/json
 Accept: application/json
 
@@ -278,9 +241,8 @@ Accept: application/json
 
 ###
 # @name get-process-instance-elements-statistics
-GET {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/process-instances/{{PROCESS_INSTANCE_KEY}}/statistics/element-instances
-Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
-X-CSRF-TOKEN: {{csrf_token}}
+GET {{ZEEBE_REST_ADDRESS_LOCAL}}/core/v2/process-instances/{{PROCESS_INSTANCE_KEY}}/statistics/element-instances
+Authorization: Bearer {{TOKEN}}
 Content-Type: application/json
 Accept: application/json
 
@@ -301,9 +263,8 @@ Accept: application/json
 
 ###
 # @name get-process-instance-call-hierarchy
-GET {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/process-instances/{{PROCESS_INSTANCE_KEY}}/call-hierarchy
-Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
-X-CSRF-TOKEN: {{csrf_token}}
+GET {{ZEEBE_REST_ADDRESS_LOCAL}}/core/v2/process-instances/{{PROCESS_INSTANCE_KEY}}/call-hierarchy
+Authorization: Bearer {{TOKEN}}
 Content-Type: application/json
 Accept: application/json
 
@@ -324,9 +285,8 @@ Accept: application/json
 
 ###
 # @name process-instance-search-authorized
-POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/process-instances/search
-Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
-X-CSRF-TOKEN: {{csrf_token}}
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/core/v2/process-instances/search
+Authorization: Bearer {{TOKEN}}
 Content-Type: application/json
 Accept: application/json
 
@@ -359,9 +319,8 @@ Accept: application/json
 
 ###
 # @name process-instance-search-for-incidents-authorized
-POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/process-instances/{{PROCESS_INSTANCE_KEY}}/incidents/search
-Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
-X-CSRF-TOKEN: {{csrf_token}}
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/core/v2/process-instances/{{PROCESS_INSTANCE_KEY}}/incidents/search
+Authorization: Bearer {{TOKEN}}
 Content-Type: application/json
 Accept: application/json
 
@@ -394,9 +353,8 @@ Accept: application/json
 
 ###
 # @name process-instance-cancellation-authorized
-POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/process-instances/{{PROCESS_INSTANCE_KEY}}/cancellation
-Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
-X-CSRF-TOKEN: {{csrf_token}}
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/core/v2/process-instances/{{PROCESS_INSTANCE_KEY}}/cancellation
+Authorization: Bearer {{TOKEN}}
 Content-Type: application/json
 Accept: application/json
 
@@ -416,9 +374,8 @@ Accept: application/json
   import {wait} from "../js/wait"
   wait(4)
 %}
-GET {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/process-instances/{{PROCESS_INSTANCE_KEY}}
-Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
-X-CSRF-TOKEN: {{csrf_token}}
+GET {{ZEEBE_REST_ADDRESS_LOCAL}}/core/v2/process-instances/{{PROCESS_INSTANCE_KEY}}
+Authorization: Bearer {{TOKEN}}
 Content-Type: application/json
 Accept: application/json
 
@@ -440,9 +397,8 @@ Accept: application/json
 
 ###
 # @name process-definition-resource-deletion-authorized
-POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/resources/{{FORM_KEY}}/deletion
-Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
-X-CSRF-TOKEN: {{csrf_token}}
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/core/v2/resources/{{FORM_KEY}}/deletion
+Authorization: Bearer {{TOKEN}}
 Content-Type: application/json
 Accept: application/json
 
@@ -451,16 +407,15 @@ Accept: application/json
 }
 
 > {%
-  client.test("Process definition resource deletion is successful", function () {
+  client.test("Process definition search is successful", function () {
     client.assert(response.status === 200, "Expected 200, got " + response.status);
   });
 %}
 
 ###
 # @name get-deleted-process-definition-resource-authorized
-GET {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/resources/{{FORM_KEY}}
-Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
-X-CSRF-TOKEN: {{csrf_token}}
+GET {{ZEEBE_REST_ADDRESS_LOCAL}}/core/v2/resources/{{FORM_KEY}}
+Authorization: Bearer {{TOKEN}}
 Content-Type: application/json
 Accept: application/json
 
@@ -472,12 +427,16 @@ Accept: application/json
 
 ###
 # @name deploy-process-diagram-with-incident
-POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/deployments
-Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
-X-CSRF-TOKEN: {{csrf_token}}
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/core/v2/deployments
+Authorization: Bearer {{TOKEN}}
 Accept: application/json
 Content-Type: multipart/form-data; boundary=boundary123
 
+--boundary123
+Content-Disposition: form-data; name="tenantId"
+Content-Type: application/json
+
+<default>
 --boundary123
 Content-Disposition: form-data; name="resources"; filename="User Task Test Process Incident.bpmn"
 Content-Type: application/octet-stream
@@ -500,15 +459,15 @@ Content-Type: application/octet-stream
   import {wait} from "../js/wait"
   wait(1)
 %}
-POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/process-instances
-Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
-X-CSRF-TOKEN: {{csrf_token}}
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/core/v2/process-instances
+Authorization: Bearer {{TOKEN}}
 Content-Type: application/json
 Accept: application/json
 
 {
   "processDefinitionKey": "{{PROCESS_DEFINITION_KEY_INCIDENT}}",
-  "variables": {}
+  "variables": {},
+  "tenantId": "<default>"
 }
 
 > {%
@@ -532,9 +491,8 @@ Accept: application/json
   import {wait} from "../js/wait"
   wait(4)
 %}
-POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/user-tasks/search
-Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
-X-CSRF-TOKEN: {{csrf_token}}
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/core/v2/user-tasks/search
+Authorization: Bearer {{TOKEN}}
 Content-Type: application/json
 Accept: application/json
 
@@ -572,9 +530,8 @@ Accept: application/json
 
 ###
 # @name element-instance-search-authorized
-POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/element-instances/search
-Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
-X-CSRF-TOKEN: {{csrf_token}}
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/core/v2/element-instances/search
+Authorization: Bearer {{TOKEN}}
 Content-Type: application/json
 Accept: application/json
 
@@ -612,9 +569,8 @@ Accept: application/json
 
 ###
 # @name update-element-instance-variables-authorized
-PUT {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/element-instances/{{ELEMENT_INSTANCE_KEY}}/variables
-Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
-X-CSRF-TOKEN: {{csrf_token}}
+PUT {{ZEEBE_REST_ADDRESS_LOCAL}}/core/v2/element-instances/{{ELEMENT_INSTANCE_KEY}}/variables
+Authorization: Bearer {{TOKEN}}
 Content-Type: application/json
 Accept: application/json
 
@@ -631,9 +587,8 @@ Accept: application/json
 
 ###
 # @name get-element-instance-authorized
-GET {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/element-instances/{{ELEMENT_INSTANCE_KEY}}
-Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
-X-CSRF-TOKEN: {{csrf_token}}
+GET {{ZEEBE_REST_ADDRESS_LOCAL}}/core/v2/element-instances/{{ELEMENT_INSTANCE_KEY}}
+Authorization: Bearer {{TOKEN}}
 Content-Type: application/json
 Accept: application/json
 
@@ -653,9 +608,8 @@ Accept: application/json
 
 ###
 # @name user-task-variables-search-authorized
-POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/user-tasks/{{USER_TASK_KEY}}/variables/search
-Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
-X-CSRF-TOKEN: {{csrf_token}}
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/core/v2/user-tasks/{{USER_TASK_KEY}}/variables/search
+Authorization: Bearer {{TOKEN}}
 Content-Type: application/json
 Accept: application/json
 
@@ -688,9 +642,8 @@ Accept: application/json
 
 ###
 # @name get-user-task-authorized
-GET {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/user-tasks/{{USER_TASK_KEY}}
-Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
-X-CSRF-TOKEN: {{csrf_token}}
+GET {{ZEEBE_REST_ADDRESS_LOCAL}}/core/v2/user-tasks/{{USER_TASK_KEY}}
+Authorization: Bearer {{TOKEN}}
 Content-Type: application/json
 Accept: application/json
 
@@ -710,9 +663,8 @@ Accept: application/json
 
 ###
 # @name get-user-task-form-authorized
-GET {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/user-tasks/{{USER_TASK_KEY}}/form
-Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
-X-CSRF-TOKEN: {{csrf_token}}
+GET {{ZEEBE_REST_ADDRESS_LOCAL}}/core/v2/user-tasks/{{USER_TASK_KEY}}/form
+Authorization: Bearer {{TOKEN}}
 Content-Type: application/json
 Accept: application/json
 
@@ -732,9 +684,8 @@ Accept: application/json
 
 ###
 # @name update-user-task-authorized
-PATCH {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/user-tasks/{{USER_TASK_KEY}}
-Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
-X-CSRF-TOKEN: {{csrf_token}}
+PATCH {{ZEEBE_REST_ADDRESS_LOCAL}}/core/v2/user-tasks/{{USER_TASK_KEY}}
+Authorization: Bearer {{TOKEN}}
 Content-Type: application/json
 Accept: application/json
 
@@ -756,9 +707,8 @@ Accept: application/json
 
 ###
 # @name assign-user-task-authorized
-POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/user-tasks/{{USER_TASK_KEY}}/assignment
-Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
-X-CSRF-TOKEN: {{csrf_token}}
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/core/v2/user-tasks/{{USER_TASK_KEY}}/assignment
+Authorization: Bearer {{TOKEN}}
 Content-Type: application/json
 Accept: application/json
 
@@ -780,9 +730,8 @@ Accept: application/json
   import {wait} from "../js/wait"
   wait(4)
 %}
-GET {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/user-tasks/{{USER_TASK_KEY}}
-Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
-X-CSRF-TOKEN: {{csrf_token}}
+GET {{ZEEBE_REST_ADDRESS_LOCAL}}/core/v2/user-tasks/{{USER_TASK_KEY}}
+Authorization: Bearer {{TOKEN}}
 Content-Type: application/json
 Accept: application/json
 
@@ -805,9 +754,8 @@ Accept: application/json
 
 ###
 # @name unassign-user-task-authorized
-DELETE {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/user-tasks/{{USER_TASK_KEY}}/assignee
-Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
-X-CSRF-TOKEN: {{csrf_token}}
+DELETE {{ZEEBE_REST_ADDRESS_LOCAL}}/core/v2/user-tasks/{{USER_TASK_KEY}}/assignee
+Authorization: Bearer {{TOKEN}}
 Content-Type: application/json
 Accept: application/json
 
@@ -819,9 +767,8 @@ Accept: application/json
 
 ###
 # @name complete-user-task-authorized
-POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/user-tasks/{{USER_TASK_KEY}}/completion
-Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
-X-CSRF-TOKEN: {{csrf_token}}
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/core/v2/user-tasks/{{USER_TASK_KEY}}/completion
+Authorization: Bearer {{TOKEN}}
 Content-Type: application/json
 Accept: application/json
 
@@ -838,9 +785,8 @@ Accept: application/json
 
 ###
 # @name search-variables-authorized
-POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/variables/search
-Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
-X-CSRF-TOKEN: {{csrf_token}}
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/core/v2/variables/search
+Authorization: Bearer {{TOKEN}}
 Content-Type: application/json
 Accept: application/json
 
@@ -874,9 +820,8 @@ Accept: application/json
 
 ###
 # @name get-variable-by-key-authorized
-GET {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/variables/{{VARIABLE_KEY}}
-Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
-X-CSRF-TOKEN: {{csrf_token}}
+GET {{ZEEBE_REST_ADDRESS_LOCAL}}/core/v2/variables/{{VARIABLE_KEY}}
+Authorization: Bearer {{TOKEN}}
 Content-Type: application/json
 Accept: application/json
 
@@ -900,9 +845,8 @@ Accept: application/json
   import {wait} from "../js/wait"
   wait(4)
 %}
-GET {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/process-instances/{{PROCESS_INSTANCE_KEY_INCIDENT}}
-Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
-X-CSRF-TOKEN: {{csrf_token}}
+GET {{ZEEBE_REST_ADDRESS_LOCAL}}/core/v2/process-instances/{{PROCESS_INSTANCE_KEY_INCIDENT}}
+Authorization: Bearer {{TOKEN}}
 Content-Type: application/json
 Accept: application/json
 
@@ -925,9 +869,8 @@ Accept: application/json
 
 ###
 # @name process-incident-search-authorized
-POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/incidents/search
-Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
-X-CSRF-TOKEN: {{csrf_token}}
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/core/v2/incidents/search
+Authorization: Bearer {{TOKEN}}
 Content-Type: application/json
 Accept: application/json
 
@@ -961,9 +904,8 @@ Accept: application/json
 
 ###
 # @name get-process-incident-authorized
-GET {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/incidents/{{INCIDENT_KEY}}
-Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
-X-CSRF-TOKEN: {{csrf_token}}
+GET {{ZEEBE_REST_ADDRESS_LOCAL}}/core/v2/incidents/{{INCIDENT_KEY}}
+Authorization: Bearer {{TOKEN}}
 Content-Type: application/json
 Accept: application/json
 
@@ -975,9 +917,8 @@ Accept: application/json
 
 ###
 # @name process-incident-resolution-authorized
-POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/incidents/{{INCIDENT_KEY}}/resolution
-Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
-X-CSRF-TOKEN: {{csrf_token}}
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/core/v2/incidents/{{INCIDENT_KEY}}/resolution
+Authorization: Bearer {{TOKEN}}
 Content-Type: application/json
 Accept: application/json
 
@@ -993,9 +934,8 @@ Accept: application/json
 
 ###
 # @name upload-document-authorized
-POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/documents
-Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
-X-CSRF-TOKEN: {{csrf_token}}
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/core/v2/documents
+Authorization: Bearer {{TOKEN}}
 Accept: application/json
 Content-Type: multipart/form-data; boundary=boundary123
 
@@ -1033,9 +973,8 @@ Content-Type: application/pdf
   import {wait} from "../js/wait"
   wait(2)
 %}
-GET {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/documents/{{DOCUMENT_ID}}?contentHash={{CONTENT_HASH}}
-Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
-X-CSRF-TOKEN: {{csrf_token}}
+GET {{ZEEBE_REST_ADDRESS_LOCAL}}/core/v2/documents/{{DOCUMENT_ID}}?contentHash={{CONTENT_HASH}}
+Authorization: Bearer {{TOKEN}}
 Accept: application/octet-stream
 
 > {%
@@ -1046,9 +985,8 @@ Accept: application/octet-stream
 
 ###
 # @name delete-and-verify-document
-DELETE {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/documents/{{DOCUMENT_ID}}
-Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
-X-CSRF-TOKEN: {{csrf_token}}
+DELETE {{ZEEBE_REST_ADDRESS_LOCAL}}/core/v2/documents/{{DOCUMENT_ID}}
+Authorization: Bearer {{TOKEN}}
 Accept: */*
 
 > {%
@@ -1061,9 +999,8 @@ Accept: */*
 
 ###
 # @name verify-deleted-document
-GET {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/documents/{{DOCUMENT_ID}}?contentHash={{CONTENT_HASH}}
-Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
-X-CSRF-TOKEN: {{csrf_token}}
+GET {{ZEEBE_REST_ADDRESS_LOCAL}}/core/v2/documents/{{DOCUMENT_ID}}?contentHash={{CONTENT_HASH}}
+Authorization: Bearer {{TOKEN}}
 Accept: application/octet-stream
 
 > {%
@@ -1072,4 +1009,17 @@ Accept: application/octet-stream
       client.assert(response.status === 404, "Expected 404, got " + response.status);
     });
   }
+%}
+
+###
+# @name get-authorization-by-key
+GET {{ZEEBE_REST_ADDRESS_LOCAL}}/core/v2/authorizations/2251799813685298
+Authorization: Bearer {{TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+> {%
+  client.test("Authorization retrieval should be successful", function () {
+    client.assert(response.status === 200, "Response status is not 200");
+  });
 %}
