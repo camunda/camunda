@@ -97,6 +97,50 @@ public enum StarterLatencyMetricsDoc implements ExtendedMeterDocumentation {
     public Duration[] getTimerSLOs() {
       return BUCKETS;
     }
+  },
+
+  /** The latency of read benchmark queries executed against the Camunda cluster. */
+  READ_BENCHMARK {
+    private static final KeyName[] KEY_NAMES = new KeyName[] {StarterMetricKeyNames.QUERY_NAME};
+
+    private static final Duration[] BUCKETS = {
+      Duration.ofMillis(10),
+      Duration.ofMillis(25),
+      Duration.ofMillis(50),
+      Duration.ofMillis(75),
+      Duration.ofMillis(100),
+      Duration.ofMillis(250),
+      Duration.ofMillis(500),
+      Duration.ofMillis(750),
+      Duration.ofSeconds(1),
+      Duration.ofMillis(2500),
+      Duration.ofSeconds(5)
+    };
+
+    @Override
+    public KeyName[] getKeyNames() {
+      return KEY_NAMES;
+    }
+
+    @Override
+    public String getDescription() {
+      return "The latency of read benchmark queries executed against the Camunda cluster.";
+    }
+
+    @Override
+    public String getName() {
+      return "starter.read.benchmark";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.TIMER;
+    }
+
+    @Override
+    public Duration[] getTimerSLOs() {
+      return BUCKETS;
+    }
   };
 
   public enum StarterMetricKeyNames implements KeyName {
@@ -106,6 +150,14 @@ public enum StarterLatencyMetricsDoc implements ExtendedMeterDocumentation {
       @Override
       public String asString() {
         return "partition";
+      }
+    },
+
+    /** The name of the query being benchmarked */
+    QUERY_NAME {
+      @Override
+      public String asString() {
+        return "query";
       }
     },
   }
