@@ -14,6 +14,7 @@ import static io.camunda.operate.webapp.rest.IncidentRestService.INCIDENT_URL;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
+import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.OperateAbstractIT;
 import io.camunda.operate.util.SearchTestRule;
 import io.camunda.operate.util.TestUtil;
@@ -42,6 +43,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
 public class IncidentStatisticsIT extends OperateAbstractIT {
 
@@ -59,6 +61,7 @@ public class IncidentStatisticsIT extends OperateAbstractIT {
   private static final String QUERY_INCIDENTS_BY_ERROR_URL = INCIDENT_URL + "/byError";
   @Rule public SearchTestRule searchTestRule = new SearchTestRule();
   @MockitoBean private PermissionsService permissionsService;
+  @MockitoSpyBean private OperateProperties operateProperties;
   private final Random random = new Random();
 
   private final String tenantId1 = "tenant1";
@@ -70,6 +73,8 @@ public class IncidentStatisticsIT extends OperateAbstractIT {
         .thenReturn(PermissionsService.ResourcesAllowed.wildcard());
     when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_DEFINITION))
         .thenReturn(PermissionsService.ResourcesAllowed.wildcard());
+    // Default behavior for operate properties, can be overridden in specific tests
+    when(operateProperties.getMaxIncidentSearchGroups()).thenReturn(1000);
   }
 
   @Test
@@ -138,6 +143,22 @@ public class IncidentStatisticsIT extends OperateAbstractIT {
                     && s.getTenantId().equals(tenantId1)
                     && s.getInstancesWithActiveIncidentsCount() == 1L
                     && (s.getVersion() == 1 || s.getVersion() == 2));
+  }
+
+  @Test
+  public void testIncidentStatisticsByErrorWithLimit() throws Exception {
+    // Given
+    when(operateProperties.getMaxIncidentSearchGroups()).thenReturn(1);
+    createData();
+
+    // When
+    final List<IncidentsByErrorMsgStatisticsDto> response = requestIncidentsByError();
+
+    // Then
+    assertThat(response).hasSize(1);
+    final IncidentsByErrorMsgStatisticsDto incidentsByErrorStat = response.get(0);
+    assertThat(incidentsByErrorStat.getErrorMessage()).isEqualTo(TestUtil.ERROR_MSG);
+    assertThat(incidentsByErrorStat.getProcesses()).hasSize(1);
   }
 
   @Test

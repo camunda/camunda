@@ -18,8 +18,9 @@ public class OperateProperties {
   public static final String PREFIX = "camunda.operate";
 
   public static final long BATCH_OPERATION_MAX_SIZE_DEFAULT = 1_000_000L;
-
   private static final String UNKNOWN_VERSION = "unknown-version";
+
+  private int maxIncidentSearchGroups = 1000;
 
   private boolean importerEnabled = false;
   private boolean webappEnabled = true;
@@ -358,5 +359,13 @@ public class OperateProperties {
 
   public String getIndexPrefix() {
     return getIndexPrefix(database);
+  }
+
+  public int getMaxIncidentSearchGroups() {
+    return maxIncidentSearchGroups;
+  }
+
+  public void setMaxIncidentSearchGroups(final int maxIncidentSearchGroups) {
+    this.maxIncidentSearchGroups = maxIncidentSearchGroups;
   }
 }
