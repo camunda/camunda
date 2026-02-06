@@ -53,6 +53,12 @@ public class JobIT {
     final var instance = processInstanceReader.findOne(original.jobKey()).orElse(null);
 
     compareJob(instance, original);
+
+    // assert that boolean values are not null and have expected values
+    assertThat(instance.hasFailedWithRetriesLeft()).isNotNull();
+    assertThat(instance.hasFailedWithRetriesLeft()).isFalse();
+    assertThat(instance.isDenied()).isNotNull();
+    assertThat(instance.isDenied()).isFalse();
   }
 
   @TestTemplate

@@ -5,17 +5,17 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.it.rdbms.db.elementinstance;
+package io.camunda.it.rdbms.db.flownodeinstance;
 
-import static io.camunda.it.rdbms.db.fixtures.ElementInstanceFixtures.createAndSaveRandomElementInstance;
-import static io.camunda.it.rdbms.db.fixtures.ElementInstanceFixtures.createAndSaveRandomElementInstances;
+import static io.camunda.it.rdbms.db.fixtures.FlowNodeInstanceFixtures.createAndSaveRandomFlowNodeInstance;
+import static io.camunda.it.rdbms.db.fixtures.FlowNodeInstanceFixtures.createAndSaveRandomFlowNodeInstances;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.application.commons.rdbms.RdbmsConfiguration;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.FlowNodeInstanceDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriters;
-import io.camunda.it.rdbms.db.fixtures.ElementInstanceFixtures;
+import io.camunda.it.rdbms.db.fixtures.FlowNodeInstanceFixtures;
 import io.camunda.it.rdbms.db.util.RdbmsTestConfiguration;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
@@ -41,7 +41,7 @@ import org.springframework.test.context.TestPropertySource;
 @AutoConfigurationPackage
 @TestPropertySource(
     properties = {"spring.liquibase.enabled=false", "camunda.data.secondary-storage.type=rdbms"})
-public class ElementInstanceSpecificFilterIT {
+public class FlowNodeInstanceSpecificFilterIT {
 
   public static final OffsetDateTime NOW = OffsetDateTime.now();
 
@@ -57,14 +57,14 @@ public class ElementInstanceSpecificFilterIT {
   }
 
   @ParameterizedTest
-  @MethodSource("shouldFindElementInstanceWithSpecificFilterParameters")
-  public void shouldFindElementInstanceWithSpecificFilter(final FlowNodeInstanceFilter filter) {
-    createAndSaveRandomElementInstances(
+  @MethodSource("shouldFindFlowNodeInstanceWithSpecificFilterParameters")
+  public void shouldFindFlowNodeInstanceWithSpecificFilter(final FlowNodeInstanceFilter filter) {
+    createAndSaveRandomFlowNodeInstances(
         rdbmsWriters,
         b -> b.state(FlowNodeState.COMPLETED).type(FlowNodeType.BOUNDARY_EVENT).incidentKey(null));
-    createAndSaveRandomElementInstance(
+    createAndSaveRandomFlowNodeInstance(
         rdbmsWriters,
-        ElementInstanceFixtures.createRandomized(
+        FlowNodeInstanceFixtures.createRandomized(
             b ->
                 b.flowNodeInstanceKey(42L)
                     .flowNodeId("unique-element-42")
@@ -90,7 +90,7 @@ public class ElementInstanceSpecificFilterIT {
     assertThat(searchResult.items().getFirst().flowNodeInstanceKey()).isEqualTo(42L);
   }
 
-  static List<FlowNodeInstanceFilter> shouldFindElementInstanceWithSpecificFilterParameters() {
+  static List<FlowNodeInstanceFilter> shouldFindFlowNodeInstanceWithSpecificFilterParameters() {
     return List.of(
         FlowNodeInstanceFilter.of(b -> b.flowNodeInstanceKeys(42L)),
         FlowNodeInstanceFilter.of(b -> b.flowNodeIds("unique-element-42")),

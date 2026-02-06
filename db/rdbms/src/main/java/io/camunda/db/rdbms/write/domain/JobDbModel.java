@@ -29,9 +29,9 @@ public class JobDbModel implements Copyable<JobDbModel> {
   private JobKind kind;
   private ListenerEventType listenerEventType;
   private Integer retries;
-  private Boolean isDenied;
+  private Boolean isDenied = false;
   private String deniedReason;
-  private Boolean hasFailedWithRetriesLeft;
+  private Boolean hasFailedWithRetriesLeft = false;
   private String errorCode;
   private String errorMessage;
   private String serializedCustomHeaders;
@@ -61,9 +61,9 @@ public class JobDbModel implements Copyable<JobDbModel> {
       final JobKind kind,
       final ListenerEventType listenerEventType,
       final Integer retries,
-      final Boolean isDenied,
+      final boolean isDenied,
       final String deniedReason,
-      final Boolean hasFailedWithRetriesLeft,
+      final boolean hasFailedWithRetriesLeft,
       final String errorCode,
       final String errorMessage,
       final Map<String, String> customHeaders,
@@ -396,9 +396,9 @@ public class JobDbModel implements Copyable<JobDbModel> {
     private JobKind kind;
     private ListenerEventType listenerEventType;
     private Integer retries;
-    private Boolean isDenied;
+    private Boolean isDenied = false;
     private String deniedReason;
-    private Boolean hasFailedWithRetriesLeft;
+    private Boolean hasFailedWithRetriesLeft = false;
     private String errorCode;
     private String errorMessage;
     private Map<String, String> customHeaders;
