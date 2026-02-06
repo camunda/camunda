@@ -205,11 +205,13 @@ public class BackupRetention extends Actor {
     backupStore
         .list(identifier)
         .thenApply(backups -> backups.stream().sorted(BACKUP_STATUS_COMPARATOR).toList())
-        .thenAccept(requestFuture::complete)
-        .exceptionally(
-            throwable -> {
-              requestFuture.completeExceptionally(throwable);
-              return null;
+        .whenComplete(
+            (backups, throwable) -> {
+              if (throwable != null) {
+                requestFuture.completeExceptionally(throwable);
+              } else {
+                requestFuture.complete(backups);
+              }
             });
     return requestFuture;
   }
@@ -219,12 +221,7 @@ public class BackupRetention extends Actor {
     backupStore
         .rangeMarkers(partitionId)
         .thenApply(markers -> markers.stream().sorted(BackupRanges.MARKER_ORDERING).toList())
-        .thenAccept(requestFuture::complete)
-        .exceptionally(
-            throwable -> {
-              requestFuture.completeExceptionally(throwable);
-              return null;
-            });
+        .whenComplete(requestFuture);
     return requestFuture;
   }
 
