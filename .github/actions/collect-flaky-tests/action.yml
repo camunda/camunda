@@ -10,30 +10,18 @@ inputs:
     general-unit-tests-flaky:
         description: 'Flaky tests from the general unit tests job'
         required: true
-    elasticsearch8-tests-result:
-        description: 'Result of the Elasticsearch 8 integration tests job'
-        required: true
-    elasticsearch8-tests-flaky:
-        description: 'Flaky tests from the Elasticsearch 8 integration tests job'
-        required: true
-    elasticsearch9-tests-result:
-        description: 'Result of the Elasticsearch 9 integration tests job'
-        required: true
-    elasticsearch9-tests-flaky:
-        description: 'Flaky tests from the Elasticsearch 9 integration tests job'
-        required: true
-    opensearch-tests-result:
-        description: 'Result of the OpenSearch integration tests job'
-        required: true
-    opensearch-tests-flaky:
-        description: 'Flaky tests from the OpenSearch integration tests job'
-        required: true
-    rdbms-h2-tests-result:
-        description: 'Result of the RDBMS H2 integration tests job'
-        required: true
-    rdbms-h2-tests-flaky:
-        description: 'Flaky tests from the RDBMS H2 integration tests job'
-        required: true
+    database-integration-tests-result:
+      description: 'Result of the database integration tests job'
+      required: true
+    database-matrix-output-result:
+      description: 'Matrix output for database integration tests'
+      required: true
+    history-tests-result:
+      description: 'Result of the history tests job'
+      required: true
+    history-matrix-output-result:
+      description: 'Matrix output for history tests'
+      required: true
     rdbms-tests-result:
         description: 'Result of the RDBMS integration tests job'
         required: true
@@ -82,14 +70,12 @@ runs:
 
         # Collect from single jobs
         collect_from_single_job "general-unit-tests" "${{ inputs.general-unit-tests-result }}" "${{ inputs.general-unit-tests-flaky }}"
-        collect_from_single_job "elasticsearch8-integration-tests" "${{ inputs.elasticsearch8-tests-result }}" "${{ inputs.elasticsearch8-tests-flaky }}"
-        collect_from_single_job "elasticsearch9-integration-tests" "${{ inputs.elasticsearch9-tests-result }}" "${{ inputs.elasticsearch9-tests-flaky }}"
-        collect_from_single_job "opensearch-integration-tests" "${{ inputs.opensearch-tests-result }}" "${{ inputs.opensearch-tests-flaky }}"
-        collect_from_single_job "rdbms-h2-integration-tests" "${{ inputs.rdbms-h2-tests-result }}" "${{ inputs.rdbms-h2-tests-flaky }}"
         collect_from_single_job "rdbms-integration-tests" "${{ inputs.rdbms-tests-result }}" "${{ inputs.rdbms-tests-flaky }}"
         collect_from_single_job "docker-checks" "${{ inputs.docker-checks-result }}" "${{ inputs.docker-checks-flaky }}"
 
         # Collect from matrix jobs
+        collect_from_matrix_job "history-tests" "${{ inputs.history-tests-result }}" '${{ inputs.history-matrix-output-result }}'
+        collect_from_matrix_job "database-integration-tests" "${{ inputs.database-integration-tests-result }}" '${{ inputs.database-matrix-output-result }}'
         collect_from_matrix_job "zeebe-unit-tests" "${{ inputs.zeebe-tests-result }}" '${{ inputs.zeebe-matrix-output-result }}'
         collect_from_matrix_job "integration-tests" "${{ inputs.integration-tests-result }}" '${{ inputs.integration-matrix-output-result }}'
 

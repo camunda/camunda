@@ -493,90 +493,72 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
-  elasticsearch8-integration-tests:
-    name: "Database Integration Tests / Elasticsearch"
+  database-integration-tests:
+    name: "Database Integration Tests / ${{ matrix.name }}"
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     needs: [ detect-changes ]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: "Elasticsearch 8"
+            database-type: "elasticsearch"
+            database-image-version: "8.18.4"
+            it-database-type: "es"
+          - name: "Elasticsearch 9"
+            database-type: "elasticsearch9"
+            database-container: "elasticsearch"
+            database-image-version: "9.2.4"
+            it-database-type: "es"
+          - name: "Opensearch"
+            database-type: "opensearch"
+            database-image-version: "2.17.0"
+            it-database-type: "os"
+          - name: "RDBMS H2"
+            database-type: "h2"
+            it-database-type: "rdbms_h2"
     uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
     secrets: inherit
     with:
-      database-type: "elasticsearch"
-      database-image-version: "8.18.4"
-      it-database-type: "es"
+      database-type: "${{ matrix.database-type }}"
+      database-container: "${{ matrix.database-container }}"
+      database-image-version: "${{ matrix.database-image-version }}"
+      it-database-type: "${{ matrix.it-database-type }}"
 
-  elasticsearch9-integration-tests:
-    name: "Database Integration Tests / Elasticsearch 9"
+  history-tests:
+    name: "History Integration Tests / ${{ matrix.name }}"
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     needs: [ detect-changes ]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: "Elasticsearch 8"
+            database-type: "elasticsearch"
+            database-image-version: "8.18.4"
+            it-database-type: "es"
+          - name: "Elasticsearch 9"
+            database-type: "elasticsearch9"
+            database-container: "elasticsearch"
+            database-image-version: "9.2.4"
+            it-database-type: "es"
+          - name: "Opensearch"
+            database-type: "opensearch"
+            database-image-version: "2.17.0"
+            it-database-type: "os"
+          - name: "RDBMS H2"
+            database-type: "h2"
+            it-database-type: "rdbms_h2"
     uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
     secrets: inherit
     with:
-      database-type: "elasticsearch"
-      database-image-version: "9.2.4"
-      it-database-type: "es"
-      job-name-suffix: "9"
-
-  opensearch-integration-tests:
-    name: "Database Integration Tests / Opensearch"
-    uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
-    if: needs.detect-changes.outputs.java-code-changes == 'true'
-    needs: [ detect-changes ]
-    secrets: inherit
-    with:
-      database-type: "opensearch"
-      database-image-version: "2.17.0"
-      it-database-type: "os"
-
-  rdbms-h2-integration-tests:
-    name: "Database Integration Tests / RDBMS H2"
-    if: needs.detect-changes.outputs.java-code-changes == 'true'
-    needs: [ detect-changes ]
-    uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
-    secrets: inherit
-    with:
-      database-type: "h2"
-      it-database-type: "rdbms_h2"
-
-  elasticsearch-history-tests:
-    name: "History Integration Tests / Elasticsearch"
-    if: needs.detect-changes.outputs.java-code-changes == 'true'
-    needs: [ detect-changes ]
-    uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
-    secrets: inherit
-    with:
-      database-type: "elasticsearch"
-      database-image-version: "8.18.4"
-      it-database-type: "es"
+      database-type: "${{ matrix.database-type }}"
+      database-container: "${{ matrix.database-container }}"
+      database-image-version: "${{ matrix.database-image-version }}"
+      it-database-type: "${{ matrix.it-database-type }}"
       maven-profiles: "history"
+      test-type: "history-tests"
       test-type-label: "History"
-      job-name-suffix: "-history"
-
-  opensearch-history-tests:
-    name: "History Integration Tests / Opensearch"
-    if: needs.detect-changes.outputs.java-code-changes == 'true'
-    needs: [ detect-changes ]
-    uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
-    secrets: inherit
-    with:
-      database-type: "opensearch"
-      database-image-version: "2.17.0"
-      it-database-type: "os"
-      maven-profiles: "history"
-      test-type-label: "History"
-      job-name-suffix: "-history"
-
-  h2-history-tests:
-    name: "History Integration Tests / H2"
-    if: needs.detect-changes.outputs.java-code-changes == 'true'
-    needs: [ detect-changes ]
-    uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
-    secrets: inherit
-    with:
-      database-type: "h2"
-      it-database-type: "rdbms_h2"
-      maven-profiles: "history"
-      test-type-label: "History"
-      job-name-suffix: "-history"
 
   rdbms-integration-tests:
     if: needs.detect-changes.outputs.rdbms-integration-tests == 'true'
@@ -685,8 +667,8 @@ jobs:
             name: "Zeebe Exporter Modules"
             maven-modules: ${{ needs.setup-tests.outputs.ZEEBE_IT_EXPORTER_MODULES }}
             maven-build-threads: 2
-            maven-test-fork-count: 3
-            runs-on: gcp-core-32-default
+            maven-test-fork-count: 7
+            runs-on: gcp-perf-core-16-longrunning
             docker-repository: localhost:5000/camunda/zeebe
             docker-file: Dockerfile
             owner: "DataLayer"
@@ -1079,13 +1061,11 @@ jobs:
     if: always() && github.event_name == 'pull_request' && !github.event.pull_request.head.repo.fork
     needs:
       - archunit-tests
+      - database-integration-tests
       - docker-checks
-      - elasticsearch8-integration-tests
-      - elasticsearch9-integration-tests
       - general-unit-tests
+      - history-tests
       - integration-tests
-      - opensearch-integration-tests
-      - rdbms-h2-integration-tests
       - rdbms-integration-tests
       - zeebe-unit-tests
     runs-on: ubuntu-latest
@@ -1105,20 +1085,26 @@ jobs:
         id: integration-matrix-read
         with:
           matrix-step-name: integration-tests
+      - name: Read Database integration tests matrix outputs
+        uses: cloudposse/github-action-matrix-outputs-read@v1
+        id: database-integration-matrix-read
+        with:
+          matrix-step-name: database-integration-tests
+      - name: Read history tests matrix outputs
+        uses: cloudposse/github-action-matrix-outputs-read@v1
+        id: history-matrix-read
+        with:
+          matrix-step-name: history-tests
       - name: Collect flaky test results
         id: collect-results
         uses: ./.github/actions/collect-flaky-tests
         with:
           general-unit-tests-result: ${{ needs.general-unit-tests.result }}
           general-unit-tests-flaky: ${{ needs.general-unit-tests.outputs.flakyTests }}
-          elasticsearch8-tests-result: ${{ needs.elasticsearch8-integration-tests.result }}
-          elasticsearch8-tests-flaky: ${{ needs.elasticsearch8-integration-tests.outputs.flakyTests }}
-          elasticsearch9-tests-result: ${{ needs.elasticsearch9-integration-tests.result }}
-          elasticsearch9-tests-flaky: ${{ needs.elasticsearch9-integration-tests.outputs.flakyTests }}
-          opensearch-tests-result: ${{ needs.opensearch-integration-tests.result }}
-          opensearch-tests-flaky: ${{ needs.opensearch-integration-tests.outputs.flakyTests }}
-          rdbms-h2-tests-result: ${{ needs.rdbms-h2-integration-tests.result }}
-          rdbms-h2-tests-flaky: ${{ needs.rdbms-h2-integration-tests.outputs.flakyTests }}
+          database-integration-tests-result: ${{ needs.database-integration-tests.result }}
+          database-matrix-output-result: ${{ steps.database-integration-matrix-read.outputs.result }}
+          history-tests-result: ${{ needs.history-tests.result }}
+          history-matrix-output-result: ${{ steps.history-matrix-read.outputs.result }}
           rdbms-tests-result: ${{ needs.rdbms-integration-tests.result }}
           rdbms-tests-flaky: ${{ needs.rdbms-integration-tests.outputs.flakyTests }}
           docker-checks-result: ${{ needs.docker-checks.result }}
@@ -1360,24 +1346,19 @@ jobs:
       - build-platform-frontend
       - client-components
       - commitlint
+      - database-integration-tests
       - detect-changes
       - docker-checks
-      - elasticsearch-history-tests
-      - elasticsearch8-integration-tests
-      - elasticsearch9-integration-tests
       - general-unit-tests
-      - h2-history-tests
+      - history-tests
       - identity-frontend-tests
       - integration-tests
       - java-checks
       - maven-spotless-linter
       - openapi-lint
-      - opensearch-history-tests
-      - opensearch-integration-tests
       - operate-ci
       - optimize-ci
       - protobuf-checks
-      - rdbms-h2-integration-tests
       - rdbms-integration-tests
       - renovatelint
       - setup-tests
