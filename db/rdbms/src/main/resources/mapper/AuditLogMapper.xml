@@ -57,6 +57,7 @@
         RELATED_ENTITY_TYPE,
         RELATED_ENTITY_KEY,
         ENTITY_DESCRIPTION,
+        DETAILS,
         PARTITION_ID,
         HISTORY_CLEANUP_DATE
       FROM ${prefix}AUDIT_LOG
@@ -336,6 +337,7 @@
       RELATED_ENTITY_TYPE,
       RELATED_ENTITY_KEY,
       ENTITY_DESCRIPTION,
+      DETAILS,
       PARTITION_ID,
       HISTORY_CLEANUP_DATE
     )
@@ -377,6 +379,7 @@
         #{auditLog.relatedEntityType},
         #{auditLog.relatedEntityKey},
         #{auditLog.entityDescription},
+        #{auditLog.details, jdbcType=CLOB},
         #{auditLog.partitionId},
         #{auditLog.historyCleanupDate, jdbcType=TIMESTAMP}
       )
@@ -436,4 +439,3 @@
   </delete>
 
 </mapper>
-

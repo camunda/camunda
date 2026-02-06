@@ -44,7 +44,8 @@ public record AuditLogEntity(
     Long resourceKey,
     AuditLogEntityType relatedEntityType,
     String relatedEntityKey,
-    String entityDescription)
+    String entityDescription,
+    String details)
     implements TenantOwnedEntity {
 
   @Override
@@ -85,6 +86,7 @@ public record AuditLogEntity(
     private AuditLogEntityType relatedEntityType;
     private String relatedEntityKey;
     private String entityDescription;
+    private String details;
 
     public Builder auditLogKey(final String auditLogKey) {
       this.auditLogKey = auditLogKey;
@@ -246,6 +248,11 @@ public record AuditLogEntity(
       return this;
     }
 
+    public Builder details(final String details) {
+      this.details = details;
+      return this;
+    }
+
     @Override
     public AuditLogEntity build() {
       return new AuditLogEntity(
@@ -280,7 +287,8 @@ public record AuditLogEntity(
           resourceKey,
           relatedEntityType,
           relatedEntityKey,
-          entityDescription);
+          entityDescription,
+          details);
     }
   }
 

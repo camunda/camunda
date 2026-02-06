@@ -50,7 +50,8 @@ public class AuditLogEntityTransformer
         value.getResourceKey(),
         mapEntityType(value.getRelatedEntityType()),
         value.getRelatedEntityKey(),
-        value.getEntityDescription());
+        value.getEntityDescription(),
+        value.getDetails());
   }
 
   private AuditLogEntity.AuditLogEntityType mapEntityType(

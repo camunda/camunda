@@ -46,6 +46,7 @@ public class AuditLogEntityMapper {
         .relatedEntityType(auditLogDbModel.relatedEntityType())
         .relatedEntityKey(auditLogDbModel.relatedEntityKey())
         .entityDescription(auditLogDbModel.entityDescription())
+        .details(auditLogDbModel.details())
         .build();
   }
 }

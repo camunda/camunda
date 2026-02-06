@@ -107,6 +107,10 @@
       },
       "entityDescription": {
         "type": "keyword"
+      },
+      "details": {
+        "type": "text",
+        "index": false
       }
     }
   }

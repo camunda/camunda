@@ -49,6 +49,7 @@ public record AuditLogDbModel(
     AuditLogEntity.AuditLogEntityType relatedEntityType,
     String relatedEntityKey,
     String entityDescription,
+    String details,
     int partitionId,
     OffsetDateTime historyCleanupDate)
     implements DbModel<AuditLogDbModel> {
@@ -95,7 +96,8 @@ public record AuditLogDbModel(
                 .relatedEntityKey(relatedEntityKey)
                 .entityDescription(entityDescription)
                 .partitionId(partitionId)
-                .historyCleanupDate(historyCleanupDate))
+                .historyCleanupDate(historyCleanupDate)
+                .details(details))
         .build();
   }
 
@@ -136,7 +138,8 @@ public record AuditLogDbModel(
         .relatedEntityKey(relatedEntityKey)
         .entityDescription(entityDescription)
         .partitionId(partitionId)
-        .historyCleanupDate(historyCleanupDate);
+        .historyCleanupDate(historyCleanupDate)
+        .details(details);
   }
 
   public static class Builder implements ObjectBuilder<AuditLogDbModel> {
@@ -178,6 +181,7 @@ public record AuditLogDbModel(
     private String entityDescription;
     private int partitionId;
     private OffsetDateTime historyCleanupDate;
+    private String details;
 
     public Builder() {}
 
@@ -366,6 +370,11 @@ public record AuditLogDbModel(
       return this;
     }
 
+    public Builder details(final String details) {
+      this.details = details;
+      return this;
+    }
+
     @Override
     public AuditLogDbModel build() {
       return new AuditLogDbModel(
@@ -404,6 +413,7 @@ public record AuditLogDbModel(
           relatedEntityType,
           relatedEntityKey,
           entityDescription,
+          details,
           partitionId,
           historyCleanupDate);
     }
