@@ -77,13 +77,13 @@
     <version.mockito>5.18.0</version.mockito>
     <version.model>7.7.0</version.model>
     <version.msgpack>0.9.11</version.msgpack>
-    <version.netty>4.1.127.Final</version.netty>
+    <version.netty>4.2.9.Final</version.netty>
     <version.objenesis>3.4</version.objenesis>
     <version.opensearch>2.17.0</version.opensearch>
     <version.opensearch-java>2.26.0</version.opensearch-java>
     <version.opensearch.testcontainers>4.1.0</version.opensearch.testcontainers>
     <version.prometheus>0.16.0</version.prometheus>
-    <version.protobuf>4.33.0</version.protobuf>
+    <version.protobuf>4.31.1</version.protobuf>
     <version.protobuf-common>2.63.2</version.protobuf-common>
     <version.micrometer>1.15.3</version.micrometer>
     <version.rocksdbjni>10.2.1</version.rocksdbjni>
