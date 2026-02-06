@@ -405,24 +405,27 @@ public class AnnotationUtil {
   private static List<DeploymentValue> getDeploymentValuesFromRepeatable(final BeanInfo beanInfo) {
     return beanInfo.getAnnotation(Deployments.class).stream()
         .flatMap(d -> Arrays.stream(d.value()))
-        .map(AnnotationUtil::fromAnnotation)
+        .map(d -> fromAnnotation(d, beanInfo.getTargetClass()))
         .toList();
   }
 
   private static List<DeploymentValue> getDeploymentValuesInternal(final BeanInfo beanInfo) {
     return beanInfo
         .getAnnotation(Deployment.class)
-        .map(AnnotationUtil::fromAnnotation)
+        .map(d -> fromAnnotation(d, beanInfo.getTargetClass()))
         .map(Arrays::asList)
         .orElseGet(List::of);
   }
 
-  private static DeploymentValue fromAnnotation(final Deployment deploymentAnnotation) {
+  private static DeploymentValue fromAnnotation(
+      final Deployment deploymentAnnotation, final Class<?> annotatedClass) {
     return new DeploymentValue(
         Arrays.asList(deploymentAnnotation.resources()),
         StringUtils.isEmpty(deploymentAnnotation.tenantId())
             ? null
-            : deploymentAnnotation.tenantId());
+            : deploymentAnnotation.tenantId(),
+        deploymentAnnotation.ownJarOnly(),
+        annotatedClass);
   }
 
   private static List<DeploymentValue> getDeploymentResourcesLegacy(final BeanInfo beanInfo) {
@@ -439,7 +442,9 @@ public class AnnotationUtil {
         Arrays.asList(deploymentAnnotation.resources()),
         StringUtils.isEmpty(deploymentAnnotation.tenantId())
             ? null
-            : deploymentAnnotation.tenantId());
+            : deploymentAnnotation.tenantId(),
+        false,
+        null);
   }
 
   private static boolean isVariableLegacy(final ParameterInfo parameterInfo) {
