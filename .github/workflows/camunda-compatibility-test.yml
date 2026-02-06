@@ -61,8 +61,7 @@ jobs:
               STABLE_VERSION="${BASH_REMATCH[1]}"
               echo "stable-version=$STABLE_VERSION" >> "$GITHUB_OUTPUT"
             else
-              echo "DEBUG: Using default stable version for testing: $DEFAULT_STABLE"
-              echo "stable-version=$DEFAULT_STABLE" >> "$GITHUB_OUTPUT"
+              echo "WARN: No main or stable branch detected"
             fi
           fi
 
