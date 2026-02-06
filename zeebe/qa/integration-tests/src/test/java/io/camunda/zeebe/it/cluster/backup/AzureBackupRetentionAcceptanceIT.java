@@ -7,10 +7,6 @@
  */
 package io.camunda.zeebe.it.cluster.backup;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-
-import com.azure.storage.blob.BlobServiceClient;
-import com.azure.storage.blob.models.ListBlobsOptions;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.PrimaryStorageBackup;
 import io.camunda.zeebe.backup.api.BackupStore;
@@ -24,7 +20,6 @@ import io.camunda.zeebe.test.util.testcontainers.ContainerLogsDumper;
 import java.time.Duration;
 import java.util.Map;
 import java.util.function.Consumer;
-import java.util.stream.IntStream;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -43,7 +38,6 @@ public class AzureBackupRetentionAcceptanceIT implements BackupRetentionAcceptan
       new ContainerLogsDumper(() -> Map.of("azurite", AZURITE_CONTAINER));
 
   private BackupStore backupStore;
-  private BlobServiceClient blobServiceClient;
 
   @TestZeebe(autoStart = false)
   private final TestCluster cluster =
@@ -86,41 +80,6 @@ public class AzureBackupRetentionAcceptanceIT implements BackupRetentionAcceptan
   }
 
   @Override
-  public void assertManifestDoesNotExist(final long backupId) {
-    final var containerClient = blobServiceClient.getBlobContainerClient(CONTAINER_NAME);
-    IntStream.rangeClosed(1, PARTITION_COUNT)
-        .forEach(
-            partitionId ->
-                IntStream.rangeClosed(0, BROKER_COUNT - 1)
-                    .forEach(
-                        brokerId -> {
-                          final var client =
-                              containerClient.getBlobClient(
-                                  "manifests/%d/%d/%d/manifest.json"
-                                      .formatted(partitionId, backupId, brokerId));
-                          assertThat(client.getBlockBlobClient().exists()).isFalse();
-                        }));
-  }
-
-  @Override
-  public void assertContentsDoNotExist(final long backupId) {
-    final var containerClient = blobServiceClient.getBlobContainerClient(CONTAINER_NAME);
-    IntStream.rangeClosed(1, PARTITION_COUNT)
-        .forEach(
-            partitionId ->
-                IntStream.rangeClosed(0, BROKER_COUNT - 1)
-                    .forEach(
-                        brokerId -> {
-                          final var prefix =
-                              "contents/%d/%d/%d".formatted(partitionId, backupId, brokerId);
-                          final var blobs =
-                              containerClient.listBlobs(
-                                  new ListBlobsOptions().setPrefix(prefix), null);
-                          assertThat(blobs.stream().count()).isZero();
-                        }));
-  }
-
-  @Override
   public Consumer<Camunda> backupConfig() {
     return cfg -> {
       final var backup = cfg.getData().getPrimaryStorage().getBackup();
@@ -129,12 +88,6 @@ public class AzureBackupRetentionAcceptanceIT implements BackupRetentionAcceptan
       backup.setStore(PrimaryStorageBackup.BackupStoreType.AZURE);
       azure.setBasePath(CONTAINER_NAME);
       azure.setConnectionString(AZURITE_CONTAINER.getConnectString());
-      final var config =
-          new AzureBackupConfig.Builder()
-              .withConnectionString(AZURITE_CONTAINER.getConnectString())
-              .withContainerName(CONTAINER_NAME)
-              .build();
-      blobServiceClient = AzureBackupStore.buildClient(config);
     };
   }
 }

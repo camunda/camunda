@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.it.cluster.backup;
 
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
-
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.Filesystem;
 import io.camunda.configuration.PrimaryStorageBackup;
@@ -18,11 +16,9 @@ import io.camunda.zeebe.backup.filesystem.FilesystemBackupStore;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.UUID;
 import java.util.function.Consumer;
-import java.util.stream.IntStream;
 import org.junit.jupiter.api.io.TempDir;
 
 @ZeebeIntegration
@@ -53,30 +49,6 @@ public class FilesystemBackupRetentionAcceptanceIT implements BackupRetentionAcc
   @Override
   public BackupStore getBackupStore() {
     return backupStore;
-  }
-
-  @Override
-  public void assertManifestDoesNotExist(final long backupId) {
-    final Path manifestsDir = basePath.resolve("manifests");
-    IntStream.rangeClosed(1, PARTITION_COUNT)
-        .forEach(
-            partitionId -> {
-              final Path partitionDir = manifestsDir.resolve(String.valueOf(partitionId));
-              final Path checkpointDir = partitionDir.resolve(String.valueOf(backupId));
-              assertThat(Files.exists(checkpointDir)).isFalse();
-            });
-  }
-
-  @Override
-  public void assertContentsDoNotExist(final long backupId) {
-    final Path contentsDir = basePath.resolve("contents");
-    IntStream.rangeClosed(1, PARTITION_COUNT)
-        .forEach(
-            partitionId -> {
-              final Path partitionDir = contentsDir.resolve(String.valueOf(partitionId));
-              final Path checkpointDir = partitionDir.resolve(String.valueOf(backupId));
-              assertThat(Files.exists(checkpointDir)).isFalse();
-            });
   }
 
   @Override

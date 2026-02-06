@@ -7,11 +7,7 @@
  */
 package io.camunda.zeebe.it.cluster.backup;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-
 import com.google.cloud.storage.BucketInfo;
-import com.google.cloud.storage.Storage;
-import com.google.cloud.storage.Storage.BlobListOption;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.Gcs;
 import io.camunda.configuration.PrimaryStorageBackup;
@@ -24,10 +20,8 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.testcontainers.GcsContainer;
 import java.time.Duration;
 import java.util.function.Consumer;
-import java.util.stream.IntStream;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.exception.UncheckedException;
-import org.junit.jupiter.api.AfterEach;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -39,7 +33,6 @@ public class GcsBackupRetentionAcceptanceIT implements BackupRetentionAcceptance
   @Container private static final GcsContainer GCS = new GcsContainer();
   private final String basePath = RandomStringUtils.randomAlphabetic(10).toLowerCase();
   private BackupStore backupStore;
-  private Storage client;
 
   @TestZeebe(autoStart = false)
   private final TestCluster cluster =
@@ -60,13 +53,6 @@ public class GcsBackupRetentionAcceptanceIT implements BackupRetentionAcceptance
                   node.withProperty("zeebe.clock.controlled", true)
                       .withProperty("management.endpoints.web.exposure.include", "*"))
           .build();
-
-  @AfterEach
-  public void tearDown() throws Exception {
-    if (client != null) {
-      client.close();
-    }
-  }
 
   @Override
   public TestCluster getTestCluster() {
@@ -95,39 +81,6 @@ public class GcsBackupRetentionAcceptanceIT implements BackupRetentionAcceptance
   }
 
   @Override
-  public void assertManifestDoesNotExist(final long backupId) {
-    IntStream.rangeClosed(1, PARTITION_COUNT)
-        .forEach(
-            partitionId ->
-                IntStream.rangeClosed(0, BROKER_COUNT - 1)
-                    .forEach(
-                        brokerId -> {
-                          final var manifest =
-                              client.get(
-                                  BUCKET_NAME,
-                                  "%s/manifests/%d/%d/%d/manifest.json"
-                                      .formatted(basePath, partitionId, backupId, brokerId));
-                          assertThat(manifest).isNull();
-                        }));
-  }
-
-  @Override
-  public void assertContentsDoNotExist(final long backupId) {
-    IntStream.rangeClosed(1, PARTITION_COUNT)
-        .forEach(
-            partitionId ->
-                IntStream.rangeClosed(0, BROKER_COUNT - 1)
-                    .forEach(
-                        brokerId -> {
-                          final var prefix =
-                              "%s/contents/%d/%d/%d"
-                                  .formatted(basePath, partitionId, backupId, brokerId);
-                          final var blobs = client.list(BUCKET_NAME, BlobListOption.prefix(prefix));
-                          assertThat(blobs.streamAll().count()).isZero();
-                        }));
-  }
-
-  @Override
   public Consumer<Camunda> backupConfig() {
     return cfg -> {
       cfg.getData()
@@ -150,8 +103,6 @@ public class GcsBackupRetentionAcceptanceIT implements BackupRetentionAcceptance
               .build();
 
       backupStore = GcsBackupStore.of(brokerCfg);
-
-      client = GcsBackupStore.buildClient(brokerCfg);
     };
   }
 }

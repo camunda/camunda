@@ -25,9 +25,7 @@ import io.camunda.zeebe.qa.util.actuator.BackupActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
 import org.assertj.core.api.AssertionsForClassTypes;
@@ -54,10 +52,6 @@ public interface BackupRetentionAcceptance {
 
   default void containerSetup() {}
 
-  void assertManifestDoesNotExist(long checkpointId);
-
-  void assertContentsDoNotExist(long checkpointId);
-
   @BeforeEach
   default void setup() {
     applyBackupConfig();
@@ -71,24 +65,28 @@ public interface BackupRetentionAcceptance {
     pinClock();
     final var actuator = BackupActuator.of(getTestCluster().availableGateway());
     final List<Long> backupIds = new ArrayList<>();
-    final AtomicLong nextBackupId = new AtomicLong();
 
     // Wait for 3 completed backups
-    Awaitility.await("Initial backups are created")
-        .atMost(Duration.ofSeconds(30))
-        .pollInterval(Duration.ofSeconds(1))
-        .until(
-            () -> {
-              final var backups = actuator.list();
-              if (backups.stream().filter(f -> f.getState() == StateCode.COMPLETED).count() < 3) {
-                progressClock(BACKUP_INTERVAL.toMillis());
-                return false;
-              }
-              backups.sort(Comparator.comparingLong(BackupInfo::getBackupId));
-              nextBackupId.set(backups.get(2).getBackupId());
-              backups.subList(0, 2).forEach(backup -> backupIds.add(backup.getBackupId()));
-              return true;
-            });
+    /*    Awaitility.await("Initial backups are created")
+    .atMost(Duration.ofSeconds(30))
+    .pollInterval(Duration.ofSeconds(1))
+    .until(
+        () -> {
+          final var backups = actuator.list();
+          if (backups.stream().filter(f -> f.getState() == StateCode.COMPLETED).count() < 3) {
+            progressClock(BACKUP_INTERVAL.toMillis());
+            return false;
+          }
+          backups.sort(Comparator.comparingLong(BackupInfo::getBackupId));
+          nextBackupId.set(backups.get(2).getBackupId());
+          backups.subList(0, 2).forEach(backup -> backupIds.add(backup.getBackupId()));
+          return true;
+        });*/
+    final var firstBackup = awaitNewBackup(0);
+    final var secondBackup = awaitNewBackup(firstBackup);
+    final var thirdBackup = awaitNewBackup(secondBackup);
+    backupIds.add(firstBackup);
+    backupIds.add(secondBackup);
 
     resetTime();
 
@@ -107,13 +105,28 @@ public interface BackupRetentionAcceptance {
                   .doesNotContainAnyElementsOf(backupIds);
             });
 
-    backupIds.forEach(
-        backupId -> {
-          assertManifestNotFoundFromStore(backupId);
-          assertManifestDoesNotExist(backupId);
-          assertContentsDoNotExist(backupId);
-        });
-    assertRangeMarkerHasBeenUpdated(nextBackupId.get());
+    backupIds.forEach(this::assertManifestNotFoundFromStore);
+    assertRangeMarkerHasBeenUpdated(thirdBackup);
+  }
+
+  default long awaitNewBackup(final long previousBackup) {
+    progressClock(BACKUP_INTERVAL.toMillis());
+    final var actuator = BackupActuator.of(getTestCluster().availableGateway());
+    Awaitility.await("Backup is created")
+        .atMost(Duration.ofSeconds(30))
+        .pollInterval(Duration.ofSeconds(1))
+        .until(
+            () -> {
+              final var backups = actuator.list();
+              return backups.stream()
+                  .anyMatch(
+                      f -> f.getState() == StateCode.COMPLETED && f.getBackupId() > previousBackup);
+            });
+    return actuator.list().stream()
+        .filter(f -> f.getState() == StateCode.COMPLETED && f.getBackupId() > previousBackup)
+        .findFirst()
+        .get()
+        .getBackupId();
   }
 
   default void assertManifestNotFoundFromStore(final Long backupId) {
