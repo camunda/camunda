@@ -59,18 +59,20 @@ public class HistoryDeletionService {
     final var batch = historyDeletionDbReader.getNextBatch(partitionId, config.queueBatchSize());
     LOG.trace("Deleting historic data for entities: {}", batch);
 
-    final List<Long> deletedProcessInstances = deleteProcessInstances(partitionId, batch);
+    final List<Long> deletedProcessInstances = deleteProcessInstances(batch);
     final List<Long> deletedProcessDefinitions = deleteProcessDefinitions(batch);
+    final List<Long> deletedDecisionInstances = deleteDecisionInstances(batch);
+
     final List<Long> deletedResources =
-        Stream.concat(deletedProcessInstances.stream(), deletedProcessDefinitions.stream())
+        Stream.of(deletedProcessInstances, deletedProcessDefinitions, deletedDecisionInstances)
+            .flatMap(List::stream)
             .toList();
     final var deletedResourceCount = deleteFromHistoryDeletionTable(deletedResources);
 
     return nextDelay(deletedResourceCount);
   }
 
-  private List<Long> deleteProcessInstances(
-      final int partitionId, final List<HistoryDeletionDbModel> batch) {
+  private List<Long> deleteProcessInstances(final List<HistoryDeletionDbModel> batch) {
     final var processInstanceKeys =
         batch.stream()
             .filter(
@@ -123,6 +125,25 @@ public class HistoryDeletionService {
     rdbmsWriters.getProcessDefinitionWriter().deleteByKeys(processDefinitionKeys);
 
     return processDefinitionKeys;
+  }
+
+  private List<Long> deleteDecisionInstances(final List<HistoryDeletionDbModel> batch) {
+    final var decisionInstanceKeys =
+        batch.stream()
+            .filter(
+                deletionModel ->
+                    deletionModel
+                        .resourceType()
+                        .equals(HistoryDeletionTypeDbModel.DECISION_INSTANCE))
+            .map(HistoryDeletionDbModel::resourceKey)
+            .toList();
+
+    if (decisionInstanceKeys.isEmpty()) {
+      return List.of();
+    }
+
+    rdbmsWriters.getDecisionInstanceWriter().deleteByKeys(decisionInstanceKeys);
+    return decisionInstanceKeys;
   }
 
   private boolean hasDeletedAllProcessInstances(
