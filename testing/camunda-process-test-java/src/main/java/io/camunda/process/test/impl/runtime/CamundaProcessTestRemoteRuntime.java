@@ -40,12 +40,14 @@ public class CamundaProcessTestRemoteRuntime implements CamundaProcessTestRuntim
   private final URI camundaGrpcApiAddress;
   private final URI camundaMonitoringApiAddress;
   private final URI connectorsRestApiAddress;
+  private final Duration runtimeConnectionTimeout;
   private final CamundaClientBuilderFactory camundaClientBuilderFactory;
 
   public CamundaProcessTestRemoteRuntime(final CamundaProcessTestRuntimeBuilder runtimeBuilder) {
     camundaClientBuilderFactory = runtimeBuilder.getRemoteCamundaClientBuilderFactory();
     camundaMonitoringApiAddress = runtimeBuilder.getRemoteCamundaMonitoringApiAddress();
     connectorsRestApiAddress = runtimeBuilder.getRemoteConnectorsRestApiAddress();
+    runtimeConnectionTimeout = runtimeBuilder.getRemoteRuntimeConnectionTimeout();
 
     final CamundaClientConfiguration clientConfiguration =
         getClientConfiguration(camundaClientBuilderFactory);
@@ -73,10 +75,9 @@ public class CamundaProcessTestRemoteRuntime implements CamundaProcessTestRuntim
         connectorsRestApiAddress);
 
     // check connection to remote runtime
-    //    checkConnectionToRemoteRuntime();
     try {
       Awaitility.await()
-          .atMost(Duration.ofSeconds(5))
+          .atMost(runtimeConnectionTimeout)
           .pollInterval(Duration.ofSeconds(1))
           .pollDelay(Duration.ZERO)
           .ignoreExceptions()

@@ -152,6 +152,8 @@ public class CamundaSpringProcessTestRuntimeBuilderTest {
         .isEqualTo(CamundaProcessTestRuntimeDefaults.LOCAL_CAMUNDA_MONITORING_API_ADDRESS);
     assertThat(runtimeBuilder.getRemoteConnectorsRestApiAddress())
         .isEqualTo(CamundaProcessTestRuntimeDefaults.LOCAL_CONNECTORS_REST_API_ADDRESS);
+    assertThat(runtimeBuilder.getRemoteRuntimeConnectionTimeout())
+        .isEqualTo(CamundaProcessTestRuntimeDefaults.REMOTE_RUNTIME_CONNECTION_TIMEOUT);
 
     final CamundaClientBuilderFactory remoteCamundaClientBuilderFactory =
         runtimeBuilder.getRemoteCamundaClientBuilderFactory();
@@ -181,6 +183,7 @@ public class CamundaSpringProcessTestRuntimeBuilderTest {
     final URI remoteCamundaGrpcApiAddress = URI.create("http://camunda.com:2000");
     final URI remoteCamundaMonitoringApiAddress = URI.create("http://camunda.com:3000");
     final URI remoteConnectorsRestApiAddress = URI.create("http://camunda.com:4000");
+    final Duration remoteRuntimeConnectionTimeout = Duration.ofSeconds(30);
 
     runtimeConfiguration.setRuntimeMode(CamundaProcessTestRuntimeMode.REMOTE);
     runtimeConfiguration.getRemote().getClient().setRequestTimeout(Duration.ofHours(1));
@@ -188,6 +191,7 @@ public class CamundaSpringProcessTestRuntimeBuilderTest {
     final RemoteConfiguration remoteConfiguration = runtimeConfiguration.getRemote();
     remoteConfiguration.setCamundaMonitoringApiAddress(remoteCamundaMonitoringApiAddress);
     remoteConfiguration.setConnectorsRestApiAddress(remoteConnectorsRestApiAddress);
+    remoteConfiguration.setRuntimeConnectionTimeout(remoteRuntimeConnectionTimeout);
 
     final CamundaClientProperties remoteClientProperties = remoteConfiguration.getClient();
     remoteClientProperties.setRestAddress(remoteCamundaRestApiAddress);
@@ -201,6 +205,8 @@ public class CamundaSpringProcessTestRuntimeBuilderTest {
         .isEqualTo(remoteCamundaMonitoringApiAddress);
     assertThat(runtimeBuilder.getRemoteConnectorsRestApiAddress())
         .isEqualTo(remoteConnectorsRestApiAddress);
+    assertThat(runtimeBuilder.getRemoteRuntimeConnectionTimeout())
+        .isEqualTo(remoteRuntimeConnectionTimeout);
 
     final CamundaClientBuilderFactory remoteCamundaClientBuilderFactory =
         runtimeBuilder.getRemoteCamundaClientBuilderFactory();

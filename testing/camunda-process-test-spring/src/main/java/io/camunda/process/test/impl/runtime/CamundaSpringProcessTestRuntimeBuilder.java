@@ -80,7 +80,9 @@ public class CamundaSpringProcessTestRuntimeBuilder {
         .withRemoteCamundaMonitoringApiAddress(
             runtimeConfiguration.getRemote().getCamundaMonitoringApiAddress())
         .withRemoteConnectorsRestApiAddress(
-            runtimeConfiguration.getRemote().getConnectorsRestApiAddress());
+            runtimeConfiguration.getRemote().getConnectorsRestApiAddress())
+        .withRemoteRuntimeConnectionTimeout(
+            runtimeConfiguration.getRemote().getRuntimeConnectionTimeout());
 
     final CamundaClientBuilderFactory remoteClientBuilderFactory =
         createRemoteClientBuilderFactory(runtimeConfiguration);
