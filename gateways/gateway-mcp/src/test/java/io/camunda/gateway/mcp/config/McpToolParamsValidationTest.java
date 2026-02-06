@@ -14,7 +14,6 @@ import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import jakarta.validation.Valid;
 import java.util.List;
 import org.junit.jupiter.api.Test;
-import org.springaicommunity.mcp.annotation.McpTool;
 import org.springframework.stereotype.Component;
 
 class McpToolParamsValidationTest {
@@ -63,7 +62,7 @@ class McpToolParamsValidationTest {
   // Valid usage: @McpToolParams alone
   @Component
   static class ValidSingleRequestBody {
-    @McpTool
+    @CamundaMcpTool
     public CallToolResult validMethod(@McpToolParams final CreateTaskRequest request) {
       return null;
     }
@@ -72,7 +71,7 @@ class McpToolParamsValidationTest {
   // Invalid usage: @McpToolParams mixed with @Valid object
   @Component
   static class InvalidMixedParameters {
-    @McpTool
+    @CamundaMcpTool
     public CallToolResult invalidMethod(
         @McpToolParams final CreateTaskRequest request, @Valid final CreateTaskRequest other) {
       return null;
@@ -82,7 +81,7 @@ class McpToolParamsValidationTest {
   // Valid usage: @McpToolParams with simple type
   @Component
   static class ValidWithSimpleType {
-    @McpTool
+    @CamundaMcpTool
     public CallToolResult validMethod(
         @McpToolParams final CreateTaskRequest request, final String simpleParam) {
       return null;
@@ -92,7 +91,7 @@ class McpToolParamsValidationTest {
   // Valid usage: @McpToolParams with validated primitive
   @Component
   static class ValidWithValidatedPrimitive {
-    @McpTool
+    @CamundaMcpTool
     public CallToolResult validMethod(
         @McpToolParams final CreateTaskRequest request,
         @jakarta.validation.constraints.NotBlank final String name,

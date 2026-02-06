@@ -8,31 +8,31 @@
 package io.camunda.gateway.mcp.config;
 
 import io.camunda.gateway.mcp.ConditionalOnMcpGatewayEnabled;
-import io.modelcontextprotocol.server.McpStatelessServerFeatures;
 import io.modelcontextprotocol.server.McpStatelessServerFeatures.SyncToolSpecification;
 import java.util.List;
-import org.springaicommunity.mcp.annotation.McpTool;
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerStatelessAutoConfiguration.EnabledStatelessServerCondition;
 import org.springframework.ai.mcp.server.common.autoconfigure.StatelessToolCallbackConverterAutoConfiguration.ToolCallbackConverterCondition;
-import org.springframework.ai.mcp.server.common.autoconfigure.annotations.McpServerAnnotationScannerAutoConfiguration;
-import org.springframework.ai.mcp.server.common.autoconfigure.annotations.McpServerAnnotationScannerAutoConfiguration.ServerMcpAnnotatedBeans;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 
-@AutoConfiguration(after = McpServerAnnotationScannerAutoConfiguration.class)
+/**
+ * Autoconfiguration for creating MCP tool specifications from {@link CamundaMcpTool}-annotated
+ * methods.
+ *
+ * <p>This configuration runs after {@link CamundaMcpToolScannerAutoConfiguration} which populates
+ * the {@link CamundaMcpToolAnnotatedBeans} registry with discovered tool beans.
+ */
+@AutoConfiguration(after = CamundaMcpToolScannerAutoConfiguration.class)
 @Conditional({EnabledStatelessServerCondition.class, ToolCallbackConverterCondition.class})
 @ConditionalOnMcpGatewayEnabled
 public class CamundaMcpServerToolSpecificationsAutoConfiguration {
 
   @Bean
   public List<SyncToolSpecification> mcpGatewayToolSpecifications(
-      final ServerMcpAnnotatedBeans beansWithMcpMethodAnnotations) {
-    final List<Object> beansByAnnotation =
-        beansWithMcpMethodAnnotations.getBeansByAnnotation(McpTool.class);
+      final CamundaMcpToolAnnotatedBeans annotatedBeans) {
     // Use Camunda's custom provider with CamundaJsonSchemaGenerator
-    final List<McpStatelessServerFeatures.SyncToolSpecification> syncToolSpecifications =
-        new CamundaSyncStatelessMcpToolProvider(beansByAnnotation).getToolSpecifications();
-    return syncToolSpecifications;
+    return new CamundaSyncStatelessMcpToolProvider(annotatedBeans.getToolBeans())
+        .getToolSpecifications();
   }
 }

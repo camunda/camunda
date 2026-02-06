@@ -26,7 +26,7 @@ import java.lang.annotation.Target;
  * <h3>Example Usage:</h3>
  *
  * <pre>{@code
- * @McpTool(description = "Create a task")
+ * @CamundaMcpTool(description = "Create a task")
  * public CallToolResult createTask(@McpToolParams @Valid CreateTaskRequest request) {
  *   // request.taskName, request.description are unwrapped to root level in schema
  *   return taskService.create(request);

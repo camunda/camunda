@@ -24,7 +24,6 @@ import org.slf4j.LoggerFactory;
 import org.springaicommunity.mcp.McpPredicates;
 import org.springaicommunity.mcp.annotation.McpMeta;
 import org.springaicommunity.mcp.annotation.McpProgressToken;
-import org.springaicommunity.mcp.annotation.McpTool;
 import org.springaicommunity.mcp.context.McpAsyncRequestContext;
 import org.springaicommunity.mcp.context.McpSyncRequestContext;
 import org.springaicommunity.mcp.method.tool.ReturnMode;
@@ -35,9 +34,9 @@ import org.springframework.aop.support.AopUtils;
 /**
  * Camunda-specific provider for synchronous stateless MCP tool methods.
  *
- * <p>This provider extends the standard MCP tool provider to use {@link CamundaJsonSchemaGenerator}
- * for generating JSON schemas. This allows Camunda to customize schema generation (e.g., inline
- * schemas without $defs) while maintaining compatibility with the MCP specification.
+ * <p>This provider scans for {@link CamundaMcpTool} annotations (not Spring AI's {@code @McpTool})
+ * and uses {@link CamundaJsonSchemaGenerator} for generating JSON schemas. This allows Camunda to
+ * control tool registration independently without relying on Spring AI's autoconfig exclusions.
  */
 public class CamundaSyncStatelessMcpToolProvider extends AbstractMcpToolProvider {
 
@@ -47,7 +46,7 @@ public class CamundaSyncStatelessMcpToolProvider extends AbstractMcpToolProvider
   /**
    * Create a new CamundaSyncStatelessMcpToolProvider.
    *
-   * @param toolObjects the objects containing methods annotated with {@link McpTool}
+   * @param toolObjects the objects containing methods annotated with {@link CamundaMcpTool}
    */
   public CamundaSyncStatelessMcpToolProvider(final List<Object> toolObjects) {
     super(toolObjects);
@@ -71,7 +70,7 @@ public class CamundaSyncStatelessMcpToolProvider extends AbstractMcpToolProvider
                           : toolObject.getClass();
 
                   return Stream.of(targetClass.getDeclaredMethods())
-                      .filter(method -> method.isAnnotationPresent(McpTool.class))
+                      .filter(method -> method.isAnnotationPresent(CamundaMcpTool.class))
                       .filter(McpPredicates.filterReactiveReturnTypeMethod())
                       .filter(McpPredicates.filterMethodWithBidirectionalParameters())
                       .sorted((m1, m2) -> m1.getName().compareTo(m2.getName()))
@@ -80,14 +79,15 @@ public class CamundaSyncStatelessMcpToolProvider extends AbstractMcpToolProvider
                             // Validate @McpToolParams usage
                             validateMcpToolParamsUsage(mcpToolMethod);
 
-                            final var toolJavaAnnotation = doGetMcpToolAnnotation(mcpToolMethod);
+                            final var toolAnnotation =
+                                mcpToolMethod.getAnnotation(CamundaMcpTool.class);
 
                             final String toolName =
-                                Utils.hasText(toolJavaAnnotation.name())
-                                    ? toolJavaAnnotation.name()
+                                Utils.hasText(toolAnnotation.name())
+                                    ? toolAnnotation.name()
                                     : mcpToolMethod.getName();
 
-                            final String toolDescription = toolJavaAnnotation.description();
+                            final String toolDescription = toolAnnotation.description();
 
                             // Use CamundaJsonSchemaGenerator instead of default
                             final String inputSchema =
@@ -99,11 +99,11 @@ public class CamundaSyncStatelessMcpToolProvider extends AbstractMcpToolProvider
                                     .description(toolDescription)
                                     .inputSchema(getJsonMapper(), inputSchema);
 
-                            var title = toolJavaAnnotation.title();
+                            var title = toolAnnotation.title();
 
                             // Tool annotations
-                            if (toolJavaAnnotation.annotations() != null) {
-                              final var toolAnnotations = toolJavaAnnotation.annotations();
+                            if (toolAnnotation.annotations() != null) {
+                              final var toolAnnotations = toolAnnotation.annotations();
                               toolBuilder.annotations(
                                   new McpSchema.ToolAnnotations(
                                       toolAnnotations.title(),
@@ -125,7 +125,7 @@ public class CamundaSyncStatelessMcpToolProvider extends AbstractMcpToolProvider
 
                             // Generate Output Schema from the method return type.
                             final Class<?> methodReturnType = mcpToolMethod.getReturnType();
-                            if (toolJavaAnnotation.generateOutputSchema()
+                            if (toolAnnotation.generateOutputSchema()
                                 && methodReturnType != null
                                 && methodReturnType != CallToolResult.class
                                 && methodReturnType != Void.class

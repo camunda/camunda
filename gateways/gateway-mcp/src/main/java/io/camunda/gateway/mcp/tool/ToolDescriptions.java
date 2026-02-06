@@ -21,7 +21,7 @@ public final class ToolDescriptions {
    * <p>Usage:
    *
    * <pre>{@code
-   * @McpTool(description = "Search for incidents. " + EVENTUAL_CONSISTENCY_NOTE)
+   * @CamundaMcpTool(description = "Search for incidents. " + EVENTUAL_CONSISTENCY_NOTE)
    * }</pre>
    */
   public static final String EVENTUAL_CONSISTENCY_NOTE =

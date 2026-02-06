@@ -7,10 +7,10 @@
  */
 package io.camunda.gateway.mcp.tool.demo;
 
+import io.camunda.gateway.mcp.config.CamundaMcpTool;
 import io.camunda.gateway.mcp.config.McpToolParams;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import jakarta.validation.Valid;
-import org.springaicommunity.mcp.annotation.McpTool;
 import org.springaicommunity.mcp.annotation.McpToolParam;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
@@ -31,7 +31,7 @@ public class DemoTools {
    * <p>The MCP schema will expose taskName, priority, metadata, and urgent as individual root-level
    * properties, NOT nested under a "request" property.
    */
-  @McpTool(
+  @CamundaMcpTool(
       description =
           """
           Demo tool for creating a task. This tool uses @McpToolParams to unwrap the request DTO.
@@ -59,7 +59,7 @@ public class DemoTools {
    *
    * <p>This shows the old way - multiple individual parameters instead of a DTO.
    */
-  @McpTool(
+  @CamundaMcpTool(
       description =
           """
           Comparison demo tool using traditional @McpToolParam parameters.

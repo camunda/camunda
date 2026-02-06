@@ -36,11 +36,6 @@ public class CamundaSyncStatelessMcpToolMethodCallback
     implements BiFunction<McpTransportContext, CallToolRequest, CallToolResult> {
 
   public CamundaSyncStatelessMcpToolMethodCallback(
-      final ReturnMode returnMode, final Method toolMethod, final Object toolObject) {
-    super(returnMode, toolMethod, toolObject, Exception.class);
-  }
-
-  public CamundaSyncStatelessMcpToolMethodCallback(
       final ReturnMode returnMode,
       final Method toolMethod,
       final Object toolObject,
