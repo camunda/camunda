@@ -120,7 +120,11 @@ const SortableTable = <
   }
 
   return (
-    <Container ref={scrollableContentRef} $isScrollable={state === 'content'}>
+    <Container
+      data-testid="data-table-container"
+      ref={scrollableContentRef}
+      $isScrollable={state === 'content'}
+    >
       <DataTable<RowType, ColTypes>
         rows={rows}
         headers={headerColumns}
