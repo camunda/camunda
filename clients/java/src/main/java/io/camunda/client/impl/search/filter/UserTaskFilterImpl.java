@@ -102,7 +102,14 @@ public class UserTaskFilterImpl
 
   @Override
   public UserTaskFilter name(final String name) {
-    filter.setName(name);
+    return name(b -> b.eq(name));
+  }
+
+  @Override
+  public UserTaskFilter name(final Consumer<StringProperty> fn) {
+    final StringProperty property = new StringPropertyImpl();
+    fn.accept(property);
+    filter.setName(provideSearchRequestProperty(property));
     return this;
   }
 

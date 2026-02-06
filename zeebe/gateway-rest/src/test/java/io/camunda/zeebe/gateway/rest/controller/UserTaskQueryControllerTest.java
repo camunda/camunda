@@ -951,6 +951,8 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         "priority",
         ops -> new UserTaskFilter.Builder().priorityOperations(ops).build());
     stringOperationTestCases(
+        streamBuilder, "name", ops -> new UserTaskFilter.Builder().nameOperations(ops).build());
+    stringOperationTestCases(
         streamBuilder,
         "candidateGroup",
         ops -> new UserTaskFilter.Builder().candidateGroupOperations(ops).build());

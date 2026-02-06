@@ -76,6 +76,26 @@ public final class SearchUserTaskTest extends ClientRestTest {
   }
 
   @Test
+  void shouldSearchUserTaskByName() {
+    // when
+    client.newUserTaskSearchRequest().filter(f -> f.name("myTask")).send().join();
+
+    // then
+    final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
+    assertThat(request.getFilter().getName().get$Eq()).isEqualTo("myTask");
+  }
+
+  @Test
+  void shouldSearchUserTaskByNameStringFilter() {
+    // when
+    client.newUserTaskSearchRequest().filter(f -> f.name(b -> b.neq("otherTask"))).send().join();
+
+    // then
+    final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
+    assertThat(request.getFilter().getName().get$Neq()).isEqualTo("otherTask");
+  }
+
+  @Test
   void shouldSearchUserTaskByState() {
     // when
     client.newUserTaskSearchRequest().filter(f -> f.state(UserTaskState.COMPLETED)).send().join();

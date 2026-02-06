@@ -104,6 +104,15 @@ public interface UserTaskFilter extends SearchRequestFilter {
   UserTaskFilter name(final String name);
 
   /**
+   * Filters user tasks by their name using {@link StringProperty} consumer. This only works for
+   * data created with 8.8 and onwards. Instances from prior versions don't contain this data.
+   *
+   * @param fn the name {@link StringProperty} consumer of the user task
+   * @return the updated filter
+   */
+  UserTaskFilter name(final Consumer<StringProperty> fn);
+
+  /**
    * Filters user tasks by tags associated with the process instance. Matches user tasks where the
    * process instance has ALL of the provided tags (AND logic).
    *
