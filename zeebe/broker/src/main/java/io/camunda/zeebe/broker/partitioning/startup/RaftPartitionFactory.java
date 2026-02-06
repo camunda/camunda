@@ -39,10 +39,7 @@ public final class RaftPartitionFactory {
   public RaftPartition createRaftPartition(
       final PartitionMetadata partitionMetadata, final MeterRegistry partitionMeterRegistry) {
     final var partitionDirectory =
-        Paths.get(brokerCfg.getData().getDirectory())
-            .resolve(GROUP_NAME)
-            .resolve("partitions")
-            .resolve(partitionMetadata.id().id().toString());
+        getPartitionDirectory(partitionMetadata, brokerCfg.getData().getDirectory());
     try {
       if (FileUtil.isEmpty(partitionDirectory)) {
         LOG.info(
@@ -56,6 +53,14 @@ public final class RaftPartitionFactory {
       throw new UncheckedIOException(e);
     }
     return createRaftPartition(partitionMetadata, partitionDirectory, partitionMeterRegistry);
+  }
+
+  public static Path getPartitionDirectory(
+      final PartitionMetadata partitionMetadata, final String dataDirectory) {
+    return Paths.get(dataDirectory)
+        .resolve(GROUP_NAME)
+        .resolve("partitions")
+        .resolve(partitionMetadata.id().id().toString());
   }
 
   public RaftPartition createRaftPartition(

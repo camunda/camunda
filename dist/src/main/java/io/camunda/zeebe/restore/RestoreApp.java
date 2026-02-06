@@ -128,6 +128,7 @@ public class RestoreApp implements ApplicationRunner {
     final var preRestoreActionResult =
         preRestoreAction.beforeRestore(restoreId, configuration.getCluster().getNodeId());
 
+    final PostRestoreActionContext postRestoreActionContext;
     if (preRestoreActionResult.proceed()) {
       if (backupId != null) {
         LOG.info(
@@ -152,14 +153,19 @@ public class RestoreApp implements ApplicationRunner {
             restoreConfiguration.ignoreFilesInTarget());
         LOG.info("Successfully restored broker from backups in time range [{}, {}]", from, to);
       }
+
+      postRestoreActionContext =
+          new PostRestoreActionContext(restoreId, configuration.getCluster().getNodeId(), false);
     } else {
       LOG.info("Skipping restore: {}", preRestoreActionResult.message());
+      postRestoreActionContext =
+          new PostRestoreActionContext(restoreId, configuration.getCluster().getNodeId(), true);
     }
 
     // We have to run post restore anyway even if post restore action decided to skip restore,
     // because in some cases, like when using dynamic node ids, we need to wait for other nodes to
     // complete restore.
-    postRestoreAction.restored(restoreId, configuration.getCluster().getNodeId());
+    postRestoreAction.restored(postRestoreActionContext);
   }
 
   private void validateParameters() {
@@ -210,12 +216,14 @@ public class RestoreApp implements ApplicationRunner {
 
   public record PreRestoreActionResult(boolean proceed, String message) {}
 
+  public record PostRestoreActionContext(long restoreId, int nodeId, boolean skippedRestore) {}
+
   public interface PreRestoreAction {
     PreRestoreActionResult beforeRestore(final long restoreId, int nodeId)
         throws InterruptedException;
   }
 
   public interface PostRestoreAction {
-    void restored(final long restoreId, int nodeId) throws InterruptedException;
+    void restored(final PostRestoreActionContext context) throws InterruptedException;
   }
 }

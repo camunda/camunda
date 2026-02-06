@@ -27,6 +27,7 @@ import io.camunda.zeebe.dynamic.nodeid.fs.VersionedNodeIdBasedDataDirectoryProvi
 import io.camunda.zeebe.dynamic.nodeid.repository.NodeIdRepository;
 import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository;
 import io.camunda.zeebe.restore.RestoreApp.PostRestoreAction;
+import io.camunda.zeebe.restore.RestoreApp.PostRestoreActionContext;
 import io.camunda.zeebe.restore.RestoreApp.PreRestoreAction;
 import io.camunda.zeebe.restore.RestoreApp.PreRestoreActionResult;
 import java.nio.file.Path;
@@ -92,22 +93,50 @@ public class RestoreNodeIdProviderConfiguration {
   }
 
   @Bean
-  public PostRestoreAction postRestoreAction(final Optional<NodeIdRepository> nodeIdRepository) {
+  public PostRestoreAction postRestoreAction(
+      final Optional<NodeIdRepository> nodeIdRepository, final BrokerBasedProperties brokerCfg) {
     return switch (cluster.getNodeIdProvider().getType()) {
-      case FIXED -> (restoreId, ignore) -> {};
+      case FIXED -> (context) -> validateAfterRestore(brokerCfg, context);
       case S3 -> {
         if (nodeIdRepository.isEmpty()) {
           throw new IllegalStateException(
               "PostRestoreAction configured to use S3: missing s3 node id repository");
         }
         final var restoreStatusManager = new RestoreStatusManager(nodeIdRepository.get());
-        yield ((restoreId, nodeId) -> {
-          restoreStatusManager.markNodeRestored(restoreId, nodeId);
+        yield (context -> {
+          final var restoreId = context.restoreId();
+          final var nodeId = context.nodeId();
+          if (!context.skippedRestore()) {
+            restoreStatusManager.markNodeRestored(restoreId, nodeId);
+          }
+          // Validate even if we skipped in case the restore was retried with empty disk, but the s3
+          // object was not deleted.
+          validateAfterRestore(brokerCfg, context);
+
           restoreStatusManager.waitForAllNodesRestored(
               restoreId, cluster.getSize(), Duration.ofSeconds(10));
         });
       }
     };
+  }
+
+  private static void validateAfterRestore(
+      final BrokerBasedProperties brokerCfg, final PostRestoreActionContext context) {
+    if (!RestoreValidator.validate(brokerCfg)) {
+      final String message;
+      if (context.skippedRestore()) {
+        message =
+            String.format(
+                "Expected to find restored data on node %d, but validation failed. Possible root cause: Restore is skipped because node is marked as restored in the s3 bucket, but node started with empty directory. Try restoring the cluster after deleting the s3 bucket configured for node id provider.",
+                context.nodeId());
+      } else {
+        message =
+            String.format(
+                "Expected to find restored data on node %d, but validation failed.",
+                context.nodeId());
+      }
+      throw new IllegalStateException(message);
+    }
   }
 
   @Bean
