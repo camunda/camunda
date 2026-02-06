@@ -171,7 +171,7 @@ jobs:
       #   https://github.com/camunda/camunda/issues/40258 is implemented and
       #   the backend no longer depends on project.previousVersion.
       - name: Validate Optimize Previous Version
-        if: ${{ inputs.includeOptimize && !inputs.dryRun && ((!contains(inputs.releaseVersion, '-') && endsWith(inputs.releaseVersion, '.0')) || (contains(inputs.releaseVersion, '-alpha1') && endsWith(split(inputs.releaseVersion, '-')[0], '.0'))) }}
+        if: ${{ inputs.includeOptimize && !inputs.dryRun && ((!contains(inputs.releaseVersion, '-') && endsWith(inputs.releaseVersion, '.0')) || contains(inputs.releaseVersion, '.0-alpha1')) }}
         run: |
           set -euo pipefail
           
