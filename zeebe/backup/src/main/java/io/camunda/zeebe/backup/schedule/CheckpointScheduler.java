@@ -68,7 +68,6 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
   }
 
   private void reschedulingTask() {
-
     acquireEarliestState()
         .thenApply(this::determineCheckpoint, this)
         .andThen(this::checkpointIfNeeded, this)
@@ -80,10 +79,10 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
               } else {
                 errorDelayMs = 0;
                 delay = calculateDelay(instruction);
-              }
-              if (instruction.checkpointTaken) {
-                metrics.recordLastCheckpointId(instruction.checkpointId, instruction.type);
-                metrics.recordLastCheckpointTime(instruction.checkpointTime, instruction.type);
+                if (instruction.checkpointTaken) {
+                  metrics.recordLastCheckpointId(instruction.checkpointId, instruction.type);
+                  metrics.recordLastCheckpointTime(instruction.checkpointTime, instruction.type);
+                }
               }
               LOG.debug("Next checkpoint scheduled in {} ms", delay);
               schedule(Duration.ofMillis(delay), this::reschedulingTask);
@@ -99,7 +98,7 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
       backupRequestHandler
           .checkpoint(instruction.type)
           .toCompletableFuture()
-          .thenApply(
+          .thenApplyAsync(
               id -> {
                 LOG.debug("Checkpoint {} triggered with id {}", instruction.type, id);
                 final var currentClock = ActorClock.current().instant();
@@ -107,8 +106,9 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
                 // instant execution of the schedule. However, for the next interval we want to
                 // readjust the schedule to account for that drift.
                 return instruction.taken(id, currentClock);
-              })
-          .thenAccept(future::complete);
+              },
+              this)
+          .whenCompleteAsync(future, this);
     } else {
       future.complete(instruction);
     }
