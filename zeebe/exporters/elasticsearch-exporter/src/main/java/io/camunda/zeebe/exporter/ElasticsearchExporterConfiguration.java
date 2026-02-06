@@ -257,6 +257,9 @@ public class ElasticsearchExporterConfiguration implements FilterConfiguration {
     private List<String> variableValueTypeInclusion = new ArrayList<>();
     private List<String> variableValueTypeExclusion = new ArrayList<>();
 
+    // optimize mode
+    private boolean optimizeModeEnabled = false;
+
     public Integer getNumberOfShards() {
       return numberOfShards;
     }
@@ -319,6 +322,15 @@ public class ElasticsearchExporterConfiguration implements FilterConfiguration {
     @Override
     public List<String> getVariableValueTypeExclusion() {
       return List.copyOf(variableValueTypeExclusion);
+    }
+
+    @Override
+    public boolean isOptimizeModeEnabled() {
+      return optimizeModeEnabled;
+    }
+
+    public void setOptimizeModeEnabled(final boolean optimizeModeEnabled) {
+      this.optimizeModeEnabled = optimizeModeEnabled;
     }
 
     public void setVariableValueTypeExclusion(final List<String> variableValueTypeExclusion) {
