@@ -86,12 +86,30 @@ public class HistoryDeletionJob implements BackgroundTask {
 
     final var deleteProcessInstancesAndDefinitionsFuture =
         deleteProcessInstances(batch)
-            .thenCompose(ids -> deleteProcessDefinitions(batch, ids).exceptionally(ex -> ids))
-            .exceptionally(ex -> List.of())
+            .thenCompose(
+                ids ->
+                    deleteProcessDefinitions(batch, ids)
+                        .exceptionally(
+                            ex -> {
+                              logger.warn(
+                                  "Failed to delete process definitions for batch: {}", batch, ex);
+                              return ids;
+                            }))
+            .exceptionally(
+                ex -> {
+                  logger.warn("Failed to delete process instances for batch: {}", batch, ex);
+                  return List.of();
+                })
             .toCompletableFuture();
 
     final var deleteDecisionInstancesFuture =
-        deleteDecisionInstances(batch).exceptionally(ex -> List.of()).toCompletableFuture();
+        deleteDecisionInstances(batch)
+            .exceptionally(
+                ex -> {
+                  logger.warn("Failed to delete decision instances for batch: {}", batch, ex);
+                  return List.of();
+                })
+            .toCompletableFuture();
 
     return CompletableFuture.allOf(
             deleteProcessInstancesAndDefinitionsFuture, deleteDecisionInstancesFuture)
