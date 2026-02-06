@@ -597,7 +597,7 @@ class BatchOperationStatusHandlerTest {
       extends AbstractOperationStatusHandlerTest<HistoryDeletionRecordValue> {
 
     ProcessInstanceHistoryDeletionOperationHandlerTest() {
-      super(new ProcessDefinitionHistoryDeletionOperationHandler(indexName, batchOperationCache));
+      super(new ProcessInstanceHistoryDeletionOperationHandler(indexName, batchOperationCache));
     }
 
     @Override
@@ -614,55 +614,6 @@ class BatchOperationStatusHandlerTest {
       final var processInstanceKey = handler.getProcessInstanceKey(record);
 
       assertThat(processInstanceKey).isEqualTo(record.getValue().getResourceKey());
-    }
-
-    @Override
-    Record<HistoryDeletionRecordValue> createSuccessRecord() {
-      return factory.generateRecord(
-          ValueType.HISTORY_DELETION,
-          b ->
-              b.withIntent(HistoryDeletionIntent.DELETED)
-                  .withBatchOperationReference(batchOperationKey));
-    }
-
-    @Override
-    Record<HistoryDeletionRecordValue> createFailureRecord() {
-      return factory.generateRecord(
-          ValueType.HISTORY_DELETION,
-          b ->
-              b.withRejectionType(RejectionType.PROCESSING_ERROR)
-                  .withIntent(HistoryDeletionIntent.DELETE)
-                  .withBatchOperationReference(batchOperationKey));
-    }
-
-    @Override
-    boolean shouldHandleRootProcessInstanceKey() {
-      return false;
-    }
-  }
-
-  @Nested
-  class ProcessDefinitionHistoryDeletionOperationHandlerTest
-      extends AbstractOperationStatusHandlerTest<HistoryDeletionRecordValue> {
-
-    ProcessDefinitionHistoryDeletionOperationHandlerTest() {
-      super(new ProcessDefinitionHistoryDeletionOperationHandler(indexName, batchOperationCache));
-    }
-
-    @Override
-    void shouldExtractCorrectItemKey() {
-      final var record = createSuccessRecord();
-      final var itemKey = handler.getItemKey(record);
-
-      assertThat(itemKey).isEqualTo(record.getValue().getResourceKey());
-    }
-
-    @Override
-    void shouldExtractCorrectProcessInstanceKey() {
-      final var record = createSuccessRecord();
-      final var processInstanceKey = handler.getProcessInstanceKey(record);
-
-      assertThat(processInstanceKey).isEqualTo(-1);
     }
 
     @Override
