@@ -8,6 +8,7 @@
 package io.camunda.zeebe.backup.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.List;
@@ -122,6 +123,20 @@ public class IntervalTest {
 
       assertThat(interval.contains(1)).isFalse();
       assertThat(interval.contains(10)).isTrue();
+    }
+
+    @ParameterizedTest
+    @CsvSource({"false, true", "true, false", "false, false"})
+    void shouldThrowExceptionWhenPointIntervalWithExtremesExcluded(
+        final boolean startInclusive, final boolean endInclusive) {
+      assertThatThrownBy(() -> new Interval<>(1, startInclusive, 1, endInclusive))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("Interval with equal bounds must be inclusive on both sides");
+    }
+
+    @Test
+    void shouldAllowCreationOfClosedPointInterval() {
+      assertThatNoException().isThrownBy(() -> Interval.closed(1, 1));
     }
   }
 

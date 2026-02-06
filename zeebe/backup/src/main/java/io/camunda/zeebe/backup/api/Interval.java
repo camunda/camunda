@@ -216,7 +216,8 @@ public record Interval<T extends Comparable<T>>(
 
   /**
    * Given a sorted collections of intervals where interval[n-1].end == interval[n].start, returns
-   * the smallest interval that covers all intervals in the collection.
+   * the smallest subset of contiguous intervals from the input that cover this interval's
+   * overlapping region.
    *
    * @param intervals the collection of contiguous intervals
    * @return the intervals that overlap with this interval
