@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.processinstance;
 
 import static java.util.function.Predicate.not;
 
+import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
@@ -69,10 +70,12 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.agrona.DirectBuffer;
 import org.agrona.Strings;
+import org.slf4j.Logger;
 
 public final class ProcessInstanceModificationModifyProcessor
     implements TypedRecordProcessor<ProcessInstanceModificationRecord> {
 
+  private static final Logger LOG = Loggers.ENGINE_PROCESSING_LOGGER;
   private static final String ERROR_MESSAGE_PROCESS_INSTANCE_NOT_FOUND =
       "Expected to modify process instance but no process instance found with key '%d'";
   private static final String ERROR_MESSAGE_ACTIVATE_ELEMENT_NOT_FOUND =
@@ -230,6 +233,7 @@ public final class ProcessInstanceModificationModifyProcessor
 
     if (processInstance == null) {
       final String reason = String.format(ERROR_MESSAGE_PROCESS_INSTANCE_NOT_FOUND, eventKey);
+      // No enrichment possible - process instance doesn't exist in state
       responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, reason);
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, reason);
       return;
@@ -253,6 +257,7 @@ public final class ProcessInstanceModificationModifyProcessor
                   processInstance.getValue().getProcessInstanceKey(),
                   "such process instance")
               : rejection.reason();
+      enrichRejectionCommand(command, processInstance.getValue());
       responseWriter.writeRejectionOnCommand(command, rejection.type(), errorMessage);
       rejectionWriter.appendRejection(command, rejection.type(), errorMessage);
       return;
@@ -271,6 +276,7 @@ public final class ProcessInstanceModificationModifyProcessor
         validateCommand(terminateInstructionsInput, moveInstructions, process);
     if (commandValidationResult.isLeft()) {
       final var rejection = commandValidationResult.getLeft();
+      enrichRejectionCommand(command, processInstance.getValue());
       responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
       return;
@@ -292,6 +298,7 @@ public final class ProcessInstanceModificationModifyProcessor
             value.getProcessInstanceKey());
     if (moveByKeyValidationResult.isLeft()) {
       final var rejection = moveByKeyValidationResult.getLeft();
+      enrichRejectionCommand(command, processInstance.getValue());
       responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
       return;
@@ -320,6 +327,7 @@ public final class ProcessInstanceModificationModifyProcessor
             activateInstructions, terminateInstructions, process, value.getProcessInstanceKey());
     if (instructionsValidationResult.isLeft()) {
       final var rejection = instructionsValidationResult.getLeft();
+      enrichRejectionCommand(command, processInstance.getValue());
       responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
       return;
@@ -389,6 +397,7 @@ public final class ProcessInstanceModificationModifyProcessor
   public ProcessingError tryHandleError(
       final TypedRecord<ProcessInstanceModificationRecord> typedCommand, final Throwable error) {
     if (error instanceof final EventSubscriptionException exception) {
+      enrichRejectionCommand(typedCommand);
       rejectionWriter.appendRejection(
           typedCommand, RejectionType.INVALID_ARGUMENT, exception.getMessage());
       responseWriter.writeRejectionOnCommand(
@@ -399,6 +408,7 @@ public final class ProcessInstanceModificationModifyProcessor
       final var rejectionReason =
           ERROR_MESSAGE_MORE_THAN_ONE_FLOW_SCOPE_INSTANCE.formatted(
               exception.getBpmnProcessId(), exception.getFlowScopeId());
+      enrichRejectionCommand(typedCommand);
       rejectionWriter.appendRejection(
           typedCommand, RejectionType.INVALID_ARGUMENT, rejectionReason);
       responseWriter.writeRejectionOnCommand(
@@ -408,11 +418,13 @@ public final class ProcessInstanceModificationModifyProcessor
     } else if (error instanceof ExceededBatchRecordSizeException) {
       final var message =
           ERROR_COMMAND_TOO_LARGE.formatted(typedCommand.getValue().getProcessInstanceKey());
+      enrichRejectionCommand(typedCommand);
       rejectionWriter.appendRejection(typedCommand, RejectionType.INVALID_ARGUMENT, message);
       responseWriter.writeRejectionOnCommand(typedCommand, RejectionType.INVALID_ARGUMENT, message);
       return ProcessingError.EXPECTED_ERROR;
 
     } else if (error instanceof final TerminatedChildProcessException exception) {
+      enrichRejectionCommand(typedCommand);
       rejectionWriter.appendRejection(
           typedCommand, RejectionType.INVALID_ARGUMENT, exception.getMessage());
       responseWriter.writeRejectionOnCommand(
@@ -423,6 +435,7 @@ public final class ProcessInstanceModificationModifyProcessor
       final var message =
           ERROR_MESSAGE_ATTEMPTED_TO_ACTIVATE_MULTI_INSTANCE.formatted(
               exception.getBpmnProcessId(), exception.getMultiInstanceId());
+      enrichRejectionCommand(typedCommand);
       rejectionWriter.appendRejection(typedCommand, RejectionType.INVALID_ARGUMENT, message);
       responseWriter.writeRejectionOnCommand(typedCommand, RejectionType.INVALID_ARGUMENT, message);
       return ProcessingError.EXPECTED_ERROR;
@@ -1452,6 +1465,30 @@ public final class ProcessInstanceModificationModifyProcessor
         && elementInstance.getActiveSequenceFlows() == 0
         // no activate instruction requires this element instance
         && !requiredKeysForActivation.contains(elementInstance.getKey());
+  }
+
+  /**
+   * Enriches the command value with fields from the process instance record to ensure rejection
+   * records have the proper context for batch operation items export.
+   */
+  private void enrichRejectionCommand(
+      final TypedRecord<ProcessInstanceModificationRecord> command,
+      final ProcessInstanceRecord processInstanceRecord) {
+    command.getValue().setTenantId(processInstanceRecord.getTenantId());
+    command.getValue().setRootProcessInstanceKey(processInstanceRecord.getRootProcessInstanceKey());
+  }
+
+  private void enrichRejectionCommand(
+      final TypedRecord<ProcessInstanceModificationRecord> command) {
+    final var processInstanceKey = command.getValue().getProcessInstanceKey();
+    final var processInstance = elementInstanceState.getInstance(processInstanceKey);
+    if (processInstance != null) {
+      enrichRejectionCommand(command, processInstance.getValue());
+    } else {
+      LOG.debug(
+          "Cannot enrich rejection command for process instance modification with key {} because the process instance was not found",
+          processInstanceKey);
+    }
   }
 
   /**
