@@ -321,13 +321,16 @@ public class RaftPartitionServer implements HealthMonitorable {
     final var legacySubjects = createLegacySubjects();
     final var engineSubjects = createEngineSubjects();
 
+    final var sendingSubject =
+        config.isEnableLegacyRaftServerSender() ? legacySubjects : engineSubjects;
+
     final var receivingSubjects =
         config.isEnableLegacyRaftServerReceiver()
             ? List.of(legacySubjects, engineSubjects)
             : List.of(engineSubjects);
 
     return new RaftServerCommunicator(
-        legacySubjects,
+        sendingSubject,
         receivingSubjects,
         Serializer.using(RaftNamespaces.RAFT_PROTOCOL),
         clusterCommunicator,
@@ -361,5 +364,11 @@ public class RaftPartitionServer implements HealthMonitorable {
 
   public CompletableFuture<SegmentInfo> getTailSegments(final long index) {
     return server.getContext().getTailSegments(index);
+  }
+
+  private String getPartitionNameWithEnginePrefix() {
+    final var engineName = config.getEngineName();
+    final var partitionId = partition.id().id();
+    return PARTITION_NAME_FORMAT.formatted(engineName, partitionId);
   }
 }
