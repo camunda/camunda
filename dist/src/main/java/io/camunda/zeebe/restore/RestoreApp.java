@@ -125,31 +125,40 @@ public class RestoreApp implements ApplicationRunner {
     final var restoreManager = new RestoreManager(configuration, backupStore, meterRegistry);
 
     final var restoreId = getRestoreId();
-    preRestoreAction.beforeRestore(restoreId, configuration.getCluster().getNodeId());
-    if (backupId != null) {
-      LOG.info(
-          "Starting to restore from backup {} with the following configuration: {}",
-          backupId,
-          restoreConfiguration);
-      restoreManager.restore(
-          backupId,
-          restoreConfiguration.validateConfig(),
-          restoreConfiguration.ignoreFilesInTarget());
-      LOG.info("Successfully restored broker from backup {}", backupId);
+    final var preRestoreActionResult =
+        preRestoreAction.beforeRestore(restoreId, configuration.getCluster().getNodeId());
+
+    if (preRestoreActionResult.proceed()) {
+      if (backupId != null) {
+        LOG.info(
+            "Starting to restore from backup {} with the following configuration: {}",
+            backupId,
+            restoreConfiguration);
+        restoreManager.restore(
+            backupId,
+            restoreConfiguration.validateConfig(),
+            restoreConfiguration.ignoreFilesInTarget());
+        LOG.info("Successfully restored broker from backup {}", backupId);
+      } else {
+        LOG.info(
+            "Starting to restore from backups in time range [{}, {}] with the following configuration: {}",
+            from,
+            to,
+            restoreConfiguration);
+        restoreManager.restore(
+            from,
+            to,
+            restoreConfiguration.validateConfig(),
+            restoreConfiguration.ignoreFilesInTarget());
+        LOG.info("Successfully restored broker from backups in time range [{}, {}]", from, to);
+      }
     } else {
-      LOG.info(
-          "Starting to restore from backups in time range [{}, {}] with the following configuration: {}",
-          from,
-          to,
-          restoreConfiguration);
-      restoreManager.restore(
-          from,
-          to,
-          restoreConfiguration.validateConfig(),
-          restoreConfiguration.ignoreFilesInTarget());
-      LOG.info("Successfully restored broker from backups in time range [{}, {}]", from, to);
+      LOG.info("Skipping restore: {}", preRestoreActionResult.message());
     }
 
+    // We have to run post restore anyway even if post restore action decided to skip restore,
+    // because in some cases, like when using dynamic node ids, we need to wait for other nodes to
+    // complete restore.
     postRestoreAction.restored(restoreId, configuration.getCluster().getNodeId());
   }
 
@@ -199,8 +208,11 @@ public class RestoreApp implements ApplicationRunner {
     }
   }
 
+  public record PreRestoreActionResult(boolean proceed, String message) {}
+
   public interface PreRestoreAction {
-    void beforeRestore(final long restoreId, int nodeId) throws InterruptedException;
+    PreRestoreActionResult beforeRestore(final long restoreId, int nodeId)
+        throws InterruptedException;
   }
 
   public interface PostRestoreAction {

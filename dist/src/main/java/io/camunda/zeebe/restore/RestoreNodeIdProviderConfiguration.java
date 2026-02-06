@@ -28,6 +28,7 @@ import io.camunda.zeebe.dynamic.nodeid.repository.NodeIdRepository;
 import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository;
 import io.camunda.zeebe.restore.RestoreApp.PostRestoreAction;
 import io.camunda.zeebe.restore.RestoreApp.PreRestoreAction;
+import io.camunda.zeebe.restore.RestoreApp.PreRestoreActionResult;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Optional;
@@ -70,14 +71,22 @@ public class RestoreNodeIdProviderConfiguration {
   @Bean
   public PreRestoreAction preRestoreAction(final Optional<NodeIdRepository> nodeIdRepository) {
     return switch (cluster.getNodeIdProvider().getType()) {
-      case FIXED -> (restoreId, ignore) -> {};
+      case FIXED -> (restoreId, ignore) -> new PreRestoreActionResult(true, "");
       case S3 -> {
         if (nodeIdRepository.isEmpty()) {
           throw new IllegalStateException(
               "PreRestoreAction configured to use S3: missing s3 node id repository");
         }
         final var restoreStatusManager = new RestoreStatusManager(nodeIdRepository.get());
-        yield ((restoreId, nodeId) -> restoreStatusManager.initializeRestore(restoreId));
+        yield ((restoreId, nodeId) -> {
+          final var restoreStatus = restoreStatusManager.initializeRestore(restoreId);
+          if (restoreStatus.isNodeRestored(nodeId)) {
+            return new PreRestoreActionResult(
+                false, "Node " + nodeId + " has already been restored for restore id " + restoreId);
+          } else {
+            return new PreRestoreActionResult(true, "");
+          }
+        });
       }
     };
   }

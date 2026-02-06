@@ -18,6 +18,10 @@ import java.util.Set;
 public record StoredRestoreStatus(RestoreStatus restoreStatus, String etag) {
   public record RestoreStatus(long restoreId, Set<Integer> restoredNodes) {
 
+    public boolean isNodeRestored(final int nodeId) {
+      return restoredNodes != null && restoredNodes.contains(nodeId);
+    }
+
     public byte[] toJsonBytes(final ObjectMapper objectMapper) {
       try {
         return objectMapper.writeValueAsBytes(this);

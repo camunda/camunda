@@ -29,14 +29,23 @@ public class RestoreStatusManager {
     this.repository = repository;
   }
 
-  /** Initializes restore. If a restore object already exists, does nothing. */
-  public void initializeRestore(final long restoreId) throws InterruptedException {
+  /**
+   * Initializes the restore status for the given restore ID if it does not already exist.
+   *
+   * @param restoreId the restore ID to initialize
+   * @return the initialized or existing restore status
+   */
+  public RestoreStatus initializeRestore(final long restoreId) throws InterruptedException {
     while (true) {
       try {
         final var existingStatus = repository.getRestoreStatus(restoreId);
         if (existingStatus != null) {
+          if (existingStatus.restoreStatus().restoreId() != restoreId) {
+            throw new RestoreIdMismatchException(
+                restoreId, existingStatus.restoreStatus().restoreId());
+          }
           LOG.debug("Restore status is already initialized {}", existingStatus.restoreStatus());
-          return;
+          return existingStatus.restoreStatus();
         }
       } catch (final Exception e) {
         LOG.debug("Error checking existing restore status, proceeding with initialization", e);
@@ -46,7 +55,7 @@ public class RestoreStatusManager {
       try {
         repository.updateRestoreStatus(initialStatus, null);
         LOG.info("Initialized restore status: {}", initialStatus);
-        return;
+        return initialStatus;
       } catch (final Exception e) {
         LOG.debug("Failed to initialize restore, retrying", e);
         // Most likely due to concurrent update, retry to ensure restore status is initialized
@@ -75,11 +84,7 @@ public class RestoreStatusManager {
         final var currentStatus = storedStatus.restoreStatus();
 
         if (currentStatus.restoreId() != restoreId) {
-          throw new IllegalStateException(
-              "Mismatching restore ID. Expected: "
-                  + restoreId
-                  + ", but got: "
-                  + currentStatus.restoreId());
+          throw new RestoreIdMismatchException(restoreId, currentStatus.restoreId());
         }
 
         if (currentStatus.restoredNodes().contains(nodeId)) {
@@ -125,11 +130,7 @@ public class RestoreStatusManager {
       final var currentStatus = storedStatus.restoreStatus();
 
       if (currentStatus.restoreId() != restoreId) {
-        throw new IllegalStateException(
-            "Mismatching restore ID. Expected: "
-                + restoreId
-                + ", but got: "
-                + currentStatus.restoreId());
+        throw new RestoreIdMismatchException(restoreId, currentStatus.restoreId());
       }
 
       final var completedNodeIds = currentStatus.restoredNodes();
