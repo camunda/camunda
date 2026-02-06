@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.restore;
 
+import io.camunda.zeebe.backup.api.BackupDescriptor;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern;
 import io.camunda.zeebe.backup.api.BackupRange;
@@ -16,6 +17,7 @@ import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.api.Interval;
+import io.camunda.zeebe.util.Optionals;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -25,19 +27,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.SequencedCollection;
-import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
- * Pure, side-effect-free resolver for determining valid backup ranges for restore operations. All
- * methods are static and accept data as parameters, making them easily testable without mocks.
+ * The {@code BackupRangeResolver} class provides methods to resolve backup ranges and backup
+ * statuses for a given partition, time interval, or exported position. This class interacts with a
+ * {@link BackupStore} to fetch and manage backup data required for restoring partitions or
+ * determining safe starting checkpoints.
  */
 public final class BackupRangeResolver {
 
-  private static final Logger LOG = LoggerFactory.getLogger(BackupRangeResolver.class);
   private final BackupStore store;
 
   public BackupRangeResolver(final BackupStore store) {
@@ -82,19 +81,6 @@ public final class BackupRangeResolver {
                             + lastExportedPosition));
 
     return new PartitionRestoreInfo(partition, safeStart, statusInterval.getLeft(), backups);
-  }
-
-  public BackupStatus toBackupStatus(final int partitionId, final long checkpoint) {
-    final var wildcard =
-        BackupIdentifierWildcard.forPartition(partitionId, CheckpointPattern.of(checkpoint));
-    // TODO check if there's more than one
-    final var backup =
-        store.list(wildcard).join().stream().filter(BackupStatus::isCompleted).findFirst();
-    if (backup.isPresent()) {
-      return backup.get();
-    } else {
-      throw new BackupNotFoundException(checkpoint, partitionId);
-    }
   }
 
   /**
@@ -149,33 +135,6 @@ public final class BackupRangeResolver {
         .toList();
   }
 
-  /** Find the backups before the given timestamp */
-  public static Stream<BackupStatus> findLatestBackupsBefore(
-      final Instant toTimestamp, final Collection<BackupStatus> allBackups) {
-    return allBackups.stream()
-        .filter(BackupStatus::isCompleted)
-        .filter(
-            backup ->
-                backup
-                    .descriptor()
-                    .map(ds -> !ds.checkpointTimestamp().isAfter(toTimestamp))
-                    .orElse(false));
-  }
-
-  /**
-   * Finds the latest backup before the given timestamp.
-   *
-   * @param toTimestamp the target timestamp
-   * @param allBackups collection of all available backups
-   * @return the backup with max(checkpointTimestamp) where checkpointTimestamp <= toTimestamp, or
-   *     empty if no such backup exists
-   */
-  public static Optional<BackupStatus> findLatestBackupBefore(
-      final Instant toTimestamp, final Collection<BackupStatus> allBackups) {
-    return findLatestBackupsBefore(toTimestamp, allBackups)
-        .max(Comparator.comparing(backup -> backup.descriptor().get().checkpointTimestamp()));
-  }
-
   /**
    * Finds the safe starting checkpoint for a partition based on its exported position.
    *
@@ -208,18 +167,137 @@ public final class BackupRangeResolver {
         .toList();
   }
 
+  private BackupStatus toBackupStatus(final int partitionId, final long checkpoint) {
+    final var wildcard =
+        BackupIdentifierWildcard.forPartition(partitionId, CheckpointPattern.of(checkpoint));
+    // TODO check if there's more than one
+    final var backup =
+        store.list(wildcard).join().stream().filter(BackupStatus::isCompleted).findFirst();
+    if (backup.isPresent()) {
+      return backup.get();
+    } else {
+      throw new BackupNotFoundException(checkpoint, partitionId);
+    }
+  }
+
   public record PartitionRestoreInfo(
       int partition,
       long safeStart,
-      BackupRange completRange,
-      SequencedCollection<BackupStatus> backupStatuses) {}
+      BackupRange backupRange,
+      SequencedCollection<BackupStatus> backupStatuses) {
+
+    public void validate(final long globalCheckpointId) {
+      if (safeStart > globalCheckpointId) {
+        throw new IllegalStateException(
+            "Partition %d: safe start checkpoint %d is beyond global checkpoint %d."
+                .formatted(partition, safeStart, globalCheckpointId));
+      }
+
+      switch (backupRange) {
+        case null ->
+            throw new IllegalStateException(
+                "Partition %d: no backup range found".formatted(partition));
+        case final BackupRange.Incomplete incomplete ->
+            throw new IllegalStateException(
+                "Partition %d: backup range [%d, %d] has deletions: %s"
+                    .formatted(
+                        partition,
+                        incomplete.interval().start(),
+                        incomplete.interval().end(),
+                        incomplete.deletedCheckpointIds()));
+        case final BackupRange.Complete complete -> {
+          validateRangeCoverage(globalCheckpointId, complete);
+          validateLogPositionContiguity(globalCheckpointId);
+        }
+      }
+    }
+
+    private void validateRangeCoverage(
+        final long globalCheckpointId, final BackupRange.Complete range) {
+      if (range.interval().start() > safeStart || range.interval().end() < globalCheckpointId) {
+        throw new IllegalStateException(
+            "Partition %d: backup range [%d, %d] does not cover required range [%d, %d]"
+                .formatted(
+                    partition,
+                    range.interval().start(),
+                    range.interval().end(),
+                    safeStart,
+                    globalCheckpointId));
+      }
+    }
+
+    private void validateLogPositionContiguity(final long globalCheckpointId) {
+      final var sortedBackups = filterAndSortBackups(backupStatuses, safeStart, globalCheckpointId);
+
+      if (sortedBackups.isEmpty()) {
+        throw new IllegalStateException(
+            "Partition %d has no backups in range [%d, %d]"
+                .formatted(partition, safeStart, globalCheckpointId));
+      }
+
+      final var firstCheckpointId = sortedBackups.getFirst().id().checkpointId();
+      final var lastCheckpointId = sortedBackups.getLast().id().checkpointId();
+
+      if (firstCheckpointId > safeStart) {
+        throw new IllegalStateException(
+            "Partition %ds first backup at checkpoint %d is after safe start %d"
+                .formatted(partition, firstCheckpointId, safeStart));
+      }
+
+      if (lastCheckpointId < globalCheckpointId) {
+        throw new IllegalStateException(
+            "Partition %d: last backup at checkpoint %d is before global checkpoint %d"
+                .formatted(partition, lastCheckpointId, globalCheckpointId));
+      }
+
+      validateBackupChainOverlaps(partition, sortedBackups);
+    }
+
+    private void validateBackupChainOverlaps(
+        final int partitionId, final List<BackupStatus> sortedBackups) {
+
+      for (var i = 1; i < sortedBackups.size(); i++) {
+        final var prevBackup = sortedBackups.get(i - 1);
+        final var currBackup = sortedBackups.get(i);
+
+        final var prevCheckpointPosition =
+            prevBackup
+                .descriptor()
+                .map(BackupDescriptor::checkpointPosition)
+                .orElseThrow(
+                    () ->
+                        new IllegalStateException(
+                            String.format(
+                                "Missing checkpoint position for backup %s", prevBackup)));
+        final var currFirstLogPosition =
+            currBackup
+                .descriptor()
+                .map(BackupDescriptor::firstLogPosition)
+                .flatMap(Optionals::boxed);
+
+        if (currFirstLogPosition.isPresent()
+            && currFirstLogPosition.get() > prevCheckpointPosition + 1) {
+          throw new IllegalStateException(
+              "Partition %d: has gap in log positions - backup %d ends at position %d, but backup %d starts at position %d (expected %d)"
+                  .formatted(
+                      partitionId,
+                      prevBackup.id().checkpointId(),
+                      prevCheckpointPosition,
+                      currBackup.id().checkpointId(),
+                      currFirstLogPosition.get(),
+                      prevCheckpointPosition + 1));
+        }
+      }
+    }
+  }
 
   /** Logic for validating that all partitions can reach the global checkpoint. */
   public static final class ReachabilityValidator {
 
     private final long globalCheckpointId;
-    private final Map<Integer, PartitionRestoreInfo> restoreInfoByPartition;
+    private final Collection<PartitionRestoreInfo> restoreInfos;
     private final List<String> failures = new ArrayList<>();
+
     public ReachabilityValidator(final Collection<PartitionRestoreInfo> restoreInfos) {
       if (restoreInfos.isEmpty()) {
         throw new IllegalStateException(
@@ -227,17 +305,11 @@ public final class BackupRangeResolver {
       }
 
       globalCheckpointId = computeGlobalCheckpointId(restoreInfos);
-      restoreInfoByPartition =
-          restoreInfos.stream()
-              .collect(Collectors.toMap(PartitionRestoreInfo::partition, Function.identity()));
+      this.restoreInfos = restoreInfos;
     }
 
     public long getGlobalCheckpointId() {
       return globalCheckpointId;
-    }
-
-    public List<String> getFailures() {
-      return failures;
     }
 
     /**
@@ -250,19 +322,17 @@ public final class BackupRangeResolver {
      * @return map from partition ID to sorted array of backup checkpoint IDs
      */
     public Map<Integer, long[]> getBackupIdsByPartition() {
-      return restoreInfoByPartition.entrySet().stream()
+      return restoreInfos.stream()
           .collect(
               Collectors.toMap(
-                  Map.Entry::getKey,
-                  entry -> {
-                    final var info = entry.getValue();
-                    return info.backupStatuses().stream()
-                        .map(bs -> bs.id().checkpointId())
-                        .filter(id -> id >= info.safeStart() && id <= globalCheckpointId)
-                        .sorted()
-                        .mapToLong(Long::longValue)
-                        .toArray();
-                  }));
+                  PartitionRestoreInfo::partition,
+                  info ->
+                      info.backupStatuses().stream()
+                          .map(bs -> bs.id().checkpointId())
+                          .filter(id -> id >= info.safeStart() && id <= globalCheckpointId)
+                          .sorted()
+                          .mapToLong(Long::longValue)
+                          .toArray()));
     }
 
     /**
@@ -282,120 +352,23 @@ public final class BackupRangeResolver {
      *   <li>If ANY partition cannot reach the global checkpoint, the entire restore fails. This is
      *       necessary to ensure that all nodes in the cluster restore the same checkpoint.
      * </ul>
-     *
      */
     public void validate() {
-      restoreInfoByPartition.forEach(this::validatePartition);
+      restoreInfos.forEach(
+          info -> {
+            try {
+              info.validate(globalCheckpointId);
+            } catch (final RuntimeException e) {
+              failures.add(e.getMessage());
+            }
+          });
 
-      if (failures.isEmpty()) {
-        return;
+      if (!failures.isEmpty()) {
+        throw new IllegalStateException(
+            String.format(
+                "Cannot restore to global checkpoint %d. Failures:\n  - %s",
+                globalCheckpointId, String.join("\n  - ", failures)));
       }
-
-      throw new IllegalStateException(
-          String.format(
-              "Cannot restore to global checkpoint %d. Failures:\n  - %s",
-              globalCheckpointId, String.join("\n  - ", failures)));
-    }
-
-    private void validatePartition(final int partitionId, final PartitionRestoreInfo info) {
-      final var safeStart = info.safeStart();
-      if (safeStart > globalCheckpointId) {
-        addFailure(
-            "Partition %d: safe start checkpoint %d is beyond global checkpoint %d.",
-            partitionId, info.safeStart(), globalCheckpointId);
-        return;
-      }
-
-      switch (info.completRange()) {
-        case null -> addFailure("Partition %d: no backup range found", partitionId);
-        case final BackupRange.Incomplete incomplete ->
-            addFailure(
-                "Partition %d: backup range [%d, %d] has deletions: %s",
-                partitionId,
-                incomplete.interval().start(),
-                incomplete.interval().end(),
-                incomplete.deletedCheckpointIds());
-        case final BackupRange.Complete complete -> {
-          validateRangeCoverage(partitionId, safeStart, complete);
-          validateLogPositionContiguity(info);
-        }
-      }
-    }
-
-    private void validateRangeCoverage(
-        final int partitionId, final long safeStart, final BackupRange.Complete range) {
-      if (range.interval().start() > safeStart || range.interval().end() < globalCheckpointId) {
-        addFailure(
-            "Partition %d: backup range [%d, %d] does not cover required range [%d, %d]",
-            partitionId,
-            range.interval().start(),
-            range.interval().end(),
-            safeStart,
-            globalCheckpointId);
-      }
-    }
-
-    private void validateLogPositionContiguity(final PartitionRestoreInfo info) {
-      final var backups = info.backupStatuses();
-      final var safeStart = info.safeStart();
-      final var partitionId = info.partition();
-      final var sortedBackups = filterAndSortBackups(backups, safeStart, globalCheckpointId);
-
-      if (sortedBackups.isEmpty()) {
-        addFailure(
-            "Partition %d has no backups in range [%d, %d]",
-            partitionId, safeStart, globalCheckpointId);
-        return;
-      }
-
-      final var firstCheckpointId = sortedBackups.getFirst().id().checkpointId();
-      final var lastCheckpointId = sortedBackups.getLast().id().checkpointId();
-
-      if (firstCheckpointId > safeStart) {
-        addFailure(
-            "Partition %ds first backup at checkpoint %d is after safe start %d",
-            partitionId, firstCheckpointId, safeStart);
-        return;
-      }
-
-      if (lastCheckpointId < globalCheckpointId) {
-        addFailure(
-            "Partition %d: last backup at checkpoint %d is before global checkpoint %d",
-            partitionId, lastCheckpointId, globalCheckpointId);
-        return;
-      }
-
-      validateBackupChainOverlaps(partitionId, sortedBackups);
-    }
-
-    private void validateBackupChainOverlaps(
-        final int partitionId, final List<BackupStatus> sortedBackups) {
-
-      for (var i = 1; i < sortedBackups.size(); i++) {
-        final var prevBackup = sortedBackups.get(i - 1);
-        final var currBackup = sortedBackups.get(i);
-
-        final var prevCheckpointPosition = prevBackup.descriptor().get().checkpointPosition();
-        final var currFirstLogPosition = currBackup.descriptor().get().firstLogPosition();
-
-        if (currFirstLogPosition.isPresent()
-            && currFirstLogPosition.getAsLong() > prevCheckpointPosition + 1) {
-          addFailure(
-              "Partition %d: has gap in log positions - backup %d ends at position %d, "
-                  + "but backup %d starts at position %d (expected %d)",
-              partitionId,
-              prevBackup.id().checkpointId(),
-              prevCheckpointPosition,
-              currBackup.id().checkpointId(),
-              currFirstLogPosition.getAsLong(),
-              prevCheckpointPosition + 1);
-          break;
-        }
-      }
-    }
-
-    private void addFailure(final String format, final Object... args) {
-      failures.add(String.format(format, args));
     }
 
     /**

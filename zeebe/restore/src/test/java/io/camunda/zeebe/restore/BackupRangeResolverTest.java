@@ -137,9 +137,6 @@ final class BackupRangeResolverTest {
         Optional.of(timestamp));
   }
 
-  /** Checkpoint specification: checkpointId and checkpointPosition */
-  record CheckpointSpec(long checkpointId, long checkpointPosition) {}
-
   /**
    * Converts the old-style test parameters to a list of PartitionRestoreInfo. This helper method
    * makes it easier to update tests from the old validateGlobalCheckpointReachability API to the
@@ -164,6 +161,9 @@ final class BackupRangeResolverTest {
             })
         .toList();
   }
+
+  /** Checkpoint specification: checkpointId and checkpointPosition */
+  record CheckpointSpec(long checkpointId, long checkpointPosition) {}
 
   @Nested
   class ValidateGlobalCheckpointReachability {
@@ -328,7 +328,8 @@ final class BackupRangeResolverTest {
           .hasMessageContaining("Cannot restore to global checkpoint 2100")
           .hasMessageContaining(
               "Partition 1: backup range [1950, 2100] does not cover required range [1900, 2100]")
-          .hasMessageContaining("Partition 1s first backup at checkpoint 1950 is after safe start 1900");
+          .hasMessageContaining(
+              "Partition 1s first backup at checkpoint 1950 is after safe start 1900");
     }
 
     @Test
@@ -478,7 +479,8 @@ final class BackupRangeResolverTest {
       assertThatThrownBy(validator::validate)
           .isInstanceOf(IllegalStateException.class)
           .hasMessageContaining("Cannot restore to global checkpoint 2100")
-          .hasMessageContaining("Partition 1s first backup at checkpoint 2100 is after safe start 2000");
+          .hasMessageContaining(
+              "Partition 1s first backup at checkpoint 2100 is after safe start 2000");
     }
 
     @Test
@@ -621,60 +623,6 @@ final class BackupRangeResolverTest {
   }
 
   @Nested
-  class FindLatestBackup {
-    @Test
-    void shouldFindLatestBackupBeforeTimestamp() {
-      // given
-      final var timestamp1 = Instant.parse("2026-01-20T10:00:00Z");
-      final var timestamp2 = Instant.parse("2026-01-20T11:00:00Z");
-      final var timestamp3 = Instant.parse("2026-01-20T12:00:00Z");
-      final var targetTimestamp = Instant.parse("2026-01-20T11:30:00Z");
-
-      final var backups =
-          List.of(
-              createBackup(1, 100, timestamp1),
-              createBackup(2, 200, timestamp2),
-              createBackup(3, 300, timestamp3));
-
-      // when
-      final var result = BackupRangeResolver.findLatestBackupBefore(targetTimestamp, backups);
-
-      // then
-      assertThat(result).isPresent();
-      assertThat(result.get().id().checkpointId()).isEqualTo(2);
-    }
-
-    @Test
-    void shouldReturnEmptyWhenNoBackupBeforeTimestamp() {
-      // given
-      final var timestamp = Instant.parse("2026-01-20T12:00:00Z");
-      final var targetTimestamp = Instant.parse("2026-01-20T10:00:00Z");
-
-      final var backups = List.of(createBackup(1, 100, timestamp));
-
-      // when
-      final var result = BackupRangeResolver.findLatestBackupBefore(targetTimestamp, backups);
-
-      // then
-      assertThat(result).isEmpty();
-    }
-
-    @Test
-    void shouldReturnBackupAtExactTimestamp() {
-      // given
-      final var timestamp = Instant.parse("2026-01-20T12:00:00Z");
-      final var backups = List.of(createBackup(1, 100, timestamp));
-
-      // when
-      final var result = BackupRangeResolver.findLatestBackupBefore(timestamp, backups);
-
-      // then
-      assertThat(result).isPresent();
-      assertThat(result.get().id().checkpointId()).isEqualTo(1);
-    }
-  }
-
-  @Nested
   class SafeStart {
 
     @Test
@@ -757,7 +705,7 @@ final class BackupRangeResolverTest {
       // then
       assertThat(result.partition()).isEqualTo(PARTITION_ID);
       assertThat(result.safeStart()).isEqualTo(200L);
-      assertThat(result.completRange()).isInstanceOf(BackupRange.Complete.class);
+      assertThat(result.backupRange()).isInstanceOf(BackupRange.Complete.class);
       // Only backups within the time interval [10:30, 12:00] are included (checkpoints 200, 300)
       // Checkpoint 100 is excluded because its timestamp (10:00) is before the interval start
       assertThat(result.backupStatuses()).hasSize(2);
