@@ -103,7 +103,7 @@ public class AtomixTransportTest {
                 (cluster) -> {
                   final var messagingService = cluster.getMessagingService();
                   return transportFactory.createServerTransport(
-                      messagingService, requestIdGenerator);
+                      messagingService, requestIdGenerator, "default");
                 }
           },
           {
@@ -118,7 +118,7 @@ public class AtomixTransportTest {
                 (cluster) -> {
                   final var messagingService = cluster.getMessagingService();
                   return transportFactory.createServerTransport(
-                      messagingService, requestIdGenerator);
+                      messagingService, requestIdGenerator, "default");
                 }
           },
           {
@@ -145,7 +145,7 @@ public class AtomixTransportTest {
                   }
 
                   return transportFactory.createServerTransport(
-                      nettyMessagingService, requestIdGenerator);
+                      nettyMessagingService, requestIdGenerator, "default");
                 }
           },
           {
@@ -173,7 +173,7 @@ public class AtomixTransportTest {
                   }
 
                   return transportFactory.createServerTransport(
-                      nettyMessagingService, requestIdGenerator);
+                      nettyMessagingService, requestIdGenerator, "default");
                 }
           }
         });

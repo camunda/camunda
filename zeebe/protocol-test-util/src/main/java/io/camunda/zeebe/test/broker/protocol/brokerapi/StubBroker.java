@@ -96,7 +96,8 @@ public final class StubBroker implements AutoCloseable {
     final var transportFactory = new TransportFactory(scheduler);
     final var requestIdGenerator = new SnowflakeIdGenerator(nodeId);
     serverTransport =
-        transportFactory.createServerTransport(cluster.getMessagingService(), requestIdGenerator);
+        transportFactory.createServerTransport(
+            cluster.getMessagingService(), requestIdGenerator, "default");
 
     channelHandler = new StubRequestHandler(msgPackHelper);
     serverTransport.subscribe(partitionId, RequestType.COMMAND, channelHandler);

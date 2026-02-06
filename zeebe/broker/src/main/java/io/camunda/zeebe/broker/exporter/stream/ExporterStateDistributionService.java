@@ -22,7 +22,8 @@ public class ExporterStateDistributionService implements AutoCloseable {
   private static final Logger PERIODIC_LOGGER =
       new ThrottledLogger(Loggers.EXPORTER_LOGGER, Duration.ofSeconds(60));
   private final PartitionMessagingService partitionMessagingService;
-  private final String exporterStateTopic;
+  private final String legacyExporterStateTopic;
+  private final String engineExporterStateTopic;
   private final BiConsumer<String, ExporterStateDistributeMessage.ExporterStateEntry>
       exporterStateConsumer;
 
@@ -30,16 +31,19 @@ public class ExporterStateDistributionService implements AutoCloseable {
       final BiConsumer<String, ExporterStateDistributeMessage.ExporterStateEntry>
           exporterStateConsumer,
       final PartitionMessagingService partitionMessagingService,
-      final String exporterStateTopic) {
+      final String legacyExporterStateTopic,
+      final String engineExporterStateTopic) {
     this.exporterStateConsumer = exporterStateConsumer;
     this.partitionMessagingService = partitionMessagingService;
-    this.exporterStateTopic = exporterStateTopic;
+    this.legacyExporterStateTopic = legacyExporterStateTopic;
+    this.engineExporterStateTopic = engineExporterStateTopic;
   }
 
   public void subscribeForExporterState(final Executor executor) {
-    partitionMessagingService.subscribe(exporterStateTopic, this::storeExporterState, executor);
     partitionMessagingService.subscribe(
-        "%s-%s".formatted("default", exporterStateTopic), this::storeExporterState, executor);
+        legacyExporterStateTopic, this::storeExporterState, executor);
+    partitionMessagingService.subscribe(
+        engineExporterStateTopic, this::storeExporterState, executor);
   }
 
   private void storeExporterState(final ByteBuffer byteBuffer) {
@@ -56,12 +60,12 @@ public class ExporterStateDistributionService implements AutoCloseable {
   }
 
   public void distributeExporterState(final ExporterStateDistributeMessage distributeMessage) {
-    partitionMessagingService.broadcast(exporterStateTopic, distributeMessage.toByteBuffer());
+    partitionMessagingService.broadcast(legacyExporterStateTopic, distributeMessage.toByteBuffer());
   }
 
   @Override
   public void close() {
-    partitionMessagingService.unsubscribe(exporterStateTopic);
-    partitionMessagingService.unsubscribe("%s-%s".formatted("default", exporterStateTopic));
+    partitionMessagingService.unsubscribe(legacyExporterStateTopic);
+    partitionMessagingService.unsubscribe(engineExporterStateTopic);
   }
 }

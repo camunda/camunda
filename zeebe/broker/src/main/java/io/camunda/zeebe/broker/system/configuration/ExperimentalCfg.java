@@ -24,6 +24,9 @@ public class ExperimentalCfg implements ConfigurationEntry {
   public static final boolean DEFAULT_DISABLE_EXPLICIT_RAFT_FLUSH = false;
   public static final boolean DEFAULT_VERSION_CHECK_ENABLED = true;
 
+  private static final boolean DEFAULT_ENABLE_MULTI_ENGINE = false;
+  private static final String DEFAULT_DEFAULT_ENGINE_NAME = "default";
+
   private boolean continuousBackups = false;
 
   /**
@@ -32,6 +35,8 @@ public class ExperimentalCfg implements ConfigurationEntry {
    */
   private boolean versionCheckRestrictionEnabled = DEFAULT_VERSION_CHECK_ENABLED;
 
+  private boolean enableMultiEngine = DEFAULT_ENABLE_MULTI_ENGINE;
+  private String defaultEngineName = DEFAULT_DEFAULT_ENGINE_NAME;
   private int maxAppendsPerFollower = DEFAULT_MAX_APPENDS_PER_FOLLOWER;
   private DataSize maxAppendBatchSize = DEFAULT_MAX_APPEND_BATCH_SIZE;
   private boolean disableExplicitRaftFlush = DEFAULT_DISABLE_EXPLICIT_RAFT_FLUSH;
@@ -159,6 +164,22 @@ public class ExperimentalCfg implements ConfigurationEntry {
 
   public void setFeatures(final FeatureFlagsCfg features) {
     this.features = features;
+  }
+
+  public boolean isEnableMultiEngine() {
+    return enableMultiEngine;
+  }
+
+  public void setEnableMultiEngine(final boolean enableMultiEngine) {
+    this.enableMultiEngine = enableMultiEngine;
+  }
+
+  public String getDefaultEngineName() {
+    return defaultEngineName;
+  }
+
+  public void setDefaultEngineName(final String defaultEngineName) {
+    this.defaultEngineName = defaultEngineName;
   }
 
   @Override

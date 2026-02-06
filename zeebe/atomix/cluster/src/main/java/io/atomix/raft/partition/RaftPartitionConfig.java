@@ -30,6 +30,8 @@ public class RaftPartitionConfig {
   private static final int DEFAULT_MIN_STEP_DOWN_FAILURE_COUNT = 3;
   private static final Duration DEFAULT_MAX_QUORUM_RESPONSE_TIMEOUT = Duration.ofSeconds(0);
   private static final int DEFAULT_SNAPSHOT_REPLICATION_THRESHOLD = 100;
+  private static final boolean DEFAULT_MULTI_ENGINE_ENABLED = false;
+  private static final String DEFAULT_ENGINE_NAME = "default";
 
   private Duration electionTimeout = DEFAULT_ELECTION_TIMEOUT;
   private Duration heartbeatInterval = DEFAULT_HEARTBEAT_INTERVAL;
@@ -45,6 +47,8 @@ public class RaftPartitionConfig {
   private EntryValidator entryValidator;
   private Duration configurationChangeTimeout;
   private int snapshotChunkSize;
+  private boolean multiEngineEnabled = DEFAULT_MULTI_ENGINE_ENABLED;
+  private String engineName = DEFAULT_ENGINE_NAME;
 
   /**
    * Returns the Raft leader election timeout.
@@ -207,6 +211,22 @@ public class RaftPartitionConfig {
 
   public void setEntryValidator(final EntryValidator entryValidator) {
     this.entryValidator = entryValidator;
+  }
+
+  public boolean isMultiEngineEnabled() {
+    return multiEngineEnabled;
+  }
+
+  public void setMultiEngineEnabled(final boolean multiEngineEnabled) {
+    this.multiEngineEnabled = multiEngineEnabled;
+  }
+
+  public String getEngineName() {
+    return engineName;
+  }
+
+  public void setEngineName(final String engineName) {
+    this.engineName = engineName;
   }
 
   @Override

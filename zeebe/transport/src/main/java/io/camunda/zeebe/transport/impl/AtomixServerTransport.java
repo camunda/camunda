@@ -8,6 +8,7 @@
 package io.camunda.zeebe.transport.impl;
 
 import io.atomix.cluster.messaging.MessagingService;
+import io.atomix.utils.net.Address;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.transport.RequestHandler;
@@ -15,7 +16,9 @@ import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.transport.ServerResponse;
 import io.camunda.zeebe.transport.ServerTransport;
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.BiFunction;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.IdGenerator;
@@ -34,12 +37,16 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
   private final MessagingService messagingService;
 
   private final IdGenerator requestIdGenerator;
+  private final String prefix;
 
   public AtomixServerTransport(
-      final MessagingService messagingService, final IdGenerator requestIdGenerator) {
+      final MessagingService messagingService,
+      final IdGenerator requestIdGenerator,
+      final String prefix) {
     this.messagingService = messagingService;
     this.requestIdGenerator = requestIdGenerator;
     partitionsRequestMap = new Int2ObjectHashMap<>();
+    this.prefix = Objects.requireNonNull(prefix);
   }
 
   @Override
@@ -65,16 +72,16 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
       final int partitionId, final RequestType requestType, final RequestHandler requestHandler) {
     return actor.call(
         () -> {
-          final var topicName = topicName(partitionId, requestType);
-          final var prefixed = "default-" + topicName;
-          LOG.trace("Subscribe for topic {}", topicName);
+          final var legacyTopicName = topicName(partitionId, requestType);
+          final var prefixedTopicName = prefixedTopicName(prefix, legacyTopicName);
+          LOG.trace("Subscribe for topics {} and {}", legacyTopicName, prefixedTopicName);
           partitionsRequestMap.computeIfAbsent(partitionId, id -> new Long2ObjectHashMap<>());
-          messagingService.registerHandler(
-              topicName,
+          registerHandler(
+              legacyTopicName,
               (sender, request) ->
                   handleAtomixRequest(request, partitionId, requestType, requestHandler));
-          messagingService.registerHandler(
-              prefixed,
+          registerHandler(
+              prefixedTopicName,
               (sender, request) ->
                   handleAtomixRequest(request, partitionId, requestType, requestHandler));
         });
@@ -83,6 +90,12 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
   @Override
   public ActorFuture<Void> unsubscribe(final int partitionId, final RequestType requestType) {
     return actor.call(() -> removeRequestHandlers(partitionId, requestType));
+  }
+
+  private void registerHandler(
+      final String topicName,
+      final BiFunction<Address, byte[], CompletableFuture<byte[]>> handler) {
+    messagingService.registerHandler(topicName, handler);
   }
 
   private void removePartition(final int partitionId) {
@@ -97,11 +110,11 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
   }
 
   private void removeRequestHandlers(final int partitionId, final RequestType requestType) {
-    final var topicName = topicName(partitionId, requestType);
-    final var prefixed = "default-" + topicName;
-    LOG.trace("Unsubscribe from topic {}", topicName);
-    messagingService.unregisterHandler(topicName);
-    messagingService.unregisterHandler(prefixed);
+    final var legacyTopicName = topicName(partitionId, requestType);
+    final var prefixedTopicName = prefixedTopicName(prefix, legacyTopicName);
+    LOG.trace("Unsubscribe from topics {} and {}", legacyTopicName, prefixedTopicName);
+    messagingService.unregisterHandler(legacyTopicName);
+    messagingService.unregisterHandler(prefixedTopicName);
   }
 
   private CompletableFuture<byte[]> handleAtomixRequest(
@@ -182,6 +195,10 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
             LOG.trace("Wasn't able to send response to request {}", requestId);
           }
         });
+  }
+
+  static String prefixedTopicName(final String prefix, final String topicName) {
+    return String.format("%s-%s", prefix, topicName);
   }
 
   static String topicName(final int partitionId, final RequestType requestType) {

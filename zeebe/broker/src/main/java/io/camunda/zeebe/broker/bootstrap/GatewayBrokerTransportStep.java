@@ -43,9 +43,11 @@ final class GatewayBrokerTransportStep extends AbstractBrokerStartupStep {
     final var schedulingService = brokerStartupContext.getActorSchedulingService();
     final var messagingService = brokerStartupContext.getApiMessagingService();
     final var requestIdGenerator = brokerStartupContext.getRequestIdGenerator();
+    final var prefix =
+        brokerStartupContext.getBrokerConfiguration().getExperimental().getDefaultEngineName();
 
     final var atomixServerTransport =
-        new AtomixServerTransport(messagingService, requestIdGenerator);
+        new AtomixServerTransport(messagingService, requestIdGenerator, prefix);
 
     concurrencyControl.runOnCompletion(
         schedulingService.submitActor(atomixServerTransport),

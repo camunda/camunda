@@ -37,10 +37,12 @@ public final class TransportFactory {
   }
 
   public ServerTransport createServerTransport(
-      final MessagingService messagingService, final IdGenerator requestIdGenerator) {
+      final MessagingService messagingService,
+      final IdGenerator requestIdGenerator,
+      final String prefix) {
 
     final var atomixServerTransport =
-        new AtomixServerTransport(messagingService, requestIdGenerator);
+        new AtomixServerTransport(messagingService, requestIdGenerator, prefix);
     actorSchedulingService.submitActor(atomixServerTransport);
     return atomixServerTransport;
   }

@@ -138,7 +138,8 @@ public final class ExporterRule implements TestRule {
             .partitionMessagingService(partitionMessagingService)
             .descriptors(descriptorsWithInitializationInfo)
             .meterRegistry(new SimpleMeterRegistry())
-            .positionsToSkipFilter(positionsToSkipFilter);
+            .positionsToSkipFilter(positionsToSkipFilter)
+            .engineName("default");
 
     director = new ExporterDirector(context, phase, recordExporter);
     director.startAsync(actorSchedulerRule.get()).join();

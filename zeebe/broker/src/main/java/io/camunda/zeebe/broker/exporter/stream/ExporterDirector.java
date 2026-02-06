@@ -85,7 +85,8 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   private boolean inExportingPhase;
   private ExporterPhase exporterPhase;
   private final PartitionMessagingService partitionMessagingService;
-  private final String exporterPositionsTopic;
+  private final String legacyExporterPositionsTopic;
+  private final String engineExporterPositionsTopic;
   private final ExporterMode exporterMode;
   private final Duration distributionInterval;
   private ExporterStateDistributionService exporterDistributionService;
@@ -132,7 +133,9 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     zeebeDb = context.getZeebeDb();
     this.exporterPhase = exporterPhase;
     partitionMessagingService = context.getPartitionMessagingService();
-    exporterPositionsTopic = String.format(EXPORTER_STATE_TOPIC_FORMAT, partitionId);
+    legacyExporterPositionsTopic = String.format(EXPORTER_STATE_TOPIC_FORMAT, partitionId);
+    engineExporterPositionsTopic =
+        "%s-%s".formatted(context.getEngineName(), legacyExporterPositionsTopic);
     exporterMode = context.getExporterMode();
     distributionInterval = context.getDistributionInterval();
     positionsToSkipFilter = context.getPositionsToSkipFilter();
@@ -383,7 +386,8 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
           new ExporterStateDistributionService(
               this::consumeExporterStateFromLeader,
               partitionMessagingService,
-              exporterPositionsTopic);
+              legacyExporterPositionsTopic,
+              engineExporterPositionsTopic);
 
       // Initialize containers irrespective of if it is Active or Passive mode
       initContainers();

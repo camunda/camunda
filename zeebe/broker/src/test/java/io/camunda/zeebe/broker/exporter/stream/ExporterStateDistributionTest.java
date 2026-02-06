@@ -28,7 +28,7 @@ public class ExporterStateDistributionTest {
     partitionMessagingService = new SimplePartitionMessageService();
     exporterStateDistributionService =
         new ExporterStateDistributionService(
-            exporterState::put, partitionMessagingService, "topic");
+            exporterState::put, partitionMessagingService, "topic", "default-topic");
   }
 
   @Test
