@@ -366,33 +366,6 @@ public class IntervalTest {
     }
 
     @Test
-    void shouldReturnSameIntervalForSingleElement() {
-      final var interval = Interval.closed(1, 10);
-
-      final var result = Interval.intersection(List.of(interval));
-
-      assertThat(result).contains(interval);
-    }
-
-    @Test
-    void shouldReturnIntersectionOfOverlappingIntervals() {
-      // [1, 10] ∩ [5, 15] = [5, 10]
-      final var result =
-          Interval.intersection(List.of(Interval.closed(1, 10), Interval.closed(5, 15)));
-
-      assertThat(result).contains(Interval.closed(5, 10));
-    }
-
-    @Test
-    void shouldReturnEmptyWhenIntervalsDoNotOverlap() {
-      // [1, 5] ∩ [7, 10] = ∅
-      final var result =
-          Interval.intersection(List.of(Interval.closed(1, 5), Interval.closed(7, 10)));
-
-      assertThat(result).isEmpty();
-    }
-
-    @Test
     void shouldReturnSinglePointWhenIntervalsMeetAtInclusiveBounds() {
       // [1, 5] ∩ [5, 10] = [5, 5]
       final var result =
@@ -417,26 +390,6 @@ public class IntervalTest {
           Interval.intersection(List.of(Interval.openClosed(1, 10), Interval.closedOpen(5, 15)));
 
       assertThat(result).contains(Interval.closed(5, 10));
-    }
-
-    @Test
-    void shouldHandleMultipleIntervals() {
-      // [1, 20] ∩ [5, 15] ∩ [8, 12] = [8, 12]
-      final var result =
-          Interval.intersection(
-              List.of(Interval.closed(1, 20), Interval.closed(5, 15), Interval.closed(8, 12)));
-
-      assertThat(result).contains(Interval.closed(8, 12));
-    }
-
-    @Test
-    void shouldReturnEmptyWhenOneIntervalDoesNotOverlapWithOthers() {
-      // [1, 10] ∩ [5, 15] ∩ [20, 25] = ∅
-      final var result =
-          Interval.intersection(
-              List.of(Interval.closed(1, 10), Interval.closed(5, 15), Interval.closed(20, 25)));
-
-      assertThat(result).isEmpty();
     }
 
     @ParameterizedTest

@@ -8,8 +8,10 @@
 package io.camunda.zeebe.backup.api;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.SequencedCollection;
 import java.util.function.Function;
 
@@ -100,6 +102,66 @@ public record Interval<T extends Comparable<T>>(
    */
   public static <T extends Comparable<T>> Interval<T> openClosed(final T start, final T end) {
     return new Interval<>(start, false, end, true);
+  }
+
+  /**
+   * Computes the intersection of all intervals in the collection. The intersection is the largest
+   * interval that is contained by all input intervals.
+   *
+   * @param intervals the collection of intervals to intersect
+   * @return the intersection interval, or empty if the intervals don't all overlap
+   * @throws IllegalArgumentException if the collection is empty
+   */
+  public static <T extends Comparable<T>> Optional<Interval<T>> intersection(
+      final Collection<Interval<T>> intervals) {
+    if (intervals.isEmpty()) {
+      throw new IllegalArgumentException("Cannot compute intersection of empty collection");
+    }
+
+    final var iterator = intervals.iterator();
+    final var first = iterator.next();
+
+    var maxStart = first.start;
+    var maxStartInclusive = first.startInclusive;
+    var minEnd = first.end;
+    var minEndInclusive = first.endInclusive;
+
+    while (iterator.hasNext()) {
+      final var interval = iterator.next();
+
+      // Update start bound: take the maximum (most restrictive)
+      final var startComparison =
+          compareBound(
+              interval.start,
+              interval.startInclusive,
+              maxStart,
+              maxStartInclusive,
+              START_INCLUSIVE_SIGN);
+      if (startComparison > 0) {
+        maxStart = interval.start;
+        maxStartInclusive = interval.startInclusive;
+      }
+
+      // Update end bound: take the minimum (most restrictive)
+      final var endComparison =
+          compareBound(
+              interval.end, interval.endInclusive, minEnd, minEndInclusive, END_INCLUSIVE_SIGN);
+      if (endComparison < 0) {
+        minEnd = interval.end;
+        minEndInclusive = interval.endInclusive;
+      }
+    }
+
+    // Check if the resulting interval is valid
+    final var comparison = maxStart.compareTo(minEnd);
+    if (comparison > 0) {
+      return Optional.empty();
+    }
+    if (comparison == 0 && (!maxStartInclusive || !minEndInclusive)) {
+      return Optional.empty();
+    }
+
+    return Optional.of(new Interval<>(maxStart, maxStartInclusive, minEnd, minEndInclusive));
   }
 
   /**
@@ -208,28 +270,28 @@ public record Interval<T extends Comparable<T>>(
   /**
    * Compares bounds considering inclusiveness.
    *
-   * @param thisBound this interval's bound value
-   * @param thisInclusive whether this bound is inclusive
-   * @param otherBound the other bound value
-   * @param otherInclusive whether the other bound is inclusive
+   * @param bound1 the first bound value
+   * @param inclusive1 whether the first bound is inclusive
+   * @param bound2 the second bound value
+   * @param inclusive2 whether the second bound is inclusive
    * @param inclusiveSign -1 for start bounds (inclusive is "before"), +1 for end bounds (inclusive
    *     is "after")
-   * @return negative if this bound is "before", positive if "after", 0 if equal
+   * @return negative if first bound is "before", positive if "after", 0 if equal
    */
-  private int compareBound(
-      final T thisBound,
-      final boolean thisInclusive,
-      final T otherBound,
-      final boolean otherInclusive,
+  private static <T extends Comparable<T>> int compareBound(
+      final T bound1,
+      final boolean inclusive1,
+      final T bound2,
+      final boolean inclusive2,
       final int inclusiveSign) {
-    final var comparison = thisBound.compareTo(otherBound);
+    final var comparison = bound1.compareTo(bound2);
     if (comparison != 0) {
       return comparison;
     }
-    if (thisInclusive == otherInclusive) {
+    if (inclusive1 == inclusive2) {
       return 0;
     }
-    return thisInclusive ? inclusiveSign : -inclusiveSign;
+    return inclusive1 ? inclusiveSign : -inclusiveSign;
   }
 
   /**

@@ -419,4 +419,88 @@ final class IntervalPropertyTest {
       }
     }
   }
+
+  // ==================== Intersection ====================
+
+  @Property(tries = 100)
+  void intersectionOfSingleIntervalReturnsSameInterval(
+      @ForAll("intervals") final Interval<Integer> a) {
+    final var result = Interval.intersection(List.of(a));
+
+    assertThat(result).contains(a);
+  }
+
+  @Property(tries = 100)
+  void intersectionIsCommutative(
+      @ForAll("intervals") final Interval<Integer> a,
+      @ForAll("intervals") final Interval<Integer> b) {
+    final var result1 = Interval.intersection(List.of(a, b));
+    final var result2 = Interval.intersection(List.of(b, a));
+
+    assertThat(result1).isEqualTo(result2);
+  }
+
+  @Property(tries = 100)
+  void intersectionIsAssociative(
+      @ForAll("intervals") final Interval<Integer> a,
+      @ForAll("intervals") final Interval<Integer> b,
+      @ForAll("intervals") final Interval<Integer> c) {
+    // (a ∩ b) ∩ c == a ∩ (b ∩ c)
+    final var abThenC =
+        Interval.intersection(List.of(a, b)).flatMap(ab -> Interval.intersection(List.of(ab, c)));
+    final var aThenBc =
+        Interval.intersection(List.of(b, c)).flatMap(bc -> Interval.intersection(List.of(a, bc)));
+
+    assertThat(abThenC).isEqualTo(aThenBc);
+  }
+
+  @Property(tries = 100)
+  void intersectionIsIdempotent(@ForAll("intervals") final Interval<Integer> a) {
+    // a ∩ a == a
+    final var result = Interval.intersection(List.of(a, a));
+
+    assertThat(result).contains(a);
+  }
+
+  @Property(tries = 100)
+  void intersectionResultIsContainedByAllInputs(
+      @ForAll("intervals") final Interval<Integer> a,
+      @ForAll("intervals") final Interval<Integer> b) {
+    final var result = Interval.intersection(List.of(a, b));
+
+    result.ifPresent(
+        intersection -> {
+          assertThat(a.contains(intersection))
+              .describedAs("First interval %s should contain intersection %s", a, intersection)
+              .isTrue();
+          assertThat(b.contains(intersection))
+              .describedAs("Second interval %s should contain intersection %s", b, intersection)
+              .isTrue();
+        });
+  }
+
+  @Property(tries = 100)
+  void intersectionExistsIffIntervalsOverlap(
+      @ForAll("intervals") final Interval<Integer> a,
+      @ForAll("intervals") final Interval<Integer> b) {
+    final var result = Interval.intersection(List.of(a, b));
+
+    assertThat(result.isPresent())
+        .describedAs("Intersection of %s and %s should exist iff they overlap", a, b)
+        .isEqualTo(a.overlapsWith(b));
+  }
+
+  @Property(tries = 100)
+  void intersectionWithContainedIntervalReturnsContained(
+      @ForAll("intervals") final Interval<Integer> a,
+      @ForAll("intervals") final Interval<Integer> b) {
+    // If a contains b, then a ∩ b == b
+    if (a.contains(b)) {
+      final var result = Interval.intersection(List.of(a, b));
+
+      assertThat(result)
+          .describedAs("Intersection of %s (container) and %s (contained) should be %s", a, b, b)
+          .contains(b);
+    }
+  }
 }
