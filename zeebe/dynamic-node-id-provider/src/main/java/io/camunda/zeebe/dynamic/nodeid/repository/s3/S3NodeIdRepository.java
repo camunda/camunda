@@ -134,7 +134,7 @@ public class S3NodeIdRepository implements NodeIdRepository {
     final PutObjectRequest.Builder putRequestBuilder =
         PutObjectRequest.builder()
             .bucket(config.bucketName)
-            .key("restore")
+            .key(getRestoreStatusKey(restoreStatus.restoreId()))
             .contentType("application/json");
 
     if (etag == null || etag.isEmpty()) {
@@ -158,8 +158,12 @@ public class S3NodeIdRepository implements NodeIdRepository {
   }
 
   @Override
-  public StoredRestoreStatus getRestoreStatus() {
-    final var request = GetObjectRequest.builder().bucket(config.bucketName).key("restore").build();
+  public StoredRestoreStatus getRestoreStatus(final long restoreId) {
+    final var request =
+        GetObjectRequest.builder()
+            .bucket(config.bucketName)
+            .key(getRestoreStatusKey(restoreId))
+            .build();
     try {
       final var response = client.getObject(request);
       final var bytes = response.readAllBytes();
@@ -179,6 +183,10 @@ public class S3NodeIdRepository implements NodeIdRepository {
     } catch (final IOException e) {
       throw new RuntimeException(e);
     }
+  }
+
+  private String getRestoreStatusKey(final long restoreId) {
+    return "restore/%d".formatted(restoreId);
   }
 
   public void initializeForNode(final int nodeId) {

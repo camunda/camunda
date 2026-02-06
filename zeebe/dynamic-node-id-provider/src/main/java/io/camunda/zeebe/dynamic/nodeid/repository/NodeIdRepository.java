@@ -68,7 +68,7 @@ public interface NodeIdRepository extends AutoCloseable {
    *
    * @return the current restore status, or null if none exists
    */
-  StoredRestoreStatus getRestoreStatus();
+  StoredRestoreStatus getRestoreStatus(final long restoreId);
 
   /**
    * A StoredLease represents the Lease stored in a Repository such as S3. It can be

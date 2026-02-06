@@ -23,6 +23,7 @@ import io.camunda.zeebe.dynamic.nodeid.fs.DataDirectoryProvider;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import org.slf4j.Logger;
@@ -123,37 +124,53 @@ public class RestoreApp implements ApplicationRunner {
 
     final var restoreManager = new RestoreManager(configuration, backupStore, meterRegistry);
 
-    preRestoreAction.beforeRestore(configuration.getCluster().getNodeId());
-    if (backupId != null) {
-      LOG.info(
-          "Starting to restore from backup {} with the following configuration: {}",
-          backupId,
-          restoreConfiguration);
-      restoreManager.restore(
-          backupId,
-          restoreConfiguration.validateConfig(),
-          restoreConfiguration.ignoreFilesInTarget());
-      LOG.info("Successfully restored broker from backup {}", backupId);
+    final var restoreId = getRestoreId();
+    final var preRestoreActionResult =
+        preRestoreAction.beforeRestore(restoreId, configuration.getCluster().getNodeId());
+
+    final PostRestoreActionContext postRestoreActionContext;
+    if (preRestoreActionResult.proceed()) {
+      if (backupId != null) {
+        LOG.info(
+            "Starting to restore from backup {} with the following configuration: {}",
+            backupId,
+            restoreConfiguration);
+        restoreManager.restore(
+            backupId,
+            restoreConfiguration.validateConfig(),
+            restoreConfiguration.ignoreFilesInTarget());
+        LOG.info("Successfully restored broker from backup {}", backupId);
+      } else {
+        LOG.info(
+            "Starting to restore from backups in time range [{}, {}] with the following configuration: {}",
+            from,
+            to,
+            restoreConfiguration);
+        restoreManager.restore(
+            from,
+            to,
+            restoreConfiguration.validateConfig(),
+            restoreConfiguration.ignoreFilesInTarget());
+        LOG.info("Successfully restored broker from backups in time range [{}, {}]", from, to);
+      }
+
+      postRestoreActionContext =
+          new PostRestoreActionContext(restoreId, configuration.getCluster().getNodeId(), false);
     } else {
-      LOG.info(
-          "Starting to restore from backups in time range [{}, {}] with the following configuration: {}",
-          from,
-          to,
-          restoreConfiguration);
-      restoreManager.restore(
-          from,
-          to,
-          restoreConfiguration.validateConfig(),
-          restoreConfiguration.ignoreFilesInTarget());
-      LOG.info("Successfully restored broker from backups in time range [{}, {}]", from, to);
+      LOG.info("Skipping restore: {}", preRestoreActionResult.message());
+      postRestoreActionContext =
+          new PostRestoreActionContext(restoreId, configuration.getCluster().getNodeId(), true);
     }
 
-    postRestoreAction.restored(configuration.getCluster().getNodeId());
+    // We have to run post restore anyway even if post restore action decided to skip restore,
+    // because in some cases, like when using dynamic node ids, we need to wait for other nodes to
+    // complete restore.
+    postRestoreAction.restored(postRestoreActionContext);
   }
 
   private void validateParameters() {
-    final boolean hasBackupId = backupId != null && backupId.length > 0;
-    final boolean hasTimeRange = from != null && to != null;
+    final boolean hasBackupId = hasBackupId();
+    final boolean hasTimeRange = hasTimeRange();
 
     if (!hasBackupId && !hasTimeRange) {
       throw new IllegalArgumentException(
@@ -179,11 +196,34 @@ public class RestoreApp implements ApplicationRunner {
     }
   }
 
+  private boolean hasTimeRange() {
+    return from != null && to != null;
+  }
+
+  private boolean hasBackupId() {
+    return backupId != null && backupId.length > 0;
+  }
+
+  private long getRestoreId() {
+    if (hasBackupId()) {
+      return Arrays.hashCode(backupId);
+    } else if (hasTimeRange()) {
+      return Objects.hash(from, to);
+    } else {
+      throw new IllegalStateException("No valid restore parameters provided");
+    }
+  }
+
+  public record PreRestoreActionResult(boolean proceed, String message) {}
+
+  public record PostRestoreActionContext(long restoreId, int nodeId, boolean skippedRestore) {}
+
   public interface PreRestoreAction {
-    void beforeRestore(int nodeId) throws InterruptedException;
+    PreRestoreActionResult beforeRestore(final long restoreId, int nodeId)
+        throws InterruptedException;
   }
 
   public interface PostRestoreAction {
-    void restored(int nodeId) throws InterruptedException;
+    void restored(final PostRestoreActionContext context) throws InterruptedException;
   }
 }
