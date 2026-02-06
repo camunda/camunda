@@ -133,6 +133,7 @@ const resourcePermissions: ResourcePermissionsType = {
   ],
   CLUSTER_VARIABLE: [
     PermissionType.CREATE,
+    PermissionType.UPDATE,
     PermissionType.DELETE,
     PermissionType.READ,
   ],
