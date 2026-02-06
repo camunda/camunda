@@ -87,41 +87,51 @@ jobs:
           IS_MAIN="${{ steps.branch-info.outputs.is-main }}"
 
           if [[ "$IS_MAIN" == "true" ]]; then
-            # On main, use only the snapshot version from pom as the tag
+            # On main, use only the snapshot version from pom
             FILTERED_TAGS=""
+            echo "On main branch - no stable version tags to filter"
           else
-            # Filter tags >= stable version (e.g., >= 8.8.0)
+            # Filter tags to ONLY exact stable version (e.g., only 8.8.x, not 8.7.x or 8.9.x)
             FILTERED_TAGS=""
             SKIPPED_COUNT=0
             FILTERED_COUNT=0
+            
+            # Parse stable version to get major and minor
+            if [[ ! "$STABLE_VERSION" =~ ^([0-9]+)\.([0-9]+)$ ]]; then
+              echo "::error::Invalid stable version format: $STABLE_VERSION"
+              exit 1
+            fi
+            
+            STABLE_MAJOR="${BASH_REMATCH[1]}"
+            STABLE_MINOR="${BASH_REMATCH[2]}"
+            echo "Filtering tags for exact version: $STABLE_MAJOR.$STABLE_MINOR.x"
+            
             for tag in $ALL_TAGS; do
-              # Skip alpha/beta/rc releases (format: 8.x.x-alpha1, 8.x.x-rc1)
+              # Skip alpha/beta/rc releases
               if [[ "$tag" =~ -alpha|-beta|-rc ]]; then
                 SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
                 continue
               fi
 
-              # Extract major.minor from tag
+              # Extract major.minor.patch from tag
               if [[ "$tag" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
                 TAG_MAJOR="${BASH_REMATCH[1]}"
                 TAG_MINOR="${BASH_REMATCH[2]}"
 
-                # Compare versions
-                IFS='.' read -r STABLE_MAJOR STABLE_MINOR <<< "$STABLE_VERSION"
-
-                if (( TAG_MAJOR > STABLE_MAJOR )) || \
-                   (( TAG_MAJOR == STABLE_MAJOR && TAG_MINOR >= STABLE_MINOR )); then
+                # Only include tags with EXACT stable major.minor match
+                if [[ "$TAG_MAJOR" == "$STABLE_MAJOR" ]] && [[ "$TAG_MINOR" == "$STABLE_MINOR" ]]; then
                   FILTERED_TAGS+="$tag"$'\n'
                   FILTERED_COUNT=$((FILTERED_COUNT + 1))
                 fi
               fi
             done
+            
+            echo "Filtered $FILTERED_COUNT tags (skipped $SKIPPED_COUNT pre-release tags)"
           fi
 
           # Save filtered tags
           echo "$FILTERED_TAGS" > /tmp/filtered_tags.txt
-          FILTERED_COUNT=$(echo "$FILTERED_TAGS" | grep -c -v '^$' || echo "0")
-          echo "Filtered tags:"
+          echo "Filtered tags for testing:"
           cat /tmp/filtered_tags.txt
 
       - name: Create version lists
