@@ -253,7 +253,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                       Collections.emptyMap(), // customHeaders
                       50, // priority
                       Set.of() // tags
-                  )))
+                      )))
           .startCursor("f")
           .endCursor("v")
           .build();
@@ -886,8 +886,8 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                 }""";
 
     when(userTaskServices.searchUserTaskVariables(
-        VALID_USER_TASK_KEY,
-        variableSearchQuery().filter(f -> f.nameOperations(Operation.eq("varName"))).build()))
+            VALID_USER_TASK_KEY,
+            variableSearchQuery().filter(f -> f.nameOperations(Operation.eq("varName"))).build()))
         .thenReturn(SEARCH_VAR_QUERY_RESULT);
     // when and then
     webClient
@@ -921,8 +921,8 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
             }""";
 
     when(userTaskServices.searchUserTaskVariables(
-        VALID_USER_TASK_KEY,
-        variableSearchQuery().filter(f -> f.nameOperations(Operation.eq("varName"))).build()))
+            VALID_USER_TASK_KEY,
+            variableSearchQuery().filter(f -> f.nameOperations(Operation.eq("varName"))).build()))
         .thenReturn(SEARCH_VAR_QUERY_RESULT);
     // when and then
     webClient
@@ -1016,7 +1016,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                 }""";
 
     when(userTaskServices.searchUserTaskAuditLogs(
-        VALID_USER_TASK_KEY, auditLogSearchQuery().filter(f -> f.actorIds("1")).build()))
+            VALID_USER_TASK_KEY, auditLogSearchQuery().filter(f -> f.actorIds("1")).build()))
         .thenReturn(SEARCH_AUDIT_LOG_QUERY_RESULT);
     // when and then
     webClient
