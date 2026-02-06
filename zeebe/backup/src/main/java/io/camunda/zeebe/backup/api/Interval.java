@@ -7,24 +7,172 @@
  */
 package io.camunda.zeebe.backup.api;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.SequencedCollection;
 import java.util.function.Function;
 
 /**
- * Represents a generic range with a start and end value.
+ * Represents a generic range with a start and end value, with configurable inclusiveness for each
+ * bound.
  *
  * @param <T> the type of the range values, must be comparable
- * @param start the first value in the range (inclusive)
- * @param end the last value in the range (inclusive)
+ * @param start the first value in the range
+ * @param startInclusive whether the start bound is inclusive
+ * @param end the last value in the range
+ * @param endInclusive whether the end bound is inclusive
  */
-public record Interval<T extends Comparable<T>>(T start, T end) {
+public record Interval<T extends Comparable<T>>(
+    T start, boolean startInclusive, T end, boolean endInclusive) {
+
+  /** For start bounds, inclusive is "before" exclusive when values are equal. */
+  private static final int START_INCLUSIVE_SIGN = -1;
+
+  /** For end bounds, inclusive is "after" exclusive when values are equal. */
+  private static final int END_INCLUSIVE_SIGN = 1;
+
+  public Interval {
+    Objects.requireNonNull(start, "start must not be null");
+    Objects.requireNonNull(end, "end must not be null");
+    final var comparison = start.compareTo(end);
+    if (comparison > 0) {
+      throw new IllegalArgumentException(
+          "Expected start <= end, but got start = %s, end = %s".formatted(start, end));
+    }
+    // For equal bounds, both must be inclusive or the interval is empty/invalid
+    if (comparison == 0 && (!startInclusive || !endInclusive)) {
+      throw new IllegalArgumentException(
+          "Interval with equal bounds must be inclusive on both sides, got %s%s, %s%s"
+              .formatted(startInclusive ? "[" : "(", start, end, endInclusive ? "]" : ")"));
+    }
+  }
+
+  /**
+   * Creates a closed interval [start, end] where both bounds are inclusive.
+   *
+   * @param start the first value in the range (inclusive)
+   * @param end the last value in the range (inclusive)
+   */
+  public Interval(final T start, final T end) {
+    this(start, true, end, true);
+  }
+
+  /**
+   * Creates a closed interval [start, end] where both bounds are inclusive.
+   *
+   * @param start the first value in the range (inclusive)
+   * @param end the last value in the range (inclusive)
+   * @return a new closed interval
+   */
+  public static <T extends Comparable<T>> Interval<T> closed(final T start, final T end) {
+    return new Interval<>(start, true, end, true);
+  }
+
+  /**
+   * Creates an open interval (start, end) where both bounds are exclusive.
+   *
+   * @param start the first value in the range (exclusive)
+   * @param end the last value in the range (exclusive)
+   * @return a new open interval
+   */
+  public static <T extends Comparable<T>> Interval<T> open(final T start, final T end) {
+    return new Interval<>(start, false, end, false);
+  }
+
+  /**
+   * Creates a half-open interval [start, end) where start is inclusive and end is exclusive.
+   *
+   * @param start the first value in the range (inclusive)
+   * @param end the last value in the range (exclusive)
+   * @return a new half-open interval
+   */
+  public static <T extends Comparable<T>> Interval<T> closedOpen(final T start, final T end) {
+    return new Interval<>(start, true, end, false);
+  }
+
+  /**
+   * Creates a half-open interval (start, end] where start is exclusive and end is inclusive.
+   *
+   * @param start the first value in the range (exclusive)
+   * @param end the last value in the range (inclusive)
+   * @return a new half-open interval
+   */
+  public static <T extends Comparable<T>> Interval<T> openClosed(final T start, final T end) {
+    return new Interval<>(start, false, end, true);
+  }
+
+  /**
+   * Computes the intersection of all intervals in the collection. The intersection is the largest
+   * interval that is contained by all input intervals.
+   *
+   * @param intervals the collection of intervals to intersect
+   * @return the intersection interval, or empty if the intervals don't all overlap
+   * @throws IllegalArgumentException if the collection is empty
+   */
+  public static <T extends Comparable<T>> Optional<Interval<T>> intersection(
+      final Collection<Interval<T>> intervals) {
+    if (intervals.isEmpty()) {
+      throw new IllegalArgumentException("Cannot compute intersection of empty collection");
+    }
+
+    final var iterator = intervals.iterator();
+    final var first = iterator.next();
+
+    var maxStart = first.start;
+    var maxStartInclusive = first.startInclusive;
+    var minEnd = first.end;
+    var minEndInclusive = first.endInclusive;
+
+    while (iterator.hasNext()) {
+      final var interval = iterator.next();
+
+      // Update start bound: take the maximum (most restrictive)
+      final var startComparison =
+          compareBound(
+              interval.start,
+              interval.startInclusive,
+              maxStart,
+              maxStartInclusive,
+              START_INCLUSIVE_SIGN);
+      if (startComparison > 0) {
+        maxStart = interval.start;
+        maxStartInclusive = interval.startInclusive;
+      }
+
+      // Update end bound: take the minimum (most restrictive)
+      final var endComparison =
+          compareBound(
+              interval.end, interval.endInclusive, minEnd, minEndInclusive, END_INCLUSIVE_SIGN);
+      if (endComparison < 0) {
+        minEnd = interval.end;
+        minEndInclusive = interval.endInclusive;
+      }
+    }
+
+    // Check if the resulting interval is valid
+    final var comparison = maxStart.compareTo(minEnd);
+    if (comparison > 0) {
+      return Optional.empty();
+    }
+    if (comparison == 0 && (!maxStartInclusive || !minEndInclusive)) {
+      return Optional.empty();
+    }
+
+    return Optional.of(new Interval<>(maxStart, maxStartInclusive, minEnd, minEndInclusive));
+  }
+
   /**
    * @param other interval to check
    * @return true if this interval completely covers the other interval
    */
   public boolean contains(final Interval<T> other) {
-    return start.compareTo(other.start) <= 0 && end.compareTo(other.end) >= 0;
+    return compareBound(
+                start, startInclusive, other.start, other.startInclusive, START_INCLUSIVE_SIGN)
+            <= 0
+        && compareBound(end, endInclusive, other.end, other.endInclusive, END_INCLUSIVE_SIGN) >= 0;
   }
 
   /**
@@ -32,7 +180,66 @@ public record Interval<T extends Comparable<T>>(T start, T end) {
    * @return true if the value is within this interval
    */
   public boolean contains(final T value) {
-    return value.compareTo(start) >= 0 && value.compareTo(end) <= 0;
+    final var startComparison = value.compareTo(start);
+    final var endComparison = value.compareTo(end);
+
+    final var afterStart = startInclusive ? startComparison >= 0 : startComparison > 0;
+    final var beforeEnd = endInclusive ? endComparison <= 0 : endComparison < 0;
+
+    return afterStart && beforeEnd;
+  }
+
+  /**
+   * @param other interval to check
+   * @return true if this interval is entirely before the other (no overlap)
+   */
+  public boolean isBefore(final Interval<T> other) {
+    final var comparison = end.compareTo(other.start);
+    return comparison < 0 || (comparison == 0 && (!endInclusive || !other.startInclusive));
+  }
+
+  /**
+   * @param other interval to check
+   * @return true if this interval is entirely after the other (no overlap)
+   */
+  public boolean isAfter(final Interval<T> other) {
+    return other.isBefore(this);
+  }
+
+  /**
+   * @param other interval to check
+   * @return true if this interval overlaps with the other interval
+   */
+  public boolean overlapsWith(final Interval<T> other) {
+    return !isBefore(other) && !isAfter(other);
+  }
+
+  /**
+   * Given a sorted collections of intervals where interval[n-1].end == interval[n].start, returns
+   * the smallest subset of contiguous intervals from the input that cover this interval's
+   * overlapping region.
+   *
+   * @param intervals the collection of contiguous intervals
+   * @return the intervals that overlap with this interval
+   */
+  public SequencedCollection<Interval<T>> smallestCover(
+      final SequencedCollection<Interval<T>> intervals) {
+    final var result = new ArrayList<Interval<T>>();
+    Interval<T> previousInterval = null;
+    var i = 0;
+    for (final var interval : intervals) {
+      if (previousInterval != null && !areContiguous(previousInterval, interval)) {
+        throw new IllegalArgumentException(
+            "Expected intervals to be contiguous, but interval at index %d is %s, interval at index %d is %s"
+                .formatted(i - 1, previousInterval, i, interval));
+      }
+      if (interval.overlapsWith(this)) {
+        result.add(interval);
+      }
+      previousInterval = interval;
+      i++;
+    }
+    return result;
   }
 
   public SequencedCollection<T> values() {
@@ -48,6 +255,58 @@ public record Interval<T extends Comparable<T>>(T start, T end) {
    * @return a new interval with transformed values
    */
   public <U extends Comparable<U>> Interval<U> map(final Function<T, U> mapper) {
-    return new Interval<>(mapper.apply(start), mapper.apply(end));
+    return new Interval<>(mapper.apply(start), startInclusive, mapper.apply(end), endInclusive);
+  }
+
+  /**
+   * Returns the mathematical notation for this interval.
+   *
+   * @return string representation using [ ] for inclusive and ( ) for exclusive bounds
+   */
+  @Override
+  public String toString() {
+    return "%s%s, %s%s".formatted(startInclusive ? "[" : "(", start, end, endInclusive ? "]" : ")");
+  }
+
+  /**
+   * Compares bounds considering inclusiveness.
+   *
+   * @param bound1 the first bound value
+   * @param inclusive1 whether the first bound is inclusive
+   * @param bound2 the second bound value
+   * @param inclusive2 whether the second bound is inclusive
+   * @param inclusiveSign -1 for start bounds (inclusive is "before"), +1 for end bounds (inclusive
+   *     is "after")
+   * @return negative if first bound is "before", positive if "after", 0 if equal
+   */
+  private static <T extends Comparable<T>> int compareBound(
+      final T bound1,
+      final boolean inclusive1,
+      final T bound2,
+      final boolean inclusive2,
+      final int inclusiveSign) {
+    final var comparison = bound1.compareTo(bound2);
+    if (comparison != 0) {
+      return comparison;
+    }
+    if (inclusive1 == inclusive2) {
+      return 0;
+    }
+    return inclusive1 ? inclusiveSign : -inclusiveSign;
+  }
+
+  /**
+   * Checks if two intervals are contiguous (meet at a boundary point without gap).
+   *
+   * @return true if the intervals are contiguous
+   */
+  private static <T extends Comparable<T>> boolean areContiguous(
+      final Interval<T> first, final Interval<T> second) {
+    // Contiguous means end == start and at least one bound is inclusive (no gap)
+    // [a, b] and [b, c] - both inclusive, contiguous (overlap at b is ok)
+    // [a, b) and [b, c] - first exclusive, second inclusive, contiguous
+    // [a, b] and (b, c] - first inclusive, second exclusive, contiguous
+    // [a, b) and (b, c] - both exclusive, NOT contiguous (gap at b)
+    return first.end.compareTo(second.start) == 0 && (first.endInclusive || second.startInclusive);
   }
 }
