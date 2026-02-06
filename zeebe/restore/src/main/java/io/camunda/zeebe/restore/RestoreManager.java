@@ -36,6 +36,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.restore.BackupRangeResolver.PartitionRestoreInfo;
 import io.camunda.zeebe.restore.PartitionRestoreService.BackupValidator;
+import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.concurrency.FuturesUtil;
@@ -57,14 +58,16 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.agrona.collections.MutableBoolean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class RestoreManager {
+public class RestoreManager implements CloseableSilently {
   private static final Logger LOG = LoggerFactory.getLogger(RestoreManager.class);
   private final BrokerCfg configuration;
   private final BackupStore backupStore;
@@ -72,6 +75,7 @@ public class RestoreManager {
   private final MeterRegistry meterRegistry;
   private final CheckpointIdGenerator checkpointIdGenerator;
   private final ExporterPositionMapper exporterPositionMapper;
+  private final ExecutorService executor;
 
   @VisibleForTesting
   RestoreManager(
@@ -93,6 +97,8 @@ public class RestoreManager {
     rangeResolver = new BackupRangeResolver(backupStore);
     this.exporterPositionMapper = exporterPositionMapper;
     this.meterRegistry = meterRegistry;
+    executor =
+        Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("zeebe-restore-", 0).factory());
   }
 
   public void restore(
@@ -124,11 +130,13 @@ public class RestoreManager {
 
     final var restoreInfos = getRestoreInfoForAllPartitions(from, to, partitionCount).join();
 
-    // Step 6: Validate checkpoint reachability using validateGlobalCheckpointReachability
+    // Validate checkpoint reachability using validateGlobalCheckpointReachability
     final var validator = new BackupRangeResolver.ReachabilityValidator(restoreInfos);
 
-    validator.validate();
     final var globalCheckpointId = validator.getGlobalCheckpointId();
+    LOG.info("Global checkpointId is {}", globalCheckpointId);
+
+    validator.validate();
 
     // Get per-partition backup IDs from the validator
     // Each partition may have different backups, but all must reach globalCheckpointId
@@ -224,17 +232,14 @@ public class RestoreManager {
 
     verifyBackupIdsAreContinuous(backupIdsByPartition);
 
-    final var partitionsToRestore = collectPartitions();
-    try (final var executor =
-        Executors.newThreadPerTaskExecutor(
-            Thread.ofVirtual().name("zeebe-restore-", 0).factory())) {
+    try {
+      final var partitionsToRestore = collectPartitions();
       final var tasks = new ArrayList<Callable<Void>>(partitionsToRestore.size());
       for (final var partition : partitionsToRestore) {
         final var partitionId = partition.partition().id().id();
         final var backupIds = backupIdsByPartition.get(partitionId);
         if (backupIds == null || backupIds.length == 0) {
-          throw new IllegalArgumentException(
-              "No backup IDs provided for partition " + partitionId);
+          throw new IllegalArgumentException("No backup IDs provided for partition " + partitionId);
         }
         tasks.add(
             () -> {
@@ -412,23 +417,32 @@ public class RestoreManager {
   private CompletableFuture<List<PartitionRestoreInfo>> getRestoreInfoForAllPartitions(
       final Instant from, final Instant to, final int partitionCount) {
     // Get backup ranges from the store for each partition
-    try (final var virtualExecutor = Executors.newVirtualThreadPerTaskExecutor()) {
-      return FuturesUtil.parTraverse(
-          IntStream.range(1, partitionCount + 1).boxed().toList(),
-          partition ->
-              CompletableFuture.supplyAsync(
-                  () -> {
-                    final var positionModel = exporterPositionMapper.findOne(partition);
-                    if (positionModel == null || positionModel.lastExportedPosition() == null) {
-                      throw new IllegalArgumentException(
-                          "No exported position found for partition " + partition + " in RDBMS");
-                    }
+    return FuturesUtil.parTraverse(
+        IntStream.range(1, partitionCount + 1).boxed().toList(),
+        partition ->
+            CompletableFuture.supplyAsync(
+                () -> {
+                  final var positionModel = exporterPositionMapper.findOne(partition);
+                  if (positionModel == null || positionModel.lastExportedPosition() == null) {
+                    throw new IllegalArgumentException(
+                        "No exported position found for partition " + partition + " in RDBMS");
+                  }
 
-                    final var exportedPosition = positionModel.lastExportedPosition();
-                    return rangeResolver.getInformationPerPartition(
-                        partition, from, to, exportedPosition);
-                  },
-                  virtualExecutor));
+                  final var exportedPosition = positionModel.lastExportedPosition();
+                  return rangeResolver.getInformationPerPartition(
+                      partition, from, to, exportedPosition);
+                },
+                executor));
+  }
+
+  @Override
+  public void close() {
+    try {
+      executor.shutdown();
+      if (!executor.awaitTermination(30, TimeUnit.SECONDS)) {
+        executor.shutdownNow();
+      }
+    } catch (final InterruptedException ignored) {
     }
   }
 

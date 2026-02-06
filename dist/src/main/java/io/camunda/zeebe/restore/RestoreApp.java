@@ -22,10 +22,8 @@ import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.dynamic.nodeid.fs.DataDirectoryProvider;
 import io.micrometer.core.instrument.MeterRegistry;
-import java.io.IOException;
 import java.time.Instant;
 import java.util.Objects;
-import java.util.concurrent.ExecutionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -121,39 +119,38 @@ public class RestoreApp implements ApplicationRunner {
   }
 
   @Override
-  public void run(final ApplicationArguments args)
-      throws IOException, ExecutionException, InterruptedException {
+  public void run(final ApplicationArguments args) throws Exception {
     validateParameters();
 
-    final var restoreManager =
-        new RestoreManager(configuration, backupStore, exporterPositionMapper, meterRegistry);
-
-    preRestoreAction.beforeRestore(configuration.getCluster().getNodeId());
-    if (backupId != null) {
-      LOG.info(
-          "Starting to restore from backup {} with the following configuration: {}",
-          backupId,
-          restoreConfiguration);
-      restoreManager.restore(
-          backupId,
-          restoreConfiguration.validateConfig(),
-          restoreConfiguration.ignoreFilesInTarget());
-      LOG.info("Successfully restored broker from backup {}", backupId);
-    } else {
-      LOG.info(
-          "Starting to restore from backups in time range [{}, {}] with the following configuration: {}",
-          from,
-          to,
-          restoreConfiguration);
-      restoreManager.restore(
-          from,
-          to,
-          restoreConfiguration.validateConfig(),
-          restoreConfiguration.ignoreFilesInTarget());
-      LOG.info("Successfully restored broker from backups in time range [{}, {}]", from, to);
+    try (final var restoreManager =
+        new RestoreManager(configuration, backupStore, exporterPositionMapper, meterRegistry)) {
+      preRestoreAction.beforeRestore(configuration.getCluster().getNodeId());
+      if (backupId != null) {
+        LOG.info(
+            "Starting to restore from backup {} with the following configuration: {}",
+            backupId,
+            restoreConfiguration);
+        restoreManager.restore(
+            backupId,
+            restoreConfiguration.validateConfig(),
+            restoreConfiguration.ignoreFilesInTarget());
+        LOG.info("Successfully restored broker from backup {}", backupId);
+      } else {
+        LOG.info(
+            "Starting to restore from backups in time range [{}, {}] with the following configuration: {}",
+            from,
+            to,
+            restoreConfiguration);
+        restoreManager.restore(
+            from,
+            to,
+            restoreConfiguration.validateConfig(),
+            restoreConfiguration.ignoreFilesInTarget());
+        LOG.info("Successfully restored broker from backups in time range [{}, {}]", from, to);
+      }
+    } finally {
+      postRestoreAction.restored(configuration.getCluster().getNodeId());
     }
-
-    postRestoreAction.restored(configuration.getCluster().getNodeId());
   }
 
   private void validateParameters() {
