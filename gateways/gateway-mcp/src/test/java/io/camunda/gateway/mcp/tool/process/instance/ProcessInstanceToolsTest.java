@@ -193,7 +193,8 @@ class ProcessInstanceToolsTest extends ToolsTest {
               TextContent.class,
               textContent ->
                   assertThat(textContent.text())
-                      .contains("Process instance key must be a positive number."));
+                      .isEqualTo(
+                          "processInstanceKey: Process instance key must be a positive number."));
     }
   }
 

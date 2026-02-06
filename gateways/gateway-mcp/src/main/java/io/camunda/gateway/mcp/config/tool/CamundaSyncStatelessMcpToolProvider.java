@@ -16,6 +16,8 @@ import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.ToolAnnotations;
 import io.modelcontextprotocol.util.Utils;
 import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.function.BiFunction;
@@ -23,7 +25,11 @@ import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springaicommunity.mcp.McpPredicates;
+import org.springaicommunity.mcp.annotation.McpMeta;
+import org.springaicommunity.mcp.annotation.McpProgressToken;
 import org.springaicommunity.mcp.annotation.McpTool;
+import org.springaicommunity.mcp.context.McpAsyncRequestContext;
+import org.springaicommunity.mcp.context.McpSyncRequestContext;
 import org.springaicommunity.mcp.method.tool.ReturnMode;
 import org.springaicommunity.mcp.method.tool.utils.ClassUtils;
 import org.springaicommunity.mcp.provider.tool.AbstractMcpToolProvider;
@@ -97,6 +103,8 @@ public class CamundaSyncStatelessMcpToolProvider extends AbstractMcpToolProvider
 
   private SyncToolSpecification createSyncToolSpecification(
       final Object toolObject, final Method mcpToolMethod) {
+    validateMcpToolParamsUsage(mcpToolMethod);
+
     final var toolAnnotation = mcpToolMethod.getAnnotation(CamundaMcpTool.class);
 
     final String toolName =
@@ -161,5 +169,64 @@ public class CamundaSyncStatelessMcpToolProvider extends AbstractMcpToolProvider
             returnMode, mcpToolMethod, toolObject, doGetToolCallException());
 
     return SyncToolSpecification.builder().tool(tool).callHandler(methodCallback).build();
+  }
+
+  /**
+   * Validates that @McpToolParams is used correctly.
+   *
+   * <p>Enforces mutual exclusivity: a method can have EITHER individual tool parameters OR a single
+   * {@code @McpToolParams} wrapper parameter, but not both. The only parameters allowed alongside
+   * {@code @McpToolParams} are MCP framework types (context, exchange, progress token, meta,
+   * request).
+   *
+   * @param method the tool method to validate
+   * @throws IllegalStateException if @McpToolParams is used incorrectly
+   */
+  private void validateMcpToolParamsUsage(final Method method) {
+    final Parameter[] params = method.getParameters();
+
+    final long mcpToolParamsCount =
+        Arrays.stream(params)
+            .filter(param -> param.isAnnotationPresent(McpToolParams.class))
+            .count();
+
+    if (mcpToolParamsCount == 0) {
+      return;
+    }
+
+    if (mcpToolParamsCount > 1) {
+      throw new IllegalStateException(
+          String.format(
+              "Method '%s.%s' has multiple @McpToolParams parameters. "
+                  + "Only a single @McpToolParams parameter is allowed per method.",
+              method.getDeclaringClass().getSimpleName(), method.getName()));
+    }
+
+    for (final Parameter param : params) {
+      if (param.isAnnotationPresent(McpToolParams.class)) {
+        continue;
+      }
+
+      if (!isFrameworkType(param)) {
+        throw new IllegalStateException(
+            String.format(
+                "Method '%s.%s' mixes @McpToolParams with individual parameter '%s' (type: %s). "
+                    + "Use either individual parameters OR a single @McpToolParams wrapper, not both.",
+                method.getDeclaringClass().getSimpleName(),
+                method.getName(),
+                param.getName(),
+                param.getType().getSimpleName()));
+      }
+    }
+  }
+
+  private static boolean isFrameworkType(final Parameter param) {
+    final Class<?> paramType = param.getType();
+    return McpSyncRequestContext.class.isAssignableFrom(paramType)
+        || McpAsyncRequestContext.class.isAssignableFrom(paramType)
+        || CallToolRequest.class.isAssignableFrom(paramType)
+        || McpTransportContext.class.isAssignableFrom(paramType)
+        || param.isAnnotationPresent(McpProgressToken.class)
+        || McpMeta.class.isAssignableFrom(paramType);
   }
 }
