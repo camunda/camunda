@@ -33,7 +33,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Comparator;
 import java.util.stream.StreamSupport;
-import org.json.JSONException;
 import org.junit.jupiter.api.Test;
 import org.skyscreamer.jsonassert.JSONAssert;
 import org.skyscreamer.jsonassert.JSONCompareMode;
@@ -76,7 +75,7 @@ class ToolSchemaRegressionTest extends ToolsTest {
   @MockitoBean private MultiTenancyConfiguration multiTenancyConfiguration;
 
   @Test
-  void toolSchemasShouldMatchSnapshot() throws IOException, JSONException {
+  void toolSchemasShouldMatchSnapshot() throws Exception {
     // Initialize MCP client
     mcpClient.initialize();
 
@@ -110,7 +109,7 @@ class ToolSchemaRegressionTest extends ToolsTest {
   }
 
   private String loadSnapshot() throws IOException {
-    try (InputStream is = getClass().getClassLoader().getResourceAsStream(SNAPSHOT_PATH)) {
+    try (final InputStream is = getClass().getClassLoader().getResourceAsStream(SNAPSHOT_PATH)) {
       if (is == null) {
         throw new IllegalStateException(
             "Snapshot file not found: "

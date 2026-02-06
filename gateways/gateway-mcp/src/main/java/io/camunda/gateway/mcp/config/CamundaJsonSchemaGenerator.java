@@ -57,7 +57,7 @@ import org.springaicommunity.mcp.method.tool.utils.ClassUtils;
 import org.springaicommunity.mcp.method.tool.utils.ConcurrentReferenceHashMap;
 import org.springaicommunity.mcp.method.tool.utils.JsonParser;
 import org.springaicommunity.mcp.method.tool.utils.SpringAiSchemaModule;
-import reactor.util.annotation.Nullable;
+import org.springframework.lang.Nullable;
 
 /**
  * Camunda's copy of JsonSchemaGenerator for MCP tool schema generation.

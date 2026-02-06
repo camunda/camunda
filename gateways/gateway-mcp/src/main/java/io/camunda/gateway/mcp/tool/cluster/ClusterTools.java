@@ -13,6 +13,7 @@ import io.camunda.gateway.mcp.mapper.CallToolResultMapper;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.TopologyServices;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
+import org.springaicommunity.mcp.annotation.McpTool;
 import org.springframework.stereotype.Component;
 
 @Component
