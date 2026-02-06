@@ -17,6 +17,7 @@ import static io.camunda.gateway.mcp.tool.ToolDescriptions.VARIABLE_VALUE_RETURN
 
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
+import io.camunda.gateway.mcp.config.tool.CamundaMcpTool;
 import io.camunda.gateway.mcp.mapper.CallToolResultMapper;
 import io.camunda.gateway.mcp.model.McpSearchQueryPageRequest;
 import io.camunda.gateway.mcp.model.McpVariableFilter;
@@ -26,7 +27,6 @@ import io.camunda.service.VariableServices;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import jakarta.validation.constraints.Positive;
 import java.util.List;
-import org.springaicommunity.mcp.annotation.McpTool;
 import org.springaicommunity.mcp.annotation.McpTool.McpAnnotations;
 import org.springaicommunity.mcp.annotation.McpToolParam;
 import org.springframework.stereotype.Component;
@@ -46,7 +46,7 @@ public class VariableTools {
     this.authenticationProvider = authenticationProvider;
   }
 
-  @McpTool(
+  @CamundaMcpTool(
       description =
           "Search for variables. " + VARIABLE_VALUE_RETURN_FORMAT + " " + EVENTUAL_CONSISTENCY_NOTE,
       annotations = @McpAnnotations(readOnlyHint = true))
@@ -77,7 +77,7 @@ public class VariableTools {
     }
   }
 
-  @McpTool(
+  @CamundaMcpTool(
       description =
           "Get variable by key. " + VARIABLE_VALUE_RETURN_FORMAT + " " + EVENTUAL_CONSISTENCY_NOTE,
       annotations = @McpAnnotations(readOnlyHint = true))

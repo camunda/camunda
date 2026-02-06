@@ -18,6 +18,7 @@ import io.camunda.gateway.mapping.http.ResponseMapper;
 import io.camunda.gateway.mapping.http.SimpleRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
+import io.camunda.gateway.mcp.config.tool.CamundaMcpTool;
 import io.camunda.gateway.mcp.mapper.CallToolResultMapper;
 import io.camunda.gateway.mcp.model.McpProcessInstanceFilter;
 import io.camunda.gateway.mcp.model.McpSearchQueryPageRequest;
@@ -35,7 +36,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import org.springaicommunity.mcp.annotation.McpTool;
 import org.springaicommunity.mcp.annotation.McpTool.McpAnnotations;
 import org.springaicommunity.mcp.annotation.McpToolParam;
 import org.springframework.stereotype.Component;
@@ -58,7 +58,7 @@ public class ProcessInstanceTools {
     this.authenticationProvider = authenticationProvider;
   }
 
-  @McpTool(
+  @CamundaMcpTool(
       description = "Search for process instances. " + EVENTUAL_CONSISTENCY_NOTE,
       annotations = @McpAnnotations(readOnlyHint = true))
   public CallToolResult searchProcessInstances(
@@ -84,7 +84,7 @@ public class ProcessInstanceTools {
     }
   }
 
-  @McpTool(
+  @CamundaMcpTool(
       description = "Get process instance by key. " + EVENTUAL_CONSISTENCY_NOTE,
       annotations = @McpAnnotations(readOnlyHint = true))
   public CallToolResult getProcessInstance(
@@ -104,7 +104,7 @@ public class ProcessInstanceTools {
     }
   }
 
-  @McpTool(
+  @CamundaMcpTool(
       description =
           """
           Create a new process instance of the given process definition. Either a processDefinitionKey or

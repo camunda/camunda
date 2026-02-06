@@ -20,6 +20,7 @@ import static io.camunda.gateway.mcp.tool.ToolDescriptions.VARIABLE_VALUE_RETURN
 import io.camunda.gateway.mapping.http.RequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
+import io.camunda.gateway.mcp.config.tool.CamundaMcpTool;
 import io.camunda.gateway.mcp.mapper.CallToolResultMapper;
 import io.camunda.gateway.mcp.model.McpSearchQueryPageRequest;
 import io.camunda.gateway.mcp.model.McpUserTaskAssignmentRequest;
@@ -33,7 +34,6 @@ import io.camunda.service.UserTaskServices;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import jakarta.validation.constraints.Positive;
 import java.util.List;
-import org.springaicommunity.mcp.annotation.McpTool;
 import org.springaicommunity.mcp.annotation.McpTool.McpAnnotations;
 import org.springaicommunity.mcp.annotation.McpToolParam;
 import org.springframework.stereotype.Component;
@@ -53,7 +53,7 @@ public class UserTaskTools {
     this.authenticationProvider = authenticationProvider;
   }
 
-  @McpTool(
+  @CamundaMcpTool(
       description =
           "Search for user tasks. " + VARIABLE_FILTER_FORMAT_NOTE + " " + EVENTUAL_CONSISTENCY_NOTE,
       annotations = @McpAnnotations(readOnlyHint = true))
@@ -81,7 +81,7 @@ public class UserTaskTools {
     }
   }
 
-  @McpTool(
+  @CamundaMcpTool(
       description = "Get user task by key. " + EVENTUAL_CONSISTENCY_NOTE,
       annotations = @McpAnnotations(readOnlyHint = true))
   public CallToolResult getUserTask(
@@ -99,7 +99,7 @@ public class UserTaskTools {
     }
   }
 
-  @McpTool(
+  @CamundaMcpTool(
       description =
           "Assign or unassign a user task. Provide an assignee to assign the task, or omit/provide null to unassign it.")
   public CallToolResult assignUserTask(
@@ -134,7 +134,7 @@ public class UserTaskTools {
   }
 
   private CallToolResult performAssignment(
-      final Long userTaskKey, UserTaskAssignmentRequest request) {
+      final Long userTaskKey, final UserTaskAssignmentRequest request) {
     final var mappedRequest = RequestMapper.toUserTaskAssignmentRequest(request, userTaskKey);
     if (mappedRequest.isLeft()) {
       return CallToolResultMapper.mapProblemToResult(mappedRequest.getLeft());
@@ -164,7 +164,7 @@ public class UserTaskTools {
         r -> "User task with key %s unassigned.".formatted(unassignRequest.userTaskKey()));
   }
 
-  @McpTool(
+  @CamundaMcpTool(
       description =
           "Search user task variables based on given criteria. "
               + VARIABLE_VALUE_RETURN_FORMAT

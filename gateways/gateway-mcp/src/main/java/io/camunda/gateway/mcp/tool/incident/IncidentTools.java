@@ -17,6 +17,7 @@ import static io.camunda.gateway.mcp.tool.ToolDescriptions.SORT_DESCRIPTION;
 import io.camunda.gateway.mapping.http.GatewayErrorMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
+import io.camunda.gateway.mcp.config.tool.CamundaMcpTool;
 import io.camunda.gateway.mcp.mapper.CallToolResultMapper;
 import io.camunda.gateway.mcp.model.McpIncidentFilter;
 import io.camunda.gateway.mcp.model.McpSearchQueryPageRequest;
@@ -35,7 +36,6 @@ import io.camunda.zeebe.util.Either;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import jakarta.validation.constraints.Positive;
 import java.util.List;
-import org.springaicommunity.mcp.annotation.McpTool;
 import org.springaicommunity.mcp.annotation.McpTool.McpAnnotations;
 import org.springaicommunity.mcp.annotation.McpToolParam;
 import org.springframework.stereotype.Component;
@@ -58,7 +58,7 @@ public class IncidentTools {
     this.jobServices = jobServices;
   }
 
-  @McpTool(
+  @CamundaMcpTool(
       description = "Search for incidents. " + EVENTUAL_CONSISTENCY_NOTE,
       annotations = @McpAnnotations(readOnlyHint = true))
   public CallToolResult searchIncidents(
@@ -85,7 +85,7 @@ public class IncidentTools {
     }
   }
 
-  @McpTool(
+  @CamundaMcpTool(
       description = "Get incident by key. " + EVENTUAL_CONSISTENCY_NOTE,
       annotations = @McpAnnotations(readOnlyHint = true))
   public CallToolResult getIncident(
@@ -105,7 +105,7 @@ public class IncidentTools {
     }
   }
 
-  @McpTool(description = "Resolve incident by key. " + EVENTUAL_CONSISTENCY_NOTE)
+  @CamundaMcpTool(description = "Resolve incident by key. " + EVENTUAL_CONSISTENCY_NOTE)
   public CallToolResult resolveIncident(
       @McpToolParam(description = "Key of the incident to resolve.")
           @Positive(message = INCIDENT_KEY_POSITIVE_MESSAGE)
