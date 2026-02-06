@@ -43,6 +43,9 @@
             },
             "rootProcessInstanceKey": {
               "type": "long"
+            },
+            "elementInstanceKey": {
+              "type": "long"
             }
           }
         }

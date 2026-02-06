@@ -27,7 +27,8 @@ import org.immutables.value.Value;
  */
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableVariableRecordValue.Builder.class)
-public interface VariableRecordValue extends RecordValue, ProcessInstanceRelated, TenantOwned {
+public interface VariableRecordValue
+    extends RecordValue, ProcessInstanceRelated, AuditLogProcessInstanceRelated, TenantOwned {
 
   /**
    * @return the name of the variable.
@@ -53,11 +54,21 @@ public interface VariableRecordValue extends RecordValue, ProcessInstanceRelated
   /**
    * @return the key of the process the variable belongs to
    */
+  @Override
   long getProcessDefinitionKey();
+
+  /**
+   * @return the element instance key of the scope the variable belongs to.
+   */
+  @Override
+  default long getElementInstanceKey() {
+    return getScopeKey();
+  }
 
   /**
    * @return the BPMN process id this process instance belongs to.
    */
+  @Override
   String getBpmnProcessId();
 
   /**

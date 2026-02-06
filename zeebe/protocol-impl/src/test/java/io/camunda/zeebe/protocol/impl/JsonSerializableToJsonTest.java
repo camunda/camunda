@@ -1612,7 +1612,8 @@ final class JsonSerializableToJsonTest {
                   "name": "x",
                   "value": "1",
                   "tenantId": "<default>",
-                  "rootProcessInstanceKey": 5
+                  "rootProcessInstanceKey": 5,
+                  "elementInstanceKey": 3
                 }
                 """
       },
@@ -1649,7 +1650,8 @@ final class JsonSerializableToJsonTest {
                   "name": "x",
                   "value": "1",
                   "tenantId": "tenant-test",
-                  "rootProcessInstanceKey": 5
+                  "rootProcessInstanceKey": 5,
+                  "elementInstanceKey": 3
                 }
                 """
       },

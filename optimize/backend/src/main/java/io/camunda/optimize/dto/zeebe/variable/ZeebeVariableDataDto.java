@@ -65,6 +65,11 @@ public class ZeebeVariableDataDto implements VariableRecordValue {
   }
 
   @Override
+  public long getElementInstanceKey() {
+    return -1L; // not used in Optimize
+  }
+
+  @Override
   public String getBpmnProcessId() {
     return bpmnProcessId;
   }
