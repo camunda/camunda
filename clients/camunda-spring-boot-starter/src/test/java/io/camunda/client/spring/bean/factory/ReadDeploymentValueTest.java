@@ -38,7 +38,11 @@ public class ReadDeploymentValueTest {
     final BeanInfo classInfo = beanInfo(new WithSingleClassPathResource());
 
     final DeploymentValue expectedDeploymentValue =
-        new DeploymentValue(Collections.singletonList("classpath*:/1.bpmn"), null);
+        new DeploymentValue(
+            Collections.singletonList("classpath*:/1.bpmn"),
+            null,
+            false,
+            WithSingleClassPathResource.class);
 
     // when
     final List<DeploymentValue> valueForClass = getDeploymentValues(classInfo);
@@ -54,7 +58,11 @@ public class ReadDeploymentValueTest {
     final BeanInfo classInfo = beanInfo(new WithMultipleClassPathResource());
 
     final DeploymentValue expectedDeploymentValue =
-        new DeploymentValue(Arrays.asList("classpath*:/1.bpmn", "classpath*:/2.bpmn"), null);
+        new DeploymentValue(
+            Arrays.asList("classpath*:/1.bpmn", "classpath*:/2.bpmn"),
+            null,
+            false,
+            WithMultipleClassPathResource.class);
 
     // when
     final List<DeploymentValue> valueForClass = getDeploymentValues(classInfo);
@@ -81,7 +89,7 @@ public class ReadDeploymentValueTest {
     // given
     final BeanInfo classInfo = beanInfo(new WithSingleClassPathResourceLegacy());
     final DeploymentValue expectedDeploymentValue =
-        new DeploymentValue(Collections.singletonList("classpath*:/1.bpmn"), null);
+        new DeploymentValue(Collections.singletonList("classpath*:/1.bpmn"), null, false, null);
 
     // when
     final List<DeploymentValue> valueForClass = getDeploymentValues(classInfo);
@@ -96,8 +104,23 @@ public class ReadDeploymentValueTest {
     // given
     final BeanInfo classInfo = beanInfo(new WithMultipleClassPathResourceLegacy());
     final DeploymentValue expectedDeploymentValue =
-        new DeploymentValue(Arrays.asList("classpath*:/1.bpmn", "classpath*:/2.bpmn"), null);
+        new DeploymentValue(
+            Arrays.asList("classpath*:/1.bpmn", "classpath*:/2.bpmn"), null, false, null);
 
+    // when
+    final List<DeploymentValue> valueForClass = getDeploymentValues(classInfo);
+
+    // then
+    assertThat(valueForClass).hasSize(1);
+    assertThat(valueForClass.get(0)).isEqualTo(expectedDeploymentValue);
+  }
+
+  @Test
+  void shouldReadOwnJarOnly() {
+    final BeanInfo classInfo = beanInfo(new WithOwnJarOnly());
+    final DeploymentValue expectedDeploymentValue =
+        new DeploymentValue(
+            Collections.singletonList("classpath*:/1.bpmn"), null, true, WithOwnJarOnly.class);
     // when
     final List<DeploymentValue> valueForClass = getDeploymentValues(classInfo);
 
@@ -120,4 +143,7 @@ public class ReadDeploymentValueTest {
   private static final class WithMultipleClassPathResourceLegacy {}
 
   private static final class WithoutAnnotation {}
+
+  @Deployment(resources = "classpath*:/1.bpmn", ownJarOnly = true)
+  private static final class WithOwnJarOnly {}
 }
