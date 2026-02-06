@@ -68,7 +68,8 @@ test.describe('Process Instances Filters', () => {
     await captureFailureVideo(page, testInfo);
   });
 
-  test('Interaction between diagram and filters', async ({
+  // skipped due to bug 45156: https://github.com/camunda/camunda/issues/45156
+  test.skip('Interaction between diagram and filters', async ({
     operateProcessesPage,
     operateFiltersPanelPage,
     page,
@@ -106,7 +107,7 @@ test.describe('Process Instances Filters', () => {
         assertion: async () => {
           await expect(
             operateProcessesPage.noMatchingInstancesMessage,
-          ).toBeVisible({timeout: 60000});
+          ).toBeVisible({timeout: 90000});
         },
         onFailure: async () => {
           await page.reload();

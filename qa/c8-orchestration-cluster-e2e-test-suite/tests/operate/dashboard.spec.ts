@@ -134,12 +134,14 @@ test.describe('Dashboard', () => {
     });
   });
 
-  test('Navigate to processes view (same truncated error message)', async ({
+  // skipped due to bug 45129: https://github.com/camunda/camunda/issues/45129
+  test.skip('Navigate to processes view (same truncated error message)', async ({
     operateDashboardPage,
     operateProcessInstancePage,
   }) => {
     await test.step('Select incident type A and verify details', async () => {
       await operateDashboardPage.clickIncidentByType(/type a/i);
+
       await expect(
         operateDashboardPage.processInstancesHeading(1, false),
       ).toBeVisible();

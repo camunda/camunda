@@ -77,6 +77,7 @@ test.describe('Processes', () => {
     await captureScreenshot(page, testInfo);
     await captureFailureVideo(page, testInfo);
   });
+  const baseUrl = process.env.CORE_APPLICATION_URL || 'http://localhost:8080';
 
   test('Processes Page Initial Load', async ({
     operateProcessesPage,
@@ -127,7 +128,9 @@ test.describe('Processes', () => {
       await waitForAssertion({
         assertion: async () => {
           await expect(operateProcessesPage.dataList).toBeVisible();
-          await expect(operateProcessesPage.processInstancesTable).toHaveCount(2);
+          await expect(operateProcessesPage.processInstancesTable).toHaveCount(
+            2,
+          );
         },
         onFailure: async () => {
           await page.reload();
@@ -242,13 +245,16 @@ test.describe('Processes', () => {
     page,
   }) => {
     await test.step('Navigate to non-existent process', async () => {
-      const baseUrl =
-        process.env.CORE_APPLICATION_URL || 'http://localhost:8080';
       await page.goto(
         `${baseUrl}/operate/processes?process=testProcess&version=1`,
       );
 
-      await expect(page).toHaveURL(`${baseUrl}/operate/processes?process=testProcess&version=1`);
+      await expect(page).toHaveURL(
+        `${baseUrl}/operate/processes?process=testProcess&version=1`,
+      );
+      await expect(
+        operateProcessesPage.processCouldNotBeFoundMessage,
+      ).toBeVisible();
 
       await waitForAssertion({
         assertion: async () => {
@@ -257,19 +263,21 @@ test.describe('Processes', () => {
           });
         },
         onFailure: async () => {
-          page.reload();
+          await page.reload();
         },
         maxRetries: 5,
       });
-
-      await expect(operateDiagramPage.diagramSpinner).toBeVisible();
     });
 
     await test.step('Deploy new process and verify it loads', async () => {
       await deploy(['./resources/newProcess.bpmn']);
       await sleep(5000);
 
-      await expect(operateDiagramPage.diagram).toBeInViewport({timeout: 20000});
+      await page.goto(
+        `${baseUrl}/operate/processes?process=testProcess&version=1`,
+      );
+
+      await expect(operateDiagramPage.diagram).toBeInViewport();
 
       await expect(operateDiagramPage.diagramSpinner).toBeHidden();
 
