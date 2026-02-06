@@ -165,22 +165,41 @@ jobs:
       #   has been set correctly based on the current release version.
       # - For GA minor releases (e.g., 8.9.0), previousVersion should be set to the
       #   previous minor version (e.g., 8.8.0).
+      # - For new alpha releases (e.g., 8.9.0-alpha1), previousVersion should also be validated
+      #   to ensure main branch was properly updated after stable branch creation.
       # - Long-term, this manual step should disappear once
       #   https://github.com/camunda/camunda/issues/40258 is implemented and
       #   the backend no longer depends on project.previousVersion.
       - name: Validate Optimize Previous Version
-        if: ${{ inputs.includeOptimize && !inputs.dryRun && !contains(inputs.releaseVersion, '-') && endsWith(inputs.releaseVersion, '.0') }}
+        if: ${{ inputs.includeOptimize && !inputs.dryRun && ((!contains(inputs.releaseVersion, '-') && endsWith(inputs.releaseVersion, '.0')) || (contains(inputs.releaseVersion, '-alpha1') && endsWith(split(inputs.releaseVersion, '-')[0], '.0'))) }}
         run: |
           set -euo pipefail
           
           echo "=== Validating Optimize project.previousVersion ==="
           
-          # Extract current release version components (e.g., 8.9.0 -> major=8, minor=9)
           RELEASE_VERSION="${{ inputs.releaseVersion }}"
-          if ! [[ "${RELEASE_VERSION}" =~ ^([0-9]+)\.([0-9]+)\.0$ ]]; then
-            echo "❌ FAILED: Release version '${RELEASE_VERSION}' does not match expected pattern X.Y.0"
-            echo "This should not happen due to workflow conditionals. Please check the release version format."
-            exit 1
+          
+          # Determine if this is an alpha release or GA release
+          if [[ "${RELEASE_VERSION}" == *"-alpha"* ]]; then
+            # Alpha release - extract base version (e.g., 8.9.0-alpha1 -> 8.9.0)
+            BASE_VERSION="${RELEASE_VERSION%%-alpha*}"
+            echo "Validating alpha release: ${RELEASE_VERSION} (base version: ${BASE_VERSION})"
+            
+            # Validate base version format
+            if ! [[ "${BASE_VERSION}" =~ ^([0-9]+)\.([0-9]+)\.0$ ]]; then
+              echo "❌ FAILED: Alpha release base version '${BASE_VERSION}' does not match expected pattern X.Y.0"
+              exit 1
+            fi
+          else
+            # GA release - use release version directly
+            BASE_VERSION="${RELEASE_VERSION}"
+            echo "Validating GA release: ${RELEASE_VERSION}"
+            
+            # Validate GA version format
+            if ! [[ "${BASE_VERSION}" =~ ^([0-9]+)\.([0-9]+)\.0$ ]]; then
+              echo "❌ FAILED: GA release version '${BASE_VERSION}' does not match expected pattern X.Y.0"
+              exit 1
+            fi
           fi
           
           MAJOR="${BASH_REMATCH[1]}"
@@ -189,7 +208,7 @@ jobs:
           # Handle edge case for X.0.0 releases
           if [[ "${MINOR}" -eq 0 ]]; then
             echo "❌ FAILED: Cannot validate previousVersion for X.0.0 releases"
-            echo "Release version '${RELEASE_VERSION}' is a major release (X.0.0)"
+            echo "Release version '${BASE_VERSION}' is a major release (X.0.0)"
             echo "There is no previous minor version to validate against."
             echo "This validation only applies to minor releases (X.Y.0 where Y > 0)."
             exit 1
