@@ -7,6 +7,14 @@
  */
 package io.camunda.zeebe.backup.retention;
 
+import static io.camunda.zeebe.backup.retention.RetentionMetrics.BACKUPS_DELETED_ROUND;
+import static io.camunda.zeebe.backup.retention.RetentionMetrics.EARLIEST_BACKUP_ID;
+import static io.camunda.zeebe.backup.retention.RetentionMetrics.PARTITION_TAG;
+import static io.camunda.zeebe.backup.retention.RetentionMetrics.RANGES_DELETED_ROUND;
+import static io.camunda.zeebe.backup.retention.RetentionMetrics.RETENTION_LAST_EXECUTION;
+import static io.camunda.zeebe.backup.retention.RetentionMetrics.RETENTION_NEXT_EXECUTION;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -33,6 +41,9 @@ import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
 import io.camunda.zeebe.util.VersionUtil;
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.search.MeterNotFoundException;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.time.Instant;
@@ -61,10 +72,12 @@ public class RetentionTest {
   @Mock private BackupStore backupStore;
   @Mock private BrokerTopologyManager topologyManager;
   @Mock private BrokerClusterState clusterState;
+  private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
   private BackupRetention backupRetention;
 
   @BeforeEach
   void setUp() {
+    meterRegistry.clear();
     backupRetention = createBackupRetention();
 
     doReturn(clusterState).when(topologyManager).getTopology();
@@ -237,13 +250,83 @@ public class RetentionTest {
     verifyNoBackupStoreModifications();
   }
 
+  @Test
+  void shouldRegisterMetricsOnCreation() {
+    // given
+    final var partitions = List.of(1, 2, 3);
+    setupMultiPartition(partitions);
+    final var now = actorScheduler.getClock().instant();
+    final Map<Integer, List<BackupStatus>> backupsPerPartition =
+        createBackupsForPartitions(partitions, now);
+    final List<BackupRangeMarker> ranges = createDefaultRangeMarkers(now);
+
+    setupBackupStoreListForPartitions(backupsPerPartition);
+    when(backupStore.rangeMarkers(anyInt())).thenReturn(CompletableFuture.completedFuture(ranges));
+
+    // when
+    runRetentionCycle();
+
+    // then
+    assertThat(getGauge(RETENTION_LAST_EXECUTION)).isNotNull();
+    assertThat(getGauge(RETENTION_NEXT_EXECUTION)).isNotNull();
+    partitions.forEach(
+        partition -> {
+          assertThat(getGauge(BACKUPS_DELETED_ROUND, partition)).isNotNull();
+          assertThat(getGauge(RANGES_DELETED_ROUND, partition)).isNotNull();
+          assertThat(getGauge(EARLIEST_BACKUP_ID, partition)).isNotNull();
+        });
+  }
+
+  @Test
+  void shouldDeRegisterMetricsOnShutdown() {
+    // given
+    final var partitions = List.of(1, 2, 3);
+    setupMultiPartition(partitions);
+    final var now = actorScheduler.getClock().instant();
+    final Map<Integer, List<BackupStatus>> backupsPerPartition =
+        createBackupsForPartitions(partitions, now);
+    final List<BackupRangeMarker> ranges = createDefaultRangeMarkers(now);
+
+    setupBackupStoreListForPartitions(backupsPerPartition);
+    when(backupStore.rangeMarkers(anyInt())).thenReturn(CompletableFuture.completedFuture(ranges));
+
+    // when
+    runRetentionCycle();
+    backupRetention.closeAsync();
+    actorScheduler.workUntilDone();
+
+    // then
+    assertThatThrownBy(() -> getGauge(RETENTION_LAST_EXECUTION))
+        .isInstanceOf(MeterNotFoundException.class);
+    assertThatThrownBy(() -> getGauge(RETENTION_NEXT_EXECUTION))
+        .isInstanceOf(MeterNotFoundException.class);
+
+    partitions.forEach(
+        partition -> {
+          assertThatThrownBy(() -> getGauge(BACKUPS_DELETED_ROUND, partition))
+              .isInstanceOf(MeterNotFoundException.class);
+          assertThatThrownBy(() -> getGauge(RANGES_DELETED_ROUND, partition))
+              .isInstanceOf(MeterNotFoundException.class);
+          assertThatThrownBy(() -> getGauge(EARLIEST_BACKUP_ID, partition))
+              .isInstanceOf(MeterNotFoundException.class);
+        });
+  }
+
+  private Gauge getGauge(final String gaugeName) {
+    return meterRegistry.get(gaugeName).gauge();
+  }
+
+  private Gauge getGauge(final String gaugeName, final int partitionId) {
+    return meterRegistry.get(gaugeName).tag(PARTITION_TAG, String.valueOf(partitionId)).gauge();
+  }
+
   private BackupRetention createBackupRetention() {
     return new BackupRetention(
         backupStore,
         new IntervalSchedule(Duration.ofSeconds(10)),
         Duration.ofMinutes(2),
         topologyManager,
-        new SimpleMeterRegistry());
+        meterRegistry);
   }
 
   private void setupMultiPartition(final List<Integer> partitions) {

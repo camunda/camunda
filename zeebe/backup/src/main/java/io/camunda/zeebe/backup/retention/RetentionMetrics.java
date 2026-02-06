@@ -82,6 +82,7 @@ public class RetentionMetrics implements CloseableSilently {
     meterRegistry.find(EARLIEST_BACKUP_ID).gauges().forEach(meterRegistry::remove);
     meterRegistry.find(BACKUPS_DELETED_ROUND).gauges().forEach(meterRegistry::remove);
     meterRegistry.find(RANGES_DELETED_ROUND).gauges().forEach(meterRegistry::remove);
+    partitionMetrics.clear();
   }
 
   public void recordLastExecution(final Instant lastExecution) {

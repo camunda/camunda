@@ -67,21 +67,6 @@ public interface BackupRetentionAcceptance {
     final List<Long> backupIds = new ArrayList<>();
 
     // Wait for 3 completed backups
-    /*    Awaitility.await("Initial backups are created")
-    .atMost(Duration.ofSeconds(30))
-    .pollInterval(Duration.ofSeconds(1))
-    .until(
-        () -> {
-          final var backups = actuator.list();
-          if (backups.stream().filter(f -> f.getState() == StateCode.COMPLETED).count() < 3) {
-            progressClock(BACKUP_INTERVAL.toMillis());
-            return false;
-          }
-          backups.sort(Comparator.comparingLong(BackupInfo::getBackupId));
-          nextBackupId.set(backups.get(2).getBackupId());
-          backups.subList(0, 2).forEach(backup -> backupIds.add(backup.getBackupId()));
-          return true;
-        });*/
     final var firstBackup = awaitNewBackup(0);
     final var secondBackup = awaitNewBackup(firstBackup);
     final var thirdBackup = awaitNewBackup(secondBackup);
