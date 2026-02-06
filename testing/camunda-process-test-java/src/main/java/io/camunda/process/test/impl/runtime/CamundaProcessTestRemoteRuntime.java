@@ -23,7 +23,11 @@ import io.camunda.client.api.response.PartitionInfo;
 import io.camunda.client.api.response.Topology;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import java.net.URI;
+import java.time.Duration;
+import java.util.Optional;
 import java.util.function.Supplier;
+import org.awaitility.Awaitility;
+import org.awaitility.core.ConditionTimeoutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,7 +73,20 @@ public class CamundaProcessTestRemoteRuntime implements CamundaProcessTestRuntim
         connectorsRestApiAddress);
 
     // check connection to remote runtime
-    checkConnectionToRemoteRuntime();
+    //    checkConnectionToRemoteRuntime();
+    try {
+      Awaitility.await()
+          .atMost(Duration.ofSeconds(5))
+          .pollInterval(Duration.ofSeconds(1))
+          .pollDelay(Duration.ZERO)
+          .ignoreExceptions()
+          .untilAsserted(this::checkConnectionToRemoteRuntime);
+    } catch (final ConditionTimeoutException timeout) {
+      throw new RuntimeException(
+          Optional.ofNullable(timeout.getCause())
+              .map(Throwable::getMessage)
+              .orElse("Failed to connect to remote Camunda runtime."));
+    }
   }
 
   @Override
