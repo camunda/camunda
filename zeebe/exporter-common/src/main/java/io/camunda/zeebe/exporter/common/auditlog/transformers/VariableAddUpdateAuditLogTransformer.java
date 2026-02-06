@@ -7,9 +7,12 @@
  */
 package io.camunda.zeebe.exporter.common.auditlog.transformers;
 
+import io.camunda.search.entities.AuditLogDetails;
+import io.camunda.search.entities.AuditLogDetails.AuditLogChangeSetDetails;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogEntry;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
+import java.util.List;
 
 public class VariableAddUpdateAuditLogTransformer
     implements AuditLogTransformer<VariableRecordValue> {
@@ -25,6 +28,9 @@ public class VariableAddUpdateAuditLogTransformer
     log.setProcessInstanceKey(value.getProcessInstanceKey())
         .setProcessDefinitionId(value.getBpmnProcessId())
         .setProcessDefinitionKey(value.getProcessDefinitionKey())
-        .setElementInstanceKey(value.getScopeKey());
+        .setElementInstanceKey(value.getScopeKey())
+        .setDetails(
+            new AuditLogChangeSetDetails(
+                List.of(new AuditLogDetails.ChangeSet(value.getName(), "?", value.getValue()))));
   }
 }

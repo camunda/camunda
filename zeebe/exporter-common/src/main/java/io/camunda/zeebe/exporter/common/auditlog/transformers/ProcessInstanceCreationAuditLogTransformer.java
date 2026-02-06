@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.exporter.common.auditlog.transformers;
 
+import io.camunda.search.entities.AuditLogDetails.AuditLogInstructionDetails;
+import io.camunda.search.entities.AuditLogDetails.Instruction;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogEntry;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
@@ -30,5 +32,13 @@ public class ProcessInstanceCreationAuditLogTransformer
     if (rootProcessInstanceKey > 0) {
       log.setRootProcessInstanceKey(rootProcessInstanceKey);
     }
+
+    final var startInstructions =
+        value.getStartInstructions().stream().map(i -> new Instruction(i.getElementId())).toList();
+    final var runtimeInstructions =
+        value.getRuntimeInstructions().stream()
+            .map(i -> new Instruction(i.getAfterElementId()))
+            .toList();
+    log.setDetails(new AuditLogInstructionDetails(startInstructions, runtimeInstructions));
   }
 }

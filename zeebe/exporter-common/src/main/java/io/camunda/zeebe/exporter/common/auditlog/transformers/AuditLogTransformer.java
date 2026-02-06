@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.exporter.common.auditlog.transformers;
 
+import io.camunda.search.entities.AuditLogDetails.AuditLogFailDetails;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogEntry;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -48,6 +49,10 @@ public interface AuditLogTransformer<R extends RecordValue> {
     if (log.getResult() == null) {
       if (RecordType.COMMAND_REJECTION.equals(record.getRecordType())) {
         log.setResult(io.camunda.search.entities.AuditLogEntity.AuditLogOperationResult.FAIL);
+
+        log.setDetails(
+            new AuditLogFailDetails(
+                String.valueOf(record.getRejectionType().value()), record.getRejectionReason()));
       } else {
         log.setResult(io.camunda.search.entities.AuditLogEntity.AuditLogOperationResult.SUCCESS);
       }
