@@ -21,6 +21,6 @@ class HistoryDeletionDbReaderTest {
   @Test
   void shouldReturnEmptyList() {
     final var nextBatch = historyDeletionDbReader.getNextBatch(0, 1);
-    assertThat(nextBatch).isEmpty();
+    assertThat(nextBatch.historyDeletionModels()).isEmpty();
   }
 }

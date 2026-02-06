@@ -22,10 +22,9 @@ import io.camunda.db.rdbms.read.service.ProcessInstanceDbReader;
 import io.camunda.db.rdbms.sql.RootProcessInstanceDependantMapper;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig.HistoryDeletionConfig;
 import io.camunda.db.rdbms.write.RdbmsWriters;
+import io.camunda.db.rdbms.write.domain.HistoryDeletionBatch;
 import io.camunda.db.rdbms.write.domain.HistoryDeletionDbModel;
 import io.camunda.db.rdbms.write.domain.HistoryDeletionDbModel.HistoryDeletionTypeDbModel;
-import io.camunda.search.entities.ProcessInstanceEntity;
-import io.camunda.search.query.SearchQueryResult;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
@@ -38,18 +37,16 @@ public class HistoryDeletionServiceTest {
   private HistoryDeletionService historyDeletionService;
   private RdbmsWriters rdbmsWritersMock;
   private HistoryDeletionDbReader historyDeletionDbReaderMock;
-  private ProcessInstanceDbReader processInstanceDbReaderMock;
 
   @BeforeEach
   void setUp() {
     rdbmsWritersMock = mock(RdbmsWriters.class, Answers.RETURNS_DEEP_STUBS);
     historyDeletionDbReaderMock = mock(HistoryDeletionDbReader.class);
-    processInstanceDbReaderMock = mock(ProcessInstanceDbReader.class);
     historyDeletionService =
         new HistoryDeletionService(
             rdbmsWritersMock,
             historyDeletionDbReaderMock,
-            processInstanceDbReaderMock,
+            mock(ProcessInstanceDbReader.class),
             new HistoryDeletionConfig(Duration.ofSeconds(1), Duration.ofMinutes(5), 100, 10000));
   }
 
@@ -61,9 +58,11 @@ public class HistoryDeletionServiceTest {
     final var processInstanceKey2 = 2L;
     when(historyDeletionDbReaderMock.getNextBatch(anyInt(), anyInt()))
         .thenReturn(
-            List.of(
-                createModel(processInstanceKey1, partitionId),
-                createModel(processInstanceKey2, partitionId)));
+            new HistoryDeletionBatch(
+                List.of(
+                    createModel(processInstanceKey1, HistoryDeletionTypeDbModel.PROCESS_INSTANCE),
+                    createModel(
+                        processInstanceKey2, HistoryDeletionTypeDbModel.PROCESS_INSTANCE))));
     final var mapperMock = mock(RootProcessInstanceDependantMapper.class);
     when(rdbmsWritersMock.getProcessInstanceDependantWriters())
         .thenReturn(List.of(new TestProcessInstanceDependantWriter(mapperMock)));
@@ -87,7 +86,8 @@ public class HistoryDeletionServiceTest {
   @Test
   void shouldNotDeleteWhenBatchIsEmpty() {
     // given
-    when(historyDeletionDbReaderMock.getNextBatch(anyInt(), anyInt())).thenReturn(List.of());
+    when(historyDeletionDbReaderMock.getNextBatch(anyInt(), anyInt()))
+        .thenReturn(new HistoryDeletionBatch(List.of()));
     final var mapperMock = mock(RootProcessInstanceDependantMapper.class);
     when(rdbmsWritersMock.getProcessInstanceDependantWriters())
         .thenReturn(List.of(new TestProcessInstanceDependantWriter(mapperMock)));
@@ -107,12 +107,15 @@ public class HistoryDeletionServiceTest {
     final var partitionId = 1;
     final var processInstanceKey = 1L;
     when(historyDeletionDbReaderMock.getNextBatch(anyInt(), anyInt()))
-        .thenReturn(List.of(createModel(processInstanceKey, partitionId)));
+        .thenReturn(
+            new HistoryDeletionBatch(
+                List.of(
+                    createModel(processInstanceKey, HistoryDeletionTypeDbModel.PROCESS_INSTANCE))));
     final var mapperMock = mock(RootProcessInstanceDependantMapper.class);
     when(rdbmsWritersMock.getProcessInstanceDependantWriters())
         .thenReturn(List.of(new TestProcessInstanceDependantWriter(mapperMock)));
     when(mapperMock.deleteRootProcessInstanceRelatedData(any()))
-        .thenReturn(10000); // not all dependant data deleted
+        .thenThrow(new RuntimeException("Failed deleting")); // not all dependant data deleted
 
     // when
     historyDeletionService.deleteHistory(partitionId);
@@ -130,10 +133,12 @@ public class HistoryDeletionServiceTest {
     final var processDefinitionKey2 = 2L;
     when(historyDeletionDbReaderMock.getNextBatch(anyInt(), anyInt()))
         .thenReturn(
-            List.of(
-                createProcessDefinitionModel(processDefinitionKey1, partitionId),
-                createProcessDefinitionModel(processDefinitionKey2, partitionId)));
-    when(processInstanceDbReaderMock.search(any())).thenReturn(SearchQueryResult.empty());
+            new HistoryDeletionBatch(
+                List.of(
+                    createModel(
+                        processDefinitionKey1, HistoryDeletionTypeDbModel.PROCESS_DEFINITION),
+                    createModel(
+                        processDefinitionKey2, HistoryDeletionTypeDbModel.PROCESS_DEFINITION))));
 
     // when
     historyDeletionService.deleteHistory(partitionId);
@@ -150,10 +155,19 @@ public class HistoryDeletionServiceTest {
     // given
     final var partitionId = 1;
     final var processDefinitionKey = 1L;
+    final var processInstanceKey = 1L;
+    final HistoryDeletionBatch historyDeletionBatch =
+        new HistoryDeletionBatch(
+            List.of(
+                createModel(processInstanceKey, HistoryDeletionTypeDbModel.PROCESS_INSTANCE),
+                createModel(processDefinitionKey, HistoryDeletionTypeDbModel.PROCESS_DEFINITION)));
     when(historyDeletionDbReaderMock.getNextBatch(anyInt(), anyInt()))
-        .thenReturn(List.of(createProcessDefinitionModel(processDefinitionKey, partitionId)));
-    when(processInstanceDbReaderMock.search(any()))
-        .thenReturn(SearchQueryResult.of(mock(ProcessInstanceEntity.class)));
+        .thenReturn(historyDeletionBatch);
+    final var mapperMock = mock(RootProcessInstanceDependantMapper.class);
+    when(rdbmsWritersMock.getProcessInstanceDependantWriters())
+        .thenReturn(List.of(new TestProcessInstanceDependantWriter(mapperMock)));
+    when(rdbmsWritersMock.getProcessInstanceWriter().deleteByKeys(List.of(processInstanceKey)))
+        .thenThrow(new RuntimeException("Failed deleting")); // not all process instances deleted
 
     // when
     historyDeletionService.deleteHistory(partitionId);
@@ -167,6 +181,10 @@ public class HistoryDeletionServiceTest {
   void shouldApplyExponentialBackoffIfNothingToDelete() {
     // given
     final var partitionId = 1;
+
+    when(historyDeletionDbReaderMock.getNextBatch(anyInt(), anyInt()))
+        .thenReturn(
+            new HistoryDeletionBatch(Collections.emptyList())); // nothing to delete in all calls
 
     // when
     final var interval1 = historyDeletionService.deleteHistory(partitionId);
@@ -188,7 +206,9 @@ public class HistoryDeletionServiceTest {
     // given
     final var partitionId = 1;
     when(historyDeletionDbReaderMock.getNextBatch(anyInt(), anyInt()))
-        .thenReturn(List.of(createModel(1L, partitionId)));
+        .thenReturn(
+            new HistoryDeletionBatch(
+                List.of(createModel(1L, HistoryDeletionTypeDbModel.PROCESS_INSTANCE))));
     when(rdbmsWritersMock.getProcessInstanceDependantWriters()).thenReturn(Collections.emptyList());
     when(rdbmsWritersMock.getHistoryDeletionWriter().deleteByResourceKeys(anyList())).thenReturn(1);
 
@@ -209,9 +229,11 @@ public class HistoryDeletionServiceTest {
     final var decisionInstanceKey2 = 2L;
     when(historyDeletionDbReaderMock.getNextBatch(anyInt(), anyInt()))
         .thenReturn(
-            List.of(
-                createDecisionInstanceModel(decisionInstanceKey1, partitionId),
-                createDecisionInstanceModel(decisionInstanceKey2, partitionId)));
+            new HistoryDeletionBatch(
+                List.of(
+                    createModel(decisionInstanceKey1, HistoryDeletionTypeDbModel.DECISION_INSTANCE),
+                    createModel(
+                        decisionInstanceKey2, HistoryDeletionTypeDbModel.DECISION_INSTANCE))));
 
     // when
     historyDeletionService.deleteHistory(partitionId);
@@ -224,21 +246,8 @@ public class HistoryDeletionServiceTest {
   }
 
   private static HistoryDeletionDbModel createModel(
-      final long processInstanceKey, final int partitionId) {
-    return new HistoryDeletionDbModel(
-        processInstanceKey, HistoryDeletionTypeDbModel.PROCESS_INSTANCE, 2L, partitionId);
-  }
-
-  private static HistoryDeletionDbModel createProcessDefinitionModel(
-      final long processDefinitionKey, final int partitionId) {
-    return new HistoryDeletionDbModel(
-        processDefinitionKey, HistoryDeletionTypeDbModel.PROCESS_DEFINITION, 2L, partitionId);
-  }
-
-  private static HistoryDeletionDbModel createDecisionInstanceModel(
-      final long decisionInstanceKey, final int partitionId) {
-    return new HistoryDeletionDbModel(
-        decisionInstanceKey, HistoryDeletionTypeDbModel.DECISION_INSTANCE, 2L, partitionId);
+      final long resourceKey, final HistoryDeletionTypeDbModel type) {
+    return new HistoryDeletionDbModel(resourceKey, type, 2L, 1);
   }
 
   private static class TestProcessInstanceDependantWriter extends RootProcessInstanceDependant {

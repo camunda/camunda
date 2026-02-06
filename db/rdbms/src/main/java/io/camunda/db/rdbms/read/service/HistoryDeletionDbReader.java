@@ -8,8 +8,7 @@
 package io.camunda.db.rdbms.read.service;
 
 import io.camunda.db.rdbms.sql.HistoryDeletionMapper;
-import io.camunda.db.rdbms.write.domain.HistoryDeletionDbModel;
-import java.util.List;
+import io.camunda.db.rdbms.write.domain.HistoryDeletionBatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,10 +21,11 @@ public class HistoryDeletionDbReader {
     this.historyDeletionMapper = historyDeletionMapper;
   }
 
-  public List<HistoryDeletionDbModel> getNextBatch(final int partitionId, final int limit) {
+  public HistoryDeletionBatch getNextBatch(final int partitionId, final int limit) {
     LOG.trace(
         "[RDBMS DB] Fetch first {} history deletion records from partition {}", limit, partitionId);
 
-    return historyDeletionMapper.getHistoryDeletionBatch(partitionId, limit);
+    return new HistoryDeletionBatch(
+        historyDeletionMapper.getHistoryDeletionBatch(partitionId, limit));
   }
 }
