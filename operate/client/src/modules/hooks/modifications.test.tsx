@@ -435,7 +435,7 @@ describe('modifications hooks', () => {
           useAvailableModifications({
             runningElementInstanceCount: 1,
             elementId: 'StartEvent_1',
-            isElementInstanceResolved: true,
+            isElementInstanceKeyAvailable: true,
           }),
         {wrapper: getWrapper()},
       );
@@ -451,7 +451,7 @@ describe('modifications hooks', () => {
           useAvailableModifications({
             runningElementInstanceCount: 1,
             elementId: 'ServiceTask_1daop2o',
-            isElementInstanceResolved: true,
+            isElementInstanceKeyAvailable: true,
           }),
         {wrapper: getWrapper()},
       );
@@ -466,7 +466,7 @@ describe('modifications hooks', () => {
           useAvailableModifications({
             runningElementInstanceCount: 1,
             elementId: 'ServiceTask_0ruokei',
-            isElementInstanceResolved: true,
+            isElementInstanceKeyAvailable: true,
           }),
         {wrapper: getWrapper()},
       );
@@ -481,7 +481,7 @@ describe('modifications hooks', () => {
           useAvailableModifications({
             runningElementInstanceCount: 1,
             elementId: 'ServiceTask_1daop2o',
-            isElementInstanceResolved: true,
+            isElementInstanceKeyAvailable: true,
           }),
         {wrapper: getWrapper()},
       );
@@ -507,7 +507,7 @@ describe('modifications hooks', () => {
           useAvailableModifications({
             runningElementInstanceCount: 1,
             elementId: 'ServiceTask_1daop2o',
-            isElementInstanceResolved: true,
+            isElementInstanceKeyAvailable: true,
           }),
         {wrapper: getWrapper()},
       );
@@ -565,7 +565,7 @@ describe('modifications hooks', () => {
           useAvailableModifications({
             runningElementInstanceCount: 1,
             elementId: 'ServiceTask_0ruokei',
-            isElementInstanceResolved: true,
+            isElementInstanceKeyAvailable: true,
           }),
         {wrapper: getWrapper()},
       );

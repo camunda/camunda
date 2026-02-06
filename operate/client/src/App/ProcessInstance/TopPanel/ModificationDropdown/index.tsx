@@ -79,7 +79,7 @@ const ModificationDropdown: React.FC<Props> = observer(
       elementId: selectedElementId ?? undefined,
       elementInstanceKey: selectedElementInstanceKey ?? undefined,
       isMultiInstanceBody: isSelectedInstanceMultiInstanceBody,
-      isElementInstanceResolved:
+      isElementInstanceKeyAvailable:
         selectedElementInstanceKey !== null ||
         resolvedElementInstanceKey !== undefined,
     });
