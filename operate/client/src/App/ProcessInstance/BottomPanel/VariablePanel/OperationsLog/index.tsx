@@ -30,7 +30,7 @@ import {
   type DetailsModalState,
 } from 'modules/components/OperationsLogDetailsModal';
 import {OperationsLogStateIcon} from 'modules/components/OperationsLogStateIcon';
-import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
+import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
 import {IS_ELEMENT_SELECTION_V2} from 'modules/feature-flags';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
@@ -79,7 +79,7 @@ const OperationsLog: React.FC<Props> = observer(({isVisible}) => {
     useProcessInstanceElementSelection();
   const elementInstanceKey = IS_ELEMENT_SELECTION_V2
     ? resolvedElementInstance?.elementInstanceKey
-    : flowNodeMetaDataStore.state.metaData?.flowNodeInstanceId;
+    : flowNodeSelectionStore.state.selection?.flowNodeInstanceId;
 
   const request = useMemo(
     (): QueryAuditLogsRequestBody => ({
