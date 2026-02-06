@@ -108,7 +108,7 @@
     <version.spring>7.0.3</version.spring>
     <version.spring-security>7.0.2</version.spring-security>
     <version.spring-boot>4.0.2</version.spring-boot>
-    <version.spring-ai>1.1.2</version.spring-ai>
+    <version.spring-ai>2.0.0-M2</version.spring-ai>
     <version.spring-ai-community.mcp-annotations>0.8.0</version.spring-ai-community.mcp-annotations>
     <version.mcp-sdk>0.17.2</version.mcp-sdk>
     <version.tomcat>11.0.15</version.tomcat>
