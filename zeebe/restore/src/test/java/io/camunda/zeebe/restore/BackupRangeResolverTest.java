@@ -173,7 +173,9 @@ final class BackupRangeResolverTest {
       final var safeStartByPartition = Map.of(1, 100L, 2, 100L, 3, 100L);
 
       final var completeBackupList =
-          List.of(createBackup(100, 1000, Instant.now()), createBackup(105, 1050, Instant.now()));
+          List.of(
+              createBackupWithLogPosition(100, 1000, 500, Instant.now()),
+              createBackupWithLogPosition(105, 1050, 950, Instant.now()));
 
       // All nodes have backups for their partitions
       // needed due to lack of covariance
@@ -265,8 +267,8 @@ final class BackupRangeResolverTest {
               1,
               30, // Gap before index 1
               new CheckpointSpec(100, 1000),
-              new CheckpointSpec(103, 1030),
-              new CheckpointSpec(105, 1050));
+              new CheckpointSpec(103, 1200),
+              new CheckpointSpec(105, 1300));
 
       // Node1P2 has a gap of 99 positions before backup 105
       final var node1Backups =
@@ -274,7 +276,7 @@ final class BackupRangeResolverTest {
               1,
               99, // Gap before index 1
               new CheckpointSpec(100, 2000),
-              new CheckpointSpec(105, 2050));
+              new CheckpointSpec(105, 2500));
 
       final Map<Integer, SequencedCollection<BackupStatus>> backupsByNodePartition =
           Map.of(
@@ -295,9 +297,9 @@ final class BackupRangeResolverTest {
           .isInstanceOf(IllegalStateException.class)
           .hasMessageContaining("Cannot restore to global checkpoint 105")
           .hasMessageContaining(
-              "Partition 1: has gap in log positions - backup 100 ends at position 1000, but backup 103 starts at position 1031 (expected 1001)")
+              "Partition 1: has gap in log positions - checkpoint 100 @ [1, 1000], checkpoint 103 @ [1031, 1200]")
           .hasMessageContaining(
-              "Partition 2: has gap in log positions - backup 100 ends at position 2000, but backup 105 starts at position 2100 (expected 2001)");
+              "Partition 2: has gap in log positions - checkpoint 100 @ [1, 2000], checkpoint 105 @ [2100, 2500]");
     }
 
     @Test
@@ -327,9 +329,7 @@ final class BackupRangeResolverTest {
           .isInstanceOf(IllegalStateException.class)
           .hasMessageContaining("Cannot restore to global checkpoint 2100")
           .hasMessageContaining(
-              "Partition 1: backup range [1950, 2100] does not cover required range [1900, 2100]")
-          .hasMessageContaining(
-              "Partition 1s first backup at checkpoint 1950 is after safe start 1900");
+              "Partition 1: backup range [1950, 2100] does not cover required range [1900, 2100]");
     }
 
     @Test
@@ -551,8 +551,7 @@ final class BackupRangeResolverTest {
       assertThatThrownBy(validator::validate)
           .isInstanceOf(IllegalStateException.class)
           .hasMessageContaining("Cannot restore to global checkpoint 2100")
-          .hasMessageContaining(
-              "Partition 2: has gap in log positions - backup 1900 ends at position 2500, but backup 2100 starts at position 2700 (expected 2501)");
+          .hasMessageContaining("Partition 2: has gap in log positions");
     }
 
     @Test

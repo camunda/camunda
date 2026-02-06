@@ -17,7 +17,6 @@ import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.api.Interval;
-import io.camunda.zeebe.util.Optionals;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -107,7 +106,7 @@ public final class BackupRangeResolver {
       if (range instanceof final BackupRange.Complete completeRange) {
         // get the BackupStatuses from the store
         final Interval<BackupStatus> statusInterval =
-            completeRange.interval().map(c -> toBackupStatus(partitionId, c));
+            completeRange.checkpointInterval().map(c -> toBackupStatus(partitionId, c));
         final Interval<Instant> timeInterval = statusInterval.map(BackupStatus::createdOrThrow);
         if (timeInterval.contains(interval)) {
           return Optional.of(new Tuple<>(completeRange, statusInterval));
@@ -202,8 +201,8 @@ public final class BackupRangeResolver {
                 "Partition %d: backup range [%d, %d] has deletions: %s"
                     .formatted(
                         partition,
-                        incomplete.interval().start(),
-                        incomplete.interval().end(),
+                        incomplete.checkpontInterval().start(),
+                        incomplete.checkpontInterval().end(),
                         incomplete.deletedCheckpointIds()));
         case final BackupRange.Complete complete -> {
           validateRangeCoverage(globalCheckpointId, complete);
@@ -214,13 +213,14 @@ public final class BackupRangeResolver {
 
     private void validateRangeCoverage(
         final long globalCheckpointId, final BackupRange.Complete range) {
-      if (range.interval().start() > safeStart || range.interval().end() < globalCheckpointId) {
+      if (range.checkpointInterval().start() > safeStart
+          || range.checkpointInterval().end() < globalCheckpointId) {
         throw new IllegalStateException(
             "Partition %d: backup range [%d, %d] does not cover required range [%d, %d]"
                 .formatted(
                     partition,
-                    range.interval().start(),
-                    range.interval().end(),
+                    range.checkpointInterval().start(),
+                    range.checkpointInterval().end(),
                     safeStart,
                     globalCheckpointId));
       }
@@ -260,34 +260,30 @@ public final class BackupRangeResolver {
         final var prevBackup = sortedBackups.get(i - 1);
         final var currBackup = sortedBackups.get(i);
 
-        final var prevCheckpointPosition =
-            prevBackup
-                .descriptor()
-                .map(BackupDescriptor::checkpointPosition)
-                .orElseThrow(
-                    () ->
-                        new IllegalStateException(
-                            String.format(
-                                "Missing checkpoint position for backup %s", prevBackup)));
-        final var currFirstLogPosition =
-            currBackup
-                .descriptor()
-                .map(BackupDescriptor::firstLogPosition)
-                .flatMap(Optionals::boxed);
+        final var prevPositionInterval = getLogPositionInterval(prevBackup);
+        final var currPositionInterval = getLogPositionInterval(currBackup);
 
-        if (currFirstLogPosition.isPresent()
-            && currFirstLogPosition.get() > prevCheckpointPosition + 1) {
+        if (!(prevPositionInterval.overlapsWith(currPositionInterval)
+            || currPositionInterval.start() == prevPositionInterval.end() + 1)) {
           throw new IllegalStateException(
-              "Partition %d: has gap in log positions - backup %d ends at position %d, but backup %d starts at position %d (expected %d)"
+              "Partition %d: has gap in log positions - checkpoint %d @ %s, checkpoint %d @ %s"
                   .formatted(
                       partitionId,
                       prevBackup.id().checkpointId(),
-                      prevCheckpointPosition,
+                      prevPositionInterval,
                       currBackup.id().checkpointId(),
-                      currFirstLogPosition.get(),
-                      prevCheckpointPosition + 1));
+                      currPositionInterval));
         }
       }
+    }
+
+    private Interval<Long> getLogPositionInterval(final BackupStatus backup) {
+      return backup
+          .descriptor()
+          .flatMap(BackupDescriptor::getLogPositionInterval)
+          .orElseThrow(
+              () ->
+                  new IllegalStateException("No log position interval for backup " + backup.id()));
     }
   }
 
@@ -360,6 +356,7 @@ public final class BackupRangeResolver {
               info.validate(globalCheckpointId);
             } catch (final RuntimeException e) {
               failures.add(e.getMessage());
+              e.printStackTrace();
             }
           });
 
