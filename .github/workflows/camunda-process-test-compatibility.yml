@@ -46,7 +46,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
-          fetch-depth: 0
+          fetch-depth: 0  # Fetch all history for git tags
 
       - name: Get branch information
         id: branch-info
@@ -59,21 +59,20 @@ jobs:
             echo "stable-version=" >> "$GITHUB_OUTPUT"
           else
             echo "is-main=false" >> "$GITHUB_OUTPUT"
+            # Extract version from stable/8.x branch name
             if [[ "$BRANCH_NAME" =~ ^stable/([0-9]+\.[0-9]+)$ ]]; then
               STABLE_VERSION="${BASH_REMATCH[1]}"
               echo "stable-version=$STABLE_VERSION" >> "$GITHUB_OUTPUT"
-            # TESTING ONLY: Hardcode stable version for test branch - Remove before merging
-
-            elif [[ "$BRANCH_NAME" == "nicpuppa/41917-cpt-workflow" ]]; then
-              echo "stable-version=8.8" >> "$GITHUB_OUTPUT"
             else
-              echo "stable-version=" >> "$GITHUB_OUTPUT"
+              echo "DEBUG: Using default stable version for testing: $DEFAULT_STABLE"
+              echo "stable-version=$DEFAULT_STABLE" >> "$GITHUB_OUTPUT"
             fi
           fi
 
       - name: Get current version from pom.xml
         id: pom-version
         run: |
+          # Extract version from root pom.xml
           POM_VERSION=$(./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout)
           echo "pom-version=$POM_VERSION" >> "$GITHUB_OUTPUT"
           echo "Current pom.xml version: $POM_VERSION"
@@ -81,35 +80,47 @@ jobs:
       - name: Get versions from git tags
         id: get-versions
         run: |
+          # Get all version tags (format: 8.x.y)
           ALL_TAGS=$(git tag -l '[0-9]*.[0-9]*.[0-9]*' | sort -V)
 
           STABLE_VERSION="${{ steps.branch-info.outputs.stable-version }}"
           IS_MAIN="${{ steps.branch-info.outputs.is-main }}"
 
           if [[ "$IS_MAIN" == "true" ]]; then
+            # On main, use only the snapshot version from pom as the tag
             FILTERED_TAGS=""
           else
+            # Filter tags >= stable version (e.g., >= 8.8.0)
             FILTERED_TAGS=""
+            SKIPPED_COUNT=0
+            FILTERED_COUNT=0
             for tag in $ALL_TAGS; do
+              # Skip alpha/beta/rc releases (format: 8.x.x-alpha1, 8.x.x-rc1)
               if [[ "$tag" =~ -alpha|-beta|-rc ]]; then
+                SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
                 continue
               fi
 
+              # Extract major.minor from tag
               if [[ "$tag" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
                 TAG_MAJOR="${BASH_REMATCH[1]}"
                 TAG_MINOR="${BASH_REMATCH[2]}"
 
+                # Compare versions
                 IFS='.' read -r STABLE_MAJOR STABLE_MINOR <<< "$STABLE_VERSION"
 
                 if (( TAG_MAJOR > STABLE_MAJOR )) || \
                    (( TAG_MAJOR == STABLE_MAJOR && TAG_MINOR >= STABLE_MINOR )); then
                   FILTERED_TAGS+="$tag"$'\n'
+                  FILTERED_COUNT=$((FILTERED_COUNT + 1))
                 fi
               fi
             done
           fi
 
+          # Save filtered tags
           echo "$FILTERED_TAGS" > /tmp/filtered_tags.txt
+          FILTERED_COUNT=$(echo "$FILTERED_TAGS" | grep -c -v '^$' || echo "0")
           echo "Filtered tags:"
           cat /tmp/filtered_tags.txt
 
@@ -120,14 +131,16 @@ jobs:
           POM_VERSION="${{ steps.pom-version.outputs.pom-version }}"
           IS_MAIN="${{ steps.branch-info.outputs.is-main }}"
 
-          # Calculate next minor snapshot version
+          # Calculate next minor snapshot version from latest tag
           LATEST_TAG=$(echo "$FILTERED_TAGS" | tail -n1)
           if [[ -n "$LATEST_TAG" ]] && [[ "$LATEST_TAG" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
             TAG_MAJOR="${BASH_REMATCH[1]}"
             TAG_MINOR="${BASH_REMATCH[2]}"
             NEXT_MINOR=$((TAG_MINOR + 1))
             NEXT_SNAPSHOT="$TAG_MAJOR.$NEXT_MINOR.0-SNAPSHOT"
+            echo "DEBUG: Calculated next snapshot from latest tag: $NEXT_SNAPSHOT"
           else
+            # Fallback: derive from pom version
             if [[ "$POM_VERSION" =~ ^([0-9]+)\.([0-9]+)\. ]]; then
               NEXT_SNAPSHOT="$POM_VERSION"
             else
@@ -138,114 +151,141 @@ jobs:
 
           echo "next-snapshot=$NEXT_SNAPSHOT" >> "$GITHUB_OUTPUT"
 
-          # Create VERSION_LIST: all versions + snapshot (if not on main)
-          VERSION_LIST=""
+          # Create CLIENT_LIST: all versions + snapshot (if not on main)
+          CLIENT_LIST=""
+          CLIENT_COUNT=0
           if [[ -n "$FILTERED_TAGS" ]]; then
             for tag in $FILTERED_TAGS; do
-              VERSION_LIST+="$tag"$'\n'
+              CLIENT_LIST+="$tag"$'\n'
+              CLIENT_COUNT=$((CLIENT_COUNT + 1))
             done
           fi
 
           if [[ "$IS_MAIN" != "true" ]]; then
-            VERSION_LIST+="$NEXT_SNAPSHOT"$'\n'
+            CLIENT_LIST+="$NEXT_SNAPSHOT"$'\n'
           else
-            VERSION_LIST="$NEXT_SNAPSHOT"$'\n'
+            CLIENT_LIST="$NEXT_SNAPSHOT"$'\n'
           fi
 
-          echo "$VERSION_LIST" > /tmp/version_list.txt
-          echo "VERSION_LIST:"
-          cat /tmp/version_list.txt
+          echo "$CLIENT_LIST" > /tmp/client_list.txt
+          echo "CLIENT_LIST:"
+          cat /tmp/client_list.txt
+
+          # Create SERVER_LIST: versions from next minor onwards + snapshot (if not on main)
+          SERVER_LIST=""
+          STABLE_VERSION="${{ steps.branch-info.outputs.stable-version }}"
+
+          if [[ -n "$STABLE_VERSION" ]]; then
+            # Parse stable version to get next minor
+            IFS='.' read -r STABLE_MAJOR STABLE_MINOR <<< "$STABLE_VERSION"
+            NEXT_MINOR=$((STABLE_MINOR + 1))
+
+            SERVER_COUNT=0
+            if [[ -n "$FILTERED_TAGS" ]]; then
+              for tag in $FILTERED_TAGS; do
+                if [[ "$tag" =~ ^([0-9]+)\.([0-9]+)\. ]]; then
+                  TAG_MAJOR="${BASH_REMATCH[1]}"
+                  TAG_MINOR="${BASH_REMATCH[2]}"
+
+                  if (( TAG_MAJOR > STABLE_MAJOR )) || \
+                     (( TAG_MAJOR == STABLE_MAJOR && TAG_MINOR >= NEXT_MINOR )); then
+                    SERVER_LIST+="$tag"$'\n'
+                    SERVER_COUNT=$((SERVER_COUNT + 1))
+                  fi
+                fi
+              done
+            fi
+          else
+            # On main, SERVER_LIST same as CLIENT_LIST
+            SERVER_LIST="$CLIENT_LIST"
+          fi
+
+          if [[ "$IS_MAIN" != "true" ]]; then
+            SERVER_LIST+="$NEXT_SNAPSHOT"$'\n'
+          fi
+
+          echo "$SERVER_LIST" > /tmp/server_list.txt
+          echo "SERVER_LIST:"
+          cat /tmp/server_list.txt
 
       - name: Download tested combinations artifact
         id: download-tested
         continue-on-error: true
         uses: actions/download-artifact@v4
         with:
-          name: cpt-compatibility-tested-combinations
-          path: /tmp/cpt-compatibility-state-download
+          name: compatibility-tested-combinations
+          path: /tmp/compatibility-state-download
 
       - name: Load tested combinations
         id: load-tested
         run: |
-          mkdir -p /tmp/cpt-compatibility-state
+          mkdir -p /tmp/compatibility-state
 
           if [[ "${{ inputs.skip_cache }}" == "true" ]]; then
-            touch /tmp/cpt-compatibility-state/tested-combinations.txt
+            touch /tmp/compatibility-state/tested-combinations.txt
             echo "Skipping cache - will test all combinations"
-          elif [[ -f /tmp/cpt-compatibility-state-download/tested-combinations.txt ]]; then
-            cp /tmp/cpt-compatibility-state-download/tested-combinations.txt /tmp/cpt-compatibility-state/tested-combinations.txt
-            echo "Loaded $(wc -l < /tmp/cpt-compatibility-state/tested-combinations.txt) previously tested combinations"
+          elif [[ -f /tmp/compatibility-state-download/tested-combinations.txt ]]; then
+            cp /tmp/compatibility-state-download/tested-combinations.txt /tmp/compatibility-state/tested-combinations.txt
+            echo "Loaded $(wc -l < /tmp/compatibility-state/tested-combinations.txt) previously tested combinations"
           else
-            touch /tmp/cpt-compatibility-state/tested-combinations.txt
+            touch /tmp/compatibility-state/tested-combinations.txt
             echo "No previous test history found - starting fresh"
           fi
 
       - name: Create version matrix
         id: create-matrix
         run: |
-          CPT_VERSION="${{ inputs.cpt_version }}"
-          RUNTIME_VERSION="${{ inputs.runtime_version }}"
+          CLIENT_VERSION="${{ inputs.cpt_version }}"
+          SERVER_VERSION="${{ inputs.runtime_version }}"
 
-          if [[ -n "$CPT_VERSION" ]] && [[ -n "$RUNTIME_VERSION" ]]; then
-            echo "Manual trigger: Testing specific versions - CPT: $CPT_VERSION, Runtime: $RUNTIME_VERSION"
-            MATRIX_JSON=$(jq -nc --arg cpt "$CPT_VERSION" --arg runtime "$RUNTIME_VERSION" '{"include": [{"cpt": $cpt, "runtime": $runtime}]}')
+          if [[ -n "$CLIENT_VERSION" ]] && [[ -n "$SERVER_VERSION" ]]; then
+            echo "Manual trigger: Testing specific versions - Client: $CLIENT_VERSION, Server: $SERVER_VERSION"
+            MATRIX_JSON=$(jq -nc --arg client "$CLIENT_VERSION" --arg server "$SERVER_VERSION" '{"include": [{"client": $client, "server": $server}]}')
             echo "matrix=$MATRIX_JSON" >> "$GITHUB_OUTPUT"
-          elif [[ -n "$CPT_VERSION" ]]; then
-            echo "Manual trigger: Testing CPT version $CPT_VERSION against all runtimes"
-            VERSION_LIST=$(grep -v '^$' /tmp/version_list.txt)
+          elif [[ -n "$CLIENT_VERSION" ]]; then
+            echo "Manual trigger: Testing client version $CLIENT_VERSION against all servers"
+            SERVER_LIST=$(grep -v '^$' /tmp/server_list.txt)
             MATRIX_ITEMS="[]"
-            for runtime in $VERSION_LIST; do
-              MATRIX_ITEMS=$(echo "$MATRIX_ITEMS" | jq -c '. += [{"cpt": "'"$CPT_VERSION"'", "runtime": "'"$runtime"'"}]')
+            for server in $SERVER_LIST; do
+              MATRIX_ITEMS=$(echo "$MATRIX_ITEMS" | jq -c '. += [{"client": "'"$CLIENT_VERSION"'", "server": "'"$server"'"}]')
             done
             MATRIX_JSON=$(jq -nc --argjson items "$MATRIX_ITEMS" '{"include": $items}')
             echo "matrix=$MATRIX_JSON" >> "$GITHUB_OUTPUT"
-          elif [[ -n "$RUNTIME_VERSION" ]]; then
-            echo "Manual trigger: Testing runtime version $RUNTIME_VERSION with all CPT versions"
-            VERSION_LIST=$(grep -v '^$' /tmp/version_list.txt)
+          elif [[ -n "$SERVER_VERSION" ]]; then
+            echo "Manual trigger: Testing server version $SERVER_VERSION with all clients"
+            CLIENT_LIST=$(grep -v '^$' /tmp/client_list.txt)
             MATRIX_ITEMS="[]"
-            for cpt in $VERSION_LIST; do
-              MATRIX_ITEMS=$(echo "$MATRIX_ITEMS" | jq -c '. += [{"cpt": "'"$cpt"'", "runtime": "'"$RUNTIME_VERSION"'"}]')
+            for client in $CLIENT_LIST; do
+              MATRIX_ITEMS=$(echo "$MATRIX_ITEMS" | jq -c '. += [{"client": "'"$client"'", "server": "'"$SERVER_VERSION"'"}]')
             done
             MATRIX_JSON=$(jq -nc --argjson items "$MATRIX_ITEMS" '{"include": $items}')
             echo "matrix=$MATRIX_JSON" >> "$GITHUB_OUTPUT"
           else
-            VERSION_LIST=$(grep -v '^$' /tmp/version_list.txt)
+            CLIENT_LIST=$(grep -v '^$' /tmp/client_list.txt)
+            SERVER_LIST=$(grep -v '^$' /tmp/server_list.txt)
             SKIP_CACHE="${{ inputs.skip_cache }}"
 
             MATRIX_ITEMS="[]"
             ADDED_COUNT=0
             SKIPPED_COUNT=0
 
-            # Test each CPT version against runtime versions of the NEXT minor version only
-            # Example: CPT 8.8.1 -> Runtime 8.9.x, CPT 8.9.1 -> Runtime 8.10.x
-            for cpt in $VERSION_LIST; do
-              # Parse CPT version to get next minor
-              if [[ "$cpt" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+) ]] || [[ "$cpt" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)-SNAPSHOT$ ]]; then
-                CPT_MAJOR="${BASH_REMATCH[1]}"
-                CPT_MINOR="${BASH_REMATCH[2]}"
-                NEXT_MINOR=$((CPT_MINOR + 1))
-                TARGET_VERSION_PREFIX="$CPT_MAJOR.$NEXT_MINOR."
+            for client in $CLIENT_LIST; do
+              for server in $SERVER_LIST; do
+                COMBO="$client-$server"
 
-                # Find all runtime versions matching the next minor version
-                for runtime in $VERSION_LIST; do
-                  # Match runtime versions with the target next minor version
-                  if [[ "$runtime" == "$TARGET_VERSION_PREFIX"* ]] || [[ "$runtime" == "$CPT_MAJOR.$NEXT_MINOR.0-SNAPSHOT" ]]; then
-                    COMBO="$cpt-$runtime"
-
-                    if [[ "$SKIP_CACHE" != "true" ]]; then
-                      if grep -q "^$COMBO$" /tmp/cpt-compatibility-state/tested-combinations.txt 2>/dev/null; then
-                        if [[ "$runtime" != *"-SNAPSHOT" ]]; then
-                          SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
-                          continue
-                        fi
-                      fi
+                # Skip if combination already tested (unless skip_cache is true or server is snapshot)
+                if [[ "$SKIP_CACHE" != "true" ]]; then
+                  if grep -q "^$COMBO$" /tmp/compatibility-state/tested-combinations.txt 2>/dev/null; then
+                    if [[ "$server" != *"-SNAPSHOT" ]]; then
+                      SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
+                      continue
                     fi
-
-                    MATRIX_ITEMS=$(echo "$MATRIX_ITEMS" | jq -c '. += [{"cpt": "'"$cpt"'", "runtime": "'"$runtime"'"}]')
-                    ADDED_COUNT=$((ADDED_COUNT + 1))
                   fi
-                done
-              fi
+                fi
+
+                MATRIX_ITEMS=$(echo "$MATRIX_ITEMS" | jq -c '. += [{"client": "'"$client"'", "server": "'"$server"'"}]')
+                ADDED_COUNT=$((ADDED_COUNT + 1))
+              done
             done
 
             echo "Matrix contains $ADDED_COUNT combinations (skipped $SKIPPED_COUNT already tested)"
@@ -279,17 +319,21 @@ jobs:
     steps:
       - name: Checkout Camunda
         uses: actions/checkout@v6
-
-      - name: Setup Java
-        uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '21'
-          cache: 'maven'
+          ref: ${{ matrix.cpt }}
 
-      - name: Run CPT integration tests
-        run: |
-          ./mvnw verify \
+      - uses: ./.github/actions/setup-build
+        with:
+          dockerhub-readonly: true
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+
+      - name: Run compatibility tests
+        uses: ./.github/actions/run-maven
+        with:
+          parameters: >-
+            verify \
             -pl testing/ \
             -Dio.camunda.process.test.camundaDockerImageVersion=${{ matrix.runtime }} \
             -Dio.camunda.process.test.connectorsDockerImageVersion=${{ matrix.runtime }} \
