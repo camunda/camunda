@@ -138,7 +138,6 @@ test.describe('Dashboard', () => {
   test.skip('Navigate to processes view (same truncated error message)', async ({
     operateDashboardPage,
     operateProcessInstancePage,
-    page,
   }) => {
     await test.step('Select incident type A and verify details', async () => {
       await operateDashboardPage.clickIncidentByType(/type a/i);

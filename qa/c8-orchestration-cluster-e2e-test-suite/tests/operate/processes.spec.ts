@@ -77,6 +77,8 @@ test.describe('Processes', () => {
     await captureScreenshot(page, testInfo);
     await captureFailureVideo(page, testInfo);
   });
+  const baseUrl =
+        process.env.CORE_APPLICATION_URL || 'http://localhost:8080';
 
   test('Processes Page Initial Load', async ({
     operateProcessesPage,
@@ -242,14 +244,12 @@ test.describe('Processes', () => {
     page,
   }) => {
     await test.step('Navigate to non-existent process', async () => {
-      const baseUrl =
-        process.env.CORE_APPLICATION_URL || 'http://localhost:8080';
       await page.goto(
         `${baseUrl}/operate/processes?process=testProcess&version=1`,
       );
 
       await expect(page).toHaveURL(`${baseUrl}/operate/processes?process=testProcess&version=1`);
-      await expect(operateProcessesPage.processCouldntBeFoundMessage).toBeVisible();
+      await expect(operateProcessesPage.processCouldNotBeFoundMessage).toBeVisible();
 
       await waitForAssertion({
         assertion: async () => {
@@ -258,7 +258,7 @@ test.describe('Processes', () => {
           });
         },
         onFailure: async () => {
-          page.reload();
+          await page.reload();
         },
         maxRetries: 5,
       });
@@ -268,8 +268,6 @@ test.describe('Processes', () => {
       await deploy(['./resources/newProcess.bpmn']);
       await sleep(5000);
 
-      const baseUrl =
-        process.env.CORE_APPLICATION_URL || 'http://localhost:8080';
       await page.goto(
         `${baseUrl}/operate/processes?process=testProcess&version=1`,
       );

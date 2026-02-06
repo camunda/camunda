@@ -21,6 +21,7 @@ let processA: ProcessInstance;
 let processB_v_1: ProcessInstance;
 let processB_v_2: ProcessInstance;
 let scrollingInstances: ProcessInstance[];
+const amountOfInstancesForInfiniteScroll = 350;
 
 test.beforeAll(async () => {
   await deploy([
@@ -54,7 +55,7 @@ test.beforeAll(async () => {
   const createdInstances = await createInstances(
     'instancesTableProcessForInfiniteScroll',
     1,
-    350,
+    amountOfInstancesForInfiniteScroll,
   );
   scrollingInstances = createdInstances.map((instance) => ({
     processInstanceKey: Number(instance.processInstanceKey),
@@ -276,7 +277,7 @@ test.describe('Process Instances Table', () => {
       await operateFiltersPanelPage.selectVersion('1');
       await waitForAssertion({
         assertion: async () => {
-          await expect(page.getByText('350 results')).toBeVisible();
+          await expect(page.getByText(`${amountOfInstancesForInfiniteScroll} results`)).toBeVisible();
         },
         onFailure: async () => {
           await page.reload();
