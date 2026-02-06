@@ -45,8 +45,8 @@ import org.slf4j.LoggerFactory;
 
 /** Abstract partition. */
 public final class RaftPartition implements Partition, HealthMonitorable {
+  public static final String PARTITION_NAME_FORMAT = "%s-partition-%d";
   private static final Logger LOG = LoggerFactory.getLogger(RaftPartition.class);
-  private static final String PARTITION_NAME_FORMAT = "%s-partition-%d";
   private static final String PARTITION_COMPONENT_NAME_FORMAT = "RaftPartition-%d";
 
   private final PartitionId partitionId;

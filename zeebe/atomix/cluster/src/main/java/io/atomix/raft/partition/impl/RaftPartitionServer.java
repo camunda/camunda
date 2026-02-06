@@ -16,6 +16,8 @@
  */
 package io.atomix.raft.partition.impl;
 
+import static io.atomix.raft.partition.RaftPartition.PARTITION_NAME_FORMAT;
+
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
@@ -29,6 +31,7 @@ import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.SnapshotReplicationListener;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.RaftMember.Type;
+import io.atomix.raft.metrics.RaftRequestMetrics;
 import io.atomix.raft.metrics.RaftStartupMetrics;
 import io.atomix.raft.partition.RaftElectionConfig;
 import io.atomix.raft.partition.RaftPartition;
@@ -50,6 +53,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -314,14 +318,26 @@ public class RaftPartitionServer implements HealthMonitorable {
   }
 
   private RaftServerCommunicator createServerProtocol() {
+    final var legacySubjects = createLegacySubjects();
+    final var engineSubjects = createEngineSubjects();
     return new RaftServerCommunicator(
-        partition.name(),
+        legacySubjects,
+        List.of(legacySubjects, engineSubjects),
         Serializer.using(RaftNamespaces.RAFT_PROTOCOL),
         clusterCommunicator,
         requestTimeout,
         snapshotRequestTimeout,
         configurationChangeTimeout,
-        meterRegistry);
+        new RaftRequestMetrics(partition.name(), meterRegistry));
+  }
+
+  private RaftMessageContext createLegacySubjects() {
+    return new RaftMessageContext(partition.name());
+  }
+
+  private RaftMessageContext createEngineSubjects() {
+    final var enginePrefix = PARTITION_NAME_FORMAT.formatted("default", partition.id().id());
+    return new RaftMessageContext(enginePrefix);
   }
 
   public CompletableFuture<Void> stepDown() {

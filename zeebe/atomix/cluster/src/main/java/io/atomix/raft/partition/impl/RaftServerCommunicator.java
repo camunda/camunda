@@ -35,6 +35,8 @@ import io.atomix.raft.protocol.LeaveResponse;
 import io.atomix.raft.protocol.PollRequest;
 import io.atomix.raft.protocol.PollResponse;
 import io.atomix.raft.protocol.RaftMessage;
+import io.atomix.raft.protocol.RaftRequest;
+import io.atomix.raft.protocol.RaftResponse;
 import io.atomix.raft.protocol.RaftServerProtocol;
 import io.atomix.raft.protocol.ReconfigureRequest;
 import io.atomix.raft.protocol.ReconfigureResponse;
@@ -44,15 +46,16 @@ import io.atomix.raft.protocol.VersionedAppendRequest;
 import io.atomix.raft.protocol.VoteRequest;
 import io.atomix.raft.protocol.VoteResponse;
 import io.atomix.utils.serializer.Serializer;
-import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
 /** Raft server protocol that uses a {@link ClusterCommunicationService}. */
 public class RaftServerCommunicator implements RaftServerProtocol {
 
-  private final RaftMessageContext context;
+  private final RaftMessageContext sendingSubject;
+  private final List<RaftMessageContext> receivingSubjects;
   private final Serializer serializer;
   private final ClusterCommunicationService clusterCommunicator;
   private final RaftRequestMetrics metrics;
@@ -61,246 +64,229 @@ public class RaftServerCommunicator implements RaftServerProtocol {
   private final Duration configurationChangeTimeout;
 
   public RaftServerCommunicator(
-      final String prefix,
+      final RaftMessageContext sendingSubject,
+      final List<RaftMessageContext> receivingSubjects,
       final Serializer serializer,
       final ClusterCommunicationService clusterCommunicator,
       final Duration requestTimeout,
       final Duration snapshotRequestTimeout,
       final Duration configurationChangeTimeout,
-      final MeterRegistry meterRegistry) {
-    context = new RaftMessageContext(prefix);
+      final RaftRequestMetrics metrics) {
+    this.sendingSubject = sendingSubject;
+    this.receivingSubjects = receivingSubjects;
     this.serializer = Preconditions.checkNotNull(serializer, "serializer cannot be null");
     this.clusterCommunicator =
         Preconditions.checkNotNull(clusterCommunicator, "clusterCommunicator cannot be null");
     this.requestTimeout = requestTimeout;
     this.snapshotRequestTimeout = snapshotRequestTimeout;
     this.configurationChangeTimeout = configurationChangeTimeout;
-    metrics = new RaftRequestMetrics(prefix, meterRegistry);
+    this.metrics = metrics;
   }
 
   @Override
   public CompletableFuture<ConfigureResponse> configure(
       final MemberId memberId, final ConfigureRequest request) {
-    return sendAndReceive(context.configureSubject, request, memberId);
+    return sendAndReceive(sendingSubject.configureSubject, request, memberId);
   }
 
   @Override
   public CompletableFuture<ReconfigureResponse> reconfigure(
       final MemberId memberId, final ReconfigureRequest request) {
     return sendAndReceive(
-        context.reconfigureSubject, request, memberId, configurationChangeTimeout);
+        sendingSubject.reconfigureSubject, request, memberId, configurationChangeTimeout);
   }
 
   @Override
   public CompletableFuture<ForceConfigureResponse> forceConfigure(
       final MemberId memberId, final ForceConfigureRequest request) {
-    return sendAndReceive(context.forceConfigureSubject, request, memberId, requestTimeout);
+    return sendAndReceive(sendingSubject.forceConfigureSubject, request, memberId, requestTimeout);
   }
 
   @Override
   public CompletableFuture<JoinResponse> join(final MemberId memberId, final JoinRequest request) {
-    return sendAndReceive(context.joinSubject, request, memberId, configurationChangeTimeout);
+    return sendAndReceive(
+        sendingSubject.joinSubject, request, memberId, configurationChangeTimeout);
   }
 
   @Override
   public CompletableFuture<LeaveResponse> leave(
       final MemberId memberId, final LeaveRequest request) {
-    return sendAndReceive(context.leaveSubject, request, memberId, configurationChangeTimeout);
+    return sendAndReceive(
+        sendingSubject.leaveSubject, request, memberId, configurationChangeTimeout);
   }
 
   @Override
   public CompletableFuture<InstallResponse> install(
       final MemberId memberId, final InstallRequest request) {
-    return sendAndReceive(context.installSubject, request, memberId, snapshotRequestTimeout);
+    return sendAndReceive(sendingSubject.installSubject, request, memberId, snapshotRequestTimeout);
   }
 
   @Override
   public CompletableFuture<TransferResponse> transfer(
       final MemberId memberId, final TransferRequest request) {
-    return sendAndReceive(context.transferSubject, request, memberId);
+    return sendAndReceive(sendingSubject.transferSubject, request, memberId);
   }
 
   @Override
   public CompletableFuture<PollResponse> poll(final MemberId memberId, final PollRequest request) {
-    return sendAndReceive(context.pollSubject, request, memberId);
+    return sendAndReceive(sendingSubject.pollSubject, request, memberId);
   }
 
   @Override
   public CompletableFuture<VoteResponse> vote(final MemberId memberId, final VoteRequest request) {
-    return sendAndReceive(context.voteSubject, request, memberId);
+    return sendAndReceive(sendingSubject.voteSubject, request, memberId);
   }
 
   @Override
   public CompletableFuture<AppendResponse> append(
       final MemberId memberId, final AppendRequest request) {
-    return sendAndReceive(context.appendV1subject, request, memberId);
+    return sendAndReceive(sendingSubject.appendV1subject, request, memberId);
   }
 
   @Override
   public CompletableFuture<AppendResponse> append(
       final MemberId memberId, final VersionedAppendRequest request) {
-    return sendAndReceive(context.appendV2subject, request, memberId);
+    return sendAndReceive(sendingSubject.appendV2subject, request, memberId);
   }
 
   @Override
   public void registerTransferHandler(
       final Function<TransferRequest, CompletableFuture<TransferResponse>> handler) {
-    clusterCommunicator.replyTo(
-        context.transferSubject,
-        serializer::decode,
-        handler.<TransferRequest>compose(this::recordReceivedMetrics),
-        serializer::encode);
+    registerHandler(RaftMessageContext::getTransferSubject, handler);
   }
 
   @Override
   public void unregisterTransferHandler() {
-    clusterCommunicator.unsubscribe(context.transferSubject);
+    unregisterHandler(RaftMessageContext::getTransferSubject);
   }
 
   @Override
   public void registerConfigureHandler(
       final Function<ConfigureRequest, CompletableFuture<ConfigureResponse>> handler) {
-    clusterCommunicator.replyTo(
-        context.configureSubject,
-        serializer::decode,
-        handler.<ConfigureRequest>compose(this::recordReceivedMetrics),
-        serializer::encode);
+    registerHandler(RaftMessageContext::getConfigureSubject, handler);
   }
 
   @Override
   public void unregisterConfigureHandler() {
-    clusterCommunicator.unsubscribe(context.configureSubject);
+    unregisterHandler(RaftMessageContext::getConfigureSubject);
   }
 
   @Override
   public void registerReconfigureHandler(
       final Function<ReconfigureRequest, CompletableFuture<ReconfigureResponse>> handler) {
-    clusterCommunicator.replyTo(
-        context.reconfigureSubject,
-        serializer::decode,
-        handler.<ReconfigureRequest>compose(this::recordReceivedMetrics),
-        serializer::encode);
+    registerHandler(RaftMessageContext::getReconfigureSubject, handler);
   }
 
   @Override
   public void unregisterReconfigureHandler() {
-    clusterCommunicator.unsubscribe(context.reconfigureSubject);
+    unregisterHandler(RaftMessageContext::getReconfigureSubject);
   }
 
   @Override
   public void registerForceConfigureHandler(
       final Function<ForceConfigureRequest, CompletableFuture<ForceConfigureResponse>> handler) {
-    clusterCommunicator.replyTo(
-        context.forceConfigureSubject,
-        serializer::decode,
-        handler.<ForceConfigureRequest>compose(this::recordReceivedMetrics),
-        serializer::encode);
+    registerHandler(RaftMessageContext::getForceConfigureSubject, handler);
   }
 
   @Override
   public void unregisterForceConfigureHandler() {
-    clusterCommunicator.unsubscribe(context.forceConfigureSubject);
+    unregisterHandler(RaftMessageContext::getForceConfigureSubject);
   }
 
   @Override
   public void registerJoinHandler(
       final Function<JoinRequest, CompletableFuture<JoinResponse>> handler) {
-    clusterCommunicator.replyTo(
-        context.joinSubject,
-        serializer::decode,
-        handler.<JoinRequest>compose(this::recordReceivedMetrics),
-        serializer::encode);
+    registerHandler(RaftMessageContext::getJoinSubject, handler);
   }
 
   @Override
   public void unregisterJoinHandler() {
-    clusterCommunicator.unsubscribe(context.joinSubject);
+    unregisterHandler(RaftMessageContext::getJoinSubject);
   }
 
   @Override
   public void registerLeaveHandler(
       final Function<LeaveRequest, CompletableFuture<LeaveResponse>> handler) {
-    clusterCommunicator.replyTo(
-        context.leaveSubject,
-        serializer::decode,
-        handler.<LeaveRequest>compose(this::recordReceivedMetrics),
-        serializer::encode);
+    registerHandler(RaftMessageContext::getLeaveSubject, handler);
   }
 
   @Override
   public void unregisterLeaveHandler() {
-    clusterCommunicator.unsubscribe(context.leaveSubject);
+    unregisterHandler(RaftMessageContext::getLeaveSubject);
   }
 
   @Override
   public void registerInstallHandler(
       final Function<InstallRequest, CompletableFuture<InstallResponse>> handler) {
-    clusterCommunicator.replyTo(
-        context.installSubject,
-        serializer::decode,
-        handler.<InstallRequest>compose(this::recordReceivedMetrics),
-        serializer::encode);
+    registerHandler(RaftMessageContext::getInstallSubject, handler);
   }
 
   @Override
   public void unregisterInstallHandler() {
-    clusterCommunicator.unsubscribe(context.installSubject);
+    unregisterHandler(RaftMessageContext::getInstallSubject);
   }
 
   @Override
   public void registerPollHandler(
       final Function<PollRequest, CompletableFuture<PollResponse>> handler) {
-    clusterCommunicator.replyTo(
-        context.pollSubject,
-        serializer::decode,
-        handler.<PollRequest>compose(this::recordReceivedMetrics),
-        serializer::encode);
+    registerHandler(RaftMessageContext::getPollSubject, handler);
   }
 
   @Override
   public void unregisterPollHandler() {
-    clusterCommunicator.unsubscribe(context.pollSubject);
+    unregisterHandler(RaftMessageContext::getPollSubject);
   }
 
   @Override
   public void registerVoteHandler(
       final Function<VoteRequest, CompletableFuture<VoteResponse>> handler) {
-    clusterCommunicator.replyTo(
-        context.voteSubject,
-        serializer::decode,
-        handler.<VoteRequest>compose(this::recordReceivedMetrics),
-        serializer::encode);
+    registerHandler(RaftMessageContext::getVoteSubject, handler);
   }
 
   @Override
   public void unregisterVoteHandler() {
-    clusterCommunicator.unsubscribe(context.voteSubject);
+    unregisterHandler(RaftMessageContext::getVoteSubject);
   }
 
   @Override
   public void registerAppendV1Handler(
       final Function<AppendRequest, CompletableFuture<AppendResponse>> handler) {
-    clusterCommunicator.replyTo(
-        context.appendV1subject,
-        serializer::decode,
-        handler.<AppendRequest>compose(this::recordReceivedMetrics),
-        serializer::encode);
+    registerHandler(RaftMessageContext::getAppendV1subject, handler);
   }
 
   @Override
   public void registerAppendV2Handler(
       final Function<VersionedAppendRequest, CompletableFuture<AppendResponse>> handler) {
-    clusterCommunicator.replyTo(
-        context.appendV2subject,
-        serializer::decode,
-        handler.<VersionedAppendRequest>compose(this::recordReceivedMetrics),
-        serializer::encode);
+    registerHandler(RaftMessageContext::getAppendV2subject, handler);
   }
 
   @Override
   public void unregisterAppendHandler() {
-    clusterCommunicator.unsubscribe(context.appendV1subject);
-    clusterCommunicator.unsubscribe(context.appendV2subject);
+    unregisterHandler(RaftMessageContext::getAppendV1subject);
+    unregisterHandler(RaftMessageContext::getAppendV2subject);
+  }
+
+  private <M extends RaftRequest, R extends RaftResponse> void registerHandler(
+      final Function<RaftMessageContext, String> subjectSupplier,
+      final Function<M, CompletableFuture<R>> handler) {
+    receivingSubjects.stream().map(subjectSupplier).forEach(subject -> subscribe(subject, handler));
+  }
+
+  private <M extends RaftRequest, R extends RaftResponse> void subscribe(
+      final String subject, final Function<M, CompletableFuture<R>> handler) {
+    clusterCommunicator.replyTo(
+        subject,
+        serializer::decode,
+        handler.<M>compose(this::recordReceivedMetrics),
+        serializer::encode);
+  }
+
+  private void unregisterHandler(final Function<RaftMessageContext, String> subjectSupplier) {
+    receivingSubjects.stream().map(subjectSupplier).forEach(this::unsubscribe);
+  }
+
+  private void unsubscribe(final String subject) {
+    clusterCommunicator.unsubscribe(subject);
   }
 
   private <T, U> CompletableFuture<U> sendAndReceive(
