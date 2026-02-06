@@ -480,8 +480,9 @@
         "type": "object",
         "properties": {
           "filter": {
-            "$defs": {
-              "SimpleDateTimeFilterProperty": {
+            "type": "object",
+            "properties": {
+              "endDate": {
                 "type": "object",
                 "properties": {
                   "from": {
@@ -492,13 +493,7 @@
                     "type": "string",
                     "description": "Filter up to this time (exclusive). RFC 3339 format (e.g., '2024-12-17T10:30:00Z' or '2024-12-17T10:30:00+01:00')."
                   }
-                }
-              }
-            },
-            "type": "object",
-            "properties": {
-              "endDate": {
-                "$ref": "#/$defs/SimpleDateTimeFilterProperty",
+                },
                 "description": "The end date."
               },
               "hasIncident": {
@@ -527,7 +522,17 @@
                 "description": "The key of this process instance."
               },
               "startDate": {
-                "$ref": "#/$defs/SimpleDateTimeFilterProperty",
+                "type": "object",
+                "properties": {
+                  "from": {
+                    "type": "string",
+                    "description": "Filter from this time (inclusive). RFC 3339 format (e.g., '2024-12-17T10:30:00Z' or '2024-12-17T10:30:00+01:00')."
+                  },
+                  "to": {
+                    "type": "string",
+                    "description": "Filter up to this time (exclusive). RFC 3339 format (e.g., '2024-12-17T10:30:00Z' or '2024-12-17T10:30:00+01:00')."
+                  }
+                },
                 "description": "The start date."
               },
               "state": {
@@ -813,8 +818,13 @@
         "type": "object",
         "properties": {
           "filter": {
-            "$defs": {
-              "SimpleDateTimeFilterProperty": {
+            "type": "object",
+            "properties": {
+              "assignee": {
+                "type": "string",
+                "description": "The assignee of the user task."
+              },
+              "completionDate": {
                 "type": "object",
                 "properties": {
                   "from": {
@@ -825,42 +835,35 @@
                     "type": "string",
                     "description": "Filter up to this time (exclusive). RFC 3339 format (e.g., '2024-12-17T10:30:00Z' or '2024-12-17T10:30:00+01:00')."
                   }
-                }
-              },
-              "VariableValueFilterProperty": {
-                "type": "object",
-                "properties": {
-                  "name": {
-                    "type": "string",
-                    "description": "Name of the variable."
-                  },
-                  "value": {
-                    "type": "string",
-                    "description": "The value of the variable."
-                  }
                 },
-                "required": [
-                  "name",
-                  "value"
-                ]
-              }
-            },
-            "type": "object",
-            "properties": {
-              "assignee": {
-                "type": "string",
-                "description": "The assignee of the user task."
-              },
-              "completionDate": {
-                "$ref": "#/$defs/SimpleDateTimeFilterProperty",
                 "description": "The user task completion date."
               },
               "creationDate": {
-                "$ref": "#/$defs/SimpleDateTimeFilterProperty",
+                "type": "object",
+                "properties": {
+                  "from": {
+                    "type": "string",
+                    "description": "Filter from this time (inclusive). RFC 3339 format (e.g., '2024-12-17T10:30:00Z' or '2024-12-17T10:30:00+01:00')."
+                  },
+                  "to": {
+                    "type": "string",
+                    "description": "Filter up to this time (exclusive). RFC 3339 format (e.g., '2024-12-17T10:30:00Z' or '2024-12-17T10:30:00+01:00')."
+                  }
+                },
                 "description": "The user task creation date."
               },
               "dueDate": {
-                "$ref": "#/$defs/SimpleDateTimeFilterProperty",
+                "type": "object",
+                "properties": {
+                  "from": {
+                    "type": "string",
+                    "description": "Filter from this time (inclusive). RFC 3339 format (e.g., '2024-12-17T10:30:00Z' or '2024-12-17T10:30:00+01:00')."
+                  },
+                  "to": {
+                    "type": "string",
+                    "description": "Filter up to this time (exclusive). RFC 3339 format (e.g., '2024-12-17T10:30:00Z' or '2024-12-17T10:30:00+01:00')."
+                  }
+                },
                 "description": "The user task due date."
               },
               "elementId": {
@@ -872,13 +875,37 @@
                 "description": "The key of the element instance."
               },
               "followUpDate": {
-                "$ref": "#/$defs/SimpleDateTimeFilterProperty",
+                "type": "object",
+                "properties": {
+                  "from": {
+                    "type": "string",
+                    "description": "Filter from this time (inclusive). RFC 3339 format (e.g., '2024-12-17T10:30:00Z' or '2024-12-17T10:30:00+01:00')."
+                  },
+                  "to": {
+                    "type": "string",
+                    "description": "Filter up to this time (exclusive). RFC 3339 format (e.g., '2024-12-17T10:30:00Z' or '2024-12-17T10:30:00+01:00')."
+                  }
+                },
                 "description": "The user task follow-up date."
               },
               "localVariables": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/$defs/VariableValueFilterProperty"
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "description": "Name of the variable."
+                    },
+                    "value": {
+                      "type": "string",
+                      "description": "The value of the variable."
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "value"
+                  ]
                 }
               },
               "name": {
@@ -905,7 +932,21 @@
               "processInstanceVariables": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/$defs/VariableValueFilterProperty"
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "description": "Name of the variable."
+                    },
+                    "value": {
+                      "type": "string",
+                      "description": "The value of the variable."
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "value"
+                  ]
                 }
               },
               "state": {

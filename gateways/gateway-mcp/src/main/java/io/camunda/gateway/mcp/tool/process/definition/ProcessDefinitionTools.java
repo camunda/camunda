@@ -16,6 +16,7 @@ import static io.camunda.gateway.mcp.tool.ToolDescriptions.SORT_DESCRIPTION;
 
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
+import io.camunda.gateway.mcp.config.tool.CamundaMcpTool;
 import io.camunda.gateway.mcp.mapper.CallToolResultMapper;
 import io.camunda.gateway.mcp.model.McpProcessDefinitionFilter;
 import io.camunda.gateway.mcp.model.McpSearchQueryPageRequest;
@@ -27,7 +28,6 @@ import io.camunda.service.exception.ServiceException.Status;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import jakarta.validation.constraints.Positive;
 import java.util.List;
-import org.springaicommunity.mcp.annotation.McpTool;
 import org.springaicommunity.mcp.annotation.McpTool.McpAnnotations;
 import org.springaicommunity.mcp.annotation.McpToolParam;
 import org.springframework.stereotype.Component;
@@ -47,7 +47,7 @@ public class ProcessDefinitionTools {
     this.authenticationProvider = authenticationProvider;
   }
 
-  @McpTool(
+  @CamundaMcpTool(
       description = "Search for process definitions. " + EVENTUAL_CONSISTENCY_NOTE,
       annotations = @McpAnnotations(readOnlyHint = true))
   public CallToolResult searchProcessDefinitions(
@@ -73,7 +73,7 @@ public class ProcessDefinitionTools {
     }
   }
 
-  @McpTool(
+  @CamundaMcpTool(
       description = "Get process definition by key. " + EVENTUAL_CONSISTENCY_NOTE,
       annotations = @McpAnnotations(readOnlyHint = true))
   public CallToolResult getProcessDefinition(
@@ -91,7 +91,7 @@ public class ProcessDefinitionTools {
     }
   }
 
-  @McpTool(
+  @CamundaMcpTool(
       description = "Get the BPMN XML of a process definition by key. " + EVENTUAL_CONSISTENCY_NOTE,
       annotations = @McpAnnotations(readOnlyHint = true))
   public CallToolResult getProcessDefinitionXml(

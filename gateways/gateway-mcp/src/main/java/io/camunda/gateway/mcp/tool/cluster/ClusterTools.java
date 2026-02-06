@@ -8,6 +8,7 @@
 package io.camunda.gateway.mcp.tool.cluster;
 
 import io.camunda.gateway.mapping.http.ResponseMapper;
+import io.camunda.gateway.mcp.config.tool.CamundaMcpTool;
 import io.camunda.gateway.mcp.mapper.CallToolResultMapper;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.TopologyServices;
@@ -28,7 +29,7 @@ public class ClusterTools {
     this.authenticationProvider = authenticationProvider;
   }
 
-  @McpTool(
+  @CamundaMcpTool(
       description =
           "Checks the health status of the cluster by verifying if there's at least one partition with a healthy leader.",
       annotations = @McpTool.McpAnnotations(readOnlyHint = true))
@@ -40,7 +41,7 @@ public class ClusterTools {
         Enum::name);
   }
 
-  @McpTool(
+  @CamundaMcpTool(
       description = "Obtains the current topology of the cluster the gateway is part of.",
       annotations = @McpTool.McpAnnotations(readOnlyHint = true))
   public CallToolResult getTopology() {
