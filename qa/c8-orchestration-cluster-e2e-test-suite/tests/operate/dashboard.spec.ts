@@ -143,16 +143,9 @@ test.describe('Dashboard', () => {
     await test.step('Select incident type A and verify details', async () => {
       await operateDashboardPage.clickIncidentByType(/type a/i);
 
-      await waitForAssertion({
-        assertion: async () => {
-          await expect(
-            operateDashboardPage.processInstancesHeading(1, false),
-          ).toBeVisible({timeout: 30000});
-        },
-        onFailure: async () => {
-          await page.reload();
-        },
-      });
+      await expect(
+        operateDashboardPage.processInstancesHeading(1, false),
+      ).toBeVisible();
 
       await operateDashboardPage.clickViewInstanceLink();
       await expect(
