@@ -20,12 +20,7 @@ public class OperateProperties {
   public static final long BATCH_OPERATION_MAX_SIZE_DEFAULT = 1_000_000L;
   private static final String UNKNOWN_VERSION = "unknown-version";
 
-  /**
-   * Maximum number of groups to request from Elasticsearch when searching incidents by error
-   * message.
-   */
-  @Value("${camunda.operate.max-incident-search-groups:1000}")
-  private int maxIncidentSearchGroups;
+  private int maxIncidentSearchGroups = 1000;
 
   private boolean importerEnabled = false;
   private boolean webappEnabled = true;
