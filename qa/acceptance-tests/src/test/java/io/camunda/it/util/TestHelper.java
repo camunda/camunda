@@ -33,6 +33,7 @@ import io.camunda.client.api.search.filter.MessageSubscriptionFilter;
 import io.camunda.client.api.search.filter.ProcessDefinitionFilter;
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.client.api.search.filter.UserTaskFilter;
+import io.camunda.client.api.search.request.SearchRequestPage;
 import io.camunda.client.api.search.response.GroupUser;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.RoleUser;
@@ -50,6 +51,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -293,6 +295,69 @@ public final class TestHelper {
       cmd.variables(variables);
     }
     return cmd.send().join();
+  }
+
+  /**
+   * Helper method to wait for items in a SearchRequest to be available, supporting pagination.
+   *
+   * <p>This is useful for cases where a large number of items are expected, and they might not all
+   * be available at once. The method will keep fetching items in batches until the expected count
+   * is reached or the timeout is exceeded.
+   *
+   * <p>To use it, call it with a search function that takes a Consumer<SearchRequestPage>. This
+   * provides you with the pagination parameters to use in the search request. Just pass the
+   * SearchRequestPage page to the page() method of your search request. The method will handle the
+   * pagination and counting for you.
+   *
+   * <p>For example, to wait for 1000 element instances of a process to be available, you could do:
+   *
+   * <pre>
+   *   waitForItemsPaginated(
+   *     "wait until element instances of process 'myProcess' are available",
+   *     1000,
+   *     page ->
+   *         camundaClient
+   *             .newElementInstanceSearchRequest()
+   *             .filter(f -> f.processDefinitionId("myProcess"))
+   *             .page(page)
+   *             .execute());
+   * </pre>
+   *
+   * @param timeoutMessage The message to display when the timeout {@code TIMEOUT_DATA_AVAILABILITY}
+   *     is exceeded.
+   * @param expectedCount The expected number of items to be available. The method will keep
+   *     fetching items until this count is reached or the timeout is exceeded.
+   * @param searchFunction A function that is provided with a SearchRequest Page set up by this
+   *     method to handle pagination. The function should execute the search request and return the
+   *     SearchResponse. The method will call this function repeatedly with updated pagination
+   *     parameters until the expected count of items is reached or the timeout is exceeded.
+   * @param <T> The type of items being searched for (e.g., ProcessInstance, ElementInstance, etc.).
+   *     Can typically be inferred from the searchFunction parameter.
+   */
+  private static <T> void waitForItemsPaginated(
+      final String timeoutMessage,
+      final int expectedCount,
+      final Function<Consumer<SearchRequestPage>, SearchResponse<T>> searchFunction) {
+    final var collected = new AtomicInteger(0);
+    Awaitility.await(timeoutMessage)
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions()
+        .until(
+            () -> {
+              final int currentCollected = collected.get();
+              if (currentCollected >= expectedCount) {
+                return true;
+              }
+              final int limit = Math.min(100, expectedCount - currentCollected);
+              final var response = searchFunction.apply(p -> p.from(currentCollected).limit(limit));
+              final var items = response.items();
+
+              if (!items.isEmpty()) {
+                collected.addAndGet(items.size());
+              }
+
+              return collected.get() >= expectedCount;
+            });
   }
 
   public static void waitForProcessInstancesToStart(
