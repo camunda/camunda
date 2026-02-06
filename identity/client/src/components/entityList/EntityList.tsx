@@ -452,7 +452,7 @@ const EntityList = <D extends EntityData>({
                                         disabled={disabled}
                                         hasIconOnly={hasIconOnly}
                                         renderIcon={icon}
-                                        tooltipAlignment="end"
+                                        tooltipAlignment="center"
                                         iconDescription={label}
                                         onClick={handleMenuItemClick(
                                           rowId,
@@ -475,8 +475,7 @@ const EntityList = <D extends EntityData>({
               </Table>
             )}
           </TableContentWrapper>
-          {!!pageData?.totalItems &&
-            pageData.totalItems > Math.min(...PAGESIZES) && (
+          {!!pageData?.totalItems && (
               <PaginationWrapper>
                 <Pagination
                   backwardText={t("Previous page")}

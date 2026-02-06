@@ -17,6 +17,7 @@ import { useApi, usePagination, SortConfig } from "src/utility/api";
 import { searchAuditLogs } from "src/utility/api/audit-logs";
 import { spaceAndCapitalize } from "src/utility/format/spaceAndCapitalize";
 import { OperationLogName, OperationsLogContainer } from "./components/styled";
+import { DetailsModal } from "./DetailsModal";
 
 type AuditLogSort = { field: string; order: "asc" | "desc" };
 
@@ -57,6 +58,16 @@ const List: FC = () => {
   const { t: tComponents } = useTranslate();
 
   const [filters, setFilters] = useState<FilterValues>({});
+  const [selectedEntry, setSelectedEntry] = useState<{
+    auditLogKey: string;
+    operationType: string;
+    entityType: string;
+    entityKey: string;
+    result: "SUCCESS" | "FAIL";
+    actorId?: string;
+    timestamp: string;
+  } | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const {
     pageParams,
@@ -165,6 +176,24 @@ const List: FC = () => {
     // Reset to first page when filters change
     setPageNumber(1);
   }, [setPageNumber]);
+
+  const handleOpenModal = useCallback((log: {
+    auditLogKey: string;
+    operationType: string;
+    entityType: string;
+    entityKey: string;
+    result: "SUCCESS" | "FAIL";
+    actorId?: string;
+    timestamp: string;
+  }) => {
+    setSelectedEntry(log);
+    setIsModalOpen(true);
+  }, []);
+
+  const handleCloseModal = useCallback(() => {
+    setIsModalOpen(false);
+    setSelectedEntry(null);
+  }, []);
 
   // Filter audit logs client-side for owner type/ID (since API might not support these filters directly)
   const filteredAuditLogs = useMemo(() => {
@@ -285,7 +314,9 @@ const List: FC = () => {
               <IconButton
                 kind="ghost"
                 size="sm"
+                align="left"
                 label="View details"
+                onClick={() => handleOpenModal(log)}
               >
                 <Information size={16} />
               </IconButton>
@@ -318,6 +349,11 @@ const List: FC = () => {
           actionButton={{ label: tComponents("retry"), onClick: reload }}
         />
       )}
+      <DetailsModal
+        open={isModalOpen}
+        onClose={handleCloseModal}
+        entry={selectedEntry}
+      />
     </Page>
   );
 };
