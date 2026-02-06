@@ -17,7 +17,50 @@ export const DocumentationDescription = styled.p`
 `;
 
 export const StyledTableContainer = styled(TableContainer)`
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+
   .cds--skeleton {
     padding: 0;
   }
+
+  &.no-header .cds--data-table-header {
+    display: none !important;
+  }
+
+  .cds--data-table-container,
+  .cds--data-table-content {
+    overflow: visible;
+  }
+
+  .cds--data-table thead {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+  }
+
+  .cds--data-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+  }
+`;
+
+export const TableContentWrapper = styled.div`
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  min-height: 0;
+  overflow-x: hidden;
+`;
+
+export const PaginationWrapper = styled.div`
+  flex-shrink: 0;
+  background-color: var(--cds-layer-01);
+  padding-bottom: var(--cds-spacing-03);
+  z-index: 1;
 `;

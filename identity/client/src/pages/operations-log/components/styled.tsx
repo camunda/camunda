@@ -26,4 +26,26 @@ const ErrorIcon = styled(BaseErrorFilled)`
   fill: var(--cds-support-error);
 `;
 
-export { OperationLogName, SuccessIcon, ErrorIcon };
+const StatusColumnContainer = styled.div`
+  table thead tr th:first-child,
+  table tbody tr td:first-child {
+    width: 40px;
+    min-width: 40px;
+    max-width: 40px;
+    padding: 0 var(--cds-spacing-03);
+  }
+  table tbody tr td:first-child {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+`;
+
+const OperationsLogContainer = styled.div`
+  .cds--popover[role='tooltip'] .cds--popover-content {
+    padding-top: var(--cds-spacing-02);
+    padding-bottom: var(--cds-spacing-02);
+  }
+`;
+
+export { OperationLogName, SuccessIcon, ErrorIcon, StatusColumnContainer, OperationsLogContainer };

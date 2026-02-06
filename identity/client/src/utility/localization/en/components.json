@@ -13,9 +13,9 @@
   "client": "Client",
   "authorizations": "Authorizations",
   "authorization": "Authorization",
-  "clusterVariables": "Cluster variables",
+  "clusterVariables": "Cluster Variables",
   "clusterVariable": "Cluster variable",
-  "operationsLog": "Operations log",
+  "operationsLog": "Operations Log",
   "unauthorized": "Unauthorized",
   "sessionExpired": "Looks like your session has expired",
   "forbidden": "Forbidden",
@@ -90,5 +90,7 @@
   "emptyStateSubtitleAssign": "Start by assigning a {{childResourceType}}.",
   "emptyStateButtonAssign": "Assign {{childResourceType}}",
   "emptyStateLearnText": "Learn more about {{resourceType}}s",
-  "emptyStateTenantAccessDisclaimer": "Members of this Tenant will be given access to the data within the Tenant."
+  "emptyStateTenantAccessDisclaimer": "Members of this Tenant will be given access to the data within the Tenant.",
+  "ownerType": "Owner type",
+  "ownerId": "Owner ID"
 }

@@ -28,7 +28,7 @@ type Page = {
 
 export const DEFAULT_PAGINATION_CONFIG = {
   pageNumber: 1,
-  pageSize: 10,
+  pageSize: 50,
 };
 
 export type SortConfig = {

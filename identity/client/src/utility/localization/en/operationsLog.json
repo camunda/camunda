@@ -1,10 +1,14 @@
 {
-  "operationsLog": "Operations log",
+  "operationsLog": "Operations Log",
   "operation": "Operation",
   "entity": "Entity",
   "status": "Status",
   "appliedTo": "Applied to",
   "actor": "Actor",
   "time": "Time",
-  "operationsLogCouldNotLoad": "Operations log could not be loaded"
+  "operationsLogCouldNotLoad": "Operations log could not be loaded",
+  "Operation type": "Operation type",
+  "Operation entity": "Operation entity",
+  "Operation status": "Operation status",
+  "Date range": "Date range"
 }
