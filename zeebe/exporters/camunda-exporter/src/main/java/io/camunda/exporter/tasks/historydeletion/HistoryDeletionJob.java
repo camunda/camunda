@@ -71,7 +71,7 @@ public class HistoryDeletionJob implements BackgroundTask {
 
   /**
    * This deletes all entities in a given batch. A batch could contain different types of entities,
-   * such as process instances, or process definitions.
+   * such as process instances, process definitions, or decision instances.
    *
    * @param batch The batch of entities to delete
    * @return A future containing the amount of entities that were deleted
