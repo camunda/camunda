@@ -124,10 +124,9 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
     final var delay =
         instruction.checkpointTaken
             ? determineDelayFromSchedules(currentState)
-            : instruction.checkpointTime.toEpochMilli()
-                - ActorClock.current().instant().toEpochMilli();
+            : instruction.checkpointTime.toEpochMilli() - ActorClock.currentTimeMillis();
 
-    return Math.abs(delay);
+    return Math.max(0, delay);
   }
 
   /**
@@ -196,7 +195,7 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
   }
 
   private long determineDelayFromSchedules(final CheckpointState state) {
-    final var now = ActorClock.current().instant();
+    final var now = ActorClock.currentTimeMillis();
     final Instant next;
 
     if (backupSchedule != null && checkpointSchedule != null) {
@@ -212,7 +211,7 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
       next = nextExecution(backupSchedule, state.lastBackup);
       metrics.recordNextExecution(next, CheckpointType.SCHEDULED_BACKUP);
     }
-    return next.toEpochMilli() - now.toEpochMilli();
+    return next.toEpochMilli() - now;
   }
 
   private long backOffOnError(final Throwable error) {

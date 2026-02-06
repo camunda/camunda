@@ -398,6 +398,35 @@ public class CheckpointScheduleTest {
     assertThat(meterRegistry.getMeters()).isEmpty();
   }
 
+  @Test
+  void shouldNotDelayWhenScheduledCheckpointWasAlreadyMissed() {
+    // given
+    final var interval = Duration.ofMinutes(1);
+    final var now = actorScheduler.getClock().getCurrentTime();
+    // checkpoint was scheduled 10 seconds ago
+    final var lastCheckpoint = now.minus(interval).minus(Duration.ofSeconds(10));
+
+    checkpointScheduler = createScheduler(new Schedule.IntervalSchedule(interval), null);
+    when(backupRequestHandler.getCheckpointState())
+        .thenReturn(
+            CompletableFuture.completedStage(checkpointState(lastCheckpoint.toEpochMilli(), 0L)));
+
+    doAnswer(
+            (ctx) -> {
+              return CompletableFuture.completedFuture(1L);
+            })
+        .when(backupRequestHandler)
+        .checkpoint(any());
+
+    // when
+    actorScheduler.submitActor(checkpointScheduler);
+    actorScheduler.workUntilDone();
+
+    // then
+    // it should have triggered checkpoint immediately
+    verify(backupRequestHandler).checkpoint(CheckpointType.MARKER);
+  }
+
   private CheckpointStateResponse checkpointState(
       final long checkpointTimestamp, final long backupTimestamp) {
     final var response = new CheckpointStateResponse();
