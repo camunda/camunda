@@ -93,8 +93,7 @@ public final class TestHelper {
     return camundaClient
         .newDeployResourceCommand()
         .addResourceFromClasspath(resourceName)
-        .send()
-        .join();
+        .execute();
   }
 
   /**
@@ -112,8 +111,7 @@ public final class TestHelper {
         client
             .newDeployResourceCommand()
             .addProcessModel(processDefinition, resourceName)
-            .send()
-            .join()
+            .execute()
             .getProcesses()
             .getFirst();
 
@@ -149,8 +147,7 @@ public final class TestHelper {
     return camundaClient
         .newDeployResourceCommand()
         .addProcessModel(processModel, resourceName)
-        .send()
-        .join();
+        .execute();
   }
 
   public static DeploymentEvent deployResourceForTenant(
@@ -162,8 +159,7 @@ public final class TestHelper {
         .newDeployResourceCommand()
         .addProcessModel(processModel, resourceName)
         .tenantId(tenantId)
-        .send()
-        .join();
+        .execute();
   }
 
   public static DeploymentEvent deployResourceForTenant(
@@ -172,8 +168,7 @@ public final class TestHelper {
         .newDeployResourceCommand()
         .addResourceFromClasspath(resourceName)
         .tenantId(tenantId)
-        .send()
-        .join();
+        .execute();
   }
 
   public static void createTenant(
@@ -181,14 +176,14 @@ public final class TestHelper {
       final String tenantId,
       final String tenantName,
       final String... usernames) {
-    client.newCreateTenantCommand().tenantId(tenantId).name(tenantName).send().join();
+    client.newCreateTenantCommand().tenantId(tenantId).name(tenantName).execute();
     for (final var username : usernames) {
-      client.newAssignUserToTenantCommand().username(username).tenantId(tenantId).send().join();
+      client.newAssignUserToTenantCommand().username(username).tenantId(tenantId).execute();
     }
   }
 
   public static void deleteTenant(final CamundaClient camundaClient, final String tenant) {
-    camundaClient.newDeleteTenantCommand(tenant).send().join();
+    camundaClient.newDeleteTenantCommand(tenant).execute();
   }
 
   public static ProcessInstanceEvent startProcessInstance(
@@ -197,8 +192,7 @@ public final class TestHelper {
         .newCreateInstanceCommand()
         .bpmnProcessId(bpmnProcessId)
         .latestVersion()
-        .send()
-        .join();
+        .execute();
   }
 
   public static ProcessInstanceEvent startProcessInstance(
@@ -206,8 +200,7 @@ public final class TestHelper {
     return camundaClient
         .newCreateInstanceCommand()
         .processDefinitionKey(processDefinitionKey)
-        .send()
-        .join();
+        .execute();
   }
 
   public static ProcessInstanceEvent startProcessInstance(
@@ -216,8 +209,7 @@ public final class TestHelper {
         .newCreateInstanceCommand()
         .processDefinitionKey(processDefinitionKey)
         .tenantId(tenantId)
-        .send()
-        .join();
+        .execute();
   }
 
   /**
@@ -227,7 +219,7 @@ public final class TestHelper {
    * @param jobKey the job key to complete
    */
   public static void completeJob(final CamundaClient camundaClient, final long jobKey) {
-    camundaClient.newCompleteCommand(jobKey).send().join();
+    camundaClient.newCompleteCommand(jobKey).execute();
   }
 
   /**
@@ -238,7 +230,7 @@ public final class TestHelper {
    */
   public static void cancelInstance(
       final CamundaClient camundaClient, final ProcessInstanceEvent instance) {
-    camundaClient.newCancelInstanceCommand(instance.getProcessInstanceKey()).send().join();
+    camundaClient.newCancelInstanceCommand(instance.getProcessInstanceKey()).execute();
     waitForProcessInstanceToBeTerminated(camundaClient, instance.getProcessInstanceKey());
   }
 
@@ -249,8 +241,7 @@ public final class TestHelper {
         .bpmnProcessId(bpmnProcessId)
         .latestVersion()
         .tenantId(tenant)
-        .send()
-        .join();
+        .execute();
   }
 
   public static CorrelateMessageResponse startProcessInstanceWithMessage(
@@ -259,8 +250,7 @@ public final class TestHelper {
         .newCorrelateMessageCommand()
         .messageName(messageName)
         .withoutCorrelationKey()
-        .send()
-        .join();
+        .execute();
   }
 
   public static ProcessInstanceEvent startProcessInstanceWithTags(
@@ -270,8 +260,7 @@ public final class TestHelper {
         .bpmnProcessId(bpmnProcessId)
         .latestVersion()
         .tags(tags)
-        .send()
-        .join();
+        .execute();
   }
 
   public static ProcessInstanceEvent startProcessInstance(
@@ -282,7 +271,7 @@ public final class TestHelper {
     if (payload != null) {
       createProcessInstanceCommandStep3.variables(payload);
     }
-    return createProcessInstanceCommandStep3.send().join();
+    return createProcessInstanceCommandStep3.execute();
   }
 
   public static ProcessInstanceEvent startProcessInstance(
@@ -294,7 +283,7 @@ public final class TestHelper {
     if (variables != null && !variables.isEmpty()) {
       cmd.variables(variables);
     }
-    return cmd.send().join();
+    return cmd.execute();
   }
 
   /**
@@ -373,12 +362,7 @@ public final class TestHelper {
         "should start process instances and import in Operate",
         expectedProcessInstances,
         page ->
-            camundaClient
-                .newProcessInstanceSearchRequest()
-                .filter(filter)
-                .page(page)
-                .send()
-                .join());
+            camundaClient.newProcessInstanceSearchRequest().filter(filter).page(page).execute());
   }
 
   /**
@@ -415,8 +399,7 @@ public final class TestHelper {
         .newCreateInstanceCommand()
         .processDefinitionKey(processDefinitionKey)
         .variables(variablesCopy)
-        .send()
-        .join();
+        .execute();
   }
 
   /**
@@ -442,8 +425,7 @@ public final class TestHelper {
         .bpmnProcessId(bpmnProcessId)
         .latestVersion()
         .variables(variablesCopy)
-        .send()
-        .join();
+        .execute();
   }
 
   /**
@@ -463,8 +445,7 @@ public final class TestHelper {
                 .newProcessInstanceSearchRequest()
                 .filter(f -> f.variables(getScopedVariables(scopeId)))
                 .page(page)
-                .send()
-                .join());
+                .execute());
   }
 
   /**
@@ -486,8 +467,7 @@ public final class TestHelper {
                     f ->
                         f.state(ProcessInstanceState.ACTIVE).variables(getScopedVariables(scopeId)))
                 .page(page)
-                .send()
-                .join());
+                .execute());
   }
 
   /**
@@ -515,8 +495,7 @@ public final class TestHelper {
                         f.processInstanceKey(processInstanceKey)
                             .variables(Map.of(variableName, variableValue)))
                 .page(page)
-                .send()
-                .join());
+                .execute());
   }
 
   /**
@@ -540,8 +519,7 @@ public final class TestHelper {
                         f.state(UserTaskState.CREATED)
                             .processInstanceVariables(getScopedVariables(testScopeId)))
                 .page(page)
-                .send()
-                .join());
+                .execute());
   }
 
   /**
@@ -561,7 +539,7 @@ public final class TestHelper {
     waitForItemsPaginated(
         "should have items with state",
         expectedCount,
-        page -> client.newUserTaskSearchRequest().filter(filter).page(page).send().join());
+        page -> client.newUserTaskSearchRequest().filter(filter).page(page).execute());
   }
 
   public static void waitForBatchOperationWithCorrectTotalCount(
@@ -575,7 +553,7 @@ public final class TestHelper {
         .untilAsserted(
             () -> {
               final var batch =
-                  camundaClient.newBatchOperationGetRequest(batchOperationKey).send().join();
+                  camundaClient.newBatchOperationGetRequest(batchOperationKey).execute();
               assertThat(batch).isNotNull();
               assertThat(batch.getOperationsTotalCount()).isEqualTo(expectedItems);
             });
@@ -593,7 +571,7 @@ public final class TestHelper {
             () -> {
               // and
               final var batch =
-                  camundaClient.newBatchOperationGetRequest(batchOperationKey).send().join();
+                  camundaClient.newBatchOperationGetRequest(batchOperationKey).execute();
               assertThat(batch).isNotNull();
               assertThat(batch.getStatus()).isEqualTo(BatchOperationState.COMPLETED);
               assertThat(batch.getOperationsCompletedCount()).isEqualTo(expectedCompletedItems);
@@ -612,7 +590,7 @@ public final class TestHelper {
             () -> {
               // and
               final var batch =
-                  camundaClient.newBatchOperationGetRequest(batchOperationKey).send().join();
+                  camundaClient.newBatchOperationGetRequest(batchOperationKey).execute();
               assertThat(batch).isNotNull();
               assertThat(batch.getStatus()).isEqualTo(expectedStatus);
             });
@@ -629,7 +607,7 @@ public final class TestHelper {
             () -> {
               // and
               final var batch =
-                  camundaClient.newBatchOperationGetRequest(batchOperationKey).send().join();
+                  camundaClient.newBatchOperationGetRequest(batchOperationKey).execute();
               assertThat(batch).isNotNull();
               assertThat(batch.getStatus())
                   .withFailMessage(
@@ -647,7 +625,7 @@ public final class TestHelper {
         .untilAsserted(
             () -> {
               final var result =
-                  camundaClient.newProcessInstanceGetRequest(processInstanceKey).send().join();
+                  camundaClient.newProcessInstanceGetRequest(processInstanceKey).execute();
               assertThat(result.getState()).isEqualTo(ProcessInstanceState.TERMINATED);
             });
   }
@@ -664,8 +642,7 @@ public final class TestHelper {
                 .newProcessInstanceSearchRequest()
                 .page(page)
                 .filter(fn.andThen(f -> f.state(ProcessInstanceState.COMPLETED)))
-                .send()
-                .join());
+                .execute());
   }
 
   public static void waitForProcessInstance(
@@ -678,7 +655,7 @@ public final class TestHelper {
         .untilAsserted(
             () -> {
               final var result =
-                  client.newProcessInstanceSearchRequest().filter(filter).send().join().items();
+                  client.newProcessInstanceSearchRequest().filter(filter).execute().items();
               asserter.accept(result);
             });
   }
@@ -696,12 +673,7 @@ public final class TestHelper {
         "should wait until element instances are available",
         expectedElementInstances,
         page ->
-            camundaClient
-                .newElementInstanceSearchRequest()
-                .filter(filter)
-                .page(page)
-                .send()
-                .join());
+            camundaClient.newElementInstanceSearchRequest().filter(filter).page(page).execute());
   }
 
   public static void waitForJobs(
@@ -714,8 +686,7 @@ public final class TestHelper {
                 .newJobSearchRequest()
                 .filter(f -> f.processInstanceKey(b -> b.in(processInstanceKeys)))
                 .page(page)
-                .send()
-                .join());
+                .execute());
   }
 
   public static void waitForProcessInstances(
@@ -725,8 +696,7 @@ public final class TestHelper {
     waitForItemsPaginated(
         "should wait until process instances are available",
         expectedProcessInstances,
-        page ->
-            camundaClient.newProcessInstanceSearchRequest().filter(fn).page(page).send().join());
+        page -> camundaClient.newProcessInstanceSearchRequest().filter(fn).page(page).execute());
   }
 
   public static void waitForTenantDeletion(
@@ -737,7 +707,7 @@ public final class TestHelper {
         .untilAsserted(
             () ->
                 assertThat(
-                        camundaClient.newTenantsSearchRequest().send().join().items().stream()
+                        camundaClient.newTenantsSearchRequest().execute().items().stream()
                             .map(Tenant::getTenantId)
                             .collect(Collectors.toSet()))
                     .doesNotContain(tenantToBeDeleted));
@@ -748,7 +718,7 @@ public final class TestHelper {
     waitForItemsPaginated(
         "should deploy processes and import in Operate",
         expectedProcessDefinitions,
-        page -> camundaClient.newProcessDefinitionSearchRequest().page(page).send().join());
+        page -> camundaClient.newProcessDefinitionSearchRequest().page(page).execute());
   }
 
   public static void waitForStartFormsBeingExported(
@@ -765,16 +735,12 @@ public final class TestHelper {
                   camundaClient
                       .newProcessDefinitionSearchRequest()
                       .filter(f -> f.processDefinitionId(processDefinitionId))
-                      .send()
-                      .join()
+                      .execute()
                       .items()
                       .getFirst()
                       .getProcessDefinitionKey();
               final var form =
-                  camundaClient
-                      .newProcessDefinitionGetFormRequest(processDefinitionKey)
-                      .send()
-                      .join();
+                  camundaClient.newProcessDefinitionGetFormRequest(processDefinitionKey).execute();
               assertThat(form.getFormId()).isEqualTo(expectedFormId);
               assertThat(form.getVersion()).isEqualTo(expectedFormVersion);
             });
@@ -788,12 +754,7 @@ public final class TestHelper {
         "should deploy processes and import in secondary database",
         expectedProcessDefinitions,
         page ->
-            camundaClient
-                .newProcessDefinitionSearchRequest()
-                .filter(filter)
-                .page(page)
-                .send()
-                .join());
+            camundaClient.newProcessDefinitionSearchRequest().filter(filter).page(page).execute());
   }
 
   public static Decision deployDefaultTestDecisionProcessInstance(
@@ -802,8 +763,7 @@ public final class TestHelper {
         camundaClient
             .newDeployResourceCommand()
             .addResourceFromClasspath(String.format("decisions/%s", dmnResource))
-            .send()
-            .join()
+            .execute()
             .getDecisions()
             .getFirst();
     waitForDecisionsToBeDeployed(
@@ -884,8 +844,7 @@ public final class TestHelper {
                       camundaClient
                           .newDecisionDefinitionSearchRequest()
                           .filter(decisionDefinitionFilter)
-                          .send()
-                          .join()
+                          .execute()
                           .items()
                           .size())
                   .isEqualTo(expectedDecisionDefinitions);
@@ -893,8 +852,7 @@ public final class TestHelper {
                       camundaClient
                           .newDecisionRequirementsSearchRequest()
                           .filter(decisionRequirementsFilter)
-                          .send()
-                          .join()
+                          .execute()
                           .items()
                           .size())
                   .isEqualTo(expectedDecisionRequirements);
@@ -922,8 +880,7 @@ public final class TestHelper {
                   camundaClient
                       .newDecisionInstanceSearchRequest()
                       .filter(f -> f.processInstanceKey(processInstanceKey))
-                      .send()
-                      .join();
+                      .execute();
               assertThat(result.items()).hasSize(expectedDecisionInstances);
             });
   }
@@ -938,8 +895,7 @@ public final class TestHelper {
                 .newProcessInstanceSearchRequest()
                 .filter(f -> f.hasIncident(true))
                 .page(page)
-                .send()
-                .join());
+                .execute());
   }
 
   public static void waitUntilIncidentIsResolvedOnProcessInstance(
@@ -952,8 +908,7 @@ public final class TestHelper {
                 .newProcessInstanceSearchRequest()
                 .filter(f -> f.hasIncident(false))
                 .page(page)
-                .send()
-                .join());
+                .execute());
   }
 
   public static void waitUntilIncidentIsResolvedOnElementInstance(
@@ -966,8 +921,7 @@ public final class TestHelper {
                 .newElementInstanceSearchRequest()
                 .filter(f -> f.hasIncident(false))
                 .page(page)
-                .send()
-                .join());
+                .execute());
   }
 
   public static void waitUntilIncidentsAreActive(
@@ -987,7 +941,7 @@ public final class TestHelper {
     waitForItemsPaginated(
         awaitMsg,
         expectedIncidents,
-        page -> camundaClient.newIncidentSearchRequest().filter(filter).page(page).send().join());
+        page -> camundaClient.newIncidentSearchRequest().filter(filter).page(page).execute());
   }
 
   public static void waitUntilIncidentsAreResolved(
@@ -1000,8 +954,7 @@ public final class TestHelper {
                 .newIncidentSearchRequest()
                 .filter(f -> f.state(IncidentState.RESOLVED))
                 .page(page)
-                .send()
-                .join());
+                .execute());
   }
 
   public static void waitUntilIncidentsAreResolved(
@@ -1014,8 +967,7 @@ public final class TestHelper {
                 .newIncidentSearchRequest()
                 .filter(f -> f.state(IncidentState.RESOLVED).incidentKey(k -> k.in(incidentKeys)))
                 .page(page)
-                .send()
-                .join());
+                .execute());
   }
 
   public static void waitUntilProcessInstanceIsEnded(
@@ -1029,8 +981,7 @@ public final class TestHelper {
                   camundaClient
                       .newProcessInstanceSearchRequest()
                       .filter(f -> f.processInstanceKey(processInstanceKey))
-                      .send()
-                      .join();
+                      .execute();
               assertThat(result.items().getFirst().getEndDate()).isNotNull();
             });
   }
@@ -1045,8 +996,7 @@ public final class TestHelper {
                 .newElementInstanceSearchRequest()
                 .filter(f -> f.hasIncident(true))
                 .page(page)
-                .send()
-                .join());
+                .execute());
   }
 
   public static void waitUntilFailedJobIncident(
@@ -1059,8 +1009,7 @@ public final class TestHelper {
                 .newIncidentSearchRequest()
                 .filter(f -> f.jobKey(b -> b.exists(true)))
                 .page(page)
-                .send()
-                .join());
+                .execute());
   }
 
   public static void waitUntilJobWorkerHasFailedJob(
@@ -1075,8 +1024,7 @@ public final class TestHelper {
                 .newProcessInstanceSearchRequest()
                 .filter(f -> f.hasRetriesLeft(true).variables(variables))
                 .page(page)
-                .send()
-                .join());
+                .execute());
   }
 
   public static void waitUntilJobExistsForProcessInstance(
@@ -1089,8 +1037,7 @@ public final class TestHelper {
                 .newJobSearchRequest()
                 .filter(f -> f.processInstanceKey(processInstanceKey))
                 .page(page)
-                .send()
-                .join());
+                .execute());
   }
 
   public static void waitUntilExactUsersExist(
@@ -1099,7 +1046,7 @@ public final class TestHelper {
         .atMost(TIMEOUT_DATA_AVAILABILITY)
         .untilAsserted(
             () -> {
-              final var result = camundaClient.newUsersSearchRequest().send().join();
+              final var result = camundaClient.newUsersSearchRequest().execute();
               final var users = result.items();
               assertThat(users)
                   .extracting(u -> u.getUsername())
@@ -1124,8 +1071,7 @@ public final class TestHelper {
                 .newMessageSubscriptionSearchRequest()
                 .filter(filterConsumer)
                 .page(page)
-                .send()
-                .join());
+                .execute());
   }
 
   public static void waitForCorrelatedMessageSubscriptions(
@@ -1133,8 +1079,7 @@ public final class TestHelper {
     waitForItemsPaginated(
         "should wait until correlated message subscriptions are available",
         expectedCorrelatedMessageSubscriptions,
-        page ->
-            camundaClient.newCorrelatedMessageSubscriptionSearchRequest().page(page).send().join());
+        page -> camundaClient.newCorrelatedMessageSubscriptionSearchRequest().page(page).execute());
   }
 
   public static void waitUntilAuthorizationVisible(
@@ -1148,8 +1093,7 @@ public final class TestHelper {
                   camundaClient
                       .newAuthorizationSearchRequest()
                       .filter(f -> f.ownerId(owner).resourceIds(resource))
-                      .send()
-                      .join();
+                      .execute();
               assertThat(result.items().size()).isOne();
             });
   }
@@ -1161,8 +1105,7 @@ public final class TestHelper {
         .ignoreExceptions()
         .untilAsserted(
             () ->
-                assertThat(
-                        camundaClient.newUsersByGroupSearchRequest(groupId).send().join().items())
+                assertThat(camundaClient.newUsersByGroupSearchRequest(groupId).execute().items())
                     .extracting(GroupUser::getUsername)
                     .contains(username));
   }
@@ -1174,7 +1117,7 @@ public final class TestHelper {
         .ignoreExceptions()
         .untilAsserted(
             () ->
-                assertThat(camundaClient.newUsersByRoleSearchRequest(roleId).send().join().items())
+                assertThat(camundaClient.newUsersByRoleSearchRequest(roleId).execute().items())
                     .extracting(RoleUser::getUsername)
                     .contains(username));
   }
@@ -1257,8 +1200,7 @@ public final class TestHelper {
                   camundaClient
                       .newGloballyScopedClusterVariableGetRequest()
                       .withName(variableName)
-                      .send()
-                      .join();
+                      .execute();
               assertThat(result).isNotNull();
               assertThat(result.getValue()).contains(expectedValue);
             });
@@ -1287,8 +1229,7 @@ public final class TestHelper {
                   camundaClient
                       .newTenantScopedClusterVariableGetRequest(tenantId)
                       .withName(variableName)
-                      .send()
-                      .join();
+                      .execute();
               assertThat(result).isNotNull();
               assertThat(result.getValue()).contains(expectedValue);
             });
@@ -1308,7 +1249,7 @@ public final class TestHelper {
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
-              final var response = camundaClient.newClusterVariableSearchRequest().send().join();
+              final var response = camundaClient.newClusterVariableSearchRequest().execute();
               assertThat(response).isNotNull();
               assertThat(response.items()).isNotEmpty();
 
