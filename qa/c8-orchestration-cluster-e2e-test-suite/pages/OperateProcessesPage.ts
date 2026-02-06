@@ -62,7 +62,12 @@ class OperateProcessesPage {
     rowIndex?: number,
     cellIndex?: number,
   ) => Locator;
-  readonly batchOperationStartedMessage: (batchOperationType: 'Resolve Incident' | 'Retry' | 'Cancel Process Instance') => Locator;
+  readonly batchOperationStartedMessage: (
+    batchOperationType:
+      | 'Resolve Incident'
+      | 'Retry'
+      | 'Cancel Process Instance',
+  ) => Locator;
   readonly processCouldNotBeFoundMessage: Locator;
 
   constructor(page: Page) {
@@ -183,9 +188,18 @@ class OperateProcessesPage {
         .nth(rowIndex)
         .getByRole('cell')
         .nth(cellIndex);
-    this.batchOperationStartedMessage = (batchOperationType: 'Resolve Incident' | 'Retry' | 'Cancel Process Instance') =>
-      page.getByText(`Batch operation \"${batchOperationType}\" has been started`);
-    this.processCouldNotBeFoundMessage = this.page.getByRole('status').getByText('Process could not be found');
+    this.batchOperationStartedMessage = (
+      batchOperationType:
+        | 'Resolve Incident'
+        | 'Retry'
+        | 'Cancel Process Instance',
+    ) =>
+      page.getByText(
+        `Batch operation \"${batchOperationType}\" has been started`,
+      );
+    this.processCouldNotBeFoundMessage = this.page
+      .getByRole('status')
+      .getByText('Process could not be found');
   }
 
   async filterByProcessName(name: string): Promise<void> {

@@ -277,7 +277,9 @@ test.describe('Process Instances Table', () => {
       await operateFiltersPanelPage.selectVersion('1');
       await waitForAssertion({
         assertion: async () => {
-          await expect(page.getByText(`${amountOfInstancesForInfiniteScroll} results`)).toBeVisible();
+          await expect(
+            page.getByText(`${amountOfInstancesForInfiniteScroll} results`),
+          ).toBeVisible();
         },
         onFailure: async () => {
           await page.reload();

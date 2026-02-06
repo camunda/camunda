@@ -77,8 +77,7 @@ test.describe('Processes', () => {
     await captureScreenshot(page, testInfo);
     await captureFailureVideo(page, testInfo);
   });
-  const baseUrl =
-        process.env.CORE_APPLICATION_URL || 'http://localhost:8080';
+  const baseUrl = process.env.CORE_APPLICATION_URL || 'http://localhost:8080';
 
   test('Processes Page Initial Load', async ({
     operateProcessesPage,
@@ -129,7 +128,9 @@ test.describe('Processes', () => {
       await waitForAssertion({
         assertion: async () => {
           await expect(operateProcessesPage.dataList).toBeVisible();
-          await expect(operateProcessesPage.processInstancesTable).toHaveCount(2);
+          await expect(operateProcessesPage.processInstancesTable).toHaveCount(
+            2,
+          );
         },
         onFailure: async () => {
           await page.reload();
@@ -248,8 +249,12 @@ test.describe('Processes', () => {
         `${baseUrl}/operate/processes?process=testProcess&version=1`,
       );
 
-      await expect(page).toHaveURL(`${baseUrl}/operate/processes?process=testProcess&version=1`);
-      await expect(operateProcessesPage.processCouldNotBeFoundMessage).toBeVisible();
+      await expect(page).toHaveURL(
+        `${baseUrl}/operate/processes?process=testProcess&version=1`,
+      );
+      await expect(
+        operateProcessesPage.processCouldNotBeFoundMessage,
+      ).toBeVisible();
 
       await waitForAssertion({
         assertion: async () => {
