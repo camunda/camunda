@@ -310,6 +310,68 @@ final class IntervalPropertyTest {
     }
   }
 
+  @Property(tries = 100)
+  void containsWithMapperIsEquivalentToMapThenContains(
+      @ForAll("intervals") final Interval<Integer> a, @ForAll("values") final Integer value) {
+    // contains(value, mapper) should be equivalent to map(mapper).contains(value)
+    final var mapperResult = a.contains(value * 2L, i -> i * 2L);
+    final var mapThenContainsResult = a.map(i -> i * 2L).contains(value * 2L);
+
+    assertThat(mapperResult)
+        .describedAs("contains with mapper should equal map().contains()")
+        .isEqualTo(mapThenContainsResult);
+  }
+
+  @Property(tries = 100)
+  void containsIntervalWithMapperIsEquivalentToMapThenContains(
+      @ForAll("intervals") final Interval<Integer> a,
+      @ForAll("intervals") final Interval<Integer> b) {
+    // contains(interval, mapper) should be equivalent to map(mapper).contains(mapped interval)
+    final var mappedB = b.map(i -> i * 2L);
+    final var mapperResult = a.contains(mappedB, i -> i * 2L);
+    final var mapThenContainsResult = a.map(i -> i * 2L).contains(mappedB);
+
+    assertThat(mapperResult)
+        .describedAs("contains interval with mapper should equal map().contains()")
+        .isEqualTo(mapThenContainsResult);
+  }
+
+  @Property(tries = 100)
+  void smallestCoverWithMapperReturnsEquivalentIntervals(
+      @ForAll("intervals") final Interval<Integer> query,
+      @ForAll("contiguousIntervalLists") final List<Interval<Integer>> intervals) {
+    // smallestCover with mapper should return the same intervals (by index) as
+    // mapping the query and calling smallestCover on mapped intervals
+    final var mapper = (java.util.function.Function<Integer, Long>) Integer::longValue;
+    final var mappedQuery = query.map(mapper);
+    final var mappedIntervals = intervals.stream().map(i -> i.map(mapper)).toList();
+
+    // Get result using mapper version
+    final var mapperResult = mappedQuery.smallestCover(intervals, mapper);
+    // Get result by mapping everything first
+    final var mappedResult = mappedQuery.smallestCover(mappedIntervals);
+
+    // Results should have the same size
+    assertThat(mapperResult)
+        .describedAs("Mapper result should have same size as mapped result")
+        .hasSameSizeAs(mappedResult);
+
+    // Results should correspond to the same indices in the original list
+    final var mapperIndices = new ArrayList<Integer>();
+    for (final var interval : mapperResult) {
+      mapperIndices.add(intervals.indexOf(interval));
+    }
+
+    final var mappedIndices = new ArrayList<Integer>();
+    for (final var mappedInterval : mappedResult) {
+      mappedIndices.add(mappedIntervals.indexOf(mappedInterval));
+    }
+
+    assertThat(mapperIndices)
+        .describedAs("Mapper result should correspond to same indices as mapped result")
+        .isEqualTo(mappedIndices);
+  }
+
   // ==================== SmallestCover ====================
 
   @Property(tries = 100)
@@ -501,6 +563,72 @@ final class IntervalPropertyTest {
       assertThat(result)
           .describedAs("Intersection of %s (container) and %s (contained) should be %s", a, b, b)
           .contains(b);
+    }
+  }
+
+  // ==================== FromPoints ====================
+
+  @Provide
+  Arbitrary<List<Integer>> sortedPoints() {
+    return Arbitraries.integers()
+        .between(-500, 500)
+        .list()
+        .ofMinSize(0)
+        .ofMaxSize(10)
+        .map(points -> points.stream().distinct().sorted().toList());
+  }
+
+  @Property(tries = 100)
+  void fromPointsReturnsCorrectNumberOfIntervals(
+      @ForAll("sortedPoints") final List<Integer> points) {
+    final var result = Interval.fromPoints(points, Interval::closedOpen);
+
+    final var expectedSize = Math.max(0, points.size() - 1);
+    assertThat(result).hasSize(expectedSize);
+  }
+
+  @Property(tries = 100)
+  void fromPointsIntervalsAreContiguous(@ForAll("sortedPoints") final List<Integer> points) {
+    final var result = Interval.fromPoints(points, Interval::closedOpen);
+
+    if (result.size() > 1) {
+      for (int i = 0; i < result.size() - 1; i++) {
+        final var current = result.get(i);
+        final var next = result.get(i + 1);
+        assertThat(current.end())
+            .describedAs("Interval %s end should equal interval %s start", current, next)
+            .isEqualTo(next.start());
+      }
+    }
+  }
+
+  @Property(tries = 100)
+  void fromPointsIntervalsSpanAllPoints(@ForAll("sortedPoints") final List<Integer> points) {
+    if (points.size() < 2) {
+      return;
+    }
+
+    final var result = Interval.fromPoints(points, Interval::closedOpen);
+
+    // First interval starts at first point
+    assertThat(result.getFirst().start()).isEqualTo(points.getFirst());
+    // Last interval ends at last point
+    assertThat(result.getLast().end()).isEqualTo(points.getLast());
+  }
+
+  @Property(tries = 100)
+  void fromPointsEachIntervalSpansConsecutivePoints(
+      @ForAll("sortedPoints") final List<Integer> points) {
+    final var result = Interval.fromPoints(points, Interval::closedOpen);
+
+    for (int i = 0; i < result.size(); i++) {
+      final var interval = result.get(i);
+      assertThat(interval.start())
+          .describedAs("Interval %d start should be point %d", i, i)
+          .isEqualTo(points.get(i));
+      assertThat(interval.end())
+          .describedAs("Interval %d end should be point %d", i, i + 1)
+          .isEqualTo(points.get(i + 1));
     }
   }
 }

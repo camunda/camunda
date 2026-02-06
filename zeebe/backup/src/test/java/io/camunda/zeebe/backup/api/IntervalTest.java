@@ -141,6 +141,106 @@ public class IntervalTest {
   }
 
   @Nested
+  class ContainsValueWithMapper {
+
+    // Event is Comparable by timestamp, but we can also compare by other fields using mapper
+    record Event(String name, long timestamp) implements Comparable<Event> {
+      @Override
+      public int compareTo(final Event other) {
+        return Long.compare(timestamp, other.timestamp);
+      }
+    }
+
+    @Test
+    void shouldContainMappedValueInMiddle() {
+      final var interval = Interval.closed(new Event("start", 100L), new Event("end", 200L));
+
+      assertThat(interval.contains(150L, Event::timestamp)).isTrue();
+    }
+
+    @Test
+    void shouldNotContainMappedValueOutside() {
+      final var interval = Interval.closed(new Event("start", 100L), new Event("end", 200L));
+
+      assertThat(interval.contains(50L, Event::timestamp)).isFalse();
+      assertThat(interval.contains(250L, Event::timestamp)).isFalse();
+    }
+
+    @Test
+    void shouldRespectStartInclusiveness() {
+      final var closedInterval = Interval.closed(new Event("start", 100L), new Event("end", 200L));
+      final var openInterval = Interval.open(new Event("start", 100L), new Event("end", 200L));
+
+      assertThat(closedInterval.contains(100L, Event::timestamp)).isTrue();
+      assertThat(openInterval.contains(100L, Event::timestamp)).isFalse();
+    }
+
+    @Test
+    void shouldRespectEndInclusiveness() {
+      final var closedInterval = Interval.closed(new Event("start", 100L), new Event("end", 200L));
+      final var openInterval = Interval.open(new Event("start", 100L), new Event("end", 200L));
+
+      assertThat(closedInterval.contains(200L, Event::timestamp)).isTrue();
+      assertThat(openInterval.contains(200L, Event::timestamp)).isFalse();
+    }
+
+    @Test
+    void shouldWorkWithDifferentMapperTypes() {
+      final var interval = Interval.closed(new Event("alpha", 100L), new Event("zeta", 200L));
+
+      // Map to String for comparison (different from the Comparable<Event> implementation)
+      assertThat(interval.contains("beta", Event::name)).isTrue();
+      assertThat(interval.contains("aaa", Event::name)).isFalse();
+    }
+  }
+
+  @Nested
+  class ContainsIntervalWithMapper {
+
+    record Event(String name, long timestamp) implements Comparable<Event> {
+      @Override
+      public int compareTo(final Event other) {
+        return Long.compare(timestamp, other.timestamp);
+      }
+    }
+
+    @Test
+    void shouldContainSmallerMappedInterval() {
+      final var outer = Interval.closed(new Event("start", 100L), new Event("end", 200L));
+      final var inner = Interval.closed(120L, 180L);
+
+      assertThat(outer.contains(inner, Event::timestamp)).isTrue();
+    }
+
+    @Test
+    void shouldNotContainLargerMappedInterval() {
+      final var outer = Interval.closed(new Event("start", 100L), new Event("end", 200L));
+      final var inner = Interval.closed(50L, 250L);
+
+      assertThat(outer.contains(inner, Event::timestamp)).isFalse();
+    }
+
+    @Test
+    void shouldRespectBoundInclusiveness() {
+      // Closed interval contains open interval with same bounds
+      final var closed = Interval.closed(new Event("start", 100L), new Event("end", 200L));
+      assertThat(closed.contains(Interval.open(100L, 200L), Event::timestamp)).isTrue();
+
+      // Open interval does not contain closed interval with same bounds
+      final var open = Interval.open(new Event("start", 100L), new Event("end", 200L));
+      assertThat(open.contains(Interval.closed(100L, 200L), Event::timestamp)).isFalse();
+    }
+
+    @Test
+    void shouldContainEqualMappedInterval() {
+      final var interval = Interval.closed(new Event("start", 100L), new Event("end", 200L));
+      final var other = Interval.closed(100L, 200L);
+
+      assertThat(interval.contains(other, Event::timestamp)).isTrue();
+    }
+  }
+
+  @Nested
   class ContainsInterval {
 
     @Test
@@ -341,6 +441,113 @@ public class IntervalTest {
   }
 
   @Nested
+  class SmallestCoverWithMapper {
+
+    record Event(String name, long timestamp) implements Comparable<Event> {
+      @Override
+      public int compareTo(final Event other) {
+        return Long.compare(timestamp, other.timestamp);
+      }
+    }
+
+    @Test
+    void shouldReturnOriginalIntervalsWhenMapped() {
+      // given - intervals of Event, query by Long timestamp
+      final var event1 = new Event("a", 100L);
+      final var event2 = new Event("b", 200L);
+      final var event3 = new Event("c", 300L);
+
+      final var intervals =
+          List.of(
+              Interval.closedOpen(event1, event2),
+              Interval.closed(event2, event3));
+
+      final var query = Interval.closed(150L, 250L);
+
+      // when
+      final var result = query.smallestCover(intervals, Event::timestamp);
+
+      // then - returns original Event intervals, not mapped Long intervals
+      assertThat(result)
+          .containsExactly(
+              Interval.closedOpen(event1, event2),
+              Interval.closed(event2, event3));
+
+      // verify they are the actual Event intervals
+      assertThat(result.getFirst().start().name()).isEqualTo("a");
+      assertThat(result.getLast().end().name()).isEqualTo("c");
+    }
+
+    @Test
+    void shouldSkipNonOverlappingIntervalsAtBeginning() {
+      final var event1 = new Event("a", 100L);
+      final var event2 = new Event("b", 200L);
+      final var event3 = new Event("c", 300L);
+      final var event4 = new Event("d", 400L);
+
+      final var intervals =
+          List.of(
+              Interval.closedOpen(event1, event2),
+              Interval.closedOpen(event2, event3),
+              Interval.closed(event3, event4));
+
+      // Query that only overlaps with last two intervals
+      final var query = Interval.closed(250L, 350L);
+
+      final var result = query.smallestCover(intervals, Event::timestamp);
+
+      assertThat(result)
+          .containsExactly(
+              Interval.closedOpen(event2, event3),
+              Interval.closed(event3, event4));
+    }
+
+    @Test
+    void shouldSkipNonOverlappingIntervalsAtEnd() {
+      final var event1 = new Event("a", 100L);
+      final var event2 = new Event("b", 200L);
+      final var event3 = new Event("c", 300L);
+      final var event4 = new Event("d", 400L);
+
+      final var intervals =
+          List.of(
+              Interval.closedOpen(event1, event2),
+              Interval.closedOpen(event2, event3),
+              Interval.closed(event3, event4));
+
+      // Query that only overlaps with first two intervals
+      final var query = Interval.closed(150L, 250L);
+
+      final var result = query.smallestCover(intervals, Event::timestamp);
+
+      assertThat(result)
+          .containsExactly(
+              Interval.closedOpen(event1, event2),
+              Interval.closedOpen(event2, event3));
+    }
+
+    @Test
+    void shouldThrowWhenIntervalsAreNotContiguous() {
+      final var event1 = new Event("a", 100L);
+      final var event2 = new Event("b", 200L);
+      final var event3 = new Event("c", 300L);
+      final var event4 = new Event("d", 400L);
+
+      // Gap between intervals: [event1, event2) and [event3, event4] don't share a boundary
+      final var intervals =
+          List.of(
+              Interval.closedOpen(event1, event2),
+              Interval.closed(event3, event4)); // Not contiguous - gap at event2/event3
+
+      final var query = Interval.closed(150L, 350L);
+
+      assertThatThrownBy(() -> query.smallestCover(intervals, Event::timestamp))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("Expected intervals to be contiguous");
+    }
+  }
+
+  @Nested
   class Values {
 
     @ParameterizedTest
@@ -431,6 +638,59 @@ public class IntervalTest {
       final var result = Interval.intersection(List.of(first, second));
 
       assertThat(result.isPresent()).isEqualTo(hasResult);
+    }
+  }
+
+  @Nested
+  class FromPoints {
+
+    @Test
+    void shouldReturnEmptyListForEmptyInput() {
+      final List<Integer> emptyPoints = List.of();
+      final var result = Interval.fromPoints(emptyPoints, Interval::closed);
+
+      assertThat(result).isEmpty();
+    }
+
+    @Test
+    void shouldReturnEmptyListForSinglePoint() {
+      final var result = Interval.fromPoints(List.of(1), Interval::closed);
+
+      assertThat(result).isEmpty();
+    }
+
+    @Test
+    void shouldCreateSingleIntervalFromTwoPoints() {
+      final var result = Interval.fromPoints(List.of(1, 5), Interval::closed);
+
+      assertThat(result).containsExactly(Interval.closed(1, 5));
+    }
+
+    @Test
+    void shouldCreateIntervalsFromMultiplePoints() {
+      final var result = Interval.fromPoints(List.of(1, 3, 5, 7), Interval::closedOpen);
+
+      assertThat(result)
+          .containsExactly(
+              Interval.closedOpen(1, 3), Interval.closedOpen(3, 5), Interval.closedOpen(5, 7));
+    }
+
+    @Test
+    void shouldUseProvidedIntervalFactory() {
+      // Using closed intervals
+      final var closedResult = Interval.fromPoints(List.of(1, 2, 3), Interval::closed);
+      assertThat(closedResult)
+          .containsExactly(Interval.closed(1, 2), Interval.closed(2, 3));
+
+      // Using half-open intervals
+      final var halfOpenResult = Interval.fromPoints(List.of(1, 2, 3), Interval::closedOpen);
+      assertThat(halfOpenResult)
+          .containsExactly(Interval.closedOpen(1, 2), Interval.closedOpen(2, 3));
+
+      // Using open-closed intervals
+      final var openClosedResult = Interval.fromPoints(List.of(1, 2, 3), Interval::openClosed);
+      assertThat(openClosedResult)
+          .containsExactly(Interval.openClosed(1, 2), Interval.openClosed(2, 3));
     }
   }
 
