@@ -35,7 +35,10 @@ public enum AuditLogSearchColumn implements SearchColumn<AuditLogEntity> {
   DECISION_EVALUATION_KEY("decisionEvaluationKey"),
   DEPLOYMENT_KEY("deploymentKey"),
   FORM_KEY("formKey"),
-  RESOURCE_KEY("resourceKey");
+  RESOURCE_KEY("resourceKey"),
+  RELATED_ENTITY_TYPE("relatedEntityType"),
+  RELATED_ENTITY_KEY("relatedEntityKey"),
+  ENTITY_DESCRIPTION("entityDescription");
 
   private final String property;
 

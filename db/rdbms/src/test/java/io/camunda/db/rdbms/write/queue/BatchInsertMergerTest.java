@@ -126,6 +126,9 @@ class BatchInsertMergerTest {
             null,
             null,
             null,
+            null,
+            null,
+            null,
             1,
             OffsetDateTime.now());
 
@@ -154,6 +157,9 @@ class BatchInsertMergerTest {
             100L,
             201L,
             201L,
+            null,
+            null,
+            null,
             null,
             null,
             null,

@@ -43,7 +43,10 @@ public record AuditLogFilter(
     List<Operation<Long>> batchOperationKeyOperations,
     List<Operation<Long>> deploymentKeyOperations,
     List<Operation<Long>> formKeyOperations,
-    List<Operation<Long>> resourceKeyOperations)
+    List<Operation<Long>> resourceKeyOperations,
+    List<Operation<String>> relatedEntityKeyOperations,
+    List<Operation<String>> relatedEntityTypeOperations,
+    List<Operation<String>> entityDescriptionOperations)
     implements FilterBase {
 
   public static AuditLogFilter of(
@@ -78,7 +81,10 @@ public record AuditLogFilter(
         .batchOperationKeyOperations(batchOperationKeyOperations)
         .deploymentKeyOperations(deploymentKeyOperations)
         .formKeyOperations(formKeyOperations)
-        .resourceKeyOperations(resourceKeyOperations);
+        .resourceKeyOperations(resourceKeyOperations)
+        .relatedEntityKeyOperations(relatedEntityKeyOperations)
+        .relatedEntityTypeOperations(relatedEntityTypeOperations)
+        .entityDescriptionOperations(entityDescriptionOperations);
   }
 
   public static final class Builder implements ObjectBuilder<AuditLogFilter> {
@@ -108,6 +114,9 @@ public record AuditLogFilter(
     private List<Operation<Long>> deploymentKeyOperations;
     private List<Operation<Long>> formKeyOperations;
     private List<Operation<Long>> resourceKeyOperations;
+    private List<Operation<String>> entityDescriptionOperations;
+    private List<Operation<String>> relatedEntityTypeOperations;
+    private List<Operation<String>> relatedEntityKeyOperations;
 
     public Builder auditLogKeyOperations(final List<Operation<String>> operations) {
       if (operations != null) {
@@ -414,6 +423,39 @@ public record AuditLogFilter(
       return resourceKeyOperations(List.of(FilterUtil.mapDefaultToOperation(value, values)));
     }
 
+    public Builder relatedEntityKeyOperations(final List<Operation<String>> operations) {
+      if (operations != null) {
+        relatedEntityKeyOperations = addValuesToList(relatedEntityKeyOperations, operations);
+      }
+      return this;
+    }
+
+    public Builder relatedEntityKeys(final String value, final String... values) {
+      return relatedEntityKeyOperations(List.of(FilterUtil.mapDefaultToOperation(value, values)));
+    }
+
+    public Builder relatedEntityTypeOperations(final List<Operation<String>> operations) {
+      if (operations != null) {
+        relatedEntityTypeOperations = addValuesToList(relatedEntityTypeOperations, operations);
+      }
+      return this;
+    }
+
+    public Builder relatedEntityTypes(final String value, final String... values) {
+      return relatedEntityTypeOperations(List.of(FilterUtil.mapDefaultToOperation(value, values)));
+    }
+
+    public Builder entityDescriptionOperations(final List<Operation<String>> operations) {
+      if (operations != null) {
+        entityDescriptionOperations = addValuesToList(entityDescriptionOperations, operations);
+      }
+      return this;
+    }
+
+    public Builder entityDescriptions(final String value, final String... values) {
+      return entityDescriptionOperations(List.of(FilterUtil.mapDefaultToOperation(value, values)));
+    }
+
     @Override
     public AuditLogFilter build() {
       return new AuditLogFilter(
@@ -442,7 +484,10 @@ public record AuditLogFilter(
           Objects.requireNonNullElse(batchOperationKeyOperations, List.of()),
           Objects.requireNonNullElse(deploymentKeyOperations, List.of()),
           Objects.requireNonNullElse(formKeyOperations, List.of()),
-          Objects.requireNonNullElse(resourceKeyOperations, List.of()));
+          Objects.requireNonNullElse(resourceKeyOperations, List.of()),
+          Objects.requireNonNullElse(relatedEntityKeyOperations, List.of()),
+          Objects.requireNonNullElse(relatedEntityTypeOperations, List.of()),
+          Objects.requireNonNullElse(entityDescriptionOperations, List.of()));
     }
   }
 }

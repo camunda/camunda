@@ -43,6 +43,9 @@ public class AuditLogEntityMapper {
         .deploymentKey(auditLogDbModel.deploymentKey())
         .formKey(auditLogDbModel.formKey())
         .resourceKey(auditLogDbModel.resourceKey())
+        .relatedEntityType(auditLogDbModel.relatedEntityType())
+        .relatedEntityKey(auditLogDbModel.relatedEntityKey())
+        .entityDescription(auditLogDbModel.entityDescription())
         .build();
   }
 }

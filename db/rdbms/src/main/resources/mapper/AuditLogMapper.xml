@@ -54,6 +54,9 @@
         DEPLOYMENT_KEY,
         FORM_KEY,
         RESOURCE_KEY,
+        RELATED_ENTITY_TYPE,
+        RELATED_ENTITY_KEY,
+        ENTITY_DESCRIPTION,
         PARTITION_ID,
         HISTORY_CLEANUP_DATE
       FROM ${prefix}AUDIT_LOG
@@ -275,6 +278,24 @@
           <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
         </foreach>
       </if>
+      <if test="filter.relatedEntityTypeOperations != null and !filter.relatedEntityTypeOperations.isEmpty()">
+        <foreach collection="filter.relatedEntityTypeOperations" item="operation">
+          AND RELATED_ENTITY_TYPE
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.relatedEntityKeyOperations != null and !filter.relatedEntityKeyOperations.isEmpty()">
+        <foreach collection="filter.relatedEntityKeyOperations" item="operation">
+          AND RELATED_ENTITY_KEY
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.entityDescriptionOperations != null and !filter.entityDescriptionOperations.isEmpty()">
+        <foreach collection="filter.entityDescriptionOperations" item="operation">
+          AND ENTITY_DESCRIPTION
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
     </where>
   </sql>
 
@@ -312,6 +333,9 @@
       DEPLOYMENT_KEY,
       FORM_KEY,
       RESOURCE_KEY,
+      RELATED_ENTITY_TYPE,
+      RELATED_ENTITY_KEY,
+      ENTITY_DESCRIPTION,
       PARTITION_ID,
       HISTORY_CLEANUP_DATE
     )
@@ -350,6 +374,9 @@
         #{auditLog.deploymentKey},
         #{auditLog.formKey},
         #{auditLog.resourceKey},
+        #{auditLog.relatedEntityType},
+        #{auditLog.relatedEntityKey},
+        #{auditLog.entityDescription},
         #{auditLog.partitionId},
         #{auditLog.historyCleanupDate, jdbcType=TIMESTAMP}
       )

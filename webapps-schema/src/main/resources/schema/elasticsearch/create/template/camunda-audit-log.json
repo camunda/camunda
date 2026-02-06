@@ -98,6 +98,15 @@
       },
       "rootProcessInstanceKey": {
         "type": "long"
+      },
+      "relatedEntityType": {
+        "type": "keyword"
+      },
+      "relatedEntityKey": {
+        "type": "keyword"
+      },
+      "entityDescription": {
+        "type": "keyword"
       }
     }
   }
