@@ -21,6 +21,7 @@ import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
 import org.apache.hc.client5.http.protocol.HttpClientContext;
 import org.apache.hc.core5.http.protocol.BasicHttpContext;
 import org.apache.hc.core5.http.protocol.HttpContext;
+import org.jspecify.annotations.Nullable;
 import org.springframework.context.annotation.Scope;
 import org.springframework.http.*;
 import org.springframework.http.client.support.BasicAuthenticationInterceptor;
@@ -65,6 +66,12 @@ public class StatefulRestTemplate extends RestTemplate {
     final var interceptors = new ArrayList<>(super.getInterceptors());
     interceptors.add(new BasicAuthenticationInterceptor(USERNAME, PASSWORD));
     super.setInterceptors(interceptors);
+  }
+
+  @Override
+  public @Nullable <T> T postForObject(final URI url, @Nullable final Object request,
+      final Class<T> responseType) throws RestClientException {
+    return postForEntity(url, request, responseType).getBody();
   }
 
   @Override
