@@ -26,7 +26,6 @@ import io.camunda.zeebe.backup.schedule.Schedule;
 import io.camunda.zeebe.backup.schedule.Schedule.IntervalSchedule;
 import io.camunda.zeebe.backup.schedule.Schedule.NoneSchedule;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
-import io.camunda.zeebe.broker.partitioning.PartitionManager;
 import io.camunda.zeebe.broker.system.configuration.backup.AzureBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.FilesystemBackupStoreConfig;
@@ -60,8 +59,7 @@ public class CheckpointSchedulingService extends Actor implements ClusterMembers
       final ActorSchedulingService actorScheduler,
       final BackupCfg backupCfg,
       final BrokerClient brokerClient,
-      final MeterRegistry meterRegistry,
-      final PartitionManager partitionManager) {
+      final MeterRegistry meterRegistry) {
     this.membershipService = membershipService;
     this.actorScheduler = actorScheduler;
     this.backupCfg = backupCfg;

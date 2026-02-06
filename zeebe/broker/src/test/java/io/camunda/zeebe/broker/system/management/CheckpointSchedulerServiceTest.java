@@ -100,8 +100,7 @@ public class CheckpointSchedulerServiceTest {
             scheduler,
             brokerConfig.getData().getBackup(),
             brokerClient,
-            new SimpleMeterRegistry(),
-            mockPartitionManager);
+            new SimpleMeterRegistry());
   }
 
   @Test
@@ -267,8 +266,7 @@ public class CheckpointSchedulerServiceTest {
             scheduler,
             brokerConfig.getData().getBackup(),
             brokerClient,
-            new SimpleMeterRegistry(),
-            mockPartitionManager);
+            new SimpleMeterRegistry());
 
     final var member = mock(Member.class);
     doReturn(Set.of(member)).when(membershipService).getMembers();
