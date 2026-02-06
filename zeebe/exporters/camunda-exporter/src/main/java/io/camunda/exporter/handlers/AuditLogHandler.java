@@ -9,6 +9,7 @@ package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.search.entities.AuditLogDetails;
 import io.camunda.webapps.schema.entities.auditlog.AuditLogActorType;
 import io.camunda.webapps.schema.entities.auditlog.AuditLogEntity;
 import io.camunda.webapps.schema.entities.auditlog.AuditLogEntityType;
@@ -28,6 +29,7 @@ import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -146,7 +148,11 @@ public class AuditLogHandler<R extends RecordValue> implements ExportHandler<Aud
         .setDeploymentKey(log.getDeploymentKey())
         .setFormKey(log.getFormKey())
         .setResourceKey(log.getResourceKey())
-        .setRootProcessInstanceKey(log.getRootProcessInstanceKey());
+        .setRootProcessInstanceKey(log.getRootProcessInstanceKey())
+        .setDetails(
+            Optional.ofNullable(log.getDetails())
+                .map(AuditLogDetails::writeValueAsString)
+                .orElse(null));
   }
 
   @VisibleForTesting

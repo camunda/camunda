@@ -11,6 +11,7 @@ import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.write.domain.AuditLogDbModel;
 import io.camunda.db.rdbms.write.service.AuditLogWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
+import io.camunda.search.entities.AuditLogDetails;
 import io.camunda.search.entities.AuditLogEntity.AuditLogTenantScope;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogConfiguration;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogEntry;
@@ -20,6 +21,7 @@ import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransforme
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.util.VisibleForTesting;
+import java.util.Optional;
 
 public class AuditLogExportHandler<R extends RecordValue> implements RdbmsExportHandler<R> {
   private final AuditLogWriter auditLogWriter;
@@ -104,7 +106,11 @@ public class AuditLogExportHandler<R extends RecordValue> implements RdbmsExport
             .deploymentKey(log.getDeploymentKey())
             .formKey(log.getFormKey())
             .resourceKey(log.getResourceKey())
-            .partitionId(record.getPartitionId());
+            .partitionId(record.getPartitionId())
+            .details(
+                Optional.ofNullable(log.getDetails())
+                    .map(AuditLogDetails::writeValueAsString)
+                    .orElse(null));
 
     return auditLog.build();
   }

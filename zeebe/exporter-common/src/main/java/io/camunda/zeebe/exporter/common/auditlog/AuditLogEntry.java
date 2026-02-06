@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.exporter.common.auditlog;
 
+import io.camunda.search.entities.AuditLogDetails;
 import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationCategory;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationResult;
@@ -95,6 +96,8 @@ public class AuditLogEntry {
   private Long resourceKey;
 
   private Long rootProcessInstanceKey;
+
+  private AuditLogDetails details;
 
   public String getEntityKey() {
     return entityKey;
@@ -354,6 +357,15 @@ public class AuditLogEntry {
 
   public AuditLogEntry setRootProcessInstanceKey(final Long rootProcessInstanceKey) {
     this.rootProcessInstanceKey = rootProcessInstanceKey;
+    return this;
+  }
+
+  public AuditLogDetails getDetails() {
+    return details;
+  }
+
+  public AuditLogEntry setDetails(final AuditLogDetails details) {
+    this.details = details;
     return this;
   }
 
