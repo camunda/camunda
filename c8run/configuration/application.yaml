@@ -3,7 +3,7 @@ camunda:
     secondary-storage:
       type: rdbms
       rdbms:
-        url: jdbc:h2:mem:camunda
+        url: jdbc:h2:file:./camunda-data/h2db
         username: sa
         password:
         flushInterval: PT0.5S
