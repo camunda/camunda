@@ -481,6 +481,7 @@ describe('modifications hooks', () => {
           useAvailableModifications({
             runningElementInstanceCount: 1,
             elementId: 'ServiceTask_1daop2o',
+            elementInstanceKey: '23894723897402320',
             isElementInstanceKeyAvailable: true,
           }),
         {wrapper: getWrapper()},
