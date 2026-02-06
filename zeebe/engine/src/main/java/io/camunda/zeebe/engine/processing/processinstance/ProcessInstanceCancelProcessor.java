@@ -122,6 +122,7 @@ public final class ProcessInstanceCancelProcessor
                   elementInstance.getValue().getProcessInstanceKey(),
                   "such process")
               : rejection.reason();
+      enrichRejectionCommand(command, elementInstance.getValue());
       rejectionWriter.appendRejection(command, rejection.type(), errorMessage);
       responseWriter.writeRejectionOnCommand(command, rejection.type(), errorMessage);
       return false;
@@ -132,6 +133,7 @@ public final class ProcessInstanceCancelProcessor
 
       final var rootProcessInstanceKey = getRootProcessInstanceKey(parentProcessInstanceKey);
 
+      enrichRejectionCommand(command, elementInstance.getValue());
       rejectionWriter.appendRejection(
           command,
           RejectionType.INVALID_STATE,
@@ -148,12 +150,24 @@ public final class ProcessInstanceCancelProcessor
             command.getKey(), ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.CANCEL);
     if (existingAsyncRequest.isPresent()) {
       final String reason = String.format(PROCESS_CANCEL_IN_PROGRESS_MESSAGE, command.getKey());
+      enrichRejectionCommand(command, elementInstance.getValue());
       rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, reason);
       responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_STATE, reason);
       return false;
     }
 
     return true;
+  }
+
+  /**
+   * Enriches the command value with fields from the element instance to ensure rejection records
+   * have the proper context for audit logs export.
+   */
+  private void enrichRejectionCommand(
+      final TypedRecord<ProcessInstanceRecord> command,
+      final ProcessInstanceRecord processInstanceRecord) {
+    command.getValue().setTenantId(processInstanceRecord.getTenantId());
+    command.getValue().setRootProcessInstanceKey(processInstanceRecord.getRootProcessInstanceKey());
   }
 
   private long getRootProcessInstanceKey(long instanceKey) {

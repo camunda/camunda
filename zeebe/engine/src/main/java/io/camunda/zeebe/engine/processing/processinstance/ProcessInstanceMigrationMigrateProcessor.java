@@ -159,6 +159,7 @@ public class ProcessInstanceMigrationMigrateProcessor
                   processInstanceRecord.getProcessInstanceKey(),
                   "such process instance")
               : rejection.reason();
+      enrichRejectionCommand(command, processInstanceRecord);
       rejectionWriter.appendRejection(command, rejection.type(), errorMessage);
       responseWriter.writeRejectionOnCommand(command, rejection.type(), errorMessage);
       return;
@@ -208,12 +209,14 @@ public class ProcessInstanceMigrationMigrateProcessor
       final TypedRecord<ProcessInstanceMigrationRecord> command, final Throwable error) {
 
     if (error instanceof final ProcessInstanceMigrationPreconditionFailedException e) {
+      enrichRejectionCommand(command);
       rejectionWriter.appendRejection(command, e.getRejectionType(), e.getMessage());
       responseWriter.writeRejectionOnCommand(command, e.getRejectionType(), e.getMessage());
       return ProcessingError.EXPECTED_ERROR;
 
     } else if (error instanceof final SafetyCheckFailedException e) {
       LOG.error(e.getMessage(), e);
+      enrichRejectionCommand(command);
       rejectionWriter.appendRejection(command, RejectionType.PROCESSING_ERROR, e.getMessage());
       responseWriter.writeRejectionOnCommand(
           command, RejectionType.PROCESSING_ERROR, e.getMessage());
@@ -221,6 +224,29 @@ public class ProcessInstanceMigrationMigrateProcessor
     }
 
     return ProcessingError.UNEXPECTED_ERROR;
+  }
+
+  /**
+   * Enriches the command value with fields from the process instance record to ensure rejection
+   * records have the proper context for audit logs export.
+   */
+  private void enrichRejectionCommand(
+      final TypedRecord<ProcessInstanceMigrationRecord> command,
+      final ProcessInstanceRecord processInstanceRecord) {
+    command.getValue().setTenantId(processInstanceRecord.getTenantId());
+    command.getValue().setRootProcessInstanceKey(processInstanceRecord.getRootProcessInstanceKey());
+  }
+
+  private void enrichRejectionCommand(final TypedRecord<ProcessInstanceMigrationRecord> command) {
+    final var processInstanceKey = command.getValue().getProcessInstanceKey();
+    final var processInstance = elementInstanceState.getInstance(processInstanceKey);
+    if (processInstance != null) {
+      enrichRejectionCommand(command, processInstance.getValue());
+    } else {
+      LOG.debug(
+          "Could not enrich rejection command for process instance migration with key '{}', because the process instance was not found.",
+          processInstanceKey);
+    }
   }
 
   private Map<String, String> mapElementIds(

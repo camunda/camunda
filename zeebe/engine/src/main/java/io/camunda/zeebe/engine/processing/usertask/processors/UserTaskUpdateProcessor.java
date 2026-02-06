@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.usertask.processors;
 
 import static io.camunda.zeebe.engine.processing.usertask.processors.UserTaskAuthorizationHelper.buildProcessDefinitionUpdateUserTaskRequest;
 import static io.camunda.zeebe.engine.processing.usertask.processors.UserTaskAuthorizationHelper.buildUserTaskRequest;
+import static io.camunda.zeebe.engine.processing.usertask.processors.UserTaskCommandHelper.enrichCommandForRejection;
 
 import io.camunda.zeebe.engine.processing.AsyncRequestBehavior;
 import io.camunda.zeebe.engine.processing.Rejection;
@@ -72,6 +73,7 @@ public final class UserTaskUpdateProcessor implements UserTaskCommandProcessor {
       final TypedRecord<UserTaskRecord> command) {
     return commandChecker
         .checkUserTaskExists(command)
+        .flatMap(userTask -> enrichCommandForRejection(command, userTask))
         .flatMap(userTask -> checkAuthorization(command, userTask))
         .flatMap(userTask -> commandChecker.checkLifecycleState(command, userTask));
   }
