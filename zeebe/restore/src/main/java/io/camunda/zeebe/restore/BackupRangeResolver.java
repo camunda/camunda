@@ -16,7 +16,6 @@ import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.api.Interval;
-import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -26,6 +25,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.SequencedCollection;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,31 +50,34 @@ public final class BackupRangeResolver {
     final var rangeMarkers = store.rangeMarkers(partition).join();
     final var ranges = BackupRanges.fromMarkers(rangeMarkers);
 
-    final int finalPartition = partition;
+    // finds the BackupRange that entirely covers the interval `[from, to]`
     final var statusInterval =
-        findBackupsInRange(interval, ranges, partition)
+        findBackupRangeCoveringInterval(interval, ranges, partition)
             .orElseThrow(
                 () ->
                     new IllegalArgumentException(
                         "No backup range found for partition "
-                            + finalPartition
+                            + partition
                             + " in interval ["
                             + interval.start()
                             + ","
                             + interval.end()
                             + "]"));
 
-    final var backups = findBackupsInInterval(interval, statusInterval.getRight(), finalPartition);
+    // Retrieve all BackupStatus in the BackupRange
+    // note that all backups must be retrieved as we only know the extremes, not every backup inside
+    // the range
+    final var backups =
+        getAllBackupsInBackupInterval(interval, statusInterval.getRight(), partition);
 
-    // Step 4: Find valid safe points for each partition using RDBMS exported positions
-
+    // Find valid safe points for each partition using RDBMS exported positions
     final var safeStart =
-        BackupRangeResolver.findSafeStartCheckpoint(lastExportedPosition, backups)
+        findSafeStartCheckpoint(lastExportedPosition, backups)
             .orElseThrow(
                 () ->
                     new IllegalArgumentException(
                         "No safe start checkpoint found for partition "
-                            + finalPartition
+                            + partition
                             + " with exported position "
                             + lastExportedPosition));
 
@@ -93,7 +97,22 @@ public final class BackupRangeResolver {
     }
   }
 
-  public Optional<Tuple<Complete, Interval<BackupStatus>>> findBackupsInRange(
+  /**
+   * Finds the backup range that completely covers the given time interval.
+   *
+   * <p>The method iterates through the provided collection of backup ranges in reverse
+   * chronological order. For each backup range, it checks if it is a complete backup range and
+   * determines if its corresponding interval of backup statuses fully contains the specified time
+   * interval. If such a range is found, it is returned along with its corresponding backup status
+   * interval. If no range meets the criteria, an empty {@code Optional} is returned.
+   *
+   * @param interval the target time interval that needs to be covered
+   * @param ranges a chronologically ordered collection of backup ranges to search
+   * @param partitionId the partition ID used for mapping backup checkpoints to their statuses
+   * @return an {@code Optional} containing a tuple of the matching complete backup range and its
+   *     corresponding status interval if found; otherwise, an empty {@code Optional}
+   */
+  public Optional<Tuple<Complete, Interval<BackupStatus>>> findBackupRangeCoveringInterval(
       final Interval<Instant> interval,
       final SequencedCollection<BackupRange> ranges,
       final int partitionId) {
@@ -112,7 +131,7 @@ public final class BackupRangeResolver {
     return Optional.empty();
   }
 
-  public List<BackupStatus> findBackupsInInterval(
+  public List<BackupStatus> getAllBackupsInBackupInterval(
       final Interval<Instant> interval,
       final Interval<BackupStatus> statusInterval,
       final int partitionId) {
@@ -179,48 +198,6 @@ public final class BackupRangeResolver {
         .max(Long::compareTo);
   }
 
-  /**
-   * Validates that all partitions can safely restore to the global checkpoint.
-   *
-   * <p>This is CRITICAL for cluster consistency: ALL nodes must restore to the SAME global
-   * checkpoint ID. However, each partition may start from a different checkpoint based on its
-   * export position.
-   *
-   * <p>The validation ensures:
-   *
-   * <ul>
-   *   <li>We have backup data from ALL expected nodes
-   *   <li>Each partition has a safe start checkpoint where checkpointPosition <= exportedPosition
-   *   <li>For all partitions, there is a continuous backup ranges from backup_start[partition] to
-   *       the global checkpoint
-   *   <li>If ANY partition cannot reach the global checkpoint, the entire restore fails. This is
-   *       necessary to ensure that all nodes in the cluster restore the same checkpoint.
-   * </ul>
-   *
-   * @param globalCheckpointId the target checkpoint that ALL nodes will restore to
-   * @param safeStartByPartition map of partitionId → safe start checkpoint based on RDBMS export
-   *     position
-   * @param backupsByPartition map of (nodeId, partitionId) → collection of available backups
-   * @param rangesByPartition map of partitionId → backup range for validation
-   * @return validation result with success if all partitions can reach global checkpoint
-   */
-  public static Either<String, Void> validateGlobalCheckpointReachability(
-      final long globalCheckpointId,
-      final Map<Integer, Long> safeStartByPartition,
-      final Map<Integer, SequencedCollection<BackupStatus>> backupsByPartition,
-      final Map<Integer, BackupRange> rangesByPartition) {
-
-    if (safeStartByPartition.isEmpty()) {
-      return Either.left("No partitions found for checkpoint reachability validation");
-    }
-
-    final var validator =
-        new ReachabilityValidator(
-            globalCheckpointId, safeStartByPartition, backupsByPartition, rangesByPartition);
-
-    return validator.validate();
-  }
-
   private static List<BackupStatus> filterAndSortBackups(
       final Collection<BackupStatus> backups, final long safeStart, final long globalCheckpointId) {
     return backups.stream()
@@ -231,55 +208,72 @@ public final class BackupRangeResolver {
         .toList();
   }
 
-  record PartitionRestoreInfo(
+  public record PartitionRestoreInfo(
       int partition,
       long safeStart,
       BackupRange completRange,
       SequencedCollection<BackupStatus> backupStatuses) {}
 
   /** Logic for validating that all partitions can reach the global checkpoint. */
-  private static final class ReachabilityValidator {
+  public static final class ReachabilityValidator {
     private final long globalCheckpointId;
-    private final Map<Integer, Long> safeStartByPartition;
-    private final Map<Integer, SequencedCollection<BackupStatus>> backupsByPartition;
-    private final Map<Integer, BackupRange> rangesByPartition;
+    private final Map<Integer, PartitionRestoreInfo> restoreInfoByPartition;
     private final List<String> failures = new ArrayList<>();
 
-    private ReachabilityValidator(
-        final long globalCheckpointId,
-        final Map<Integer, Long> safeStartByPartition,
-        final Map<Integer, SequencedCollection<BackupStatus>> backupsByPartition,
-        final Map<Integer, BackupRange> rangesByPartition) {
-      this.globalCheckpointId = globalCheckpointId;
-      this.safeStartByPartition = safeStartByPartition;
-      this.backupsByPartition = backupsByPartition;
-      this.rangesByPartition = rangesByPartition;
-    }
-
-    private Either<String, Void> validate() {
-      safeStartByPartition.keySet().forEach(this::validatePartition);
-
-      if (failures.isEmpty()) {
-        return Either.right(null);
+    public ReachabilityValidator(final Collection<PartitionRestoreInfo> restoreInfos) {
+      if (restoreInfos.isEmpty()) {
+        throw new IllegalStateException(
+            "No partitions found for checkpoint reachability validation");
       }
 
-      return Either.left(
+      globalCheckpointId = computeGlobalCheckpointId(restoreInfos);
+      restoreInfoByPartition =
+          restoreInfos.stream()
+              .collect(Collectors.toMap(PartitionRestoreInfo::partition, Function.identity()));
+    }
+
+    /**
+     * Validates that all partitions can safely restore to the global checkpoint.
+     *
+     * <p>This is CRITICAL for cluster consistency: ALL nodes must restore to the SAME global
+     * checkpoint ID. However, each partition may start from a different checkpoint based on its
+     * export position.
+     *
+     * <p>The validation ensures:
+     *
+     * <ul>
+     *   <li>We have backup data from ALL expected nodes
+     *   <li>Each partition has a safe start checkpoint where checkpointPosition <= exportedPosition
+     *   <li>For all partitions, there is a continuous backup ranges from backup_start[partition] to
+     *       the global checkpoint
+     *   <li>If ANY partition cannot reach the global checkpoint, the entire restore fails. This is
+     *       necessary to ensure that all nodes in the cluster restore the same checkpoint.
+     * </ul>
+     *
+     */
+    public void validate() {
+      restoreInfoByPartition.forEach(this::validatePartition);
+
+      if (failures.isEmpty()) {
+        return;
+      }
+
+      throw new IllegalStateException(
           String.format(
               "Cannot restore to global checkpoint %d. Failures:\n  - %s",
               globalCheckpointId, String.join("\n  - ", failures)));
     }
 
-    private void validatePartition(final int partitionId) {
-      final var safeStart = safeStartByPartition.get(partitionId);
-
+    private void validatePartition(final int partitionId, final PartitionRestoreInfo info) {
+      final var safeStart = info.safeStart();
       if (safeStart > globalCheckpointId) {
         addFailure(
             "Partition %d: safe start checkpoint %d is beyond global checkpoint %d.",
-            partitionId, safeStart, globalCheckpointId);
+            partitionId, info.safeStart(), globalCheckpointId);
         return;
       }
 
-      switch (rangesByPartition.get(partitionId)) {
+      switch (info.completRange()) {
         case null -> addFailure("Partition %d: no backup range found", partitionId);
         case final BackupRange.Incomplete incomplete ->
             addFailure(
@@ -290,7 +284,7 @@ public final class BackupRangeResolver {
                 incomplete.deletedCheckpointIds());
         case final BackupRange.Complete complete -> {
           validateRangeCoverage(partitionId, safeStart, complete);
-          validateLogPositionContiguity(partitionId, safeStart);
+          validateLogPositionContiguity(info);
         }
       }
     }
@@ -308,9 +302,10 @@ public final class BackupRangeResolver {
       }
     }
 
-    private void validateLogPositionContiguity(final int partitionId, final long safeStart) {
-      final var backups = backupsByPartition.get(partitionId);
-
+    private void validateLogPositionContiguity(final PartitionRestoreInfo info) {
+      final var backups = info.backupStatuses();
+      final var safeStart = info.safeStart();
+      final var partitionId = info.partition();
       final var sortedBackups = filterAndSortBackups(backups, safeStart, globalCheckpointId);
 
       if (sortedBackups.isEmpty()) {
@@ -337,10 +332,10 @@ public final class BackupRangeResolver {
         return;
       }
 
-      validateBackupChainContiguity(partitionId, sortedBackups);
+      validateBackupChainOverlaps(partitionId, sortedBackups);
     }
 
-    private void validateBackupChainContiguity(
+    private void validateBackupChainOverlaps(
         final int partitionId, final List<BackupStatus> sortedBackups) {
 
       for (var i = 1; i < sortedBackups.size(); i++) {
@@ -368,6 +363,41 @@ public final class BackupRangeResolver {
 
     private void addFailure(final String format, final Object... args) {
       failures.add(String.format(format, args));
+    }
+
+    /**
+     * Computes the global checkpoint ID that is common to all partitions.
+     *
+     * <p>This method finds the maximum checkpoint ID that exists across ALL partitions. This is
+     * critical for cluster consistency: during restore, all nodes must restore to the same global
+     * checkpoint. The algorithm works as follows:
+     *
+     * <ol>
+     *   <li>For each partition, extract the set of checkpoint IDs from its backup statuses
+     *   <li>Compute the intersection of all these sets (checkpoints present in every partition)
+     *   <li>Return the maximum checkpoint ID from the intersection
+     * </ol>
+     *
+     * @param restoreInfos collection of restore information for all partitions
+     * @return the maximum checkpoint ID that is common to all partitions
+     * @throws IllegalStateException if no common checkpoint exists across all partitions
+     */
+    public static long computeGlobalCheckpointId(
+        final Collection<PartitionRestoreInfo> restoreInfos) {
+      return restoreInfos.stream()
+          .map(
+              info ->
+                  info.backupStatuses().stream()
+                      .map(bs -> bs.id().checkpointId())
+                      .collect(Collectors.toSet()))
+          .reduce(
+              (set1, set2) -> {
+                set1.retainAll(set2);
+                return set1;
+              })
+          .flatMap(commonCheckpoints -> commonCheckpoints.stream().max(Long::compareTo))
+          .orElseThrow(
+              () -> new IllegalStateException("No common checkpoint found across all partitions"));
     }
   }
 }

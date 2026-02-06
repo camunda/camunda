@@ -23,6 +23,8 @@ import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupStatusImpl;
 import io.camunda.zeebe.backup.common.NamedFileSetImpl;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
+import io.camunda.zeebe.restore.BackupRangeResolver.PartitionRestoreInfo;
+import io.camunda.zeebe.restore.BackupRangeResolver.ReachabilityValidator;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -844,7 +846,7 @@ final class BackupRangeResolverTest {
     }
 
     /** Simple test BackupStore implementation for testing getInformationPerPartition */
-    private static class TestBackupStore implements io.camunda.zeebe.backup.api.BackupStore {
+    private static final class TestBackupStore implements io.camunda.zeebe.backup.api.BackupStore {
       private final Map<BackupIdentifier, Backup> backups =
           new java.util.concurrent.ConcurrentHashMap<>();
       private final Map<Integer, java.util.Collection<BackupRangeMarker>> rangeMarkersByPartition =
@@ -979,6 +981,183 @@ final class BackupRangeResolverTest {
       public NamedFileSet segments() {
         return new NamedFileSetImpl(Map.of());
       }
+    }
+  }
+
+  @Nested
+  class ComputeGlobalCheckpointId {
+
+    @Test
+    void shouldReturnMaxCommonCheckpointWhenAllPartitionsShareCheckpoints() {
+      // given - 3 partitions, all have checkpoints [100, 200, 300]
+      final var p1Backups =
+          List.of(
+              createBackupForPartition(1, 100, 1000),
+              createBackupForPartition(1, 200, 2000),
+              createBackupForPartition(1, 300, 3000));
+
+      final var p2Backups =
+          List.of(
+              createBackupForPartition(2, 100, 1000),
+              createBackupForPartition(2, 200, 2000),
+              createBackupForPartition(2, 300, 3000));
+
+      final var p3Backups =
+          List.of(
+              createBackupForPartition(3, 100, 1000),
+              createBackupForPartition(3, 200, 2000),
+              createBackupForPartition(3, 300, 3000));
+
+      final var restoreInfos =
+          List.of(
+              new PartitionRestoreInfo(1, 100L, new BackupRange.Complete(100, 300), p1Backups),
+              new PartitionRestoreInfo(2, 100L, new BackupRange.Complete(100, 300), p2Backups),
+              new PartitionRestoreInfo(3, 100L, new BackupRange.Complete(100, 300), p3Backups));
+
+      // when
+      final var result = ReachabilityValidator.computeGlobalCheckpointId(restoreInfos);
+
+      // then
+      assertThat(result).isEqualTo(300L);
+    }
+
+    @Test
+    void shouldReturnMaxCommonCheckpointWhenPartitionsHaveDifferentCheckpointSets() {
+      // given - partitions have overlapping but different checkpoint sets
+      // P1: [100, 200, 300, 400]
+      // P2: [100, 200, 300]
+      // P3: [100, 200, 300, 500]
+      // Common: [100, 200, 300], max = 300
+      final var p1Backups =
+          List.of(
+              createBackupForPartition(1, 100, 1000),
+              createBackupForPartition(1, 200, 2000),
+              createBackupForPartition(1, 300, 3000),
+              createBackupForPartition(1, 400, 4000));
+
+      final var p2Backups =
+          List.of(
+              createBackupForPartition(2, 100, 1000),
+              createBackupForPartition(2, 200, 2000),
+              createBackupForPartition(2, 300, 3000));
+
+      final var p3Backups =
+          List.of(
+              createBackupForPartition(3, 100, 1000),
+              createBackupForPartition(3, 200, 2000),
+              createBackupForPartition(3, 300, 3000),
+              createBackupForPartition(3, 500, 5000));
+
+      final var restoreInfos =
+          List.of(
+              new PartitionRestoreInfo(1, 100L, new BackupRange.Complete(100, 400), p1Backups),
+              new PartitionRestoreInfo(2, 100L, new BackupRange.Complete(100, 300), p2Backups),
+              new PartitionRestoreInfo(3, 100L, new BackupRange.Complete(100, 500), p3Backups));
+
+      // when
+      final var result = ReachabilityValidator.computeGlobalCheckpointId(restoreInfos);
+
+      // then
+      assertThat(result).isEqualTo(300L);
+    }
+
+    @Test
+    void shouldReturnSingleCommonCheckpointWhenOnlyOneIsShared() {
+      // given - only checkpoint 200 is common to all partitions
+      // P1: [100, 200]
+      // P2: [200, 300]
+      // Common: [200]
+      final var p1Backups =
+          List.of(createBackupForPartition(1, 100, 1000), createBackupForPartition(1, 200, 2000));
+
+      final var p2Backups =
+          List.of(createBackupForPartition(2, 200, 2000), createBackupForPartition(2, 300, 3000));
+
+      final var restoreInfos =
+          List.of(
+              new PartitionRestoreInfo(1, 100L, new BackupRange.Complete(100, 200), p1Backups),
+              new PartitionRestoreInfo(2, 200L, new BackupRange.Complete(200, 300), p2Backups));
+
+      // when
+      final var result = ReachabilityValidator.computeGlobalCheckpointId(restoreInfos);
+
+      // then
+      assertThat(result).isEqualTo(200L);
+    }
+
+    @Test
+    void shouldThrowWhenNoCommonCheckpointExists() {
+      // given - no common checkpoints between partitions
+      // P1: [100, 200]
+      // P2: [300, 400]
+      final var p1Backups =
+          List.of(createBackupForPartition(1, 100, 1000), createBackupForPartition(1, 200, 2000));
+
+      final var p2Backups =
+          List.of(createBackupForPartition(2, 300, 3000), createBackupForPartition(2, 400, 4000));
+
+      final var restoreInfos =
+          List.of(
+              new PartitionRestoreInfo(1, 100L, new BackupRange.Complete(100, 200), p1Backups),
+              new PartitionRestoreInfo(2, 300L, new BackupRange.Complete(300, 400), p2Backups));
+
+      // when/then
+      assertThatThrownBy(() -> ReachabilityValidator.computeGlobalCheckpointId(restoreInfos))
+          .isInstanceOf(IllegalStateException.class)
+          .hasMessageContaining("No common checkpoint found across all partitions");
+    }
+
+    @Test
+    void shouldThrowWhenPartitionHasEmptyBackups() {
+      // given - one partition has no backups
+      final var p1Backups =
+          List.of(createBackupForPartition(1, 100, 1000), createBackupForPartition(1, 200, 2000));
+
+      final List<BackupStatus> p2Backups = List.of();
+
+      final var restoreInfos =
+          List.of(
+              new PartitionRestoreInfo(1, 100L, new BackupRange.Complete(100, 200), p1Backups),
+              new PartitionRestoreInfo(2, 100L, new BackupRange.Complete(100, 200), p2Backups));
+
+      // when/then
+      assertThatThrownBy(() -> ReachabilityValidator.computeGlobalCheckpointId(restoreInfos))
+          .isInstanceOf(IllegalStateException.class)
+          .hasMessageContaining("No common checkpoint found across all partitions");
+    }
+
+    @Test
+    void shouldWorkWithSinglePartition() {
+      // given - single partition with multiple checkpoints
+      final var p1Backups =
+          List.of(
+              createBackupForPartition(1, 100, 1000),
+              createBackupForPartition(1, 200, 2000),
+              createBackupForPartition(1, 300, 3000));
+
+      final var restoreInfos =
+          List.of(new PartitionRestoreInfo(1, 100L, new BackupRange.Complete(100, 300), p1Backups));
+
+      // when
+      final var result = ReachabilityValidator.computeGlobalCheckpointId(restoreInfos);
+
+      // then
+      assertThat(result).isEqualTo(300L);
+    }
+
+    private BackupStatus createBackupForPartition(
+        final int partitionId, final long checkpointId, final long checkpointPosition) {
+      final BackupIdentifier id = new BackupIdentifierImpl(1, partitionId, checkpointId);
+      final BackupDescriptor descriptor =
+          new BackupDescriptorImpl(
+              checkpointPosition, 3, "8.7.0", Instant.now(), CheckpointType.SCHEDULED_BACKUP);
+      return new BackupStatusImpl(
+          id,
+          Optional.of(descriptor),
+          BackupStatusCode.COMPLETED,
+          Optional.empty(),
+          Optional.of(Instant.now()),
+          Optional.of(Instant.now()));
     }
   }
 }
