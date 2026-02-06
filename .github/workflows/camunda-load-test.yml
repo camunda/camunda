@@ -147,6 +147,8 @@ jobs:
         run: |
           echo "image-tag=${{ inputs.name }}-$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
 
+  # Dummy comment to create a PR for baseline scenario to compare conditional events performance against
+  # This PR also serves a purpose to experiment the load test workflow itself.
   calculate-scenario-config:
     name: Calculate Scenario Configuration
     runs-on: ubuntu-latest
