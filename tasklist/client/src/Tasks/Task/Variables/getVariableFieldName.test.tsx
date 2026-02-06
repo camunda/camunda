@@ -15,6 +15,9 @@ describe('getVariableFieldName', () => {
   it('should get variable field name', () => {
     expect(getVariableFieldName('#someVariableName')).toBe('someVariableName');
   });
+  it('should decode variable field name with dots', () => {
+    expect(getVariableFieldName('#a%2Eb')).toBe('a.b');
+  });
   it('should get new variable prefix', () => {
     expect(getNewVariablePrefix('newVariables[0].name')).toBe(
       'newVariables[0]',
