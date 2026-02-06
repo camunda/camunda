@@ -17,6 +17,7 @@ import io.camunda.zeebe.backup.api.BackupRange;
 import io.camunda.zeebe.backup.api.BackupRangeMarker;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
+import io.camunda.zeebe.backup.api.Interval;
 import io.camunda.zeebe.backup.api.NamedFileSet;
 import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
@@ -25,7 +26,6 @@ import io.camunda.zeebe.backup.common.NamedFileSetImpl;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.restore.BackupRangeResolver.PartitionRestoreInfo;
 import io.camunda.zeebe.restore.BackupRangeResolver.ReachabilityValidator;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -676,23 +676,27 @@ final class BackupRangeResolverTest {
       // given
       setupStore();
 
+      final var timestampNotNeededBefore = Instant.parse("2026-01-20T09:00:00Z");
       final var timestamp1 = Instant.parse("2026-01-20T10:00:00Z");
-      final var timestamp2 = timestamp1.plus(Duration.ofHours(1));
-      final var timestamp3 = timestamp1.plus(Duration.ofHours(2));
+      final var timestamp2 = Instant.parse("2026-01-20T11:00:00Z");
+      final var timestampNotNeededAfter = Instant.parse("2026-01-20T12:00:00Z");
+      final var timestampNotInRange = Instant.parse("2026-01-20T12:30:00Z");
 
       // Add range markers (Start at checkpoint 100, End at checkpoint 300)
-      store.storeRangeMarker(PARTITION_ID, new BackupRangeMarker.Start(100L));
+      store.storeRangeMarker(PARTITION_ID, new BackupRangeMarker.Start(10L));
       store.storeRangeMarker(PARTITION_ID, new BackupRangeMarker.End(300L));
 
       // Add backups with timestamps and checkpoint positions
+      store.addBackup(PARTITION_ID, 10L, 1000L, timestampNotNeededBefore);
       store.addBackup(PARTITION_ID, 100L, 1000L, timestamp1);
       store.addBackup(PARTITION_ID, 200L, 2000L, timestamp2);
-      store.addBackup(PARTITION_ID, 300L, 3000L, timestamp3);
+      store.addBackup(PARTITION_ID, 300L, 3000L, timestampNotNeededAfter);
+      store.addBackup(PARTITION_ID, 500L, 5000L, timestampNotInRange);
 
-      // Time interval from 10:30 to 12:00 - includes timestamps 11:00 and 12:00
+      // Time interval from 10:30 to 11:45 - includes timestamps 10:00, 11:00
       // but excludes 10:00 (which is before the interval starts)
       final var from = Instant.parse("2026-01-20T10:30:00Z");
-      final var to = Instant.parse("2026-01-20T12:00:00Z");
+      final var to = Instant.parse("2026-01-20T11:45:00Z");
 
       // Exported position that makes checkpoint 200 the safe start (position <= 2500)
       final var lastExportedPosition = 2500L;
@@ -704,10 +708,14 @@ final class BackupRangeResolverTest {
       // then
       assertThat(result.partition()).isEqualTo(PARTITION_ID);
       assertThat(result.safeStart()).isEqualTo(200L);
-      assertThat(result.backupRange()).isInstanceOf(BackupRange.Complete.class);
-      // Only backups within the time interval [10:30, 12:00] are included (checkpoints 200, 300)
-      // Checkpoint 100 is excluded because its timestamp (10:00) is before the interval start
-      assertThat(result.backupStatuses()).hasSize(2);
+      assertThat(result.backupRange())
+          .isEqualTo(new BackupRange.Complete(new Interval<>(10L, 300L)));
+      // Checkpoint 10 is excluded because its timestamp (10:00) is before the interval start
+      // Checkpoint
+      assertThat(result.backupStatuses())
+          .containsExactly(
+              store.getStatus(new BackupIdentifierImpl(NODE_ID, PARTITION_ID, 100L)).join(),
+              store.getStatus(new BackupIdentifierImpl(NODE_ID, PARTITION_ID, 200L)).join());
     }
 
     @Test

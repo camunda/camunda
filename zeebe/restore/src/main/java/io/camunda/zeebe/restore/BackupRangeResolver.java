@@ -65,10 +65,9 @@ public final class BackupRangeResolver {
     // Retrieve all BackupStatus in the BackupRange
     // note that all backups must be retrieved as we only know the extremes, not every backup inside
     // the range
-    final var backups =
-        getAllBackupsInBackupInterval(interval, statusInterval.getRight(), partition);
+    final var backups = getAllBackups(interval, statusInterval.getRight(), partition);
 
-    // Find valid safe points for each partition using RDBMS exported positions
+    // Find valid safe points using RDBMS exported positions
     final var safeStart =
         findSafeStartCheckpoint(lastExportedPosition, backups)
             .orElseThrow(
@@ -116,7 +115,7 @@ public final class BackupRangeResolver {
     return Optional.empty();
   }
 
-  public List<BackupStatus> getAllBackupsInBackupInterval(
+  public List<BackupStatus> getAllBackups(
       final Interval<Instant> interval,
       final Interval<BackupStatus> statusInterval,
       final int partitionId) {
@@ -128,10 +127,14 @@ public final class BackupRangeResolver {
                     CheckpointPattern.ofInterval(statusInterval.map(s -> s.id().checkpointId()))))
             .join();
 
-    return backups.stream()
-        .filter(bs -> bs.statusCode() == BackupStatusCode.COMPLETED)
-        .filter(bs -> interval.contains(bs.createdOrThrow()))
-        .toList();
+    final var completedBackups =
+        backups.stream()
+            .filter(bs -> bs.statusCode() == BackupStatusCode.COMPLETED)
+            .sorted()
+            .toList();
+    final var backupsIntervals = Interval.fromPoints(completedBackups, Interval::closedOpen);
+    final var cover = interval.smallestCover(backupsIntervals, BackupStatus::createdOrThrow);
+    return cover.stream().map(Interval::start).toList();
   }
 
   /**
