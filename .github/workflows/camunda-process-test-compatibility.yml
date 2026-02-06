@@ -63,9 +63,11 @@ jobs:
             if [[ "$BRANCH_NAME" =~ ^stable/([0-9]+\.[0-9]+)$ ]]; then
               STABLE_VERSION="${BASH_REMATCH[1]}"
               echo "stable-version=$STABLE_VERSION" >> "$GITHUB_OUTPUT"
+            # TESTING ONLY: Hardcode stable version for test branch - Remove before merging
+            elif [[ "$BRANCH_NAME" == "nicpuppa/41917-cpt-workflow" ]]; then
+              echo "stable-version=8.8" >> "$GITHUB_OUTPUT"
             else
-              echo "DEBUG: Using default stable version for testing: $DEFAULT_STABLE"
-              echo "stable-version=$DEFAULT_STABLE" >> "$GITHUB_OUTPUT"
+              echo "stable-version=" >> "$GITHUB_OUTPUT"
             fi
           fi
 
@@ -96,9 +98,15 @@ jobs:
             SKIPPED_COUNT=0
             FILTERED_COUNT=0
             
+            # Check if stable version is set
+            if [[ -z "$STABLE_VERSION" ]]; then
+              echo "::error::No stable version detected. Branch must be main, stable/X.Y, or the test branch."
+              exit 1
+            fi
+            
             # Parse stable version to get major and minor
             if [[ ! "$STABLE_VERSION" =~ ^([0-9]+)\.([0-9]+)$ ]]; then
-              echo "::error::Invalid stable version format: $STABLE_VERSION"
+              echo "::error::Invalid stable version format: '$STABLE_VERSION' (expected X.Y format)"
               exit 1
             fi
             
