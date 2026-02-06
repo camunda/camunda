@@ -13,6 +13,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.gateway.protocol.model.CamundaProblemDetail;
 import io.camunda.gateway.protocol.model.ClockPinRequest;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
@@ -87,7 +88,7 @@ public class ClockControllerTest extends RestControllerTest {
   public void pinClockShouldReturnBadRequestIfInvalidClockPinRequestProvided(
       final ClockPinRequest invalidRequest, final String expectedError) {
     // given
-    final var expectedBody = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
+    final var expectedBody = CamundaProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
     expectedBody.setTitle(INVALID_ARGUMENT.name());
     expectedBody.setInstance(URI.create(CLOCK_URL));
     expectedBody.setDetail(expectedError);

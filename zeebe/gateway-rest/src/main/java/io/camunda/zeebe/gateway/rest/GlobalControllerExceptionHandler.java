@@ -14,6 +14,7 @@ import com.fasterxml.jackson.databind.exc.InvalidTypeIdException;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import com.fasterxml.jackson.databind.exc.ValueInstantiationException;
 import io.camunda.gateway.mapping.http.GatewayErrorMapper;
+import io.camunda.gateway.protocol.model.CamundaProblemDetail;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.zeebe.gateway.rest.exception.DeserializationException;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
@@ -101,8 +102,10 @@ public class GlobalControllerExceptionHandler extends ResponseEntityExceptionHan
       detail = defaultDetail;
     }
 
-    return super.createProblemDetail(
-        ex, status, detail, detailMessageCode, detailMessageArguments, request);
+    final var problemDetail =
+        super.createProblemDetail(
+            ex, status, detail, detailMessageCode, detailMessageArguments, request);
+    return CamundaProblemDetail.wrap(problemDetail);
   }
 
   @Override
@@ -113,7 +116,12 @@ public class GlobalControllerExceptionHandler extends ResponseEntityExceptionHan
       @NonNull final HttpStatusCode statusCode,
       @NonNull final WebRequest request) {
     Loggers.REST_LOGGER.debug(ex.getMessage(), ex);
-    return super.handleExceptionInternal(ex, body, headers, statusCode, request);
+    final var response = super.handleExceptionInternal(ex, body, headers, statusCode, request);
+    if (response != null && response.getBody() instanceof final ProblemDetail pd) {
+      return new ResponseEntity<>(
+          CamundaProblemDetail.wrap(pd), response.getHeaders(), response.getStatusCode());
+    }
+    return response;
   }
 
   private boolean isRequestBodyMissing(final Exception ex) {
@@ -154,7 +162,7 @@ public class GlobalControllerExceptionHandler extends ResponseEntityExceptionHan
   public ResponseEntity<ProblemDetail> handleAllExceptions(
       final Exception ex, final HttpServletRequest request) {
     final ProblemDetail problemDetail =
-        ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        CamundaProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
     problemDetail.setInstance(URI.create(request.getRequestURI()));
     return RestErrorMapper.mapProblemToResponse(problemDetail);
   }

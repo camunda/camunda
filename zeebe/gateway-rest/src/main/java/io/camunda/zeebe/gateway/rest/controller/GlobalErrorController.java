@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
+import io.camunda.gateway.protocol.model.CamundaProblemDetail;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import java.net.URI;
@@ -49,7 +50,7 @@ public class GlobalErrorController implements ErrorController {
     final String detail = (String) attributes.getOrDefault("message", "No message available");
 
     final ProblemDetail problemDetail =
-        ProblemDetail.forStatusAndDetail(HttpStatus.valueOf(status), detail);
+        CamundaProblemDetail.forStatusAndDetail(HttpStatus.valueOf(status), detail);
     problemDetail.setInstance(URI.create(path != null ? path : "/unknown"));
     return RestErrorMapper.mapProblemToResponse(problemDetail);
   }

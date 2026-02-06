@@ -42,6 +42,7 @@ import io.camunda.gateway.mapping.http.search.SearchQueryFilterMapper;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import io.camunda.gateway.mapping.http.validator.DocumentValidator;
 import io.camunda.gateway.protocol.model.AdHocSubProcessActivateActivitiesInstruction;
+import io.camunda.gateway.protocol.model.CamundaProblemDetail;
 import io.camunda.gateway.protocol.model.CancelProcessInstanceRequest;
 import io.camunda.gateway.protocol.model.Changeset;
 import io.camunda.gateway.protocol.model.ClockPinRequest;
@@ -334,7 +335,7 @@ public class RequestMapper {
 
     // Disallow providing both metadata sources simultaneously
     if (hasList && hasHeaderMetadata) {
-      final ProblemDetail pd = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
+      final ProblemDetail pd = CamundaProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
       pd.setDetail("Specify either metadataList part or X-Document-Metadata headers, but not both");
       return Either.left(pd);
     }
@@ -342,7 +343,7 @@ public class RequestMapper {
     if (hasList) {
       // Size must match number of files
       if (metadataList.size() != parts.size()) {
-        final ProblemDetail pd = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
+        final ProblemDetail pd = CamundaProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
         pd.setDetail(
             "metadataList length ("
                 + metadataList.size()
@@ -359,7 +360,7 @@ public class RequestMapper {
               .filter(Optional::isPresent)
               .map(Optional::get)
               .reduce(
-                  ProblemDetail.forStatus(HttpStatus.BAD_REQUEST),
+                  CamundaProblemDetail.forStatus(HttpStatus.BAD_REQUEST),
                   (acc, detail) -> {
                     acc.setDetail(acc.getDetail() + ". " + detail.getDetail());
                     return acc;
@@ -412,7 +413,7 @@ public class RequestMapper {
             .filter(Optional::isPresent)
             .map(Optional::get)
             .reduce(
-                ProblemDetail.forStatus(HttpStatus.BAD_REQUEST),
+                CamundaProblemDetail.forStatus(HttpStatus.BAD_REQUEST),
                 (acc, detail) -> {
                   acc.setDetail(acc.getDetail() + ". " + detail.getDetail());
                   return acc;
