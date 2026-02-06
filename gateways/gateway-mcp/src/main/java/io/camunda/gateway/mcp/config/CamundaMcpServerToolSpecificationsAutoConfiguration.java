@@ -9,6 +9,7 @@ package io.camunda.gateway.mcp.config;
 
 import io.camunda.gateway.mcp.ConditionalOnMcpGatewayEnabled;
 import io.camunda.gateway.mcp.config.CamundaMcpToolScannerAutoConfiguration.CamundaMcpToolAnnotatedBeans;
+import io.camunda.gateway.mcp.config.schema.CamundaJsonSchemaGenerator;
 import io.camunda.gateway.mcp.config.tool.CamundaMcpTool;
 import io.camunda.gateway.mcp.config.tool.CamundaSyncStatelessMcpToolProvider;
 import io.modelcontextprotocol.server.McpStatelessServerFeatures.SyncToolSpecification;
@@ -28,10 +29,16 @@ import org.springframework.context.annotation.Bean;
 public class CamundaMcpServerToolSpecificationsAutoConfiguration {
 
   @Bean
+  public CamundaJsonSchemaGenerator mcpGatewayJsonSchemaGenerator() {
+    return new CamundaJsonSchemaGenerator();
+  }
+
+  @Bean
   public List<SyncToolSpecification> mcpGatewayToolSpecifications(
       final CamundaMcpToolAnnotatedBeans annotatedBeans) {
     return new CamundaSyncStatelessMcpToolProvider(
-            annotatedBeans.getBeansByAnnotation(CamundaMcpTool.class))
+            annotatedBeans.getBeansByAnnotation(CamundaMcpTool.class),
+            mcpGatewayJsonSchemaGenerator())
         .getToolSpecifications();
   }
 }

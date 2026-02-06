@@ -33,6 +33,7 @@ import org.springframework.test.context.ContextConfiguration;
 class DemoToolsTest extends ToolsTest {
 
   @Autowired private ObjectMapper objectMapper;
+  @Autowired private CamundaJsonSchemaGenerator camundaJsonSchemaGenerator;
 
   @Nested
   class CreateTask {
@@ -235,7 +236,7 @@ class DemoToolsTest extends ToolsTest {
       final Method method = DemoTools.class.getMethod("createTask", CreateTaskRequest.class);
 
       // When: Generate schema
-      final String schemaJson = CamundaJsonSchemaGenerator.generateForMethodInput(method);
+      final String schemaJson = camundaJsonSchemaGenerator.generateForMethodInput(method);
       final Map<String, Object> schema = objectMapper.readValue(schemaJson, Map.class);
 
       // Then: Schema has flat properties (not nested under "request")
@@ -259,8 +260,8 @@ class DemoToolsTest extends ToolsTest {
               "createTaskOldWay", String.class, String.class, Map.class, Boolean.class);
 
       // When: Generate schemas for both
-      final String newWaySchema = CamundaJsonSchemaGenerator.generateForMethodInput(newWay);
-      final String oldWaySchema = CamundaJsonSchemaGenerator.generateForMethodInput(oldWay);
+      final String newWaySchema = camundaJsonSchemaGenerator.generateForMethodInput(newWay);
+      final String oldWaySchema = camundaJsonSchemaGenerator.generateForMethodInput(oldWay);
 
       final Map<String, Object> newWayMap = objectMapper.readValue(newWaySchema, Map.class);
       final Map<String, Object> oldWayMap = objectMapper.readValue(oldWaySchema, Map.class);

@@ -9,6 +9,7 @@ package io.camunda.gateway.mcp.config;
 
 import static org.assertj.core.api.Assertions.*;
 
+import io.camunda.gateway.mcp.config.schema.CamundaJsonSchemaGenerator;
 import io.camunda.gateway.mcp.config.tool.CamundaMcpTool;
 import io.camunda.gateway.mcp.config.tool.CamundaSyncStatelessMcpToolProvider;
 import io.camunda.gateway.mcp.config.tool.McpToolParams;
@@ -21,12 +22,16 @@ import org.springframework.stereotype.Component;
 
 class McpToolParamsValidationTest {
 
+  private final CamundaJsonSchemaGenerator camundaJsonSchemaGenerator =
+      new CamundaJsonSchemaGenerator();
+
   @Test
   void shouldAcceptSingleRequestBodyParameter() {
     // Should not throw
     assertThatCode(
             () ->
-                new CamundaSyncStatelessMcpToolProvider(List.of(new ValidSingleRequestBody()))
+                new CamundaSyncStatelessMcpToolProvider(
+                        List.of(new ValidSingleRequestBody()), camundaJsonSchemaGenerator)
                     .getToolSpecifications())
         .doesNotThrowAnyException();
   }
@@ -36,7 +41,8 @@ class McpToolParamsValidationTest {
     // Should not throw
     assertThatCode(
             () ->
-                new CamundaSyncStatelessMcpToolProvider(List.of(new ValidWithSimpleType()))
+                new CamundaSyncStatelessMcpToolProvider(
+                        List.of(new ValidWithSimpleType()), camundaJsonSchemaGenerator)
                     .getToolSpecifications())
         .doesNotThrowAnyException();
   }
@@ -45,7 +51,8 @@ class McpToolParamsValidationTest {
   void shouldRejectMixedRequestBodyAndValidParameters() {
     assertThatThrownBy(
             () ->
-                new CamundaSyncStatelessMcpToolProvider(List.of(new InvalidMixedParameters()))
+                new CamundaSyncStatelessMcpToolProvider(
+                        List.of(new InvalidMixedParameters()), camundaJsonSchemaGenerator)
                     .getToolSpecifications())
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("mixes @McpToolParams with complex parameter")
@@ -57,7 +64,8 @@ class McpToolParamsValidationTest {
     // @NotBlank/@Min on primitives are allowed (not the same as @Valid on objects)
     assertThatCode(
             () ->
-                new CamundaSyncStatelessMcpToolProvider(List.of(new ValidWithValidatedPrimitive()))
+                new CamundaSyncStatelessMcpToolProvider(
+                        List.of(new ValidWithValidatedPrimitive()), camundaJsonSchemaGenerator)
                     .getToolSpecifications())
         .doesNotThrowAnyException();
   }

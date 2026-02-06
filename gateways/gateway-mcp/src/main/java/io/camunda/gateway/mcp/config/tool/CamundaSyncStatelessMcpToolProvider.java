@@ -51,13 +51,17 @@ public class CamundaSyncStatelessMcpToolProvider extends AbstractMcpToolProvider
   private static final Logger LOGGER =
       LoggerFactory.getLogger(CamundaSyncStatelessMcpToolProvider.class);
 
+  private final CamundaJsonSchemaGenerator jsonSchemaGenerator;
+
   /**
    * Create a new CamundaSyncStatelessMcpToolProvider.
    *
    * @param toolObjects the objects containing methods annotated with {@link CamundaMcpTool}
    */
-  public CamundaSyncStatelessMcpToolProvider(final List<Object> toolObjects) {
+  public CamundaSyncStatelessMcpToolProvider(
+      final List<Object> toolObjects, final CamundaJsonSchemaGenerator jsonSchemaGenerator) {
     super(toolObjects);
+    this.jsonSchemaGenerator = jsonSchemaGenerator;
   }
 
   /**
@@ -109,7 +113,7 @@ public class CamundaSyncStatelessMcpToolProvider extends AbstractMcpToolProvider
     final String toolDescription = toolAnnotation.description();
     String toolTitle = toolAnnotation.title();
 
-    final String inputSchema = CamundaJsonSchemaGenerator.generateForMethodInput(mcpToolMethod);
+    final String inputSchema = jsonSchemaGenerator.generateForMethodInput(mcpToolMethod);
 
     final var toolBuilder =
         McpSchema.Tool.builder()
@@ -150,7 +154,7 @@ public class CamundaSyncStatelessMcpToolProvider extends AbstractMcpToolProvider
 
       toolBuilder.outputSchema(
           getJsonMapper(),
-          CamundaJsonSchemaGenerator.generateFromType(mcpToolMethod.getGenericReturnType()));
+          jsonSchemaGenerator.generateFromType(mcpToolMethod.getGenericReturnType()));
     }
 
     final var tool = toolBuilder.build();

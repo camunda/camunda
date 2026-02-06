@@ -10,6 +10,7 @@ package io.camunda.gateway.mcp.config.schema;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.github.victools.jsonschema.generator.Module;
 import com.github.victools.jsonschema.generator.Option;
@@ -36,6 +37,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import org.springaicommunity.mcp.annotation.McpMeta;
 import org.springaicommunity.mcp.annotation.McpProgressToken;
 import org.springaicommunity.mcp.annotation.McpToolParam;
@@ -44,73 +46,80 @@ import org.springaicommunity.mcp.context.McpSyncRequestContext;
 import org.springaicommunity.mcp.method.tool.utils.ClassUtils;
 import org.springaicommunity.mcp.method.tool.utils.ConcurrentReferenceHashMap;
 import org.springaicommunity.mcp.method.tool.utils.JsonParser;
+import org.springaicommunity.mcp.method.tool.utils.JsonSchemaGenerator;
 import org.springaicommunity.mcp.method.tool.utils.SpringAiSchemaModule;
 import org.springframework.lang.Nullable;
 
 /**
- * Camunda's copy of JsonSchemaGenerator for MCP tool schema generation.
- *
- * <p>This is a 1:1 copy of the mcp-annotations JsonSchemaGenerator. It generates JSON schemas with
- * $defs (default behavior). In Phase 2, this will be modified to generate inline schemas without
- * $defs.
- *
- * <p><b>Phase 1:</b> Exact copy - generates schemas with $defs (current)
- *
- * <p><b>Phase 2:</b> Will be modified to inline all definitions
+ * This is an adapted variant of {@link JsonSchemaGenerator}, configured to inline defs and with
+ * support for {@link McpToolParams} expansion.
  */
 public class CamundaJsonSchemaGenerator {
 
   private static final boolean PROPERTY_REQUIRED_BY_DEFAULT = true;
 
-  private static final SchemaGenerator TYPE_SCHEMA_GENERATOR;
+  private final Map<Method, String> methodSchemaCache = new ConcurrentReferenceHashMap<>(256);
+  private final Map<Type, String> typeSchemaCache = new ConcurrentReferenceHashMap<>(256);
 
-  private static final SchemaGenerator SUBTYPE_SCHEMA_GENERATOR;
+  private final ObjectMapper objectMapper;
+  private final SchemaGenerator typeSchemaGenerator;
+  private final SchemaGenerator subtypeSchemaGenerator;
 
-  private static final Map<Method, String> METHOD_SCHEMA_CACHE =
-      new ConcurrentReferenceHashMap<>(256);
+  public CamundaJsonSchemaGenerator() {
+    this(JsonParser.getObjectMapper());
+  }
 
-  private static final Map<Type, String> TYPE_SCHEMA_CACHE = new ConcurrentReferenceHashMap<>(256);
+  public CamundaJsonSchemaGenerator(final ObjectMapper objectMapper) {
+    this(objectMapper, Function.identity(), Function.identity());
+  }
 
-  /*
-   * Initialize JSON Schema generators.
-   */
-  static {
+  public CamundaJsonSchemaGenerator(
+      final ObjectMapper objectMapper,
+      final Function<SchemaGeneratorConfigBuilder, SchemaGeneratorConfigBuilder>
+          typeSchemaCustomizer,
+      final Function<SchemaGeneratorConfigBuilder, SchemaGeneratorConfigBuilder>
+          subtypeSchemaCustomizer) {
+    this.objectMapper = objectMapper;
+
+    final SchemaGeneratorConfigBuilder schemaGeneratorConfigBuilder =
+        typeSchemaCustomizer.apply(createSchemaGeneratorConfig());
+
+    typeSchemaGenerator = new SchemaGenerator(schemaGeneratorConfigBuilder.build());
+
+    final SchemaGeneratorConfig subtypeSchemaGeneratorConfig =
+        subtypeSchemaCustomizer
+            .apply(schemaGeneratorConfigBuilder.without(Option.SCHEMA_VERSION_INDICATOR))
+            .build();
+    subtypeSchemaGenerator = new SchemaGenerator(subtypeSchemaGeneratorConfig);
+  }
+
+  private static SchemaGeneratorConfigBuilder createSchemaGeneratorConfig() {
     final Module jacksonModule = new JacksonModule(JacksonOption.RESPECT_JSONPROPERTY_REQUIRED);
     final Module openApiModule = new Swagger2Module();
     final Module springAiSchemaModule =
-        PROPERTY_REQUIRED_BY_DEFAULT
+        CamundaJsonSchemaGenerator.PROPERTY_REQUIRED_BY_DEFAULT
             ? new SpringAiSchemaModule()
             : new SpringAiSchemaModule(
                 SpringAiSchemaModule.Option.PROPERTY_REQUIRED_FALSE_BY_DEFAULT);
 
-    final SchemaGeneratorConfigBuilder schemaGeneratorConfigBuilder =
-        new SchemaGeneratorConfigBuilder(SchemaVersion.DRAFT_2020_12, OptionPreset.PLAIN_JSON)
-            .with(jacksonModule)
-            .with(openApiModule)
-            .with(springAiSchemaModule)
-            .with(Option.EXTRA_OPEN_API_FORMAT_VALUES)
-            .with(Option.STANDARD_FORMATS)
-            .with(Option.INLINE_ALL_SCHEMAS);
-
-    final SchemaGeneratorConfig typeSchemaGeneratorConfig = schemaGeneratorConfigBuilder.build();
-    TYPE_SCHEMA_GENERATOR = new SchemaGenerator(typeSchemaGeneratorConfig);
-
-    final SchemaGeneratorConfig subtypeSchemaGeneratorConfig =
-        schemaGeneratorConfigBuilder.without(Option.SCHEMA_VERSION_INDICATOR).build();
-    SUBTYPE_SCHEMA_GENERATOR = new SchemaGenerator(subtypeSchemaGeneratorConfig);
+    return new SchemaGeneratorConfigBuilder(SchemaVersion.DRAFT_2020_12, OptionPreset.PLAIN_JSON)
+        .with(jacksonModule)
+        .with(openApiModule)
+        .with(springAiSchemaModule)
+        .with(Option.EXTRA_OPEN_API_FORMAT_VALUES)
+        .with(Option.STANDARD_FORMATS)
+        .with(Option.INLINE_ALL_SCHEMAS);
   }
 
-  public static String generateForMethodInput(final Method method) {
+  public String generateForMethodInput(final Method method) {
     Assert.notNull(method, "method cannot be null");
-    return METHOD_SCHEMA_CACHE.computeIfAbsent(
-        method, CamundaJsonSchemaGenerator::internalGenerateFromMethodArguments);
+    return methodSchemaCache.computeIfAbsent(method, this::internalGenerateFromMethodArguments);
   }
 
-  private static String internalGenerateFromMethodArguments(final Method method) {
+  private String internalGenerateFromMethodArguments(final Method method) {
     // Check if method has CallToolRequest parameter
     final boolean hasCallToolRequestParam =
-        Arrays.stream(method.getParameterTypes())
-            .anyMatch(type -> CallToolRequest.class.isAssignableFrom(type));
+        Arrays.stream(method.getParameterTypes()).anyMatch(CallToolRequest.class::isAssignableFrom);
 
     // If method has CallToolRequest, return minimal schema
     if (hasCallToolRequestParam) {
@@ -133,7 +142,7 @@ public class CamundaJsonSchemaGenerator {
 
       // If only CallToolRequest (and possibly exchange), return empty schema
       if (!hasOtherParams) {
-        final ObjectNode schema = JsonParser.getObjectMapper().createObjectNode();
+        final ObjectNode schema = objectMapper.createObjectNode();
         schema.put("type", "object");
         schema.putObject("properties");
         schema.putArray("required");
@@ -141,7 +150,7 @@ public class CamundaJsonSchemaGenerator {
       }
     }
 
-    final ObjectNode schema = JsonParser.getObjectMapper().createObjectNode();
+    final ObjectNode schema = objectMapper.createObjectNode();
     schema.put("$schema", SchemaVersion.DRAFT_2020_12.getIdentifier());
     schema.put("type", "object");
 
@@ -177,7 +186,7 @@ public class CamundaJsonSchemaGenerator {
       // Handle @McpToolParams - unwrap DTO fields to root level
       if (parameter.isAnnotationPresent(McpToolParams.class)) {
         // Generate schema for the DTO type and merge its properties at root level
-        final ObjectNode dtoSchema = SUBTYPE_SCHEMA_GENERATOR.generateSchema(parameterType);
+        final ObjectNode dtoSchema = subtypeSchemaGenerator.generateSchema(parameterType);
 
         // Extract properties from DTO schema
         if (dtoSchema.has("properties") && dtoSchema.get("properties").isObject()) {
@@ -192,17 +201,20 @@ public class CamundaJsonSchemaGenerator {
           dtoSchema.get("required").forEach(requiredField -> required.add(requiredField.asText()));
         }
 
-        continue; // Skip standard parameter handling
+        continue;
       }
 
       if (isMethodParameterRequired(method, i)) {
         required.add(parameterName);
       }
-      final ObjectNode parameterNode = SUBTYPE_SCHEMA_GENERATOR.generateSchema(parameterType);
+
+      final ObjectNode parameterNode = subtypeSchemaGenerator.generateSchema(parameterType);
       final String parameterDescription = getMethodParameterDescription(method, i);
+
       if (Utils.hasText(parameterDescription)) {
         parameterNode.put("description", parameterDescription);
       }
+
       properties.set(parameterName, parameterNode);
     }
 
@@ -212,17 +224,16 @@ public class CamundaJsonSchemaGenerator {
     return schema.toPrettyString();
   }
 
-  public static String generateFromType(final Type type) {
+  public String generateFromType(final Type type) {
     Assert.notNull(type, "type cannot be null");
-    return TYPE_SCHEMA_CACHE.computeIfAbsent(
-        type, CamundaJsonSchemaGenerator::internalGenerateFromType);
+    return typeSchemaCache.computeIfAbsent(type, this::internalGenerateFromType);
   }
 
-  private static String internalGenerateFromType(final Type type) {
-    return TYPE_SCHEMA_GENERATOR.generateSchema(type).toPrettyString();
+  private String internalGenerateFromType(final Type type) {
+    return typeSchemaGenerator.generateSchema(type).toPrettyString();
   }
 
-  private static boolean isMethodParameterRequired(final Method method, final int index) {
+  private boolean isMethodParameterRequired(final Method method, final int index) {
     final Parameter parameter = method.getParameters()[index];
 
     final var toolParamAnnotation = parameter.getAnnotation(McpToolParam.class);
@@ -250,7 +261,7 @@ public class CamundaJsonSchemaGenerator {
     return PROPERTY_REQUIRED_BY_DEFAULT;
   }
 
-  private static String getMethodParameterDescription(final Method method, final int index) {
+  private String getMethodParameterDescription(final Method method, final int index) {
     final Parameter parameter = method.getParameters()[index];
 
     final var toolParamAnnotation = parameter.getAnnotation(McpToolParam.class);
