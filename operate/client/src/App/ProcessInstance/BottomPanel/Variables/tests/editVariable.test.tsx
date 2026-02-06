@@ -468,4 +468,36 @@ describe('Edit variable', () => {
       within(screen.getByRole('dialog')).getByTestId('monaco-editor'),
     ).toBeInTheDocument();
   });
+
+  it('should allow editing a variable with dots in modification mode', async () => {
+    modificationsStore.enableModificationMode();
+    processInstanceDetailsStore.setProcessInstance(instanceMock);
+
+    mockFetchVariables().withSuccess([
+      createVariable({name: 'a.b', value: '"old"'}),
+      createVariable({name: 'a.b.c', value: '"old"'}),
+    ]);
+
+    variablesStore.fetchVariables({
+      fetchType: 'initial',
+      instanceId: '1',
+      payload: {pageSize: 10, scopeId: '1'},
+    });
+
+    const {user} = render(<Variables isVariableModificationAllowed />, {
+      wrapper: Wrapper,
+    });
+    await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
+
+    const variableRow = screen.getByTestId('variable-a.b');
+    const input = within(variableRow).getByTestId('edit-variable-value');
+    expect(input).toHaveValue('"old"');
+
+    await user.clear(input);
+    await user.type(input, '"new"');
+
+    await waitFor(() => {
+      expect(input).toHaveValue('"new"');
+    });
+  });
 });
