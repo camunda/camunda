@@ -1753,7 +1753,8 @@ final class JsonSerializableToJsonTest {
                   "tenantId": "test-tenant",
                   "runtimeInstructions": [],
                   "tags": ["tag1", "tag2"],
-                  "rootProcessInstanceKey": 3
+                  "rootProcessInstanceKey": 3,
+                  "elementInstanceKey": -1
                 }
                 """
       },
@@ -1777,7 +1778,8 @@ final class JsonSerializableToJsonTest {
                   "tenantId": "<default>",
                   "runtimeInstructions": [],
                   "tags": [],
-                  "rootProcessInstanceKey": -1
+                  "rootProcessInstanceKey": -1,
+                  "elementInstanceKey": -1
                 }
                 """
       },

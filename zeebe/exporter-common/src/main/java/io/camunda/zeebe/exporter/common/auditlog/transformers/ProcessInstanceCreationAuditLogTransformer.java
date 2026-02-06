@@ -22,10 +22,6 @@ public class ProcessInstanceCreationAuditLogTransformer
   @Override
   public void transform(
       final Record<ProcessInstanceCreationRecordValue> record, final AuditLogEntry log) {
-    final var value = record.getValue();
-    log.setProcessInstanceKey(value.getProcessInstanceKey())
-        .setProcessDefinitionId(value.getBpmnProcessId())
-        .setProcessDefinitionKey(value.getProcessDefinitionKey());
     final long rootProcessInstanceKey = record.getValue().getRootProcessInstanceKey();
     if (rootProcessInstanceKey > 0) {
       log.setRootProcessInstanceKey(rootProcessInstanceKey);
