@@ -143,7 +143,7 @@ public class Starter extends App {
       final CountDownLatch countDownLatch,
       final CamundaClient client) {
 
-    final long intervalNanos = Math.floorDiv(NANOS_PER_SECOND, 10);
+    final long intervalNanos = Math.floorDiv(NANOS_PER_SECOND, 5);
     LOG.info("Creating an instance every {}ns", intervalNanos);
 
     final String variablesString = readVariables("bpmn/small_payload.json");
