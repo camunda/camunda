@@ -55,7 +55,6 @@ public class AuditLogControllerTest extends RestControllerTest {
           {
             "auditLogKey": "123",
             "entityKey": "entityKey",
-            "entityType": "USER",
             "operationType": "CREATE",
             "batchOperationKey": "456",
             "batchOperationType": "ADD_VARIABLE",
@@ -76,7 +75,8 @@ public class AuditLogControllerTest extends RestControllerTest {
             "decisionRequirementsKey": "222",
             "decisionDefinitionId": "decisionDefId",
             "decisionDefinitionKey": "333",
-            "decisionEvaluationKey": "444"
+            "decisionEvaluationKey": "444",
+            "operationDetails":{"changes":[{"name":"existingVar","oldValue":"oldValue","newValue":"newValue"}]}
           }
         ],
         "page": {
@@ -91,7 +91,7 @@ public class AuditLogControllerTest extends RestControllerTest {
       {
         "auditLogKey": "123",
         "entityKey": "entityKey",
-        "entityType": "USER",
+        "entityType": "VARIABLE",
         "operationType": "CREATE",
         "batchOperationKey": "456",
         "batchOperationType": "ADD_VARIABLE",
@@ -112,7 +112,8 @@ public class AuditLogControllerTest extends RestControllerTest {
         "decisionRequirementsKey": "222",
         "decisionDefinitionId": "decisionDefId",
         "decisionDefinitionKey": "333",
-        "decisionEvaluationKey": "444"
+        "decisionEvaluationKey": "444",
+        "operationDetails":{"changes":[{"name":"existingVar","oldValue":"oldValue","newValue":"newValue"}]}
       }
       """;
 
@@ -120,7 +121,7 @@ public class AuditLogControllerTest extends RestControllerTest {
       new AuditLogEntity.Builder()
           .auditLogKey("123")
           .entityKey("entityKey")
-          .entityType(AuditLogEntity.AuditLogEntityType.USER)
+          .entityType(AuditLogEntity.AuditLogEntityType.VARIABLE)
           .operationType(AuditLogEntity.AuditLogOperationType.CREATE)
           .batchOperationKey(456L)
           .batchOperationType(BatchOperationType.ADD_VARIABLE)
@@ -142,6 +143,8 @@ public class AuditLogControllerTest extends RestControllerTest {
           .decisionDefinitionId("decisionDefId")
           .decisionDefinitionKey(333L)
           .decisionEvaluationKey(444L)
+          .details(
+              "{\"type\":\"CHANGE_SET\",\"changes\":[{\"name\":\"existingVar\",\"oldValue\":\"oldValue\",\"newValue\":\"newValue\"}]}")
           .build();
 
   @MockitoBean AuditLogServices auditLogServices;

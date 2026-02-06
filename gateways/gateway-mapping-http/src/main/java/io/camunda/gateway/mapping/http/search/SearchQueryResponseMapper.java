@@ -19,14 +19,23 @@ import io.camunda.gateway.protocol.model.AuditLogCategoryEnum;
 import io.camunda.gateway.protocol.model.AuditLogEntityTypeEnum;
 import io.camunda.gateway.protocol.model.AuditLogOperationTypeEnum;
 import io.camunda.gateway.protocol.model.AuditLogResult;
+import io.camunda.gateway.protocol.model.AuditLogResultBase;
+import io.camunda.gateway.protocol.model.AuditLogResultChangeSet;
+import io.camunda.gateway.protocol.model.AuditLogResultChangeSetAllOfOperationDetails;
+import io.camunda.gateway.protocol.model.AuditLogResultChangeSetAllOfOperationDetailsChanges;
 import io.camunda.gateway.protocol.model.AuditLogResultEnum;
-import io.camunda.gateway.protocol.model.AuditLogResultSuccess;
+import io.camunda.gateway.protocol.model.AuditLogResultFail;
+import io.camunda.gateway.protocol.model.AuditLogResultInstruction;
+import io.camunda.gateway.protocol.model.AuditLogResultInstructionAllOfOperationDetails;
+import io.camunda.gateway.protocol.model.AuditLogResultInstructionAllOfOperationDetailsStartInstructions;
+import io.camunda.gateway.protocol.model.AuditLogResultNoDetails;
 import io.camunda.gateway.protocol.model.AuditLogSearchQueryResult;
 import io.camunda.gateway.protocol.model.AuthorizationResult;
 import io.camunda.gateway.protocol.model.AuthorizationSearchResult;
 import io.camunda.gateway.protocol.model.BatchOperationError;
 import io.camunda.gateway.protocol.model.BatchOperationError.TypeEnum;
 import io.camunda.gateway.protocol.model.BatchOperationItemResponse;
+import io.camunda.gateway.protocol.model.BatchOperationItemResponse.StateEnum;
 import io.camunda.gateway.protocol.model.BatchOperationItemSearchQueryResult;
 import io.camunda.gateway.protocol.model.BatchOperationResponse;
 import io.camunda.gateway.protocol.model.BatchOperationSearchQueryResult;
@@ -128,6 +137,7 @@ import io.camunda.gateway.protocol.model.UserTaskStateEnum;
 import io.camunda.gateway.protocol.model.VariableResult;
 import io.camunda.gateway.protocol.model.VariableSearchQueryResult;
 import io.camunda.gateway.protocol.model.VariableSearchResult;
+import io.camunda.search.entities.AuditLogDetails;
 import io.camunda.search.entities.AuditLogEntity;
 import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.entities.BatchOperationEntity;
@@ -159,6 +169,7 @@ import io.camunda.search.entities.ProcessDefinitionInstanceVersionStatisticsEnti
 import io.camunda.search.entities.ProcessDefinitionMessageSubscriptionStatisticsEntity;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
+import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.entities.RoleMemberEntity;
 import io.camunda.search.entities.SequenceFlowEntity;
@@ -179,6 +190,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -215,7 +227,7 @@ public final class SearchQueryResponseMapper {
       final Map<String, UsageMetricsResponseItem> mergedTenants =
           allTenantKeys.stream()
               .collect(
-                  Collectors.toMap(
+                  toMap(
                       key -> key,
                       key -> {
                         final UsageMetricStatisticsEntityTenant stats = tenants1.get(key);
@@ -802,7 +814,7 @@ public final class SearchQueryResponseMapper {
         .state(
             warnIfNull(entity, BatchOperationItemEntity::state, "state")
                 .map(Enum::name)
-                .map(BatchOperationItemResponse.StateEnum::fromValue)
+                .map(StateEnum::fromValue)
                 .orElse(null));
   }
 
@@ -1122,7 +1134,7 @@ public final class SearchQueryResponseMapper {
   private static Map<String, String> toCamundaUserResultC8Links(
       final Map<AppName, String> c8Links) {
     return c8Links.entrySet().stream()
-        .collect(toMap(e -> e.getKey().getValue(), Map.Entry::getValue, (v1, v2) -> v1));
+        .collect(toMap(e -> e.getKey().getValue(), Entry::getValue, (v1, v2) -> v1));
   }
 
   private static List<DecisionInstanceResult> toDecisionInstances(
@@ -1386,8 +1398,9 @@ public final class SearchQueryResponseMapper {
     return auditLogs.stream().map(SearchQueryResponseMapper::toAuditLog).toList();
   }
 
-  public static AuditLogResult toAuditLog(final AuditLogEntity auditLog) {
-    return new AuditLogResultSuccess()
+  public static <T extends AuditLogResultBase> T mapAuditLogBase(
+      final T auditLogResult, final AuditLogEntity auditLog) {
+    auditLogResult
         .auditLogKey(auditLog.auditLogKey())
         .entityKey(auditLog.entityKey())
         .entityType(
@@ -1439,14 +1452,97 @@ public final class SearchQueryResponseMapper {
         .deploymentKey(KeyUtil.keyToString(auditLog.deploymentKey()))
         .formKey(KeyUtil.keyToString(auditLog.formKey()))
         .resourceKey(KeyUtil.keyToString(auditLog.resourceKey()));
+    return auditLogResult;
   }
 
-  private static ProcessInstanceStateEnum toProtocolState(
-      final ProcessInstanceEntity.ProcessInstanceState value) {
+  public static AuditLogResultChangeSetAllOfOperationDetails toAuditLogResultChangeSet(
+      final AuditLogDetails auditLog) {
+
+    if (auditLog instanceof final AuditLogDetails.AuditLogChangeSetDetails changeSetDetails) {
+      return new AuditLogResultChangeSetAllOfOperationDetails()
+          .changes(
+              changeSetDetails.getChanges().stream()
+                  .map(
+                      changeSet ->
+                          new AuditLogResultChangeSetAllOfOperationDetailsChanges(changeSet.name())
+                              .oldValue(changeSet.oldValue())
+                              .newValue(changeSet.newValue()))
+                  .toList());
+    }
+
+    return null;
+  }
+
+  public static AuditLogResultInstructionAllOfOperationDetails toAuditLogResultInstruction(
+      final AuditLogDetails auditLog) {
+
+    if (auditLog instanceof final AuditLogDetails.AuditLogInstructionDetails instructionDetails) {
+      final var start =
+          ofNullable(instructionDetails.getStartInstructions())
+              .map(
+                  list ->
+                      list.stream()
+                          .map(
+                              i ->
+                                  new AuditLogResultInstructionAllOfOperationDetailsStartInstructions()
+                                      .elementId(i.elementId()))
+                          .toList())
+              .orElseGet(Collections::emptyList);
+
+      final var runtime =
+          ofNullable(instructionDetails.getRuntimeInstructions())
+              .map(
+                  list ->
+                      list.stream()
+                          .map(
+                              i ->
+                                  new AuditLogResultInstructionAllOfOperationDetailsStartInstructions()
+                                      .elementId(i.elementId()))
+                          .toList())
+              .orElseGet(Collections::emptyList);
+
+      return new AuditLogResultInstructionAllOfOperationDetails()
+          .startInstructions(start)
+          .runtimeInstructions(runtime);
+    }
+
+    return null;
+  }
+
+  public static AuditLogResult toAuditLog(final AuditLogEntity auditLog) {
+    AuditLogDetails auditLogDetails = null;
+    if (auditLog.details() != null) {
+      auditLogDetails = AuditLogDetails.readValue(auditLog.details());
+      System.out.printf("auditLogDetails: %s = %s%n", auditLog.details(), auditLogDetails);
+    }
+
+    AuditLogResult auditLogResult = null;
+    if (auditLogDetails != null) {
+      switch (auditLogDetails.getType()) {
+        case FAIL -> auditLogResult = mapAuditLogBase(new AuditLogResultFail(), auditLog);
+        case CHANGE_SET ->
+            auditLogResult =
+                mapAuditLogBase(new AuditLogResultChangeSet(), auditLog)
+                    .operationDetails(toAuditLogResultChangeSet(auditLogDetails));
+        case INSTRUCTION ->
+            auditLogResult =
+                mapAuditLogBase(new AuditLogResultInstruction(), auditLog)
+                    .operationDetails(toAuditLogResultInstruction(auditLogDetails));
+      }
+    }
+
+    if (auditLogResult == null) {
+      auditLogResult = mapAuditLogBase(new AuditLogResultNoDetails(), auditLog);
+    }
+
+    return auditLogResult;
+  }
+
+  private static ProcessInstanceStateEnum toProtocolState(final ProcessInstanceState value) {
     if (value == null) {
       return null;
     }
-    if (value == ProcessInstanceEntity.ProcessInstanceState.CANCELED) {
+    if (value == ProcessInstanceState.CANCELED) {
       return ProcessInstanceStateEnum.TERMINATED;
     }
     return ProcessInstanceStateEnum.fromValue(value.name());

@@ -168,19 +168,93 @@ components:
           description: The system-assigned key for this resource.
 
     AuditLogResultSuccess:
-      x-discriminator-value: SUCCESS
-      description: Audit log item for successful operation.
+      x-polymorphic-schema: true
+      description: SUCCESS result with operation specific details.
+      properties:
+        entityType:
+          $ref: '#/components/schemas/AuditLogEntityTypeEnum'
+      oneOf:
+        - $ref: '#/components/schemas/AuditLogResultChangeSet'
+        - $ref: '#/components/schemas/AuditLogResultInstruction'
+        - $ref: '#/components/schemas/AuditLogResultNoDetails'
+      discriminator:
+        propertyName: entityType
+        mapping:
+          AUTHORIZATION: '#/components/schemas/AuditLogResultNoDetails'
+          BATCH: '#/components/schemas/AuditLogResultNoDetails'
+          DECISION: '#/components/schemas/AuditLogResultNoDetails'
+          GROUP: '#/components/schemas/AuditLogResultNoDetails'
+          INCIDENT: '#/components/schemas/AuditLogResultNoDetails'
+          MAPPING_RULE: '#/components/schemas/AuditLogResultNoDetails'
+          PROCESS_INSTANCE: '#/components/schemas/AuditLogResultInstruction'
+          RESOURCE: '#/components/schemas/AuditLogResultNoDetails'
+          ROLE: '#/components/schemas/AuditLogResultNoDetails'
+          TENANT: '#/components/schemas/AuditLogResultNoDetails'
+          USER: '#/components/schemas/AuditLogResultNoDetails'
+          USER_TASK: '#/components/schemas/AuditLogResultNoDetails'
+          VARIABLE: '#/components/schemas/AuditLogResultChangeSet'
+
+    AuditLogResultNoDetails:
+      description: Audit log item for successful operation without additional details.
+      allOf:
+        - $ref: '#/components/schemas/AuditLogResultBase'
+        - type: object
+          properties: {}
+          description: SUCCESS result without operationDetails.
+
+    AuditLogResultChangeSet:
+      type: object
+      description: A set of variable changes with old and new values.
       allOf:
         - $ref: '#/components/schemas/AuditLogResultBase'
         - type: object
           properties:
             operationDetails:
-              allOf:
-                - $ref: '#/components/schemas/AuditLogDetails'
-          description: SUCCESS result with empty details.
+              type: object
+              properties:
+                changes:
+                  type: array
+                  description: The list of variable changes.
+                  items:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                      oldValue:
+                        type: string
+                      newValue:
+                        type: string
+                    required:
+                      - name
+
+    AuditLogResultInstruction:
+      type: object
+      description: Start and runtime instructions related to a process instance.
+      allOf:
+        - $ref: '#/components/schemas/AuditLogResultBase'
+        - type: object
+          properties:
+            operationDetails:
+              type: object
+              properties:
+                startInstructions:
+                  type: array
+                  description: Instructions applied at process start.
+                  items:
+                    type: object
+                    properties:
+                      elementId:
+                        type: string
+                runtimeInstructions:
+                  type: array
+                  description: Instructions applied at runtime.
+                  items:
+                    type: object
+                    properties:
+                      elementId:
+                        type: string
 
     AuditLogResultFail:
-      x-discriminator-value: FAIL
       description: Audit log item for failed operation.
       allOf:
         - $ref: '#/components/schemas/AuditLogResultBase'
@@ -661,11 +735,6 @@ components:
             $ref: '#/components/schemas/AuditLogActorTypeEnum'
         $like:
           $ref: 'filters.yaml#/components/schemas/LikeFilter'
-
-    AuditLogDetails:
-      description: Details of successful operations. Empty object.
-      type: object
-      properties: {}
 
     AuditLogErrorDetails:
       description: Details of failed operations.
