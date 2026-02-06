@@ -16,6 +16,7 @@ import io.camunda.zeebe.exporter.common.auditlog.AuditLogInfo.AuditLogTenant;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordMetadataDecoder;
 import io.camunda.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.record.value.AuditLogProcessInstanceRelated;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRelated;
 import io.camunda.zeebe.util.DateUtil;
@@ -371,6 +372,8 @@ public class AuditLogEntry {
             .setBatchOperationKey(getBatchOperationKey(record))
             .setProcessInstanceKey(getProcessInstanceKey(record))
             .setProcessDefinitionKey(getProcessDefinitionKey(record))
+            .setElementInstanceKey(getElementInstanceKey(record))
+            .setProcessDefinitionId(getProcessDefinitionId(record))
             .setEntityVersion(record.getRecordVersion())
             .setEntityValueType(record.getValueType().value())
             .setEntityOperationIntent(record.getIntent().value())
@@ -381,30 +384,41 @@ public class AuditLogEntry {
 
   private static <R extends RecordValue> Long getProcessInstanceKey(final Record<R> record) {
     final var value = record.getValue();
-
     if (value instanceof ProcessInstanceRelated) {
       return ((ProcessInstanceRelated) value).getProcessInstanceKey();
-    } else {
-      return null;
     }
+    return null;
   }
 
   private static <R extends RecordValue> Long getProcessDefinitionKey(final Record<R> record) {
     final var value = record.getValue();
-
     if (value instanceof ProcessInstanceRelated) {
       return ((ProcessInstanceRelated) value).getProcessDefinitionKey();
-    } else {
-      return null;
     }
+    return null;
   }
 
   private static <R extends RecordValue> Long getBatchOperationKey(final Record<R> record) {
     final var batchOperationKey = record.getBatchOperationReference();
     if (RecordMetadataDecoder.batchOperationReferenceNullValue() != batchOperationKey) {
       return batchOperationKey;
-    } else {
-      return null;
     }
+    return null;
+  }
+
+  private static <R extends RecordValue> Long getElementInstanceKey(final Record<R> record) {
+    final var value = record.getValue();
+    if (value instanceof AuditLogProcessInstanceRelated) {
+      return ((AuditLogProcessInstanceRelated) value).getElementInstanceKey();
+    }
+    return null;
+  }
+
+  private static <R extends RecordValue> String getProcessDefinitionId(final Record<R> record) {
+    final var value = record.getValue();
+    if (value instanceof AuditLogProcessInstanceRelated) {
+      return ((AuditLogProcessInstanceRelated) value).getBpmnProcessId();
+    }
+    return null;
   }
 }

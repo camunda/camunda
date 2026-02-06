@@ -22,11 +22,7 @@ public class IncidentResolutionAuditLogTransformer
   @Override
   public void transform(final Record<IncidentRecordValue> record, final AuditLogEntry log) {
     final var value = record.getValue();
-    log.setProcessDefinitionId(value.getBpmnProcessId())
-        .setProcessDefinitionKey(value.getProcessDefinitionKey())
-        .setProcessInstanceKey(value.getProcessInstanceKey())
-        .setElementInstanceKey(value.getElementInstanceKey())
-        .setJobKey(value.getJobKey());
+    log.setJobKey(value.getJobKey());
     final long rootProcessInstanceKey = record.getValue().getRootProcessInstanceKey();
     if (rootProcessInstanceKey > 0) {
       log.setRootProcessInstanceKey(rootProcessInstanceKey);
