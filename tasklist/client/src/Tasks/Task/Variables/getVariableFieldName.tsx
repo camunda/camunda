@@ -7,7 +7,7 @@
  */
 
 const getVariableFieldName = (variableNameWithPrefix: string) => {
-  return variableNameWithPrefix.substring(1);
+  return decodeURIComponent(variableNameWithPrefix.substring(1));
 };
 
 const getNewVariablePrefix = (variableName: string) => {

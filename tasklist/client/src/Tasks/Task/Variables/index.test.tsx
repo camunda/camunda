@@ -37,7 +37,7 @@ const getWrapper = () => {
 };
 
 function isRequestingAllVariables(req: VariableSearchRequestBody) {
-  return req.variableNames !== undefined && req.variableNames.length == 0;
+  return req.variableNames !== undefined && req.variableNames.length === 0;
 }
 
 describe('<Variables />', () => {
@@ -217,6 +217,56 @@ describe('<Variables />', () => {
     await user.type(screen.getByLabelText('myVar'), newVariableValue);
 
     expect(screen.getByDisplayValue(newVariableValue)).toBeInTheDocument();
+
+    vi.runOnlyPendingTimers();
+
+    await waitFor(() =>
+      expect(screen.getByText(/complete task/i)).toBeEnabled(),
+    );
+  });
+
+  it('should edit variables with dots in names', async () => {
+    nodeMockServer.use(
+      http.post<never, VariableSearchRequestBody>(
+        '/v1/tasks/:taskId/variables/search',
+        async ({request}) => {
+          if (isRequestingAllVariables(await request.json())) {
+            return HttpResponse.json(variableMocks.variables);
+          }
+
+          return HttpResponse.json(
+            [
+              {
+                message: 'Invalid variables',
+              },
+            ],
+            {
+              status: 400,
+            },
+          );
+        },
+      ),
+    );
+
+    const {user} = render(
+      <Variables
+        task={taskMocks.assignedTask()}
+        user={currentUser}
+        onSubmit={() => Promise.resolve()}
+        onSubmitFailure={noop}
+        onSubmitSuccess={noop}
+      />,
+      {
+        wrapper: getWrapper(),
+      },
+    );
+
+    const dotVariableInput = await screen.findByLabelText('a.b');
+    expect(dotVariableInput).toHaveValue('"old"');
+    await user.clear(dotVariableInput);
+    await user.type(dotVariableInput, '"new"');
+
+    expect(dotVariableInput).toHaveValue('"new"');
 
     vi.runOnlyPendingTimers();
 
