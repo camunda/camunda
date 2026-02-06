@@ -25,8 +25,6 @@ import org.slf4j.LoggerFactory;
 public class CamundaRdbmsInvocationContextProviderExtension
     implements TestTemplateInvocationContextProvider, BeforeAllCallback, AutoCloseable {
 
-  private static boolean started = false;
-
   private static final Logger LOGGER =
       LoggerFactory.getLogger(CamundaRdbmsInvocationContextProviderExtension.class);
 
@@ -144,22 +142,20 @@ public class CamundaRdbmsInvocationContextProviderExtension
 
   @Override
   public void beforeAll(final ExtensionContext context) {
-    if (!started) {
-      useTestApplications.forEach(
-          key -> {
-            final CamundaRdbmsTestApplication testApplication =
-                SUPPORTED_TEST_APPLICATIONS.get(key);
+    useTestApplications.forEach(
+        key -> {
+          final CamundaRdbmsTestApplication testApplication = SUPPORTED_TEST_APPLICATIONS.get(key);
+          if (!testApplication.isStarted()) {
             LOGGER.info("Start up CamundaDatabaseTestApplication '{}'...", key);
             testApplication.start();
             LOGGER.info("Start up of CamundaDatabaseTestApplication '{}' finished.", key);
-          });
+          }
+        });
 
-      started = true;
-      // Your "before all tests" startup logic goes here
-      // The following line registers a callback hook when the root test context is shut down
-      final String key = "RDBMS DB - Multiple Database Tests";
-      context.getRoot().getStore(GLOBAL).put(key, this);
-    }
+    // Your "before all tests" startup logic goes here
+    // The following line registers a callback hook when the root test context is shut down
+    final String key = "RDBMS DB - Multiple Database Tests";
+    context.getRoot().getStore(GLOBAL).put(key, this);
   }
 
   private TestTemplateInvocationContext invocationContext(final String standaloneCamundaKey) {
@@ -180,13 +176,8 @@ public class CamundaRdbmsInvocationContextProviderExtension
     };
   }
 
-  /**
-   * We need to set started to false for the case that the tests should be rerun because of
-   * surefire.rerunFailingTestsCount
-   */
   @Override
   public void close() {
     LOGGER.info("Resource closed - Close CamundaRdbmsInvocationContextProviderExtension");
-    started = false;
   }
 }
