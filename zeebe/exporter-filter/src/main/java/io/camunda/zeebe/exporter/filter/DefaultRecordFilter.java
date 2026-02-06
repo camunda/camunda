@@ -48,12 +48,16 @@ public final class DefaultRecordFilter implements Context.RecordFilter {
     final List<ExporterRecordFilter> filters = new ArrayList<>();
 
     // Just add if there are any rules configured
-    if (!variableNameInclusionRules.isEmpty() || !variableNameExclusionRules.isEmpty()) {
-      filters.add(new VariableNameFilter(variableNameInclusionRules, variableNameExclusionRules));
+    if (index.isOptimizeModeEnabled()) {
+      filters.add(new OptimizeModeFilter());
     }
 
     if (!valueTypeInclusion.isEmpty() || !valueTypeExclusion.isEmpty()) {
       filters.add(new VariableTypeFilter(valueTypeInclusion, valueTypeExclusion));
+    }
+
+    if (!variableNameInclusionRules.isEmpty() || !variableNameExclusionRules.isEmpty()) {
+      filters.add(new VariableNameFilter(variableNameInclusionRules, variableNameExclusionRules));
     }
 
     return List.copyOf(filters);
