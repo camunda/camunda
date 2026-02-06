@@ -15,8 +15,10 @@ import io.camunda.service.TopologyServices;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import org.springaicommunity.mcp.annotation.McpTool;
 import org.springframework.stereotype.Component;
+import org.springframework.validation.annotation.Validated;
 
 @Component
+@Validated
 public class ClusterTools {
 
   private final TopologyServices topologyServices;
