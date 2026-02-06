@@ -260,6 +260,14 @@ public record AuditLogInfo(
     public static AuditLogActor of(final Record<?> record) {
       final Map<String, Object> authorizations = record.getAuthorizations();
 
+      final String agentId =
+          Optional.ofNullable(authorizations.get(Authorization.AUTHORIZED_AGENT_ID))
+              .map(Object::toString)
+              .orElse(null);
+      if (agentId != null) {
+        return new AuditLogActor(AuditLogActorType.AGENT, agentId);
+      }
+
       // client
       final String clientId =
           Optional.ofNullable(authorizations.get(Authorization.AUTHORIZED_CLIENT_ID))
