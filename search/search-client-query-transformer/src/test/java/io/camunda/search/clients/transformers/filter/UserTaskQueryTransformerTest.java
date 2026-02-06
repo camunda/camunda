@@ -157,6 +157,7 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
                           assertThat(wildcardQuery.value()).isEqualTo("my*");
                         })));
   }
+
   private static Arguments nameOperationCase(
       final Operation<String> operation, final Consumer<SearchQueryOption> queryAssertion) {
     return Arguments.of(operation, queryAssertion);
@@ -180,7 +181,6 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
             SearchBoolQuery.class,
             boolQuery -> queryAssertion.accept(boolQuery.must().getFirst().queryOption()));
   }
-
 
   static Stream<Arguments> provideStateOperations() {
     return Stream.of(
