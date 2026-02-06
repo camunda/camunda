@@ -14,7 +14,6 @@ import static io.camunda.zeebe.broker.NodeIProviderConfigurationUtils.getS3NodeI
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.configuration.Cluster;
-import io.camunda.configuration.NodeIdProvider.S3;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.zeebe.broker.system.BrokerDataDirectoryCopier;
@@ -71,14 +70,14 @@ public class RestoreNodeIdProviderConfiguration {
   @Bean
   public PreRestoreAction preRestoreAction(final Optional<NodeIdRepository> nodeIdRepository) {
     return switch (cluster.getNodeIdProvider().getType()) {
-      case FIXED -> (ignore) -> {};
+      case FIXED -> (restoreId, ignore) -> {};
       case S3 -> {
         if (nodeIdRepository.isEmpty()) {
           throw new IllegalStateException(
               "PreRestoreAction configured to use S3: missing s3 node id repository");
         }
         final var restoreStatusManager = new RestoreStatusManager(nodeIdRepository.get());
-        yield ((nodeId) -> restoreStatusManager.initializeRestore());
+        yield ((restoreId, nodeId) -> restoreStatusManager.initializeRestore());
       }
     };
   }
@@ -86,14 +85,14 @@ public class RestoreNodeIdProviderConfiguration {
   @Bean
   public PostRestoreAction postRestoreAction(final Optional<NodeIdRepository> nodeIdRepository) {
     return switch (cluster.getNodeIdProvider().getType()) {
-      case FIXED -> (ignore) -> {};
+      case FIXED -> (restoreId, ignore) -> {};
       case S3 -> {
         if (nodeIdRepository.isEmpty()) {
           throw new IllegalStateException(
               "PostRestoreAction configured to use S3: missing s3 node id repository");
         }
         final var restoreStatusManager = new RestoreStatusManager(nodeIdRepository.get());
-        yield ((nodeId) -> {
+        yield ((restoreId, nodeId) -> {
           restoreStatusManager.markNodeRestored(nodeId);
           restoreStatusManager.waitForAllNodesRestored(cluster.getSize(), Duration.ofSeconds(10));
         });

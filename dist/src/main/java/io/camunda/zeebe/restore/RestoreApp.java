@@ -23,6 +23,7 @@ import io.camunda.zeebe.dynamic.nodeid.fs.DataDirectoryProvider;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import org.slf4j.Logger;
@@ -123,7 +124,8 @@ public class RestoreApp implements ApplicationRunner {
 
     final var restoreManager = new RestoreManager(configuration, backupStore, meterRegistry);
 
-    preRestoreAction.beforeRestore(configuration.getCluster().getNodeId());
+    final var restoreId = getRestoreId();
+    preRestoreAction.beforeRestore(restoreId, configuration.getCluster().getNodeId());
     if (backupId != null) {
       LOG.info(
           "Starting to restore from backup {} with the following configuration: {}",
@@ -148,12 +150,12 @@ public class RestoreApp implements ApplicationRunner {
       LOG.info("Successfully restored broker from backups in time range [{}, {}]", from, to);
     }
 
-    postRestoreAction.restored(configuration.getCluster().getNodeId());
+    postRestoreAction.restored(restoreId, configuration.getCluster().getNodeId());
   }
 
   private void validateParameters() {
-    final boolean hasBackupId = backupId != null && backupId.length > 0;
-    final boolean hasTimeRange = from != null && to != null;
+    final boolean hasBackupId = hasBackupId();
+    final boolean hasTimeRange = hasTimeRange();
 
     if (!hasBackupId && !hasTimeRange) {
       throw new IllegalArgumentException(
@@ -179,11 +181,29 @@ public class RestoreApp implements ApplicationRunner {
     }
   }
 
+  private boolean hasTimeRange() {
+    return from != null && to != null;
+  }
+
+  private boolean hasBackupId() {
+    return backupId != null && backupId.length > 0;
+  }
+
+  private long getRestoreId() {
+    if (hasBackupId()) {
+      return Arrays.hashCode(backupId);
+    } else if (hasTimeRange()) {
+      return Objects.hash(from, to);
+    } else {
+      throw new IllegalStateException("No valid restore parameters provided");
+    }
+  }
+
   public interface PreRestoreAction {
-    void beforeRestore(int nodeId) throws InterruptedException;
+    void beforeRestore(final long restoreId, int nodeId) throws InterruptedException;
   }
 
   public interface PostRestoreAction {
-    void restored(int nodeId) throws InterruptedException;
+    void restored(final long restoreId, int nodeId) throws InterruptedException;
   }
 }
