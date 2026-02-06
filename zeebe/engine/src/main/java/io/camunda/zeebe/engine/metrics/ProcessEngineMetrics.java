@@ -16,10 +16,12 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.util.collection.Map3D;
 import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicLong;
 
 public final class ProcessEngineMetrics {
 
@@ -34,9 +36,11 @@ public final class ProcessEngineMetrics {
       Map3D.ofEnum(EngineAction.class, BpmnElementType.class, BpmnEventType.class, Counter[]::new);
   private final Map<EngineAction, Counter> executedEvents = new EnumMap<>(EngineAction.class);
   private final Map<EngineAction, Counter> evaluatedDmnElements = new EnumMap<>(EngineAction.class);
+  private final AtomicLong activeRootProcessInstances = new AtomicLong(0);
 
   public ProcessEngineMetrics(final MeterRegistry registry) {
     this.registry = Objects.requireNonNull(registry, "must specify a registry");
+    registerActiveRootProcessInstanceGauge();
   }
 
   public void processInstanceCreated(final ProcessInstanceCreationRecord instanceCreationRecord) {
@@ -58,6 +62,7 @@ public final class ProcessEngineMetrics {
 
     if (isRootProcessInstance(elementType, context.getParentProcessInstanceKey())) {
       increaseRootProcessInstance(EngineAction.ACTIVATED);
+      activeRootProcessInstances.incrementAndGet();
     }
   }
 
@@ -69,6 +74,7 @@ public final class ProcessEngineMetrics {
 
     if (isRootProcessInstance(elementType, context.getParentProcessInstanceKey())) {
       increaseRootProcessInstance(EngineAction.COMPLETED);
+      activeRootProcessInstances.decrementAndGet();
     }
   }
 
@@ -80,6 +86,7 @@ public final class ProcessEngineMetrics {
 
     if (isRootProcessInstance(elementType, context.getParentProcessInstanceKey())) {
       increaseRootProcessInstance(EngineAction.TERMINATED);
+      activeRootProcessInstances.decrementAndGet();
     }
   }
 
@@ -158,6 +165,13 @@ public final class ProcessEngineMetrics {
     return Counter.builder(meterDoc.getName())
         .description(meterDoc.getDescription())
         .tag(EngineKeyNames.ACTION.asString(), engineAction.toString())
+        .tag(EngineKeyNames.ORGANIZATION_ID.asString(), ORGANIZATION_ID)
+        .register(registry);
+  }
+
+  private void registerActiveRootProcessInstanceGauge() {
+    Gauge.builder("zeebe.active.instances.total", activeRootProcessInstances, AtomicLong::get)
+        .description("Number of currently active root process instances")
         .tag(EngineKeyNames.ORGANIZATION_ID.asString(), ORGANIZATION_ID)
         .register(registry);
   }
