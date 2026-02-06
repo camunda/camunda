@@ -28,6 +28,8 @@ public @interface Deployment {
 
   String tenantId() default "";
 
+  boolean ownJarOnly() default false;
+
   @Documented
   @Inherited
   @Retention(RetentionPolicy.RUNTIME)
