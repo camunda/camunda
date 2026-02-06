@@ -30,16 +30,17 @@ final class RestoreManagerTest {
     // given
     final var configuration = new BrokerCfg();
     configuration.getData().setDirectory(dir.toString());
-    final var restoreManager =
+    try (final var restoreManager =
         new RestoreManager(
-            configuration, new TestRestorableBackupStore(), new SimpleMeterRegistry());
+            configuration, new TestRestorableBackupStore(), new SimpleMeterRegistry())) {
 
-    // when
-    Files.createDirectory(dir.resolve("other-data"));
+      // when
+      Files.createDirectory(dir.resolve("other-data"));
 
-    // then
-    assertThatThrownBy(() -> restoreManager.restore(1L, false, List.of()))
-        .isInstanceOf(DirectoryNotEmptyException.class);
+      // then
+      assertThatThrownBy(() -> restoreManager.restore(1L, false, List.of()))
+          .isInstanceOf(DirectoryNotEmptyException.class);
+    }
   }
 
   @Test
@@ -47,20 +48,22 @@ final class RestoreManagerTest {
     // given
     final var configuration = new BrokerCfg();
     configuration.getData().setDirectory(dir.toString());
-    final var restoreManager =
+    try (final var restoreManager =
         new RestoreManager(
-            configuration, new TestRestorableBackupStore(), new SimpleMeterRegistry());
+            configuration, new TestRestorableBackupStore(), new SimpleMeterRegistry())) {
 
-    // when - create ignored files
-    Files.createDirectory(dir.resolve("lost+found"));
-    Files.createFile(dir.resolve(".DS_Store"));
-    Files.createFile(dir.resolve("Thumbs.db"));
+      // when - create ignored files
+      Files.createDirectory(dir.resolve("lost+found"));
+      Files.createFile(dir.resolve(".DS_Store"));
+      Files.createFile(dir.resolve("Thumbs.db"));
 
-    // then - should not fail because all files are ignored
-    assertThatThrownBy(
-            () ->
-                restoreManager.restore(1L, false, List.of("lost+found", ".DS_Store", "Thumbs.db")))
-        .hasRootCauseInstanceOf(BackupNotFoundException.class);
+      // then - should not fail because all files are ignored
+      assertThatThrownBy(
+              () ->
+                  restoreManager.restore(
+                      1L, false, List.of("lost+found", ".DS_Store", "Thumbs.db")))
+          .hasRootCauseInstanceOf(BackupNotFoundException.class);
+    }
   }
 
   @Test
@@ -68,17 +71,18 @@ final class RestoreManagerTest {
     // given
     final var configuration = new BrokerCfg();
     configuration.getData().setDirectory(dir.toString());
-    final var restoreManager =
+    try (final var restoreManager =
         new RestoreManager(
-            configuration, new TestRestorableBackupStore(), new SimpleMeterRegistry());
+            configuration, new TestRestorableBackupStore(), new SimpleMeterRegistry())) {
 
-    // when - create ignored and non-ignored files
-    Files.createDirectory(dir.resolve("lost+found"));
-    Files.createFile(dir.resolve("some-data-file"));
+      // when - create ignored and non-ignored files
+      Files.createDirectory(dir.resolve("lost+found"));
+      Files.createFile(dir.resolve("some-data-file"));
 
-    // then - should fail because some-data-file is not ignored
-    assertThatThrownBy(() -> restoreManager.restore(1L, false, List.of("lost+found")))
-        .isInstanceOf(DirectoryNotEmptyException.class);
+      // then - should fail because some-data-file is not ignored
+      assertThatThrownBy(() -> restoreManager.restore(1L, false, List.of("lost+found")))
+          .isInstanceOf(DirectoryNotEmptyException.class);
+    }
   }
 
   @Test
@@ -99,15 +103,16 @@ final class RestoreManagerTest {
     backupStore.storeRangeMarker(2, new BackupRangeMarker.Start(5L)).join();
     backupStore.storeRangeMarker(2, new BackupRangeMarker.End(7L)).join();
 
-    final var restoreManager =
-        new RestoreManager(configuration, backupStore, new SimpleMeterRegistry());
+    try (final var restoreManager =
+        new RestoreManager(configuration, backupStore, new SimpleMeterRegistry())) {
 
-    // when - trying to restore backups from 1 to 5
-    // then - should fail because partition 2 doesn't have a continuous range from 1 to 5
-    assertThatThrownBy(
-            () -> restoreManager.restore(new long[] {1L, 2L, 3L, 4L, 5L}, false, List.of()))
-        .isInstanceOf(IllegalStateException.class)
-        .hasMessage("Invalid backup ranges");
+      // when - trying to restore backups from 1 to 5
+      // then - should fail because partition 2 doesn't have a continuous range from 1 to 5
+      assertThatThrownBy(
+              () -> restoreManager.restore(new long[] {1L, 2L, 3L, 4L, 5L}, false, List.of()))
+          .isInstanceOf(IllegalStateException.class)
+          .hasMessage("Invalid backup ranges");
+    }
   }
 
   @Test
@@ -121,10 +126,10 @@ final class RestoreManagerTest {
     final var generator = new CheckpointIdGenerator();
 
     // Add backups with timestamps
-    final var baseTime = Instant.parse("2024-01-01T10:00:00Z");
+    final var from = Instant.parse("2024-01-01T10:00:00Z");
     final var checkpointIds = new long[5];
     for (int i = 0; i < 5; i++) {
-      final var timestamp = baseTime.plusSeconds((i + 1) * 60);
+      final var timestamp = from.plusSeconds((i + 1) * 60);
       final var checkpointId = generator.fromTimestamp(timestamp.toEpochMilli());
       checkpointIds[i] = checkpointId;
       backupStore.addBackupWithTimestamp(
@@ -143,15 +148,15 @@ final class RestoreManagerTest {
     backupStore.storeRangeMarker(2, new BackupRangeMarker.Start(checkpointIds[3])).join();
     backupStore.storeRangeMarker(2, new BackupRangeMarker.End(checkpointIds[4])).join();
 
-    final var restoreManager =
-        new RestoreManager(configuration, backupStore, new SimpleMeterRegistry());
+    try (final var restoreManager =
+        new RestoreManager(configuration, backupStore, new SimpleMeterRegistry())) {
 
-    // when - trying to restore backups from baseTime to baseTime + 5 minutes
-    // then - should fail because partition 2 doesn't have a continuous range
-    final var from = baseTime;
-    final var to = baseTime.plusSeconds(5 * 60);
-    assertThatThrownBy(() -> restoreManager.restore(from, to, false, List.of()))
-        .isInstanceOf(IllegalStateException.class)
-        .hasMessage("Invalid backup ranges");
+      // when - trying to restore backups from baseTime to baseTime + 5 minutes
+      // then - should fail because partition 2 doesn't have a continuous range
+      final var to = from.plusSeconds(5 * 60);
+      assertThatThrownBy(() -> restoreManager.restore(from, to, false, List.of()))
+          .isInstanceOf(IllegalStateException.class)
+          .hasMessage("Invalid backup ranges");
+    }
   }
 }

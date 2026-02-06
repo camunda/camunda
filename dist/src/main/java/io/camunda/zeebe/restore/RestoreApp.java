@@ -16,15 +16,14 @@ import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
 import io.camunda.configuration.beanoverrides.RestorePropertiesOverride;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.beans.RestoreProperties;
+import io.camunda.db.rdbms.sql.ExporterPositionMapper;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.dynamic.nodeid.fs.DataDirectoryProvider;
 import io.micrometer.core.instrument.MeterRegistry;
-import java.io.IOException;
 import java.time.Instant;
 import java.util.Objects;
-import java.util.concurrent.ExecutionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -65,6 +64,7 @@ public class RestoreApp implements ApplicationRunner {
   // Parsed from commandline Eg:-`--to=2024-01-01T12:00:00Z` (optional, requires --from)
   private Instant to;
 
+  private final ExporterPositionMapper exporterPositionMapper;
   private final RestoreProperties restoreConfiguration;
   private final MeterRegistry meterRegistry;
   private final PostRestoreAction postRestoreAction;
@@ -74,6 +74,7 @@ public class RestoreApp implements ApplicationRunner {
   public RestoreApp(
       final BrokerBasedProperties configuration,
       final BackupStore backupStore,
+      @Autowired(required = false) final ExporterPositionMapper exporterPositionMapper,
       final RestoreProperties restoreConfiguration,
       final MeterRegistry meterRegistry,
       final NodeIdProvider nodeIdProvider,
@@ -84,6 +85,7 @@ public class RestoreApp implements ApplicationRunner {
       final PreRestoreAction preRestoreAction) {
     this.configuration = configuration;
     this.backupStore = backupStore;
+    this.exporterPositionMapper = exporterPositionMapper;
     this.restoreConfiguration = restoreConfiguration;
     this.meterRegistry = meterRegistry;
     this.postRestoreAction = postRestoreAction;
@@ -117,38 +119,38 @@ public class RestoreApp implements ApplicationRunner {
   }
 
   @Override
-  public void run(final ApplicationArguments args)
-      throws IOException, ExecutionException, InterruptedException {
+  public void run(final ApplicationArguments args) throws Exception {
     validateParameters();
 
-    final var restoreManager = new RestoreManager(configuration, backupStore, meterRegistry);
-
-    preRestoreAction.beforeRestore(configuration.getCluster().getNodeId());
-    if (backupId != null) {
-      LOG.info(
-          "Starting to restore from backup {} with the following configuration: {}",
-          backupId,
-          restoreConfiguration);
-      restoreManager.restore(
-          backupId,
-          restoreConfiguration.validateConfig(),
-          restoreConfiguration.ignoreFilesInTarget());
-      LOG.info("Successfully restored broker from backup {}", backupId);
-    } else {
-      LOG.info(
-          "Starting to restore from backups in time range [{}, {}] with the following configuration: {}",
-          from,
-          to,
-          restoreConfiguration);
-      restoreManager.restore(
-          from,
-          to,
-          restoreConfiguration.validateConfig(),
-          restoreConfiguration.ignoreFilesInTarget());
-      LOG.info("Successfully restored broker from backups in time range [{}, {}]", from, to);
+    try (final var restoreManager =
+        new RestoreManager(configuration, backupStore, exporterPositionMapper, meterRegistry)) {
+      preRestoreAction.beforeRestore(configuration.getCluster().getNodeId());
+      if (backupId != null) {
+        LOG.info(
+            "Starting to restore from backup {} with the following configuration: {}",
+            backupId,
+            restoreConfiguration);
+        restoreManager.restore(
+            backupId,
+            restoreConfiguration.validateConfig(),
+            restoreConfiguration.ignoreFilesInTarget());
+        LOG.info("Successfully restored broker from backup {}", backupId);
+      } else {
+        LOG.info(
+            "Starting to restore from backups in time range [{}, {}] with the following configuration: {}",
+            from,
+            to,
+            restoreConfiguration);
+        restoreManager.restore(
+            from,
+            to,
+            restoreConfiguration.validateConfig(),
+            restoreConfiguration.ignoreFilesInTarget());
+        LOG.info("Successfully restored broker from backups in time range [{}, {}]", from, to);
+      }
+    } finally {
+      postRestoreAction.restored(configuration.getCluster().getNodeId());
     }
-
-    postRestoreAction.restored(configuration.getCluster().getNodeId());
   }
 
   private void validateParameters() {
