@@ -242,7 +242,6 @@ public class RetentionTest {
         backupStore,
         new IntervalSchedule(Duration.ofSeconds(10)),
         Duration.ofMinutes(2),
-        0,
         topologyManager,
         new SimpleMeterRegistry());
   }
@@ -270,7 +269,7 @@ public class RetentionTest {
   private List<BackupStatus> createDefaultBackupsNoCreatedDate(
       final int partition, final int nodeId, final Instant now) {
     return java.util.Arrays.stream(DEFAULT_BACKUP_OFFSETS)
-        .mapToObj(offset -> backupNoCreatedDate(partition, nodeId, now.minusSeconds(offset)))
+        .mapToObj(offset -> backupNoDescriptor(partition, nodeId, now.minusSeconds(offset)))
         .toList();
   }
 
@@ -348,7 +347,7 @@ public class RetentionTest {
         null);
   }
 
-  private BackupStatus backupNoCreatedDate(
+  private BackupStatus backupNoDescriptor(
       final int partition, final int nodeId, final Instant timestamp) {
     return new BackupStatusImpl(
         new BackupIdentifierImpl(nodeId, partition, timestamp.toEpochMilli()),
@@ -356,7 +355,7 @@ public class RetentionTest {
         null,
         null,
         Optional.empty(),
-        null);
+        Optional.of(timestamp));
   }
 
   @Nested

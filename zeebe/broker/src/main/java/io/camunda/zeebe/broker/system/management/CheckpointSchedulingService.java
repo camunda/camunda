@@ -92,7 +92,6 @@ public class CheckpointSchedulingService extends Actor implements ClusterMembers
               backupStore,
               retentionCfg.getCleanupSchedule(),
               retentionCfg.getWindow(),
-              backupCfg.getOffset(),
               brokerClient.getTopologyManager(),
               meterRegistry);
       LOG.info(

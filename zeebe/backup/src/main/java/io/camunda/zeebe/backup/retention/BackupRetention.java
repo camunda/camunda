@@ -15,7 +15,6 @@ import io.camunda.zeebe.backup.api.BackupRanges;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.common.BackupIdentifierWildcardImpl;
-import io.camunda.zeebe.backup.common.CheckpointIdGenerator;
 import io.camunda.zeebe.backup.schedule.Schedule;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.scheduler.Actor;
@@ -86,10 +85,11 @@ public class BackupRetention extends Actor {
   private static final Logger LOG = LoggerFactory.getLogger(BackupRetention.class);
   private static final Comparator<BackupStatus> BACKUP_STATUS_COMPARATOR =
       Comparator.comparing(
-          (BackupStatus s) ->
-              s.descriptor()
-                  .map(BackupDescriptor::checkpointTimestamp)
-                  .orElse(Instant.ofEpochMilli(s.id().checkpointId())),
+          (BackupStatus s) -> {
+            final var refTimestampOpt =
+                s.descriptor().map(BackupDescriptor::checkpointTimestamp).or(s::lastModified);
+            return refTimestampOpt.orElse(null);
+          },
           Comparator.nullsLast(Comparator.naturalOrder()));
 
   private final BackupStore backupStore;
@@ -97,13 +97,11 @@ public class BackupRetention extends Actor {
   private final Duration retentionWindow;
   private final BrokerTopologyManager topologyManager;
   private final RetentionMetrics metrics;
-  private final CheckpointIdGenerator checkpointIdGenerator;
 
   public BackupRetention(
       final BackupStore backupStore,
       final Schedule retentionSchedule,
       final Duration retentionWindow,
-      final long checkpointOffset,
       final BrokerTopologyManager topologyManager,
       final MeterRegistry meterRegistry) {
     metrics = new RetentionMetrics(meterRegistry);
@@ -111,7 +109,6 @@ public class BackupRetention extends Actor {
     this.retentionSchedule = retentionSchedule;
     this.retentionWindow = retentionWindow;
     this.topologyManager = topologyManager;
-    checkpointIdGenerator = new CheckpointIdGenerator(ActorClock.current(), checkpointOffset);
   }
 
   @Override
@@ -257,15 +254,18 @@ public class BackupRetention extends Actor {
     long firstAvailableBackupInNewRange = -1L;
 
     for (final var backup : backups) {
-      final var backupTimestamp =
-          backup
-              .descriptor()
-              .map(BackupDescriptor::checkpointTimestamp)
-              .orElse(
-                  Instant.ofEpochMilli(
-                      checkpointIdGenerator.fromTimestamp(backup.id().checkpointId())))
-              .toEpochMilli();
-      if (backupTimestamp < window) {
+      final var refTimestampOpt =
+          backup.descriptor().map(BackupDescriptor::checkpointTimestamp).or(backup::lastModified);
+
+      if (refTimestampOpt.isEmpty()) {
+        LOG.debug(
+            "Unable to determine timestamp for backup {}. Skipping backup during retention.",
+            backup.id());
+        continue;
+      }
+
+      final var timestamp = refTimestampOpt.get().toEpochMilli();
+      if (timestamp < window) {
         deletableBackups.add(backup.id());
       } else {
         firstAvailableBackupInNewRange = backup.id().checkpointId();
