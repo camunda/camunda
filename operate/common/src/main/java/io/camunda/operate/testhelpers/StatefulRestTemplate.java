@@ -27,7 +27,6 @@ import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
 import org.apache.hc.client5.http.protocol.HttpClientContext;
 import org.apache.hc.core5.http.protocol.BasicHttpContext;
 import org.apache.hc.core5.http.protocol.HttpContext;
-import org.jspecify.annotations.Nullable;
 import org.springframework.context.annotation.Scope;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -96,8 +95,8 @@ public class StatefulRestTemplate extends RestTemplate {
   }
 
   @Override
-  public @Nullable <T> T postForObject(final URI url, @Nullable final Object request,
-      final Class<T> responseType) throws RestClientException {
+  public <T> T postForObject(final URI url, final Object request, final Class<T> responseType)
+      throws RestClientException {
     return postForEntity(url, request, responseType).getBody();
   }
 
