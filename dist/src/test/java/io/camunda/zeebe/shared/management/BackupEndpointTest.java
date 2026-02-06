@@ -51,6 +51,8 @@ import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.netty.channel.ConnectTimeoutException;
 import java.net.ConnectException;
 import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
@@ -700,8 +702,8 @@ final class BackupEndpointTest {
       final var stateResponse = new CheckpointStateResponse();
       stateResponse.setCheckpointStates(
           Set.of(
-              new io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse
-                  .PartitionCheckpointState(1, 1L, CheckpointType.MARKER, 20L, 10L)));
+              new CheckpointStateResponse.PartitionCheckpointState(
+                  1, 1L, CheckpointType.MARKER, 20L, 10L)));
       final var rangesResponse = new BackupRangesResponse();
       rangesResponse.setRanges(
           List.of(
@@ -734,7 +736,9 @@ final class BackupEndpointTest {
                               .partitionId(1)
                               .checkpointId(1L)
                               .checkpointPosition(10L)
-                              .checkpointTimestamp(20L)
+                              .checkpointTimestamp(
+                                  OffsetDateTime.ofInstant(
+                                      Instant.ofEpochMilli(20L), ZoneId.of("UTC")))
                               .checkpointType(io.camunda.management.backups.CheckpointType.MARKER)))
                   .ranges(
                       List.of(
@@ -755,8 +759,8 @@ final class BackupEndpointTest {
       final var stateResponse = new CheckpointStateResponse();
       stateResponse.setBackupStates(
           Set.of(
-              new io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse
-                  .PartitionCheckpointState(1, 1L, CheckpointType.MANUAL_BACKUP, 20L, 10L)));
+              new CheckpointStateResponse.PartitionCheckpointState(
+                  1, 1L, CheckpointType.MANUAL_BACKUP, 20L, 10L)));
       when(api.getCheckpointState()).thenReturn(CompletableFuture.completedFuture(stateResponse));
       when(api.getBackupRanges())
           .thenReturn(CompletableFuture.completedFuture(new BackupRangesResponse()));
@@ -775,7 +779,9 @@ final class BackupEndpointTest {
                               .partitionId(1)
                               .checkpointId(1L)
                               .checkpointPosition(10L)
-                              .checkpointTimestamp(20L)
+                              .checkpointTimestamp(
+                                  OffsetDateTime.ofInstant(
+                                      Instant.ofEpochMilli(20L), ZoneId.of("UTC")))
                               .checkpointType(BackupType.MANUAL_BACKUP))));
     }
 
@@ -789,12 +795,12 @@ final class BackupEndpointTest {
       final var stateResponse = new CheckpointStateResponse();
       stateResponse.setBackupStates(
           Set.of(
-              new io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse
-                  .PartitionCheckpointState(1, 1L, CheckpointType.MANUAL_BACKUP, 20L, 10L)));
+              new CheckpointStateResponse.PartitionCheckpointState(
+                  1, 1L, CheckpointType.MANUAL_BACKUP, 20L, 10L)));
       stateResponse.setCheckpointStates(
           Set.of(
-              new io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse
-                  .PartitionCheckpointState(1, 2L, CheckpointType.MARKER, 30L, 50L)));
+              new CheckpointStateResponse.PartitionCheckpointState(
+                  1, 2L, CheckpointType.MARKER, 30L, 50L)));
       when(api.getCheckpointState()).thenReturn(CompletableFuture.completedFuture(stateResponse));
       when(api.getBackupRanges())
           .thenReturn(CompletableFuture.completedFuture(new BackupRangesResponse()));
@@ -813,7 +819,9 @@ final class BackupEndpointTest {
                               .partitionId(1)
                               .checkpointId(1L)
                               .checkpointPosition(10L)
-                              .checkpointTimestamp(20L)
+                              .checkpointTimestamp(
+                                  OffsetDateTime.ofInstant(
+                                      Instant.ofEpochMilli(20L), ZoneId.of("UTC")))
                               .checkpointType(BackupType.MANUAL_BACKUP)))
                   .checkpointStates(
                       List.of(
@@ -821,7 +829,9 @@ final class BackupEndpointTest {
                               .partitionId(1)
                               .checkpointId(2L)
                               .checkpointPosition(50L)
-                              .checkpointTimestamp(30L)
+                              .checkpointTimestamp(
+                                  OffsetDateTime.ofInstant(
+                                      Instant.ofEpochMilli(30L), ZoneId.of("UTC")))
                               .checkpointType(
                                   io.camunda.management.backups.CheckpointType.MARKER))));
     }
@@ -857,31 +867,25 @@ final class BackupEndpointTest {
 
       final var stateResponse = new CheckpointStateResponse();
 
-      final io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse.PartitionCheckpointState
-          p1State =
-              new io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse
-                  .PartitionCheckpointState(1, 1L, CheckpointType.MARKER, 20L, 10L);
-      final io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse.PartitionCheckpointState
-          p2State =
-              new io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse
-                  .PartitionCheckpointState(2, 1L, CheckpointType.MARKER, 20L, 20L);
-      final io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse.PartitionCheckpointState
-          p3State =
-              new io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse
-                  .PartitionCheckpointState(3, 1L, CheckpointType.MARKER, 30L, 40L);
+      final CheckpointStateResponse.PartitionCheckpointState p1State =
+          new CheckpointStateResponse.PartitionCheckpointState(
+              1, 1L, CheckpointType.MARKER, 20L, 10L);
+      final CheckpointStateResponse.PartitionCheckpointState p2State =
+          new CheckpointStateResponse.PartitionCheckpointState(
+              2, 1L, CheckpointType.MARKER, 20L, 20L);
+      final CheckpointStateResponse.PartitionCheckpointState p3State =
+          new CheckpointStateResponse.PartitionCheckpointState(
+              3, 1L, CheckpointType.MARKER, 30L, 40L);
 
-      final io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse.PartitionCheckpointState
-          p1BackupState =
-              new io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse
-                  .PartitionCheckpointState(1, 1L, CheckpointType.MANUAL_BACKUP, 20L, 10L);
-      final io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse.PartitionCheckpointState
-          p2BackupState =
-              new io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse
-                  .PartitionCheckpointState(2, 1L, CheckpointType.MANUAL_BACKUP, 20L, 20L);
-      final io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse.PartitionCheckpointState
-          p3BackupState =
-              new io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse
-                  .PartitionCheckpointState(3, 1L, CheckpointType.MANUAL_BACKUP, 30L, 40L);
+      final CheckpointStateResponse.PartitionCheckpointState p1BackupState =
+          new CheckpointStateResponse.PartitionCheckpointState(
+              1, 1L, CheckpointType.MANUAL_BACKUP, 20L, 10L);
+      final CheckpointStateResponse.PartitionCheckpointState p2BackupState =
+          new CheckpointStateResponse.PartitionCheckpointState(
+              2, 1L, CheckpointType.MANUAL_BACKUP, 20L, 20L);
+      final CheckpointStateResponse.PartitionCheckpointState p3BackupState =
+          new CheckpointStateResponse.PartitionCheckpointState(
+              3, 1L, CheckpointType.MANUAL_BACKUP, 30L, 40L);
 
       stateResponse.setCheckpointStates(Set.of(p1State, p2State, p3State));
       stateResponse.setBackupStates(Set.of(p1BackupState, p2BackupState, p3BackupState));
@@ -904,19 +908,25 @@ final class BackupEndpointTest {
                               .partitionId(1)
                               .checkpointId(1L)
                               .checkpointPosition(10L)
-                              .checkpointTimestamp(20L)
+                              .checkpointTimestamp(
+                                  OffsetDateTime.ofInstant(
+                                      Instant.ofEpochMilli(20L), ZoneId.of("UTC")))
                               .checkpointType(io.camunda.management.backups.CheckpointType.MARKER),
                           new PartitionCheckpointState()
                               .partitionId(2)
                               .checkpointId(1L)
                               .checkpointPosition(20L)
-                              .checkpointTimestamp(20L)
+                              .checkpointTimestamp(
+                                  OffsetDateTime.ofInstant(
+                                      Instant.ofEpochMilli(20L), ZoneId.of("UTC")))
                               .checkpointType(io.camunda.management.backups.CheckpointType.MARKER),
                           new PartitionCheckpointState()
                               .partitionId(3)
                               .checkpointId(1L)
                               .checkpointPosition(40L)
-                              .checkpointTimestamp(30L)
+                              .checkpointTimestamp(
+                                  OffsetDateTime.ofInstant(
+                                      Instant.ofEpochMilli(30L), ZoneId.of("UTC")))
                               .checkpointType(io.camunda.management.backups.CheckpointType.MARKER)))
                   .backupStates(
                       List.of(
@@ -924,19 +934,25 @@ final class BackupEndpointTest {
                               .partitionId(1)
                               .checkpointId(1L)
                               .checkpointPosition(10L)
-                              .checkpointTimestamp(20L)
+                              .checkpointTimestamp(
+                                  OffsetDateTime.ofInstant(
+                                      Instant.ofEpochMilli(20L), ZoneId.of("UTC")))
                               .checkpointType(BackupType.MANUAL_BACKUP),
                           new PartitionBackupState()
                               .partitionId(2)
                               .checkpointId(1L)
                               .checkpointPosition(20L)
-                              .checkpointTimestamp(20L)
+                              .checkpointTimestamp(
+                                  OffsetDateTime.ofInstant(
+                                      Instant.ofEpochMilli(20L), ZoneId.of("UTC")))
                               .checkpointType(BackupType.MANUAL_BACKUP),
                           new PartitionBackupState()
                               .partitionId(3)
                               .checkpointId(1L)
                               .checkpointPosition(40L)
-                              .checkpointTimestamp(30L)
+                              .checkpointTimestamp(
+                                  OffsetDateTime.ofInstant(
+                                      Instant.ofEpochMilli(30L), ZoneId.of("UTC")))
                               .checkpointType(BackupType.MANUAL_BACKUP))));
     }
   }
