@@ -12,13 +12,14 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import org.springaicommunity.mcp.annotation.McpTool;
 import org.springaicommunity.mcp.annotation.McpTool.McpAnnotations;
 
 /**
  * Marks a method as an MCP tool.
  *
- * <p>This is our custom tool annotation that is functionally equivalent to Spring AI's
- * {@code @McpTool} but allows to control schema generation and output handling individually.
+ * <p>This is our custom tool annotation that is functionally equivalent to Spring AI's {@link
+ * McpTool} but allows to control schema generation and output handling individually.
  */
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)

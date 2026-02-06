@@ -23,6 +23,7 @@ import org.springaicommunity.mcp.context.McpAsyncRequestContext;
 import org.springaicommunity.mcp.context.McpSyncRequestContext;
 import org.springaicommunity.mcp.method.tool.AbstractSyncMcpToolMethodCallback;
 import org.springaicommunity.mcp.method.tool.ReturnMode;
+import org.springaicommunity.mcp.method.tool.SyncStatelessMcpToolMethodCallback;
 
 /**
  * Camunda-specific callback for synchronous stateless MCP tool methods.
@@ -30,6 +31,8 @@ import org.springaicommunity.mcp.method.tool.ReturnMode;
  * <p>Extends the abstract callback to support {@link McpToolParams} annotation, which allows method
  * parameters annotated with {@code @McpToolParams} to be deserialized from the entire tool input
  * arguments map.
+ *
+ * <p>Original Spring AI implementation: {@link SyncStatelessMcpToolMethodCallback}
  */
 public class CamundaSyncStatelessMcpToolMethodCallback
     extends AbstractSyncMcpToolMethodCallback<McpTransportContext, McpSyncRequestContext>
@@ -49,60 +52,6 @@ public class CamundaSyncStatelessMcpToolMethodCallback
         || McpSyncRequestContext.class.isAssignableFrom(paramType);
   }
 
-  /**
-   * Cleans up validation property paths by removing internal method and parameter names.
-   *
-   * <p>Uses actual method metadata to determine if a parameter has @McpToolParams annotation,
-   * making this approach robust regardless of parameter naming or nesting depth.
-   *
-   * <p>Examples:
-   *
-   * <ul>
-   *   <li>"createTask.request.taskName" → "taskName" (if param at index 1 has @McpToolParams)
-   *   <li>"createTask.request.a.b.c.d" → "a.b.c.d" (deep nesting works)
-   *   <li>"createTask.myDto.field" → "field" (any param name works)
-   *   <li>"createTask.instruction.key" → "instruction.key" (standard param without @McpToolParams)
-   * </ul>
-   *
-   * @param propertyPath the validation property path to clean
-   * @return cleaned property path suitable for user-facing error messages
-   */
-  private String cleanPropertyPath(final String propertyPath) {
-    final String[] parts = propertyPath.split("\\.");
-
-    if (parts.length <= 1) {
-      return propertyPath; // No dots, return as-is
-    }
-
-    // parts[0] = method name
-    // parts[1] = parameter name (might be arg0, arg1, etc. or actual name if -parameters flag is
-    // set)
-    // parts[2+] = nested field path (if any)
-
-    final String paramName = parts[1];
-
-    // Check all parameters to see if any has @McpToolParams
-    // We can't rely on parameter name matching since Java doesn't always preserve names
-    // Instead, check if ANY parameter has @McpToolParams and assume the property path refers to it
-    // This is safe because validation paths for @McpToolParams will have 3+ parts
-    // (method.param.field)
-    final boolean hasRequestBodyParam =
-        Stream.of(toolMethod.getParameters())
-            .anyMatch(p -> p.isAnnotationPresent(McpToolParams.class));
-
-    if (hasRequestBodyParam && parts.length >= 3) {
-      // If method has @McpToolParams parameter and path has 3+ parts, assume this is it
-      // Remove method name AND parameter name
-      // "methodName.paramName.field..." → "field..."
-      return String.join(".", Arrays.copyOfRange(parts, 2, parts.length));
-    } else {
-      // Standard parameter or simple property path
-      // Remove only method name
-      // "methodName.paramName..." → "paramName..."
-      return String.join(".", Arrays.copyOfRange(parts, 1, parts.length));
-    }
-  }
-
   @Override
   public CallToolResult apply(
       final McpTransportContext mcpTransportContext, final CallToolRequest callToolRequest) {
@@ -116,40 +65,20 @@ public class CamundaSyncStatelessMcpToolMethodCallback
       // Invoke the method
       final Object result = callMethod(args);
 
-      // Return the processed result
       return processResult(result);
-    } catch (final ConstraintViolationException e) {
-      // Reformat validation error messages to remove internal parameter names
-      final String reformattedMessage =
-          e.getConstraintViolations().stream()
-              .map(
-                  violation ->
-                      cleanPropertyPath(violation.getPropertyPath().toString())
-                          + ": "
-                          + violation.getMessage())
-              .collect(Collectors.joining(", "));
-
-      return createSyncErrorResult(new IllegalArgumentException(reformattedMessage));
+    } catch (final ConstraintViolationException cve) {
+      return createSyncErrorResult(
+          new IllegalArgumentException(normalizeConstraintViolationMessage(cve)));
     } catch (final Exception e) {
-      // Check if the exception wraps a ConstraintViolationException
-      final Throwable cause = e.getCause();
-      if (cause instanceof final ConstraintViolationException cve) {
-        // Reformat validation error messages to remove internal parameter names
-        final String reformattedMessage =
-            cve.getConstraintViolations().stream()
-                .map(
-                    violation ->
-                        cleanPropertyPath(violation.getPropertyPath().toString())
-                            + ": "
-                            + violation.getMessage())
-                .collect(Collectors.joining(", "));
-
-        return createSyncErrorResult(new IllegalArgumentException(reformattedMessage));
+      if (e.getCause() instanceof final ConstraintViolationException cve) {
+        return createSyncErrorResult(
+            new IllegalArgumentException(normalizeConstraintViolationMessage(cve)));
       }
 
       if (toolCallExceptionClass.isInstance(e)) {
         return createSyncErrorResult(e);
       }
+
       throw e;
     }
   }
@@ -209,5 +138,70 @@ public class CamundaSyncStatelessMcpToolMethodCallback
       final McpTransportContext exchange, final CallToolRequest request) {
     throw new UnsupportedOperationException(
         "Stateless tool methods do not support McpSyncRequestContext parameter.");
+  }
+
+  private String normalizeConstraintViolationMessage(
+      final ConstraintViolationException constraintViolationException) {
+    return constraintViolationException.getConstraintViolations().stream()
+        .map(
+            violation ->
+                normalizeViolationPropertyPath(violation.getPropertyPath().toString())
+                    + ": "
+                    + violation.getMessage())
+        .collect(Collectors.joining(", "));
+  }
+
+  /**
+   * Cleans up validation property paths by removing internal method and parameter names.
+   *
+   * <p>Uses actual method metadata to determine if a parameter has @McpToolParams annotation,
+   * making this approach robust regardless of parameter naming or nesting depth.
+   *
+   * <p>Examples:
+   *
+   * <ul>
+   *   <li>"createTask.request.taskName" → "taskName" (if param at index 1 has @McpToolParams)
+   *   <li>"createTask.request.a.b.c.d" → "a.b.c.d" (deep nesting works)
+   *   <li>"createTask.myDto.field" → "field" (any param name works)
+   *   <li>"createTask.instruction.key" → "instruction.key" (standard param without @McpToolParams)
+   * </ul>
+   *
+   * @param propertyPath the validation property path to clean
+   * @return cleaned property path suitable for user-facing error messages
+   */
+  private String normalizeViolationPropertyPath(final String propertyPath) {
+    final String[] parts = propertyPath.split("\\.");
+
+    if (parts.length <= 1) {
+      return propertyPath; // No dots, return as-is
+    }
+
+    // parts[0] = method name
+    // parts[1] = parameter name (might be arg0, arg1, etc. or actual name if -parameters flag is
+    // set)
+    // parts[2+] = nested field path (if any)
+
+    final String paramName = parts[1];
+
+    // Check all parameters to see if any has @McpToolParams
+    // We can't rely on parameter name matching since Java doesn't always preserve names
+    // Instead, check if ANY parameter has @McpToolParams and assume the property path refers to it
+    // This is safe because validation paths for @McpToolParams will have 3+ parts
+    // (method.param.field)
+    final boolean hasRequestBodyParam =
+        Stream.of(toolMethod.getParameters())
+            .anyMatch(p -> p.isAnnotationPresent(McpToolParams.class));
+
+    if (hasRequestBodyParam && parts.length >= 3) {
+      // If method has @McpToolParams parameter and path has 3+ parts, assume this is it
+      // Remove method name AND parameter name
+      // "methodName.paramName.field..." → "field..."
+      return String.join(".", Arrays.copyOfRange(parts, 2, parts.length));
+    } else {
+      // Standard parameter or simple property path
+      // Remove only method name
+      // "methodName.paramName..." → "paramName..."
+      return String.join(".", Arrays.copyOfRange(parts, 1, parts.length));
+    }
   }
 }
