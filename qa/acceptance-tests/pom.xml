@@ -24,6 +24,8 @@
     <version.maven-surefire-junit5-tree-reporter>1.5.1</version.maven-surefire-junit5-tree-reporter>
     <!-- Runtime client version for compatibility tests - can be overridden -->
     <camunda.client.version>${project.version}</camunda.client.version>
+
+    <identity-packages>io/camunda/it/auth/*,io/camunda/it/csrf/*,io/camunda/it/logout/*,io/camunda/it/oidc/*</identity-packages>
   </properties>
 
   <dependencies>
@@ -692,6 +694,39 @@
               <failIfNoTests>false</failIfNoTests>
               <groups>multi-db-test</groups>
               <excludedGroups>rdbms, history</excludedGroups>
+              <excludes>
+                <exclude>${identity-packages}</exclude>
+              </excludes>
+              <systemPropertyVariables>
+                <camunda.test.preferred.extension>multi-db</camunda.test.preferred.extension>
+              </systemPropertyVariables>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
+    <!--
+    This profile will run all tests annotated with @Tag("multiDbTest") for the identity related packages.
+    The profile is mainly used to run tests, that can be executed against multiple different
+    databases.
+
+    For example against:
+    Elasticsearch, OpenSearch, AWS OpenSearch, PostGreSQL, etc.
+    -->
+    <profile>
+      <id>identity-tests</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration>
+              <failIfNoTests>false</failIfNoTests>
+              <groups>multi-db-test</groups>
+              <includes>
+                <include>${identity-packages}</include>
+              </includes>
               <systemPropertyVariables>
                 <camunda.test.preferred.extension>multi-db</camunda.test.preferred.extension>
               </systemPropertyVariables>

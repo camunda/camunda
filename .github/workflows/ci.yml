@@ -548,6 +548,7 @@ jobs:
       it-database-type: "es"
       maven-profiles: "history"
       test-type-label: "History"
+      job-name-suffix: "-history"
 
   opensearch-history-tests:
     name: "History Integration Tests / Opensearch"
@@ -561,6 +562,7 @@ jobs:
       it-database-type: "os"
       maven-profiles: "history"
       test-type-label: "History"
+      job-name-suffix: "-history"
 
   h2-history-tests:
     name: "History Integration Tests / H2"
@@ -573,6 +575,48 @@ jobs:
       it-database-type: "rdbms_h2"
       maven-profiles: "history"
       test-type-label: "History"
+      job-name-suffix: "-history"
+
+  elasticsearch-identity-tests:
+    name: "Identity Integration Tests / Elasticsearch"
+    if: needs.detect-changes.outputs.java-code-changes == 'true'
+    needs: [ detect-changes ]
+    uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
+    secrets: inherit
+    with:
+      database-type: "elasticsearch"
+      database-image-version: "8.18.4"
+      it-database-type: "es"
+      maven-profiles: "identity-tests"
+      test-type-label: "Identity"
+      job-name-suffix: "-identity"
+
+  opensearch-identity-tests:
+    name: "Identity Integration Tests / Opensearch"
+    if: needs.detect-changes.outputs.java-code-changes == 'true'
+    needs: [ detect-changes ]
+    uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
+    secrets: inherit
+    with:
+      database-type: "opensearch"
+      database-image-version: "2.17.0"
+      it-database-type: "os"
+      maven-profiles: "identity-tests"
+      test-type-label: "Identity"
+      job-name-suffix: "-identity"
+
+  h2-identity-tests:
+    name: "Identity Integration Tests / H2"
+    if: needs.detect-changes.outputs.java-code-changes == 'true'
+    needs: [ detect-changes ]
+    uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
+    secrets: inherit
+    with:
+      database-type: "h2"
+      it-database-type: "rdbms_h2"
+      maven-profiles: "identity-tests"
+      test-type-label: "Identity"
+      job-name-suffix: "-identity"
 
   rdbms-integration-tests:
     if: needs.detect-changes.outputs.rdbms-integration-tests == 'true'
