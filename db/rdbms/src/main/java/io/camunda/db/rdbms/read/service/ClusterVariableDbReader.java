@@ -48,9 +48,7 @@ public class ClusterVariableDbReader extends AbstractEntityReader<ClusterVariabl
     final var authorizedResourceIds =
         resourceAccessChecks
             .getAuthorizedResourceIdsByType()
-            // FIXME: change resource type to CLUSTER_VARIABLE once available
-            //  (see https://github.com/camunda/camunda/issues/39054)
-            .getOrDefault(AuthorizationResourceType.UNSPECIFIED.name(), List.of());
+            .getOrDefault(AuthorizationResourceType.CLUSTER_VARIABLE.name(), List.of());
     final var dbPage = convertPaging(dbSort, query.page());
     dbQueryBuilder
         .filter(query.filter())
