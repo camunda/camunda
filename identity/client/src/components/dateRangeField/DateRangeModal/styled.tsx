@@ -6,7 +6,13 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-export { default } from "./EntityList";
-export * from "./components";
-export { default as FilterPanel } from "./FilterPanel";
-export type { FilterValues } from "./FilterPanel";
+import {Stack} from '@carbon/react';
+import styled from 'styled-components';
+
+const TimeInputStack = styled(Stack)`
+  width: 289px;
+  --cds-stack-gap: 1px;
+`;
+
+export {TimeInputStack};
+

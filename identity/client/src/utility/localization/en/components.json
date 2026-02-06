@@ -90,5 +90,7 @@
   "emptyStateSubtitleAssign": "Start by assigning a {{childResourceType}}.",
   "emptyStateButtonAssign": "Assign {{childResourceType}}",
   "emptyStateLearnText": "Learn more about {{resourceType}}s",
-  "emptyStateTenantAccessDisclaimer": "Members of this Tenant will be given access to the data within the Tenant."
+  "emptyStateTenantAccessDisclaimer": "Members of this Tenant will be given access to the data within the Tenant.",
+  "ownerType": "Owner type",
+  "ownerId": "Owner ID"
 }

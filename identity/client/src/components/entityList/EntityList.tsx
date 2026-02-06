@@ -34,9 +34,10 @@ import { Add, CarbonIconType } from "@carbon/react/icons";
 import { DocumentationLink } from "src/components/documentation";
 import Flex from "src/components/layout/Flex";
 import useTranslate from "src/utility/localization";
-import { StyledTableContainer } from "./components";
+import { StyledTableContainer, TableContentWrapper, PaginationWrapper } from "./components";
 import { PageResult, SortConfig } from "src/utility/api";
 import SearchBar from "./SearchBar";
+import FilterPanel, { FilterValues } from "./FilterPanel";
 
 const StyledTableCell = styled(TableCell)<{ $isClickable?: boolean }>`
   cursor: ${({ $isClickable }) => ($isClickable ? "pointer" : "auto")};
@@ -50,6 +51,37 @@ const StyledToolTip = styled(Tooltip)`
   .cds--tooltip-content {
     max-inline-size: 28rem;
   }
+`;
+
+const EntityListWrapper = styled.div`
+  display: flex;
+  flex-direction: row;
+  height: calc(100vh - 180px);
+  overflow: hidden;
+
+  ${StyledTableContainer} {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  ${TableContentWrapper} {
+    overflow-y: auto;
+    min-height: 0;
+  }
+
+  ${PaginationWrapper} {
+    position: static;
+    flex-shrink: 0;
+  }
+`;
+
+const TableWrapper = styled.div`
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 `;
 
 export type EntityData = {
@@ -116,10 +148,17 @@ type EntityListProps<D extends EntityData> = {
     | undefined;
   setSort?: (sort: SortConfig[] | undefined) => void;
   setSearch?: (search: Record<string, string> | undefined) => void;
+  showFilterPanel?: boolean;
+  onFilterChange?: (filters: FilterValues) => void;
+  filterOptions?: {
+    operationTypeOptions?: string[];
+    operationEntityOptions?: string[];
+    operationStatusOptions?: string[];
+  };
 };
 
 const MAX_ICON_ACTIONS = 2;
-const PAGESIZES = [20, 30, 40, 50, 100];
+const PAGESIZES = [50, 100, 200];
 
 const EntityList = <D extends EntityData>({
   title,
@@ -143,6 +182,9 @@ const EntityList = <D extends EntityData>({
   page: pageData,
   setSort = () => {},
   setSearch = () => {},
+  showFilterPanel = false,
+  onFilterChange = () => {},
+  filterOptions,
 }: EntityListProps<D>): ReturnType<FC> => {
   const { t } = useTranslate("components");
 
@@ -203,18 +245,19 @@ const EntityList = <D extends EntityData>({
         ...(!hasHeader && { className: "no-header" }),
       };
 
-  return (
-    <DataTable
-      rows={tableData}
-      headers={headers}
-      isSortable
-      sortRow={() => {
-        return 0;
-      }}
-    >
-      {({ rows, getHeaderProps, getToolbarProps, getTableProps }) => (
-        <StyledTableContainer {...tableContainerProps}>
-          <>
+  const dataTable = (
+        <DataTable
+          rows={tableData}
+          headers={headers}
+          size="md"
+          isSortable
+          sortRow={() => {
+            return 0;
+          }}
+        >
+          {({ rows, getHeaderProps, getToolbarProps, getTableProps }) => (
+            <StyledTableContainer {...tableContainerProps}>
+          <TableContentWrapper>
             {(searchKey || addEntityLabel) && (
               <TableToolbar {...getToolbarProps()}>
                 <TableToolbarContent>
@@ -431,34 +474,52 @@ const EntityList = <D extends EntityData>({
                 )}
               </Table>
             )}
-          </>
+          </TableContentWrapper>
           {!!pageData?.totalItems &&
             pageData.totalItems > Math.min(...PAGESIZES) && (
-              <Pagination
-                backwardText={t("Previous page")}
-                forwardText={t("Next page")}
-                itemsPerPageText={t("Items per page:")}
-                page={pageData.pageNumber}
-                pageNumberText={t("Page Number")}
-                pageSize={pageData.pageSize}
-                pageSizes={PAGESIZES}
-                totalItems={pageData.totalItems}
-                onChange={({
-                  page,
-                  pageSize,
-                }: {
-                  page: number;
-                  pageSize: number;
-                }) => {
-                  setPageNumber(page);
-                  setPageSize(pageSize);
-                }}
-              />
+              <PaginationWrapper>
+                <Pagination
+                  backwardText={t("Previous page")}
+                  forwardText={t("Next page")}
+                  itemsPerPageText={t("Items per page:")}
+                  page={pageData.pageNumber}
+                  pageNumberText={t("Page Number")}
+                  pageSize={pageData.pageSize}
+                  pageSizes={PAGESIZES}
+                  totalItems={pageData.totalItems}
+                  onChange={({
+                    page,
+                    pageSize,
+                  }: {
+                    page: number;
+                    pageSize: number;
+                  }) => {
+                    setPageNumber(page);
+                    setPageSize(pageSize);
+                  }}
+                />
+              </PaginationWrapper>
             )}
-        </StyledTableContainer>
-      )}
-    </DataTable>
+            </StyledTableContainer>
+          )}
+        </DataTable>
   );
+
+  if (showFilterPanel) {
+    return (
+      <EntityListWrapper>
+        <FilterPanel
+          onFilterChange={onFilterChange}
+          operationTypeOptions={filterOptions?.operationTypeOptions}
+          operationEntityOptions={filterOptions?.operationEntityOptions}
+          operationStatusOptions={filterOptions?.operationStatusOptions}
+        />
+        <TableWrapper>{dataTable}</TableWrapper>
+      </EntityListWrapper>
+    );
+  }
+
+  return dataTable;
 };
 
 function getVisibleMenuItems<D>(
