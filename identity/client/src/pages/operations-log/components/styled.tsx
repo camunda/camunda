@@ -11,6 +11,7 @@ import {
   CheckmarkFilled as BaseCheckmarkFilled,
   ErrorFilled as BaseErrorFilled,
 } from "@carbon/react/icons";
+import { Column, Grid as CarbonGrid } from "@carbon/react";
 
 const OperationLogName = styled.div`
   display: flex;
@@ -26,4 +27,47 @@ const ErrorIcon = styled(BaseErrorFilled)`
   fill: var(--cds-support-error);
 `;
 
-export { OperationLogName, SuccessIcon, ErrorIcon };
+const Grid = styled(CarbonGrid)`
+  padding: 0;
+`;
+
+const ColumnRightPadding = styled(Column)`
+  margin-right: var(--cds-spacing-05);
+`;
+
+const CenteredRow = styled.div`
+  display: flex;
+  justify-content: center;
+  width: 100%;
+`;
+
+const DatePickerWrapper = styled.div`
+  .cds--date-picker {
+    width: 100%;
+  }
+
+  .cds--date-picker-container {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .cds--date-picker-input__wrapper {
+    display: contents;
+    width: 100%;
+  }
+
+  input.cds--date-picker__input {
+    width: 100%;
+    max-width: 100%;
+  }
+`;
+
+export {
+  OperationLogName,
+  SuccessIcon,
+  ErrorIcon,
+  Grid,
+  ColumnRightPadding,
+  CenteredRow,
+  DatePickerWrapper,
+};
