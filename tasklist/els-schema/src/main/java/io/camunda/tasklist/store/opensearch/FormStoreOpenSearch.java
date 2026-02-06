@@ -16,9 +16,11 @@ import io.camunda.tasklist.store.FormStore;
 import io.camunda.tasklist.tenant.TenantAwareOpenSearchClient;
 import io.camunda.tasklist.util.OpenSearchUtil;
 import io.camunda.tasklist.util.OpenSearchUtil.QueryType;
+import io.camunda.tasklist.views.TaskSearchView;
 import io.camunda.webapps.schema.descriptors.index.FormIndex;
 import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
+import io.camunda.webapps.schema.entities.ProcessEntity;
 import io.camunda.webapps.schema.entities.form.FormEntity;
 import java.io.IOException;
 import java.net.HttpURLConnection;
@@ -64,17 +66,18 @@ public class FormStoreOpenSearch implements FormStore {
         version == null ? getFormEmbedded(id, processDefinitionId) : null;
     if (formEmbedded != null) {
       return formEmbedded;
-    } else if (isFormAssociatedToTask(id, processDefinitionId)) {
-      final var formLinked = getLinkedForm(id, version);
-      if (formLinked != null) {
-        return formLinked;
-      }
-    } else if (isFormAssociatedToProcess(id, processDefinitionId)) {
-      final var formLinked = getLinkedForm(id, version);
+    }
+
+    final Optional<String> tenantId =
+        getTenantIfFormAssociatedToTask(id, processDefinitionId)
+            .or(() -> getTenantIfFormAssociatedToProcess(id, processDefinitionId));
+    if (tenantId.isPresent()) {
+      final var formLinked = getLinkedForm(id, version, tenantId.get());
       if (formLinked != null) {
         return formLinked;
       }
     }
+
     throw new NotFoundException(String.format("form with id %s was not found", id));
   }
 
@@ -117,7 +120,8 @@ public class FormStoreOpenSearch implements FormStore {
     return Optional.empty();
   }
 
-  private Boolean isFormAssociatedToTask(final String formId, final String processDefinitionId) {
+  private Optional<String> getTenantIfFormAssociatedToTask(
+      final String formId, final String processDefinitionId) {
     try {
       final SearchRequest.Builder searchRequest =
           OpenSearchUtil.createSearchRequest(taskTemplate)
@@ -156,9 +160,13 @@ public class FormStoreOpenSearch implements FormStore {
                                                       .query(
                                                           FieldValue.of(processDefinitionId))))));
 
-      final var searchResponse = tenantAwareClient.search(searchRequest, TaskTemplate.class);
+      final var searchResponse = tenantAwareClient.search(searchRequest, TaskSearchView.class);
 
-      return searchResponse.hits().total().value() > 0;
+      if (searchResponse.hits().total().value() > 0) {
+        return Optional.of(searchResponse.hits().hits().getFirst().source().getTenantId());
+      } else {
+        return Optional.empty();
+      }
     } catch (final IOException e) {
       final String formIdNotFoundMessage =
           String.format(
@@ -168,7 +176,8 @@ public class FormStoreOpenSearch implements FormStore {
     }
   }
 
-  private Boolean isFormAssociatedToProcess(final String formId, final String processDefinitionId) {
+  private Optional<String> getTenantIfFormAssociatedToProcess(
+      final String formId, final String processDefinitionId) {
     try {
       final SearchRequest.Builder searchRequest =
           OpenSearchUtil.createSearchRequest(processIndex, QueryType.ONLY_RUNTIME)
@@ -191,9 +200,13 @@ public class FormStoreOpenSearch implements FormStore {
                                                       .query(
                                                           FieldValue.of(processDefinitionId))))));
 
-      final var searchResponse = tenantAwareClient.search(searchRequest, ProcessIndex.class);
+      final var searchResponse = tenantAwareClient.search(searchRequest, ProcessEntity.class);
 
-      return searchResponse.hits().total().value() > 0;
+      if (searchResponse.hits().total().value() > 0) {
+        return Optional.of(searchResponse.hits().hits().getFirst().source().getTenantId());
+      } else {
+        return Optional.empty();
+      }
     } catch (final IOException e) {
       final String formIdNotFoundMessage =
           String.format(
@@ -203,7 +216,8 @@ public class FormStoreOpenSearch implements FormStore {
     }
   }
 
-  public FormEntity getLinkedForm(final String formId, final Long formVersion) {
+  public FormEntity getLinkedForm(
+      final String formId, final Long formVersion, final String tenantId) {
     try {
       final Query boolQuery;
       final SearchRequest.Builder searchRequest =
@@ -263,7 +277,8 @@ public class FormStoreOpenSearch implements FormStore {
       }
       searchRequest.query(boolQuery);
 
-      final var formEntityResponse = tenantAwareClient.search(searchRequest, FormEntity.class);
+      final var formEntityResponse =
+          tenantAwareClient.searchByTenantIds(searchRequest, FormEntity.class, List.of(tenantId));
 
       if (!formEntityResponse.hits().hits().isEmpty()) {
         return formEntityResponse.hits().hits().get(0).source();

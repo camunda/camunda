@@ -10,7 +10,6 @@ package io.camunda.tasklist.store.elasticsearch;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
-import co.elastic.clients.elasticsearch.core.CountRequest;
 import co.elastic.clients.elasticsearch.core.GetRequest;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.search.Hit;
@@ -71,9 +70,11 @@ public class FormStoreElasticSearch implements FormStore {
     }
 
     // Try to get linked form if associated to task or process
-    if (isFormAssociatedToTask(id, processDefinitionId)
-        || isFormAssociatedToProcess(id, processDefinitionId)) {
-      final FormEntity formLinked = getLinkedForm(id, version);
+    final Optional<String> tenantId =
+        getTenantIfFormAssociatedToTask(id, processDefinitionId)
+            .or(() -> getTenantIfFormAssociatedToProcess(id, processDefinitionId));
+    if (tenantId.isPresent()) {
+      final var formLinked = getLinkedForm(id, version, tenantId.get());
       if (formLinked != null) {
         return formLinked;
       }
@@ -152,7 +153,8 @@ public class FormStoreElasticSearch implements FormStore {
     return null;
   }
 
-  private FormEntity getLinkedForm(final String formId, final Long formVersion) {
+  private FormEntity getLinkedForm(
+      final String formId, final Long formVersion, final String tenantId) {
     try {
       final var bpmnIdQuery = ElasticsearchUtil.termsQuery(FormIndex.BPMN_ID, formId);
       final var idQuery = ElasticsearchUtil.termsQuery(FormIndex.ID, formId);
@@ -168,7 +170,7 @@ public class FormStoreElasticSearch implements FormStore {
               : ElasticsearchUtil.joinWithAnd(
                   formIdQuery, ElasticsearchUtil.termsQuery(FormIndex.IS_DELETED, false));
 
-      final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
+      final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query, List.of(tenantId));
 
       final var searchRequestBuilder =
           new SearchRequest.Builder()
@@ -203,7 +205,8 @@ public class FormStoreElasticSearch implements FormStore {
     return null;
   }
 
-  private Boolean isFormAssociatedToTask(final String formId, final String processDefinitionId) {
+  private Optional<String> getTenantIfFormAssociatedToTask(
+      final String formId, final String processDefinitionId) {
     try {
       final var formIdMatchQuery =
           Query.of(q -> q.match(m -> m.field(TaskTemplate.FORM_ID).query(formId)));
@@ -227,14 +230,19 @@ public class FormStoreElasticSearch implements FormStore {
       final var combinedQuery = ElasticsearchUtil.joinWithAnd(formQuery, processDefQuery);
       final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(combinedQuery);
 
-      final var countRequest =
-          new CountRequest.Builder()
+      final var searchRequest =
+          new SearchRequest.Builder()
               .index(taskTemplate.getFullQualifiedName())
               .query(tenantAwareQuery)
               .build();
 
-      final var response = esClient.count(countRequest);
-      return response.count() > 0;
+      final var response = esClient.search(searchRequest, ElasticsearchUtil.MAP_CLASS);
+      if (response.hits().total().value() > 0) {
+        return Optional.of(
+            (String) response.hits().hits().get(0).source().get(TaskTemplate.TENANT_ID));
+      } else {
+        return Optional.empty();
+      }
     } catch (final IOException e) {
       final var formIdNotFoundMessage =
           String.format("Error retrieving the version for the formId: [%s]", formId);
@@ -242,7 +250,8 @@ public class FormStoreElasticSearch implements FormStore {
     }
   }
 
-  private Boolean isFormAssociatedToProcess(final String formId, final String processDefinitionId) {
+  private Optional<String> getTenantIfFormAssociatedToProcess(
+      final String formId, final String processDefinitionId) {
     try {
       final var formIdQuery =
           Query.of(q -> q.match(m -> m.field(ProcessIndex.FORM_ID).query(formId)));
@@ -252,14 +261,19 @@ public class FormStoreElasticSearch implements FormStore {
       final var combinedQuery = ElasticsearchUtil.joinWithAnd(formIdQuery, processDefQuery);
       final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(combinedQuery);
 
-      final var countRequest =
-          new CountRequest.Builder()
+      final var searchRequest =
+          new SearchRequest.Builder()
               .index(ElasticsearchUtil.whereToSearch(processIndex, QueryType.ONLY_RUNTIME))
               .query(tenantAwareQuery)
               .build();
 
-      final var response = esClient.count(countRequest);
-      return response.count() > 0;
+      final var response = esClient.search(searchRequest, ElasticsearchUtil.MAP_CLASS);
+      if (response.hits().total().value() > 0) {
+        return Optional.of(
+            (String) response.hits().hits().get(0).source().get(TaskTemplate.TENANT_ID));
+      } else {
+        return Optional.empty();
+      }
     } catch (final IOException e) {
       final var formIdNotFoundMessage =
           String.format("Error retrieving the version for the formId: [%s]", formId);
