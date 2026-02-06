@@ -69,8 +69,8 @@ paths:
 
 components:
   schemas:
-    AuditLogResult:
-      description: Audit log item.
+    AuditLogResultBase:
+      description: Common fields for an audit log item.
       type: object
       properties:
         auditLogKey:
@@ -166,6 +166,45 @@ components:
           allOf:
             - $ref: 'deployments.yaml#/components/schemas/ResourceKey'
           description: The system-assigned key for this resource.
+
+    AuditLogResultSuccess:
+      x-discriminator-value: SUCCESS
+      description: Audit log item for successful operation.
+      allOf:
+        - $ref: '#/components/schemas/AuditLogResultBase'
+        - type: object
+          properties:
+            operationDetails:
+              allOf:
+                - $ref: '#/components/schemas/AuditLogDetails'
+          description: SUCCESS result with empty details.
+
+    AuditLogResultFail:
+      x-discriminator-value: FAIL
+      description: Audit log item for failed operation.
+      allOf:
+        - $ref: '#/components/schemas/AuditLogResultBase'
+        - type: object
+          properties:
+            operationDetails:
+              allOf:
+                - $ref: '#/components/schemas/AuditLogErrorDetails'
+          description: FAIL result with error details.
+
+    AuditLogResult:
+      x-polymorphic-schema: true
+      description: Audit log item.
+      properties:
+        result:
+          $ref: '#/components/schemas/AuditLogResultEnum'
+      oneOf:
+        - $ref: '#/components/schemas/AuditLogResultSuccess'
+        - $ref: '#/components/schemas/AuditLogResultFail'
+      discriminator:
+        propertyName: result
+        mapping:
+          SUCCESS: '#/components/schemas/AuditLogResultSuccess'
+          FAIL: '#/components/schemas/AuditLogResultFail'
 
     AuditLogSearchQuerySortRequest:
       type: object
@@ -622,3 +661,19 @@ components:
             $ref: '#/components/schemas/AuditLogActorTypeEnum'
         $like:
           $ref: 'filters.yaml#/components/schemas/LikeFilter'
+
+    AuditLogDetails:
+      description: Details of successful operations. Empty object.
+      type: object
+      properties: {}
+
+    AuditLogErrorDetails:
+      description: Details of failed operations.
+      type: object
+      properties:
+        errorMessage:
+          type: string
+          description: The error message describing the failure.
+        errorCode:
+          type: string
+          description: The error code describing the failure.

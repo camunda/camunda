@@ -164,10 +164,12 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
       {
         "items": [
           {
+            "result":"SUCCESS",
             "auditLogKey": "1",
             "actorId": "1"
           },
           {
+            "result":"SUCCESS",
             "auditLogKey": "2",
             "actorId": "2"
           }
