@@ -29,4 +29,6 @@ public interface DecisionInstanceMapper extends RootProcessInstanceDependantMapp
   List<DecisionInstanceDbModel.EvaluatedOutput> loadOutputs(List<String> decisionInstanceIds);
 
   int cleanupHistory(HistoryCleanupMapper.CleanupHistoryDto dto);
+
+  int deleteByKeys(List<Long> decisionInstanceKeys);
 }

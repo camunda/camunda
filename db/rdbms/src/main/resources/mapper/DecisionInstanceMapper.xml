@@ -328,4 +328,12 @@
     <bind name="primaryKeyColumn" value="'DECISION_INSTANCE_ID'"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.rootProcessInstanceHistoryDeletion"/>
   </delete>
+
+  <delete id="deleteByKeys">
+    DELETE FROM ${prefix}DECISION_INSTANCE
+    WHERE DECISION_INSTANCE_KEY IN
+    <foreach collection="decisionInstanceKeys" item="key" open="(" separator="," close=")">
+      #{key}
+    </foreach>
+  </delete>
 </mapper>
