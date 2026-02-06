@@ -8,23 +8,40 @@ on:
       - closed
 
 jobs:
+  sanitize-branch-name:
+    name: Sanitize Branch Name
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    outputs:
+      sanitized-name: ${{ steps.sanitize.outputs.branch_name }}-benchmark
+    steps:
+      - id: sanitize
+        uses: camunda/infra-global-github-actions/sanitize-branch-name@main
+        with:
+          branch: ${{ github.event.pull_request.head.ref }}
+          max_length: 53
+
   create-benchmark:
     name: Benchmark
+    needs: sanitize-branch-name
     if: >
       (github.event.action == 'labeled' && github.event.label.name == 'benchmark') ||
       (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'benchmark'))
     uses: ./.github/workflows/camunda-load-test.yml
     secrets: inherit
     with:
-      name: ${{github.event.pull_request.head.ref}}-benchmark
+      name: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}
       ref: ${{ github.event.pull_request.head.ref }}
 
   delete-benchmark:
     name: Benchmark Cleanup
+    needs: sanitize-branch-name
     if: >
       (github.event.action == 'unlabeled' && github.event.label.name == 'benchmark') ||
       (github.event.action == 'closed' && contains(github.event.pull_request.labels.*.name, 'benchmark'))
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     permissions:
       contents: 'read'
       id-token: 'write'
@@ -38,7 +55,5 @@ jobs:
           cluster_name: zeebe-cluster
           location: europe-west1-b
       - name: Delete benchmarks
-        env:
-          PR_HEAD_REF: ${{github.event.pull_request.head.ref}}
         run: |
-          kubectl delete ns "$PR_HEAD_REF"-benchmark
+          kubectl delete ns "${{ needs.sanitize-branch-name.outputs.sanitized-name }}"
