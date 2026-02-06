@@ -382,6 +382,11 @@
     </createIndex>
 
     <createIndex tableName="${prefix}DECISION_INSTANCE"
+      indexName="${prefix}IDX_DECISION_INSTANCE_KEY">
+      <column name="DECISION_INSTANCE_KEY"/>
+    </createIndex>
+
+    <createIndex tableName="${prefix}DECISION_INSTANCE"
       indexName="${prefix}IDX_DECISION_INSTANCE_DD_KEY">
       <column name="DECISION_DEFINITION_KEY"/>
     </createIndex>
