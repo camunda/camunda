@@ -20,7 +20,6 @@ import {
   useIsPlaceholderSelected,
   useIsRootNodeSelected,
 } from 'modules/hooks/flowNodeSelection';
-import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 import {IS_ELEMENT_SELECTION_V2} from 'modules/feature-flags';
 import {hasPendingAddOrMoveModification} from 'modules/utils/modifications';
 
@@ -38,18 +37,15 @@ const VariablesForm: React.FC<FormRenderProps<VariableFormValues>> = observer(
 
     const {isModificationModeEnabled} = modificationsStore;
 
-    const {selectedElementId} = useProcessInstanceElementSelection();
-
     const isVariableModificationAllowed = computed(() => {
-      if (!isModificationModeEnabled || selectedElementId === null) {
-        return false;
+      switch (true) {
+        case !isModificationModeEnabled:
+          return false;
+        case isRootNodeSelected:
+          return hasPendingAddOrMoveModification();
+        default:
+          return isPlaceholderSelected;
       }
-
-      if (isRootNodeSelected) {
-        return hasPendingAddOrMoveModification();
-      }
-
-      return isPlaceholderSelected;
     });
 
     const isVariableModificationAllowedV1 = computed(() => {
