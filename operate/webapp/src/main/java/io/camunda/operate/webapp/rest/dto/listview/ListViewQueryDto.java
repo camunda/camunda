@@ -7,12 +7,14 @@
  */
 package io.camunda.operate.webapp.rest.dto.listview;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Objects;
 
 @Schema(description = "Process instance query")
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class ListViewQueryDto {
 
   private boolean running;
@@ -275,7 +277,35 @@ public class ListViewQueryDto {
   }
 
   @Override
-  public boolean equals(Object o) {
+  public int hashCode() {
+    return Objects.hash(
+        running,
+        active,
+        incidents,
+        finished,
+        completed,
+        canceled,
+        retriesLeft,
+        ids,
+        errorMessage,
+        incidentErrorHashCode,
+        activityId,
+        startDateAfter,
+        startDateBefore,
+        endDateAfter,
+        endDateBefore,
+        processIds,
+        bpmnProcessId,
+        processVersion,
+        excludeIds,
+        variable,
+        batchOperationId,
+        parentInstanceId,
+        tenantId);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
@@ -306,33 +336,5 @@ public class ListViewQueryDto {
         && Objects.equals(batchOperationId, that.batchOperationId)
         && Objects.equals(parentInstanceId, that.parentInstanceId)
         && Objects.equals(tenantId, that.tenantId);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(
-        running,
-        active,
-        incidents,
-        finished,
-        completed,
-        canceled,
-        retriesLeft,
-        ids,
-        errorMessage,
-        incidentErrorHashCode,
-        activityId,
-        startDateAfter,
-        startDateBefore,
-        endDateAfter,
-        endDateBefore,
-        processIds,
-        bpmnProcessId,
-        processVersion,
-        excludeIds,
-        variable,
-        batchOperationId,
-        parentInstanceId,
-        tenantId);
   }
 }

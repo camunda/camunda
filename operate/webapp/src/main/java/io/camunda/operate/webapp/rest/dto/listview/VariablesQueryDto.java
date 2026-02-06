@@ -7,9 +7,11 @@
  */
 package io.camunda.operate.webapp.rest.dto.listview;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import java.util.Arrays;
 import java.util.Objects;
 
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class VariablesQueryDto {
 
   private String name;
