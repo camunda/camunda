@@ -95,10 +95,16 @@ public interface ActorClockActuator {
   @Headers({"Content-Type: application/json", "Accept: application/json"})
   Response addTime(@RequestBody AddTimeRequest request);
 
+  @RequestLine("POST /pin")
+  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  Response pinClock(@RequestBody PinTimeRequest request);
+
   @RequestLine("DELETE")
   Response resetTime();
 
   record Response(long epochMilli, Instant instant) {}
 
   record AddTimeRequest(Long offsetMilli) {}
+
+  record PinTimeRequest(Long epochMilli) {}
 }

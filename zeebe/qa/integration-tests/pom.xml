@@ -605,6 +605,12 @@
       <artifactId>log4j-core-test</artifactId>
       <scope>test</scope>
     </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-backup-store-filesystem</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
