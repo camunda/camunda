@@ -91,7 +91,7 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
 
   private CompletableActorFuture<ScheduleInstruction> checkpointIfNeeded(
       final ScheduleInstruction instruction) {
-    final var now = ActorClock.current().instant();
+    final var now = ActorClock.currentInstant();
     final CompletableActorFuture<ScheduleInstruction> future = new CompletableActorFuture<>();
     if (instruction.checkpointTime.isBefore(now) || instruction.checkpointTime.equals(now)) {
       backupRequestHandler
@@ -100,7 +100,7 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
           .thenApplyAsync(
               id -> {
                 LOG.debug("Checkpoint {} triggered with id {}", instruction.type, id);
-                final var currentClock = ActorClock.current().instant();
+                final var currentClock = ActorClock.currentInstant();
                 // The instructions checkpoint timestamp might be in the past leading to an
                 // instant execution of the schedule. However, for the next interval we want to
                 // readjust the schedule to account for that drift.
@@ -153,7 +153,7 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
 
   private Instant minFromState(
       final Set<PartitionCheckpointState> states, final Schedule schedule) {
-    final var now = ActorClock.current().instant();
+    final var now = ActorClock.currentInstant();
     return states.stream()
         .min(Comparator.comparingLong(PartitionCheckpointState::checkpointId))
         .map(PartitionCheckpointState::checkpointTimestamp)
