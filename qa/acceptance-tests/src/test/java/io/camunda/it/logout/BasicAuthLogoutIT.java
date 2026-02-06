@@ -39,10 +39,12 @@ public class BasicAuthLogoutIT {
       "{\"filter\": {\"tenantId\": \"testTenant1\"}}";
   private static final String LOGOUT_ENDPOINT = "/logout";
 
+  // Tomcat 11+ omits Max-Age=0 when Expires is set to a past date, as per RFC 6265
+  // the Expires attribute alone is sufficient for cookie invalidation
   private static final String EXPECTED_INVALIDATED_SESSION_COOKIE_HEADER =
-      "camunda-session=; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:10 GMT; Path=/; SameSite=Lax";
+      "camunda-session=; Expires=Thu, 01 Jan 1970 00:00:10 GMT; Path=/; SameSite=Lax";
   private static final String EXPECTED_INVALIDATED_CSRF_COOKIE_HEADER =
-      "X-CSRF-TOKEN=; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:10 GMT; Path=/; SameSite=Lax";
+      "X-CSRF-TOKEN=; Expires=Thu, 01 Jan 1970 00:00:10 GMT; Path=/; SameSite=Lax";
 
   @MultiDbTestApplication
   private static final TestCamundaApplication CAMUNDA_APPLICATION =
