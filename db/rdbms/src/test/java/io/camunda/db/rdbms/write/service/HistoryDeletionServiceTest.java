@@ -245,6 +245,28 @@ public class HistoryDeletionServiceTest {
         .deleteByResourceKeys(List.of(decisionInstanceKey1, decisionInstanceKey2));
   }
 
+  @Test
+  void shouldNotDeleteFromDeletionTableIfDecisionInstanceDeletionFailed() {
+    // given
+    final var partitionId = 1;
+    final var decisionInstanceKey1 = 3L;
+    when(historyDeletionDbReaderMock.getNextBatch(anyInt(), anyInt()))
+        .thenReturn(
+            new HistoryDeletionBatch(
+                List.of(
+                    createModel(
+                        decisionInstanceKey1, HistoryDeletionTypeDbModel.DECISION_INSTANCE))));
+    when(rdbmsWritersMock.getProcessInstanceDependantWriters()).thenReturn(Collections.emptyList());
+    when(rdbmsWritersMock.getDecisionInstanceWriter().deleteByKeys(anyList()))
+        .thenThrow(new RuntimeException("Failed deleting")); // decision instance deletion fails
+
+    // when
+    historyDeletionService.deleteHistory(partitionId);
+
+    // then
+    verify(rdbmsWritersMock.getHistoryDeletionWriter(), never()).deleteByResourceKeys(anyList());
+  }
+
   private static HistoryDeletionDbModel createModel(
       final long resourceKey, final HistoryDeletionTypeDbModel type) {
     return new HistoryDeletionDbModel(resourceKey, type, 2L, 1);
