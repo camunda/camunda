@@ -77,9 +77,12 @@ public class RestoreValidator {
   }
 
   private static boolean checkTopologyFileIsRestored(final BrokerCfg configuration) {
-    final var topologyFile =
-        Path.of(configuration.getData().getDirectory())
-            .resolve(ClusterConfigurationManagerService.TOPOLOGY_FILE_NAME);
-    return topologyFile.toFile().exists() && topologyFile.toFile().isFile();
+    if (configuration.getCluster().getNodeId() == 0) {
+      final var topologyFile =
+          Path.of(configuration.getData().getDirectory())
+              .resolve(ClusterConfigurationManagerService.TOPOLOGY_FILE_NAME);
+      return topologyFile.toFile().exists() && topologyFile.toFile().isFile();
+    }
+    return true;
   }
 }
