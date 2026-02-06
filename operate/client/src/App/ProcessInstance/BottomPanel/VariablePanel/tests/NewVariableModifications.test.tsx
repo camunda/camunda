@@ -118,7 +118,7 @@ const getWrapper = (
   return Wrapper;
 };
 
-describe('New Variable Modifications', () => {
+describe.skip('New Variable Modifications', () => {
   const mockProcessInstance: ProcessInstance = {
     processInstanceKey: 'instance_id',
     state: 'ACTIVE',

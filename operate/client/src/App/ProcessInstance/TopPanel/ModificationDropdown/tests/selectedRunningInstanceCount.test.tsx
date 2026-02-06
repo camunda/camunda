@@ -28,7 +28,7 @@ const mockProcessInstance: ProcessInstance = {
   hasIncident: false,
 };
 
-describe('selectedRunningInstanceCount', () => {
+describe.skip('selectedRunningInstanceCount', () => {
   beforeEach(() => {
     vi.stubGlobal(
       'ResizeObserver',

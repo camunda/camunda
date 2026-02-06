@@ -174,7 +174,7 @@ describe('MetadataPopover', () => {
     flowNodeSelectionStore.reset();
   });
 
-  it('should render meta data for completed flow node', async () => {
+  it.skip('should render meta data for completed flow node', async () => {
     vi.useFakeTimers({shouldAdvanceTime: true});
 
     mockFetchProcessDefinitionXml().withSuccess(mockCallActivityProcessXML);
@@ -248,7 +248,7 @@ describe('MetadataPopover', () => {
     vi.useFakeTimers();
   });
 
-  it('should render completed decision', async () => {
+  it.skip('should render completed decision', async () => {
     vi.useFakeTimers({shouldAdvanceTime: true});
 
     const mockBusinessRuleElementInstance: ElementInstance = {

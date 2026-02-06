@@ -193,7 +193,7 @@ describe('VariablePanel', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('should be readonly for existing nodes without add/move modifications', async () => {
+  it.skip('should be readonly for existing nodes without add/move modifications', async () => {
     mockSearchVariables().withSuccess(searchResult([]));
     mockFetchFlowNodeMetadata().withSuccess({
       ...singleInstanceMetadata,

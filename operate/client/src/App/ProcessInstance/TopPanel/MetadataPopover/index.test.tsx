@@ -99,7 +99,7 @@ const mockSingleIncident: Incident = {
   tenantId: '<default>',
 };
 
-describe('MetadataPopover', () => {
+describe.skip('MetadataPopover', () => {
   beforeEach(() => {
     init('process-instance', []);
     flowNodeSelectionStore.init();

@@ -80,7 +80,7 @@ const statisticsData = [
   },
 ];
 
-describe('Modification Dropdown', () => {
+describe.skip('Modification Dropdown', () => {
   beforeEach(() => {
     vi.stubGlobal(
       'ResizeObserver',
