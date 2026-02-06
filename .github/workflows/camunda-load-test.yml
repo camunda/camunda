@@ -27,8 +27,27 @@ on:
         type: string
         default: ""
         required: false
+<<<<<<< HEAD
+=======
+      use-official-docker-images:
+        description: 'Use official Camunda Docker images from Docker Hub instead of building from source'
+        type: boolean
+        required: false
+        default: false
+      scenario:
+        description: 'Choose the variant of workload to use for the load test. When not set to "custom", this will override the load-test-load input.'
+        required: false
+        type: choice
+        options:
+          - custom
+          - latency
+          - realistic
+          - typical
+          - max
+        default: custom
+>>>>>>> 4a9d8a75 (feat: add scenario input option load-test GHA)
       load-test-load:
-        description: 'Specifies which load test components to deploy. For example, `starter` can be assigned with the rate at which they start instances. Allows arbitrary helm arguments, like --set starter.rate=100'
+        description: 'Specifies which load test components to deploy. For example, `starter` can be assigned with the rate at which they start instances. Allows arbitrary helm arguments, like --set starter.rate=100. This is ignored when scenario is not "custom".'
         required: false
       platform-helm-values:
         description: 'Allows to specify additional values/configurations for the Camunda platform Helm chart, which will be deployed. For example, the Orchestration cluster `resources` can be modified. Allows arbitrary helm arguments, like --set orchestration.resources.limits.memory=2Gi'
@@ -41,7 +60,7 @@ on:
         required: false
         default: false
       realistic:
-        description: 'Should run a realistic load test, with real-world process and load'
+        description: 'Should run a realistic load test, with real-world process and load. This is ignored when scenario is not "custom".'
         type: boolean
         required: false
         default: false
@@ -66,6 +85,23 @@ on:
         type: string
         default: ""
         required: false
+<<<<<<< HEAD
+=======
+      use-official-docker-images:
+        description: 'Use official Camunda Docker images from Docker Hub instead of building from source'
+        type: boolean
+        required: false
+        default: false
+      scenario:
+        description: 'Choose the variant of workload to use for the load test. Options: custom, latency, realistic, typical, max. If specified, this will override the load-test-load input when not set to "custom".'
+        type: string
+        required: false
+        default: custom
+      load-test-load:
+        description: 'Specifies which load test components to deploy. For example, `starter` can be assigned with the rate at which they start instances. Allows arbitrary helm arguments, like --set starter.rate=100. This is ignored when scenario is not "custom".'
+        type: string
+        required: false
+>>>>>>> 4a9d8a75 (feat: add scenario input option load-test GHA)
       platform-helm-values:
         description: 'Allows to specify additional values/configurations for the Camunda platform Helm chart, which will be deployed. For example, the Orchestration cluster `resources` can be modified. Allows arbitrary helm arguments, like --set orchestration.resources.limits.memory=2Gi'
         type: string
@@ -85,11 +121,20 @@ on:
         type: boolean
         required: false
         default: false
+<<<<<<< HEAD
       realistic:
         description: 'Should run a realistic load test, with real-world process and load'
         type: boolean
         required: false
         default: false
+=======
+      secondary-storage-type:
+        description: 'Specifies the type of the secondary database used by Camunda Platform, can be "elasticsearch", "opensearch" or "postgresql"'
+        # type choice is invalid here
+        type: string
+        required: false
+        default: elasticsearch
+>>>>>>> 4a9d8a75 (feat: add scenario input option load-test GHA)
 
 env:
   HELM_CHART: camunda-platform-8.6
@@ -114,6 +159,63 @@ jobs:
         id: image-tag
         run: |
           echo "image-tag=${{ inputs.name }}-$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  calculate-scenario-config:
+    name: Calculate Scenario Configuration
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: { }
+    outputs:
+      load-test-load: ${{ steps.config.outputs.load-test-load }}
+      realistic: ${{ steps.config.outputs.realistic }}
+    steps:
+      - name: Calculate configuration based on scenario
+        id: config
+        run: |
+          scenario="${{ inputs.scenario }}"
+
+          # Default to custom scenario if not provided
+          if [[ -z "$scenario" ]]; then
+            scenario="custom"
+          fi
+
+          case "$scenario" in
+            latency)
+              echo "load-test-load=--set starter.rate=1 --set workers.worker.replicas=1" >> "$GITHUB_OUTPUT"
+              echo "realistic=false" >> "$GITHUB_OUTPUT"
+              ;;
+            realistic)
+              echo "load-test-load=" >> "$GITHUB_OUTPUT"
+              echo "realistic=true" >> "$GITHUB_OUTPUT"
+              ;;
+            typical)
+              # Output typical configuration directly to avoid quote escaping issues
+              echo "load-test-load=--set starter.rate=50 --set workers.worker.replicas=6 --set starter.bpmnXmlPath=bpmn/typical_process.bpmn" >> "$GITHUB_OUTPUT"
+              echo "realistic=false" >> "$GITHUB_OUTPUT"
+              ;;
+            max)
+              echo "load-test-load=--set starter.rate=300" >> "$GITHUB_OUTPUT"
+              echo "realistic=false" >> "$GITHUB_OUTPUT"
+              ;;
+            custom)
+              # Use the provided load-test-load and realistic inputs
+              echo "load-test-load=${{ inputs.load-test-load }}" >> "$GITHUB_OUTPUT"
+              echo "realistic=${{ inputs.realistic }}" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "Error: Unknown scenario '$scenario'"
+              exit 1
+              ;;
+          esac
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -245,6 +347,7 @@ jobs:
     name: Deploy cluster under test
     needs:
       - calculate-image-tag
+      - calculate-scenario-config
       - build-camunda-image
       - build-load-test-images
     # To have the possibility to re-deploy the tests without rebuilding the images,
@@ -283,6 +386,7 @@ jobs:
           kubectl label namespace ${{ inputs.name }} created-by=${{ github.actor }} --overwrite
       - name: Label namespace with deadline
         run: |
+<<<<<<< HEAD
           # Calculate deadline date with the TTL days from now
           # Use basic ISO date format (YYYY-MM-DD), as it is compatible with kubectl label values
           # Must use minus (-) instead of / to be compatible with kubectl label value restrictions
@@ -315,6 +419,25 @@ jobs:
           ${{ inputs.platform-helm-values }}
 
       - name: Summarize deployment
+=======
+          cd load-tests/setup/${{ inputs.name }}
+
+          # Build additional load test configuration
+          load_test_config="--set global.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}"
+          if [[ "${{ needs.calculate-scenario-config.outputs.realistic }}" == "true" ]]; then
+            load_test_config="$load_test_config -f https://raw.githubusercontent.com/camunda/camunda-load-tests-helm/refs/heads/main/charts/camunda-load-tests/values-realistic-benchmark.yaml"
+          fi
+          # Append load-test-load configuration if not empty
+          if [[ -n "${{ needs.calculate-scenario-config.outputs.load-test-load }}" ]]; then
+            load_test_config="$load_test_config ${{ needs.calculate-scenario-config.outputs.load-test-load }}"
+          fi
+
+          make ${{ inputs.stable-vms && 'install-stable' || 'install' }} \
+            secondary_storage=${{ inputs.secondary-storage-type }} \
+            additional_platform_configuration="--set global.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }} --set orchestration.image.registry=${{ inputs.use-official-docker-images && 'docker.io' || 'gcr.io' }} --set orchestration.image.repository=${{ inputs.use-official-docker-images && 'camunda/camunda' || 'zeebe-io/zeebe' }} --set orchestration.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }} ${{ inputs.platform-helm-values }}" \
+            additional_load_test_configuration="$load_test_config"
+      - name: Summarize platform deployment
+>>>>>>> 4a9d8a75 (feat: add scenario input option load-test GHA)
         if: success()
         run: |
           cat >> "$GITHUB_STEP_SUMMARY" <<EOF
