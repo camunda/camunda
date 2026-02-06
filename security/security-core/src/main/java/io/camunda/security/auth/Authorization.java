@@ -327,6 +327,14 @@ public record Authorization<T>(
       return authorizedByProperty(PROP_CANDIDATE_GROUPS);
     }
 
+    /**
+     * Fluent connector indicating the next condition is an OR alternative. This is purely for
+     * readability.
+     */
+    public Builder<T> or() {
+      return this;
+    }
+
     public Authorization<T> build() {
       return new Authorization<>(
           resourceType,

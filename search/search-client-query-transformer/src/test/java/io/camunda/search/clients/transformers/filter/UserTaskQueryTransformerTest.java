@@ -650,7 +650,9 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
                 a.userTask()
                     .read()
                     .authorizedByAssignee()
+                    .or()
                     .authorizedByCandidateUsers()
+                    .or()
                     .authorizedByCandidateGroups());
     final var authorizationCheck = AuthorizationCheck.enabled(authorization);
     final var resourceAccessChecks =

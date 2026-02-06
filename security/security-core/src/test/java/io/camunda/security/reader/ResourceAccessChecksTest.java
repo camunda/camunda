@@ -227,8 +227,7 @@ class ResourceAccessChecksTest {
       // given
       final var authorization =
           Authorization.of(
-              builder ->
-                  builder.userTask().read().authorizedByAssignee().authorizedByCandidateUsers());
+              b -> b.userTask().read().authorizedByAssignee().or().authorizedByCandidateUsers());
       final var condition = AuthorizationConditions.single(authorization);
       final var checks =
           ResourceAccessChecks.of(AuthorizationCheck.enabled(condition), TenantCheck.disabled());
@@ -248,15 +247,14 @@ class ResourceAccessChecksTest {
       // given
       final var first =
           Authorization.of(
-              builder ->
-                  builder.userTask().read().authorizedByAssignee().authorizedByCandidateUsers());
+              b -> b.userTask().read().authorizedByAssignee().or().authorizedByCandidateUsers());
       final var second =
           Authorization.of(
-              builder ->
-                  builder
-                      .userTask()
+              b ->
+                  b.userTask()
                       .updateUserTask() // different permission
                       .authorizedByCandidateUsers() // duplicate
+                      .or()
                       .authorizedByCandidateGroups());
       final var condition = AuthorizationConditions.anyOf(first, second);
       final var checks =
@@ -279,12 +277,10 @@ class ResourceAccessChecksTest {
       // given
       final var userTaskAuth =
           Authorization.of(
-              builder ->
-                  builder.userTask().read().authorizedByAssignee().authorizedByCandidateUsers());
+              b -> b.userTask().read().authorizedByAssignee().or().authorizedByCandidateUsers());
       final var processDefAuth =
           Authorization.of(
-              builder ->
-                  builder.processDefinition().readUserTask().authorizedByProperty("tenantId"));
+              b -> b.processDefinition().readUserTask().authorizedByProperty("tenantId"));
       final var condition = AuthorizationConditions.anyOf(userTaskAuth, processDefAuth);
       final var checks =
           ResourceAccessChecks.of(AuthorizationCheck.enabled(condition), TenantCheck.disabled());
