@@ -263,6 +263,7 @@ public record AuditLogEntity(
   public enum AuditLogActorType {
     USER,
     CLIENT,
+    AGENT,
     ANONYMOUS,
     UNKNOWN
   }

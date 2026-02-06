@@ -63,6 +63,7 @@ public final class AuditLogConfiguration implements AuditLogCheck {
         switch (auditLog.actor().actorType()) {
           case USER -> getUser();
           case CLIENT -> getClient();
+          case AGENT -> getClient();
           case ANONYMOUS -> AuditLogCheck.DISABLED;
           case UNKNOWN -> {
             // TODO: enable logging after ensuring all expected events are correctly captured

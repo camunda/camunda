@@ -388,6 +388,7 @@ components:
       type: string
       description: The type of actor who performed the operation.
       enum:
+        - AGENT
         - ANONYMOUS
         - CLIENT
         - UNKNOWN

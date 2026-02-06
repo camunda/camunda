@@ -11,5 +11,6 @@ public enum AuditLogActorType {
   USER,
   CLIENT,
   ANONYMOUS,
+  AGENT,
   UNKNOWN
 }
