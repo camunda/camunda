@@ -24,14 +24,14 @@ import java.util.function.Function;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-public class DueDateCheckerTest {
+public class DueDateCheckSchedulerTest {
 
   @Test
   public void shouldNotScheduleTwoTasks() {
     // given
     final var timerResolution = 100;
     final var dueDateChecker =
-        new DueDateChecker(timerResolution, false, (builder) -> 0L, InstantSource.system());
+        new DueDateCheckScheduler(timerResolution, false, (builder) -> 0L, InstantSource.system());
     final var mockContext = mock(ReadonlyStreamProcessorContext.class);
     final var mockScheduleService = mock(ProcessingScheduleService.class);
     when(mockContext.getScheduleService()).thenReturn(mockScheduleService);
@@ -54,7 +54,7 @@ public class DueDateCheckerTest {
     // given
     final var timerResolution = 100;
     final var dueDateChecker =
-        new DueDateChecker(timerResolution, false, (builder) -> 0L, InstantSource.system());
+        new DueDateCheckScheduler(timerResolution, false, (builder) -> 0L, InstantSource.system());
     final var mockContext = mock(ReadonlyStreamProcessorContext.class);
     final var mockScheduleService = mock(ProcessingScheduleService.class);
     final var mockScheduledTask = mock(ScheduledTask.class);
@@ -84,7 +84,7 @@ public class DueDateCheckerTest {
 
     final var timerResolution = 100;
     final var dueDateChecker =
-        new DueDateChecker(timerResolution, false, visitor, InstantSource.system());
+        new DueDateCheckScheduler(timerResolution, false, visitor, InstantSource.system());
     final var mockContext = mock(ReadonlyStreamProcessorContext.class);
     final var mockScheduleService = mock(ProcessingScheduleService.class);
     final var mockScheduledTask = mock(ScheduledTask.class);
@@ -110,7 +110,7 @@ public class DueDateCheckerTest {
 
     final var timerResolution = 100;
     final var dueDateChecker =
-        new DueDateChecker(timerResolution, false, visitor, InstantSource.system());
+        new DueDateCheckScheduler(timerResolution, false, visitor, InstantSource.system());
     final var mockContext = mock(ReadonlyStreamProcessorContext.class);
     final var mockScheduleService = mock(ProcessingScheduleService.class);
     final var mockScheduledTask = mock(ScheduledTask.class);

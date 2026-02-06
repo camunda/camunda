@@ -14,12 +14,12 @@ import java.time.InstantSource;
 
 public class JobMetricsCheckerScheduler implements StreamProcessorLifecycleAware {
 
-  private final JobMetricsChecker jobMetricsChecker;
+  private final JobMetricsCheckScheduler jobMetricsChecker;
 
   public JobMetricsCheckerScheduler(
       final EngineConfiguration engineConfiguration, final InstantSource clock) {
     final var exportInterval = engineConfiguration.getJobMetricsExportInterval();
-    jobMetricsChecker = new JobMetricsChecker(exportInterval, clock);
+    jobMetricsChecker = new JobMetricsCheckScheduler(exportInterval, clock);
   }
 
   @Override

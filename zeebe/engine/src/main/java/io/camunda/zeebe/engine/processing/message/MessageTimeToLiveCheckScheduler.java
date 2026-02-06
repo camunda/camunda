@@ -31,7 +31,7 @@ import org.agrona.collections.MutableInteger;
  * it left off the last time. Otherwise, it starts with the first expired message deadline it can
  * find.
  */
-public final class MessageTimeToLiveChecker implements Task {
+public final class MessageTimeToLiveCheckScheduler implements Task {
 
   /** This determines the duration that the TTL checker is idle after it completes an execution. */
   private final Duration executionInterval;
@@ -53,7 +53,7 @@ public final class MessageTimeToLiveChecker implements Task {
 
   private final InstantSource clock;
 
-  public MessageTimeToLiveChecker(
+  public MessageTimeToLiveCheckScheduler(
       final Duration executionInterval,
       final int batchLimit,
       final boolean enableMessageTtlCheckerAsync,

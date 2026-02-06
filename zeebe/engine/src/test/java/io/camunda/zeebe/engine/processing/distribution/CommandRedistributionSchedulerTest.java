@@ -42,7 +42,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith({MockitoExtension.class, ProcessingStateExtension.class})
-public class CommandRedistributorTest {
+public class CommandRedistributionSchedulerTest {
 
   /** Injected by {@link ProcessingStateExtension} */
   private MutableProcessingState processingState;
@@ -52,7 +52,7 @@ public class CommandRedistributorTest {
   @Mock private InterPartitionCommandSender mockCommandSender;
   @Mock private ReadonlyStreamProcessorContext mockContext;
 
-  private CommandRedistributor commandRedistributor;
+  private CommandRedistributionScheduler commandRedistributor;
   private long distributionKey;
   private UserRecord recordValue;
   private MutableDistributionState distributionState;
@@ -121,7 +121,7 @@ public class CommandRedistributorTest {
             1, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, new AuthInfo());
   }
 
-  private CommandRedistributor getCommandRedistributor(
+  private CommandRedistributionScheduler getCommandRedistributor(
       final boolean commandDistributionPaused,
       final Duration redistributionInterval,
       final Duration maxBackoffDuration) {
@@ -149,7 +149,7 @@ public class CommandRedistributorTest {
             .setCommandRedistributionInterval(redistributionInterval)
             .setCommandRedistributionMaxBackoff(maxBackoffDuration);
 
-    return new CommandRedistributor(behavior, routingInfo, config);
+    return new CommandRedistributionScheduler(behavior, routingInfo, config);
   }
 
   @Nested

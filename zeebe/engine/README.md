@@ -96,7 +96,7 @@ the journey of a command record begins, once it enters the engine domain.
   example, have a look at the `BpmnJobActivationBehavior` class to see how job activation is handled.
 - In the `EngineProcessor` and `BpmnProcessor` classes, you may notice `Checker` classes. These are
   usually "listener"-type classes that react to the changes of the Engine modes (i.e. `processing`,
-  `replay`), and perform actions accordingly. For example, the `JobTimeoutChecker` checks for jobs
+  `replay`), and perform actions accordingly. For example, the `JobTimeoutCheckScheduler` checks for jobs
   that have timed out when the engine is in `processing` mode, and writes a `JobTimedOut` command
   using a `commandWriter`.
 
