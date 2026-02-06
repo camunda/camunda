@@ -1,0 +1,2 @@
+io.camunda.gateway.mcp.config.CamundaMcpToolScannerAutoConfiguration
+io.camunda.gateway.mcp.config.CamundaMcpServerToolSpecificationsAutoConfiguration

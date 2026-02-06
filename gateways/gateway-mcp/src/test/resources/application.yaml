@@ -16,3 +16,7 @@ spring:
           prompt: false
           resource: false
           tool: true
+
+camunda:
+  mcp:
+    enabled: true
