@@ -31,8 +31,8 @@ public class RaftPartitionConfig {
   private static final Duration DEFAULT_MAX_QUORUM_RESPONSE_TIMEOUT = Duration.ofSeconds(0);
   private static final int DEFAULT_SNAPSHOT_REPLICATION_THRESHOLD = 100;
   private static final String DEFAULT_ENGINE_NAME = "default";
-  private static final boolean DEFAULT_ENABLE_LEGACY_RAFT_SERVER_RECEIVER = true;
-  private static final boolean DEFAULT_ENABLE_LEGACY_RAFT_SERVER_SENDER = true;
+  private static final boolean DEFAULT_ENABLE_LEGACY_RECEIVER = true;
+  private static final boolean DEFAULT_ENABLE_LEGACY_SENDER = true;
 
   private Duration electionTimeout = DEFAULT_ELECTION_TIMEOUT;
   private Duration heartbeatInterval = DEFAULT_HEARTBEAT_INTERVAL;
@@ -49,8 +49,8 @@ public class RaftPartitionConfig {
   private Duration configurationChangeTimeout;
   private int snapshotChunkSize;
   private String engineName = DEFAULT_ENGINE_NAME;
-  private boolean enableLegacyRaftServerReceiver = DEFAULT_ENABLE_LEGACY_RAFT_SERVER_RECEIVER;
-  private boolean enableLegacyRaftServerSender = DEFAULT_ENABLE_LEGACY_RAFT_SERVER_SENDER;
+  private boolean enableLegacyReceiver = DEFAULT_ENABLE_LEGACY_RECEIVER;
+  private boolean enableLegacySender = DEFAULT_ENABLE_LEGACY_SENDER;
 
   /**
    * Returns the Raft leader election timeout.
@@ -223,20 +223,20 @@ public class RaftPartitionConfig {
     this.engineName = engineName;
   }
 
-  public boolean isEnableLegacyRaftServerReceiver() {
-    return enableLegacyRaftServerReceiver;
+  public boolean isEnableLegacyReceiver() {
+    return enableLegacyReceiver;
   }
 
-  public void setEnableLegacyRaftServerReceiver(final boolean enableLegacyRaftServerReceiver) {
-    this.enableLegacyRaftServerReceiver = enableLegacyRaftServerReceiver;
+  public void setEnableLegacyReceiver(final boolean enableLegacyReceiver) {
+    this.enableLegacyReceiver = enableLegacyReceiver;
   }
 
-  public boolean isEnableLegacyRaftServerSender() {
-    return enableLegacyRaftServerSender;
+  public boolean isEnableLegacySender() {
+    return enableLegacySender;
   }
 
-  public void setEnableLegacyRaftServerSender(final boolean enableLegacyRaftServerSender) {
-    this.enableLegacyRaftServerSender = enableLegacyRaftServerSender;
+  public void setEnableLegacySender(final boolean enableLegacySender) {
+    this.enableLegacySender = enableLegacySender;
   }
 
   @Override
@@ -269,10 +269,10 @@ public class RaftPartitionConfig {
         + minStepDownFailureCount
         + ", engineName="
         + engineName
-        + ", enableLegacyRaftServerReceiver="
-        + enableLegacyRaftServerReceiver
-        + ", enableLegacyRaftServerSender="
-        + enableLegacyRaftServerSender
+        + ", enableLegacyReceiver="
+        + enableLegacyReceiver
+        + ", enableLegacySender="
+        + enableLegacySender
         + '}';
   }
 }
