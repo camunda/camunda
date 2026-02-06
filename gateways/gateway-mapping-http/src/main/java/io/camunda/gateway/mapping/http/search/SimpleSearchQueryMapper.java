@@ -339,7 +339,9 @@ public class SimpleSearchQueryMapper {
           .map(SimpleSearchQueryMapper::getIntegerFilter)
           .ifPresent(filterModel::priority);
       ofNullable(filter.getElementId()).ifPresent(filterModel::elementId);
-      ofNullable(filter.getName()).ifPresent(filterModel::name);
+      ofNullable(filter.getName())
+          .map(SimpleSearchQueryMapper::getStringFilter)
+          .ifPresent(filterModel::name);
       ofNullable(filter.getCandidateGroup())
           .map(SimpleSearchQueryMapper::getStringFilter)
           .ifPresent(filterModel::candidateGroup);
