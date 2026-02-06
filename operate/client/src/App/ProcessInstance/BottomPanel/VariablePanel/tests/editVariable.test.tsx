@@ -684,6 +684,64 @@ describe('Edit variable', () => {
     ).toBeInTheDocument();
   });
 
+  it('should allow editing a variable with dots in modification mode', async () => {
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
+    mockFetchProcessInstanceDeprecated().withSuccess(
+      mockProcessInstanceDeprecated,
+    );
+    mockFetchProcessDefinitionXml().withSuccess('');
+    processInstanceDetailsStore.setProcessInstance(instanceMock);
+
+    mockSearchVariables().withSuccess({
+      items: [
+        createvariable({name: 'a.b', value: '"old"', isTruncated: false}),
+        createvariable({name: 'a.b.c', value: '"old"', isTruncated: false}),
+      ],
+      page: {totalItems: 2},
+    });
+    mockSearchVariables().withSuccess({
+      items: [
+        createvariable({name: 'a.b', value: '"old"', isTruncated: false}),
+        createvariable({name: 'a.b.c', value: '"old"', isTruncated: false}),
+      ],
+      page: {totalItems: 2},
+    });
+
+    const {user} = render(
+      <VariablePanel setListenerTabVisibility={vi.fn()} />,
+      {wrapper: getWrapper()},
+    );
+    await waitFor(() => {
+      expect(screen.getByTestId('variables-list')).toBeInTheDocument();
+    });
+
+    act(() => {
+      modificationsStore.enableModificationMode();
+      modificationsStore.addModification({
+        type: 'token',
+        payload: {
+          operation: 'ADD_TOKEN',
+          flowNode: {id: 'flow_node_0', name: 'flow node 0'},
+          scopeId: 'random-scope-id-0',
+          affectedTokenCount: 1,
+          visibleAffectedTokenCount: 1,
+          parentScopeIds: {},
+        },
+      });
+    });
+
+    const variableRow = await screen.findByTestId('variable-a.b');
+    const input = within(variableRow).getByTestId('edit-variable-value');
+    expect(input).toHaveValue('"old"');
+
+    await user.clear(input);
+    await user.type(input, '"new"');
+
+    await waitFor(() => {
+      expect(input).toHaveValue('"new"');
+    });
+  });
+
   it('should not display edit button next to variables if instance is completed or canceled', async () => {
     mockFetchProcessInstance().withSuccess({
       ...mockProcessInstance,
