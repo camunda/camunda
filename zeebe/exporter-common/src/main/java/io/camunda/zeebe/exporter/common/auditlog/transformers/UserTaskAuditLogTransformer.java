@@ -21,11 +21,6 @@ public class UserTaskAuditLogTransformer implements AuditLogTransformer<UserTask
   @Override
   public void transform(final Record<UserTaskRecordValue> record, final AuditLogEntry log) {
     final var value = record.getValue();
-    log.setProcessDefinitionId(value.getBpmnProcessId())
-        .setProcessDefinitionKey(value.getProcessDefinitionKey())
-        .setProcessInstanceKey(value.getProcessInstanceKey())
-        .setElementInstanceKey(value.getElementInstanceKey())
-        .setUserTaskKey(value.getUserTaskKey())
-        .setEntityKey(String.valueOf(value.getUserTaskKey()));
+    log.setUserTaskKey(value.getUserTaskKey()).setEntityKey(String.valueOf(value.getUserTaskKey()));
   }
 }

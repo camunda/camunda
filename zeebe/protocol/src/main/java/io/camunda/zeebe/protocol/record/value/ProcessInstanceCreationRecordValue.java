@@ -24,10 +24,14 @@ import org.immutables.value.Value;
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableProcessInstanceCreationRecordValue.Builder.class)
 public interface ProcessInstanceCreationRecordValue
-    extends RecordValueWithVariables, ProcessInstanceRelated, TenantOwned {
+    extends RecordValueWithVariables,
+        ProcessInstanceRelated,
+        AuditLogProcessInstanceRelated,
+        TenantOwned {
   /**
    * @return the BPMN process id to create a process from
    */
+  @Override
   String getBpmnProcessId();
 
   /**
@@ -38,6 +42,7 @@ public interface ProcessInstanceCreationRecordValue
   /**
    * @return the unique key of the BPMN process definition to create a process from
    */
+  @Override
   long getProcessDefinitionKey();
 
   /** Returns a list of start instructions (if available), or an empty list. */

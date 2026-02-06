@@ -31,7 +31,10 @@ import org.immutables.value.Value;
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableUserTaskRecordValue.Builder.class)
 public interface UserTaskRecordValue
-    extends RecordValueWithVariables, ProcessInstanceRelated, TenantOwned {
+    extends RecordValueWithVariables,
+        ProcessInstanceRelated,
+        AuditLogProcessInstanceRelated,
+        TenantOwned {
 
   long getUserTaskKey();
 
@@ -65,11 +68,13 @@ public interface UserTaskRecordValue
   /**
    * @return the element instance key of the corresponding user task
    */
+  @Override
   long getElementInstanceKey();
 
   /**
    * @return the bpmn process id of the corresponding process definition
    */
+  @Override
   String getBpmnProcessId();
 
   /**
@@ -80,6 +85,7 @@ public interface UserTaskRecordValue
   /**
    * @return the process key of the corresponding process definition
    */
+  @Override
   long getProcessDefinitionKey();
 
   int getPriority();
