@@ -298,6 +298,32 @@ final class DefaultRecordFilterTest {
   }
 
   @Test
+  void shouldApplyOptimizeModeFilterWhenOptimizeModeEnabled() {
+    // given
+    final var configuration =
+        new TestConfiguration()
+            .withIndexedRecordType(RecordType.EVENT)
+            // We pick JOB because OptimizeModeFilter never accepts JOB records
+            .withIndexedValueType(ValueType.JOB);
+
+    // Enable Optimize mode on the index config so that createRecordFilters()
+    // adds an OptimizeModeFilter to the chain.
+    configuration.filterIndexConfig().withOptimizeModeEnabled(true);
+
+    final var filter = new DefaultRecordFilter(configuration);
+
+    @SuppressWarnings("unchecked")
+    final Record<?> jobRecord = (Record<?>) mock(Record.class);
+    when(jobRecord.getRecordType()).thenReturn(RecordType.EVENT);
+    when(jobRecord.getValueType()).thenReturn(ValueType.JOB);
+
+    // when / then
+    assertThat(filter.acceptRecord(jobRecord))
+        .as("With Optimize mode enabled, non-Optimize value types like JOB should be rejected")
+        .isFalse();
+  }
+
+  @Test
   void shouldNotApplyVariableValueTypeFilterWhenNoTypeRulesConfigured() {
     // given
     final var configuration =
