@@ -45,7 +45,9 @@ public abstract class PaginatedQuery<T extends PaginatedQuery<T>> {
   }
 
   public T setSorting(final SortingDto sorting) {
-    if (sorting != null && !getValidSortByValues().contains(sorting.getSortBy())) {
+    if (sorting != null
+        && sorting.getSortBy() != null
+        && !getValidSortByValues().contains(sorting.getSortBy())) {
       throw new InvalidRequestException(
           "SortBy parameter has invalid value: " + sorting.getSortBy());
     }
