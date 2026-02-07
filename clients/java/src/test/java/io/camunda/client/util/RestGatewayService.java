@@ -294,6 +294,10 @@ public class RestGatewayService {
     registerPost(RestGatewayPaths.getProcessInstancesModifyUrl(), response);
   }
 
+  public void onDeleteDecisionInstancesRequest(final BatchOperationCreatedResult response) {
+    registerPost(RestGatewayPaths.getDecisionInstancesDeletionUrl(), response);
+  }
+
   public void onCreateAuthorizationRequest(final AuthorizationCreateResult response) {
     registerPost(RestGatewayPaths.getAuthorizationsUrl(), response);
   }

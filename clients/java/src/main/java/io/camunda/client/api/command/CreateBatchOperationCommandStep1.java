@@ -16,6 +16,7 @@
 package io.camunda.client.api.command;
 
 import io.camunda.client.api.response.CreateBatchOperationResponse;
+import io.camunda.client.api.search.filter.DecisionInstanceFilter;
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.client.api.search.request.TypedFilterableRequest.SearchRequestFilter;
 import java.util.function.Consumer;
@@ -56,6 +57,13 @@ public interface CreateBatchOperationCommandStep1 {
    * @return the builder for this command
    */
   ProcessInstanceModificationStep<ProcessInstanceFilter> modifyProcessInstance();
+
+  /**
+   * Defines the type of the batch operation to delete decision instances.
+   *
+   * @return the builder for this command
+   */
+  CreateBatchOperationCommandStep2<DecisionInstanceFilter> decisionInstanceDelete();
 
   interface CreateBatchOperationCommandStep2<E extends SearchRequestFilter> {
 
