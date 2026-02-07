@@ -6,10 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React, {useEffect} from 'react';
-import {incidentsByErrorStore} from 'modules/stores/incidentsByError';
-import {observer} from 'mobx-react';
-import {useLocation} from 'react-router-dom';
+import React from 'react';
 import {PartiallyExpandableDataTable} from '../PartiallyExpandableDataTable';
 import {Locations} from 'modules/Routes';
 import {panelStatesStore} from 'modules/stores/panelStates';
@@ -21,30 +18,31 @@ import {Skeleton} from '../PartiallyExpandableDataTable/Skeleton';
 import {LinkWrapper, ErrorMessage} from '../../styled';
 import {EmptyState} from 'modules/components/EmptyState';
 import EmptyStateProcessIncidents from 'modules/components/Icon/empty-state-process-incidents.svg?react';
+import {useIncidentProcessInstanceStatisticsByError} from 'modules/queries/incidentStatistics/useIncidentProcessInstanceStatisticsByError';
+import type {IncidentProcessInstanceStatisticsByError} from '@camunda/camunda-api-zod-schemas/8.9';
 import {Details} from './Details';
-import {generateErrorMessageId} from './utils/generateErrorMessageId';
 
-const IncidentsByError: React.FC = observer(() => {
-  const location = useLocation();
+const IncidentsByError: React.FC = () => {
+  const result = useIncidentProcessInstanceStatisticsByError();
+  const incidents = result.data?.items ?? [];
 
-  useEffect(() => {
-    incidentsByErrorStore.init();
-    return () => {
-      incidentsByErrorStore.reset();
-    };
-  }, []);
+  const expandedContents = incidents.reduce<
+    Record<string, React.ReactElement<{tabIndex: number}>>
+  >((accumulator, item) => {
+    accumulator[String(item.errorHashCode)] = (
+      <Details
+        errorMessage={item.errorMessage}
+        incidentErrorHashCode={item.errorHashCode}
+      />
+    );
+    return accumulator;
+  }, {});
 
-  useEffect(() => {
-    incidentsByErrorStore.getIncidentsByError();
-  }, [location.key]);
-
-  const {incidents, status} = incidentsByErrorStore.state;
-
-  if (['initial', 'first-fetch'].includes(status)) {
+  if (result.status === 'pending' && !result.data) {
     return <Skeleton />;
   }
 
-  if (status === 'fetched' && incidents.length === 0) {
+  if (result.data?.items.length === 0) {
     return (
       <EmptyState
         icon={<EmptyStateProcessIncidents title="Your processes are healthy" />}
@@ -54,7 +52,7 @@ const IncidentsByError: React.FC = observer(() => {
     );
   }
 
-  if (status === 'error') {
+  if (result.status === 'error') {
     return <ErrorMessage />;
   }
 
@@ -62,51 +60,43 @@ const IncidentsByError: React.FC = observer(() => {
     <PartiallyExpandableDataTable
       dataTestId="incident-byError"
       headers={[{key: 'incident', header: 'incident'}]}
-      rows={incidents.map(
-        ({errorMessage, incidentErrorHashCode, instancesWithErrorCount}) => {
-          return {
-            id: generateErrorMessageId(errorMessage),
-            incident: (
-              <LinkWrapper
-                to={Locations.processes({
-                  errorMessage: truncateErrorMessage(errorMessage),
-                  incidentErrorHashCode,
-                  incidents: true,
-                })}
-                onClick={() => {
-                  panelStatesStore.expandFiltersPanel();
-                  tracking.track({
-                    eventName: 'navigation',
-                    link: 'dashboard-process-incidents-by-error-message-all-processes',
-                  });
-                }}
-                title={getAccordionTitle(instancesWithErrorCount, errorMessage)}
-              >
-                <InstancesBar
-                  label={{type: 'incident', size: 'small', text: errorMessage}}
-                  incidentsCount={instancesWithErrorCount}
-                  size="medium"
-                />
-              </LinkWrapper>
-            ),
-          };
-        },
-      )}
-      expandedContents={incidents.reduce(
-        (accumulator, {errorMessage, incidentErrorHashCode, processes}) => ({
-          ...accumulator,
-          [generateErrorMessageId(errorMessage)]: (
-            <Details
-              errorMessage={errorMessage}
-              processes={processes}
-              incidentErrorHashCode={incidentErrorHashCode}
-            />
+      expandedContents={expandedContents}
+      rows={incidents.map((item: IncidentProcessInstanceStatisticsByError) => {
+        const {errorHashCode, errorMessage, activeInstancesWithErrorCount} =
+          item;
+
+        return {
+          id: String(errorHashCode),
+          incident: (
+            <LinkWrapper
+              to={Locations.processes({
+                errorMessage: truncateErrorMessage(errorMessage),
+                incidentErrorHashCode: errorHashCode,
+                incidents: true,
+              })}
+              onClick={() => {
+                panelStatesStore.expandFiltersPanel();
+                tracking.track({
+                  eventName: 'navigation',
+                  link: 'dashboard-process-incidents-by-error-message-all-processes',
+                });
+              }}
+              title={getAccordionTitle(
+                activeInstancesWithErrorCount,
+                errorMessage,
+              )}
+            >
+              <InstancesBar
+                label={{type: 'incident', size: 'small', text: errorMessage}}
+                incidentsCount={activeInstancesWithErrorCount}
+                size="medium"
+              />
+            </LinkWrapper>
           ),
-        }),
-        {},
-      )}
+        };
+      })}
     />
   );
-});
+};
 
 export {IncidentsByError};

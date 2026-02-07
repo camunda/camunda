@@ -9,6 +9,7 @@
 import {expect} from '@playwright/test';
 import {test} from '../visual-fixtures';
 import {
+  mockIncidentsByDefinition,
   mockIncidentsByError,
   mockProcessDefinitionStatistics,
   mockResponses,
@@ -55,6 +56,7 @@ test.describe('dashboard', () => {
       URL_API_PATTERN,
       mockResponses({
         incidentsByError: mockIncidentsByError,
+        incidentsByDefinition: mockIncidentsByDefinition,
         processDefinitionStatistics: mockProcessDefinitionStatistics,
       }),
     );
@@ -92,7 +94,12 @@ test.describe('dashboard', () => {
 
     await expandIncidentsByErrorRow.click();
 
-    await expect(page.getByText(/complexprocess – version 2/i)).toBeVisible();
+    await expect(
+      page
+        .getByTestId('incident-byError')
+        .getByText(/complexprocess – version 2/i)
+        .first(),
+    ).toBeVisible();
 
     const results = await makeAxeBuilder()
       // TODO: enable 'color-contrast' rule when the related TODO item is fixed https://github.com/camunda/operate/issues/5027

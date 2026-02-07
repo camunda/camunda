@@ -10,6 +10,7 @@ import {expect} from '@playwright/test';
 import {test} from '../visual-fixtures';
 import {
   mockIncidentsByError,
+  mockIncidentsByDefinition,
   mockProcessDefinitionStatistics,
   mockResponses,
 } from '../mocks/dashboard.mocks';
@@ -33,7 +34,7 @@ test.describe('dashboard page', () => {
     await page.route(
       URL_API_PATTERN,
       mockResponses({
-        incidentsByError: [],
+        incidentsByError: {items: [], page: {totalItems: 0}},
         processDefinitionStatistics: {items: [], page: {totalItems: 0}},
       }),
     );
@@ -75,6 +76,7 @@ test.describe('dashboard page', () => {
       URL_API_PATTERN,
       mockResponses({
         incidentsByError: mockIncidentsByError,
+        incidentsByDefinition: mockIncidentsByDefinition,
         processDefinitionStatistics: mockProcessDefinitionStatistics,
       }),
     );
@@ -112,7 +114,9 @@ test.describe('dashboard page', () => {
 
     await expandIncidentsByErrorRow.click();
 
-    await expect(page.getByText(/complexprocess – version 2/i)).toBeVisible();
+    await expect(
+      page.getByText(/complexprocess – version 2/i).first(),
+    ).toBeVisible();
 
     await expect(page).toHaveScreenshot();
   });
