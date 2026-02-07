@@ -11,6 +11,7 @@ import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.gateway.Gateway;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.FilterType;
@@ -35,6 +36,11 @@ import org.springframework.context.annotation.Profile;
     nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
 @Profile("operate")
 @ConditionalOnSecondaryStorageEnabled
+@ConditionalOnProperty(
+    name = "camunda.webapps.operate.enabled",
+    havingValue = "true",
+    matchIfMissing = true
+)
 public class OperateModuleConfiguration {
 
   // if present, then it will ensure
