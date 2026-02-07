@@ -43,6 +43,12 @@
       <artifactId>maven-surefire-common</artifactId>
       <version>3.5.4</version>
     </dependency>
+    <dependency>
+      <groupId>uk.co.real-logic</groupId>
+      <artifactId>sbe-tool</artifactId>
+      <version>1.37.1</version>
+      <scope>compile</scope>
+    </dependency>
   </dependencies>
 
   <build>
