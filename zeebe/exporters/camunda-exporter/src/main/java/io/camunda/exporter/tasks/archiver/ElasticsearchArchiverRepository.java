@@ -43,6 +43,7 @@ import io.camunda.search.schema.config.RetentionConfiguration;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
+import io.camunda.webapps.schema.descriptors.template.JobMetricsBatchTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
@@ -70,6 +71,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
   private final IndexTemplateDescriptor batchOperationTemplateDescriptor;
   private final IndexTemplateDescriptor usageMetricTemplateDescriptor;
   private final IndexTemplateDescriptor usageMetricTUTemplateDescriptor;
+  private final IndexTemplateDescriptor jobMetricsBatchTemplateDescriptor;
   private final IndexTemplateDescriptor decisionInstanceTemplateDescriptor;
   private final Collection<IndexTemplateDescriptor> allTemplatesDescriptors;
   private final CamundaExporterMetrics metrics;
@@ -96,6 +98,8 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
         resourceProvider.getIndexTemplateDescriptor(UsageMetricTemplate.class);
     usageMetricTUTemplateDescriptor =
         resourceProvider.getIndexTemplateDescriptor(UsageMetricTUTemplate.class);
+    jobMetricsBatchTemplateDescriptor =
+        resourceProvider.getIndexTemplateDescriptor(JobMetricsBatchTemplate.class);
     decisionInstanceTemplateDescriptor =
         resourceProvider.getIndexTemplateDescriptor(DecisionInstanceTemplate.class);
     this.metrics = metrics;
@@ -195,6 +199,21 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
                     UsageMetricTemplate.END_TIME,
                     usageMetricTemplateDescriptor,
                     config.getUsageMetricsRolloverInterval()),
+            executor);
+  }
+
+  @Override
+  public CompletableFuture<BasicArchiveBatch> getJobBatchMetricsNextBatch() {
+    final var searchRequest = createJobBatchMetricsSearchRequest();
+
+    final var timer = Timer.start();
+    return client
+        .search(searchRequest, Object.class)
+        .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
+        .thenComposeAsync(
+            response ->
+                createBasicBatch(
+                    response, JobMetricsBatchTemplate.END_TIME, jobMetricsBatchTemplateDescriptor),
             executor);
   }
 
@@ -554,6 +573,21 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
         batchOperationTemplateDescriptor.getFullQualifiedName(),
         endDateQ,
         BatchOperationTemplate.END_DATE);
+  }
+
+  private SearchRequest createJobBatchMetricsSearchRequest() {
+    final var endDateQ =
+        QueryBuilders.range(
+            q ->
+                q.date(
+                    d ->
+                        d.field(JobMetricsBatchTemplate.END_TIME)
+                            .lte(config.getArchivingTimePoint())));
+
+    return createSearchRequest(
+        jobMetricsBatchTemplateDescriptor.getFullQualifiedName(),
+        endDateQ,
+        JobMetricsBatchTemplate.END_TIME);
   }
 
   private SearchRequest createUsageMetricSearchRequest(

@@ -25,6 +25,7 @@ import io.camunda.search.schema.config.RetentionConfiguration;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
+import io.camunda.webapps.schema.descriptors.template.JobMetricsBatchTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
@@ -75,6 +76,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
   private final IndexTemplateDescriptor batchOperationTemplateDescriptor;
   private final IndexTemplateDescriptor usageMetricTemplateDescriptor;
   private final IndexTemplateDescriptor usageMetricTUTemplateDescriptor;
+  private final IndexTemplateDescriptor jobMetricsBatchTemplateDescriptor;
   private final IndexTemplateDescriptor decisionInstanceTemplateDescriptor;
   private final Collection<IndexTemplateDescriptor> allTemplatesDescriptors;
   private final CamundaExporterMetrics metrics;
@@ -103,6 +105,8 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
         resourceProvider.getIndexTemplateDescriptor(UsageMetricTemplate.class);
     usageMetricTUTemplateDescriptor =
         resourceProvider.getIndexTemplateDescriptor(UsageMetricTUTemplate.class);
+    jobMetricsBatchTemplateDescriptor =
+        resourceProvider.getIndexTemplateDescriptor(JobMetricsBatchTemplate.class);
     decisionInstanceTemplateDescriptor =
         resourceProvider.getIndexTemplateDescriptor(DecisionInstanceTemplate.class);
     this.metrics = metrics;
@@ -199,6 +203,20 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
                     UsageMetricTemplate.END_TIME,
                     usageMetricTemplateDescriptor,
                     config.getUsageMetricsRolloverInterval()),
+            executor);
+  }
+
+  @Override
+  public CompletableFuture<BasicArchiveBatch> getJobBatchMetricsNextBatch() {
+    final var searchRequest = createJobBatchMetricsSearchRequest();
+
+    final var timer = Timer.start();
+    return sendRequestAsync(() -> client.search(searchRequest, Object.class))
+        .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
+        .thenComposeAsync(
+            response ->
+                createBasicBatch(
+                    response, JobMetricsBatchTemplate.END_TIME, jobMetricsBatchTemplateDescriptor),
             executor);
   }
 
@@ -488,6 +506,19 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
         batchOperationTemplateDescriptor.getFullQualifiedName(),
         endDateQ.toQuery(),
         BatchOperationTemplate.END_DATE);
+  }
+
+  private SearchRequest createJobBatchMetricsSearchRequest() {
+    final var endDateQ =
+        QueryBuilders.range()
+            .field(JobMetricsBatchTemplate.END_TIME)
+            .lte(JsonData.of(config.getArchivingTimePoint()))
+            .build();
+
+    return createSearchRequest(
+        jobMetricsBatchTemplateDescriptor.getFullQualifiedName(),
+        endDateQ.toQuery(),
+        JobMetricsBatchTemplate.END_TIME);
   }
 
   private SearchRequest createStandaloneDecisionSearchRequest() {

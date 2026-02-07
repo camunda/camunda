@@ -63,6 +63,12 @@ public class CamundaExporterMetrics implements AutoCloseable {
   /** Count of standalone-decisions that have been archived. */
   private final Counter standaloneDecisionsArchived;
 
+  /** Count of job-batch-metrics that are in progress of archiving. */
+  private final Counter jobBatchMetricsArchiving;
+
+  /** Count of job-batch-metrics that have been archived. */
+  private final Counter jobBatchMetricsArchived;
+
   /** Count of incident updates that needed retrying. */
   private final Counter incidentUpdatesRetriesNeeded;
 
@@ -155,6 +161,17 @@ public class CamundaExporterMetrics implements AutoCloseable {
             .tag("state", "archiving")
             .description(
                 "Count of completed standalone-decisions that have been found, and are now in progress of archiving.")
+            .register(meterRegistry);
+    jobBatchMetricsArchived =
+        Counter.builder(meterName("archiver.job.batch.metrics"))
+            .tag("state", "archived")
+            .description("Count of completed job-batch-metrics, that have been archived.")
+            .register(meterRegistry);
+    jobBatchMetricsArchiving =
+        Counter.builder(meterName("archiver.job.batch.metrics"))
+            .tag("state", "archiving")
+            .description(
+                "Count of completed job-batch-metrics that have been found, and are now in progress of archiving.")
             .register(meterRegistry);
     archiverSearchTimer =
         Timer.builder(meterName("archiver.request.duration"))
@@ -300,6 +317,14 @@ public class CamundaExporterMetrics implements AutoCloseable {
     standaloneDecisionsArchiving.increment(count);
   }
 
+  public void recordJobBatchMetricsArchived(final int count) {
+    jobBatchMetricsArchived.increment(count);
+  }
+
+  public void recordJobBatchMetricsArchiving(final int count) {
+    jobBatchMetricsArchiving.increment(count);
+  }
+
   public void recordIncidentUpdatesRetriesNeeded(final int count) {
     incidentUpdatesRetriesNeeded.increment(count);
   }
@@ -376,6 +401,8 @@ public class CamundaExporterMetrics implements AutoCloseable {
     meterRegistry.remove(incidentUpdatesRetriesNeeded);
     meterRegistry.remove(incidentUpdatesProcessed);
     meterRegistry.remove(incidentUpdatesDocumentsUpdated);
+    meterRegistry.remove(jobBatchMetricsArchiving);
+    meterRegistry.remove(jobBatchMetricsArchived);
 
     // Remove custom gauges by their names if needed
     removeGaugeIfExists(meterName("since.last.flush.seconds"));
