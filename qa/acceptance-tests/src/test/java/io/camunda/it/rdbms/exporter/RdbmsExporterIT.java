@@ -19,6 +19,10 @@ import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationCategory;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationResult;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationType;
+import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemEntity;
+import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemState;
+import io.camunda.search.entities.BatchOperationEntity.BatchOperationState;
+import io.camunda.search.entities.BatchOperationType;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
@@ -31,6 +35,8 @@ import io.camunda.search.entities.SequenceFlowEntity;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.filter.UserFilter.Builder;
 import io.camunda.search.query.AuditLogQuery;
+import io.camunda.search.query.BatchOperationItemQuery;
+import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SequenceFlowQuery;
 import io.camunda.search.query.UserQuery;
 import io.camunda.security.reader.AuthorizationCheck;
@@ -45,6 +51,8 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
+import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
+import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.ClusterVariableIntent;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
@@ -60,9 +68,14 @@ import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.BatchOperationChunkRecordValue;
+import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ClusterVariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
 import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableBatchOperationChunkRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableBatchOperationCreationRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableBatchOperationItemValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableEvaluatedDecisionValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.MappingRuleRecordValue;
@@ -768,7 +781,6 @@ class RdbmsExporterIT {
         ImmutableRecord.<ProcessMessageSubscriptionRecordValue>builder()
             .from(RecordFixtures.FACTORY.generateRecord(ValueType.PROCESS_MESSAGE_SUBSCRIPTION))
             .withIntent(ProcessMessageSubscriptionIntent.CREATED)
-            .withPosition(2L)
             .withTimestamp(System.currentTimeMillis())
             .build();
 
@@ -793,7 +805,6 @@ class RdbmsExporterIT {
         ImmutableRecord.builder()
             .from(RecordFixtures.FACTORY.generateRecord(ValueType.PROCESS_MESSAGE_SUBSCRIPTION))
             .withIntent(ProcessMessageSubscriptionIntent.CREATED)
-            .withPosition(2L)
             .withTimestamp(System.currentTimeMillis())
             .build();
 
@@ -804,7 +815,6 @@ class RdbmsExporterIT {
         ImmutableRecord.builder()
             .from(messageSubscriptionRecord)
             .withIntent(ProcessMessageSubscriptionIntent.DELETED)
-            .withPosition(3L)
             .withTimestamp(System.currentTimeMillis())
             .build());
 
@@ -823,7 +833,6 @@ class RdbmsExporterIT {
         ImmutableRecord.<ProcessMessageSubscriptionRecordValue>builder()
             .from(RecordFixtures.FACTORY.generateRecord(ValueType.PROCESS_MESSAGE_SUBSCRIPTION))
             .withIntent(ProcessMessageSubscriptionIntent.CORRELATED)
-            .withPosition(2L)
             .withTimestamp(System.currentTimeMillis())
             .build();
 
@@ -1012,13 +1021,149 @@ class RdbmsExporterIT {
   }
 
   @Test
+  public void shouldExportBatchOperationCreatedRecord() {
+    // given
+    final var batchOperationCreationRecord =
+        givenBatchOperationCreationExported(
+            io.camunda.zeebe.protocol.record.value.BatchOperationType.MIGRATE_PROCESS_INSTANCE);
+
+    final var batchOperation =
+        rdbmsService
+            .getBatchOperationReader()
+            .findOne(String.valueOf(batchOperationCreationRecord.getKey()));
+    assertThat(batchOperation).isNotEmpty();
+    assertThat(batchOperation.get().operationType())
+        .isEqualTo(BatchOperationType.MIGRATE_PROCESS_INSTANCE);
+    assertThat(batchOperation.get().state()).isEqualTo(BatchOperationState.ACTIVE);
+    assertThat(batchOperation.get().operationsTotalCount()).isEqualTo(0L);
+    assertThat(batchOperation.get().operationsCompletedCount()).isEqualTo(0L);
+    assertThat(batchOperation.get().operationsFailedCount()).isEqualTo(0L);
+  }
+
+  @Test
+  public void shouldExportBatchOperationChunkRecord() {
+    final var batchOperationCreationRecord =
+        givenBatchOperationCreationExported(
+            io.camunda.zeebe.protocol.record.value.BatchOperationType.MODIFY_PROCESS_INSTANCE);
+
+    final var itemKey = 9043L;
+    final var processInstanceKey = 9044L;
+
+    final Record<BatchOperationChunkRecordValue> record =
+        RecordFixtures.FACTORY.generateRecord(ValueType.BATCH_OPERATION_CHUNK);
+    final var batchOperationChunkedRecord =
+        ImmutableRecord.<BatchOperationChunkRecordValue>builder()
+            .from(record)
+            .withIntent(BatchOperationChunkIntent.CREATE)
+            .withTimestamp(System.currentTimeMillis())
+            .withBatchOperationReference(batchOperationCreationRecord.getKey())
+            .withValue(
+                ImmutableBatchOperationChunkRecordValue.builder()
+                    .from(record.getValue())
+                    .withBatchOperationKey(batchOperationCreationRecord.getKey())
+                    .withItems(
+                        List.of(
+                            ImmutableBatchOperationItemValue.builder()
+                                .withItemKey(itemKey)
+                                .withProcessInstanceKey(processInstanceKey)
+                                .build()))
+                    .build())
+            .build();
+    // when
+    exporter.export(batchOperationChunkedRecord);
+
+    // then
+    final var batchOperation =
+        rdbmsService
+            .getBatchOperationReader()
+            .findOne(String.valueOf(batchOperationCreationRecord.getKey()));
+    assertThat(batchOperation).isNotEmpty();
+    assertThat(batchOperation.get().operationType())
+        .isEqualTo(BatchOperationType.MODIFY_PROCESS_INSTANCE);
+    assertThat(batchOperation.get().state()).isEqualTo(BatchOperationState.ACTIVE);
+    assertThat(batchOperation.get().operationsTotalCount()).isEqualTo(1L);
+    assertThat(batchOperation.get().operationsCompletedCount()).isEqualTo(0L);
+    assertThat(batchOperation.get().operationsFailedCount()).isEqualTo(0L);
+
+    final var results = searchBatchOperationItems(itemKey);
+    final var items = results.items();
+    assertThat(items).hasSize(1);
+    final var item = items.getFirst();
+    assertThat(item.itemKey()).isEqualTo(itemKey);
+    assertThat(item.processInstanceKey()).isEqualTo(processInstanceKey);
+    assertThat(item.rootProcessInstanceKey()).isEqualTo(-1L);
+    assertThat(item.operationType()).isEqualTo(BatchOperationType.MODIFY_PROCESS_INSTANCE);
+    assertThat(item.state()).isEqualTo(BatchOperationItemState.ACTIVE);
+  }
+
+  @Test
+  public void shouldUpsertBatchOperationItemForResolvedIncidentThatRelatesToBatchOperation() {
+    // given
+    final var batchOperationCreationRecord =
+        givenBatchOperationCreationExported(
+            io.camunda.zeebe.protocol.record.value.BatchOperationType.RESOLVE_INCIDENT);
+
+    final var incidentKey = 1142L;
+    final var processInstanceKey = 1151L;
+    final var rootProcessInstanceKey = 1162L;
+    final var elementInstanceKey = 1173L;
+    final var incidentRecord =
+        withBatchOperationReference(
+            FIXTURES.getIncidentRecord(
+                IncidentIntent.RESOLVED,
+                incidentKey,
+                processInstanceKey,
+                rootProcessInstanceKey,
+                elementInstanceKey),
+            batchOperationCreationRecord.getKey());
+
+    // when
+    exporter.export(incidentRecord);
+
+    // then
+    final var results = searchBatchOperationItems(incidentKey);
+    final var items = results.items();
+    assertThat(items).hasSize(1);
+    final var item = items.getFirst();
+    assertThat(item.itemKey()).isEqualTo(incidentKey);
+    assertThat(item.processInstanceKey()).isEqualTo(processInstanceKey);
+    assertThat(item.rootProcessInstanceKey()).isEqualTo(rootProcessInstanceKey);
+    assertThat(item.operationType()).isEqualTo(BatchOperationType.RESOLVE_INCIDENT);
+    assertThat(item.state()).isEqualTo(BatchOperationItemState.COMPLETED);
+  }
+
+  @Test
+  public void
+      shouldNotUpsertBatchOperationItemForResolvedIncidentThatDoesNotRelateBatchOperation() {
+    // given
+    final var incidentKey = 1042L;
+    final var processInstanceKey = 1051L;
+    final var rootProcessInstanceKey = 1062L;
+    final var elementInstanceKey = 1073L;
+    final var incidentRecord =
+        FIXTURES.getIncidentRecord(
+            IncidentIntent.RESOLVED,
+            incidentKey,
+            processInstanceKey,
+            rootProcessInstanceKey,
+            elementInstanceKey);
+
+    // when
+    exporter.export(incidentRecord);
+
+    // then
+    final var results = searchBatchOperationItems(incidentKey);
+    final var items = results.items();
+    assertThat(items).isEmpty();
+  }
+
+  @Test
   public void shouldExportJob() {
     // given
     final Record<RecordValue> jobCreatedRecord =
         ImmutableRecord.builder()
             .from(RecordFixtures.FACTORY.generateRecord(ValueType.JOB))
             .withIntent(JobIntent.CREATED)
-            .withPosition(2L)
             .withTimestamp(System.currentTimeMillis())
             .build();
 
@@ -1092,5 +1237,41 @@ class RdbmsExporterIT {
 
   private static long getProcessInstanceRootProcessInstanceKey(final Record<RecordValue> record) {
     return ((ProcessInstanceRecordValue) record.getValue()).getRootProcessInstanceKey();
+  }
+
+  private ImmutableRecord<BatchOperationCreationRecordValue> givenBatchOperationCreationExported(
+      final io.camunda.zeebe.protocol.record.value.BatchOperationType batchOperationType) {
+    final Record<BatchOperationCreationRecordValue> record =
+        RecordFixtures.FACTORY.generateRecord(ValueType.BATCH_OPERATION_CREATION);
+    final var batchOperationCreationRecord =
+        ImmutableRecord.<BatchOperationCreationRecordValue>builder()
+            .from(record)
+            .withIntent(BatchOperationIntent.CREATED)
+            .withTimestamp(System.currentTimeMillis())
+            .withValue(
+                ImmutableBatchOperationCreationRecordValue.builder()
+                    .from(record.getValue())
+                    .withBatchOperationKey(record.getKey())
+                    .withBatchOperationType(batchOperationType)
+                    .build())
+            .build();
+
+    exporter.export(batchOperationCreationRecord);
+    return batchOperationCreationRecord;
+  }
+
+  private <T extends RecordValue> Record<T> withBatchOperationReference(
+      final Record<T> record, final long batchOperationKey) {
+    return ImmutableRecord.<T>builder()
+        .from(record)
+        .withBatchOperationReference(batchOperationKey)
+        .build();
+  }
+
+  private SearchQueryResult<BatchOperationItemEntity> searchBatchOperationItems(
+      final long itemKey) {
+    return rdbmsService
+        .getBatchOperationItemReader()
+        .search(BatchOperationItemQuery.of(b -> b.filter(f -> f.itemKeys(itemKey))));
   }
 }

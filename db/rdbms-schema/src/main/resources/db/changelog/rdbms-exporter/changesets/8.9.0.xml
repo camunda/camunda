@@ -628,10 +628,19 @@
         <constraints primaryKey="true" nullable="false"/>
       </column>
       <column name="PROCESS_INSTANCE_KEY" type="BIGINT"/>
+      <column name="ROOT_PROCESS_INSTANCE_KEY" type="BIGINT"/>
       <column name="PROCESSED_DATE" type="TIMESTAMP WITH TIME ZONE(3)"/>
       <column name="ERROR_MESSAGE" type="VARCHAR(4000)"/>
       <column name="STATE" type="VARCHAR(20)" defaultValue="ACTIVE"/>
     </createTable>
+
+    <createIndex tableName="${prefix}BATCH_OPERATION_ITEM" indexName="${prefix}IDX_BATCH_OPERATION_ITEM_PI_KEY">
+      <column name="PROCESS_INSTANCE_KEY"/>
+    </createIndex>
+
+    <createIndex tableName="${prefix}BATCH_OPERATION_ITEM" indexName="${prefix}IDX_BATCH_OPERATION_ITEM_RPI_KEY">
+      <column name="ROOT_PROCESS_INSTANCE_KEY"/>
+    </createIndex>
 
     <createTable tableName="${prefix}BATCH_OPERATION_ERROR">
       <column name="BATCH_OPERATION_KEY" type="VARCHAR(255)">

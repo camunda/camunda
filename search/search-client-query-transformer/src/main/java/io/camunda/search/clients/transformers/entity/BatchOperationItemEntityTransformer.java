@@ -48,6 +48,7 @@ public class BatchOperationItemEntityTransformer
         source.getType() != null ? BatchOperationType.valueOf(source.getType().name()) : null,
         source.getItemKey(),
         source.getProcessInstanceKey(),
+        source.getRootProcessInstanceKey(),
         map(source.getState()),
         source.getCompletedDate(),
         source.getErrorMessage());
@@ -61,6 +62,7 @@ public class BatchOperationItemEntityTransformer
         // in legacy items only one of the following is set (processInstanceKey as default)
         ObjectUtils.firstNonNull(source.getIncidentKey(), source.getProcessInstanceKey()),
         source.getProcessInstanceKey(),
+        source.getRootProcessInstanceKey(),
         map(source.getState()),
         source.getCompletedDate(),
         source.getErrorMessage());
