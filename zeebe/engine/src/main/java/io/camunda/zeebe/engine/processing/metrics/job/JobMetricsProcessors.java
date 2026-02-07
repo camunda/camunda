@@ -42,6 +42,6 @@ public class JobMetricsProcessors {
             ValueType.JOB_METRICS_BATCH,
             JobMetricsBatchIntent.EXPORT,
             new JobMetricsBatchExportProcessor(jobMetricsState, writers, keyGenerator))
-        .withListener(new JobMetricsCheckerScheduler(config, clock));
+        .withListener(new JobMetricsCheckScheduler(config.getJobMetricsExportInterval(), clock));
   }
 }
