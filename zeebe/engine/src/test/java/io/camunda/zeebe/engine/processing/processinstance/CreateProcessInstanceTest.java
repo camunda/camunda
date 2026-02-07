@@ -270,6 +270,31 @@ public final class CreateProcessInstanceTest {
   }
 
   @Test
+  public void shouldCreateProcessInstanceWithBusinessId() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(Bpmn.createExecutableProcess("process").startEvent().endEvent().done())
+        .deploy();
+
+    final String businessId = "biz-123";
+
+    // when
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId("process").withBusinessId(businessId).create();
+
+    // then
+    final Record<ProcessInstanceRecordValue> processActivated =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withElementType(BpmnElementType.PROCESS)
+            .getFirst();
+
+    assertThat(processActivated.getValue().getBusinessId()).isEqualTo(businessId);
+  }
+
+  @Test
   public void shouldActivateNoneStartEvent() {
     // given
     ENGINE

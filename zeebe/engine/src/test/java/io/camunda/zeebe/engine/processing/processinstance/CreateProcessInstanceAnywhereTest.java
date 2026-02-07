@@ -74,6 +74,37 @@ public class CreateProcessInstanceAnywhereTest {
   }
 
   @Test
+  public void shouldActivateSingleElementWithBusinessId() {
+    // Given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID).startEvent().endEvent("end").done())
+        .deploy();
+
+    final String businessId = "biz-123";
+
+    // When
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withStartInstruction("end")
+            .withBusinessId(businessId)
+            .create();
+
+    // Then
+    final var processActivated =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withElementType(BpmnElementType.PROCESS)
+            .getFirst();
+
+    Assertions.assertThat(processActivated.getValue().getBusinessId()).isEqualTo(businessId);
+  }
+
+  @Test
   public void shouldActivateMultipleElements() {
     // Given
     ENGINE

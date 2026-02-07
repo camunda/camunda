@@ -63,13 +63,13 @@ public class ZeebeProcessInstanceDataDto implements ProcessInstanceRecordValue {
   }
 
   @Override
-  public long getProcessDefinitionKey() {
-    return processDefinitionKey;
+  public long getProcessInstanceKey() {
+    return processInstanceKey;
   }
 
   @Override
-  public long getProcessInstanceKey() {
-    return processInstanceKey;
+  public long getProcessDefinitionKey() {
+    return processDefinitionKey;
   }
 
   @Override
@@ -127,6 +127,11 @@ public class ZeebeProcessInstanceDataDto implements ProcessInstanceRecordValue {
     return -1L; // not used in Optimize
   }
 
+  @Override
+  public String getBusinessId() {
+    return "";
+  }
+
   public void setParentElementInstanceKey(final long parentElementInstanceKey) {
     this.parentElementInstanceKey = parentElementInstanceKey;
   }
@@ -147,12 +152,12 @@ public class ZeebeProcessInstanceDataDto implements ProcessInstanceRecordValue {
     this.elementId = elementId;
   }
 
-  public void setProcessInstanceKey(final long processInstanceKey) {
-    this.processInstanceKey = processInstanceKey;
-  }
-
   public void setProcessDefinitionKey(final long processDefinitionKey) {
     this.processDefinitionKey = processDefinitionKey;
+  }
+
+  public void setProcessInstanceKey(final long processInstanceKey) {
+    this.processInstanceKey = processInstanceKey;
   }
 
   public void setVersion(final int version) {
