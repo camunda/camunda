@@ -18,6 +18,7 @@ package io.camunda.client.annotation;
 import static java.util.Optional.ofNullable;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.camunda.client.annotation.Deployment.Deployments;
 import io.camunda.client.annotation.value.DeploymentValue;
 import io.camunda.client.annotation.value.DocumentValue;
 import io.camunda.client.annotation.value.DocumentValue.ParameterType;
@@ -136,7 +137,9 @@ public class AnnotationUtil {
   }
 
   public static boolean isDeployment(final BeanInfo beanInfo) {
-    return beanInfo.hasClassAnnotation(Deployment.class) || isDeploymentLegacy(beanInfo);
+    return beanInfo.hasClassAnnotation(Deployments.class)
+        || beanInfo.hasClassAnnotation(Deployment.class)
+        || isDeploymentLegacy(beanInfo);
   }
 
   public static boolean isJobWorker(final BeanInfo beanInfo) {
@@ -391,6 +394,7 @@ public class AnnotationUtil {
   public static List<DeploymentValue> getDeploymentValues(final BeanInfo beanInfo) {
     if (isDeployment(beanInfo)) {
       final List<DeploymentValue> values = new ArrayList<>();
+      values.addAll(getDeploymentValuesFromRepeatable(beanInfo));
       values.addAll(getDeploymentValuesInternal(beanInfo));
       values.addAll(getDeploymentResourcesLegacy(beanInfo));
       return values;
@@ -398,20 +402,30 @@ public class AnnotationUtil {
     return Collections.emptyList();
   }
 
+  private static List<DeploymentValue> getDeploymentValuesFromRepeatable(final BeanInfo beanInfo) {
+    return beanInfo.getAnnotation(Deployments.class).stream()
+        .flatMap(d -> Arrays.stream(d.value()))
+        .map(d -> fromAnnotation(d, beanInfo.getTargetClass()))
+        .toList();
+  }
+
   private static List<DeploymentValue> getDeploymentValuesInternal(final BeanInfo beanInfo) {
     return beanInfo
         .getAnnotation(Deployment.class)
-        .map(AnnotationUtil::fromAnnotation)
+        .map(d -> fromAnnotation(d, beanInfo.getTargetClass()))
         .map(Arrays::asList)
         .orElseGet(List::of);
   }
 
-  private static DeploymentValue fromAnnotation(final Deployment deploymentAnnotation) {
+  private static DeploymentValue fromAnnotation(
+      final Deployment deploymentAnnotation, final Class<?> annotatedClass) {
     return new DeploymentValue(
         Arrays.asList(deploymentAnnotation.resources()),
         StringUtils.isEmpty(deploymentAnnotation.tenantId())
             ? null
-            : deploymentAnnotation.tenantId());
+            : deploymentAnnotation.tenantId(),
+        deploymentAnnotation.ownJarOnly(),
+        annotatedClass);
   }
 
   private static List<DeploymentValue> getDeploymentResourcesLegacy(final BeanInfo beanInfo) {
@@ -428,7 +442,9 @@ public class AnnotationUtil {
         Arrays.asList(deploymentAnnotation.resources()),
         StringUtils.isEmpty(deploymentAnnotation.tenantId())
             ? null
-            : deploymentAnnotation.tenantId());
+            : deploymentAnnotation.tenantId(),
+        false,
+        null);
   }
 
   private static boolean isVariableLegacy(final ParameterInfo parameterInfo) {
