@@ -11,15 +11,10 @@ import static io.camunda.service.authorization.Authorizations.COMPONENT_ACCESS_A
 
 import io.camunda.authentication.ConditionalOnAuthenticationMethod;
 import io.camunda.authentication.entity.CamundaUserDTO;
-import io.camunda.search.entities.TenantEntity;
-import io.camunda.search.entities.UserEntity;
-import io.camunda.search.query.TenantQuery;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.security.reader.ResourceAccessProvider;
-import io.camunda.service.TenantServices;
-import io.camunda.service.UserServices;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
 import java.util.List;
 import java.util.Map;
@@ -35,18 +30,16 @@ public class BasicCamundaUserService implements CamundaUserService {
 
   private final CamundaAuthenticationProvider authenticationProvider;
   private final ResourceAccessProvider resourceAccessProvider;
-  private final UserServices userServices;
-  private final TenantServices tenantServices;
+  private final TmpServicesAbstraction tmpServicesAbstraction;
 
   public BasicCamundaUserService(
       final CamundaAuthenticationProvider authenticationProvider,
       final ResourceAccessProvider resourceAccessProvider,
-      final UserServices userServices,
-      final TenantServices tenantServices) {
+      final TmpServicesAbstraction tmpServicesAbstraction
+  ) {
     this.authenticationProvider = authenticationProvider;
     this.resourceAccessProvider = resourceAccessProvider;
-    this.userServices = userServices;
-    this.tenantServices = tenantServices;
+    this.tmpServicesAbstraction = tmpServicesAbstraction;
   }
 
   @Override
@@ -71,7 +64,7 @@ public class BasicCamundaUserService implements CamundaUserService {
     final var tenants = getTenantsForCamundaAuthentication(authentication);
     final var authorizedComponents = getAuthorizedComponents(authentication);
     return new CamundaUserDTO(
-        user.name(),
+        user.username(),
         username,
         user.email(),
         authorizedComponents,
@@ -83,9 +76,9 @@ public class BasicCamundaUserService implements CamundaUserService {
         true);
   }
 
-  protected UserEntity getUser(final CamundaAuthentication authentication) {
+  protected User getUser(final CamundaAuthentication authentication) {
     final var username = authentication.authenticatedUsername();
-    return userServices.withAuthentication(CamundaAuthentication.anonymous()).getUser(username);
+    return tmpServicesAbstraction.getUser(username);
   }
 
   protected List<String> getAuthorizedComponents(final CamundaAuthentication authentication) {
@@ -95,18 +88,11 @@ public class BasicCamundaUserService implements CamundaUserService {
     return componentAccess.allowed() ? componentAccess.authorization().resourceIds() : List.of();
   }
 
-  private List<TenantEntity> getTenantsForCamundaAuthentication(
+  private List<Tenant> getTenantsForCamundaAuthentication(
       final CamundaAuthentication authentication) {
     return Optional.ofNullable(authentication.authenticatedTenantIds())
         .filter(t -> !t.isEmpty())
-        .map(this::getTenants)
+        .map(tmpServicesAbstraction::getTenants)
         .orElseGet(List::of);
-  }
-
-  private List<TenantEntity> getTenants(final List<String> tenantIds) {
-    return tenantServices
-        .withAuthentication(CamundaAuthentication.anonymous())
-        .search(TenantQuery.of(q -> q.filter(f -> f.tenantIds(tenantIds)).unlimited()))
-        .items();
   }
 }

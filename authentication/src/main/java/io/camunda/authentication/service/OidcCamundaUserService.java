@@ -11,14 +11,11 @@ import static io.camunda.service.authorization.Authorizations.COMPONENT_ACCESS_A
 
 import io.camunda.authentication.ConditionalOnAuthenticationMethod;
 import io.camunda.authentication.entity.CamundaUserDTO;
-import io.camunda.search.entities.TenantEntity;
-import io.camunda.search.query.TenantQuery;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.security.entity.ClusterMetadata.AppName;
 import io.camunda.security.reader.ResourceAccessProvider;
-import io.camunda.service.TenantServices;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
 import jakarta.json.Json;
 import jakarta.json.JsonString;
@@ -51,19 +48,19 @@ public class OidcCamundaUserService implements CamundaUserService {
 
   private final CamundaAuthenticationProvider authenticationProvider;
   private final ResourceAccessProvider resourceAccessProvider;
-  private final TenantServices tenantServices;
+  private final TmpServicesAbstraction tmpServicesAbstraction;
   private final OAuth2AuthorizedClientRepository authorizedClientRepository;
   private final HttpServletRequest request;
 
   public OidcCamundaUserService(
       final CamundaAuthenticationProvider authenticationProvider,
       final ResourceAccessProvider resourceAccessProvider,
-      final TenantServices tenantServices,
+      final TmpServicesAbstraction tmpServicesAbstraction,
       final OAuth2AuthorizedClientRepository authorizedClientRepository,
       final HttpServletRequest request) {
     this.authenticationProvider = authenticationProvider;
     this.resourceAccessProvider = resourceAccessProvider;
-    this.tenantServices = tenantServices;
+    this.tmpServicesAbstraction = tmpServicesAbstraction;
     this.authorizedClientRepository = authorizedClientRepository;
     this.request = request;
   }
@@ -171,19 +168,12 @@ public class OidcCamundaUserService implements CamundaUserService {
     return componentAccess.allowed() ? componentAccess.authorization().resourceIds() : List.of();
   }
 
-  protected List<TenantEntity> getTenantsForCamundaAuthentication(
+  protected List<Tenant> getTenantsForCamundaAuthentication(
       final CamundaAuthentication authentication) {
     return Optional.ofNullable(authentication.authenticatedTenantIds())
         .filter(t -> !t.isEmpty())
-        .map(this::getTenants)
+        .map(tmpServicesAbstraction::getTenants)
         .orElseGet(List::of);
-  }
-
-  protected List<TenantEntity> getTenants(final List<String> tenantIds) {
-    return tenantServices
-        .withAuthentication(CamundaAuthentication.anonymous())
-        .search(TenantQuery.of(q -> q.filter(f -> f.tenantIds(tenantIds)).unlimited()))
-        .items();
   }
 
   record OidcTokenUser(Map<String, Object> claims) implements StandardClaimAccessor {

@@ -9,9 +9,13 @@ package io.camunda.authentication.config;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.authentication.service.Tenant;
+import io.camunda.authentication.service.TmpServicesAbstraction;
+import io.camunda.authentication.service.User;
 import io.camunda.service.ApiServicesExecutorProvider;
 import io.camunda.service.UserServices;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ForkJoinPool;
 import java.util.stream.Stream;
@@ -120,6 +124,21 @@ public class BasicAuthWebSecurityConfigParameterizedTest {
     @Bean
     public HandlerMappingIntrospector mvcHandlerMappingIntrospector() {
       return new HandlerMappingIntrospector();
+    }
+
+    @Bean
+    public TmpServicesAbstraction tmpServicesAbstraction() {
+      return new TmpServicesAbstraction() {
+        @Override
+        public User getUser(final String username) {
+          return null;
+        }
+
+        @Override
+        public List<Tenant> getTenants(final List<String> tenantIds) {
+          return List.of();
+        }
+      };
     }
   }
 }

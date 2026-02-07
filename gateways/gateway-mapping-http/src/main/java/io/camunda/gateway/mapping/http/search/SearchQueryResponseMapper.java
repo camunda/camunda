@@ -13,6 +13,7 @@ import static java.util.stream.Collectors.toMap;
 import static org.apache.commons.lang3.StringUtils.defaultIfEmpty;
 
 import io.camunda.authentication.entity.CamundaUserDTO;
+import io.camunda.authentication.service.Tenant;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import io.camunda.gateway.protocol.model.AuditLogActorTypeEnum;
 import io.camunda.gateway.protocol.model.AuditLogCategoryEnum;
@@ -1110,12 +1111,23 @@ public final class SearchQueryResponseMapper {
         .username(camundaUser.username())
         .email(camundaUser.email())
         .authorizedComponents(camundaUser.authorizedComponents())
-        .tenants(toTenants(camundaUser.tenants()))
+        .tenants(toTenantResults(camundaUser.tenants()))
         .groups(camundaUser.groups())
         .roles(camundaUser.roles())
         .salesPlanType(camundaUser.salesPlanType())
         .c8Links(toCamundaUserResultC8Links(camundaUser.c8Links()))
         .canLogout(camundaUser.canLogout());
+  }
+
+  private static List<TenantResult> toTenantResults(final List<Tenant> tenants) {
+    return tenants.stream()
+        .map(
+            t ->
+                new TenantResult()
+                    .tenantId(t.tenantId())
+                    .name(t.name())
+                    .description(t.description()))
+        .toList();
   }
 
   private static Map<String, String> toCamundaUserResultC8Links(

@@ -16,16 +16,10 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import io.camunda.search.entities.TenantEntity;
-import io.camunda.search.entities.UserEntity;
-import io.camunda.search.query.SearchQueryResult;
-import io.camunda.search.query.TenantQuery;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.reader.ResourceAccess;
 import io.camunda.security.reader.ResourceAccessProvider;
-import io.camunda.service.TenantServices;
-import io.camunda.service.UserServices;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,19 +30,14 @@ public class BasicCamundaUserServiceTest {
 
   @Mock private CamundaAuthenticationProvider authenticationProvider;
   @Mock private ResourceAccessProvider resourceAccessProvider;
-  @Mock private TenantServices tenantServices;
-  @Mock private UserServices userServices;
   @Mock private CamundaAuthentication authentication;
+  @Mock private TmpServicesAbstraction tmpServicesAbstraction;
   private BasicCamundaUserService basicCamundaUserService;
 
   @BeforeEach
   public void setUp() throws Exception {
     MockitoAnnotations.openMocks(this).close();
 
-    when(tenantServices.withAuthentication(any(CamundaAuthentication.class)))
-        .thenReturn(tenantServices);
-    when(userServices.withAuthentication(any(CamundaAuthentication.class)))
-        .thenReturn(userServices);
     when(resourceAccessProvider.resolveResourceAccess(
             eq(authentication), eq(COMPONENT_ACCESS_AUTHORIZATION)))
         .thenReturn(ResourceAccess.allowed(COMPONENT_ACCESS_AUTHORIZATION));
@@ -56,15 +45,14 @@ public class BasicCamundaUserServiceTest {
     when(authentication.authenticatedUsername()).thenReturn("foo@bar.com");
     when(authenticationProvider.getCamundaAuthentication()).thenReturn(authentication);
 
-    final var user = mock(UserEntity.class);
-    when(user.userKey()).thenReturn(100L);
-    when(user.name()).thenReturn("Foo Bar");
+    final var user = mock(User.class);
+    when(user.username()).thenReturn("Foo Bar");
     when(user.email()).thenReturn("foo@bar.com");
-    when(userServices.getUser(eq("foo@bar.com"))).thenReturn(user);
+    when(tmpServicesAbstraction.getUser(eq("foo@bar.com"))).thenReturn(user);
 
     basicCamundaUserService =
         new BasicCamundaUserService(
-            authenticationProvider, resourceAccessProvider, userServices, tenantServices);
+            authenticationProvider, resourceAccessProvider, tmpServicesAbstraction);
   }
 
   @Test
@@ -105,17 +93,17 @@ public class BasicCamundaUserServiceTest {
   void shouldIncludeTenants() {
     // given
     when(authentication.authenticatedTenantIds()).thenReturn(List.of("tenant1", "tenant2"));
-    when(tenantServices.search(any(TenantQuery.class)))
+    when(tmpServicesAbstraction.getTenants(any()))
         .thenReturn(
-            SearchQueryResult.of(
-                new TenantEntity(1L, "tenant1", "name", "desc"),
-                new TenantEntity(2L, "tenant2", "name", "desc")));
+            List.of(
+                new Tenant(1L, "tenant1", "name", "desc"),
+                new Tenant(2L, "tenant2", "name", "desc")));
 
     // when
     final var currentUser = basicCamundaUserService.getCurrentUser();
 
     // then
-    assertThat(currentUser.tenants().stream().map(TenantEntity::tenantId).toList())
+    assertThat(currentUser.tenants().stream().map(Tenant::tenantId).toList())
         .containsExactlyInAnyOrder("tenant1", "tenant2");
   }
 

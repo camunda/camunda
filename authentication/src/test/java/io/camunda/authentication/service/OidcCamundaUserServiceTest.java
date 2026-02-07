@@ -16,14 +16,10 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import io.camunda.search.entities.TenantEntity;
-import io.camunda.search.query.SearchQueryResult;
-import io.camunda.search.query.TenantQuery;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.reader.ResourceAccess;
 import io.camunda.security.reader.ResourceAccessProvider;
-import io.camunda.service.TenantServices;
 import jakarta.json.Json;
 import java.util.List;
 import java.util.Map;
@@ -50,7 +46,7 @@ public class OidcCamundaUserServiceTest {
   @Mock private OAuth2AuthorizedClientRepository authorizedClientRepository;
   @Mock private CamundaAuthenticationProvider authenticationProvider;
   @Mock private ResourceAccessProvider resourceAccessProvider;
-  @Mock private TenantServices tenantServices;
+  @Mock private TmpServicesAbstraction tmpServicesAbstraction;
   private OidcCamundaUserService userService;
 
   @BeforeEach
@@ -65,8 +61,6 @@ public class OidcCamundaUserServiceTest {
     SecurityContextHolder.setContext(securityContext);
 
     when(authenticationProvider.getCamundaAuthentication()).thenReturn(camundaAuthentication);
-    when(tenantServices.withAuthentication(any(CamundaAuthentication.class)))
-        .thenReturn(tenantServices);
     when(resourceAccessProvider.resolveResourceAccess(
             any(CamundaAuthentication.class), eq(COMPONENT_ACCESS_AUTHORIZATION)))
         .thenReturn(ResourceAccess.allowed(withAuthorization(COMPONENT_ACCESS_AUTHORIZATION, "*")));
@@ -74,7 +68,7 @@ public class OidcCamundaUserServiceTest {
         new OidcCamundaUserService(
             authenticationProvider,
             resourceAccessProvider,
-            tenantServices,
+            tmpServicesAbstraction,
             authorizedClientRepository,
             null);
   }
@@ -143,17 +137,17 @@ public class OidcCamundaUserServiceTest {
   void shouldIncludeTenants() {
     // given
     when(camundaAuthentication.authenticatedTenantIds()).thenReturn(List.of("tenant1", "tenant2"));
-    when(tenantServices.search(any(TenantQuery.class)))
+    when(tmpServicesAbstraction.getTenants(any()))
         .thenReturn(
-            SearchQueryResult.of(
-                new TenantEntity(1L, "tenant1", "name", "desc"),
-                new TenantEntity(2L, "tenant2", "name", "desc")));
+            List.of(
+                new Tenant(1L, "tenant1", "name", "desc"),
+                new Tenant(2L, "tenant2", "name", "desc")));
 
     // when
     final var currentUser = userService.getCurrentUser();
 
     // then
-    assertThat(currentUser.tenants().stream().map(TenantEntity::tenantId).toList())
+    assertThat(currentUser.tenants().stream().map(Tenant::tenantId).toList())
         .containsExactlyInAnyOrder("tenant1", "tenant2");
   }
 
