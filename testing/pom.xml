@@ -25,6 +25,7 @@
     <module>camunda-process-test-spring</module>
     <module>camunda-process-test-example</module>
     <module>camunda-process-test-dsl</module>
+    <module>camunda-dmn-parallel-worker-example</module>
   </modules>
 
   <properties>
