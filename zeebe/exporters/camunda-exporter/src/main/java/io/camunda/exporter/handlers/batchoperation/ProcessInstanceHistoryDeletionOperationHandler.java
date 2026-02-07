@@ -15,9 +15,11 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.HistoryDeletionIntent;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionRecordValue;
+import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
 
 public class ProcessInstanceHistoryDeletionOperationHandler
     extends AbstractOperationStatusHandler<HistoryDeletionRecordValue> {
+
   public ProcessInstanceHistoryDeletionOperationHandler(
       final String indexName,
       final ExporterEntityCache<String, CachedBatchOperationEntity> batchOperationCache) {
@@ -26,6 +28,12 @@ public class ProcessInstanceHistoryDeletionOperationHandler
         ValueType.HISTORY_DELETION,
         OperationType.DELETE_PROCESS_INSTANCE,
         batchOperationCache);
+  }
+
+  @Override
+  public boolean handlesRecord(final Record<HistoryDeletionRecordValue> record) {
+    return super.handlesRecord(record)
+        && record.getValue().getResourceType().equals(HistoryDeletionType.PROCESS_INSTANCE);
   }
 
   @Override

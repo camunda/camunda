@@ -44,6 +44,7 @@ import io.camunda.client.impl.search.filter.DecisionRequirementsFilterImpl;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.time.Duration;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -54,6 +55,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.awaitility.Awaitility;
 
@@ -713,6 +715,16 @@ public final class TestHelper {
                     .doesNotContain(tenantToBeDeleted));
   }
 
+  public static void waitForProcesses(
+      final CamundaClient camundaClient,
+      final Consumer<ProcessDefinitionFilter> fn,
+      final int expectedProcessDefinitions) {
+    waitForItemsPaginated(
+        "should wait until processes are available",
+        expectedProcessDefinitions,
+        page -> camundaClient.newProcessDefinitionSearchRequest().filter(fn).page(page).execute());
+  }
+
   public static void waitForProcessesToBeDeployed(
       final CamundaClient camundaClient, final int expectedProcessDefinitions) {
     waitForItemsPaginated(
@@ -1262,5 +1274,101 @@ public final class TestHelper {
                     .anySatisfy(item -> assertThat(item.getName()).isEqualTo(expectedName));
               }
             });
+  }
+
+  /**
+   * Asserts that all data related to a process instance has been deleted from secondary storage.
+   */
+  public static void assertAllProcessInstanceDependantDataDeleted(
+      final CamundaClient client, final long processInstanceKey) {
+    Awaitility.await("All process instance data should be deleted")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final Map<String, Collection<?>> results =
+                  getDataVerifiers(client, processInstanceKey).entrySet().parallelStream()
+                      .collect(
+                          Collectors.toConcurrentMap(Map.Entry::getKey, e -> e.getValue().get()));
+
+              assertThat(results)
+                  .as("All verifiers should find no data")
+                  .allSatisfy((name, data) -> assertThat(data).as("Data for %s", name).isEmpty());
+            });
+  }
+
+  /**
+   * Returns a map of data verifiers for exhaustive checking of all process instance related data in
+   * secondary storage.
+   */
+  private static Map<String, Supplier<Collection<?>>> getDataVerifiers(
+      final CamundaClient client, final long processInstanceKey) {
+    return Map.of(
+        "process instance",
+        () ->
+            client
+                .newProcessInstanceSearchRequest()
+                .filter(f -> f.processInstanceKey(processInstanceKey))
+                .send()
+                .join()
+                .items(),
+        "element instance",
+        () ->
+            client
+                .newElementInstanceSearchRequest()
+                .filter(f -> f.processInstanceKey(processInstanceKey))
+                .send()
+                .join()
+                .items(),
+        "variable",
+        () ->
+            client
+                .newVariableSearchRequest()
+                .filter(f -> f.processInstanceKey(processInstanceKey))
+                .send()
+                .join()
+                .items(),
+        "incident",
+        () ->
+            client
+                .newIncidentSearchRequest()
+                .filter(f -> f.processInstanceKey(processInstanceKey))
+                .send()
+                .join()
+                .items(),
+        "job",
+        () ->
+            client
+                .newJobSearchRequest()
+                .filter(f -> f.processInstanceKey(processInstanceKey))
+                .send()
+                .join()
+                .items(),
+        "user task",
+        () ->
+            client
+                .newUserTaskSearchRequest()
+                .filter(f -> f.processInstanceKey(processInstanceKey))
+                .send()
+                .join()
+                .items(),
+        "decision instance",
+        () ->
+            client
+                .newDecisionInstanceSearchRequest()
+                .filter(f -> f.processInstanceKey(processInstanceKey))
+                .send()
+                .join()
+                .items(),
+        "correlated message subscription",
+        () ->
+            client
+                .newCorrelatedMessageSubscriptionSearchRequest()
+                .filter(f -> f.processInstanceKey(processInstanceKey))
+                .send()
+                .join()
+                .items(),
+        "sequence flow",
+        () -> client.newProcessInstanceSequenceFlowsRequest(processInstanceKey).send().join());
   }
 }

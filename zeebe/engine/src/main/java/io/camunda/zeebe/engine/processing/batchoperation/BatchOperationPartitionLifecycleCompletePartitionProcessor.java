@@ -21,7 +21,6 @@ import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationLifecycleManagementRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationPartitionLifecycleRecord;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
-import io.camunda.zeebe.stream.api.FollowUpCommandMetadata;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -138,11 +137,7 @@ public final class BatchOperationPartitionLifecycleCompletePartitionProcessor
     if (bo.hasFollowUpCommand()) {
       final var followUpCommand = bo.getFollowUpCommand();
       commandWriter.appendFollowUpCommand(
-          batchOperationKey,
-          followUpCommand.getIntent(),
-          followUpCommand.getRecordValue(),
-          FollowUpCommandMetadata.of(
-              b -> b.batchOperationReference(command.getValue().getBatchOperationKey())));
+          batchOperationKey, followUpCommand.getIntent(), followUpCommand.getRecordValue());
     }
 
     LOGGER.debug(

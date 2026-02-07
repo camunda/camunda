@@ -98,7 +98,15 @@ public final class BatchOperationCreationCreateProcessor
       return;
     }
 
-    final long key = keyGenerator.nextKey();
+    final long key;
+    if (command.getValue().getBatchOperationKey() != -1L) {
+      // If the batch operation was created internally (e.g. by a resource deletion) a key is
+      // already generated for it.
+      key = command.getValue().getBatchOperationKey();
+    } else {
+      key = keyGenerator.nextKey();
+    }
+
     final var recordValue = command.getValue();
     LOGGER.debug("Creating new batch operation with key '{}': {}", key, recordValue);
     metrics.startTotalDurationMeasure(key, recordValue.getBatchOperationType());
