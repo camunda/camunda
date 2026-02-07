@@ -30,6 +30,9 @@ public class RaftPartitionConfig {
   private static final int DEFAULT_MIN_STEP_DOWN_FAILURE_COUNT = 3;
   private static final Duration DEFAULT_MAX_QUORUM_RESPONSE_TIMEOUT = Duration.ofSeconds(0);
   private static final int DEFAULT_SNAPSHOT_REPLICATION_THRESHOLD = 100;
+  private static final String DEFAULT_ENGINE_NAME = "default";
+  private static final boolean DEFAULT_ENABLE_LEGACY_RECEIVER = true;
+  private static final boolean DEFAULT_ENABLE_LEGACY_SENDER = true;
 
   private Duration electionTimeout = DEFAULT_ELECTION_TIMEOUT;
   private Duration heartbeatInterval = DEFAULT_HEARTBEAT_INTERVAL;
@@ -45,6 +48,9 @@ public class RaftPartitionConfig {
   private EntryValidator entryValidator;
   private Duration configurationChangeTimeout;
   private int snapshotChunkSize;
+  private String engineName = DEFAULT_ENGINE_NAME;
+  private boolean enableLegacyReceiver = DEFAULT_ENABLE_LEGACY_RECEIVER;
+  private boolean enableLegacySender = DEFAULT_ENABLE_LEGACY_SENDER;
 
   /**
    * Returns the Raft leader election timeout.
@@ -209,6 +215,30 @@ public class RaftPartitionConfig {
     this.entryValidator = entryValidator;
   }
 
+  public String getEngineName() {
+    return engineName;
+  }
+
+  public void setEngineName(final String engineName) {
+    this.engineName = engineName;
+  }
+
+  public boolean isEnableLegacyReceiver() {
+    return enableLegacyReceiver;
+  }
+
+  public void setEnableLegacyReceiver(final boolean enableLegacyReceiver) {
+    this.enableLegacyReceiver = enableLegacyReceiver;
+  }
+
+  public boolean isEnableLegacySender() {
+    return enableLegacySender;
+  }
+
+  public void setEnableLegacySender(final boolean enableLegacySender) {
+    this.enableLegacySender = enableLegacySender;
+  }
+
   @Override
   public String toString() {
     return "RaftPartitionConfig{"
@@ -236,6 +266,13 @@ public class RaftPartitionConfig {
         + maxQuorumResponseTimeout
         + ", preferSnapshotReplicationThreshold="
         + preferSnapshotReplicationThreshold
+        + minStepDownFailureCount
+        + ", engineName="
+        + engineName
+        + ", enableLegacyReceiver="
+        + enableLegacyReceiver
+        + ", enableLegacySender="
+        + enableLegacySender
         + '}';
   }
 }

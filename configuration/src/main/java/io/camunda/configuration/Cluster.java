@@ -142,6 +142,9 @@ public class Cluster implements Cloneable {
    */
   @NestedConfigurationProperty private Partitioning partitioning = new Partitioning();
 
+  private boolean legacySenderSubjectsEnabled = true;
+  private boolean legacyReceiverSubjectsEnabled = true;
+
   public NodeIdProvider getNodeIdProvider() {
     return nodeIdProvider;
   }
@@ -295,6 +298,22 @@ public class Cluster implements Cloneable {
 
   public void setPartitioning(final Partitioning partitioning) {
     this.partitioning = partitioning;
+  }
+
+  public boolean isLegacyReceiverSubjectsEnabled() {
+    return legacyReceiverSubjectsEnabled;
+  }
+
+  public void setLegacyReceiverSubjectsEnabled(final boolean legacyReceiverSubjectsEnabled) {
+    this.legacyReceiverSubjectsEnabled = legacyReceiverSubjectsEnabled;
+  }
+
+  public boolean isLegacySenderSubjectsEnabled() {
+    return legacySenderSubjectsEnabled;
+  }
+
+  public void setLegacySenderSubjectsEnabled(final boolean legacySenderSubjectsEnabled) {
+    this.legacySenderSubjectsEnabled = legacySenderSubjectsEnabled;
   }
 
   @Override
