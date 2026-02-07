@@ -8,7 +8,6 @@
 
 import {
   action,
-  computed,
   makeObservable,
   observable,
   override,
@@ -36,7 +35,6 @@ class FlowNodeMetaData extends NetworkReconnectionHandler {
     makeObservable(this, {
       state: observable,
       setMetaData: action,
-      isSelectedInstanceRunning: computed,
       reset: override,
       startFetching: action,
       handleSuccess: action,
@@ -61,10 +59,6 @@ class FlowNodeMetaData extends NetworkReconnectionHandler {
     this.state.metaData = metaData;
   };
 
-  get isSelectedInstanceRunning() {
-    return this.state.metaData?.instanceMetadata?.endDate === null;
-  }
-
   reset() {
     super.reset();
     this.state = {...DEFAULT_STATE};
@@ -72,4 +66,5 @@ class FlowNodeMetaData extends NetworkReconnectionHandler {
   }
 }
 
+/** @deprecated Do not use this store! Use useProcessInstanceElementSelection instead. */
 export const flowNodeMetaDataStore = new FlowNodeMetaData();

@@ -8,25 +8,20 @@
 
 import {computed} from 'mobx';
 import {observer} from 'mobx-react';
-import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {modificationsStore} from 'modules/stores/modifications';
 import {type VariableFormValues} from 'modules/types/variables';
 import {generateUniqueID} from 'modules/utils/generateUniqueID';
 import {type FormRenderProps} from 'react-final-form';
-
 import {AddVariableButton, Form, VariablesContainer} from './styled';
 import {Variables} from '../Variables';
-import {
-  useIsPlaceholderSelected,
-  useIsRootNodeSelected,
-} from 'modules/hooks/flowNodeSelection';
-import {IS_ELEMENT_SELECTION_V2} from 'modules/feature-flags';
+import {useIsPlaceholderSelected} from 'modules/hooks/flowNodeSelection';
+import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 import {hasPendingAddOrMoveModification} from 'modules/utils/modifications';
 
 const VariablesForm: React.FC<FormRenderProps<VariableFormValues>> = observer(
   ({handleSubmit, form, values}) => {
     const isPlaceholderSelected = useIsPlaceholderSelected();
-    const isRootNodeSelected = useIsRootNodeSelected();
+    const {hasSelection} = useProcessInstanceElementSelection();
     const hasEmptyNewVariable = (values?: VariableFormValues) =>
       values?.newVariables?.some(
         (variable) =>
@@ -35,37 +30,18 @@ const VariablesForm: React.FC<FormRenderProps<VariableFormValues>> = observer(
           variable.value === undefined,
       );
 
-    const {isModificationModeEnabled} = modificationsStore;
-
     const isVariableModificationAllowed = computed(() => {
       switch (true) {
-        case !isModificationModeEnabled:
+        case !modificationsStore.isModificationModeEnabled:
           return false;
-        case isRootNodeSelected:
+        case !hasSelection:
           return hasPendingAddOrMoveModification();
         default:
           return isPlaceholderSelected;
       }
     });
 
-    const isVariableModificationAllowedV1 = computed(() => {
-      if (
-        !isModificationModeEnabled ||
-        flowNodeSelectionStore.state.selection === null
-      ) {
-        return false;
-      }
-
-      if (isRootNodeSelected) {
-        return hasPendingAddOrMoveModification();
-      }
-
-      return isPlaceholderSelected;
-    });
-
-    const isModificationAllowed = IS_ELEMENT_SELECTION_V2
-      ? isVariableModificationAllowed.get()
-      : isVariableModificationAllowedV1.get();
+    const isModificationAllowed = isVariableModificationAllowed.get();
 
     return (
       <Form onSubmit={handleSubmit}>

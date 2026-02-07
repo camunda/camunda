@@ -30,9 +30,7 @@ import {
   type DetailsModalState,
 } from 'modules/components/OperationsLogDetailsModal';
 import {OperationsLogStateIcon} from 'modules/components/OperationsLogStateIcon';
-import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
-import {IS_ELEMENT_SELECTION_V2} from 'modules/feature-flags';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 
 type Props = {
@@ -77,9 +75,7 @@ const OperationsLog: React.FC<Props> = observer(({isVisible}) => {
   const {data: processInstance} = useProcessInstance();
   const {resolvedElementInstance, isFetchingElement} =
     useProcessInstanceElementSelection();
-  const elementInstanceKey = IS_ELEMENT_SELECTION_V2
-    ? resolvedElementInstance?.elementInstanceKey
-    : flowNodeMetaDataStore.state.metaData?.flowNodeInstanceId;
+  const elementInstanceKey = resolvedElementInstance?.elementInstanceKey;
 
   const request = useMemo(
     (): QueryAuditLogsRequestBody => ({
@@ -114,7 +110,7 @@ const OperationsLog: React.FC<Props> = observer(({isVisible}) => {
     hasNextPage,
     fetchNextPage,
   } = useAuditLogs(request, {
-    enabled: isVisible && (IS_ELEMENT_SELECTION_V2 ? !isFetchingElement : true),
+    enabled: isVisible && !isFetchingElement,
     select: (data) => {
       tracking.track({
         eventName: 'audit-logs-loaded',

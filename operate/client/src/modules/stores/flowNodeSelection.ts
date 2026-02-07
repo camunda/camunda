@@ -10,7 +10,6 @@ import {makeAutoObservable, when, reaction, type IReactionDisposer} from 'mobx';
 import type {FlowNodeInstance} from 'modules/types/operate';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {modificationsStore} from './modifications';
-import {flowNodeMetaDataStore} from './flowNodeMetaData';
 
 type Selection = {
   flowNodeId?: string;
@@ -178,17 +177,6 @@ class FlowNodeSelection {
    * @deprecated
    * will be migrated to useProcessInstanceElementSelection
    */
-  get selectedFlowNodeInstanceId() {
-    return (
-      this.state.selection?.flowNodeInstanceId ??
-      flowNodeMetaDataStore.state.metaData?.flowNodeInstanceId
-    );
-  }
-
-  /**
-   * @deprecated
-   * will be migrated to useProcessInstanceElementSelection
-   */
   isSelected = ({
     flowNodeId,
     flowNodeInstanceId,
@@ -227,5 +215,6 @@ class FlowNodeSelection {
   };
 }
 
+/** @deprecated Do not use this store! Use useProcessInstanceElementSelection instead. */
 export const flowNodeSelectionStore = new FlowNodeSelection();
 export type {Selection};
