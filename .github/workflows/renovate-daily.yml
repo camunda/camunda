@@ -1,0 +1,68 @@
+# description: Runs daily to assign Renovate PRs to team members and manage stale PRs
+# type: CI Helper
+# owner: @camunda/monorepo-devops-team
+
+---
+name: Renovate Daily
+
+on:
+  schedule:
+    - cron: '0 11 * * 1-5'  # Monday through Friday at 11:00 AM UTC
+  pull_request:
+    paths:
+      - '.github/workflows/renovate-assignments.yml'
+      - '.ci/scripts/renovate-assignments.py'
+  workflow_dispatch: {}
+
+env:
+  GHA_BEST_PRACTICES_LINTER: enabled
+
+jobs:
+  assign-renovate-prs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions: {}  # Using GitHub App token instead of GITHUB_TOKEN
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+
+      - name: Generate a GitHub token
+        id: github-token
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
+        with:
+          # TODO: Replace with actual Vault keys for the Renovate automation app
+          # These need to be created and stored in Vault first
+          github-app-id-vault-key: GITHUB_RENOVATE_AUTOMATION_APP_ID
+          github-app-id-vault-path: secret/data/products/camunda/ci/renovate-automation
+          github-app-private-key-vault-key: GITHUB_RENOVATE_AUTOMATION_APP_KEY
+          github-app-private-key-vault-path: secret/data/products/camunda/ci/renovate-automation
+          vault-auth-method: approle
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-url: ${{ secrets.VAULT_ADDR }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.x"
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests
+
+      - name: Run Renovate assignments script
+        env:
+          GITHUB_TOKEN: ${{ steps.github-token.outputs.token }}
+          DRY_RUN: ${{ github.event_name == 'pull_request' && 'true' || 'false' }}
+        run: |
+          python3 .ci/scripts/renovate-assignments.py
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
