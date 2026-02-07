@@ -1437,7 +1437,14 @@ public final class SearchQueryResponseMapper {
         .decisionEvaluationKey(KeyUtil.keyToString(auditLog.decisionEvaluationKey()))
         .deploymentKey(KeyUtil.keyToString(auditLog.deploymentKey()))
         .formKey(KeyUtil.keyToString(auditLog.formKey()))
-        .resourceKey(KeyUtil.keyToString(auditLog.resourceKey()));
+        .resourceKey(KeyUtil.keyToString(auditLog.resourceKey()))
+        .relatedEntityKey(auditLog.relatedEntityKey())
+        .relatedEntityType(
+            ofNullable(auditLog.relatedEntityType())
+                .map(Enum::name)
+                .map(AuditLogEntityTypeEnum::fromValue)
+                .orElse(null))
+        .entityDescription(auditLog.entityDescription());
   }
 
   private static ProcessInstanceStateEnum toProtocolState(

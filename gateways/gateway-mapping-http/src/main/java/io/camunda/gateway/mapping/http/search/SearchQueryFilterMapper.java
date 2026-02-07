@@ -1023,6 +1023,15 @@ public class SearchQueryFilterMapper {
     ofNullable(filter.getDecisionEvaluationKey())
         .map(mapToOperations(Long.class))
         .ifPresent(builder::decisionEvaluationKeyOperations);
+    ofNullable(filter.getRelatedEntityKey())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::relatedEntityKeyOperations);
+    ofNullable(filter.getRelatedEntityType())
+        .map(mapToOperations(String.class, new AuditLogEntityTypeConverter()))
+        .ifPresent(builder::relatedEntityTypeOperations);
+    ofNullable(filter.getEntityDescription())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::entityDescriptionOperations);
     return builder.build();
   }
 

@@ -381,6 +381,45 @@ public class AuditLogFilterImpl
   }
 
   @Override
+  public AuditLogFilter relatedEntityKey(final String relatedEntityKey) {
+    return relatedEntityKey(b -> b.eq(relatedEntityKey));
+  }
+
+  @Override
+  public AuditLogFilter relatedEntityKey(final Consumer<BasicStringProperty> fn) {
+    final BasicStringProperty property = new BasicStringPropertyImpl();
+    fn.accept(property);
+    filter.setRelatedEntityKey(provideSearchRequestProperty(property));
+    return this;
+  }
+
+  @Override
+  public AuditLogFilter relatedEntityType(final AuditLogEntityTypeEnum relatedEntityType) {
+    return relatedEntityType(b -> b.eq(relatedEntityType));
+  }
+
+  @Override
+  public AuditLogFilter relatedEntityType(final Consumer<AuditLogEntityTypeFilterProperty> fn) {
+    final AuditLogEntityTypeFilterProperty property = new AuditLogEntityTypeFilterPropertyImpl();
+    fn.accept(property);
+    filter.setRelatedEntityType(provideSearchRequestProperty(property));
+    return this;
+  }
+
+  @Override
+  public AuditLogFilter entityDescription(final String entityDescription) {
+    return entityDescription(b -> b.eq(entityDescription));
+  }
+
+  @Override
+  public AuditLogFilter entityDescription(final Consumer<StringProperty> fn) {
+    final StringProperty property = new StringPropertyImpl();
+    fn.accept(property);
+    filter.setEntityDescription(provideSearchRequestProperty(property));
+    return this;
+  }
+
+  @Override
   protected io.camunda.client.protocol.rest.AuditLogFilter getSearchRequestProperty() {
     return filter;
   }

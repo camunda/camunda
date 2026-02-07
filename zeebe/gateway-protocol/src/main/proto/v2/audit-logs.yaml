@@ -166,6 +166,17 @@ components:
           allOf:
             - $ref: 'deployments.yaml#/components/schemas/ResourceKey'
           description: The system-assigned key for this resource.
+        relatedEntityKey:
+          allOf:
+            - $ref: '#/components/schemas/AuditLogEntityKey'
+          description: The key of the related entity.
+        relatedEntityType:
+          allOf:
+            - $ref: '#/components/schemas/AuditLogEntityTypeEnum'
+          description: The type of the related entity.
+        entityDescription:
+          type: string
+          description: Additional description of the entity affected by the operation.
 
     AuditLogSearchQuerySortRequest:
       type: object
@@ -325,6 +336,18 @@ components:
           description: The decision evaluation key search filter.
           allOf:
             - $ref: 'keys.yaml#/components/schemas/DecisionEvaluationKeyFilterProperty'
+        relatedEntityKey:
+          description: The related entity key search filter.
+          allOf:
+            - $ref: '#/components/schemas/AuditLogEntityKeyFilterProperty'
+        relatedEntityType:
+          description: The related entity type search filter.
+          allOf:
+            - $ref: '#/components/schemas/EntityTypeFilterProperty'
+        entityDescription:
+          description: The entity description filter.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
 
     AuditLogSearchQueryResult:
       description: Audit log search response.

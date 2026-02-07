@@ -435,4 +435,53 @@ public interface AuditLogFilter extends SearchRequestFilter {
    * @return the updated filter
    */
   AuditLogFilter resourceKey(final Consumer<BasicStringProperty> fn);
+
+  /**
+   * Filter audit logs by the related entity key
+   *
+   * @param relatedEntityKey the related entity key
+   * @return the updated filter
+   */
+  AuditLogFilter relatedEntityKey(final String relatedEntityKey);
+
+  /**
+   * Filter audit logs by the related entity key using {@link BasicStringProperty} consumer
+   *
+   * @param fn the related entity key filter consumer
+   * @return the updated filter
+   */
+  AuditLogFilter relatedEntityKey(final Consumer<BasicStringProperty> fn);
+
+  /**
+   * Filter audit logs by the related entity type
+   *
+   * @param relatedEntityType the related entity type
+   * @return the updated filter
+   */
+  AuditLogFilter relatedEntityType(final AuditLogEntityTypeEnum relatedEntityType);
+
+  /**
+   * Filter audit logs by the related entity type using {@link AuditLogEntityTypeFilterProperty}
+   * consumer
+   *
+   * @param fn the related entity type filter consumer
+   * @return the updated filter
+   */
+  AuditLogFilter relatedEntityType(final Consumer<AuditLogEntityTypeFilterProperty> fn);
+
+  /**
+   * Filter audit logs by the entity description
+   *
+   * @param entityDescription the entity description
+   * @return the updated filter
+   */
+  AuditLogFilter entityDescription(final String entityDescription);
+
+  /**
+   * Filter audit logs by the entity description using {@link StringProperty} consumer
+   *
+   * @param fn the entity description filter consumer
+   * @return the updated filter
+   */
+  AuditLogFilter entityDescription(final Consumer<StringProperty> fn);
 }
