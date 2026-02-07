@@ -30,6 +30,11 @@ public interface ActorClock extends InstantSource {
     return clock != null ? clock.getTimeMillis() : System.currentTimeMillis();
   }
 
+  static Instant currentInstant() {
+    final ActorClock clock = current();
+    return clock != null ? clock.instant() : Instant.now();
+  }
+
   @Override
   default Instant instant() {
     return Instant.ofEpochMilli(getTimeMillis());

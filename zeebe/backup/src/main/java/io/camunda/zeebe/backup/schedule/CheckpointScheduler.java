@@ -8,7 +8,6 @@
 package io.camunda.zeebe.backup.schedule;
 
 import io.camunda.zeebe.backup.client.api.BackupRequestHandler;
-import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse;
 import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse.PartitionCheckpointState;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.scheduler.Actor;
@@ -68,7 +67,6 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
   }
 
   private void reschedulingTask() {
-
     acquireEarliestState()
         .thenApply(this::determineCheckpoint, this)
         .andThen(this::checkpointIfNeeded, this)
@@ -80,10 +78,10 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
               } else {
                 errorDelayMs = 0;
                 delay = calculateDelay(instruction);
-              }
-              if (instruction.checkpointTaken) {
-                metrics.recordLastCheckpointId(instruction.checkpointId, instruction.type);
-                metrics.recordLastCheckpointTime(instruction.checkpointTime, instruction.type);
+                if (instruction.checkpointTaken) {
+                  metrics.recordLastCheckpointId(instruction.checkpointId, instruction.type);
+                  metrics.recordLastCheckpointTime(instruction.checkpointTime, instruction.type);
+                }
               }
               LOG.debug("Next checkpoint scheduled in {} ms", delay);
               schedule(Duration.ofMillis(delay), this::reschedulingTask);
@@ -93,22 +91,23 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
 
   private CompletableActorFuture<ScheduleInstruction> checkpointIfNeeded(
       final ScheduleInstruction instruction) {
-    final var now = ActorClock.current().instant();
+    final var now = ActorClock.currentInstant();
     final CompletableActorFuture<ScheduleInstruction> future = new CompletableActorFuture<>();
     if (instruction.checkpointTime.isBefore(now) || instruction.checkpointTime.equals(now)) {
       backupRequestHandler
           .checkpoint(instruction.type)
           .toCompletableFuture()
-          .thenApply(
+          .thenApplyAsync(
               id -> {
                 LOG.debug("Checkpoint {} triggered with id {}", instruction.type, id);
-                final var currentClock = ActorClock.current().instant();
+                final var currentClock = ActorClock.currentInstant();
                 // The instructions checkpoint timestamp might be in the past leading to an
                 // instant execution of the schedule. However, for the next interval we want to
                 // readjust the schedule to account for that drift.
                 return instruction.taken(id, currentClock);
-              })
-          .thenAccept(future::complete);
+              },
+              this)
+          .whenCompleteAsync(future, this);
     } else {
       future.complete(instruction);
     }
@@ -124,10 +123,9 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
     final var delay =
         instruction.checkpointTaken
             ? determineDelayFromSchedules(currentState)
-            : instruction.checkpointTime.toEpochMilli()
-                - ActorClock.current().instant().toEpochMilli();
+            : instruction.checkpointTime.toEpochMilli() - ActorClock.currentTimeMillis();
 
-    return Math.abs(delay);
+    return Math.max(0, delay);
   }
 
   /**
@@ -138,28 +136,24 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
    */
   private ActorFuture<CheckpointState> acquireEarliestState() {
     final ActorFuture<CheckpointState> future = createFuture();
-    final ActorFuture<CheckpointStateResponse> requestFuture = createFuture();
-
-    runOnCompletion(
-        requestFuture,
-        (response, error) -> {
-          if (error != null) {
-            future.completeExceptionally(error);
-          }
-          final Instant minCheckpointTimestamp =
-              minFromState(response.getCheckpointStates(), checkpointSchedule);
-          final Instant minBackupTimestamp =
-              minFromState(response.getBackupStates(), backupSchedule);
-          future.complete(new CheckpointState(minCheckpointTimestamp, minBackupTimestamp));
-        });
-
-    backupRequestHandler.getCheckpointState().thenAccept(requestFuture::complete);
+    backupRequestHandler
+        .getCheckpointState()
+        .thenApplyAsync(
+            response -> {
+              final Instant minCheckpointTimestamp =
+                  minFromState(response.getCheckpointStates(), checkpointSchedule);
+              final Instant minBackupTimestamp =
+                  minFromState(response.getBackupStates(), backupSchedule);
+              return new CheckpointState(minCheckpointTimestamp, minBackupTimestamp);
+            },
+            this)
+        .whenCompleteAsync(future, this);
     return future;
   }
 
   private Instant minFromState(
       final Set<PartitionCheckpointState> states, final Schedule schedule) {
-    final var now = ActorClock.current().instant();
+    final var now = ActorClock.currentInstant();
     return states.stream()
         .min(Comparator.comparingLong(PartitionCheckpointState::checkpointId))
         .map(PartitionCheckpointState::checkpointTimestamp)
@@ -196,7 +190,7 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
   }
 
   private long determineDelayFromSchedules(final CheckpointState state) {
-    final var now = ActorClock.current().instant();
+    final var now = ActorClock.currentTimeMillis();
     final Instant next;
 
     if (backupSchedule != null && checkpointSchedule != null) {
@@ -212,7 +206,7 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
       next = nextExecution(backupSchedule, state.lastBackup);
       metrics.recordNextExecution(next, CheckpointType.SCHEDULED_BACKUP);
     }
-    return next.toEpochMilli() - now.toEpochMilli();
+    return next.toEpochMilli() - now;
   }
 
   private long backOffOnError(final Throwable error) {

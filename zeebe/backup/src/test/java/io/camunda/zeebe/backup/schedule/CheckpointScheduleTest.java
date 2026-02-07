@@ -398,6 +398,95 @@ public class CheckpointScheduleTest {
     assertThat(meterRegistry.getMeters()).isEmpty();
   }
 
+  @Test
+  void shouldNotDelayWhenScheduledCheckpointWasAlreadyMissed() {
+    // given
+    final var interval = Duration.ofMinutes(1);
+    final var now = actorScheduler.getClock().getCurrentTime();
+    // checkpoint was scheduled 10 seconds ago
+    final var lastCheckpoint = now.minus(interval).minus(Duration.ofSeconds(10));
+
+    checkpointScheduler = createScheduler(new Schedule.IntervalSchedule(interval), null);
+    when(backupRequestHandler.getCheckpointState())
+        .thenReturn(
+            CompletableFuture.completedStage(checkpointState(lastCheckpoint.toEpochMilli(), 0L)));
+
+    doAnswer(
+            (ctx) -> {
+              return CompletableFuture.completedFuture(1L);
+            })
+        .when(backupRequestHandler)
+        .checkpoint(any());
+
+    // when
+    actorScheduler.submitActor(checkpointScheduler);
+    actorScheduler.workUntilDone();
+
+    // then
+    // it should have triggered checkpoint immediately
+    verify(backupRequestHandler).checkpoint(CheckpointType.MARKER);
+  }
+
+  @Test
+  void shouldRetryOnGetCheckpointStateError() {
+    // given
+    final var now = actorScheduler.getClock().getCurrentTime();
+    checkpointScheduler =
+        createScheduler(new Schedule.IntervalSchedule(Duration.ofSeconds(60)), null);
+
+    // First call fails, second call succeeds
+    when(backupRequestHandler.getCheckpointState())
+        .thenReturn(CompletableFuture.failedStage(new RuntimeException("Expected error")))
+        .thenReturn(CompletableFuture.completedStage(checkpointState(now.toEpochMilli(), 0L)));
+
+    // when
+    actorScheduler.submitActor(checkpointScheduler);
+    actorScheduler.workUntilDone(); // Should handle error and schedule backoff
+
+    // then
+    verify(backupRequestHandler, times(1)).getCheckpointState();
+
+    // Move clock past initial backoff (1s)
+    actorScheduler.updateClock(Duration.ofSeconds(2));
+    actorScheduler.workUntilDone();
+
+    // Should have retried
+    verify(backupRequestHandler, times(2)).getCheckpointState();
+  }
+
+  @Test
+  void shouldRetryWhenCheckpointingFailed() {
+    // given
+    final var now = actorScheduler.getClock().getCurrentTime();
+    checkpointScheduler =
+        createScheduler(new Schedule.IntervalSchedule(Duration.ofSeconds(60)), null);
+
+    // Provide a state where last checkpoint was long ago
+    when(backupRequestHandler.getCheckpointState())
+        .thenReturn(
+            CompletableFuture.completedStage(
+                checkpointState(now.minus(Duration.ofHours(1)).toEpochMilli(), 0L)));
+
+    // First checkpoint call fails
+    doAnswer(invocation -> CompletableFuture.failedStage(new RuntimeException("Checkpoint failed")))
+        .when(backupRequestHandler)
+        .checkpoint(any());
+
+    // when
+    actorScheduler.submitActor(checkpointScheduler);
+    actorScheduler.workUntilDone(); // Should handle checkpoint error and schedule backoff
+
+    // then
+    verify(backupRequestHandler, times(1)).checkpoint(any());
+
+    // Move clock past initial backoff (1s)
+    actorScheduler.updateClock(Duration.ofSeconds(2));
+    actorScheduler.workUntilDone();
+
+    // Should have retried (starts by acquiring state again)
+    verify(backupRequestHandler, times(2)).getCheckpointState();
+  }
+
   private CheckpointStateResponse checkpointState(
       final long checkpointTimestamp, final long backupTimestamp) {
     final var response = new CheckpointStateResponse();
