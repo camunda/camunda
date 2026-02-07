@@ -104,14 +104,15 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
     final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(authRequest);
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();
-      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-      responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+      enrichRejectionCommand(command, incident);
+      rejectResolveCommand(command, rejection.reason(), rejection.type());
       return;
     }
 
     final long jobKey = incident.getJobKey();
     if (isJobRelatedIncident(jobKey) && jobState.getJob(jobKey).getRetries() <= 0) {
       final var errorMessage = String.format(NO_RETRIES_LEFT_MSG, key, jobKey);
+      enrichRejectionCommand(command, incident);
       rejectResolveCommand(command, errorMessage, RejectionType.INVALID_STATE);
       return;
     }
@@ -132,6 +133,16 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
 
     rejectionWriter.appendRejection(command, rejectionType, errorMessage);
     responseWriter.writeRejectionOnCommand(command, rejectionType, errorMessage);
+  }
+
+  /**
+   * Enriches the command with fields from the incident record, that are relevant to be exported in
+   * the audit log in case of a rejection.
+   */
+  private void enrichRejectionCommand(
+      final TypedRecord<IncidentRecord> command, final IncidentRecord incident) {
+    command.getValue().setTenantId(incident.getTenantId());
+    command.getValue().setElementInstancePath(incident.getElementInstancePath());
   }
 
   private void attemptToContinueProcessProcessing(
