@@ -52,6 +52,7 @@ import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
 import {mockSearchDecisionInstances} from 'modules/mocks/api/v2/decisionInstances/searchDecisionInstances';
 import {mockSearchProcessInstances} from 'modules/mocks/api/v2/processInstances/searchProcessInstances';
 import {mockSearchMessageSubscriptions} from 'modules/mocks/api/v2/messageSubscriptions/searchMessageSubscriptions';
+import * as modificationsUtils from 'modules/utils/modifications';
 
 const mockIncidents = {
   page: {totalItems: 1},
@@ -567,7 +568,7 @@ describe('TopPanel', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('should render modification info banner when move modification requires an ancestor', async () => {
+  it('should pass the ancestor type if move modification requires an ancestor', async () => {
     mockFetchProcessDefinitionXml().withSuccess(
       open('subprocessInsideMultiInstance.bpmn'),
     );
@@ -608,6 +609,11 @@ describe('TopPanel', () => {
       },
     });
 
+    const finishMovingTokenSpy = vi.spyOn(
+      modificationsUtils,
+      'finishMovingToken',
+    );
+
     const {user} = render(<TopPanel />, {
       wrapper: getWrapper(),
     });
@@ -628,11 +634,16 @@ describe('TopPanel', () => {
 
     await user.click(await screen.findByTestId('task-2'));
 
-    expect(
-      await screen.findByText(
-        /Target flow node has multiple parent scopes. Please select parent node from Instance History to move./i,
-      ),
-    ).toBeInTheDocument();
+    expect(finishMovingTokenSpy).toHaveBeenCalledWith(
+      expect.any(Number),
+      expect.any(Number),
+      expect.any(Object),
+      expect.any(String),
+      'task-2',
+      'sourceParent',
+    );
+
+    finishMovingTokenSpy.mockRestore();
   });
 
   /* eslint-disable vitest/no-standalone-expect -- eslint doesn't understand dynamically skipped tests */

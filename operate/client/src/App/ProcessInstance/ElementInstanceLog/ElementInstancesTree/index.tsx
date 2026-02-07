@@ -420,13 +420,6 @@ const FoldableVirtualElementInstanceNode: React.FC<FoldableVirtualElementInstanc
           return;
         }
 
-        if (modificationsStore.state.status === 'requires-ancestor-selection') {
-          return modificationsStore.setAncestorFlowNodeKeyForMoveOperation({
-            instanceKey: scopeKey,
-            flowNodeId: elementId,
-          });
-        }
-
         if (modificationsStore.state.status === 'adding-token') {
           modificationsStore.finishAddingToken(
             businessObjects,
@@ -610,13 +603,6 @@ const FoldableElementInstancesNode: React.FC<FoldableElementInstancesNodeProps> 
 
         if (modificationsStore.state.status === 'moving-token') {
           return;
-        }
-
-        if (modificationsStore.state.status === 'requires-ancestor-selection') {
-          return modificationsStore.setAncestorFlowNodeKeyForMoveOperation({
-            instanceKey: scopeKey,
-            flowNodeId: elementId,
-          });
         }
 
         if (modificationsStore.state.status === 'adding-token') {

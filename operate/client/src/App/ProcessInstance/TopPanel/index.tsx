@@ -77,7 +77,7 @@ import {incidentsPanelStore} from 'modules/stores/incidentsPanel';
 import {isInstanceRunning} from 'modules/utils/instance';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 import {IS_ELEMENT_SELECTION_V2} from 'modules/feature-flags';
-import {hasMultipleScopes} from 'modules/utils/processInstanceDetailsDiagram';
+import {getAncestorScopeType} from 'modules/utils/processInstanceDetailsDiagram';
 
 const OVERLAY_TYPE_STATE = 'flowNodeState';
 const OVERLAY_TYPE_MODIFICATIONS_BADGE = 'modificationsBadge';
@@ -350,10 +350,6 @@ const TopPanel: React.FC = observer(() => {
           isOpen={isIncidentBarOpen}
         />
       )}
-
-      {modificationsStore.state.status === 'requires-ancestor-selection' && (
-        <ModificationInfoBanner text="Target flow node has multiple parent scopes. Please select parent node from Instance History to move." />
-      )}
       {modificationsStore.state.status === 'moving-token' &&
         businessObjects && (
           <ModificationInfoBanner
@@ -425,8 +421,10 @@ const TopPanel: React.FC = observer(() => {
                 }}
                 onFlowNodeSelection={(flowNodeId, isMultiInstance) => {
                   if (modificationsStore.state.status === 'moving-token') {
-                    const ancestorSelectionRequired = hasMultipleScopes(
-                      businessObjects[flowNodeId ?? ''],
+                    const ancestorScopeType = getAncestorScopeType(
+                      businessObjects,
+                      sourceFlowNodeIdForMoveOperation ?? '',
+                      flowNodeId ?? '',
                       totalRunningInstancesByFlowNode,
                     );
 
@@ -441,7 +439,7 @@ const TopPanel: React.FC = observer(() => {
                       businessObjects,
                       processInstance?.processDefinitionId,
                       flowNodeId,
-                      ancestorSelectionRequired,
+                      ancestorScopeType,
                     );
                   } else {
                     if (modificationsStore.state.status !== 'adding-token') {

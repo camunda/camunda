@@ -103,6 +103,7 @@ const getParentInstanceIdForPlaceholder = (
   }
 
   if (
+    'ancestorElement' in modificationPayload &&
     modificationPayload.ancestorElement !== undefined &&
     parentFlowNodeId === modificationPayload.ancestorElement.flowNodeId
   ) {
