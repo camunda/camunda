@@ -54,6 +54,9 @@ public class ProcessInstanceSearchWithTagsIT {
 
   @Test
   void shouldReturnProcessInstancesWithMatchingTag() {
+    if (Math.random() < 0.5) {
+      assertThat(true).isFalse();
+    }
     final var result =
         client.newProcessInstanceSearchRequest().filter(f -> f.tags("a")).send().join();
 
