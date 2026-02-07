@@ -30,6 +30,7 @@ import io.camunda.db.rdbms.read.service.IncidentDbReader;
 import io.camunda.db.rdbms.read.service.IncidentProcessInstanceStatisticsByDefinitionDbReader;
 import io.camunda.db.rdbms.read.service.IncidentProcessInstanceStatisticsByErrorDbReader;
 import io.camunda.db.rdbms.read.service.JobDbReader;
+import io.camunda.db.rdbms.read.service.JobMetricsBatchDbReader;
 import io.camunda.db.rdbms.read.service.MappingRuleDbReader;
 import io.camunda.db.rdbms.read.service.MessageSubscriptionDbReader;
 import io.camunda.db.rdbms.read.service.PersistentWebSessionDbReader;
@@ -66,6 +67,7 @@ import io.camunda.db.rdbms.sql.GroupMapper;
 import io.camunda.db.rdbms.sql.HistoryDeletionMapper;
 import io.camunda.db.rdbms.sql.IncidentMapper;
 import io.camunda.db.rdbms.sql.JobMapper;
+import io.camunda.db.rdbms.sql.JobMetricsBatchMapper;
 import io.camunda.db.rdbms.sql.MappingRuleMapper;
 import io.camunda.db.rdbms.sql.MessageSubscriptionMapper;
 import io.camunda.db.rdbms.sql.PersistentWebSessionMapper;
@@ -257,6 +259,12 @@ public class RdbmsConfiguration {
   public BatchOperationItemDbReader batchOperationItemReader(
       final BatchOperationMapper batchOperationMapper) {
     return new BatchOperationItemDbReader(batchOperationMapper);
+  }
+
+  @Bean
+  public JobMetricsBatchDbReader jobMetricsBatchReader(
+      final JobMetricsBatchMapper jobMetricsBatchMapper) {
+    return new JobMetricsBatchDbReader(jobMetricsBatchMapper);
   }
 
   @Bean

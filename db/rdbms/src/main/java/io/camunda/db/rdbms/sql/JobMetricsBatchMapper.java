@@ -7,9 +7,13 @@
  */
 package io.camunda.db.rdbms.sql;
 
+import io.camunda.db.rdbms.read.domain.GlobalJobStatisticsDbQuery;
+import io.camunda.db.rdbms.read.domain.GlobalJobStatisticsDbResult;
 import io.camunda.db.rdbms.write.domain.JobMetricsBatchDbModel;
 
 public interface JobMetricsBatchMapper {
 
   void insert(JobMetricsBatchDbModel jobMetricsBatch);
+
+  GlobalJobStatisticsDbResult globalJobStatistics(GlobalJobStatisticsDbQuery query);
 }

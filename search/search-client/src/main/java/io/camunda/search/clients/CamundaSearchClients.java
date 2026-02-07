@@ -377,7 +377,7 @@ public class CamundaSearchClients implements SearchClientsProxy {
   @Override
   public GlobalJobStatisticsEntity getGlobalJobStatistics(final GlobalJobStatisticsQuery query) {
     return doReadWithResourceAccessController(
-        access -> readers.jobReader().getGlobalJobStatistics(query, access));
+        access -> readers.jobMetricsBatchReader().getGlobalJobStatistics(query, access));
   }
 
   @Override

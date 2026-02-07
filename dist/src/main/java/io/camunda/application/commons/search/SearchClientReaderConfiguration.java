@@ -45,6 +45,8 @@ import io.camunda.search.clients.reader.IncidentProcessInstanceStatisticsByError
 import io.camunda.search.clients.reader.IncidentProcessInstanceStatisticsByErrorReader;
 import io.camunda.search.clients.reader.IncidentReader;
 import io.camunda.search.clients.reader.JobDocumentReader;
+import io.camunda.search.clients.reader.JobMetricsBatchDocumentReader;
+import io.camunda.search.clients.reader.JobMetricsBatchReader;
 import io.camunda.search.clients.reader.JobReader;
 import io.camunda.search.clients.reader.MappingRuleDocumentReader;
 import io.camunda.search.clients.reader.MappingRuleReader;
@@ -105,6 +107,7 @@ import io.camunda.webapps.schema.descriptors.template.CorrelatedMessageSubscript
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.IncidentTemplate;
+import io.camunda.webapps.schema.descriptors.template.JobMetricsBatchTemplate;
 import io.camunda.webapps.schema.descriptors.template.JobTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate;
@@ -233,6 +236,13 @@ public class SearchClientReaderConfiguration {
   public JobReader jobReader(
       final SearchClientBasedQueryExecutor executor, final IndexDescriptors descriptors) {
     return new JobDocumentReader(executor, descriptors.get(JobTemplate.class));
+  }
+
+  @Bean
+  public JobMetricsBatchReader jobMetricsBatchReader(
+      final SearchClientBasedQueryExecutor executor, final IndexDescriptors descriptors) {
+    return new JobMetricsBatchDocumentReader(
+        executor, descriptors.get(JobMetricsBatchTemplate.class));
   }
 
   @Bean
