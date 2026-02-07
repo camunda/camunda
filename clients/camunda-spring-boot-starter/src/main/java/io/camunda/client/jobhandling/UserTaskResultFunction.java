@@ -19,5 +19,9 @@ import io.camunda.client.api.command.CompleteJobResult;
 import io.camunda.client.api.command.CompleteUserTaskJobResultStep1;
 import java.util.function.Function;
 
+/**
+ * This interface allows to describe the result that should be applied to a job that processes a
+ * user task listener.
+ */
 public interface UserTaskResultFunction
     extends Function<CompleteUserTaskJobResultStep1, CompleteJobResult> {}

@@ -15,18 +15,24 @@
  */
 package io.camunda.client.jobhandling.result;
 
-import io.camunda.client.jobhandling.AdHocSubProcessResultFunction;
-import io.camunda.client.jobhandling.UserTaskResultFunction;
+import static org.assertj.core.api.Assertions.assertThat;
 
-public class ResultFunctionResultProcessor implements ResultProcessor {
-  @Override
-  public Object process(final ResultProcessorContext context) {
-    if (context.getResult() instanceof UserTaskResultFunction
-        || context.getResult() instanceof AdHocSubProcessResultFunction) {
-      return context.getResult();
-    } else {
-      throw new IllegalStateException(
-          "Cannot process result of type " + context.getResult().getClass().getName());
-    }
+import io.camunda.client.jobhandling.AdHocSubProcessResultFunction;
+import java.util.Map;
+import org.junit.jupiter.api.Test;
+
+public class AdHocSubprocessResultFunctionTest {
+  @Test
+  void shouldHaveNullVariables() {
+    final AdHocSubProcessResultFunction resultFunction = r -> r.activateElement("test");
+    assertThat(resultFunction.getVariables()).isNull();
+  }
+
+  @Test
+  void shouldHaveVariables() {
+    final Map<String, Object> variables = Map.of("foo", "bar");
+    final AdHocSubProcessResultFunction resultFunction =
+        AdHocSubProcessResultFunction.withVariables(variables, r -> r.activateElement("test"));
+    assertThat(resultFunction.getVariables()).isEqualTo(Map.of("foo", "bar"));
   }
 }
