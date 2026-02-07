@@ -647,7 +647,6 @@
     <dependency>
       <groupId>org.glassfish.jersey.core</groupId>
       <artifactId>jersey-client</artifactId>
-      <version>3.1.11</version>
       <scope>test</scope>
     </dependency>
 
