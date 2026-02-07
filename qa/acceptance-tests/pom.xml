@@ -252,6 +252,17 @@
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-data-jdbc</artifactId>
       <scope>test</scope>
+      <exclusions>
+        <!-- Exclude standard logging based on logback to allow usage of log4j2 -->
+        <exclusion>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-starter-logging</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-log4j2</artifactId>
     </dependency>
     <dependency>
       <groupId>org.springframework</groupId>
@@ -650,6 +661,7 @@
             <dep>io.camunda:zeebe-elasticsearch-exporter</dep>
             <dep>io.camunda:zeebe-opensearch-exporter</dep>
             <dep>io.camunda:camunda-exporter</dep>
+            <dep>org.springframework.boot:spring-boot-starter-log4j2</dep>
           </ignoredUnusedDeclaredDependencies>
         </configuration>
       </plugin>
