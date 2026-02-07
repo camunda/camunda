@@ -211,6 +211,10 @@ final class ExporterContainer implements Controller {
         && filter.acceptRecord(typedEvent);
   }
 
+  boolean shouldExportRecord(final RecordMetadata metadata, final long eventPosition) {
+    return position < eventPosition && acceptRecord(metadata);
+  }
+
   void configureExporter() throws Exception {
     LOG.debug("Configure exporter with id '{}'", getId());
     ThreadContextUtil.runCheckedWithClassLoader(
