@@ -11,14 +11,14 @@ import io.camunda.db.rdbms.read.service.HistoryDeletionDbReader;
 import io.camunda.db.rdbms.read.service.ProcessInstanceDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig.HistoryDeletionConfig;
 import io.camunda.db.rdbms.write.RdbmsWriters;
-import io.camunda.db.rdbms.write.domain.HistoryDeletionDbModel;
+import io.camunda.db.rdbms.write.domain.HistoryDeletionBatch;
 import io.camunda.db.rdbms.write.domain.HistoryDeletionDbModel.HistoryDeletionTypeDbModel;
-import io.camunda.search.filter.ProcessInstanceFilter;
-import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.zeebe.util.ExponentialBackoff;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Stream;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,94 +57,150 @@ public class HistoryDeletionService {
 
   public Duration deleteHistory(final int partitionId) {
     final var batch = historyDeletionDbReader.getNextBatch(partitionId, config.queueBatchSize());
-    LOG.trace("Deleting historic data for entities: {}", batch);
 
-    final List<Long> deletedProcessInstances = deleteProcessInstances(partitionId, batch);
-    final List<Long> deletedProcessDefinitions = deleteProcessDefinitions(batch);
-    final List<Long> deletedResources =
-        Stream.concat(deletedProcessInstances.stream(), deletedProcessDefinitions.stream())
-            .toList();
-    final var deletedResourceCount = deleteFromHistoryDeletionTable(deletedResources);
+    final var deletedResourceCount = deleteBatch(batch).toCompletableFuture().join();
 
     return nextDelay(deletedResourceCount);
   }
 
-  private List<Long> deleteProcessInstances(
-      final int partitionId, final List<HistoryDeletionDbModel> batch) {
-    final var processInstanceKeys =
-        batch.stream()
-            .filter(
-                deletionModel ->
-                    deletionModel
-                        .resourceType()
-                        .equals(HistoryDeletionTypeDbModel.PROCESS_INSTANCE))
-            .map(HistoryDeletionDbModel::resourceKey)
-            .toList();
+  /**
+   * This deletes all entities in a given batch. A batch could contain different types of entities,
+   * such as process instances, process definitions, or decision instances.
+   *
+   * @param batch The batch of entities to delete
+   * @return A future containing the amount of entities that were deleted
+   */
+  private CompletionStage<Integer> deleteBatch(final HistoryDeletionBatch batch) {
+    LOG.trace("Deleting historic data for entities: {}", batch.historyDeletionModels());
 
-    if (processInstanceKeys.isEmpty()) {
-      return List.of();
+    if (batch.historyDeletionModels().isEmpty()) {
+      LOG.trace("No historic data to delete");
+      return CompletableFuture.completedFuture(0);
     }
 
-    final var allProcessInstanceDependantDataDeleted =
+    final var deleteProcessInstancesAndDefinitionsFuture =
+        deleteProcessInstances(batch)
+            .thenCompose(
+                ids ->
+                    deleteProcessDefinitions(batch, ids)
+                        .exceptionally(
+                            ex -> {
+                              LOG.warn(
+                                  "Failed to delete process definitions for batch: {}", batch, ex);
+                              return ids;
+                            }))
+            .exceptionally(
+                ex -> {
+                  LOG.warn("Failed to delete process instances for batch: {}", batch, ex);
+                  return List.of();
+                })
+            .toCompletableFuture();
+
+    final var deleteDecisionInstancesFuture =
+        deleteDecisionInstances(batch)
+            .exceptionally(
+                ex -> {
+                  LOG.warn("Failed to delete decision instances for batch: {}", batch, ex);
+                  return List.of();
+                })
+            .toCompletableFuture();
+
+    return CompletableFuture.allOf(
+            deleteProcessInstancesAndDefinitionsFuture, deleteDecisionInstancesFuture)
+        .thenCompose(
+            ignored -> {
+              final var deletedResources = new ArrayList<Long>();
+              deletedResources.addAll(deleteProcessInstancesAndDefinitionsFuture.join());
+              deletedResources.addAll(deleteDecisionInstancesFuture.join());
+              return CompletableFuture.completedFuture(
+                  deleteFromHistoryDeletionTable(deletedResources));
+            });
+  }
+
+  /**
+   * This method will delete a batch of process instances in two steps:
+   *
+   * <ol>
+   *   <li>It deletes the PI related data from all process instance dependants (eg, variable, jobs)
+   *   <li>It deletes the PIs from the list-view
+   * </ol>
+   *
+   * @param batch The batch of entities to delete
+   * @return A future containing the list of history-deletion IDs that were processed
+   */
+  private CompletionStage<List<Long>> deleteProcessInstances(final HistoryDeletionBatch batch) {
+    final var processInstanceKeys =
+        batch.getResourceKeys(HistoryDeletionTypeDbModel.PROCESS_INSTANCE);
+    if (processInstanceKeys.isEmpty()) {
+      return CompletableFuture.completedFuture(List.of());
+    }
+
+    final var deletionFutures =
         rdbmsWriters.getProcessInstanceDependantWriters().stream()
             .filter(dependant -> !(dependant instanceof AuditLogWriter))
-            .allMatch(
+            .map(
                 dependant -> {
                   final var limit = config.dependentRowLimit();
-                  final var deletedRows =
-                      dependant.deleteRootProcessInstanceRelatedData(processInstanceKeys, limit);
-                  return deletedRows < limit;
-                });
-
-    if (allProcessInstanceDependantDataDeleted) {
-      rdbmsWriters.getProcessInstanceWriter().deleteByKeys(processInstanceKeys);
-      return processInstanceKeys;
-    }
-
-    return List.of();
-  }
-
-  private List<Long> deleteProcessDefinitions(final List<HistoryDeletionDbModel> batch) {
-    final var processDefinitionKeys =
-        batch.stream()
-            .filter(
-                deletionModel ->
-                    deletionModel
-                        .resourceType()
-                        .equals(HistoryDeletionTypeDbModel.PROCESS_DEFINITION))
-            .filter(this::hasDeletedAllProcessInstances)
-            .map(HistoryDeletionDbModel::resourceKey)
+                  return CompletableFuture.supplyAsync(
+                      () ->
+                          dependant.deleteRootProcessInstanceRelatedData(
+                              processInstanceKeys, limit));
+                })
             .toList();
 
-    if (processDefinitionKeys.isEmpty()) {
-      return List.of();
-    }
-
-    rdbmsWriters.getProcessDefinitionWriter().deleteByKeys(processDefinitionKeys);
-
-    return processDefinitionKeys;
+    return CompletableFuture.allOf(deletionFutures.toArray(CompletableFuture[]::new))
+        .thenCompose(
+            ignored -> {
+              rdbmsWriters.getProcessInstanceWriter().deleteByKeys(processInstanceKeys);
+              return CompletableFuture.completedFuture(processInstanceKeys);
+            });
   }
 
-  private boolean hasDeletedAllProcessInstances(
-      final HistoryDeletionDbModel historyDeletionDbModel) {
-    final boolean hasDependents =
-        processInstanceDbReader
-                .search(
-                    ProcessInstanceQuery.of(
-                        b ->
-                            b.filter(
-                                new ProcessInstanceFilter.Builder()
-                                    .processDefinitionKeys(historyDeletionDbModel.resourceKey())
-                                    .build())))
-                .total()
-            != 0;
+  /**
+   * This method will delete a batch of process definitions by deleting the process definitions from
+   * the process index
+   *
+   * @param batch The batch of entities to delete
+   * @param deletedResourceKeys the list of the deleted process instance keys
+   * @return A future containing the list of history-deletion IDs that were processed
+   */
+  private CompletionStage<List<Long>> deleteProcessDefinitions(
+      final HistoryDeletionBatch batch, final List<Long> deletedResourceKeys) {
+    final var processDefinitionKeys =
+        batch.getResourceKeys(HistoryDeletionTypeDbModel.PROCESS_DEFINITION);
 
-    if (hasDependents) {
-      LOG.debug(
-          "Process definition {} still has process instances and will not be deleted.",
-          historyDeletionDbModel.resourceKey());
+    if (processDefinitionKeys.isEmpty()) {
+      return CompletableFuture.completedFuture(deletedResourceKeys);
     }
-    return !hasDependents;
+
+    return CompletableFuture.supplyAsync(
+        () -> {
+          rdbmsWriters.getProcessDefinitionWriter().deleteByKeys(processDefinitionKeys);
+
+          final var deletedResources = new ArrayList<>(deletedResourceKeys);
+          deletedResources.addAll(processDefinitionKeys);
+          return deletedResources;
+        });
+  }
+
+  /**
+   * This method will delete a batch of decision instances.
+   *
+   * @param batch The batch of entities to delete
+   * @return A future containing the list of history-deletion IDs that were processed
+   */
+  private CompletionStage<List<Long>> deleteDecisionInstances(final HistoryDeletionBatch batch) {
+    final var decisionInstanceKeys =
+        batch.getResourceKeys(HistoryDeletionTypeDbModel.DECISION_INSTANCE);
+    if (decisionInstanceKeys.isEmpty()) {
+      return CompletableFuture.completedFuture(List.of());
+    }
+
+    return CompletableFuture.supplyAsync(
+        () -> {
+          rdbmsWriters.getDecisionInstanceWriter().deleteByKeys(decisionInstanceKeys);
+          return decisionInstanceKeys;
+        });
   }
 
   private int deleteFromHistoryDeletionTable(final List<Long> deletedResourceKeys) {

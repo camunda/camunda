@@ -17,6 +17,7 @@ import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
 import java.time.OffsetDateTime;
+import java.util.List;
 
 public class DecisionInstanceWriter extends RootProcessInstanceDependant implements RdbmsWriter {
 
@@ -91,5 +92,9 @@ public class DecisionInstanceWriter extends RootProcessInstanceDependant impleme
       final int partitionId, final OffsetDateTime cleanupDate, final int limit) {
     return mapper.cleanupHistory(
         new HistoryCleanupMapper.CleanupHistoryDto(partitionId, cleanupDate, limit));
+  }
+
+  public int deleteByKeys(final List<Long> decisionInstanceKeys) {
+    return mapper.deleteByKeys(decisionInstanceKeys);
   }
 }

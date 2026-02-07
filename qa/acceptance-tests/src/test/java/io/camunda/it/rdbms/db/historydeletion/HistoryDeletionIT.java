@@ -62,7 +62,7 @@ public class HistoryDeletionIT {
     final var actual = historyDeletionReader.getNextBatch(PARTITION_ID, 1);
 
     // then
-    assertThat(actual).containsExactly(model);
+    assertThat(actual.historyDeletionModels()).containsExactly(model);
   }
 
   @TestTemplate
@@ -71,7 +71,7 @@ public class HistoryDeletionIT {
     final var actual = historyDeletionReader.getNextBatch(PARTITION_ID, 1);
 
     // then
-    assertThat(actual).isEmpty();
+    assertThat(actual.historyDeletionModels()).isEmpty();
   }
 
   @TestTemplate
@@ -99,7 +99,7 @@ public class HistoryDeletionIT {
     final var actual = historyDeletionReader.getNextBatch(PARTITION_ID, 10);
 
     // then
-    assertThat(actual).containsExactlyInAnyOrder(model1, model2);
+    assertThat(actual.historyDeletionModels()).containsExactlyInAnyOrder(model1, model2);
   }
 
   @TestTemplate
@@ -128,8 +128,8 @@ public class HistoryDeletionIT {
     final var actualPartition1 = historyDeletionReader.getNextBatch(1, 10);
 
     // then
-    assertThat(actualPartition0).containsExactly(modelPartition0);
-    assertThat(actualPartition1).containsExactly(modelPartition1);
+    assertThat(actualPartition0.historyDeletionModels()).containsExactly(modelPartition0);
+    assertThat(actualPartition1.historyDeletionModels()).containsExactly(modelPartition1);
   }
 
   @TestTemplate
@@ -165,7 +165,7 @@ public class HistoryDeletionIT {
     final var actual = historyDeletionReader.getNextBatch(PARTITION_ID, 10);
 
     // then
-    assertThat(actual)
+    assertThat(actual.historyDeletionModels())
         .containsExactly(
             modelC, // batchOperationKey=9, resourceKey=3
             modelB, // batchOperationKey=10, resourceKey=1
@@ -181,13 +181,15 @@ public class HistoryDeletionIT {
             RESOURCE_KEY, PROCESS_INSTANCE, BATCH_OPERATION_KEY, PARTITION_ID);
     historyDeletionWriter.create(model);
     rdbmsWriters.flush();
-    assertThat(historyDeletionReader.getNextBatch(PARTITION_ID, 1)).isNotEmpty();
+    assertThat(historyDeletionReader.getNextBatch(PARTITION_ID, 1).historyDeletionModels())
+        .isNotEmpty();
 
     // when
     historyDeletionWriter.delete(RESOURCE_KEY, BATCH_OPERATION_KEY);
     rdbmsWriters.flush();
 
     // then
-    assertThat(historyDeletionReader.getNextBatch(PARTITION_ID, 1)).isEmpty();
+    assertThat(historyDeletionReader.getNextBatch(PARTITION_ID, 1).historyDeletionModels())
+        .isEmpty();
   }
 }
