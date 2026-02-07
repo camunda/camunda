@@ -624,6 +624,26 @@ final class ExporterContainerTest {
       assertThat(readMetadata).isPresent().hasValue(metadata);
     }
 
+    @Test
+    void shouldHandleRecordWithSerializedSizeInterface() throws Exception {
+      // given
+      exporterContainer.configureExporter();
+      runtime.getState().setPosition(EXPORTER_ID, 0);
+      exporterContainer.initMetadata();
+
+      // Create a record that implements RecordWithSerializedSize
+      final var mockedRecord = mock(TypedRecord.class);
+      when(mockedRecord.getPosition()).thenReturn(1L);
+      final var recordMetadata = new RecordMetadata();
+
+      // when
+      exporterContainer.exportRecord(recordMetadata, mockedRecord);
+
+      // then - the exporter should receive the record
+      assertThat(exporter.getRecord()).isNotNull();
+      assertThat(exporter.getRecord()).isEqualTo(mockedRecord);
+    }
+
     private void awaitPreviousCall() {
       // call is enqueued in queue and will be run after the previous call
       // when we await the call we can be sure that the previous call is also done

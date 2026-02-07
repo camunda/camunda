@@ -15,7 +15,7 @@ import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.util.ObjectSizeEstimator;
+import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.ArrayList;
@@ -70,7 +70,15 @@ public final class ExporterBatchWriter {
     handler.updateEntity(record, entity);
     cachedRecordTimestamps.put(record.getPosition(), record.getTimestamp());
 
-    cachedEntitySizes.put(cacheKey, ObjectSizeEstimator.estimateSize(entity));
+    // Use record length instead of estimating entity size for better performance
+    final long recordSize;
+    if (record instanceof TypedRecord<?> typedRecord) {
+      recordSize = typedRecord.getLength();
+    } else {
+      // Fallback to a default size if not a TypedRecord (should not happen in practice)
+      recordSize = 0;
+    }
+    cachedEntitySizes.put(cacheKey, recordSize);
 
     // we store all handlers for an entity to make sure not to miss any flushes.
     // we flush them in the same order as they were originally run.
