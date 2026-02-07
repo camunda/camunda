@@ -123,6 +123,11 @@ public final class RetryTypedRecord<T extends UnifiedRecordValue> implements Typ
   }
 
   @Override
+  public int getSerializedLength() {
+    return 0;
+  }
+
+  @Override
   public long getKey() {
     return key;
   }
@@ -130,6 +135,11 @@ public final class RetryTypedRecord<T extends UnifiedRecordValue> implements Typ
   @Override
   public T getValue() {
     return record;
+  }
+
+  @Override
+  public AuthInfo getAuthInfo() {
+    return null;
   }
 
   @Override
@@ -145,10 +155,5 @@ public final class RetryTypedRecord<T extends UnifiedRecordValue> implements Typ
   @Override
   public int getLength() {
     return 0;
-  }
-
-  @Override
-  public AuthInfo getAuthInfo() {
-    return null;
   }
 }

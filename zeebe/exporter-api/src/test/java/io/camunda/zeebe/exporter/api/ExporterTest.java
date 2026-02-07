@@ -259,5 +259,10 @@ public final class ExporterTest {
     public long getBatchOperationReference() {
       return 0;
     }
+
+    @Override
+    public int getSerializedLength() {
+      return 0;
+    }
   }
 }

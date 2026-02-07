@@ -7,6 +7,7 @@
  */
 package io.camunda.protocol;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -14,7 +15,12 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import java.util.Map;
 
-public record TestRecord(long position, ValueType valueType) implements Record<TestValue> {
+public record TestRecord(long position, ValueType valueType, int serializedLength)
+    implements Record<TestValue> {
+
+  public TestRecord(final long position, final ValueType valueType) {
+    this(position, valueType, 0);
+  }
 
   @Override
   public long getPosition() {
@@ -99,6 +105,12 @@ public record TestRecord(long position, ValueType valueType) implements Record<T
   @Override
   public Record<TestValue> copyOf() {
     return this;
+  }
+
+  @JsonIgnore
+  @Override
+  public int getSerializedLength() {
+    return serializedLength;
   }
 
   @Override

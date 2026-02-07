@@ -56,6 +56,11 @@
       <scope>provided</scope>
     </dependency>
 
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-annotations</artifactId>
+    </dependency>
+
     <!--
       adding SpotBugs annotations to the classpath will cause Immutables to generate the proper
       annotations and suppress false positives

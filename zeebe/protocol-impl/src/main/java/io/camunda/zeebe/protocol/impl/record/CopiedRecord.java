@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.protocol.impl.record;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.record.Record;
@@ -20,6 +21,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 public final class CopiedRecord<T extends UnifiedRecordValue> implements Record<T> {
 
+  public final int serializedLength;
   private final ValueType valueType;
   private final T recordValue;
   private final long key;
@@ -50,6 +52,7 @@ public final class CopiedRecord<T extends UnifiedRecordValue> implements Record<
     this.position = position;
     this.sourcePosition = sourcePosition;
     this.timestamp = timestamp;
+    serializedLength = metadata.getSerializedLength();
 
     intent = metadata.getIntent();
     recordType = metadata.getRecordType();
@@ -86,6 +89,7 @@ public final class CopiedRecord<T extends UnifiedRecordValue> implements Record<
     position = copiedRecord.position;
     sourcePosition = copiedRecord.sourcePosition;
     timestamp = copiedRecord.timestamp;
+    serializedLength = copiedRecord.serializedLength;
 
     intent = copiedRecord.intent;
     recordType = copiedRecord.recordType;
@@ -183,6 +187,12 @@ public final class CopiedRecord<T extends UnifiedRecordValue> implements Record<
   @Override
   public Record<T> copyOf() {
     return new CopiedRecord<>(this);
+  }
+
+  @JsonIgnore
+  @Override
+  public int getSerializedLength() {
+    return serializedLength;
   }
 
   /**
