@@ -12,7 +12,6 @@ import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toMap;
 import static org.apache.commons.lang3.StringUtils.defaultIfEmpty;
 
-import io.camunda.authentication.entity.CamundaUserDTO;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import io.camunda.gateway.protocol.model.AuditLogActorTypeEnum;
 import io.camunda.gateway.protocol.model.AuditLogCategoryEnum;
@@ -186,6 +185,7 @@ import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.entity.ClusterMetadata.AppName;
+import io.camunda.service.CamundaUserDTO;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.util.Collections;

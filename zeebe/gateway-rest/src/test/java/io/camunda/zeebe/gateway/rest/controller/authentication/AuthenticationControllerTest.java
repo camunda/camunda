@@ -11,9 +11,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.authentication.entity.CamundaUserDTO;
-import io.camunda.authentication.service.CamundaUserService;
 import io.camunda.search.entities.TenantEntity;
+import io.camunda.service.CamundaUserDTO;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.util.List;
 import java.util.Map;

@@ -5,10 +5,10 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.authentication.entity;
+package io.camunda.service;
 
 import io.camunda.search.entities.TenantEntity;
-import io.camunda.security.entity.ClusterMetadata;
+import io.camunda.security.entity.ClusterMetadata.AppName;
 import java.util.List;
 import java.util.Map;
 
@@ -21,7 +21,7 @@ public record CamundaUserDTO(
     List<String> groups,
     List<String> roles,
     String salesPlanType,
-    Map<ClusterMetadata.AppName, String> c8Links,
+    Map<AppName, String> c8Links,
     boolean canLogout) {
 
   public CamundaUserDTO {

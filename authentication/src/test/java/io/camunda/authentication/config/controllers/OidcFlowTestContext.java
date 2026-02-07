@@ -8,6 +8,8 @@
 package io.camunda.authentication.config.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.authentication.filters.AbstractWebComponentAuthorizationCheckFilter;
+import io.camunda.authentication.filters.NoOpWebComponentAuthorizationCheckFilter;
 import io.camunda.authentication.handler.AuthFailureHandler;
 import io.camunda.authentication.service.MembershipService;
 import io.camunda.authentication.service.NoDBMembershipService;
@@ -72,5 +74,10 @@ public class OidcFlowTestContext {
   public MembershipService createMembershipService(
       final SecurityConfiguration securityConfiguration) {
     return new NoDBMembershipService(securityConfiguration);
+  }
+
+  @Bean
+  public AbstractWebComponentAuthorizationCheckFilter createWebComponentAuthorizationCheckFilter() {
+    return new NoOpWebComponentAuthorizationCheckFilter();
   }
 }

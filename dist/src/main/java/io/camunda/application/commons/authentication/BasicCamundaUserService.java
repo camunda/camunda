@@ -5,32 +5,24 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.authentication.service;
+package io.camunda.application.commons.authentication;
 
 import static io.camunda.service.authorization.Authorizations.COMPONENT_ACCESS_AUTHORIZATION;
 
-import io.camunda.authentication.ConditionalOnAuthenticationMethod;
-import io.camunda.authentication.entity.CamundaUserDTO;
 import io.camunda.search.entities.TenantEntity;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.query.TenantQuery;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
-import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.security.reader.ResourceAccessProvider;
+import io.camunda.service.CamundaUserDTO;
 import io.camunda.service.TenantServices;
 import io.camunda.service.UserServices;
-import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
+import io.camunda.zeebe.gateway.rest.controller.authentication.CamundaUserService;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import org.springframework.context.annotation.Profile;
-import org.springframework.stereotype.Service;
 
-@Service
-@ConditionalOnAuthenticationMethod(AuthenticationMethod.BASIC)
-@ConditionalOnSecondaryStorageEnabled
-@Profile("consolidated-auth")
 public class BasicCamundaUserService implements CamundaUserService {
 
   private final CamundaAuthenticationProvider authenticationProvider;

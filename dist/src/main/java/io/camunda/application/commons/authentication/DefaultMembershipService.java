@@ -5,11 +5,12 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.authentication.service;
+package io.camunda.application.commons.authentication;
 
 import static io.camunda.zeebe.protocol.record.value.EntityType.GROUP;
 import static io.camunda.zeebe.protocol.record.value.EntityType.MAPPING_RULE;
 
+import io.camunda.authentication.service.MembershipService;
 import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.entities.RoleEntity;
@@ -21,7 +22,6 @@ import io.camunda.service.GroupServices;
 import io.camunda.service.MappingRuleServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
-import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -30,13 +30,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.context.annotation.Primary;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
-import org.springframework.stereotype.Service;
 
-@Service
-@Primary
-@ConditionalOnSecondaryStorageEnabled
 public class DefaultMembershipService implements MembershipService {
   private static final Logger LOG = LoggerFactory.getLogger(DefaultMembershipService.class);
 

@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.gateway.rest.controller.authentication;
 
-import io.camunda.authentication.service.CamundaUserService;
 import io.camunda.security.ConditionalOnSaaSConfigured;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;

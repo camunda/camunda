@@ -9,7 +9,6 @@ package io.camunda.zeebe.gateway.rest.controller.authentication;
 
 import static org.mockito.Mockito.when;
 
-import io.camunda.authentication.service.CamundaUserService;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

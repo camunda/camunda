@@ -5,12 +5,8 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.authentication.service;
+package io.camunda.authentication.filters;
 
-import io.camunda.authentication.entity.CamundaUserDTO;
+import org.springframework.web.filter.OncePerRequestFilter;
 
-public interface CamundaUserService {
-  CamundaUserDTO getCurrentUser();
-
-  String getUserToken();
-}
+public abstract class AbstractAdminUserCheckFilter extends OncePerRequestFilter {}

@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.authentication.filters;
+package io.camunda.application.commons.authentication;
 
 import static io.camunda.service.authorization.Authorizations.COMPONENT_ACCESS_AUTHORIZATION;
 import static org.mockito.ArgumentMatchers.eq;

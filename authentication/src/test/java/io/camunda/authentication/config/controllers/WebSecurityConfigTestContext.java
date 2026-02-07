@@ -10,6 +10,9 @@ package io.camunda.authentication.config.controllers;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.authentication.DefaultCamundaAuthenticationProvider;
 import io.camunda.authentication.converter.CamundaAuthenticationDelegatingConverter;
+import io.camunda.authentication.filters.AbstractAdminUserCheckFilter;
+import io.camunda.authentication.filters.AbstractWebComponentAuthorizationCheckFilter;
+import io.camunda.authentication.filters.NoOpAdminUserCheckFilter;
 import io.camunda.authentication.handler.AuthFailureHandler;
 import io.camunda.authentication.holder.CamundaAuthenticationDelegatingHolder;
 import io.camunda.authentication.holder.HttpSessionBasedAuthenticationHolder;
@@ -20,13 +23,12 @@ import io.camunda.security.auth.CamundaAuthenticationHolder;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.reader.ResourceAccessProvider;
-import io.camunda.service.ApiServicesExecutorProvider;
-import io.camunda.service.GroupServices;
-import io.camunda.service.RoleServices;
-import io.camunda.service.TenantServices;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.util.List;
-import java.util.concurrent.ForkJoinPool;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -34,6 +36,7 @@ import org.springframework.security.access.expression.method.DefaultMethodSecuri
 import org.springframework.security.access.expression.method.MethodSecurityExpressionHandler;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -66,26 +69,6 @@ public class WebSecurityConfigTestContext {
   @Bean
   public UserDetailsService createUserDetailsService() {
     return new TestUserDetailsService();
-  }
-
-  @Bean
-  public ApiServicesExecutorProvider apiServicesExecutorProvider() {
-    return new ApiServicesExecutorProvider(ForkJoinPool.commonPool());
-  }
-
-  @Bean
-  public RoleServices createRoleServices(final ApiServicesExecutorProvider executorProvider) {
-    return new RoleServices(null, null, null, null, executorProvider, null);
-  }
-
-  @Bean
-  public GroupServices createGroupServices(final ApiServicesExecutorProvider executorProvider) {
-    return new GroupServices(null, null, null, null, executorProvider, null);
-  }
-
-  @Bean
-  public TenantServices createTenantServices(final ApiServicesExecutorProvider executorProvider) {
-    return new TenantServices(null, null, null, null, executorProvider, null);
   }
 
   @Bean
@@ -149,5 +132,33 @@ public class WebSecurityConfigTestContext {
   @ConfigurationProperties("camunda.security")
   public SecurityConfiguration createSecurityConfiguration() {
     return new SecurityConfiguration();
+  }
+
+  @Bean
+  public AbstractWebComponentAuthorizationCheckFilter createWebComponentAuthorizationCheckFilter(
+      CamundaAuthenticationProvider camundaAuthenticationProvider) {
+    return new AbstractWebComponentAuthorizationCheckFilter() {
+      @Override
+      protected void doFilterInternal(
+          final HttpServletRequest request,
+          final HttpServletResponse response,
+          final FilterChain filterChain)
+          throws ServletException, IOException {
+        // SessionAuthenticationRefreshTest FAILS without fetching authentication because that is
+        // the mechanism used to set the authentication in the session.
+        // It worked previously because the WebComponentAuthorizationCheckFilter, as the name
+        // implies, fetched (and refreshed) the session implicitly.
+        // To be resolved with https://github.com/camunda/camunda/issues/47027
+        if (SecurityContextHolder.getContext().getAuthentication() != null) {
+          camundaAuthenticationProvider.getCamundaAuthentication();
+        }
+        filterChain.doFilter(request, response);
+      }
+    };
+  }
+
+  @Bean
+  public AbstractAdminUserCheckFilter createAdminUserCheckFilter() {
+    return new NoOpAdminUserCheckFilter();
   }
 }

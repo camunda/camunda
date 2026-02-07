@@ -68,6 +68,7 @@ final class SecuredClusteredMessagingIT {
   private final ZeebeContainer zeebe =
       new ZeebeContainer(ZeebeTestContainerDefaults.defaultTestImage())
           .withNetwork(NETWORK)
+          .withEnv("SPRING_PROFILES_ACTIVE", "consolidated-auth")
           .withNetworkAliases("zeebe")
           .withEnv("CAMUNDA_SECURITY_TRANSPORTLAYERSECURITY_CLUSTER_ENABLED", "true")
           .withEnv(

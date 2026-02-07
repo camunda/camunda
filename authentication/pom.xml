@@ -81,10 +81,6 @@
       <artifactId>parsson</artifactId>
     </dependency>
     <dependency>
-      <groupId>jakarta.json</groupId>
-      <artifactId>jakarta.json-api</artifactId>
-    </dependency>
-    <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-beans</artifactId>
     </dependency>
@@ -99,10 +95,6 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-gateway-model</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>camunda-service</artifactId>
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
@@ -157,10 +149,6 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-security-core</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>camunda-security-protocol</artifactId>
     </dependency>
     <dependency>
       <groupId>org.springframework.security</groupId>
@@ -227,11 +215,6 @@
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-test</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-broker-client</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
