@@ -98,6 +98,7 @@ public interface Intent {
     map.put(ValueType.USER_TASK, UserTaskIntent.class);
     map.put(ValueType.VARIABLE, VariableIntent.class);
     map.put(ValueType.VARIABLE_DOCUMENT, VariableDocumentIntent.class);
+    map.put(ValueType.PROCESS_INSTANCE_INTROSPECT, ProcessInstanceIntrospectIntent.class);
     return map;
   }
 
