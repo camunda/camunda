@@ -386,6 +386,10 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
     indicesWithCustomErrorHandlers =
         Map.of(
             indexDescriptors.get(OperationTemplate.class).getFullQualifiedName(),
+            ErrorHandlers.IGNORE_DOCUMENT_DOES_NOT_EXIST,
+            indexDescriptors.get(BatchOperationTemplate.class).getFullQualifiedName(),
+            ErrorHandlers.IGNORE_DOCUMENT_DOES_NOT_EXIST,
+            indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName(),
             ErrorHandlers.IGNORE_DOCUMENT_DOES_NOT_EXIST);
   }
 

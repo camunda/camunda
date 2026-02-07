@@ -46,6 +46,7 @@ import io.camunda.zeebe.exporter.test.ExporterTestController;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
@@ -571,5 +572,31 @@ final class CamundaExporterIT {
 
               assertThat(varDocs).isNotNull().isNotEmpty().doesNotContainNull();
             });
+  }
+
+  @TestTemplate
+  void shouldNotFailWhenUpdatingBatchOperationAndListViewByScriptWithNoDocument(
+      final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
+      throws IOException {
+    // given
+    createSchemas(config);
+    final Record record =
+        factory.generateRecord(
+            ValueType.BATCH_OPERATION_CHUNK,
+            r ->
+                r.withBrokerVersion("8.8.0")
+                    .withIntent(BatchOperationChunkIntent.CREATED)
+                    .withTimestamp(System.currentTimeMillis()));
+
+    final CamundaExporter camundaExporter = new CamundaExporter();
+    final ExporterTestContext exporterTestContext =
+        new ExporterTestContext()
+            .setConfiguration(new ExporterTestConfiguration<>("camundaExporter", config));
+
+    camundaExporter.configure(exporterTestContext);
+    camundaExporter.open(new ExporterTestController());
+
+    // act
+    assertThatCode(() -> camundaExporter.export(record)).doesNotThrowAnyException();
   }
 }
