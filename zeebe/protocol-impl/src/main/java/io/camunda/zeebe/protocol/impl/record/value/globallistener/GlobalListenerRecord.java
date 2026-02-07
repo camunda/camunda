@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.record.value.GlobalListenerRecordValue;
 import io.camunda.zeebe.protocol.record.value.GlobalListenerSource;
 import io.camunda.zeebe.protocol.record.value.GlobalListenerType;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -29,6 +30,11 @@ public final class GlobalListenerRecord extends UnifiedRecordValue
 
   public static final int DEFAULT_RETRIES = 3;
   public static final int DEFAULT_PRIORITY = 50;
+
+  public static final Comparator<GlobalListenerRecord> PRIORITY_COMPARATOR =
+      Comparator.comparingInt(GlobalListenerRecord::getPriority)
+          .reversed()
+          .thenComparing(GlobalListenerRecord::getId);
 
   private final StringProperty idProp = new StringProperty("id", "");
   private final StringProperty typeProp = new StringProperty("type", "");

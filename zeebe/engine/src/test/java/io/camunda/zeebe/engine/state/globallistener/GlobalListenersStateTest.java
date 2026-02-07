@@ -40,7 +40,7 @@ public class GlobalListenersStateTest {
     final GlobalListenerBatchRecord expectedConfig = newGlobalListeners();
 
     // when the configuration is stored in state
-    globalListenersState.updateCurrentConfiguration(expectedConfig);
+    updateCurrentConfiguration(expectedConfig);
 
     // then the configuration can be retrieved from state
     final var storedConfig = globalListenersState.getCurrentConfig();
@@ -51,11 +51,11 @@ public class GlobalListenersStateTest {
   public void shouldUpdateConfiguration() {
     // given a global listeners configuration stored in state
     final GlobalListenerBatchRecord firstConfig = newGlobalListeners();
-    globalListenersState.updateCurrentConfiguration(firstConfig);
+    updateCurrentConfiguration(firstConfig);
 
     // when the configuration is updated
     final GlobalListenerBatchRecord newConfig = newGlobalListeners();
-    globalListenersState.updateCurrentConfiguration(newConfig);
+    updateCurrentConfiguration(newConfig);
 
     // then the new configuration can be retrieved from state
     final var storedConfig = globalListenersState.getCurrentConfig();
@@ -82,7 +82,7 @@ public class GlobalListenersStateTest {
 
     // whe the current global listeners configuration is updated
     final GlobalListenerBatchRecord newConfig = newGlobalListeners();
-    globalListenersState.updateCurrentConfiguration(newConfig);
+    updateCurrentConfiguration(newConfig);
 
     // then the versioned configuration can still be retrieved from state
     Assertions.assertThat(globalListenersState.isConfigurationVersionStored(versionKey)).isTrue();
@@ -153,6 +153,19 @@ public class GlobalListenersStateTest {
 
     // then
     Assertions.assertThat(globalListenersState.isConfigurationVersionPinned(versionKey)).isFalse();
+  }
+
+  private void updateCurrentConfiguration(final GlobalListenerBatchRecord newConfig) {
+    final var oldConfig = globalListenersState.getCurrentConfig();
+    if (oldConfig != null) {
+      oldConfig
+          .getTaskListeners()
+          .forEach(listener -> globalListenersState.delete((GlobalListenerRecord) listener));
+    }
+    newConfig
+        .getTaskListeners()
+        .forEach(listener -> globalListenersState.create((GlobalListenerRecord) listener));
+    globalListenersState.updateConfigKey(newConfig.getGlobalListenerBatchKey());
   }
 
   private GlobalListenerBatchRecord newGlobalListeners() {

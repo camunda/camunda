@@ -8,56 +8,87 @@
 package io.camunda.zeebe.engine.processing.globallistener;
 
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
-import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
-import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
-import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
+import io.camunda.zeebe.engine.state.globallistener.GlobalListenersState;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerBatchRecord;
 import io.camunda.zeebe.protocol.record.intent.GlobalListenerBatchIntent;
+import io.camunda.zeebe.protocol.record.intent.GlobalListenerIntent;
+import io.camunda.zeebe.protocol.record.value.GlobalListenerRecordValue;
+import io.camunda.zeebe.protocol.record.value.GlobalListenerSource;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import java.util.Collections;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @ExcludeAuthorizationCheck
 public final class GlobalListenerBatchConfigureProcessor
-    implements DistributedTypedRecordProcessor<GlobalListenerBatchRecord> {
+    implements TypedRecordProcessor<GlobalListenerBatchRecord> {
 
   private final KeyGenerator keyGenerator;
-  private final StateWriter stateWriter;
-  private final CommandDistributionBehavior distributionBehavior;
+  private final Writers writers;
+  private final GlobalListenersState globalListenersState;
 
   public GlobalListenerBatchConfigureProcessor(
       final KeyGenerator keyGenerator,
       final Writers writers,
-      final CommandDistributionBehavior distributionBehavior) {
+      final ProcessingState processingState) {
     this.keyGenerator = keyGenerator;
-    stateWriter = writers.state();
-    this.distributionBehavior = distributionBehavior;
+    this.writers = writers;
+    globalListenersState = processingState.getGlobalListenersState();
   }
 
   @Override
-  public void processNewCommand(final TypedRecord<GlobalListenerBatchRecord> command) {
+  public void processRecord(final TypedRecord<GlobalListenerBatchRecord> command) {
+    // Note: key generation is done here to have a single key for all resulting commands/events
+    // since they are all related to the same configuration change, generating a single new
+    // configuration version.
     final long key = keyGenerator.nextKey();
-    appendConfiguredEvent(key, command.getValue());
-    distributeCommand(key, command);
-  }
 
-  @Override
-  public void processDistributedCommand(final TypedRecord<GlobalListenerBatchRecord> command) {
-    final var record = command.getValue();
-    appendConfiguredEvent(command.getKey(), record);
-    distributionBehavior.acknowledgeCommand(command);
-  }
+    // Retrieve existing listeners from state, mapped by ID
+    final GlobalListenerBatchRecord currentConfig = globalListenersState.getCurrentConfig();
+    final Map<String, GlobalListenerRecordValue> existingListeners =
+        currentConfig == null
+            ? Collections.emptyMap()
+            : currentConfig.getTaskListeners().stream()
+                .collect(Collectors.toMap(GlobalListenerRecordValue::getId, l -> l));
+    // Retrieve new requested listeners from command, mapped by ID
+    final Map<String, GlobalListenerRecordValue> newListeners =
+        command.getValue().getTaskListeners().stream()
+            .collect(Collectors.toMap(GlobalListenerRecordValue::getId, l -> l));
 
-  private void appendConfiguredEvent(final long key, final GlobalListenerBatchRecord record) {
-    stateWriter.appendFollowUpEvent(key, GlobalListenerBatchIntent.CONFIGURED, record);
-  }
+    // The new configuration should completely replace the old one.
+    // This means that any existing configuration-defined listener which is no longer present in the
+    // new configuration should be deleted.
+    existingListeners.values().stream()
+        // only consider configuration-defined listeners
+        .filter(l -> l.getSource() == GlobalListenerSource.CONFIGURATION)
+        // filter out listeners which are still present in the new configuration
+        .filter(l -> !newListeners.containsKey(l.getId()))
+        .forEach(
+            listener ->
+                writers
+                    .command()
+                    .appendFollowUpCommand(key, GlobalListenerIntent.DELETE, listener));
+    // New or updated listeners should be created or updated accordingly
+    newListeners
+        .values()
+        .forEach(
+            listener -> {
+              if (existingListeners.containsKey(listener.getId())) {
+                // Note: the old listener is replaced even if it was API-defined
+                writers.command().appendFollowUpCommand(key, GlobalListenerIntent.UPDATE, listener);
+              } else {
+                writers.command().appendFollowUpCommand(key, GlobalListenerIntent.CREATE, listener);
+              }
+            });
 
-  private void distributeCommand(
-      final long key, final TypedRecord<GlobalListenerBatchRecord> command) {
-    distributionBehavior
-        .withKey(key)
-        .inQueue(DistributionQueue.GLOBAL_LISTENERS.getQueueId())
-        .distribute(command);
+    // Finally, write the CONFIGURED event for the batch, marking the completion of the
+    // configuration change
+    writers
+        .state()
+        .appendFollowUpEvent(key, GlobalListenerBatchIntent.CONFIGURED, command.getValue());
   }
 }

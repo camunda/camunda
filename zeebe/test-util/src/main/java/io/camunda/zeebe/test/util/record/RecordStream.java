@@ -189,6 +189,11 @@ public final class RecordStream extends ExporterRecordStream<RecordValue, Record
         filter(r -> r.getValueType() == ValueType.GLOBAL_LISTENER_BATCH).map(Record.class::cast));
   }
 
+  public GlobalListenerRecordStream globalListenerRecords() {
+    return new GlobalListenerRecordStream(
+        filter(r -> r.getValueType() == ValueType.GLOBAL_LISTENER).map(Record.class::cast));
+  }
+
   public BatchOperationCreationRecordStream batchOperationCreationRecords() {
     return new BatchOperationCreationRecordStream(
         filter(r -> r.getValueType() == ValueType.BATCH_OPERATION_CREATION)

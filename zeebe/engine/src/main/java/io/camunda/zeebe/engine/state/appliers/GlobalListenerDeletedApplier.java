@@ -10,21 +10,21 @@ package io.camunda.zeebe.engine.state.appliers;
 import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.globallistener.MutableGlobalListenersState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
-import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerBatchRecord;
-import io.camunda.zeebe.protocol.record.intent.GlobalListenerBatchIntent;
+import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerRecord;
+import io.camunda.zeebe.protocol.record.intent.GlobalListenerIntent;
 
-public final class GlobalListenerBatchConfiguredApplier
-    implements TypedEventApplier<GlobalListenerBatchIntent, GlobalListenerBatchRecord> {
+public final class GlobalListenerDeletedApplier
+    implements TypedEventApplier<GlobalListenerIntent, GlobalListenerRecord> {
 
   private final MutableGlobalListenersState globalListenersState;
 
-  public GlobalListenerBatchConfiguredApplier(final MutableProcessingState processingState) {
+  public GlobalListenerDeletedApplier(final MutableProcessingState processingState) {
     globalListenersState = processingState.getGlobalListenersState();
   }
 
   @Override
-  public void applyState(final long eventKey, final GlobalListenerBatchRecord value) {
-    value.setGlobalListenerBatchKey(eventKey);
-    globalListenersState.updateCurrentConfiguration(value);
+  public void applyState(final long eventKey, final GlobalListenerRecord value) {
+    globalListenersState.updateConfigKey(eventKey);
+    globalListenersState.delete(value);
   }
 }
