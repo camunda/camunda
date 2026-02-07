@@ -261,7 +261,7 @@ public class RoleController {
   public CompletableFuture<ResponseEntity<Object>> assignRoleToGroup(
       @PathVariable final String roleId, @PathVariable final String groupId) {
     return roleMapper
-        .toRoleGroupMemberRequest(roleId, groupId, EntityType.GROUP)
+        .toRoleMemberRequest(roleId, groupId, EntityType.GROUP)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::addMemberToRole);
   }
 
@@ -310,7 +310,7 @@ public class RoleController {
   public CompletableFuture<ResponseEntity<Object>> unassignRoleFromGroup(
       @PathVariable final String roleId, @PathVariable final String groupId) {
     return roleMapper
-        .toRoleGroupMemberRequest(roleId, groupId, EntityType.GROUP)
+        .toRoleMemberRequest(roleId, groupId, EntityType.GROUP)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::removeMemberFromRole);
   }
 

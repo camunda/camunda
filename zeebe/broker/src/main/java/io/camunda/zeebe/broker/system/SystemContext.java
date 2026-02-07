@@ -17,6 +17,7 @@ import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.validation.AuthorizationValidator;
 import io.camunda.security.validation.IdentifierValidator;
 import io.camunda.security.validation.IdentityInitializationException;
+import io.camunda.security.validation.RoleValidator;
 import io.camunda.security.validation.TenantValidator;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.backup.azure.AzureBackupStore;
@@ -48,8 +49,10 @@ import io.camunda.zeebe.broker.system.configuration.partitioning.FixedPartitionC
 import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
 import io.camunda.zeebe.engine.GlobalListenerConfiguration;
 import io.camunda.zeebe.engine.processing.identity.initialize.AuthorizationConfigurer;
+import io.camunda.zeebe.engine.processing.identity.initialize.RoleConfigurer;
 import io.camunda.zeebe.engine.processing.identity.initialize.TenantConfigurer;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.util.Either;
@@ -489,26 +492,34 @@ public final class SystemContext {
         new AuthorizationConfigurer(new AuthorizationValidator(identifierValidator));
     final TenantConfigurer tenantConfigurer =
         new TenantConfigurer(new TenantValidator(identifierValidator));
+    final var roleConfigurer = new RoleConfigurer(new RoleValidator(identifierValidator));
 
     final Either<List<String>, List<AuthorizationRecord>> configuredAuthorizations =
         authorizationConfigurer.configureEntities(
             securityConfiguration.getInitialization().getAuthorizations());
     final Either<List<String>, List<TenantRecord>> configuredTenants =
         tenantConfigurer.configureEntities(securityConfiguration.getInitialization().getTenants());
+    final Either<List<String>, List<RoleRecord>> configuredRoles =
+        roleConfigurer.configureEntities(securityConfiguration.getInitialization().getRoles());
 
     // TODO: after adding more entity types, change this, so it accounts for all violations all
     //   together.
     configuredAuthorizations.ifLeft(
         (violations) -> {
           throw new IdentityInitializationException(
-              "Cannot initialize configured entities: %n- %s"
+              "Cannot initialize configured authorizations: %n- %s"
                   .formatted(String.join(System.lineSeparator() + "- ", violations)));
         });
-
     configuredTenants.ifLeft(
         (violations) -> {
           throw new IdentityInitializationException(
               "Cannot initialize configured tenants: %n- %s"
+                  .formatted(String.join(System.lineSeparator() + "- ", violations)));
+        });
+    configuredRoles.ifLeft(
+        (violations) -> {
+          throw new IdentityInitializationException(
+              "Cannot initialize configured roles: %n- %s"
                   .formatted(String.join(System.lineSeparator() + "- ", violations)));
         });
   }
