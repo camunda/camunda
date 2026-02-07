@@ -11,7 +11,6 @@ import static io.camunda.application.commons.search.SearchEngineDatabaseConfigur
 
 import io.camunda.configuration.DocumentBasedSecondaryStorageDatabase;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
-import io.camunda.exporter.CamundaExporter;
 import io.camunda.zeebe.exporter.ElasticsearchExporter;
 import io.camunda.zeebe.exporter.opensearch.OpensearchExporter;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneApplication;
@@ -68,60 +67,31 @@ public class MultiDbConfigurator {
         .withSecondaryStorageType(SecondaryStorageType.elasticsearch)
         .withUnifiedConfig(
             cfg -> {
-              cfg.getData().getSecondaryStorage().getRetention().setEnabled(retentionEnabled);
+              final var secondaryStorage = cfg.getData().getSecondaryStorage();
+              final var elasticsearch = secondaryStorage.getElasticsearch();
+
+              // Connection settings
+              elasticsearch.setUrl(elasticsearchUrl);
+              elasticsearch.setIndexPrefix(indexPrefix);
+
+              // Retention settings
+              secondaryStorage.getRetention().setEnabled(retentionEnabled);
               // 0s causes ILM to move data asap - it is normally the default
               // https://www.elastic.co/guide/en/elasticsearch/reference/current/ilm-index-lifecycle.html#ilm-phase-transitions
-              cfg.getData().getSecondaryStorage().getRetention().setMinimumAge("0s");
-              cfg.getData().getSecondaryStorage().getElasticsearch().setUrl(elasticsearchUrl);
-              cfg.getData().getSecondaryStorage().getElasticsearch().setIndexPrefix(indexPrefix);
-              cfg.getData()
-                  .getSecondaryStorage()
-                  .getElasticsearch()
-                  .getHistory()
-                  .setPolicyName(indexPrefix + "-ilm");
-              overrideRefreshInterval(cfg.getData().getSecondaryStorage().getElasticsearch());
+              secondaryStorage.getRetention().setMinimumAge("0s");
+
+              // History settings
+              final var history = elasticsearch.getHistory();
+              history.setPolicyName(indexPrefix + "-ilm");
+              history.setWaitPeriodBeforeArchiving(retentionEnabled ? "1s" : "1h");
+              history.setDelayBetweenRuns(java.time.Duration.ofMillis(1000));
+              history.setMaxDelayBetweenRuns(java.time.Duration.ofMillis(1000));
+
+              // Bulk settings
+              elasticsearch.getBulk().setSize(1);
+
+              overrideRefreshInterval(elasticsearch);
             });
-    testApplication.withExporter(
-        CamundaExporter.class.getSimpleName().toLowerCase(),
-        cfg -> {
-          cfg.setClassName(CamundaExporter.class.getName());
-          cfg.setArgs(
-              Map.of(
-                  "connect",
-                  Map.of(
-                      "url",
-                      elasticsearchUrl,
-                      "indexPrefix",
-                      indexPrefix,
-                      "type",
-                      io.camunda.search.connect.configuration.DatabaseType.ELASTICSEARCH),
-                  "index",
-                  Map.of("prefix", indexPrefix),
-                  "history",
-                  Map.of(
-                      "waitPeriodBeforeArchiving",
-                      retentionEnabled ? "1s" : "1h", // find completed instances almost directly
-                      "delayBetweenRuns",
-                      "1000",
-                      "maxDelayBetweenRuns",
-                      "1000",
-                      "retention",
-                      Map.of(
-                          "enabled",
-                          Boolean.toString(retentionEnabled),
-                          "policyName",
-                          indexPrefix + "-ilm",
-                          "minimumAge",
-                          // 0s causes ILM to move data asap - it is normally the default
-                          // https://www.elastic.co/guide/en/elasticsearch/reference/current/ilm-index-lifecycle.html#ilm-phase-transitions
-                          "0s",
-                          "usageMetricsPolicyName",
-                          indexPrefix + "-usage-metrics-ilm",
-                          "usageMetricsMinimumAge",
-                          "0s")),
-                  "bulk",
-                  Map.of("size", 1)));
-        });
   }
 
   public void configureOpenSearchSupportIncludingOldExporter(
@@ -185,63 +155,31 @@ public class MultiDbConfigurator {
         .withSecondaryStorageType(SecondaryStorageType.opensearch)
         .withUnifiedConfig(
             cfg -> {
-              cfg.getData().getSecondaryStorage().getRetention().setEnabled(retentionEnabled);
-              cfg.getData().getSecondaryStorage().getRetention().setMinimumAge("0s");
-              cfg.getData().getSecondaryStorage().getOpensearch().setUrl(opensearchUrl);
-              cfg.getData().getSecondaryStorage().getOpensearch().setIndexPrefix(indexPrefix);
-              cfg.getData()
-                  .getSecondaryStorage()
-                  .getOpensearch()
-                  .getHistory()
-                  .setPolicyName(indexPrefix + "-ilm");
-              cfg.getData().getSecondaryStorage().getOpensearch().setUsername(userName);
-              cfg.getData().getSecondaryStorage().getOpensearch().setPassword(userPassword);
-              overrideRefreshInterval(cfg.getData().getSecondaryStorage().getOpensearch());
-            });
+              final var secondaryStorage = cfg.getData().getSecondaryStorage();
+              final var opensearch = secondaryStorage.getOpensearch();
 
-    testApplication.withExporter(
-        CamundaExporter.class.getSimpleName().toLowerCase(),
-        cfg -> {
-          cfg.setClassName(CamundaExporter.class.getName());
-          cfg.setArgs(
-              Map.of(
-                  "connect",
-                  Map.of(
-                      "url",
-                      opensearchUrl,
-                      "indexPrefix",
-                      indexPrefix,
-                      "type",
-                      io.camunda.search.connect.configuration.DatabaseType.OPENSEARCH,
-                      "username",
-                      userName,
-                      "password",
-                      userPassword,
-                      "awsEnabled",
-                      isAws),
-                  "index",
-                  Map.of("prefix", indexPrefix),
-                  "history",
-                  Map.of(
-                      "waitPeriodBeforeArchiving",
-                      retentionEnabled ? "1s" : "1h", // find completed instances almost directly
-                      "retention",
-                      Map.of(
-                          "enabled",
-                          Boolean.toString(retentionEnabled),
-                          "policyName",
-                          indexPrefix + "-ilm",
-                          "minimumAge",
-                          // 0s causes ILM to move data asap - it is normally the default
-                          // https://www.elastic.co/guide/en/elasticsearch/reference/current/ilm-index-lifecycle.html#ilm-phase-transitions
-                          "0s",
-                          "usageMetricsPolicyName",
-                          indexPrefix + "-usage-metrics-ilm",
-                          "usageMetricsMinimumAge",
-                          "0s")),
-                  "bulk",
-                  Map.of("size", 1)));
-        });
+              // Connection settings
+              opensearch.setUrl(opensearchUrl);
+              opensearch.setIndexPrefix(indexPrefix);
+              opensearch.setUsername(userName);
+              opensearch.setPassword(userPassword);
+
+              // Retention settings
+              secondaryStorage.getRetention().setEnabled(retentionEnabled);
+              // 0s causes ILM to move data asap - it is normally the default
+              // https://www.elastic.co/guide/en/elasticsearch/reference/current/ilm-index-lifecycle.html#ilm-phase-transitions
+              secondaryStorage.getRetention().setMinimumAge("0s");
+
+              // History settings
+              final var history = opensearch.getHistory();
+              history.setPolicyName(indexPrefix + "-ilm");
+              history.setWaitPeriodBeforeArchiving(retentionEnabled ? "1s" : "1h");
+
+              // Bulk settings
+              opensearch.getBulk().setSize(1);
+
+              overrideRefreshInterval(opensearch);
+            });
   }
 
   public void configureRDBMSSupport(
