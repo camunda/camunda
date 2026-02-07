@@ -20,6 +20,7 @@ import io.camunda.gateway.protocol.model.AuditLogEntityTypeEnum;
 import io.camunda.gateway.protocol.model.AuditLogOperationTypeEnum;
 import io.camunda.gateway.protocol.model.AuditLogResult;
 import io.camunda.gateway.protocol.model.AuditLogResultEnum;
+import io.camunda.gateway.protocol.model.AuditLogResultSuccess;
 import io.camunda.gateway.protocol.model.AuditLogSearchQueryResult;
 import io.camunda.gateway.protocol.model.AuthorizationResult;
 import io.camunda.gateway.protocol.model.AuthorizationSearchResult;
@@ -1386,7 +1387,7 @@ public final class SearchQueryResponseMapper {
   }
 
   public static AuditLogResult toAuditLog(final AuditLogEntity auditLog) {
-    return new AuditLogResult()
+    return new AuditLogResultSuccess()
         .auditLogKey(auditLog.auditLogKey())
         .entityKey(auditLog.entityKey())
         .entityType(

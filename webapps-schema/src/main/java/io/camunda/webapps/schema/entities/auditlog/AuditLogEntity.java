@@ -132,6 +132,10 @@ public class AuditLogEntity extends AbstractExporterEntity<AuditLogEntity> {
   @SinceVersion(value = "8.9.0", requireDefault = false)
   private String entityDescription;
 
+  // details of the operation (may contain error details or extra info)
+  @SinceVersion(value = "8.9.0", requireDefault = false)
+  private String details;
+
   public String getEntityKey() {
     return entityKey;
   }
@@ -435,6 +439,15 @@ public class AuditLogEntity extends AbstractExporterEntity<AuditLogEntity> {
 
   public AuditLogEntity setEntityDescription(final String entityDescription) {
     this.entityDescription = entityDescription;
+    return this;
+  }
+
+  public String getDetails() {
+    return details;
+  }
+
+  public AuditLogEntity setDetails(final String details) {
+    this.details = details;
     return this;
   }
 }
