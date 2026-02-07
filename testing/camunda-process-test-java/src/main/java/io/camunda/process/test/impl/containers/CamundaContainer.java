@@ -69,10 +69,7 @@ public class CamundaContainer extends GenericContainer<CamundaContainer> {
         .withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_SPRING_PROFILES_ACTIVE, ACTIVE_SPRING_PROFILES)
         .withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_ZEEBE_CLOCK_CONTROLLED, "true")
         .withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_ZEEBE_LOG_APPENDER, LOG_APPENDER_STACKDRIVER)
-        .withEnv(
-            ContainerRuntimeEnvs.CAMUNDA_ENV_CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTED_API,
-            "true")
-        .withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED, "false")
+        .withDefaultSecurityConfiguration()
         .withH2()
         .addExposedPorts(
             ContainerRuntimePorts.CAMUNDA_GATEWAY_API,
@@ -80,6 +77,29 @@ public class CamundaContainer extends GenericContainer<CamundaContainer> {
             ContainerRuntimePorts.CAMUNDA_INTERNAL_API,
             ContainerRuntimePorts.CAMUNDA_MONITORING_API,
             ContainerRuntimePorts.CAMUNDA_REST_API);
+  }
+
+  public CamundaContainer withDefaultSecurityConfiguration() {
+    withEnv(
+            ContainerRuntimeEnvs.CAMUNDA_ENV_CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTED_API,
+            "true")
+        .withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED, "false")
+        .withEnv(
+            ContainerRuntimeEnvs
+                .CAMUNDA_ENV_CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_USERS_0,
+            "demo")
+        .withEnv(
+            ContainerRuntimeEnvs.CAMUNDA_ENV_CAMUNDA_SECURITY_INITIALIZATION_USERS_0_EMAIL,
+            "demo@example.com")
+        .withEnv(
+            ContainerRuntimeEnvs.CAMUNDA_ENV_CAMUNDA_SECURITY_INITIALIZATION_USERS_0_NAME, "Demo")
+        .withEnv(
+            ContainerRuntimeEnvs.CAMUNDA_ENV_CAMUNDA_SECURITY_INITIALIZATION_USERS_0_PASSWORD,
+            "demo")
+        .withEnv(
+            ContainerRuntimeEnvs.CAMUNDA_ENV_CAMUNDA_SECURITY_INITIALIZATION_USERS_0_USERNAME,
+            "demo");
+    return this;
   }
 
   public CamundaContainer withMultiTenancy() {

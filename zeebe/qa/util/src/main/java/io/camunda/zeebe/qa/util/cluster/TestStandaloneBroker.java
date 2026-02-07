@@ -11,6 +11,7 @@ import io.atomix.cluster.MemberId;
 import io.camunda.application.Profile;
 import io.camunda.application.StandaloneCamunda;
 import io.camunda.application.commons.CommonsModuleConfiguration;
+import io.camunda.application.commons.authentication.CamundaAuthenticationConfiguration;
 import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
 import io.camunda.authentication.config.AuthenticationProperties;
 import io.camunda.configuration.Camunda;
@@ -71,6 +72,7 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     super(
         BrokerModuleConfiguration.class,
         CommonsModuleConfiguration.class,
+        CamundaAuthenticationConfiguration.class,
         UnifiedConfigurationHelper.class,
         UnifiedConfiguration.class,
         PrimaryStorageBackupPropertiesOverride.class,

@@ -100,6 +100,11 @@ final class SecuredClusteredMessagingIT {
           .withEnv("ZEEBE_BROKER_EXPORTERS_CAMUNDA_ARGS_CONNECT_INDEXPREFIX", testPrefix)
           .withEnv(UNPROTECTED_API_ENV_VAR, "true")
           .withEnv("CAMUNDA_LOG_LEVEL", "DEBUG")
+          .withEnv("CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_USERS_0", "demo")
+          .withEnv("CAMUNDA_SECURITY_INITIALIZATION_USERS_0_EMAIL", "demo@example.com")
+          .withEnv("CAMUNDA_SECURITY_INITIALIZATION_USERS_0_NAME", "Demo")
+          .withEnv("CAMUNDA_SECURITY_INITIALIZATION_USERS_0_PASSWORD", "demo")
+          .withEnv("CAMUNDA_SECURITY_INITIALIZATION_USERS_0_USERNAME", "demo")
           .withAdditionalExposedPort(8080)
           .withAdditionalExposedPort(ZeebePort.INTERNAL.getPort());
 

@@ -38,13 +38,13 @@ import java.util.Set;
  *       that defaults those fields to empty <b>mutable</b> instances (e.g. {@code new
  *       ArrayList<>()}). This is required because MyBatis hydrates collection-mapped fields by
  *       calling mutating methods on the existing instance.
- *   <li>Every record in {@code io.camunda.authentication.entity} with collection-type fields must
- *       declare a compact constructor that defaults those fields to empty instances (immutable
- *       defaults like {@code List.of()} are acceptable here).
+ *   <li>Record {@code io.camunda.service.CamundaUserDTO} with collection-type fields must declare a
+ *       compact constructor that defaults those fields to empty instances (immutable defaults like
+ *       {@code List.of()} are acceptable here).
  * </ol>
  */
 @AnalyzeClasses(
-    packages = {"io.camunda.search.entities", "io.camunda.authentication.entity"},
+    packages = {"io.camunda.search.entities", "io.camunda.service"},
     importOptions = ImportOption.DoNotIncludeTests.class)
 public final class SearchEntityArchTest {
 
@@ -167,16 +167,15 @@ public final class SearchEntityArchTest {
                   + "List.of() would cause UnsupportedOperationException at runtime");
 
   /**
-   * Every record in {@code io.camunda.authentication.entity} that declares collection-type fields
-   * must have a compact constructor that defaults them to non-null empty instances when {@code
-   * null} is passed. Unlike search entities, immutable defaults (e.g. {@code List.of()}) are
-   * acceptable.
+   * The record {@code io.camunda.service.CamundaUserDTO} that declares collection-type fields must
+   * have a compact constructor that defaults them to non-null empty instances when {@code null} is
+   * passed. Unlike search entities, immutable defaults (e.g. {@code List.of()}) are acceptable.
    */
   @ArchTest
   static final ArchRule AUTH_ENTITY_COLLECTION_FIELDS_MUST_HAVE_DEFAULTS =
       ArchRuleDefinition.classes()
           .that()
-          .resideInAPackage("io.camunda.authentication.entity..")
+          .haveFullyQualifiedName("io.camunda.service.CamundaUserDTO")
           .and()
           .areRecords()
           .should(

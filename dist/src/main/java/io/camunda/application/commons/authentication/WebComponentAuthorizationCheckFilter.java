@@ -5,10 +5,11 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.authentication.filters;
+package io.camunda.application.commons.authentication;
 
 import static io.camunda.service.authorization.Authorizations.COMPONENT_ACCESS_AUTHORIZATION;
 
+import io.camunda.authentication.filters.AbstractWebComponentAuthorizationCheckFilter;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.reader.ResourceAccessProvider;
@@ -21,10 +22,10 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.util.UrlPathHelper;
 
-public class WebComponentAuthorizationCheckFilter extends OncePerRequestFilter {
+public class WebComponentAuthorizationCheckFilter
+    extends AbstractWebComponentAuthorizationCheckFilter {
 
   private static final Logger LOG =
       LoggerFactory.getLogger(WebComponentAuthorizationCheckFilter.class);

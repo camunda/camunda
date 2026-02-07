@@ -10,11 +10,10 @@ package io.camunda.authentication.config;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.service.ApiServicesExecutorProvider;
-import io.camunda.service.UserServices;
+import io.camunda.authentication.filters.AbstractAdminUserCheckFilter;
+import io.camunda.authentication.filters.NoOpAdminUserCheckFilter;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ForkJoinPool;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -115,20 +114,13 @@ public class BasicAuthWebSecurityConfigParameterizedTest {
     }
 
     @Bean
-    public UserServices userServices() {
-      return new UserServices(
-          null,
-          null,
-          null,
-          null,
-          null,
-          new ApiServicesExecutorProvider(ForkJoinPool.commonPool()),
-          null);
+    public HandlerMappingIntrospector mvcHandlerMappingIntrospector() {
+      return new HandlerMappingIntrospector();
     }
 
     @Bean
-    public HandlerMappingIntrospector mvcHandlerMappingIntrospector() {
-      return new HandlerMappingIntrospector();
+    public AbstractAdminUserCheckFilter adminUserCheckFilter() {
+      return new NoOpAdminUserCheckFilter();
     }
   }
 }

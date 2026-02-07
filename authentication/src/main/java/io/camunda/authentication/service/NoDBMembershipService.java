@@ -10,16 +10,12 @@ package io.camunda.authentication.service;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.OidcGroupsLoader;
 import io.camunda.security.configuration.SecurityConfiguration;
-import io.camunda.spring.utils.ConditionalOnSecondaryStorageDisabled;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
-import org.springframework.stereotype.Service;
 
-@Service
-@ConditionalOnSecondaryStorageDisabled
 public class NoDBMembershipService implements MembershipService {
 
   private final OidcGroupsLoader oidcGroupsLoader;

@@ -5,28 +5,25 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.authentication.service;
+package io.camunda.application.commons.authentication;
 
 import static io.camunda.service.authorization.Authorizations.COMPONENT_ACCESS_AUTHORIZATION;
 
-import io.camunda.authentication.ConditionalOnAuthenticationMethod;
-import io.camunda.authentication.entity.CamundaUserDTO;
 import io.camunda.search.entities.TenantEntity;
 import io.camunda.search.query.TenantQuery;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
-import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.security.entity.ClusterMetadata.AppName;
 import io.camunda.security.reader.ResourceAccessProvider;
+import io.camunda.service.CamundaUserDTO;
 import io.camunda.service.TenantServices;
-import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
+import io.camunda.zeebe.gateway.rest.controller.authentication.CamundaUserService;
 import jakarta.json.Json;
 import jakarta.json.JsonString;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import org.springframework.context.annotation.Profile;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
@@ -37,12 +34,7 @@ import org.springframework.security.oauth2.core.oidc.OidcIdToken;
 import org.springframework.security.oauth2.core.oidc.StandardClaimAccessor;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.security.oauth2.server.resource.authentication.AbstractOAuth2TokenAuthenticationToken;
-import org.springframework.stereotype.Service;
 
-@Service
-@ConditionalOnAuthenticationMethod(AuthenticationMethod.OIDC)
-@ConditionalOnSecondaryStorageEnabled
-@Profile("consolidated-auth")
 public class OidcCamundaUserService implements CamundaUserService {
   private static final String SALES_PLAN_TYPE = "";
 
