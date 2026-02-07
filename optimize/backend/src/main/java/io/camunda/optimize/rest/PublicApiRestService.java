@@ -8,6 +8,8 @@
 package io.camunda.optimize.rest;
 
 import static io.camunda.optimize.rest.SharingRestService.SHARE_PATH;
+import static io.camunda.optimize.rest.constants.RestConstants.X_OPTIMIZE_CLIENT_LOCALE;
+import static io.camunda.optimize.rest.util.TimeZoneUtil.extractTimezone;
 import static io.camunda.optimize.tomcat.OptimizeResourceConstants.REST_API_PATH;
 
 import io.camunda.optimize.dto.optimize.SettingsDto;
@@ -16,13 +18,19 @@ import io.camunda.optimize.dto.optimize.query.IdResponseDto;
 import io.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
 import io.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import io.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionRequestDto;
+import io.camunda.optimize.dto.optimize.query.report.AdditionalProcessReportEvaluationFilterDto;
+import io.camunda.optimize.dto.optimize.query.report.AuthorizedReportEvaluationResult;
 import io.camunda.optimize.dto.optimize.query.variable.DefinitionVariableLabelsDto;
 import io.camunda.optimize.dto.optimize.rest.export.OptimizeEntityExportDto;
 import io.camunda.optimize.dto.optimize.rest.export.report.ReportDefinitionExportDto;
 import io.camunda.optimize.dto.optimize.rest.pagination.PaginatedDataExportDto;
+import io.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
+import io.camunda.optimize.dto.optimize.rest.pagination.PaginationRequestDto;
 import io.camunda.optimize.dto.optimize.rest.pagination.PaginationScrollableDto;
 import io.camunda.optimize.dto.optimize.rest.pagination.PaginationScrollableRequestDto;
+import io.camunda.optimize.dto.optimize.rest.report.AuthorizedReportEvaluationResponseDto;
 import io.camunda.optimize.rest.exceptions.BadRequestException;
+import io.camunda.optimize.rest.mapper.ReportRestMapper;
 import io.camunda.optimize.service.SettingsService;
 import io.camunda.optimize.service.collection.CollectionScopeService;
 import io.camunda.optimize.service.collection.CollectionService;
@@ -31,8 +39,10 @@ import io.camunda.optimize.service.entities.EntityExportService;
 import io.camunda.optimize.service.entities.EntityImportService;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.export.JsonReportResultExportService;
+import io.camunda.optimize.service.report.ReportEvaluationService;
 import io.camunda.optimize.service.report.ReportService;
 import io.camunda.optimize.service.variable.ProcessVariableLabelService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.time.ZoneId;
 import java.util.Collections;
@@ -79,6 +89,7 @@ public class PublicApiRestService {
       REPORT_EXPORT_BY_ID_PATH + "/result/json";
   private static final String DASHBOARD_BY_ID_PATH = DASHBOARD_SUB_PATH + "/{dashboardId}";
   private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(PublicApiRestService.class);
+  private static final String userId = "a8ddcbf9-617e-4b89-8a32-2dda5969953e";
 
   private final JsonReportResultExportService jsonReportResultExportService;
   private final EntityExportService entityExportService;
@@ -89,6 +100,8 @@ public class PublicApiRestService {
   private final SettingsService settingsService;
   private final CollectionService collectionService;
   private final CollectionScopeService collectionScopeService;
+  private final ReportEvaluationService reportEvaluationService;
+  private final ReportRestMapper reportRestMapper;
 
   public PublicApiRestService(
       final JsonReportResultExportService jsonReportResultExportService,
@@ -99,7 +112,9 @@ public class PublicApiRestService {
       final ProcessVariableLabelService processVariableLabelService,
       final SettingsService settingsService,
       final CollectionService collectionService,
-      final CollectionScopeService collectionScopeService) {
+      final CollectionScopeService collectionScopeService,
+      final ReportEvaluationService reportEvaluationService,
+      final ReportRestMapper reportRestMapper) {
     this.jsonReportResultExportService = jsonReportResultExportService;
     this.entityExportService = entityExportService;
     this.entityImportService = entityImportService;
@@ -109,6 +124,8 @@ public class PublicApiRestService {
     this.settingsService = settingsService;
     this.collectionService = collectionService;
     this.collectionScopeService = collectionScopeService;
+    this.reportEvaluationService = reportEvaluationService;
+    this.reportRestMapper = reportRestMapper;
   }
 
   @GetMapping(REPORT_SUB_PATH)
@@ -195,6 +212,26 @@ public class PublicApiRestService {
     final SettingsDto settings = SettingsDto.builder().sharingEnabled(false).build();
     settingsService.setSettings(settings);
   }
+
+  // Undocumented API for getting the query time of a report evaluation
+  @PostMapping("/{id}/evaluate")
+  public AuthorizedReportEvaluationResponseDto evaluateReportByIdWithFilters(
+      @PathVariable("id") final String reportId,
+      @Valid final PaginationRequestDto paginationRequestDto,
+      @RequestBody final AdditionalProcessReportEvaluationFilterDto reportEvaluationFilter,
+      final HttpServletRequest request) {
+    final ZoneId timezone = extractTimezone(request);
+    final AuthorizedReportEvaluationResult reportEvaluationResult =
+        reportEvaluationService.evaluateSavedReportWithAdditionalFilters(
+            userId,
+            timezone,
+            reportId,
+            reportEvaluationFilter,
+            PaginationDto.fromPaginationRequest(paginationRequestDto));
+    return reportRestMapper.mapToLocalizedEvaluationResponseDto(
+        reportEvaluationResult, request.getHeader(X_OPTIMIZE_CLIENT_LOCALE));
+  }
+
 
   // Undocumented API used in consulting to programmatically list collections
   @GetMapping(COLLECTION_SUB_PATH)

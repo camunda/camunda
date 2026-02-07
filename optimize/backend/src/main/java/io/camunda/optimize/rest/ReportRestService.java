@@ -31,6 +31,8 @@ import io.camunda.optimize.service.report.ReportEvaluationService;
 import io.camunda.optimize.service.report.ReportService;
 import io.camunda.optimize.service.security.SessionService;
 import io.camunda.optimize.service.security.util.LocalDateUtil;
+import io.micrometer.core.instrument.Metrics;
+import io.micrometer.core.instrument.Timer;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.time.ZoneId;

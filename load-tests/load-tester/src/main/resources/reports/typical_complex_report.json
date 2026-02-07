@@ -1,0 +1,140 @@
+[
+  {
+    "id": "f3dae2f6-6065-4995-8060-5e8bdcc412d4",
+    "exportEntityType": "single_process_report",
+    "name": "Complex Report",
+    "description": "Analyze shares for count or duration of processes.",
+    "sourceIndexVersion": 11,
+    "collectionId": "87cc0147-edc8-4955-b3c9-1493a028c4f9",
+    "data": {
+      "configuration": {
+        "color": "#1991c8",
+        "aggregationTypes": [
+          {
+            "type": "avg",
+            "value": null
+          }
+        ],
+        "userTaskDurationTimes": [
+          "total"
+        ],
+        "showInstanceCount": false,
+        "pointMarkers": true,
+        "precision": null,
+        "hideRelativeValue": false,
+        "hideAbsoluteValue": false,
+        "alwaysShowRelative": false,
+        "alwaysShowAbsolute": true,
+        "showGradientBars": true,
+        "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<bpmn:definitions xmlns:bpmn=\"http://www.omg.org/spec/BPMN/20100524/MODEL\" xmlns:bpmndi=\"http://www.omg.org/spec/BPMN/20100524/DI\" xmlns:dc=\"http://www.omg.org/spec/DD/20100524/DC\" xmlns:zeebe=\"http://camunda.org/schema/zeebe/1.0\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:di=\"http://www.omg.org/spec/DD/20100524/DI\" id=\"Definitions_02ctmia\" targetNamespace=\"http://bpmn.io/schema/bpmn\" exporter=\"Camunda Modeler\" exporterVersion=\"4.12.0\">\n  <bpmn:process id=\"benchmark\" name=\"Ten tasks process\" isExecutable=\"true\">\n    <bpmn:startEvent id=\"start\">\n      <bpmn:outgoing>SequenceFlow_1swotv4</bpmn:outgoing>\n    </bpmn:startEvent>\n    <bpmn:serviceTask id=\"task1\" name=\"task1\">\n      <bpmn:extensionElements>\n        <zeebe:taskDefinition type=\"benchmark-task\" />\n      </bpmn:extensionElements>\n      <bpmn:incoming>SequenceFlow_1swotv4</bpmn:incoming>\n      <bpmn:outgoing>SequenceFlow_0cqtbo2</bpmn:outgoing>\n    </bpmn:serviceTask>\n    <bpmn:sequenceFlow id=\"SequenceFlow_1swotv4\" sourceRef=\"start\" targetRef=\"task1\" />\n    <bpmn:serviceTask id=\"task2\" name=\"task2\">\n      <bpmn:extensionElements>\n        <zeebe:taskDefinition type=\"benchmark-task\" />\n      </bpmn:extensionElements>\n      <bpmn:incoming>SequenceFlow_0cqtbo2</bpmn:incoming>\n      <bpmn:outgoing>SequenceFlow_19e406m</bpmn:outgoing>\n    </bpmn:serviceTask>\n    <bpmn:sequenceFlow id=\"SequenceFlow_0cqtbo2\" sourceRef=\"task1\" targetRef=\"task2\" />\n    <bpmn:serviceTask id=\"task3\" name=\"task3\">\n      <bpmn:extensionElements>\n        <zeebe:taskDefinition type=\"benchmark-task\" />\n      </bpmn:extensionElements>\n      <bpmn:incoming>SequenceFlow_19e406m</bpmn:incoming>\n      <bpmn:outgoing>SequenceFlow_1fcsq3j</bpmn:outgoing>\n    </bpmn:serviceTask>\n    <bpmn:sequenceFlow id=\"SequenceFlow_19e406m\" sourceRef=\"task2\" targetRef=\"task3\" />\n    <bpmn:intermediateCatchEvent id=\"timer1\" name=\"1 minute\">\n      <bpmn:incoming>Flow_0z2tud8</bpmn:incoming>\n      <bpmn:outgoing>SequenceFlow_1izpkmf</bpmn:outgoing>\n      <bpmn:timerEventDefinition>\n        <bpmn:timeDuration xsi:type=\"bpmn:tFormalExpression\">PT1M</bpmn:timeDuration>\n      </bpmn:timerEventDefinition>\n    </bpmn:intermediateCatchEvent>\n    <bpmn:sequenceFlow id=\"SequenceFlow_1fcsq3j\" sourceRef=\"task3\" targetRef=\"Gateway_09jrxib\" />\n    <bpmn:serviceTask id=\"task4\" name=\"task4\">\n      <bpmn:extensionElements>\n        <zeebe:taskDefinition type=\"benchmark-task\" />\n      </bpmn:extensionElements>\n      <bpmn:incoming>SequenceFlow_1izpkmf</bpmn:incoming>\n      <bpmn:outgoing>SequenceFlow_1ktyxza</bpmn:outgoing>\n    </bpmn:serviceTask>\n    <bpmn:sequenceFlow id=\"SequenceFlow_1izpkmf\" sourceRef=\"timer1\" targetRef=\"task4\" />\n    <bpmn:serviceTask id=\"task5\" name=\"task5\">\n      <bpmn:extensionElements>\n        <zeebe:taskDefinition type=\"benchmark-task\" />\n      </bpmn:extensionElements>\n      <bpmn:incoming>SequenceFlow_1ktyxza</bpmn:incoming>\n      <bpmn:outgoing>SequenceFlow_0h8p3qy</bpmn:outgoing>\n    </bpmn:serviceTask>\n    <bpmn:sequenceFlow id=\"SequenceFlow_1ktyxza\" sourceRef=\"task4\" targetRef=\"task5\" />\n    <bpmn:serviceTask id=\"task6\" name=\"task6\">\n      <bpmn:extensionElements>\n        <zeebe:taskDefinition type=\"benchmark-task\" />\n      </bpmn:extensionElements>\n      <bpmn:incoming>SequenceFlow_0h8p3qy</bpmn:incoming>\n      <bpmn:outgoing>SequenceFlow_0pvrpnr</bpmn:outgoing>\n    </bpmn:serviceTask>\n    <bpmn:sequenceFlow id=\"SequenceFlow_0h8p3qy\" sourceRef=\"task5\" targetRef=\"task6\" />\n    <bpmn:intermediateCatchEvent id=\"timer2\" name=\"1 minute\">\n      <bpmn:incoming>SequenceFlow_0pvrpnr</bpmn:incoming>\n      <bpmn:outgoing>SequenceFlow_0momtrt</bpmn:outgoing>\n      <bpmn:timerEventDefinition>\n        <bpmn:timeDuration xsi:type=\"bpmn:tFormalExpression\">PT1M</bpmn:timeDuration>\n      </bpmn:timerEventDefinition>\n    </bpmn:intermediateCatchEvent>\n    <bpmn:sequenceFlow id=\"SequenceFlow_0pvrpnr\" sourceRef=\"task6\" targetRef=\"timer2\" />\n    <bpmn:serviceTask id=\"task7\" name=\"task7\">\n      <bpmn:extensionElements>\n        <zeebe:taskDefinition type=\"benchmark-task\" />\n      </bpmn:extensionElements>\n      <bpmn:incoming>SequenceFlow_0momtrt</bpmn:incoming>\n      <bpmn:outgoing>SequenceFlow_11i3dru</bpmn:outgoing>\n    </bpmn:serviceTask>\n    <bpmn:sequenceFlow id=\"SequenceFlow_0momtrt\" sourceRef=\"timer2\" targetRef=\"task7\" />\n    <bpmn:serviceTask id=\"task8\" name=\"task8\">\n      <bpmn:extensionElements>\n        <zeebe:taskDefinition type=\"benchmark-task\" />\n      </bpmn:extensionElements>\n      <bpmn:incoming>SequenceFlow_11i3dru</bpmn:incoming>\n      <bpmn:outgoing>SequenceFlow_02ln9k8</bpmn:outgoing>\n    </bpmn:serviceTask>\n    <bpmn:sequenceFlow id=\"SequenceFlow_11i3dru\" sourceRef=\"task7\" targetRef=\"task8\" />\n    <bpmn:serviceTask id=\"task9\" name=\"task9\">\n      <bpmn:extensionElements>\n        <zeebe:taskDefinition type=\"benchmark-task\" />\n      </bpmn:extensionElements>\n      <bpmn:incoming>SequenceFlow_02ln9k8</bpmn:incoming>\n      <bpmn:outgoing>SequenceFlow_18f5tlt</bpmn:outgoing>\n    </bpmn:serviceTask>\n    <bpmn:sequenceFlow id=\"SequenceFlow_02ln9k8\" sourceRef=\"task8\" targetRef=\"task9\" />\n    <bpmn:serviceTask id=\"task10\" name=\"task10\">\n      <bpmn:extensionElements>\n        <zeebe:taskDefinition type=\"benchmark-task\" />\n      </bpmn:extensionElements>\n      <bpmn:incoming>SequenceFlow_18f5tlt</bpmn:incoming>\n      <bpmn:outgoing>SequenceFlow_1ofj7hs</bpmn:outgoing>\n    </bpmn:serviceTask>\n    <bpmn:sequenceFlow id=\"SequenceFlow_18f5tlt\" sourceRef=\"task9\" targetRef=\"task10\" />\n    <bpmn:endEvent id=\"end\">\n      <bpmn:incoming>SequenceFlow_1ofj7hs</bpmn:incoming>\n    </bpmn:endEvent>\n    <bpmn:sequenceFlow id=\"SequenceFlow_1ofj7hs\" sourceRef=\"task10\" targetRef=\"end\" />\n    <bpmn:exclusiveGateway id=\"Gateway_09jrxib\" name=\"Continue?\">\n      <bpmn:incoming>SequenceFlow_1fcsq3j</bpmn:incoming>\n      <bpmn:outgoing>Flow_0z2tud8</bpmn:outgoing>\n      <bpmn:outgoing>Flow_11ozwsi</bpmn:outgoing>\n    </bpmn:exclusiveGateway>\n    <bpmn:sequenceFlow id=\"Flow_0z2tud8\" name=\"yes\" sourceRef=\"Gateway_09jrxib\" targetRef=\"timer1\">\n      <bpmn:conditionExpression xsi:type=\"bpmn:tFormalExpression\">= var2=true</bpmn:conditionExpression>\n    </bpmn:sequenceFlow>\n    <bpmn:endEvent id=\"Event_1bcf2he\">\n      <bpmn:incoming>Flow_11ozwsi</bpmn:incoming>\n    </bpmn:endEvent>\n    <bpmn:sequenceFlow id=\"Flow_11ozwsi\" name=\"no\" sourceRef=\"Gateway_09jrxib\" targetRef=\"Event_1bcf2he\">\n      <bpmn:conditionExpression xsi:type=\"bpmn:tFormalExpression\">= var2=false</bpmn:conditionExpression>\n    </bpmn:sequenceFlow>\n  </bpmn:process>\n  <bpmndi:BPMNDiagram id=\"BPMNDiagram_1\">\n    <bpmndi:BPMNPlane id=\"BPMNPlane_1\" bpmnElement=\"benchmark\">\n      <bpmndi:BPMNEdge id=\"SequenceFlow_0momtrt_di\" bpmnElement=\"SequenceFlow_0momtrt\">\n        <di:waypoint x=\"1408\" y=\"127\" />\n        <di:waypoint x=\"1460\" y=\"127\" />\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_1izpkmf_di\" bpmnElement=\"SequenceFlow_1izpkmf\">\n        <di:waypoint x=\"880\" y=\"127\" />\n        <di:waypoint x=\"930\" y=\"127\" />\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_1fcsq3j_di\" bpmnElement=\"SequenceFlow_1fcsq3j\">\n        <di:waypoint x=\"685\" y=\"127\" />\n        <di:waypoint x=\"745\" y=\"127\" />\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_19e406m_di\" bpmnElement=\"SequenceFlow_19e406m\">\n        <di:waypoint x=\"534\" y=\"127\" />\n        <di:waypoint x=\"585\" y=\"127\" />\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_0cqtbo2_di\" bpmnElement=\"SequenceFlow_0cqtbo2\">\n        <di:waypoint x=\"381\" y=\"127\" />\n        <di:waypoint x=\"434\" y=\"127\" />\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_1swotv4_di\" bpmnElement=\"SequenceFlow_1swotv4\">\n        <di:waypoint x=\"215\" y=\"127\" />\n        <di:waypoint x=\"281\" y=\"127\" />\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNEdge id=\"Flow_0z2tud8_di\" bpmnElement=\"Flow_0z2tud8\">\n        <di:waypoint x=\"795\" y=\"127\" />\n        <di:waypoint x=\"844\" y=\"127\" />\n        <bpmndi:BPMNLabel>\n          <dc:Bounds x=\"811\" y=\"109\" width=\"18\" height=\"14\" />\n        </bpmndi:BPMNLabel>\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNEdge id=\"Flow_11ozwsi_di\" bpmnElement=\"Flow_11ozwsi\">\n        <di:waypoint x=\"770\" y=\"152\" />\n        <di:waypoint x=\"770\" y=\"222\" />\n        <bpmndi:BPMNLabel>\n          <dc:Bounds x=\"779\" y=\"184\" width=\"13\" height=\"14\" />\n        </bpmndi:BPMNLabel>\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_1ktyxza_di\" bpmnElement=\"SequenceFlow_1ktyxza\">\n        <di:waypoint x=\"1030\" y=\"127\" />\n        <di:waypoint x=\"1083\" y=\"127\" />\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_0h8p3qy_di\" bpmnElement=\"SequenceFlow_0h8p3qy\">\n        <di:waypoint x=\"1183\" y=\"127\" />\n        <di:waypoint x=\"1234\" y=\"127\" />\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_0pvrpnr_di\" bpmnElement=\"SequenceFlow_0pvrpnr\">\n        <di:waypoint x=\"1334\" y=\"127\" />\n        <di:waypoint x=\"1372\" y=\"127\" />\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_11i3dru_di\" bpmnElement=\"SequenceFlow_11i3dru\">\n        <di:waypoint x=\"1560\" y=\"127\" />\n        <di:waypoint x=\"1613\" y=\"127\" />\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_02ln9k8_di\" bpmnElement=\"SequenceFlow_02ln9k8\">\n        <di:waypoint x=\"1713\" y=\"127\" />\n        <di:waypoint x=\"1764\" y=\"127\" />\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_18f5tlt_di\" bpmnElement=\"SequenceFlow_18f5tlt\">\n        <di:waypoint x=\"1864\" y=\"127\" />\n        <di:waypoint x=\"1920\" y=\"127\" />\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_1ofj7hs_di\" bpmnElement=\"SequenceFlow_1ofj7hs\">\n        <di:waypoint x=\"2020\" y=\"127\" />\n        <di:waypoint x=\"2072\" y=\"127\" />\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNShape id=\"_BPMNShape_StartEvent_2\" bpmnElement=\"start\">\n        <dc:Bounds x=\"179\" y=\"109\" width=\"36\" height=\"36\" />\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNShape id=\"ServiceTask_1ytg4oh_di\" bpmnElement=\"task1\">\n        <dc:Bounds x=\"281\" y=\"87\" width=\"100\" height=\"80\" />\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNShape id=\"ServiceTask_0io0li4_di\" bpmnElement=\"task2\">\n        <dc:Bounds x=\"434\" y=\"87\" width=\"100\" height=\"80\" />\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNShape id=\"ServiceTask_1dkpuzw_di\" bpmnElement=\"task3\">\n        <dc:Bounds x=\"585\" y=\"87\" width=\"100\" height=\"80\" />\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNShape id=\"IntermediateCatchEvent_1so6ydj_di\" bpmnElement=\"timer1\">\n        <dc:Bounds x=\"844\" y=\"109\" width=\"36\" height=\"36\" />\n        <bpmndi:BPMNLabel>\n          <dc:Bounds x=\"834\" y=\"155\" width=\"55\" height=\"14\" />\n        </bpmndi:BPMNLabel>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNShape id=\"Gateway_09jrxib_di\" bpmnElement=\"Gateway_09jrxib\" isMarkerVisible=\"true\">\n        <dc:Bounds x=\"745\" y=\"102\" width=\"50\" height=\"50\" />\n        <bpmndi:BPMNLabel>\n          <dc:Bounds x=\"744\" y=\"78\" width=\"51\" height=\"14\" />\n        </bpmndi:BPMNLabel>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNShape id=\"ServiceTask_0k94g0c_di\" bpmnElement=\"task4\">\n        <dc:Bounds x=\"930\" y=\"87\" width=\"100\" height=\"80\" />\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNShape id=\"ServiceTask_1v3vuuo_di\" bpmnElement=\"task5\">\n        <dc:Bounds x=\"1083\" y=\"87\" width=\"100\" height=\"80\" />\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNShape id=\"ServiceTask_0grrw5s_di\" bpmnElement=\"task6\">\n        <dc:Bounds x=\"1234\" y=\"87\" width=\"100\" height=\"80\" />\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNShape id=\"IntermediateCatchEvent_066cnhl_di\" bpmnElement=\"timer2\">\n        <dc:Bounds x=\"1372\" y=\"109\" width=\"36\" height=\"36\" />\n        <bpmndi:BPMNLabel>\n          <dc:Bounds x=\"1364\" y=\"79\" width=\"55\" height=\"14\" />\n        </bpmndi:BPMNLabel>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNShape id=\"ServiceTask_0tsh0b1_di\" bpmnElement=\"task7\">\n        <dc:Bounds x=\"1460\" y=\"87\" width=\"100\" height=\"80\" />\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNShape id=\"ServiceTask_1cx6u42_di\" bpmnElement=\"task8\">\n        <dc:Bounds x=\"1613\" y=\"87\" width=\"100\" height=\"80\" />\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNShape id=\"ServiceTask_1kfeq2q_di\" bpmnElement=\"task9\">\n        <dc:Bounds x=\"1764\" y=\"87\" width=\"100\" height=\"80\" />\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNShape id=\"ServiceTask_0iryuae_di\" bpmnElement=\"task10\">\n        <dc:Bounds x=\"1920\" y=\"87\" width=\"100\" height=\"80\" />\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNShape id=\"EndEvent_0l925tw_di\" bpmnElement=\"end\">\n        <dc:Bounds x=\"2072\" y=\"109\" width=\"36\" height=\"36\" />\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNShape id=\"Event_1bcf2he_di\" bpmnElement=\"Event_1bcf2he\">\n        <dc:Bounds x=\"752\" y=\"222\" width=\"36\" height=\"36\" />\n      </bpmndi:BPMNShape>\n    </bpmndi:BPMNPlane>\n  </bpmndi:BPMNDiagram>\n</bpmn:definitions>\n",
+        "tableColumns": {
+          "includeNewVariables": false,
+          "excludedColumns": [],
+          "includedColumns": [],
+          "columnOrder": []
+        },
+        "targetValue": {
+          "countChart": {
+            "isBelow": false,
+            "value": "100"
+          },
+          "durationProgress": {
+            "baseline": {
+              "unit": "hours",
+              "value": "0"
+            },
+            "target": {
+              "unit": "hours",
+              "value": "2",
+              "isBelow": false
+            }
+          },
+          "active": false,
+          "countProgress": {
+            "baseline": "0",
+            "target": "100",
+            "isBelow": false
+          },
+          "durationChart": {
+            "unit": "hours",
+            "isBelow": false,
+            "value": "2"
+          },
+          "isKpi": false
+        },
+        "heatmapTargetValue": {
+          "active": false,
+          "values": {}
+        },
+        "groupByDateVariableUnit": "automatic",
+        "distributeByDateVariableUnit": "automatic",
+        "customBucket": {
+          "active": false,
+          "bucketSize": "10.0",
+          "bucketSizeUnit": "minute",
+          "baseline": "0.0",
+          "baselineUnit": "minute"
+        },
+        "distributeByCustomBucket": {
+          "active": false,
+          "bucketSize": "10.0",
+          "bucketSizeUnit": "minute",
+          "baseline": "0.0",
+          "baselineUnit": "minute"
+        },
+        "sorting": {
+          "by": "value",
+          "order": "desc"
+        },
+        "processPart": null,
+        "measureVisualizations": {
+          "frequency": "bar",
+          "duration": "line"
+        },
+        "stackedBar": false,
+        "horizontalBar": true,
+        "logScale": false,
+        "yLabel": "Process instance Duration",
+        "xLabel": "var5"
+      },
+      "definitions": [
+        {
+          "identifier": "definition",
+          "key": "benchmark",
+          "name": "Ten tasks process",
+          "displayName": "Ten tasks process",
+          "versions": [
+            "all"
+          ],
+          "tenantIds": [
+            "<default>"
+          ]
+        }
+      ],
+      "filter": [],
+      "view": {
+        "entity": "processInstance",
+        "properties": [
+          "duration"
+        ]
+      },
+      "groupBy": {
+        "type": "variable",
+        "value": {
+          "name": "var5",
+          "type": "String"
+        }
+      },
+      "distributedBy": {
+        "type": "startDate",
+        "value": {
+          "unit": "hour"
+        }
+      },
+      "visualization": "bar",
+      "managementReport": false,
+      "instantPreviewReport": false,
+      "userTaskReport": false
+    }
+  }
+]
