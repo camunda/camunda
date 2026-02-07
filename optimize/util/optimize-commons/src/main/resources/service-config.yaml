@@ -408,6 +408,10 @@ es:
       port: null
       # whether this proxy is using a secured connection
       sslEnabled: false
+      # username for proxy authentication
+      username: null
+      # password for proxy authentication
+      password: null
     # Determines whether the hostname verification should be skipped
     skipHostnameVerification: ${CAMUNDA_OPTIMIZE_ELASTICSEARCH_CONNECTION_SKIP_HOSTNAME_VERIFICATION:false}
   # Configuration relating to ES backup

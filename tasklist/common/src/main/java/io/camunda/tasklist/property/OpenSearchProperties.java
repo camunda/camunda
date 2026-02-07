@@ -51,6 +51,8 @@ public class OpenSearchProperties {
   private boolean healthCheckEnabled = true;
   @NestedConfigurationProperty private SslProperties ssl;
 
+  @NestedConfigurationProperty private ProxyProperties proxy;
+
   private List<PluginConfiguration> interceptorPlugins;
 
   public String getClusterName() {
@@ -189,6 +191,14 @@ public class OpenSearchProperties {
 
   public void setSsl(final SslProperties ssl) {
     this.ssl = ssl;
+  }
+
+  public ProxyProperties getProxy() {
+    return proxy;
+  }
+
+  public void setProxy(final ProxyProperties proxy) {
+    this.proxy = proxy;
   }
 
   public List<PluginConfiguration> getInterceptorPlugins() {

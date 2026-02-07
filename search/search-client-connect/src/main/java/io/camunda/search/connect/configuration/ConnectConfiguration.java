@@ -32,6 +32,7 @@ public class ConnectConfiguration {
   private String indexPrefix = "";
   private List<PluginConfiguration> interceptorPlugins = new ArrayList<>();
   private boolean isAwsEnabled = false;
+  private ProxyConfiguration proxy;
 
   /** Use {@link ConnectConfiguration#getTypeEnum()} */
   @Deprecated
@@ -149,5 +150,13 @@ public class ConnectConfiguration {
 
   public void setInterceptorPlugins(final List<PluginConfiguration> interceptorPlugins) {
     this.interceptorPlugins = interceptorPlugins;
+  }
+
+  public ProxyConfiguration getProxy() {
+    return proxy;
+  }
+
+  public void setProxy(final ProxyConfiguration proxy) {
+    this.proxy = proxy;
   }
 }

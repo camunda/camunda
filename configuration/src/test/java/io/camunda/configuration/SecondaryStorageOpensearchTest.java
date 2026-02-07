@@ -812,4 +812,94 @@ public class SecondaryStorageOpensearchTest {
       assertThat(searchEngineConnectProperties.getPassword()).isEqualTo(EXPECTED_PASSWORD);
     }
   }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.data.secondary-storage.type=opensearch",
+        "camunda.data.secondary-storage.opensearch.url=http://expected-url:4321",
+        "camunda.data.secondary-storage.opensearch.proxy.enabled=true",
+        "camunda.data.secondary-storage.opensearch.proxy.host=proxy.example.com",
+        "camunda.data.secondary-storage.opensearch.proxy.port=8080",
+        "camunda.data.secondary-storage.opensearch.proxy.ssl-enabled=true",
+        "camunda.data.secondary-storage.opensearch.proxy.username=proxyUser",
+        "camunda.data.secondary-storage.opensearch.proxy.password=proxyPass",
+      })
+  class WithProxyConfigured {
+    private static final String EXPECTED_PROXY_HOST = "proxy.example.com";
+    private static final int EXPECTED_PROXY_PORT = 8080;
+    private static final String EXPECTED_PROXY_USERNAME = "proxyUser";
+    private static final String EXPECTED_PROXY_PASSWORD = "proxyPass";
+
+    final OperateProperties operateProperties;
+    final TasklistProperties tasklistProperties;
+    final BrokerBasedProperties brokerBasedProperties;
+    final SearchEngineConnectProperties searchEngineConnectProperties;
+
+    WithProxyConfigured(
+        @Autowired final OperateProperties operateProperties,
+        @Autowired final TasklistProperties tasklistProperties,
+        @Autowired final BrokerBasedProperties brokerBasedProperties,
+        @Autowired final SearchEngineConnectProperties searchEngineConnectProperties) {
+      this.operateProperties = operateProperties;
+      this.tasklistProperties = tasklistProperties;
+      this.brokerBasedProperties = brokerBasedProperties;
+      this.searchEngineConnectProperties = searchEngineConnectProperties;
+    }
+
+    @Test
+    void testProxyPropagatedToOperateProperties() {
+      final var proxy = operateProperties.getOpensearch().getProxy();
+      assertThat(proxy).isNotNull();
+      assertThat(proxy.isEnabled()).isTrue();
+      assertThat(proxy.getHost()).isEqualTo(EXPECTED_PROXY_HOST);
+      assertThat(proxy.getPort()).isEqualTo(EXPECTED_PROXY_PORT);
+      assertThat(proxy.isSslEnabled()).isTrue();
+      assertThat(proxy.getUsername()).isEqualTo(EXPECTED_PROXY_USERNAME);
+      assertThat(proxy.getPassword()).isEqualTo(EXPECTED_PROXY_PASSWORD);
+    }
+
+    @Test
+    void testProxyPropagatedToTasklistProperties() {
+      final var proxy = tasklistProperties.getOpenSearch().getProxy();
+      assertThat(proxy).isNotNull();
+      assertThat(proxy.isEnabled()).isTrue();
+      assertThat(proxy.getHost()).isEqualTo(EXPECTED_PROXY_HOST);
+      assertThat(proxy.getPort()).isEqualTo(EXPECTED_PROXY_PORT);
+      assertThat(proxy.isSslEnabled()).isTrue();
+      assertThat(proxy.getUsername()).isEqualTo(EXPECTED_PROXY_USERNAME);
+      assertThat(proxy.getPassword()).isEqualTo(EXPECTED_PROXY_PASSWORD);
+    }
+
+    @Test
+    void testProxyPropagatedToCamundaExporterProperties() {
+      final ExporterCfg camundaExporter = brokerBasedProperties.getCamundaExporter();
+      assertThat(camundaExporter).isNotNull();
+      final Map<String, Object> args = camundaExporter.getArgs();
+      assertThat(args).isNotNull();
+
+      final ExporterConfiguration exporterConfiguration =
+          UnifiedConfigurationHelper.argsToCamundaExporterConfiguration(args);
+      final var proxy = exporterConfiguration.getConnect().getProxy();
+      assertThat(proxy).isNotNull();
+      assertThat(proxy.isEnabled()).isTrue();
+      assertThat(proxy.getHost()).isEqualTo(EXPECTED_PROXY_HOST);
+      assertThat(proxy.getPort()).isEqualTo(EXPECTED_PROXY_PORT);
+      assertThat(proxy.isSslEnabled()).isTrue();
+      assertThat(proxy.getUsername()).isEqualTo(EXPECTED_PROXY_USERNAME);
+      assertThat(proxy.getPassword()).isEqualTo(EXPECTED_PROXY_PASSWORD);
+    }
+
+    @Test
+    void testProxyPropagatedToSearchEngineConnectProperties() {
+      final var proxy = searchEngineConnectProperties.getProxy();
+      assertThat(proxy).isNotNull();
+      assertThat(proxy.isEnabled()).isTrue();
+      assertThat(proxy.getHost()).isEqualTo(EXPECTED_PROXY_HOST);
+      assertThat(proxy.getPort()).isEqualTo(EXPECTED_PROXY_PORT);
+      assertThat(proxy.isSslEnabled()).isTrue();
+      assertThat(proxy.getUsername()).isEqualTo(EXPECTED_PROXY_USERNAME);
+      assertThat(proxy.getPassword()).isEqualTo(EXPECTED_PROXY_PASSWORD);
+    }
+  }
 }
