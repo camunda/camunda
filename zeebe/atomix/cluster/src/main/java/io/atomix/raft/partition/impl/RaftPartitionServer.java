@@ -315,7 +315,7 @@ public class RaftPartitionServer implements HealthMonitorable {
 
   private RaftServerCommunicator createServerProtocol() {
     return new RaftServerCommunicator(
-        partition.name(),
+        partition,
         Serializer.using(RaftNamespaces.RAFT_PROTOCOL),
         clusterCommunicator,
         requestTimeout,

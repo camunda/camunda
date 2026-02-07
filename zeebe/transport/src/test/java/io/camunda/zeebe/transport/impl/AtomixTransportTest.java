@@ -14,6 +14,7 @@ import static org.assertj.core.api.Assertions.fail;
 import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.cluster.messaging.MessagingException;
+import io.atomix.cluster.messaging.MessagingService;
 import io.atomix.cluster.messaging.impl.NettyMessagingService;
 import io.atomix.utils.net.Address;
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
@@ -34,10 +35,13 @@ import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -99,7 +103,22 @@ public class AtomixTransportTest {
                 (cluster) -> {
                   final var messagingService = cluster.getMessagingService();
                   return transportFactory.createServerTransport(
-                      messagingService, requestIdGenerator);
+                      messagingService, requestIdGenerator, "default");
+                }
+          },
+          {
+            "use default-{topic}-prefixed topics in client requests",
+            (Function<AtomixCluster, ClientTransport>)
+                (cluster) -> {
+                  final var messagingService = cluster.getMessagingService();
+                  return transportFactory.createClientTransport(
+                      new WithDefaultPrefixedMessageService(messagingService));
+                },
+            (Function<AtomixCluster, ServerTransport>)
+                (cluster) -> {
+                  final var messagingService = cluster.getMessagingService();
+                  return transportFactory.createServerTransport(
+                      messagingService, requestIdGenerator, "default");
                 }
           },
           {
@@ -126,7 +145,35 @@ public class AtomixTransportTest {
                   }
 
                   return transportFactory.createServerTransport(
-                      nettyMessagingService, requestIdGenerator);
+                      nettyMessagingService, requestIdGenerator, "default");
+                }
+          },
+          {
+            "use different messaging service and prefixed client requests",
+            (Function<AtomixCluster, ClientTransport>)
+                (cluster) -> {
+                  final var messagingService = cluster.getMessagingService();
+                  return transportFactory.createClientTransport(
+                      new WithDefaultPrefixedMessageService(messagingService));
+                },
+            (Function<AtomixCluster, ServerTransport>)
+                (cluster) -> {
+                  if (nettyMessagingService == null) {
+                    // do only once
+                    final var socketAddress = SocketUtil.getNextAddress();
+                    serverAddress = socketAddress.getHostName() + ":" + socketAddress.getPort();
+                    nodeAddressSupplier = () -> serverAddress;
+                    nettyMessagingService =
+                        new NettyMessagingService(
+                            "cluster",
+                            Address.from(serverAddress),
+                            new MessagingConfig(),
+                            meterRegistry);
+                    nettyMessagingService.start().join();
+                  }
+
+                  return transportFactory.createServerTransport(
+                      nettyMessagingService, requestIdGenerator, "default");
                 }
           }
         });
@@ -473,6 +520,99 @@ public class AtomixTransportTest {
         final int offset,
         final int length) {
       fail("Expected request to not be handled by this handler, but it was");
+    }
+  }
+
+  private record WithDefaultPrefixedMessageService(MessagingService delegate)
+      implements MessagingService {
+
+    private static final String DEFAULT_TYPE_PATTERN = "default-%s";
+
+    @Override
+    public Address address() {
+      return delegate.address();
+    }
+
+    @Override
+    public Collection<Address> bindingAddresses() {
+      return delegate.bindingAddresses();
+    }
+
+    @Override
+    public CompletableFuture<Void> sendAsync(
+        final Address address, final String type, final byte[] payload, final boolean keepAlive) {
+      return delegate.sendAsync(address, DEFAULT_TYPE_PATTERN.formatted(type), payload, keepAlive);
+    }
+
+    @Override
+    public CompletableFuture<byte[]> sendAndReceive(
+        final Address address, final String type, final byte[] payload, final boolean keepAlive) {
+      return delegate.sendAndReceive(
+          address, DEFAULT_TYPE_PATTERN.formatted(type), payload, keepAlive);
+    }
+
+    @Override
+    public CompletableFuture<byte[]> sendAndReceive(
+        final Address address,
+        final String type,
+        final byte[] payload,
+        final boolean keepAlive,
+        final Executor executor) {
+      return delegate.sendAndReceive(
+          address, DEFAULT_TYPE_PATTERN.formatted(type), payload, keepAlive, executor);
+    }
+
+    @Override
+    public CompletableFuture<byte[]> sendAndReceive(
+        final Address address,
+        final String type,
+        final byte[] payload,
+        final boolean keepAlive,
+        final Duration timeout) {
+      return delegate.sendAndReceive(
+          address, DEFAULT_TYPE_PATTERN.formatted(type), payload, keepAlive, timeout);
+    }
+
+    @Override
+    public CompletableFuture<byte[]> sendAndReceive(
+        final Address address,
+        final String type,
+        final byte[] payload,
+        final boolean keepAlive,
+        final Duration timeout,
+        final Executor executor) {
+      return delegate.sendAndReceive(
+          address, DEFAULT_TYPE_PATTERN.formatted(type), payload, keepAlive, timeout, executor);
+    }
+
+    @Override
+    public void registerHandler(
+        final String type, final BiConsumer<Address, byte[]> handler, final Executor executor) {
+      delegate.registerHandler(type, handler, executor);
+    }
+
+    @Override
+    public void registerHandler(
+        final String type,
+        final BiFunction<Address, byte[], byte[]> handler,
+        final Executor executor) {
+      delegate.registerHandler(type, handler, executor);
+    }
+
+    @Override
+    public void registerHandler(
+        final String type, final BiFunction<Address, byte[], CompletableFuture<byte[]>> handler) {
+      delegate.registerHandler(type, handler);
+    }
+
+    @Override
+    public void unregisterHandler(final String type) {
+      delegate.unregisterHandler(type);
+    }
+
+    @Override
+    public boolean isRunning() {
+      return delegate.isRunning();
     }
   }
 }

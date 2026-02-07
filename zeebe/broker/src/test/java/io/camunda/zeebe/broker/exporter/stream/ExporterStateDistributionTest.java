@@ -28,7 +28,7 @@ public class ExporterStateDistributionTest {
     partitionMessagingService = new SimplePartitionMessageService();
     exporterStateDistributionService =
         new ExporterStateDistributionService(
-            exporterState::put, partitionMessagingService, "topic");
+            exporterState::put, partitionMessagingService, "topic", "default-topic");
   }
 
   @Test
@@ -40,6 +40,7 @@ public class ExporterStateDistributionTest {
 
     // then
     assertThat(partitionMessagingService.consumers).containsKey("topic");
+    assertThat(partitionMessagingService.consumers).containsKey("default-topic");
   }
 
   @Test

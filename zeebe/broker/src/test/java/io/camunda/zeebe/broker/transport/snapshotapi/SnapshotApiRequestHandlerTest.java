@@ -113,7 +113,8 @@ public class SnapshotApiRequestHandlerTest {
     brokerClient.start();
 
     serverTransport =
-        submitActor(new AtomixServerTransport(messagingService, new SnowflakeIdGenerator(1L)));
+        submitActor(
+            new AtomixServerTransport(messagingService, new SnowflakeIdGenerator(1L), "foo"));
 
     scaleUpProgressInvocationCount = new AtomicInteger();
 
