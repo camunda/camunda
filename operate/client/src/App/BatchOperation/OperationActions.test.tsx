@@ -30,6 +30,11 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => (
 
 const BATCH_OPERATION_KEY = 'migrate-operation-123';
 
+const defaultProps = {
+  batchOperationKey: BATCH_OPERATION_KEY,
+  batchOperationType: 'MODIFY_PROCESS_INSTANCE' as const,
+};
+
 describe('<OperationActions />', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -40,10 +45,7 @@ describe('<OperationActions />', () => {
 
   it('should render Suspend and Cancel actions for created state', () => {
     render(
-      <OperationsActions
-        batchOperationKey={BATCH_OPERATION_KEY}
-        batchOperationState="CREATED"
-      />,
+      <OperationsActions {...defaultProps} batchOperationState="CREATED" />,
       {wrapper: Wrapper},
     );
 
@@ -56,10 +58,7 @@ describe('<OperationActions />', () => {
     mockCancelBatchOperation().withSuccess(null, {mockResolverFn: cancelSpy});
 
     const {user} = render(
-      <OperationsActions
-        batchOperationKey={BATCH_OPERATION_KEY}
-        batchOperationState="CREATED"
-      />,
+      <OperationsActions {...defaultProps} batchOperationState="CREATED" />,
       {wrapper: Wrapper},
     );
 
@@ -71,10 +70,7 @@ describe('<OperationActions />', () => {
 
   it('should render Suspend and Cancel actions for active state', () => {
     render(
-      <OperationsActions
-        batchOperationKey={BATCH_OPERATION_KEY}
-        batchOperationState="ACTIVE"
-      />,
+      <OperationsActions {...defaultProps} batchOperationState="ACTIVE" />,
       {wrapper: Wrapper},
     );
 
@@ -92,10 +88,7 @@ describe('<OperationActions />', () => {
     });
 
     const {user} = render(
-      <OperationsActions
-        batchOperationKey={BATCH_OPERATION_KEY}
-        batchOperationState="ACTIVE"
-      />,
+      <OperationsActions {...defaultProps} batchOperationState="ACTIVE" />,
       {wrapper: Wrapper},
     );
 
@@ -108,10 +101,7 @@ describe('<OperationActions />', () => {
     mockSuspendBatchOperation().withServerError(500);
 
     const {user} = render(
-      <OperationsActions
-        batchOperationKey={BATCH_OPERATION_KEY}
-        batchOperationState="ACTIVE"
-      />,
+      <OperationsActions {...defaultProps} batchOperationState="ACTIVE" />,
       {wrapper: Wrapper},
     );
 
@@ -127,10 +117,7 @@ describe('<OperationActions />', () => {
 
   it('should render Resume and Cancel actions', () => {
     render(
-      <OperationsActions
-        batchOperationKey={BATCH_OPERATION_KEY}
-        batchOperationState="SUSPENDED"
-      />,
+      <OperationsActions {...defaultProps} batchOperationState="SUSPENDED" />,
       {wrapper: Wrapper},
     );
 
@@ -146,10 +133,7 @@ describe('<OperationActions />', () => {
     mockResumeBatchOperation().withSuccess(null, {mockResolverFn: resumeSpy});
 
     const {user} = render(
-      <OperationsActions
-        batchOperationKey={BATCH_OPERATION_KEY}
-        batchOperationState="SUSPENDED"
-      />,
+      <OperationsActions {...defaultProps} batchOperationState="SUSPENDED" />,
       {wrapper: Wrapper},
     );
 
@@ -162,10 +146,7 @@ describe('<OperationActions />', () => {
     mockResumeBatchOperation().withServerError(500);
 
     const {user} = render(
-      <OperationsActions
-        batchOperationKey={BATCH_OPERATION_KEY}
-        batchOperationState="SUSPENDED"
-      />,
+      <OperationsActions {...defaultProps} batchOperationState="SUSPENDED" />,
       {wrapper: Wrapper},
     );
 
@@ -184,10 +165,7 @@ describe('<OperationActions />', () => {
     mockCancelBatchOperation().withDelay(null);
 
     const {user} = render(
-      <OperationsActions
-        batchOperationKey={BATCH_OPERATION_KEY}
-        batchOperationState="SUSPENDED"
-      />,
+      <OperationsActions {...defaultProps} batchOperationState="SUSPENDED" />,
       {wrapper: Wrapper},
     );
 
@@ -211,10 +189,7 @@ describe('<OperationActions />', () => {
     'should not render any actions for %s state',
     (state) => {
       render(
-        <OperationsActions
-          batchOperationKey={BATCH_OPERATION_KEY}
-          batchOperationState={state}
-        />,
+        <OperationsActions {...defaultProps} batchOperationState={state} />,
         {wrapper: Wrapper},
       );
 

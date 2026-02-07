@@ -88,6 +88,7 @@ const SortableTable = <
   columnsWithNoContentPadding,
   batchOperationId,
   stickyHeader = false,
+  onSort,
 }: Props<RowType, ColTypes>) => {
   let scrollableContentRef = useRef<HTMLDivElement | null>(null);
 
@@ -166,6 +167,7 @@ const SortableTable = <
                         sortKey={headerColumns[index].sortKey ?? header.key}
                         isDefault={headerColumns[index].isDefault}
                         isDisabled={headerColumns[index].isDisabled}
+                        onSort={onSort}
                       />
                     );
                   })}

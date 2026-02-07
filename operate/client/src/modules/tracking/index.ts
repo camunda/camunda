@@ -296,6 +296,43 @@ type Events =
   | {
       eventName: 'batch-move-modification-apply-button-clicked';
     }
+  /**
+   * Batch operations list and details
+   */
+  | {
+      eventName: 'batch-operations-sorted';
+      sortBy: string;
+      sortOrder: 'asc' | 'desc';
+    }
+  | {
+      eventName: 'batch-operation-details-opened';
+      batchOperationType: string;
+      batchOperationState: string;
+    }
+  | {
+      eventName: 'batch-operation-details-loaded';
+      batchOperationType: string;
+      state: string;
+      operationsTotalCount: number;
+    }
+  | {
+      eventName: 'batch-operation-suspended';
+      batchOperationType: string;
+      batchOperationState: string;
+    }
+  | {
+      eventName: 'batch-operation-resumed';
+      batchOperationType: string;
+      batchOperationState: string;
+    }
+  | {
+      eventName: 'batch-operation-canceled';
+      batchOperationType: string;
+      batchOperationState: string;
+    }
+  /**
+   * audit logs
+   */
   | {
       eventName: 'audit-logs-loaded';
       filters: string[];
