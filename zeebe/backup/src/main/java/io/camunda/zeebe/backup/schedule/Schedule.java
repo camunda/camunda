@@ -23,7 +23,6 @@ import java.util.function.Supplier;
 /** Represents a schedule which can be either a CRON expression or an ISO8601 duration interval. */
 public sealed interface Schedule {
 
-  String AUTO = "auto";
   String NONE = "none";
 
   /*
@@ -55,9 +54,6 @@ public sealed interface Schedule {
     }
     if (expression.equalsIgnoreCase(NONE)) {
       return none();
-    }
-    if (expression.equalsIgnoreCase(AUTO)) {
-      return new AutoSchedule();
     }
     try {
       final var cron =
@@ -117,25 +113,6 @@ public sealed interface Schedule {
     @Override
     public Optional<Instant> nextExecution(final Instant from) {
       return Optional.empty();
-    }
-
-    @Override
-    public Optional<Instant> previousExecution(final Instant from) {
-      return Optional.empty();
-    }
-  }
-
-  record AutoSchedule() implements Schedule {
-
-    @Override
-    public Optional<Instant> nextExecution(final Instant from) {
-      return Optional.empty();
-    }
-
-    @Override
-    public Optional<Instant> nextExecution(
-        final Instant from, final Supplier<Duration> intervalSupplier) {
-      return Optional.of(from.plus(intervalSupplier.get()));
     }
 
     @Override

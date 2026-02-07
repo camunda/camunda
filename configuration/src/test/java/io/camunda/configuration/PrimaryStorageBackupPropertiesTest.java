@@ -12,7 +12,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
 import io.camunda.configuration.beans.BrokerBasedProperties;
-import io.camunda.zeebe.backup.schedule.Schedule.AutoSchedule;
 import io.camunda.zeebe.backup.schedule.Schedule.CronSchedule;
 import io.camunda.zeebe.backup.schedule.Schedule.IntervalSchedule;
 import io.camunda.zeebe.backup.schedule.Schedule.NoneSchedule;
@@ -150,25 +149,6 @@ public class PrimaryStorageBackupPropertiesTest {
     void shouldParseConfig() {
       assertThat(backupSchedulerCfg.getRetention().getCleanupSchedule())
           .isInstanceOf(NoneSchedule.class);
-    }
-  }
-
-  @Nested
-  @TestPropertySource(
-      properties = {
-        "camunda.data.primary-storage.backup.retention.clean-up-schedule=auto",
-      })
-  class AutoRetentionSchedulerConfiguration {
-    final BackupCfg backupSchedulerCfg;
-
-    AutoRetentionSchedulerConfiguration(@Autowired final BrokerBasedProperties brokerCfg) {
-      backupSchedulerCfg = brokerCfg.getData().getBackup();
-    }
-
-    @Test
-    void shouldParseConfig() {
-      assertThat(backupSchedulerCfg.getRetention().getCleanupSchedule())
-          .isInstanceOf(AutoSchedule.class);
     }
   }
 
