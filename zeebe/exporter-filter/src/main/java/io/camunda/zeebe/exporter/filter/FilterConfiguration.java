@@ -41,5 +41,9 @@ public interface FilterConfiguration {
     List<String> getVariableNameExclusionStartWith();
 
     List<String> getVariableNameExclusionEndWith();
+
+    List<String> getVariableValueTypeInclusion();
+
+    List<String> getVariableValueTypeExclusion();
   }
 }
