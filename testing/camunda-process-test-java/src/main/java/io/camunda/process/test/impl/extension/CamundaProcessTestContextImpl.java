@@ -66,6 +66,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import org.camunda.bpm.model.dmn.Dmn;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.bpm.model.dmn.instance.Decision;
@@ -107,7 +108,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
 
   private final URI camundaRestApiAddress;
   private final URI camundaGrpcApiAddress;
-  private final URI connectorsRestApiAddress;
+  private final Supplier<URI> connectorsRestApiAddress;
   private final CamundaClientBuilderFactory camundaClientBuilderFactory;
   private final Consumer<AutoCloseable> clientCreationCallback;
   private final CamundaManagementClient camundaManagementClient;
@@ -127,7 +128,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
     camundaClientBuilderFactory = camundaRuntime.getCamundaClientBuilderFactory();
     camundaRestApiAddress = camundaRuntime.getCamundaRestApiAddress();
     camundaGrpcApiAddress = camundaRuntime.getCamundaGrpcApiAddress();
-    connectorsRestApiAddress = camundaRuntime.getConnectorsRestApiAddress();
+    connectorsRestApiAddress = camundaRuntime::getConnectorsRestApiAddress;
     this.clientCreationCallback = clientCreationCallback;
     this.camundaManagementClient = camundaManagementClient;
     this.awaitBehavior = awaitBehavior;
@@ -196,7 +197,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
 
   @Override
   public URI getConnectorsAddress() {
-    return connectorsRestApiAddress;
+    return connectorsRestApiAddress.get();
   }
 
   @Override
@@ -575,6 +576,60 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   }
 
   @Override
+  public void updateVariables(
+      final ProcessInstanceSelector processInstanceSelector, final Map<String, Object> variables) {
+    final CamundaClient client = createClient();
+
+    awaitProcessInstance(
+        processInstanceSelector,
+        client,
+        pi -> {
+          LOGGER.debug(
+              "Update variables for process instance [{}, processInstanceKey: '{}'] with variables {}",
+              processInstanceSelector.describe(),
+              pi.getProcessInstanceKey(),
+              variables);
+
+          client
+              .newSetVariablesCommand(pi.getProcessInstanceKey())
+              .variables(variables)
+              .send()
+              .join();
+        });
+  }
+
+  @Override
+  public void updateLocalVariables(
+      final ProcessInstanceSelector processInstanceSelector,
+      final ElementSelector elementSelector,
+      final Map<String, Object> variables) {
+    final CamundaClient client = createClient();
+
+    awaitProcessInstance(
+        processInstanceSelector,
+        client,
+        pi ->
+            awaitElementInstance(
+                pi.getProcessInstanceKey(),
+                elementSelector,
+                client,
+                ei -> {
+                  LOGGER.debug(
+                      "Update local variables for element [{}, elementInstanceKey: '{}'] in process instance [processInstanceKey: '{}'] with variables {}",
+                      elementSelector.describe(),
+                      ei.getElementInstanceKey(),
+                      pi.getProcessInstanceKey(),
+                      variables);
+
+                  client
+                      .newSetVariablesCommand(ei.getElementInstanceKey())
+                      .variables(variables)
+                      .send()
+                      .join();
+                }));
+  }
+
+  @Override
   public void completeJobOfUserTaskListener(
       final JobSelector jobSelector, final Consumer<CompleteUserTaskJobResultStep1> jobResult) {
     final CamundaClient client = createClient();
@@ -722,60 +777,6 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
         .stream()
         .filter(incidentSelector::test)
         .findFirst();
-  }
-
-  @Override
-  public void updateVariables(
-      final ProcessInstanceSelector processInstanceSelector, final Map<String, Object> variables) {
-    final CamundaClient client = createClient();
-
-    awaitProcessInstance(
-        processInstanceSelector,
-        client,
-        pi -> {
-          LOGGER.debug(
-              "Update variables for process instance [{}, processInstanceKey: '{}'] with variables {}",
-              processInstanceSelector.describe(),
-              pi.getProcessInstanceKey(),
-              variables);
-
-          client
-              .newSetVariablesCommand(pi.getProcessInstanceKey())
-              .variables(variables)
-              .send()
-              .join();
-        });
-  }
-
-  @Override
-  public void updateLocalVariables(
-      final ProcessInstanceSelector processInstanceSelector,
-      final ElementSelector elementSelector,
-      final Map<String, Object> variables) {
-    final CamundaClient client = createClient();
-
-    awaitProcessInstance(
-        processInstanceSelector,
-        client,
-        pi ->
-            awaitElementInstance(
-                pi.getProcessInstanceKey(),
-                elementSelector,
-                client,
-                ei -> {
-                  LOGGER.debug(
-                      "Update local variables for element [{}, elementInstanceKey: '{}'] in process instance [processInstanceKey: '{}'] with variables {}",
-                      elementSelector.describe(),
-                      ei.getElementInstanceKey(),
-                      pi.getProcessInstanceKey(),
-                      variables);
-
-                  client
-                      .newSetVariablesCommand(ei.getElementInstanceKey())
-                      .variables(variables)
-                      .send()
-                      .join();
-                }));
   }
 
   private Optional<ProcessInstance> findProcessInstance(

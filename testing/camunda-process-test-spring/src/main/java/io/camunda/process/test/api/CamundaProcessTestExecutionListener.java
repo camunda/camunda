@@ -290,6 +290,12 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
       final Duration duration = Duration.between(startTime, endTime);
       LOG.debug("Runtime data deleted in {}", duration);
 
+      // connectors are stateful on e.g. cached definitions, after a purge we can have key conflicts
+      // thus we need to restart them
+      if (containerRuntimeBuilder.isConnectorsEnabled()) {
+        runtime.restartConnectors();
+      }
+
     } catch (final Throwable t) {
       LOG.warn(
           "Failed to delete the runtime data, skipping. Check the runtime for details. "
