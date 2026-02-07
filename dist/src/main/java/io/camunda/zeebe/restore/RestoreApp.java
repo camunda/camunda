@@ -62,7 +62,7 @@ public class RestoreApp implements ApplicationRunner {
   private Instant from;
 
   @Value("${to:#{null}}")
-  // Parsed from commandline Eg:-`--to=2024-01-01T12:00:00Z` (optional, requires --from)
+  // Parsed from commandline Eg:-`--to=2024-01-01T12:00:00Z` (optional, defaults to Instant.now())
   private Instant to;
 
   private final RestoreProperties restoreConfiguration;
@@ -135,17 +135,29 @@ public class RestoreApp implements ApplicationRunner {
           restoreConfiguration.ignoreFilesInTarget());
       LOG.info("Successfully restored broker from backup {}", backupId);
     } else {
-      LOG.info(
-          "Starting to restore from backups in time range [{}, {}] with the following configuration: {}",
-          from,
-          to,
-          restoreConfiguration);
-      restoreManager.restore(
-          from,
-          to,
-          restoreConfiguration.validateConfig(),
-          restoreConfiguration.ignoreFilesInTarget());
-      LOG.info("Successfully restored broker from backups in time range [{}, {}]", from, to);
+      if (to != null) {
+        LOG.info(
+            "Starting to restore from backups in time range [{}, {}] with the following configuration: {}",
+            from,
+            to,
+            restoreConfiguration);
+        restoreManager.restore(
+            from,
+            to,
+            restoreConfiguration.validateConfig(),
+            restoreConfiguration.ignoreFilesInTarget());
+        LOG.info("Successfully restored broker from backups in time range [{}, {}]", from, to);
+      } else {
+        LOG.info(
+            "Starting to restore from backups starting at {} (restore as much as possible from complete range) with the following configuration: {}",
+            from,
+            restoreConfiguration);
+        restoreManager.restoreFromCompleteRange(
+            from,
+            restoreConfiguration.validateConfig(),
+            restoreConfiguration.ignoreFilesInTarget());
+        LOG.info("Successfully restored broker from backups starting at {}", from);
+      }
     }
 
     postRestoreAction.restored(configuration.getCluster().getNodeId());
@@ -153,11 +165,13 @@ public class RestoreApp implements ApplicationRunner {
 
   private void validateParameters() {
     final boolean hasBackupId = backupId != null && backupId.length > 0;
-    final boolean hasTimeRange = from != null && to != null;
+    final boolean hasFrom = from != null;
+    final boolean hasTo = to != null;
+    final boolean hasTimeRange = hasFrom || hasTo;
 
-    if (!hasBackupId && !hasTimeRange) {
+    if (!hasBackupId && !hasFrom) {
       throw new IllegalArgumentException(
-          "Either --backupId or both --from and --to parameters must be provided");
+          "Either --backupId or --from parameter must be provided");
     }
 
     if (hasBackupId && hasTimeRange) {
@@ -165,15 +179,11 @@ public class RestoreApp implements ApplicationRunner {
           "Cannot specify both --backupId and --from/--to parameters. Choose one approach.");
     }
 
-    if (from != null && to == null) {
-      throw new IllegalArgumentException("--from parameter requires --to parameter");
-    }
-
-    if (to != null && from == null) {
+    if (hasTo && !hasFrom) {
       throw new IllegalArgumentException("--to parameter requires --from parameter");
     }
 
-    if (hasTimeRange && from.isAfter(to)) {
+    if (hasFrom && hasTo && from.isAfter(to)) {
       throw new IllegalArgumentException(
           "Invalid time range: --from (%s) must be before --to (%s)".formatted(from, to));
     }

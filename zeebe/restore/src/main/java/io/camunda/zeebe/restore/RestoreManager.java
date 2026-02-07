@@ -118,7 +118,134 @@ public class RestoreManager {
       throw new IllegalArgumentException("No backups found in range [" + from + "," + to + "]");
     }
 
-    restore(backupIds, validateConfig, ignoreFilesInTarget);
+    restore(backupIds, false, validateConfig, ignoreFilesInTarget);
+  }
+
+  /**
+   * Restores from the given time, restoring as much as possible from the complete backup range
+   * that contains the from timestamp. This is used when the --to parameter is not provided, which
+   * means the cluster is shutdown and we should find and restore from the complete range containing
+   * the from timestamp.
+   */
+  public void restoreFromCompleteRange(
+      final Instant from, final boolean validateConfig, final List<String> ignoreFilesInTarget)
+      throws IOException, ExecutionException, InterruptedException {
+    final var dataDirectory = Path.of(configuration.getData().getDirectory());
+    verifyDataFolderIsEmpty(dataDirectory, ignoreFilesInTarget);
+
+    final var partitionCount = configuration.getCluster().getPartitionsCount();
+    final var fromCheckpointId = checkpointIdGenerator.fromTimestamp(from.toEpochMilli());
+
+    // Find the complete range that contains 'from' for each partition
+    Long rangeStart = null;
+    Long rangeEnd = null;
+
+    for (int partition = 1; partition <= partitionCount; partition++) {
+      final var ranges = BackupRanges.fromMarkers(backupStore.rangeMarkers(partition).join());
+      final var completeRanges =
+          ranges.stream().filter(BackupRange.Complete.class::isInstance).toList();
+
+      // Find the complete range that contains fromCheckpointId
+      final var matchingRange =
+          completeRanges.stream()
+              .filter(
+                  r ->
+                      r.firstCheckpointId() <= fromCheckpointId
+                          && r.lastCheckpointId() >= fromCheckpointId)
+              .findFirst();
+
+      if (matchingRange.isEmpty()) {
+        throw new IllegalArgumentException(
+            "No complete backup range found containing checkpoint %d (from timestamp %s) for partition %d. Available complete ranges: %s"
+                .formatted(fromCheckpointId, from, partition, completeRanges));
+      }
+
+      final var range = matchingRange.get();
+      if (rangeStart == null) {
+        rangeStart = range.firstCheckpointId();
+        rangeEnd = range.lastCheckpointId();
+      } else {
+        // Verify all partitions have the same range
+        if (rangeStart != range.firstCheckpointId() || rangeEnd != range.lastCheckpointId()) {
+          throw new IllegalStateException(
+              "Partitions have different complete ranges. Expected range [%d, %d] but partition %d has range [%d, %d]"
+                  .formatted(
+                      rangeStart,
+                      rangeEnd,
+                      partition,
+                      range.firstCheckpointId(),
+                      range.lastCheckpointId()));
+        }
+      }
+    }
+
+    if (rangeStart == null || rangeEnd == null) {
+      throw new IllegalArgumentException(
+          "No complete backup range found containing checkpoint %d (from timestamp %s)"
+              .formatted(fromCheckpointId, from));
+    }
+
+    LOG.info(
+        "Found complete backup range [{}, {}] containing from checkpoint {} (timestamp {})",
+        rangeStart,
+        rangeEnd,
+        fromCheckpointId,
+        from);
+
+    // Create a checkpoint pattern for the interval [fromCheckpointId, rangeEnd]
+    // This optimizes the query by using a common prefix instead of querying all backups
+    final var checkpointPattern =
+        BackupIdentifierWildcard.CheckpointPattern.longestCommonPrefix(
+            String.valueOf(fromCheckpointId), String.valueOf(rangeEnd));
+
+    // Query each partition in parallel with the interval pattern to minimize object storage queries
+    final var partitionQueries = new ArrayList<CompletableFuture<List<Long>>>();
+    for (int partition = 1; partition <= partitionCount; partition++) {
+      final var wildCard =
+          BackupIdentifierWildcard.forPartition(partition, checkpointPattern);
+      final var partitionQuery =
+          backupStore
+              .list(wildCard)
+              .thenApply(
+                  b ->
+                      b.stream()
+                          .filter(bs -> bs.statusCode() == BackupStatusCode.COMPLETED)
+                          .filter(
+                              bs ->
+                                  bs.id().checkpointId() >= fromCheckpointId
+                                      && bs.id().checkpointId() <= rangeEnd)
+                          .map(bs -> bs.id().checkpointId())
+                          .toList());
+      partitionQueries.add(partitionQuery);
+    }
+
+    // Wait for all partition queries to complete and collect the results
+    final var backupIdsArray =
+        CompletableFuture.allOf(partitionQueries.toArray(new CompletableFuture[0]))
+            .thenApply(
+                ignored ->
+                    partitionQueries.stream()
+                        .flatMap(query -> query.join().stream())
+                        .distinct()
+                        .sorted()
+                        .mapToLong(Long::longValue)
+                        .toArray())
+            .join();
+
+    LOG.info(
+        "Restoring {} backups from checkpoint {} to {} (range [{}, {}])",
+        backupIdsArray.length,
+        fromCheckpointId,
+        rangeEnd,
+        rangeStart,
+        rangeEnd);
+
+    if (backupIdsArray.length == 0) {
+      throw new IllegalArgumentException(
+          "No completed backups found in range [%d, %d]".formatted(fromCheckpointId, rangeEnd));
+    }
+
+    restore(backupIdsArray, false, validateConfig, ignoreFilesInTarget);
   }
 
   public void restore(
