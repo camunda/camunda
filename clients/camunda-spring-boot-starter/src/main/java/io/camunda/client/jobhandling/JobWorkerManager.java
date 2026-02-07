@@ -76,6 +76,11 @@ public class JobWorkerManager {
     return internalManagedJobWorker.getCurrent();
   }
 
+  public JobHandlerFactory getJobHandlerFactory(final String type) {
+    final InternalManagedJobWorker internalManagedJobWorker = findManagedJobWorker(type);
+    return internalManagedJobWorker.getJobHandlerFactory();
+  }
+
   public void updateJobWorker(final String type, final JobWorkerChangeSet changeSet) {
     final InternalManagedJobWorker internalManagedJobWorker = findManagedJobWorker(type);
     upsertWorker(internalManagedJobWorker, changeSet);
