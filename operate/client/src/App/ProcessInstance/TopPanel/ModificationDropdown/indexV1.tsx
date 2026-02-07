@@ -83,7 +83,7 @@ const ModificationDropdown: React.FC<Props> = observer(
         flowNodeSelectionStore.state.selection?.flowNodeInstanceId,
       isMultiInstanceBody:
         flowNodeSelectionStore.state.selection?.isMultiInstance,
-      isElementInstanceResolved: !isNil(
+      isElementInstanceKeyAvailable: !isNil(
         flowNodeSelectionStore.selectedFlowNodeInstanceId,
       ),
     });
