@@ -193,58 +193,57 @@ const validateVariableNameCharacters: FieldValidator<string | undefined> = (
   return;
 };
 
-const validateVariableNameComplete: FieldValidator<
-  ProcessInstanceFilters['variableName']
-> = promisifyValidator(
-  (variableName = '', allValues: {variableValues?: string} | undefined) => {
-    const variableValues = allValues?.variableValues ?? '';
+const validateVariableNameComplete: FieldValidator<string | undefined> =
+  promisifyValidator(
+    (variableName = '', allValues: {variableValues?: string} | undefined) => {
+      const variableValues = allValues?.variableValues ?? '';
 
-    if ((variableName === '' && variableValues === '') || variableName !== '') {
+      if (
+        (variableName === '' && variableValues === '') ||
+        variableName !== ''
+      ) {
+        return undefined;
+      }
+
+      return ERRORS.variables.nameUnfilled;
+    },
+    VALIDATION_TIMEOUT,
+  );
+
+const validateVariableValuesComplete: FieldValidator<string | undefined> =
+  promisifyValidator(
+    (variableValues = '', allValues: {variableName?: string} | undefined) => {
+      const variableName = allValues?.variableName ?? '';
+
+      if (
+        (variableName === '' && variableValues === '') ||
+        variableValues !== ''
+      ) {
+        return;
+      }
+
+      return ERRORS.variables.valueUnfilled;
+    },
+    VALIDATION_TIMEOUT,
+  );
+
+const validateVariableValueValid: FieldValidator<string | undefined> =
+  promisifyValidator((variableValue = '') => {
+    if (variableValue === '' || isValidJSON(variableValue)) {
       return undefined;
     }
 
-    return ERRORS.variables.nameUnfilled;
-  },
-  VALIDATION_TIMEOUT,
-);
+    return ERRORS.variables.valueInvalid;
+  }, VALIDATION_TIMEOUT);
 
-const validateVariableValuesComplete: FieldValidator<
-  ProcessInstanceFilters['variableValues']
-> = promisifyValidator(
-  (variableValues = '', allValues: {variableName?: string} | undefined) => {
-    const variableName = allValues?.variableName ?? '';
-
-    if (
-      (variableName === '' && variableValues === '') ||
-      variableValues !== ''
-    ) {
-      return;
+const validateMultipleVariableValuesValid: FieldValidator<string | undefined> =
+  promisifyValidator((variableValues = '') => {
+    if (validateMultipleVariableValues(variableValues)) {
+      return undefined;
     }
 
-    return ERRORS.variables.valueUnfilled;
-  },
-  VALIDATION_TIMEOUT,
-);
-
-const validateVariableValueValid: FieldValidator<
-  ProcessInstanceFilters['variableValues']
-> = promisifyValidator((variableValue = '') => {
-  if (variableValue === '' || isValidJSON(variableValue)) {
-    return undefined;
-  }
-
-  return ERRORS.variables.valueInvalid;
-}, VALIDATION_TIMEOUT);
-
-const validateMultipleVariableValuesValid: FieldValidator<
-  ProcessInstanceFilters['variableValues']
-> = promisifyValidator((variableValues = '') => {
-  if (validateMultipleVariableValues(variableValues)) {
-    return undefined;
-  }
-
-  return ERRORS.variables.multipleValueInvalid;
-}, VALIDATION_TIMEOUT);
+    return ERRORS.variables.multipleValueInvalid;
+  }, VALIDATION_TIMEOUT);
 
 /**
  * Validates if value contains only characters from a key or UUID

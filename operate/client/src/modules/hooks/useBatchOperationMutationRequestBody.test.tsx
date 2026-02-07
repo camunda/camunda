@@ -120,10 +120,9 @@ describe('useBatchOperationMutationRequestBody', () => {
   });
 
   it('should include variable filter', () => {
-    variableFilterStore.setVariable({
-      name: 'testVar',
-      values: '"value1"',
-    });
+    variableFilterStore.setConditions([
+      {id: '1', name: 'testVar', operator: 'equals', value: '"value1"'},
+    ]);
 
     const {result} = renderHook(() => useBatchOperationMutationRequestBody(), {
       wrapper: getWrapper(),
@@ -134,18 +133,22 @@ describe('useBatchOperationMutationRequestBody', () => {
         variables: [
           {
             name: 'testVar',
-            value: '"value1"',
+            value: {$eq: '"value1"'},
           },
         ],
       },
     });
   });
 
-  it('should include multiple variable values', () => {
-    variableFilterStore.setVariable({
-      name: 'testVar',
-      values: '"value1", "value2", "value3"',
-    });
+  it('should include multiple variable conditions', () => {
+    variableFilterStore.setConditions([
+      {
+        id: '1',
+        name: 'testVar',
+        operator: 'oneOf',
+        value: '"value1", "value2", "value3"',
+      },
+    ]);
 
     const {result} = renderHook(() => useBatchOperationMutationRequestBody(), {
       wrapper: getWrapper(),
@@ -170,10 +173,9 @@ describe('useBatchOperationMutationRequestBody', () => {
       '456',
     ];
 
-    variableFilterStore.setVariable({
-      name: 'status',
-      values: '"active"',
-    });
+    variableFilterStore.setConditions([
+      {id: '1', name: 'status', operator: 'equals', value: '"active"'},
+    ]);
 
     const {result} = renderHook(() => useBatchOperationMutationRequestBody(), {
       wrapper: getWrapper({
@@ -188,7 +190,7 @@ describe('useBatchOperationMutationRequestBody', () => {
         variables: [
           {
             name: 'status',
-            value: '"active"',
+            value: {$eq: '"active"'},
           },
         ],
       },
@@ -196,10 +198,9 @@ describe('useBatchOperationMutationRequestBody', () => {
   });
 
   it('should not include variable filter when variable name is missing', () => {
-    variableFilterStore.setVariable({
-      name: '',
-      values: '"value1"',
-    });
+    variableFilterStore.setConditions([
+      {id: '1', name: '', operator: 'equals', value: '"value1"'},
+    ]);
 
     const {result} = renderHook(() => useBatchOperationMutationRequestBody(), {
       wrapper: getWrapper(),
@@ -211,10 +212,9 @@ describe('useBatchOperationMutationRequestBody', () => {
   });
 
   it('should not include variable filter when variable values are missing', () => {
-    variableFilterStore.setVariable({
-      name: 'testVar',
-      values: '',
-    });
+    variableFilterStore.setConditions([
+      {id: '1', name: 'testVar', operator: 'equals', value: ''},
+    ]);
 
     const {result} = renderHook(() => useBatchOperationMutationRequestBody(), {
       wrapper: getWrapper(),

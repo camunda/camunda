@@ -36,7 +36,8 @@ import {
   ButtonContainer,
   FieldContainer,
 } from 'modules/components/FiltersPanel/styled';
-import {Variable} from './VariableField';
+import {VariableFilter} from './VariablesFilter';
+import {variableFilterStore} from 'modules/stores/variableFilter';
 
 type OptionalFilter =
   | 'variable'
@@ -70,8 +71,8 @@ const OPTIONAL_FILTER_FIELDS: Record<
   }
 > = {
   variable: {
-    keys: ['variableName', 'variableValues'],
-    label: 'Variable',
+    keys: [],
+    label: 'Variables',
   },
   ids: {
     keys: ['ids'],
@@ -155,6 +156,7 @@ const OptionalFiltersFormGroup: React.FC<Props> = observer(
               ...('endDateAfter' in filters && 'endDateBefore' in filters
                 ? ['endDateRange']
                 : []),
+              ...(variableFilterStore.hasActiveFilters ? ['variable'] : []),
             ] as OptionalFilter[]),
           ]),
         );
@@ -164,6 +166,8 @@ const OptionalFiltersFormGroup: React.FC<Props> = observer(
     const [isStartDateRangeModalOpen, setIsStartDateRangeModalOpen] =
       useState<boolean>(false);
     const [isEndDateRangeModalOpen, setIsEndDateRangeModalOpen] =
+      useState<boolean>(false);
+    const [isVariableFilterModalOpen, setIsVariableFilterModalOpen] =
       useState<boolean>(false);
 
     return (
@@ -182,6 +186,9 @@ const OptionalFiltersFormGroup: React.FC<Props> = observer(
               eventName: 'optional-filter-selected',
               filterName: filter,
             });
+            if (filter === 'variable') {
+              setIsVariableFilterModalOpen(true);
+            }
             if (filter === 'startDateRange') {
               setIsStartDateRangeModalOpen(true);
             }
@@ -196,7 +203,13 @@ const OptionalFiltersFormGroup: React.FC<Props> = observer(
               {(() => {
                 switch (filter) {
                   case 'variable':
-                    return <Variable />;
+                    return (
+                      <VariableFilter
+                        isModalOpen={isVariableFilterModalOpen}
+                        onModalOpen={() => setIsVariableFilterModalOpen(true)}
+                        onModalClose={() => setIsVariableFilterModalOpen(false)}
+                      />
+                    );
                   case 'startDateRange':
                     return (
                       <DateRangeField
@@ -295,6 +308,11 @@ const OptionalFiltersFormGroup: React.FC<Props> = observer(
                         (visibleFilter) => visibleFilter !== filter,
                       ),
                     );
+
+                    // Clear variable filter store when removing the variable filter
+                    if (filter === 'variable') {
+                      variableFilterStore.setConditions([]);
+                    }
 
                     OPTIONAL_FILTER_FIELDS[filter].keys.forEach((key) => {
                       form.change(key, undefined);

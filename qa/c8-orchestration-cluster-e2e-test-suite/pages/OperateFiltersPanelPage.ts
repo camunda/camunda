@@ -37,20 +37,17 @@ export class OperateFiltersPanelPage {
   readonly resetFiltersButton: Locator;
   readonly errorMessageFilter: Locator;
   readonly startDateFilter: Locator;
+  readonly variableFilterInput: Locator;
+  readonly variableFilterModal: Locator;
   readonly variableNameFilter: Locator;
   readonly variableValueFilter: Locator;
-  readonly multipleVariablesSwitch: Locator;
+  readonly variableFilterApplyButton: Locator;
   readonly moreFiltersButton: Locator;
   readonly dateFilterDialog: Locator;
   readonly fromTimeInput: Locator;
   readonly toTimeInput: Locator;
   readonly fromDateInput: Locator;
   readonly applyButton: Locator;
-  readonly jsonEditorModalButton: Locator;
-  readonly variableEditorDialog: Locator;
-  readonly dialogEditVariableValueText: Locator;
-  readonly dialogEditMultipleVariableValueText: Locator;
-  readonly dialogCancelButton: Locator;
   readonly getOptionByName: (name: string, exact?: boolean) => Locator;
 
   constructor(page: Page) {
@@ -106,13 +103,22 @@ export class OperateFiltersPanelPage {
     this.startDateFilter = this.page.getByRole('textbox', {
       name: 'start date range',
     });
-    this.variableNameFilter = this.page.getByTestId(
-      'optional-filter-variable-name',
+    this.variableFilterInput = this.page.getByTestId(
+      'variable-filter-input',
     );
-    this.variableValueFilter = this.page.getByTestId(
-      'optional-filter-variable-value',
+    this.variableFilterModal = this.page.getByTestId(
+      'variable-filter-modal',
     );
-    this.multipleVariablesSwitch = this.page.getByText('multiple');
+    this.variableNameFilter = this.variableFilterModal
+      .locator('[data-testid^="variable-filter-name-"]')
+      .first();
+    this.variableValueFilter = this.variableFilterModal
+      .locator('[data-testid^="variable-filter-value-"]')
+      .first();
+    this.variableFilterApplyButton = this.variableFilterModal.getByRole(
+      'button',
+      {name: 'Apply'},
+    );
     this.moreFiltersButton = this.page.getByRole('button', {
       name: 'More Filters',
     });
@@ -121,18 +127,6 @@ export class OperateFiltersPanelPage {
     this.toTimeInput = page.getByTestId('toTime');
     this.fromDateInput = this.page.getByText('From date');
     this.applyButton = this.page.getByText('Apply');
-    this.jsonEditorModalButton = this.page.getByRole('button', {
-      name: /open (json )?editor modal/i,
-    });
-    this.variableEditorDialog = this.page.getByRole('dialog');
-    this.dialogEditVariableValueText = this.variableEditorDialog.getByText(
-      'edit variable value',
-    );
-    this.dialogEditMultipleVariableValueText =
-      this.variableEditorDialog.getByText('edit multiple variable values');
-    this.dialogCancelButton = this.variableEditorDialog.getByRole('button', {
-      name: 'cancel',
-    });
     this.getOptionByName = (name: string, exact = true) =>
       this.page.getByRole('option', {name, exact});
   }
@@ -191,6 +185,10 @@ export class OperateFiltersPanelPage {
   }
 
   async fillVariableNameFilter(name: string) {
+    if (!(await this.variableFilterModal.isVisible())) {
+      await this.variableFilterInput.click();
+      await expect(this.variableFilterModal).toBeVisible();
+    }
     await expect(this.variableNameFilter).toBeVisible();
     await this.variableNameFilter.fill(name);
   }
@@ -198,7 +196,6 @@ export class OperateFiltersPanelPage {
   async fillVariableValueFilter(value: string) {
     await expect(this.variableValueFilter).toBeVisible();
     await this.variableValueFilter.fill(value);
-    await expect(this.variableValueFilter).toHaveValue(value);
   }
 
   async fillProcessInstanceKeyFilter(processInstanceKey: string) {
@@ -269,16 +266,17 @@ export class OperateFiltersPanelPage {
     await this.operationIdFilter.fill(operationId);
   }
 
-  async clickJsonEditorModal() {
-    await this.jsonEditorModalButton.click();
+  async applyVariableFilter() {
+    await this.variableFilterApplyButton.click();
+    await expect(this.variableFilterModal).toBeHidden();
   }
 
-  async closeModalWithCancel() {
-    await this.dialogCancelButton.click();
-  }
-
-  async clickMultipleVariablesSwitch() {
-    await this.multipleVariablesSwitch.click({force: true});
+  async selectVariableOperator(operatorLabel: string) {
+    const operatorDropdown = this.variableFilterModal
+      .locator('[data-testid^="variable-filter-operator-"]')
+      .first();
+    await operatorDropdown.click();
+    await this.page.getByRole('option', {name: operatorLabel}).click();
   }
 
   async clickRunningInstancesCheckbox(): Promise<void> {

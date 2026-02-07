@@ -58,15 +58,11 @@ function getFilters<Fields extends string, Filters>(
 function getProcessInstanceFilters(
   searchParams: string,
 ): ProcessInstanceFilters {
-  const {variableName, variableValues, ...filters} = getFilters<
-    ProcessInstanceFilterField,
-    ProcessInstanceFilters
-  >(
+  return getFilters<ProcessInstanceFilterField, ProcessInstanceFilters>(
     searchParams,
     PROCESS_INSTANCE_FILTER_FIELDS,
     BOOLEAN_PROCESS_INSTANCE_FILTER_FIELDS,
   );
-  return filters;
 }
 
 export {getProcessInstanceFilters, getFilters};

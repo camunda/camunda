@@ -57,10 +57,10 @@ const Filters: React.FC = observer(() => {
   const navigate = useNavigate();
   const [visibleFilters, setVisibleFilters] = useState<OptionalFilter[]>([]);
   const filterValues = parseProcessInstancesFilter(searchParams);
-  const variable = variableFilterStore.variable;
-  if (variable) {
-    filterValues.variableName = variable.name;
-    filterValues.variableValues = variable.values;
+  const conditions = variableFilterStore.conditions;
+  if (conditions.length > 0) {
+    filterValues.variableName = conditions.map((c) => c.name).join(',');
+    filterValues.variableValues = JSON.stringify(conditions);
   }
   if (filterValues.process && filterValues.tenant !== 'all') {
     filterValues.process = getDefinitionIdentifier(
@@ -76,18 +76,6 @@ const Filters: React.FC = observer(() => {
   return (
     <Form<ProcessInstancesFilter>
       onSubmit={(values) => {
-        if (
-          values.variableName !== undefined &&
-          values.variableValues !== undefined
-        ) {
-          variableFilterStore.setVariable({
-            name: values.variableName,
-            values: values.variableValues,
-          });
-        } else {
-          variableFilterStore.setVariable(undefined);
-        }
-
         navigate({
           search: updateProcessInstancesFilterSearchString(searchParams, {
             ...values,
@@ -102,7 +90,9 @@ const Filters: React.FC = observer(() => {
           <FiltersPanel
             localStorageKey="isFiltersCollapsed"
             isResetButtonDisabled={
-              (isEqual(initialValues, values) && visibleFilters.length === 0) ||
+              (isEqual(initialValues, values) &&
+                visibleFilters.length === 0 &&
+                !variableFilterStore.hasActiveFilters) ||
               isBatchModificationEnabled
             }
             onResetClick={() => {
@@ -114,7 +104,7 @@ const Filters: React.FC = observer(() => {
                 ),
               });
               setVisibleFilters([]);
-              variableFilterStore.setVariable(undefined);
+              variableFilterStore.setConditions([]);
             }}
           >
             <Container>

@@ -14,10 +14,14 @@ import {
 } from '@camunda/camunda-api-zod-schemas/8.8';
 import {formatToISO} from 'modules/utils/date/formatDate';
 import {parseIds, parseSortParamsV2, updateFiltersSearchString} from '../index';
+import type {VariableCondition} from 'modules/stores/variableFilter';
+import {getValidVariableValues} from '../getValidVariableValues';
 
 /**
  * ProcessInstancesFilter represents the URL search params.
  * This is the single source of truth for what can be filtered from the UI.
+ * Note: variableName/variableValues are included in the schema for form state management
+ * but are stripped when updating the URL (variable filtering is stored in variableFilterStore).
  */
 const ProcessInstancesFilterSchema = z
   .object({
@@ -197,6 +201,7 @@ function updateProcessInstancesFilterSearchString(
   currentSearch: URLSearchParams,
   newFilters: ProcessInstancesFilter,
 ) {
+  // Strip variable filter fields - they're stored in MobX, not URL
   const {variableName, variableValues, ...filtersWithoutVariable} = newFilters;
 
   return updateFiltersSearchString<ProcessInstancesFilter>(
@@ -207,10 +212,98 @@ function updateProcessInstancesFilterSearchString(
   );
 }
 
+/**
+ * Internal type for variable filter value in V2 API format.
+ */
+type VariableFilterValue =
+  | string
+  | {
+      $eq?: string;
+      $neq?: string;
+      $exists?: boolean;
+      $in?: string[];
+      $like?: string;
+    };
+
+/**
+ * Internal type representing a single variable filter condition in V2 API format.
+ * Used by convertVariableConditionsToApiFormat.
+ */
+type VariableFilter = {
+  name: string;
+  value: VariableFilterValue;
+};
+
+/**
+ * Converts UI variable filter conditions to the V2 API format.
+ *
+ * Operator mappings:
+ * - equals → {$eq: value}
+ * - notEqual → {$neq: value}
+ * - contains → {$like: "*value*"} (auto-wrap wildcards)
+ * - oneOf → {$in: [values]} (always array)
+ * - exists → {$exists: true}
+ * - doesNotExist → {$exists: false}
+ */
+function convertVariableConditionsToApiFormat(
+  conditions: VariableCondition[],
+): VariableFilter[] {
+  return conditions
+    .filter((c) => {
+      // Filter out invalid conditions
+      if (!c.name.trim()) {
+        return false;
+      }
+      if (c.operator === 'exists' || c.operator === 'doesNotExist') {
+        return true;
+      }
+      return c.value.trim() !== '';
+    })
+    .map((condition) => {
+      const {name, operator, value} = condition;
+
+      switch (operator) {
+        case 'exists':
+          return {name, value: {$exists: true}};
+        case 'doesNotExist':
+          return {name, value: {$exists: false}};
+        case 'equals': {
+          const parsed = getValidVariableValues(value);
+          const jsonValue =
+            parsed && parsed.length > 0 ? JSON.stringify(parsed[0]) : value;
+          return {name, value: {$eq: jsonValue}};
+        }
+        case 'notEqual': {
+          const parsed = getValidVariableValues(value);
+          const jsonValue =
+            parsed && parsed.length > 0 ? JSON.stringify(parsed[0]) : value;
+          return {name, value: {$neq: jsonValue}};
+        }
+        case 'contains': {
+          const parsed = getValidVariableValues(value);
+          const jsonValue =
+            parsed && parsed.length > 0 ? JSON.stringify(parsed[0]) : value;
+          return {name, value: {$like: `*${jsonValue}*`}};
+        }
+        case 'oneOf': {
+          const parsed = getValidVariableValues(value) ?? [];
+          const jsonValues = parsed.map((v) => JSON.stringify(v));
+          return {
+            name,
+            value: {$in: jsonValues.length > 0 ? jsonValues : [value]},
+          };
+        }
+        default:
+          return {name, value};
+      }
+    });
+}
+
 export {
   parseProcessInstancesFilter,
   parseProcessInstancesSearchFilter,
   parseProcessInstancesSearchSort,
   updateProcessInstancesFilterSearchString,
+  convertVariableConditionsToApiFormat,
 };
 export type {ProcessInstancesFilter};
