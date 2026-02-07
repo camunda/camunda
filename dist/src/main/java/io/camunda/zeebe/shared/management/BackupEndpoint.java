@@ -189,7 +189,9 @@ public final class BackupEndpoint {
     response.setPartitionId(state.partitionId());
     response.setCheckpointId(state.checkpointId());
     response.setCheckpointPosition(state.checkpointPosition());
-    response.setCheckpointTimestamp(state.checkpointTimestamp());
+    response.setCheckpointTimestamp(
+        OffsetDateTime.ofInstant(
+            Instant.ofEpochMilli(state.checkpointTimestamp()), ZoneId.of("UTC")));
     response.setCheckpointType(toCheckpointType(state.checkpointType()));
     return response;
   }
@@ -200,7 +202,9 @@ public final class BackupEndpoint {
     response.setPartitionId(state.partitionId());
     response.setCheckpointId(state.checkpointId());
     response.setCheckpointPosition(state.checkpointPosition());
-    response.setCheckpointTimestamp(state.checkpointTimestamp());
+    response.setCheckpointTimestamp(
+        OffsetDateTime.ofInstant(
+            Instant.ofEpochMilli(state.checkpointTimestamp()), ZoneId.of("UTC")));
     response.setCheckpointType(toBackupType(state.checkpointType()));
     return response;
   }

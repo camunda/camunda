@@ -621,9 +621,9 @@ components:
           format: int64
           example: 1500
         checkpointTimestamp:
-          type: integer
-          format: int64
-          example: 1765208671134
+          type: string
+          format: date-time
+          example: "2020-01-01T00:00:00Z"
 
     PartitionBackupState:
       title: Partition Checkpoint State
@@ -645,9 +645,9 @@ components:
           format: int64
           example: 1500
         checkpointTimestamp:
-          type: integer
-          format: int64
-          example: 1765208671134
+          type: string
+          format: date-time
+          example: "2020-01-01T00:00:00Z"
 
     PartitionBackupRange:
       title: Partition Backup Range
