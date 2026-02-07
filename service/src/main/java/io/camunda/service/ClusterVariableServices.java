@@ -21,6 +21,7 @@ import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateClusterVariableRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerDeleteClusterVariableRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerUpdateClusterVariableRequest;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.clustervariable.ClusterVariableRecord;
 import java.util.concurrent.CompletableFuture;
@@ -89,6 +90,24 @@ public final class ClusterVariableServices
     return sendBrokerRequest(
         new BrokerDeleteClusterVariableRequest()
             .setName(request.name())
+            .setTenantScope(request.tenantId()));
+  }
+
+  public CompletableFuture<ClusterVariableRecord> updateGloballyScopedClusterVariable(
+      final ClusterVariableRequest request) {
+    return sendBrokerRequest(
+        new BrokerUpdateClusterVariableRequest()
+            .setName(request.name())
+            .setValue(toDirectBufferValue(request.value()))
+            .setGlobalScope());
+  }
+
+  public CompletableFuture<ClusterVariableRecord> updateTenantScopedClusterVariable(
+      final ClusterVariableRequest request) {
+    return sendBrokerRequest(
+        new BrokerUpdateClusterVariableRequest()
+            .setName(request.name())
+            .setValue(toDirectBufferValue(request.value()))
             .setTenantScope(request.tenantId()));
   }
 

@@ -172,7 +172,10 @@ public class IdentitySetupInitializeDefaultsTest {
                 Assertions.assertThat(auth)
                     .hasResourceType(AuthorizationResourceType.CLUSTER_VARIABLE)
                     .hasOnlyPermissionTypes(
-                        PermissionType.CREATE, PermissionType.READ, PermissionType.DELETE),
+                        PermissionType.CREATE,
+                        PermissionType.READ,
+                        PermissionType.UPDATE,
+                        PermissionType.DELETE),
             auth ->
                 Assertions.assertThat(auth)
                     .hasResourceType(AuthorizationResourceType.BATCH)

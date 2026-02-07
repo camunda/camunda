@@ -17,6 +17,10 @@ public interface MutableClusterVariableState extends ClusterVariableState {
 
   void createGloballyScopedClusterVariable(ClusterVariableRecord clusterVariableRecord);
 
+  void updateTenantScopedClusterVariable(ClusterVariableRecord clusterVariableRecord);
+
+  void updateGloballyScopedClusterVariable(ClusterVariableRecord clusterVariableRecord);
+
   void deleteTenantScopedClusterVariable(DirectBuffer variableNameBuffer, String tenantId);
 
   void deleteGloballyScopedClusterVariable(DirectBuffer variableNameBuffer);
