@@ -38,14 +38,13 @@ const Operations: React.FC<Props> = ({
   useIcons = false,
 }) => {
   const [isTablet, setIsTablet] = useState(
-    window.innerWidth < BREAKPOINTS.lg && window.innerWidth >= BREAKPOINTS.md,
+    window.innerWidth < BREAKPOINTS.lg,
   );
 
   useEffect(() => {
     const updateBreakpoint = () => {
       setIsTablet(
-        window.innerWidth < BREAKPOINTS.lg &&
-          window.innerWidth >= BREAKPOINTS.md,
+        window.innerWidth < BREAKPOINTS.lg,
       );
     };
     updateBreakpoint();
