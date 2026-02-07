@@ -15,6 +15,7 @@ import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.validation.AuthorizationValidator;
+import io.camunda.security.validation.GroupValidator;
 import io.camunda.security.validation.IdentifierValidator;
 import io.camunda.security.validation.IdentityInitializationException;
 import io.camunda.security.validation.TenantValidator;
@@ -48,8 +49,10 @@ import io.camunda.zeebe.broker.system.configuration.partitioning.FixedPartitionC
 import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
 import io.camunda.zeebe.engine.GlobalListenerConfiguration;
 import io.camunda.zeebe.engine.processing.identity.initialize.AuthorizationConfigurer;
+import io.camunda.zeebe.engine.processing.identity.initialize.GroupConfigurer;
 import io.camunda.zeebe.engine.processing.identity.initialize.TenantConfigurer;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.util.Either;
@@ -489,19 +492,23 @@ public final class SystemContext {
         new AuthorizationConfigurer(new AuthorizationValidator(identifierValidator));
     final TenantConfigurer tenantConfigurer =
         new TenantConfigurer(new TenantValidator(identifierValidator));
+    final GroupConfigurer groupConfigurer =
+        new GroupConfigurer(new GroupValidator(identifierValidator));
 
     final Either<List<String>, List<AuthorizationRecord>> configuredAuthorizations =
         authorizationConfigurer.configureEntities(
             securityConfiguration.getInitialization().getAuthorizations());
     final Either<List<String>, List<TenantRecord>> configuredTenants =
         tenantConfigurer.configureEntities(securityConfiguration.getInitialization().getTenants());
+    final Either<List<String>, List<GroupRecord>> configuredGroups =
+        groupConfigurer.configureEntities(securityConfiguration.getInitialization().getGroups());
 
     // TODO: after adding more entity types, change this, so it accounts for all violations all
     //   together.
     configuredAuthorizations.ifLeft(
         (violations) -> {
           throw new IdentityInitializationException(
-              "Cannot initialize configured entities: %n- %s"
+              "Cannot initialize configured authorizations: %n- %s"
                   .formatted(String.join(System.lineSeparator() + "- ", violations)));
         });
 
@@ -509,6 +516,13 @@ public final class SystemContext {
         (violations) -> {
           throw new IdentityInitializationException(
               "Cannot initialize configured tenants: %n- %s"
+                  .formatted(String.join(System.lineSeparator() + "- ", violations)));
+        });
+
+    configuredGroups.ifLeft(
+        (violations) -> {
+          throw new IdentityInitializationException(
+              "Cannot initialize configured groups: %n- %s"
                   .formatted(String.join(System.lineSeparator() + "- ", violations)));
         });
   }
