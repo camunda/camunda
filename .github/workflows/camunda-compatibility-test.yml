@@ -291,20 +291,10 @@ jobs:
             echo "$MATRIX_JSON" | jq '.'
           fi
 
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          build_status: ${{ job.status }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-
   run-compatibility-tests:
     name: Test ${{ matrix.client }} -> ${{ matrix.server }}
     needs: prepare-versions
-    if: needs.prepare-versions.outputs.matrix != '{"include":[]}'
+    if: needs.prepare-versions.outputs.matrix != '' && needs.prepare-versions.outputs.matrix != '{"include":[]}'
     runs-on: ubuntu-latest
     timeout-minutes: 120
     permissions:
@@ -437,7 +427,7 @@ jobs:
           webhook: ${{ secrets.SLACK_CAMUNDA_EX_CI_WEBHOOK }}
           webhook-type: incoming-webhook
           payload: |
-            {
+           {
               "blocks": [
                 {
                   "type": "section",
