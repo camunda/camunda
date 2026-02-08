@@ -33,7 +33,7 @@
     "react-i18next": "15.6.0",
     "react-router-dom": "7.13.0",
     "react-transition-group": "4.4.5",
-    "styled-components": "6.1.19"
+    "styled-components": "6.3.9"
   },
   "devDependencies": {
     "@types/carbon__elements": "^11.10.3",
