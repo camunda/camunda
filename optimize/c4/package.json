@@ -31,8 +31,8 @@
 		"classnames": "^2.3.2",
 		"css-loader": "^7.1.2",
 		"prop-types": "^15.8.1",
-		"react": "17.0.2",
-		"react-dom": "17.0.2",
+		"react": "19.2.4",
+		"react-dom": "19.2.4",
 		"sass": "^1.81.0",
 		"sass-loader": "^16.0.3",
 		"storybook": "9.1.17",
@@ -41,8 +41,8 @@
 	},
 	"peerDependencies": {
 		"@carbon/react": "^1.91.0",
-		"react": "17.0.2",
-		"react-dom": "17.0.2"
+		"react": "19.2.4",
+		"react-dom": "19.2.4"
 	},
 	"packageManager": "yarn@4.12.0"
 }
