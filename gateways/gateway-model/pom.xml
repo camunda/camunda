@@ -110,6 +110,9 @@
               <!-- validate the spec on every generation -->
               <skipValidateSpec>false</skipValidateSpec>
               <openapiNormalizer>REF_AS_PARENT_IN_ALLOF=true</openapiNormalizer>
+              <importMappings>
+                <importMapping>Nullable=jakarta.annotation.Nullable</importMapping>
+              </importMappings>
               <configOptions>
                 <additionalModelTypeAnnotations>@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)</additionalModelTypeAnnotations>
                 <serializationLibrary>jackson</serializationLibrary>
@@ -117,6 +120,7 @@
                 <jdk8>true</jdk8>
                 <openApiNullable>false</openApiNullable>
                 <useEnumCaseInsensitive>true</useEnumCaseInsensitive>
+                <useSpringBoot3>true</useSpringBoot3>
               </configOptions>
             </configuration>
           </execution>
@@ -187,6 +191,9 @@
               <generateModelTests>false</generateModelTests>
               <!-- no validation needed, done in the advanced execution already -->
               <skipValidateSpec>true</skipValidateSpec>
+              <importMappings>
+                <importMapping>Nullable=jakarta.annotation.Nullable</importMapping>
+              </importMappings>
               <configOptions>
                 <additionalModelTypeAnnotations>@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)</additionalModelTypeAnnotations>
                 <serializationLibrary>jackson</serializationLibrary>
@@ -195,7 +202,35 @@
                 <openApiNullable>false</openApiNullable>
                 <useEnumCaseInsensitive>true</useEnumCaseInsensitive>
                 <useOneOfInterfaces>false</useOneOfInterfaces>
+                <useSpringBoot3>true</useSpringBoot3>
               </configOptions>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>add-nullable-import</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <configuration>
+              <target>
+                <!-- Workaround for OpenAPI Generator 7.19.0 bug where @Nullable is used but import is missing -->
+                <!-- Add jakarta.annotation.Nullable import to generated files that use @Nullable -->
+                <replaceregexp match="^(package .+;)$" replace="\1${line.separator}${line.separator}import jakarta.annotation.Nullable;" flags="m" byline="false">
+                  <fileset dir="${project.build.directory}/generated-sources/openapi/src/main" includes="**/*.java">
+                    <contains text="@Nullable" casesensitive="yes"/>
+                    <not>
+                      <contains text="import jakarta.annotation.Nullable" casesensitive="yes"/>
+                    </not>
+                  </fileset>
+                </replaceregexp>
+              </target>
             </configuration>
           </execution>
         </executions>
