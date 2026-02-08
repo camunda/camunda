@@ -37,7 +37,7 @@
 		"sass-loader": "^16.0.3",
 		"storybook": "9.1.17",
 		"style-loader": "^4.0.0",
-		"typescript": "5.8.2"
+		"typescript": "5.9.3"
 	},
 	"peerDependencies": {
 		"@carbon/react": "^1.91.0",
