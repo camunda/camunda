@@ -54,12 +54,6 @@ jobs:
           if [[ "$BRANCH_NAME" == "main" ]]; then
             echo "is-main=true" >> "$GITHUB_OUTPUT"
             echo "stable-version=" >> "$GITHUB_OUTPUT"
-
-            ## TODO: remove
-          elif [[ "$BRANCH_NAME" == "nicpuppa/fix-compatibility-workflow" ]]; then
-            echo "is-main=false" >> "$GITHUB_OUTPUT"
-            echo "stable-version=8.8" >> "$GITHUB_OUTPUT"
-            echo "INFO: TEMP override stable version to 8.8 for testing"
           else
             echo "is-main=false" >> "$GITHUB_OUTPUT"
             # Extract version from stable/8.x branch name
@@ -87,15 +81,6 @@ jobs:
 
           STABLE_VERSION="${{ steps.branch-info.outputs.stable-version }}"
           IS_MAIN="${{ steps.branch-info.outputs.is-main }}"
-          POM_VERSION="${{ steps.pom-version.outputs.pom-version }}"
-          BRANCH_NAME="${{ steps.branch-info.outputs.branch-name }}"
-
-          ## TODO: remove
-
-          if [[ "$BRANCH_NAME" == "nicpuppa/fix-compatibility-workflow" ]]; then
-            STABLE_VERSION="8.8"
-            echo "INFO: TEMP override stable version to 8.8 for testing"
-          fi
 
           if [[ "$IS_MAIN" == "true" ]]; then
             # On main, use only the snapshot version from pom as the tag
@@ -139,25 +124,22 @@ jobs:
         id: create-lists
         run: |
           FILTERED_TAGS=$(grep -v '^$' /tmp/filtered_tags.txt || true)
-          POM_VERSION="${{ steps.pom-version.outputs.pom-version }}"
           IS_MAIN="${{ steps.branch-info.outputs.is-main }}"
 
-          # Calculate next minor snapshot version from latest tag
-          LATEST_TAG=$(echo "$FILTERED_TAGS" | tail -n1)
-          if [[ -n "$LATEST_TAG" ]] && [[ "$LATEST_TAG" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
-            TAG_MAJOR="${BASH_REMATCH[1]}"
-            TAG_MINOR="${BASH_REMATCH[2]}"
-            NEXT_MINOR=$((TAG_MINOR + 1))
-            NEXT_SNAPSHOT="$TAG_MAJOR.$NEXT_MINOR.0-SNAPSHOT"
-            echo "DEBUG: Calculated next snapshot from latest tag: $NEXT_SNAPSHOT"
-          else
-            # Fallback: derive from pom version
-            if [[ "$POM_VERSION" =~ ^([0-9]+)\.([0-9]+)\. ]]; then
-              NEXT_SNAPSHOT="$POM_VERSION"
+          STABLE_VERSION="${{ steps.branch-info.outputs.stable-version }}"
+
+          if [[ "$IS_MAIN" == "true" ]]; then
+            NEXT_SNAPSHOT="SNAPSHOT"
+          elif [[ -n "$STABLE_VERSION" ]]; then
+            IFS='.' read -r STABLE_MAJOR STABLE_MINOR <<< "$STABLE_VERSION"
+            NEXT_MINOR=$((STABLE_MINOR + 1))
+            if echo "$FILTERED_TAGS" | grep -q "^${STABLE_MAJOR}\\.${NEXT_MINOR}\\."; then
+              NEXT_SNAPSHOT="${STABLE_MAJOR}.${NEXT_MINOR}.0-SNAPSHOT"
             else
-              echo "::error::Cannot determine snapshot version"
-              exit 1
+              NEXT_SNAPSHOT="SNAPSHOT"
             fi
+          else
+            NEXT_SNAPSHOT="SNAPSHOT"
           fi
 
           echo "next-snapshot=$NEXT_SNAPSHOT" >> "$GITHUB_OUTPUT"
@@ -317,8 +299,7 @@ jobs:
       id-token: write
     strategy:
       fail-fast: false
-      matrix:
-        include: ${{ fromJson(needs.prepare-versions.outputs.matrix) }}
+      matrix: ${{ fromJson(needs.prepare-versions.outputs.matrix) }}
     steps:
       - uses: actions/checkout@v6
 
@@ -345,7 +326,7 @@ jobs:
             verify
             -P compatibility-test
             -pl qa/acceptance-tests
-            -Dcamunda.test.version=${{ matrix.server }}
+            -Dcamunda.compatibility.test.version=${{ matrix.server }}
             -Dcamunda.client.version=${{ matrix.client }}
             -DfailIfNoTests=false
 
@@ -425,49 +406,49 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
-  # notify-failure:
-  #   name: Notify on failure
-  #   runs-on: ubuntu-latest
-  #   timeout-minutes: 5
-  #   needs: [prepare-versions, run-compatibility-tests]
-  #   if: always() && (contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled'))
-  #   permissions: {}
-  #   steps:
-  #     - uses: actions/checkout@v6
-  #     - name: Notify failure
-  #       uses: slackapi/slack-github-action@v2.1.1
-  #       if: env.SLACK_CAMUNDA_EX_CI_WEBHOOK != ''
-  #       env:
-  #         SLACK_CAMUNDA_EX_CI_WEBHOOK: ${{ secrets.SLACK_CAMUNDA_EX_CI_WEBHOOK }}
-  #       with:
-  #         webhook: ${{ secrets.SLACK_CAMUNDA_EX_CI_WEBHOOK }}
-  #         webhook-type: incoming-webhook
-  #         payload: |
-  #           {
-  #             "blocks": [
-  #               {
-  #                 "type": "section",
-  #                 "text": {
-  #                   "type": "mrkdwn",
-  #                   "text": ":alarm: *Camunda Client Compatibility Tests Failed*"
-  #                 }
-  #               },
-  #               {
-  #                 "type": "section",
-  #                 "text": {
-  #                   "type": "mrkdwn",
-  #                   "text": "Branch: `${{ github.ref_name }}`\nPlease check: https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}"
-  #                 }
-  #               }
-  #             ]
-  #           }
+  notify-failure:
+    name: Notify on failure
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [prepare-versions, run-compatibility-tests]
+    if: always() && (contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled'))
+    permissions: {}
+    steps:
+      - uses: actions/checkout@v6
+      - name: Notify failure
+        uses: slackapi/slack-github-action@v2.1.1
+        if: env.SLACK_CAMUNDA_EX_CI_WEBHOOK != ''
+        env:
+          SLACK_CAMUNDA_EX_CI_WEBHOOK: ${{ secrets.SLACK_CAMUNDA_EX_CI_WEBHOOK }}
+        with:
+          webhook: ${{ secrets.SLACK_CAMUNDA_EX_CI_WEBHOOK }}
+          webhook-type: incoming-webhook
+          payload: |
+           {
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ":alarm: *Camunda Client Compatibility Tests Failed*"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "Branch: `${{ github.ref_name }}`\nPlease check: https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}"
+                  }
+                }
+              ]
+            }
 
-  #     - name: Observe build status
-  #       if: always()
-  #       continue-on-error: true
-  #       uses: ./.github/actions/observe-build-status
-  #       with:
-  #         build_status: ${{ job.status }}
-  #         secret_vault_address: ${{ secrets.VAULT_ADDR }}
-  #         secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-  #         secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}

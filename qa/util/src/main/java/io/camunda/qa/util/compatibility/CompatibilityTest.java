@@ -44,7 +44,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
  * <p>The version can be specified via:
  *
  * <ul>
- *   <li>System property: {@code -Dcamunda.test.version=8.8.1}
+ *   <li>System property: {@code -Dcamunda.compatibility.test.version=8.8.1}
  *   <li>Annotation parameter: {@code @CompatibilityTest(version = "8.8.1")}
  * </ul>
  */
