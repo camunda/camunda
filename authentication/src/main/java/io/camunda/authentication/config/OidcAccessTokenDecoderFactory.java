@@ -7,11 +7,7 @@
  */
 package io.camunda.authentication.config;
 
-import static com.nimbusds.jose.JOSEObjectType.JWT;
-
 import com.nimbusds.jose.JOSEObjectType;
-import com.nimbusds.jose.proc.DefaultJOSEObjectTypeVerifier;
-import com.nimbusds.jose.proc.JOSEObjectTypeVerifier;
 import com.nimbusds.jose.proc.SecurityContext;
 import com.nimbusds.jwt.proc.ConfigurableJWTProcessor;
 import com.nimbusds.jwt.proc.DefaultJWTProcessor;
@@ -141,14 +137,10 @@ public class OidcAccessTokenDecoderFactory {
       final JWTProcessor<SecurityContext> jwtProcessor,
       final OAuth2TokenValidator<Jwt> tokenValidator) {
     final var decoder = new NimbusJwtDecoder(jwtProcessor);
-    // Accept both standard JWT and at+jwt (RFC 9068) type headers
-    // Note: JwtTypeValidator constructor takes varargs of allowed types
-    final var typeValidator = new JwtTypeValidator("JWT", "at+jwt");
-    // Also allow tokens with no type header (null/empty)
-    typeValidator.setAllowEmpty(true);
-    final var combinedValidator =
-        new DelegatingOAuth2TokenValidator<>(typeValidator, tokenValidator);
-    decoder.setJwtValidator(combinedValidator);
+    final JwtTypeValidator jwtTypeValidator =
+        new JwtTypeValidator(List.of(JOSEObjectType.JWT.getType(), AT_JWT.getType()));
+    jwtTypeValidator.setAllowEmpty(true);
+    decoder.setJwtValidator(new DelegatingOAuth2TokenValidator<>(jwtTypeValidator, tokenValidator));
     return decoder;
   }
 
@@ -189,8 +181,6 @@ public class OidcAccessTokenDecoderFactory {
   protected ConfigurableJWTProcessor<SecurityContext> createAndCustomizeJwtProcessor(
       final Consumer<ConfigurableJWTProcessor<SecurityContext>> customizer) {
     final var jwtProcessor = new DefaultJWTProcessor<>();
-    final var jwsTypeVerifier = createJOSEObjectTypeVerifier();
-    jwtProcessor.setJWSTypeVerifier(jwsTypeVerifier);
     customizer.accept(jwtProcessor);
     return jwtProcessor;
   }
@@ -215,14 +205,5 @@ public class OidcAccessTokenDecoderFactory {
   protected OAuth2TokenValidator<Jwt> createJwtValidator(
       final ClientRegistration clientRegistration) {
     return tokenValidatorFactory.createTokenValidator(clientRegistration);
-  }
-
-  /**
-   * Creates a {@link JOSEObjectTypeVerifier} that accepts standard JWT types.
-   *
-   * @return a JOSE object type verifier
-   */
-  protected JOSEObjectTypeVerifier<SecurityContext> createJOSEObjectTypeVerifier() {
-    return new DefaultJOSEObjectTypeVerifier<>(JWT, AT_JWT, null);
   }
 }
