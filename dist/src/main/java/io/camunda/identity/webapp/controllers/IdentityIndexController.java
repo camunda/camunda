@@ -36,8 +36,26 @@ public class IdentityIndexController {
     return "identity/index";
   }
 
-  @RequestMapping(
-      value = {"/identity/", "/identity/{regex:[\\w-]+}", "/identity/**/{regex:[\\w-]+}"})
+  /**
+   * Forwards SPA routes to index.html, excluding static assets.
+   *
+   * <p>The regex pattern uses negative lookahead to prevent matching paths starting with "assets":
+   *
+   * <ul>
+   *   <li>{@code (?!assets%2F?)} - excludes "assets" optionally followed by a slash (escaped as
+   *       %2F)
+   *   <li>{@code .*} - matches any other path segment
+   * </ul>
+   *
+   * <p>The slash must be escaped as {@code %2F} because PathPatternParser does not allow literal
+   * slashes within path variable regex patterns.
+   *
+   * <p>This exclusion is necessary because PathPatternParser (Spring Framework 6+) gives controller
+   * mappings higher precedence than static resource handlers. Without this pattern, requests like
+   * {@code /operate/assets/index.css} would be forwarded to index.html instead of being served as
+   * static files.
+   */
+  @RequestMapping("/identity/{path:^(?!assets%2F?).*}")
   public String forwardToIdentity(final HttpServletRequest request) {
     return webappsRequestForwardManager.forward(request, "identity");
   }

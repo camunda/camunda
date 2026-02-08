@@ -25,9 +25,9 @@ import java.net.http.HttpResponse;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureWebMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureWebMvc;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
@@ -232,9 +232,7 @@ class MultipleOidcProviderFlowTest {
           mockMvcTester.get().uri("/").accept(MediaType.TEXT_HTML).exchange();
 
       // Then the user is redirected to the Login Page listing the OIDC providers
-      assertThat(result)
-          .hasStatus(HttpStatus.FOUND)
-          .hasHeader("Location", "http://localhost/login");
+      assertThat(result).hasStatus(HttpStatus.FOUND).hasHeader("Location", "/login");
     }
 
     @Test

@@ -9,7 +9,7 @@ package io.camunda.operate.webapp.security;
 
 import org.apache.catalina.Context;
 import org.apache.tomcat.util.http.Rfc6265CookieProcessor;
-import org.springframework.boot.web.embedded.tomcat.TomcatContextCustomizer;
+import org.springframework.boot.tomcat.TomcatContextCustomizer;
 import org.springframework.stereotype.Component;
 
 @Component

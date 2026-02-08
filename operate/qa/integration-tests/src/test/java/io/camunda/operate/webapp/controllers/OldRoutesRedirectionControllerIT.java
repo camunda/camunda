@@ -17,14 +17,16 @@ import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.http.client.ClientHttpRequestFactorySettings.Redirects;
+import org.springframework.boot.http.client.HttpRedirects;
+import org.springframework.boot.resttestclient.TestRestTemplate;
+import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRestTemplate;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
+@AutoConfigureTestRestTemplate
 @SpringBootTest(
     classes = {
       TestApplicationWithNoBeans.class,
@@ -62,7 +64,7 @@ public class OldRoutesRedirectionControllerIT {
   public void testRedirections(final String path) {
     final ResponseEntity<String> response =
         restTemplate
-            .withRedirects(Redirects.DONT_FOLLOW)
+            .withRedirects(HttpRedirects.DONT_FOLLOW)
             .getForEntity(baseUrl() + path, String.class);
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FOUND);
     assertThat(response.getHeaders().getLocation().toString())

@@ -54,6 +54,8 @@ public final class TestStandaloneGateway extends TestSpringApplication<TestStand
         // ---
         GatewayModuleConfiguration.class,
         CommonsModuleConfiguration.class);
+    // this is needed to ensure no default spring boot 4.0 security setup kicks in
+    withAdditionalProfile(Profile.CONSOLIDATED_AUTH);
 
     unifiedConfig = new Camunda();
 

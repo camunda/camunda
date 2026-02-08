@@ -7,6 +7,7 @@
  */
 package io.camunda.gateway.mapping.http;
 
+import io.camunda.gateway.protocol.model.CamundaProblemDetail;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
 import java.util.concurrent.CompletionException;
@@ -75,7 +76,7 @@ public class GatewayErrorMapper {
    */
   public static ProblemDetail createProblemDetail(
       final HttpStatusCode status, final String detail, final String title) {
-    final var problemDetail = ProblemDetail.forStatusAndDetail(status, detail);
+    final var problemDetail = CamundaProblemDetail.forStatusAndDetail(status, detail);
     problemDetail.setTitle(title);
     return problemDetail;
   }

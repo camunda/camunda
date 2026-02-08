@@ -76,8 +76,6 @@
     <!-- testing config -->
     <mockito.version>5.21.0</mockito.version>
     <mockito-inline.version>5.2.0</mockito-inline.version>
-    <junit.jupiter.version>5.14.2</junit.jupiter.version>
-    <junit.platform.version>1.14.2</junit.platform.version>
     <mockserver.version>5.15.0</mockserver.version>
     <assertj.version>3.27.7</assertj.version>
     <google-java-format.plugin.version>1.33.0</google-java-format.plugin.version>
@@ -105,31 +103,26 @@
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-api</artifactId>
-      <version>${junit.jupiter.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.junit.platform</groupId>
       <artifactId>junit-platform-launcher</artifactId>
-      <version>${junit.platform.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-engine</artifactId>
-      <version>${junit.jupiter.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-params</artifactId>
-      <version>${junit.jupiter.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.junit.platform</groupId>
       <artifactId>junit-platform-commons</artifactId>
-      <version>${junit.platform.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -314,13 +307,6 @@
               <database.type>${database.type}</database.type>
             </systemPropertyVariables>
           </configuration>
-          <dependencies>
-            <dependency>
-              <groupId>org.junit.jupiter</groupId>
-              <artifactId>junit-jupiter-engine</artifactId>
-              <version>${junit.jupiter.version}</version>
-            </dependency>
-          </dependencies>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>

@@ -447,6 +447,26 @@
     </dependency>
 
     <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-jdbc</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-jackson2</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-health</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-micrometer-metrics</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-web</artifactId>
     </dependency>
@@ -530,6 +550,17 @@
       <groupId>io.micrometer</groupId>
       <artifactId>micrometer-registry-otlp</artifactId>
       <scope>runtime</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-opentelemetry</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-micrometer-observation</artifactId>
     </dependency>
 
     <dependency>
@@ -988,6 +1019,7 @@
 
             <!-- Needed for Spring Actuators, and REST API -->
             <dependency>org.springframework.boot:spring-boot-starter-web</dependency>
+            <dependency>org.springframework.boot:spring-boot-jackson2</dependency>
             <dependency>org.openapitools:jackson-databind-nullable</dependency>
             <dependency>jakarta.servlet:jakarta.servlet-api</dependency>
 
@@ -1006,6 +1038,7 @@
 
             <!-- Micrometer Exporters/Registries -->
             <dependency>io.micrometer:micrometer-registry-otlp</dependency>
+            <dependency>org.springframework.boot:spring-boot-opentelemetry</dependency>
           </usedDependencies>
           <ignoredUnusedDeclaredDependencies>
             <dep>com.nimbusds:oauth2-oidc-sdk</dep>

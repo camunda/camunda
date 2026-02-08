@@ -17,7 +17,7 @@ import io.camunda.security.entity.AuthenticationMethod;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Set;
-import org.springframework.boot.DefaultPropertiesPropertySource;
+import org.springframework.boot.env.DefaultPropertiesPropertySource;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
 

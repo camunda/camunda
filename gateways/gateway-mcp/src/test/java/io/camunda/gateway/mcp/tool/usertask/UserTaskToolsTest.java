@@ -54,17 +54,20 @@ import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
+@ExtendWith(MockitoExtension.class)
 @ContextConfiguration(classes = {UserTaskTools.class})
 class UserTaskToolsTest extends ToolsTest {
 
@@ -619,7 +622,7 @@ class UserTaskToolsTest extends ToolsTest {
     @ParameterizedTest
     @NullAndEmptySource
     @ValueSource(strings = {"  "})
-    void shouldUnassignUserTaskWhenAssigneeIsNullOrEmpty(String assignee) {
+    void shouldUnassignUserTaskWhenAssigneeIsNullOrEmpty(final String assignee) {
       // given
       when(userTaskServices.unassignUserTask(anyLong(), anyString()))
           .thenReturn(CompletableFuture.completedFuture(new UserTaskRecord()));

@@ -31,14 +31,15 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureWebMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureWebMvc;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
@@ -66,7 +67,7 @@ public class SessionAuthenticationRefreshTest {
     void shouldNotRefreshBeforeInterval() {
       final MockHttpSession session = new MockHttpSession();
       setSessionRefreshAttribute(session, refreshInterval.minus(Duration.ofSeconds(5)));
-      setupAuthentication();
+      setupAuthentication(session);
 
       final MvcTestResult testResult =
           mockMvcTester
@@ -81,7 +82,7 @@ public class SessionAuthenticationRefreshTest {
     @Test
     void shouldInitializeOnFirstRequest() {
       final MockHttpSession session = new MockHttpSession();
-      setupAuthentication();
+      setupAuthentication(session);
 
       final MvcTestResult testResult =
           mockMvcTester
@@ -102,7 +103,7 @@ public class SessionAuthenticationRefreshTest {
     void shouldRefreshOnWebappAfterInterval() {
       final MockHttpSession session = new MockHttpSession();
       setSessionRefreshAttribute(session, refreshInterval.multipliedBy(2));
-      setupAuthentication();
+      setupAuthentication(session);
       final Instant oldRefresh = (Instant) session.getAttribute(LAST_REFRESH_ATTR);
 
       final MvcTestResult testResult =
@@ -122,7 +123,7 @@ public class SessionAuthenticationRefreshTest {
     void shouldRefreshOnApiAfterInterval() {
       final MockHttpSession session = new MockHttpSession();
       setSessionRefreshAttribute(session, refreshInterval.multipliedBy(2));
-      setupAuthentication();
+      setupAuthentication(session);
       final Instant oldRefresh = (Instant) session.getAttribute(LAST_REFRESH_ATTR);
 
       final MvcTestResult testResult =
@@ -150,11 +151,14 @@ public class SessionAuthenticationRefreshTest {
       assertThat(newRefreshTime).isAfter(Instant.now().minusMillis(refreshInterval.toMillis()));
     }
 
-    private void setupAuthentication() {
+    private void setupAuthentication(final MockHttpSession session) {
       final var mockAuthentication = createMockAuthentication();
       final var testAuthentication = new TestingAuthenticationToken(mockAuthentication, null);
       testAuthentication.setAuthenticated(true);
-      SecurityContextHolder.getContext().setAuthentication(testAuthentication);
+      final var securityContext = SecurityContextHolder.createEmptyContext();
+      securityContext.setAuthentication(testAuthentication);
+      session.setAttribute(
+          HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, securityContext);
     }
 
     private CamundaAuthentication createMockAuthentication() {
@@ -180,10 +184,10 @@ public class SessionAuthenticationRefreshTest {
         final MockHttpSession session, final MockMvcTester mockMvcTester)
         throws InterruptedException {
       final AtomicInteger successfulRequests = new AtomicInteger(0);
+      setupAuthentication(session);
       final Runnable requestTask =
           () -> {
             try {
-              setupAuthentication();
               final MvcTestResult testResult =
                   mockMvcTester
                       .get()

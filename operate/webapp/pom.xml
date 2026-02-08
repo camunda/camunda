@@ -109,6 +109,10 @@
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-actuator</artifactId>
     </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-tomcat</artifactId>
+    </dependency>
     <!-- OAuth2 token authorization -->
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -137,10 +141,6 @@
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-core</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot</artifactId>
     </dependency>
     <dependency>
       <groupId>org.springdoc</groupId>

@@ -31,7 +31,26 @@ public class OperateIndexController {
     return "operate/index";
   }
 
-  @RequestMapping(value = {"/operate/{regex:[\\w-]+}", "/operate/**/{regex:[\\w-]+}"})
+  /**
+   * Forwards SPA routes to index.html, excluding static assets.
+   *
+   * <p>The regex pattern uses negative lookahead to prevent matching paths starting with "assets":
+   *
+   * <ul>
+   *   <li>{@code (?!assets%2F?)} - excludes "assets" optionally followed by a slash (escaped as
+   *       %2F)
+   *   <li>{@code .*} - matches any other path segment
+   * </ul>
+   *
+   * <p>The slash must be escaped as {@code %2F} because PathPatternParser does not allow literal
+   * slashes within path variable regex patterns.
+   *
+   * <p>This exclusion is necessary because PathPatternParser (Spring Framework 6+) gives controller
+   * mappings higher precedence than static resource handlers. Without this pattern, requests like
+   * {@code /operate/assets/index.css} would be forwarded to index.html instead of being served as
+   * static files.
+   */
+  @RequestMapping("/operate/{path:^(?!assets%2F?).*}")
   public String forwardToOperate(final HttpServletRequest request) {
     return webappsRequestForwardManager.forward(request, "operate");
   }
@@ -39,8 +58,17 @@ public class OperateIndexController {
   /**
    * Redirects the old frontend routes to the /operate sub-path. This can be removed after the
    * creation of the auto-discovery service.
+   *
+   * <p>Note: Patterns like /processes/{segment} require at least one path segment (e.g.,
+   * /processes/123), while /processes alone will return 404. This matches the legacy behavior.
    */
-  @GetMapping({"/processes/*", "/decisions", "/decisions/*", "/instances", "/instances/*"})
+  @GetMapping({
+    "/processes/{segment}",
+    "/decisions",
+    "/decisions/{segment}",
+    "/instances",
+    "/instances/{segment}"
+  })
   public String redirectOldRoutes(final HttpServletRequest request) {
     return "redirect:/operate" + getRequestedUrl(request);
   }

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
+import io.camunda.gateway.protocol.model.CamundaProblemDetail;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import java.net.URI;
@@ -15,8 +16,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.web.error.ErrorAttributeOptions;
 import org.springframework.boot.web.error.ErrorAttributeOptions.Include;
-import org.springframework.boot.web.servlet.error.ErrorAttributes;
-import org.springframework.boot.web.servlet.error.ErrorController;
+import org.springframework.boot.webmvc.error.ErrorAttributes;
+import org.springframework.boot.webmvc.error.ErrorController;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
@@ -49,7 +50,7 @@ public class GlobalErrorController implements ErrorController {
     final String detail = (String) attributes.getOrDefault("message", "No message available");
 
     final ProblemDetail problemDetail =
-        ProblemDetail.forStatusAndDetail(HttpStatus.valueOf(status), detail);
+        CamundaProblemDetail.forStatusAndDetail(HttpStatus.valueOf(status), detail);
     problemDetail.setInstance(URI.create(path != null ? path : "/unknown"));
     return RestErrorMapper.mapProblemToResponse(problemDetail);
   }

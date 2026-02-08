@@ -14,7 +14,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
-import org.springframework.boot.DefaultPropertiesPropertySource;
+import org.springframework.boot.env.DefaultPropertiesPropertySource;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.core.env.Environment;

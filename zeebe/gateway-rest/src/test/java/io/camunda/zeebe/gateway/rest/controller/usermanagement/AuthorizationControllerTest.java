@@ -17,6 +17,7 @@ import io.camunda.gateway.protocol.model.AuthorizationCreateResult;
 import io.camunda.gateway.protocol.model.AuthorizationIdBasedRequest;
 import io.camunda.gateway.protocol.model.AuthorizationPropertyBasedRequest;
 import io.camunda.gateway.protocol.model.AuthorizationRequest;
+import io.camunda.gateway.protocol.model.CamundaProblemDetail;
 import io.camunda.gateway.protocol.model.OwnerTypeEnum;
 import io.camunda.gateway.protocol.model.PermissionTypeEnum;
 import io.camunda.gateway.protocol.model.ResourceTypeEnum;
@@ -43,7 +44,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -100,7 +101,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
   @MethodSource("provideInvalidAuthorizationRequests")
   public void createAuthorizationShouldReturnBadRequest(
       final AuthorizationRequest request, final String errorMessage) {
-    final var expectedBody = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
+    final var expectedBody = CamundaProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
     expectedBody.setTitle(INVALID_ARGUMENT.name());
     expectedBody.setInstance(URI.create("/v2/authorizations"));
     expectedBody.setDetail(errorMessage);
@@ -131,7 +132,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
               "permissionTypes":["CREATE"]
             }""";
 
-    final var expectedBody = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
+    final var expectedBody = CamundaProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
     expectedBody.setTitle("Bad Request");
     expectedBody.setInstance(URI.create("/v2/authorizations"));
     expectedBody.setDetail("Only one of [resourceId, resourcePropertyName] is allowed");
@@ -161,7 +162,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
               "permissionTypes":["CREATE"]
             }""";
 
-    final var expectedBody = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
+    final var expectedBody = CamundaProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
     expectedBody.setTitle("Bad Request");
     expectedBody.setInstance(URI.create("/v2/authorizations"));
     expectedBody.setDetail("At least one of [resourceId, resourcePropertyName] is required");
@@ -236,7 +237,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
   @MethodSource("provideInvalidAuthorizationRequests")
   public void updateAuthorizationShouldReturnBadRequest(
       final AuthorizationRequest request, final String errorMessage) {
-    final var expectedBody = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
+    final var expectedBody = CamundaProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
     expectedBody.setTitle(INVALID_ARGUMENT.name());
     expectedBody.setInstance(URI.create("/v2/authorizations/1"));
     expectedBody.setDetail(errorMessage);
@@ -267,7 +268,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
               "permissionTypes":["UPDATE"]
             }""";
 
-    final var expectedBody = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
+    final var expectedBody = CamundaProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
     expectedBody.setTitle("Bad Request");
     expectedBody.setInstance(URI.create("/v2/authorizations/2"));
     expectedBody.setDetail("Only one of [resourceId, resourcePropertyName] is allowed");
@@ -297,7 +298,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
               "permissionTypes":["UPDATE"]
             }""";
 
-    final var expectedBody = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
+    final var expectedBody = CamundaProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
     expectedBody.setTitle("Bad Request");
     expectedBody.setInstance(URI.create("/v2/authorizations/3"));
     expectedBody.setDetail("At least one of [resourceId, resourcePropertyName] is required");

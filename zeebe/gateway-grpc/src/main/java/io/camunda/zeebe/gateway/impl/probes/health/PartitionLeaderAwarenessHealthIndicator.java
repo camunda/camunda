@@ -12,8 +12,8 @@ import static java.util.Objects.requireNonNull;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import java.util.Optional;
 import java.util.function.Supplier;
-import org.springframework.boot.actuate.health.Health;
-import org.springframework.boot.actuate.health.HealthIndicator;
+import org.springframework.boot.health.contributor.Health;
+import org.springframework.boot.health.contributor.HealthIndicator;
 
 /**
  * Health indicator that signals whether the gateway is aware of partition leaders in the cluster.
