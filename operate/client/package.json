@@ -41,7 +41,7 @@
     "react-router-dom": "7.13.0",
     "react-transition-group": "4.4.5",
     "serve": "14.2.5",
-    "styled-components": "6.1.19",
+    "styled-components": "6.3.9",
     "tiny-svg": "4.1.3",
     "zod": "4.3.6"
   },
