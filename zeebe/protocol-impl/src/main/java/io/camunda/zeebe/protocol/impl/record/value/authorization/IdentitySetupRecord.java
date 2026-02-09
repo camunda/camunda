@@ -46,7 +46,7 @@ public class IdentitySetupRecord extends UnifiedRecordValue implements IdentityS
       new ArrayProperty<>("groupMembers", GroupRecord::new);
 
   public IdentitySetupRecord() {
-    super(8);
+    super(10);
     declareProperty(rolesProp)
         .declareProperty(roleMembersProp)
         .declareProperty(usersProp)
@@ -158,8 +158,8 @@ public class IdentitySetupRecord extends UnifiedRecordValue implements IdentityS
     return this;
   }
 
-  public IdentitySetupRecord addGroupMember(final GroupRecord role) {
-    groupMembersProp.add().copyFrom(role);
+  public IdentitySetupRecord addGroupMember(final GroupRecord groupMember) {
+    groupMembersProp.add().copyFrom(groupMember);
     return this;
   }
 }

@@ -40,12 +40,12 @@ public class GroupConfigurer
   }
 
   public List<GroupRecord> configureMembers(final ConfiguredGroup group) {
-    final String tenantId = group.groupId();
+    final String groupId = group.groupId();
     return Stream.of(
-            mapToGroupMembers(tenantId, group.users(), EntityType.USER),
-            mapToGroupMembers(tenantId, group.roles(), EntityType.ROLE),
-            mapToGroupMembers(tenantId, group.mappingRules(), EntityType.MAPPING_RULE),
-            mapToGroupMembers(tenantId, group.clients(), EntityType.CLIENT))
+            mapToGroupMembers(groupId, group.users(), EntityType.USER),
+            mapToGroupMembers(groupId, group.roles(), EntityType.ROLE),
+            mapToGroupMembers(groupId, group.mappingRules(), EntityType.MAPPING_RULE),
+            mapToGroupMembers(groupId, group.clients(), EntityType.CLIENT))
         .flatMap(s -> s)
         .toList();
   }

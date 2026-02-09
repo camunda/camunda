@@ -3225,7 +3225,13 @@ final class JsonSerializableToJsonTest {
                             .setResourceType(AuthorizationResourceType.RESOURCE)
                             .setResourceMatcher(AuthorizationResourceMatcher.ID)
                             .setResourceId("resource-id")
-                            .setPermissionTypes(Set.of(PermissionType.CREATE))),
+                            .setPermissionTypes(Set.of(PermissionType.CREATE)))
+                    .addGroup(new GroupRecord().setGroupId("group1").setName("Group 1"))
+                    .addGroupMember(
+                        new GroupRecord()
+                            .setGroupId("group1")
+                            .setEntityType(EntityType.USER)
+                            .setEntityId("username")),
         """
       {
         "roles": [
@@ -3318,8 +3324,27 @@ final class JsonSerializableToJsonTest {
             "resourceType": "RESOURCE",
             "permissionTypes": ["CREATE"]
           }
-        ]
-      }
+        ],
+      "groups": [
+                    {
+                      "groupKey": -1,
+                      "groupId": "group1",
+                      "name": "Group 1",
+                      "description": "",
+                      "entityId": "",
+                      "entityType": "UNSPECIFIED"
+                    }
+                  ],
+                  "groupMembers": [
+                    {
+                      "groupKey": -1,
+                      "groupId": "group1",
+                      "name": "",
+                      "description": "",
+                      "entityId": "username",
+                      "entityType": "USER"
+                    }
+                  ]}
       """
       },
       /////////////////////////////////////////////////////////////////////////////////////////////
@@ -3347,8 +3372,9 @@ final class JsonSerializableToJsonTest {
                     "mappingRules": [],
           "roleMembers": [],
           "tenantMembers": [],
-          "authorizations": []
-      }
+          "authorizations": [],
+      "groups": [],
+                    "groupMembers": []}
       """
       },
       /////////////////////////////////////////////////////////////////////////////////////////////
