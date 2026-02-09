@@ -124,25 +124,22 @@ jobs:
         id: create-lists
         run: |
           FILTERED_TAGS=$(grep -v '^$' /tmp/filtered_tags.txt || true)
-          POM_VERSION="${{ steps.pom-version.outputs.pom-version }}"
           IS_MAIN="${{ steps.branch-info.outputs.is-main }}"
 
-          # Calculate next minor snapshot version from latest tag
-          LATEST_TAG=$(echo "$FILTERED_TAGS" | tail -n1)
-          if [[ -n "$LATEST_TAG" ]] && [[ "$LATEST_TAG" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
-            TAG_MAJOR="${BASH_REMATCH[1]}"
-            TAG_MINOR="${BASH_REMATCH[2]}"
-            NEXT_MINOR=$((TAG_MINOR + 1))
-            NEXT_SNAPSHOT="$TAG_MAJOR.$NEXT_MINOR.0-SNAPSHOT"
-            echo "DEBUG: Calculated next snapshot from latest tag: $NEXT_SNAPSHOT"
-          else
-            # Fallback: derive from pom version
-            if [[ "$POM_VERSION" =~ ^([0-9]+)\.([0-9]+)\. ]]; then
-              NEXT_SNAPSHOT="$POM_VERSION"
+          STABLE_VERSION="${{ steps.branch-info.outputs.stable-version }}"
+
+          if [[ "$IS_MAIN" == "true" ]]; then
+            NEXT_SNAPSHOT="SNAPSHOT"
+          elif [[ -n "$STABLE_VERSION" ]]; then
+            IFS='.' read -r STABLE_MAJOR STABLE_MINOR <<< "$STABLE_VERSION"
+            NEXT_MINOR=$((STABLE_MINOR + 1))
+            if echo "$FILTERED_TAGS" | grep -q "^${STABLE_MAJOR}\\.${NEXT_MINOR}\\."; then
+              NEXT_SNAPSHOT="${STABLE_MAJOR}.${NEXT_MINOR}.0-SNAPSHOT"
             else
-              echo "::error::Cannot determine snapshot version"
-              exit 1
+              NEXT_SNAPSHOT="SNAPSHOT"
             fi
+          else
+            NEXT_SNAPSHOT="SNAPSHOT"
           fi
 
           echo "next-snapshot=$NEXT_SNAPSHOT" >> "$GITHUB_OUTPUT"
@@ -291,20 +288,10 @@ jobs:
             echo "$MATRIX_JSON" | jq '.'
           fi
 
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          build_status: ${{ job.status }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-
   run-compatibility-tests:
     name: Test ${{ matrix.client }} -> ${{ matrix.server }}
     needs: prepare-versions
-    if: needs.prepare-versions.outputs.matrix != '{"include":[]}'
+    if: needs.prepare-versions.outputs.matrix != '' && needs.prepare-versions.outputs.matrix != '{"include":[]}'
     runs-on: ubuntu-latest
     timeout-minutes: 120
     permissions:
@@ -339,7 +326,7 @@ jobs:
             verify
             -P compatibility-test
             -pl qa/acceptance-tests
-            -Dcamunda.test.version=${{ matrix.server }}
+            -Dcamunda.compatibility.test.version=${{ matrix.server }}
             -Dcamunda.client.version=${{ matrix.client }}
             -DfailIfNoTests=false
 
@@ -437,7 +424,7 @@ jobs:
           webhook: ${{ secrets.SLACK_CAMUNDA_EX_CI_WEBHOOK }}
           webhook-type: incoming-webhook
           payload: |
-            {
+           {
               "blocks": [
                 {
                   "type": "section",
