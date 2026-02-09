@@ -136,4 +136,29 @@ class ExporterBatchWriterTest {
     assertThat(batchWriter.getBatchSize()).isEqualTo(0);
     assertThat(batchWriter.getEntitiesToFlushSize()).isEqualTo(0);
   }
+
+  @Test
+  void shouldOnlyFlushSameEntityAndHandlerOnce() throws PersistenceException {
+    // given
+    final TestRecord record = new TestRecord(0, NULL_VAL);
+    final String id = "1";
+    final TestExporterEntity entity = new TestExporterEntity().setId(id);
+    when(handler.handlesRecord(eq(record))).thenReturn(true);
+    when(handler.generateIds(eq(record))).thenReturn(List.of(id));
+    when(handler.createNewEntity(eq(id))).thenReturn(entity);
+
+    // duplicate the record
+    batchWriter.addRecord(record);
+    batchWriter.addRecord(record);
+
+    // When
+    final BatchRequest batchRequest = mock(BatchRequest.class);
+    batchWriter.flush(batchRequest);
+
+    // then
+    verify(handler).flush(entity, batchRequest);
+    verify(batchRequest).execute(any());
+    assertThat(batchWriter.getBatchSize()).isEqualTo(0);
+    assertThat(batchWriter.getEntitiesToFlushSize()).isEqualTo(0);
+  }
 }
