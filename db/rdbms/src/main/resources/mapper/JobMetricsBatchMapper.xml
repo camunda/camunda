@@ -36,7 +36,7 @@
       MAX(LAST_COMPLETED_AT) AS LAST_COMPLETED_AT,
       SUM(FAILED_COUNT) AS FAILED_COUNT,
       MAX(LAST_FAILED_AT) AS LAST_FAILED_AT,
-      MAX(CASE WHEN INCOMPLETE_BATCH = true THEN true ELSE false END) AS INCOMPLETE_BATCH
+      CASE WHEN MAX(CASE WHEN INCOMPLETE_BATCH = ${true} THEN 1 ELSE 0 END) = 1 THEN ${true} ELSE ${false} END AS INCOMPLETE_BATCH
     FROM ${prefix}JOB_METRICS_BATCH
     <include refid="io.camunda.db.rdbms.sql.JobMetricsBatchMapper.globalJobStatisticsFilter"/>
   </select>
