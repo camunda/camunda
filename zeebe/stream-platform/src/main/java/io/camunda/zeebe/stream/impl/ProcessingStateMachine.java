@@ -7,6 +7,9 @@
  */
 package io.camunda.zeebe.stream.impl;
 
+import static io.camunda.zeebe.protocol.record.RecordMetadataDecoder.batchOperationReferenceNullValue;
+import static io.camunda.zeebe.protocol.record.RecordMetadataDecoder.operationReferenceNullValue;
+
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDbTransaction;
 import io.camunda.zeebe.logstreams.impl.Loggers;
@@ -15,6 +18,7 @@ import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.logstreams.log.WriteContext;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -54,6 +58,7 @@ import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.function.BooleanSupplier;
+import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 
 /**
@@ -347,12 +352,8 @@ public final class ProcessingStateMachine {
   private void batchProcessing(final TypedRecord<?> initialCommand) {
     // propagate the operation reference from the initial command to the processingResultBuilder to
     // be appended to the followup events
-    final var processingResultBuilder =
-        new BufferedProcessingResultBuilder(
-            logStreamWriter::canWriteEvents,
-            initialCommand.getOperationReference(),
-            initialCommand.getBatchOperationReference(),
-            initialCommand.getAuthorizations());
+    final var processingResultBuilder = newProcessingResultBuilder(initialCommand);
+
     var lastProcessingResultSize = 0;
 
     // It might be that we reached the batch size limit during processing a command.
@@ -405,6 +406,29 @@ public final class ProcessingStateMachine {
     // We are done with processing, no new writes or responses will be added.
     pendingWrites = Collections.unmodifiableList(pendingWrites);
     pendingResponses = Collections.unmodifiableCollection(pendingResponses);
+  }
+
+  private @NonNull BufferedProcessingResultBuilder newProcessingResultBuilder(
+      final TypedRecord<?> command) {
+
+    return new BufferedProcessingResultBuilder(
+        logStreamWriter::canWriteEvents,
+        metadata -> {
+          // `operationReference` from `metadata` should have a higher precedence
+          if (metadata.getOperationReference() == operationReferenceNullValue()) {
+            if (command.getOperationReference() != operationReferenceNullValue()) {
+              metadata.operationReference(command.getOperationReference());
+            }
+          }
+
+          if (command.getBatchOperationReference() != batchOperationReferenceNullValue()) {
+            metadata.batchOperationReference(command.getBatchOperationReference());
+          }
+
+          if (command.getAuthorizations() != null && !command.getAuthorizations().isEmpty()) {
+            metadata.authorization(new AuthInfo().setClaims(command.getAuthorizations()));
+          }
+        });
   }
 
   /**
@@ -550,11 +574,7 @@ public final class ProcessingStateMachine {
   private void tryRejectingIfUserCommand(final String errorMessage) {
     final var rejectionReason = errorMessage != null ? errorMessage : "";
     final ProcessingResultBuilder processingResultBuilder =
-        new BufferedProcessingResultBuilder(
-            logStreamWriter::canWriteEvents,
-            typedCommand.getOperationReference(),
-            typedCommand.getBatchOperationReference(),
-            typedCommand.getAuthorizations());
+        newProcessingResultBuilder(typedCommand);
     final var errorRecord = new ErrorRecord();
     errorRecord.initErrorRecord(
         new CommandRejectionException(rejectionReason), currentRecord.getPosition());
@@ -595,11 +615,7 @@ public final class ProcessingStateMachine {
     zeebeDbTransaction.run(
         () -> {
           final ProcessingResultBuilder processingResultBuilder =
-              new BufferedProcessingResultBuilder(
-                  logStreamWriter::canWriteEvents,
-                  typedCommand.getOperationReference(),
-                  typedCommand.getBatchOperationReference(),
-                  typedCommand.getAuthorizations());
+              newProcessingResultBuilder(typedCommand);
           currentProcessingResult =
               currentProcessor.onProcessingError(
                   processingException, typedCommand, processingResultBuilder);

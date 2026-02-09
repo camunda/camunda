@@ -8,7 +8,6 @@
 package io.camunda.zeebe.protocol.impl.encoding;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.auth.JwtDecoder;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.DocumentProperty;
@@ -99,17 +98,6 @@ public class AuthInfo extends UnpackedObject {
   }
 
   public Map<String, Object> toDecodedMap() {
-    final var claims = determineClaims();
-    // TODO determine if actor claim should be added
-    if (getAgentInfo() != null) {
-      // NOTE: the ID is not a credential, the authenticated party is still identified via clientId
-      // or username
-      claims.put(Authorization.AUTHORIZED_AGENT_ID, getAgentInfo().id());
-    }
-    return claims;
-  }
-
-  private Map<String, Object> determineClaims() {
     if (getFormat() == AuthDataFormat.JWT) {
       final String token = getAuthData();
       return new JwtDecoder(token).decode().getClaims();

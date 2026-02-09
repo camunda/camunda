@@ -172,11 +172,15 @@ public class Engine implements RecordProcessor {
       }
 
       if (shouldProcessCommand(typedCommand)) {
+
+        // TODO: this can be refactored into the onPreProcess hook of the processor
         if (currentProcessor.shouldProcessResultsInSeparateBatches()) {
           processingResultBuilder.withProcessInASeparateBatch();
         }
 
-        currentProcessor.processRecord(record);
+        currentProcessor.onPreProcess(record, processingResultBuilder);
+
+        currentProcessor.processRecord(record, processingResultBuilder);
       }
     }
     return processingResultBuilder.build();

@@ -7,11 +7,7 @@
  */
 package io.camunda.zeebe.stream.impl;
 
-import static io.camunda.zeebe.protocol.record.RecordMetadataDecoder.batchOperationReferenceNullValue;
-import static io.camunda.zeebe.protocol.record.RecordMetadataDecoder.operationReferenceNullValue;
-
 import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RecordMetadataEncoder;
@@ -31,7 +27,7 @@ import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.StringUtil;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
+import java.util.function.Consumer;
 
 /**
  * Implementation of {@code ProcessingResultBuilder} that buffers the processing results. After
@@ -44,44 +40,23 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
 
   private final RecordBatch mutableRecordBatch;
   private ProcessingResponseImpl processingResponse;
-  private final long operationReference;
   private boolean processInASeparateBatch = false;
-  private final long batchOperationReference;
-  private final Map<String, Object> authorizationClaims;
 
-  BufferedProcessingResultBuilder(final RecordBatchSizePredicate predicate) {
-    this(predicate, operationReferenceNullValue(), batchOperationReferenceNullValue(), Map.of());
-  }
+  private final List<Consumer<RecordMetadata>> metadataConsumer = new ArrayList<>();
 
   BufferedProcessingResultBuilder(
       final RecordBatchSizePredicate predicate,
-      final long operationReference,
-      final long batchOperationReference,
-      final Map<String, Object> authorizationClaims) {
+      final Consumer<RecordMetadata>... metadataConsumers) {
     mutableRecordBatch = new RecordBatch(predicate);
-    this.operationReference = operationReference;
-    this.batchOperationReference = batchOperationReference;
-    this.authorizationClaims = authorizationClaims;
+    metadataConsumer.addAll(metadataConsumer);
   }
 
   @Override
   public Either<RuntimeException, ProcessingResultBuilder> appendRecordReturnEither(
       final long key, final RecordValue value, final RecordMetadata metadata) {
 
-    // `operationReference` from `metadata` should have a higher precedence
-    if (metadata.getOperationReference() == operationReferenceNullValue()) {
-      if (operationReference != operationReferenceNullValue()) {
-        metadata.operationReference(operationReference);
-      }
-    }
-
-    if (batchOperationReference != batchOperationReferenceNullValue()) {
-      metadata.batchOperationReference(batchOperationReference);
-    }
-
-    if (authorizationClaims != null && !authorizationClaims.isEmpty()) {
-      metadata.authorization(new AuthInfo().setClaims(authorizationClaims));
-    }
+    // enrich metadata
+    metadataConsumer.forEach(m -> m.accept(metadata));
 
     if (value instanceof final UnifiedRecordValue unifiedRecordValue) {
       final var valueType = unifiedRecordValue.valueType();
@@ -120,6 +95,11 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
     if (requestId == RecordMetadataEncoder.requestIdNullValue()) {
       return this;
     }
+
+    // enrich metdata on only copy relevant parts to the response metadata
+    final var enrichedMetaData = new RecordMetadata();
+    metadataConsumer.forEach(m -> m.accept(enrichedMetaData));
+
     final var metadata =
         new RecordMetadata()
             .recordType(recordType)
@@ -127,8 +107,9 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
             .rejectionType(rejectionType)
             .rejectionReason(rejectionReason)
             .valueType(valueType)
-            .operationReference(operationReference)
-            .batchOperationReference(batchOperationReference);
+            .operationReference(enrichedMetaData.getOperationReference())
+            .batchOperationReference(enrichedMetaData.getBatchOperationReference());
+
     final var entry = RecordBatchEntry.createEntry(key, metadata, -1, value);
     processingResponse = new ProcessingResponseImpl(entry, requestId, requestStreamId);
     return this;
@@ -161,6 +142,11 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
   @Override
   public boolean canWriteEventOfLength(final int eventLength) {
     return mutableRecordBatch.canAppendRecordOfLength(eventLength);
+  }
+
+  @Override
+  public void metadata(final Consumer<RecordMetadata> applyMetadata) {
+    metadataConsumer.add(applyMetadata);
   }
 
   record ProcessingResponseImpl(RecordBatchEntry responseValue, long requestId, int requestStreamId)

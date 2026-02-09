@@ -24,7 +24,6 @@ public interface TypedRecord<T extends UnifiedRecordValue> extends Record<T> {
   @Override
   T getValue();
 
-  @Override
   @JsonIgnore
   AuthInfo getAuthInfo();
 

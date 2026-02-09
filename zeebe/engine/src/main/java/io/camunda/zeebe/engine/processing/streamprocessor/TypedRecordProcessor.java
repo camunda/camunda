@@ -42,6 +42,15 @@ public interface TypedRecordProcessor<T extends UnifiedRecordValue> {
     return false;
   }
 
+  /**
+   * A hook that is called before processing result is built. Can be used to modify the processing
+   * result, e.g. set metadata extensions to enhance metadata of produced records.
+   *
+   * @param processingResultBuilder the processing result builder
+   */
+  default void onPreProcess(
+      final TypedRecord<T> record, final ProcessingResultBuilder processingResultBuilder) {}
+
   enum ProcessingError {
     EXPECTED_ERROR,
     UNEXPECTED_ERROR

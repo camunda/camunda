@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.job;
 
+import static io.camunda.zeebe.protocol.record.value.JobKind.AD_HOC_SUB_PROCESS;
+
 import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.JobAction;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.processing.Rejection;
@@ -43,6 +45,7 @@ import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.JobListenerEventType;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue.JobResultActivateElementValue;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 import java.util.EnumSet;
@@ -180,6 +183,29 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
               rejectionWriter.appendRejection(record, rejection.type(), rejection.reason());
               responseWriter.writeRejectionOnCommand(record, rejection.type(), rejection.reason());
             });
+  }
+
+  @Override
+  public void onPreProcess(
+      final TypedRecord<JobRecord> record, final ProcessingResultBuilder processingResultBuilder) {
+    final long jobKey = record.getKey();
+    final JobState.State state = jobState.getState(jobKey);
+
+    preconditionChecker
+        .check(state, record)
+        .flatMap(job -> checkAuthorization(record, job))
+        .ifRightOrLeft(
+            job -> {
+              if (job.getJobKind().equals(AD_HOC_SUB_PROCESS)) {
+                processingResultBuilder.metadata(
+                    m -> {
+                      final var newClaims = m.getAuthorization().getClaims();
+                      newClaims.put("IS_AD_HOC_SUB_PROCESS", true);
+                      m.getAuthorization().setClaims(newClaims);
+                    });
+              }
+            },
+            rejection -> {});
   }
 
   private void completeJob(final TypedRecord<JobRecord> command, final JobRecord job) {
