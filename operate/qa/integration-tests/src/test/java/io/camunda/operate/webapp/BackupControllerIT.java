@@ -281,7 +281,7 @@ public class BackupControllerIT {
                 b.index("1")
                     .indexUuid("uuid")
                     .nodeId("someNodeId1")
-                    .shardId("someIndex1" + UUID.randomUUID() + 1)
+                    .shardId(1)
                     .status("FAILURE")
                     .reason("Shard 1 is not allocated"));
     final SnapshotShardFailure failure2 =
@@ -290,7 +290,7 @@ public class BackupControllerIT {
                 b.index("2")
                     .indexUuid("uuid2")
                     .nodeId("someNodeId2")
-                    .shardId("someIndex2" + UUID.randomUUID() + 2)
+                    .shardId(2)
                     .status("FAILURE")
                     .reason("Shard 2 is not allocated"));
     final List<SnapshotShardFailure> shardFailures = asList(failure1, failure2);
