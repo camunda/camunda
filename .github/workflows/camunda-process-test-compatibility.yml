@@ -4,9 +4,6 @@
 name: Camunda Process Test Compatibility Tests
 
 on:
-  push:
-    branches:
-      - nicpuppa/41917-cpt-workflow
   schedule:
     # Runs at 02:00 every day https://crontab.guru/#0_2_*_*_*
     - cron: '0 2 * * *'
@@ -51,14 +48,6 @@ jobs:
         id: branch-info
         run: |
           BRANCH_NAME="${GITHUB_REF#refs/heads/}"
-
-          # owner: TODO
-          # TEMP HACK: simulate stable/8.8 branch for manual test on nicpuppa/41917-cpt-workflow.
-          # Remove this block after testing.
-          if [[ "$BRANCH_NAME" == "nicpuppa/41917-cpt-workflow" ]]; then
-            BRANCH_NAME="stable/8.8"
-          fi
-
           echo "branch-name=$BRANCH_NAME" >> "$GITHUB_OUTPUT"
 
           if [[ "$BRANCH_NAME" == "main" ]]; then
@@ -216,22 +205,22 @@ jobs:
         continue-on-error: true
         uses: actions/download-artifact@v4
         with:
-          name: compatibility-tested-combinations
-          path: /tmp/compatibility-state-download
+          name: cpt-compatibility-tested-combinations
+          path: /tmp/cpt-compatibility-state-download
 
       - name: Load tested combinations
         id: load-tested
         run: |
-          mkdir -p /tmp/compatibility-state
+          mkdir -p /tmp/cpt-compatibility-state
 
           if [[ "${{ inputs.skip_cache }}" == "true" ]]; then
-            touch /tmp/compatibility-state/tested-combinations.txt
+            touch /tmp/cpt-compatibility-state/tested-combinations.txt
             echo "Skipping cache - will test all combinations"
-          elif [[ -f /tmp/compatibility-state-download/tested-combinations.txt ]]; then
-            cp /tmp/compatibility-state-download/tested-combinations.txt /tmp/compatibility-state/tested-combinations.txt
-            echo "Loaded $(wc -l < /tmp/compatibility-state/tested-combinations.txt) previously tested combinations"
+          elif [[ -f /tmp/cpt-compatibility-state-download/tested-combinations.txt ]]; then
+            cp /tmp/cpt-compatibility-state/tested-combinations.txt /tmp/cpt-compatibility-state/tested-combinations.txt
+            echo "Loaded $(wc -l < /tmp/cpt-compatibility-state/tested-combinations.txt) previously tested combinations"
           else
-            touch /tmp/compatibility-state/tested-combinations.txt
+            touch /tmp/cpt-compatibility-state/tested-combinations.txt
             echo "No previous test history found - starting fresh"
           fi
 
@@ -278,7 +267,7 @@ jobs:
 
                 # Skip if combination already tested (unless skip_cache is true or server is snapshot)
                 if [[ "$SKIP_CACHE" != "true" ]]; then
-                  if grep -q "^$COMBO$" /tmp/compatibility-state/tested-combinations.txt 2>/dev/null; then
+                  if grep -q "^$COMBO$" /tmp/cpt-compatibility-state/tested-combinations.txt 2>/dev/null; then
                     if [[ "$server" != *"-SNAPSHOT" ]]; then
                       SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
                       continue
@@ -312,11 +301,11 @@ jobs:
       matrix: ${{ fromJson(needs.prepare-versions.outputs.matrix) }}
     steps:
       - name: Checkout Camunda (main for SNAPSHOT)
-        if: matrix.client == 'SNAPSHOT' && matrix.server == 'SNAPSHOT'
+        if: matrix.client == 'SNAPSHOT'
         uses: actions/checkout@v6
 
       - name: Checkout Camunda
-        if: matrix.client != 'SNAPSHOT' || matrix.server != 'SNAPSHOT'
+        if: matrix.client != 'SNAPSHOT'
         uses: actions/checkout@v6
         with:
           ref: ${{ matrix.client }}
