@@ -18,7 +18,7 @@ on:
       helmRepositoryDirName:
         description: 'Helm chart directory name'
         type: string
-        default: 'camunda-platform-8.7'
+        default: 'camunda-platform-8.6'
       scenario:
         description: 'Test scenario'
         type: string
@@ -34,7 +34,9 @@ on:
   pull_request:
     paths:
       - ".github/workflows/docker-build-helm-integration.yml"
-      - "camunda.Dockerfile"
+      - "Dockerfile"
+      - "operate.Dockerfile"
+      - "tasklist.Dockerfile"
       - "dist/**"
       - "zeebe/**"
       - "operate/**"
@@ -49,7 +51,9 @@ concurrency:
 env:
   GHA_BEST_PRACTICES_LINTER: enabled
   HARBOR_REGISTRY: registry.camunda.cloud
-  HARBOR_REPOSITORY: registry.camunda.cloud/team-camunda/camunda
+  HARBOR_ZEEBE_REPOSITORY: registry.camunda.cloud/team-camunda/zeebe
+  HARBOR_OPERATE_REPOSITORY: registry.camunda.cloud/team-camunda/operate
+  HARBOR_TASKLIST_REPOSITORY: registry.camunda.cloud/team-camunda/tasklist
 
 defaults:
   run:
@@ -92,7 +96,6 @@ jobs:
       - uses: ./.github/actions/build-frontend
         with:
           directory: ./operate/client
-          package-manager: "npm"
       - name: Upload Operate frontend artifact
         uses: actions/upload-artifact@v4
         with:
@@ -121,7 +124,6 @@ jobs:
       - uses: ./.github/actions/build-frontend
         with:
           directory: ./tasklist/client
-          package-manager: "npm"
       - name: Upload Tasklist frontend artifact
         uses: actions/upload-artifact@v4
         with:
@@ -150,7 +152,6 @@ jobs:
       - uses: ./.github/actions/build-frontend
         with:
           directory: ./identity/client
-          package-manager: "npm"
       - name: Upload Identity frontend artifact
         uses: actions/upload-artifact@v4
         with:
@@ -169,8 +170,8 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   # Main build job - waits for all frontends to complete
-  build-and-push:
-    name: Build and Push Docker Image
+  build-and-push-images:
+    name: Build and Push Docker Images
     needs: [build-operate-frontend, build-tasklist-frontend, build-identity-frontend]
     permissions: { }
     runs-on: gcp-perf-core-8-default
@@ -204,10 +205,10 @@ jobs:
             # Use explicitly provided version
             echo "tag=${{ inputs.version }}" >> "$GITHUB_OUTPUT"
           elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            # For PRs: <maven-version>-pr<number> (e.g., 8.7.0-SNAPSHOT-pr123)
+            # For PRs: <maven-version>-pr<number> (e.g., 8.6.0-SNAPSHOT-pr123)
             echo "tag=${MAVEN_VERSION}-pr${{ github.event.pull_request.number }}" >> "$GITHUB_OUTPUT"
           else
-            # For manual dispatch: <maven-version>-<short-sha> (e.g., 8.7.0-SNAPSHOT-abc1234)
+            # For manual dispatch: <maven-version>-<short-sha> (e.g., 8.6.0-SNAPSHOT-abc1234)
             SHA_SHORT="${GITHUB_SHA::7}"
             echo "tag=${MAVEN_VERSION}-${SHA_SHORT}" >> "$GITHUB_OUTPUT"
           fi
@@ -236,25 +237,51 @@ jobs:
         with:
           maven-extra-args: -PskipFrontendBuild
 
-      - name: Build and push Docker image to Harbor
-        id: build-docker
+      - name: Build and push Zeebe Docker image to Harbor
+        id: build-zeebe-docker
         uses: ./.github/actions/build-platform-docker
         with:
-          repository: ${{ env.HARBOR_REPOSITORY }}
+          repository: ${{ env.HARBOR_ZEEBE_REPOSITORY }}
           version: ${{ steps.set-image-tag.outputs.tag }}
           distball: ${{ steps.build-camunda.outputs.distball }}
           platforms: linux/amd64
-          dockerfile: camunda.Dockerfile
+          dockerfile: Dockerfile
+          push: true
+
+      - name: Build and push Operate Docker image to Harbor
+        id: build-operate-docker
+        uses: ./.github/actions/build-platform-docker
+        with:
+          repository: ${{ env.HARBOR_OPERATE_REPOSITORY }}
+          version: ${{ steps.set-image-tag.outputs.tag }}
+          distball: ${{ steps.build-camunda.outputs.distball }}
+          platforms: linux/amd64
+          dockerfile: operate.Dockerfile
+          push: true
+
+      - name: Build and push Tasklist Docker image to Harbor
+        id: build-tasklist-docker
+        uses: ./.github/actions/build-platform-docker
+        with:
+          repository: ${{ env.HARBOR_TASKLIST_REPOSITORY }}
+          version: ${{ steps.set-image-tag.outputs.tag }}
+          distball: ${{ steps.build-camunda.outputs.distball }}
+          platforms: linux/amd64
+          dockerfile: tasklist.Dockerfile
           push: true
 
       - name: Output image details
         run: |
           {
-            echo "### Docker Image Built and Pushed"
+            echo "### Docker Images Built and Pushed"
             echo ""
-            echo "**Repository:** ${{ env.HARBOR_REPOSITORY }}"
             echo "**Tag:** ${{ steps.set-image-tag.outputs.tag }}"
-            echo "**Full Image:** ${{ env.HARBOR_REPOSITORY }}:${{ steps.set-image-tag.outputs.tag }}"
+            echo ""
+            echo "| Component | Image |"
+            echo "|-----------|-------|"
+            echo "| Zeebe | ${{ env.HARBOR_ZEEBE_REPOSITORY }}:${{ steps.set-image-tag.outputs.tag }} |"
+            echo "| Operate | ${{ env.HARBOR_OPERATE_REPOSITORY }}:${{ steps.set-image-tag.outputs.tag }} |"
+            echo "| Tasklist | ${{ env.HARBOR_TASKLIST_REPOSITORY }}:${{ steps.set-image-tag.outputs.tag }} |"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Observe build status
@@ -301,14 +328,14 @@ jobs:
 
   helm-deploy:
     name: Helm chart Integration Tests
-    needs: [build-and-push, format-identifier]
+    needs: [build-and-push-images, format-identifier]
     uses: camunda/camunda-platform-helm/.github/workflows/test-integration-template.yaml@main
     secrets: inherit
     with:
       identifier: ${{ needs.format-identifier.outputs.identifier }}
       platforms: gke
       camunda-helm-git-ref: ${{ inputs.helmRepositoryBranchName || 'main' }}
-      camunda-helm-dir: ${{ inputs.helmRepositoryDirName || 'camunda-platform-8.7' }}
+      camunda-helm-dir: ${{ inputs.helmRepositoryDirName || 'camunda-platform-8.6' }}
       namespace-prefix: monorepo
       test-enabled: true
       e2e-enabled: true
@@ -318,11 +345,28 @@ jobs:
       always-delete-namespace: true
       flows: install
       extra-values: |
-        orchestration:
+        zeebe:
           image:
             registry: registry.camunda.cloud
-            repository: team-camunda/camunda
-            tag: ${{ needs.build-and-push.outputs.image-tag }}
+            repository: team-camunda/zeebe
+            tag: ${{ needs.build-and-push-images.outputs.image-tag }}
+        zeebeGateway:
+          image:
+            registry: registry.camunda.cloud
+            repository: team-camunda/zeebe
+            tag: ${{ needs.build-and-push-images.outputs.image-tag }}
+        operate:
+          image:
+            registry: registry.camunda.cloud
+            repository: team-camunda/operate
+            tag: ${{ needs.build-and-push-images.outputs.image-tag }}
+        tasklist:
+          image:
+            registry: registry.camunda.cloud
+            repository: team-camunda/tasklist
+            tag: ${{ needs.build-and-push-images.outputs.image-tag }}
+        global:
+          image:
             pullSecrets:
               - name: index-docker-io
               - name: registry-camunda-cloud
