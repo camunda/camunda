@@ -94,6 +94,7 @@ jobs:
           exportEnv: false # we rely on step outputs, no need for environment variables
           secrets: |
             secret/data/products/operate/ci/github-actions OPERATE_CI_ALERT_WEBHOOK_URL;
+            secret/data/products/camunda/ci/github-actions REGISTRY_MINIMUS_PSW | minimus-token
 
       #########################################################################
       # Setup and configure Maven, Docker, and settings
@@ -101,6 +102,7 @@ jobs:
         name: Build setup
         with:
           dockerhub: ${{ env.SHOULD_PUSH_DOCKER_SNAPSHOT == 'true' }}
+          minimus: true
           harbor: true
           java-distribution: adopt
           maven-cache-key-modifier: operate
