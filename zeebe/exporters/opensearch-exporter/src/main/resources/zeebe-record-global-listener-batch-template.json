@@ -26,6 +26,9 @@
               "type": "nested",
               "dynamic": "strict",
               "properties": {
+                "globalListenerKey": {
+                  "type": "long"
+                },
                 "id": {
                   "type": "keyword"
                 },

@@ -4352,6 +4352,7 @@ final class JsonSerializableToJsonTest {
         "globalListenerBatchKey": 1,
         "taskListeners": [
           {
+            "globalListenerKey": -1,
             "id": "listener1",
             "type": "global1",
             "retries": 5,
@@ -4362,6 +4363,7 @@ final class JsonSerializableToJsonTest {
             "listenerType": "USER_TASK"
           },
           {
+            "globalListenerKey": -1,
             "id": "listener2",
             "type": "global2",
             "retries": 3,
@@ -4377,7 +4379,7 @@ final class JsonSerializableToJsonTest {
       },
       {
         "Empty GlobalListenerBatchRecord",
-        (Supplier<GlobalListenerBatchRecord>) () -> new GlobalListenerBatchRecord(),
+        (Supplier<GlobalListenerBatchRecord>) GlobalListenerBatchRecord::new,
         """
       {
         "globalListenerBatchKey": -1,
@@ -4392,6 +4394,7 @@ final class JsonSerializableToJsonTest {
         (Supplier<GlobalListenerRecord>)
             () ->
                 new GlobalListenerRecord()
+                    .setGlobalListenerKey(123L)
                     .setId("my-listener")
                     .setType("global1")
                     .setEventTypes(List.of("creating", "assigning"))
@@ -4401,6 +4404,7 @@ final class JsonSerializableToJsonTest {
                     .setSource(GlobalListenerSource.API),
         """
     {
+      "globalListenerKey": 123,
       "id": "my-listener",
       "type": "global1",
       "retries": 5,
@@ -4414,9 +4418,10 @@ final class JsonSerializableToJsonTest {
       },
       {
         "Empty GlobalListenerRecord",
-        (Supplier<GlobalListenerRecord>) () -> new GlobalListenerRecord(),
+        (Supplier<GlobalListenerRecord>) GlobalListenerRecord::new,
         """
     {
+      "globalListenerKey": -1,
       "id": "",
       "type": "",
       "retries": 3,
