@@ -139,8 +139,8 @@ public class GlobalJobStatisticsIT {
         });
 
     // Wait for export & store first batch export time
-    firstBatchExportedTime = OffsetDateTime.now();
     Thread.sleep(2 * EXPORT_INTERVAL.toMillis());
+    firstBatchExportedTime = OffsetDateTime.now();
 
     // ========== SECOND BATCH: Incomplete metrics (long worker name) ==========
     // Start a new process instance to have a new taskA job available
@@ -173,8 +173,8 @@ public class GlobalJobStatisticsIT {
         });
 
     // Wait for export & store second batch export time
-    secondBatchExportedTime = OffsetDateTime.now();
     Thread.sleep(2 * EXPORT_INTERVAL.toMillis());
+    secondBatchExportedTime = OffsetDateTime.now();
 
     // ========== THIRD BATCH: Incomplete metrics (long job type) ==========
     // Start a process instance with the long job type
@@ -202,8 +202,8 @@ public class GlobalJobStatisticsIT {
         });
 
     // Wait for export & store third batch export time
-    thirdBatchExportedTime = OffsetDateTime.now();
     Thread.sleep(2 * EXPORT_INTERVAL.toMillis());
+    thirdBatchExportedTime = OffsetDateTime.now();
 
     // ========== FOURTH BATCH: Incomplete metrics (max unique keys exceeded) ==========
     // Deploy all processes first (deployments don't create job metrics)
