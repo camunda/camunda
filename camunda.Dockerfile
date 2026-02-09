@@ -11,7 +11,7 @@ ARG BUILD_IMAGE="reg.mini.dev/1212/openjdk:21.0.9-dev"
 # base images like this instead on your own risk.
 # Simply pass `--build-arg BASE=public` in order to build with the Temurin JDK.
 ARG BASE_IMAGE_PUBLIC="eclipse-temurin:21-jre-noble"
-ARG JDK_DIGEST="sha256:c20c7d70c47fb9f09f19fae01d816c14108e10812a5a36ff7494710ada4216d3"
+ARG BASE_DIGEST_PUBLIC="sha256:c20c7d70c47fb9f09f19fae01d816c14108e10812a5a36ff7494710ada4216d3"
 ARG BASE="hardened"
 
 # set to "build" to build camunda from scratch instead of using a distball
