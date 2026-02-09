@@ -21,6 +21,7 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
@@ -29,7 +30,8 @@ import java.util.function.BiConsumer;
 @SuppressWarnings({"rawtypes", "unchecked"})
 public final class ExporterBatchWriter {
   private final Map<EntityIdAndEntityType, ExporterEntity> cachedEntities = new HashMap<>();
-  private final List<EntityAndHandler> cachedEntitiesToFlush = new ArrayList<>();
+  private final Map<EntityIdTypeAndHandler, ExporterEntity> cachedEntitiesToFlush =
+      new LinkedHashMap<>();
   private final Map<EntityIdAndEntityType, Long> cachedEntitySizes = new HashMap<>();
   private final Map<Long, Long> cachedRecordTimestamps = new HashMap<>();
 
@@ -77,7 +79,7 @@ public final class ExporterBatchWriter {
     // in cases where we have bugs with writing to the same index + id, but with a different
     // entity, this helps avoid race conditions that make that behavior non-deterministic.
     // which would otherwise make spotting and fixing such bugs harder.
-    cachedEntitiesToFlush.add(new EntityAndHandler(entity, handler));
+    cachedEntitiesToFlush.put(new EntityIdTypeAndHandler(cacheKey, handler), entity);
   }
 
   public void flush(final BatchRequest batchRequest) throws PersistenceException {
@@ -89,8 +91,11 @@ public final class ExporterBatchWriter {
       return;
     }
 
-    for (final var toFlush : cachedEntitiesToFlush) {
-      toFlush.flush(batchRequest);
+    for (final var entry : cachedEntitiesToFlush.entrySet()) {
+      final var key = entry.getKey();
+      final var handler = key.handler();
+      final var entity = entry.getValue();
+      handler.flush(entity, batchRequest);
     }
 
     batchRequest.execute(customErrorHandler);
@@ -161,9 +166,5 @@ public final class ExporterBatchWriter {
 
   private record EntityIdAndEntityType(String entityId, Class<?> entityType) {}
 
-  private record EntityAndHandler(ExporterEntity entity, ExportHandler handler) {
-    public void flush(final BatchRequest batchRequest) throws PersistenceException {
-      handler.flush(entity, batchRequest);
-    }
-  }
+  private record EntityIdTypeAndHandler(EntityIdAndEntityType key, ExportHandler handler) {}
 }
