@@ -125,7 +125,6 @@
       <type name="minorVersion" primitiveType="int32"/>
       <type name="patchVersion" primitiveType="int32"/>
     </composite>
-
   </types>
 
   <!-- L1 General Messages 0 - 99 -->
@@ -193,6 +192,7 @@
     <data name="rejectionReason" id="8" type="varDataEncoding"/>
     <!-- populated when RecordType is COMMAND -->
     <data name="authorization" id="11" type="varDataEncoding" sinceVersion="4"/>
+    <data name="agent" id="14" type="varDataEncoding" sinceVersion="7"/>
   </sbe:message>
 
   <sbe:message name="BrokerInfo" id="201" description="Broker topology information">

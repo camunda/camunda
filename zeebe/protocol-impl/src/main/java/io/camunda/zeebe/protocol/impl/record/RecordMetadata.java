@@ -8,6 +8,7 @@
 package io.camunda.zeebe.protocol.impl.record;
 
 import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.impl.encoding.AgentInfo;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.record.MessageHeaderDecoder;
 import io.camunda.zeebe.protocol.record.MessageHeaderEncoder;
@@ -50,6 +51,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
   private final AuthInfo authorization = new AuthInfo();
   private RejectionType rejectionType;
   private final UnsafeBuffer rejectionReason = new UnsafeBuffer(0, 0);
+  private Optional<AgentInfo> agent = Optional.empty();
 
   // always the current version by default
   private int protocolVersion = Protocol.PROTOCOL_VERSION;
@@ -117,6 +119,18 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
     } else {
       decoder.skipAuthorization();
     }
+
+    final int agentLength = decoder.agentLength();
+    if (agentLength > 0) {
+      final DirectBuffer agentBuffer = new UnsafeBuffer();
+      decoder.wrapAgent(agentBuffer);
+
+      final var newAgent = agent.orElseGet(AgentInfo::new);
+      newAgent.wrap(agentBuffer);
+      agent = Optional.of(newAgent);
+    } else {
+      decoder.skipAgent();
+    }
   }
 
   @Override
@@ -125,7 +139,9 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
         + RecordMetadataEncoder.rejectionReasonHeaderLength()
         + rejectionReason.capacity()
         + RecordMetadataEncoder.authorizationHeaderLength()
-        + authorization.getLength();
+        + authorization.getLength()
+        + RecordMetadataEncoder.agentHeaderLength()
+        + agent.map(AgentInfo::getLength).orElse(0);
   }
 
   @Override
@@ -163,6 +179,12 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
     // working with variable-length fields
     encoder.putRejectionReason(rejectionReason, 0, rejectionReason.capacity());
     encoder.putAuthorization(authorization.toDirectBuffer(), 0, authorization.getLength());
+
+    if (agent.isPresent()) {
+      encoder.putAgent(agent.get().toDirectBuffer(), 0, agent.get().getLength());
+    } else {
+      encoder.agent("");
+    }
   }
 
   public long getRequestId() {
@@ -258,6 +280,15 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
     return authorization;
   }
 
+  public AgentInfo getAgent() {
+    return agent.orElse(null);
+  }
+
+  public RecordMetadata agent(final AgentInfo agent) {
+    this.agent = Optional.ofNullable(agent);
+    return this;
+  }
+
   public RecordMetadata brokerVersion(final VersionInfo brokerVersion) {
     this.brokerVersion = brokerVersion;
     return this;
@@ -305,6 +336,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
     rejectionType = RejectionType.NULL_VAL;
     rejectionReason.wrap(0, 0);
     authorization.reset();
+    agent = Optional.empty();
     brokerVersion = CURRENT_BROKER_VERSION;
     recordVersion = DEFAULT_RECORD_VERSION;
     operationReference = RecordMetadataEncoder.operationReferenceNullValue();
@@ -327,7 +359,8 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
         brokerVersion,
         recordVersion,
         operationReference,
-        batchOperationReference);
+        batchOperationReference,
+        agent);
   }
 
   @Override
@@ -348,6 +381,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
         && rejectionType == that.rejectionType
         && rejectionReason.equals(that.rejectionReason)
         && authorization.equals(that.authorization)
+        && agent.equals(that.agent)
         && brokerVersion.equals(that.brokerVersion)
         && recordVersion == that.recordVersion
         && operationReference == that.operationReference
@@ -384,6 +418,9 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
     }
     if (batchOperationReference != RecordMetadataEncoder.batchOperationReferenceNullValue()) {
       builder.append(", batchOperationReference=").append(batchOperationReference);
+    }
+    if (agent.isPresent()) {
+      builder.append(", agent=").append(agent);
     }
 
     builder.append('}');

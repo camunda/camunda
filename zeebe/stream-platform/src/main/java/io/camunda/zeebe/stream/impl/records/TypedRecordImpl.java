@@ -13,6 +13,7 @@ import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.record.Agent;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -95,8 +96,8 @@ public final class TypedRecordImpl implements TypedRecord {
   }
 
   @Override
-  public AuthInfo getAuthInfo() {
-    return metadata.getAuthorization();
+  public Agent getAgent() {
+    return metadata.getAgent();
   }
 
   @Override
@@ -132,6 +133,11 @@ public final class TypedRecordImpl implements TypedRecord {
   @Override
   public UnifiedRecordValue getValue() {
     return value;
+  }
+
+  @Override
+  public AuthInfo getAuthInfo() {
+    return metadata.getAuthorization();
   }
 
   @Override

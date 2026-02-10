@@ -7,6 +7,7 @@
  */
 package io.camunda.protocol;
 
+import io.camunda.zeebe.protocol.record.Agent;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -69,6 +70,11 @@ public record TestRecord(long position, ValueType valueType) implements Record<T
   @Override
   public Map<String, Object> getAuthorizations() {
     return Map.of();
+  }
+
+  @Override
+  public Agent getAgent() {
+    return null;
   }
 
   @Override

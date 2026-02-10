@@ -10,6 +10,7 @@ package io.camunda.zeebe.stream.impl.records;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.record.Agent;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -83,6 +84,11 @@ public class UnwrittenRecord implements TypedRecord {
   @Override
   public Map<String, Object> getAuthorizations() {
     return metadata.getAuthorization().toDecodedMap();
+  }
+
+  @Override
+  public Agent getAgent() {
+    return metadata.getAgent();
   }
 
   @Override

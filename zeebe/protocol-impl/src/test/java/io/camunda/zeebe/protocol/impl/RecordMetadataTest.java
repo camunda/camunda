@@ -39,6 +39,7 @@ final class RecordMetadataTest {
     assertThat(metadata.getRejectionType()).isEqualTo(RejectionType.NULL_VAL);
     assertThat(metadata.getRejectionReason()).isEmpty();
     assertThat(metadata.getAuthorization()).isEqualTo(new AuthInfo());
+    assertThat(metadata.getAgent()).isNull();
     assertThat(metadata.getBrokerVersion()).isEqualTo(RecordMetadata.CURRENT_BROKER_VERSION);
     assertThat(metadata.getRecordVersion()).isEqualTo(RecordMetadata.DEFAULT_RECORD_VERSION);
   }

@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.incident;
 
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.record.Agent;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordMetadataEncoder;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -98,6 +99,11 @@ public final class RetryTypedRecord<T extends UnifiedRecordValue> implements Typ
   }
 
   @Override
+  public Agent getAgent() {
+    return null;
+  }
+
+  @Override
   public int getRecordVersion() {
     return 1;
   }
@@ -133,6 +139,11 @@ public final class RetryTypedRecord<T extends UnifiedRecordValue> implements Typ
   }
 
   @Override
+  public AuthInfo getAuthInfo() {
+    return null;
+  }
+
+  @Override
   public int getRequestStreamId() {
     return RecordMetadataEncoder.requestStreamIdNullValue();
   }
@@ -145,10 +156,5 @@ public final class RetryTypedRecord<T extends UnifiedRecordValue> implements Typ
   @Override
   public int getLength() {
     return 0;
-  }
-
-  @Override
-  public AuthInfo getAuthInfo() {
-    return null;
   }
 }

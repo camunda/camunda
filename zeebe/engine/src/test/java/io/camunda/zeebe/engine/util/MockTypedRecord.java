@@ -11,6 +11,7 @@ import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.record.Agent;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -47,6 +48,15 @@ public final class MockTypedRecord<T extends UnifiedRecordValue> implements Type
     return value;
   }
 
+  public void setValue(final T value) {
+    this.value = value;
+  }
+
+  @Override
+  public AuthInfo getAuthInfo() {
+    return metadata.getAuthorization();
+  }
+
   @Override
   public int getRequestStreamId() {
     return metadata.getRequestStreamId();
@@ -60,10 +70,6 @@ public final class MockTypedRecord<T extends UnifiedRecordValue> implements Type
   @Override
   public int getLength() {
     return metadata.getLength() + value.getLength();
-  }
-
-  public void setValue(final T value) {
-    this.value = value;
   }
 
   public void setMetadata(final RecordMetadata metadata) {
@@ -121,6 +127,11 @@ public final class MockTypedRecord<T extends UnifiedRecordValue> implements Type
   }
 
   @Override
+  public Agent getAgent() {
+    return metadata.getAgent();
+  }
+
+  @Override
   public int getRecordVersion() {
     return metadata.getRecordVersion();
   }
@@ -148,10 +159,5 @@ public final class MockTypedRecord<T extends UnifiedRecordValue> implements Type
   @Override
   public String toJson() {
     throw new UnsupportedOperationException("not yet implemented");
-  }
-
-  @Override
-  public AuthInfo getAuthInfo() {
-    return metadata.getAuthorization();
   }
 }
