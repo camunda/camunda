@@ -18,8 +18,14 @@ public class OperateProperties {
   public static final String PREFIX = "camunda.operate";
 
   public static final long BATCH_OPERATION_MAX_SIZE_DEFAULT = 1_000_000L;
-
   private static final String UNKNOWN_VERSION = "unknown-version";
+
+  /**
+   * Maximum number of groups to search for when searching for incidents. For the backward
+   * compatibility reasons we must keep it as 10000 to keep the behavior unchanged for the most of
+   * the users. For some users we need to override it to a smaller value to avoid Operate UI crash.
+   */
+  private int maxIncidentSearchGroups = 10000;
 
   private boolean importerEnabled = false;
   private boolean webappEnabled = true;
@@ -358,5 +364,13 @@ public class OperateProperties {
 
   public String getIndexPrefix() {
     return getIndexPrefix(database);
+  }
+
+  public int getMaxIncidentSearchGroups() {
+    return maxIncidentSearchGroups;
+  }
+
+  public void setMaxIncidentSearchGroups(final int maxIncidentSearchGroups) {
+    this.maxIncidentSearchGroups = maxIncidentSearchGroups;
   }
 }

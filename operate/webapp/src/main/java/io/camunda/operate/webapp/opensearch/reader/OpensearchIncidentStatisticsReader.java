@@ -23,6 +23,7 @@ import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.PR
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.STATE;
 
 import io.camunda.operate.conditions.OpensearchCondition;
+import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.store.ProcessStore;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.util.ConversionUtils;
@@ -72,6 +73,7 @@ public class OpensearchIncidentStatisticsReader implements IncidentStatisticsRea
   @Autowired private ListViewTemplate processInstanceTemplate;
   @Autowired private ProcessReader processReader;
   @Autowired private PermissionsService permissionsService;
+  @Autowired private OperateProperties operateProperties;
 
   @Override
   public Set<IncidentsByProcessGroupStatisticsDto> getProcessAndIncidentsStatistics() {
@@ -87,6 +89,8 @@ public class OpensearchIncidentStatisticsReader implements IncidentStatisticsRea
     final Set<IncidentsByErrorMsgStatisticsDto> result =
         new TreeSet<>(IncidentsByErrorMsgStatisticsDto.COMPARATOR);
 
+    final int termsAggSize = operateProperties.getMaxIncidentSearchGroups();
+
     final Map<Long, ProcessEntity> processes =
         processReader.getProcessesWithFields(
             ProcessIndex.KEY,
@@ -101,11 +105,11 @@ public class OpensearchIncidentStatisticsReader implements IncidentStatisticsRea
     final var uniqueProcessInstances =
         cardinalityAggregation(IncidentTemplate.PROCESS_INSTANCE_KEY);
     final var groupByProcessKeys =
-        termAggregation(IncidentTemplate.PROCESS_DEFINITION_KEY, TERMS_AGG_SIZE);
+        termAggregation(IncidentTemplate.PROCESS_DEFINITION_KEY, termsAggSize);
     final var errorMessage =
         topHitsAggregation(List.of(IncidentTemplate.ERROR_MSG, IncidentTemplate.ERROR_MSG_HASH), 1);
     final var groupByErrorMessageHash =
-        termAggregation(IncidentTemplate.ERROR_MSG_HASH, TERMS_AGG_SIZE);
+        termAggregation(IncidentTemplate.ERROR_MSG_HASH, termsAggSize);
 
     final var searchRequestBuilder =
         searchRequestBuilder(incidentTemplate, ONLY_RUNTIME)
