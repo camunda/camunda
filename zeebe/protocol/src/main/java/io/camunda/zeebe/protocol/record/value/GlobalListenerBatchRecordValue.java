@@ -18,6 +18,7 @@ package io.camunda.zeebe.protocol.record.value;
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import java.util.List;
+import java.util.Set;
 import org.immutables.value.Value;
 
 @Value.Immutable
@@ -26,4 +27,10 @@ public interface GlobalListenerBatchRecordValue extends RecordValue {
   long getGlobalListenerBatchKey();
 
   List<GlobalListenerRecordValue> getListeners();
+
+  Set<Long> getCreatedListenerKeys();
+
+  Set<Long> getUpdatedListenerKeys();
+
+  Set<Long> getDeletedListenerKeys();
 }

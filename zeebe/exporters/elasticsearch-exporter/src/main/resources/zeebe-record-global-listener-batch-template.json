@@ -54,6 +54,15 @@
                   "type": "keyword"
                 }
               }
+            },
+            "createdListenerKeys": {
+              "type": "long"
+            },
+            "updatedListenerKeys": {
+              "type": "long"
+            },
+            "deletedListenerKeys": {
+              "type": "long"
             }
           }
         }

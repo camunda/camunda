@@ -10,6 +10,7 @@ package io.camunda.zeebe.protocol.impl.record.value.globallistener;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
+import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.GlobalListenerBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.GlobalListenerRecordValue;
@@ -26,9 +27,21 @@ public final class GlobalListenerBatchRecord extends UnifiedRecordValue
   private final ArrayProperty<GlobalListenerRecord> listenersProp =
       new ArrayProperty<>("listeners", GlobalListenerRecord::new);
 
+  // Metadata to apply state mutations on command distribution
+  private final ArrayProperty<LongValue> createdListenerKeysProp =
+      new ArrayProperty<>("createdListenerKeys", LongValue::new);
+  private final ArrayProperty<LongValue> updatedListenerKeysProp =
+      new ArrayProperty<>("updatedListenerKeys", LongValue::new);
+  private final ArrayProperty<LongValue> deletedListenerKeysProp =
+      new ArrayProperty<>("deletedListenerKeys", LongValue::new);
+
   public GlobalListenerBatchRecord() {
-    super(2);
-    declareProperty(globalListenerBatchKey).declareProperty(listenersProp);
+    super(5);
+    declareProperty(globalListenerBatchKey)
+        .declareProperty(listenersProp)
+        .declareProperty(createdListenerKeysProp)
+        .declareProperty(updatedListenerKeysProp)
+        .declareProperty(deletedListenerKeysProp);
   }
 
   @Override
@@ -46,9 +59,19 @@ public final class GlobalListenerBatchRecord extends UnifiedRecordValue
     return listenersProp.stream().collect(Collectors.toList());
   }
 
-  public GlobalListenerBatchRecord addListener(final GlobalListenerRecord listener) {
-    listenersProp.add().copyFrom(listener);
-    return this;
+  @Override
+  public Set<Long> getCreatedListenerKeys() {
+    return createdListenerKeysProp.stream().map(LongValue::getValue).collect(Collectors.toSet());
+  }
+
+  @Override
+  public Set<Long> getUpdatedListenerKeys() {
+    return updatedListenerKeysProp.stream().map(LongValue::getValue).collect(Collectors.toSet());
+  }
+
+  @Override
+  public Set<Long> getDeletedListenerKeys() {
+    return deletedListenerKeysProp.stream().map(LongValue::getValue).collect(Collectors.toSet());
   }
 
   @JsonIgnore
@@ -84,5 +107,25 @@ public final class GlobalListenerBatchRecord extends UnifiedRecordValue
                 })
             .collect(Collectors.toSet());
     return thisListeners.equals(otherListeners);
+  }
+
+  public GlobalListenerBatchRecord addListener(final GlobalListenerRecord listener) {
+    listenersProp.add().copyFrom(listener);
+    return this;
+  }
+
+  public GlobalListenerBatchRecord addCreatedListener(final GlobalListenerRecord listener) {
+    createdListenerKeysProp.add().setValue(listener.getGlobalListenerKey());
+    return this;
+  }
+
+  public GlobalListenerBatchRecord addUpdatedListener(final GlobalListenerRecord listener) {
+    updatedListenerKeysProp.add().setValue(listener.getGlobalListenerKey());
+    return this;
+  }
+
+  public GlobalListenerBatchRecord addDeletedListener(final GlobalListenerRecord listener) {
+    deletedListenerKeysProp.add().setValue(listener.getGlobalListenerKey());
+    return this;
   }
 }
