@@ -7,7 +7,6 @@
  */
 package io.camunda.operate.zeebeimport;
 
-import static org.apache.commons.io.output.NullOutputStream.INSTANCE;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
 import com.esotericsoftware.kryo.Kryo;
@@ -24,7 +23,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
-import org.apache.commons.io.output.CountingOutputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -174,7 +172,7 @@ public class ImportJob implements Callable<Boolean> {
       long subBatchSize = 0;
       for (final HitEntity hit : importBatch.getHits()) {
         final String indexName = hit.getIndex();
-        final long hitSize = EntitySizeEstimator.estimateEntitySize(hit);
+        final int hitSize = EntitySizeEstimator.estimateEntitySize(hit);
         final boolean indexChanged =
             previousIndexName != null && !indexName.equals(previousIndexName);
         final boolean sizeExceeded = subBatchSize + hitSize > maxBatchSizeBytes;
@@ -284,26 +282,22 @@ public class ImportJob implements Callable<Boolean> {
     return creationTime;
   }
 
-  private static final class EntitySizeEstimator {
-    private static final ThreadLocal<Kryo> THREAD_LOCAL_KRYO =
+  protected static class EntitySizeEstimator {
+    private static final int INITIAL_BUFFER_SIZE = 1024;
+    private static final int MAX_BUFFER_SIZE = 5 * 1024 * 1024; // 5 MB
+    private static final ThreadLocal<Kryo> KYRO_THREAD_LOCAL =
         ThreadLocal.withInitial(
             () -> {
               final Kryo kryo = new Kryo();
               kryo.setRegistrationRequired(false);
-              kryo.setReferences(false);
               return kryo;
             });
 
-    public static long estimateEntitySize(final HitEntity entity) {
-      final Kryo kryo = THREAD_LOCAL_KRYO.get();
-      try (final CountingOutputStream countingStream = new CountingOutputStream(INSTANCE);
-          final Output output = new Output(countingStream, 8192)) {
-        kryo.writeObject(output, entity);
-        output.flush();
-        kryo.reset();
-        return countingStream.getByteCount();
-      } catch (final Exception e) {
-        throw new RuntimeException("Failed to estimate object size", e);
+    public static int estimateEntitySize(final HitEntity entity) {
+      final Kryo kryo = KYRO_THREAD_LOCAL.get();
+      try (final Output output = new Output(INITIAL_BUFFER_SIZE, MAX_BUFFER_SIZE)) {
+        kryo.writeClassAndObject(output, entity);
+        return output.position();
       }
     }
   }
