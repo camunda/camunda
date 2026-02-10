@@ -105,16 +105,21 @@ public enum StarterLatencyMetricsDoc implements ExtendedMeterDocumentation {
 
     private static final Duration[] BUCKETS = {
       Duration.ofMillis(10),
+      Duration.ofMillis(15),
       Duration.ofMillis(25),
       Duration.ofMillis(50),
       Duration.ofMillis(75),
       Duration.ofMillis(100),
+      Duration.ofMillis(150),
       Duration.ofMillis(250),
       Duration.ofMillis(500),
       Duration.ofMillis(750),
-      Duration.ofSeconds(1),
+      Duration.ofMillis(1000),
+      Duration.ofMillis(1500),
       Duration.ofMillis(2500),
-      Duration.ofSeconds(5)
+      Duration.ofMillis(5000),
+      Duration.ofMillis(10000),
+      Duration.ofMillis(15000)
     };
 
     @Override
