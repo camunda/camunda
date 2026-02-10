@@ -22,12 +22,8 @@ public class OperateProperties {
 
   /**
    * Maximum number of groups to search for when searching for incidents. For the backward
-   * compatibility reasons, the default value is set to 10000, which is the default value for the
-   * maxClauseCount in Elasticsearch. We must keep it as 10000 to keep the behavior unchanged for
-   * the users.
-   *
-   * @see
-   *     io.camunda.operate.store.opensearch.client.sync.OpenSearchDocumentOperations.TERMS_AGG_SIZE
+   * compatibility reasons we must keep it as 10000 to keep the behavior unchanged for the most of
+   * the users. For some users we need to override it to a smaller value to avoid Operate UI crash.
    */
   private int maxIncidentSearchGroups = 10000;
 

@@ -74,7 +74,7 @@ public class IncidentStatisticsIT extends OperateAbstractIT {
     when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_DEFINITION))
         .thenReturn(PermissionsService.ResourcesAllowed.wildcard());
     // Default behavior for operate properties, can be overridden in specific tests
-    when(operateProperties.getMaxIncidentSearchGroups()).thenReturn(1000);
+    when(operateProperties.getMaxIncidentSearchGroups()).thenReturn(10000);
   }
 
   @Test
