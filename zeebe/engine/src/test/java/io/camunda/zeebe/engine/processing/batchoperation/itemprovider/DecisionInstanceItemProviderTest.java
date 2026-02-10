@@ -21,6 +21,7 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
+import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProvider.Item;
 import java.util.List;
 import org.instancio.Instancio;
 import org.junit.jupiter.api.BeforeEach;
@@ -63,11 +64,11 @@ class DecisionInstanceItemProviderTest {
         new SearchQueryResult.Builder<DecisionInstanceEntity>()
             .items(
                 List.of(
-                    createDecisionInstanceEntity(1L),
-                    createDecisionInstanceEntity(2L),
-                    createDecisionInstanceEntity(3L),
-                    createDecisionInstanceEntity(4L),
-                    createDecisionInstanceEntity(5L)))
+                    createDecisionInstanceEntity(1L, 10L, null),
+                    createDecisionInstanceEntity(2L, 20L, 20L),
+                    createDecisionInstanceEntity(3L, 30L, 20L),
+                    createDecisionInstanceEntity(4L, 40L, 40L),
+                    createDecisionInstanceEntity(5L, 50L, 50L)))
             .total(5)
             .endCursor("5")
             .build();
@@ -77,10 +78,16 @@ class DecisionInstanceItemProviderTest {
     final var resultPage = provider.fetchItemPage("-1", 5);
 
     // then
-    assertThat(resultPage.items()).hasSize(5);
     assertThat(resultPage.endCursor()).isEqualTo("5");
     assertThat(resultPage.isLastPage()).isFalse();
-    assertThat(resultPage.items().getFirst().itemKey()).isEqualTo(1L);
+    assertThat(resultPage.items())
+        .isEqualTo(
+            List.of(
+                new Item(1, 10L, null),
+                new Item(2, 20L, 20L),
+                new Item(3, 30L, 20L),
+                new Item(4, 40L, 40L),
+                new Item(5, 50L, 50L)));
   }
 
   @Test
@@ -114,9 +121,9 @@ class DecisionInstanceItemProviderTest {
         new SearchQueryResult.Builder<DecisionInstanceEntity>()
             .items(
                 List.of(
-                    createDecisionInstanceEntity(1L),
-                    createDecisionInstanceEntity(2L),
-                    createDecisionInstanceEntity(3L)))
+                    createDecisionInstanceEntity(1L, 10L, null),
+                    createDecisionInstanceEntity(2L, 20L, null),
+                    createDecisionInstanceEntity(3L, 30L, null)))
             .total(3)
             .endCursor("3")
             .build();
@@ -126,17 +133,20 @@ class DecisionInstanceItemProviderTest {
     final var resultPage = provider.fetchItemPage(null, 5);
 
     // then
-    assertThat(resultPage.items()).hasSize(3);
     assertThat(resultPage.endCursor()).isEqualTo("3");
     assertThat(resultPage.isLastPage()).isTrue();
-    assertThat(resultPage.items().get(0).itemKey()).isEqualTo(1L);
-    assertThat(resultPage.items().get(1).itemKey()).isEqualTo(2L);
-    assertThat(resultPage.items().get(2).itemKey()).isEqualTo(3L);
+    assertThat(resultPage.items())
+        .isEqualTo(List.of(new Item(1, 10L, null), new Item(2, 20L, null), new Item(3, 30L, null)));
   }
 
-  private DecisionInstanceEntity createDecisionInstanceEntity(final long decisionInstanceKey) {
+  private DecisionInstanceEntity createDecisionInstanceEntity(
+      final long decisionInstanceKey,
+      final long processInstanceKey,
+      final Long rootProcessInstanceKey) {
     return Instancio.of(DecisionInstanceEntity.class)
         .set(field(DecisionInstanceEntity::decisionInstanceKey), decisionInstanceKey)
+        .set(field(DecisionInstanceEntity::processInstanceKey), processInstanceKey)
+        .set(field(DecisionInstanceEntity::rootProcessInstanceKey), rootProcessInstanceKey)
         .create();
   }
 }

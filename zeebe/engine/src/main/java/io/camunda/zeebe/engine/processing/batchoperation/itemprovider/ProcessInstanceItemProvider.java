@@ -65,7 +65,12 @@ public class ProcessInstanceItemProvider implements ItemProvider {
 
     return new ItemPage(
         result.items().stream()
-            .map(pi -> new Item(pi.processInstanceKey(), pi.processInstanceKey()))
+            .map(
+                pi ->
+                    new Item(
+                        pi.processInstanceKey(),
+                        pi.processInstanceKey(),
+                        pi.rootProcessInstanceKey()))
             .collect(Collectors.toList()),
         result.endCursor(),
         result.total(),

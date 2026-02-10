@@ -69,11 +69,11 @@ class IncidentItemProviderTest {
         new SearchQueryResult.Builder<ProcessInstanceEntity>()
             .items(
                 List.of(
-                    createProcessInstanceEntity(1L),
-                    createProcessInstanceEntity(2L),
-                    createProcessInstanceEntity(3L),
-                    createProcessInstanceEntity(4L),
-                    createProcessInstanceEntity(5L)))
+                    createProcessInstanceEntity(1L, 1L),
+                    createProcessInstanceEntity(2L, 1L),
+                    createProcessInstanceEntity(3L, 3L),
+                    createProcessInstanceEntity(4L, null),
+                    createProcessInstanceEntity(5L, null)))
             .total(5)
             .build();
     when(searchClientsProxy.searchProcessInstances(piQueryCaptor.capture())).thenReturn(piResult);
@@ -82,22 +82,22 @@ class IncidentItemProviderTest {
         new SearchQueryResult.Builder<IncidentEntity>()
             .items(
                 List.of(
-                    mockIncidentEntity(11, 1),
-                    mockIncidentEntity(12, 1),
-                    mockIncidentEntity(21, 2),
-                    mockIncidentEntity(22, 2),
-                    mockIncidentEntity(31, 3)))
+                    mockIncidentEntity(11, 1, 1L),
+                    mockIncidentEntity(12, 1, 1L),
+                    mockIncidentEntity(21, 2, 1L),
+                    mockIncidentEntity(22, 2, 1L),
+                    mockIncidentEntity(31, 3, 3L)))
             .total(10)
             .build();
     final var incidentResult2 =
         new SearchQueryResult.Builder<IncidentEntity>()
             .items(
                 List.of(
-                    mockIncidentEntity(32, 3),
-                    mockIncidentEntity(41, 4),
-                    mockIncidentEntity(42, 4),
-                    mockIncidentEntity(51, 5),
-                    mockIncidentEntity(52, 5)))
+                    mockIncidentEntity(32, 3, 3L),
+                    mockIncidentEntity(41, 4, null),
+                    mockIncidentEntity(42, 4, null),
+                    mockIncidentEntity(51, 5, null),
+                    mockIncidentEntity(52, 5, null)))
             .total(10)
             .build();
     final var incidentResult3 =
@@ -114,16 +114,16 @@ class IncidentItemProviderTest {
     // then
     assertThat(resultPage.items())
         .containsExactly(
-            new Item(11, 1),
-            new Item(12, 1),
-            new Item(21, 2),
-            new Item(22, 2),
-            new Item(31, 3),
-            new Item(32, 3),
-            new Item(41, 4),
-            new Item(42, 4),
-            new Item(51, 5),
-            new Item(52, 5));
+            new Item(11, 1, 1L),
+            new Item(12, 1, 1L),
+            new Item(21, 2, 1L),
+            new Item(22, 2, 1L),
+            new Item(31, 3, 3L),
+            new Item(32, 3, 3L),
+            new Item(41, 4, null),
+            new Item(42, 4, null),
+            new Item(51, 5, null),
+            new Item(52, 5, null));
     assertThat(resultPage.isLastPage()).isFalse();
   }
 
@@ -137,11 +137,11 @@ class IncidentItemProviderTest {
         new SearchQueryResult.Builder<ProcessInstanceEntity>()
             .items(
                 List.of(
-                    createProcessInstanceEntity(1L),
-                    createProcessInstanceEntity(2L),
-                    createProcessInstanceEntity(3L),
-                    createProcessInstanceEntity(4L),
-                    createProcessInstanceEntity(5L)))
+                    createProcessInstanceEntity(1L, 1L),
+                    createProcessInstanceEntity(2L, 2L),
+                    createProcessInstanceEntity(3L, 1L),
+                    createProcessInstanceEntity(4L, 2L),
+                    createProcessInstanceEntity(5L, null)))
             .total(5)
             .build();
     when(searchClientsProxy.searchProcessInstances(piQueryCaptor.capture())).thenReturn(piResult);
@@ -179,16 +179,20 @@ class IncidentItemProviderTest {
     assertThat(resultPage.isLastPage()).isTrue();
   }
 
-  private ProcessInstanceEntity createProcessInstanceEntity(final long processInstanceKey) {
+  private ProcessInstanceEntity createProcessInstanceEntity(
+      final long processInstanceKey, final Long rootProcessInstanceKey) {
     return Instancio.of(ProcessInstanceEntity.class)
         .set(field(ProcessInstanceEntity::processInstanceKey), processInstanceKey)
+        .set(field(ProcessInstanceEntity::rootProcessInstanceKey), rootProcessInstanceKey)
         .create();
   }
 
-  private IncidentEntity mockIncidentEntity(final long incidentKey, final long processInstanceKey) {
+  private IncidentEntity mockIncidentEntity(
+      final long incidentKey, final long processInstanceKey, final Long rootProcessInstanceKey) {
     final var entity = mock(IncidentEntity.class);
     when(entity.incidentKey()).thenReturn(incidentKey);
     when(entity.processInstanceKey()).thenReturn(processInstanceKey);
+    when(entity.rootProcessInstanceKey()).thenReturn(rootProcessInstanceKey);
     return entity;
   }
 }

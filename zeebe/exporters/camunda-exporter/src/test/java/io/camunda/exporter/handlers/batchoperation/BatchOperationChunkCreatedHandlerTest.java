@@ -151,6 +151,9 @@ class BatchOperationChunkCreatedHandlerTest {
                 .withValue(
                     new BatchOperationChunkRecord()
                         .setBatchOperationKey(123L)
-                        .setItems(List.of(new BatchOperationItem(itemKey, processInstanceKey)))));
+                        .setItems(
+                            List.of(
+                                new BatchOperationItem(
+                                    itemKey, processInstanceKey, processInstanceKey)))));
   }
 }

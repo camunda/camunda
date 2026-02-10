@@ -3984,7 +3984,10 @@ final class JsonSerializableToJsonTest {
                     .setBatchOperationKey(12345L)
                     .setItems(
                         List.of(
-                            new BatchOperationItem().setItemKey(1L).setProcessInstanceKey(2L),
+                            new BatchOperationItem()
+                                .setItemKey(1L)
+                                .setProcessInstanceKey(2L)
+                                .setRootProcessInstanceKey(3L),
                             new BatchOperationItem().setItemKey(2L).setProcessInstanceKey(2L))),
         """
                 {
@@ -3992,14 +3995,16 @@ final class JsonSerializableToJsonTest {
                     {
                       "itemKey": 1,
                       "processInstanceKey": 2,
+                      "rootProcessInstanceKey": 3,
                       "empty": false,
-                      "encodedLength": 30
+                      "encodedLength": 54
                     },
                     {
                       "itemKey": 2,
                       "processInstanceKey": 2,
+                      "rootProcessInstanceKey": -1,
                       "empty": false,
-                      "encodedLength": 30
+                      "encodedLength": 54
                     }
                   ],
                   "batchOperationKey": 12345

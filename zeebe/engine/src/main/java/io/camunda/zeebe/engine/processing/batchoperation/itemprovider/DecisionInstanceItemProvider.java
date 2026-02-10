@@ -61,7 +61,12 @@ public class DecisionInstanceItemProvider implements ItemProvider {
 
     return new ItemPage(
         result.items().stream()
-            .map(di -> new Item(di.decisionInstanceKey(), di.processInstanceKey()))
+            .map(
+                di ->
+                    new Item(
+                        di.decisionInstanceKey(),
+                        di.processInstanceKey(),
+                        di.rootProcessInstanceKey()))
             .collect(Collectors.toList()),
         result.endCursor(),
         result.total(),

@@ -21,6 +21,7 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
+import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProvider.Item;
 import java.util.List;
 import org.instancio.Instancio;
 import org.junit.jupiter.api.BeforeEach;
@@ -63,11 +64,11 @@ class ProcessInstanceItemProviderTest {
         new SearchQueryResult.Builder<ProcessInstanceEntity>()
             .items(
                 List.of(
-                    createProcessInstanceEntity(1L),
-                    createProcessInstanceEntity(2L),
-                    createProcessInstanceEntity(3L),
-                    createProcessInstanceEntity(4L),
-                    createProcessInstanceEntity(5L)))
+                    createProcessInstanceEntity(1L, null),
+                    createProcessInstanceEntity(2L, 2L),
+                    createProcessInstanceEntity(3L, 2L),
+                    createProcessInstanceEntity(4L, 4L),
+                    createProcessInstanceEntity(5L, 4L)))
             .total(5)
             .endCursor("5")
             .build();
@@ -77,9 +78,16 @@ class ProcessInstanceItemProviderTest {
     final var resultPage = provider.fetchItemPage("-1", 5);
 
     // then
-    assertThat(resultPage.items()).hasSize(5);
     assertThat(resultPage.endCursor()).isEqualTo("5");
     assertThat(resultPage.isLastPage()).isFalse();
+    assertThat(resultPage.items())
+        .isEqualTo(
+            List.of(
+                new Item(1L, 1L, null),
+                new Item(2L, 2L, 2L),
+                new Item(3L, 3L, 2L),
+                new Item(4L, 4L, 4L),
+                new Item(5L, 5L, 4L)));
   }
 
   @Test
@@ -113,9 +121,9 @@ class ProcessInstanceItemProviderTest {
         new SearchQueryResult.Builder<ProcessInstanceEntity>()
             .items(
                 List.of(
-                    createProcessInstanceEntity(1L),
-                    createProcessInstanceEntity(2L),
-                    createProcessInstanceEntity(3L)))
+                    createProcessInstanceEntity(1L, null),
+                    createProcessInstanceEntity(2L, 2L),
+                    createProcessInstanceEntity(3L, 3L)))
             .total(3)
             .endCursor("3")
             .build();
@@ -125,14 +133,17 @@ class ProcessInstanceItemProviderTest {
     final var resultPage = provider.fetchItemPage(null, 5);
 
     // then
-    assertThat(resultPage.items()).hasSize(3);
     assertThat(resultPage.endCursor()).isEqualTo("3");
     assertThat(resultPage.isLastPage()).isTrue();
+    assertThat(resultPage.items())
+        .isEqualTo(List.of(new Item(1L, 1L, null), new Item(2L, 2L, 2L), new Item(3L, 3L, 3L)));
   }
 
-  private ProcessInstanceEntity createProcessInstanceEntity(final long processInstanceKey) {
+  private ProcessInstanceEntity createProcessInstanceEntity(
+      final long processInstanceKey, final Long rootProcessInstanceKey) {
     return Instancio.of(ProcessInstanceEntity.class)
         .set(field(ProcessInstanceEntity::processInstanceKey), processInstanceKey)
+        .set(field(ProcessInstanceEntity::rootProcessInstanceKey), rootProcessInstanceKey)
         .create();
   }
 }
