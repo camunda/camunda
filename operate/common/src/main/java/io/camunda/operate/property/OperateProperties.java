@@ -20,7 +20,16 @@ public class OperateProperties {
   public static final long BATCH_OPERATION_MAX_SIZE_DEFAULT = 1_000_000L;
   private static final String UNKNOWN_VERSION = "unknown-version";
 
-  private int maxIncidentSearchGroups = 1000;
+  /**
+   * Maximum number of groups to search for when searching for incidents. For the backward
+   * compatibility reasons, the default value is set to 10000, which is the default value for the
+   * maxClauseCount in Elasticsearch. We must keep it as 10000 to keep the behavior unchanged for
+   * the users.
+   *
+   * @see
+   *     io.camunda.operate.store.opensearch.client.sync.OpenSearchDocumentOperations.TERMS_AGG_SIZE
+   */
+  private int maxIncidentSearchGroups = 10000;
 
   private boolean importerEnabled = false;
   private boolean webappEnabled = true;
