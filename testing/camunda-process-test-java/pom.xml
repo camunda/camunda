@@ -19,6 +19,9 @@
     <!-- Camunda Docker image properties. CI overrides the properties to use the current image. -->
     <io.camunda.process.test.camundaDockerImageName>camunda/camunda</io.camunda.process.test.camundaDockerImageName>
     <io.camunda.process.test.camundaDockerImageVersion>${project.version}</io.camunda.process.test.camundaDockerImageVersion>
+    <!-- Connectors Docker image properties. CI overrides the properties to use the current image. -->
+    <io.camunda.process.test.connectorsDockerImageName>camunda/connectors-bundle</io.camunda.process.test.connectorsDockerImageName>
+    <io.camunda.process.test.connectorsDockerImageVersion>${project.version}</io.camunda.process.test.connectorsDockerImageVersion>
   </properties>
 
   <dependencies>

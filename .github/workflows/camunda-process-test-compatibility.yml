@@ -328,29 +328,6 @@ jobs:
             -DskipUTs
             -DskipChecks
 
-      - name: Override connectors bundle version
-        run: |
-          CPT_VERSION="${{ matrix.client }}"
-          CONNECTORS_REPO="https://github.com/camunda/connectors.git"
-
-          if [[ "$CPT_VERSION" == "SNAPSHOT" ]]; then
-            CONNECTORS_VERSION="SNAPSHOT"
-          else
-            CONNECTORS_TAGS=$(git ls-remote --tags --refs "$CONNECTORS_REPO" | awk -F/ '{print $NF}')
-            if echo "$CONNECTORS_TAGS" | grep -qx "$CPT_VERSION"; then
-              CONNECTORS_VERSION="$CPT_VERSION"
-            elif [[ "$CPT_VERSION" =~ ^([0-9]+)\.([0-9]+)\. ]]; then
-              CONNECTORS_VERSION="${BASH_REMATCH[1]}.${BASH_REMATCH[2]}-SNAPSHOT"
-            else
-              CONNECTORS_VERSION="SNAPSHOT"
-            fi
-          fi
-
-          cat <<EOF > testing/camunda-process-test-java/src/main/resources/camunda-container-runtime.properties
-          connectorsDockerImageName=camunda/connectors-bundle
-          connectorsDockerImageVersion=${CONNECTORS_VERSION}
-          EOF
-
       - name: Run compatibility tests
         uses: ./.github/actions/run-maven
         with:
@@ -358,6 +335,7 @@ jobs:
             verify
             -f testing/pom.xml
             -Dio.camunda.process.test.camundaDockerImageVersion=${{ matrix.server }}
+            -Dio.camunda.process.test.connectorsDockerImageVersion=${{ matrix.server }}
             -DfailIfNoTests=false
 
       - name: Record tested combination
