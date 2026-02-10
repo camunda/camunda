@@ -278,9 +278,9 @@ class BackupCompatibilityTest {
                 .withConnectionString(AZURITE.getConnectString())
                 .withContainerName(containerName)
                 .build();
-        try (final var client = AzureBackupStore.buildClient(config)) {
-          client.createBlobContainer(containerName).block(Duration.ofSeconds(30));
-        }
+        final var client = AzureBackupStore.buildClient(config);
+        final var containerClient = client.getBlobContainerClient(containerName);
+        containerClient.createIfNotExists();
       }
       case FILESYSTEM -> {
         // Create directory if needed
@@ -412,7 +412,7 @@ class BackupCompatibilityTest {
       case AZURE -> {
         backup.setStore(BackupStoreType.AZURE);
         final var azureConfig = new Azure();
-        azureConfig.setContainerName(containerName);
+        azureConfig.setBasePath(containerName);
         azureConfig.setConnectionString(AZURITE.getConnectString());
         backup.setAzure(azureConfig);
       }
