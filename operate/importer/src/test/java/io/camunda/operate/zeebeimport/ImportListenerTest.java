@@ -10,6 +10,7 @@ package io.camunda.operate.zeebeimport;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertFalse;
 import static junit.framework.TestCase.assertTrue;
+import static org.junit.Assert.assertThrows;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doNothing;
@@ -18,6 +19,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.esotericsoftware.kryo.io.KryoBufferOverflowException;
 import io.camunda.operate.JacksonConfig;
 import io.camunda.operate.Metrics;
 import io.camunda.operate.conditions.DatabaseInfo;
@@ -194,6 +196,80 @@ public class ImportListenerTest extends NoBeansTest {
     final List<Integer> batchSizes =
         batches.stream().map(b -> b.getHits().size()).collect(Collectors.toList());
     assertEquals(List.of(2, 2, 1), batchSizes);
+  }
+
+  @Test
+  public void testFinishedWithLargeVariableUnderBufferLimit() {
+    final HitEntity hit = new HitEntity();
+    hit.setIndex("test_index");
+    hit.setSourceAsString(
+        "{ \"fieldName\": \"" + "x".repeat(4 * 1024 * 1024) + "\"}"); // <5MB buffer limit
+
+    final ImportBatch importBatch =
+        new ImportBatch(1, ImportValueType.PROCESS_INSTANCE, List.of(hit), "some_name");
+    final ImportPositionEntity previousPosition =
+        new ImportPositionEntity()
+            .setAliasName("alias")
+            .setPartitionId(1)
+            .setPosition(0)
+            .setSequence(0L);
+    final ImportJob importJob = beanFactory.getBean(ImportJob.class, importBatch, previousPosition);
+
+    // mock import methods
+    try {
+      when(importBatchProcessorFactory.getImportBatchProcessor(anyString()))
+          .thenReturn(elasticsearchBulkProcessor);
+      doNothing().when(elasticsearchBulkProcessor).performImport(importBatch);
+    } catch (final PersistenceException e) {
+      // ignore
+    }
+
+    // when the job is executed
+    importJob.call();
+
+    // then
+    assertTrue(importListener.isFinishedCalled());
+    assertFalse(importListener.isFailedCalled());
+    assertEquals(importListener.getImportBatch(), importBatch);
+  }
+
+  @Test
+  public void testFailedWithLargeVariableOverBufferLimit() throws PersistenceException {
+    final HitEntity largeHit = new HitEntity();
+    largeHit.setIndex("test_index");
+    largeHit.setSourceAsString(
+        "{ \"fieldName\": \"" + "x".repeat(5 * 1024 * 1024) + "\"}"); // >5MB buffer limit
+    final HitEntity smallHit = new HitEntity();
+    smallHit.setIndex("test_index");
+    smallHit.setSourceAsString("{ \"fieldName\": \"" + "x".repeat(5) + "\"}");
+
+    final ImportBatch importBatch =
+        new ImportBatch(
+            1, ImportValueType.PROCESS_INSTANCE, List.of(largeHit, smallHit), "some_name");
+    final ImportPositionEntity previousPosition =
+        new ImportPositionEntity()
+            .setAliasName("alias")
+            .setPartitionId(1)
+            .setPosition(0)
+            .setSequence(0L);
+    final ImportJob importJob = beanFactory.getBean(ImportJob.class, importBatch, previousPosition);
+
+    // mock import methods
+    try {
+      when(importBatchProcessorFactory.getImportBatchProcessor(anyString()))
+          .thenReturn(elasticsearchBulkProcessor);
+      doNothing().when(elasticsearchBulkProcessor).performImport(importBatch);
+    } catch (final PersistenceException e) {
+      // ignore
+    }
+
+    // when the job is executed
+    assertThrows(
+        KryoBufferOverflowException.class,
+        () -> {
+          importJob.call();
+        });
+    verify(elasticsearchBulkProcessor, times(0)).performImport(importBatch);
   }
 
   @Component
