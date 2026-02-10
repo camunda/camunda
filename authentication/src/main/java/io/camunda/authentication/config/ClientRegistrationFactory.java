@@ -10,8 +10,6 @@ package io.camunda.authentication.config;
 import static io.camunda.security.configuration.OidcAuthenticationConfiguration.CLIENT_AUTHENTICATION_METHODS;
 
 import io.camunda.security.configuration.OidcAuthenticationConfiguration;
-import java.util.HashMap;
-import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;

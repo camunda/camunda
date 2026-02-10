@@ -279,8 +279,7 @@ public class OidcAuthenticationConfiguration {
         || assertionConfiguration.getKidDigestAlgorithm() != KidDigestAlgorithm.SHA256
         || assertionConfiguration.getKidEncoding() != KidEncoding.BASE64URL
         || assertionConfiguration.getKidCase() != null
-        || !DEFAULT_CLOCK_SKEW.equals(clockSkew)
-        || !userInfoEnabled;
+        || !DEFAULT_CLOCK_SKEW.equals(clockSkew);
   }
 
   public static Builder builder() {
