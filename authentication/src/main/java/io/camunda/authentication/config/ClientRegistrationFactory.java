@@ -10,6 +10,10 @@ package io.camunda.authentication.config;
 import static io.camunda.security.configuration.OidcAuthenticationConfiguration.CLIENT_AUTHENTICATION_METHODS;
 
 import io.camunda.security.configuration.OidcAuthenticationConfiguration;
+import java.util.HashMap;
+import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.ClientRegistration.Builder;
 import org.springframework.security.oauth2.client.registration.ClientRegistrations;
@@ -17,6 +21,7 @@ import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 
 public final class ClientRegistrationFactory {
+  private static final Logger LOGGER = LoggerFactory.getLogger(ClientRegistrationFactory.class);
 
   private ClientRegistrationFactory() {}
 
@@ -63,6 +68,12 @@ public final class ClientRegistrationFactory {
       builder.clientAuthenticationMethod(
           ClientAuthenticationMethod.valueOf(configuration.getClientAuthenticationMethod()));
     }
+
+    if (!configuration.isUserInfoEnabled()) {
+      LOGGER.debug("Fetching user info is disabled for client registration {}", registrationId);
+      builder.userInfoUri(null);
+    }
+
     return builder.build();
   }
 
