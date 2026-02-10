@@ -1,10 +1,3 @@
-/*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
- * one or more contributor license agreements. See the NOTICE file distributed
- * with this work for additional information regarding copyright ownership.
- * Licensed under the Camunda License 1.0. You may not use this file
- * except in compliance with the Camunda License 1.0.
- */
 package io.camunda.optimize;
 
 import static io.camunda.optimize.tomcat.OptimizeResourceConstants.ACTUATOR_PORT_PROPERTY_KEY;
@@ -31,7 +24,20 @@ public class Main {
     final Map<String, Object> defaultProperties = new HashMap<>();
     defaultProperties.put(ACTUATOR_PORT_PROPERTY_KEY, configurationService.getActuatorPort());
 
+    // Import extra Spring config from the config dir (e.g. mounted by Helm extraConfiguration)
+    Main.putSystemPropertyIfAbsent("spring.config.import", "optional:file:./config/");
+
     optimize.setDefaultProperties(defaultProperties);
     optimize.run(args);
+  }
+
+  /**
+   * Sets system properties only if they haven't been set already, allowing users to override them
+   * via CLI or other means
+   */
+  public static void putSystemPropertyIfAbsent(final String key, final String value) {
+    if (System.getProperty(key) == null) {
+      System.setProperty(key, value);
+    }
   }
 }
