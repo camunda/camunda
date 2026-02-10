@@ -194,7 +194,7 @@ jobs:
       - name: Get Maven project version
         id: maven-version
         run: |
-          VERSION=$(./mvnw -q -Dexec.executable=echo -Dexec.args="\${project.version}" --non-recursive exec:exec)
+          VERSION=$(./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout --non-recursive)
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
 
       - name: Set semantic image tag
