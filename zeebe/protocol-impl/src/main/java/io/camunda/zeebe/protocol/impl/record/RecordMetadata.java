@@ -153,7 +153,9 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
 
     // working with variable-length fields
     encoder.putRejectionReason(rejectionReason, 0, rejectionReason.capacity());
-    encoder.putAuthorization(authorization.toDirectBuffer(), 0, authorization.getLength());
+    final var authorizationBuffer = authorization.toDirectBuffer();
+    encoder.putAuthorization(authorizationBuffer, 0, authorizationBuffer.capacity());
+
   }
 
   public long getRequestId() {
