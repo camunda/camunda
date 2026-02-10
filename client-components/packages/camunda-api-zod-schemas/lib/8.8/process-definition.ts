@@ -176,8 +176,9 @@ const processDefinitionInstanceVersionStatisticsSchema = z.object({
 });
 type ProcessDefinitionInstanceVersionStatistics = z.infer<typeof processDefinitionInstanceVersionStatisticsSchema>;
 
-const processDefinitionVersionStatisticsFilterFieldsSchema = processDefinitionStatisticsFilterFieldsSchema.extend({
+const processDefinitionVersionStatisticsFilterFieldsSchema = z.object({
 	processDefinitionId: z.string(),
+	tenantId: z.string().optional(),
 });
 
 const getProcessDefinitionInstanceVersionStatisticsRequestBodySchema = getQueryRequestBodySchema({
@@ -189,7 +190,7 @@ const getProcessDefinitionInstanceVersionStatisticsRequestBodySchema = getQueryR
 		'activeInstancesWithIncidentCount',
 		'activeInstancesWithoutIncidentCount',
 	] as const,
-	filter: getOrFilterSchema(processDefinitionVersionStatisticsFilterFieldsSchema.partial()),
+	filter: processDefinitionVersionStatisticsFilterFieldsSchema,
 });
 
 type GetProcessDefinitionInstanceVersionStatisticsRequestBody = z.infer<
