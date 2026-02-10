@@ -47,7 +47,7 @@ public class SchemaManagerIT {
   @Test
   public void shouldUseVersionedComponentTemplateForIndexTemplates() throws IOException {
     // given
-    final var restClient = RestClientFactory.of(CONFIG);
+    final var restClient = RestClientFactory.ofRestClient(CONFIG);
     final var esClient = new ElasticsearchClient(CONFIG, new SimpleMeterRegistry());
 
     // when

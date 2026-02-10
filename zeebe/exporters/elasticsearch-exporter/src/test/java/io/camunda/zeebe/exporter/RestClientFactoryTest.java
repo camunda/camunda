@@ -36,7 +36,7 @@ final class RestClientFactoryTest {
     config.url = "http://localhost:9201,https://localhost:9202";
 
     // when
-    final var client = RestClientFactory.of(config);
+    final var client = RestClientFactory.ofRestClient(config);
 
     // then
     assertThat(client.getNodes())
@@ -54,7 +54,7 @@ final class RestClientFactoryTest {
     final var context = new BasicHttpContext();
 
     // when
-    final var client = RestClientFactory.of(config);
+    final var client = RestClientFactory.ofRestClient(config);
     client
         .getHttpClient()
         .execute(HttpHost.create("localhost:9200"), new HttpGet(), context, NoopCallback.INSTANCE);
@@ -74,7 +74,7 @@ final class RestClientFactoryTest {
     final var context = new BasicHttpContext();
 
     // when
-    final var client = RestClientFactory.of(config);
+    final var client = RestClientFactory.ofRestClient(config);
     client
         .getHttpClient()
         .execute(HttpHost.create("localhost:9200"), new HttpGet(), context, NoopCallback.INSTANCE);
@@ -90,7 +90,7 @@ final class RestClientFactoryTest {
     // given
     final var context = new BasicHttpContext();
     try (final var client =
-        RestClientFactory.of(
+        RestClientFactory.ofRestClient(
             config,
             (req, ctx) -> ctx.setAttribute("foo", "bar"),
             (req, ctx) -> ctx.setAttribute("foo", "baz"))) {

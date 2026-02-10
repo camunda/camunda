@@ -7,6 +7,9 @@
  */
 package io.camunda.zeebe.exporter;
 
+import co.elastic.clients.json.jackson.JacksonJsonpMapper;
+import co.elastic.clients.transport.rest_client.RestClientTransport;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpRequestInterceptor;
 import org.apache.http.auth.AuthScope;
@@ -25,11 +28,25 @@ final class RestClientFactory {
   private RestClientFactory() {}
 
   /**
-   * Returns a {@link RestClient} instance based on the given configuration. The URL is parsed as a
-   * comma separated list of "host:port" formatted strings. Authentication is supported only as
-   * basic auth; if there is no authentication present, then nothing is configured for it.
+   * Returns a {@link co.elastic.clients.elasticsearch.ElasticsearchClient} instance based on the
+   * given configuration. The URL is parsed as a comma separated list of "host:port" formatted
+   * strings. Authentication is supported only as basic auth; if there is no authentication present,
+   * then nothing is configured for it.
    */
-  static RestClient of(
+  static co.elastic.clients.elasticsearch.ElasticsearchClient of(
+      final ElasticsearchExporterConfiguration config,
+      final HttpRequestInterceptor... interceptors) {
+    final var restClient = INSTANCE.createRestClient(config, interceptors);
+    final var transport =
+        new RestClientTransport(restClient, new JacksonJsonpMapper(new ObjectMapper()));
+    return new co.elastic.clients.elasticsearch.ElasticsearchClient(transport);
+  }
+
+  /**
+   * Returns a raw {@link RestClient} for cases where the low-level client is needed directly (e.g.
+   * test utilities).
+   */
+  static RestClient ofRestClient(
       final ElasticsearchExporterConfiguration config,
       final HttpRequestInterceptor... interceptors) {
     return INSTANCE.createRestClient(config, interceptors);

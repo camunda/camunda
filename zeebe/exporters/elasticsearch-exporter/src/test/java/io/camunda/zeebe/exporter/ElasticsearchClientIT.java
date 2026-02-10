@@ -205,7 +205,11 @@ final class ElasticsearchClientIT {
     assertThat(actualTemplate.version()).isEqualTo(expectedTemplate.version());
     assertThat(actualTemplate.template().aliases())
         .isEqualTo(expectedTemplate.template().aliases());
-    assertThat(actualTemplate.template().mappings())
+    // Use recursive comparison to tolerate ES and the Java client normalizing object-typed mapping
+    // fields by adding "type": "object" — this is functionally correct but absent from the JSON
+    // resource files. The ignoringOverriddenEqualsForFields approach doesn't work for nested maps,
+    // so we strip the extra "type" entries before comparing.
+    assertThat(stripObjectTypeFromMappings(actualTemplate.template().mappings()))
         .isEqualTo(expectedTemplate.template().mappings());
 
     // cannot compare settings because we never get flat settings, instead we get { index : {
@@ -220,5 +224,26 @@ final class ElasticsearchClientIT {
         .containsEntry("number_of_shards", "1")
         .containsEntry("number_of_replicas", "0")
         .containsEntry("queries", Map.of("cache", Map.of("enabled", "false")));
+  }
+
+  /**
+   * Strips {@code "type": "object"} entries from mapping properties recursively. ES and the Java
+   * client normalize object-typed mapping fields by adding this implicit type, but the JSON resource
+   * files omit it. Removing it from the actual result allows direct comparison with expected.
+   */
+  @SuppressWarnings("unchecked")
+  private static Map<String, Object> stripObjectTypeFromMappings(final Map<String, Object> map) {
+    final var result = new java.util.LinkedHashMap<>(map);
+    // Remove "type": "object" at this level — it's implicit for any field with "properties"
+    if ("object".equals(result.get("type")) && result.containsKey("properties")) {
+      result.remove("type");
+    }
+    // Recurse into nested maps
+    for (final var entry : result.entrySet()) {
+      if (entry.getValue() instanceof Map) {
+        entry.setValue(stripObjectTypeFromMappings((Map<String, Object>) entry.getValue()));
+      }
+    }
+    return result;
   }
 }
