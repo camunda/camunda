@@ -229,6 +229,27 @@ final class ElasticsearchExporterClientIT {
 
   /**
    * Strips {@code "type": "object"} entries from mapping properties recursively. ES and the Java
+   * client normalize object-typed mapping fields by adding this implicit type, but the JSON resource
+   * files omit it. Removing it from the actual result allows direct comparison with expected.
+   */
+  @SuppressWarnings("unchecked")
+  private static Map<String, Object> stripObjectTypeFromMappings(final Map<String, Object> map) {
+    final var result = new java.util.LinkedHashMap<>(map);
+    // Remove "type": "object" at this level — it's implicit for any field with "properties"
+    if ("object".equals(result.get("type")) && result.containsKey("properties")) {
+      result.remove("type");
+    }
+    // Recurse into nested maps
+    for (final var entry : result.entrySet()) {
+      if (entry.getValue() instanceof Map) {
+        entry.setValue(stripObjectTypeFromMappings((Map<String, Object>) entry.getValue()));
+      }
+    }
+    return result;
+  }
+
+  /**
+   * Strips {@code "type": "object"} entries from mapping properties recursively. ES and the Java
    * client normalize object-typed mapping fields by adding this implicit type. Stripping it from
    * both actual and expected mappings allows direct comparison regardless of whether the JSON
    * resource files include the explicit type or not.

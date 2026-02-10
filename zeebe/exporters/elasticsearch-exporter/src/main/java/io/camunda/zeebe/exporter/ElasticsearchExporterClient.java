@@ -7,6 +7,10 @@
  */
 package io.camunda.zeebe.exporter;
 
+import co.elastic.clients.elasticsearch._helpers.bulk.BulkIngester;
+import co.elastic.clients.elasticsearch._helpers.bulk.BulkListener;
+import co.elastic.clients.elasticsearch.core.BulkRequest;
+import co.elastic.clients.elasticsearch.core.BulkResponse;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.BulkResponse;
@@ -185,6 +189,20 @@ class ElasticsearchExporterClient implements AutoCloseable {
   }
 
   private void exportBulk() {
+    final var operations = bulkIndexRequest.toBulkOperations();
+    final var errorCollector = new BulkErrorCollector();
+
+    try (final BulkIngester<Void> ingester =
+        BulkIngester.of(
+            b ->
+                b.client(esClient)
+                    .maxOperations(operations.size())
+                    .maxSize(configuration.bulk.memoryLimit)
+                    .listener(errorCollector))) {
+      operations.forEach(ingester::add);
+    }
+
+    errorCollector.throwIfError();
     final var indexOperations = bulkIndexRequest.bulkOperations();
     final long memoryLimit = configuration.bulk.memoryLimit;
     final var allErrors = new ArrayList<String>();
@@ -329,5 +347,55 @@ class ElasticsearchExporterClient implements AutoCloseable {
                         "Failed to flush %d item(s) of bulk request [type: %s, reason: %s]",
                         errors.size(), errorType, errors.get(0).error().reason())));
     return collectedErrors;
+  private static List<String> collectBulkErrors(final BulkResponse bulkResponse) {
+    final var collectedErrors = new ArrayList<String>();
+    bulkResponse.items().stream()
+        .filter(item -> item.error() != null)
+        .collect(Collectors.groupingBy(item -> item.error().type()))
+        .forEach(
+            (errorType, errors) ->
+                collectedErrors.add(
+                    String.format(
+                        "Failed to flush %d item(s) of bulk request [type: %s, reason: %s]",
+                        errors.size(), errorType, errors.get(0).error().reason())));
+    return collectedErrors;
+  }
+
+  private static final class BulkErrorCollector implements BulkListener<Void> {
+    private ElasticsearchExporterException error;
+
+    @Override
+    public void beforeBulk(
+        final long executionId, final BulkRequest request, final List<Void> contexts) {
+      // no-op
+    }
+
+    @Override
+    public void afterBulk(
+        final long executionId,
+        final BulkRequest request,
+        final List<Void> contexts,
+        final BulkResponse response) {
+      if (response.errors()) {
+        error =
+            new ElasticsearchExporterException(
+                "Failed to flush bulk request: " + collectBulkErrors(response));
+      }
+    }
+
+    @Override
+    public void afterBulk(
+        final long executionId,
+        final BulkRequest request,
+        final List<Void> contexts,
+        final Throwable failure) {
+      error = new ElasticsearchExporterException("Failed to flush bulk", failure);
+    }
+
+    void throwIfError() {
+      if (error != null) {
+        throw error;
+      }
+    }
   }
 }

@@ -7,6 +7,9 @@
  */
 package io.camunda.zeebe.exporter;
 
+import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
+import co.elastic.clients.util.BinaryData;
+import co.elastic.clients.util.ContentType;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.core.JsonParser.Feature;
@@ -174,6 +177,26 @@ final class BulkIndexRequest {
   /** Returns the currently indexed operations as an unmodifiable shallow copy. */
   List<IndexOperation> bulkOperations() {
     return Collections.unmodifiableList(operations);
+  }
+
+  /**
+   * Converts the buffered operations to ES Java client {@link BulkOperation} objects. Each
+   * pre-serialized record is wrapped in {@link BinaryData} to avoid re-serialization.
+   */
+  List<BulkOperation> toBulkOperations() {
+    return operations.stream()
+        .map(
+            op ->
+                BulkOperation.of(
+                    b ->
+                        b.index(
+                            i ->
+                                i.index(op.metadata().index())
+                                    .id(op.metadata().id())
+                                    .routing(op.metadata().routing())
+                                    .document(
+                                        BinaryData.of(op.source(), ContentType.APPLICATION_JSON)))))
+        .toList();
   }
 
   private static boolean isPreviousVersionRecord(final String brokerVersion) {
