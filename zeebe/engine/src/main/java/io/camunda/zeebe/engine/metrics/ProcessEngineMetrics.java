@@ -43,6 +43,20 @@ public final class ProcessEngineMetrics {
     registerActiveRootProcessInstanceGauge();
   }
 
+  /**
+   * Initializes the count of active root process instances.
+   *
+   * <p>This method should be called exactly once during the recovery phase of the StreamProcessor
+   * (e.g., in {@code onRecovered}). It allows the metric to start with the correct value derived
+   * from the persistent state (RocksDB), accounting for instances that are active but whose
+   * creation events have been compacted via snapshots.
+   *
+   * @param count the number of active root process instances currently in the state
+   */
+  public void initializeActiveRootProcessInstanceCount(final long count) {
+    activeRootProcessInstances.set(count);
+  }
+
   public void processInstanceCreated(final ProcessInstanceCreationRecord instanceCreationRecord) {
     final var creationMode =
         instanceCreationRecord.hasStartInstructions()
