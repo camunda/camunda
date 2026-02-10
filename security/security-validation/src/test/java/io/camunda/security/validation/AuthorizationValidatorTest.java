@@ -20,8 +20,8 @@ import org.junit.jupiter.api.Test;
 
 class AuthorizationValidatorTest {
 
-  public static final AuthorizationValidator VALIDATOR =
-      new AuthorizationValidator(Pattern.compile(".*"));
+  private static final AuthorizationValidator VALIDATOR =
+      new AuthorizationValidator(new IdentifierValidator(Pattern.compile(".*")));
 
   @Test
   public void shouldValidateOwnerType() {

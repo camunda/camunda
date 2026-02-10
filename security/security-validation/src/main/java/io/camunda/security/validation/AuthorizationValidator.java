@@ -16,14 +16,13 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import java.util.regex.Pattern;
 
 public class AuthorizationValidator {
 
-  private final Pattern idPattern;
+  private final IdentifierValidator identifierValidator;
 
-  public AuthorizationValidator(final Pattern idPattern) {
-    this.idPattern = idPattern;
+  public AuthorizationValidator(final IdentifierValidator identifierValidator) {
+    this.identifierValidator = identifierValidator;
   }
 
   /* The validate method takes individual arguments instead of a whole object,
@@ -37,14 +36,14 @@ public class AuthorizationValidator {
       final Set<PermissionType> permissions) {
     final List<String> violations = new ArrayList<>();
     // owner validation
-    IdentifierValidator.validateId(ownerId, "ownerId", violations, idPattern);
+    identifierValidator.validateId(ownerId, "ownerId", violations);
     if (ownerType == null) {
       violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("ownerType"));
     }
 
     // resource validation
-    IdentifierValidator.validateId(
-        resourceId, "resourceId", violations, idPattern, AuthorizationScope.WILDCARD_CHAR::equals);
+    identifierValidator.validateId(
+        resourceId, "resourceId", violations, AuthorizationScope.WILDCARD_CHAR::equals);
     if (resourceType == null) {
       violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("resourceType"));
     }

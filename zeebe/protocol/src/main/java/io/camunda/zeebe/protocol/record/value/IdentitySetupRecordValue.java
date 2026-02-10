@@ -31,7 +31,13 @@ public interface IdentitySetupRecordValue extends RecordValue {
 
   List<UserRecordValue> getUsers();
 
+  /**
+   * @deprecated Remove after 8.x release. Use {@link #getTenants()} instead.
+   */
+  @Deprecated
   TenantRecordValue getDefaultTenant();
+
+  List<TenantRecordValue> getTenants();
 
   Collection<TenantRecordValue> getTenantMembers();
 
