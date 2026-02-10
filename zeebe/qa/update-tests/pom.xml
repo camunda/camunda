@@ -178,11 +178,6 @@
       <artifactId>zeebe-backup-store-filesystem</artifactId>
       <scope>test</scope>
     </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>camunda-management-backups</artifactId>
-      <scope>test</scope>
-    </dependency>
 
   </dependencies>
 
