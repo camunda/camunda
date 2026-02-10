@@ -126,16 +126,18 @@ const NonFoldableElementInstancesNode: React.FC<NonFoldableElementInstancesNodeP
         useElementInstanceHistoryTree();
       const isRoot = elementType === 'PROCESS';
       const {processInstance} = useElementInstanceHistoryTree();
-      const {isSelected} = useProcessInstanceElementSelection();
+      const {isSelected, hasSelection} = useProcessInstanceElementSelection();
 
       const rootNode = useRootNode();
 
       const isElementSelected = IS_ELEMENT_SELECTION_V2
-        ? isSelected({
-            elementId: isRoot ? undefined : elementId,
-            elementInstanceKey: scopeKey,
-            isMultiInstanceBody: elementType === 'MULTI_INSTANCE_BODY',
-          })
+        ? isRoot
+          ? !hasSelection
+          : isSelected({
+              elementId,
+              elementInstanceKey: scopeKey,
+              isMultiInstanceBody: elementType === 'MULTI_INSTANCE_BODY',
+            })
         : flowNodeSelectionStore.isSelected({
             flowNodeId: isRoot ? undefined : elementId,
             flowNodeInstanceId: scopeKey,
@@ -243,14 +245,16 @@ const NonFoldableVirtualElementInstanceNode: React.FC<NonFoldableVirtualElementI
       const businessObject = businessObjects[elementId];
 
       const rootNode = useRootNode();
-      const {isSelected} = useProcessInstanceElementSelection();
+      const {isSelected, hasSelection} = useProcessInstanceElementSelection();
 
       const isElementSelected = IS_ELEMENT_SELECTION_V2
-        ? isSelected({
-            elementId: isRoot ? undefined : elementId,
-            elementInstanceKey: scopeKey,
-            isMultiInstanceBody: isMultiInstance(businessObject),
-          })
+        ? isRoot
+          ? !hasSelection
+          : isSelected({
+              elementId,
+              elementInstanceKey: scopeKey,
+              isMultiInstanceBody: isMultiInstance(businessObject),
+            })
         : flowNodeSelectionStore.isSelected({
             flowNodeId: isRoot ? undefined : elementId,
             flowNodeInstanceId: scopeKey,
@@ -383,14 +387,16 @@ const FoldableVirtualElementInstanceNode: React.FC<FoldableVirtualElementInstanc
 
       const rootNode = useRootNode();
 
-      const {isSelected} = useProcessInstanceElementSelection();
+      const {isSelected, hasSelection} = useProcessInstanceElementSelection();
 
       const isElementSelected = IS_ELEMENT_SELECTION_V2
-        ? isSelected({
-            elementId: isRoot ? undefined : elementId,
-            elementInstanceKey: scopeKey,
-            isMultiInstanceBody: isMultiInstance(businessObject),
-          })
+        ? isRoot
+          ? !hasSelection
+          : isSelected({
+              elementId,
+              elementInstanceKey: scopeKey,
+              isMultiInstanceBody: isMultiInstance(businessObject),
+            })
         : flowNodeSelectionStore.isSelected({
             flowNodeId: isRoot ? undefined : elementId,
             flowNodeInstanceId: scopeKey,
@@ -556,14 +562,16 @@ const FoldableElementInstancesNode: React.FC<FoldableElementInstancesNodeProps> 
 
       const rootNode = useRootNode();
 
-      const {isSelected} = useProcessInstanceElementSelection();
+      const {isSelected, hasSelection} = useProcessInstanceElementSelection();
 
       const isElementSelected = IS_ELEMENT_SELECTION_V2
-        ? isSelected({
-            elementId: isRoot ? undefined : elementId,
-            elementInstanceKey: scopeKey,
-            isMultiInstanceBody: elementType === 'MULTI_INSTANCE_BODY',
-          })
+        ? isRoot
+          ? !hasSelection
+          : isSelected({
+              elementId,
+              elementInstanceKey: scopeKey,
+              isMultiInstanceBody: elementType === 'MULTI_INSTANCE_BODY',
+            })
         : flowNodeSelectionStore.isSelected({
             flowNodeId: isRoot ? undefined : elementId,
             flowNodeInstanceId: scopeKey,
