@@ -14,6 +14,8 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.DeployResourceCommandStep1.DeployResourceCommandStep2;
 import io.camunda.client.api.response.Process;
+import io.camunda.client.api.response.ProcessInstanceEvent;
+import io.camunda.client.api.search.enums.AuditLogCategoryEnum;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.search.response.DecisionInstanceState;
 import io.camunda.client.api.search.response.ProcessInstance;
@@ -22,6 +24,7 @@ import io.camunda.client.api.search.sort.ProcessInstanceSort;
 import io.camunda.zeebe.DataReadMeter.ReadQuery;
 import io.camunda.zeebe.config.AppCfg;
 import io.camunda.zeebe.config.StarterCfg;
+import io.camunda.zeebe.util.BoundedQueue;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.grpc.Status.Code;
@@ -34,6 +37,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CountDownLatch;
@@ -63,9 +67,13 @@ public class Starter extends App {
   private final AtomicLong businessKey = new AtomicLong(0);
   private long benchmarkProcessDefinitionKey;
 
+  private final BoundedQueue<Long> lastProcessInstances;
+
   Starter(final AppCfg config) {
     super(config);
     starterCfg = config.getStarter();
+    // store the keys of the process instances started in the last minute
+    lastProcessInstances = new BoundedQueue<>(config.getStarter().getRate() * 60);
   }
 
   @Override
@@ -192,6 +200,12 @@ public class Starter extends App {
                         .sort(ProcessInstanceSort::startDate)
                         .page(p -> p.limit(100))),
             new ReadQuery(
+                "process_instance_by_key",
+                Duration.ofSeconds(5),
+                c ->
+                    c.newProcessInstanceGetRequest(
+                        Optional.ofNullable(lastProcessInstances.first()).orElse(0L))),
+            new ReadQuery(
                 "process_definition_statistics",
                 Duration.ofSeconds(5),
                 c -> c.newProcessDefinitionInstanceStatisticsRequest().page(p -> p.limit(100))),
@@ -208,6 +222,34 @@ public class Starter extends App {
                                             List.of(
                                                 ProcessInstanceState.ACTIVE,
                                                 ProcessInstanceState.COMPLETED))))),
+            new ReadQuery(
+                "incident_by_error_statistics",
+                Duration.ofSeconds(5),
+                c ->
+                    c.newIncidentProcessInstanceStatisticsByErrorRequest()
+                        .page(p -> p.limit(100))
+                        .sort(s -> s.activeInstancesWithErrorCount().desc())),
+            new ReadQuery(
+                "audit_log_by_process_instance_key",
+                Duration.ofSeconds(5),
+                c ->
+                    c.newAuditLogSearchRequest()
+                        .filter(
+                            f ->
+                                f.processInstanceKey(
+                                    Optional.ofNullable(lastProcessInstances.first())
+                                        .orElse(0L)
+                                        .toString()))
+                        .page(p -> p.limit(100))
+                        .sort(s -> s.timestamp().desc())),
+            new ReadQuery(
+                "audit_log_by_category",
+                Duration.ofSeconds(5),
+                c ->
+                    c.newAuditLogSearchRequest()
+                        .filter(f -> f.category(AuditLogCategoryEnum.DEPLOYED_RESOURCES))
+                        .page(p -> p.limit(100))
+                        .sort(s -> s.timestamp().desc())),
             new ReadQuery(
                 "decision_instance_list",
                 Duration.ofSeconds(5),
@@ -286,28 +328,32 @@ public class Starter extends App {
         TimeUnit.NANOSECONDS);
   }
 
-  private CompletionStage<?> startInstance(
+  private CompletionStage<ProcessInstanceEvent> startInstance(
       final CamundaClient client,
       final long startTime,
       final String processId,
       final HashMap<String, Object> variables) {
-    final var sendFuture =
-        client
-            .newCreateInstanceCommand()
-            .bpmnProcessId(processId)
-            .latestVersion()
-            .variables(variables)
-            .send();
-
-    if (config.isMonitorDataAvailability()) {
-      return sendFuture.thenApply(
-          (response) -> {
-            final long processInstanceKey = response.getProcessInstanceKey();
-            processInstanceStartMeter.recordProcessInstanceStart(processInstanceKey, startTime);
-            return response;
-          });
-    }
-    return sendFuture;
+    return client
+        .newCreateInstanceCommand()
+        .bpmnProcessId(processId)
+        .latestVersion()
+        .variables(variables)
+        .send()
+        .thenApply(
+            (response) -> {
+              if (config.isMonitorDataAvailability()) {
+                final long processInstanceKey = response.getProcessInstanceKey();
+                processInstanceStartMeter.recordProcessInstanceStart(processInstanceKey, startTime);
+              }
+              return response;
+            })
+        .thenApply(
+            (response) -> {
+              if (config.isPerformReadBenchmarks()) {
+                lastProcessInstances.add(response.getProcessInstanceKey());
+              }
+              return response;
+            });
   }
 
   private CompletionStage<?> startInstanceWithAwaitingResult(
