@@ -5,25 +5,36 @@
 name: Zeebe Release Dry Run from stable branches
 
 on:
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      releaseBranch88:
+        description: 'Specifies the branch for 8.8 release dry run'
+        default: 'stable/8.8'
+        required: false
+        type: string
+      includeOptimize88:
+        description: 'Whether to include Optimize in the 8.8 dry run. Defaults to true.'
+        type: boolean
+        default: true
   schedule:
     # Runs at 02:00 every week day; see this link for more: https://crontab.guru/#0_2_*_*_1-5
     - cron: '0 2 * * 1-5'
 
 jobs:
   dry-run-release-88:
-    name: "Release from stable/8.8"
+    name: "Release from ${{ inputs.releaseBranch88 || 'stable/8.8' }}"
     uses: camunda/camunda/.github/workflows/camunda-platform-release.yml@stable/8.8
     secrets: inherit
     strategy:
       fail-fast: false
     with:
-      releaseBranch: stable/8.8
+      releaseBranch: ${{ inputs.releaseBranch88 || 'stable/8.8' }}
       # Uses fake tag for dry run testing without affecting real releases
       releaseVersion: 0.0.0-dryrun-88
       nextDevelopmentVersion: 0.0.0-SNAPSHOT
       isLatest: true
       dryRun: true
+      includeOptimize: ${{ github.event_name == 'schedule' || inputs.includeOptimize88 || true }}
   dry-run-release-87:
     name: "Release from stable/8.7"
     uses: camunda/camunda/.github/workflows/camunda-platform-release.yml@stable/8.7
