@@ -25,7 +25,7 @@ import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Test;
 
 @MultiDbTest
-@CompatibilityTest(enableAuthorization = true, enableMultiTenancy = true)
+@CompatibilityTest
 public class RolesByTenantIntegrationTest {
 
   private static final String ADMIN_USERNAME = "admin";
