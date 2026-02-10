@@ -131,8 +131,9 @@ public final class LoggedEventImpl implements LoggedEvent {
 
   @Override
   public int write(final MutableDirectBuffer destination, final int offset) {
-    destination.putBytes(offset, buffer, fragmentOffset, getLength());
-    return getLength();
+    final var length = getLength();
+    destination.putBytes(offset, buffer, fragmentOffset, length);
+    return length;
   }
 
   private int getMessageLength() {

@@ -44,7 +44,6 @@ public class ExporterStateDistributeMessage
 
   @Override
   public int getLength() {
-
     final var length = new MutableInteger();
     exporterState.forEach(
         (id, state) ->
@@ -63,7 +62,6 @@ public class ExporterStateDistributeMessage
     super.write(buffer, offset);
 
     final var stateEncoder = encoder.stateCount(exporterState.size());
-
     exporterState.forEach(
         (id, state) -> {
           final var idBuffer = BufferUtil.wrapString(id);
@@ -75,7 +73,7 @@ public class ExporterStateDistributeMessage
               .putExporterId(idBuffer, 0, idBuffer.capacity())
               .putMetadata(metadata, 0, metadata.capacity());
         });
-    return getLength();
+    return headerEncoder.encodedLength() + encoder.encodedLength();
   }
 
   @Override
