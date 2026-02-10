@@ -152,6 +152,38 @@
       <scope>test</scope>
     </dependency>
 
+    <!-- Backup and restore dependencies -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-restore</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-backup-store-s3</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-backup-store-gcs</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-backup-store-azure</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-backup-store-filesystem</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-management-backups</artifactId>
+      <scope>test</scope>
+    </dependency>
+
   </dependencies>
 
   <build>
