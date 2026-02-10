@@ -84,6 +84,8 @@ import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
+import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
+import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.FeatureFlags;
 import java.time.InstantSource;
@@ -133,6 +135,9 @@ public final class EngineProcessors {
         new BatchOperationMetrics(typedRecordProcessorContext.getMeterRegistry(), partitionId);
     final ExpressionLanguageMetricsImpl expressionLanguageMetrics =
         new ExpressionLanguageMetricsImpl(typedRecordProcessorContext.getMeterRegistry());
+
+    onRecoveredSetActiveInstancesMetrics(
+        typedRecordProcessors, processingState, processEngineMetrics);
 
     subscriptionCommandSender.setWriters(writers);
 
@@ -397,6 +402,22 @@ public final class EngineProcessors {
         clock);
 
     return typedRecordProcessors;
+  }
+
+  private static void onRecoveredSetActiveInstancesMetrics(
+      final TypedRecordProcessors typedRecordProcessors,
+      final MutableProcessingState processingState,
+      final ProcessEngineMetrics processEngineMetrics) {
+    typedRecordProcessors.withListener(
+        new StreamProcessorLifecycleAware() {
+          @Override
+          public void onRecovered(final ReadonlyStreamProcessorContext context) {
+            final var activeRootProcessInstances =
+                processingState.getElementInstanceState().getActiveRootProcessInstanceCount();
+            processEngineMetrics.initializeActiveRootProcessInstanceCount(
+                activeRootProcessInstances);
+          }
+        });
   }
 
   private static TypedRecordProcessor<UserTaskRecord> createUserTaskProcessor(
