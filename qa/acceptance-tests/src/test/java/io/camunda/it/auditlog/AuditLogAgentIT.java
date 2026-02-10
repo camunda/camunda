@@ -8,9 +8,14 @@
 package io.camunda.it.auditlog;
 
 import static io.camunda.it.auditlog.AuditLogUtils.DEFAULT_USERNAME;
+import static io.camunda.it.util.TestHelper.deployProcessAndWaitForIt;
+import static io.camunda.it.util.TestHelper.startProcessInstance;
+import static io.camunda.it.util.TestHelper.waitForJobs;
+import static io.camunda.it.util.TestHelper.waitForProcessInstancesToStart;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.enums.AuditLogActorTypeEnum;
 import io.camunda.client.api.search.enums.AuditLogEntityTypeEnum;
 import io.camunda.qa.util.auth.Authenticated;
@@ -18,7 +23,9 @@ import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
-import org.junit.jupiter.api.BeforeAll;
+import java.util.ArrayList;
+import java.util.List;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
@@ -35,16 +42,9 @@ public class AuditLogAgentIT {
           .withAuthenticatedAccess();
 
   private static CamundaClient adminClient;
-  private static AuditLogUtils utils;
-
-  @BeforeAll
-  static void setup() {
-    utils = new AuditLogUtils(adminClient).init();
-  }
 
   @Test
-  void shouldSearchUserTaskAuditLogWithSort(
-      @Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
+  void shouldTrackAgentActor(@Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
     // given
     final var processModel =
         Bpmn.createExecutableProcess("AGENT_PROCESS")
@@ -55,27 +55,44 @@ public class AuditLogAgentIT {
             .moveToActivity("my_ahsp")
             .endEvent("end")
             .done();
-
-    utils.deployResource("ahsp.bpmn", processModel, utils.TENANT_A);
-    utils.startProcessInstance("AGENT_PROCESS", utils.TENANT_A);
-    utils.await();
-
-    final var results = client.newJobSearchRequest().filter(f -> f.type("my job")).send().join();
-
-    final var completion =
-        client
-            .newCompleteCommand(results.items().getFirst().getJobKey())
-            .variable("foo", "bar")
-            .send()
-            .join();
+    final var process = deployProcessAndWaitForIt(client, processModel, "process.bpmn");
+    final var processInstance = startProcessInstance(client, process.getBpmnProcessId());
+    waitForProcessInstancesToStart(client, 1);
+    waitForJobs(client, List.of(processInstance.getProcessInstanceKey()));
 
     // when
+    final var results = client.newJobSearchRequest().filter(f -> f.type("my job")).send().join();
+    client
+        .newCompleteCommand(results.items().getFirst().getJobKey())
+        .variable("foo", "bar")
+        .send()
+        .join();
+
+    // then
     final var auditLogItems =
         client
             .newAuditLogSearchRequest()
             .filter(f -> f.entityType(AuditLogEntityTypeEnum.VARIABLE))
             .send()
             .join();
+
+    final var auditLogs = new ArrayList<>();
+    Awaitility.await("User is assigned to tenant")
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .untilAsserted(
+            () -> {
+              final var result =
+                  client
+                      .newAuditLogSearchRequest()
+                      .filter(f -> f.entityType(AuditLogEntityTypeEnum.VARIABLE))
+                      .send()
+                      .join();
+
+              // one for the adhoc subprocess variable and one for the job variable
+              assertThat(result.items()).hasSize(2);
+
+              auditLogs.addAll(result.items());
+            });
 
     assertThat(auditLogItems.items()).isNotEmpty();
     assertThat(auditLogItems.items().getLast().getActorType())

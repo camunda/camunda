@@ -178,8 +178,6 @@ public class Engine implements RecordProcessor {
           processingResultBuilder.withProcessInASeparateBatch();
         }
 
-        currentProcessor.onPreProcess(record, processingResultBuilder);
-
         currentProcessor.processRecord(record, processingResultBuilder);
       }
     }

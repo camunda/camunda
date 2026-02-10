@@ -16,10 +16,9 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.stream.api.records.ExceededBatchRecordSizeException;
 import io.camunda.zeebe.util.Either;
-import java.util.function.Consumer;
 
 /** Builder to compose the processing result */
-public interface ProcessingResultBuilder {
+public interface ProcessingResultBuilder extends ProcessingContext {
 
   /**
    * Appends a record to the result
@@ -106,6 +105,4 @@ public interface ProcessingResultBuilder {
   ProcessingResult build();
 
   boolean canWriteEventOfLength(int eventLength);
-
-  default void metadata(final Consumer<RecordMetadata> applyMetadata) {}
 }

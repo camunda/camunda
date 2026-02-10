@@ -8,6 +8,7 @@
 package io.camunda.zeebe.stream.impl;
 
 import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RecordMetadataEncoder;
@@ -48,7 +49,7 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
       final RecordBatchSizePredicate predicate,
       final Consumer<RecordMetadata>... metadataConsumers) {
     mutableRecordBatch = new RecordBatch(predicate);
-    metadataConsumer.addAll(metadataConsumer);
+    metadataConsumer.addAll(List.of(metadataConsumers));
   }
 
   @Override
@@ -96,19 +97,16 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
       return this;
     }
 
-    // enrich metdata on only copy relevant parts to the response metadata
-    final var enrichedMetaData = new RecordMetadata();
-    metadataConsumer.forEach(m -> m.accept(enrichedMetaData));
-
     final var metadata =
         new RecordMetadata()
             .recordType(recordType)
             .intent(intent)
             .rejectionType(rejectionType)
             .rejectionReason(rejectionReason)
-            .valueType(valueType)
-            .operationReference(enrichedMetaData.getOperationReference())
-            .batchOperationReference(enrichedMetaData.getBatchOperationReference());
+            .valueType(valueType);
+
+    metadataConsumer.forEach(m -> m.accept(metadata));
+    metadata.authorization(new AuthInfo()); // don't expose the authInfo in the response
 
     final var entry = RecordBatchEntry.createEntry(key, metadata, -1, value);
     processingResponse = new ProcessingResponseImpl(entry, requestId, requestStreamId);
@@ -145,7 +143,7 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
   }
 
   @Override
-  public void metadata(final Consumer<RecordMetadata> applyMetadata) {
+  public void addMetadataToFollowUpRecords(final Consumer<RecordMetadata> applyMetadata) {
     metadataConsumer.add(applyMetadata);
   }
 

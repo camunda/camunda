@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.job;
 
-import static io.camunda.zeebe.auth.Authorization.ACTING_AGENT_ID;
 import static io.camunda.zeebe.protocol.record.value.JobKind.AD_HOC_SUB_PROCESS;
 
 import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.JobAction;
@@ -32,6 +31,7 @@ import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
+import io.camunda.zeebe.protocol.impl.encoding.AgentInfo;
 import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessInstructionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResultActivateElement;
@@ -46,7 +46,7 @@ import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.JobListenerEventType;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue.JobResultActivateElementValue;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
-import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
+import io.camunda.zeebe.stream.api.ProcessingContext;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 import java.util.EnumSet;
@@ -178,8 +178,7 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
   }
 
   @Override
-  public void processRecord(
-      final TypedRecord<JobRecord> record, final ProcessingResultBuilder resultBuilder) {
+  public void processRecord(final TypedRecord<JobRecord> record, final ProcessingContext context) {
     final long jobKey = record.getKey();
     final JobState.State state = jobState.getState(jobKey);
 
@@ -189,12 +188,12 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
         .ifRightOrLeft(
             job -> {
               if (job.getJobKind().equals(AD_HOC_SUB_PROCESS)) {
-                resultBuilder.metadata(
+                context.addMetadataToFollowUpRecords(
                     m -> {
-                      final var newClaims = m.getAuthorization().getClaims();
-                      newClaims.put(ACTING_AGENT_ID, job.getElementInstanceKey());
-                      newClaims.put(ACTING_AGENT_ID + "name", job.getElementId());
-                      m.getAuthorization().setClaims(newClaims);
+                      m.agent(
+                          new AgentInfo()
+                              .setId(job.getElementInstanceKey())
+                              .setName(job.getElementId()));
                     });
               }
               completeJob(record, job);
@@ -206,8 +205,7 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
   }
 
   @Override
-  public void onPreProcess(
-      final TypedRecord<JobRecord> record, final ProcessingResultBuilder processingResultBuilder) {
+  public void onPreProcess(final TypedRecord<JobRecord> record, final ProcessingContext context) {
     //    final long jobKey = record.getKey();
     //    final JobState.State state = jobState.getState(jobKey);
     //
@@ -217,7 +215,7 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
     //        .ifRightOrLeft(
     //            job -> {
     //              if (job.getJobKind().equals(AD_HOC_SUB_PROCESS)) {
-    //                processingResultBuilder.metadata(
+    //                context.metadata(
     //                    m -> {
     //                      final var newClaims = m.getAuthorization().getClaims();
     //                      newClaims.put("IS_AD_HOC_SUB_PROCESS", true);

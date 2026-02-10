@@ -261,17 +261,7 @@ public record AuditLogInfo(
       final Map<String, Object> authorizations = record.getAuthorizations();
 
       final var actor = extractActorFromAuthorizations(authorizations);
-
-      // this could come from 3 places
-      // 1. just a claim
-      // 2. a property in AuthInfo (AgentInfo)
-      // 3. Metadata (AgentInfo) -> would add bytes to ALL records, so we want to avoid that if possible
-
-      final String agentId =
-          Optional.ofNullable(authorizations.get(Authorization.ACTING_AGENT_ID))
-              .map(Object::toString)
-              .orElse(null);
-      if (agentId != null) {
+      if (record.getAgent() != null) {
         // agentId is just additional information which agentic process acted
         // on behalf of the authenticated party / original actor
         return new AuditLogActor(AuditLogActorType.AGENT, actor.actorId());

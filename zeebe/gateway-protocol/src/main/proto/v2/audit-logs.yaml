@@ -100,6 +100,12 @@ components:
           description: The ID of the actor who performed the operation.
         actorType:
           $ref: '#/components/schemas/AuditLogActorTypeEnum'
+        agentId:
+          type: string
+          description: The ID of the agent that performed the operation on behalf of the actor, if applicable.
+        agentName:
+          type: string
+          description: The name of the agent that performed the operation on behalf of the actor, if applicable.
         tenantId:
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/TenantId'

@@ -8,7 +8,7 @@
 package io.camunda.zeebe.engine.processing.streamprocessor;
 
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
-import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
+import io.camunda.zeebe.stream.api.ProcessingContext;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 
 public interface TypedRecordProcessor<T extends UnifiedRecordValue> {
@@ -27,11 +27,9 @@ public interface TypedRecordProcessor<T extends UnifiedRecordValue> {
    * that method.
    *
    * @param record The record to process
-   * @param resultBuilder The builder to construct the processing result, allowing to append
-   *     follow-up records or set a response
+   * @param context
    */
-  default void processRecord(
-      final TypedRecord<T> record, final ProcessingResultBuilder resultBuilder) {
+  default void processRecord(final TypedRecord<T> record, final ProcessingContext context) {
     processRecord(record);
   }
 
@@ -67,10 +65,9 @@ public interface TypedRecordProcessor<T extends UnifiedRecordValue> {
    * A hook that is called before processing result is built. Can be used to modify the processing
    * result, e.g. set metadata extensions to enhance metadata of produced records.
    *
-   * @param processingResultBuilder the processing result builder
+   * @param context
    */
-  default void onPreProcess(
-      final TypedRecord<T> record, final ProcessingResultBuilder processingResultBuilder) {}
+  default void onPreProcess(final TypedRecord<T> record, final ProcessingContext context) {}
 
   enum ProcessingError {
     EXPECTED_ERROR,
