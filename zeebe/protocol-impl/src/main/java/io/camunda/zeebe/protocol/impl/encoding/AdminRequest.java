@@ -58,7 +58,7 @@ public class AdminRequest implements BufferReader, BufferWriter {
     if (hasPayload) {
       bodyEncoder.putPayload(payload, 0, payload.length);
     }
-    return getLength();
+    return headerEncoder.encodedLength() + bodyEncoder.encodedLength();
   }
 
   public int getBrokerId() {

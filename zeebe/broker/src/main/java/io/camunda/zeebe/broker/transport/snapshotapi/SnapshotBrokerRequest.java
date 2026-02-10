@@ -124,7 +124,6 @@ public class SnapshotBrokerRequest extends BrokerRequest<SnapshotResponse> {
 
   @Override
   public int write(final MutableDirectBuffer buffer, final int offset) {
-    serializer.serialize(request, buffer, offset);
-    return getLength();
+    return serializer.serialize(request, buffer, offset);
   }
 }
