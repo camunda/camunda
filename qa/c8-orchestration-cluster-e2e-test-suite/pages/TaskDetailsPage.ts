@@ -115,7 +115,15 @@ class TaskDetailsPage {
   }
 
   async clickAssignToMeButton() {
-    await this.assignToMeButton.click({timeout: 60000});
+    await waitForAssertion({
+      assertion: async () => {
+        await expect(this.assignToMeButton).toBeVisible();
+        await this.assignToMeButton.click();
+      },
+      onFailure: async () => {
+        console.log('Click assign to me button failed, retrying...');
+      },
+    });
   }
 
   async clickUnassignButton() {
