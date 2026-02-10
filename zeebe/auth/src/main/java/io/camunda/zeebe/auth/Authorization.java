@@ -17,5 +17,5 @@ public class Authorization {
   public static final String USER_GROUPS_CLAIMS = "user_groups_claims";
   public static final String IS_CAMUNDA_USERS_ENABLED = "is_camunda_users_enabled";
   public static final String IS_CAMUNDA_GROUPS_ENABLED = "is_camunda_groups_enabled";
-  public static final String AGENT_INFO = "agent_info";
+  public static final String ACTING_AGENT_ID = "acting_agent_id";
 }

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.job;
 
+import static io.camunda.zeebe.auth.Authorization.ACTING_AGENT_ID;
 import static io.camunda.zeebe.protocol.record.value.JobKind.AD_HOC_SUB_PROCESS;
 
 import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.JobAction;
@@ -171,23 +172,14 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
 
   @Override
   public void processRecord(final TypedRecord<JobRecord> record) {
-    final long jobKey = record.getKey();
-    final JobState.State state = jobState.getState(jobKey);
-
-    preconditionChecker
-        .check(state, record)
-        .flatMap(job -> checkAuthorization(record, job))
-        .ifRightOrLeft(
-            job -> completeJob(record, job),
-            rejection -> {
-              rejectionWriter.appendRejection(record, rejection.type(), rejection.reason());
-              responseWriter.writeRejectionOnCommand(record, rejection.type(), rejection.reason());
-            });
+    // already implements the processRecord method below
+    throw new UnsupportedOperationException(
+        "This processor requires the use of the processRecord method with ProcessingResultBuilder");
   }
 
   @Override
-  public void onPreProcess(
-      final TypedRecord<JobRecord> record, final ProcessingResultBuilder processingResultBuilder) {
+  public void processRecord(
+      final TypedRecord<JobRecord> record, final ProcessingResultBuilder resultBuilder) {
     final long jobKey = record.getKey();
     final JobState.State state = jobState.getState(jobKey);
 
@@ -197,15 +189,43 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
         .ifRightOrLeft(
             job -> {
               if (job.getJobKind().equals(AD_HOC_SUB_PROCESS)) {
-                processingResultBuilder.metadata(
+                resultBuilder.metadata(
                     m -> {
                       final var newClaims = m.getAuthorization().getClaims();
-                      newClaims.put("IS_AD_HOC_SUB_PROCESS", true);
+                      newClaims.put(ACTING_AGENT_ID, job.getElementInstanceKey());
+                      newClaims.put(ACTING_AGENT_ID + "name", job.getElementId());
                       m.getAuthorization().setClaims(newClaims);
                     });
               }
+              completeJob(record, job);
             },
-            rejection -> {});
+            rejection -> {
+              rejectionWriter.appendRejection(record, rejection.type(), rejection.reason());
+              responseWriter.writeRejectionOnCommand(record, rejection.type(), rejection.reason());
+            });
+  }
+
+  @Override
+  public void onPreProcess(
+      final TypedRecord<JobRecord> record, final ProcessingResultBuilder processingResultBuilder) {
+    //    final long jobKey = record.getKey();
+    //    final JobState.State state = jobState.getState(jobKey);
+    //
+    //    preconditionChecker
+    //        .check(state, record)
+    //        .flatMap(job -> checkAuthorization(record, job))
+    //        .ifRightOrLeft(
+    //            job -> {
+    //              if (job.getJobKind().equals(AD_HOC_SUB_PROCESS)) {
+    //                processingResultBuilder.metadata(
+    //                    m -> {
+    //                      final var newClaims = m.getAuthorization().getClaims();
+    //                      newClaims.put("IS_AD_HOC_SUB_PROCESS", true);
+    //                      m.getAuthorization().setClaims(newClaims);
+    //                    });
+    //              }
+    //            },
+    //            rejection -> {});
   }
 
   private void completeJob(final TypedRecord<JobRecord> command, final JobRecord job) {

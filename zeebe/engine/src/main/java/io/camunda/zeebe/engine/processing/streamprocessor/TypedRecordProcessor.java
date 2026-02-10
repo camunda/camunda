@@ -8,11 +8,32 @@
 package io.camunda.zeebe.engine.processing.streamprocessor;
 
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 
 public interface TypedRecordProcessor<T extends UnifiedRecordValue> {
 
   void processRecord(final TypedRecord<T> record);
+
+  /**
+   * Process the given record and build the processing result using the provided result builder.
+   *
+   * <p>By default, this method delegates to {@link #processRecord(TypedRecord)}, allowing
+   * implementations to override only one of the two methods based on their needs. If an
+   * implementation overrides this method, it should use the provided {@code resultBuilder} to
+   * construct the processing result, which may include appending follow-up records or setting a
+   * response. If it does not override this method, the default implementation will simply call
+   * {@link #processRecord(TypedRecord)}, and any processing results would need to be handled within
+   * that method.
+   *
+   * @param record The record to process
+   * @param resultBuilder The builder to construct the processing result, allowing to append
+   *     follow-up records or set a response
+   */
+  default void processRecord(
+      final TypedRecord<T> record, final ProcessingResultBuilder resultBuilder) {
+    processRecord(record);
+  }
 
   /**
    * Try to handle an error that occurred during processing.

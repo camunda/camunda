@@ -13,7 +13,6 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.response.ProcessInstanceEvent;
-import io.camunda.client.api.search.enums.AuditLogActorTypeEnum;
 import io.camunda.client.api.search.enums.AuditLogEntityTypeEnum;
 import io.camunda.client.api.search.enums.AuditLogOperationTypeEnum;
 import io.camunda.client.api.search.response.TenantUser;
@@ -207,7 +206,7 @@ public class AuditLogUtils {
             });
   }
 
-  private void awaitUserTenantAssignmentsAuditLogs() {
+  private void awaitUserTenantAssignmentsAuditLogs(final UserTenantAssignment last) {
     final var assignmentCount = userTenantAssignments.size();
 
     // tenant assignment audit logs
@@ -222,11 +221,11 @@ public class AuditLogUtils {
                           f ->
                               f.operationType(AuditLogOperationTypeEnum.ASSIGN)
                                   .entityType(AuditLogEntityTypeEnum.TENANT)
-                                  .actorType(AuditLogActorTypeEnum.USER))
+                                  .entityKey(last.tenantId))
                       .send()
                       .join();
 
-              assertThat(auditLogs.items()).hasSize(assignmentCount);
+              assertThat(auditLogs.items()).isNotEmpty();
             });
   }
 
@@ -277,7 +276,7 @@ public class AuditLogUtils {
     if (!getUserTenantAssignments().isEmpty()) {
       // this waits for the creation export
       awaitUserTenantAssignments();
-      awaitUserTenantAssignmentsAuditLogs();
+      awaitUserTenantAssignmentsAuditLogs(getUserTenantAssignments().getLast());
     }
 
     // this waits for the actual audit log
