@@ -97,6 +97,6 @@ public class BackupRequest implements BufferReader, BufferWriter {
         .type(type)
         .backupId(backupId)
         .pattern(pattern);
-    return getLength();
+    return headerEncoder.encodedLength() + bodyEncoder.encodedLength();
   }
 }

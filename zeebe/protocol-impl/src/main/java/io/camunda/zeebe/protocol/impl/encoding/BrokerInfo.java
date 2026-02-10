@@ -419,7 +419,7 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
         partitionHealthEncoder.next().partitionId(entry.getKey()).healthStatus(entry.getValue());
       }
     }
-    return getLength();
+    return headerEncoder.encodedLength() + bodyEncoder.encodedLength();
   }
 
   public static BrokerInfo fromProperties(final Properties properties) {

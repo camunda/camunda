@@ -128,17 +128,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
 
   @Override
   public int write(final MutableDirectBuffer buffer, int offset) {
-    final int initialOffset = offset;
-    headerEncoder.wrap(buffer, offset);
-
-    headerEncoder
-        .blockLength(encoder.sbeBlockLength())
-        .templateId(encoder.sbeTemplateId())
-        .schemaId(encoder.sbeSchemaId())
-        .version(encoder.sbeSchemaVersion());
-
-    offset += headerEncoder.encodedLength();
-    encoder.wrap(buffer, offset);
+    encoder.wrapAndApplyHeader(buffer, offset, headerEncoder);
 
     // working with fixed-length fields
     encoder

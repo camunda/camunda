@@ -110,7 +110,7 @@ public class BackupListResponse implements BufferReader, BufferWriter {
                 .putCreatedAt(backup.encodedCreatedAt, 0, backup.encodedCreatedAt.length)
                 .putBrokerVersion(
                     backup.encodedBrokerVersion, 0, backup.encodedBrokerVersion.length));
-    return getLength();
+    return headerEncoder.encodedLength() + bodyEncoder.encodedLength();
   }
 
   public List<BackupStatus> getBackups() {
