@@ -20,13 +20,7 @@ import io.camunda.client.api.search.enums.ResourceType;
 import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.test.util.Strings;
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.util.List;
 import java.util.UUID;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
@@ -215,15 +209,12 @@ public class RoleIntegrationTest {
     Awaitility.await()
         .untilAsserted(
             () ->
-                assertThat(
-                        searchAuthorizations(
-                                camundaClient.getConfiguration().getRestAddress().toString())
-                            .items())
+                assertThat(camundaClient.newAuthorizationSearchRequest().send().join().items())
                     .anyMatch(
                         auth ->
-                            auth.resourceId().equals("resourceId")
-                                && auth.resourceType().equals(ResourceType.RESOURCE)
-                                && auth.ownerId().equals(roleId)));
+                            auth.getResourceId().equals("resourceId")
+                                && auth.getResourceType().equals(ResourceType.RESOURCE)
+                                && auth.getOwnerId().equals(roleId)));
 
     camundaClient.newDeleteRoleCommand(roleId).send().join();
 
@@ -238,15 +229,12 @@ public class RoleIntegrationTest {
     Awaitility.await("Authorization is deleted")
         .untilAsserted(
             () ->
-                assertThat(
-                        searchAuthorizations(
-                                camundaClient.getConfiguration().getRestAddress().toString())
-                            .items())
+                assertThat(camundaClient.newAuthorizationSearchRequest().send().join().items())
                     .noneMatch(
                         auth ->
-                            auth.resourceId().equals("resourceId")
-                                && auth.resourceType().equals(ResourceType.RESOURCE)
-                                && auth.ownerId().equals(roleId)));
+                            auth.getResourceId().equals("resourceId")
+                                && auth.getResourceType().equals(ResourceType.RESOURCE)
+                                && auth.getOwnerId().equals(roleId)));
   }
 
   private static void createRole(
@@ -329,29 +317,4 @@ public class RoleIntegrationTest {
               assertThat(role.getDescription()).isEqualTo(description);
             });
   }
-
-  // TODO once available, this test should use the client to make the request
-  private AuthorizationSearchResponse searchAuthorizations(final String restAddress)
-      throws URISyntaxException, IOException, InterruptedException {
-    final HttpRequest request =
-        HttpRequest.newBuilder()
-            .uri(new URI("%s%s".formatted(restAddress, "v2/authorizations/search")))
-            .POST(HttpRequest.BodyPublishers.ofString(""))
-            .build();
-
-    final HttpResponse<String> response =
-        httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-    return OBJECT_MAPPER.readValue(response.body(), AuthorizationSearchResponse.class);
-  }
-
-  private record AuthorizationSearchResponse(
-      List<RoleIntegrationTest.AuthorizationResponse> items) {}
-
-  private record AuthorizationResponse(
-      String ownerId,
-      OwnerType ownerType,
-      ResourceType resourceType,
-      String resourceId,
-      List<PermissionType> permissionTypes,
-      String authorizationKey) {}
 }
