@@ -512,6 +512,20 @@ public final class DbElementInstanceState implements MutableElementInstanceState
         .toList();
   }
 
+  @Override
+  public long getActiveRootProcessInstanceCount() {
+    parentKey.inner().wrapLong(-1L);
+    final var count = new MutableInteger(0);
+    // runs through all root instances. Can be slow, only used on partition recovered for metrics.
+    parentChildColumnFamily.whileEqualPrefix(
+        parentKey,
+        (key, nil) -> {
+          count.increment();
+          return true;
+        });
+    return count.get();
+  }
+
   private void removeNumberOfTakenSequenceFlows(final long flowScopeKey) {
     this.flowScopeKey.wrapLong(flowScopeKey);
 
