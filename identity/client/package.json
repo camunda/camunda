@@ -18,7 +18,7 @@
     "lint:fix": "eslint . --fix"
   },
   "dependencies": {
-    "@camunda/camunda-api-zod-schemas": "0.0.36",
+    "@camunda/camunda-api-zod-schemas": "0.0.37",
     "@camunda/camunda-composite-components": "0.21.4",
     "@carbon/elements": "^11.57.0",
     "@carbon/react": "1.99.0",
