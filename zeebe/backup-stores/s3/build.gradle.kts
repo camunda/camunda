@@ -25,7 +25,7 @@ dependencies {
     api(libs.com.fasterxml.jackson.datatype.jackson.datatype.jsr310)
     api(libs.org.reactivestreams.reactive.streams)
     api(project(":zeebe-util"))
-    testImplementation(project(":zeebe-backup-testkit"))
+    testImplementation(project(":zeebe-backup-testkit", configuration = "tests"))
     testImplementation(libs.org.apache.commons.commons.lang3)
     testImplementation(libs.org.junit.jupiter.junit.jupiter.api)
     testImplementation(libs.org.testcontainers.testcontainers)

@@ -17,7 +17,7 @@ dependencies {
     api(libs.com.fasterxml.jackson.core.jackson.databind)
     api(libs.com.fasterxml.jackson.core.jackson.annotations)
     testImplementation(libs.org.awaitility.awaitility)
-    testImplementation(project(":zeebe-scheduler"))
+    testImplementation(project(":zeebe-scheduler", configuration = "tests"))
     testImplementation(libs.org.assertj.assertj.core)
     testImplementation(libs.junit.junit)
     testImplementation(libs.org.junit.jupiter.junit.jupiter.api)
@@ -30,6 +30,16 @@ description = "Zeebe Snapshots"
 val testsJar by tasks.registering(Jar::class) {
     archiveClassifier = "tests"
     from(sourceSets["test"].output)
+}
+
+val tests by configurations.creating {
+    isCanBeConsumed = true
+    isCanBeResolved = false
+    extendsFrom(configurations["testRuntimeClasspath"])
+}
+
+artifacts {
+    add("tests", testsJar)
 }
 
 (publishing.publications["maven"] as MavenPublication).artifact(testsJar)
