@@ -249,6 +249,11 @@ org-springframework-boot-spring-boot-starter-validation = "4.0.2"
 org-springframework-boot-spring-boot-starter-web = "4.0.2"
 org-springframework-boot-spring-boot-test = "4.0.2"
 org-springframework-boot-spring-boot-test-autoconfigure = "4.0.2"
+org-springframework-boot-spring-boot-webmvc = "4.0.2"
+org-springframework-boot-spring-boot-webmvc-test = "4.0.2"
+org-springframework-boot-spring-boot-webtestclient = "4.0.2"
+org-springframework-boot-spring-boot-hibernate = "4.0.2"
+org-springframework-boot-spring-boot-jdbc = "4.0.2"
 org-springframework-retry-spring-retry = "2.0.12"
 org-springframework-security-spring-security-config = "7.0.2"
 org-springframework-security-spring-security-core = "7.0.2"
@@ -555,6 +560,11 @@ org-springframework-boot-spring-boot-starter-validation = { module = "org.spring
 org-springframework-boot-spring-boot-starter-web = { module = "org.springframework.boot:spring-boot-starter-web", version.ref = "org-springframework-boot-spring-boot-starter-web" }
 org-springframework-boot-spring-boot-test = { module = "org.springframework.boot:spring-boot-test", version.ref = "org-springframework-boot-spring-boot-test" }
 org-springframework-boot-spring-boot-test-autoconfigure = { module = "org.springframework.boot:spring-boot-test-autoconfigure", version.ref = "org-springframework-boot-spring-boot-test-autoconfigure" }
+org-springframework-boot-spring-boot-webmvc = { module = "org.springframework.boot:spring-boot-webmvc", version.ref = "org-springframework-boot-spring-boot-webmvc" }
+org-springframework-boot-spring-boot-webmvc-test = { module = "org.springframework.boot:spring-boot-webmvc-test", version.ref = "org-springframework-boot-spring-boot-webmvc-test" }
+org-springframework-boot-spring-boot-webtestclient = { module = "org.springframework.boot:spring-boot-webtestclient", version.ref = "org-springframework-boot-spring-boot-webtestclient" }
+org-springframework-boot-spring-boot-hibernate = { module = "org.springframework.boot:spring-boot-hibernate", version.ref = "org-springframework-boot-spring-boot-hibernate" }
+org-springframework-boot-spring-boot-jdbc = { module = "org.springframework.boot:spring-boot-jdbc", version.ref = "org-springframework-boot-spring-boot-jdbc" }
 org-springframework-retry-spring-retry = { module = "org.springframework.retry:spring-retry", version.ref = "org-springframework-retry-spring-retry" }
 org-springframework-security-spring-security-config = { module = "org.springframework.security:spring-security-config", version.ref = "org-springframework-security-spring-security-config" }
 org-springframework-security-spring-security-core = { module = "org.springframework.security:spring-security-core", version.ref = "org-springframework-security-spring-security-core" }
