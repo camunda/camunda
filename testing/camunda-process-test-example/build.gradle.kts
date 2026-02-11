@@ -7,7 +7,7 @@ plugins {
 }
 
 dependencies {
-    api(project(":camunda-spring-boot-starter"))
+    implementation(project(":camunda-spring-boot-starter"))
     testImplementation(project(":camunda-process-test-spring"))
     testImplementation(libs.org.mockito.mockito.core)
     testImplementation(libs.org.awaitility.awaitility)

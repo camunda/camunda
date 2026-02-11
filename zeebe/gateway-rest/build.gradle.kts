@@ -34,7 +34,7 @@ dependencies {
     api(libs.org.agrona.agrona)
     api(libs.com.fasterxml.jackson.core.jackson.core)
     api(libs.com.fasterxml.jackson.core.jackson.databind)
-    api(libs.org.slf4j.slf4j.api)
+    implementation(libs.org.slf4j.slf4j.api)
     api(project(":camunda-authentication"))
     api(libs.jakarta.validation.jakarta.validation.api)
     api(libs.io.swagger.core.v3.swagger.annotations.jakarta)

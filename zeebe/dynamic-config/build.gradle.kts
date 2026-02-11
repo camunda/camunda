@@ -19,7 +19,7 @@ dependencies {
     api(project(":zeebe-scheduler"))
     api(project(":zeebe-atomix-cluster"))
     api(libs.com.google.protobuf.protobuf.java)
-    api(libs.org.slf4j.slf4j.api)
+    implementation(libs.org.slf4j.slf4j.api)
     api(libs.com.google.guava.guava)
     api(project(":zeebe-atomix-utils"))
     api(project(":zeebe-util"))

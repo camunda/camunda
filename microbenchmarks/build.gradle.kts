@@ -7,10 +7,10 @@ plugins {
 }
 
 dependencies {
-    api(libs.org.agrona.agrona)
-    api(project(":zeebe-util"))
-    api(libs.org.openjdk.jmh.jmh.core)
-    api(project(":zeebe-msgpack-value"))
+    implementation(libs.org.agrona.agrona)
+    implementation(project(":zeebe-util"))
+    implementation(libs.org.openjdk.jmh.jmh.core)
+    implementation(project(":zeebe-msgpack-value"))
     compileOnly(libs.org.openjdk.jmh.jmh.generator.annprocess)
 }
 

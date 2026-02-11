@@ -9,7 +9,7 @@ plugins {
 dependencies {
     api(project(":zeebe-protocol"))
     api(project(":zeebe-util"))
-    api(libs.org.slf4j.slf4j.api)
+    implementation(libs.org.slf4j.slf4j.api)
     api(project(":zeebe-exporter-api"))
     testImplementation(libs.org.junit.jupiter.junit.jupiter.api)
     testImplementation(libs.org.assertj.assertj.core)

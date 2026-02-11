@@ -8,11 +8,11 @@ plugins {
 
 dependencies {
     api(libs.org.agrona.agrona)
-    api(libs.org.slf4j.slf4j.api)
+    implementation(libs.org.slf4j.slf4j.api)
     api(libs.io.micrometer.micrometer.commons)
     api(libs.io.micrometer.micrometer.core)
     api(project(":zeebe-util"))
-    api(libs.org.jetbrains.annotations)
+    implementation(libs.org.jetbrains.annotations)
     testImplementation(libs.junit.junit)
     testImplementation(libs.org.junit.jupiter.junit.jupiter.api)
     testImplementation(libs.org.junit.jupiter.junit.jupiter.params)

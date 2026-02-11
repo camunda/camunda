@@ -8,7 +8,7 @@ plugins {
 
 dependencies {
     api(project(":camunda-security-protocol"))
-    api(libs.commons.validator.commons.validator)
+    implementation(libs.commons.validator.commons.validator)
     testImplementation(libs.org.junit.jupiter.junit.jupiter.api)
     testImplementation(libs.org.junit.jupiter.junit.jupiter.params)
     testImplementation(libs.org.assertj.assertj.core)

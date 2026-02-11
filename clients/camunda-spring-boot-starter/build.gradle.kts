@@ -7,7 +7,7 @@ plugins {
 }
 
 dependencies {
-    api(libs.org.slf4j.slf4j.api)
+    implementation(libs.org.slf4j.slf4j.api)
     api(project(":camunda-client-java"))
     api(project(":zeebe-client-java"))
     api(libs.org.springframework.spring.context.x1)
@@ -21,7 +21,7 @@ dependencies {
     api(libs.com.fasterxml.jackson.core.jackson.databind)
     api(libs.com.fasterxml.jackson.core.jackson.annotations)
     api(libs.org.apache.httpcomponents.client5.httpclient5)
-    api(libs.org.apache.commons.commons.lang3)
+    implementation(libs.org.apache.commons.commons.lang3)
     api(libs.io.micrometer.micrometer.core)
     api(project(":zeebe-gateway-protocol-impl"))
     api(libs.org.springframework.boot.spring.boot.actuator.autoconfigure.x1)

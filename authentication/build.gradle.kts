@@ -25,7 +25,7 @@ dependencies {
     api(libs.jakarta.json.jakarta.json.api)
     api(libs.org.springframework.spring.beans)
     api(libs.org.springframework.spring.web)
-    api(libs.org.slf4j.slf4j.api)
+    implementation(libs.org.slf4j.slf4j.api)
     api(project(":camunda-service"))
     api(project(":camunda-search-domain"))
     api(project(":camunda-search-client"))

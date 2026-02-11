@@ -7,42 +7,7 @@ plugins {
     `maven-publish`
 }
 
-repositories {
-    maven {
-        url = uri("https://artifacts.camunda.com/artifactory/internal")
-    }
-
-    maven {
-        url = uri("https://repo.maven.apache.org/maven2/")
-    }
-
-    maven {
-        url = uri("https://artifacts.camunda.com/artifactory/zeebe-io/")
-    }
-
-    maven {
-        url = uri("https://artifacts.camunda.com/artifactory/zeebe-io-snapshots/")
-    }
-
-    maven {
-        url = uri("https://artifacts.camunda.com/artifactory/camunda-identity/")
-    }
-
-    maven {
-        url = uri("https://artifacts.camunda.com/artifactory/camunda-identity-snapshots/")
-    }
-
-    maven {
-        url = uri("https://artifacts.camunda.com/artifactory/camunda-bpm/")
-    }
-
-    maven {
-        url = uri("https://artifacts.camunda.com/artifactory/camunda-bpm-snapshots/")
-    }
-
-    // mavenLocal() at the end to prefer remote artifacts
-    mavenLocal()
-}
+// Repositories are centrally managed in settings.gradle.kts via dependencyResolutionManagement
 
 group = "io.camunda"
 version = "8.9.0-SNAPSHOT"

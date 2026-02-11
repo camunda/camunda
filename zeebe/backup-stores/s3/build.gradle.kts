@@ -8,9 +8,9 @@ plugins {
 
 dependencies {
     api(project(":zeebe-backup"))
-    api(libs.org.slf4j.slf4j.api)
+    implementation(libs.org.slf4j.slf4j.api)
     api(libs.org.apache.commons.commons.compress)
-    api(libs.com.github.luben.zstd.jni)
+    implementation(libs.com.github.luben.zstd.jni)
     api(libs.software.amazon.awssdk.sdk.core)
     api(libs.software.amazon.awssdk.s3)
     api(libs.software.amazon.awssdk.regions)

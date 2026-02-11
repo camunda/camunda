@@ -16,7 +16,7 @@ dependencies {
     api(libs.org.apache.httpcomponents.httpclient)
     api(libs.org.apache.httpcomponents.httpcore.nio)
     api(libs.org.apache.httpcomponents.httpcore)
-    api(libs.org.slf4j.slf4j.api)
+    implementation(libs.org.slf4j.slf4j.api)
     api(project(":zeebe-util"))
     api(libs.io.micrometer.micrometer.core)
     api(libs.com.fasterxml.jackson.core.jackson.databind)
