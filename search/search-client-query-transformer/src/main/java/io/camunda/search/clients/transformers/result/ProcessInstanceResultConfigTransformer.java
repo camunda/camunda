@@ -20,8 +20,8 @@ public final class ProcessInstanceResultConfigTransformer
     if (value != null) {
       final var builder = new SearchSourceFilter.Builder();
 
-      if (value.onlyKey()) {
-        builder.includes(List.of("key"));
+      if (value.onlyKeys()) {
+        builder.includes(List.of("key", "rootProcessInstanceKey"));
       }
 
       return new SearchSourceConfig(builder.build());

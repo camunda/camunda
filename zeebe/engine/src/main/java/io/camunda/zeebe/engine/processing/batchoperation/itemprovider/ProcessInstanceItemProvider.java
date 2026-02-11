@@ -47,7 +47,7 @@ public class ProcessInstanceItemProvider implements ItemProvider {
         SearchQueryBuilders.processInstanceSearchQuery()
             .filter(filter)
             .page(page)
-            .resultConfig(c -> c.onlyKey(true))
+            .resultConfig(c -> c.onlyKeys(true))
             .build();
 
     final SearchQueryResult<ProcessInstanceEntity> result;

@@ -74,6 +74,7 @@ class SearchQueryResponseMapperTest {
         .isEqualTo(BatchOperationTypeEnum.MIGRATE_PROCESS_INSTANCE);
     assertThat(response.getItemKey()).isEqualTo("1234");
     assertThat(response.getProcessInstanceKey()).isEqualTo("4321");
+    assertThat(response.getRootProcessInstanceKey()).isEqualTo("4320");
     assertThat(response.getState()).isEqualTo(StateEnum.COMPLETED);
     assertThat(response.getProcessedDate()).isEqualTo("2025-01-15T11:53:00.000Z");
     assertThat(response.getErrorMessage()).isEqualTo("errorMessage");

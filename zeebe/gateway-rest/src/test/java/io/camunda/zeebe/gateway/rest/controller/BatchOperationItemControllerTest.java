@@ -129,6 +129,7 @@ class BatchOperationItemControllerTest extends RestControllerTest {
                             "operationType":"CANCEL_PROCESS_INSTANCE",
                             "itemKey":"11",
                             "processInstanceKey":"12",
+                            "rootProcessInstanceKey":"13",
                             "state":"FAILED",
                             "processedDate":"2025-03-18T10:57:44.000+01:00",
                             "errorMessage": "error"
