@@ -22,7 +22,7 @@
             "globalListenerBatchKey": {
               "type": "long"
             },
-            "taskListeners": {
+            "listeners": {
               "type": "nested",
               "dynamic": "strict",
               "properties": {

@@ -105,7 +105,7 @@ final class GlobalListenersInitializerIT {
                 .withIntent(GlobalListenerBatchIntent.CONFIGURE))
         .hasSize(1)
         .first()
-        .matches(record -> record.getValue().getTaskListeners().isEmpty())
+        .matches(record -> record.getValue().getListeners().isEmpty())
         .extracting(Record::getPartitionId)
         .isEqualTo(Protocol.DEPLOYMENT_PARTITION);
   }
@@ -160,9 +160,7 @@ final class GlobalListenersInitializerIT {
   private boolean containsTypes(
       final Record<GlobalListenerBatchRecordValue> record, final String... types) {
     final var recordTypes =
-        record.getValue().getTaskListeners().stream()
-            .map(GlobalListenerRecordValue::getType)
-            .toList();
+        record.getValue().getListeners().stream().map(GlobalListenerRecordValue::getType).toList();
     return List.of(types).equals(recordTypes);
   }
 }

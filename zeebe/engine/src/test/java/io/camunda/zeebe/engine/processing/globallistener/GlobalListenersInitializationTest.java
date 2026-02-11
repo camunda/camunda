@@ -34,12 +34,12 @@ public class GlobalListenersInitializationTest {
     // given a global listener batch record containing the desired configuration
     final GlobalListenerBatchRecord record =
         new GlobalListenerBatchRecord()
-            .addTaskListener(
+            .addListener(
                 new GlobalListenerRecord()
                     .setId("GlobalListener_global1")
                     .setType("global1")
                     .addEventType("all"))
-            .addTaskListener(
+            .addListener(
                 new GlobalListenerRecord()
                     .setId("GlobalListener_global2")
                     .setType("global2")
@@ -66,12 +66,12 @@ public class GlobalListenersInitializationTest {
     // given an existing global listener configuration
     final GlobalListenerBatchRecord originalConfigRecord =
         new GlobalListenerBatchRecord()
-            .addTaskListener(
+            .addListener(
                 new GlobalListenerRecord()
                     .setId("GlobalListener_global1")
                     .setType("global1")
                     .addEventType("all"))
-            .addTaskListener(
+            .addListener(
                 new GlobalListenerRecord()
                     .setId("GlobalListener_global2")
                     .setType("global2")
@@ -84,12 +84,12 @@ public class GlobalListenersInitializationTest {
     // when executing a CONFIGURE command with a different configuration
     final GlobalListenerBatchRecord newConfigRecord =
         new GlobalListenerBatchRecord()
-            .addTaskListener(
+            .addListener(
                 new GlobalListenerRecord()
                     .setId("GlobalListener_global2")
                     .setType("global2")
                     .addEventType("creating"))
-            .addTaskListener(
+            .addListener(
                 new GlobalListenerRecord()
                     .setId("GlobalListener_global3")
                     .setType("global3")
@@ -114,12 +114,12 @@ public class GlobalListenersInitializationTest {
     // given an existing global listener configuration
     final GlobalListenerBatchRecord originalConfigRecord =
         new GlobalListenerBatchRecord()
-            .addTaskListener(
+            .addListener(
                 new GlobalListenerRecord()
                     .setId("GlobalListener_global1")
                     .setType("global1")
                     .addEventType("all"))
-            .addTaskListener(
+            .addListener(
                 new GlobalListenerRecord()
                     .setId("GlobalListener_global2")
                     .setType("global2")
@@ -132,12 +132,12 @@ public class GlobalListenersInitializationTest {
     // when executing a CONFIGURE command with a different configuration
     final GlobalListenerBatchRecord newConfigRecord =
         new GlobalListenerBatchRecord()
-            .addTaskListener(
+            .addListener(
                 new GlobalListenerRecord()
                     .setId("GlobalListener_global2")
                     .setType("global2")
                     .addEventType("creating"))
-            .addTaskListener(
+            .addListener(
                 new GlobalListenerRecord()
                     .setId("GlobalListener_global3")
                     .setType("global3")

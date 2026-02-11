@@ -42,7 +42,7 @@ public final class GlobalListenerBatchRecord extends UnifiedRecordValue
     return taskListenersProp.stream().collect(Collectors.toList());
   }
 
-  public GlobalListenerBatchRecord addTaskListener(final GlobalListenerRecord listener) {
+  public GlobalListenerBatchRecord addListener(final GlobalListenerRecord listener) {
     taskListenersProp.add().copyFrom(listener);
     return this;
   }

@@ -91,7 +91,7 @@ public final class GlobalListenersInitializer implements StreamProcessorLifecycl
                     .setPriority(listener.priority())
                     .setSource(GlobalListenerSource.CONFIGURATION)
                     .setListenerType(listener.listenerType()))
-        .forEach(record::addTaskListener);
+        .forEach(record::addListener);
     return record;
   }
 }

@@ -7,11 +7,13 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.globallistener;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.GlobalListenerBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.GlobalListenerRecordValue;
+import io.camunda.zeebe.protocol.record.value.GlobalListenerType;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -20,12 +22,12 @@ public final class GlobalListenerBatchRecord extends UnifiedRecordValue
 
   private final LongProperty globalListenerBatchKey =
       new LongProperty("globalListenerBatchKey", -1L);
-  private final ArrayProperty<GlobalListenerRecord> taskListenersProp =
-      new ArrayProperty<>("taskListeners", GlobalListenerRecord::new);
+  private final ArrayProperty<GlobalListenerRecord> listenersProp =
+      new ArrayProperty<>("listeners", GlobalListenerRecord::new);
 
   public GlobalListenerBatchRecord() {
     super(2);
-    declareProperty(globalListenerBatchKey).declareProperty(taskListenersProp);
+    declareProperty(globalListenerBatchKey).declareProperty(listenersProp);
   }
 
   @Override
@@ -39,12 +41,19 @@ public final class GlobalListenerBatchRecord extends UnifiedRecordValue
   }
 
   @Override
-  public List<GlobalListenerRecordValue> getTaskListeners() {
-    return taskListenersProp.stream().collect(Collectors.toList());
+  public List<GlobalListenerRecordValue> getListeners() {
+    return listenersProp.stream().collect(Collectors.toList());
   }
 
-  public GlobalListenerBatchRecord addTaskListener(final GlobalListenerRecord listener) {
-    taskListenersProp.add().copyFrom(listener);
+  public GlobalListenerBatchRecord addListener(final GlobalListenerRecord listener) {
+    listenersProp.add().copyFrom(listener);
     return this;
+  }
+
+  @JsonIgnore
+  public List<GlobalListenerRecord> getTaskListeners() {
+    return listenersProp.stream()
+        .filter(listener -> listener.getListenerType() == GlobalListenerType.USER_TASK)
+        .toList();
   }
 }

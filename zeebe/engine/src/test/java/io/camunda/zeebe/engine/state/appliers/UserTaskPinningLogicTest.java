@@ -196,11 +196,11 @@ public class UserTaskPinningLogicTest {
     final var oldConfig = globalListenersState.getCurrentConfig();
     if (oldConfig != null) {
       oldConfig
-          .getTaskListeners()
+          .getListeners()
           .forEach(listener -> globalListenersState.delete((GlobalListenerRecord) listener));
     }
     newConfig
-        .getTaskListeners()
+        .getListeners()
         .forEach(listener -> globalListenersState.create((GlobalListenerRecord) listener));
     globalListenersState.updateConfigKey(newConfig.getGlobalListenerBatchKey());
   }
@@ -214,7 +214,7 @@ public class UserTaskPinningLogicTest {
         new GlobalListenerBatchRecord().setGlobalListenerBatchKey(newKey());
     final int numberOfListeners = new Random().nextInt(2, 10);
     for (int i = 0; i < numberOfListeners; i++) {
-      record.addTaskListener(
+      record.addListener(
           new GlobalListenerRecord()
               .setId("GlobalListener_" + i)
               .setType("global" + i)

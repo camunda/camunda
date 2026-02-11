@@ -25,5 +25,5 @@ import org.immutables.value.Value;
 public interface GlobalListenerBatchRecordValue extends RecordValue {
   long getGlobalListenerBatchKey();
 
-  List<GlobalListenerRecordValue> getTaskListeners();
+  List<GlobalListenerRecordValue> getListeners();
 }
