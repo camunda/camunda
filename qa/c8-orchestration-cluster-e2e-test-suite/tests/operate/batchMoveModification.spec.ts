@@ -143,7 +143,14 @@ test.describe('Process Instance Batch Modification', () => {
     });
 
     await test.step('Verify operation is created and completed', async () => {
-      await expect(operateOperationPanelPage.operationsList).toBeVisible();
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(operateOperationPanelPage.operationsList).toBeVisible();
+        },
+        onFailure: async () => {
+          console.log('Operations list not visible yet, retrying assertion...');
+        },
+      });
       const operationEntry =
         operateOperationPanelPage.getModificationOperationEntry(4);
 

@@ -17,6 +17,8 @@ import {
 import {waitForProcessInstances} from 'utils/incidentsHelper';
 import {navigateToApp} from '@pages/UtilitiesPage';
 import {captureScreenshot, captureFailureVideo} from '@setup';
+import {waitForAssertion} from '../../utils/waitForAssertion';
+import {undefined} from 'valibot';
 
 let instanceIds: string[] = [];
 
@@ -139,9 +141,18 @@ test.describe('Dashboard', () => {
   }) => {
     await test.step('Select incident type A and verify details', async () => {
       await operateDashboardPage.clickIncidentByType(/type a/i);
-      await expect(
-        operateDashboardPage.processInstancesHeading(1, false),
-      ).toBeVisible();
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(
+            operateDashboardPage.processInstancesHeading(1, false),
+          ).toBeVisible();
+        },
+        onFailure: async () => {
+          console.log(
+            'Process instances heading not visible yet, retrying assertion...',
+          );
+        },
+      });
 
       await operateDashboardPage.clickViewInstanceLink();
       await expect(
