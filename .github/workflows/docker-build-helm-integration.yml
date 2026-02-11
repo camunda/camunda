@@ -340,7 +340,7 @@ jobs:
       test-enabled: true
       e2e-enabled: true
       deployment-ttl: ${{ inputs.deployment-ttl || '' }}
-      scenario: ${{ inputs.scenario || 'keycloak-original' }}
+      scenario: ${{ inputs.scenario || 'elasticsearch' }}
       shortname: ${{ inputs.shortname || 'kcor' }}
       always-delete-namespace: true
       flows: install
