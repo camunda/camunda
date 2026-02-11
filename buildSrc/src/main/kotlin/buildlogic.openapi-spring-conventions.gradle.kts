@@ -32,6 +32,7 @@ openApiGenerate {
         // map complex String schemas to String
         "ProcessInstanceModificationActivateInstructionAncestorElementInstanceKey" to "String",
         "ResourceKey" to "String",
+        "ElementInstanceKey" to "String",
         // map specific filter properties to basic filter types
         "AuditLogEntityKeyFilterProperty" to "BasicStringFilterProperty",
         "AuditLogKeyFilterProperty" to "BasicStringFilterProperty",
@@ -54,7 +55,16 @@ openApiGenerate {
     // Validate spec
     skipValidateSpec.set(false)
     globalProperties.set(mapOf(
-        "apis" to "false"
+        "models" to "",
+        "apis" to "false",
+        "supportingFiles" to "false"
+    ))
+
+    // Map ElementInstanceKey import to String to avoid missing class errors
+    // (The Gradle plugin generates an unused import for this type in interface files,
+    //  unlike the Maven plugin which produces cleaner imports)
+    importMappings.set(mapOf(
+        "ElementInstanceKey" to "java.lang.String"
     ))
 
     // OpenAPI normalizer
@@ -70,6 +80,7 @@ openApiGenerate {
         "jdk8" to "true",
         "openApiNullable" to "false",
         "useEnumCaseInsensitive" to "true",
+        "useSpringBoot3" to "true",
         "sourceFolder" to "src/main/java"
     ))
 }
