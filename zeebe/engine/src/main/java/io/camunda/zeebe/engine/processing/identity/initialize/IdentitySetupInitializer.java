@@ -134,8 +134,8 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
     configuredRoles.ifLeft(
         (violations) -> {
           throw new IdentityInitializationException(
-              "Found invalid roles. Aborting identity initialization! %n- %s"
-                  .formatted(String.join(System.lineSeparator() + "- ", violations)));
+              INVALID_CONFIGURED_ENTITY_MESSAGE.formatted(
+                  "roles", String.join(System.lineSeparator() + "- ", violations)));
         });
     configuredAuthorizations.ifRight(auths -> auths.forEach(setupRecord::addAuthorization));
     configuredTenants.ifRight(tenants -> tenants.forEach(setupRecord::addTenant));

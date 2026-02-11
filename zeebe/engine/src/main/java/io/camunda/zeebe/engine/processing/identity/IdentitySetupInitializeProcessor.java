@@ -50,15 +50,15 @@ public final class IdentitySetupInitializeProcessor
     final var initializationKey = keyGenerator.nextKey();
     final var setupRecord = command.getValue();
 
-    createRoles(initializationKey, setupRecord.getRoles());
     createDefaultTenant(initializationKey, setupRecord.getDefaultTenant());
     createTenants(initializationKey, setupRecord.getTenants());
+    createRoles(initializationKey, setupRecord.getRoles());
+    createGroups(initializationKey, setupRecord.getGroups());
     createUsers(initializationKey, setupRecord.getUsers());
     createMappingRules(initializationKey, setupRecord.getMappingRules());
-    createRoleMembers(initializationKey, setupRecord.getRoleMembers());
-    createTenantMembers(initializationKey, setupRecord.getTenantMembers());
     createAuthorizations(initializationKey, setupRecord.getAuthorizations());
-    createGroups(initializationKey, setupRecord.getGroups());
+    createTenantMembers(initializationKey, setupRecord.getTenantMembers());
+    createRoleMembers(initializationKey, setupRecord.getRoleMembers());
     createGroupMembers(initializationKey, setupRecord.getGroupMembers());
 
     stateWriter.appendFollowUpEvent(
