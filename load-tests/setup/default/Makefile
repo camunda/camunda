@@ -1,5 +1,6 @@
 namespace ?= __NAMESPACE__
 secondary_storage ?= __STORAGE_TYPE__
+enable_optimize ?= false
 helm_chart ?= camunda-platform-8.9
 curl_image ?= curlimages/curl:7.87.0
 camunda_management_url ?= http://camunda:9600
@@ -14,6 +15,11 @@ additional_platform_configuration ?=
 # See the load test README for example values and guidance.
 additional_load_test_configuration ?=
 
+# Optimize k6 browser tests configuration
+OPTIMIZE_K6_DIR := optimize-k6
+K6_SCRIPT := $(OPTIMIZE_K6_DIR)/script.js
+K6_CRONJOB_FILE := $(OPTIMIZE_K6_DIR)/k6-browser-cronjob-generic.yaml
+
 # Conditional values file based on secondary_storage
 ifeq ($(secondary_storage),postgresql)
 storage_values_file := camunda-platform-values-rdbms.yaml
@@ -27,10 +33,10 @@ endif
 all: install
 
 .PHONY: install
-install: install-storage install-platform install-load-test install-elasticsearch-exporter
+install: install-storage install-platform install-load-test install-elasticsearch-exporter install-optimize-k6
 
 .PHONY: install-stable
-install-stable: install-storage install-platform-stable install-load-test install-elasticsearch-exporter
+install-stable: install-storage install-platform-stable install-load-test install-elasticsearch-exporter install-optimize-k6
 
 # Install PostgreSQL database if secondary_storage is postgresql, or OpenSearch if secondary_storage is opensearch
 .PHONY: install-storage
@@ -75,7 +81,7 @@ install-platform: setup-leader-balancer
 		--reset-then-reuse-values \
 		--render-subchart-notes \
 		-f camunda-platform-values.yaml \
-		-f camunda-platform-values-optimize.yaml \
+		$(if $(filter true,$(enable_optimize)),-f camunda-platform-values-optimize.yaml) \
 		$(if $(storage_values_file),-f $(storage_values_file)) \
 		$(additional_platform_configuration)
 
@@ -89,6 +95,7 @@ install-platform-stable: setup-leader-balancer
 		--render-subchart-notes \
 		-f camunda-platform-values.yaml \
 		-f values-stable.yaml \
+		$(if $(filter true,$(enable_optimize)),-f camunda-platform-values-optimize.yaml) \
 		$(if $(storage_values_file),-f $(storage_values_file)) \
 		$(additional_platform_configuration)
 
@@ -116,11 +123,25 @@ setup-leader-balancer:
 		echo "Leader balancer cronjob already exists"; \
 	fi
 
+# Setup Optimize k6 browser tests
+.PHONY: install-optimize-k6
+install-optimize-k6:
+ifeq ($(enable_optimize),true)
+	@echo "Setting up Optimize k6 browser tests in namespace $(namespace)..."
+	# Create ConfigMap from script.js
+	-kubectl create configmap script --from-file=$(K6_SCRIPT) --namespace $(namespace) --dry-run=client -o yaml | kubectl apply -f -
+	# Apply the CronJob
+	kubectl apply -f $(K6_CRONJOB_FILE) --namespace $(namespace)
+else
+	@echo "Skipping Optimize k6 browser tests (enable_optimize=$(enable_optimize))"
+endif
+
 # Generates templates from the Camunda Platform helm chart
 .PHONY: template
 template:
 	helm template $(namespace) camunda/$(helm_chart) \
 		-f camunda-platform-values.yaml \
+		$(if $(filter true,$(enable_optimize)),-f camunda-platform-values-optimize.yaml) \
 		$(if $(storage_values_file),-f $(storage_values_file)) \
 		--output-dir .
 
@@ -129,6 +150,7 @@ template-stable:
 	helm template $(namespace) camunda/$(helm_chart) \
 		-f camunda-platform-values.yaml \
 		-f values-stable.yaml \
+		$(if $(filter true,$(enable_optimize)),-f camunda-platform-values-optimize.yaml) \
 		$(if $(storage_values_file),-f $(storage_values_file)) \
 		--output-dir .
 

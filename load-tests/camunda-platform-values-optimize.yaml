@@ -6,11 +6,13 @@ global:
   identity:
     auth:
       enabled: true
+      publicIssuerUrl: "http://pg-optimize-latency-load-test-keycloak/auth/realms/camunda-platform"
       optimize:
         clientId: optimize
         secret:
           existingSecret: camunda-credentials
           existingSecretKey: identity-optimize-client-token
+        redirectUrl: "http://pg-optimize-latency-load-test:80"
 
 identity:
   enabled: true

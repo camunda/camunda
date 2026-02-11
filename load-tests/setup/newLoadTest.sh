@@ -34,6 +34,9 @@ if ! [[ $ttl_days =~ $numberRegex ]] ; then
    exit 1
 fi
 
+# Validate enable_optimize value
+enable_optimize="${4:-false}"
+
 # Create namespace if it doesn't exist
 if ! kubectl get namespace $namespace >/dev/null 2>&1; then
   kubectl create namespace $namespace
@@ -86,11 +89,20 @@ cp -v ../secondary-storage-values*.yaml $namespace/
 # Copy Prometheus ElasticSearch Exporter values.yaml to the new folder
 cp -v ../prometheus-elasticsearch-exporter-values.yaml $namespace/
 
+# Copy Optimize k6 browser tests folder to the new folder
+cp -rv ../optimize-k6 $namespace/
+
 cd $namespace
 
 # Update Makefile to use the namespace and secondary storage
 sed_inplace "s/__NAMESPACE__/$namespace/" Makefile
 sed_inplace "s/__STORAGE_TYPE__/$secondaryStorage/" Makefile
+
+# Update Optimize values if enabled
+if [[ "$enable_optimize" == "true" ]]; then
+  sed_inplace "s|publicIssuerUrl: \"http://.*-keycloak|publicIssuerUrl: \"http://$namespace-keycloak|" camunda-platform-values-optimize.yaml
+  sed_inplace "s|redirectUrl: \"http://.*:80|redirectUrl: \"http://$namespace:80|" camunda-platform-values-optimize.yaml
+fi
 
 # Add/update helm repositories
 helm repo add camunda https://helm.camunda.io/ --force-update

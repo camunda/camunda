@@ -1,0 +1,58 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: k6-browser-test
+spec:
+  schedule: "*/20 * * * *"
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 1
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      backoffLimit: 0
+      ttlSecondsAfterFinished: 600
+      template:
+        metadata:
+          labels:
+            app: k6-browser-test
+        spec:
+          restartPolicy: Never
+          containers:
+            - name: k6
+              image: grafana/k6:0.54.0-with-browser
+              command: ["k6"]
+              args:
+                - run
+                - /script/script.js
+              env:
+                # Base URL - dynamically get namespace
+                - name: NAMESPACE
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.namespace
+                - name: BASE_URL
+                  value: "http://$(NAMESPACE):80"
+                # Username - always "demo"
+                - name: USERNAME
+                  value: "demo"
+                # Password - from Kubernetes secret
+                - name: PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: camunda-credentials
+                      key: identity-keycloak-demo-password
+              resources:
+                requests:
+                  cpu: "4"
+                  memory: "8G"
+                limits:
+                  cpu: "4"
+                  memory: "8G"
+              volumeMounts:
+                - name: script
+                  mountPath: /script/script.js
+                  subPath: script.js
+          volumes:
+            - name: script
+              configMap:
+                name: script

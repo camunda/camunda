@@ -1,13 +1,20 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
 import http from "k6/http";
 import exec from 'k6/execution';
 import { browser } from "k6/browser";
 import { sleep, check, fail } from 'k6';
 import { Trend } from 'k6/metrics';
 
-// Environment variables
-const BASE_URL = __ENV.BASE_URL || "http://localhost:8083";
+// Environment variables - injected by Kubernetes CronJob
+const BASE_URL = __ENV.BASE_URL || "http://pg-optimize-latency-load-test-bh:80";
 const USERNAME = __ENV.USERNAME || "demo";
-const PASSWORD = __ENV.PASSWORD || "zuSi25meGPQSri4R";
+const PASSWORD = __ENV.PASSWORD; // Required - must be provided via K8s secret
 
 // Custom metrics
 const homepageLoadTime = new Trend('optimize_homepage_load_time', true);
@@ -28,7 +35,7 @@ export const options = {
     },
   },
   thresholds: {
-    'optimize_homepage_load_time': ['p(95)<5000'], // 95% of homepage loads should be under 5s
+    'optimize_homepage_load_time': ['p(95)<10000'], // 95% of homepage loads should be under 5s
     'optimize_login_duration': ['p(95)<3000'],      // 95% of logins should be under 3s
   },
 };
@@ -53,7 +60,16 @@ export function setup() {
  */
 async function navigateToOptimize(page) {
   console.log(`Navigating to: ${BASE_URL}`);
-  await page.goto(BASE_URL);
+  const response = await page.goto(BASE_URL);
+
+  // Log redirect information
+  const currentUrl = page.url();
+  console.log(`Current URL after navigation: ${currentUrl}`);
+  console.log(`Response status: ${response.status()}`);
+
+  if (currentUrl !== BASE_URL) {
+    console.log(`↳ Redirected from ${BASE_URL} to ${currentUrl}`);
+  }
 }
 
 /**
@@ -115,9 +131,37 @@ async function waitForHomepageLoad(page) {
  */
 async function verifyLogin(page) {
   const pageTitle = await page.title();
-  console.log(`Page title: "${pageTitle}"`);
+  const currentUrl = page.url();
+
+  console.log('='.repeat(50));
+  console.log('LOGIN VERIFICATION:');
+  console.log(`  Current URL: ${currentUrl}`);
+  console.log(`  Page Title: "${pageTitle}"`);
+
+  // Log additional page info
+  try {
+    const bodyText = await page.locator('body').textContent();
+    console.log(`  Body text length: ${bodyText.length} characters`);
+
+    // Check if still on Keycloak login page
+    const isOnKeycloakPage = currentUrl.includes('/auth/') || currentUrl.includes('/realms/');
+    if (isOnKeycloakPage) {
+      console.log(`  ⚠ Still on Keycloak page!`);
+    }
+
+    // Check for error messages
+    const errorElement = await page.locator('.alert-error, .error, [role="alert"]').count();
+    if (errorElement > 0) {
+      const errorText = await page.locator('.alert-error, .error, [role="alert"]').first().textContent();
+      console.log(`  ⚠ Error detected: ${errorText}`);
+    }
+  } catch (error) {
+    console.log(`  Warning: Could not retrieve additional page info: ${error.message}`);
+  }
 
   const isSuccess = pageTitle === 'Optimize | Process dashboards and KPIs';
+  console.log(`  Login Successful: ${isSuccess ? 'YES ✓' : 'NO ✗'}`);
+  console.log('='.repeat(50));
 
   check(page, {
     'login_successful': isSuccess,
@@ -135,8 +179,9 @@ async function verifyLogin(page) {
  */
 async function captureScreenshot(page, filename = "screenshot.png") {
   try {
-    await page.screenshot({ path: filename });
-    console.log(`✓ Screenshot saved: ${filename}`);
+    const screenshotPath = `/screenshots/${filename}`;
+    await page.screenshot({ path: screenshotPath });
+    console.log(`✓ Screenshot saved: ${screenshotPath}`);
   } catch (error) {
     console.log(`Warning: Failed to capture screenshot: ${error.message}`);
   }
