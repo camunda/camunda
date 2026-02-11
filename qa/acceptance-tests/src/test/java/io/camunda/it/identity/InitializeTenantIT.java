@@ -28,6 +28,8 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
+// RDBMS is not fully implemented in 8.8, so we disable this test.
+@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms.*$")
 class InitializeTenantIT {
 
   private static final String ADMIN = "admin";
