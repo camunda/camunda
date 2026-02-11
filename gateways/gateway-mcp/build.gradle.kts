@@ -26,7 +26,7 @@ dependencies {
     api(libs.org.springframework.spring.context)
     api(libs.org.springframework.spring.web)
     api(libs.jakarta.validation.jakarta.validation.api)
-    testImplementation(libs.org.springframework.boot.spring.boot.test.x1)
+    testImplementation(libs.org.springframework.boot.spring.boot.test)
     testImplementation(libs.org.springframework.spring.test)
     testImplementation(libs.org.junit.jupiter.junit.jupiter.api)
     testImplementation(libs.org.junit.jupiter.junit.jupiter.params)

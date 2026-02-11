@@ -31,7 +31,7 @@ dependencies {
     testImplementation(libs.com.fasterxml.jackson.core.jackson.core)
     testImplementation(libs.org.junit.jupiter.junit.jupiter.api)
     testImplementation(libs.org.springframework.boot.spring.boot)
-    testImplementation(libs.org.springframework.boot.spring.boot.test.x1)
+    testImplementation(libs.org.springframework.boot.spring.boot.test)
     testImplementation(libs.org.apache.httpcomponents.core5.httpcore5)
     testImplementation(libs.org.opensearch.client.opensearch.java)
     testImplementation(libs.org.awaitility.awaitility)

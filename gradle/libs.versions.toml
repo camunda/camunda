@@ -198,7 +198,7 @@ org-junit-vintage-junit-vintage-engine-x1 = "6.0.1"
 org-keycloak-keycloak-admin-client = "26.0.8"
 org-keycloak-keycloak-client-common-synced = "26.0.8"
 org-keycloak-keycloak-core = "26.5.3"
-org-liquibase-liquibase-core = "4.33.0"
+org-liquibase-liquibase-core = "5.0.1"
 org-mariadb-jdbc-mariadb-java-client = "3.5.7"
 org-mock-server-mockserver-client-java = "5.15.0"
 org-mock-server-mockserver-core = "5.15.0"
@@ -208,7 +208,7 @@ org-mockito-mockito-junit-jupiter = "5.21.0"
 org-msgpack-jackson-dataformat-msgpack = "0.9.11"
 org-msgpack-msgpack-core = "0.9.11"
 org-mybatis-mybatis = "3.5.19"
-org-mybatis-mybatis-spring = "3.0.5"
+org-mybatis-mybatis-spring = "4.0.0"
 org-objenesis-objenesis = "3.5"
 org-openapitools-jackson-databind-nullable = "0.2.9"
 org-openjdk-jmh-jmh-core = "1.37"
@@ -228,13 +228,11 @@ org-springaicommunity-mcp-annotations = "0.8.0"
 org-springdoc-springdoc-openapi-starter-common = "3.0.1"
 org-springdoc-springdoc-openapi-starter-webmvc-ui = "3.0.1"
 org-springframework-ai-spring-ai-starter-mcp-server-webmvc = "1.1.2"
-org-springframework-boot-spring-boot = "3.5.10"
-org-springframework-boot-spring-boot-actuator = "3.5.10"
-org-springframework-boot-spring-boot-actuator-autoconfigure = "3.5.10"
-org-springframework-boot-spring-boot-actuator-autoconfigure-x1 = "4.0.0"
-org-springframework-boot-spring-boot-actuator-x1 = "4.0.0"
-org-springframework-boot-spring-boot-autoconfigure = "3.5.10"
-org-springframework-boot-spring-boot-autoconfigure-x1 = "4.0.0"
+org-springframework-boot-spring-boot = "4.0.2"
+org-springframework-boot-spring-boot-actuator = "4.0.2"
+org-springframework-boot-spring-boot-actuator-autoconfigure = "4.0.2"
+org-springframework-boot-spring-boot-autoconfigure = "4.0.2"
+org-springframework-boot-spring-boot-freemarker = "4.0.2"
 org-springframework-boot-spring-boot-health = "4.0.2"
 org-springframework-boot-spring-boot-jackson = "4.0.2"
 org-springframework-boot-spring-boot-jackson2 = "4.0.2"
@@ -243,16 +241,14 @@ org-springframework-boot-spring-boot-starter-data-jdbc = "4.0.2"
 org-springframework-boot-spring-boot-starter-log4j2 = "4.0.2"
 org-springframework-boot-spring-boot-starter-oauth2-resource-server = "4.0.2"
 org-springframework-boot-spring-boot-starter-security = "4.0.2"
-org-springframework-boot-spring-boot-starter-test = "4.0.0"
-org-springframework-boot-spring-boot-starter-test-x1 = "3.5.10"
+org-springframework-boot-spring-boot-security = "4.0.2"
+org-springframework-boot-spring-boot-starter-test = "4.0.2"
 org-springframework-boot-spring-boot-starter-thymeleaf = "4.0.2"
 org-springframework-boot-spring-boot-starter-tomcat = "4.0.2"
 org-springframework-boot-spring-boot-starter-validation = "4.0.2"
 org-springframework-boot-spring-boot-starter-web = "4.0.2"
-org-springframework-boot-spring-boot-test = "4.0.0"
+org-springframework-boot-spring-boot-test = "4.0.2"
 org-springframework-boot-spring-boot-test-autoconfigure = "4.0.2"
-org-springframework-boot-spring-boot-test-x1 = "3.5.10"
-org-springframework-boot-spring-boot-x1 = "4.0.0"
 org-springframework-retry-spring-retry = "2.0.12"
 org-springframework-security-spring-security-config = "7.0.2"
 org-springframework-security-spring-security-core = "7.0.2"
@@ -266,16 +262,12 @@ org-springframework-security-spring-security-web = "7.0.2"
 org-springframework-session-spring-session-core = "3.5.4"
 org-springframework-spring-aop = "7.0.3"
 org-springframework-spring-aspects = "7.0.3"
-org-springframework-spring-beans = "6.2.15"
-org-springframework-spring-beans-x1 = "7.0.1"
-org-springframework-spring-context = "6.2.15"
+org-springframework-spring-beans = "7.0.3"
+org-springframework-spring-context = "7.0.3"
 org-springframework-spring-context-support = "7.0.3"
-org-springframework-spring-context-x1 = "7.0.1"
-org-springframework-spring-core = "6.2.15"
-org-springframework-spring-core-x1 = "7.0.1"
+org-springframework-spring-core = "7.0.3"
 org-springframework-spring-jdbc = "7.0.3"
-org-springframework-spring-test = "6.2.15"
-org-springframework-spring-test-x1 = "7.0.1"
+org-springframework-spring-test = "7.0.3"
 org-springframework-spring-tx = "7.0.3"
 org-springframework-spring-web = "7.0.3"
 org-springframework-spring-webflux = "7.0.3"
@@ -545,10 +537,8 @@ org-springframework-ai-spring-ai-starter-mcp-server-webmvc = { module = "org.spr
 org-springframework-boot-spring-boot = { module = "org.springframework.boot:spring-boot", version.ref = "org-springframework-boot-spring-boot" }
 org-springframework-boot-spring-boot-actuator = { module = "org.springframework.boot:spring-boot-actuator", version.ref = "org-springframework-boot-spring-boot-actuator" }
 org-springframework-boot-spring-boot-actuator-autoconfigure = { module = "org.springframework.boot:spring-boot-actuator-autoconfigure", version.ref = "org-springframework-boot-spring-boot-actuator-autoconfigure" }
-org-springframework-boot-spring-boot-actuator-autoconfigure-x1 = { module = "org.springframework.boot:spring-boot-actuator-autoconfigure", version.ref = "org-springframework-boot-spring-boot-actuator-autoconfigure-x1" }
-org-springframework-boot-spring-boot-actuator-x1 = { module = "org.springframework.boot:spring-boot-actuator", version.ref = "org-springframework-boot-spring-boot-actuator-x1" }
 org-springframework-boot-spring-boot-autoconfigure = { module = "org.springframework.boot:spring-boot-autoconfigure", version.ref = "org-springframework-boot-spring-boot-autoconfigure" }
-org-springframework-boot-spring-boot-autoconfigure-x1 = { module = "org.springframework.boot:spring-boot-autoconfigure", version.ref = "org-springframework-boot-spring-boot-autoconfigure-x1" }
+org-springframework-boot-spring-boot-freemarker = { module = "org.springframework.boot:spring-boot-freemarker", version.ref = "org-springframework-boot-spring-boot-freemarker" }
 org-springframework-boot-spring-boot-health = { module = "org.springframework.boot:spring-boot-health", version.ref = "org-springframework-boot-spring-boot-health" }
 org-springframework-boot-spring-boot-jackson = { module = "org.springframework.boot:spring-boot-jackson", version.ref = "org-springframework-boot-spring-boot-jackson" }
 org-springframework-boot-spring-boot-jackson2 = { module = "org.springframework.boot:spring-boot-jackson2", version.ref = "org-springframework-boot-spring-boot-jackson2" }
@@ -557,16 +547,14 @@ org-springframework-boot-spring-boot-starter-data-jdbc = { module = "org.springf
 org-springframework-boot-spring-boot-starter-log4j2 = { module = "org.springframework.boot:spring-boot-starter-log4j2", version.ref = "org-springframework-boot-spring-boot-starter-log4j2" }
 org-springframework-boot-spring-boot-starter-oauth2-resource-server = { module = "org.springframework.boot:spring-boot-starter-oauth2-resource-server", version.ref = "org-springframework-boot-spring-boot-starter-oauth2-resource-server" }
 org-springframework-boot-spring-boot-starter-security = { module = "org.springframework.boot:spring-boot-starter-security", version.ref = "org-springframework-boot-spring-boot-starter-security" }
+org-springframework-boot-spring-boot-security = { module = "org.springframework.boot:spring-boot-security", version.ref = "org-springframework-boot-spring-boot-security" }
 org-springframework-boot-spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test", version.ref = "org-springframework-boot-spring-boot-starter-test" }
-org-springframework-boot-spring-boot-starter-test-x1 = { module = "org.springframework.boot:spring-boot-starter-test", version.ref = "org-springframework-boot-spring-boot-starter-test-x1" }
 org-springframework-boot-spring-boot-starter-thymeleaf = { module = "org.springframework.boot:spring-boot-starter-thymeleaf", version.ref = "org-springframework-boot-spring-boot-starter-thymeleaf" }
 org-springframework-boot-spring-boot-starter-tomcat = { module = "org.springframework.boot:spring-boot-starter-tomcat", version.ref = "org-springframework-boot-spring-boot-starter-tomcat" }
 org-springframework-boot-spring-boot-starter-validation = { module = "org.springframework.boot:spring-boot-starter-validation", version.ref = "org-springframework-boot-spring-boot-starter-validation" }
 org-springframework-boot-spring-boot-starter-web = { module = "org.springframework.boot:spring-boot-starter-web", version.ref = "org-springframework-boot-spring-boot-starter-web" }
 org-springframework-boot-spring-boot-test = { module = "org.springframework.boot:spring-boot-test", version.ref = "org-springframework-boot-spring-boot-test" }
 org-springframework-boot-spring-boot-test-autoconfigure = { module = "org.springframework.boot:spring-boot-test-autoconfigure", version.ref = "org-springframework-boot-spring-boot-test-autoconfigure" }
-org-springframework-boot-spring-boot-test-x1 = { module = "org.springframework.boot:spring-boot-test", version.ref = "org-springframework-boot-spring-boot-test-x1" }
-org-springframework-boot-spring-boot-x1 = { module = "org.springframework.boot:spring-boot", version.ref = "org-springframework-boot-spring-boot-x1" }
 org-springframework-retry-spring-retry = { module = "org.springframework.retry:spring-retry", version.ref = "org-springframework-retry-spring-retry" }
 org-springframework-security-spring-security-config = { module = "org.springframework.security:spring-security-config", version.ref = "org-springframework-security-spring-security-config" }
 org-springframework-security-spring-security-core = { module = "org.springframework.security:spring-security-core", version.ref = "org-springframework-security-spring-security-core" }
@@ -581,15 +569,11 @@ org-springframework-session-spring-session-core = { module = "org.springframewor
 org-springframework-spring-aop = { module = "org.springframework:spring-aop", version.ref = "org-springframework-spring-aop" }
 org-springframework-spring-aspects = { module = "org.springframework:spring-aspects", version.ref = "org-springframework-spring-aspects" }
 org-springframework-spring-beans = { module = "org.springframework:spring-beans", version.ref = "org-springframework-spring-beans" }
-org-springframework-spring-beans-x1 = { module = "org.springframework:spring-beans", version.ref = "org-springframework-spring-beans-x1" }
 org-springframework-spring-context = { module = "org.springframework:spring-context", version.ref = "org-springframework-spring-context" }
 org-springframework-spring-context-support = { module = "org.springframework:spring-context-support", version.ref = "org-springframework-spring-context-support" }
-org-springframework-spring-context-x1 = { module = "org.springframework:spring-context", version.ref = "org-springframework-spring-context-x1" }
 org-springframework-spring-core = { module = "org.springframework:spring-core", version.ref = "org-springframework-spring-core" }
-org-springframework-spring-core-x1 = { module = "org.springframework:spring-core", version.ref = "org-springframework-spring-core-x1" }
 org-springframework-spring-jdbc = { module = "org.springframework:spring-jdbc", version.ref = "org-springframework-spring-jdbc" }
 org-springframework-spring-test = { module = "org.springframework:spring-test", version.ref = "org-springframework-spring-test" }
-org-springframework-spring-test-x1 = { module = "org.springframework:spring-test", version.ref = "org-springframework-spring-test-x1" }
 org-springframework-spring-tx = { module = "org.springframework:spring-tx", version.ref = "org-springframework-spring-tx" }
 org-springframework-spring-web = { module = "org.springframework:spring-web", version.ref = "org-springframework-spring-web" }
 org-springframework-spring-webflux = { module = "org.springframework:spring-webflux", version.ref = "org-springframework-spring-webflux" }

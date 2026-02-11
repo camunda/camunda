@@ -18,6 +18,7 @@ dependencies {
     implementation(libs.com.jayway.jsonpath.json.path)
     implementation(libs.org.slf4j.slf4j.api)
     api(libs.org.apache.logging.log4j.log4j.api)
+    implementation(libs.org.apache.logging.log4j.log4j.core)
     api(libs.com.google.guava.guava)
     implementation(libs.org.apache.commons.commons.lang3)
     api(libs.net.jodah.failsafe)
@@ -54,3 +55,24 @@ dependencies {
 
 group = "io.camunda.optimize"
 description = "Optimize Commons"
+
+// Generate Version.java from template (replaces Maven templating-maven-plugin)
+val generateVersionJava by tasks.registering(Sync::class) {
+    from("src/main/java-templates")
+    into(layout.buildDirectory.dir("generated/sources/java-templates/java/main"))
+    inputs.property("projectVersion", project.version)
+    val tokenMap = mapOf("project.version" to project.version.toString())
+    filter<org.apache.tools.ant.filters.ReplaceTokens>(
+        "beginToken" to "\${",
+        "endToken" to "}",
+        "tokens" to tokenMap
+    )
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir(generateVersionJava)
+        }
+    }
+}

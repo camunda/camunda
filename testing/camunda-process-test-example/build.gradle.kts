@@ -11,7 +11,7 @@ dependencies {
     testImplementation(project(":camunda-process-test-spring"))
     testImplementation(libs.org.mockito.mockito.core)
     testImplementation(libs.org.awaitility.awaitility)
-    testImplementation(libs.org.springframework.spring.test.x1)
+    testImplementation(libs.org.springframework.spring.test)
     testImplementation(libs.org.wiremock.integrations.wiremock.spring.boot)
 }
 
