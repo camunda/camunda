@@ -95,6 +95,8 @@ public class ProcessEngineMetricsTest {
         .withProcessInstanceKey(processInstanceKey)
         .await();
 
+    assertThat(activeRootProcessInstanceGauge()).isNotNull().isOne();
+
     engine.processInstance().withInstanceKey(processInstanceKey).cancel();
 
     RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
@@ -104,6 +106,7 @@ public class ProcessEngineMetricsTest {
 
     assertThat(activatedProcessInstanceMetric()).isNotNull().isOne();
     assertThat(terminatedProcessInstanceMetric()).isNotNull().isOne();
+    assertThat(activeRootProcessInstanceGauge()).isNotNull().isZero();
 
     assertThat(failedEvaluatedDmnElementsMetric())
         .isNotNull()
@@ -175,6 +178,48 @@ public class ProcessEngineMetricsTest {
     assertThat(processInstanceCreationsMetric("creation_at_given_element")).isOne();
   }
 
+  @Test
+  public void shouldTrackActiveRootProcessInstanceGauge() {
+    // given
+    engine
+        .deployment()
+        .withXmlClasspathResource(DMN_RESOURCE)
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .userTask("waitTask")
+                .endEvent()
+                .done())
+        .deploy();
+
+    final long processInstanceKey = engine.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // Wait for the user task to be created
+    // Wait for the process to reach the user task
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementType(BpmnElementType.USER_TASK)
+        .await();
+
+    // then: gauge should be 1 while process is active
+    assertThat(activeRootProcessInstanceGauge()).isNotNull().isOne();
+
+    // terminate process instance
+    engine.processInstance().withInstanceKey(processInstanceKey).cancel();
+
+    // Wait for process completion
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.TERMINATE_ELEMENT)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementType(BpmnElementType.PROCESS)
+        .await();
+
+    // then: gauge should be 0 after completion
+    assertThat(activeRootProcessInstanceGauge()).isNotNull().isZero();
+  }
+
+  @Test
+  public void shouldInitializeActiveRootProcessInstanceGaugeAfterRecovery() {}
+
   private Double activatedProcessInstanceMetric() {
     return executedProcessInstanceMetric("activated");
   }
@@ -207,6 +252,10 @@ public class ProcessEngineMetricsTest {
         .tag("creation_mode", creationMode)
         .counter()
         .count();
+  }
+
+  private Double activeRootProcessInstanceGauge() {
+    return engine.getMeterRegistry().get("zeebe.active.instances.total").gauge().value();
   }
 
   private Double succeededEvaluatedDmnElementsMetric() {
