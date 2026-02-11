@@ -39,6 +39,27 @@ dependencies {
 group = "io.camunda.optimize"
 description = "Optimize Upgrade"
 
+// Generate PreviousVersion.java from template (replaces Maven templating-maven-plugin)
+val generatePreviousVersionJava by tasks.registering(Sync::class) {
+    from("src/main/java-templates")
+    into(layout.buildDirectory.dir("generated/sources/java-templates/java/main"))
+    inputs.property("projectPreviousVersion", "8.8.0")
+    val tokenMap = mapOf("project.previousVersion" to "8.8.0")
+    filter<org.apache.tools.ant.filters.ReplaceTokens>(
+        "beginToken" to "\${",
+        "endToken" to "}",
+        "tokens" to tokenMap
+    )
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir(generatePreviousVersionJava)
+        }
+    }
+}
+
 val testsJar by tasks.registering(Jar::class) {
     archiveClassifier = "tests"
     from(sourceSets["test"].output)
