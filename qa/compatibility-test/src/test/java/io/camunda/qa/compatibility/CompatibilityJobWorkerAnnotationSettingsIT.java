@@ -89,7 +89,7 @@ class CompatibilityJobWorkerAnnotationSettingsIT {
   }
 
   @Test
-  void shouldForceFetchAllVariablesWhenActivatedJobUsed() {
+  void shouldNotForceFetchAllVariablesWhenActivatedJobUsed() {
     final JobWorkerValue jobWorkerValue = jobWorkerManager.getJobWorker(FORCE_FETCH_JOB_TYPE);
 
     assertThat(jobWorkerValue.getForceFetchAllVariables())
