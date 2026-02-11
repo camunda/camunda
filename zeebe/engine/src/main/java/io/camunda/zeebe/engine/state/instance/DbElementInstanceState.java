@@ -514,16 +514,10 @@ public final class DbElementInstanceState implements MutableElementInstanceState
 
   @Override
   public long getActiveRootProcessInstanceCount() {
+    // parent key with -1 indicates root instances, as root instances have no parent
     parentKey.inner().wrapLong(-1L);
-    final var count = new MutableInteger(0);
-    // runs through all root instances. Can be slow, only used on partition recovered for metrics.
-    parentChildColumnFamily.whileEqualPrefix(
-        parentKey,
-        (key, nil) -> {
-          count.increment();
-          return true;
-        });
-    return count.get();
+    // Use countEqualPrefix to efficiently count root instances
+    return parentChildColumnFamily.countEqualPrefix(parentKey);
   }
 
   private void removeNumberOfTakenSequenceFlows(final long flowScopeKey) {
