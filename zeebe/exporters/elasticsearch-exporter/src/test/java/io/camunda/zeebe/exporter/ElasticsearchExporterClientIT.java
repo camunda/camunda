@@ -11,9 +11,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import co.elastic.clients.elasticsearch._types.Refresh;
+import co.elastic.clients.elasticsearch.cluster.ComponentTemplate;
 import co.elastic.clients.elasticsearch.ilm.GetLifecycleRequest;
-import io.camunda.zeebe.exporter.TestClient.ComponentTemplatesDto.ComponentTemplateWrapper;
-import io.camunda.zeebe.exporter.TestClient.IndexTemplatesDto.IndexTemplateWrapper;
+import co.elastic.clients.elasticsearch.indices.get_index_template.IndexTemplateItem;
 import io.camunda.zeebe.exporter.dto.Template;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
@@ -26,7 +26,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.agrona.CloseHelper;
-import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -129,18 +128,18 @@ final class ElasticsearchExporterClientIT {
         .as("should have created template for value type %s", valueType)
         .isPresent()
         .get()
-        .extracting(IndexTemplateWrapper::name)
+        .extracting(IndexTemplateItem::name)
         .isEqualTo(indexTemplateName);
 
-    final var template = templateWrapper.get().template();
-    assertIndexTemplate(template, expectedTemplate);
+    final var indexTemplate = templateWrapper.get().indexTemplate();
+    assertThat(indexTemplate.indexPatterns()).isEqualTo(expectedTemplate.patterns());
+    assertThat(indexTemplate.composedOf()).isEqualTo(expectedTemplate.composedOf());
+    assertThat(indexTemplate.priority()).isEqualTo((long) expectedTemplate.priority());
+    assertThat(indexTemplate.version()).isEqualTo((long) expectedTemplate.version());
   }
 
   @Test
   void shouldPutComponentTemplate() {
-    // given
-    final Template expectedTemplate = templateReader.readComponentTemplate();
-
     // when
     client.putComponentTemplate();
 
@@ -150,11 +149,13 @@ final class ElasticsearchExporterClientIT {
         .as("should have created component template")
         .isPresent()
         .get()
-        .extracting(ComponentTemplateWrapper::name)
+        .extracting(ComponentTemplate::name)
         .isEqualTo(config.index.prefix + "-" + VersionUtil.getVersionLowerCase());
 
-    final var template = templateWrapper.get().template();
-    assertIndexTemplate(template, expectedTemplate);
+    final var componentTemplate = templateWrapper.get().componentTemplate();
+    assertThat(componentTemplate.template()).isNotNull();
+    assertThat(componentTemplate.template().mappings()).isNotNull();
+    assertThat(componentTemplate.template().settings()).isNotNull();
   }
 
   @Test

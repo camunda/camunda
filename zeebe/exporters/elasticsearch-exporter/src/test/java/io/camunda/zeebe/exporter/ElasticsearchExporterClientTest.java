@@ -42,8 +42,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 @Execution(ExecutionMode.CONCURRENT)
 final class ElasticsearchExporterClientTest {
-  private static final ObjectMapper MAPPER =
-      new ObjectMapper().registerModule(new ZeebeProtocolModule());
 
   private static final int PARTITION_ID = 1;
 
