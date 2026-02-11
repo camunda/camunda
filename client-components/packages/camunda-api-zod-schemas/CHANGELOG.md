@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.0.37
+
+### 🚀 Enhancements
+
+- update zod schema for version statistics endpoint ([#45418](https://github.com/camunda/camunda/pull/45418))
+
+### ❤️ Contributors
+
+- Eddie Tsedeke ([@tsedekey](https://github.com/tsedekey))
+
 ## v0.0.36
 
 ### 🚀 Enhancements
