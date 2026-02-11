@@ -65,7 +65,7 @@ dependencies {
     testImplementation(project(":zeebe-atomix-cluster"))
     testImplementation(project(":zeebe-msgpack-core"))
     testImplementation(project(":zeebe-protocol-asserts"))
-    testImplementation(project(":zeebe-scheduler"))
+    testImplementation(project(":zeebe-scheduler", configuration = "tests"))
     testImplementation(project(":zeebe-test-util"))
     testImplementation(project(":zeebe-gateway"))
     testImplementation(libs.org.reactivestreams.reactive.streams)
