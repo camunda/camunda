@@ -4,13 +4,118 @@
 
 plugins {
     id("buildlogic.java-conventions")
+    id("org.assertj.generator") version "1.1.0"
+}
+
+val assertjGeneratedDir = layout.buildDirectory.dir("generated-sources/assertj-assertions")
+
+val protocolOutput = project(":zeebe-protocol")
+    .extensions
+    .getByType(org.gradle.api.tasks.SourceSetContainer::class)
+    .named("main")
+    .get()
+    .output
+val protocolCompileClasspath = project(":zeebe-protocol")
+    .configurations
+    .getByName("compileClasspath")
+val protocolRuntimeClasspath = project(":zeebe-protocol")
+    .configurations
+    .getByName("runtimeClasspath")
+val securityProtocolOutput = project(":camunda-security-protocol")
+    .extensions
+    .getByType(org.gradle.api.tasks.SourceSetContainer::class)
+    .named("main")
+    .get()
+    .output
+val securityProtocolCompileClasspath = project(":camunda-security-protocol")
+    .configurations
+    .getByName("compileClasspath")
+val securityProtocolRuntimeClasspath = project(":camunda-security-protocol")
+    .configurations
+    .getByName("runtimeClasspath")
+abstract class PatchRecordAssert : DefaultTask() {
+    @get:org.gradle.api.tasks.Optional
+    @get:InputFile
+    abstract val recordAssertFile: RegularFileProperty
+
+    @get:OutputFile
+    abstract val outputFile: RegularFileProperty
+
+    @TaskAction
+    fun patch() {
+        val recordAssert = recordAssertFile.get().asFile
+        if (!recordAssert.exists()) {
+            return
+        }
+        val updated = recordAssert.readText()
+            .replace("T value", "RecordValue value")
+            .replace("T actualValue", "RecordValue actualValue")
+        outputFile.get().asFile.writeText(updated)
+    }
+}
+
+val patchRecordAssert by tasks.registering(PatchRecordAssert::class) {
+    group = "code generation"
+    description = "Patch generated RecordAssert generic types"
+    val assertjSourceSet = sourceSets.named("assertj").get()
+    dependsOn(tasks.named(assertjSourceSet.getTaskName("generate", "assertJ")))
+    val recordAssert = layout.buildDirectory.file(
+        "generated-sources/assertj-assertions/io/camunda/zeebe/protocol/record/RecordAssert.java"
+    )
+    recordAssertFile.set(recordAssert)
+    outputFile.set(recordAssert)
+    onlyIf { recordAssertFile.get().asFile.exists() }
 }
 
 dependencies {
-    implementation(project(":zeebe-protocol"))
+    api(project(":zeebe-protocol"))
     implementation(project(":camunda-security-protocol"))
     implementation(libs.org.assertj.assertj.core)
     implementation(libs.javax.annotation.javax.annotation.api)
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir(assertjGeneratedDir)
+        }
+        assertJ {
+            skip = true
+        }
+    }
+    create("assertj") {
+        compileClasspath += protocolOutput + securityProtocolOutput
+        compileClasspath += protocolCompileClasspath + securityProtocolCompileClasspath
+        runtimeClasspath += protocolOutput + securityProtocolOutput
+        runtimeClasspath += protocolRuntimeClasspath + securityProtocolRuntimeClasspath
+        assertJ {
+            outputDir.set(assertjGeneratedDir)
+            classDirectories.srcDir(protocolOutput.classesDirs)
+            classDirectories.srcDir(securityProtocolOutput.classesDirs)
+            packages {
+                include("io.camunda.zeebe.protocol.record**")
+            }
+            classes {
+                exclude("**.Immutable**")
+            }
+            entryPoints {
+                only("STANDARD", "SOFT")
+            }
+            hierarchical = false
+        }
+    }
+}
+
+tasks.named("compileJava") {
+    dependsOn(patchRecordAssert)
+}
+
+tasks.named(sourceSets.named("assertj").get().getTaskName("generate", "assertJ")) {
+    dependsOn(
+        project(":zeebe-protocol").tasks.named("classes"),
+        project(":camunda-security-protocol").tasks.named("classes")
+    )
+    notCompatibleWithConfigurationCache("AssertJ generator task is not configuration cache compatible")
 }
 
 description = "Zeebe Protocol AssertJ Assertions"
