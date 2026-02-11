@@ -61,55 +61,6 @@
     </where>
   </sql>
 
-  <resultMap id="GlobalJobStatisticsResultMap"
-    type="io.camunda.db.rdbms.read.domain.GlobalJobStatisticsDbResult">
-    <constructor>
-      <arg column="CREATED_COUNT" javaType="java.lang.Long"/>
-      <arg column="LAST_CREATED_AT" javaType="java.time.OffsetDateTime"/>
-      <arg column="COMPLETED_COUNT" javaType="java.lang.Long"/>
-      <arg column="LAST_COMPLETED_AT" javaType="java.time.OffsetDateTime"/>
-      <arg column="FAILED_COUNT" javaType="java.lang.Long"/>
-      <arg column="LAST_FAILED_AT" javaType="java.time.OffsetDateTime"/>
-      <arg column="INCOMPLETE_BATCH" javaType="java.lang.Boolean"/>
-    </constructor>
-  </resultMap>
-
-  <select id="globalJobStatistics"
-    parameterType="io.camunda.db.rdbms.read.domain.GlobalJobStatisticsDbQuery"
-    resultMap="GlobalJobStatisticsResultMap"
-    statementType="PREPARED">
-    SELECT
-      SUM(CREATED_COUNT) AS CREATED_COUNT,
-      MAX(LAST_CREATED_AT) AS LAST_CREATED_AT,
-      SUM(COMPLETED_COUNT) AS COMPLETED_COUNT,
-      MAX(LAST_COMPLETED_AT) AS LAST_COMPLETED_AT,
-      SUM(FAILED_COUNT) AS FAILED_COUNT,
-      MAX(LAST_FAILED_AT) AS LAST_FAILED_AT,
-      CASE WHEN MAX(CASE WHEN INCOMPLETE_BATCH = ${true} THEN 1 ELSE 0 END) = 1 THEN ${true} ELSE ${false} END AS INCOMPLETE_BATCH
-    FROM ${prefix}JOB_METRICS_BATCH
-    <include refid="io.camunda.db.rdbms.sql.JobMetricsBatchMapper.globalJobStatisticsFilter"/>
-  </select>
-
-  <sql id="globalJobStatisticsFilter">
-    <where>
-      <if test="authorizedTenantIds != null and !authorizedTenantIds.isEmpty()">
-        AND TENANT_ID IN
-        <foreach collection="authorizedTenantIds" item="tenantId" open="(" separator="," close=")">
-          #{tenantId}
-        </foreach>
-      </if>
-      <if test="filter.from != null">
-        AND START_TIME &gt;= #{filter.from}
-      </if>
-      <if test="filter.to != null">
-        AND END_TIME &lt;= #{filter.to}
-      </if>
-      <if test="filter.jobType != null">
-        AND JOB_TYPE = #{filter.jobType}
-      </if>
-    </where>
-  </sql>
-
   <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.JobMetricsBatchDbModel">
     INSERT INTO ${prefix}JOB_METRICS_BATCH (JOB_METRICS_BATCH_KEY,
                                             PARTITION_ID,

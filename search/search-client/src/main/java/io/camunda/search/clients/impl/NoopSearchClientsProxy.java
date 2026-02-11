@@ -28,6 +28,7 @@ import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.IncidentProcessInstanceStatisticsByDefinitionEntity;
 import io.camunda.search.entities.IncidentProcessInstanceStatisticsByErrorEntity;
 import io.camunda.search.entities.JobEntity;
+import io.camunda.search.entities.JobTypeStatisticsEntity;
 import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.entities.MessageSubscriptionEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
@@ -65,6 +66,7 @@ import io.camunda.search.query.IncidentProcessInstanceStatisticsByDefinitionQuer
 import io.camunda.search.query.IncidentProcessInstanceStatisticsByErrorQuery;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.JobQuery;
+import io.camunda.search.query.JobTypeStatisticsQuery;
 import io.camunda.search.query.MappingRuleQuery;
 import io.camunda.search.query.MessageSubscriptionQuery;
 import io.camunda.search.query.ProcessDefinitionInstanceStatisticsQuery;
@@ -402,5 +404,11 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
   @Override
   public GlobalJobStatisticsEntity getGlobalJobStatistics(final GlobalJobStatisticsQuery query) {
     return new GlobalJobStatisticsEntity(null, null, null, false);
+  }
+
+  @Override
+  public SearchQueryResult<JobTypeStatisticsEntity> getJobTypeStatistics(
+      final JobTypeStatisticsQuery query) {
+    return SearchQueryResult.empty();
   }
 }
