@@ -110,7 +110,8 @@ public class MessageSubscriptionSearchIT {
     assertThat(searchResponse.items()).size().isEqualTo(1);
     final var result = searchResponse.items().getFirst();
     assertThat(result).isEqualTo(expectedMessageSubscription);
-    // Assert all fields explicitly to ensure consistency across different secondary storage backends
+    // Assert all fields explicitly to ensure consistency across different secondary storage
+    // backends
     assertThat(result.getMessageSubscriptionKey())
         .isEqualTo(expectedMessageSubscription.getMessageSubscriptionKey());
     assertThat(result.getProcessDefinitionId())

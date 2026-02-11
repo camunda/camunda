@@ -114,12 +114,14 @@ public class CorrelatedMessageSubscriptionSearchIT {
     assertThat(searchResponse.items()).size().isEqualTo(1);
     final var result = searchResponse.items().getFirst();
     assertThat(result).isEqualTo(expectedCorrelatedMessageSubscription);
-    // Assert all fields explicitly to ensure consistency across different secondary storage backends
+    // Assert all fields explicitly to ensure consistency across different secondary storage
+    // backends
     assertThat(result.getCorrelationKey())
         .isEqualTo(expectedCorrelatedMessageSubscription.getCorrelationKey());
     assertThat(result.getCorrelationTime())
         .isEqualTo(expectedCorrelatedMessageSubscription.getCorrelationTime());
-    assertThat(result.getElementId()).isEqualTo(expectedCorrelatedMessageSubscription.getElementId());
+    assertThat(result.getElementId())
+        .isEqualTo(expectedCorrelatedMessageSubscription.getElementId());
     assertThat(result.getElementInstanceKey())
         .isEqualTo(expectedCorrelatedMessageSubscription.getElementInstanceKey());
     assertThat(result.getMessageKey())
@@ -170,12 +172,14 @@ public class CorrelatedMessageSubscriptionSearchIT {
     assertThat(searchResponse.items()).size().isEqualTo(1);
     final var result = searchResponse.items().getFirst();
     assertThat(result).isEqualTo(expectedCorrelatedMessageSubscription);
-    // Assert all fields explicitly to ensure consistency across different secondary storage backends
+    // Assert all fields explicitly to ensure consistency across different secondary storage
+    // backends
     assertThat(result.getCorrelationKey())
         .isEqualTo(expectedCorrelatedMessageSubscription.getCorrelationKey());
     assertThat(result.getCorrelationTime())
         .isEqualTo(expectedCorrelatedMessageSubscription.getCorrelationTime());
-    assertThat(result.getElementId()).isEqualTo(expectedCorrelatedMessageSubscription.getElementId());
+    assertThat(result.getElementId())
+        .isEqualTo(expectedCorrelatedMessageSubscription.getElementId());
     assertThat(result.getElementInstanceKey())
         .isEqualTo(expectedCorrelatedMessageSubscription.getElementInstanceKey());
     assertThat(result.getMessageKey())
