@@ -14,7 +14,10 @@ import io.camunda.db.rdbms.sql.JobMetricsBatchMapper;
 import io.camunda.search.clients.reader.JobMetricsBatchReader;
 import io.camunda.search.entities.GlobalJobStatisticsEntity;
 import io.camunda.search.entities.GlobalJobStatisticsEntity.StatusMetric;
+import io.camunda.search.entities.JobTypeStatisticsEntity;
 import io.camunda.search.query.GlobalJobStatisticsQuery;
+import io.camunda.search.query.JobTypeStatisticsQuery;
+import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.reader.ResourceAccessChecks;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,6 +58,12 @@ public class JobMetricsBatchDbReader implements JobMetricsBatchReader {
         new StatusMetric(ofNullable(result.completedCount()).orElse(0L), result.lastCompletedAt()),
         new StatusMetric(ofNullable(result.failedCount()).orElse(0L), result.lastFailedAt()),
         ofNullable(result.incompleteBatch()).orElse(false));
+  }
+
+  @Override
+  public SearchQueryResult<JobTypeStatisticsEntity> getJobTypeStatistics(
+      final JobTypeStatisticsQuery query, final ResourceAccessChecks resourceAccessChecks) {
+    throw new UnsupportedOperationException("Not implemented yet");
   }
 
   private GlobalJobStatisticsEntity emptyGlobalJobStatistics() {

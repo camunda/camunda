@@ -128,6 +128,21 @@ public final class SearchQueryRequestMapper {
         SearchQueryBuilders.globalJobStatisticsSearchQuery().filter(filter.get()).build());
   }
 
+  public static Either<ProblemDetail, io.camunda.search.query.JobTypeStatisticsQuery>
+      toJobTypeStatisticsQuery(
+          final io.camunda.gateway.protocol.model.JobTypeStatisticsQuery request) {
+    if (request == null) {
+      return Either.right(SearchQueryBuilders.jobTypeStatisticsSearchQuery().build());
+    }
+    final Either<List<String>, SearchQueryPage> page =
+        request.getPage() == null
+            ? Either.right(null)
+            : Either.right(toSearchQueryPage(request.getPage()));
+    final var filter = SearchQueryFilterMapper.toJobTypeStatisticsFilter(request.getFilter());
+    return buildSearchQuery(
+        filter, Either.right(null), page, SearchQueryBuilders::jobTypeStatisticsSearchQuery);
+  }
+
   public static Either<ProblemDetail, ProcessDefinitionQuery> toProcessDefinitionQuery(
       final io.camunda.gateway.protocol.model.simple.ProcessDefinitionFilter filter,
       final io.camunda.gateway.protocol.model.simple.SearchQueryPageRequest page,
