@@ -621,3 +621,6 @@ software-amazon-jdbc-aws-advanced-jdbc-wrapper = { module = "software.amazon.jdb
 tools-jackson-core-jackson-core = { module = "tools.jackson.core:jackson-core", version.ref = "tools-jackson-core-jackson-core" }
 tools-jackson-core-jackson-databind = { module = "tools.jackson.core:jackson-databind", version.ref = "tools-jackson-core-jackson-databind" }
 uk-co-real-logic-sbe-tool = { module = "uk.co.real-logic:sbe-tool", version.ref = "uk-co-real-logic-sbe-tool" }
+
+[plugins]
+spring-boot = { id = "org.springframework.boot", version.ref = "org-springframework-boot-spring-boot" }
