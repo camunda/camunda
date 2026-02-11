@@ -69,7 +69,6 @@ jobs:
     if: >
       github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'pull_request' &&
-       (github.actor == 'eamonnmoloney' || github.actor == 'remcowesterhoud') &&
        !contains(github.event.pull_request.labels.*.name, 'skip-always-green'))
     steps:
       - run: echo "Workflow conditions met, proceeding with build"
@@ -137,34 +136,6 @@ jobs:
         with:
           build_status: ${{ job.status }}
           job_name: docker-build-helm-integration-tasklist-frontend
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-  build-identity-frontend:
-    name: Build Identity Frontend
-    needs: should-run
-    permissions: { }
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - uses: ./.github/actions/build-frontend
-        with:
-          directory: ./identity/client
-      - name: Upload Identity frontend artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: identity-frontend
-          path: identity/client/dist
-          retention-days: 1
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          build_status: ${{ job.status }}
-          job_name: docker-build-helm-integration-identity-frontend
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
@@ -336,7 +307,7 @@ jobs:
       platforms: gke
       camunda-helm-git-ref: ${{ inputs.helmRepositoryBranchName || 'main' }}
       camunda-helm-dir: ${{ inputs.helmRepositoryDirName || 'camunda-platform-8.6' }}
-      namespace-prefix: monorepo
+      namespace-prefix: mono-8-6
       test-enabled: true
       e2e-enabled: true
       deployment-ttl: ${{ inputs.deployment-ttl || '' }}
@@ -375,5 +346,5 @@ jobs:
         secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_PSW | TEST_DOCKER_PASSWORD;
         secret/data/github.com/organizations/camunda NEXUS_USR | TEST_DOCKER_USERNAME_CAMUNDA_CLOUD;
         secret/data/github.com/organizations/camunda NEXUS_PSW | TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD;
-
+        secret/data/products/distribution/ci DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET;
 
