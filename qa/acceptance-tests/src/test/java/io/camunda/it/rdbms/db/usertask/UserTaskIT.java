@@ -9,6 +9,7 @@ package io.camunda.it.rdbms.db.usertask;
 
 import static io.camunda.it.rdbms.db.fixtures.UserTaskFixtures.createAndSaveRandomUserTasks;
 import static io.camunda.it.rdbms.db.fixtures.UserTaskFixtures.createAndSaveUserTask;
+import static java.util.Map.entry;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
@@ -34,6 +35,7 @@ import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.assertj.core.data.TemporalUnitWithinOffset;
 import org.junit.jupiter.api.Tag;
@@ -56,6 +58,20 @@ public class UserTaskIT {
 
     final var instance = rdbmsService.getUserTaskReader().findOne(userTask.userTaskKey()).get();
     assertUserTaskEntity(instance, userTask);
+  }
+
+  @TestTemplate
+  public void shouldCreateAndFindUserTaskByKeyWithCustomHeader(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+
+    final UserTaskDbModel userTask =
+        UserTaskFixtures.createRandomized(b -> b.customHeaders(Map.of("headerKey", "headerValue")));
+    createAndSaveUserTask(rdbmsService, userTask);
+
+    final var instance = rdbmsService.getUserTaskReader().findOne(userTask.userTaskKey()).get();
+    assertUserTaskEntity(instance, userTask);
+    assertThat(instance.customHeaders()).containsExactly(entry("headerKey", "headerValue"));
   }
 
   @TestTemplate
