@@ -4,6 +4,7 @@
 
 plugins {
     id("buildlogic.java-conventions")
+    alias(libs.plugins.spring.boot)
     id("org.openapi.generator")
 }
 
@@ -165,8 +166,6 @@ dependencies {
     implementation(libs.org.slf4j.slf4j.api)
     implementation(libs.org.apache.logging.log4j.log4j.api)
     implementation(libs.org.apache.logging.log4j.log4j.layout.template.json)
-    implementation(libs.org.springframework.boot.spring.boot)
-    implementation(libs.org.springframework.boot.spring.boot.autoconfigure)
     implementation(libs.org.springframework.boot.spring.boot.actuator)
     implementation(libs.org.springframework.boot.spring.boot.health)
     implementation(libs.org.springframework.spring.web)
@@ -184,7 +183,6 @@ dependencies {
     implementation(libs.org.springframework.spring.beans)
     implementation(libs.org.springframework.spring.core)
     implementation(libs.org.springframework.spring.context)
-    implementation(libs.org.springframework.boot.spring.boot.actuator.autoconfigure)
     implementation(libs.org.springframework.spring.webmvc)
     implementation(libs.org.apache.tomcat.embed.tomcat.embed.core)
     implementation(libs.jakarta.annotation.jakarta.annotation.api)
