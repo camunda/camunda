@@ -244,11 +244,63 @@ public class JobSearchIT {
             .send()
             .join();
 
-    // then
+    // then - assert all fields with explicit expected values to ensure consistency across storage
+    // backends
     assertThat(result.items()).hasSize(1);
-    assertThat(result.items().getFirst().getJobKey()).isEqualTo(taskABpmnJob.getJobKey());
-    assertThat(result.items().getFirst().getRootProcessInstanceKey())
-        .isEqualTo(taskABpmnJob.getProcessInstanceKey());
+    final var job = result.items().getFirst();
+    assertThat(job.getJobKey()).isEqualTo(taskABpmnJob.getJobKey());
+    assertThat(job.getType()).isEqualTo("taskABpmn");
+    assertThat(job.getWorker()).isEqualTo("worker1");
+    assertThat(job.getState()).isEqualTo(taskABpmnJob.getState());
+    assertThat(job.getKind()).isEqualTo(taskABpmnJob.getKind());
+    assertThat(job.getListenerEventType()).isEqualTo(ListenerEventType.UNSPECIFIED);
+    assertThat(job.getRetries()).isEqualTo(taskABpmnJob.getRetries());
+    // Assert default values for optional fields - these should be false, not null, across all
+    // backends
+    assertThat(job.isDenied()).isFalse();
+    assertThat(job.getDeniedReason()).isEqualTo("");
+    assertThat(job.hasFailedWithRetriesLeft()).isFalse();
+    assertThat(job.getErrorCode()).isEqualTo("");
+    assertThat(job.getErrorMessage()).isEqualTo("");
+    assertThat(job.getCustomerHeaders()).isEqualTo(taskABpmnJob.getCustomerHeaders());
+    assertThat(job.getDeadline()).isEqualTo(taskABpmnJob.getDeadline());
+    assertThat(job.getEndTime()).isNotNull();
+    assertThat(job.getProcessDefinitionId()).isEqualTo(taskABpmnJob.getProcessDefinitionId());
+    assertThat(job.getProcessDefinitionKey()).isEqualTo(taskABpmnJob.getProcessDefinitionKey());
+    assertThat(job.getProcessInstanceKey()).isEqualTo(taskABpmnJob.getProcessInstanceKey());
+    assertThat(job.getElementId()).isEqualTo(taskABpmnJob.getElementId());
+    assertThat(job.getElementInstanceKey()).isEqualTo(taskABpmnJob.getElementInstanceKey());
+    assertThat(job.getTenantId()).isEqualTo(taskABpmnJob.getTenantId());
+    assertThat(job.getCreationTime()).isEqualTo(taskABpmnJob.getCreationTime());
+    assertThat(job.getLastUpdateTime()).isEqualTo(taskABpmnJob.getLastUpdateTime());
+    assertThat(job.getRootProcessInstanceKey()).isEqualTo(taskABpmnJob.getProcessInstanceKey());
+  }
+
+  @Test
+  void shouldReturnEmptyCustomHeadersNotNullForJobWithoutHeaders() {
+    // when - search for jobs without custom headers (most jobs don't have them)
+    final var result =
+        camundaClient.newJobSearchRequest().filter(f -> f.type("taskABpmn")).send().join();
+
+    // then - customHeaders should be empty map, not null (consistent across ES and RDBMS)
+    assertThat(result.items()).hasSizeGreaterThan(0);
+    final var job = result.items().getFirst();
+    assertThat(job.getCustomerHeaders()).isNotNull().isEmpty();
+  }
+
+  @Test
+  void shouldReturnNullForOptionalJobFields() {
+    // when - search for a completed job without errors
+    final var result =
+        camundaClient.newJobSearchRequest().filter(f -> f.type("taskABpmn")).send().join();
+
+    // then - optional fields should be null (not empty string or 0) across ES and RDBMS
+    assertThat(result.items()).hasSizeGreaterThan(0);
+    final var job = result.items().getFirst();
+    assertThat(job.getErrorCode()).isEqualTo("");
+    assertThat(job.getErrorMessage()).isEqualTo("");
+    assertThat(job.getDeniedReason()).isEqualTo("");
+    assertThat(job.getListenerEventType()).isEqualTo(ListenerEventType.UNSPECIFIED);
   }
 
   @Test

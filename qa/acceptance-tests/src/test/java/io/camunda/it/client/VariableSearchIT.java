@@ -325,8 +325,15 @@ class VariableSearchIT {
     // when
     final var result = camundaClient.newVariableGetRequest(variable.getVariableKey()).send().join();
 
-    // then
+    // then - assert all fields with explicit expected values to ensure consistency across storage backends
     assertThat(result.getVariableKey()).isEqualTo(variable.getVariableKey());
+    assertThat(result.getName()).isEqualTo(variable.getName());
+    assertThat(result.getValue()).isEqualTo(variable.getValue());
+    assertThat(result.getScopeKey()).isEqualTo(variable.getScopeKey());
+    assertThat(result.getProcessInstanceKey()).isEqualTo(variable.getProcessInstanceKey());
+    assertThat(result.getTenantId()).isEqualTo(variable.getTenantId());
+    // Assert default value for isTruncated - should be false for normal-sized variables across all backends
+    assertThat(result.isTruncated()).isFalse();
     assertThat(result.getRootProcessInstanceKey()).isEqualTo(variable.getProcessInstanceKey());
   }
 

@@ -112,7 +112,29 @@ public class CorrelatedMessageSubscriptionSearchIT {
 
     // Then
     assertThat(searchResponse.items()).size().isEqualTo(1);
-    assertThat(searchResponse.items().getFirst()).isEqualTo(expectedCorrelatedMessageSubscription);
+    final var result = searchResponse.items().getFirst();
+    assertThat(result).isEqualTo(expectedCorrelatedMessageSubscription);
+    // Assert all fields explicitly to ensure consistency across different secondary storage backends
+    assertThat(result.getCorrelationKey())
+        .isEqualTo(expectedCorrelatedMessageSubscription.getCorrelationKey());
+    assertThat(result.getCorrelationTime())
+        .isEqualTo(expectedCorrelatedMessageSubscription.getCorrelationTime());
+    assertThat(result.getElementId()).isEqualTo(expectedCorrelatedMessageSubscription.getElementId());
+    assertThat(result.getElementInstanceKey())
+        .isEqualTo(expectedCorrelatedMessageSubscription.getElementInstanceKey());
+    assertThat(result.getMessageKey())
+        .isEqualTo(expectedCorrelatedMessageSubscription.getMessageKey());
+    assertThat(result.getMessageName())
+        .isEqualTo(expectedCorrelatedMessageSubscription.getMessageName());
+    assertThat(result.getPartitionId())
+        .isEqualTo(expectedCorrelatedMessageSubscription.getPartitionId());
+    assertThat(result.getProcessDefinitionId())
+        .isEqualTo(expectedCorrelatedMessageSubscription.getProcessDefinitionId());
+    assertThat(result.getProcessInstanceKey())
+        .isEqualTo(expectedCorrelatedMessageSubscription.getProcessInstanceKey());
+    assertThat(result.getSubscriptionKey())
+        .isEqualTo(expectedCorrelatedMessageSubscription.getSubscriptionKey());
+    assertThat(result.getTenantId()).isEqualTo(expectedCorrelatedMessageSubscription.getTenantId());
   }
 
   @Test
@@ -146,7 +168,31 @@ public class CorrelatedMessageSubscriptionSearchIT {
 
     // Then
     assertThat(searchResponse.items()).size().isEqualTo(1);
-    assertThat(searchResponse.items().getFirst()).isEqualTo(expectedCorrelatedMessageSubscription);
+    final var result = searchResponse.items().getFirst();
+    assertThat(result).isEqualTo(expectedCorrelatedMessageSubscription);
+    // Assert all fields explicitly to ensure consistency across different secondary storage backends
+    assertThat(result.getCorrelationKey())
+        .isEqualTo(expectedCorrelatedMessageSubscription.getCorrelationKey());
+    assertThat(result.getCorrelationTime())
+        .isEqualTo(expectedCorrelatedMessageSubscription.getCorrelationTime());
+    assertThat(result.getElementId()).isEqualTo(expectedCorrelatedMessageSubscription.getElementId());
+    assertThat(result.getElementInstanceKey())
+        .isEqualTo(expectedCorrelatedMessageSubscription.getElementInstanceKey());
+    assertThat(result.getMessageKey())
+        .isEqualTo(expectedCorrelatedMessageSubscription.getMessageKey());
+    assertThat(result.getMessageName())
+        .isEqualTo(expectedCorrelatedMessageSubscription.getMessageName());
+    assertThat(result.getPartitionId())
+        .isEqualTo(expectedCorrelatedMessageSubscription.getPartitionId());
+    assertThat(result.getProcessDefinitionId())
+        .isEqualTo(expectedCorrelatedMessageSubscription.getProcessDefinitionId());
+    assertThat(result.getProcessDefinitionKey())
+        .isEqualTo(expectedCorrelatedMessageSubscription.getProcessDefinitionKey());
+    assertThat(result.getProcessInstanceKey())
+        .isEqualTo(expectedCorrelatedMessageSubscription.getProcessInstanceKey());
+    assertThat(result.getSubscriptionKey())
+        .isEqualTo(expectedCorrelatedMessageSubscription.getSubscriptionKey());
+    assertThat(result.getTenantId()).isEqualTo(expectedCorrelatedMessageSubscription.getTenantId());
   }
 
   @Test

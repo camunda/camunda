@@ -335,6 +335,23 @@ public class ElementInstanceSearchIT {
 
     // then
     assertThat(result).isNotNull().isEqualTo(elementInstance);
+    // Assert all fields explicitly to ensure consistency across different secondary storage backends.
+    // While the object equality check above validates all fields, explicit assertions provide clearer
+    // error messages when a field mismatch occurs, making it easier to identify which specific field
+    // is inconsistent between storage backends.
+    assertThat(result.getElementInstanceKey()).isEqualTo(elementInstance.getElementInstanceKey());
+    assertThat(result.getProcessDefinitionKey()).isEqualTo(elementInstance.getProcessDefinitionKey());
+    assertThat(result.getProcessDefinitionId()).isEqualTo(elementInstance.getProcessDefinitionId());
+    assertThat(result.getProcessInstanceKey()).isEqualTo(elementInstance.getProcessInstanceKey());
+    assertThat(result.getElementId()).isEqualTo(elementInstance.getElementId());
+    assertThat(result.getElementName()).isEqualTo(elementInstance.getElementName());
+    assertThat(result.getStartDate()).isEqualTo(elementInstance.getStartDate());
+    assertThat(result.getEndDate()).isEqualTo(elementInstance.getEndDate());
+    assertThat(result.getIncident()).isEqualTo(elementInstance.getIncident());
+    assertThat(result.getIncidentKey()).isEqualTo(elementInstance.getIncidentKey());
+    assertThat(result.getState()).isEqualTo(elementInstance.getState());
+    assertThat(result.getTenantId()).isEqualTo(elementInstance.getTenantId());
+    assertThat(result.getType()).isEqualTo(elementInstance.getType());
   }
 
   @Test

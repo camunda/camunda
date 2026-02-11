@@ -33,6 +33,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import org.assertj.core.data.TemporalUnitWithinOffset;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -656,11 +657,33 @@ class UserTaskSearchIT {
 
   @Test
   void shouldGetUserTaskByKey() {
-    // when
-    final var result = camundaClient.newUserTaskGetRequest(userTaskKeyTaskAssigned).send().join();
+    // when - retrieve the subprocess task which is in an active state
+    final var result = camundaClient.newUserTaskGetRequest(userTaskSubprocessKey).send().join();
 
-    // then
-    assertThat(result.getUserTaskKey()).isEqualTo(userTaskKeyTaskAssigned);
+    // then - assert all fields have expected values
+    assertThat(result.getUserTaskKey()).isEqualTo(userTaskSubprocessKey);
+    assertThat(result.getName()).isEqualTo("TaskSub");
+    assertThat(result.getState()).isEqualTo(UserTaskState.CREATED);
+    assertThat(result.getAssignee()).isNull();
+    assertThat(result.getElementId()).isEqualTo("TaskSub");
+    assertThat(result.getElementInstanceKey()).isGreaterThan(0L);
+    assertThat(result.getCandidateGroups()).isEmpty();
+    assertThat(result.getCandidateUsers()).isEmpty();
+    assertThat(result.getBpmnProcessId()).isEqualTo("processWithSubProcess");
+    assertThat(result.getProcessName()).isNull();
+    assertThat(result.getProcessDefinitionKey()).isGreaterThan(0L);
+    assertThat(result.getProcessInstanceKey()).isGreaterThan(0L);
+    assertThat(result.getFormKey()).isNull();
+    assertThat(result.getCreationDate()).isBeforeOrEqualTo(OffsetDateTime.now());
+    assertThat(result.getCompletionDate()).isNull();
+    assertThat(result.getFollowUpDate()).isNull();
+    assertThat(result.getDueDate()).isNull();
+    assertThat(result.getTenantId()).isEqualTo("<default>");
+    assertThat(result.getExternalFormReference()).isNull();
+    assertThat(result.getProcessDefinitionVersion()).isEqualTo(1);
+    assertThat(result.getCustomHeaders()).isEmpty();
+    assertThat(result.getPriority()).isEqualTo(50);
+    assertThat(result.getTags()).isEmpty();
   }
 
   @Test
@@ -716,6 +739,89 @@ class UserTaskSearchIT {
     assertThat(problemException.code()).isEqualTo(404);
     assertThat(problemException.details().getDetail())
         .contains("User Task with key '%d' not found".formatted(userTaskKey));
+  }
+
+  @Test
+  void shouldReturnEmptyCollectionsNotNullForUserTaskWithoutCandidates() {
+    // given - find a task without candidate groups or users (process "simple.bpmn" has no
+    // candidates)
+    final var result =
+        camundaClient
+            .newUserTaskSearchRequest()
+            .filter(f -> f.bpmnProcessId("process"))
+            .send()
+            .join();
+
+    // then - assert collections are empty, not null (consistent across ES and RDBMS)
+    assertThat(result.items()).hasSizeGreaterThan(0);
+    final var task = result.items().getFirst();
+    assertThat(task.getCandidateGroups()).isNotNull().isEmpty();
+    assertThat(task.getCandidateUsers()).isNotNull().isEmpty();
+    assertThat(task.getCustomHeaders()).isNotNull().isEmpty();
+    assertThat(task.getTags()).isNotNull().isEmpty();
+  }
+
+  @Test
+  void shouldReturnEmptyCollectionsNotNullWhenGettingUserTaskByKey() {
+    // given - get task by key (process "simple.bpmn" has no candidates)
+    final var searchResult =
+        camundaClient
+            .newUserTaskSearchRequest()
+            .filter(f -> f.bpmnProcessId("process"))
+            .send()
+            .join();
+    final var taskKey = searchResult.items().getFirst().getUserTaskKey();
+
+    // when
+    final var result = camundaClient.newUserTaskGetRequest(taskKey).send().join();
+
+    // then - assert collections are empty, not null (consistent across ES and RDBMS)
+    assertThat(result.getCandidateGroups()).isNotNull().isEmpty();
+    assertThat(result.getCandidateUsers()).isNotNull().isEmpty();
+    assertThat(result.getCustomHeaders()).isNotNull().isEmpty();
+    assertThat(result.getTags()).isNotNull().isEmpty();
+  }
+
+  @Test
+  void shouldReturnNullForOptionalTextFields() {
+    // given - find a task without assignee, formKey, externalFormReference
+    final var result =
+        camundaClient
+            .newUserTaskSearchRequest()
+            .filter(f -> f.bpmnProcessId("process").state(UserTaskState.CREATED))
+            .send()
+            .join();
+
+    // then - assert optional text fields are null (not empty string) across ES and RDBMS
+    assertThat(result.items()).hasSizeGreaterThan(0);
+    final var task = result.items().getFirst();
+    assertThat(task.getAssignee()).isNull();
+    assertThat(task.getFormKey()).isNull();
+    assertThat(task.getExternalFormReference()).isNull();
+  }
+
+  @Test
+  void shouldReturnNullForOptionalDateFields() {
+    // given - find a task that hasn't been completed (no completion/due/followUp dates)
+    final var result =
+        camundaClient
+            .newUserTaskSearchRequest()
+            .filter(f -> f.bpmnProcessId("process").state(UserTaskState.CREATED))
+            .send()
+            .join();
+
+    // then - assert optional date fields are null (not epoch) across ES and RDBMS
+    assertThat(result.items()).hasSizeGreaterThan(0);
+    final var task = result.items().getFirst();
+    assertThat(task.getCompletionDate()).isNull();
+    assertThat(task.getDueDate())
+        .isCloseTo(
+            OffsetDateTime.now().minusDays(1),
+            new TemporalUnitWithinOffset(5, java.time.temporal.ChronoUnit.SECONDS));
+    assertThat(task.getFollowUpDate())
+        .isCloseTo(
+            OffsetDateTime.now().minusDays(1),
+            new TemporalUnitWithinOffset(5, java.time.temporal.ChronoUnit.SECONDS));
   }
 
   @Test

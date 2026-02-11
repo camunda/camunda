@@ -124,13 +124,17 @@ public class ProcessInstanceSearchIT {
     assertThat(result.getProcessDefinitionId()).isEqualTo(bpmnProcessId);
     assertThat(result.getProcessDefinitionName()).isEqualTo("Service tasks v1");
     assertThat(result.getProcessDefinitionVersion()).isEqualTo(1);
+    assertThat(result.getProcessDefinitionVersionTag()).isNull();
     assertThat(result.getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
+    assertThat(result.getParentProcessInstanceKey()).isNull();
+    assertThat(result.getParentElementInstanceKey()).isNull();
     assertThat(result.getRootProcessInstanceKey()).isEqualTo(processInstanceKey);
     assertThat(result.getStartDate()).isNotNull();
     assertThat(result.getEndDate()).isNull();
     assertThat(result.getState()).isEqualTo(ACTIVE);
     assertThat(result.getHasIncident()).isFalse();
     assertThat(result.getTenantId()).isEqualTo("<default>");
+    assertThat(result.getTags()).isEmpty();
   }
 
   @Test
@@ -167,6 +171,39 @@ public class ProcessInstanceSearchIT {
     assertThat(exception.details().getStatus()).isEqualTo(404);
     assertThat(exception.details().getDetail())
         .contains("Process Instance with key '%s' not found".formatted(invalidProcessInstanceKey));
+  }
+
+  @Test
+  void shouldReturnEmptyTagsNotNullForProcessInstance() {
+    // given
+    final ProcessInstanceEvent processInstanceEvent = PROCESS_INSTANCES.getFirst();
+    final long processInstanceKey = processInstanceEvent.getProcessInstanceKey();
+
+    // when
+    final var result = camundaClient.newProcessInstanceGetRequest(processInstanceKey).send().join();
+
+    // then - tags should be empty list, not null (consistent across ES and RDBMS)
+    assertThat(result.getTags()).isNotNull().isEmpty();
+  }
+
+  @Test
+  void shouldReturnNullForOptionalProcessInstanceFields() {
+    // given - process instance without parent
+    final ProcessInstanceEvent processInstanceEvent =
+        PROCESS_INSTANCES.stream()
+            .filter(p -> Objects.equals("service_tasks_v1", p.getBpmnProcessId()))
+            .findFirst()
+            .orElseThrow();
+    final long processInstanceKey = processInstanceEvent.getProcessInstanceKey();
+
+    // when
+    final var result = camundaClient.newProcessInstanceGetRequest(processInstanceKey).send().join();
+
+    // then - optional fields should be null (not empty string or 0) across ES and RDBMS
+    assertThat(result.getParentProcessInstanceKey()).isNull();
+    assertThat(result.getParentElementInstanceKey()).isNull();
+    assertThat(result.getProcessDefinitionVersionTag()).isNull();
+    assertThat(result.getEndDate()).isNull(); // Active instance has no end date
   }
 
   @Test
@@ -760,6 +797,10 @@ public class ProcessInstanceSearchIT {
     assertThat(result.items().size()).isEqualTo(1);
     assertThat(result.items().stream().map(ProcessInstance::getProcessDefinitionId).toList())
         .containsExactlyInAnyOrder("child_process_v1");
+    // Verify that parentProcessInstanceKey is correctly set in the results
+    assertThat(result.items().getFirst().getParentProcessInstanceKey())
+        .isEqualTo(parentProcessInstanceKey);
+    assertThat(result.items().getFirst().getParentElementInstanceKey()).isNotNull();
     assertThat(result.items().getFirst().getRootProcessInstanceKey())
         .isEqualTo(parentProcessInstanceKey);
   }
