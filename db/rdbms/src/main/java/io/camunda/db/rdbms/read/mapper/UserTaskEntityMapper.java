@@ -37,6 +37,6 @@ public class UserTaskEntityMapper {
         dbModel.externalFormReference(),
         dbModel.processDefinitionVersion(),
         CustomHeaderSerializer.deserialize(dbModel.serializedCustomHeaders()),
-        dbModel.priority();
+        dbModel.priority());
   }
 }
