@@ -36,7 +36,7 @@ dependencies {
     testImplementation(libs.software.amazon.awssdk.regions)
     testImplementation(libs.org.jeasy.easy.random.core)
     testImplementation(libs.org.springframework.boot.spring.boot)
-    testImplementation(libs.org.springframework.boot.spring.boot.test.x1)
+    testImplementation(libs.org.springframework.boot.spring.boot.test)
     testImplementation(libs.org.springframework.boot.spring.boot.autoconfigure)
     testImplementation(libs.org.springframework.boot.spring.boot.test.autoconfigure)
     testImplementation(libs.org.springframework.spring.context)

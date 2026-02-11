@@ -18,6 +18,7 @@ dependencies {
     api(libs.org.springframework.boot.spring.boot.actuator)
     api(libs.org.springframework.boot.spring.boot.autoconfigure)
     api(libs.org.springframework.boot.spring.boot.actuator.autoconfigure)
+    api(libs.org.springframework.boot.spring.boot.health)
     implementation(libs.org.apache.commons.commons.lang3)
     api(project(":zeebe-bpmn-model"))
     api(libs.org.camunda.bpm.model.camunda.xml.model)
