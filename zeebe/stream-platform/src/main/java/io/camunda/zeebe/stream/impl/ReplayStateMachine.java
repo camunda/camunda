@@ -255,6 +255,7 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
     // source position (pointer). This means the last source position is equal to the last processed
     // position by the processing state machine, which we can backfill after replay.
     final var lastProcessedPosition = lastSourceEventPosition;
+    currentStateDescription = () -> "replay finished";
 
     // The replay state machine reads all records, but only applies the events.
     // The last read record position can be used as lastWrittenPosition in order to
@@ -275,6 +276,7 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
    */
   private void onRecordReplayed(final LoggedEvent currentEvent) {
     replayMetrics.event();
+    // release the reference to the event as soon as possible
     final var sourceEventPosition = currentEvent.getSourceEventPosition();
     final var currentPosition = currentEvent.getPosition();
     final var currentRecordKey = currentEvent.getKey();
