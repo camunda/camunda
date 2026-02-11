@@ -8,7 +8,7 @@ plugins {
 
 dependencies {
     api(libs.org.agrona.agrona)
-    api(libs.org.slf4j.slf4j.api)
+    implementation(libs.org.slf4j.slf4j.api)
     api(project(":zeebe-atomix-cluster"))
     api(project(":zeebe-atomix-utils"))
     api(project(":zeebe-cluster-config"))

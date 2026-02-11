@@ -7,9 +7,9 @@ plugins {
 }
 
 dependencies {
-    api(project(":zeebe-exporter-api"))
-    api(libs.org.slf4j.slf4j.api)
-    api(libs.io.micrometer.micrometer.core)
+    implementation(project(":zeebe-exporter-api"))
+    implementation(libs.org.slf4j.slf4j.api)
+    implementation(libs.io.micrometer.micrometer.core)
     testImplementation(libs.org.junit.jupiter.junit.jupiter.api)
     testImplementation(libs.org.assertj.assertj.core)
     testImplementation(libs.org.agrona.agrona)

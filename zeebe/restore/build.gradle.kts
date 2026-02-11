@@ -23,7 +23,7 @@ dependencies {
     testImplementation(project(":zeebe-protocol"))
     testImplementation(project(":zeebe-logstreams"))
     testImplementation(libs.org.assertj.assertj.core)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.implementation)
+    testImplementation(libs.org.junit.jupiter.junit.jupiter.api)
     testImplementation(libs.org.mockito.mockito.core)
 }
 

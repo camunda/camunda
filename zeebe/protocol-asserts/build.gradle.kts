@@ -7,10 +7,10 @@ plugins {
 }
 
 dependencies {
-    api(project(":zeebe-protocol"))
-    api(project(":camunda-security-protocol"))
-    api(libs.org.assertj.assertj.core)
-    api(libs.javax.annotation.javax.annotation.api)
+    implementation(project(":zeebe-protocol"))
+    implementation(project(":camunda-security-protocol"))
+    implementation(libs.org.assertj.assertj.core)
+    implementation(libs.javax.annotation.javax.annotation.api)
 }
 
 description = "Zeebe Protocol AssertJ Assertions"

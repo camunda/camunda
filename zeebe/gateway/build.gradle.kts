@@ -20,7 +20,7 @@ dependencies {
     api(project(":zeebe-cluster-config"))
     api(project(":camunda-search-domain"))
     api(libs.org.agrona.agrona)
-    api(libs.org.slf4j.slf4j.api)
+    implementation(libs.org.slf4j.slf4j.api)
     api(project(":zeebe-atomix-cluster"))
     api(libs.com.fasterxml.jackson.core.jackson.core)
     api(libs.org.springframework.spring.core)

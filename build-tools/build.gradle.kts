@@ -7,10 +7,10 @@ plugins {
 }
 
 dependencies {
-    api(libs.junit.junit)
-    api(libs.org.slf4j.slf4j.api)
-    api(libs.org.apache.maven.surefire.surefire.myextensions.api)
-    api(libs.org.apache.maven.surefire.maven.surefire.common)
+    implementation(libs.junit.junit)
+    implementation(libs.org.slf4j.slf4j.api)
+    implementation(libs.org.apache.maven.surefire.surefire.myextensions.api)
+    implementation(libs.org.apache.maven.surefire.maven.surefire.common)
 }
 
 description = "Zeebe Build Tools"

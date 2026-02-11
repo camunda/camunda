@@ -7,10 +7,10 @@ plugins {
 }
 
 dependencies {
-    api(libs.org.springframework.boot.spring.boot.autoconfigure.x1)
-    api(libs.org.springframework.spring.context.x1)
-    api(libs.org.springframework.spring.beans.x1)
-    api(libs.io.micrometer.micrometer.core)
+    implementation(libs.org.springframework.boot.spring.boot.autoconfigure.x1)
+    implementation(libs.org.springframework.spring.context.x1)
+    implementation(libs.org.springframework.spring.beans.x1)
+    implementation(libs.io.micrometer.micrometer.core)
     testImplementation(libs.org.springframework.boot.spring.boot.starter.test)
     testImplementation(libs.org.springframework.boot.spring.boot.test)
     testImplementation(libs.org.junit.jupiter.junit.jupiter.api.x1)

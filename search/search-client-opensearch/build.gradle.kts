@@ -11,7 +11,7 @@ dependencies {
     api(project(":camunda-search-client-query-transformer"))
     api(project(":camunda-search-domain"))
     api(libs.org.opensearch.client.opensearch.java)
-    api(libs.org.slf4j.slf4j.api)
+    implementation(libs.org.slf4j.slf4j.api)
     testImplementation(libs.org.junit.jupiter.junit.jupiter.api)
     testImplementation(libs.org.junit.jupiter.junit.jupiter.params)
     testImplementation(libs.org.junit.jupiter.junit.jupiter.engine)

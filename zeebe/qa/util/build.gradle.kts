@@ -18,7 +18,7 @@ dependencies {
     api(project(":camunda-spring-utils"))
     api(libs.org.testcontainers.testcontainers)
     api(libs.io.zeebe.zeebe.test.container)
-    api(libs.org.slf4j.slf4j.api)
+    implementation(libs.org.slf4j.slf4j.api)
     api(libs.com.fasterxml.jackson.core.jackson.annotations)
     api(libs.io.github.openfeign.feign.core)
     api(libs.io.github.openfeign.feign.httpclient)

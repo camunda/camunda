@@ -8,7 +8,7 @@ plugins {
 
 dependencies {
     api(project(":zeebe-protocol"))
-    api(libs.org.slf4j.slf4j.api)
+    implementation(libs.org.slf4j.slf4j.api)
     api(libs.io.micrometer.micrometer.core)
     testImplementation(libs.junit.junit)
     testImplementation(libs.org.assertj.assertj.core)

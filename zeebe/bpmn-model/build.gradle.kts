@@ -8,7 +8,7 @@ plugins {
 
 dependencies {
     api(libs.org.camunda.bpm.model.camunda.xml.model)
-    api(libs.org.slf4j.slf4j.api)
+    implementation(libs.org.slf4j.slf4j.api)
     testImplementation(libs.junit.junit)
     testImplementation(libs.org.junit.jupiter.junit.jupiter.params)
     testImplementation(libs.org.junit.jupiter.junit.jupiter.api)

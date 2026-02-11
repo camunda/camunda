@@ -9,11 +9,11 @@ plugins {
 dependencies {
     api(project(":camunda-search-client-connect"))
     api(project(":webapps-schema"))
-    api(libs.org.slf4j.slf4j.api)
+    implementation(libs.org.slf4j.slf4j.api)
     api(libs.co.elastic.clients.elasticsearch.java)
     api(libs.org.opensearch.client.opensearch.java)
     api(libs.jakarta.json.jakarta.json.api)
-    api(libs.commons.io.commons.io)
+    implementation(libs.commons.io.commons.io)
     api(libs.com.fasterxml.jackson.core.jackson.databind)
     api(libs.com.fasterxml.jackson.core.jackson.core)
     api(libs.com.google.guava.guava)

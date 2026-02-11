@@ -13,7 +13,7 @@ dependencies {
     api(project(":zeebe-auth"))
     api(project(":zeebe-protocol"))
     api(libs.com.github.ben.manes.caffeine.caffeine)
-    api(libs.org.slf4j.slf4j.api)
+    implementation(libs.org.slf4j.slf4j.api)
     testImplementation(project(":zeebe-protocol-impl"))
     testImplementation(project(":camunda-security-protocol"))
     testImplementation(project(":zeebe-protocol-test-util"))

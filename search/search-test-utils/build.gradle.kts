@@ -7,22 +7,22 @@ plugins {
 }
 
 dependencies {
-    api(project(":camunda-search-client-connect"))
-    api(project(":webapps-schema"))
-    api(libs.org.slf4j.slf4j.api)
-    api(libs.co.elastic.clients.elasticsearch.java)
-    api(libs.org.opensearch.client.opensearch.java)
-    api(libs.jakarta.json.jakarta.json.api)
-    api(libs.com.fasterxml.jackson.core.jackson.databind)
-    api(libs.com.fasterxml.jackson.core.jackson.core)
-    api(libs.org.apache.commons.commons.lang3)
-    api(libs.com.fasterxml.jackson.datatype.jackson.datatype.jsr310)
-    api(libs.org.testcontainers.testcontainers.elasticsearch)
-    api(libs.org.opensearch.opensearch.testcontainers)
-    api(libs.org.junit.jupiter.junit.jupiter.api)
-    api(libs.org.mockito.mockito.core)
-    api(libs.org.assertj.assertj.core)
-    api(project(":zeebe-test-util"))
+    implementation(project(":camunda-search-client-connect"))
+    implementation(project(":webapps-schema"))
+    implementation(libs.org.slf4j.slf4j.api)
+    implementation(libs.co.elastic.clients.elasticsearch.java)
+    implementation(libs.org.opensearch.client.opensearch.java)
+    implementation(libs.jakarta.json.jakarta.json.api)
+    implementation(libs.com.fasterxml.jackson.core.jackson.databind)
+    implementation(libs.com.fasterxml.jackson.core.jackson.core)
+    implementation(libs.org.apache.commons.commons.lang3)
+    implementation(libs.com.fasterxml.jackson.datatype.jackson.datatype.jsr310)
+    implementation(libs.org.testcontainers.testcontainers.elasticsearch)
+    implementation(libs.org.opensearch.opensearch.testcontainers)
+    implementation(libs.org.junit.jupiter.junit.jupiter.api)
+    implementation(libs.org.mockito.mockito.core)
+    implementation(libs.org.assertj.assertj.core)
+    implementation(project(":zeebe-test-util"))
 }
 
 description = "Camunda Search Test Utils"

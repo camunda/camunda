@@ -7,7 +7,7 @@ plugins {
 }
 
 dependencies {
-    api(libs.com.unboundid.unboundid.ldapsdk)
+    implementation(libs.com.unboundid.unboundid.ldapsdk)
     testImplementation(project(":operate-webapp"))
     testImplementation(project(":operate-qa-util"))
     testImplementation(project(":operate-data-generator"))

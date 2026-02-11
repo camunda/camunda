@@ -121,7 +121,7 @@ dependencies {
     runtimeOnly(libs.org.bouncycastle.bcpkix.jdk18on)
     runtimeOnly(libs.org.bouncycastle.bcprov.jdk18on)
     testImplementation(libs.org.apache.logging.log4j.log4j.core.test)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.implementation)
+    testImplementation(libs.org.junit.jupiter.junit.jupiter.api)
     testImplementation(libs.org.junit.jupiter.junit.jupiter.engine)
     testImplementation(libs.org.assertj.assertj.core)
     testImplementation(project(":zeebe-test-util"))
@@ -139,7 +139,7 @@ dependencies {
     testImplementation(libs.org.mockito.mockito.junit.jupiter)
     testImplementation(libs.org.awaitility.awaitility)
     testImplementation(libs.org.wiremock.wiremock.standalone)
-    testImplementation(libs.com.github.docker.java.docker.java.implementation)
+    testImplementation(libs.com.github.docker.java.docker.java.api)
     compileOnly(libs.com.mysql.mysql.connector.j)
     compileOnly(libs.com.oracle.database.jdbc.ojdbc8)
 }

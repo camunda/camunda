@@ -17,7 +17,7 @@ dependencies {
     api(libs.org.springframework.spring.beans)
     api(libs.org.springframework.boot.spring.boot.autoconfigure)
     api(project(":camunda-client-java"))
-    api(libs.org.slf4j.slf4j.api)
+    implementation(libs.org.slf4j.slf4j.api)
     api(libs.jakarta.annotation.jakarta.annotation.api)
     api(libs.com.fasterxml.jackson.core.jackson.databind)
 }

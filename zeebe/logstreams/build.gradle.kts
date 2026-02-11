@@ -10,7 +10,7 @@ dependencies {
     api(project(":zeebe-util"))
     api(project(":zeebe-scheduler"))
     api(libs.org.agrona.agrona)
-    api(libs.org.slf4j.slf4j.api)
+    implementation(libs.org.slf4j.slf4j.api)
     api(project(":zeebe-protocol"))
     api(project(":zeebe-protocol-impl"))
     api(libs.com.netflix.concurrency.limits.concurrency.limits.core)

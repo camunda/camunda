@@ -10,7 +10,7 @@ dependencies {
     api(project(":webapps-common"))
     api(project(":webapps-schema"))
     api(project(":zeebe-util"))
-    api(libs.org.slf4j.slf4j.api)
+    implementation(libs.org.slf4j.slf4j.api)
     api(libs.co.elastic.clients.elasticsearch.java)
     api(libs.org.opensearch.client.opensearch.java)
     testImplementation(libs.org.junit.jupiter.junit.jupiter.engine)
