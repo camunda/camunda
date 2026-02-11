@@ -18,7 +18,7 @@ dependencies {
     api(libs.com.fasterxml.jackson.core.jackson.core)
     api(libs.com.fasterxml.jackson.core.jackson.databind)
     api(libs.com.fasterxml.jackson.datatype.jackson.datatype.jsr310)
-    api(libs.org.slf4j.slf4j.api)
+    implementation(libs.org.slf4j.slf4j.api)
     api(libs.io.micrometer.micrometer.core)
     api(libs.com.github.ben.manes.caffeine.caffeine)
     api(project(":camunda-db-rdbms-schema"))

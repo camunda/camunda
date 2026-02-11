@@ -13,7 +13,7 @@ tasks.named<JavaExec>("generateSbe") {
 
 dependencies {
     api(libs.org.agrona.agrona)
-    api(libs.org.slf4j.slf4j.api)
+    implementation(libs.org.slf4j.slf4j.api)
     api(libs.com.google.guava.guava)
     api(libs.io.micrometer.micrometer.commons)
     api(libs.io.micrometer.micrometer.core)

@@ -13,10 +13,10 @@ dependencies {
     api(libs.org.springframework.spring.core)
     api(libs.org.springframework.spring.context)
     api(libs.com.fasterxml.jackson.core.jackson.annotations)
-    api(libs.com.jayway.jsonpath.json.path)
-    api(libs.org.slf4j.slf4j.api)
+    implementation(libs.com.jayway.jsonpath.json.path)
+    implementation(libs.org.slf4j.slf4j.api)
     api(libs.jakarta.annotation.jakarta.annotation.api)
-    api(libs.net.jcip.jcip.annotations)
+    implementation(libs.net.jcip.jcip.annotations)
     testImplementation(libs.org.junit.jupiter.junit.jupiter.api)
     testImplementation(libs.org.assertj.assertj.core)
 }

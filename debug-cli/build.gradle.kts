@@ -7,7 +7,7 @@ plugins {
 }
 
 dependencies {
-    api(libs.info.picocli.picocli)
+    implementation(libs.info.picocli.picocli)
     api(project(":zeebe-cluster-config"))
     api(project(":zeebe-atomix-cluster"))
     api(libs.com.google.protobuf.protobuf.java.util)

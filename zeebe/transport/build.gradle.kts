@@ -81,7 +81,7 @@ dependencies {
     api(project(":zeebe-util"))
     api(project(":zeebe-scheduler"))
     api(libs.org.agrona.agrona)
-    api(libs.org.slf4j.slf4j.api)
+    implementation(libs.org.slf4j.slf4j.api)
     testImplementation(project(":zeebe-scheduler"))
     testImplementation(libs.junit.junit)
     testImplementation(libs.org.assertj.assertj.core)

@@ -12,7 +12,7 @@ dependencies {
     api(libs.org.camunda.feel.feel.engine)
     api(libs.org.scala.lang.scala.library)
     api(libs.org.agrona.agrona)
-    api(libs.org.slf4j.slf4j.api)
+    implementation(libs.org.slf4j.slf4j.api)
     api(libs.io.micrometer.micrometer.core)
     api(project(":zeebe-msgpack-core"))
     api(libs.io.micrometer.micrometer.commons)

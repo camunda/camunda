@@ -13,7 +13,7 @@ dependencies {
     api(project(":zeebe-util"))
     api(project(":camunda-security-protocol"))
     api(libs.org.agrona.agrona)
-    api(libs.org.slf4j.slf4j.api)
+    implementation(libs.org.slf4j.slf4j.api)
     api(libs.com.fasterxml.jackson.core.jackson.databind)
     api(libs.com.fasterxml.jackson.core.jackson.annotations)
     api(libs.com.fasterxml.jackson.core.jackson.core)

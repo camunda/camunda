@@ -7,7 +7,7 @@ plugins {
 }
 
 dependencies {
-    api(libs.org.slf4j.slf4j.api)
+    implementation(libs.org.slf4j.slf4j.api)
     api(libs.com.fasterxml.jackson.core.jackson.annotations)
     api(project(":zeebe-protocol"))
     api(project(":camunda-security-protocol"))

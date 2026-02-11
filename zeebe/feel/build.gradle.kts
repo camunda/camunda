@@ -13,7 +13,7 @@ dependencies {
     api(project(":zeebe-feel-tagged-parameters"))
     api(libs.org.scala.lang.scala.library)
     api(libs.org.agrona.agrona)
-    api(libs.org.slf4j.slf4j.api)
+    implementation(libs.org.slf4j.slf4j.api)
 }
 
 description = "Zeebe FEEL Integration"

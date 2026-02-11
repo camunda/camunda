@@ -10,7 +10,7 @@ dependencies {
     api(project(":camunda-search-domain"))
     api(project(":camunda-search-client-reader"))
     api(project(":camunda-security-core"))
-    api(libs.org.slf4j.slf4j.api)
+    implementation(libs.org.slf4j.slf4j.api)
     testImplementation(libs.org.junit.jupiter.junit.jupiter.api)
     testImplementation(libs.org.junit.jupiter.junit.jupiter.engine)
     testImplementation(libs.org.assertj.assertj.core)
