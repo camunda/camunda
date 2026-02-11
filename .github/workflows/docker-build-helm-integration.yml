@@ -34,7 +34,9 @@ on:
   pull_request:
     paths:
       - ".github/workflows/docker-build-helm-integration.yml"
-      - "camunda.Dockerfile"
+      - "Dockerfile"
+      - "operate.Dockerfile"
+      - "tasklist.Dockerfile"
       - "dist/**"
       - "zeebe/**"
       - "operate/**"
@@ -49,7 +51,9 @@ concurrency:
 env:
   GHA_BEST_PRACTICES_LINTER: enabled
   HARBOR_REGISTRY: registry.camunda.cloud
-  HARBOR_REPOSITORY: registry.camunda.cloud/team-camunda/camunda
+  HARBOR_ZEEBE_REPOSITORY: registry.camunda.cloud/team-camunda/zeebe
+  HARBOR_OPERATE_REPOSITORY: registry.camunda.cloud/team-camunda/operate
+  HARBOR_TASKLIST_REPOSITORY: registry.camunda.cloud/team-camunda/tasklist
 
 defaults:
   run:
@@ -65,7 +69,6 @@ jobs:
     if: >
       github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'pull_request' &&
-       (github.actor == 'eamonnmoloney' || github.actor == 'remcowesterhoud') &&
        !contains(github.event.pull_request.labels.*.name, 'skip-always-green'))
     steps:
       - run: echo "Workflow conditions met, proceeding with build"
@@ -169,8 +172,8 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   # Main build job - waits for all frontends to complete
-  build-and-push:
-    name: Build and Push Docker Image
+  build-and-push-images:
+    name: Build and Push Docker Images
     needs: [build-operate-frontend, build-tasklist-frontend, build-identity-frontend]
     permissions: { }
     runs-on: gcp-perf-core-8-default
@@ -193,7 +196,7 @@ jobs:
       - name: Get Maven project version
         id: maven-version
         run: |
-          VERSION=$(./mvnw -q -Dexec.executable=echo -Dexec.args="\${project.version}" --non-recursive exec:exec)
+          VERSION=$(./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout --non-recursive)
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
 
       - name: Set semantic image tag
@@ -236,25 +239,51 @@ jobs:
         with:
           maven-extra-args: -PskipFrontendBuild
 
-      - name: Build and push Docker image to Harbor
-        id: build-docker
+      - name: Build and push Zeebe Docker image to Harbor
+        id: build-zeebe-docker
         uses: ./.github/actions/build-platform-docker
         with:
-          repository: ${{ env.HARBOR_REPOSITORY }}
+          repository: ${{ env.HARBOR_ZEEBE_REPOSITORY }}
           version: ${{ steps.set-image-tag.outputs.tag }}
           distball: ${{ steps.build-camunda.outputs.distball }}
           platforms: linux/amd64
-          dockerfile: camunda.Dockerfile
+          dockerfile: Dockerfile
+          push: true
+
+      - name: Build and push Operate Docker image to Harbor
+        id: build-operate-docker
+        uses: ./.github/actions/build-platform-docker
+        with:
+          repository: ${{ env.HARBOR_OPERATE_REPOSITORY }}
+          version: ${{ steps.set-image-tag.outputs.tag }}
+          distball: ${{ steps.build-camunda.outputs.distball }}
+          platforms: linux/amd64
+          dockerfile: operate.Dockerfile
+          push: true
+
+      - name: Build and push Tasklist Docker image to Harbor
+        id: build-tasklist-docker
+        uses: ./.github/actions/build-platform-docker
+        with:
+          repository: ${{ env.HARBOR_TASKLIST_REPOSITORY }}
+          version: ${{ steps.set-image-tag.outputs.tag }}
+          distball: ${{ steps.build-camunda.outputs.distball }}
+          platforms: linux/amd64
+          dockerfile: tasklist.Dockerfile
           push: true
 
       - name: Output image details
         run: |
           {
-            echo "### Docker Image Built and Pushed"
+            echo "### Docker Images Built and Pushed"
             echo ""
-            echo "**Repository:** ${{ env.HARBOR_REPOSITORY }}"
             echo "**Tag:** ${{ steps.set-image-tag.outputs.tag }}"
-            echo "**Full Image:** ${{ env.HARBOR_REPOSITORY }}:${{ steps.set-image-tag.outputs.tag }}"
+            echo ""
+            echo "| Component | Image |"
+            echo "|-----------|-------|"
+            echo "| Zeebe | ${{ env.HARBOR_ZEEBE_REPOSITORY }}:${{ steps.set-image-tag.outputs.tag }} |"
+            echo "| Operate | ${{ env.HARBOR_OPERATE_REPOSITORY }}:${{ steps.set-image-tag.outputs.tag }} |"
+            echo "| Tasklist | ${{ env.HARBOR_TASKLIST_REPOSITORY }}:${{ steps.set-image-tag.outputs.tag }} |"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Observe build status
@@ -301,7 +330,7 @@ jobs:
 
   helm-deploy:
     name: Helm chart Integration Tests
-    needs: [build-and-push, format-identifier]
+    needs: [build-and-push-images, format-identifier]
     uses: camunda/camunda-platform-helm/.github/workflows/test-integration-template.yaml@main
     secrets: inherit
     with:
@@ -309,7 +338,7 @@ jobs:
       platforms: gke
       camunda-helm-git-ref: ${{ inputs.helmRepositoryBranchName || 'main' }}
       camunda-helm-dir: ${{ inputs.helmRepositoryDirName || 'camunda-platform-8.7' }}
-      namespace-prefix: monorepo
+      namespace-prefix: mono-8-7
       test-enabled: true
       e2e-enabled: true
       deployment-ttl: ${{ inputs.deployment-ttl || '' }}
@@ -318,11 +347,28 @@ jobs:
       always-delete-namespace: true
       flows: install
       extra-values: |
-        orchestration:
+        zeebe:
           image:
             registry: registry.camunda.cloud
-            repository: team-camunda/camunda
-            tag: ${{ needs.build-and-push.outputs.image-tag }}
+            repository: team-camunda/zeebe
+            tag: ${{ needs.build-and-push-images.outputs.image-tag }}
+        zeebeGateway:
+          image:
+            registry: registry.camunda.cloud
+            repository: team-camunda/zeebe
+            tag: ${{ needs.build-and-push-images.outputs.image-tag }}
+        operate:
+          image:
+            registry: registry.camunda.cloud
+            repository: team-camunda/operate
+            tag: ${{ needs.build-and-push-images.outputs.image-tag }}
+        tasklist:
+          image:
+            registry: registry.camunda.cloud
+            repository: team-camunda/tasklist
+            tag: ${{ needs.build-and-push-images.outputs.image-tag }}
+        global:
+          image:
             pullSecrets:
               - name: index-docker-io
               - name: registry-camunda-cloud
@@ -331,5 +377,6 @@ jobs:
         secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_PSW | TEST_DOCKER_PASSWORD;
         secret/data/github.com/organizations/camunda NEXUS_USR | TEST_DOCKER_USERNAME_CAMUNDA_CLOUD;
         secret/data/github.com/organizations/camunda NEXUS_PSW | TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD;
+        secret/data/products/distribution/ci DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET;
 
 
