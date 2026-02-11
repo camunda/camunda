@@ -65,7 +65,6 @@ jobs:
     if: >
       github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'pull_request' &&
-       (github.actor == 'eamonnmoloney' || github.actor == 'remcowesterhoud') &&
        !contains(github.event.pull_request.labels.*.name, 'skip-always-green'))
     steps:
       - run: echo "Workflow conditions met, proceeding with build"
@@ -193,7 +192,7 @@ jobs:
       - name: Get Maven project version
         id: maven-version
         run: |
-          VERSION=$(./mvnw -q -Dexec.executable=echo -Dexec.args="\${project.version}" --non-recursive exec:exec)
+          VERSION=$(./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout --non-recursive)
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
 
       - name: Set semantic image tag
@@ -309,7 +308,7 @@ jobs:
       platforms: gke
       camunda-helm-git-ref: ${{ inputs.helmRepositoryBranchName || 'main' }}
       camunda-helm-dir: ${{ inputs.helmRepositoryDirName || 'camunda-platform-8.8' }}
-      namespace-prefix: monorepo
+      namespace-prefix: mono-8-8
       test-enabled: true
       e2e-enabled: true
       deployment-ttl: ${{ inputs.deployment-ttl || '' }}
@@ -331,5 +330,6 @@ jobs:
         secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_PSW | TEST_DOCKER_PASSWORD;
         secret/data/github.com/organizations/camunda NEXUS_USR | TEST_DOCKER_USERNAME_CAMUNDA_CLOUD;
         secret/data/github.com/organizations/camunda NEXUS_PSW | TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD;
+        secret/data/products/distribution/ci DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET;
 
 
