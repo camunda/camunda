@@ -10,6 +10,7 @@ package io.camunda.tasklist.zeebeimport;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doNothing;
@@ -19,6 +20,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.esotericsoftware.kryo.io.KryoBufferOverflowException;
 import io.camunda.tasklist.JacksonConfig;
 import io.camunda.tasklist.entities.meta.ImportPositionEntity;
 import io.camunda.tasklist.exceptions.PersistenceException;
@@ -28,13 +30,18 @@ import io.camunda.tasklist.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.tasklist.zeebe.ImportValueType;
 import io.camunda.tasklist.zeebeimport.es.ImportBatchElasticSearch;
 import io.camunda.tasklist.zeebeimport.es.ImportJobElasticsearch;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.common.bytes.BytesArray;
+import org.elasticsearch.index.shard.ShardId;
 import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.SearchShardTarget;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
@@ -246,6 +253,94 @@ public class ImportListenerElasticsearchTest extends NoBeansTest {
     final List<Integer> batchSizes =
         batches.stream().map(b -> b.getHits().size()).collect(Collectors.toList());
     assertEquals(List.of(2, 2, 1), batchSizes);
+  }
+
+  @Test
+  public void testLargeVarSmallerThanEstimationBufferIsSuccessful() throws Exception {
+    // given
+    final String indexName = "some_name-8.7.0_";
+
+    // Create a real SearchHit with a large variable, but lower than limit (<5MB)
+    final StringBuilder sb = new StringBuilder();
+    sb.append("{\"fieldA\":12345,\"fieldB\":67890,\"variables\":\"");
+    for (int i = 0; i < 4.5 * 1024 * 1024; i++) {
+      sb.append("a");
+    }
+    sb.append("\"}");
+    final byte[] sourceBytes = sb.toString().getBytes(StandardCharsets.UTF_8);
+    final SearchHit largeHit = new SearchHit(0);
+    largeHit.sourceRef(new BytesArray(sourceBytes));
+    largeHit.shard(
+        new SearchShardTarget(
+            "someId", new ShardId(indexName, UUID.randomUUID().toString(), 1), "clusterAlias"));
+
+    final List<SearchHit> hits = List.of(largeHit);
+    final ImportBatch importBatchElasticSearch =
+        new ImportBatchElasticSearch(1, ImportValueType.PROCESS_INSTANCE, hits, indexName);
+    final ImportPositionEntity previousPosition =
+        new ImportPositionEntity().setAliasName("alias").setPartitionId(1).setPosition(0);
+    final ImportJob importJob =
+        beanFactory.getBean(
+            ImportJobElasticsearch.class, importBatchElasticSearch, previousPosition);
+
+    // mock import methods
+    try {
+      when(importBatchProcessorFactory.getImportBatchProcessor(anyString()))
+          .thenReturn(elasticsearchBulkProcessor);
+      doNothing().when(elasticsearchBulkProcessor).performImport(importBatchElasticSearch);
+    } catch (final PersistenceException e) {
+      // ignore
+    }
+
+    // when the job is executed
+    importJob.call();
+
+    // then
+    assertFalse(importListener.isFailedCalled());
+    assertTrue(importListener.isFinishedCalled());
+  }
+
+  @Test
+  public void testVarsLargerThanEstimationBufferFails() throws Exception {
+    // given
+    final String indexName = "some_name-8.7.0_";
+
+    // Create a real SearchHit with a large variable (>5MB)
+    final StringBuilder sb = new StringBuilder();
+    sb.append("{\"fieldA\":12345,\"fieldB\":67890,\"variables\":\"");
+    for (int i = 0; i < 5.5 * 1024 * 1024; i++) {
+      sb.append("a");
+    }
+    sb.append("\"}");
+    final byte[] sourceBytes = sb.toString().getBytes(StandardCharsets.UTF_8);
+    final SearchHit largeHit = new SearchHit(0);
+    largeHit.sourceRef(new BytesArray(sourceBytes));
+
+    final List<SearchHit> hits = List.of(largeHit);
+    final ImportBatch importBatchElasticSearch =
+        new ImportBatchElasticSearch(1, ImportValueType.PROCESS_INSTANCE, hits, indexName);
+    final ImportPositionEntity previousPosition =
+        new ImportPositionEntity().setAliasName("alias").setPartitionId(1).setPosition(0);
+    final ImportJob importJob =
+        beanFactory.getBean(
+            ImportJobElasticsearch.class, importBatchElasticSearch, previousPosition);
+
+    // mock import methods
+    try {
+      when(importBatchProcessorFactory.getImportBatchProcessor(anyString()))
+          .thenReturn(elasticsearchBulkProcessor);
+      doNothing().when(elasticsearchBulkProcessor).performImport(importBatchElasticSearch);
+    } catch (final PersistenceException e) {
+      // ignore
+    }
+
+    // then
+    assertThrows(
+        KryoBufferOverflowException.class,
+        () -> {
+          importJob.call();
+        });
+    verify(elasticsearchBulkProcessor, times(0)).performImport(importBatchElasticSearch);
   }
 
   @Component
