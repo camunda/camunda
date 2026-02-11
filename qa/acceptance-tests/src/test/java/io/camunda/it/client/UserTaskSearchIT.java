@@ -801,7 +801,7 @@ class UserTaskSearchIT {
   }
 
   @Test
-  void shouldReturnNullForOptionalDateFields() {
+  void shouldReturnNullOrDefaultForOptionalDateFields() {
     // given - find a task that hasn't been completed (no completion/due/followUp dates)
     final var result =
         camundaClient
@@ -810,7 +810,7 @@ class UserTaskSearchIT {
             .send()
             .join();
 
-    // then - assert optional date fields are null (not epoch) across ES and RDBMS
+    // then - assert optional date fields
     assertThat(result.items()).hasSizeGreaterThan(0);
     final var task = result.items().getFirst();
     assertThat(task.getCompletionDate()).isNull();

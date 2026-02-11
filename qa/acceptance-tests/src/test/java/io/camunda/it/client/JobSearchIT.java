@@ -289,12 +289,12 @@ public class JobSearchIT {
   }
 
   @Test
-  void shouldReturnNullForOptionalJobFields() {
+  void shouldReturnEmptyOrDefaultForOptionalJobFields() {
     // when - search for a completed job without errors
     final var result =
         camundaClient.newJobSearchRequest().filter(f -> f.type("taskABpmn")).send().join();
 
-    // then - optional fields should be null (not empty string or 0) across ES and RDBMS
+    // then
     assertThat(result.items()).hasSizeGreaterThan(0);
     final var job = result.items().getFirst();
     assertThat(job.getErrorCode()).isEqualTo("");
