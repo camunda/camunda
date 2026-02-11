@@ -93,7 +93,13 @@ runs:
             -H "X-GitHub-Api-Version: 2022-11-28" \
             "/repos/${{ github.repository }}/check-runs/$JOB_ID/annotations?per_page=100")
 
-          HAS_PRIORITY_CANCELLATION=$(echo "$ANNOTATIONS" | jq -r '.[] | select(.annotation_level == "failure" and (.message | contains("Canceling since a higher priority waiting request"))) | .message' | wc -l)
+          HAS_PRIORITY_CANCELLATION=$(echo "$ANNOTATIONS" | jq -sR '
+            try (
+              fromjson
+                | [.[]? | select(.annotation_level == "failure" and (.message | contains("Canceling since a higher priority waiting request")))]
+                | length
+              ) catch 0
+          ')
 
           if [ "$HAS_PRIORITY_CANCELLATION" -gt 0 ]; then
             PRIORITY_CANCELLED=true
