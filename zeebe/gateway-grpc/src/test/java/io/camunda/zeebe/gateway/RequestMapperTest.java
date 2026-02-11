@@ -11,7 +11,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.core.JsonParseException;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeleteResourceRequest;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -132,6 +136,225 @@ public class RequestMapperTest {
       assertThat(requestWriter.getResourceKey()).isEqualTo(22222L);
       assertThat(requestWriter.isDeleteHistory()).isTrue();
       assertThat(brokerRequest.getOperationReference()).isEqualTo(555L);
+    }
+  }
+
+  @Nested
+  class ActivateJobsRequestMappingTest {
+
+    @BeforeEach
+    public void setup() {
+      // Enable multi-tenancy for most tests
+      RequestMapper.setMultiTenancyEnabled(true);
+    }
+
+    @AfterEach
+    public void tearDown() {
+      // Reset to default state
+      RequestMapper.setMultiTenancyEnabled(false);
+    }
+
+    @Test
+    public void shouldMapActivateJobsRequestWithProvidedTenantFilter() {
+      // given
+      final var grpcRequest =
+          ActivateJobsRequest.newBuilder()
+              .setType("test-job")
+              .setWorker("test-worker")
+              .setMaxJobsToActivate(10)
+              .setTimeout(5000L)
+              .addTenantIds("tenant-a")
+              .addTenantIds("tenant-b")
+              .setTenantFilter(
+                  io.camunda.zeebe.gateway.protocol.GatewayOuterClass.TenantFilter.PROVIDED)
+              .build();
+
+      // when
+      final var brokerRequest = RequestMapper.toActivateJobsRequest(grpcRequest);
+
+      // then
+      final var requestWriter = brokerRequest.getRequestWriter();
+      assertThat(requestWriter.getType()).isEqualTo("test-job");
+      assertThat(requestWriter.getWorker()).isEqualTo("test-worker");
+      assertThat(requestWriter.getMaxJobsToActivate()).isEqualTo(10);
+      assertThat(requestWriter.getTimeout()).isEqualTo(5000L);
+      assertThat(requestWriter.getTenantIds()).containsExactly("tenant-a", "tenant-b");
+      assertThat(requestWriter.getTenantFilter())
+          .isEqualTo(io.camunda.zeebe.protocol.record.value.TenantFilter.PROVIDED);
+    }
+
+    @Test
+    public void shouldMapActivateJobsRequestWithAssignedTenantFilter() {
+      // given
+      final var grpcRequest =
+          ActivateJobsRequest.newBuilder()
+              .setType("test-job")
+              .setWorker("test-worker")
+              .setMaxJobsToActivate(5)
+              .setTimeout(3000L)
+              .setTenantFilter(
+                  io.camunda.zeebe.gateway.protocol.GatewayOuterClass.TenantFilter.ASSIGNED)
+              .build();
+
+      // when
+      final var brokerRequest = RequestMapper.toActivateJobsRequest(grpcRequest);
+
+      // then
+      final var requestWriter = brokerRequest.getRequestWriter();
+      assertThat(requestWriter.getType()).isEqualTo("test-job");
+      assertThat(requestWriter.getWorker()).isEqualTo("test-worker");
+      assertThat(requestWriter.getMaxJobsToActivate()).isEqualTo(5);
+      assertThat(requestWriter.getTimeout()).isEqualTo(3000L);
+      assertThat(requestWriter.getTenantIds()).isEmpty();
+      assertThat(requestWriter.getTenantFilter())
+          .isEqualTo(io.camunda.zeebe.protocol.record.value.TenantFilter.ASSIGNED);
+    }
+
+    @Test
+    public void shouldIgnoreTenantIdsWhenAssignedTenantFilterIsUsed() {
+      // given - request has tenantIds but uses ASSIGNED filter
+      final var grpcRequest =
+          ActivateJobsRequest.newBuilder()
+              .setType("test-job")
+              .setWorker("test-worker")
+              .setMaxJobsToActivate(5)
+              .addTenantIds("tenant-a")
+              .addTenantIds("tenant-b")
+              .setTenantFilter(
+                  io.camunda.zeebe.gateway.protocol.GatewayOuterClass.TenantFilter.ASSIGNED)
+              .build();
+
+      // when
+      final var brokerRequest = RequestMapper.toActivateJobsRequest(grpcRequest);
+
+      // then - tenantIds should be empty when ASSIGNED filter is used
+      final var requestWriter = brokerRequest.getRequestWriter();
+      assertThat(requestWriter.getTenantIds()).isEmpty();
+      assertThat(requestWriter.getTenantFilter())
+          .isEqualTo(io.camunda.zeebe.protocol.record.value.TenantFilter.ASSIGNED);
+    }
+
+    @Test
+    public void shouldDefaultToProvidedTenantFilterWhenNotSpecified() {
+      // given - request without explicit tenant filter
+      final var grpcRequest =
+          ActivateJobsRequest.newBuilder()
+              .setType("test-job")
+              .setWorker("test-worker")
+              .setMaxJobsToActivate(10)
+              .addTenantIds("tenant-a")
+              .build();
+
+      // when
+      final var brokerRequest = RequestMapper.toActivateJobsRequest(grpcRequest);
+
+      // then - should default to PROVIDED
+      final var requestWriter = brokerRequest.getRequestWriter();
+      assertThat(requestWriter.getTenantFilter())
+          .isEqualTo(io.camunda.zeebe.protocol.record.value.TenantFilter.PROVIDED);
+      assertThat(requestWriter.getTenantIds()).containsExactly("tenant-a");
+    }
+
+    @Test
+    public void shouldRejectProvidedFilterWithoutTenantIds() {
+      // given - PROVIDED filter but no tenant IDs
+      final var grpcRequest =
+          ActivateJobsRequest.newBuilder()
+              .setType("test-job")
+              .setWorker("test-worker")
+              .setMaxJobsToActivate(10)
+              .setTenantFilter(
+                  io.camunda.zeebe.gateway.protocol.GatewayOuterClass.TenantFilter.PROVIDED)
+              .build();
+
+      // when/then - should throw exception
+      assertThatThrownBy(() -> RequestMapper.toActivateJobsRequest(grpcRequest))
+          .hasMessageContaining("no tenant identifiers were provided");
+    }
+
+    @Test
+    public void shouldMapActivateJobsRequestWithFetchVariables() {
+      // given
+      final var grpcRequest =
+          ActivateJobsRequest.newBuilder()
+              .setType("test-job")
+              .setWorker("test-worker")
+              .setMaxJobsToActivate(10)
+              .addTenantIds("tenant-a")
+              .addFetchVariable("var1")
+              .addFetchVariable("var2")
+              .addFetchVariable("var3")
+              .build();
+
+      // when
+      final var brokerRequest = RequestMapper.toActivateJobsRequest(grpcRequest);
+
+      // then
+      final var requestWriter = brokerRequest.getRequestWriter();
+      final var variables = requestWriter.variables();
+      assertThat(variables).hasSize(3);
+      assertThat(variables.iterator())
+          .toIterable()
+          .extracting(v -> io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString(v.getValue()))
+          .containsExactly("var1", "var2", "var3");
+    }
+
+    @Test
+    public void shouldMapActivateJobsRequestWithMultiTenancyDisabled() {
+      // given
+      RequestMapper.setMultiTenancyEnabled(false);
+      final var grpcRequest =
+          ActivateJobsRequest.newBuilder()
+              .setType("test-job")
+              .setWorker("test-worker")
+              .setMaxJobsToActivate(10)
+              .build();
+
+      // when
+      final var brokerRequest = RequestMapper.toActivateJobsRequest(grpcRequest);
+
+      // then - should default to default tenant
+      final var requestWriter = brokerRequest.getRequestWriter();
+      assertThat(requestWriter.getTenantIds())
+          .containsExactly(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+      assertThat(requestWriter.getTenantFilter())
+          .isEqualTo(io.camunda.zeebe.protocol.record.value.TenantFilter.PROVIDED);
+    }
+
+    @Test
+    public void shouldRejectNonDefaultTenantIdWhenMultiTenancyDisabled() {
+      // given
+      RequestMapper.setMultiTenancyEnabled(false);
+      final var grpcRequest =
+          ActivateJobsRequest.newBuilder()
+              .setType("test-job")
+              .setWorker("test-worker")
+              .setMaxJobsToActivate(10)
+              .addTenantIds("tenant-a")
+              .build();
+
+      // when/then - should throw exception
+      assertThatThrownBy(() -> RequestMapper.toActivateJobsRequest(grpcRequest))
+          .hasMessageContaining("multi-tenancy is disabled");
+    }
+
+    @Test
+    public void shouldThrowExceptionForUnrecognizedTenantFilter() {
+      // given
+      final var grpcRequest =
+          ActivateJobsRequest.newBuilder()
+              .setType("test-job")
+              .setWorker("test-worker")
+              .setMaxJobsToActivate(10)
+              .addTenantIds("tenant-a")
+              .setTenantFilterValue(999) // Invalid enum value
+              .build();
+
+      // when/then
+      assertThatThrownBy(() -> RequestMapper.toActivateJobsRequest(grpcRequest))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("Unrecognized tenantFilter option")
+          .hasMessageContaining("expected one of ASSIGNED or PROVIDED");
     }
   }
 }
