@@ -93,3 +93,5 @@ scripts/codeowners-utils/output/
 # playwright test output
 **/test-results
 .claude/settings.local.json
+build/
+build-cache/
