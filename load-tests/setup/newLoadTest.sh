@@ -90,18 +90,20 @@ cp -v ../secondary-storage-values*.yaml $namespace/
 cp -v ../prometheus-elasticsearch-exporter-values.yaml $namespace/
 
 # Copy Optimize k6 browser tests folder to the new folder
-cp -rv ../optimize-k6 $namespace/
+cp -rv ./optimize-k6 $namespace/
 
 cd $namespace
 
 # Update Makefile to use the namespace and secondary storage
 sed_inplace "s/__NAMESPACE__/$namespace/" Makefile
 sed_inplace "s/__STORAGE_TYPE__/$secondaryStorage/" Makefile
+sed_inplace "s/enable_optimize ?= false/enable_optimize ?= $enable_optimize/" Makefile
 
 # Update Optimize values if enabled
 if [[ "$enable_optimize" == "true" ]]; then
-  sed_inplace "s|publicIssuerUrl: \"http://.*-keycloak|publicIssuerUrl: \"http://$namespace-keycloak|" camunda-platform-values-optimize.yaml
-  sed_inplace "s|redirectUrl: \"http://.*:80|redirectUrl: \"http://$namespace:80|" camunda-platform-values-optimize.yaml
+  sed_inplace "s|publicIssuerUrl: \"http://.*-keycloak|publicIssuerUrl: \"http://${namespace}-keycloak|" camunda-platform-values-optimize.yaml
+  sed_inplace "s|redirectUrl: \"http://.*:80|redirectUrl: \"http://${namespace}:80|" camunda-platform-values-optimize.yaml
+  sed_inplace "s/__NAMESPACE__/$namespace/" optimize-k6/k6-browser-cronjob-generic.yaml
 fi
 
 # Add/update helm repositories

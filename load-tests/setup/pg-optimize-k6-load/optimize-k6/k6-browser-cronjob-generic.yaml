@@ -31,7 +31,7 @@ spec:
                     fieldRef:
                       fieldPath: metadata.namespace
                 - name: BASE_URL
-                  value: "http://__NAMESPACE__:80"
+                  value: "http://pg-optimize-k6-load:80"
                 # Username - always "demo"
                 - name: USERNAME
                   value: "demo"
