@@ -53,7 +53,7 @@
     "license-checker": "25.0.1",
     "prettier": "3.6.2",
     "rollup": "4.45.3",
-    "rollup-plugin-license": "^3.5.3",
+    "rollup-plugin-license": "3.6.0",
     "rollup-plugin-sbom": "3.0.2",
     "sass": "1.89.2",
     "typescript": "5.8.3",
