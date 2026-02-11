@@ -138,6 +138,19 @@ public class ProcessInstanceController {
   }
 
   @RequiresSecondaryStorage
+  @CamundaGetMapping(path = "/{processInstanceKey}/introspect")
+  public CompletableFuture<ResponseEntity<Object>> introspectProcessInstance(
+      @PathVariable("processInstanceKey") final Long processInstanceKey) {
+    return RequestExecutor.executeServiceMethod(
+        () ->
+            processInstanceServices
+                .withAuthentication(authenticationProvider.getCamundaAuthentication())
+                .introspectProcessInstance(processInstanceKey),
+        ResponseMapper::toIntrospectProcessInstanceResponse,
+        HttpStatus.OK);
+  }
+
+  @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/{processInstanceKey}/deletion")
   public CompletableFuture<ResponseEntity<Object>> deleteProcessInstance(
       @PathVariable("processInstanceKey") final Long processInstanceKey,

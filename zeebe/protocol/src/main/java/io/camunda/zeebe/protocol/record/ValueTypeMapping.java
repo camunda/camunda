@@ -57,6 +57,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessEventIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntrospectIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceResultIntent;
@@ -117,6 +118,7 @@ import io.camunda.zeebe.protocol.record.value.MultiInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessEventRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceIntrospectRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceMigrationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
@@ -360,6 +362,10 @@ public final class ValueTypeMapping {
     mapping.put(
         ValueType.GLOBAL_LISTENER,
         new Mapping<>(GlobalListenerRecordValue.class, GlobalListenerIntent.class));
+    mapping.put(
+        ValueType.PROCESS_INSTANCE_INTROSPECT,
+        new Mapping<>(
+            ProcessInstanceIntrospectRecordValue.class, ProcessInstanceIntrospectIntent.class));
     return mapping;
   }
 

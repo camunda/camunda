@@ -59,6 +59,7 @@ import io.camunda.zeebe.protocol.impl.record.value.multiinstance.MultiInstanceRe
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessEventRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceIntrospectRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
@@ -213,6 +214,7 @@ public class UnifiedRecordValue extends UnpackedObject implements RecordValue {
       case ValueType.GLOBAL_LISTENER_BATCH -> new GlobalListenerBatchRecord();
       case ValueType.JOB_METRICS_BATCH -> new JobMetricsBatchRecord();
       case ValueType.GLOBAL_LISTENER -> new GlobalListenerRecord();
+      case PROCESS_INSTANCE_INTROSPECT -> new ProcessInstanceIntrospectRecord();
       case ValueType.SBE_UNKNOWN -> null;
       case ValueType.NULL_VAL -> null;
     };

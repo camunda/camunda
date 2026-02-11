@@ -27,6 +27,7 @@ import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCancelP
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCreationCreateProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCreationCreateWithAwaitingResultProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCreationHelper;
+import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceIntrospectProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceMigrationMigrateProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceModificationModifyProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
@@ -51,6 +52,7 @@ import io.camunda.zeebe.protocol.record.intent.ConditionalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntrospectIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
@@ -137,6 +139,11 @@ public final class BpmnProcessors {
     addProcessInstanceBatchStreamProcessors(typedRecordProcessors, processingState, writers);
     addAdHocSubProcessActivityStreamProcessors(
         typedRecordProcessors, processingState, writers, authCheckBehavior, bpmnBehaviors);
+
+    typedRecordProcessors.onCommand(
+        ValueType.PROCESS_INSTANCE_INTROSPECT,
+        ProcessInstanceIntrospectIntent.INTROSPECT,
+        new ProcessInstanceIntrospectProcessor(writers, keyGenerator, processingState));
 
     return bpmnStreamProcessor;
   }
