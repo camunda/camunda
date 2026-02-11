@@ -1170,6 +1170,7 @@ class RdbmsExporterIT {
 
     final var itemKey = 9043L;
     final var processInstanceKey = 9044L;
+    final var rootProcessInstanceKey = 9033L;
 
     final Record<BatchOperationChunkRecordValue> record =
         RecordFixtures.FACTORY.generateRecord(ValueType.BATCH_OPERATION_CHUNK);
@@ -1188,6 +1189,7 @@ class RdbmsExporterIT {
                             ImmutableBatchOperationItemValue.builder()
                                 .withItemKey(itemKey)
                                 .withProcessInstanceKey(processInstanceKey)
+                                .withRootProcessInstanceKey(rootProcessInstanceKey)
                                 .build()))
                     .build())
             .build();
@@ -1213,7 +1215,7 @@ class RdbmsExporterIT {
     final var item = items.getFirst();
     assertThat(item.itemKey()).isEqualTo(itemKey);
     assertThat(item.processInstanceKey()).isEqualTo(processInstanceKey);
-    assertThat(item.rootProcessInstanceKey()).isNull();
+    assertThat(item.rootProcessInstanceKey()).isEqualTo(rootProcessInstanceKey);
     assertThat(item.operationType()).isEqualTo(BatchOperationType.MODIFY_PROCESS_INSTANCE);
     assertThat(item.state()).isEqualTo(BatchOperationItemState.ACTIVE);
   }
