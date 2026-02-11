@@ -18,6 +18,7 @@ package io.camunda.client.spring.configuration;
 import io.camunda.client.annotation.customizer.JobWorkerValueCustomizer;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.worker.BackoffSupplier;
+import io.camunda.client.impl.worker.JobWorkerBuilderImpl;
 import io.camunda.client.jobhandling.CamundaClientExecutorService;
 import io.camunda.client.jobhandling.CommandExceptionHandlingStrategy;
 import io.camunda.client.jobhandling.DefaultCommandExceptionHandlingStrategy;
@@ -111,10 +112,14 @@ public class CamundaClientAllAutoConfiguration {
   @Bean
   public JobWorkerFactory jobWorkerFactory(
       final BackoffSupplier backoffSupplier,
+      final BackoffSupplier streamNoJobsBackoffSupplier,
       final JobWorkerMetricsFactory jobWorkerMetricsFactory,
       final JobExceptionHandlerSupplier jobExceptionHandlerSupplier) {
     return new JobWorkerFactory(
-        backoffSupplier, jobExceptionHandlerSupplier, jobWorkerMetricsFactory);
+        backoffSupplier,
+        streamNoJobsBackoffSupplier,
+        jobExceptionHandlerSupplier,
+        jobWorkerMetricsFactory);
   }
 
   @Bean
@@ -124,10 +129,16 @@ public class CamundaClientAllAutoConfiguration {
     return new JobWorkerManager(jobWorkerValueCustomizers, jobWorkerFactory);
   }
 
-  @Bean
-  @ConditionalOnMissingBean
+  @Bean("backoffSupplier")
+  @ConditionalOnMissingBean(name = "backoffSupplier")
   public BackoffSupplier backoffSupplier() {
-    return BackoffSupplier.newBackoffBuilder().build();
+    return JobWorkerBuilderImpl.DEFAULT_BACKOFF_SUPPLIER;
+  }
+
+  @Bean("streamNoJobsBackoffSupplier")
+  @ConditionalOnMissingBean(name = "streamNoJobsBackoffSupplier")
+  public BackoffSupplier streamNoJobsBackoffSupplier() {
+    return JobWorkerBuilderImpl.DEFAULT_STREAM_NO_JOBS_BACKOFF_SUPPLIER;
   }
 
   @Bean("propertyBasedJobWorkerValueCustomizer")
